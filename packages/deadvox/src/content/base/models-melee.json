@@ -117,6 +117,26 @@
     },
     {
       "anchors": {
+        "face": [0.034000000000000002, -0.095000000000000001, 0],
+        "strike": [0.062, 0, 0]
+      },
+      "file": "assets/models/sledgehammer.glb",
+      "grip": {
+        "at": [-0.45000000000000001, 0, 0]
+      },
+      "hold": "upright",
+      "id": "sledgehammer",
+      "parts": {
+        "sledgehammer": {
+          "centreOfMass": [-0.2129179552841525, -2.8759972421944166e-5, -2.3047375160051148e-5],
+          "massKg": 4.5,
+          "node": "sledgehammer:sledgehammer"
+        }
+      },
+      "roll": 90
+    },
+    {
+      "anchors": {
         "strike": [0.1047, 0, 0]
       },
       "file": "assets/models/wrench.glb",

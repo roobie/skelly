@@ -31,17 +31,18 @@ const makeDoor = (runtime: ReturnType<typeof createRuntime>) => {
   }
   return door;
 };
-const carryCrowbar = (runtime: ReturnType<typeof createRuntime>) => {
+const carryTool = (runtime: ReturnType<typeof createRuntime>, type: string) => {
   const light = runtime.inventory.hands.left;
   if (!(light && runtime.inventory.consume(light))) {
-    throw new Error('Could not free a hand for the fixture crowbar');
+    throw new Error(`Could not free a hand for the fixture ${type}`);
   }
-  const crowbar = runtime.inventory.create('crowbar');
-  if (!runtime.inventory.add(crowbar, { kind: 'hand', side: 'left' })) {
-    throw new Error('Could not hold the fixture crowbar');
+  const tool = runtime.inventory.create(type);
+  if (!runtime.inventory.add(tool, { kind: 'hand', side: 'left' })) {
+    throw new Error(`Could not hold the fixture ${type}`);
   }
-  return crowbar;
+  return tool;
 };
+const carryCrowbar = (runtime: ReturnType<typeof createRuntime>) => carryTool(runtime, 'crowbar');
 const nearSpawn: [number, number, number] = [0, 1, 0];
 const makePryRuntime = (snapshot?: Parameters<typeof createRuntime>[0], active = false) => {
   const runtime = createRuntime(snapshot, false, undefined, { spawn: nearSpawn, active });
@@ -295,6 +296,22 @@ it('a prying strike travels through the sound-hearing path and draws a shambler'
   expect(shambler.mode).toBe('investigate');
 });
 
+it('a sledgehammer forces a door by hammering and its blows reach the sound-hearing path', () => {
+  const runtime = makePryRuntime();
+  const door = makeDoor(runtime);
+  const hammer = doorDef.door!.methods.hammer!;
+  const sledgehammer = carryTool(runtime, 'sledgehammer');
+  const shamblerType = registry.zombies.get('shambler')!;
+  const id = runtime.zombies.add({ ...shamblerType, sight: 0, nightSight: 0 }, [0, 1, 5], [1, 0, 0]);
+  const shambler = runtime.zombies.store.get(id)!;
+  expect(runtime.session.forceDoor(door, sledgehammer.uid)).toBeUndefined();
+
+  runtime.sim.scheduler.advance(hammer.strikeIntervalSimSeconds + 2);
+
+  expect(runtime.heardSounds.some(({ event }) => event === hammer.strikeSound)).toBe(true);
+  expect(shambler.mode).toBe('investigate');
+});
+
 it('saves a running pry just before a long-action tick and completes on the same frame after load', async () => {
   const framesBeforeSave = 300;
   const uninterrupted = makePryRuntime();
@@ -361,7 +378,7 @@ it('a stopped part-done pry and a destroyed lock round-trip through save and loa
   const loaded = makePryRuntime(decoded.snapshot);
   expect(loaded.sim.actions.job).toMatchObject({
     jobType: 'forceDoor',
-    method: Object.keys(doorDef.door!.methods)[0],
+    method: 'pry',
     stopped: true,
     elapsed,
   });

@@ -45,7 +45,7 @@ import { handOpener } from './families/handOpener.ts';
 import { arm, base, shade } from './families/lamp.ts';
 import { candle, flashlight, torch } from './families/lights.ts';
 import { cutStock, foldedSheet, turnedStock } from './families/materials.ts';
-import { bat, crowbar, hammer, knife, steelPipe, wrench } from './families/melee.ts';
+import { bat, crowbar, hammer, knife, sledgehammer, steelPipe, wrench } from './families/melee.ts';
 import { openTin } from './families/openTin.ts';
 import { carton, vessel } from './families/package.ts';
 import { ring } from './families/ring.ts';
@@ -131,6 +131,7 @@ const builders = {
   fuse,
   crowbar,
   hammer,
+  sledgehammer,
   bat,
   knife,
   wrench,

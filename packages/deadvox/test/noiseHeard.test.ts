@@ -409,6 +409,14 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
       'prying sound is played',
       played.slice(soundCount).some(({ sound }) => sound.event === 'lock_pry'),
     );
+    const hammerEventCount = scenario.events.length;
+    session.playPlayerSound('lock_hammer', session.sim.time, { sourceLabel: 'noise-pairing fixture' });
+    scenario.drainEvents();
+    observe(
+      scenario,
+      'hammering sound reaches the noise event path',
+      scenario.events.slice(hammerEventCount).some((event) => event.kind === 'noise' && event.event === 'lock_hammer'),
+    );
     const feet = session.feet();
     const struckOrigin: Vec3 = [Math.floor(feet[0]) - 1, Math.floor(feet[1]), Math.floor(feet[2]) - 2];
     session.entities.add({ type: 'wood_door', pos: struckOrigin, size: doorSize, facing: 'n' });
