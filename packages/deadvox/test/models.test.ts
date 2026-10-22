@@ -97,12 +97,14 @@ it.each<[string, Vec3]>([
     const definition = registry.models.get('compass')!;
     const { scene } = await parseGlb(readFileSync(`${BASE}/${definition.file}`));
     const { held } = prepareModel(definition, scene);
-    const context = { fillRect: vi.fn(), fillText: vi.fn(), beginPath: vi.fn(), arc: vi.fn(), stroke: vi.fn() };
+    // Every canvas call is a no-op: the test observes Three transforms, not painted pixels.
+    const context = new Proxy({}, { get: () => vi.fn() });
     vi.stubGlobal('document', { createElement: () => ({ getContext: () => context }) });
     const compass = createCompass({
       root: held,
       display: definition.display!,
       needleMount: definition.anchors!.needle_mount!,
+      dial: definition.dial!,
     });
     const hand = new Group().add(held);
     hand.position.set(...heldAt);
@@ -110,13 +112,10 @@ it.each<[string, Vec3]>([
     hand.add(palm);
     hand.updateMatrixWorld(true);
     const toEye = new Vector3(...heldAt).negate().normalize();
-    for (const name of ['compass-live-display', 'compass-live-needle']) {
-      expect(compass.group.getObjectByName(name)!.getWorldDirection(new Vector3()).dot(toEye), name).toBeGreaterThan(
-        0.99,
-      );
-    }
-    const display = compass.group.getObjectByName('compass-live-display')!;
-    const top = new Vector3(0, 1, 0).applyQuaternion(display.getWorldQuaternion(new Quaternion()));
+    const card = compass.group.getObjectByName('compass-live-dial')!;
+    expect(card.getWorldDirection(new Vector3()).dot(toEye)).toBeGreaterThan(0.99);
+    // The card's top is north, so at its default bearing it stands upright.
+    const top = new Vector3(0, 1, 0).applyQuaternion(card.getWorldQuaternion(new Quaternion()));
     expect(top.y).toBeGreaterThan(0.9);
     const palmFront = FIRST_PERSON_PALM[2] / 2;
     const palmForward = new Vector3(0, 0, 1).applyQuaternion(palm.getWorldQuaternion(new Quaternion()));

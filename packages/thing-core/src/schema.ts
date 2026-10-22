@@ -54,10 +54,18 @@ export const NeutralModelSchema = strictObject({
   rest: optional(picklist(['lying', 'upright'])),
   roll: optional(pipe(number(), finite(), minValue(-180), maxValue(180))),
   anchors: optional(record(Id, ModelPointSchema)),
-  /** The screen of an item that shows something: its centre, the way it faces and the way its top points. */
+  /**
+   * The screen of an item that shows something: its centre, the way it faces, the way its top points,
+   * and its width across and height along that top in metres.
+   */
   display: optional(
     pipe(
-      strictObject({ at: ModelPointSchema, normal: UnitVectorSchema, up: UnitVectorSchema }),
+      strictObject({
+        at: ModelPointSchema,
+        normal: UnitVectorSchema,
+        up: UnitVectorSchema,
+        size: tuple([pipe(number(), finite(), minValue(0)), pipe(number(), finite(), minValue(0))]),
+      }),
       check(({ normal, up }) => Math.abs(dotOf(normal, up)) <= 1e-6, 'display up must be across its normal'),
     ),
   ),

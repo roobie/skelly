@@ -1,99 +1,120 @@
-// A deliberately rough electronic compass: its lit screen belongs to the held object,
-// not the HUD. Battery consumption is outside this readability spike.
+// A magnetic card compass: its card and needle belong to the held object, not the HUD.
+// The card turns with the needle, so its marks name the world's directions and the model's
+// lubber mark shows the heading.
+import { MATERIALS } from '@skelly/thing-core/materials';
 import {
   CanvasTexture,
   CircleGeometry,
+  Color,
   Group,
   Matrix4,
   Mesh,
-  MeshBasicMaterial,
+  MeshStandardMaterial,
   type Object3D,
-  PlaneGeometry,
   SRGBColorSpace,
   Vector3,
 } from 'three';
-import { compassBearing, headingLabel, yawFromBearing } from '../core/coords.ts';
-import type { ModelDef } from '../core/schema.ts';
+import { compassBearing, yawFromBearing } from '../core/coords.ts';
+import type { CompassDial, ModelDef } from '../core/schema.ts';
 import { heldModelFrame } from './models.ts';
 
 const FULL_TURN = Math.PI * 2;
+const TEXTURE_SIZE = 512;
+
+const style = (material: string) =>
+  `#${new Color().setRGB(...MATERIALS[material]!.colour, SRGBColorSpace).getHexString()}`;
+
+/** Paints the card with north up; the canvas is a square whose inscribed circle is the card. */
+const paintCard = (context: CanvasRenderingContext2D, dial: CompassDial) => {
+  const radius = TEXTURE_SIZE / 2;
+  context.translate(radius, radius);
+  context.fillStyle = style(dial.face);
+  context.beginPath();
+  context.arc(0, 0, radius, 0, FULL_TURN);
+  context.fill();
+  context.strokeStyle = style(dial.ink);
+  context.lineWidth = radius * 0.05;
+  context.beginPath();
+  context.arc(0, 0, radius * 0.95, 0, FULL_TURN);
+  context.stroke();
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.font = `bold ${Math.round(dial.markHeight * radius)}px sans-serif`;
+  dial.marks.forEach((mark, index) => {
+    context.save();
+    context.rotate((index / dial.marks.length) * FULL_TURN);
+    context.fillStyle = style(index === 0 ? dial.north : dial.ink);
+    context.fillText(mark, 0, -radius * (0.9 - dial.markHeight / 2));
+    context.restore();
+  });
+  const reach = dial.needleLength * radius;
+  const half = (dial.needleWidth * radius) / 2;
+  for (const [end, colour] of [
+    [-reach, dial.north],
+    [reach, dial.south],
+  ] as const) {
+    context.fillStyle = style(colour);
+    context.beginPath();
+    context.moveTo(-half, 0);
+    context.lineTo(0, end);
+    context.lineTo(half, 0);
+    context.closePath();
+    context.fill();
+  }
+  context.fillStyle = style(dial.ink);
+  context.beginPath();
+  context.arc(0, 0, half * 0.6, 0, FULL_TURN);
+  context.fill();
+};
 
 export const createCompass = (model: {
   readonly root: Object3D;
   readonly display: NonNullable<ModelDef['display']>;
   readonly needleMount: readonly [number, number, number];
+  readonly dial: CompassDial;
 }) => {
-  const { root, display: screen, needleMount } = model;
+  const { root, display: screen, needleMount, dial } = model;
   const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 512;
+  canvas.width = TEXTURE_SIZE;
+  canvas.height = TEXTURE_SIZE;
   const context = canvas.getContext('2d');
   if (!context) {
-    throw new Error('Compass display requires a 2D canvas');
+    throw new Error('Compass card requires a 2D canvas');
   }
+  paintCard(context, dial);
   const texture = new CanvasTexture(canvas);
   texture.colorSpace = SRGBColorSpace;
-  const displayGeometry = new PlaneGeometry(0.024, 0.012);
-  const displayMaterial = new MeshBasicMaterial({ map: texture, color: 0x9d_c9_b2 });
-  const display = new Mesh(displayGeometry, displayMaterial);
-  display.name = 'compass-live-display';
-  const needleGeometry = new CircleGeometry(0.006, 3);
-  const needleMaterial = new MeshBasicMaterial({ color: 0xff_9f_86 });
-  const needle = new Mesh(needleGeometry, needleMaterial);
-  needle.name = 'compass-live-needle';
-  needle.geometry.rotateZ(Math.PI / 2);
-  needle.scale.x = 0.45;
-  // A plane's front is +z and its top +y: the face turns them to the screen's normal and up,
-  // and the live layers stand off the screen to avoid z-fighting.
+  // The card fills the display, lit like the rest of the model.
+  const cardGeometry = new CircleGeometry(Math.min(...screen.size) / 2, 48);
+  const cardMaterial = new MeshStandardMaterial({ map: texture, roughness: 0.8 });
+  const card = new Mesh(cardGeometry, cardMaterial);
+  card.name = 'compass-live-dial';
+  // A circle's front is +z and its top +y: the face turns them to the display's normal and up,
+  // and the card stands off the dial to avoid z-fighting.
   const normal = new Vector3(...screen.normal);
   const up = new Vector3(...screen.up);
   const face = new Group();
   face.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(up.clone().cross(normal), up, normal));
-  face.position.set(...screen.at).addScaledVector(normal, 0.001);
-  needle.position
+  face.position.set(...screen.at).addScaledVector(normal, 0.0005);
+  // The card turns on the needle's pin.
+  card.position
     .set(...needleMount)
     .sub(new Vector3(...screen.at))
     .applyQuaternion(face.quaternion.clone().invert());
-  needle.position.z += 0.001;
-  face.add(display, needle);
+  card.position.z = 0;
+  face.add(card);
   heldModelFrame(root).add(face);
-  let displayed = -1;
   const update = (yaw: number) => {
-    const bearing = compassBearing(yaw);
-    // Looking east puts north on the left of the held display.
-    needle.rotation.z = bearing * (Math.PI / 180);
-    const label = headingLabel(bearing);
-    if (label.degrees === displayed) {
-      return;
-    }
-    displayed = label.degrees;
-    context.fillStyle = '#10221c';
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    context.fillStyle = '#d3ffe6';
-    context.textAlign = 'center';
-    context.textBaseline = 'middle';
-    context.font = 'bold 110px monospace';
-    context.fillText(label.cardinal, 256, 96);
-    context.font = 'bold 120px monospace';
-    context.fillText(`${String(label.degrees).padStart(3, '0')}°`, 256, 225);
-    context.font = '22px sans-serif';
-    context.fillText('NORTH POINTER', 256, 472);
-    context.strokeStyle = '#608c76';
-    context.lineWidth = 3;
-    context.beginPath();
-    context.arc(256, 365, 80, 0, FULL_TURN);
-    context.stroke();
-    texture.needsUpdate = true;
+    // Looking east puts north on the left of the held card.
+    card.rotation.z = compassBearing(yaw) * (Math.PI / 180);
   };
   update(yawFromBearing(0));
   return {
     group: root,
     update,
     dispose: () => {
-      displayGeometry.dispose();
-      displayMaterial.dispose();
-      needleGeometry.dispose();
-      needleMaterial.dispose();
+      cardGeometry.dispose();
+      cardMaterial.dispose();
       texture.dispose();
     },
   };

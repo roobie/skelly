@@ -3,6 +3,7 @@
 // furniture, zombie types, models) are checked after all files are merged (content.ts).
 // Units: grams, millilitres, metres and seconds; inventory space is in cells.
 
+import { MATERIALS } from '@skelly/thing-core/materials';
 import { ModelPointSchema, modelSchema } from '@skelly/thing-core/schema';
 import {
   array,
@@ -1395,8 +1396,29 @@ const GunModelSchema = pipe(
   ),
 );
 
+const ModelMaterialId = pipe(
+  string(),
+  check((id) => Object.hasOwn(MATERIALS, id), 'must name a model material'),
+);
+
+/** A magnetic compass card drawn on the model's display: it turns with its needle to point north. */
+const CompassDialSchema = strictObject({
+  /** Model materials whose colours paint the card, its marks and the needle's two ends. */
+  face: ModelMaterialId,
+  ink: ModelMaterialId,
+  north: ModelMaterialId,
+  south: ModelMaterialId,
+  /** Labels spaced evenly clockwise from north, the first in the north colour. */
+  marks: pipe(array(pipe(string(), nonEmpty())), nonEmpty()),
+  /** Letter height, needle reach from the pin and needle width, as fractions of the card's radius. */
+  markHeight: Fraction,
+  needleLength: Fraction,
+  needleWidth: Fraction,
+});
+export type CompassDial = InferOutput<typeof CompassDialSchema>;
+
 export const ModelSchema = pipe(
-  modelSchema({ gun: optional(GunModelSchema) }),
+  modelSchema({ gun: optional(GunModelSchema), dial: optional(CompassDialSchema) }),
   check(
     ({ gun, anchors }) => gun?.internalMagazine === undefined || anchors?.loading_port !== undefined,
     'internal magazine metadata needs a loading_port anchor',

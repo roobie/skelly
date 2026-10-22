@@ -281,10 +281,28 @@ export const buildItem = (item: ToolItem) => {
     };
   }
   if (item.display) {
-    const { part, normal, up } = item.display;
+    const { part, solid: solidId, normal, up } = item.display;
+    const at = datumAt(item.display);
+    const [min, max] = localSolidBounds(report.resolved.defs.get(part)!.solids.find(({ id }) => id === solidId)!);
+    // The screen solid's extent along a part-frame direction.
+    const extentAlong = (direction: Vec3) => {
+      const unit = scale(direction, 1 / Math.hypot(...direction));
+      const across = unit.reduce((sum, value, axis) => sum + Math.abs(value) * (max[axis]! - min[axis]!), 0);
+      return across * catalogue.units.metresPerUnit;
+    };
+    const side: Vec3 = [
+      up[1] * normal[2] - up[2] * normal[1],
+      up[2] * normal[0] - up[0] * normal[2],
+      up[0] * normal[1] - up[1] * normal[0],
+    ];
     handling = {
       ...handling,
-      display: { at: datumAt(item.display), normal: directionIn(part, normal), up: directionIn(part, up) },
+      display: {
+        at,
+        normal: directionIn(part, normal),
+        up: directionIn(part, up),
+        size: [extentAlong(side), extentAlong(up)],
+      },
     };
   }
   return { report, masses, handling, glow: item.glow && glowMaterial(item, item.glow) };

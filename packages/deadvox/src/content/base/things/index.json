@@ -2001,12 +2001,18 @@
   {
     "id": "compass",
     "file": "assets/models/compass.glb",
-    "parts": { "compass": { "node": "compass:compass", "massKg": 0.12, "centreOfMass": [0, 0.005916140928369013, 0] } },
+    "parts": {
+      "compass": {
+        "node": "compass:compass",
+        "massKg": 0.12,
+        "centreOfMass": [0, 0.005848954933302406, -0.000024035047361379754]
+      }
+    },
     "grip": { "at": [0, 0.0045, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0,
-    "anchors": { "needle_mount": [0, 0.013399999999999999, 0] },
-    "display": { "at": [0, 0.013399999999999999, 0], "normal": [0, 1, 0], "up": [0, 0, -1] }
+    "anchors": { "needle_mount": [0, 0.009999999999999998, 0] },
+    "display": { "at": [0, 0.009999999999999998, 0], "normal": [0, 1, 0], "up": [0, 0, -1], "size": [0.0456, 0.0456] }
   },
   {
     "id": "lighter",

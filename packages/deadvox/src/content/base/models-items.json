@@ -450,6 +450,42 @@
       }
     },
     {
+      "anchors": {
+        "needle_mount": [0, 0.0099999999999999985, 0]
+      },
+      "dial": {
+        "face": "paint-cream",
+        "ink": "plastic-black",
+        "markHeight": 0.29999999999999999,
+        "marks": ["N", "E", "S", "W"],
+        "needleLength": 0.59999999999999998,
+        "needleWidth": 0.20000000000000001,
+        "north": "plastic-red",
+        "south": "plastic-black"
+      },
+      "display": {
+        "at": [0, 0.0099999999999999985, 0],
+        "normal": [0, 1, 0],
+        "size": [0.045600000000000002, 0.045600000000000002],
+        "up": [0, 0, -1]
+      },
+      "file": "assets/models/compass.glb",
+      "grip": {
+        "at": [0, 0.0044999999999999997, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "compass",
+      "parts": {
+        "compass": {
+          "centreOfMass": [0, 0.0058489549333024058, -2.4035047361379754e-5],
+          "massKg": 0.12,
+          "node": "compass:compass"
+        }
+      },
+      "roll": 0
+    },
+    {
       "file": "assets/models/hand_saw.glb",
       "grip": {
         "at": [-0.13, 0.034000000000000002, 0]
@@ -3278,31 +3314,6 @@
           "centreOfMass": [7.5343305067843464e-5, 0.065601100853136418, -0.00034903912059921485],
           "massKg": 0.59999999999999998,
           "node": "equipment:portableRadio"
-        }
-      },
-      "roll": 0
-    },
-    {
-      "anchors": {
-        "needle_mount": [0, 0.013399999999999999, 0]
-      },
-      "display": {
-        "at": [0, 0.013399999999999999, 0],
-        "normal": [0, 1, 0],
-        "up": [0, 0, -1]
-      },
-      "file": "assets/models/compass.glb",
-      "grip": {
-        "at": [0, 0.0044999999999999997, 0],
-        "turn": [0, 0, -90]
-      },
-      "hold": "upright",
-      "id": "compass",
-      "parts": {
-        "compass": {
-          "centreOfMass": [0, 0.005916140928369013, 0],
-          "massKg": 0.12,
-          "node": "compass:compass"
         }
       },
       "roll": 0

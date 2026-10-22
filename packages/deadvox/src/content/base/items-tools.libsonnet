@@ -64,7 +64,7 @@ local items = [
     name: 'Compass',
     category: 'tool',
     size: [1, 2],
-    description: 'An electronic compass with an illuminated heading display.',
+    description: 'A magnetic compass with a turning card.',
     heldDisplay: 'compass',
     model: 'compass',
   },

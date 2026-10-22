@@ -4885,7 +4885,7 @@
         "needle_mount": {
           "fraction": [0.5, 1, 0.5],
           "part": "compass",
-          "solid": "display"
+          "solid": "dial"
         }
       },
       "connections": [],
@@ -4893,7 +4893,7 @@
         "fraction": [0.5, 1, 0.5],
         "normal": [0, 1, 0],
         "part": "compass",
-        "solid": "display",
+        "solid": "dial",
         "up": [0, 0, -1]
       },
       "exportMass": "parts",
@@ -4912,13 +4912,14 @@
           "finish": {
             "bezel": "steel-grey",
             "body": "plastic-black",
-            "display": "plastic-green"
+            "dial": "paint-cream",
+            "lubber": "plastic-white"
           },
           "id": "compass",
           "massKg": 0.12,
           "params": {
             "bezelHeight": "0.0040000000000000001",
-            "displayWidth": "0.025999999999999999",
+            "dialHeight": "0.001",
             "height": "0.0089999999999999993",
             "radius": "0.029999999999999999"
           },

@@ -1465,13 +1465,14 @@ export class HeldItems {
     // Until its model loads, a held display shows the placeholder any item does.
     if (def.heldDisplay === HELD_DISPLAY_KIND.compass && model) {
       const definition = this.inventory.registry.models.get(def.model!);
-      if (!(definition?.display && definition.anchors?.needle_mount)) {
-        throw new Error(`Held compass ${item.type} needs a model with a display and a needle_mount anchor`);
+      if (!(definition?.display && definition.anchors?.needle_mount && definition.dial)) {
+        throw new Error(`Held compass ${item.type} needs a model with a display, a needle_mount anchor and a dial`);
       }
       const compass = createCompass({
         root: model.root,
         display: definition.display,
         needleMount: definition.anchors.needle_mount,
+        dial: definition.dial,
       });
       this.compasses.set(item.uid, compass);
       return compass.group;

@@ -66,17 +66,19 @@ const measureGlowstickFloor = async (page, uid, label, capture) => {
   return { measurement, screenshot };
 };
 
+// The pixels of the square around the held compass card as the camera sees it.
 const heldCompassPixels = (page, shot) =>
   page.evaluate(async (base64) => {
     const r = globalThis.primaryActionTest;
     const { scene, camera } = r.view.held.warmUpTarget;
-    const display = scene.getObjectByName('compass-live-display');
-    if (!display) {
-      throw new Error('Held compass display is missing');
+    const card = scene.getObjectByName('compass-live-dial');
+    if (!card) {
+      throw new Error('Held compass card is missing');
     }
     scene.updateMatrixWorld(true);
     camera.updateMatrixWorld(true);
-    const point = display.getWorldPosition(display.position.clone()).project(camera);
+    const point = card.getWorldPosition(card.position.clone()).project(camera);
+    const rim = card.localToWorld(card.position.clone().set(card.geometry.parameters.radius, 0, 0)).project(camera);
     const image = new Image();
     image.src = `data:image/png;base64,${base64}`;
     await image.decode();
@@ -87,16 +89,25 @@ const heldCompassPixels = (page, shot) =>
     context.drawImage(image, 0, 0);
     const x = Math.round(((point.x + 1) / 2) * image.width);
     const y = Math.round(((1 - point.y) / 2) * image.height);
-    const radius = 16;
+    const radius = Math.round(Math.hypot((rim.x - point.x) * image.width, (rim.y - point.y) * image.height) / 2);
     const { data } = context.getImageData(x - radius, y - radius, radius * 2 + 1, radius * 2 + 1);
-    let green = 0;
-    for (let index = 0; index < data.length; index += 4) {
-      if (data[index + 1] > data[index] + 8 && data[index + 1] > data[index + 2] + 4) {
-        green += 1;
-      }
-    }
-    return { green, pixels: data.length / 4, x, y };
+    return { data: Array.from(data), x, y, radius };
   }, shot.toString('base64'));
+
+// How many pixels of one window differ visibly from the same window in another frame.
+const changedPixels = (before, after) => {
+  let changed = 0;
+  for (let index = 0; index < before.data.length; index += 4) {
+    const difference = [0, 1, 2].reduce(
+      (sum, channel) => sum + Math.abs(before.data[index + channel] - after.data[index + channel]),
+      0,
+    );
+    if (difference > 48) {
+      changed += 1;
+    }
+  }
+  return { changed, pixels: before.data.length / 4 };
+};
 
 const visorRatio = (page, shot) =>
   page.evaluate(async (base64) => {
@@ -274,6 +285,17 @@ try {
     assert.deepEqual(pageErrors, []);
   });
   await timePhase('held-compass-pixel-assertion', async () => {
+    // The card is lit like the model, so it is read by daylight; the debug clock seek moves there and back.
+    const seekHour = (hour) =>
+      page.evaluate(
+        async ({ clockUrl, seconds }) => {
+          const { nextTimeOfDay } = await import(clockUrl);
+          const { sim } = globalThis.primaryActionTest.session;
+          sim.setDebugCalendarTime(nextTimeOfDay(sim.calendar, seconds));
+        },
+        { clockUrl: '/src/core/clock.ts', seconds: hour * 3600 },
+      );
+    await seekHour(12);
     const frame = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       r.setHand(r.dominant, r.inventory.create('compass'));
@@ -283,19 +305,30 @@ try {
     const shot = await capture();
     await writeFile(resolve(projectRoot, 'test-results/primary-action/held-compass.png'), shot);
     const shown = await heldCompassPixels(page, shot);
-    // Hiding only the live display isolates its own pixels from the lit floor and the arm around it.
+    // Hiding only the card isolates its own pixels from the lit floor and the arm around it.
     const hiddenFrame = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
-      r.view.held.warmUpTarget.scene.getObjectByName('compass-live-display').visible = false;
+      r.view.held.warmUpTarget.scene.getObjectByName('compass-live-dial').visible = false;
       return r.frames;
     });
     await page.waitForFunction((previous) => globalThis.primaryActionTest.frames > previous + 3, hiddenFrame);
     const hidden = await heldCompassPixels(page, await capture());
-    process.stdout.write(`Held compass green pixels: ${JSON.stringify({ shown, hidden })}\n`);
+    const change = changedPixels(shown, hidden);
+    process.stdout.write(`Held compass card pixels: ${JSON.stringify({ ...change, radius: shown.radius })}\n`);
     assert.ok(
-      shown.green - hidden.green > shown.pixels / 10,
-      'the held compass display is visible: showing it adds green pixels over the same frame with it hidden',
+      change.changed > change.pixels / 20,
+      'the held compass card is visible: hiding it changes its marks and needle on screen',
     );
+    // A look artifact of the other hand's hold; the assertion above covers visibility.
+    const offFrame = await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      r.clearHand(r.dominant);
+      r.setHand(r.off, r.inventory.create('compass'));
+      return r.frames;
+    });
+    await page.waitForFunction((previous) => globalThis.primaryActionTest.frames > previous + 3, offFrame);
+    await writeFile(resolve(projectRoot, 'test-results/primary-action/held-compass-off-hand.png'), await capture());
+    await seekHour(23.5);
   });
   await page.evaluate(() => {
     const r = globalThis.primaryActionTest;

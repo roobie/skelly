@@ -1791,7 +1791,7 @@ describe('content references', () => {
     expect(issues.some((issue) => issue.message === 'an emissive light model needs an emissive material')).toBe(true);
   });
 
-  it('requires a held display item’s model to say where its screen is and which way it faces', () => {
+  it('requires a held compass’s model to say where its display is, which way it faces and how its dial looks', () => {
     const displayIssues = (model: Record<string, unknown>) =>
       buildRegistry([
         {
@@ -1814,10 +1814,24 @@ describe('content references', () => {
       ]).issues.filter((issue) => issue.source === 'held-display.json');
     // biome-ignore lint/style/useNamingConvention: model anchors use content Ids.
     const needle = { anchors: { needle_mount: [0, 0.01, 0] } };
-    expect(displayIssues(needle).map(({ message }) => message)).toEqual([
+    const display = { at: [0, 0.01, 0], normal: [0, 1, 0], up: [0, 0, -1], size: [0.04, 0.04] };
+    const dial = {
+      face: 'plastic-white',
+      ink: 'plastic-black',
+      north: 'plastic-red',
+      south: 'plastic-black',
+      marks: ['N'],
+      markHeight: 0.3,
+      needleLength: 0.6,
+      needleWidth: 0.2,
+    };
+    expect(displayIssues({ ...needle, dial }).map(({ message }) => message)).toEqual([
       'a held display needs a model with a display',
     ]);
-    expect(displayIssues({ ...needle, display: { at: [0, 0.01, 0], normal: [0, 1, 0], up: [0, 0, -1] } })).toEqual([]);
+    expect(displayIssues({ ...needle, display }).map(({ message }) => message)).toEqual([
+      'a held compass needs a model with a dial',
+    ]);
+    expect(displayIssues({ ...needle, display, dial })).toEqual([]);
   });
 
   it('requires an explicit disassembly yield for a recipe result', () => {

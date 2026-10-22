@@ -31,6 +31,18 @@ local authored = [
     import 'things/torch.model.json',
     import 'things/candle.model.json',
     import 'things/bear_trap.model.json',
+    (import 'things/compass.model.json') + {
+      dial: {
+        face: 'paint-cream',
+        ink: 'plastic-black',
+        north: 'plastic-red',
+        south: 'plastic-black',
+        marks: ['N', 'E', 'S', 'W'],
+        markHeight: 0.3,
+        needleLength: 0.6,
+        needleWidth: 0.2,
+      },
+    },
     {
       "id": "hand_saw",
       "file": "assets/models/hand_saw.glb",

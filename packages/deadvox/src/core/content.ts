@@ -438,6 +438,9 @@ const checkItemHeldDisplay = (item: ItemDef, registry: Registry, report: Report)
   if (item.heldDisplay === HELD_DISPLAY_KIND.compass && !model?.anchors?.needle_mount) {
     report('items', item.id, '.model', 'a held compass needs a model with a needle_mount anchor');
   }
+  if (item.heldDisplay === HELD_DISPLAY_KIND.compass && !model?.dial) {
+    report('items', item.id, '.model', 'a held compass needs a model with a dial');
+  }
 };
 
 const checkItemLight = (item: ItemDef, hasIgniter: boolean, registry: Registry, report: Report) => {

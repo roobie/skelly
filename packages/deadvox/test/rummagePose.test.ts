@@ -198,7 +198,7 @@ it('a live firearm pose takes precedence over a generic held move', () => {
 
 it('held-display capability selects the raised compass display and rummage grip independently of item id', () => {
   // A canvas protocol fixture observes Three transforms, not rendered pixels.
-  const context = { fillRect: vi.fn(), fillText: vi.fn(), beginPath: vi.fn(), arc: vi.fn(), stroke: vi.fn() };
+  const context = new Proxy({}, { get: () => vi.fn() });
   vi.stubGlobal('document', { createElement: () => ({ getContext: () => context }) });
   const content = buildRegistry([
     playerInventorySource(),
@@ -222,9 +222,19 @@ it('held-display capability selects the raised compass display and rummage grip 
           {
             id: 'fixture_display_model',
             file: 'assets/models/compass.glb',
-            display: { at: [0, 0.005, 0], normal: [0, 1, 0], up: [0, 0, -1] },
+            display: { at: [0, 0.005, 0], normal: [0, 1, 0], up: [0, 0, -1], size: [0.03, 0.03] },
             // biome-ignore lint/style/useNamingConvention: model anchors use content Ids.
             anchors: { needle_mount: [0, 0.005, 0] },
+            dial: {
+              face: 'plastic-white',
+              ink: 'plastic-black',
+              north: 'plastic-red',
+              south: 'plastic-black',
+              marks: ['N'],
+              markHeight: 0.3,
+              needleLength: 0.6,
+              needleWidth: 0.2,
+            },
           },
         ],
       },

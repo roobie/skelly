@@ -1,17 +1,19 @@
 ---
 read_if:
-  - you change the held compass's readability, lighting or placement
+  - you change the held compass's look, readability, lighting or placement
   - you change the debug compass loadout or its hand preferences
 ---
 
 # Held compass
 
-The compass is a held object with a self-lit heading display, not HUD text. That choice keeps its information attached to the item and readable at night because held objects do not receive the world's flashlight beam. It must not add a second gameplay input or hand-motion authority. See `src/render/compass.ts`, `createCompass`, and `src/core/coords.ts`, `compassBearing`.
+The compass is a held object, not HUD text, so its information stays attached to the item. It must not add a second gameplay input or hand-motion authority. See `src/render/compass.ts`, `createCompass`, and `src/core/coords.ts`, `compassBearing`.
 
-A live handheld uses its exported model plus live parts on the model's screen and named anchors. The world and hand therefore share one model while the live display or indicator remains dynamic. How a screen is held is in `DESIGN.md`, "Held screens". See `src/render/hands.ts`, `HeldItems`, and `packages/thing-authoring-tool/src/catalogue.ts`, `buildItem`.
+The compass reads as a magnetic needle compass: a light card with bold cardinal marks and a long needle with a coloured north end, on a centre pin. A screen is illegible at hand distance, while a few large analogue shapes still read at that size. Its colours, marks and proportions are content on the model. See `src/content/base/models-items.jsonnet`, `dial`, and `src/core/schema.ts`, `CompassDialSchema`.
 
-The display uses the world's canonical north convention and converts camera yaw to clockwise bearings. The numeric bearing and cardinal label describe facing; the triangle points north. See `src/core/coords.ts`, `WORLD_NORTH` and `headingLabel`.
+The card turns with the needle, so its marks name the world's directions and the bezel's lubber mark shows the heading. It uses the world's canonical north convention and converts camera yaw to a clockwise bearing. See `src/core/coords.ts`, `WORLD_NORTH`.
 
-The compass remains a prototype: BR's choice between electronic and magnetic operation, battery use, light spill, ground model, casing/grip art and final size/readability verdict are unresolved. Do not treat the eternal display as a power policy. The debug loadout is for a fresh game only and must not replace restored hands. See `src/debug/index.ts`, `attachDebugTools`.
+A live handheld uses its exported model plus live parts on the model's display and named anchors. The world and hand therefore share one model while the card stays dynamic. How a display is held is in `DESIGN.md`, "Held screens". See `src/render/hands.ts`, `HeldItems`, and `packages/thing-authoring-tool/src/catalogue.ts`, `buildItem`.
+
+The compass remains a prototype: its readability at night, casing and grip art, and final size are unresolved. The card is lit like the rest of the held model, so it darkens with the world's light. The debug loadout is for a fresh game only and must not replace restored hands. See `src/debug/index.ts`, `attachDebugTools`.
 
 A wristwatch may reuse held-display ownership, but it must show read-only calendar time and must not advance the simulation clock.

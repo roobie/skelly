@@ -2,7 +2,7 @@
   "items": [
     {
       "category": "tool",
-      "description": "An electronic compass with an illuminated heading display.",
+      "description": "A magnetic compass with a turning card.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]

@@ -16,23 +16,27 @@ const box = (
 
 export const compass = (params: Readonly<Record<string, string>>) => {
   const d = parse(
-    strictObject({ radius: positive, height: positive, bezelHeight: positive, displayWidth: positive }),
+    strictObject({ radius: positive, height: positive, bezelHeight: positive, dialHeight: positive }),
     params,
   );
-  if (!(d.bezelHeight < d.height && d.displayWidth < 2 * d.radius)) {
+  if (!(d.bezelHeight < d.height && d.dialHeight < d.bezelHeight)) {
     throw new Error('Invalid compass dimensions');
   }
+  const well = d.radius * 0.76;
+  const rim = d.radius * 1.03;
   return [
     cylinder('body', d.radius, d.height),
     {
-      ...annulus('bezel', [d.radius * 0.76, d.radius * 1.03], d.bezelHeight, 'bezel'),
+      ...annulus('bezel', [well, rim], d.bezelHeight, 'bezel'),
       origin: [0, d.height, 0] as const,
     },
+    // The dial sits down in the bezel's well; the lubber mark on the rim shows the way the compass points.
+    { ...cylinder('dial', well, d.dialHeight, 'dial'), origin: [0, d.height, 0] as const },
     box(
-      'display',
-      [0, d.height + d.bezelHeight / 2, 0],
-      [d.displayWidth, d.bezelHeight * 1.2, d.displayWidth * 0.5],
-      'display',
+      'lubber',
+      [0, d.height + d.bezelHeight, -(well + rim) / 2],
+      [d.radius * 0.1, d.bezelHeight * 0.3, rim - well],
+      'lubber',
     ),
   ];
 };
