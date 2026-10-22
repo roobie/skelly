@@ -1,0 +1,11 @@
+{
+  "id": "bear_trap",
+  "file": "assets/models/bear_trap.glb",
+  "parts": {
+    "bear_trap": {
+      "node": "bear_trap:bearTrap",
+      "massKg": 4.5,
+      "centreOfMass": [-0.007978212127787243, 0.009364679069232785, 4.736746180037985e-18]
+    }
+  }
+}

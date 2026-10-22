@@ -83,6 +83,13 @@ shape.colliding({
       },
     },
     {
+      id: 'workshop_sedan',
+      name: 'Car',
+      size: [4, 3, 10],
+      color: '#8a97a3',
+      vehicle: vehicles { blueprint: 'sedan', body: '#8a97a3', dirt: 0.15, removed: [] },
+    },
+    {
       id: 'workshop_scrap_pile',
       name: 'Scrap pile',
       size: [4, 1, 3],

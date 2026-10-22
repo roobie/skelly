@@ -17,6 +17,7 @@ import {
 import { MOTORBIKE } from '../src/vehicles/motorbike.ts';
 import { PICKUP } from '../src/vehicles/pickup.ts';
 import { RANGE_ROVER, STRIPPED_REMOVED } from '../src/vehicles/rangeRover.ts';
+import { SEDAN } from '../src/vehicles/sedan.ts';
 import {
   GLASS,
   keyVoxel,
@@ -49,6 +50,7 @@ const library = new PartLibrary(CATALOGUE);
 const BLUEPRINTS: readonly { readonly blueprint: Blueprint; readonly builds: readonly (readonly string[])[] }[] = [
   { blueprint: RANGE_ROVER, builds: [[], STRIPPED_REMOVED] },
   { blueprint: PICKUP, builds: [[]] },
+  { blueprint: SEDAN, builds: [[]] },
   { blueprint: MOTORBIKE, builds: [[]] },
 ];
 

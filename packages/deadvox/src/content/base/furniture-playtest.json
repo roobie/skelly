@@ -334,6 +334,19 @@
       }
     },
     {
+      "color": "#8a97a3",
+      "id": "workshop_sedan",
+      "name": "Car",
+      "size": [4, 3, 10],
+      "vehicle": {
+        "blueprint": "sedan",
+        "body": "#8a97a3",
+        "dirt": 0.14999999999999999,
+        "removed": [],
+        "solidFill": 0.40000000000000002
+      }
+    },
+    {
       "color": "#615b50",
       "container": {
         "pockets": [

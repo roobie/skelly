@@ -1682,6 +1682,42 @@
       ]
     },
     {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "bear_trap",
+      "parts": [
+        {
+          "family": "bearTrap",
+          "finish": {
+            "chain": "steel-grey",
+            "frame": "steel-parkerized",
+            "jaw": "steel-grey"
+          },
+          "id": "bear_trap",
+          "massKg": 4.5,
+          "params": {
+            "barHeight": "0.012",
+            "barWidth": "0.035000000000000003",
+            "jawRadius": "0.16",
+            "jawSegments": "8",
+            "jawThickness": "0.0080000000000000002",
+            "jawWidth": "0.014",
+            "linkCount": "5",
+            "linkRadius": "0.017999999999999999",
+            "linkWire": "0.0050000000000000001",
+            "panHeight": "0.0060000000000000001",
+            "panRadius": "0.059999999999999998",
+            "springLength": "0.17000000000000001",
+            "springThickness": "0.01",
+            "springWidth": "0.040000000000000001",
+            "toothCount": "9",
+            "toothHeight": "0.017999999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
       "connections": [
         {
           "from": "base.arm",

@@ -26,6 +26,7 @@ import {
   string,
 } from 'valibot';
 import content from '../items.json' with { type: 'json' };
+import { bearTrap } from './families/bearTrap.ts';
 import { head, limb, torso } from './families/body.ts';
 import { coil } from './families/coil.ts';
 import { foodPortion, stemmedFruit, woundRoll } from './families/food-medical.ts';
@@ -111,6 +112,7 @@ const builders = {
   head,
   openTin,
   handOpener,
+  bearTrap,
   cutStock,
   foldedSheet,
   turnedStock,
