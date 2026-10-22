@@ -25,21 +25,60 @@ export interface FreeFloor {
   readonly top: number;
   /** Free cells by `cellKey`, each with the metres clear above it. */
   readonly clearance: ReadonlyMap<string, number>;
+  /** The lattice the load floor is drawn on, which cargo standing on it snaps to. */
+  readonly lattice: Lattice;
 }
+
+type Lattice = PlacedFitting['lattice'];
+
+/**
+ * The plane of `lattice` nearest `value` along `axis`: a cargo space is a datum, so like every other it stands on
+ * the drawn voxels of the floor it rests on (`packages/thing-export/README.md`, "Voxelized export").
+ */
+const snap = (lattice: Lattice, value: number, axis: number): number => {
+  if (!lattice) {
+    return value;
+  }
+  const origin = lattice.origin[axis]!;
+  return origin + Math.round((value - origin) / lattice.grain) * lattice.grain;
+};
+
+/** `box` with each face on its nearest plane of `lattice`, where the drawn voxels put it. */
+export const snapBox = (lattice: Lattice, { min, max }: ModelBox): ModelBox => ({
+  min: [snap(lattice, min[0], 0), snap(lattice, min[1], 1), snap(lattice, min[2], 2)],
+  max: [snap(lattice, max[0], 0), snap(lattice, max[1], 1), snap(lattice, max[2], 2)],
+});
 
 /** Cell (i, k) spans x from i to i + 1 cells and z from k to k + 1 cells, in the vehicle frame. */
 const cellKey = (i: number, k: number): string => `${i},${k}`;
 
-/** Cell indices along one axis: those lying inside the span, or those it overlaps (touching excluded). */
-const cellSpan = (low: number, high: number, cell: number, inside: boolean): number[] => {
-  const first = inside ? Math.ceil(low / cell - EPSILON) : Math.floor(low / cell + EPSILON);
-  const end = inside ? Math.floor(high / cell + EPSILON) : Math.ceil(high / cell - EPSILON);
-  return Array.from({ length: Math.max(end - first, 0) }, (_, n) => first + n);
+/** Inventory cells `metres` across over one load floor, each snapped to its `lattice` as cargo on it would be. */
+interface FloorCells {
+  readonly metres: number;
+  readonly lattice: Lattice;
+}
+
+/** Cell indices along `axis`: those lying inside the span, or those it overlaps (touching excluded). */
+const cellSpan = (
+  { metres, lattice }: FloorCells,
+  [low, high]: readonly [number, number],
+  axis: number,
+  inside: boolean,
+) => {
+  const cells: number[] = [];
+  for (let n = Math.floor(low / metres) - 1; n <= Math.ceil(high / metres); n += 1) {
+    const [from, to] = [snap(lattice, n * metres, axis), snap(lattice, (n + 1) * metres, axis)];
+    const kept = inside ? from >= low - EPSILON && to <= high + EPSILON : from < high - EPSILON && to > low + EPSILON;
+    if (kept) {
+      cells.push(n);
+    }
+  }
+  return cells;
 };
 
-const planCells = ({ min, max }: ModelBox, cell: number, inside: boolean): string[] =>
-  cellSpan(min[0], max[0], cell, inside).flatMap((i) =>
-    cellSpan(min[2], max[2], cell, inside).map((k) => cellKey(i, k)),
+const planCells = (cells: FloorCells, { min, max }: ModelBox, inside: boolean): string[] =>
+  cellSpan(cells, [min[0], max[0]], 0, inside).flatMap((i) =>
+    cellSpan(cells, [min[2], max[2]], 2, inside).map((k) => cellKey(i, k)),
   );
 
 /**
@@ -57,27 +96,29 @@ export const freeFloor = (
     return undefined;
   }
   const top = Math.max(...floor.collision.map(({ max }) => max[1]));
+  const { lattice } = floor;
+  const cells: FloorCells = { metres: cellMetres, lattice };
   const clearance = new Map<string, number>();
   for (const face of floor.collision.filter(({ max }) => Math.abs(max[1] - top) < EPSILON)) {
-    for (const key of planCells(face, cellMetres, true)) {
+    for (const key of planCells(cells, face, true)) {
       clearance.set(key, openClearanceMetres);
     }
   }
   for (const fitting of fittings) {
-    for (const box of fitting === floor ? [] : fitting.collision) {
-      narrow(clearance, box, top, cellMetres);
+    for (const box of fitting === floor ? [] : drawnCollision(fittings, fitting)) {
+      narrow(clearance, box, top, cells);
     }
   }
-  return { support, top, clearance };
+  return { support, top, clearance, lattice };
 };
 
 /** Takes a box above the floor out of the cells under it: whole where it stands in the first cell's layer. */
-const narrow = (clearance: Map<string, number>, box: ModelBox, top: number, cellMetres: number): void => {
+const narrow = (clearance: Map<string, number>, box: ModelBox, top: number, cells: FloorCells): void => {
   if (box.max[1] <= top + EPSILON) {
     return;
   }
-  const standing = box.min[1] < top + cellMetres - EPSILON;
-  for (const key of planCells(box, cellMetres, false).filter((at) => clearance.has(at))) {
+  const standing = box.min[1] < snap(cells.lattice, top + cells.metres, 1) - EPSILON;
+  for (const key of planCells(cells, box, false).filter((at) => clearance.has(at))) {
     if (standing) {
       clearance.delete(key);
     } else {
@@ -100,6 +141,17 @@ const bounds = (boxes: readonly ModelBox[]): ModelBox => ({
 const overlaps = (a: ModelBox, b: ModelBox): boolean =>
   [0, 1, 2].every((axis) => a.min[axis]! < b.max[axis]! - EPSILON && b.min[axis]! < a.max[axis]! - EPSILON);
 
+/** A fitting's collision as drawn: a cargo space's cell block snapped onto the load floor it rests on. */
+const drawnCollision = (fittings: readonly PlacedFitting[], fitting: PlacedFitting): readonly ModelBox[] => {
+  if (!fitting.cargo) {
+    return fitting.collision;
+  }
+  const floor = fittings.find(
+    ({ id, capabilities }) => fitting.supportedBy.includes(id) && capabilities.includes('load_floor'),
+  );
+  return fitting.collision.map((box) => snapBox(floor?.lattice, box));
+};
+
 const cargoIssue = (
   present: readonly PlacedFitting[],
   candidate: PlacedFitting,
@@ -112,7 +164,7 @@ const cargoIssue = (
   if (floors.length === 0) {
     return 'a cargo space must rest on a load floor';
   }
-  const floor = floors.find(({ top }) => Math.abs(top - block.min[1]) < EPSILON);
+  const floor = floors.find(({ top, lattice }) => Math.abs(top - snap(lattice, block.min[1], 1)) < EPSILON);
   if (!floor) {
     return 'a cargo space must stand on its load floor’s top face';
   }
@@ -130,7 +182,8 @@ const cargoIssue = (
       clear = Math.min(clear, above);
     }
   }
-  return block.max[1] - block.min[1] > clear + EPSILON
+  const drawn = snapBox(floor.lattice, block);
+  return drawn.max[1] - drawn.min[1] > clear + EPSILON
     ? `a cargo space must not rise above the clearance over ${floor.support}`
     : undefined;
 };
@@ -147,9 +200,11 @@ export const fitIssue = (
   if (candidate.cargo) {
     return cargoIssue(present, candidate, candidate.cargo.cells, cellMetres);
   }
+  const all = [...present, candidate];
   const hold = present.find(
-    ({ cargo, collision }) =>
-      cargo && collision.some((box) => candidate.collision.some((other) => overlaps(box, other))),
+    (fitting) =>
+      fitting.cargo &&
+      drawnCollision(all, fitting).some((box) => candidate.collision.some((other) => overlaps(box, other))),
   );
   return hold && `${candidate.id} would stand inside cargo space ${hold.id}`;
 };

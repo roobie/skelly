@@ -1,6 +1,14 @@
 import type { ModelBox } from '@skelly/thing-core/schema';
 import { describe, expect, it } from 'vitest';
-import { cargoFitting, cargoSpaceItem, fitIssue, freeFloor } from '../src/core/cargoSpace.ts';
+import {
+  type CargoSpaceDef,
+  cargoFitting,
+  cargoGrid,
+  cargoSpaceItem,
+  fitIssue,
+  freeFloor,
+  snapBox,
+} from '../src/core/cargoSpace.ts';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { ItemFactory, type ItemState, restoreItem, snapshotItem } from '../src/core/items.ts';
@@ -30,10 +38,10 @@ const without = (fittings: readonly PlacedFitting[], ...ids: string[]) =>
 const loadFloorOf = (fittings: readonly PlacedFitting[]): PlacedFitting =>
   fittings.find(({ capabilities }) => capabilities.includes('load_floor'))!;
 
-/** A cell's plan in vehicle metres, from its `cellKey`. */
-const cellPlan = (key: string): ModelBox => {
+/** A cell's plan in vehicle metres, from its `cellKey`, snapped as cargo standing on `floor` is. */
+const cellPlan = (key: string, floor?: PlacedFitting): ModelBox => {
   const [i, k] = key.split(',').map(Number) as [number, number];
-  return { min: [i * cell, 0, k * cell], max: [(i + 1) * cell, 0, (k + 1) * cell] };
+  return snapBox(floor?.lattice, { min: [i * cell, 0, k * cell], max: [(i + 1) * cell, 0, (k + 1) * cell] });
 };
 const tolerance = 1e-6;
 const planInside = (inner: ModelBox, outer: ModelBox): boolean =>
@@ -67,7 +75,7 @@ describe('cargo space', () => {
       const free = freeFloor([floor], floor.id, cell, openMetres)!;
       expect(free.clearance.size).toBeGreaterThan(0);
       for (const key of free.clearance.keys()) {
-        expect(floor.collision.some((box) => planInside(cellPlan(key), box))).toBe(true);
+        expect(floor.collision.some((box) => planInside(cellPlan(key, floor), box))).toBe(true);
       }
     }
   });
@@ -84,7 +92,7 @@ describe('cargo space', () => {
     expect(tubs.length).toBeGreaterThan(0);
     expect(free.clearance.size).toBeGreaterThan(0);
     for (const key of free.clearance.keys()) {
-      expect(tubs.some((tub) => planOverlaps(cellPlan(key), tub))).toBe(false);
+      expect(tubs.some((tub) => planOverlaps(cellPlan(key, floor), tub))).toBe(false);
     }
   });
 
@@ -156,6 +164,40 @@ describe('cargo space', () => {
     const refitted = placeFitting(registry, cargoFitting(restored, fitted));
     expect(refitted.cargo).toEqual(placeFitting(registry, fitted).cargo);
     expect(fitIssue(without(fittingsOf('box_van'), fitted.id), refitted, cell)).toBeUndefined();
+  });
+
+  it('fits a cargo space that fills its bed after the drawn faces round inward', () => {
+    // A bed authored on whole cells and drawn on a lattice that does not nest with them: every drawn face lies
+    // inside its authored face, so a block of the bed's own cells fits only once it snaps onto that lattice.
+    const lattice = { grain: 1 / 32, origin: [0, 0, 0] as const };
+    const fixture = (id: string, box: ModelBox, extra: Partial<PlacedFitting> = {}): PlacedFitting => ({
+      id,
+      part: id,
+      capabilities: [],
+      supportedBy: [],
+      massKg: 1,
+      centreOfMass: [0, 0, 0],
+      collision: [snapBox(lattice, box)],
+      datums: {},
+      lattice,
+      ...extra,
+    });
+    const floor = fixture('floor', { min: [-0.2, 0, -0.1], max: [0.2, 0.2, 0.1] }, { capabilities: ['load_floor'] });
+    const wall = fixture('wall', { min: [0.2, 0.2, -0.1], max: [0.25, 0.5, 0.1] }, { supportedBy: ['floor'] });
+    // Placed cargo is its cells; `cargoSpace.ts` snaps it.
+    const cargo = (cells: [number, number, number], x: number): PlacedFitting => {
+      const { lattice: _, ...hold } = fixture('hold', { min: [0, 0, 0], max: [0, 0, 0] });
+      return {
+        ...hold,
+        collision: [{ min: [x, 0.2, -0.1], max: [x + cells[0] * 0.1, 0.2 + cells[1] * 0.1, 0.1] }],
+        supportedBy: ['floor'],
+        cargo: { cells, grid: cargoGrid(cells, { handlingSimSeconds: 1 } as CargoSpaceDef), openClearanceCells: 20 },
+      };
+    };
+    expect(wall.collision[0]!.min[0]).toBeLessThan(0.2);
+    expect(fitIssue([floor, wall], cargo([4, 2, 2], -0.2), 0.1)).toBeUndefined();
+    expect(fitIssue([floor, cargo([4, 2, 2], -0.2)], wall, 0.1)).toBeUndefined();
+    expect(fitIssue([floor, wall], cargo([4, 2, 2], -0.1), 0.1)).toMatch(OFF_FREE_FLOOR);
   });
 
   it('refuses a cargo space resting on a part that is not a load floor', () => {

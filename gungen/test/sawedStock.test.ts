@@ -138,15 +138,19 @@ describe('sawed-off tapered stock', () => {
 });
 
 sweepGroup('sawed-off tapered stock', () => {
-  it('generates sawed stocks only on short-barrel builds across 300 seeds', () => {
-    for (let seed = 0; seed < 300; seed++) {
+  it('generates sawed stocks, and only on short-barrel builds', () => {
+    const seedScanBound = 300;
+    let sawedBuilds = 0;
+    for (let seed = 0; seed < seedScanBound; seed++) {
       const assembly = generate(pumpShotgun, gunDomain, seed);
       const stockEntry = Object.entries(assembly.parts).find(([, part]) => part.family === 'stock');
       expect(stockEntry, `seed ${seed}: one stock part`).toBeDefined();
       if (stockEntry?.[1].params?.style !== 'tapered-sawed') {
         continue;
       }
+      sawedBuilds += 1;
       expectSawedStockBuild(assembly, seed);
     }
+    expect(sawedBuilds, `no sawed stock in ${seedScanBound} seeds`).toBeGreaterThan(0);
   });
 });

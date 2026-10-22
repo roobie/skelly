@@ -1,7 +1,6 @@
 ---
 read_if:
   - "you're reviewing the amalgam's open visual-quality pass in #378"
-  - "you're assessing the exact-shape movement cost tracked by #574"
   - "you're changing how generated voxel identity is used across JavaScript engines"
   - "you're assessing animated joint-range and self-overlap risk"
 ---
@@ -13,10 +12,6 @@ This page keeps unresolved reasons to revisit Mobgen; implementation and test co
 ## Amalgam appearance (#378)
 
 The first-look body is approved, but the scope of the requested visual improvement remains open. Treat the composition as a visual proposal rather than a permanent gameplay or encounter constraint. See `src/mob/amalgam.ts`, `buildAmalgam`, `src/viewer/main.ts`, and `test/amalgam.test.ts`.
-
-## Exact-shape movement cost (#574)
-
-The generated amalgam shape is also a gameplay collision input, so rendering budgets alone do not establish the cost of movement in tight spaces. Keep collision-query measurements distinct from Mobgen's voxel and triangle budgets. See `packages/deadvox/src/core/amalgamShape.ts`, `AmalgamShape`, and `packages/deadvox/src/core/zombies.ts`, `pushTurn`.
 
 ## Animated-pose limits
 

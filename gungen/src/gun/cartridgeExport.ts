@@ -1,7 +1,12 @@
 import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import type { Assembly, Domain, PartDef, PartFamily } from '@skelly/engine/assembly/schema.ts';
 import type { RevolvedSolid, Solid } from '@skelly/engine/shapes/solid.ts';
-import type { AppearanceContext, GlbAssetIdentity, GlbExportError } from '@skelly/thing-export/exportTypes.ts';
+import type {
+  AppearanceContext,
+  GlbAssetIdentity,
+  GlbExportError,
+  VoxelGrains,
+} from '@skelly/thing-export/exportTypes.ts';
 import { type CartridgeModelKind, cartridgeModelAsset } from '../ammo/calibreSlug.ts';
 import type { Cartridge } from '../ammo/cartridge.ts';
 import { type RoundProfiles, roundProfiles } from '../ammo/roundProfile.ts';
@@ -33,11 +38,16 @@ const EMPTY_KEEPOUTS: PartDef['keepOuts'] = [];
 const EMPTY_AXES: PartDef['axes'] = [];
 const MM_DOMAIN: Domain['units'] = { metresPerUnit: 0.001, grid: 0.001, bevel: 0 };
 
+interface CartridgeLook {
+  readonly appearance?: AppearanceContext | undefined;
+  readonly voxel?: Partial<VoxelGrains>;
+}
+
 const makeModelExport = (
   cartridge: Cartridge,
   asset: GlbAssetIdentity,
   solids: readonly Solid[],
-  appearance?: AppearanceContext,
+  { appearance, voxel }: CartridgeLook,
 ): SingleCartridgeExportResult => {
   const family: PartFamily = {
     name: 'cartridge-model',
@@ -77,6 +87,7 @@ const makeModelExport = (
     revolveFacets: 96,
     asset,
     appearance: effectiveAppearance,
+    ...voxel,
   });
   if (!result.ok) {
     return result;
@@ -118,19 +129,21 @@ export const exportCartridgeModel = (
   cartridge: Cartridge,
   component: CartridgeModelKind,
   asset: GlbAssetIdentity,
-  appearance?: AppearanceContext,
+  look: CartridgeLook = {},
 ): SingleCartridgeExportResult => {
   const solids = cartridge.kind === 'shotshell' ? shotshellGeometry(cartridge) : metallicSolids(cartridge);
-  return makeModelExport(cartridge, asset, solids[component], appearance);
+  return makeModelExport(cartridge, asset, solids[component], look);
 };
 
 /** Export loaded-round/shell and fired-case/hull GLBs at real millimetre-derived dimensions. */
 export const exportCartridgeModels = (cartridge: Cartridge, appearance?: AppearanceContext): CartridgeExportResult => {
-  const round = exportCartridgeModel(cartridge, 'round', cartridgeModelAsset('round', cartridge.id), appearance);
+  const round = exportCartridgeModel(cartridge, 'round', cartridgeModelAsset('round', cartridge.id), { appearance });
   if (!round.ok) {
     return round;
   }
-  const firedCase = exportCartridgeModel(cartridge, 'case', cartridgeModelAsset('case', cartridge.id), appearance);
+  const firedCase = exportCartridgeModel(cartridge, 'case', cartridgeModelAsset('case', cartridge.id), {
+    appearance,
+  });
   if (!firedCase.ok) {
     return firedCase;
   }
