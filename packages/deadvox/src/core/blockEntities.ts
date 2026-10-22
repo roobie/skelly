@@ -174,7 +174,7 @@ const key = (x: number, y: number, z: number) => `${x},${y},${z}`;
 
 /** Everything a piece's drawn look and blocking cells follow from, so a view can skip pieces that didn't change. */
 export const poseKey = (entity: BlockEntity): string =>
-  `${entity.pos}|${entity.size}|${entity.facing}|${entity.tip ?? ''}|${entity.open}`;
+  `${entity.pos}|${entity.size}|${entity.facing}|${entity.tip ?? ''}|${entity.open}|${entity.broken ?? false}`;
 
 export interface BlockingBox {
   readonly pos: Readonly<Vec3>;
