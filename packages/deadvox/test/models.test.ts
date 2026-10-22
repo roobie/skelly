@@ -19,7 +19,7 @@ import { toggleLight } from '../src/core/lights.ts';
 import { pileLayout } from '../src/core/pileLayout.ts';
 import { spentCaseItemId } from '../src/game/firearmHandling.ts';
 import { itemLook } from '../src/render/itemLook.ts';
-import { fittedPartFrame, heldModelFrame, prepareModel } from '../src/render/models.ts';
+import { fittedPartFrame, groundModelFrame, heldModelFrame, prepareModel } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
@@ -257,6 +257,21 @@ describe('model forms', () => {
     expect(box.getCenter(new Vector3()).x).toBeCloseTo(0);
     expect(box.getCenter(new Vector3()).z).toBeCloseTo(0);
     expect(box.max.x - box.min.x).toBeCloseTo(0.3); // long side along x
+  });
+
+  it('stands a model that rests upright on its back end, its front end up and centred over its origin', async () => {
+    const bytes = readFileSync('test/fixtures/packs/lamp/assets/models/lamp.glb');
+    const { scene } = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
+    const raw = new Box3().setFromObject(scene);
+    const { ground } = prepareModel({ ...registry.models.get('lamp')!, rest: 'upright' }, scene);
+    ground.updateMatrixWorld(true);
+    const box = new Box3().setFromObject(ground);
+    expect(box.min.y).toBeCloseTo(0);
+    expect(box.max.y - box.min.y).toBeCloseTo(raw.max.x - raw.min.x);
+    expect(box.getCenter(new Vector3()).x).toBeCloseTo(0);
+    expect(box.getCenter(new Vector3()).z).toBeCloseTo(0);
+    const front = groundModelFrame(ground).localToWorld(new Vector3(raw.max.x, 0, 0));
+    expect(front.y).toBeCloseTo(box.max.y);
   });
 
   it('exposes shared ground mesh resources with the prepared root transforms for instancing', async () => {
