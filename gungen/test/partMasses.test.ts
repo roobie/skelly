@@ -38,12 +38,15 @@ it('gives every choice of every body family param a mass row that admits it', ()
   // Fitted attachments and the magazine are replaceable items; gunModelParts takes their mass from the item.
   const replaceable = new Set(['magazine', ...ATTACHMENT_IDS.map((id) => attachmentInstanceForId(id).family)]);
   const unmassed: string[] = [];
-  for (const family of new Set(rows.map((row) => row.family))) {
+  for (const [family, def] of Object.entries(gunDomain.families)) {
     if (replaceable.has(family)) {
       continue;
     }
     const familyRows = rows.filter((row) => row.family === family);
-    for (const [name, param] of Object.entries(gunDomain.families[family]!.params)) {
+    if (familyRows.length === 0) {
+      unmassed.push(family);
+    }
+    for (const [name, param] of Object.entries(def.params)) {
       for (const value of param.values) {
         if (!familyRows.some((row) => row.match[name] === undefined || row.match[name] === value)) {
           unmassed.push(`${family}.${name}=${value}`);
