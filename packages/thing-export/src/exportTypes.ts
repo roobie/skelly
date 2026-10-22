@@ -90,8 +90,8 @@ export interface GlbExportInput {
   readonly revolveFacets?: number;
   /**
    * Voxel edge in metres. When set, each part's drawn solids are sampled at this grain and written as a greedy-meshed
-   * voxel mesh, one primitive per finish, instead of their smooth meshes. An evaluation of voxelizing at export; absent
-   * leaves the export unchanged.
+   * voxel mesh, one primitive per finish, instead of their smooth meshes. Every model export sets it (see `recipe.ts`,
+   * `recipeVoxel`); absent, the file holds the authored smooth meshes, which only geometry checks read.
    */
   readonly voxelGrain?: number;
   /**
@@ -100,6 +100,9 @@ export interface GlbExportInput {
    */
   readonly voxelDetailGrain?: number;
 }
+
+/** A model export's voxel class as the GLB writer takes it. */
+export type VoxelGrains = Required<Pick<GlbExportInput, 'voxelGrain'>> & Pick<GlbExportInput, 'voxelDetailGrain'>;
 
 export type GlbExportError =
   | { readonly code: 'structure-issues'; readonly issues: readonly Issue[] }

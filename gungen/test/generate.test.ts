@@ -31,32 +31,26 @@ describe('generate', () => {
   });
 
   it('includes conditional slots only when an earlier parameter matches', () => {
-    const t: Template = {
-      name: 'conditional-slot',
-      description: '',
-      root: 'receiver',
-      slots: [
-        { id: 'receiver', family: 'receiver' },
-        { id: 'lower', family: 'lower', params: { layout: ['pump', 'trigger'] } },
-        {
-          id: 'grip',
-          family: 'grip',
-          params: { length: 'M' },
-          when: { part: 'lower', param: 'layout', equals: 'trigger' },
-        },
-      ],
-      connections: [],
-    };
-    // These seeds cover both source values. The branch property is the contract; a population
-    // sweep is not needed to repeat it.
-    const layouts = new Set<string>();
-    for (const seed of [0, 1]) {
-      const assembly = generate(t, gunDomain, seed);
-      const layout = assembly.parts.lower?.params?.layout;
-      layouts.add(layout!);
-      expect('grip' in assembly.parts, `seed ${seed}`).toBe(layout === 'trigger');
+    // The source parameter is fixed per case, so no seed has to roll each value.
+    for (const layout of ['pump', 'trigger'] as const) {
+      const t: Template = {
+        name: 'conditional-slot',
+        description: '',
+        root: 'receiver',
+        slots: [
+          { id: 'receiver', family: 'receiver' },
+          { id: 'lower', family: 'lower', params: { layout } },
+          {
+            id: 'grip',
+            family: 'grip',
+            params: { length: 'M' },
+            when: { part: 'lower', param: 'layout', equals: 'trigger' },
+          },
+        ],
+        connections: [],
+      };
+      expect('grip' in generate(t, gunDomain, 0).parts, layout).toBe(layout === 'trigger');
     }
-    expect(layouts).toEqual(new Set(['pump', 'trigger']));
   });
 
   it('honours chance 0 and chance 1', () => {
@@ -138,9 +132,8 @@ sweepGroup('templates', () => {
     const chunkSize = t.name === 'ar' || t.name === 'ak' ? 10 : CHUNK;
     describe(t.name, () => {
       // Chunked by seed range so each test stays well inside the default timeout; the sweep
-      // runs only in CI (see sweeps.ts) and its timeouts are never raised. An isolated 25-seed
-      // chunk measured 1.285s for AR and 2.175s for AK, so those expensive families use 10-seed
-      // chunks. The half-valid floor is an aggregate over all SEEDS seeds, so chunks tally into a
+      // runs only in CI (see sweeps.ts) and its timeouts are never raised. The AR and AK families
+      // are costly, so they use smaller chunks. The half-valid floor is an aggregate over all SEEDS seeds, so chunks tally into a
       // memoized count and one final test asserts it (computing any chunk that has not run, e.g. under `-t`).
       // Each chunk test also records its valid count, so the final test is normally free.
       const validIn = new Map<number, number>();

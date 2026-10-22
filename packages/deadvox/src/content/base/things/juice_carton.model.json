@@ -1,7 +1,7 @@
 {
   "id": "juice_carton",
   "file": "assets/models/juice_carton.glb",
-  "parts": { "package": { "node": "package:carton", "massKg": 1.05, "centreOfMass": [0, 0.10026769352988682, 0] } },
+  "parts": { "package": { "node": "package:carton", "massKg": 1.05, "centreOfMass": [0, 0.09844827586206896, 0] } },
   "grip": { "at": [0, 0.095, 0], "turn": [0, 0, -90] },
   "hold": "upright",
   "roll": 0

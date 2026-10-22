@@ -1,4 +1,5 @@
 import type { PartDef, Resolved } from '@skelly/engine/assembly/schema.ts';
+import type { DrawnGeometry } from '@skelly/thing-export/drawn.ts';
 import { partNodeName } from '@skelly/thing-export/glb.ts';
 import { modelParts, type PhysicalInputs } from '@skelly/thing-export/physical.ts';
 import {
@@ -68,6 +69,7 @@ export const gunModelParts = (
   resolved: Resolved,
   replaceableNodes: ReadonlySet<string>,
   rows: readonly PartMassRow[] = partMasses,
+  drawn?: DrawnGeometry,
 ) => {
   // Replaceable geometry belongs to the child item, whose authored weight is authoritative.
   const body = {
@@ -82,5 +84,5 @@ export const gunModelParts = (
       }),
     ),
   };
-  return modelParts(body, (id, part) => physicalInputs(resolved, id, part, rows));
+  return modelParts(body, (id, part) => physicalInputs(resolved, id, part, rows), drawn ? { drawn } : {});
 };

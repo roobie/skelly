@@ -6,7 +6,8 @@
       "node": "body:compound",
       "massKg": 12,
       "centreOfMass": [2.09375, 1.140625, 0],
-      "collision": [{ "min": [1.6875, 1.03125, -0.25], "max": [2.5, 1.25, 0.25] }]
+      "collision": [{ "min": [1.6875, 1.03125, -0.25], "max": [2.5, 1.25, 0.25] }],
+      "voxelGrain": 0.03125
     }
   },
   "anchors": {}

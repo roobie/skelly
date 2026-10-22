@@ -36,6 +36,14 @@ export const ModelPartSchema = strictObject({
   centreOfMass: ModelPointSchema,
   node: optional(pipe(string(), nonEmpty())),
   collision: optional(pipe(array(ModelBoxSchema), nonEmpty('baked collision needs a box'))),
+  /** Metres between the planes, from the model origin, that its baked collision lies on when drawn in voxels. */
+  voxelGrain: optional(
+    pipe(
+      number(),
+      finite(),
+      check((grain) => grain > 0, 'voxel grain must be positive'),
+    ),
+  ),
 });
 
 export const NeutralModelSchema = strictObject({
