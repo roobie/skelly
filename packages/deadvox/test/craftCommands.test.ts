@@ -37,7 +37,7 @@ const stockFor = (recipeId: string): [string, number][] => {
   return [...stock, [toolType.id, 1]];
 };
 // The recipe's three component types in order, then the tool type that provides its qualities.
-const [[OTHER], , [LAST], [TOOL]] = stockFor(CRAFT) as [[string], [string], [string], [string]];
+const [OTHER, LAST, TOOL] = ((stock) => [stock[0]![0], stock[2]![0], stock[3]![0]] as const)(stockFor(CRAFT));
 const make = (handedness?: HandSide) => {
   const character = new Character(registry, handedness ? { handedness } : {});
   const inventory = new Inventory(registry, undefined, undefined, character);
