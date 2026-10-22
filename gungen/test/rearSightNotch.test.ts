@@ -57,7 +57,7 @@ const partTriangles = (json: GltfJson, read: ReturnType<typeof readGlb>, partId:
 
 /**
  * How wide the file's drawn rear sight is open across the sight line: the distance between the drawn faces that bound
- * the line on either side, read in the top voxel row, or 0 where the line runs through drawn material.
+ * the line on either side, read in the voxel row at `row`, or 0 where the line runs through drawn material.
  */
 const openWidthAtLine = (triangles: readonly Triangle[], eye: readonly number[], row: number): number => {
   let left = Number.NEGATIVE_INFINITY;
@@ -84,7 +84,7 @@ const rearSights = loadDesigns().flatMap(({ label, assembly }) => {
   return rearSightParts(iron).map((partId) => ({ label, assembly: iron, partId }));
 });
 
-describe('a rear sight keeps its notch in the voxelized file', () => {
+describe('a rear sight keeps its notch or aperture open in the voxelized file', () => {
   it('has rear sights to check', () => {
     expect(rearSights.length).toBeGreaterThan(0);
   });
@@ -104,7 +104,8 @@ describe('a rear sight keeps its notch in the voxelized file', () => {
     }
     const { eye } = result.modelEntry.gun.sight!;
     const read = readGlb(result.glb);
-    const row = eye[1] - gunVoxel.detailGrain / 2;
+    // A quarter grain below the eye is inside the top row of an open notch and inside the hole of a closed aperture.
+    const row = eye[1] - gunVoxel.detailGrain / 4;
     const width = openWidthAtLine(partTriangles(read.json, read, partId), eye, row);
     expect(width).toBeGreaterThanOrEqual(gunVoxel.grain - 1e-6);
   });

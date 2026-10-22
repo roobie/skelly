@@ -14,6 +14,7 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   knockoutSimSeconds: simSeconds(1),
   staminaRegenDelaySimSeconds: simSeconds(5),
   proneEyeHeightMetres: 0.2,
+  fragmentRegionHeights: { head: 0.85, torso: 0.45 },
   shockPerDamage: { blunt: 2, cut: 0, pierce: 0, acid: 1 },
   outerWearMultiplier: { blunt: 1, cut: 1, pierce: 1, acid: 4 },
   coverage: {

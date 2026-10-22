@@ -52,6 +52,7 @@ const senseTuning = {
     renderedBeamLimit: 3,
     throwArmSpeedMetresPerRealSecond: 6,
     throwArmEnergyJoules: 20,
+    groundLight: { senseHeightMetres: 0.075, renderLiftMetres: 0.4 },
   },
 };
 
@@ -117,7 +118,14 @@ describe('passable but opaque vegetation', () => {
         zombie: registry.zombies.get('shambler')!,
         from: [0, 2, 0],
         facing: [1, 0, 0],
-        player: { pos: [10, 2, 0], facing: [-1, 0, 0], movement: 'still', lit: false, lightSeenFrom: 40 },
+        player: {
+          pos: [10, 2, 0],
+          facing: [-1, 0, 0],
+          movement: 'still',
+          lit: false,
+          lightSeenFrom: 40,
+          eyeHeightMetres: 1.3,
+        },
         dayPhase: dayStateAtHour(12).phase,
         sightBlend: dayStateAtHour(12).sightBlend,
         blockSize: 0.5,
@@ -164,6 +172,7 @@ describe('passable but opaque vegetation', () => {
       movement: 'still' as const,
       lit: false,
       lightSeenFrom: 40,
+      eyeHeightMetres: 1.3,
     };
     const hits: number[] = [];
     const system = new ZombieSystem({

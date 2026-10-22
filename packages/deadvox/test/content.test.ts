@@ -12,6 +12,7 @@ import { blockColors, requiredContentIssues, validateContent } from '../src/core
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { ordinaryHamletSpawnWeights } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { corpseLootPoint, lootTypeIssue } from '../src/core/loot.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
 import { blockPatterns, blockWeatherability } from '../src/core/meshInput.ts';
 import { opticViewSettings } from '../src/core/opticView.ts';
@@ -54,6 +55,25 @@ const baseSounds = {
       .filter(({ source }) => source.startsWith('sounds'))
       .flatMap(({ data }) => (data as { sounds: unknown[] }).sounds),
   },
+};
+const reachableLootItems = (root: string | undefined): { table: string; item: string }[] => {
+  const found: { table: string; item: string }[] = [];
+  const seen = new Set<string>();
+  const pending = root === undefined ? [] : [root];
+  while (pending.length > 0) {
+    const table = baseRegistry.loot.get(pending.pop()!)!;
+    if (!seen.has(table.id)) {
+      seen.add(table.id);
+      for (const { item, table: nested } of table.entries) {
+        if (nested !== undefined) {
+          pending.push(nested);
+        } else if (item !== undefined) {
+          found.push({ table: table.id, item });
+        }
+      }
+    }
+  }
+  return found;
 };
 const invalidZombieRegionIssues = (zombieId: string, regionId: string, change: 'remove' | 'add') => {
   const zombieFile = base.find((file) => file.source === 'zombies.json')!;
@@ -286,6 +306,16 @@ describe('content', () => {
   it('excludes authored-only kinds from ordinary hamlet spawn weights', () => {
     const soldier = baseRegistry.zombies.get('military_shambler')!;
     expect(ordinaryHamletSpawnWeights(baseRegistry).has(soldier.id)).toBe(false);
+  });
+
+  it('gives every zombie kind only kit items its corpse can drop', () => {
+    const dead = [...baseRegistry.zombies.values()].flatMap((kind) => {
+      const { context } = corpseLootPoint(kind.loot ?? '', 0, [0, 0, 0]);
+      return reachableLootItems(kind.loot)
+        .filter(({ item }) => lootTypeIssue(baseRegistry, item, context) !== undefined)
+        .map(({ table, item }) => `${kind.id} → ${table} → ${item}`);
+    });
+    expect(dead).toEqual([]);
   });
 
   it('resolves spawn names against the day cycle of the last file that defines one', () => {
@@ -1733,6 +1763,38 @@ describe('content references', () => {
     ).toBe(true);
   });
 
+  it('rejects the Inventory Management skill without its handling tuning block', () => {
+    const recipes = structuredClone(recipeFile().data) as {
+      skills: { id: string; inventory?: unknown }[];
+    };
+    recipes.skills = recipes.skills.map(({ inventory, ...skill }) =>
+      skill.id === 'inventory_management' ? skill : { ...skill, ...(inventory === undefined ? {} : { inventory }) },
+    );
+    const { issues } = buildRegistry([{ source: 'recipes.json', data: recipes }]);
+    expect(
+      issues.some(
+        (issue) => issue.source === 'recipes.json' && issue.message.includes('missing required skill tuning'),
+      ),
+    ).toBe(true);
+  });
+
+  it('rejects a handling tuning block that leaves out a weight', () => {
+    const recipes = structuredClone(recipeFile().data) as {
+      skills: { id: string; inventory?: Record<string, number> }[];
+    };
+    const tuning = recipes.skills.find(({ id }) => id === 'inventory_management')!.inventory!;
+    for (const key of Object.keys(tuning).filter((name) => name !== 'handlingFactorFloor')) {
+      const partial = structuredClone(recipes);
+      const { [key]: _omitted, ...rest } = partial.skills.find(({ id }) => id === 'inventory_management')!.inventory!;
+      partial.skills.find(({ id }) => id === 'inventory_management')!.inventory = rest;
+      const { issues } = buildRegistry([{ source: 'recipes.json', data: partial }]);
+      expect(
+        issues.some((issue) => issue.source === 'recipes.json'),
+        key,
+      ).toBe(true);
+    }
+  });
+
   it('requires Inventory Management training to be untiered', () => {
     const baseActivity = baseRegistry.skills.get('inventory_management')?.training?.activities?.handling;
     expect(baseActivity?.practice).toBeDefined();
@@ -2315,7 +2377,7 @@ describe('content references', () => {
             strength: 1,
             sounds: zombieSounds,
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
-            speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5 },
+            speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5, backgroundStepMetres: 1 },
             stepLength: 0.6,
             wander: {
               obstacleWanderChance: 0.25,
@@ -2336,6 +2398,9 @@ describe('content references', () => {
             nightSight: 10,
             stimulusMemorySimSeconds: 1,
             sightCone: 60,
+            eyeHeightMetres: 1.3,
+            earHeightMetres: 1.3,
+            hordeSpacing: { innerMetres: 0.35, stepMetres: 0.38 },
             hearing: 1,
             hearingRange: { walk: 3, jog: 8, sprint: 15 },
             hearingModel: {
@@ -2359,6 +2424,7 @@ describe('content references', () => {
             },
             attack: {
               reach: 1,
+              grabBandMetres: 1.7,
               cooldownSimSeconds: 1.5,
               windupSimSeconds: 0.3,
               moves: [

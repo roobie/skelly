@@ -17,6 +17,10 @@
       },
       "id": "player",
       "light": {
+        "groundLight": {
+          "renderLiftMetres": 0.40000000000000002,
+          "senseHeightMetres": 0.074999999999999997
+        },
         "lureRangeScale": 0.5,
         "playerDaySightScale": 0,
         "renderedBeamLimit": 2,

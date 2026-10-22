@@ -19,7 +19,7 @@
         "T": { "furniture": "sample_tray" },
         "C": { "furniture": "counter", "fixed": true, "loot": "medical_filler" },
         "N": { "furniture": "medical_research_notice", "facing": "e" },
-        "z": { "spawn": "shambler" },
+        "z": { "spawn": "medic_shambler" },
         "c": { "spawn": "crawler" }
       },
       "layers": [
