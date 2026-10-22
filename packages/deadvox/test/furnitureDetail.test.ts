@@ -10,6 +10,9 @@ const definitions = [
   { kind: 'cabinet', surface: 'wood', size: [3, 4, 1] },
   { kind: 'drawers', surface: 'plastic', size: [2, 2, 1] },
   { kind: 'fridge', surface: 'painted-metal', size: [2, 4, 2] },
+  { kind: 'door', surface: 'painted-metal', size: [1, 1, 1] },
+  { kind: 'lid', surface: 'painted-metal', size: [1, 1, 1] },
+  { kind: 'rack', surface: 'wood', size: [2, 4, 1] },
 ].map(({ kind, surface, size }, index) => ({
   id: `detail_fixture_${index}`,
   name: 'Detail fixture',
@@ -41,7 +44,7 @@ describe('furniture detail', () => {
     };
     for (const [index, definition] of definitions.entries()) {
       const def = registry.furniture.get(definition.id)!;
-      const facing = facings[index]!;
+      const facing = facings[index % facings.length]!;
       const size: [number, number, number] =
         facing === 'e' || facing === 'w' ? [def.size[2], def.size[1], def.size[0]] : [...def.size];
       const entity = entities.add({ type: def.id, size, pos: [index * 8, 2, 3], facing })!;
