@@ -445,7 +445,11 @@ describe('pure craft planner', () => {
     expect(snapshot.entries).toHaveLength(200);
     const actor = new Character(benchmarkRegistry);
     actor.learnRecipes([...benchmarkRegistry.recipes.keys()]); // Isolate planning cost from reachable knowledge admission.
-    actor.awardPractice('crafting', practiceForNextLevel(benchmarkRegistry, actor.skills.crafting!), SKILL_LEVEL_LEGENDARY);
+    actor.awardPractice(
+      'crafting',
+      practiceForNextLevel(benchmarkRegistry, actor.skills.crafting!),
+      SKILL_LEVEL_LEGENDARY,
+    );
     actor.awardPractice(
       'mechanics',
       practiceForNextLevel(benchmarkRegistry, actor.skills.mechanics!) +
