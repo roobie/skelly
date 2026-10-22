@@ -16,6 +16,7 @@ local attachment(source) = {
   voxel: voxel.of(voxel.item, std.get(attachments, source, {})),
 };
 local attachmentSources = [
+  'ak-slant-compensator',
   'foregrip',
   'improvised-suppressor',
   'optic-digital-thermal',

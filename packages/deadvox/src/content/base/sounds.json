@@ -147,6 +147,26 @@
       "noise": { "enabled": true, "radiusMetres": 5 }
     },
     {
+      "id": "player_heartbeat_slow",
+      "variants": ["assets/audio/heartbeat-slow-beat.ogg"],
+      "gain": 1,
+      "pitchJitter": [1, 1],
+      "gainJitter": [1, 1],
+      "minIntervalSimSeconds": 0,
+      "category": "body",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "player_heartbeat_fast",
+      "variants": ["assets/audio/heartbeat-fast-beat.ogg"],
+      "gain": 1,
+      "pitchJitter": [1, 1],
+      "gainJitter": [1, 1],
+      "minIntervalSimSeconds": 0,
+      "category": "body",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
       "id": "player_landing_hard",
       "variants": ["assets/audio/player-landing-hard-01.ogg"],
       "gain": 0.72,
@@ -672,6 +692,16 @@
       "minIntervalSimSeconds": 0,
       "category": "world",
       "noise": { "enabled": true, "radiusMetres": 60 }
+    },
+    {
+      "id": "lock_hammer",
+      "variants": ["assets/audio/door_blocked_close-01.ogg"],
+      "gain": 1,
+      "pitchJitter": [0.6, 0.7],
+      "gainJitter": [0.9, 1.1],
+      "minIntervalSimSeconds": 0,
+      "category": "world",
+      "noise": { "enabled": true, "radiusMetres": 110 }
     },
     {
       "id": "door_open",

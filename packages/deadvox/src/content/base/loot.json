@@ -333,6 +333,10 @@
         },
         {
           "item": "lamp_oil",
+          "weight": 2
+        },
+        {
+          "item": "oil_lamp",
           "weight": 1
         },
         {
@@ -357,6 +361,11 @@
         },
         {
           "condition": [0.40000000000000002, 1],
+          "item": "sledgehammer",
+          "weight": 1
+        },
+        {
+          "condition": [0.40000000000000002, 1],
           "item": "baseball_bat",
           "weight": 1
         },
@@ -368,6 +377,10 @@
         {
           "condition": [0.40000000000000002, 1],
           "item": "kabar",
+          "weight": 1
+        },
+        {
+          "item": "whetstone",
           "weight": 1
         },
         {
@@ -720,6 +733,11 @@
           "weight": 3
         },
         {
+          "condition": [0.40000000000000002, 1],
+          "item": "sledgehammer",
+          "weight": 1
+        },
+        {
           "item": "gas_canister",
           "weight": 1
         },
@@ -751,6 +769,10 @@
         {
           "condition": [0.40000000000000002, 1],
           "item": "wire_strippers",
+          "weight": 1
+        },
+        {
+          "item": "whetstone",
           "weight": 1
         },
         {

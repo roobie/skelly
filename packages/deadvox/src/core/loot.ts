@@ -179,6 +179,8 @@ export interface Rolled {
   condition: number;
   /** Item types fitted to each one, by slot id; only authored fixed loot sets them. */
   fitted?: Readonly<Record<string, string>>;
+  /** Battery charge as a share of full; only authored fixed loot sets it. */
+  charge?: number;
 }
 
 const pick = <T extends { weight: number }>(entries: readonly T[], rng: Rng): T => {
@@ -245,7 +247,7 @@ const fixedItems = (
   point: LootSpawnPoint,
   rng: Rng,
 ): Rolled[] =>
-  items.flatMap(({ item, count = 1, condition = 1, fitted }) => {
+  items.flatMap(({ item, count = 1, condition = 1, fitted, charge }) => {
     const type = selectLootType(registry, point, [{ type: item, weight: 1, fitted }], rng);
     if (type === undefined) {
       if (point.required) {
@@ -253,7 +255,11 @@ const fixedItems = (
       }
       return [];
     }
-    return itemsOf(registry, { type, count, condition }).map((rolled) => (fitted ? { ...rolled, fitted } : rolled));
+    return itemsOf(registry, { type, count, condition }).map((rolled) => ({
+      ...rolled,
+      ...(fitted ? { fitted } : {}),
+      ...(charge === undefined ? {} : { charge }),
+    }));
   });
 
 const leafCandidates = (entries: readonly LootEntry[]): WeightedCandidate[] =>

@@ -352,6 +352,7 @@ export interface SessionOptions {
   /** Observational hook for actual handling completion/failure outcomes. */
   onHandlingOutcomes?: (result: TickResult) => void;
   onConsumed?: ((type: string) => void) | undefined;
+  onBatterySwapped?: ((lightType: string) => void) | undefined;
   /** Output only, called after the simulation has committed the case transition. */
   onFirearmEjection?: (effect: FirearmShotEffect) => void;
   /** Output only, after the simulation inserts an ejected item into its landing pile. */
@@ -602,7 +603,10 @@ const observeScenarioMovement = (
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
   const dayCycle = requireDayCycle(registry);
-  const shamblerVoice = shamblerVoiceLaw(figureSeedPool(registry.zombies));
+  const shamblerVoice = shamblerVoiceLaw(
+    figureSeedPool(registry.zombies),
+    registry.senses.get(CORE_CONTENT_IDS.player)!.shamblerVoice,
+  );
   const s = scale.blockSize;
   const skyTop = (scale.maxCy + 1) * CHUNK - 1;
   const physics = physicsFor(scale);
@@ -929,6 +933,9 @@ export const createSession = (options: SessionOptions) => {
         sourceLabel: sound.sourceLabel,
         noiseRadiusScale: firearms.noiseFactorFor(firearm),
       });
+      if (sound.bodyEvent !== undefined) {
+        playPlayerSound(sound.bodyEvent, time, { sourceLabel: sound.sourceLabel });
+      }
     },
     onSound: (event, position, time) =>
       position ? playWorldSound(event, position, time) : playPlayerSound(event, time),
@@ -950,6 +957,7 @@ export const createSession = (options: SessionOptions) => {
     notice: options.notice,
     read: options.onRead,
     consumed: options.onConsumed,
+    batterySwapped: options.onBatterySwapped,
     bookRead: (bookUid) => {
       const item = inventory.itemByUid(bookUid);
       const book = item && registry.items.get(item.type)?.book;

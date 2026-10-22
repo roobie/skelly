@@ -284,7 +284,7 @@ describe('made light burn state', () => {
   });
 
   it('keeps every dropped burn light burning on its fuel until it burns out on the floor', () => {
-    const burnLights = [...registry.items.values()].filter(({ light }) => light?.burning !== undefined);
+    const burnLights = [...registry.items.values()].filter(({ light }) => light?.burnTimeGameHours !== undefined);
     const igniter = [...registry.items.values()].find((definition) => definition.igniter)!.id;
     expect(burnLights.length).toBeGreaterThan(0);
 

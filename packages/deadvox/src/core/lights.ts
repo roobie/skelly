@@ -219,6 +219,25 @@ export const chargeShare = (registry: Registry, item: Item): number | undefined 
   return capacity === undefined || charge === undefined ? undefined : charge / capacity;
 };
 
+/** Starts a consumable light's burn clock. Returns why it can't light, or undefined. */
+const startBurn = (
+  light: Item,
+  spec: NonNullable<ReturnType<typeof defOf>['light']>,
+  burnTime: number,
+  calendar: number,
+): string | undefined => {
+  if (light.burnRemainingGameSeconds !== undefined && !spec.burning?.relight) {
+    return "It can't be lit again";
+  }
+  const remaining = light.burnRemainingGameSeconds ?? burnTime;
+  if (remaining <= 0) {
+    return 'It has burned out';
+  }
+  light.burnRemainingGameSeconds = remaining;
+  light.litAtGameTimestamp = calendar;
+  return undefined;
+};
+
 /** Switches a light on or off. Returns why it can't come on, or undefined. */
 export const toggleLight = (registry: Registry, light: Item, calendar = 0): string | undefined => {
   const def = defOf(registry, light.type);
@@ -235,17 +254,12 @@ export const toggleLight = (registry: Registry, light: Item, calendar = 0): stri
     return undefined;
   }
   if (spec.burnTimeGameHours !== undefined) {
-    if (light.burnRemainingGameSeconds !== undefined && !spec.burning?.relight) {
-      return "It can't be lit again";
+    const blocked = startBurn(light, spec, spec.burnTimeGameHours, calendar);
+    if (blocked) {
+      return blocked;
     }
-    const remaining = light.burnRemainingGameSeconds ?? spec.burnTimeGameHours;
-    if (remaining <= 0) {
-      return 'It has burned out';
-    }
-    light.burnRemainingGameSeconds = remaining;
-    light.litAtGameTimestamp = calendar;
   } else if (chargeOf(registry, light) === 0) {
-    return def.igniter ? "It's out of fuel" : 'The battery is dead';
+    return def.igniter || def.tool?.fuel ? "It's out of fuel" : 'The battery is dead';
   }
   light.on = true;
   return undefined;
@@ -280,17 +294,18 @@ export const drainLight = (
   if (!(light.on && ratePerGameSecond !== undefined)) {
     return undefined;
   }
-  const battery = light.slots?.battery;
+  // A fuelled lamp holds its oil in the canister slot, as a powered light holds its battery.
+  const cell = light.slots?.battery ?? light.slots?.canister;
   const charge = chargeOf(registry, light) ?? 0;
   const lasts = charge / ratePerGameSecond;
   if (lasts > elapsedGameSeconds) {
-    if (battery) {
-      battery.charges = charge - ratePerGameSecond * elapsedGameSeconds;
+    if (cell) {
+      cell.charges = charge - ratePerGameSecond * elapsedGameSeconds;
     }
     return undefined;
   }
-  if (battery) {
-    battery.charges = 0;
+  if (cell) {
+    cell.charges = 0;
   }
   light.on = false;
   return gameSeconds(lasts);
