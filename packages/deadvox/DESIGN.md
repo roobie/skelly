@@ -2092,12 +2092,23 @@ sole owner and preserving ordinary fuse and save behavior. The flight is
 presentation only: the pile renderer hides the item while its arc plays, and the
 arc follows the pile's visible pose so the landing does not jump. No second owner
 exists while an item is in flight, so saves and fuses see only the pile; behavior
-during flight is new work on a new issue. Mass limits range; #368 is
-the trigger for deciding whether atmospheric drag adds another limit. A throw
-adds no hit damage or landing lure; explosive effects belong to the grenade.
+during flight is new work on a new issue. A throw adds no hit damage or landing
+lure; explosive effects belong to the grenade.
 See `src/game/throwCharge.ts`, `ThrowCharge.place`;
 `src/render/itemThrows.ts`, `ItemThrows.update`; and `src/render/piles.ts`,
 `PileMeshes.sync`.
+
+Mass and air both limit range. Mass caps the speed the arm can give; drag then
+takes a share of that range by how much air the item pushes for its mass, so a
+flimsy glowstick falls shorter than a dense grenade thrown with the same effort.
+Drag derives from the item's footprint and mass, so no item needs its own row.
+The footprint is a cell-rounded outline, not the face that meets the air, so one
+coefficient against it stands in for shape and tumbling. The range comes from
+stepping a level 45-degree flight with drag at a fixed step, so the same throw
+always lands at the same place, and a replay records that range. The arc's
+height and flight time do not depend on drag. See `src/core/itemThrow.ts`,
+`throwDistanceForItem` and `dragRangeShare`, and
+`src/content/base/inventory.jsonnet`, `throwDrag`.
 
 ## Hand grenade
 

@@ -46,6 +46,10 @@
         "minSimSeconds": 1
       },
       "throwArcHeightMetres": 1.1000000000000001,
+      "throwDrag": {
+        "airDensityKgPerCubicMetre": 1.2,
+        "footprintDragCoefficient": 0.25
+      },
       "throwFlightSimSeconds": 0.75,
       "useReachMetres": 2
     }
