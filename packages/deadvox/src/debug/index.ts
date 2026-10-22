@@ -690,6 +690,19 @@ export const createDebugActions = ({
         run: hooks.spectatorCamera.toggle,
       },
       {
+        id: 'debug.spectator-teleport',
+        label: 'Teleport avatar to spectator camera',
+        group: 'tools',
+        run: () => {
+          const result = hooks.spectatorCamera.teleport();
+          if (result === 'blocked') {
+            hooks.showNotice('The camera is inside solid ground');
+          } else if (result === undefined) {
+            hooks.showNotice('Teleport needs the spectator camera');
+          }
+        },
+      },
+      {
         id: 'debug.third-person-toggle',
         label: 'Third-person avatar view',
         group: 'tools',

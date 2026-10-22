@@ -251,6 +251,8 @@ const VEHICLE_CAPABILITIES = [
   'structure',
   /** A road wheel, the part a vehicle rolls on. */
   'wheel',
+  /** A floor a cargo space can rest on (`src/core/cargoSpace.ts`, `freeFloor`). */
+  'load_floor',
 ] as const;
 export type VehicleCapability = (typeof VEHICLE_CAPABILITIES)[number];
 
@@ -280,8 +282,28 @@ const ContainerSchema = strictObject({
   wideReason: optional(pipe(string(), nonEmpty('must not be empty'))),
 });
 
+/** Ordered lower bounds with a word each; the first starts at 0 and each rises, so every value in [0, 1] reads as one band. */
+const ConditionBandsSchema = pipe(
+  array(strictObject({ from: Fraction, word: Name })),
+  nonEmpty('needs at least one band'),
+  rawCheck(({ dataset, addIssue }) => {
+    if (!dataset.typed) {
+      return;
+    }
+    dataset.value.forEach(({ from }, index) => {
+      if (index === 0 && from !== 0) {
+        addIssue({ message: `bands[${index}].from must be 0 so no value is left without a word` });
+      } else if (index > 0 && !(from > dataset.value[index - 1]!.from)) {
+        addIssue({ message: `bands[${index}].from must be above the band before it, or bands overlap` });
+      }
+    });
+  }),
+);
+
 const InventoryTuningSchema = strictObject({
   id: Id,
+  /** What a condition reads as (`DESIGN.md`, "The item model"); furniture reads the same table. */
+  conditionBands: ConditionBandsSchema,
   /** The real side of one inventory cell; footprints and pockets are real sizes rounded up to it (`DESIGN.md`, "The item model"). */
   cellMetres: Positive,
   /** Maximum width, in cells, for a container pocket without a content-owned exception. */
@@ -941,6 +963,20 @@ const ItemSchema = strictObject({
         array(picklist(VEHICLE_CAPABILITIES)),
         check((list) => new Set(list).size === list.length, 'capabilities must be distinct'),
       ),
+      /**
+       * A cargo space: a block whose footprint is its one pocket (`DESIGN.md`, "Vehicles", **Cargo space.**).
+       * Its model is one inventory cell, and a fitting's `cargo` scales it.
+       */
+      cargoSpace: optional(
+        strictObject({
+          /** Sim seconds to take an item out or put one in, before the per-cell part. */
+          handlingSimSeconds: SimSeconds,
+          /** The clearance above a free-floor cell with nothing over it, in cells. */
+          openClearanceCells: Cells,
+          /** Why its pocket may be wider than the inventory width tuning allows. */
+          wideReason: optional(pipe(string(), nonEmpty('must not be empty'))),
+        }),
+      ),
     }),
   ),
 });
@@ -955,6 +991,8 @@ const VehicleFittingSchema = strictObject({
   mirror: optional(literal(true)),
   /** Every fitting it rests on; an authored structural choice, not inferred from contact. */
   supportedBy: array(Id),
+  /** A factory cargo space's size in inventory cells along x, y and z; its pocket is x by z. */
+  cargo: optional(tuple([Cells, Cells, Cells])),
 });
 
 /** A factory build, as a vehicle authoring export: parts by item id, placed and supported. */
