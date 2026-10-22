@@ -1,13 +1,14 @@
 local shape = import 'furniture-shape.libsonnet';
+local breach = import 'furniture-breach.libsonnet';
 local woodDoor = {
   id: 'wood_door',
   name: 'Burglary-safe wooden door',
   size: [2, 4, 1],
   color: '#7a5534',
+  breach: { minimumStrength: 4.5, durability: 150 },
   door: {
     material: 'wood',
     handlingSimSeconds: 0.6,
-    breach: { minimumStrength: 4.5, toughness: 150 },
     methods: {
       pry: {
         quality: 'prying', level: 3, skill: 'mechanics',
@@ -17,7 +18,7 @@ local woodDoor = {
     },
   },
 };
-shape.colliding({
+breach.breaking(shape.colliding({
   doorMaterials: [
     {
       id: 'wood', methods: ['pry'], broken: { tint: '#d8c9a6', strength: 0.6 },
@@ -317,8 +318,8 @@ shape.colliding({
     woodDoor,
     woodDoor + {
       id: 'flimsy_wood_door', name: 'Flimsy wooden door',
+      breach: { minimumStrength: 3.5, durability: 60 },
       door: woodDoor.door + {
-        breach: { minimumStrength: 3.5, toughness: 60 },
         methods: {
           pry: woodDoor.door.methods.pry + {
             level: 1, timeSimSeconds: 6, fastestTimeSimSeconds: 3,
@@ -328,9 +329,9 @@ shape.colliding({
     },
     woodDoor + {
       id: 'steel_armoury_door', name: 'Steel armoury door', color: '#626a70',
+      breach: { minimumStrength: 9, durability: 300 },
       door: woodDoor.door + {
         material: 'steel',
-        breach: { minimumStrength: 9, toughness: 300 },
         methods: {
           cut: {
             quality: 'flame_cutting', level: 1, skill: 'mechanics',
@@ -341,4 +342,4 @@ shape.colliding({
       },
     }
   ]
-})
+}))

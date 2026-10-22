@@ -9,7 +9,7 @@ import { templateBodySpace } from '../src/core/templateSpatial.ts';
 import { compileTemplate, placedDecals, type Turn } from '../src/core/templates.ts';
 import { gameHours } from '../src/core/time.ts';
 import { AuthoredDecals } from '../src/render/decals.ts';
-import { fixtureLootContext } from './economyFixtures.ts';
+import { fixtureBreach, fixtureLootContext } from './economyFixtures.ts';
 
 const decal = (): DecalDef => ({
   kind: 'blood',
@@ -50,11 +50,11 @@ const fixture = () => {
             name: 'Door',
             color: '#808080',
             size: [2, 4, 1],
+            breach: fixtureBreach(),
             door: {
               material: 'wood',
               methods: {},
               handlingSimSeconds: 1,
-              breach: { minimumStrength: 1, toughness: 1 },
             },
           },
         ],

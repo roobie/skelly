@@ -5,6 +5,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import type { FurnitureDef } from '../src/core/schema.ts';
 import type { Facing } from '../src/core/templates.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
+import { fixtureBreach } from './economyFixtures.ts';
 
 const definitions = [
   { kind: 'cabinet', surface: 'wood', size: [3, 4, 1] },
@@ -17,6 +18,7 @@ const definitions = [
   color: '#8a7654',
   appearance: { kind, surface },
   container: { pockets: [{ grid: [2, 2], handlingSimSeconds: 1 }] },
+  breach: fixtureBreach(),
 }));
 
 function fixture() {
@@ -105,6 +107,7 @@ describe('furniture detail', () => {
                 { position: [1, 0, 1], size: [1, 0.5, 1] },
               ],
               solidFill: 0.01,
+              breach: fixtureBreach(),
             },
           ],
         },
@@ -134,7 +137,7 @@ describe('furniture detail', () => {
     const definition = definitions[0]!;
     for (const extra of [
       { shape: [{ position: [0, 0, 0], size: [1, 1, 1] }] },
-      { door: { material: 'wood', methods: {}, handlingSimSeconds: 1, breach: { minimumStrength: 1, toughness: 1 } } },
+      { door: { material: 'wood', methods: {}, handlingSimSeconds: 1 } },
       { container: undefined },
     ]) {
       const { issues } = buildRegistry([

@@ -1,12 +1,12 @@
 {
   "furniture": [
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#718087",
       "door": {
-        "breach": {
-          "minimumStrength": 9,
-          "toughness": 300
-        },
         "handlingSimSeconds": 0.59999999999999998,
         "material": "steel",
         "methods": {
@@ -26,6 +26,10 @@
       "size": [2, 4, 1]
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#69716f",
       "container": {
         "pockets": [
@@ -110,6 +114,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#77725a",
       "container": {
         "pockets": [
@@ -191,6 +199,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#5b6142",
       "container": {
         "pockets": [
@@ -205,6 +217,10 @@
       "size": [1, 1, 1]
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#6b756f",
       "container": {
         "pockets": [
@@ -296,6 +312,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#677a82",
       "id": "camp_cot",
       "name": "Folding cot",
@@ -359,6 +379,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#59656a",
       "container": {
         "pockets": [
@@ -384,6 +408,10 @@
       "size": [3, 2, 2]
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#7a5c3e",
       "container": {
         "pockets": [
@@ -448,6 +476,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#a6936f",
       "id": "camp_orders",
       "name": "Camp orders board",
@@ -473,6 +505,10 @@
       "solid": false
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#9b8d6a",
       "id": "camp_sandbag_barricade",
       "name": "Sandbag barricade",
@@ -480,12 +516,12 @@
       "solid": true
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#666c70",
       "door": {
-        "breach": {
-          "minimumStrength": 9,
-          "toughness": 300
-        },
         "handlingSimSeconds": 1.2,
         "material": "steel",
         "methods": {}

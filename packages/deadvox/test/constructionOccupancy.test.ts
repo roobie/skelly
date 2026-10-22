@@ -39,7 +39,6 @@ const { registry, issues } = buildRegistry([
             material: 'wood',
             methods: {},
             handlingSimSeconds: 0.3,
-            breach: { minimumStrength: 1, toughness: 1 },
           },
         },
         {

@@ -1,6 +1,10 @@
 {
   "furniture": [
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#8d986d",
       "container": {
         "pockets": [

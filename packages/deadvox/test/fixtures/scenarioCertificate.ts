@@ -34,7 +34,6 @@ export const cyclicSite = (registry: Registry, base: CityPlan, scale: Scale): Ci
               material: 'wood',
               methods: {},
               handlingSimSeconds: 1,
-              breach: { minimumStrength: 1, toughness: 1 },
             },
           },
         ],

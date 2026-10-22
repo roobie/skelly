@@ -10,6 +10,7 @@ import type { ContentFile } from '../src/core/schema.ts';
 import { createPlayerBody, physicsFor, steer } from '../src/game/player.ts';
 import { BLUEPRINTS } from '../src/vehicles/catalogue.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { fixtureBreach } from './economyFixtures.ts';
 
 const half = makeScale(0.5);
 const base = baseRegistry();
@@ -26,6 +27,7 @@ const frame = {
   color: '#5b605c',
   shape: [post(0, 0), post(4.75, 0), post(4.75, 2.75), { position: [0, 4.5, 0] as Vec3, size: [5, 0.5, 3] as Vec3 }],
   solidFill: 0.01,
+  breach: fixtureBreach(),
 };
 
 const fixtures: ContentFile = {
@@ -36,6 +38,7 @@ const fixtures: ContentFile = {
       size: [...intact.size] as Vec3,
       color: '#5b605c',
       vehicle: { ...intact.vehicle!, removed: at === 0 ? [] : [wheel] },
+      breach: fixtureBreach(),
     })),
     frame,
   ],

@@ -1,6 +1,10 @@
 {
   "furniture": [
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#4c5950",
       "id": "police_desk_radio",
       "name": "Desk radio",
@@ -42,6 +46,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#d7d0b4",
       "id": "police_duty_notice",
       "mount": "wall",
@@ -64,6 +72,10 @@
         "kind": "drawers",
         "surface": "painted-metal"
       },
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#79857c",
       "container": {
         "pockets": [
@@ -82,6 +94,10 @@
         "kind": "cabinet",
         "surface": "painted-metal"
       },
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#68777b",
       "container": {
         "pockets": [
@@ -96,6 +112,10 @@
       "size": [2, 4, 1]
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#deddd3",
       "id": "station_toilet",
       "name": "Toilet",
@@ -137,6 +157,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#8b9494",
       "id": "station_cell_toilet",
       "name": "Cell toilet",
@@ -178,6 +202,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#deddd3",
       "id": "station_washbasin",
       "name": "Washbasin",
@@ -223,6 +251,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#8b9494",
       "id": "station_cleaning_sink",
       "name": "Cleaning sink",
@@ -268,6 +300,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#b0b7b3",
       "id": "station_kitchen_sink",
       "name": "Kitchen sink",
@@ -313,6 +349,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#535b58",
       "id": "station_solid_fuel_boiler",
       "name": "Solid-fuel boiler",
@@ -354,6 +394,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#383d3b",
       "id": "station_coal_bin",
       "name": "Coal bin",
@@ -399,12 +443,12 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#596562",
       "door": {
-        "breach": {
-          "minimumStrength": 9,
-          "toughness": 300
-        },
         "handlingSimSeconds": 0.59999999999999998,
         "material": "steel",
         "methods": {}
@@ -414,6 +458,10 @@
       "size": [2, 2, 1]
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#b7b9ae",
       "id": "station_cooker",
       "name": "Cooker",
@@ -467,12 +515,12 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#8c9b91",
       "door": {
-        "breach": {
-          "minimumStrength": 9,
-          "toughness": 300
-        },
         "handlingSimSeconds": 0.59999999999999998,
         "material": "steel",
         "methods": {}

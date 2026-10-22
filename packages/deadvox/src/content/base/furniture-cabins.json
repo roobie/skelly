@@ -1,12 +1,12 @@
 {
   "furniture": [
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#7a5534",
       "door": {
-        "breach": {
-          "minimumStrength": 3.5,
-          "toughness": 60
-        },
         "handlingSimSeconds": 0.59999999999999998,
         "material": "wood",
         "methods": {}
@@ -16,6 +16,10 @@
       "size": [2, 4, 1]
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#6e5037",
       "container": {
         "pockets": [
