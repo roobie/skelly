@@ -2198,6 +2198,7 @@ export const startPlay = (
   const cancelHeldInput = (): void => {
     input.reload.cancel();
     throwStanceInput.cancel();
+    cancelItemThrow();
     quickbarInput.cancel();
     interactInput.cancel();
     wornLightInput.cancel();
