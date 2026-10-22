@@ -1,7 +1,7 @@
 import { html, render } from 'lit-html';
 import { dominantSide } from '../core/character.ts';
 import type { Inventory } from '../core/inventory.ts';
-import type { Tutorial } from '../game/tutorial.ts';
+import { COMBAT_REVOLVER, COMBAT_SHOTGUN, type Tutorial } from '../game/tutorial.ts';
 import { keyCap } from './keyCap.ts';
 
 export interface TutorialPresentation {
@@ -21,6 +21,17 @@ const stageTopics: Record<Tutorial['stage'], string> = {
   light: 'hand',
   escape: 'crouch',
   pause: 'main menu',
+  finish: 'main menu',
+  'revolver-wield': 'wield',
+  'revolver-load': 'firearm',
+  'revolver-aim': 'ready',
+  'revolver-fire': 'firearm',
+  'pump-wield': 'wield',
+  'pump-load': 'firearm',
+  'pump-rack': 'firearm',
+  'pump-fire': 'firearm',
+  down: 'ready',
+  ammo: 'inventory',
 };
 
 const stageHint = (stage: Tutorial['stage'], { inventory, inventoryOpen, lightOn }: TutorialPresentation) => {
@@ -75,6 +86,22 @@ const stageHint = (stage: Tutorial['stage'], { inventory, inventoryOpen, lightOn
       : wield('Flashlight — On / off'),
     escape: html`${action('player.crouch-toggle', 'Crouch')} · Exit path`,
     pause: action('ui.main-menu-toggle', 'Main menu'),
+    finish: action('ui.main-menu-toggle', 'Main menu — Exit practice, or try combat practice'),
+    'revolver-wield': wield('Revolver · rounds in the supply cabinet'),
+    'revolver-load': held(COMBAT_REVOLVER)
+      ? html`${action('firearm.reload', 'Hold to load rounds')} · Release to close`
+      : wield('Revolver'),
+    'revolver-aim': action('stance.ready', 'Hold to ready the revolver'),
+    'revolver-fire': html`${action('stance.ready', 'Ready')} · ${action('hand.use-dominant', 'Fire')}`,
+    'pump-wield': wield('Pump shotgun · shells in the supply cabinet'),
+    'pump-load': held(COMBAT_SHOTGUN)
+      ? html`${action('firearm.reload', 'Hold to load shells')} · Release to stop`
+      : wield('Pump shotgun'),
+    'pump-rack': action('firearm.reload', 'Double-press to pump a shell in'),
+    'pump-fire': html`${action('stance.ready', 'Ready')} · ${action('hand.use-dominant', 'Fire')} ·
+      ${action('firearm.reload', 'Double-press to pump')}`,
+    down: html`${action('stance.ready', 'Ready')} · ${action('hand.use-dominant', 'Down the shambler')}`,
+    ammo: inventoryOpen ? 'Read the rounds on the held gun' : inventoryAction,
   };
   return hints[stage];
 };
@@ -100,6 +127,11 @@ export const mountTutorial = (tutorial: Tutorial, exit: () => void, restart: () 
     render(
       html`
       <div class="tutorial-action-buttons">
+        ${
+          tutorial.canStartCombat
+            ? html`<button type="button" data-tutorial-combat @click=${() => tutorial.startCombat()}>Combat practice (optional)</button>`
+            : ''
+        }
         <button type="button" @click=${openControls}>Practice controls</button>
         <button type="button" @click=${restart}>Restart practice</button>
         <button type="button" @click=${exit}>Exit practice</button>

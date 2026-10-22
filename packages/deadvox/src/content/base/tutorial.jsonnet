@@ -16,7 +16,11 @@ breach.breaking(shape.colliding({
       shell: supplyPaint, frame: '#6b7553', door: '#9ea980', upper: '#aab491',
       metal: '#aab0a5', shadow: '#343b2f', wear: '#c1c7ac', badge: '#d2d7c6',
     }),
-    container: { pockets: [{ name: 'Supplies', grid: [8, 8], handlingSimSeconds: 0.2 }] },
+    // The second pocket holds the optional combat module's guns; the essentials route reads only the first.
+    container: { pockets: [
+      { name: 'Supplies', grid: [8, 8], handlingSimSeconds: 0.2 },
+      { name: 'Practice guns', grid: [6, 10], handlingSimSeconds: 0.2 },
+    ] },
   }],
   templates: [{
     id: 'tutorial_station',
@@ -47,6 +51,11 @@ breach.breaking(shape.colliding({
         { item: 'water_bottle', count: 2 },
         { item: 'flashlight', fitted: { battery: 'aa_battery' } },
         { item: 'bandage', count: 2 },
+        // The optional combat module's kit; the essentials route never asks for it.
+        { item: 'revolver_357' },
+        { item: 'cartridge_357_h_magnum', count: 6 },
+        { item: 'pump_shotgun' },
+        { item: 'shell_12_gauge_00_buck', count: 4 },
       ] }],
     }],
     player: { position: [0, 0.5, 8], bearing: 0 },

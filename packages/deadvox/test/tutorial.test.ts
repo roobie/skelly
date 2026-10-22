@@ -23,16 +23,35 @@ const observation = (): TutorialObservation => ({
   paused: false,
 });
 const fixture = () => {
-  const complete = vi.fn();
-  const tutorial = new Tutorial([0, 1, 0], 0, { x0: 10, z0: 10, x1: 12, z1: 12 }, complete);
+  const tutorial = new Tutorial([0, 1, 0], 0, { x0: 10, z0: 10, x1: 12, z1: 12 });
   const state = observation();
   const observe = () => tutorial.observe(state);
-  return { tutorial, state, complete, observe };
+  return { tutorial, state, observe };
+};
+
+const finishEssentials = ({ tutorial, state, observe }: ReturnType<typeof fixture>) => {
+  tutorial.opened('canned_beans');
+  tutorial.consumed('beans');
+  tutorial.consumed('water_bottle');
+  Object.assign(state, {
+    position: [11, 1, 11],
+    yaw: 1,
+    doorOpen: true,
+    searched: true,
+    looted: true,
+    crouching: true,
+    lightOn: true,
+  });
+  observe();
+  state.lightOn = false;
+  observe();
+  state.paused = true;
+  observe();
 };
 
 describe('practice objectives', () => {
   it('advances only on completed outcomes and returns to start after the final pause', () => {
-    const { tutorial, state, complete, observe } = fixture();
+    const { tutorial, state, observe } = fixture();
     observe();
     expect(tutorial.stage).toBe('move');
     state.position = [7, 1, 0];
@@ -75,12 +94,58 @@ describe('practice objectives', () => {
     state.crouching = true;
     observe();
     expect(tutorial.stage).toBe('pause');
-    expect(complete).not.toHaveBeenCalled();
+    expect(tutorial.canStartCombat).toBe(false);
     state.paused = true;
     observe();
-    observe();
-    expect(complete).toHaveBeenCalledOnce();
+    expect(tutorial.stage).toBe('finish');
+    expect(tutorial.canStartCombat).toBe(true);
     expect(new URL(tutorialUrl('https://example.org/deadvox/?tutorial=1', false)).search).toBe('');
+  });
+
+  it('offers the optional combat module only after the essentials, and each step completes from its outcome', () => {
+    const f = fixture();
+    f.tutorial.startCombat();
+    expect(f.tutorial.stage).toBe('move');
+    finishEssentials(f);
+    const { tutorial, state, observe } = f;
+    expect(tutorial.stage).toBe('finish');
+    observe();
+    expect(tutorial.stage).toBe('finish');
+    tutorial.startCombat();
+    expect(tutorial.canStartCombat).toBe(false);
+    const combat = {
+      revolverHeld: false,
+      revolverRounds: 0,
+      aiming: false,
+      shotgunHeld: false,
+      shotgunRounds: 0,
+      shotgunChambered: false,
+      inventoryOpen: false,
+    };
+    state.combat = combat;
+    const advance = (patch: Partial<typeof combat>, next: string) => {
+      const before = tutorial.stage;
+      Object.assign(combat, patch);
+      observe();
+      expect(tutorial.stage, `leaving ${before}`).toBe(next);
+    };
+    observe();
+    expect(tutorial.stage).toBe('revolver-wield');
+    advance({ revolverHeld: true }, 'revolver-load');
+    advance({ revolverRounds: 3 }, 'revolver-aim');
+    advance({ aiming: true }, 'revolver-fire');
+    tutorial.zombieDowned();
+    expect(tutorial.stage, 'a downing without a shot earns nothing').toBe('revolver-fire');
+    tutorial.fired('revolver_357');
+    expect(tutorial.stage).toBe('pump-wield');
+    advance({ revolverHeld: false, shotgunHeld: true }, 'pump-load');
+    advance({ shotgunRounds: 2 }, 'pump-rack');
+    advance({ shotgunChambered: true }, 'pump-fire');
+    tutorial.fired('pump_shotgun');
+    expect(tutorial.stage).toBe('down');
+    tutorial.zombieDowned();
+    expect(tutorial.stage).toBe('ammo');
+    advance({ inventoryOpen: true }, 'finish');
   });
 
   it('remembers out-of-order supplies instead of requiring already consumed items again', () => {

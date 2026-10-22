@@ -185,7 +185,7 @@ import {
   type ThirdPersonOrbitAngle,
 } from './thirdPersonOrbit.ts';
 import { TierNotice } from './tierNotice.ts';
-import { Tutorial, tutorialUrl } from './tutorial.ts';
+import { COMBAT_REVOLVER, COMBAT_SHOTGUN, type CombatObservation, Tutorial, tutorialUrl } from './tutorial.ts';
 import { Unpacking } from './unpacking.ts';
 import { WorldLoading } from './worldLoading.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
@@ -644,7 +644,6 @@ const createPlayTutorial = (engine: Engine, enabled: boolean | undefined) => {
     engine.spawn.pos.map((coordinate) => coordinate / engine.config.scale.blockSize) as Vec3,
     engine.spawn.yaw,
     exitBeat.area,
-    leaveTutorial,
   );
   const drawTutorial = mountTutorial(tutorial, leaveTutorial, () => location.reload());
   return { tutorial, drawTutorial };
@@ -957,8 +956,14 @@ export const startPlay = (
         zombieMeshes.zombieCarved?.(id, zombie, cells, hit);
         view.gore.carved(hit, cells.length);
       },
-      onIncapacitated: (id, zombie) => zombieMeshes.zombieIncapacitated?.(id, zombie),
-      onDeath: (id, zombie) => zombieMeshes.zombieDied?.(id, zombie, [...body.pos]),
+      onIncapacitated: (id, zombie) => {
+        tutorial?.zombieDowned();
+        zombieMeshes.zombieIncapacitated?.(id, zombie);
+      },
+      onDeath: (id, zombie) => {
+        tutorial?.zombieDowned();
+        zombieMeshes.zombieDied?.(id, zombie, [...body.pos]);
+      },
       ...(config.debug ? { onMeleeResult: (result) => debugTools?.recordMeleeResult(result) } : {}),
       onMeleeContact: (impulse) => view.recoil(impulse),
     },
@@ -2850,6 +2855,7 @@ export const startPlay = (
     if (!fired) {
       return false;
     }
+    tutorial?.fired(item.type);
     return true;
   };
 
@@ -3604,6 +3610,22 @@ export const startPlay = (
     }
   };
 
+  const combatObservation = (): CombatObservation => {
+    const heldGun = (type: string) => Object.values(inventory.hands).find((item): item is Item => item?.type === type);
+    const revolver = heldGun(COMBAT_REVOLVER);
+    const shotgun = heldGun(COMBAT_SHOTGUN);
+    const readied = [revolver, shotgun].some((gun) => gun !== undefined && isFirearmReady(gun.uid));
+    return {
+      revolverHeld: revolver !== undefined,
+      revolverRounds: revolver?.firearm?.cylinder?.chambers.filter(({ state }) => state === 'round').length ?? 0,
+      aiming: readied,
+      shotgunHeld: shotgun !== undefined,
+      shotgunRounds: (shotgun?.firearm?.tube?.length ?? 0) + (shotgun?.firearm?.chamber === 'round' ? 1 : 0),
+      shotgunChambered: shotgun?.firearm?.chamber === 'round',
+      inventoryOpen: screen.isOpen,
+    };
+  };
+
   const updateTutorial = () => {
     tutorial?.observe({
       position: body.pos,
@@ -3617,6 +3639,7 @@ export const startPlay = (
         Object.values(inventory.hands).some((item) => item?.type === 'can_opener'),
       lightOn: survival.lit?.type === 'flashlight' && survival.lit.on === true,
       paused: mainMenuOpen && started,
+      combat: combatObservation(),
     });
     drawTutorial?.({
       inventory,

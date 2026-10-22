@@ -7,7 +7,9 @@ read_if:
 
 Practice is a separate authored place, not a guided replacement world. Guaranteed supplies and a compact route let a newcomer learn ordinary interactions without depending on random scavenging. Use `src/content/base/tutorial.jsonnet` and `src/core/authoredSite.ts`, `AuthoredSite`.
 
-The essentials route stays short so entry remains cheap. Combat and ammunition practice, covering both revolver and pump shotgun, injury recovery, and light and power belong in optional modules: growth must not lengthen everyone's first session.
+The essentials route stays short so entry remains cheap. Combat and ammunition practice, injury recovery, and light and power belong in optional modules: growth must not lengthen everyone's first session.
+
+The combat module is chosen from the main menu after the essentials, so it never delays them, and it covers both guns because the revolver's loose-round cylinder and the pump's tube and manual action are different skills that one gun cannot teach. It teaches equipping, readying, loading, firing, pumping and reading ammunition, and ends on a shambler downed by a firearm shot rather than on any particular gun. The guns and rounds wait in the supply cabinet's own pocket, so the essentials route's supplies are unchanged. A downing is credited to a firearm only when a shot preceded it, because the zombie system does not report a killing weapon; a melee kill after an earlier unrelated shot can therefore still count. See `src/game/tutorial.ts`, `Tutorial`, and `src/content/base/tutorial.jsonnet`.
 
 Action labels show live bindings because outcome nouns alone leave newcomers without the means to act. Fixed pointer actions use their catalogue labels rather than implying rebinding support. Help opens the shared controls card on the relevant topic, keeping one binding catalogue that follows rebinding instead of a second manual that can drift. See `src/ui/tutorial.ts`, `mountTutorial`, and `src/game/controls.ts`, `mountControlsCard`.
 
@@ -17,7 +19,7 @@ Avoidance teaches that fighting is optional. The threat has ordinary senses and 
 
 Practice must never touch the player's save. Its startup branch does not construct a save controller; play also rejects a practice session bound to persistence or restoration. This avoids periodic checkpoints, sleep saves, lifecycle writes and death markers sharing a normal world identity. See `src/game/tutorial.ts`, `tutorialRequested`, and `src/game/play.ts`, `startPlay`.
 
-Completion, death and voluntary exit return to the start choice rather than silently creating a world or transferring equipment. Returning by navigation discards the entire practice runtime and its listeners. Storage-backend selection survives navigation so Continue discovers the same normal save rather than a different storage area; presentation settings also survive; world and debug selections do not follow practice. See `src/game/tutorial.ts`, `tutorialUrl`.
+Death and voluntary exit return to the start choice rather than silently creating a world or transferring equipment. Finishing the essentials does not exit by itself, because the same menu offers the optional modules. Returning by navigation discards the entire practice runtime and its listeners. Storage-backend selection survives navigation so Continue discovers the same normal save rather than a different storage area; presentation settings also survive; world and debug selections do not follow practice. See `src/game/tutorial.ts`, `tutorialUrl`.
 
 The launcher offers practice only as a play destination, so a benchmark cannot carry an unsaved teaching place. See `site/launcher.js`, `setPlayOnlySite`.
 

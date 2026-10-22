@@ -12,6 +12,11 @@
             "grid": [8, 8],
             "handlingSimSeconds": 0.20000000000000001,
             "name": "Supplies"
+          },
+          {
+            "grid": [6, 10],
+            "handlingSimSeconds": 0.20000000000000001,
+            "name": "Practice guns"
           }
         ]
       },
@@ -235,6 +240,20 @@
                 {
                   "count": 2,
                   "item": "bandage"
+                },
+                {
+                  "item": "revolver_357"
+                },
+                {
+                  "count": 6,
+                  "item": "cartridge_357_h_magnum"
+                },
+                {
+                  "item": "pump_shotgun"
+                },
+                {
+                  "count": 4,
+                  "item": "shell_12_gauge_00_buck"
                 }
               ]
             }
