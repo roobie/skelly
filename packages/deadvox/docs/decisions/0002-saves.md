@@ -2,6 +2,7 @@
 read_if:
   - you're changing persistent simulation state, save identity or restore guarantees
   - you're changing the save envelope or deciding whether its schema number changes
+  - you're changing how a save record is compressed or which size its caps bound
   - you're changing when the game autosaves
   - you're deciding what happens to a save whose mod state no longer matches its mod
 tags: [deadvox, adr, saves, persistence, determinism]
@@ -18,6 +19,8 @@ tags: [deadvox, adr, saves, persistence, determinism]
 A save is an exact snapshot of one world and its bound character. Compare simulation fingerprint, save envelope schema, deterministic generator versions and content identity before resolving saved references through content. Content identity covers the evaluated content, not its pack sources; see [ADR 0008](0008-deterministic-world.md). The snapshot is the save's truth; a replay log beside it stays bounded. A Git revision is diagnostic, not identity. Exactness lets a restored scheduler, random stream and action continue as if save and load had not changed the simulation. Generator identity also protects saved chunk edits from being applied over different terrain.
 
 Bump `SAVE_SCHEMA_VERSION` only when the save envelope changes: a field of `src/core/saveFormat.ts`, `Envelope`, other than its payload. `decodeSave` parses those fields before it can read the saved identity, so the number is what lets a build refuse, and name, a record whose header it cannot parse. A payload change never bumps it. `src/core/saveFormat.ts` is a simulation entry (`tools/simulationFingerprint.ts`, `SIMULATION_ENTRIES`), so any change to the payload's shape or its validation already changes the simulation fingerprint; a bump would refuse the same saves twice and add a hand-kept number that merging PRs must race for (`docs/PROCESS.md`, "Save envelope version"). Simulation rules and content need no bump either, since the fingerprint and content identity cover them.
+
+The save is one compressed record. Players place, and take apart for resources, a great many blocks and pieces, so saved state grows with play; compression keeps that cheap to store and write, and one record keeps each commit atomic. The checksum, the canonical check and the payload cap apply to the uncompressed envelope, so save identity never depends on a browser's compressor output. The payload cap bounds the decompressed size and is enforced while inflating, so a small record cannot expand without limit; the storage cap bounds the compressed record. See `src/core/saveFormat.ts`, `encodeSave` and `decodeSave`, and `src/game/saveStorageRecord.ts`, `SAVE_RECORD_MAX_BYTES`.
 
 Bump `INPUT_REPLAY_SCHEMA_VERSION` only when a field of `src/game/inputReplay.ts`, `ReplayWire`, other than `startSave` changes, because those fields are parsed before the starting save's identity is checked. That starting save's ordinary checks then refuse a replay whose simulation or content differs, so a simulation change needs no replay bump.
 
