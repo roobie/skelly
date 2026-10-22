@@ -296,16 +296,18 @@ describe('final composed body-route certificate', () => {
     },
   );
 
-  it('rejects a missing seal keycard instead of admitting its bulkheads', () => {
-    const site = siteOf();
-    const [seal] = site.plan.composition!.seals;
-    expect(seal).toBeDefined();
-    const original = site.lootPointsIn.bind(site);
-    vi.spyOn(site, 'lootPointsIn').mockImplementation((cx, cz) =>
-      original(cx, cz).filter((point) => !point.destination.every((value, axis) => value === seal!.key[axis])),
-    );
-    expect(scenarioCertificate(site).issues.some(([path]) => path === '.composition.seals[0]')).toBe(true);
-  });
+  it.each(base.composition!.seals.map((_, index) => index))(
+    'rejects missing seal %i keycard instead of admitting its bulkheads',
+    (index) => {
+      const site = siteOf();
+      const seal = site.plan.composition!.seals[index]!;
+      const original = site.lootPointsIn.bind(site);
+      vi.spyOn(site, 'lootPointsIn').mockImplementation((cx, cz) =>
+        original(cx, cz).filter((point) => !point.destination.every((value, axis) => value === seal.key[axis])),
+      );
+      expect(scenarioCertificate(site).issues.some(([path]) => path === `.composition.seals[${index}]`)).toBe(true);
+    },
+  );
 
   it(
     "keeps each level's ways down behind its bulkheads until its card, reached through the seals above, is admitted",

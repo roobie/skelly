@@ -232,6 +232,16 @@ export const traverseScenario = (site: CitySite, profile: ScenarioDef, scale: Sc
     assert(result);
     return result!;
   };
+  // A lower level's card is taken with the card from above still in hand, as the browser flow's freeHand does.
+  const freeLeftHand = (at: Readonly<Vec3>) => {
+    const held = session.inventory.hands.left;
+    if (!held) {
+      return;
+    }
+    const drop = session.queue.enqueue(held, { kind: 'pile', pos: [...at] });
+    assert(drop.ok);
+    until(() => !session.inventory.hands.left, Math.ceil((drop.job.duration + 1) * 60));
+  };
   const foot = leaveRoof(session, space, plan.composition!.start, {
     intent: (value) => {
       intent = { ...value };
@@ -281,6 +291,7 @@ export const traverseScenario = (site: CitySite, profile: ScenarioDef, scale: Sc
       const pile = session.inventory.pileAt([...seal.key]);
       const card = pile?.items.find(({ item }) => registry.items.get(item.type)?.key)?.item;
       assert(card, 'seal card is a real placed item');
+      freeLeftHand(seal.standing);
       const pickup = session.queue.enqueue(card, { kind: 'hand', side: 'left' });
       assert(pickup.ok);
       until(() => session.inventory.hands.left === card, Math.ceil((pickup.job.duration + 1) * 60));
