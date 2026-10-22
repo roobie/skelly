@@ -1,6 +1,8 @@
 // Seeded randomness. Generation must be reproducible from a seed alone, on
 // any machine, so this never touches Math.random.
 
+import { lerp, smoothstep } from './math.ts';
+
 export type Rng = () => number;
 
 /** mulberry32: small, fast, and deterministic across platforms. */
@@ -47,11 +49,6 @@ const hash3 = (x: number, y: number, z: number, seed: number): number => {
   h = (h ^ (h >>> 16)) >>> 0;
   return h / 4_294_967_296;
 };
-
-/** Hermite smoothstep, for a noise field with continuous derivatives at cell edges. */
-const smoothstep = (t: number): number => t * t * (3 - 2 * t);
-
-const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 
 /** Trilinear value noise in [0, 1), continuous and deterministic from the seed. */
 export const noise3 = (x: number, y: number, z: number, seed: number): number => {

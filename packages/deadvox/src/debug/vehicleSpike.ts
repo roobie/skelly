@@ -32,6 +32,7 @@ import { buildBundledContent } from '../game/bundledContent.ts';
 import { PlayerMeshes } from '../render/playerFigure.ts';
 import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
 import { applySky } from '../render/sky.ts';
+import { APC } from '../vehicles/apc.ts';
 import { CATALOGUE } from '../vehicles/catalogue.ts';
 import { HATCHBACK, HATCHBACK_ADD_ONS } from '../vehicles/hatchback.ts';
 import { MATERIALS } from '../vehicles/materials.ts';
@@ -171,6 +172,14 @@ const BUILDS = {
     blueprint: HATCHBACK,
     removed: ['hatch-door-near'],
     addOns: HATCHBACK_ADD_ONS,
+  },
+  apc: {
+    label: 'Wheeled APC',
+    button: 'APC',
+    blueprint: APC,
+    removed: [],
+    viewScale: 1.6,
+    views: { interior: { label: 'Troop compartment', position: [-2.7, 1.75, 0], target: [1.5, 1.2, 0] } },
   },
 } as const satisfies Record<string, BuildSpec>;
 type BuildId = keyof typeof BUILDS;

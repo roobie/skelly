@@ -3,6 +3,10 @@
     {
       "color": "#718087",
       "door": {
+        "breach": {
+          "minimumStrength": 9,
+          "toughness": 300
+        },
         "handlingSimSeconds": 0.59999999999999998,
         "material": "steel",
         "methods": {
@@ -478,6 +482,10 @@
     {
       "color": "#666c70",
       "door": {
+        "breach": {
+          "minimumStrength": 9,
+          "toughness": 300
+        },
         "handlingSimSeconds": 1.2,
         "material": "steel",
         "methods": {}

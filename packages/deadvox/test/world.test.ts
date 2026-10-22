@@ -108,28 +108,58 @@ describe('World', () => {
     expect(world.getBlock(1000, -1000, 7)).toBe(0);
   });
 
-  it('keeps restored diffs pending for ungenerated chunks and applies them over the matching base', () => {
-    const world = new World();
-    const saved = { chunks: [{ cx: 0, cy: 0, cz: 0, cells: [{ index: 0, base: 'dirt', id: 'planks' }] }] };
-    const ids = new Map([
-      ['dirt', 1],
-      ['planks', 2],
-    ]);
-    const names = new Map([...ids].map(([name, id]) => [id, name]));
-    const blockId = (name: string) => {
-      const id = ids.get(name);
-      if (id === undefined) {
-        throw new Error(`unknown block ${name}`);
+  describe('saved columns', () => {
+    const names = ['air', 'dirt', 'planks'];
+    const contentId = (id: number) => names[id]!;
+    const blockId = (name: string) => names.indexOf(name);
+    const generatedColumn = (world: World, cx: number, cz: number) => {
+      for (const cy of [0, 1]) {
+        world.addChunk(new Chunk(cx, cy, cz, cy === 0 ? 1 : 0));
       }
-      return id;
     };
-    world.restoreDiffs(saved, blockId);
-    expect(world.getBlock(0, 0, 0)).toBe(0);
-    expect(world.snapshotDiffs((id) => names.get(id) ?? 'unknown')).toEqual(saved);
 
-    world.addChunk(new Chunk(0, 0, 0, 1));
-    expect(world.getBlock(0, 0, 0)).toBe(2);
-    expect(world.snapshotDiffs((id) => names.get(id) ?? 'unknown')).toEqual(saved);
+    it('stores a column whole once any of its cells changes, even after the change is undone', () => {
+      const world = new World();
+      generatedColumn(world, 0, 0);
+      generatedColumn(world, 1, 0);
+      world.setBlock(1, 2, 3, 2);
+      world.setBlock(1, 2, 3, 1);
+      const columns = world.snapshotColumns(contentId);
+      expect(columns.map(({ cx, cz }) => [cx, cz])).toEqual([[0, 0]]);
+      expect(columns[0]!.chunks.map(({ cy }) => cy)).toEqual([0, 1]);
+      expect(world.isTouched(0, 0)).toBe(true);
+      expect(world.isTouched(1, 0)).toBe(false);
+    });
+
+    it('restores every saved cell over generated chunks and saves the same columns again', () => {
+      const source = new World();
+      generatedColumn(source, 0, 0);
+      source.setBlock(1, 2, 3, 2);
+      source.setBlock(4, CHUNK + 5, 6, 1);
+      const saved = structuredClone(source.snapshotColumns(contentId));
+      const restored = new World();
+      generatedColumn(restored, 0, 0);
+      restored.restoreColumns(saved, blockId);
+      for (const cy of [0, 1]) {
+        expect(restored.getChunk(0, cy, 0)!.toArray()).toEqual(source.getChunk(0, cy, 0)!.toArray());
+      }
+      expect(restored.isTouched(0, 0)).toBe(true);
+      expect(restored.snapshotColumns(contentId)).toEqual(saved);
+    });
+
+    it('re-encodes only the columns changed since the last snapshot', () => {
+      const world = new World();
+      generatedColumn(world, 0, 0);
+      generatedColumn(world, 1, 0);
+      world.setBlock(1, 2, 3, 2);
+      world.setBlock(CHUNK + 1, 2, 3, 2);
+      const [first, second] = world.snapshotColumns(contentId);
+      world.setBlock(CHUNK + 1, 2, 4, 2);
+      const [unchanged, changed] = world.snapshotColumns(contentId);
+      expect(unchanged).toBe(first);
+      expect(changed).not.toBe(second);
+      expect(changed!.chunks[0]!.runs.length).toBeGreaterThan(second!.chunks[0]!.runs.length);
+    });
   });
 
   it('reaches as far as the occlusion radius, which the simulation graph repeats rather than imports', () => {

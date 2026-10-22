@@ -393,6 +393,52 @@
       "roll": 0
     },
     {
+      "file": "assets/models/frag_grenade.glb",
+      "grip": {
+        "at": [0, 0.033148601913168832, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "frag_grenade",
+      "parts": {
+        "grenade": {
+          "centreOfMass": [0.00036723627359508854, 0.036986902465723857, 4.7083520647869879e-5],
+          "massKg": 0.40000000000000002,
+          "node": "grenade:grenade"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "anchors": {
+        "flame": [0.41999999999999993, 0, 0]
+      },
+      "emissiveMaterial": "#2b241c",
+      "file": "assets/models/torch.glb",
+      "grip": {
+        "at": [0.11099999999999997, 0, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "torch",
+      "rest": "upright",
+      "roll": 0
+    },
+    {
+      "anchors": {
+        "flame": [0.112, 0, 0]
+      },
+      "file": "assets/models/candle.glb",
+      "grip": {
+        "at": [0.040000000000000008, 0, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "candle",
+      "rest": "upright",
+      "roll": 0
+    },
+    {
       "file": "assets/models/bear_trap.glb",
       "id": "bear_trap",
       "parts": {
@@ -534,11 +580,11 @@
       "id": "broken_toaster"
     },
     {
-      "file": "assets/models/desk_lamp.glb",
-      "id": "desk_lamp",
+      "file": "assets/models/dead_desk_lamp.glb",
+      "id": "dead_desk_lamp",
       "parts": {
         "arm": {
-          "centreOfMass": [0.0064922537076486349, 0.089771328314204618, -9.5479630393850054e-18],
+          "centreOfMass": [0.0025013109481772274, 0.075637793761647865, -7.8425363729015917e-18],
           "massKg": 0.25,
           "node": "arm:arm"
         },
@@ -548,7 +594,7 @@
           "node": "base:base"
         },
         "shade": {
-          "centreOfMass": [0.070000000000000007, 0.15968518518518521, -2.0252029474788637e-17],
+          "centreOfMass": [0.069148148148148139, 0.061388888888888889, -8.2142050120587278e-18],
           "massKg": 0.14999999999999999,
           "node": "shade:shade"
         }
@@ -852,6 +898,96 @@
         }
       },
       "roll": 0
+    },
+    {
+      "anchors": {
+        "base": [0, 0, 0],
+        "terminal_positive": [0.072000000000000008, 0.19000000000000003, -0.052499999999999998]
+      },
+      "file": "assets/models/car_battery.glb",
+      "id": "car_battery",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0.092581976558580761, 0],
+          "collision": [
+            {
+              "max": [0.12, 0.17000000000000001, 0.087499999999999994],
+              "min": [-0.12, 0, -0.087499999999999994]
+            },
+            {
+              "max": [0.12, 0.19000000000000003, 0.087499999999999994],
+              "min": [-0.12, 0.17000000000000001, -0.087499999999999994]
+            },
+            {
+              "max": [0.1205, 0.115, 0.087999999999999995],
+              "min": [-0.1205, 0.055000000000000007, -0.087999999999999995]
+            }
+          ],
+          "massKg": 14,
+          "node": "body:carton"
+        }
+      }
+    },
+    {
+      "anchors": {
+        "beam": [0.040000000000000001, 0.080000000000000002, 0],
+        "mount": [-0.040000000000000001, 0.080000000000000002, -0.076999999999999999]
+      },
+      "file": "assets/models/car_headlamp.glb",
+      "id": "car_headlamp",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0.080000000000000002, 0],
+          "collision": [
+            {
+              "max": [0.040000000000000001, 0.16, 0.11],
+              "min": [-0.040000000000000001, 0, -0.11]
+            }
+          ],
+          "massKg": 1.2,
+          "node": "body:block"
+        }
+      }
+    },
+    {
+      "anchors": {
+        "seat": [0, 0.02, 0]
+      },
+      "file": "assets/models/hatchback_battery_tray.glb",
+      "id": "hatchback_battery_tray",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0.010000000000000002, 0],
+          "collision": [
+            {
+              "max": [0.14000000000000001, 0.02, 0.105],
+              "min": [-0.14000000000000001, 0, -0.105]
+            }
+          ],
+          "massKg": 1.5,
+          "node": "body:block"
+        }
+      }
+    },
+    {
+      "anchors": {
+        "seat": [0, 0.029999999999999999, 0]
+      },
+      "file": "assets/models/pickup_battery_tray.glb",
+      "id": "pickup_battery_tray",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0.014999999999999999, 0],
+          "collision": [
+            {
+              "max": [0.16, 0.029999999999999999, 0.12],
+              "min": [-0.16, 0, -0.12]
+            }
+          ],
+          "massKg": 2.2000000000000002,
+          "node": "body:block"
+        }
+      }
     }
   ]
 }

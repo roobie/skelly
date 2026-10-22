@@ -34,6 +34,7 @@ const figureForModel = (model: string, bodyScale?: number) =>
 
 describe('zombie type content', () => {
   it('poses every zombie with the model selected by its type data', () => {
+    expect(zombies.length).toBeGreaterThan(0);
     for (const zombie of zombies) {
       expect(figureForModel(zombie.model, zombie.bodyScale).genome.template).toBe(zombie.model);
     }
@@ -41,6 +42,7 @@ describe('zombie type content', () => {
 
   it('references registered vocal sounds for every zombie type', () => {
     const events = zombies.flatMap(({ sounds }) => Object.values(sounds));
+    expect(events.length).toBeGreaterThan(0);
     for (const event of events) {
       expect(soundById.has(event)).toBe(true);
     }

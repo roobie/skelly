@@ -5,6 +5,7 @@ local content = {
   "zombies": [
     {
       "id": "shambler",
+      "strength": 5,
       "name": "Shambler",
       "model": "shambler",
       "figureSeeds": figureSeeds,
@@ -120,6 +121,7 @@ local content = {
     },
     {
       "id": "military_shambler",
+      "strength": 5,
       "name": "Soldier",
       "model": "shambler",
       "figureSeeds": figureSeeds,
@@ -286,6 +288,7 @@ local content = {
     },
     {
       "id": "runner",
+      "strength": 4,
       "name": "Runner",
       "model": "runner",
       "figureSeeds": figureSeeds,
@@ -386,6 +389,7 @@ local content = {
     },
     {
       "id": "crawler",
+      "strength": 3,
       "name": "Crawler",
       "model": "shambler",
       "figureSeeds": figureSeeds,
@@ -469,6 +473,7 @@ local content = {
     },
     {
       "id": "amalgam",
+      "strength": 0,
       "name": "Amalgam",
       "model": "amalgam",
       "canJumpObstacles": false,

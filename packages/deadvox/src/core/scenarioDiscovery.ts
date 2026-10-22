@@ -16,15 +16,8 @@ export const DISCOVERY_EVENTS = [
 ] as const;
 export type DiscoveryEvent = (typeof DISCOVERY_EVENTS)[number];
 export type ScenarioDiscoveryState = Record<DiscoveryEvent, number | null>;
-export const emptyDiscovery = (): ScenarioDiscoveryState => ({
-  clueRead: null,
-  landmarkArrival: null,
-  buildingArrival: null,
-  hatchEncounter: null,
-  hatchOpened: null,
-  entranceTravel: null,
-  sewerTravel: null,
-});
+export const emptyDiscovery = (): ScenarioDiscoveryState =>
+  Object.fromEntries(DISCOVERY_EVENTS.map((event) => [event, null])) as ScenarioDiscoveryState;
 
 interface Box {
   min: Readonly<Vec3>;

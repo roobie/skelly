@@ -233,6 +233,21 @@ const ITEM_CATEGORIES = [
   'misc',
 ] as const;
 
+/** What a fitted vehicle part provides; the game supports these, so content naming another is refused. */
+const VEHICLE_CAPABILITIES = [
+  'steered',
+  'driven',
+  'power',
+  'fuel',
+  'electricity',
+  'storage',
+  'seat',
+  'light',
+  'glazing',
+  'protection',
+] as const;
+export type VehicleCapability = (typeof VEHICLE_CAPABILITIES)[number];
+
 /** Eyes sits beside the head so goggles stack with a helmet or headlamp (`DESIGN.md`, "The item model"). */
 const CLOTHING_SLOTS = ['head', 'eyes', 'torso', 'vest', 'legs', 'back', 'waist', 'hands', 'feet'] as const;
 /** The shoulder holds a slung long gun, never clothing (`DESIGN.md`, "Shoulder and sling"). */
@@ -463,8 +478,8 @@ const WeaponSchema = strictObject({
     contactFraction: Fraction,
     /** The longest wind-up before contact, in sim seconds. */
     windupCapSimSeconds: PositiveSimSeconds,
-    /** Impulse delivered by a melee hit, in N·s. */
-    impulse: optional(NonNegative),
+    /** Impulse delivered by a melee hit, in N·s; it is also the strike's strength against a door. */
+    impulse: NonNegative,
     /** Condition lost when this weapon lands a melee hit. */
     wearPerHit: optional(Fraction),
     /** Overrides the weapon class's per-hit damage spread. */
@@ -679,6 +694,8 @@ const LightSchema = strictObject({
       relight: vBoolean(),
     }),
   ),
+  /** Size of the drawn flame, in metres, standing on the model's `flame` anchor while lit. */
+  flame: optional(strictObject({ heightMetres: Positive, radiusMetres: Positive })),
   /** What powers it: an item with a battery component, and charge used per Game hour. */
   power: optional(strictObject({ battery: Id, chargePerGameHour: GamePerHour, swapSimSeconds: PositiveSimSeconds })),
   /** Stays lit while worn and answers the worn-light control, so a source not in the hand needs no new key. */
@@ -903,6 +920,38 @@ const ItemSchema = strictObject({
   key: optional(strictObject({ lock: Id })),
   /** Its model (the `models` section); without one it's a bundle in a pile and a box in the hand. */
   model: optional(Id),
+  /** A vehicle part: blueprints may fit it, and its model must export parts with baked collision. */
+  vehicle: optional(
+    strictObject({
+      capabilities: pipe(
+        array(picklist(VEHICLE_CAPABILITIES)),
+        check((list) => new Set(list).size === list.length, 'capabilities must be distinct'),
+      ),
+    }),
+  ),
+});
+
+const VehicleFittingSchema = strictObject({
+  id: Id,
+  /** An item with a `vehicle` block. */
+  part: Id,
+  /** Where the part's model origin sits, in vehicle metres: x forward, y up, z toward the near side. */
+  at: ModelPointSchema,
+  /** Reflected across z about `at`: the other side's placement of an unhanded part. */
+  mirror: optional(literal(true)),
+  /** Every fitting it rests on; an authored structural choice, not inferred from contact. */
+  supportedBy: array(Id),
+});
+
+/** A factory build, as a vehicle authoring export: parts by item id, placed and supported. */
+const VehicleBlueprintSchema = strictObject({
+  id: Id,
+  name: Name,
+  fittings: pipe(
+    array(VehicleFittingSchema),
+    nonEmpty('needs at least one fitting'),
+    check((list) => new Set(list.map(({ id }) => id)).size === list.length, 'fitting ids must be distinct'),
+  ),
 });
 
 // ---- models ----
@@ -1301,6 +1350,8 @@ export const ModelSchema = pipe(
 const DoorMaterialSchema = strictObject({
   id: Id,
   methods: array(Id),
+  /** How a broken leaf of this material is painted: its colour moves `strength` of the way to `tint`. */
+  broken: optional(strictObject({ tint: Color, strength: Fraction })),
 });
 
 const DoorForcingSchema = pipe(
@@ -1365,6 +1416,12 @@ const FurnitureSchema = pipe(
         hatch: optional(literal(true)),
         /** Barricaded from this side, the facing side (`front`) or its opposite (`back`): it opens only from the other. */
         barredFrom: optional(picklist(['front', 'back'])),
+        /**
+         * How the leaf yields to blows (`DESIGN.md`, "Base building and electricity"); every leaf has it, and the front
+         * of a shaped container has none. Strength is in the N·s of a melee weapon's `impulse`: a blow below
+         * `minimumStrength` does nothing, and the strengths of blows at or above it add up to `toughness`, which breaks it.
+         */
+        breach: optional(strictObject({ minimumStrength: Positive, toughness: Positive })),
       }),
     ),
     /** The player climbs it; its facing is the side the climber stands on (`DESIGN.md`, "Ladders and hatches"). */
@@ -2325,6 +2382,11 @@ const ZombieSchema = strictObject({
   /** Whether this type tries to jump low obstacles when grounded. */
   canJumpObstacles: vBoolean(),
   /**
+   * Force of a bash against a closed door it is pressed against, in the N·s of a melee weapon's `impulse`, so a
+   * player's strike and a bash meet the same door gate. It bashes once per attack cooldown; 0 never damages a door.
+   */
+  strength: NonNegative,
+  /**
    * How it moves relative to its facing: `forward` walks only along its facing, so it turns before it heads
    * somewhere new; `omnidirectional` moves straight toward its goal whatever its facing, which still turns to
    * the goal. Omitted is `forward`.
@@ -3069,6 +3131,7 @@ const SECTION_DESCRIPTOR = {
   blocks: { schema: optional(array(BlockSchema)), label: 'blocks', order: 0 },
   items: { schema: optional(array(ItemSchema)), label: 'items', order: 1 },
   doorMaterials: { schema: optional(array(DoorMaterialSchema)), label: 'door materials', order: 32 },
+  vehicleBlueprints: { schema: optional(array(VehicleBlueprintSchema)), label: 'vehicle blueprints', order: 33 },
   furniture: { schema: optional(array(FurnitureSchema)), label: 'furniture', order: 2 },
   loot: { schema: optional(array(LootTableSchema)), label: 'loot tables', order: 4 },
   templates: { schema: optional(array(TemplateSchema)), label: 'templates', order: 5 },
@@ -3165,6 +3228,7 @@ export type ZombieDef = InferOutput<typeof ZombieSchema>;
 export type FigureDef = InferOutput<typeof FigureSchema>;
 export type GunModelDef = InferOutput<typeof GunModelSchema>;
 export type ModelDef = InferOutput<typeof ModelSchema>;
+export type VehicleFittingDef = InferOutput<typeof VehicleBlueprintSchema>['fittings'][number];
 export type SoundDef = InferOutput<typeof SoundSchema>;
 export type SoundRecipe = InferOutput<typeof SoundRecipeSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;

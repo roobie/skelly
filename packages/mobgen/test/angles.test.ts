@@ -10,6 +10,7 @@ import type { EulerDeg, Pose } from '../src/core/pose.ts';
 import { ATTACK_CLIPS, attackPose, blendArmBase } from '../src/mob/attack.ts';
 import {
   advanceClock,
+  createGaitCache,
   footRestExtents,
   type GaitClock,
   INITIAL_CLOCK,
@@ -67,7 +68,7 @@ const actorFor = (templateName: string, seed: number) => {
   const extents = footRestExtents(body.bones, voxels);
   const params = genome.params as HumanoidParams;
   const geomL = legGeometryFor(body.bones, extents, 'L');
-  const actor: WalkActor = { bones: body.bones, extents, params, seed: genome.seed };
+  const actor: WalkActor = { bones: body.bones, extents, params, seed: genome.seed, cache: createGaitCache() };
   return { actor, geomL, params, seed: genome.seed };
 };
 type Fixture = ReturnType<typeof actorFor>;

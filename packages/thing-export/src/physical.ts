@@ -1,9 +1,14 @@
 import type { PartDef, Resolved } from '@skelly/engine/assembly/schema.ts';
-import { add, applyPoint, extrusionPoint, scale, type Vec3 } from '@skelly/engine/foundation/math.ts';
-import { clippedExtrudedPolygonPolyhedron, polyhedronMeasures } from '@skelly/engine/shapes/geometry.ts';
+import { add, applyPoint, extrusionPoint, scale, type Transform, type Vec3 } from '@skelly/engine/foundation/math.ts';
+import {
+  boundsOfPoints,
+  clippedExtrudedPolygonPolyhedron,
+  localSolidBounds,
+  polyhedronMeasures,
+} from '@skelly/engine/shapes/geometry.ts';
 import type { Solid } from '@skelly/engine/shapes/solid.ts';
 import { modelMassKg } from '@skelly/thing-core/mass';
-import type { ModelParts } from '@skelly/thing-core/schema';
+import type { ModelBox, ModelParts } from '@skelly/thing-core/schema';
 import { partNodeName } from './glb.ts';
 
 interface VolumeProperties {
@@ -67,7 +72,22 @@ export const partProperties = (
   return { massKg: inputs.massKg, centreOfMass };
 };
 
-export const modelParts = (resolved: Resolved, inputsFor: (id: string, part: PartDef) => PhysicalInputs): ModelParts =>
+/** One axis-aligned box per solid, around its placed bounds, in the model frame's metres. */
+const collisionBoxes = (part: PartDef, placed: Transform, metresPerUnit: number): ModelBox[] =>
+  part.solids.map((solid) => {
+    const [min, max] = localSolidBounds(solid);
+    const corners = [0, 1, 2, 3, 4, 5, 6, 7].map(
+      (corner): Vec3 => [corner & 1 ? max[0] : min[0], corner & 2 ? max[1] : min[1], corner & 4 ? max[2] : min[2]],
+    );
+    const [low, high] = boundsOfPoints(corners.map((point) => applyPoint(placed, point)));
+    return { min: scale(low, metresPerUnit), max: scale(high, metresPerUnit) };
+  });
+
+export const modelParts = (
+  resolved: Resolved,
+  inputsFor: (id: string, part: PartDef) => PhysicalInputs,
+  { collision = false }: { readonly collision?: boolean } = {},
+): ModelParts =>
   Object.fromEntries(
     [...resolved.defs].map(([id, part]) => {
       const placed = resolved.placed.get(id);
@@ -83,6 +103,7 @@ export const modelParts = (resolved: Resolved, inputsFor: (id: string, part: Par
           node: partNodeName(id, instance.family),
           massKg: physical.massKg,
           centreOfMass: scale(applyPoint(placed, scale(physical.centreOfMass, 1 / unit)), unit),
+          ...(collision ? { collision: collisionBoxes(part, placed, unit) } : {}),
         },
       ];
     }),

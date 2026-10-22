@@ -54,10 +54,10 @@ before(() => {
       '## Doubled \\\\_name_',
       '## `<!-- literal -->`',
       '[^unused]:',
-      '    ## Phantom',
+      '    ## Footnote phantom',
       '    ## Duplicate',
       '<!--',
-      '## Phantom',
+      '## Comment phantom',
       '-->',
       '```md',
       '# Not an anchor',
@@ -341,7 +341,7 @@ describe('zero-drift section cues', () => {
 
   it('does not index headings in unreferenced footnotes or let them take slug suffixes', () => {
     assert.deepEqual(sections(link('target', 'docs/anchors.md#anchors')), []);
-    assert.ok(checks(sections(link('target', 'docs/anchors.md#phantom'))).includes('section'));
+    assert.ok(checks(sections(link('target', 'docs/anchors.md#footnote-phantom'))).includes('section'));
     assert.ok(checks(sections(link('target', 'docs/anchors.md#duplicate-2'))).includes('section'));
   });
 
@@ -399,8 +399,8 @@ describe('zero-drift section cues', () => {
   it('excludes headings inside HTML comments from named and slug anchors', () => {
     assert.deepEqual(sections(cue('docs/anchors.md', 'Anchors')), []);
     assert.deepEqual(sections(link('target', 'docs/anchors.md#anchors')), []);
-    assert.ok(checks(sections(cue('docs/anchors.md', 'Phantom'))).includes('section'));
-    assert.ok(checks(sections(link('target', 'docs/anchors.md#phantom'))).includes('section'));
+    assert.ok(checks(sections(cue('docs/anchors.md', 'Comment phantom'))).includes('section'));
+    assert.ok(checks(sections(link('target', 'docs/anchors.md#comment-phantom'))).includes('section'));
   });
 
   it('validates link slugs with punctuation removal, Unicode and duplicate suffixes', () => {

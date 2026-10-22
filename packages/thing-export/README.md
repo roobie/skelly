@@ -47,6 +47,12 @@ by authored mass, so a light part cannot pull the centre as much as a heavy one.
 `src/physical.ts`, `assemblyProperties`. Exported centres use the model-file frame in
 metres; authored masses use kilograms.
 
+Baked collision is one placed bounding box per solid, opted into per recipe row. Boxes
+are conservative, so a consumer may collide early but never passes through a solid, and
+they stay cheap for a solver to test. Only an export with part masses can carry them,
+because collision belongs to the parts whose mass it moves. See `src/physical.ts`,
+`collisionBoxes` and `modelParts`.
+
 Replaceable geometry belongs to the child item rather than the body's mass table. Its
 item weight stays authoritative, so neither a host-specific mount envelope nor a shared
 visual proxy can change an atom's mass. The gun table is

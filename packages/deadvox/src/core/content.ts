@@ -49,6 +49,7 @@ import {
   templateSpawnClearanceIssues,
 } from './templateSpatial.ts';
 import { compileTemplate, findPieces, pieceSize, templateLockIds, templateResolves } from './templates.ts';
+import { vehicleContentIssues } from './vehicleBlueprint.ts';
 
 export type {
   FigureDef,
@@ -416,6 +417,9 @@ const checkItemLightModel = (item: ItemDef, registry: Registry, report: Report) 
     !registry.models.get(item.model)?.emissiveMaterial
   ) {
     report('items', item.id, '.model', 'an emissive light model needs an emissive material');
+  }
+  if (item.light?.flame && item.model !== undefined && !registry.models.get(item.model)?.anchors?.flame) {
+    report('items', item.id, '.model', 'a flame light model needs a flame anchor');
   }
   if (item.light?.wornSwitch === true && !item.wearable) {
     report('items', item.id, '.light.wornSwitch', 'a worn-switch light needs a wearable component');
@@ -862,6 +866,15 @@ const checkMilitaryLoot = (registry: Registry, report: Report) => {
   }
 };
 
+/** Every leaf yields to enough strength (`DESIGN.md`, "Base building and electricity"); a container's front is its body. */
+const checkDoorBreach = (furniture: FurnitureDef, report: Report) => {
+  const leaf = !(furniture.shape && furniture.container);
+  if (leaf !== (furniture.door?.breach !== undefined)) {
+    const message = leaf ? 'a door leaf needs a breach' : "a container's front has no breach";
+    report('furniture', furniture.id, '.door.breach', message);
+  }
+};
+
 const checkDoorForcing = (registry: Registry, furniture: FurnitureDef, report: Report) => {
   const { door } = furniture;
   if (!door) {
@@ -871,6 +884,7 @@ const checkDoorForcing = (registry: Registry, furniture: FurnitureDef, report: R
   if (!material) {
     report('furniture', furniture.id, '.door.material', `no door material "${door.material}"`);
   }
+  checkDoorBreach(furniture, report);
   for (const [id, method] of Object.entries(door.methods)) {
     const path = `.door.methods.${id}`;
     if (material && !material.methods.includes(id)) {
@@ -1491,6 +1505,9 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   }
   checkScenarios(registry, report);
   for (const { section, id, path, message } of settlementCollectionIssues(registry)) {
+    report(section, id, path, message);
+  }
+  for (const { section, id, path, message } of vehicleContentIssues(registry)) {
     report(section, id, path, message);
   }
   return issues;

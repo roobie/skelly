@@ -163,7 +163,13 @@ export const fixtureScenarioSources = (
             name: 'Fixture hatch',
             size: [2, 1, 3],
             color: '#808080',
-            door: { material: 'wood', methods: {}, handlingSimSeconds: 0.2, hatch: true },
+            door: {
+              material: 'wood',
+              methods: {},
+              handlingSimSeconds: 0.2,
+              hatch: true,
+              breach: { minimumStrength: 1, toughness: 1 },
+            },
           },
           {
             id: 'fixture_crate',

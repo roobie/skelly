@@ -32,6 +32,8 @@ export interface Rect {
   z1: number;
 }
 
+export const rectsOverlap = (a: Rect, b: Rect): boolean => a.x0 < b.x1 && b.x0 < a.x1 && a.z0 < b.z1 && b.z0 < a.z1;
+
 /** Blocks from a column to a rectangle; 0 inside. */
 export const rectDistance = (r: Rect, x: number, z: number): number => cellDistance(r, x + 0.5, z + 0.5, 1);
 
