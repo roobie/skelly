@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+import baseSounds from '../src/content/base/sounds.json' with { type: 'json' };
+import baseUi from '../src/content/base/ui.json' with { type: 'json' };
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import type { ItemEconomy, LootContext, LootSpawnPoint } from '../src/core/loot.ts';
 import { simSeconds } from '../src/core/time.ts';
@@ -28,16 +29,13 @@ export const fixtureSounds = () => [
     noise: { enabled: true, radiusMetres: 10 },
   },
 ];
-const baseContent = <T>(file: string): T => JSON.parse(readFileSync(`src/content/base/${file}`, 'utf8')) as T;
 /**
  * Base content's core UI entry and the refusal sound it names: the game reads its action text from there, and
- * copying the lines into a fixture would only drift.
+ * copying the lines into a fixture would only drift. JSON imports keep this module loadable by browser proofs.
  */
 const BASE_UI = (() => {
-  const [ui] = baseContent<{ ui: [{ refusalSound: string }] }>('ui.json').ui;
-  const sound = baseContent<{ sounds: { id: string }[] }>('sounds.json').sounds.find(
-    ({ id }) => id === ui.refusalSound,
-  )!;
+  const [ui] = baseUi.ui;
+  const sound = baseSounds.sounds.find(({ id }) => id === ui!.refusalSound)!;
   return { ui: [ui], sound };
 })();
 const fixtureUi = () => structuredClone(BASE_UI);

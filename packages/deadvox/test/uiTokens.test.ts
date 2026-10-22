@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
+import baseUi from '../src/content/base/ui.json' with { type: 'json' };
 import { buildRegistry, requiredContentIssues, validateContent } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { applyUiTokens } from '../src/ui/uiTokens.ts';
@@ -26,9 +26,7 @@ interface TextTable {
 }
 const PLACEHOLDER = /\{\w+\}/;
 /** Base content's action text: its placeholders are what validation checks, so a fixture copy would only drift. */
-const baseActionText = (
-  JSON.parse(readFileSync('src/content/base/ui.json', 'utf8')) as { ui: [{ actionText: TextTable }] }
-).ui[0].actionText;
+const baseActionText = baseUi.ui[0]!.actionText as TextTable;
 const tuning = {
   id: CORE_CONTENT_IDS.coreUi,
   spacing: 1,
