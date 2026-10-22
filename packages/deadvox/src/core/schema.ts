@@ -2500,6 +2500,11 @@ const ZombieSchema = strictObject({
      * only when no way past gains ground toward its target within this reach.
      */
     wayAroundReachMetres: Positive,
+    /**
+     * The share of the ground a clear heading would gain toward its target that a slanted heading must still gain
+     * within that reach to count as a way past.
+     */
+    wayAroundMinGainFraction: Fraction,
     idleSimSeconds: SimDurationRange,
     strollSimSeconds: SimDurationRange,
     leashMetres: Positive,

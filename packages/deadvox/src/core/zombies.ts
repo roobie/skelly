@@ -760,15 +760,15 @@ const openWanderHeadings = (probe: ObstacleProbe): Vec3[] =>
   });
 /**
  * Whether a body held up along its intent can walk past what holds it: within `reachMetres`, a slanted heading still
- * gains at least a quarter of the ground toward the intent that a clear one would. A wall slides the probe along
- * itself and gains none, so a piece in a doorway or a narrow gap has no way around, and clutter in the open has.
+ * gains at least `minGainFraction` of the ground toward the intent that a clear one would. A wall slides the probe
+ * along itself and gains none, so a piece in a doorway or a narrow gap has no way around, and clutter in the open has.
  */
-const hasWayAround = (probe: ObstacleProbe, reachMetres: number): boolean =>
+const hasWayAround = (probe: ObstacleProbe, reachMetres: number, minGainFraction: number): boolean =>
   OBSTACLE_BYPASS_ANGLES.some((offset) => {
     const end = probeHeading(probe, headingAt(angleOf(probe.intent) + offset), reachMetres, WAY_AROUND_STEPS);
     const { pos } = probe.body;
     const gained = ((end[0] - pos[0]) * probe.intent[0] + (end[2] - pos[2]) * probe.intent[2]) * probe.blockSize;
-    return gained >= reachMetres * Math.cos(offset) * 0.25;
+    return gained >= reachMetres * Math.cos(offset) * minGainFraction;
   });
 const wrapAngle = (angle: number): number => Math.atan2(Math.sin(angle), Math.cos(angle));
 const approach = (current: number, target: number, amount: number): number =>
@@ -3025,7 +3025,7 @@ export class ZombieSystem {
       blockSize: scratch.blockSize,
     };
     if (
-      hasWayAround(around, type.wander.wayAroundReachMetres) ||
+      hasWayAround(around, type.wander.wayAroundReachMetres, type.wander.wayAroundMinGainFraction) ||
       !bashObstacle(this.bodyAhead(aimDirection), type.strength)
     ) {
       return;

@@ -212,6 +212,7 @@
           "max": 12,
           "min": 3
         },
+        "wayAroundMinGainFraction": 0.25,
         "wayAroundReachMetres": 2
       }
     }
