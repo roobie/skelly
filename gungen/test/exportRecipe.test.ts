@@ -79,6 +79,24 @@ it('puts every unrotated part, coarse or fine, on the fine lattice so the two gr
   expect([...seen].sort()).toEqual([fine, coarse]);
 });
 
+it('exports a voxelized sight whose up is perpendicular to its direction', () => {
+  const [exported] = loadExportRecipe([
+    {
+      id: 'fixture',
+      kind: 'design',
+      source: 'gungen/designs/archetype-ak-akm.json',
+      options: { voxelGrain: 0.004, voxelDetailGrain: 0.002 },
+    },
+  ]);
+  const { sight } = (
+    exported!.generate() as unknown as {
+      modelEntry: { gun: { sight: { direction: readonly number[]; up: readonly number[] } } };
+    }
+  ).modelEntry.gun;
+  const dot = sight.direction.reduce((sum, component, axis) => sum + component * sight.up[axis]!, 0);
+  expect(Math.abs(dot)).toBeLessThan(1e-9);
+});
+
 it('refuses a detail grain the gun grain is not a whole multiple of', () => {
   expect(() => detailExport(0.005, 0.002)).toThrow('nest');
 });

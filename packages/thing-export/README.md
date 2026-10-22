@@ -70,9 +70,12 @@ reading as one body. A part turned by a quarter turn shares the lattice too; one
 any other angle keeps its own. See `src/glb.ts`, `latticeOrigin`, and `src/voxelize.ts`,
 `voxelize`.
 
-A voxelized gun's iron-sight datum comes from the rear sight the file draws, not from the
-smooth design, because voxels move the top the player lines up on. See
-`gungen/src/gun/exportGlb.ts`, `sightMetadata`.
+A voxelized AK's sight line runs from the top of the rear sight the file draws to the top
+of the front post the file draws, not from the smooth design, because voxels move the tops
+the player lines up. Its up vector is made perpendicular to that line, since the game
+aligns the model's up to the camera's. Other sight families keep the smooth datum until a
+voxelized gun that uses one is exported. See `gungen/src/gun/exportGlb.ts`,
+`sightMetadata`.
 
 A solid thinner than the grain keeps one voxel of thickness instead of vanishing, because
 glass, blades and sheet parts are thin by design and losing them breaks the item; the cost

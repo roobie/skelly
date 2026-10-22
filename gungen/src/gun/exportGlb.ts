@@ -347,24 +347,84 @@ interface GlbSightJson {
   readonly nodes: { translation?: Vec3; rotation?: unknown; mesh?: number; extras?: { part?: string } }[];
   // biome-ignore lint/style/useNamingConvention: glTF attribute semantics are upper case
   readonly meshes: { primitives: { attributes: { POSITION: number } }[] }[];
-  readonly accessors: { max: Vec3 }[];
+  readonly accessors: { bufferView: number; byteOffset?: number; count: number }[];
+  readonly bufferViews: { byteOffset?: number }[];
 }
 
-/** Highest point of a part's drawn mesh in the model file, so a voxelized sight reports the top it actually draws. */
-const drawnTopMetres = (glb: Uint8Array, partId: string): number | undefined => {
-  const jsonLength = new DataView(glb.buffer, glb.byteOffset, glb.byteLength).getUint32(12, true);
+/**
+ * Highest point of a part's drawn mesh in the model file, so a voxelized sight reports the top it actually draws.
+ * With `halfWidthMetres`, only vertices within that distance of the bore plane count, which keeps a post's top from
+ * being read off the guard ears beside it.
+ */
+const drawnTopMetres = (glb: Uint8Array, partId: string, halfWidthMetres = Number.POSITIVE_INFINITY) => {
+  const view = new DataView(glb.buffer, glb.byteOffset, glb.byteLength);
+  const jsonLength = view.getUint32(12, true);
   const json = JSON.parse(new TextDecoder().decode(glb.subarray(20, 20 + jsonLength))) as GlbSightJson;
   const node = json.nodes.find((candidate) => candidate.extras?.part === partId);
   if (node?.mesh === undefined) {
-    return undefined;
+    return;
   }
   if (node.rotation !== undefined) {
     throw new Error(`Sight part ${partId} needs an unrotated mesh to give its drawn top`);
   }
-  const tops = json.meshes[node.mesh]!.primitives.map(
-    (primitive) => json.accessors[primitive.attributes.POSITION]!.max[1],
-  );
-  return round6((node.translation?.[1] ?? 0) + Math.max(...tops));
+  const [, shiftY = 0, shiftZ = 0] = node.translation ?? [];
+  const binStart = 20 + jsonLength + 8;
+  let top = Number.NEGATIVE_INFINITY;
+  for (const { attributes } of json.meshes[node.mesh]!.primitives) {
+    const accessor = json.accessors[attributes.POSITION]!;
+    const start = binStart + (json.bufferViews[accessor.bufferView]!.byteOffset ?? 0) + (accessor.byteOffset ?? 0);
+    for (let vertex = 0; vertex < accessor.count; vertex += 1) {
+      const at = start + vertex * 12;
+      if (Math.abs(view.getFloat32(at + 8, true) + shiftZ) <= halfWidthMetres) {
+        top = Math.max(top, view.getFloat32(at + 4, true) + shiftY);
+      }
+    }
+  }
+  return Number.isFinite(top) ? round6(top) : undefined;
+};
+
+interface AkSightLine {
+  readonly eye: Vec3;
+  readonly direction: Vec3;
+}
+
+/**
+ * The AK's sight line as the file draws it: the rear leaf's top to the front post's top, both in model metres. The post
+ * is read within twice its own width of the bore plane, which holds its top voxel column wherever the sampler put it
+ * and leaves the guard ears out. Undefined when the export is not voxelized or a part draws nothing.
+ */
+const drawnAkSightLine = (
+  voxelGlb: Uint8Array | undefined,
+  rear: { readonly id: string; readonly eye: Vec3 },
+  front: { readonly id: string; readonly tip: Vec3; readonly postHalfWidthMetres: number },
+): AkSightLine | undefined => {
+  const rearTop = voxelGlb && drawnTopMetres(voxelGlb, rear.id);
+  const frontTop = voxelGlb && drawnTopMetres(voxelGlb, front.id, 2 * front.postHalfWidthMetres);
+  if (rearTop === undefined || frontTop === undefined) {
+    return undefined;
+  }
+  const eye: Vec3 = [rear.eye[0], rearTop, rear.eye[2]];
+  return {
+    eye,
+    direction: normalize([front.tip[0] - eye[0], frontTop - eye[1], front.tip[2] - eye[2]]),
+  };
+};
+
+const akFrontSight = (resolved: Resolved) => {
+  const id = Object.entries(resolved.assembly.parts).find(([, part]) => part.family === 'front-sight')?.[0];
+  const transform = id && resolved.placed.get(id);
+  const def = id ? resolved.defs.get(id) : undefined;
+  const axis = def?.axes.find(({ kind }) => kind === 'sight');
+  const post = def?.solids.find((candidate) => candidate.id === 'post');
+  if (!(id && transform && axis && post)) {
+    throw new Error('AK rear sight needs a front-sight post to define its aim line');
+  }
+  const [low, high] = localSolidBounds(post);
+  return {
+    id,
+    tip: applyPoint(transform, axis.origin),
+    postHalfWidthMetres: ((high[2] - low[2]) / 2) * resolved.domain.units.metresPerUnit,
+  };
 };
 
 const sightMetadata = (resolved: Resolved, voxelGlb?: Uint8Array): GunModelFields['sight'] => {
@@ -385,39 +445,32 @@ const sightMetadata = (resolved: Resolved, voxelGlb?: Uint8Array): GunModelField
     ocularDiameterMetres,
   } = chosen;
   const toModel = (point: Vec3): Vec3 => modelPoint(point, resolved.domain.units.metresPerUnit);
+  const toModelDirection = (vector: Vec3): Vec3 => normalize(toFileAxes(vector));
   let direction = chosenDirection;
   let modelEye = toModel(eye);
   let aimInModel: Vec3 | undefined;
   if (sightKind === 'iron' && resolved.assembly.parts[sightId]!.family === 'ak-rear-sight') {
-    const frontId = Object.entries(resolved.assembly.parts).find(([, part]) => part.family === 'front-sight')?.[0];
-    const frontTransform = frontId && resolved.placed.get(frontId);
-    const frontSight = frontId ? resolved.defs.get(frontId) : undefined;
-    const frontAxis = frontSight?.axes.find(({ kind }) => kind === 'sight');
-    if (!(frontTransform && frontAxis)) {
-      throw new Error('AK rear sight needs a front-sight post to define its aim line');
-    }
-    const postTip = applyPoint(frontTransform, frontAxis.origin);
-    direction = normalize([postTip[0] - eye[0], postTip[1] - eye[1], postTip[2] - eye[2]]);
-    const drawnTop = voxelGlb && drawnTopMetres(voxelGlb, sightId);
-    if (drawnTop !== undefined) {
-      modelEye = [modelEye[0], drawnTop, modelEye[2]];
-      const tip = toModel(postTip);
-      aimInModel = normalize([tip[0] - modelEye[0], tip[1] - modelEye[1], tip[2] - modelEye[2]]);
+    const front = akFrontSight(resolved);
+    direction = normalize([front.tip[0] - eye[0], front.tip[1] - eye[1], front.tip[2] - eye[2]]);
+    const drawn = drawnAkSightLine(voxelGlb, { id: sightId, eye: modelEye }, { ...front, tip: toModel(front.tip) });
+    if (drawn) {
+      modelEye = drawn.eye;
+      aimInModel = drawn.direction;
     }
   }
-  const upAxis = normalize(applyDir(resolved.placed.get(sightId)!, [0, 1, 0]));
-  const upDot = upAxis[0] * direction[0] + upAxis[1] * direction[1] + upAxis[2] * direction[2];
+  const modelDirection = aimInModel ?? toModelDirection(direction);
+  const upAxis = toModelDirection(applyDir(resolved.placed.get(sightId)!, [0, 1, 0]));
+  const upDot = upAxis[0] * modelDirection[0] + upAxis[1] * modelDirection[1] + upAxis[2] * modelDirection[2];
   const up = normalize([
-    upAxis[0] - direction[0] * upDot,
-    upAxis[1] - direction[1] * upDot,
-    upAxis[2] - direction[2] * upDot,
+    upAxis[0] - modelDirection[0] * upDot,
+    upAxis[1] - modelDirection[1] * upDot,
+    upAxis[2] - modelDirection[2] * upDot,
   ]);
-  const toModelDirection = (vector: Vec3): Vec3 => normalize(toFileAxes(vector));
   return {
     kind: sightKind,
     eye: modelEye,
-    direction: aimInModel ?? toModelDirection(direction),
-    up: toModelDirection(up),
+    direction: modelDirection,
+    up,
     eyeReliefMetres: round6(eyeReliefMetres),
     ...(ocularDiameterMetres === undefined ? {} : { ocularDiameterMetres: round6(ocularDiameterMetres) }),
   };
