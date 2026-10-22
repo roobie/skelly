@@ -31,6 +31,7 @@ import { bearTrap } from './families/bearTrap.ts';
 import { block } from './families/block.ts';
 import { head, limb, torso } from './families/body.ts';
 import { coil } from './families/coil.ts';
+import { compound } from './families/compound.ts';
 import { foodPortion, stemmedFruit, woundRoll } from './families/food-medical.ts';
 import { fuse } from './families/fuse.ts';
 import { handOpener } from './families/handOpener.ts';
@@ -110,6 +111,7 @@ const builders = {
   ring,
   spool,
   coil,
+  compound,
   fuse,
   cylinder: base,
   arm,
