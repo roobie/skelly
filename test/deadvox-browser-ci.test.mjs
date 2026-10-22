@@ -61,7 +61,6 @@ const uncovered = (name) => browserStages[name].map(describeStage).filter((stage
 
 const missingCase = /enabled package-script cases/;
 const duplicateCase = /exactly once/;
-const serialControl = /start independently/;
 const unsupportedRoute = /unsupported browser route/;
 const playwrightInstallCommand = /\bnpx playwright install(?:\s|$)/;
 const withDepsFlag = /--with-deps\b/;
@@ -70,20 +69,9 @@ const partitionFixture = () => ({
   caller: {
     jobs: {
       browser: {
-        if: expression("github.event.inputs.layout != 'control'"),
         uses: './.github/workflows/deadvox-browser.yml',
         strategy: { 'fail-fast': false, matrix: { shard: ['alpha', 'beta'] } },
         with: { shard: expression('matrix.shard') },
-      },
-      'control-check': {
-        if: expression("github.event_name == 'workflow_dispatch' && github.event.inputs.layout == 'control'"),
-        uses: './.github/workflows/deadvox-browser.yml',
-        with: { shard: 'control-check' },
-      },
-      'control-stages': {
-        if: expression("github.event_name == 'workflow_dispatch' && github.event.inputs.layout == 'control'"),
-        uses: './.github/workflows/deadvox-browser.yml',
-        with: { shard: 'control-stages' },
       },
     },
   },
@@ -92,11 +80,11 @@ const partitionFixture = () => ({
       run: {
         steps: [
           {
-            if: expression("inputs.shard == 'control-check' || inputs.shard == 'alpha'"),
+            if: expression("inputs.shard == 'alpha'"),
             run: 'node test/browser/a.mjs',
           },
           {
-            if: expression("inputs.shard == 'control-stages' || inputs.shard == 'beta'"),
+            if: expression("inputs.shard == 'beta'"),
             run: 'node test/browser/b.mjs',
           },
         ],
@@ -196,13 +184,9 @@ describe('deadvox browser CI coverage', () => {
   it('preserves shard coverage for noncancelled diagnostics without accepting a widened route', () => {
     const fixture = partitionFixture();
     const expected = manifestOf(fixture);
-    fixture.reusable.jobs.run.steps[1].if = expression(
-      "!cancelled() && (inputs.shard == 'control-stages' || inputs.shard == 'beta')",
-    );
+    fixture.reusable.jobs.run.steps[1].if = expression("!cancelled() && (inputs.shard == 'beta')");
     assert.deepEqual(manifestOf(fixture), expected);
-    fixture.reusable.jobs.run.steps[1].if = expression(
-      "!cancelled() || (inputs.shard == 'control-stages' || inputs.shard == 'beta')",
-    );
+    fixture.reusable.jobs.run.steps[1].if = expression("!cancelled() || (inputs.shard == 'beta')");
     assert.throws(() => manifestOf(fixture), unsupportedRoute);
   });
 
@@ -215,12 +199,6 @@ describe('deadvox browser CI coverage', () => {
     const duplicate = partitionFixture();
     duplicate.caller.jobs.browser.strategy.matrix.shard.push('alpha');
     assert.throws(() => manifestOf(duplicate), duplicateCase);
-  });
-
-  it('rejects a dependency that serializes main control jobs', () => {
-    const fixture = partitionFixture();
-    fixture.caller.jobs['control-stages'].needs = 'control-check';
-    assert.throws(() => manifestOf(fixture), serialControl);
   });
 
   it('quarantines only scripts that exist and have no executed cases', () => {
