@@ -177,7 +177,11 @@ const PRESENTATION_ASSET_EXTENSIONS = new Set([
 const MODULE_QUERY_PATTERN = /[?#].*$/;
 const GLOB_REFERENCE = /\bimport\.meta\.glob\b/g;
 const GLOB_CALL = /\bimport\.meta\.glob(?:<[^>]*>)?\s*\(\s*(['"])(.*?)\1/g;
-const CONTENT_GLOB_PATTERNS = new Set(['../content/base/*.json', '../content/base/assets/audio/**/*.ogg']);
+const CONTENT_GLOB_PATTERNS = new Set([
+  '../content/base/*.json',
+  '../content/base/assets/audio/**/*.ogg',
+  '../config/bundled/*.json',
+]);
 const REQUIRE_CALL = /\brequire\s*\(/;
 const IMPORT_META_URL_REFERENCE = /\bimport\.meta\.url\b/g;
 const WORKER_URL_CALL = /\bnew\s+Worker\s*\(\s*new\s+URL\s*\(\s*(['"])(.*?)\1\s*,\s*import\.meta\.url\s*\)/g;
