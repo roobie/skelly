@@ -19,8 +19,8 @@ of the root package.
 - `packages/thing-core`: the shared modeling core, with no knowledge of any kind of thing.
 - `packages/thing-authoring-tool`: authors and curates the non-gun things (tools, containers,
   food, the compass and so on) on top of the core.
-- `packages/gun-authoring-tool`: authors and curates guns on top of the core; the successor
-  to `gungen/`.
+- The gun authoring tool, created in `things/WORK.md`, "Phases" (#509): authors and curates
+  guns on top of the core, and succeeds `gungen/`. Until then `gungen/` owns guns.
 - An export package above the core: writes the GLB, the model entry and each part's mass
   and centre of mass for both tools. Placing a centre of mass needs the engine's shapes, and
   deadvox loads the core, so this code needs a home deadvox doesn't load. With one writer,
