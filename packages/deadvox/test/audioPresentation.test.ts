@@ -23,12 +23,13 @@ describe('heartbeat audio presentation', () => {
     expect(heartbeatForStamina(0).gain).toBe(veryHighGain);
   });
 
-  it('is silent above the ruled start and meets the ruled rate endpoints', () => {
+  it('is silent above the start stamina and meets the tuned rate endpoints', () => {
+    const { startStamina, startHz, exhaustedHz } = HEARTBEAT_TUNING;
     expect(heartbeatForStamina(100).gain).toBe(0);
-    expect(heartbeatForStamina(86).gain).toBe(0);
-    expect(heartbeatForStamina(85).bpm).toBe(60);
-    expect(heartbeatForStamina(0).bpm).toBe(180);
-    expect(heartbeatForStamina(85).gain).toBeGreaterThan(0);
+    expect(heartbeatForStamina(startStamina + 1).gain).toBe(0);
+    expect(heartbeatForStamina(startStamina).bpm).toBeCloseTo(startHz * 60);
+    expect(heartbeatForStamina(0).bpm).toBeCloseTo(exhaustedHz * 60);
+    expect(heartbeatForStamina(startStamina).gain).toBeGreaterThan(0);
   });
 
   it('raises rate and loudness monotonically from the start to exhaustion', () => {

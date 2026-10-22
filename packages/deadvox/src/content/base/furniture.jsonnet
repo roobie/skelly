@@ -178,6 +178,7 @@ breach.breaking(shape.colliding({
       "name": "Gun rack",
       "size": [2, 4, 1],
       "color": "#494b4e",
+      "appearance": { "kind": "rack", "surface": "wood" },
       "container": {
         "pockets": [
           {

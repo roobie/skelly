@@ -4,7 +4,7 @@ read_if:
   - "you're changing the crawler's body-plan or gait constraints"
   - "you're changing the dog shambler's body-plan or gait constraints"
   - "you're reviewing the amalgam's visual quality pass in #378"
-  - "you're changing the Mobgen/Deadvox boundary or the amalgam movement-cost trade-off in #574"
+  - "you're changing the Mobgen/Deadvox boundary or the amalgam's movement-cost trade-off"
   - "you're marking a template ready or comparison-only"
   - "you change the crowd gore-mask encoding"
   - "you change template materials or coarse skeletal material assignment"
@@ -57,6 +57,6 @@ Mobgen supplies the generated body used by Deadvox collision, hit regions and re
 
 The Mobgen viewer keeps the amalgam static because arbitrarily oriented member heads have no single humanoid gaze target. Do not enable its gaze solver until it can resolve each member's head transform. See `src/viewer/main.ts`, `applyLiveFrame`, `src/mob/amalgam.ts`, and `src/mob/lookAt.ts`, `lookAtPose`.
 
-Issue #378 tracks the open visual-quality pass; the approved body remains a proposal for that judgment, not a fixed gameplay or encounter rule. Issue #574 tracks the remaining movement-cost question for the generated shape in snug corridors. See `packages/deadvox/src/core/amalgamShape.ts`, `AmalgamShape`.
+Issue #378 tracks the open visual-quality pass; the approved body remains a proposal for that judgment, not a fixed gameplay or encounter rule. The generated shape's movement cost is held to the budget in `packages/deadvox/DESIGN.md`, "Exact collision"; see `packages/deadvox/src/core/amalgamShape.ts`, `AmalgamShape`.
 
 Population-quality assertions belong in explicit sweeps because they measure distributions, not an individual actor's contract. See `test/sweeps.ts`, `sweepGroup`, `test/generate.test.ts` and `src/cli/stats.ts`.

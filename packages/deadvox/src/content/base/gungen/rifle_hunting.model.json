@@ -37,7 +37,7 @@
     "rear-sight": {
       "node": "rear-sight:sporting-rear-sight",
       "massKg": 0.035,
-      "centreOfMass": [0.07500000000000001, 0.017, 7.13649488151708e-18]
+      "centreOfMass": [0.075, 0.016789473684210524, 7.289527044621466e-18]
     },
     "receiver": {
       "node": "receiver:receiver",
