@@ -4,6 +4,7 @@ export function assertBrowserResult({ layout, needs, priorAttempts }) {
   }
   const expected = {
     fast: layout === 'control' ? 'skipped' : 'success',
+    unit: layout === 'control' ? 'skipped' : 'success',
     browser: layout === 'control' ? 'skipped' : 'success',
     'control-check': layout === 'sharded' ? 'skipped' : 'success',
     'control-stages': layout === 'sharded' ? 'skipped' : 'success',
