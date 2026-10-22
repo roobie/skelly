@@ -557,16 +557,17 @@ describe('static reachability', () => {
   it('requires the quality level, while allowing an independently found result to supply its own tool', () => {
     const registry = fresh();
     registry.recipes.clear();
+    registry.items.get('hammer')!.tool = { qualities: { fixture_pounding: 2 } };
     registry.recipes.set('candle', {
       id: 'candle',
       result: { item: 'hammer', count: 1 },
       timeGameMinutes: gameMinutes(1),
       skills: {},
-      qualities: { hammering: 3 },
+      qualities: { fixture_pounding: 3 },
       components: [[{ item: 'rag', count: 1 }]],
     });
-    expect(checkReachability(registry).issues.map((issue) => issue.path)).toEqual(['.qualities.hammering']);
-    registry.recipes.get('candle')!.qualities.hammering = 2;
+    expect(checkReachability(registry).issues.map((issue) => issue.path)).toEqual(['.qualities.fixture_pounding']);
+    registry.recipes.get('candle')!.qualities.fixture_pounding = 2;
     expect(checkReachability(registry).issues).toEqual([]);
   });
 
