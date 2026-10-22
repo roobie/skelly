@@ -193,7 +193,7 @@ zombie types, hordes, input replay and authored playtest map are planned there.
 
 ### 4a. Gauntlet
 
-- The gauntlet game mode (#671).
+- The gauntlet game mode (#671); playtest 2 runs on it at this slice's end.
 - Room types choose furniture and loot.
 - Voxel light: interiors pitch black at night and dim by day. Light through
   windows and doors can be seen from outside.
@@ -258,8 +258,7 @@ same vehicle systems for field salvage. The motorbike follows the four-wheel loo
 
 ### Sound polish
 
-The accepted recordings are approved. The placeholders and rejected or deferred
-work below are open, including a better fist hit, a
+The placeholders and rejected or deferred work below are open, including a better fist hit, a
 hard-landing-specific sound, a distinct stuck-door cue and replacement mud/stone
 footsteps.
 
@@ -304,7 +303,8 @@ Q and E remain reserved for later actions and have no world bindings.
 
 - Items carried in clothing can be damaged when that clothing is hit.
 - Condition can affect an item's performance before it is ruined.
-- Books teach recipes only.
+- Books teach recipes only, for now; they may also speed up skill practice in a
+  later reading design.
 - Learning from books will become gradual: reading lets the player use the book
   as a reference while doing the work, until the recipe is learned fully.
 - Condition may lower salvage yield.
@@ -346,7 +346,7 @@ qualities, the body model, saves, dark nights and sound. They are the game.
    its end.
 3. **Playtest:** at least 3 people play on their own with no scripted session, and
    the build logs local metrics. The first real playtest is at the end of Slice 3
-   (Playtest plan above).
+   (`EPIC.md`, "Playtest plan").
 4. **Review the slice:** run the exit consolidation surveys and report the
    process metrics: findings and their dispositions, per-item line/site changes,
    regressions including review-caught defects, standalone/folded capacity,

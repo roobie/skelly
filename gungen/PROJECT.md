@@ -59,4 +59,4 @@ Until a gun's parts become items (`../things/WORK.md`, "Phases"), each body part
 
 Revolvers use independently mounted moving parts and a separate rotational export contract so the linear carrier contract stays focused; see `docs/revolver-export.md` and `src/gun/revolverExport.ts`, `RevolverMetadata`.
 
-Cross-project checks protect this boundary. Attachment typechecking and tests traverse Deadvox and Mobgen imports, so their aliases remain part of Gungen's check graph; see `tsconfig.json`, `paths` and `vite.config.ts#resolve.alias`.
+Cross-project checks protect this boundary. Attachment typechecking and tests traverse Deadvox and Mobgen imports, so their aliases remain part of Gungen's check graph; see `tsconfig.json`, `paths` and `vite.config.ts`, `alias`.
