@@ -1,6 +1,15 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { CircleGeometry, Group, Mesh, PerspectiveCamera, Vector3 } from 'three';
+import {
+  BoxGeometry,
+  CircleGeometry,
+  Group,
+  Mesh,
+  MeshBasicMaterial,
+  type Object3D,
+  PerspectiveCamera,
+  Vector3,
+} from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { Registry } from '../src/core/content.ts';
 import { compassBearing } from '../src/core/coords.ts';
@@ -11,7 +20,7 @@ import { magazineWellCalibre } from '../src/core/magazine.ts';
 import { FirearmMechanics, firearmHandlingFor } from '../src/game/firearmHandling.ts';
 import { Unpacking } from '../src/game/unpacking.ts';
 import { type HeldHandlingFrame, HeldItems } from '../src/render/hands.ts';
-import type { ModelLibrary } from '../src/render/models.ts';
+import { type ModelLibrary, prepareModel } from '../src/render/models.ts';
 import { RUMMAGE_POSE, rummageFrame } from '../src/render/rummagePose.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { firearmsSkillSource, playerInventorySource } from './fixtures/playerInventory.ts';
@@ -54,7 +63,12 @@ if (issues.length > 0) {
   throw new Error(JSON.stringify(issues));
 }
 
-const fixture = (type: string, checkState: (before: unknown, after: unknown) => void, content: Registry = registry) => {
+const fixture = (
+  type: string,
+  checkState: (before: unknown, after: unknown) => void,
+  content: Registry = registry,
+  heldRoot: () => Object3D = () => new Group(),
+) => {
   const inventory = new Inventory(content);
   const queue = new HandlingQueue(inventory);
   const unpacking = new Unpacking(inventory, queue, () => [0, 0, 0]);
@@ -73,7 +87,8 @@ const fixture = (type: string, checkState: (before: unknown, after: unknown) => 
   }
   const models = {
     version: 0,
-    heldLook: () => ({ root: new Group(), parts: [], slots: {} }),
+    has: () => true,
+    heldLook: () => ({ root: heldRoot(), parts: [], slots: {} }),
   } as unknown as ModelLibrary;
   const held = new HeldItems(inventory, models, { skin: '#bbaa99', shirt: '#556677', trousers: '#334455' });
   const camera = new PerspectiveCamera();
@@ -198,14 +213,27 @@ it('held-display capability selects the raised compass display and rummage grip 
             category: 'misc',
             weight: 17,
             size: [1, 1],
+            model: 'fixture_display_model',
             heldDisplay: 'compass',
           },
           { id: 'fixture_plain', name: 'Plain fixture', category: 'misc', weight: 17, size: [1, 1] },
+        ],
+        models: [
+          {
+            id: 'fixture_display_model',
+            file: 'assets/models/compass.glb',
+            display: { at: [0, 0.005, 0], normal: [0, 1, 0], up: [0, 0, -1] },
+            // biome-ignore lint/style/useNamingConvention: model anchors use content Ids.
+            anchors: { needle_mount: [0, 0.005, 0] },
+          },
         ],
       },
     },
   ]);
   expect(content.issues).toEqual([]);
+  // A slab whose top face is the screen stands in for the loaded model file.
+  const slab = new Mesh(new BoxGeometry(0.04, 0.01, 0.06), new MeshBasicMaterial());
+  const displayModel = content.registry.models.get('fixture_display_model')!;
   const plain = fixture('fixture_plain', (before, after) => expect(after).toEqual(before), content.registry);
   expect(plain.inventory.move(plain.item, { kind: 'pile', pos: [2, 0, 0] }).ok).toBe(true);
   const plainEmpty = plain.project();
@@ -221,7 +249,12 @@ it('held-display capability selects the raised compass display and rummage grip 
   expect(plainDial).toBeUndefined();
   plain.held.dispose();
 
-  const f = fixture('fixture_display', (before, after) => expect(after).toEqual(before), content.registry);
+  const f = fixture(
+    'fixture_display',
+    (before, after) => expect(after).toEqual(before),
+    content.registry,
+    () => prepareModel(displayModel, slab).held,
+  );
   expect(f.inventory.move(f.item, { kind: 'pile', pos: [2, 0, 0] }).ok).toBe(true);
   const empty = f.project();
   expect(f.inventory.move(f.item, { kind: 'hand', side: 'right' }).ok).toBe(true);
@@ -238,11 +271,26 @@ it('held-display capability selects the raised compass display and rummage grip 
   const viewLocal = (position: Vector3) => position.clone().applyQuaternion(f.camera.quaternion.clone().invert());
   const attachment = (wrist: Vector3) => viewLocal(device.getWorldPosition(new Vector3()).sub(wrist));
   const restAttachment = attachment(rest.wrists[0]!);
+  // How far the eye and the wrist lie along the screen's facing: the eye in front and the hand behind.
+  const sightLine = (wrist: Vector3) => {
+    const screen = device.getWorldPosition(new Vector3());
+    const facing = device.getWorldDirection(new Vector3());
+    return {
+      eye: facing.dot(f.camera.position.clone().sub(screen).normalize()),
+      hand: facing.dot(wrist.clone().sub(screen)),
+    };
+  };
+  const restSight = sightLine(rest.wrists[0]!);
+  expect(restSight.eye).toBeGreaterThan(0.99);
+  expect(restSight.hand).toBeLessThan(0);
   expect(f.queue.enqueue(f.item, { kind: 'pile', pos: [2, 0, 0] }).ok).toBe(true);
   f.queue.tick(Math.min(f.queue.remaining / 8, RUMMAGE_POSE.transitionSeconds / 4));
   f.camera.rotation.y = -Math.PI / 3;
   const first = f.project();
   expect(first.separation).toBeLessThan(rest.separation);
+  const firstSight = sightLine(first.wrists[0]!);
+  expect(firstSight.eye).toBeGreaterThan(0);
+  expect(firstSight.hand).toBeLessThan(0);
   const firstWeight = rummageFrame(f.inventory, f.queue.jobs[0])!.weight;
   expect(firstWeight).toBeGreaterThan(0);
   expect(firstWeight).toBeLessThan(1);
@@ -255,6 +303,9 @@ it('held-display capability selects the raised compass display and rummage grip 
   const secondWeight = rummageFrame(f.inventory, f.queue.jobs[0])!.weight;
   expect(secondWeight).toBeGreaterThan(firstWeight);
   expect(attachment(second.wrists[0]!).distanceTo(restAttachment)).toBeLessThan(1e-12);
+  const secondSight = sightLine(second.wrists[0]!);
+  expect(secondSight.eye).toBeGreaterThan(0);
+  expect(secondSight.hand).toBeLessThan(0);
   expect(pointer!.rotation.z).toBeCloseTo(compassBearing(f.camera.rotation.y) * (Math.PI / 180), 12);
   const secondGrip = viewLocal(second.wrists[0]!);
   // X has no wave: each weighted displacement must start at the observed raised grip.
