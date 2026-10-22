@@ -31,4 +31,4 @@ Keeping the simulation as plain data separate from rendering supports pause, tim
 
 ## Consequences
 
-Vehicle physics, animation and audio remain project work; Rapier is a candidate, not a selected dependency. GitHub Pages cannot set response headers, as noted in [CHALLENGES.md](../../CHALLENGES.md).
+Vehicle physics, animation and audio remain project work; Rapier is a candidate, not a selected dependency. GitHub Pages cannot set response headers.

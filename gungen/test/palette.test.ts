@@ -52,7 +52,7 @@ describe('palette coverage', () => {
     }
   });
 
-  it('never needs the fallback for any solid of any fixture or design', { timeout: 10_000 }, () => {
+  it('never needs the fallback for any solid of any fixture or design', () => {
     const solids = renderedSolids(loadCorpus(() => true).map(({ assembly }) => assembly));
     expect(solids.length).toBeGreaterThan(0);
     const fallback = srgbToHex(GUN_PALETTE.fallbackColor);

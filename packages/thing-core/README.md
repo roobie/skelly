@@ -47,6 +47,10 @@ reasons and `things/WORK.md`, "Phases" for the remaining suite work.
   `src/schema.ts`, `ModelPartSchema`; `src/mass.ts`, `modelMassKg`; and
   `things/WORK.md`, "Decisions". Consumers must not count baked replaceable geometry and
   its child item twice; see `packages/deadvox/src/core/modelMass.ts`, `modelBodyMassKg`.
+- Baked collision and named anchors are neutral because any consumer that places a thing
+  needs its solid extent and its attachment points, whatever kind of thing it is. A part's
+  collision travels with its mass, so a consumer never pairs one export's boxes with
+  another's mass. See `src/schema.ts`, `ModelBoxSchema` and `ModelPartSchema`.
 
 Helper tests preserve the same dependency direction as production code: physical
 conservation is checked above the core rather than importing the exporter into it. See

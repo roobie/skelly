@@ -1,0 +1,7 @@
+{
+  "id": "painkillers",
+  "file": "assets/models/painkillers.glb",
+  "grip": { "at": [0, 0.026999999999999996, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

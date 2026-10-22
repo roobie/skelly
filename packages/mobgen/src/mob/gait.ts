@@ -18,7 +18,22 @@
 // k (executed by sideForStep(k)) — see legAndFootRotations for how neighbouring steps' plans combine.
 
 import type { Bone } from '../core/body.ts';
-import { add, applyPoint, type Mat3, mulMM, mulMV, rotX, rotY, rotZ, sub, transpose, type Vec3 } from '../core/math.ts';
+import {
+  add,
+  applyPoint,
+  clamp,
+  hermite,
+  type Mat3,
+  mulMM,
+  mulMV,
+  rotX,
+  rotY,
+  rotZ,
+  smoothstep,
+  sub,
+  transpose,
+  type Vec3,
+} from '../core/math.ts';
 import { blendPose, boneTransforms, type EulerDeg, type Pose } from '../core/pose.ts';
 import { cellIndex, type Voxels, worldPosition } from '../core/voxelize.ts';
 import { FEET_BONES, type HumanoidParams } from './humanoid.ts';
@@ -27,9 +42,6 @@ import { createStepPlanMemo, type StepPlan, type StepPlanMemo, stepPlanFor } fro
 const TAU = Math.PI * 2;
 const toDeg = (rad: number): number => (rad * 180) / Math.PI;
 const toRad = (deg: number): number => (deg * Math.PI) / 180;
-const clamp = (x: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, x));
-/** Smooth 0->1 ease with zero slope at both ends (3x²-2x³). */
-const smoothstep = (x: number): number => x * x * (3 - 2 * x);
 // Smooth minimum of a whole list at once (log-sum-exp): exact min at smoothing=0, otherwise undershoots by
 // smoothing*ln(#values within ~smoothing of the true min) — bounded and *not* per-pair-cumulative, unlike
 // folding a pairwise smooth-min across many corners one at a time (tried first: a foot's own rest-box
@@ -259,23 +271,6 @@ const stanceFootTarget = (t: number, len: number, lateralX: number, geom: FootGe
 };
 
 const HERMITE_H = 1e-4; // step for the numeric d/dt of stanceFootTarget at its own endpoints
-
-interface Keyframe {
-  readonly value: number;
-  readonly slope: number;
-}
-
-/** Cubic Hermite basis: k0 at t=0, k1 at t=1. */
-const hermite = (t: number, k0: Keyframe, k1: Keyframe): number => {
-  const t2 = t * t;
-  const t3 = t2 * t;
-  return (
-    (2 * t3 - 3 * t2 + 1) * k0.value +
-    (t3 - 2 * t2 + t) * k0.slope +
-    (-2 * t3 + 3 * t2) * k1.value +
-    (t3 - t2) * k1.slope
-  );
-};
 
 /** Central-difference d/dt of stanceFootTarget at t, extending slightly past [0,1] — safe since each
  * branch's formula is just a smooth polynomial in t past its nominal domain. */
@@ -726,8 +721,7 @@ const legAndFootRotations = (ctx: GaitContext): LegResult => {
   const hipWidthTotal = legR.thigh.head[0] - legL.thigh.head[0];
   const widthExtra = stepWidthExtra(params, hipWidthTotal);
   // The step's *base* (stagger-free) landing X — used for the sway amplitude below, so a stagger's own
-  // drift never inflates it (it used to read the full, stagger-included landing X; the inflation was not
-  // measured, 596311a records only that the sway is now taken from the centreline between the feet).
+  // drift never inflates it (the sway is taken from the centreline between the feet).
   const baseFootX = (side: Side): number => legFor(side).thigh.head[0] + widthSign(side) * widthExtra;
   // Limit crossover: even a stagger's own inward jitter can't pull this foot's *world* X past
   // MIN_WORLD_OUTWARD off-centre — swingFootTarget's Hermite has zero slope at both ends (see its own
@@ -906,16 +900,13 @@ const legAndFootRotations = (ctx: GaitContext): LegResult => {
     // just out of it): solving rotZ(θ)·(0, yb, lz-hipZ) = (vx, ly-hipY, lz-hipZ) for θ and yb gives an
     // exact (non-iterative) fix — yb = -hypot(vx, ly-hipY), θ = atan2(vx, hipY-ly) — so the 2-bone solve
     // below targets yb, not ly directly, and ends up exactly on target once abducted. (No division:
-    // hypot/atan2 stay well-behaved even as the lever arm shrinks, unlike the plain asin(vx/yPrime) this
-    // replaced.)
+    // hypot/atan2 stay well-behaved even as the lever arm shrinks.)
     const vx = target.x - hipShift[0] - rootX;
     const vy = ly - thigh.head[1];
     // This rig's own thigh/shin rest vectors already lean inward (hip wider than ankle) — nativeX is that
     // fixed lateral offset (rotX, used for the sagittal bend, never touches X, so it survives any bend
-    // angle unchanged). The old formula implicitly assumed nativeX = 0 — fine while abduction only had to
-    // cancel yaw (tiny), but the wider base's routine, larger lateral targets exposed a real gap between
-    // the intended and actual placement (sideways foot targets ended up to 16 cm short, per 596311a). Solving rotZ(θ)·(nativeX, yPrime) = (vx, vy)
-    // for θ and yPrime generalizes the old (nativeX=0) closed form exactly.
+    // angle unchanged). Ignoring it leaves sideways foot targets short once the wider base makes lateral
+    // targets large. Solve rotZ(θ)·(nativeX, yPrime) = (vx, vy) for θ and yPrime.
     const nativeX = shin.tail[0] - thigh.head[0];
     const yPrime = -Math.sqrt(Math.max(vx * vx + vy * vy - nativeX * nativeX, 0));
     const abductionDeg = toDeg(Math.atan2(vy, vx) - Math.atan2(yPrime, nativeX));
@@ -926,7 +917,7 @@ const legAndFootRotations = (ctx: GaitContext): LegResult => {
     const shinDelta = shinAbs - restAngleDeg(shin) - thighDelta;
     // Cancel pelvis Z-roll (swing-hip drop, see walkPose) here too: it's a rotZ term, same axis as
     // abduction, so cancelling it is just subtracting it from that same angle — pelvisR ∘ thighR then
-    // reduces to the same rotX(roll) ∘ rotZ(abduction) ∘ rotX(bend) as before, algebraically unchanged.
+    // reduces to rotX(roll) ∘ rotZ(abduction) ∘ rotX(bend).
     const thighR = mulMM(mulMM(rotY(-ctx.yawDeg), rotZ(abductionDeg - ctx.pelvisZRollDeg)), rotX(thighDelta));
     const shinR = rotX(shinDelta);
     // Keep the foot level in *world* space: undo pelvis(roll+yaw) ∘ thigh ∘ shin exactly, by matrix

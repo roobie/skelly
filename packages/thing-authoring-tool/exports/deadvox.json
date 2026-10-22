@@ -1,102 +1,454 @@
 [
   {
-    "id": "tape_roll",
-    "kind": "item",
-    "source": "electrical_tape"
-  },
-  {
-    "id": "thread_spool",
-    "kind": "item",
-    "source": "sewing_thread"
-  },
-  {
-    "id": "cord_coil",
-    "kind": "item",
-    "source": "nylon_cord"
-  },
-  {
-    "id": "fuse",
-    "kind": "item",
-    "source": "fuse"
-  },
-  {
-    "id": "desk_lamp",
-    "kind": "item",
-    "source": "dead_desk_lamp"
-  },
-  {
     "id": "canned_beans",
     "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
     "source": "canned_beans"
   },
   {
     "id": "canned_soup",
     "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
     "source": "canned_soup"
   },
   {
     "id": "crackers",
     "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
     "source": "crackers"
   },
   {
     "id": "chocolate_bar",
     "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
     "source": "chocolate_bar"
   },
   {
     "id": "soda_can",
     "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
     "source": "soda_can"
   },
   {
     "id": "water_bottle",
     "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
     "source": "water_bottle"
   },
   {
     "id": "juice_carton",
     "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
     "source": "juice_carton"
   },
   {
     "id": "cartridge_box_308_h_winchester",
     "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
     "source": "cartridge_box_308_h_winchester"
   },
   {
     "id": "cartridge_box_5_d_56x45",
     "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
     "source": "cartridge_box_5_d_56x45"
   },
   {
     "id": "cartridge_box_7_d_62x39",
     "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
     "source": "cartridge_box_7_d_62x39"
   },
   {
     "id": "cartridge_box_357_h_magnum",
     "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
     "source": "cartridge_box_357_h_magnum"
   },
   {
     "id": "shotshell_box",
     "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
     "source": "shotshell_box"
   },
   {
     "id": "ammo_can",
     "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
     "source": "ammo_can"
   },
   {
     "id": "jerry_can",
     "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
     "source": "jerry_can"
   },
   {
     "id": "gas_canister",
     "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
     "source": "gas_canister"
+  },
+  {
+    "id": "opened_beans",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "opened_beans"
+  },
+  {
+    "id": "opened_soup",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "opened_soup"
+  },
+  {
+    "id": "empty_can",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "empty_can"
+  },
+  {
+    "id": "can_opener",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "can_opener"
+  },
+  {
+    "id": "aa_battery",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "aa_battery"
+  },
+  {
+    "id": "rag",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "rag"
+  },
+  {
+    "id": "duct_tape",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "duct_tape"
+  },
+  {
+    "id": "nails",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "nails"
+  },
+  {
+    "id": "scrap_metal",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "scrap_metal"
+  },
+  {
+    "id": "stick",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "stick"
+  },
+  {
+    "id": "wax",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "wax"
+  },
+  {
+    "id": "wooden_plank",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "wooden_plank"
+  },
+  {
+    "id": "field_patch",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "field_patch"
+  },
+  {
+    "id": "beans",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "beans"
+  },
+  {
+    "id": "soup",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "soup"
+  },
+  {
+    "id": "apple",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "apple"
+  },
+  {
+    "id": "bandage",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "bandage"
+  },
+  {
+    "id": "antiseptic",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "antiseptic"
+  },
+  {
+    "id": "antibiotics",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "antibiotics"
+  },
+  {
+    "id": "painkillers",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "painkillers"
+  },
+  {
+    "id": "codeine",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "codeine"
+  },
+  {
+    "id": "morphine",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "morphine"
+  },
+  {
+    "id": "frag_grenade",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "frag_grenade"
+  },
+  {
+    "id": "torch",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "torch"
+  },
+  {
+    "id": "candle",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "candle"
+  },
+  {
+    "id": "dead_desk_lamp",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "dead_desk_lamp"
+  },
+  {
+    "id": "shambler_torso",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "shambler_torso"
+  },
+  {
+    "id": "shambler_head",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "shambler_head"
+  },
+  {
+    "id": "shambler_left_arm",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "shambler_left_arm"
+  },
+  {
+    "id": "shambler_right_arm",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "shambler_right_arm"
+  },
+  {
+    "id": "shambler_left_leg",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "shambler_left_leg"
+  },
+  {
+    "id": "shambler_right_leg",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "shambler_right_leg"
+  },
+  {
+    "id": "car_battery",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "car_battery"
+  },
+  {
+    "id": "car_headlamp",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "car_headlamp"
+  },
+  {
+    "id": "hatchback_battery_tray",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_battery_tray"
+  },
+  {
+    "id": "pickup_battery_tray",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "pickup_battery_tray"
+  },
+  {
+    "id": "tape_roll",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "electrical_tape"
+  },
+  {
+    "id": "thread_spool",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "sewing_thread"
+  },
+  {
+    "id": "cord_coil",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "nylon_cord"
+  },
+  {
+    "id": "fuse",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "fuse"
+  },
+  {
+    "id": "bear_trap",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "bear_trap"
   }
 ]

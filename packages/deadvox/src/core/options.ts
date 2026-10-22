@@ -1,4 +1,5 @@
 // Item action availability. Views display these plans; commands revalidate at completion.
+// The to-hands and quickbar commands also enqueue their handling jobs here, so a refusal reaches the caller as text.
 
 import type { BlockEntity, DoorOperation } from './blockEntities.ts';
 import { dominantSide, offSide } from './character.ts';
@@ -86,7 +87,7 @@ export interface UseOption {
   kind: 'use';
   label: string;
   plan: Plan;
-  operation?: 'consume' | 'switch' | 'battery' | 'canister' | 'read';
+  operation?: 'consume' | 'switch' | 'battery' | 'canister' | 'read' | 'trap';
   light?: Item;
   battery?: Item;
   tool?: Item;
@@ -316,6 +317,24 @@ const goneReason = (def: ItemDef, name: string): string => {
   return def.canister ? "The cartridge isn't there any more" : `Take the ${name} in your hands first`;
 };
 
+/** A trap lying set is disarmed where it lies; an unset one is set from the hands. */
+const trapOption = (
+  item: Item,
+  at: NonNullable<ReturnType<Inventory['locate']>>,
+  inventory: Inventory,
+  { disarmSimSeconds, setSimSeconds }: { disarmSimSeconds: number; setSimSeconds: number },
+): UseOption => {
+  if (item.trap) {
+    return item.trap.state === 'armed'
+      ? { kind: 'use', label: 'Disarm', operation: 'trap', plan: swapPlan(disarmSimSeconds) }
+      : refuseUse("It's shut on a leg");
+  }
+  const refusal = useLocationRefusal(item, at, inventory);
+  return refusal
+    ? refuseUse(refusal)
+    : { kind: 'use', label: 'Set it', operation: 'trap', plan: swapPlan(setSimSeconds) };
+};
+
 /** Eligibility only: effects remain in the domain command owner. */
 export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   const inv = view.player.inventory;
@@ -334,6 +353,9 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   }
   if (def.canister) {
     return canisterOption(item, inv);
+  }
+  if (def.trap) {
+    return trapOption(item, at, inv, def.trap);
   }
   const locationRefusal = useLocationRefusal(item, at, inv);
   if (locationRefusal) {
@@ -448,7 +470,7 @@ const queueQuickbarStows = (
 };
 
 /** Quickbar tap: stow what fits without dropping anything, then take only with free hands. */
-export const quickbarTake = (inv: Inventory, queue: HandlingQueue, item: Item, _feet: Vec3): string | undefined => {
+export const quickbarTake = (inv: Inventory, queue: HandlingQueue, item: Item): string | undefined => {
   const def = defOf(inv.registry, item.type);
   const side = quickbarHand(inv, item);
   const needs: HandSide[] = def.twoHanded ? [...SIDES] : [side];

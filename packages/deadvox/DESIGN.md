@@ -13,6 +13,7 @@ read_if:
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry and put down, or how stacks settle
   - you're changing the rules for time, survival, light or zombies
+  - you're implementing electricity networks, energy balance or appliance power history
   - you're implementing the authored gauntlet arrangement, scenario admission, composed route certificates, shared city planning, portal proofs, underground lab depth, the sewer route or its visual approval gate
   - you author lab equipment bays, curated storeys or supported descent lids
   - you change sleep onset, its tuning or cancellation
@@ -27,6 +28,7 @@ read_if:
   - you're changing the derived day phases that drive the sky, zombie sight, hordes or spawn words
   - you change shambler attention, movement, obstacle response or floor-transition behavior
   - you're changing loaded-distance simulation or the horde representation
+  - you're authoring scenario event rules or changing when they fire or what they release
   - you're restructuring the per-tick zombie simulation
   - you're authoring decals or scenario outbreak age
   - you're changing worn layers, armour protection or item wear
@@ -50,6 +52,7 @@ read_if:
   - you're designing or building holding breath to steady aim
   - you're changing firearm attachments, nested item slots or their save behavior
   - you change which item or model mass is authoritative
+  - you author item models or decide how medicine quantities should look
   - you're changing military progression, loot economy admission or loot unit planning, ground supply or roll-once persistence, including debug overlays
   - you're changing firearm case ejection, landing, or save presentation
   - you're diagnosing or changing inventory stalls from firearm attachment candidate discovery
@@ -342,8 +345,24 @@ Leaving or reloading a live save-backed game asks the browser to confirm when it
 
 Uniform chunks keep the memory cost of the voxel world manageable. Saves use
 stable block names because runtime ids depend on the loaded content pack, and
-store only differences from seeded generation so unchanged terrain can be
-recreated. See `src/core/world.ts` and `src/core/saveFormat.ts`.
+store unchanged terrain only as the seed, so it can be recreated; a changed
+column is stored whole (`DESIGN.md`, "Edits persist"). See `src/core/world.ts`
+and `src/core/saveFormat.ts`.
+
+### Edits persist
+
+A block or piece the player removes never comes back, and one they place stays, when its
+column is generated again or the game is reloaded. Base building takes placed and
+authored pieces apart for resources and places a great many blocks and pieces, so a
+removal that undid itself would duplicate resources and erase the player's work, and
+keeping edits must stay cheap at that scale.
+
+A column is furnished once, and its pieces are then saved state, kept in memory for the
+session, so a removed piece has nothing to return from. A column whose blocks have
+changed is saved whole from then on, and its chunks stay in memory for the session, so
+it is never rebuilt from the seed; unchanged columns regenerate. The save is one
+compressed record. See `src/game/session.ts`, `rolledColumns`; `src/core/world.ts`,
+`World`; and `src/core/saveFormat.ts`, `encodeSave`.
 
 ### Block entities
 
@@ -1088,8 +1107,17 @@ and leaves the empty can where eating occurred. See `src/core/schema.ts`,
 Can vessels are inventory atoms because opening and eating retain one vessel,
 not a disassemblable set of parts. Sharing filled-package geometry must not impose
 its mass on an empty vessel; shell and food tuning must remain independent. See `src/content/base/models-items.jsonnet`, `models`,
-`src/content/base/items-food.libsonnet`, `canShellGrams`, and
+`src/content/base/items-food.libsonnet`, `canShellGrams`,
+`packages/thing-authoring-tool/cans.libsonnet`, `shellMassKg`, and
 `src/core/items.ts`, `typeWeightGrams` and `weightOf`.
+
+An opened vessel must read as opened even after its food is gone, so the lid
+stays attached and raised rather than relying on a food surface or an item name.
+The dedicated opener needs the silhouette of a hand tool rather than a storage
+bundle. These are visual distinctions, not extra inventory parts or mass sources.
+See `packages/thing-authoring-tool/cans.libsonnet`, `items`, and
+`packages/thing-authoring-tool/src/families/openTin.ts`, `openTin`, and
+`packages/thing-authoring-tool/src/families/handOpener.ts`, `handOpener`.
 
 Crafting, repair, disassembly, and reading gather required items from reachable
 hands, worn storage, piles, and furniture when the action starts. Gathering is
@@ -1158,19 +1186,29 @@ quickbar use.
 
 ### Piles and item models
 
-Ground items form piles. A modeled item keeps its own look in the pile; an item
-without a model is shown as a generic bundle. Portable papers use flat paper models,
-not standing furniture, so their appearance agrees with ordinary pickup and carrying.
-Author item models at rest in metres, with the long side along x. See
-`src/content/base/models-items.jsonnet` and `docs/readables.md`.
-Spent cases read as loose debris,
-not stacked material. See `PILE_DISPLAY_KIND` in `src/core/schema.ts`.
+Ground presentation preserves an item's identity rather than making distinct
+objects read as the same bundle. Portable papers use flat paper models, not
+standing furniture, so their appearance agrees with ordinary pickup and carrying.
+Spent cases read as loose debris, not stacked material. See
+`src/render/piles.ts`, `PileMeshes`, `src/core/schema.ts`, `PILE_DISPLAY_KIND`,
+and `docs/readables.md`.
 
 Pile meshes and presentation endpoints use the same current display projection.
 It accounts for active arc hides and gives scatter items their displayed pose, so
 an endpoint remains joined to the visible pile when another throw overlaps or
 scatter is involved. See `src/core/pileDisplay.ts`, `effectivePileDisplay` and
 `effectivePileItemPosition`.
+
+Pill medicines show a blister strip or bottle regardless of stack size, including
+when one item is one pill. A pack is easier to see and reads as medicine; the
+visual pack does not change dose counts or carried mass. See
+`packages/thing-authoring-tool/food-medical.libsonnet`, `bottle`, and
+`src/content/base/items-other.libsonnet`, `pillPack`.
+
+Food portions depict food rather than a second vessel, so a serving does not
+duplicate the can that owns it. See
+`packages/thing-authoring-tool/food-medical.libsonnet`, `atom`, and
+`src/content/base/items-food.libsonnet`, `beansGrams` and `soupGrams`.
 
 Use one item look derived from that instance's own state in every view. A
 firearm with its magazine removed must not appear loaded in a hand or pile; a
@@ -1810,6 +1848,12 @@ fog, not baked into chunks. See `src/core/lights.ts`, `lightSenseSourceFor`;
 `src/render/lightPool.ts`, `LightPool.update`; and `src/core/dayPhase.ts`,
 `dayPhaseAt`.
 
+A burning torch or candle set down keeps burning and spending its fuel, standing
+upright with its flame and light where the flame is: standing one up is how a player
+sets it down to light a room. Whether a model rests upright is content, so any such
+light stands the same way. See `src/render/models.ts`, `prepareModel`, and
+`src/render/modelFlame.ts`, `ModelFlames.onModel`.
+
 Zombies see light farther than they see a player in darkness, and see a player
 lit by any source. Aimed-down or covered flashlights shorten that reach. Light
 through doors and windows can make a building a beacon; covering or boarding
@@ -1914,7 +1958,7 @@ reused across types: `grab`, `leap`, `scream`, `explode`, `acidSpit`,
 
 Zombie types are content definitions used by shared systems; choose behavior through content properties rather than type-id cases. `src/core/schema.ts`, `ZombieSchema`, defines those properties, and `src/core/zombies.ts`, `ZombieSystem.emitFootsteps`, uses the declared footstep family. The soldier appears only at military-camp markers and explicit camp spawns; `src/core/hamlet.ts`, `ordinaryHamletSpawnWeights`, excludes authored-only kinds from ordinary selection. Its kit uses ordinary items; military loot remains restricted to site containers. For #487, defer the military clothing palette, armour, and body searching; the soldier first appears in civilian clothes, carries ordinary kit, and drops loot on death.
 
-The brute shambler guards the secret cellar (`packages/deadvox/docs/content.md`, "City building types"). It is an authored-only type on mobgen's brute body, with more health and harder hits than the shambler as content values. It wears the brute body rather than a shambler's so it reads as a different kind of zombie in the dark. It neither knocks the player back nor breaks doors: those belong to the tier-2 Brute and arrive with door bashing (`packages/deadvox/EPIC.md`, "5. Holding ground"). What that leaves open: a player meets the brute's look in a city house before the evolution line introduces brutes. See `src/core/schema.ts`, `ZOMBIE_MODEL`.
+The brute shambler guards the secret cellar (`packages/deadvox/docs/content.md`, "City building types"). It is an authored-only type on mobgen's brute body, with more health and harder hits than the shambler as content values. It wears the brute body rather than a shambler's so it reads as a different kind of zombie in the dark. It bashes doors with no more strength than the shambler and never knocks the player back: the tier-2 Brute's door breaking and knockback arrive together (`packages/deadvox/EPIC.md`, "5. Holding ground"). What that leaves open: a player meets the brute's look in a city house before the evolution line introduces brutes. See `src/core/schema.ts`, `ZOMBIE_MODEL`.
 
 ### Spawning
 
@@ -1924,9 +1968,37 @@ clock window is open; live play and replay therefore agree at the window edge.
 Bounded windows recur daily so leaving the area cannot permanently lose a
 threat. An open-ended window is eligible from the first occurrence of its
 boundary. A saved spawn ledger prevents a marker from returning after it has
-spawned. Windowless markers retain chunk-load behavior. Dynamic events such as
-a computer opening a door are separate work in #313. See `ZombieSpawner` in
-`src/core/zombieSpawns.ts`.
+spawned. Windowless markers retain chunk-load behavior. Scenario beats that do
+not belong to a marker are event rules, under "Scenario events". See
+`ZombieSpawner` in `src/core/zombieSpawns.ts`.
+
+### Scenario events
+
+A scenario composes its events from content rules (#313): a trigger, optional
+conditions and effects, so a new beat needs no scenario-specific engine branch.
+No script language is admitted. Triggers are elapsed scenario time only; position
+triggers wait on BR's gate in `SLICE-5.md`, "Remaining event gate — issue #313",
+so the schema admits none. A day-phase condition holds a due rule until its phase
+comes round, letting an author aim a beat at night without fixing a clock hour.
+
+A rule fires once. The first zombie tick at or after its time where every
+condition holds records the firing in the saved scenario run and applies the
+effects in the same tick, so no save can fall between them: loading can neither
+repeat nor skip a firing. Only the calendar and that record decide firing, never
+column loading or rendering, following `docs/decisions/0008-deterministic-world.md`,
+"Decision". Rules stop once the run is won, because a run's timestamps end at its
+completion. Rule ids key the record, so validation rejects duplicates.
+See `src/core/eventRules.ts`, `advanceEventRules`, and `src/core/schema.ts`,
+`EventRuleSchema`.
+
+The first effect releases a horde from an authored world point toward where the
+player stood when it fired. It reuses the horde spawn path, so arrival placement
+is content, not a new placement rule. A released horde keeps its target until it
+arrives, unlike a heard noise it may forget, so a wave sent from beyond the
+stimulus memory still comes; that point then becomes its home. Released into
+unloaded terrain, it waits like any unloaded actor until the abstract tier of
+`EPIC.md`, "4b. The region", moves it. See `src/core/zombies.ts`,
+`ZombieSystem.releaseHorde`.
 
 ### Amalgam body and damage (#308)
 
@@ -2070,10 +2142,13 @@ crouch rules. See `src/core/zombies.ts`, `hearingTier`, `hearVocalNoise` and
   Abstract hordes are a separate future system; loaded terrain remains the
   collision authority, so the current design does not persist navigation fields.
 
-For #273, bashing waits until mob and obstacle strength exist; closed doors
-remain obstacles like walls. If #273 supplies those strengths, the bash decision
-belongs at `obstacleContact` in `ZombieSystem.tick`. Destructive-door behavior
-is not implied by movement. See `ZombieSystem.tick` in `src/core/zombies.ts`.
+A chasing or investigating zombie held up at an obstacle bashes it once per attack
+cooldown with its type's content strength; the door decides what the blow does
+(`DESIGN.md`, "Base building and electricity"). Bashing comes from strength, not
+from movement or a silhouette, so a type of strength 0 never bashes. A zombie
+whose blow lands on a leaf stays at it instead of sliding or wandering along the
+wall, so it keeps working at the one way through. See `src/core/zombies.ts`,
+`ZombieSystem.bashObstacle`.
 
 ### Models
 
@@ -2085,16 +2160,15 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 - **Construction is crafting that places blocks and block entities:** walls,
   doors, barricades, furniture, workbenches, machines. Deconstruction is
   disassembly.
-- **Doors and locks.** A matching key is the quiet route. The noisy fallback needs the door's forcing tool, not always a crowbar, so finding that tool is part of the trade. How a door yields follows from its material and its own resistance; flimsy and burglary-safe leaves need not yield alike. Forced entry destroys the lock so the breach is one-way. Every door will be bashable given enough strength, but bashing waits because neither actor strength nor door strength is modelled. Cutting a wooden door will start a fire, so wood offers no cut method until a fire model exists. Cutting steel is a flame-cutting quality apart from a knife's `cutting`, and a finished cut spends gas from the torch's swappable cartridge, so one torch does not settle every cut door; a cut without enough gas won't start. Refilling a cartridge is direction only, with no source yet. See `src/core/prying.ts`, `pryPlan`, `src/core/torch.ts`, `spendFuel`, `src/core/longAction.ts`, `LongActions.beginForcing`, and `src/core/schema.ts`, `DoorMaterialSchema` and `DoorForcingSchema`.
-- **Electricity** is a graph:
-  - **Nodes:** generators (burn fuel), solar panels (depend on the time of
-    day), batteries (store energy), and consumers (lights, fridges, radios,
-    workbench tools).
-  - **Edges:** wires.
-  - Connected components are recomputed only when wiring changes. Each power
-    tick balances supply, storage and demand for each network.
-  - When a base catches up after being unloaded, the calculation is closed
-    form: when the fuel ran out, then when the batteries emptied.
+- **Doors and locks.** A matching key is the quiet route. The noisy fallback needs the door's forcing tool, not always a crowbar, so finding that tool is part of the trade. How a door yields follows from its material and its own resistance; flimsy and burglary-safe leaves need not yield alike. Forced entry destroys the lock so the breach is one-way. A broken leaf shows that it is broken, because the player has to see which doors no longer hold before trusting one; its door material authors how it is repainted, so a mod retunes the look. See `src/core/schema.ts`, `DoorMaterialSchema`, and `src/render/furniture.ts`, `FurnitureMeshes.brokenMaterial`.
+- **Breach by strength.** Every leaf yields to enough strength, and its own breach values say how, so flimsy and burglary-safe leaves yield differently. A blow below the leaf's minimum strength does nothing, so a weak attacker cannot grind through by waiting; blows at or above it add their strength to the leaf's saved damage until it reaches the leaf's toughness. Zombie strength and a melee weapon's impulse share one scale, so a zombie's bash and a player's strike meet the same gate through one resolution; a swing that meets no zombie strikes the closed leaf in its reach. Every blow makes a noise that reaches zombies through ordinary hearing. A broken leaf stands open with its lock gone and cannot be shut, so the breach is one-way, as forcing is, and movement, sight and sound treat it as an open doorway. Damage short of breaking leaves a boarded leaf's opening sides as they were. A container's front is its body, so it has no breach. See `src/core/blockEntities.ts`, `BlockEntities.bash`, `src/game/session.ts`, `bashLeaf` and `strikeLeaf`, and `src/core/schema.ts`, `FurnitureSchema`.
+- **Cutting.** Cutting a wooden door will start a fire, so wood offers no cut method until a fire model exists. Cutting steel is a flame-cutting quality apart from a knife's `cutting`, and a finished cut spends gas from the torch's swappable cartridge, so one torch does not settle every cut door; a cut without enough gas won't start. Refilling a cartridge is direction only, with no source yet. See `src/core/prying.ts`, `pryPlan`, `src/core/torch.ts`, `spendFuel`, `src/core/longAction.ts`, `LongActions.beginForcing`, and `src/core/schema.ts`, `DoorMaterialSchema` and `DoorForcingSchema`.
+- **Electricity** keeps topology separate from energy balance so rate changes
+  do not rebuild networks. Resource settlement and timestamped power transitions
+  preserve appliance history across absences and wiring changes. The dispatch,
+  storage, solar and link rules and their reasons are in
+  `docs/electricity.md`, "Electricity"; see `src/core/power.ts`, `PowerNetwork`,
+  and `src/core/powerGraph.ts`, `PowerGraph`.
 - **Fire** is a world system: burn rate per material, spread to neighbouring
   flammable blocks, smoke and light. Hot zombies and molotovs use the same
   system.
@@ -2162,9 +2236,14 @@ their state.
    at named swappable parts, not individual bolts, wire runs or plumbing, so repair
    does not become assembly bookkeeping. A body fitted to a chassis cab, such as a box
    van's cargo box, is its own factory structure resting on the frame, not part of the
-   cab's: the chassis cab stays a complete drivable unit without it, and the body's
-   storage is a capability of that fitted structure, not a vehicle kind. See
-   `src/vehicles/boxVan.ts`, `BOX_VAN`.
+   cab's, so the chassis cab stays a complete drivable unit without it and the box can
+   move to another frame. A body's storage and its contents belong to a cargo space: a
+   separate part resting on the load floor whose own shape is the hold, so storage
+   travels with the part, losing a wall does not lose the load, and a player can build
+   one for any body with a load floor. The game reads the pocket grid from that shape
+   rather than from authored numbers. A part's capabilities are names; its sizes live
+   in its own data, so each size has one source. The cargo space arrives with #1124.
+   See `src/vehicles/boxVan.ts`, `BOX_VAN`.
 9. **Cheap at scale.** A parked street must not pay continuous driving-physics cost.
    Part-level changes should not require rebuilding unrelated vehicles.
 10. **Obstruction follows the build.** Render, collision and picking derive from the
@@ -2355,7 +2434,7 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
 - **Voxel light**: light spread through the block grid, so that inside buildings
   it's pitch black at night and dim by day, lit only by what comes in through
   doors and windows. Only diffuse sky light goes through the grid
-  (`src/core/skylight.ts`, `buildSkylight`). The sun and the carried beam are lit
+  (`src/render/skylight.ts`, `Skylight`). The sun and the carried beam are lit
   on their own, and carried or dropped sources are the pool's shadowless point
   lights (`src/render/lightPool.ts`, `LightPool`; see "Light"). First-person
   hands share the room's sky visibility, so they do not glow in enclosed dark

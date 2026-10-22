@@ -1,10 +1,18 @@
 {
   "doorMaterials": [
     {
+      "broken": {
+        "strength": 0.59999999999999998,
+        "tint": "#d8c9a6"
+      },
       "id": "wood",
       "methods": ["pry"]
     },
     {
+      "broken": {
+        "strength": 0.55000000000000004,
+        "tint": "#9a4a28"
+      },
       "id": "steel",
       "methods": ["pry", "cut"]
     }
@@ -560,6 +568,10 @@
     {
       "color": "#7a5534",
       "door": {
+        "breach": {
+          "minimumStrength": 4.5,
+          "toughness": 150
+        },
         "handlingSimSeconds": 0.59999999999999998,
         "material": "wood",
         "methods": {
@@ -581,6 +593,10 @@
     {
       "color": "#7a5534",
       "door": {
+        "breach": {
+          "minimumStrength": 3.5,
+          "toughness": 60
+        },
         "handlingSimSeconds": 0.59999999999999998,
         "material": "wood",
         "methods": {
@@ -602,6 +618,10 @@
     {
       "color": "#626a70",
       "door": {
+        "breach": {
+          "minimumStrength": 9,
+          "toughness": 300
+        },
         "handlingSimSeconds": 0.59999999999999998,
         "material": "steel",
         "methods": {

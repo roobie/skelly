@@ -1,0 +1,7 @@
+{
+  "id": "empty_can",
+  "file": "assets/models/empty_can.glb",
+  "grip": { "at": [0, 0.055, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

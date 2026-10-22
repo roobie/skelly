@@ -80,7 +80,7 @@ export const HEARTBEAT_FILES = {
   slow: 'assets/audio/heartbeat-slow-beat.ogg',
   fast: 'assets/audio/heartbeat-fast-beat.ogg',
 } as const;
-/** BR's d37-4 (#193) anchors; gain values are provisional loudness tuning. */
+/** Heartbeat anchors; gain values are provisional loudness tuning. */
 export const HEARTBEAT_TUNING = {
   startStamina: 85,
   startHz: 1,

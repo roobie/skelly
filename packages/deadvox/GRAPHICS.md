@@ -28,7 +28,7 @@ Switching a light on or off, or dimming it, changes only uniforms, never which l
 
 Retune beam intensity and decay against three targets. A mid-grey surface at 10 m stays readable. Close surfaces stay under the bloom clip and the ACES shoulder, where a bright warm colour skews towards orange. Brightness varies by under 2x between 0.5 m and 2 m, where plain inverse-distance falloff varies 4x. The near-field offset makes the last two hold while keeping the reach, so a lower offset needs a lower intensity and a higher one allows more. See `src/render/lightFalloff.ts`, `NEAR_FIELD_M`, and `test/lightFalloff.test.ts`, which checks the close-up variation.
 
-Use `torchspill=1` in the URL to turn on authored spill that content leaves disabled, and `torchspill=0` to force the plain cone, without enabling debug mode. This render-only override neither invents absent spill nor changes simulation awareness. See `src/render/playView.ts`, `createPlayView`. Handheld and head-mounted beams share this path; weapon-mounted flashlights lack nested lens resolution (#763) and receive no rendered beam or spill. See `src/render/flashlightCone.ts`, `withFlashlightSpill`.
+Use `torchspill=1` in the URL to turn on authored spill that content leaves disabled, and `torchspill=0` to force the plain cone, without enabling debug mode. This render-only override neither invents absent spill nor changes simulation awareness. See `src/render/playView.ts`, `createPlayView`. Handheld, head-mounted and weapon-mounted beams share this path; a mounted light takes its lens from the held weapon's model. See `src/render/flashlightCone.ts`, `withFlashlightSpill`.
 
 Post-processing and shadows support the intended mood. Compare the same workload on a real GPU before claiming a performance win; SwiftShader cannot establish reference-GPU cost. Keep image changes separate from waste removal so visual quality remains an operator decision. See `src/bench/post.ts`, `benchDraw`.
 
@@ -96,8 +96,8 @@ Debug-only whole-frame CPU submission counters distinguish batching growth from 
 
 ## Unresolved constraints
 
-- Sun-shadow rendering and flashlight falloff rely on three.js internals; upgrades must fail loudly until these hooks have a supported replacement.
-- Wide occlusion is tuned by eye on limited indoor scenes. Revisit its strength when Slice 4a skylight overlaps with it.
+- Sun-shadow rendering and flashlight falloff rely on three.js internals; a three.js upgrade must fail loudly, not change them silently.
+- Wide occlusion is tuned by eye on limited indoor scenes. Recheck its strength whenever it or skylight changes.
 - Dawn/dusk tone transitions and weathering profiles need review on a real GPU.
 - Debug-only look controls must move before their reserved gameplay inputs are bound.
 - Shader warm-up gaps remain for model materials and the no-post-processing path.

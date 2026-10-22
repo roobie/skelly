@@ -223,14 +223,37 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "can_opener",
+      "model": "can_opener",
       "name": "Can opener",
       "size": [1, 1],
       "tool": {
         "qualities": {
           "opening": 5
         }
+      }
+    },
+    {
+      "category": "tool",
+      "description": "Steel jaws on a spring. It shuts on whatever steps in it.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Hunting"]
       },
-      "weight": 100
+      "id": "bear_trap",
+      "model": "bear_trap",
+      "name": "Bear trap",
+      "size": [5, 5],
+      "trap": {
+        "disarmSimSeconds": 6,
+        "holdSimSeconds": 20,
+        "playerInjury": {
+          "damage": 25,
+          "kind": "pierce",
+          "region": "leftLeg"
+        },
+        "setSimSeconds": 4,
+        "zombieLegDamage": 60
+      }
     },
     {
       "category": "weapon",
@@ -447,17 +470,23 @@
         "burnTimeGameHours": 4,
         "burning": {
           "douse": true,
-          "drop": "douse",
+          "drop": "stay",
           "ignition": "firestarter",
           "relight": true,
           "sprint": "stay",
           "stow": "refuse"
         },
         "color": "#ffb36b",
+        "emissive": 0.59999999999999998,
+        "flame": {
+          "heightMetres": 0.14000000000000001,
+          "radiusMetres": 0.035000000000000003
+        },
         "intensity": 5,
         "radius": 6,
         "seenFrom": 60
       },
+      "model": "torch",
       "name": "Torch",
       "size": [1, 4],
       "weight": 350
@@ -492,17 +521,22 @@
         "burnTimeGameHours": 6,
         "burning": {
           "douse": true,
-          "drop": "douse",
+          "drop": "stay",
           "ignition": "firestarter",
           "relight": true,
           "sprint": "douse",
           "stow": "douse"
         },
         "color": "#ffd28a",
+        "flame": {
+          "heightMetres": 0.029999999999999999,
+          "radiusMetres": 0.0070000000000000001
+        },
         "intensity": 1,
         "radius": 3,
         "seenFrom": 15
       },
+      "model": "candle",
       "name": "Candle",
       "size": [1, 1],
       "weight": 150

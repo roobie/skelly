@@ -1,10 +1,10 @@
 import { BoxGeometry, Mesh, MeshLambertMaterial } from 'three';
 import { expect, it, vi } from 'vitest';
 import type { Vec3 } from '../src/core/coords.ts';
-import { buildSkylight } from '../src/core/skylight.ts';
 import { growSky, SKY_HALO } from '../src/core/skySnapshot.ts';
 import { sampleSky } from '../src/core/skyTransport.ts';
 import { skyFixture } from './fixtures/sky.ts';
+import { buildSkylight } from './fixtures/skyOracle.ts';
 import { fixtureBox } from './fixtures/skyWorld.ts';
 
 it('dims an uncertified eligible column without blackout but preserves the old noncandidate estimate', () => {

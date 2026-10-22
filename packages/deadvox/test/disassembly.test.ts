@@ -54,6 +54,7 @@ const fixtureBuild = buildRegistry([
   ...items,
   soundSource(items),
   { source: 'models-melee.json', data: JSON.parse(readFileSync(join(base, 'models-melee.json'), 'utf8')) as unknown },
+  { source: 'models-items.json', data: JSON.parse(readFileSync(join(base, 'models-items.json'), 'utf8')) as unknown },
   {
     source: 'recipes.json',
     data: {

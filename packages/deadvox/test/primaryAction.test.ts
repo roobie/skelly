@@ -32,6 +32,7 @@ const capabilities = [
         reach: 1,
         cooldownSimSeconds: 1,
         stamina: 0,
+        impulse: 1,
         type: 'blunt',
         contactFraction: 0.4,
         windupCapSimSeconds: 0.25,
@@ -105,7 +106,7 @@ const { registry, issues } = buildRegistry([
           name: 'Fixture door',
           size: [1, 1, 1],
           color: '#666666',
-          door: { material: 'wood', methods: {}, handlingSimSeconds: 0 },
+          door: { material: 'wood', methods: {}, handlingSimSeconds: 0, breach: { minimumStrength: 1, toughness: 1 } },
         },
       ],
       templates: [

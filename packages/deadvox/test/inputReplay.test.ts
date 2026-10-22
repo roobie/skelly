@@ -1261,8 +1261,9 @@ describe('input replay', () => {
       endSimTimestamp: sourceEnd.character.simulation.time,
       initialColumns: [[cx + 10, cz + 10]],
       onCreated: (runtimeAtStart) => {
+        // Only a saved (touched) column is resident before the recorded load.
         expect([...runtimeAtStart.world.chunks.values()].some((chunk) => chunk.cx === cx && chunk.cz === cz)).toBe(
-          false,
+          runtimeAtStart.world.isTouched(cx, cz),
         );
       },
     });

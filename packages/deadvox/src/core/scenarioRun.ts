@@ -16,6 +16,8 @@ export interface ScenarioRunState {
   firstFurnitureReadAtGameTimestamp: number | null;
   firstLadderUseAtGameTimestamp: number | null;
   discovery: ScenarioDiscoveryState;
+  /** When each one-shot event rule fired, by rule id; absence means not yet. */
+  eventsFiredAtGameTimestamp: Record<string, number>;
 }
 
 const discoveryTimestamps = (state: ScenarioDiscoveryState): (number | null)[] => {
@@ -23,6 +25,13 @@ const discoveryTimestamps = (state: ScenarioDiscoveryState): (number | null)[] =
     throw new Error('Invalid scenario discovery');
   }
   return DISCOVERY_EVENTS.map((event) => state[event]);
+};
+
+const firedTimestamps = (fired: Record<string, number>): number[] => {
+  if (!fired || typeof fired !== 'object') {
+    throw new Error('Invalid scenario events');
+  }
+  return Object.values(fired);
 };
 
 export const assertScenarioRun = (
@@ -51,6 +60,7 @@ export const assertScenarioRun = (
   }
   for (const timestamp of [
     ...discoveryTimestamps(state.discovery),
+    ...firedTimestamps(state.eventsFiredAtGameTimestamp),
     state.completedAtGameTimestamp,
     state.firstFurnitureReadAtGameTimestamp,
     state.firstLadderUseAtGameTimestamp,
@@ -84,10 +94,22 @@ export class ScenarioRun {
           firstFurnitureReadAtGameTimestamp: null,
           firstLadderUseAtGameTimestamp: null,
           discovery: emptyDiscovery(),
+          eventsFiredAtGameTimestamp: {},
         };
   }
   get won(): boolean {
     return this.state.completedAtGameTimestamp !== null;
+  }
+  get startedAt(): number {
+    return this.state.startedAtGameTimestamp;
+  }
+  fired(rule: string): boolean {
+    return Object.hasOwn(this.state.eventsFiredAtGameTimestamp, rule);
+  }
+  fire(rule: string, calendar: number): void {
+    if (!this.won) {
+      this.state.eventsFiredAtGameTimestamp[rule] ??= calendar;
+    }
   }
   complete(calendar: number): void {
     if (!this.won) {

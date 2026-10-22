@@ -17,6 +17,7 @@ import { startupContent } from './baseRegistry.ts';
 const BUNDLED_CONTENT = startupContent();
 
 import {
+  CASE_LANDING_LIFT,
   FirearmMechanics,
   type FirearmShotEffect,
   firearmHandlingFor,
@@ -264,7 +265,7 @@ const makeCaseSession = ({ world, spawn, intent: startingIntent, crouched = fals
       const [x, y, z] = effect.landingPosition;
       const landingPosition: Vec3 = [
         (x + 0.5) * scale.blockSize,
-        y * scale.blockSize + 0.006,
+        y * scale.blockSize + CASE_LANDING_LIFT,
         (z + 0.5) * scale.blockSize,
       ];
       spawnResults.push(renderer.spawn({ ...effect, landingPosition }));
@@ -452,7 +453,7 @@ describe('firearm case wall contact', () => {
 
     const landing: Vec3 = [
       (effect.landingPosition[0] + 0.5) * scale.blockSize,
-      effect.landingPosition[1] * scale.blockSize + 0.006,
+      effect.landingPosition[1] * scale.blockSize + CASE_LANDING_LIFT,
       (effect.landingPosition[2] + 0.5) * scale.blockSize,
     ];
     const duration = effect.landingAt - effect.startedAtSimSeconds;
@@ -504,7 +505,7 @@ describe('firearm case wall contact', () => {
     expect(shot.isSolid(casePile!.pos[0], casePile!.pos[1] - 1, casePile!.pos[2])).toBe(true);
     const landing: Vec3 = [
       (blockedEffect.landingPosition[0] + 0.5) * scale.blockSize,
-      blockedEffect.landingPosition[1] * scale.blockSize + 0.006,
+      blockedEffect.landingPosition[1] * scale.blockSize + CASE_LANDING_LIFT,
       (blockedEffect.landingPosition[2] + 0.5) * scale.blockSize,
     ];
     const duration = blockedEffect.landingAt - blockedEffect.startedAtSimSeconds;
@@ -544,7 +545,7 @@ describe('firearm case wall contact', () => {
     expect(observations.length).toBeGreaterThan(0);
     const effect = runtime.effects[0]!;
     const duration = effect.landingAt - effect.startedAtSimSeconds;
-    const landingY = effect.landingPosition[1] * scale.blockSize + 0.006;
+    const landingY = effect.landingPosition[1] * scale.blockSize + CASE_LANDING_LIFT;
     expect(observations.filter(({ solid }) => solid)).toEqual([]);
     expect(observations.every(({ point }) => point[1] >= landingY - 1e-6)).toBe(true);
     expect(effect.direction).toEqual([0, -1, 0]);

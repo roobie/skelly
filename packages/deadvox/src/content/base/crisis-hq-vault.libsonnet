@@ -44,8 +44,8 @@ local shell = [
     id: 'crisis_hq_vault', size: [15, 8, 8], lootContext: context,
     palette: {
       '.': 'air', '#': 'concrete', k: 'concrete',
-      A: { furniture: 'hq_weapon_cabinet', facing: 'e', loot: 'armoury_arms' },
-      C: { furniture: 'hq_weapon_cabinet', facing: 'e', loot: 'armoury_arms' },
+      A: { furniture: 'hq_weapon_cabinet', facing: 'e', loot: 'armoury_cabinet' },
+      C: { furniture: 'hq_weapon_cabinet', facing: 'e', loot: 'armoury_cabinet' },
       V: { furniture: 'wardrobe', facing: 's', loot: 'equipment_locker' },
     },
     layers: [floor, furnished, furnished, furnished, furnished, cabinetTops, shell, floor],

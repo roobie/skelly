@@ -134,7 +134,7 @@ describe('furniture detail', () => {
     const definition = definitions[0]!;
     for (const extra of [
       { shape: [{ position: [0, 0, 0], size: [1, 1, 1] }] },
-      { door: { material: 'wood', methods: {}, handlingSimSeconds: 1 } },
+      { door: { material: 'wood', methods: {}, handlingSimSeconds: 1, breach: { minimumStrength: 1, toughness: 1 } } },
       { container: undefined },
     ]) {
       const { issues } = buildRegistry([

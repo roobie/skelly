@@ -7,6 +7,7 @@ local woodDoor = {
   door: {
     material: 'wood',
     handlingSimSeconds: 0.6,
+    breach: { minimumStrength: 4.5, toughness: 150 },
     methods: {
       pry: {
         quality: 'prying', level: 3, skill: 'mechanics',
@@ -18,8 +19,8 @@ local woodDoor = {
 };
 shape.colliding({
   doorMaterials: [
-    { id: 'wood', methods: ['pry'] },
-    { id: 'steel', methods: ['pry', 'cut'] },
+    { id: 'wood', methods: ['pry'], broken: { tint: '#d8c9a6', strength: 0.6 } },
+    { id: 'steel', methods: ['pry', 'cut'], broken: { tint: '#9a4a28', strength: 0.55 } },
   ],
   "furniture": [
     {
@@ -303,6 +304,7 @@ shape.colliding({
     woodDoor + {
       id: 'flimsy_wood_door', name: 'Flimsy wooden door',
       door: woodDoor.door + {
+        breach: { minimumStrength: 3.5, toughness: 60 },
         methods: {
           pry: woodDoor.door.methods.pry + {
             level: 1, timeSimSeconds: 6, fastestTimeSimSeconds: 3,
@@ -314,6 +316,7 @@ shape.colliding({
       id: 'steel_armoury_door', name: 'Steel armoury door', color: '#626a70',
       door: woodDoor.door + {
         material: 'steel',
+        breach: { minimumStrength: 9, toughness: 300 },
         methods: {
           cut: {
             quality: 'flame_cutting', level: 1, skill: 'mechanics',

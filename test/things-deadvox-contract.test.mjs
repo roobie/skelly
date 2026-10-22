@@ -14,6 +14,7 @@ import { assertExportSynced, assertRecipeCredits, exportDifference } from './mod
 
 const deadvoxRequire = createRequire(new URL('../packages/deadvox/package.json', import.meta.url));
 const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders/GLTFLoader.js'));
+const { Box3, Vector3 } = deadvoxRequire('three');
 const { safeParse } = deadvoxRequire('valibot');
 const base = new URL('../packages/deadvox/src/content/base/', import.meta.url).pathname;
 const recipe = loadThingRecipe();
@@ -32,7 +33,15 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
       assert.ok(parsed.success, `${out.id}: ${JSON.stringify(parsed.issues)}`);
       assertExportSynced(out, base, 'things');
     }
-    for (const file of readdirSync(join(base, 'things'))) {
+    assert.equal(
+      exportDifference(
+        JSON.parse(readFileSync(join(base, 'things/index.json'), 'utf8')),
+        exported.map(({ modelEntry }) => modelEntry),
+      ),
+      null,
+      'the registration index derives from the recipe',
+    );
+    for (const file of readdirSync(join(base, 'things')).filter((entry) => entry !== 'index.json')) {
       assert.ok(
         file.endsWith('.model.json') && ids.has(file.slice(0, -'.model.json'.length)),
         `${file}: orphaned thing export`,
@@ -67,7 +76,12 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
       exported.map(async ({ modelEntry }) => {
         const bytes = readFileSync(join(base, modelEntry.file));
         const loaded = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
-        for (const part of Object.values(modelEntry.parts)) {
+        let hasMesh = false;
+        loaded.scene.traverse((node) => {
+          hasMesh ||= node.isMesh === true;
+        });
+        assert.ok(hasMesh, `${modelEntry.id}: missing geometry`);
+        for (const part of Object.values(modelEntry.parts ?? {})) {
           if (part.node !== undefined) {
             const [node] = namedNodes(loaded.scene, loaded.parser, [part.node]);
             assert.ok(
@@ -75,6 +89,39 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
               `${modelEntry.id}: missing ${part.node}`,
             );
           }
+        }
+      }),
+    );
+  });
+  it('names a glow material and a flame anchor that the glb holds', async () => {
+    const lit = exported.filter(({ modelEntry }) => modelEntry.emissiveMaterial || modelEntry.anchors?.flame);
+    assert.ok(
+      lit.some(({ modelEntry }) => modelEntry.emissiveMaterial),
+      'the slice must export a glow material',
+    );
+    assert.ok(
+      lit.some(({ modelEntry }) => modelEntry.anchors?.flame),
+      'the slice must export a flame anchor',
+    );
+    await Promise.all(
+      lit.map(async ({ modelEntry }) => {
+        const bytes = readFileSync(join(base, modelEntry.file));
+        const loaded = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
+        const names = new Set();
+        loaded.scene.traverse((node) => {
+          for (const material of node.isMesh ? [node.material].flat() : []) {
+            names.add(material.name);
+          }
+        });
+        if (modelEntry.emissiveMaterial) {
+          assert.ok(names.has(modelEntry.emissiveMaterial), `${modelEntry.id}: missing glow material`);
+        }
+        if (modelEntry.anchors?.flame) {
+          const bounds = new Box3().setFromObject(loaded.scene).expandByScalar(1e-6);
+          assert.ok(
+            bounds.containsPoint(new Vector3(...modelEntry.anchors.flame)),
+            `${modelEntry.id}: flame off model`,
+          );
         }
       }),
     );

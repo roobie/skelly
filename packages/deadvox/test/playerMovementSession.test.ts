@@ -21,6 +21,8 @@ import { FISTS_MELEE } from './fixtures/unarmed.ts';
 
 const BASE = 'src/content/base';
 const registry = baseRegistry();
+const [FIREARM_TYPE] = [...registry.items].find(([, def]) => def.firearm)!;
+const [DOOR_TYPE] = [...registry.furniture].find(([, def]) => def.door && !def.door.hatch)!;
 
 const FLAT: SolidAt = (_x, y) => y === 0;
 
@@ -311,7 +313,7 @@ describe('session movement consequences', () => {
       }
     }
     const runtime = makeRuntime({ world });
-    const firearm = runtime.session.inventory.create('pump_shotgun');
+    const firearm = runtime.session.inventory.create(FIREARM_TYPE);
     expect(runtime.session.inventory.add(firearm, { kind: 'hand', side: 'right' })).toBe(true);
     runtime.setReadyHeld(true);
     runtime.setIntent({ ...IDLE, forward: 1, walk: true });
@@ -350,12 +352,12 @@ describe('session movement consequences', () => {
   it('closes a door over a downed shambler lying in the doorway', () => {
     const runtime = makeRuntime();
     const { session } = runtime;
-    const door = session.entities.add({ type: 'wood_door', pos: [0, 1, -3], size: [2, 4, 1], facing: 'n' })!;
+    const door = session.entities.add({ type: DOOR_TYPE, pos: [0, 1, -3], size: [2, 4, 1], facing: 'n' })!;
     session.entities.setOpen(door, true);
     const { zombie } = downShambler(session, [1, 1, -2.5]);
     expect(session.entities.bodyIntersects(door, zombie.body)).toBe(true);
 
-    const { handlingSimSeconds } = registry.furniture.get('wood_door')!.door!;
+    const { handlingSimSeconds } = registry.furniture.get(DOOR_TYPE)!.door!;
     session.queue.enqueueAction(DOOR_ACTION, 'Door', handlingSimSeconds, { entityUid: door.uid, closing: true });
     runtime.advance(Math.ceil((handlingSimSeconds + 0.5) * 60));
     expect(door.open).toBe(false);
