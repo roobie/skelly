@@ -254,7 +254,7 @@ assert std.all([std.length(row) == std.length(plan[0]) for row in plan]) : 'entr
     ] }, anchors: {}, ports: [],
   }],
   mapAssemblies: [{
-    id: 'gauntlet_lab_level_entry', size: size, lootContext: context,
+    id: 'gauntlet_lab_level_entry', size: size, lootContext: context + { lowerTiers: true },
     slots: [slot('shell', 'piece', shell.id, [0, 0, 0], size)]
       + [slot(d.id, 'piece', 'gauntlet_lab_entry_bay_' + d.id, [d.at[0] * scale, 1, d.at[1] * scale], [4, 7, 4]) for d in dressing]
       + threat.markerSlots('entry', 'entry', markers),
