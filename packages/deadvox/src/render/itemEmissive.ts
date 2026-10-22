@@ -1,8 +1,21 @@
-import { type Material, Mesh, MeshStandardMaterial, type Object3D } from 'three';
+import { type ColorRepresentation, type Material, Mesh, MeshStandardMaterial, type Object3D } from 'three';
 import type { ItemDef, ModelDef } from '../core/content.ts';
 import type { Item } from '../core/items.ts';
 
 const ownedMaterials = new WeakSet<Material>();
+
+/** A copy of `material` glowing at full strength past the tone mapper; shader warm-up builds the same copy. */
+export const glowingCopy = (
+  material: MeshStandardMaterial,
+  color: ColorRepresentation,
+  intensity: number,
+): MeshStandardMaterial => {
+  const glowing = material.clone();
+  glowing.emissive.set(color);
+  glowing.emissiveIntensity = intensity;
+  glowing.toneMapped = false;
+  return glowing;
+};
 
 /** Adds the item's authored glow to its named model material without mutating ModelLibrary's shared copy. */
 export const applyItemEmissive = (
@@ -27,10 +40,7 @@ export const applyItemEmissive = (
       if (material.name !== name || !(material instanceof MeshStandardMaterial)) {
         return material;
       }
-      const glowing = material.clone();
-      glowing.emissive.set(color);
-      glowing.emissiveIntensity = intensity;
-      glowing.toneMapped = false;
+      const glowing = glowingCopy(material, color, intensity);
       ownedMaterials.add(glowing);
       return glowing;
     });
