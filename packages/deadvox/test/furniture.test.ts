@@ -1,6 +1,6 @@
 import { Box3, type Group, type Matrix4, type Mesh, type MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { BlockEntities, doorPanel, panelFor, searchTime } from '../src/core/blockEntities.ts';
+import { BlockEntities, doorPanel, panelFor, poseKey, searchTime } from '../src/core/blockEntities.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { buildRegistry, type TemplateDef } from '../src/core/content.ts';
 import { pickFurniture } from '../src/core/furniturePick.ts';
@@ -388,6 +388,42 @@ describe('furniture', () => {
     expect(entities.standing).toBe(standing);
     furniture.sync(entities);
     expect(furniture.group.children[0]).toBe(drawn);
+  });
+
+  it("repaints a piece that isn't a door only when its damage crosses into another of its material's steps", () => {
+    const entities = new BlockEntities(registry);
+    const { uid } = entities.add({ type: 'crate', pos: [0, 0, 0], size: [2, 2, 2], facing: 'n' })!;
+    const def = entities.defOf(entities.byUid(uid)!);
+    const steps = registry.furnitureMaterials.get(def.material)?.damaged ?? [];
+    if (steps.length < 2) {
+      throw new Error(`the crate's material "${def.material}" needs two damage steps for this test`);
+    }
+    const furniture = new FurnitureMeshes(BLOCK_SIZE);
+    /** The crate's pose key and drawn colour once its saved damage is this share of its durability. */
+    const drawnAt = (fraction: number) => {
+      const state = entities.snapshotState();
+      entities.restoreState({
+        ...state,
+        entities: state.entities.map(({ damage: _saved, ...saved }) =>
+          saved.uid === uid && fraction > 0 ? { ...saved, damage: fraction * def.breach.durability } : saved,
+        ),
+      });
+      const piece = entities.byUid(uid)!;
+      furniture.sync(entities);
+      const mesh = furniture.group.children[0] as Mesh;
+      return {
+        pose: poseKey(piece, entities.wearOf(piece)),
+        colour: (mesh.material as MeshLambertMaterial).color.getHexString(),
+      };
+    };
+    const intact = drawnAt(0);
+    const first = drawnAt(steps[0]!.from);
+    const deeperInFirst = drawnAt((steps[0]!.from + steps[1]!.from) / 2);
+    const second = drawnAt(steps[1]!.from);
+    expect(first.colour).not.toBe(intact.colour);
+    expect(deeperInFirst).toEqual(first);
+    expect(second.pose).not.toBe(first.pose);
+    expect(second.colour).not.toBe(first.colour);
   });
 
   it('picks the closed HQ safe only through its visible door', () => {
