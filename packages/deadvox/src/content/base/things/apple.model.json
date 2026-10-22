@@ -1,0 +1,14 @@
+{
+  "id": "apple",
+  "file": "assets/models/apple.glb",
+  "parts": {
+    "body": {
+      "node": "body:stemmedFruit",
+      "massKg": 0.18,
+      "centreOfMass": [0.0000037527945636891458, 0.03719666728199075, 1.3331610776034511e-21]
+    }
+  },
+  "grip": { "at": [0, 0.0355, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}
