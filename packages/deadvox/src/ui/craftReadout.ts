@@ -81,8 +81,7 @@ const recipeStartReason = (
   recipe: RecipeDef,
   result: ReturnType<typeof planCraft>,
   reach: ReachSnapshot,
-  startReason: string | undefined,
-  noRepairTarget: string,
+  { startReason, noRepairTarget }: { startReason: string | undefined; noRepairTarget: string },
 ): string | undefined => {
   if (startReason) {
     return startReason;
@@ -124,13 +123,10 @@ export const craftRows = ({
       name: `${recipe.kind === 'repair' ? 'Repair: ' : ''}${registry.items.get(recipe.result.item)!.name}`,
       kind: recipe.kind === 'repair' ? 'repair' : 'craft',
       time: craftTime('plan' in result ? result.plan.gather + result.plan.work : recipe.timeGameMinutes),
-      reason: recipeStartReason(
-        recipe,
-        result,
-        reach,
+      reason: recipeStartReason(recipe, result, reach, {
         startReason,
-        registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.craftingMessages.noRepairTarget,
-      ),
+        noRepairTarget: registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.craftingMessages.noRepairTarget,
+      }),
       components: status.components.map(({ alternatives, group }) => ({
         group,
         preferred: prefer?.[group] ?? '',

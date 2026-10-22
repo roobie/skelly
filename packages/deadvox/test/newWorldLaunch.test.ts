@@ -20,7 +20,7 @@ import { SaveController } from '../src/ui/saveController.ts';
 import { showWin } from '../src/ui/win.ts';
 import { capture, createRuntime, registry as saveFixtureRegistry } from './snapshotTestSupport.ts';
 
-const screenText = saveFixtureRegistry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText;
+const { screenText } = saveFixtureRegistry.ui.get(CORE_CONTENT_IDS.coreUi)!;
 const FULL_HASH = /[a-f0-9]{64}/;
 const BODY_MARKUP = /<body\b[^>]*>([\s\S]*)<\/body>/;
 const SCRIPT_MARKUP = /<script\b[^>]*>[\s\S]*?<\/script>/g;
