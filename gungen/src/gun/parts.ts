@@ -3549,7 +3549,7 @@ const handguard: PartFamily = {
                 id: 'rail-bottom',
                 mount: 'rail-bottom',
                 gender: 'female' as const,
-                pos: [2, snapGrid(-outerY), 0] as Vec3,
+                pos: [2, akLayout ? AK_PROPORTIONS.handguard.lowerBottomU : snapGrid(-outerY), 0] as Vec3,
                 normal: NEG_Y,
                 up: X,
                 slots: { count: (len - 4) / 2 + 1, pitch: 2 },

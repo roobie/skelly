@@ -896,6 +896,33 @@ describe('attachment parts and export metadata', () => {
     }
   });
 
+  it('fits a foregrip to the AK handguard bottom rail that validation accepts', () => {
+    const firearm = design('archetype-ak');
+    const slots = attachmentSlots(resolve(firearm, gunDomain)).filter(({ mount }) => mount === 'rail-bottom');
+    const certified = attachmentCompatibility(firearm, slots, gunDomain);
+    const fits = slots.flatMap((slot) =>
+      (certified[slot.id] ?? []).filter((id) => id === 'foregrip').map((id) => ({ slot, id })),
+    );
+    expect(fits.length).toBeGreaterThan(0);
+    const bareIssues = new Set(validate(firearm, gunDomain).issues.map((issue) => JSON.stringify(issue)));
+    for (const { slot, id } of fits) {
+      const fitted: Assembly = {
+        ...firearm,
+        parts: { ...firearm.parts, fitted: attachmentInstanceForId(id) },
+        connections: [
+          ...firearm.connections,
+          {
+            from: slot.id.split('.').slice(0, 2).join('.'),
+            to: 'fitted.base',
+            ...(slot.notchIndex === undefined ? {} : { slot: slot.notchIndex }),
+          },
+        ],
+      };
+      const added = validate(fitted, gunDomain).issues.filter((issue) => !bareIssues.has(JSON.stringify(issue)));
+      expect(added, slot.id).toEqual([]);
+    }
+  });
+
   it("certifies rifle muzzle devices on a rifled barrel but not on a shotgun's smoothbore barrel", () => {
     const rifleDevices = ATTACHMENT_IDS.filter((id) =>
       attachmentBuild(id).part.ports.some(
