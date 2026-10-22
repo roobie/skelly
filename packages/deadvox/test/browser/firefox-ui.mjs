@@ -9,6 +9,7 @@ import { createServer } from 'vite';
 import { pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove, pressWithDrawnCursor } from './menu-pointer.mjs';
 import { assertFixtureMods, selectFixtureMods } from './mods-startup.mjs';
+import { installSaveStatusTrace, saveLockSnapshot } from './save-lock-diagnostics.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { measureWeatheringMaterials } from './weatheringPixels.mjs';
 
@@ -63,6 +64,7 @@ try {
       consoleErrors.push(message.text());
     }
   });
+  await page.addInitScript(installSaveStatusTrace);
   await page.addInitScript(() => {
     localStorage.setItem('deadvox.hud-options', JSON.stringify({ clock: true }));
     let locked = null;
@@ -490,6 +492,7 @@ try {
   if (runWeatheringTestPage) {
     pageErrors.length = 0;
     consoleErrors.length = 0;
+    const locksBeforeGoto = await saveLockSnapshot(page);
     await page.goto(
       browserStageUrl(
         'firefox-ui',
@@ -510,8 +513,9 @@ try {
         startupStatus: document.querySelector('#save-status')?.textContent,
         errors: document.querySelector('#errors')?.textContent,
       }));
+      const locks = { beforeGoto: locksBeforeGoto, afterTimeout: await saveLockSnapshot(page) };
       throw new Error(
-        `${error instanceof Error ? error.message : String(error)}; startup state: ${JSON.stringify(startupState)}; page errors: ${JSON.stringify(pageErrors)}; console errors: ${JSON.stringify(consoleErrors)}`,
+        `${error instanceof Error ? error.message : String(error)}; startup state: ${JSON.stringify(startupState)}; save locks: ${JSON.stringify(locks)}; page errors: ${JSON.stringify(pageErrors)}; console errors: ${JSON.stringify(consoleErrors)}`,
         { cause: error },
       );
     }
