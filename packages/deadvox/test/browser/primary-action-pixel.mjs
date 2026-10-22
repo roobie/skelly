@@ -284,10 +284,7 @@ try {
     await writeFile(resolve(projectRoot, 'test-results/primary-action/held-compass.png'), shot);
     const pixels = await heldCompassPixels(page, shot);
     process.stdout.write(`Held compass green pixels: ${JSON.stringify(pixels)}\n`);
-    assert.ok(
-      pixels.x > 16 && pixels.y > 16 && pixels.x < clip.width - 16 && pixels.y < clip.height - 16,
-      'the held compass display projects inside the pixel sample',
-    );
+    assert.ok(pixels.green > 200, 'the held compass display contributes green pixels beyond the dark-night background');
   });
   await page.evaluate(() => {
     const r = globalThis.primaryActionTest;

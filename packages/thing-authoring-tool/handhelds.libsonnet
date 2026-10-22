@@ -11,7 +11,7 @@ local key(id, massKg, bowRadius, shaftLength, metal) = atom(id, 'key', massKg, {
 }, { metal: metal }, 'shaft');
 [
   atom('compass', 'compass', 0.120, { radius: 0.03, height: 0.009, bezelHeight: 0.004, displayWidth: 0.026 }, { body: 'plastic-black', bezel: 'steel-grey', display: 'plastic-green' }, 'body') + {
-    handling+: { turn: [90, 0, -90] },
+    handling: { part: 'compass', solid: 'body', fraction: [0, 0.5, 0.5], turn: [45, -90, -90], hold: 'upright', roll: 0 },
     anchors: {
       display_mount: { part: 'compass', solid: 'display', fraction: [0.5, 1, 0.5] },
       needle_mount: { part: 'compass', solid: 'display', fraction: [0.5, 1, 0.5] },
