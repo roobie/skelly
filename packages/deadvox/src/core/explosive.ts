@@ -64,9 +64,9 @@ export class Fuses {
 
   /**
    * Burns every fuse by `dt` Sim seconds, then lights the fuse of each explosive with its pin pulled that is no
-   * longer `held`. Returns the explosives whose fuse ran out, by uid.
+   * longer `held`, telling `lit` about each. Returns the explosives whose fuse ran out, by uid.
    */
-  advance(dt: number, held: (item: Item) => boolean): Item[] {
+  advance(dt: number, held: (item: Item) => boolean, lit?: (item: Item) => void): Item[] {
     const done: Item[] = [];
     for (const item of this.burning) {
       item.fuseRemainingSimSeconds = Math.max(0, item.fuseRemainingSimSeconds! - dt);
@@ -80,6 +80,7 @@ export class Fuses {
         this.live.delete(item);
         item.fuseRemainingSimSeconds = this.registry.items.get(item.type)!.explosive!.fuseSimSeconds;
         this.burning.add(item);
+        lit?.(item);
       }
     }
     return done.sort((a, b) => a.uid - b.uid);

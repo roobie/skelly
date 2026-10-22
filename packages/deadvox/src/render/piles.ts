@@ -60,6 +60,12 @@ export class PileMeshes {
   private readonly reveal: ColumnReveal | undefined;
   private drawn = '';
   private readonly itemBounds = new Map<number, Box3>();
+  private readonly itemModels = new Map<number, Object3D>();
+
+  /** The model drawn for a piled item, if it has a loaded one. */
+  drawnModel(uid: number): Object3D | undefined {
+    return this.itemModels.get(uid);
+  }
 
   boundsFor(uid: number): { position: [number, number, number]; size: [number, number, number] } | undefined {
     const bounds = this.itemBounds.get(uid);
@@ -90,6 +96,7 @@ export class PileMeshes {
     }
     this.drawn = version;
     this.itemBounds.clear();
+    this.itemModels.clear();
     disposeItemEmissiveMaterials(this.group);
     this.group.clear();
     const casePlans = new Map<string, CasePlan>();
@@ -129,6 +136,7 @@ export class PileMeshes {
     }
     this.caseVisuals.clear();
     this.itemBounds.clear();
+    this.itemModels.clear();
     disposeItemEmissiveMaterials(this.group);
     this.group.clear();
     this.geometry.dispose();
@@ -167,6 +175,7 @@ export class PileMeshes {
       model.rotation.y = yaw;
       this.group.add(castsAndReceives(model));
       this.itemBounds.set(item.uid, new Box3().setFromObject(model));
+      this.itemModels.set(item.uid, model);
     }
   }
 

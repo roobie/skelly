@@ -39,6 +39,7 @@ import { Gore } from './gore.ts';
 import { type HeldHandlingFrame, HeldItems } from './hands.ts';
 import { ImpactEffects } from './impactEffects.ts';
 import { ItemThrows } from './itemThrows.ts';
+import { LeverProps } from './leverProps.ts';
 import { LightPool } from './lightPool.ts';
 import { applyLook } from './look.ts';
 import { MobActorMeshes, type ZombieRenderer } from './mobActors.ts';
@@ -201,9 +202,18 @@ export const createPlayView = (
     : undefined;
   const impactEffects = new ImpactEffects(s, engine.isSolid, targetCell);
   const blastFlashes = new BlastFlashes();
+  const leverProps = new LeverProps(s, engine.isSolid);
   const acidEffects = new AcidEffects(s);
   const held = new HeldItems(inventory, models, playerPalette, engine.sky.light);
-  scene.add(caseEffects.mesh, impactEffects.group, itemThrows.group, gore.group, blastFlashes.group, acidEffects.group);
+  scene.add(
+    caseEffects.mesh,
+    impactEffects.group,
+    itemThrows.group,
+    gore.group,
+    blastFlashes.group,
+    leverProps.group,
+    acidEffects.group,
+  );
   const dispose = () => {
     piles.dispose();
     caseEffects.dispose();
@@ -212,6 +222,7 @@ export const createPlayView = (
     impactEffects.dispose();
     itemThrows.dispose();
     blastFlashes.dispose();
+    leverProps.dispose();
     acidEffects.dispose();
     flashlight.dispose();
     held.dispose();
@@ -330,6 +341,7 @@ export const createPlayView = (
     itemThrows,
     impactEffects,
     blastFlashes,
+    leverProps,
     acidEffects,
     furniture,
     playerMeshes,
@@ -382,6 +394,7 @@ export const createPlayView = (
     }: PlayWorldFrame) => {
       itemThrows.update(time, inventory);
       blastFlashes.update(dt);
+      leverProps.update(dt);
       acidEffects.sync(acidGlobs, acidPuddles, registry.zombies, dt);
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour, dayCycle), weather, dayCycle.weather);
