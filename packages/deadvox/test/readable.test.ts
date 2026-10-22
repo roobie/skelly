@@ -41,6 +41,9 @@ const admit = (value: Readable) =>
           },
         ],
         body: [{ ...BODY_TUNING_FIXTURE, id: 'player' }],
+        sounds: Object.values(BODY_TUNING_FIXTURE.heartbeat.sounds).map(
+          (id) => BUNDLED_CONTENT.registry.sounds.get(id)!,
+        ),
         compression: [{ id: 'player', caps: COMPRESSION_CAPS_FIXTURE }],
         senses: [TEST_SENSE_TUNING],
         skills: [structuredClone(BUNDLED_CONTENT.registry.skills.get('firearms_combat')!)],
