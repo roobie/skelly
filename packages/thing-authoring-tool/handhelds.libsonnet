@@ -10,7 +10,13 @@ local key(id, massKg, bowRadius, shaftLength, metal) = atom(id, 'key', massKg, {
   bowRadius: bowRadius, shaftLength: shaftLength, shaftWidth: 0.012, thickness: 0.003, toothDepth: 0.008,
 }, { metal: metal }, 'shaft');
 [
-  atom('compass', 'compass', 0.120, { radius: 0.03, height: 0.009, bezelHeight: 0.004, displayWidth: 0.026 }, { body: 'plastic-black', bezel: 'steel-grey', display: 'plastic-green' }, 'body'),
+  atom('compass', 'compass', 0.120, { radius: 0.03, height: 0.009, bezelHeight: 0.004, displayWidth: 0.026 }, { body: 'plastic-black', bezel: 'steel-grey', display: 'plastic-green' }, 'body') + {
+    handling+: { turn: [90, 0, -90] },
+    anchors: {
+      display_mount: { part: 'compass', solid: 'display', fraction: [0.5, 1, 0.5] },
+      needle_mount: { part: 'compass', solid: 'display', fraction: [0.5, 1, 0.5] },
+    },
+  },
   atom('lighter', 'lighter', 0.020, { width: 0.024, height: 0.055, depth: 0.012, capHeight: 0.009 }, { body: 'plastic-red', cap: 'steel-grey', wheel: 'steel-grey' }),
   atom('matches', 'matchbox', 0.020, { width: 0.055, height: 0.015, depth: 0.035, sleeve: 0.004 }, { tray: 'paperboard-tan', sleeve: 'paint-terracotta', striker: 'paperboard-brown' }, 'tray'),
   key('dad_cabin_key', 0.010, 0.012, 0.038, 'steel-grey'),

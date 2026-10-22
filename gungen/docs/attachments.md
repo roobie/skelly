@@ -8,9 +8,9 @@ read_if:
 
 # Attachment exports
 
-Gungen owns attachment compatibility because only the firearm domain can certify a fit against its port, optic-support, loading-clearance and keep-out rules. The exported compatibility list is complete and fail-closed: an absent pair is denied rather than guessed at runtime. See `src/gun/attachmentCompatibility.ts`, `attachmentCompatibilityPairs`; fitted defaults remain part of firearm metadata.
+Gungen owns attachment compatibility because only the firearm domain can certify a fit against its rules. A single fit runs every rule validation runs, so a certified fit cannot fail validation; a fit is blamed only for issues the bare firearm lacks. Rules with a per-part variant check just the candidate's interactions, which is all a fit can change. The exported compatibility list is complete and fail-closed: an absent pair is denied rather than guessed at runtime. See `src/gun/attachmentCompatibility.ts`, `PER_PART_RULES`, and `packages/engine/src/assembly/validate.ts`, `validationRules`; fitted defaults remain part of firearm metadata.
 
-Pair checks are sufficient because overlap and keep-out are relations between two placed parts. A group conflicts only when at least one pair conflicts, so a separate triple certificate would duplicate the same geometry question. For optics, rail support follows the mount feet rather than the full visual envelope; body clearance remains a separate fit relation. See `src/gun/attachments.ts`, `railSpanNotches`, `src/gun/rules.ts`, `opticMountFitForPart`, and `packages/deadvox/src/core/firearmFitting.ts`, `railFootprint`.
+Pair checks are sufficient because each single already passes validation, and overlap and keep-out are the relations between two placed parts. A group conflicts only when at least one pair conflicts, so a separate triple certificate would duplicate the same geometry question. For optics, rail support follows the mount feet rather than the full visual envelope; body clearance remains a separate fit relation. See `src/gun/attachments.ts`, `railSpanNotches`, `src/gun/rules.ts`, `opticMountFitForPart`, and `packages/deadvox/src/core/firearmFitting.ts`, `railFootprint`.
 
 Attachments are atoms, so their item weight remains authoritative across host-specific
 mount presentation and shared visual models. A gun body sums its authored part masses;

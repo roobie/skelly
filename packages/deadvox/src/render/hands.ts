@@ -9,7 +9,6 @@ import {
   Box3,
   BoxGeometry,
   type BufferGeometry,
-  ConeGeometry,
   DirectionalLight,
   DoubleSide,
   Euler,
@@ -80,6 +79,7 @@ import {
   readMagazineLoadFrame,
   stepMagazineRaise,
 } from './magazineLoadPose.ts';
+import { ModelFlames } from './modelFlame.ts';
 import { type ComposedSlot, heldModelFrame, LENS, type ModelLibrary } from './models.ts';
 import { createFirstPersonArm, FIRST_PERSON_SHOULDER, placeFirstPersonSegment } from './playerFigure.ts';
 import { rummageFrame, rummageGrip } from './rummagePose.ts';
@@ -170,10 +170,9 @@ export class HeldItems {
   private readonly ambient = new HemisphereLight();
   private skyVisibility = 1;
   private readonly geometry = new BoxGeometry(1, 1, 1);
-  private readonly flameGeometry = new ConeGeometry(1, 1, 6);
+  private readonly flames = new ModelFlames('held-light-flame');
   private readonly material = new MeshLambertMaterial({ color: 0x6b_66_60 });
   private readonly lightMaterials = new Map<string, MeshBasicMaterial | MeshLambertMaterial>();
-  private readonly flameMaterials = new Map<string, MeshBasicMaterial>();
   private readonly inventory: Inventory;
   private readonly models: ModelLibrary | undefined;
   private readonly sunSource: DirectionalLight | undefined;
@@ -1306,11 +1305,7 @@ export class HeldItems {
       material.dispose();
     }
     this.lightMaterials.clear();
-    for (const material of this.flameMaterials.values()) {
-      material.dispose();
-    }
-    this.flameMaterials.clear();
-    this.flameGeometry.dispose();
+    this.flames.dispose();
     this.opticWindow.geometry.dispose();
     (this.opticWindow.material as MeshBasicMaterial).dispose();
     for (const held of this.shown.values()) {
@@ -1455,15 +1450,21 @@ export class HeldItems {
 
   private shape(item: Item): Object3D {
     const def = defOf(this.inventory.registry, item.type);
+    const look = itemLook(this.inventory.registry, item);
+    const model = look && this.models?.heldLook(look);
     if (def.heldDisplay === HELD_DISPLAY_KIND.compass) {
-      const compass = createCompass();
+      const anchors = def.model === undefined ? undefined : this.inventory.registry.models.get(def.model)?.anchors;
+      const compass = createCompass(
+        model && anchors?.display_mount && anchors.needle_mount
+          ? { root: model.root, displayMount: anchors.display_mount, needleMount: anchors.needle_mount }
+          : undefined,
+      );
       this.compasses.set(item.uid, compass);
       return compass.group;
     }
-    const look = itemLook(this.inventory.registry, item);
-    const model = look && this.models?.heldLook(look);
     if (model) {
       applyItemEmissive(model.root, item, def, this.inventory.registry.models.get(def.model!));
+      this.flames.onModel(this.inventory.registry, item, model.root, heldModelFrame);
       const [top] = this.inventory.registry.models.get(def.model!)?.gun?.rounds ?? [];
       if (top) {
         const seat = new Object3D();
@@ -1517,15 +1518,7 @@ export class HeldItems {
     lens.position.z = -long + short / 2;
     const shape = new Group().add(box, lens);
     if (item.on && def.light?.burning?.ignition === 'firestarter') {
-      const flameMaterial =
-        this.flameMaterials.get(def.light.color) ??
-        new MeshBasicMaterial({
-          color: def.light.color,
-          toneMapped: false,
-        });
-      this.flameMaterials.set(def.light.color, flameMaterial);
-      const flame = new Mesh(this.flameGeometry, flameMaterial);
-      flame.name = 'held-light-flame';
+      const flame = this.flames.mesh(def.light.color);
       flame.scale.set(short * 0.5, short * 1.5, short * 0.5);
       flame.position.set(0, short * 1.05, lens.position.z);
       shape.add(flame);

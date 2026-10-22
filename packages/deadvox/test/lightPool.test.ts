@@ -6,7 +6,7 @@ import {
   drainLight,
   inventoryLightSources,
   lightSenseSourceFor,
-  sunExposedAt,
+  SunExposureCache,
   toggleLight,
 } from '../src/core/lights.ts';
 import { slotsReason } from '../src/core/magazine.ts';
@@ -206,6 +206,29 @@ describe('made-light point pool', () => {
     expect(zombies.store.get(id)!.lastPerceived).toEqual(source?.pos);
   });
 
+  it('shines a set-down light from the flame its pile draws', () => {
+    const pool = new LightPool(new Scene());
+    const inventory = new Inventory(registry);
+    const glowstick = inventory.create('glowstick');
+    expect(toggleLight(registry, glowstick, 0)).toBeUndefined();
+    expect(inventory.add(glowstick, { kind: 'pile', pos: [3, 1, 0] })).toBe(true);
+    const flame = new Vector3(1.7, 0.9, 0.2);
+    pool.update(inventory, {
+      held: { lightPositionOf: () => false },
+      piles: {
+        lightPositionOf: (item, out) => {
+          out.copy(flame);
+          return item === glowstick;
+        },
+      },
+      camera: new PerspectiveCamera(),
+      blockSize: SCALE.blockSize,
+      daylightScale: 1,
+    });
+    expect(pool.lights[4]!.intensity).toBeGreaterThan(0);
+    expect(pool.lights[4]!.position.distanceTo(flame)).toBeLessThan(1e-9);
+  });
+
   it('shares exposure for carried pockets but excludes lights stored in furniture', () => {
     const mounted = withDefaultMountedLight(registryWithTestLights(), 'rifle_assault', 'flashlight');
     const fixtureRegistry = mounted.registry;
@@ -289,16 +312,12 @@ describe('made-light point pool', () => {
   it('uses daytime sky exposure for light gating, not direct sun angle', () => {
     const wallShadow: SolidAt = (_x, y, z) => y >= 0 && z === -1;
     const cycle = BASE_DAY_CYCLE;
-    const open = sunExposedAt({ position: [0.5, 1, 0.5], gameHours: 12, skyTop: 20, isOpaque: () => false, cycle });
-    const roofed = sunExposedAt({
-      position: [0.5, 1, 0.5],
-      gameHours: 12,
-      skyTop: 20,
-      isOpaque: (_x, y) => y === 2,
-      cycle,
-    });
-    const shadow = sunExposedAt({ position: [0.5, 1, 0.5], gameHours: 12, skyTop: 20, isOpaque: wallShadow, cycle });
-    const night = sunExposedAt({ position: [0.5, 1, 0.5], gameHours: 0, skyTop: 20, isOpaque: () => false, cycle });
+    const exposed = (isOpaque: SolidAt, gameHours: number) =>
+      new SunExposureCache(20, 0, isOpaque).isExposedAt([0.5, 1, 0.5], gameHours, cycle);
+    const open = exposed(() => false, 12);
+    const roofed = exposed((_x, y) => y === 2, 12);
+    const shadow = exposed(wallShadow, 12);
+    const night = exposed(() => false, 0);
 
     expect(open).toBe(true);
     expect(roofed).toBe(false);

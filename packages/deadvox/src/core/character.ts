@@ -25,7 +25,7 @@ export const SKILL_LEVEL_MAX = 10;
 export const SKILL_LEVEL_LEGENDARY = SKILL_LEVEL_MAX + 1;
 const LEGENDARY_LEVEL_PRACTICE = 1_000_000;
 
-/** BR ruled legendary is mostly vanity; its effects match ordinary level 10. */
+/** Legendary is mostly vanity: its effects match ordinary level 10. */
 export const skillEffectLevel = (level: number): number => Math.min(level, SKILL_LEVEL_MAX);
 
 /** Shared diminishing-return curve for effects that improve with skill. */

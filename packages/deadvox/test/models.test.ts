@@ -11,15 +11,16 @@ import {
   Vector3,
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { ContentSource } from '../src/core/content.ts';
 import { Inventory, type Pile } from '../src/core/inventory.ts';
 import { PILE_GRID } from '../src/core/inventoryScale.ts';
 import { toggleLight } from '../src/core/lights.ts';
 import { pileLayout } from '../src/core/pileLayout.ts';
 import { spentCaseItemId } from '../src/game/firearmHandling.ts';
+import { createCompass } from '../src/render/compass.ts';
 import { itemLook } from '../src/render/itemLook.ts';
-import { fittedPartFrame, heldModelFrame, prepareModel } from '../src/render/models.ts';
+import { fittedPartFrame, groundModelFrame, heldModelFrame, prepareModel } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
@@ -78,6 +79,28 @@ it('prepares every thing recipe export for ground and held drawing with its grip
       }
     }),
   );
+});
+
+it('attaches compass live parts to exported model anchors', async () => {
+  const definition = registry.models.get('compass')!;
+  const { scene } = await parseGlb(readFileSync(`${BASE}/${definition.file}`));
+  const { held } = prepareModel(definition, scene);
+  const context = { fillRect: vi.fn(), fillText: vi.fn(), beginPath: vi.fn(), arc: vi.fn(), stroke: vi.fn() };
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => context }) });
+  const compass = createCompass({
+    root: held,
+    displayMount: definition.anchors!.display_mount!,
+    needleMount: definition.anchors!.needle_mount!,
+  });
+  const frame = heldModelFrame(held);
+  const display = compass.group.getObjectByName('compass-live-display');
+  const needle = compass.group.getObjectByName('compass-live-needle');
+  expect(display?.parent).toBe(frame);
+  expect(needle?.parent).toBe(frame);
+  expect(display?.position.toArray()).toEqual(definition.anchors!.display_mount);
+  expect(needle?.position.toArray()).toEqual(definition.anchors!.needle_mount);
+  compass.dispose();
+  vi.unstubAllGlobals();
 });
 
 describe('piles with models', () => {
@@ -204,6 +227,62 @@ describe('piles with models', () => {
     expect((marker.material as MeshBasicMaterial).vertexColors).toBe(false);
     bundle.dispose();
   });
+
+  it('keeps a set-down flame burning upright over its model’s flame anchor, and shines from there', async () => {
+    const flameLights = [...registry.items.values()].filter(
+      ({ light, model }) =>
+        light?.burning?.ignition === 'firestarter' &&
+        light.flame !== undefined &&
+        model !== undefined &&
+        registry.models.get(model)?.anchors?.flame !== undefined,
+    );
+    expect(flameLights.length).toBeGreaterThan(0);
+    const scenes = await Promise.all(
+      flameLights.map(
+        async ({ model }) => (await parseGlb(readFileSync(`${BASE}/${registry.models.get(model!)!.file}`))).scene,
+      ),
+    );
+    for (const [index, definition] of flameLights.entries()) {
+      const modelDefinition = registry.models.get(definition.model!)!;
+      const { ground } = prepareModel(modelDefinition, scenes[index]!);
+      const models = {
+        version: 1,
+        has: (id: string) => id === modelDefinition.id,
+        groundLook: () => ground.clone(),
+      } as unknown as import('../src/render/models.ts').ModelLibrary;
+      const render = (on: boolean) => {
+        const items = new Inventory(registry);
+        const light = items.create(definition.id);
+        if (on) {
+          expect(toggleLight(registry, light, 0)).toBeUndefined();
+        }
+        expect(items.add(light, { kind: 'pile', pos: [2, 1, -1] })).toBe(true);
+        const piles = new PileMeshes(S, models);
+        piles.sync(items);
+        const model = piles.group.children.find((child) => !(child instanceof InstancedMesh))!;
+        return { piles, light, model, flame: model.getObjectByName('pile-light-flame') };
+      };
+
+      const unlit = render(false);
+      expect(unlit.flame, definition.id).toBeUndefined();
+      expect(unlit.piles.lightPositionOf(unlit.light, new Vector3()), definition.id).toBe(false);
+      unlit.piles.dispose();
+
+      const { piles, light, model, flame } = render(true);
+      expect(flame, definition.id).toBeDefined();
+      const at = new Vector3();
+      expect(piles.lightPositionOf(light, at), definition.id).toBe(true);
+      const anchor = groundModelFrame(model).localToWorld(new Vector3(...modelDefinition.anchors!.flame!));
+      expect(at.distanceTo(anchor), definition.id).toBeLessThan(1e-9);
+      const flameBounds = new Box3().setFromObject(flame!);
+      const centre = flameBounds.getCenter(new Vector3());
+      expect(flameBounds.min.y, definition.id).toBeCloseTo(at.y);
+      expect(flameBounds.max.y - flameBounds.min.y, definition.id).toBeCloseTo(definition.light!.flame!.heightMetres);
+      expect(centre.x, definition.id).toBeCloseTo(at.x);
+      expect(centre.z, definition.id).toBeCloseTo(at.z);
+      piles.dispose();
+    }
+  });
 });
 
 it('prepares integral-magazine manual exports and binds movers by glTF node index, not sanitized name', async () => {
@@ -257,6 +336,21 @@ describe('model forms', () => {
     expect(box.getCenter(new Vector3()).x).toBeCloseTo(0);
     expect(box.getCenter(new Vector3()).z).toBeCloseTo(0);
     expect(box.max.x - box.min.x).toBeCloseTo(0.3); // long side along x
+  });
+
+  it('stands a model that rests upright on its back end, its front end up and centred over its origin', async () => {
+    const bytes = readFileSync('test/fixtures/packs/lamp/assets/models/lamp.glb');
+    const { scene } = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
+    const raw = new Box3().setFromObject(scene);
+    const { ground } = prepareModel({ ...registry.models.get('lamp')!, rest: 'upright' }, scene);
+    ground.updateMatrixWorld(true);
+    const box = new Box3().setFromObject(ground);
+    expect(box.min.y).toBeCloseTo(0);
+    expect(box.max.y - box.min.y).toBeCloseTo(raw.max.x - raw.min.x);
+    expect(box.getCenter(new Vector3()).x).toBeCloseTo(0);
+    expect(box.getCenter(new Vector3()).z).toBeCloseTo(0);
+    const front = groundModelFrame(ground).localToWorld(new Vector3(raw.max.x, 0, 0));
+    expect(front.y).toBeCloseTo(box.max.y);
   });
 
   it('exposes shared ground mesh resources with the prepared root transforms for instancing', async () => {

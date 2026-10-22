@@ -33,7 +33,7 @@ const debugVoicePitch = (search: string, param: 'voicePitch' | 'voicePitchLarge'
  * The shambler voice-pitch law, calibrated on the bodies of the authored figure pool (`figureSeedPool`):
  * a falling power law between its smallest and tallest bodies, clamped around the smallest body's old-law pitch.
  */
-// BR picked 1.2× the old law at the tiny end and approved the large end at its old-law pitch (2026-10-05); see DESIGN.md.
+// The tiny end is pitched 1.2× the old law and the large end keeps its old-law pitch; see DESIGN.md.
 // The clamp envelope is 0.5×–1.3× that same old-law pitch at the tiny end.
 export const shamblerVoiceLaw = (figureSeeds: readonly number[]) => {
   if (figureSeeds.length === 0) {

@@ -1,10 +1,18 @@
 {
   "doorMaterials": [
     {
+      "broken": {
+        "strength": 0.59999999999999998,
+        "tint": "#d8c9a6"
+      },
       "id": "wood",
       "methods": ["pry"]
     },
     {
+      "broken": {
+        "strength": 0.55000000000000004,
+        "tint": "#9a4a28"
+      },
       "id": "steel",
       "methods": ["pry", "cut"]
     }

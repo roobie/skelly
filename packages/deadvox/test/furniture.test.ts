@@ -324,6 +324,28 @@ describe('furniture', () => {
     }
   });
 
+  it('repaints a door leaf once a blow breaks it, on the view that already drew it intact', () => {
+    const entities = new BlockEntities(registry);
+    const door = entities.add({ type: 'wood_door', pos: [4, 1, 0], size: [2, 4, 1], facing: 'n' })!;
+    const furniture = new FurnitureMeshes(BLOCK_SIZE);
+    const colours = (): string[] => {
+      const found: string[] = [];
+      furniture.group.traverse((child) => {
+        if ((child as Mesh).isMesh) {
+          found.push(((child as Mesh).material as MeshLambertMaterial).color.getHexString());
+        }
+      });
+      return found.sort();
+    };
+    furniture.sync(entities);
+    const intact = colours();
+    for (let blows = 0; entities.bash(door, 1e6) !== 'broken'; blows++) {
+      expect(blows).toBeLessThan(1000);
+    }
+    furniture.sync(entities);
+    expect(colours()).not.toEqual(intact);
+  });
+
   it('picks the closed HQ safe only through its visible door', () => {
     const definition = registry.furniture.get('camp_hq_safe')!;
     const entities = new BlockEntities(registry);

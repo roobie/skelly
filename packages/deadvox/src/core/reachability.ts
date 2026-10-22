@@ -11,7 +11,7 @@ import { siteGenerationOf } from './sitePalette.ts';
 import { compileTemplate, type SpawnMarker } from './templates.ts';
 import { SEVERED_ITEM } from './zombieRegionNames.ts';
 
-/** BR's content-count exclusions for the current base; extend with new debug/case/part definitions. */
+/** Content types excluded from the content-count check; extend with new debug/case/part definitions. */
 const CONTENT_COUNT_EXCLUSIONS: ReadonlySet<string> = new Set([
   WORK_IN_PROGRESS, // Runtime-owned escrow, not an acquired content type.
   'debug_shotgun_pump',

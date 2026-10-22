@@ -1,6 +1,5 @@
-import type { ExtrudedPolygonSolid, Vec2 } from '@skelly/engine/shapes/solid.ts';
 import { parse, strictObject } from 'valibot';
-import { cylinder, positive, revolve, scalar } from './shapes.ts';
+import { cylinder, positive, revolve, scalar, strip } from './shapes.ts';
 
 export const base = (params: Readonly<Record<string, string>>) => {
   const d = parse(strictObject({ radius: positive, height: positive }), params);
@@ -11,32 +10,15 @@ export const arm = (params: Readonly<Record<string, string>>) => {
     strictObject({ elbowX: scalar, elbowY: positive, endX: scalar, endY: positive, width: positive, depth: positive }),
     params,
   );
-  const points: Vec2[] = [
-    [0, 0],
-    [d.elbowX, d.elbowY],
-    [d.endX, d.endY],
-  ];
-  return points.slice(1).map((end, i): ExtrudedPolygonSolid => {
-    const start = points[i]!;
-    const length = Math.hypot(end[0] - start[0], end[1] - start[1]);
-    if (length === 0) {
-      throw new Error('Arm segment needs length');
-    }
-    const dx = ((-(end[1] - start[1]) / length) * d.width) / 2;
-    const dy = (((end[0] - start[0]) / length) * d.width) / 2;
-    return {
-      id: `segment-${i}`,
-      kind: 'extruded-polygon',
-      profile: [
-        [start[0] + dx, start[1] + dy],
-        [start[0] - dx, start[1] - dy],
-        [end[0] - dx, end[1] - dy],
-        [end[0] + dx, end[1] + dy],
-      ],
-      z: [-d.depth / 2, d.depth / 2],
-      slot: 'body',
-    };
-  });
+  return strip(
+    'segment',
+    [
+      [0, 0],
+      [d.elbowX, d.elbowY],
+      [d.endX, d.endY],
+    ],
+    [d.width, d.depth],
+  );
 };
 export const shade = (params: Readonly<Record<string, string>>) => {
   const d = parse(

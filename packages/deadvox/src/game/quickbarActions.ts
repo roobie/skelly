@@ -21,13 +21,12 @@ export class QuickbarActions {
   }
 
   tap(item: Item): void {
-    const { inventory, queue, feet, notice } = this.dependencies;
+    const { inventory, queue, notice } = this.dependencies;
     const at = inventory.locate(item);
     if (!at) {
       return;
     }
-    const reason =
-      at.kind === 'hand' ? quickbarPutAway(inventory, queue, item) : quickbarTake(inventory, queue, item, feet());
+    const reason = at.kind === 'hand' ? quickbarPutAway(inventory, queue, item) : quickbarTake(inventory, queue, item);
     if (reason) {
       notice(reason);
     }

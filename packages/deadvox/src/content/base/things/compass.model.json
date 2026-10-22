@@ -2,7 +2,8 @@
   "id": "compass",
   "file": "assets/models/compass.glb",
   "parts": { "compass": { "node": "compass:compass", "massKg": 0.12, "centreOfMass": [0, 0.005916140928369013, 0] } },
-  "grip": { "at": [0, 0.0045, 0], "turn": [0, 0, -90] },
+  "grip": { "at": [0, 0.0045, 0], "turn": [90, 0, -90] },
   "hold": "upright",
-  "roll": 0
+  "roll": 0,
+  "anchors": { "display_mount": [0, 0.013399999999999999, 0], "needle_mount": [0, 0.013399999999999999, 0] }
 }
