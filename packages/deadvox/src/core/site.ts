@@ -53,7 +53,7 @@ export interface FurnitureSpawn {
 }
 
 /** The wear a piece is placed with, drawn from its content's range and the placement seed; undefined when intact. */
-const rollWear =(registry: Registry, seed: number, spec: EntitySpec): number | undefined => {
+const rollWear = (registry: Registry, seed: number, spec: EntitySpec): number | undefined => {
   const range = registry.furniture.get(spec.type)?.wear;
   return range && Rng.stream(seed, `wear:${spec.type}:${spec.pos.join(',')}`).range(range.from, range.to);
 };
