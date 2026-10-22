@@ -6,6 +6,8 @@ const snap = (value: number): number => Math.round(value / GRID) * GRID;
 
 const barrelTipThreadedU = 16;
 const barrelTipPlainU = 15;
+const citedBarrelLengthU = snap(mmToU(225));
+const barrelBreechU = barrelTipThreadedU - citedBarrelLengthU;
 const receiverRearX = -20;
 
 /** The stock's reach behind the receiver's rear face, for an overall length from the threaded muzzle tip. */
@@ -25,8 +27,12 @@ export const COMPACT_SMG_PROPORTIONS = {
     chamferU: 0.25,
     topFlatHalfWidthU: 1.75,
   },
-  // Lengths run from the barrel's seat at the receiver's front face to the muzzle tip.
-  barrel: { tipU: { threaded: barrelTipThreadedU, plain: barrelTipPlainU } },
+  // The cited barrel length runs from the threaded muzzle tip back to the breech.
+  barrel: {
+    breechU: barrelBreechU,
+    citedLengthU: citedBarrelLengthU,
+    tipU: { threaded: barrelTipThreadedU, plain: barrelTipPlainU },
+  },
   // Both sights share one horizontal sight line above the bore. The drum's apertures sit on a rim of
   // `rimU` about its axis; the first `apertureCount` of top, left, right and bottom are open.
   sights: {
