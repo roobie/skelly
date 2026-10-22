@@ -756,34 +756,42 @@ The lab's target is four levels below the hatch, with the nuclear objective at t
 bottom. Each function from the drawn plan gets a level, but the drawing is inspiration,
 not a blueprint: its mood guides the rebuild and BR judges fidelity in play. Looped
 circulation and separated descents make exploration and retreat choices rather than
-one corridor and a continuous climb. Entry and security replaces the grid's top
-storey; the lower grid remains until its top-down review rounds, with one grid storey
-to retire when the final rebuild establishes the target depth. See
-`src/content/base/gauntlet-lab-entry.libsonnet`, `plan`, and
-`src/content/base/gauntlet-lab.libsonnet`, `mapAssemblies`.
+one corridor and a continuous climb. Entry and security, then administration, replace
+the grid's top storeys; the lower grid remains until its top-down review rounds, with
+one grid storey to retire when the final rebuild establishes the target depth. Rebuilt
+levels share one builder and one scale, so a level's rooms keep their proportions and a
+fix to the builder reaches every level. See `src/content/base/gauntlet-lab-level.libsonnet`,
+`build`, and `src/content/base/gauntlet-lab.libsonnet`, `mapAssemblies`.
 
 The stair is the main way down because a building's descent should read as one. A
-lidded shaft remains an alternate return route. Both join the grid below through a
-temporary landing; administration's rebuild replaces that join. Threat may drop down
-a shaft but never climb up, so deep threat cannot reach the top and depth ordering
-holds. A lid then defends only against threat above. Until d508, threat stays on its
-own level. See `src/content/base/gauntlet-lab-entry.libsonnet`, `stair`, and `src/content/base/gauntlet-lab-equipment.libsonnet`, `mapPieces`.
+lidded shaft remains an alternate return route. Each level's stair and shaft leave from
+different places than the ways that arrive on it, so the next way down is something to
+find and retreat by the other route is a real choice. The lowest rebuilt level joins
+the grid below through a temporary landing named in one place, which each rebuild moves
+down a storey. Threat may drop down a shaft but never climb up, so deep threat cannot
+reach the top and depth ordering holds. A lid then defends only against threat above.
+Until d508, threat stays on its own level. See
+`src/content/base/gauntlet-lab-administration.libsonnet`, `stair`;
+`src/content/base/gauntlet-lab.libsonnet`, `join`; and
+`src/content/base/gauntlet-lab-equipment.libsonnet`, `mapPieces`.
 
-The hatch-side entrance is open. Level one's ways down need a keycard from one authored
-spot on the open side, the same spot every run. Acquisition cannot depend on the seal
+The hatch-side entrance is open. Each rebuilt level's ways down need that level's own
+keycard, from one authored spot on its open side. Acquisition cannot depend on the seal
 it opens. The seals are vault or bulkhead doors, which a crowbar cannot force: only
-the card opens them. The certificate checks that the matching placed card is present,
-reachable from the hatch landing with the seals closed, and within visible pickup reach
-before admitting those locks to the descent proof. This prevents a missing or self-locked
-card from making the run a dead end. See `src/content/base/gauntlet-lab-entry.libsonnet`,
-`seal`; `src/core/scenarioCertificate.ts`, `seals`; and `src/core/prying.ts`, `pryPlan`.
+the card opens them. The certificate checks seals top-down: each level's matching placed
+card must be present, reachable from the hatch landing with only the seals above it
+open, and within visible pickup reach before its locks are admitted to the descent
+proof. Checking in that order means no card can depend on its own seal or a deeper one,
+which would make the run a dead end. See
+`src/content/base/gauntlet-lab-administration.libsonnet`, `seal`;
+`src/core/scenarioCertificate.ts`, `seals`; and `src/core/prying.ts`, `pryPlan`.
 
 Each level is fully rebuilt and judged in play before the next one, so the first
 level sets the look and the destination is built last. Unrebuilt grid storeys keep
 their shafts without seals or fixtures. Their shell and circulation retire with
 them; equipment, descent lids, threat and the holding cap are reused where they fit.
 The authored plan scales rooms together while equipment and doors stay human-sized.
-The content scale is provisional until level one's play review. Rooms differ in
+Rooms differ in
 height, finish and furnishing so each reads as its own space under a carried light.
 Loops run between rooms instead of along a one-sided excavation corridor that serves
 nothing; unused excavation stays solid rather than making the rooms larger and emptier.
@@ -842,7 +850,7 @@ and `src/game/session.ts`, `activateGoal`.
 
 Darkness uses world-derived sky transport and an ordinary carried light. The lab's
 fixtures are intended to light only after power is restored, so light is earned,
-not given. Entry's working and broken fixtures are inert set dressing. Its breaker
+not given. Rebuilt levels' working and broken fixtures are inert set dressing. Entry's breaker
 belongs in the security post; d509 builds that interaction and its saved per-level
 power state. Later levels' switch positions are decided at their own reviews. The
 lab has no lighting category until its light round. See
