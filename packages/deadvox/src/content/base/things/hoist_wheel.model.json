@@ -1,0 +1,16 @@
+{
+  "id": "hoist_wheel",
+  "file": "assets/models/hoist_wheel.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 30,
+      "centreOfMass": [0, 0, 0],
+      "collision": [
+        { "min": [-0.375, -0.375, -0.109375], "max": [0.375, 0.375, 0.109375] },
+        { "min": [-0.203125, -0.203125, -0.09375], "max": [0.203125, 0.203125, 0.09375] }
+      ]
+    }
+  },
+  "anchors": { "hub": [0, 0, 0] }
+}

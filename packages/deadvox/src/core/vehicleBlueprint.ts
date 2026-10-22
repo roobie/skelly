@@ -31,7 +31,15 @@ const partModelIssue = (registry: Registry, itemId: string): string | undefined 
   return bare.length === 0 ? undefined : `model "${item.model}" has no baked collision for ${bare.join(', ')}`;
 };
 
-/** Parts without exported physics, and blueprints with broken references or supports. */
+const ratingIssue = ({ capabilities, ratedLoadKg }: { capabilities: readonly VehicleCapability[]; ratedLoadKg?: number }) => {
+  const lifts = capabilities.includes('lift');
+  if (lifts && ratedLoadKg === undefined) {
+    return 'a lifting part needs a rated load';
+  }
+  return !lifts && ratedLoadKg !== undefined ? 'only a lifting part has a rated load' : undefined;
+};
+
+/** Parts without exported physics or a lift rating, and blueprints with broken references, supports or bracing. */
 export const vehicleContentIssues = (registry: Registry): VehicleIssue[] => {
   const issues: VehicleIssue[] = [];
   for (const item of registry.items.values()) {
@@ -39,16 +47,28 @@ export const vehicleContentIssues = (registry: Registry): VehicleIssue[] => {
     if (message) {
       issues.push({ section: 'items', id: item.id, path: '.model', message });
     }
+    const rating = item.vehicle && ratingIssue(item.vehicle);
+    if (rating) {
+      issues.push({ section: 'items', id: item.id, path: '.vehicle', message: rating });
+    }
   }
   for (const blueprint of registry.vehicleBlueprints.values()) {
+    const capabilities = new Set<VehicleCapability>();
     blueprint.fittings.forEach((fitting, i) => {
       const item = registry.items.get(fitting.part);
       if (!item?.vehicle) {
         const message = item ? `item "${fitting.part}" is not a vehicle part` : `no item "${fitting.part}"`;
         issues.push({ section: 'vehicleBlueprints', id: blueprint.id, path: `.fittings[${i}].part`, message });
       }
+      for (const capability of item?.vehicle?.capabilities ?? []) {
+        capabilities.add(capability);
+      }
     });
     for (const message of supportProblems(blueprint.fittings)) {
+      issues.push({ section: 'vehicleBlueprints', id: blueprint.id, path: '.fittings', message });
+    }
+    if (capabilities.has('lift') && !capabilities.has('stabiliser')) {
+      const message = 'a vehicle that lifts needs a stabiliser fitted';
       issues.push({ section: 'vehicleBlueprints', id: blueprint.id, path: '.fittings', message });
     }
   }

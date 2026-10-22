@@ -251,6 +251,10 @@ const VEHICLE_CAPABILITIES = [
   'structure',
   /** A road wheel, the part a vehicle rolls on. */
   'wheel',
+  /** Raises heavy loads; the part names its rated load. */
+  'lift',
+  /** Braces a lifting vehicle against the ground; a vehicle that lifts needs one. */
+  'stabiliser',
 ] as const;
 export type VehicleCapability = (typeof VEHICLE_CAPABILITIES)[number];
 
@@ -941,6 +945,8 @@ const ItemSchema = strictObject({
         array(picklist(VEHICLE_CAPABILITIES)),
         check((list) => new Set(list).size === list.length, 'capabilities must be distinct'),
       ),
+      /** The heaviest load a `lift` part raises; one rating, not a chart over reach. */
+      ratedLoadKg: optional(Positive),
     }),
   ),
 });

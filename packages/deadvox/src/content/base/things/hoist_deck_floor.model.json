@@ -1,0 +1,17 @@
+{
+  "id": "hoist_deck_floor",
+  "file": "assets/models/hoist_deck_floor.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 120,
+      "centreOfMass": [-1.21875, 0.8186274509803921, 0],
+      "collision": [
+        { "min": [-2.875, 0.875, -0.90625], "max": [0.4375, 0.9375, 0.90625] },
+        { "min": [-2.875, 0.53125, -0.5625], "max": [0.4375, 0.875, -0.4375] },
+        { "min": [-2.875, 0.53125, 0.4375], "max": [0.4375, 0.875, 0.5625] }
+      ]
+    }
+  },
+  "anchors": {}
+}

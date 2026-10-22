@@ -1,0 +1,13 @@
+{
+  "id": "hoist_crossmember",
+  "file": "assets/models/hoist_crossmember.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 15,
+      "centreOfMass": [0.0625, 0.046875, 0.4375],
+      "collision": [{ "min": [0, 0, 0], "max": [0.125, 0.09375, 0.875] }]
+    }
+  },
+  "anchors": {}
+}

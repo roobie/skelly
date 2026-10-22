@@ -219,6 +219,222 @@ local gearLever = compound('gear_lever', 1, [
   turned('knob', 'knob', 'y', [[0, 0], [0, 0.02], [0.03, 0.025], [0.05, 0.015], [0.055, 0], [0, 0]], [0, 0.2, 0]),
 ], { gaiter: 'rubber-black', stick: 'steel-grey', knob: 'polymer-black' });
 
+// The crane truck keeps the 1/32 m grid its look was approved on: pieces are grid points with the rear
+// underrun at x 0, the ground at y 0 and the centre plane at z 32; `ht.at` turns one into metres.
+local ht = { at(p):: [(p[0] - 96) / 32, p[1] / 32, (p[2] - 32) / 32] };
+local pi = 3.141592653589793;
+local hbox(id, slot, min, max) = box(id, slot, ht.at(min), ht.at(max));
+local hprism(id, slot, profile, z) = prism(id, slot, [[(p[0] - 96) / 32, p[1] / 32] for p in profile], [(z[0] - 32) / 32, (z[1] - 32) / 32]);
+// A disc or ring about `axis` through `centre`, spanning `span` along that axis.
+local hdisc(id, slot, axis, centre, radius, span, inner=0) =
+  local i = { x: 0, y: 1, z: 2 }[axis];
+  local mid = (span[0] + span[1]) / 2;
+  local half = (span[1] - span[0]) / 2 / 32;
+  turned(id, slot, axis, if inner == 0 then disc(radius / 32, -half, half) else annulus(inner / 32, radius / 32, -half, half),
+         ht.at([if j == i then mid else centre[j] for j in [0, 1, 2]]));
+// A straight member of full `width` from `a` to `b` in the side view.
+local htube(id, slot, a, b, width, z) =
+  local len = std.sqrt(std.pow(b[0] - a[0], 2) + std.pow(b[1] - a[1], 2));
+  local n = [-(b[1] - a[1]) * width / 2 / len, (b[0] - a[0]) * width / 2 / len];
+  hprism(id, slot, [[a[0] - n[0], a[1] - n[1]], [b[0] - n[0], b[1] - n[1]], [b[0] + n[0], b[1] + n[1]], [a[0] + n[0], a[1] + n[1]]], z);
+local harc(id, slot, centre, inner, outer, from, to, segments, z) = [
+  local a = from + (to - from) * i / segments;
+  local b = from + (to - from) * (i + 1) / segments;
+  local at(r, t) = [centre[0] + r * std.cos(t), centre[1] + r * std.sin(t)];
+  hprism(id + '_' + i, slot, [at(inner, a), at(outer, a), at(outer, b), at(inner, b)], z)
+  for i in std.range(0, segments - 1)
+];
+local hoistFinish = {
+  chassis: 'paint-charcoal',
+  radiator: 'paint-charcoal',
+  trim: 'plastic-black',
+  dash: 'plastic-black',
+  grille: 'plastic-black',
+  chrome: 'steel-stainless',
+  badge: 'steel-stainless',
+  engine: 'steel-grey',
+  hub: 'steel-grey',
+  alloy: 'steel',
+  tank: 'polymer-od-green',
+  tail: 'plastic-red',
+  amber: 'plastic-yellow',
+  carpet: 'rubber-black',
+  headliner: 'cloth-rag',
+  seat: 'cloth-seat',
+  card: 'cloth-seat',
+  load: 'wood-birch',
+  glass: 'glass-clear',
+  crane: 'paint-crane-yellow',
+  paint: 'paint-cream',
+  plate: 'plastic-white',
+  dial: 'plastic-white',
+};
+local hpart(id, massKg, pieces, anchors={}) = compound(id, massKg, pieces, hoistFinish, anchors);
+
+local hoistFrameRail = hpart('hoist_frame_rail', 110, [hbox('rail', 'chassis', [4, 13, 46], [188, 17, 50])]);
+local hoistCrossmember = hpart('hoist_crossmember', 15, [box('beam', 'chassis', [0, 0, 0], [4 / 32, 3 / 32, 28 / 32])]);
+local hoistWheel = compound('hoist_wheel', 30, [
+  turned('tyre', 'tyre', 'z', annulus(6.5 / 32, 12 / 32, -3.5 / 32, 3.5 / 32)),
+  turned('rim', 'rim', 'z', disc(6.5 / 32, -3 / 32, 3 / 32)),
+], { tyre: 'rubber-black', rim: 'steel-grey' }, { hub: ['rim', [0.5, 0.5, 0.5]] });
+local hoistAxle(id, x) = hpart(id, 140, [
+  hbox('beam', 'chassis', [x - 2, 10, 14], [x + 2, 13, 50]),
+  hbox('diff', 'chassis', [x - 4, 6, 25], [x + 5, 13, 35]),
+  hdisc('hub_near', 'hub', 'z', [x, 12, 0], 4.5, [50, 51]),
+  hdisc('hub_far', 'hub', 'z', [x, 12, 0], 4.5, [13, 14]),
+]);
+local hoistFrontAxle = hoistAxle('hoist_front_axle', 157);
+local hoistRearAxle = hoistAxle('hoist_rear_axle', 48);
+// The alloy top is ringed by the block rather than sunk into it, so no two finishes share a face.
+local hoistEngine = hpart('hoist_engine', 280, [
+  hbox('block', 'engine', [140, 17, 22], [168, 26, 42]),
+  hbox('block_far', 'engine', [140, 26, 22], [168, 29, 24]),
+  hbox('block_near', 'engine', [140, 26, 40], [168, 29, 42]),
+  hbox('block_rear', 'engine', [140, 26, 24], [142, 29, 40]),
+  hbox('block_front', 'engine', [166, 26, 24], [168, 29, 40]),
+  hbox('top', 'alloy', [142, 26, 24], [166, 29, 40]),
+  hbox('sump', 'engine', [144, 14, 26], [164, 17, 38]),
+  hbox('mount_far', 'chassis', [148, 15, 18], [152, 17, 22]),
+  hbox('mount_near', 'chassis', [148, 15, 42], [152, 17, 46]),
+  hdisc('fan', 'trim', 'x', [0, 23, 32], 5.5, [168, 170]),
+]);
+local hoistGearbox = hpart('hoist_gearbox', 70, [
+  hbox('case', 'engine', [118, 17, 27], [140, 25, 37]),
+  hbox('transfer', 'engine', [126, 12, 28], [136, 17, 36]),
+]);
+local hoistPropShaft = hpart('hoist_prop_shaft', 18, [htube('shaft', 'chassis', [53, 11], [118, 20], 3, [31, 34])]);
+local hoistFuelTank = hpart('hoist_fuel_tank', 55, [hbox('tank', 'tank', [70, 8, 4], [100, 17, 14])]);
+local hoistExhaust = hpart('hoist_exhaust', 18, [
+  hdisc('pipe', 'engine', 'x', [0, 14, 52], 1.6, [104, 128]),
+  hbox('silencer', 'engine', [84, 10, 50], [104, 16, 58]),
+  hdisc('tailpipe', 'engine', 'x', [0, 12, 54], 1.6, [70, 84]),
+]);
+local hoistRadiator = hpart('hoist_radiator', 15, [hbox('core', 'radiator', [182, 16, 20], [186, 29, 44])]);
+
+// The cab tilts over the engine, so its floor carries the cab and sits on four mounts.
+local hoistCabFloor = hpart('hoist_cab_floor', 80, [
+  hbox('floor', 'chassis', [132, 30, 3], [188, 32, 61]),
+  hbox('carpet', 'carpet', [135, 32, 8], [178, 33, 56]),
+] + [
+  hbox('mount_' + x + '_' + z, 'chassis', [x, 17, z], [x + 4, 30, z + 4])
+  for x in [134, 178]
+  for z in [14, 46]
+]);
+// The step below the door follows the front wheel arch in strips, since a compound cannot cut a hole.
+local hoistCabSkirt = hpart('hoist_cab_skirt', 10, [
+  hbox('rear', 'paint', [132, 18, 57], [143.5, 30, 61]),
+  hbox('front', 'paint', [170.5, 18, 57], [188, 30, 61]),
+] + [
+  local x0 = 143.5 + 1.5 * i;
+  local dx = std.max(0, std.max(x0 - 157, 157 - (x0 + 1.5)));
+  hbox('strip_' + i, 'paint', [x0, std.max(18, 12 + std.sqrt(13.5 * 13.5 - dx * dx)), 57], [x0 + 1.5, 30, 61])
+  for i in std.range(0, 17)
+] + harc('arch', 'trim', [157, 12], 13.5, 15.5, 0, pi, 8, [61, 62]));
+local hoistCabBack = hpart('hoist_cab_back', 35, [
+  hbox('wall_low', 'paint', [132, 32, 3], [135, 48, 61]),
+  hbox('wall_high', 'paint', [132, 58, 3], [135, 67, 61]),
+  hbox('wall_far', 'paint', [132, 48, 3], [135, 58, 14]),
+  hbox('wall_near', 'paint', [132, 48, 50], [135, 58, 61]),
+  hbox('glass', 'glass', [132, 48, 14], [135, 58, 50]),
+  hbox('pillar_near', 'paint', [135, 32, 57], [138, 67, 61]),
+  hbox('pillar_far', 'paint', [135, 32, 3], [138, 67, 7]),
+]);
+local hoistFrontPanel = hpart('hoist_front_panel', 20, [
+  hbox('face', 'paint', [185, 32, 7], [188, 46, 57]),
+  hbox('corner_near', 'paint', [183, 32, 57], [188, 46, 61]),
+  hbox('corner_far', 'paint', [183, 32, 3], [188, 46, 7]),
+  hbox('grille', 'grille', [188, 34, 18], [188.5, 42, 46]),
+  hbox('badge', 'badge', [188, 43, 28], [188.5, 45, 36]),
+]);
+local hoistAPost = hpart('hoist_a_post', 6, [hbox('post', 'paint', [183, 46, 57], [188, 67, 61])]);
+local hoistWindscreen = hpart('hoist_windscreen', 14, [hbox('glass', 'glass', [186, 46, 7], [187, 67, 57])]);
+local hoistRoof = hpart('hoist_roof', 30, [
+  hprism('skin', 'paint', [[132, 67], [188, 67], [185, 70], [132, 70]], [3, 61]),
+  hbox('headliner', 'headliner', [135, 66, 8], [183, 67, 56]),
+]);
+// The door hinges on its leading edge, against the A-post.
+local hoistDoor = hpart('hoist_door', 30, [
+  hbox('skin', 'paint', [138, 32, 57], [183, 46, 61]),
+  hbox('card', 'card', [138, 32, 56], [183, 46, 57]),
+  hbox('frame_low', 'trim', [138, 46, 57], [183, 47, 61]),
+  hbox('frame_high', 'trim', [138, 65, 57], [183, 67, 61]),
+  hbox('frame_rear', 'trim', [138, 47, 57], [140, 65, 61]),
+  hbox('frame_front', 'trim', [181, 47, 57], [183, 65, 61]),
+  hbox('glass', 'glass', [140, 47, 57], [181, 65, 61]),
+  hbox('handle', 'chrome', [140, 40, 61], [145, 41, 62]),
+], {
+  hinge_a: ['skin', [1, 0.2, 1]],
+  hinge_b: ['skin', [1, 0.8, 1]],
+});
+local hoistFrontBumper = hpart('hoist_front_bumper', 20, [
+  hbox('bar', 'trim', [188, 18, 3], [191, 26, 61]),
+  hbox('bracket_far', 'chassis', [188, 13, 14], [190, 18, 18]),
+  hbox('bracket_near', 'chassis', [188, 13, 46], [190, 18, 50]),
+  hbox('plate', 'plate', [191, 20, 26], [192, 24, 38]),
+]);
+local hoistDashboard = hpart('hoist_dashboard', 18, [
+  hbox('lower', 'dash', [178, 32, 8], [185, 46, 56]),
+  hbox('binnacle', 'dash', [178, 46, 43], [183, 53, 54]),
+  hbox('dial', 'dial', [177.5, 49, 44], [178, 52, 53]),
+]);
+local hoistEngineCover = hpart('hoist_engine_cover', 12, [hbox('cover', 'trim', [150, 33, 24], [176, 40, 40])]);
+local hoistBench = hpart('hoist_bench', 30, [
+  hbox('cushion', 'seat', [138, 33, 9], [150, 44, 55]),
+  hbox('back', 'seat', [135, 44, 9], [138, 62, 55]),
+], { hips: ['cushion', [0.4, 1, 0.5]] });
+
+local hoistDeckFloor = hpart('hoist_deck_floor', 120, [
+  hbox('floor', 'load', [4, 28, 3], [110, 30, 61]),
+  hbox('bearer_far', 'chassis', [4, 17, 14], [110, 28, 18]),
+  hbox('bearer_near', 'chassis', [4, 17, 46], [110, 28, 50]),
+]);
+local hoistHeadboard = hpart('hoist_headboard', 15, [hbox('board', 'paint', [108, 30, 3], [110, 40, 61])]);
+local hoistMudguard = hpart('hoist_mudguard', 4, harc('guard', 'trim', [48, 12], 13.5, 16.5, std.asin(4 / 13.5), pi - std.asin(4 / 13.5), 8, [51, 59]));
+local hoistRearUnderrun = hpart('hoist_rear_underrun', 20, [
+  hbox('leg_far', 'chassis', [0, 12, 14], [4, 17, 18]),
+  hbox('leg_near', 'chassis', [0, 12, 46], [4, 17, 50]),
+  hbox('bar', 'trim', [0, 8, 6], [3, 12, 58]),
+  hbox('lamp_bracket_far', 'chassis', [0, 17, 6], [2, 18, 18]),
+  hbox('lamp_bracket_near', 'chassis', [0, 17, 46], [2, 18, 58]),
+  hbox('plate', 'plate', [0, 12, 26], [1, 16, 38]),
+]);
+local hoistTailLamp = hpart('hoist_tail_lamp', 1, [
+  hbox('indicator', 'amber', [0, 18, 50], [2, 20, 58]),
+  hbox('lens', 'tail', [0, 20, 50], [2, 23, 58]),
+]);
+
+local hoistCraneBase = hpart('hoist_crane_base', 180, [
+  hbox('sill_far', 'crane', [112, 17, 14], [130, 26, 18]),
+  hbox('sill_near', 'crane', [112, 17, 46], [130, 26, 50]),
+  hbox('plate', 'crane', [112, 26, 14], [130, 30, 50]),
+]);
+local hoistStabiliser = hpart('hoist_stabiliser', 45, [
+  hbox('beam', 'crane', [116, 22, 50], [126, 26, 60]),
+  hbox('leg', 'crane', [118, 12, 56], [124, 22, 60]),
+  hbox('foot', 'trim', [116, 10, 55], [126, 12, 61]),
+]);
+local hoistCraneColumn = hpart('hoist_crane_column', 140, [
+  hdisc('slew_ring', 'chassis', 'y', [121, 0, 32], 7, [30, 34]),
+  hbox('post', 'crane', [117, 34, 28], [125, 56, 36]),
+  hbox('cheek_far', 'crane', [116, 52, 25], [126, 64, 28]),
+  hbox('cheek_near', 'crane', [116, 52, 36], [126, 64, 39]),
+  hdisc('pin_far', 'chrome', 'z', [121, 60, 0], 2, [24, 25]),
+  hdisc('pin_near', 'chrome', 'z', [121, 60, 0], 2, [39, 40]),
+]);
+local hoistBoom = hpart('hoist_boom', 90, [htube('boom', 'crane', [122, 60], [68, 52], 6, [28, 36])]);
+local hoistBoomExtension = hpart('hoist_boom_extension', 70, [htube('extension', 'crane', [75, 53], [14, 44], 4.5, [29, 35])]);
+local hoistLuffRam = hpart('hoist_luff_ram', 35, [htube('ram', 'chrome', [116.8, 40], [92, 50.5], 3, [30, 34])]);
+local hoistWinch = hpart('hoist_winch', 45, [
+  hdisc('drum', 'chassis', 'z', [128, 44, 0], 3.5, [27, 37]),
+  hdisc('flange_far', 'crane', 'z', [128, 44, 0], 4.5, [26, 27]),
+  hdisc('flange_near', 'crane', 'z', [128, 44, 0], 4.5, [37, 38]),
+]);
+local hoistHookBlock = hpart('hoist_hook_block', 15, [
+  hbox('block', 'amber', [12, 36, 30], [18, 41, 34]),
+  hbox('hook', 'chrome', [14, 33, 31], [16, 36, 33]),
+]);
+local hoistBoomRest = hpart('hoist_boom_rest', 8, [hbox('rest', 'crane', [22, 30, 29], [26, 42, 35])]);
+
 [
   part('car_battery', 'carton', 14, {
     width: 0.24, height: 0.17, depth: 0.175, lidHeight: 0.02, bandHeight: 0.06, bandInset: 0.0005,
@@ -258,4 +474,41 @@ local gearLever = compound('gear_lever', 1, [
   exhaust,
   dashboard,
   rearSeat,
+  hoistFrameRail,
+  hoistCrossmember,
+  hoistWheel,
+  hoistFrontAxle,
+  hoistRearAxle,
+  hoistEngine,
+  hoistGearbox,
+  hoistPropShaft,
+  hoistFuelTank,
+  hoistExhaust,
+  hoistRadiator,
+  hoistCabFloor,
+  hoistCabSkirt,
+  hoistCabBack,
+  hoistFrontPanel,
+  hoistAPost,
+  hoistWindscreen,
+  hoistRoof,
+  hoistDoor,
+  hoistFrontBumper,
+  hoistDashboard,
+  hoistEngineCover,
+  hoistBench,
+  hoistDeckFloor,
+  hoistHeadboard,
+  hoistMudguard,
+  hoistRearUnderrun,
+  hoistTailLamp,
+  hoistCraneBase,
+  hoistStabiliser,
+  hoistCraneColumn,
+  hoistBoom,
+  hoistBoomExtension,
+  hoistLuffRam,
+  hoistWinch,
+  hoistHookBlock,
+  hoistBoomRest,
 ]

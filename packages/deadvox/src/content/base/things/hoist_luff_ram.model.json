@@ -1,0 +1,18 @@
+{
+  "id": "hoist_luff_ram",
+  "file": "assets/models/hoist_luff_ram.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 35,
+      "centreOfMass": [0.2624999999999999, 1.4140625000000013, -1.5115614780008523e-17],
+      "collision": [
+        {
+          "min": [-0.14327573007123062, 1.206834466117474, -0.0625],
+          "max": [0.6682757300712305, 1.621290533882526, 0.0625]
+        }
+      ]
+    }
+  },
+  "anchors": {}
+}
