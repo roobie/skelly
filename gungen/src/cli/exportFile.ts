@@ -137,6 +137,7 @@ export const exportFileText = (
   text: string,
   asset: GlbAssetIdentity,
   metadata: GunExportMetadata = {},
+  voxelGrain?: number,
 ): ExportFileResult => {
   const read = readAssembly(text);
   if ('message' in read) {
@@ -157,6 +158,7 @@ export const exportFileText = (
   const result = exportGunGlb(read.assembly, asset, read.appearance, {
     ...exportMetadata,
     includeAttachmentCompatibility: true,
+    ...(voxelGrain === undefined ? {} : { voxelGrain }),
     ...(read.excludedAttachments === undefined ? {} : { excludedAttachments: read.excludedAttachments }),
   });
   if (!result.ok) {

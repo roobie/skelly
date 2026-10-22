@@ -7,6 +7,9 @@
   {
     "id": "rifle_ak",
     "kind": "design",
+    "options": {
+      "voxelGrain": 0.01
+    },
     "source": "gungen/designs/archetype-ak-akm.json"
   },
   {

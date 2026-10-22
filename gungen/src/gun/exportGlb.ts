@@ -128,6 +128,8 @@ interface GunExportOptions extends GunExportMetadata {
   /** Geometry-only callers skip the slot solver; CLI model exports explicitly request its certificate. */
   readonly includeAttachmentCompatibility?: boolean;
   readonly excludedAttachments?: readonly string[];
+  /** Metres; voxelizes the GLB's meshes at this grain. See `packages/thing-export/src/glb.ts`, `voxelPrimitivesFor`. */
+  readonly voxelGrain?: number;
 }
 
 interface GunModelEntryOptions extends GunExportMetadata {
@@ -467,7 +469,7 @@ export const exportGunGlb = (
   appearance: AppearanceContext,
   options: GunExportOptions = {},
 ): GunExportResult => {
-  const { includeAttachmentCompatibility = false, excludedAttachments = [], ...metadata } = options;
+  const { includeAttachmentCompatibility = false, excludedAttachments = [], voxelGrain, ...metadata } = options;
   const message = boltMetadataIssue(assembly, metadata.cartridge);
   if (message) {
     return { ok: false, error: { code: 'structure-issues', issues: [{ rule: 'structure', message, parts: [] }] } };
@@ -486,7 +488,13 @@ export const exportGunGlb = (
   if ('code' in anchors) {
     return { ok: false, error: anchors };
   }
-  const result: GlbExportResult = exportGlb({ resolved, palette: GUN_PALETTE, appearance, asset });
+  const result: GlbExportResult = exportGlb({
+    resolved,
+    palette: GUN_PALETTE,
+    appearance,
+    asset,
+    ...(voxelGrain === undefined ? {} : { voxelGrain }),
+  });
   if (!result.ok) {
     return result;
   }

@@ -8,7 +8,7 @@ import {
   type RecipeExport,
   type RecipeRow as Row,
 } from '@skelly/thing-export/recipe.ts';
-import { nonEmpty, parse, picklist, pipe, strictObject, string } from 'valibot';
+import { gtValue, nonEmpty, number, optional, parse, picklist, pipe, strictObject, string } from 'valibot';
 import content from '../../exports/deadvox.json' with { type: 'json' };
 import { formatCartridgeParseError, parseCartridgeJson } from '../ammo/parseCartridge.ts';
 import { exportAttachmentGlb } from '../gun/attachmentExport.ts';
@@ -30,10 +30,10 @@ const cartridgeAt = (source: string, root: string) => {
 
 const exporters = {
   design: (row: Row, root: string) => {
-    parse(strictObject({}), optionsFor(row));
+    const { voxelGrain } = parse(strictObject({ voxelGrain: optional(pipe(number(), gtValue(0))) }), optionsFor(row));
     const text = readFileSync(resolve(root, row.source), 'utf8');
     return () => {
-      const result = exportFileText(text, assetFor(row));
+      const result = exportFileText(text, assetFor(row), {}, voxelGrain);
       if (!result.ok) {
         throw new Error(result.message);
       }

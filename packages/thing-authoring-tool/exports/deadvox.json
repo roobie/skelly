@@ -36,7 +36,7 @@
     "kind": "item",
     "options": {
       "mass": "parts",
-      "voxelGrain": 0.0040000000000000001
+      "voxelGrain": 0.01
     },
     "source": "soda_can"
   },
@@ -525,7 +525,7 @@
     "kind": "item",
     "options": {
       "mass": "parts",
-      "voxelGrain": 0.0040000000000000001
+      "voxelGrain": 0.01
     },
     "source": "fuse"
   },

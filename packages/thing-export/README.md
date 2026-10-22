@@ -34,14 +34,32 @@ tracked; see `tools/refresh-deadvox.mjs`, `jobs`.
 Consumer-authored projections can still select gameplay-specific physical boundaries; see
 `packages/deadvox/src/content/base/models-items.jsonnet`, `authored`.
 
-## Voxelized export (evaluation)
+## Voxelized export
 
 A recipe row may opt into `voxelGrain`, which replaces its smooth meshes with a greedy
-voxel mesh sampled at that grain. The step is an evaluation, not a decision: it exists so
-the look, the thin-part behaviour and the cost of voxelizing at export can be judged
-before choosing where content parts are voxelized. Rows without the option export as
-before. The sampler lives here because this package may not import deadvox's mesher; see
-`src/voxelize.ts`, `voxelize`, and `src/glb.ts`, `voxelPrimitivesFor`.
+voxel mesh sampled at that grain. Rows without the option export as before, so only the
+rows whose look is being judged change. The sampler lives here because this package may
+not import deadvox's mesher; see `src/voxelize.ts`, `voxelize`, and `src/glb.ts`,
+`voxelPrimitivesFor`. Which rows opt in is still being judged on screen, so the
+selection stays an explicit list in each recipe.
+
+Two grains, both content values: a coarse one for vehicles, furniture and the parts made
+to attach to them, and 1 cm for every other item or component. A vehicle part must match
+the grain of the vehicle it sits on, while a tool, a can or a rifle drawn at that grain
+collapses to a few voxels. A row picks its class, never a number, so one tuning moves a
+whole class. See `tools/jsonnet/lib/voxel-grains.libsonnet`, and the recipes
+`packages/thing-authoring-tool/exports/deadvox.jsonnet` and `gungen/exports/deadvox.jsonnet`.
+
+A solid thinner than the grain keeps one voxel of thickness instead of vanishing, because
+glass, blades and sheet parts are thin by design and losing them breaks the item; the cost
+is that they draw thicker than authored.
+
+A voxelized model replaces the smooth one in place rather than shipping beside it: two
+files per model would need a selector and a second registration for no consumer that
+wants the smooth one.
+
+Per-voxel wear on these meshes is open: a greedy-merged mesh no longer has the grid that
+wear edits.
 
 ## Physical model
 

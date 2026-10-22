@@ -1,4 +1,7 @@
+local grains = import 'tools/jsonnet/lib/voxel-grains.libsonnet';
 local design(id, source) = { id: id, kind: 'design', source: 'gungen/designs/' + source + '.json' };
+// Voxelizing at export is an evaluation: a gun is not a vehicle or furniture part, so it takes the item grain.
+local voxelDesign(id, source) = design(id, source) { options: { voxelGrain: grains.item } };
 local cartridge(id, source, component) = {
   id: id, kind: 'cartridge', source: 'gungen/cartridges/' + source + '.json', options: { component: component },
 };
@@ -9,7 +12,7 @@ local magazine(id, source, calibre, appearanceProfile) = {
 };
 [
   design('rifle_assault', 'archetype-ar'),
-  design('rifle_ak', 'archetype-ak-akm'),
+  voxelDesign('rifle_ak', 'archetype-ak-akm'),
   design('shotgun_pump', 'archetype-pump-shotgun'),
   design('rifle_hunting', 'hunting-rifle'),
   design('revolver', 'archetype-revolver'),
