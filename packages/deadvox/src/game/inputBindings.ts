@@ -755,6 +755,8 @@ export const comboBoxKey = (event: Event): ComboBoxKey | undefined => {
   }
   return event.key === 'Escape' || event.key === 'Tab' ? 'close' : undefined;
 };
+/** Whether a key clears the inventory find field (`src/ui/inventoryScreen.ts`). Like a native search field's, it is fixed. */
+export const clearsFindField = (event: Event): boolean => event instanceof KeyboardEvent && event.key === 'Escape';
 const typesCharacter = (event: Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'altKey'>): boolean =>
   event.key.length === 1 && !(event.ctrlKey || event.metaKey || event.altKey);
 const editable = (target: EventTarget | null): boolean =>

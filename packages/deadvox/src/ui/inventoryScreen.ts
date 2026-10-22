@@ -21,7 +21,7 @@ import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed,
 import { bestPocket, dropTarget, type Option, options, quickMove } from '../core/options.ts';
 import { type ReachSnapshot, reachTuning } from '../core/reach.ts';
 import type { WearSlot } from '../core/schema.ts';
-import { inputBindings, keyboardInput } from '../game/inputBindings.ts';
+import { clearsFindField, inputBindings, keyboardInput } from '../game/inputBindings.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
 import { craftTime, workName } from './craftReadout.ts';
 import { factDetail } from './factDetail.ts';
@@ -419,7 +419,7 @@ const inventoryTemplate = (
     wait,
     stepWake,
   }: {
-    find: { query: string; change: (query: string) => void; key: (e: KeyboardEvent) => void };
+    find: { query: string; change: (query: string) => void; key: (e: Event) => void };
     queue: (item: Item, target?: Target, operation?: WorkOperation) => void;
     search: (uid: number) => void;
     attachmentAction: (payload: ReplayActionPayload) => void;
@@ -1015,7 +1015,7 @@ export class InventoryScreen {
             this.update();
           },
           key: (e) => {
-            if (e.key === 'Escape') {
+            if (clearsFindField(e)) {
               this.clearFind();
               e.preventDefault();
               e.stopPropagation();
