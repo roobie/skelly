@@ -22,13 +22,20 @@ export const swapCanister = (
     return "It doesn't take that cartridge";
   }
   const old = tool.slots?.canister;
+  const oldCharges = old?.charges;
   if (old) {
+    // Written before planning because the fill decides whether the old cartridge can merge where it lands.
     old.charges = chargeOf(inventory.registry, old) ?? 0;
   }
   const target = old && spent(old);
   if (old) {
     const refusal = putDownRefusal(inventory, old, target);
     if (refusal) {
+      if (oldCharges === undefined) {
+        delete old.charges;
+      } else {
+        old.charges = oldCharges;
+      }
       return refusal;
     }
   }
