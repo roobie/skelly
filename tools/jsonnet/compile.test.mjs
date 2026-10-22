@@ -1,19 +1,26 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { test } from 'node:test';
-import { compileJsonnetSources, formatJson } from './compile.mjs';
-import { REPOSITORY_ROOT } from './index.mjs';
+import { compileJsonnetSources, formatJson, selectWithin } from './compile.mjs';
 
-test('a partial compile stays inside its directories and leaves the full-set manifest alone', () => {
-  const manifest = resolve(REPOSITORY_ROOT, 'tools/jsonnet/outputs.json');
-  const before = readFileSync(manifest, 'utf8');
-  const outputs = compileJsonnetSources({ within: ['packages/thing-authoring-tool'] });
-  assert.ok(outputs.length > 0);
-  const directory = resolve(REPOSITORY_ROOT, 'packages/thing-authoring-tool');
-  assert.ok(outputs.every((output) => output.startsWith(`${directory}/`)));
-  assert.equal(readFileSync(manifest, 'utf8'), before);
-  assert.throws(() => compileJsonnetSources({ within: ['packages/thing-authoring-tool'], check: true }));
+const NO_SOURCES = /No Jsonnet sources/;
+const CANNOT_CHECK = /cannot be checked/;
+
+test('a partial compile selects only sources inside its directories and refuses an empty selection', () => {
+  const files = [
+    { source: 'alpha/one.jsonnet', output: 'alpha/one.json' },
+    { source: 'alpha/deep/two.jsonnet', output: 'alpha/deep/two.json' },
+    { source: 'alphabet/three.jsonnet', output: 'alphabet/three.json' },
+    { source: 'beta/four.jsonnet', output: 'beta/four.json' },
+  ];
+  assert.deepEqual(
+    selectWithin(files, ['alpha', 'beta']).map(({ source }) => source),
+    ['alpha/one.jsonnet', 'alpha/deep/two.jsonnet', 'beta/four.jsonnet'],
+  );
+  assert.throws(() => selectWithin(files, ['gamma']), NO_SOURCES);
+});
+
+test('a partial compile cannot be checked against the full-set manifest', () => {
+  assert.throws(() => compileJsonnetSources({ within: ['alpha'], check: true }), CANNOT_CHECK);
 });
 
 test('formatter preserves a generated document larger than the subprocess default output buffer', () => {

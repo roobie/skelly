@@ -115,6 +115,14 @@ function removeOrphanedOutputs(currentFiles) {
   }
 }
 
+export function selectWithin(files, within) {
+  const inside = files.filter(({ source }) => within.some((directory) => source.startsWith(`${directory}/`)));
+  if (inside.length === 0) {
+    throw new Error(`No Jsonnet sources under ${within.join(', ')}`);
+  }
+  return inside;
+}
+
 export function compileJsonnetSources({ check = false, within } = {}) {
   const sources = SOURCE_ROOTS.flatMap((root) => jsonnetFiles(resolve(REPOSITORY_ROOT, root))).sort();
   const manifest = createManifest(sources);
@@ -122,13 +130,7 @@ export function compileJsonnetSources({ check = false, within } = {}) {
     if (check) {
       throw new Error('A partial Jsonnet compile cannot be checked; the manifest covers the full source set');
     }
-    const inside = manifest.files.filter(({ source }) =>
-      within.some((directory) => source.startsWith(`${directory}/`)),
-    );
-    if (inside.length === 0) {
-      throw new Error(`No Jsonnet sources under ${within.join(', ')}`);
-    }
-    return compileOutputs(inside);
+    return compileOutputs(selectWithin(manifest.files, within));
   }
   if (check) {
     checkManifest(manifestText(manifest));
