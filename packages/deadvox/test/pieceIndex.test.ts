@@ -10,7 +10,7 @@ import { baseRegistry } from './baseRegistry.ts';
 const registry = baseRegistry();
 const defs = [...registry.furniture.values()];
 /** A breakable doorway leaf wider than one cell, so it can straddle a column seam. */
-const doorDef = defs.find((def) => def.door?.breach && !def.door.hatch && !isBodyDoor(def) && def.size[0] > 1);
+const doorDef = defs.find((def) => def.door && !def.door.hatch && !isBodyDoor(def) && def.size[0] > 1);
 const blockDef = defs.find((def) => !(def.door || def.container || def.vehicle || def.climbable));
 if (!(doorDef && blockDef)) {
   throw new Error('Base content has no wide breakable door or plain piece for the index fixture');
@@ -94,7 +94,7 @@ it('lists the pieces of each column as a full scan does through adds, moves, rem
   expect(entities.byUid(far.uid)).toBeUndefined();
   expect(indexMismatches(entities)).toEqual([]);
 
-  expect(entities.bash(seamDoor, doorDef.door!.breach!.toughness)).toBe('broken');
+  expect(entities.bash(seamDoor, doorDef.breach.durability)).toBe('broken');
   expect(indexMismatches(entities)).toEqual([]);
 
   entities.lift(raised);
