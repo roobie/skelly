@@ -31,7 +31,7 @@ export interface MeleeChargeInput {
 }
 
 /** The charge level, from 0 to 1, that holding at the pull for `heldSimSeconds` builds. */
-export const meleeChargeLevel = (charge: MeleeCharge, heldSimSeconds: number): number =>
+const meleeChargeLevel = (charge: MeleeCharge, heldSimSeconds: number): number =>
   Math.min(1, Math.max(0, heldSimSeconds / charge.fullSimSeconds)) ** charge.curveExponent;
 
 const withoutCharge = (weapon: MeleeWeapon): MeleeWeapon => {
@@ -40,7 +40,7 @@ const withoutCharge = (weapon: MeleeWeapon): MeleeWeapon => {
 };
 
 /** The strike a released charge carries: its damage and impulse scaled by the level, with nothing left to charge. */
-export const chargedMeleeStrike = (weapon: MeleeWeapon, charge: MeleeCharge, level: number): MeleeWeapon => {
+const chargedMeleeStrike = (weapon: MeleeWeapon, charge: MeleeCharge, level: number): MeleeWeapon => {
   if (weapon.impulse === undefined) {
     throw new Error('A charged melee weapon needs an impulse');
   }
