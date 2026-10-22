@@ -2,15 +2,31 @@ import { expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { type FurnitureSpawn, fillFurnitureLoot } from '../src/core/site.ts';
 import { buildFixtureRegistry as buildRegistry, fixtureBreach } from './economyFixtures.ts';
-import { registry } from './snapshotTestSupport.ts';
 
-const WORN = 'crate';
-const INTACT = 'rug';
-const range = registry.furniture.get(WORN)!.wear!;
-const { durability } = registry.furniture.get(WORN)!.breach;
+const WORN = 'fixture_worn';
+const INTACT = 'fixture_intact';
+const RANGE = { from: 0.2, to: 0.5 };
+const DURABILITY = 100;
+
+const fixture = (id: string, wear?: { from: number; to: number }) => ({
+  id,
+  name: id,
+  size: [1, 1, 1],
+  color: '#123456',
+  breach: { ...fixtureBreach(), durability: DURABILITY },
+  ...(wear ? { wear } : {}),
+});
+
+const built = buildRegistry([
+  { source: 'wear-fixture.json', data: { furniture: [fixture(WORN, RANGE), fixture(INTACT)] } },
+]);
+if (built.issues.length > 0) {
+  throw new Error(`wear fixture content is invalid: ${JSON.stringify(built.issues)}`);
+}
+const { registry } = built;
 
 const spawnAt = (type: string, x: number): FurnitureSpawn => ({
-  spec: { type, pos: [x, 1, 4], size: [...registry.furniture.get(type)!.size], facing: 'n' },
+  spec: { type, pos: [x, 1, 4], size: [1, 1, 1], facing: 'n' },
   loot: [],
 });
 
@@ -32,33 +48,34 @@ const placed = (seed: number, type: string, count: number): BlockEntities => {
 };
 
 it('places worn pieces inside the authored range and below their durability', () => {
-  const entities = placed(7, WORN, 40);
-  const pieces = [...entities.records];
+  const pieces = [...placed(7, WORN, 40).records];
   expect(pieces.length).toBe(40);
   for (const piece of pieces) {
-    const share = (piece.damage ?? 0) / durability;
-    expect(share).toBeGreaterThanOrEqual(range.from);
-    expect(share).toBeLessThanOrEqual(range.to);
-    expect(piece.damage).toBeLessThan(durability);
+    expect(piece.damage, 'every ranged piece is worn').toBeDefined();
+    const share = piece.damage! / DURABILITY;
+    expect(share).toBeGreaterThanOrEqual(RANGE.from);
+    expect(share).toBeLessThanOrEqual(RANGE.to);
+    expect(piece.damage).toBeLessThan(DURABILITY);
   }
 });
 
 it('rolls the same wear from the same seed', () => {
   const damages = (seed: number) => [...placed(seed, WORN, 12).records].map((piece) => piece.damage);
-  expect(damages(21)).toEqual(damages(21));
+  const first = damages(21);
+  expect(first.some((damage) => damage !== undefined && damage > 0)).toBe(true);
+  expect(damages(21)).toEqual(first);
 });
 
 it('places a piece with no wear range intact', () => {
-  expect(registry.furniture.get(INTACT)!.wear).toBeUndefined();
-  for (const piece of placed(7, INTACT, 5).records) {
+  const pieces = [...placed(7, INTACT, 5).records];
+  expect(pieces.length).toBe(5);
+  for (const piece of pieces) {
     expect(piece.damage).toBeUndefined();
   }
 });
 
 it('rejects authored wear ranges that reach 1, run backwards or go negative', () => {
-  const piece = (wear: { from: number; to: number }) => ({
-    furniture: [{ id: 'fixture_worn', name: 'Worn', size: [1, 1, 1], color: '#123456', breach: fixtureBreach(), wear }],
-  });
+  const piece = (wear: { from: number; to: number }) => ({ furniture: [fixture('fixture_bad', wear)] });
   expect(buildRegistry([{ source: 'ok.json', data: piece({ from: 0.2, to: 0.5 }) }]).issues).toEqual([]);
   for (const wear of [
     { from: 0.2, to: 1 },
