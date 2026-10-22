@@ -144,8 +144,8 @@ slice checklist issue.
   and deliberate distinctions; review callers and secondary consumers, not only
   the new owner.
 - **At slice start and exit:** the slice checklist tracks a history-and-planned-change
-  maintainability survey for each subproject. Follow the `maintainability-review` skill
-  and link its report from #159 or a linked issue. Reuse an exit survey only when its
+  maintainability survey for each subproject. Keep the `maintainability-review` skill
+  untracked and link its report from #159 or a linked issue. Reuse an exit survey only when its
   base and next-change assumptions still hold; inspect the intervening delta. A recurring
   smell or repeated boundary failure triggers a targeted survey, not automatically a full
   survey. Keep reports out of repository files.
@@ -183,22 +183,15 @@ slice checklist issue.
   the report. State preserved behavior, deliberate changes and save/export
   identity effects. No compatibility shims or speculative shared frameworks.
 
-Each delivery links its finding ID and records the base/tip, completed versus
-remaining scope, named authorities retired and consumers unified, and additions,
-deletions and net lines. Separate source, tests, docs, content and generated
-snapshots; distinguish whole-delivery totals from refactor-only totals. If mixed
-changes cannot be isolated, say so rather than estimate.
+Private tracking links each delivery to its finding. It records the base/tip,
+completed versus remaining scope, named authorities retired and consumers unified,
+and additions, deletions and net lines. Separate source, tests, docs, content and
+generated snapshots; distinguish whole-delivery totals from refactor-only totals.
+If mixed changes cannot be isolated, say so rather than estimate.
 
 At slice closure, remove the plan after its live content has moved to current
 owners. Record the retrospective as a comment on that slice's checklist issue or
-a linked issue, not as a tracked file. Report findings opened, completed, partly
-completed, carried and dropped; per-item line/site figures; review-caught defects,
-escaped regressions and review/CI rework separately; standalone and folded counts
-with their denominator; and whether each finding is persistent or reintroduced. For
-milestones said to be unblocked, record ready, start, review-ready and merge
-dates, plus known waits. Decide whether the cadence and capacity check are worth
-their cost, then date the next review. Claim a speedup only with a defensible
-comparison; keep unknown effort or time saved unknown.
+a linked issue, not as a tracked file.
 
 ## Owned work
 
