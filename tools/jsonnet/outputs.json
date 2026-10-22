@@ -65,6 +65,10 @@
       "output": "packages/deadvox/src/config/bundled-mods.json"
     },
     {
+      "source": "packages/deadvox/src/config/bundled/beginner.jsonnet",
+      "output": "packages/deadvox/src/config/bundled/beginner.json"
+    },
+    {
       "source": "packages/deadvox/src/config/perf-baseline.jsonnet",
       "output": "packages/deadvox/src/config/perf-baseline.json"
     },
