@@ -59,6 +59,11 @@ export class Scheduler {
     });
   }
 
+  /** Ids of the systems whose cursors a snapshot carries: every registered system persists. */
+  persistedIds(): ReadonlySet<string> {
+    return new Set(this.entries.map(({ spec }) => spec.id));
+  }
+
   /** Restores cursors only after the same systems have been registered in the same runtime. */
   restoreState(state: SchedulerState): void {
     if (!Number.isFinite(state.time) || state.time < 0) {

@@ -1838,7 +1838,7 @@ export const createSession = (options: SessionOptions) => {
   };
 
   if (restored) {
-    world.restoreDiffs(restored.world.diffs, (id) => {
+    world.restoreColumns(restored.world.columns, (id) => {
       const found = registry.blockIds.get(id);
       if (found === undefined) {
         throw new Error(`Unknown block ${id} in save`);
@@ -1981,7 +1981,7 @@ export const createSession = (options: SessionOptions) => {
     restoredLook,
     /** The player's noise state; saved with the character. */
     playerAudio,
-    worldDiffs: () => world.snapshotDiffs((id) => registry.blocks[id]!.id),
+    worldColumns: () => world.snapshotColumns((id) => registry.blocks[id]!.id),
     audioState: () => soundPicker.snapshotState(),
     feet,
     chest,

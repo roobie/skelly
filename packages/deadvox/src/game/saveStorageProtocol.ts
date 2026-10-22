@@ -1,3 +1,4 @@
+import { SaveStorageError } from './saveStorageErrors.ts';
 import { openSaveSlot, SAVE_RECORD_MAX_BYTES, type SaveSlotRecord } from './saveStorageRecord.ts';
 
 type SlotName = 'a' | 'b';
@@ -53,6 +54,7 @@ export async function inspectSaveSlots(namespace: string, slots: SaveSlotPair): 
       try {
         return { slot, record: await openSaveSlot(new Uint8Array(raw), namespace), corrupt: false };
       } catch {
+        // Any unreadable record is corrupt; callers report the slot and keep the raw bytes.
         return { slot, corrupt: true };
       }
     }),
@@ -87,13 +89,12 @@ const nextCommit = async (
   }
   const slot: SlotName = newest?.slot === 'a' ? 'b' : 'a';
   const payload = await encodePayload(generation);
+  // The compressed record; its decompressed payload was capped when it was encoded.
   if (payload.byteLength > SAVE_RECORD_MAX_BYTES) {
     throw new Error(`Save payload exceeds ${SAVE_RECORD_MAX_BYTES} bytes`);
   }
   return { request: { namespace, slot, generation, payload, expected: slots } };
 };
-
-const isConflict = (error: unknown): boolean => error instanceof Error && error.message.startsWith('CONFLICT:');
 
 export async function commitSavePayload(
   driver: SaveCommitDriver,
@@ -109,7 +110,7 @@ export async function commitSavePayload(
       await driver.commit(request);
       return { generation: request.generation, slot: request.slot };
     } catch (error) {
-      if (!isConflict(error)) {
+      if (!(error instanceof SaveStorageError && error.kind === 'conflict')) {
         throw error;
       }
     }

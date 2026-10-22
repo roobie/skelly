@@ -19,6 +19,7 @@ import type { PlayerCombatState } from './playerCombat.ts';
 import type { SaveSnapshot } from './saveState.ts';
 import { assertScenarioRun } from './scenarioRun.ts';
 import { freezeSnapshot } from './snapshotData.ts';
+import type { SavedChunk, SavedColumn } from './world.ts';
 import { regionIndex, WORLD_REGION_METRES } from './worldRegion.ts';
 import type { HordeState, ZombieState, ZombieSystemState } from './zombies.ts';
 
@@ -79,6 +80,7 @@ export interface DecodeSaveOptions {
   /** Running revision is shown in refusal messages but never gates compatibility. */
   buildRevision?: string;
   contentLookup: SaveContentLookup;
+  /** Bounds the decompressed payload, so it is enforced while inflating. */
   maxPayloadBytes?: number;
 }
 
@@ -89,20 +91,10 @@ export interface DecodedSave {
   worldOptions: SaveWorldIdentity;
 }
 
-interface Run {
-  start: number;
-  length: number;
-  base: number;
-  id: number;
-}
-
-interface EncodedChunk {
+interface EncodedChunk extends SavedChunk {
   cx: number;
-  cy: number;
   cz: number;
   order: number;
-  palette: string[];
-  runs: Run[];
 }
 
 interface Region {
@@ -752,6 +744,8 @@ const scenarioRun = nullable(
   }),
 );
 
+const savedRun = obj({ start: nonNegativeInt, length: positiveInt, id: nonNegativeInt });
+
 const wirePayloadSchema = obj({
   world: obj({
     id: str({ nonEmpty: true }),
@@ -765,7 +759,7 @@ const wirePayloadSchema = obj({
             cz: safeInt,
             order: nonNegativeInt,
             palette: arr(str({ id: true }), 1),
-            runs: arr(obj({ start: nonNegativeInt, length: positiveInt, base: nonNegativeInt, id: nonNegativeInt }), 1),
+            runs: arr(savedRun, 1),
           }),
         ),
         zombies: arr(obj({ order: nonNegativeInt, id: positiveInt, zombie })),
@@ -932,6 +926,57 @@ async function sha256(bytes: Uint8Array): Promise<string> {
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
+/** Returns undefined once more than `maxBytes` arrive, without reading the rest. */
+async function readStream(
+  stream: ReadableStream<Uint8Array>,
+  maxBytes = Number.POSITIVE_INFINITY,
+): Promise<Uint8Array | undefined> {
+  const reader = stream.getReader();
+  const parts: Uint8Array[] = [];
+  let length = 0;
+  for (;;) {
+    // biome-ignore lint/performance/noAwaitInLoops: stream chunks arrive in order.
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+    length += value.byteLength;
+    if (length > maxBytes) {
+      await reader.cancel();
+      return undefined;
+    }
+    parts.push(value);
+  }
+  const bytes = new Uint8Array(length);
+  let offset = 0;
+  for (const part of parts) {
+    bytes.set(part, offset);
+    offset += part.byteLength;
+  }
+  return bytes;
+}
+
+async function gzip(bytes: Uint8Array): Promise<Uint8Array> {
+  const compressed = new Blob([bytes.slice()]).stream().pipeThrough(new CompressionStream('gzip'));
+  return (await readStream(compressed))!;
+}
+
+const envelopeLimit = (maxPayloadBytes: number): number => maxPayloadBytes + 1024 * 1024;
+
+async function gunzipBounded(bytes: Uint8Array<ArrayBuffer>, maxBytes: number): Promise<Uint8Array> {
+  // A small record must not inflate without limit, so the bound applies while streaming.
+  let inflated: Uint8Array | undefined;
+  try {
+    inflated = await readStream(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')), maxBytes);
+  } catch (error) {
+    throw new Error('Invalid or truncated compressed save', { cause: error });
+  }
+  if (!inflated) {
+    throw new Error('Save envelope exceeds configured limit');
+  }
+  return inflated;
+}
+
 function validateVersion(version: SaveVersionComponents): void {
   validateSchema(versionComponentsSchema, version, 'version');
   if (!HASH.test(version.simulationHash)) {
@@ -1091,24 +1136,14 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
     }
     return region;
   };
-  snapshot.world.diffs.chunks.forEach((chunk, order) => {
-    const x = Math.floor(chunk.cx / regionChunks);
-    const z = Math.floor(chunk.cz / regionChunks);
-    const pairs = chunk.cells.map(({ base, id }) => `${base}\u0000${id}`);
-    const palette = [...new Set(chunk.cells.flatMap(({ base, id }) => [base, id]))].sort();
-    const paletteIndex = new Map(palette.map((id, index) => [id, index]));
-    const runs: Run[] = [];
-    for (let index = 0; index < chunk.cells.length; index++) {
-      const cell = chunk.cells[index]!;
-      const previous = runs.at(-1);
-      if (previous && previous.start + previous.length === cell.index && pairs[index] === pairs[index - 1]) {
-        previous.length += 1;
-      } else {
-        runs.push({ start: cell.index, length: 1, base: paletteIndex.get(cell.base)!, id: paletteIndex.get(cell.id)! });
-      }
+  let chunkOrder = 0;
+  for (const { cx, cz, chunks } of snapshot.world.columns) {
+    const region = getRegion(Math.floor(cx / regionChunks), Math.floor(cz / regionChunks));
+    for (const chunk of chunks) {
+      region.chunks.push({ cx, cz, order: chunkOrder, ...chunk });
+      chunkOrder += 1;
     }
-    getRegion(x, z).chunks.push({ cx: chunk.cx, cy: chunk.cy, cz: chunk.cz, order, palette, runs });
-  });
+  }
   snapshot.world.zombies.zombies.forEach((entry, order) => {
     const [x, , z] = entry.zombie.body.pos;
     getRegion(regionIndex(x, worldOptions.blockSize), regionIndex(z, worldOptions.blockSize)).zombies.push({
@@ -1187,29 +1222,31 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
 }
 
 function restoreWirePayload(wire: WirePayload): SaveSnapshot {
-  const chunks: { order: number; chunk: SaveSnapshot['world']['diffs']['chunks'][number] }[] = [];
+  const chunks: EncodedChunk[] = [];
   const zombies: { order: number; id: number; zombie: ZombieState }[] = [];
   const entities: BlockEntityState[] = [];
   const piles: InventoryState['piles'] = [];
   for (const region of Object.values(wire.world.regions)) {
-    for (const encoded of region.chunks) {
-      const cells: SaveSnapshot['world']['diffs']['chunks'][number]['cells'] = [];
-      for (const run of encoded.runs) {
-        for (let offset = 0; offset < run.length; offset++) {
-          cells.push({ index: run.start + offset, base: encoded.palette[run.base]!, id: encoded.palette[run.id]! });
-        }
-      }
-      chunks.push({ order: encoded.order, chunk: { cx: encoded.cx, cy: encoded.cy, cz: encoded.cz, cells } });
-    }
+    chunks.push(...region.chunks);
     zombies.push(...region.zombies);
     entities.push(...region.entities.map(({ order: _order, entity }) => entity));
     piles.push(...region.piles.map(({ order: _order, pile }) => pile));
   }
   const ordered = <T extends { order: number }>(values: T[]): T[] => values.sort((a, b) => a.order - b.order);
+  // A column's chunks are consecutive in order, so a change of column starts the next one.
+  const columns: SavedColumn[] = [];
+  for (const { cx, cz, order: _order, ...chunk } of ordered(chunks)) {
+    const column = columns.at(-1);
+    if (column?.cx === cx && column.cz === cz) {
+      column.chunks.push(chunk);
+    } else {
+      columns.push({ cx, cz, chunks: [chunk] });
+    }
+  }
   const snapshot: SaveSnapshot = {
     world: {
       id: wire.world.id,
-      diffs: { chunks: ordered(chunks).map(({ chunk }) => chunk) },
+      columns,
       zombies: { ...wire.world.zombieSystem, zombies: ordered(zombies).map(({ order: _order, ...entry }) => entry) },
       spawned: [...wire.world.spawned],
       rolledColumns: [...wire.world.rolledColumns],
@@ -1233,46 +1270,48 @@ function restoreWirePayload(wire: WirePayload): SaveSnapshot {
   return snapshot;
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: combines run ordering, palette, and maximality invariants for one chunk.
-function encodeChunkRunsValidate(chunks: EncodedChunk[], path: string): void {
-  const chunkKeys = new Set<string>();
-  for (const [ci, chunk] of chunks.entries()) {
-    const chunkPath = `${path}.chunks[${ci}]`;
-    const key = `${chunk.cx},${chunk.cy},${chunk.cz}`;
-    if (chunkKeys.has(key)) {
-      throw new Error(`Duplicate chunk ${key}`);
+/** Runs cover the chunk in order and are maximal, so each chunk has exactly one encoding. */
+function validateSavedChunk(chunk: SavedChunk, path: string): void {
+  if (chunk.palette.some((id, i) => i > 0 && chunk.palette[i - 1]! >= id)) {
+    throw new Error(`Invalid RLE palette at ${path}.palette`);
+  }
+  const used = new Set<number>();
+  let end = 0;
+  let previousId: number | undefined;
+  for (const [ri, run] of chunk.runs.entries()) {
+    if (run.length === 0 || run.start !== end || run.id >= chunk.palette.length) {
+      throw new Error(`Malformed RLE run at ${path}.runs[${ri}]`);
     }
-    chunkKeys.add(key);
-    if (
-      new Set(chunk.palette).size !== chunk.palette.length ||
-      chunk.palette.some((id, i) => i > 0 && chunk.palette[i - 1]! >= id)
-    ) {
-      throw new Error(`Invalid RLE palette at ${chunkPath}.palette`);
+    if (run.id === previousId) {
+      throw new Error(`Non-maximal RLE runs at ${path}.runs[${ri}]`);
     }
-    const used = new Set<number>();
-    let end = 0;
-    let previous: Run | undefined;
-    for (const [ri, run] of chunk.runs.entries()) {
-      if (
-        run.length === 0 ||
-        run.start + run.length > CHUNK_VOLUME ||
-        run.start < end ||
-        run.base === run.id ||
-        run.base >= chunk.palette.length ||
-        run.id >= chunk.palette.length
-      ) {
-        throw new Error(`Malformed RLE run at ${chunkPath}.runs[${ri}]`);
+    used.add(run.id);
+    end = run.start + run.length;
+    previousId = run.id;
+  }
+  if (end !== CHUNK_VOLUME) {
+    throw new Error(`RLE runs do not cover the chunk at ${path}.runs`);
+  }
+  if (used.size !== chunk.palette.length) {
+    throw new Error(`Unused RLE palette entry at ${path}.palette`);
+  }
+}
+
+function validateSavedColumns(columns: readonly SavedColumn[]): void {
+  for (const [index, column] of columns.entries()) {
+    const path = `world.columns[${index}]`;
+    const previous = columns[index - 1];
+    if (previous && (previous.cx > column.cx || (previous.cx === column.cx && previous.cz >= column.cz))) {
+      throw new Error(`Unsorted or duplicate saved column at ${path}`);
+    }
+    if (column.chunks.length === 0) {
+      throw new Error(`Empty saved column at ${path}`);
+    }
+    for (const [ci, chunk] of column.chunks.entries()) {
+      if (ci > 0 && column.chunks[ci - 1]!.cy >= chunk.cy) {
+        throw new Error(`Unsorted or duplicate saved chunk at ${path}.chunks[${ci}]`);
       }
-      if (previous && end === run.start && previous.base === run.base && previous.id === run.id) {
-        throw new Error(`Non-maximal RLE runs at ${chunkPath}.runs[${ri}]`);
-      }
-      used.add(run.base);
-      used.add(run.id);
-      end = run.start + run.length;
-      previous = run;
-    }
-    if (used.size !== chunk.palette.length) {
-      throw new Error(`Unused RLE palette entry at ${chunkPath}.palette`);
+      validateSavedChunk(chunk, `${path}.chunks[${ci}]`);
     }
   }
 }
@@ -1306,7 +1345,6 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
   const entityOrders: number[] = [];
   const pileOrders: number[] = [];
   for (const [regionKey, region] of Object.entries(wire.world.regions)) {
-    const path = `payload.world.regions[${JSON.stringify(regionKey)}]`;
     const [regionX, regionZ] = parseRegionKey(regionKey);
     if (regions.has(regionKey)) {
       throw new Error(`Duplicate region ${regionKey}`);
@@ -1315,7 +1353,6 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
     if (region.chunks.length + region.zombies.length + region.entities.length + region.piles.length === 0) {
       throw new Error(`Empty region ${regionKey}`);
     }
-    encodeChunkRunsValidate(region.chunks, path);
     for (const chunk of region.chunks) {
       chunkOrders.push(chunk.order);
       const key = `${chunk.cx},${chunk.cy},${chunk.cz}`;
@@ -1394,6 +1431,7 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
     spawnKeys.add(key);
   }
   const snapshot = restoreWirePayload(wire);
+  validateSavedColumns(snapshot.world.columns);
   assertAimState(snapshot.character.aim);
   assertAimWobbleNoiseState(snapshot.character.aim.wobbleNoise);
   validateActionReferences(snapshot);
@@ -1416,12 +1454,6 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
   }
   if (snapshot.world.id === snapshot.character.id) {
     throw new Error('World and character IDs must be distinct');
-  }
-  if (
-    new Set(snapshot.world.diffs.chunks.map(({ cx, cy, cz }) => `${cx},${cy},${cz}`)).size !==
-    snapshot.world.diffs.chunks.length
-  ) {
-    throw new Error('Duplicate chunk diff');
   }
   if (new Set(snapshot.world.zombies.zombies.map(({ id }) => id)).size !== snapshot.world.zombies.zombies.length) {
     throw new Error('Duplicate zombie id');
@@ -1574,11 +1606,13 @@ function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLo
       throw new Error(`Unknown ${kind} content id "${id}" at ${path}`);
     }
   };
-  for (const chunk of snapshot.world.diffs.chunks) {
-    for (const [index, cell] of chunk.cells.entries()) {
-      check('block', cell.base, `world.diffs.chunks.${chunk.cx},${chunk.cy},${chunk.cz}.cells[${index}].base`);
-      check('block', cell.id, `world.diffs.chunks.${chunk.cx},${chunk.cy},${chunk.cz}.cells[${index}].id`);
-    }
+  const savedBlocks = snapshot.world.columns.flatMap(({ cx, cz, chunks }) =>
+    chunks.flatMap(({ cy, palette }) =>
+      palette.map((id, index) => ({ id, path: `world.columns.${cx},${cy},${cz}.palette[${index}]` })),
+    ),
+  );
+  for (const { id, path } of savedBlocks) {
+    check('block', id, path);
   }
   if (snapshot.character.scenarioRun) {
     check('scenario', snapshot.character.scenarioRun.scenario, 'character.scenarioRun.scenario');
@@ -1639,16 +1673,13 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
     obj({
       world: obj({
         id: str({ nonEmpty: true }),
-        diffs: obj({
-          chunks: arr(
-            obj({
-              cx: safeInt,
-              cy: safeInt,
-              cz: safeInt,
-              cells: arr(obj({ index: nonNegativeInt, base: str({ id: true }), id: str({ id: true }) })),
-            }),
-          ),
-        }),
+        columns: arr(
+          obj({
+            cx: safeInt,
+            cz: safeInt,
+            chunks: arr(obj({ cy: safeInt, palette: arr(str({ id: true }), 1), runs: arr(savedRun, 1) }), 1),
+          }),
+        ),
         zombies: obj({
           nextEntityId: positiveInt,
           nextPuddleId: nonNegativeInt,
@@ -1679,6 +1710,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
     snapshot,
     'snapshot',
   );
+  validateSavedColumns(snapshot.world.columns);
   assertAimState(snapshot.character.aim);
   assertAimWobbleNoiseState(snapshot.character.aim.wobbleNoise);
   validateActionReferences(snapshot);
@@ -1760,7 +1792,16 @@ export async function encodeSave(snapshot: SaveSnapshot, options: EncodeSaveOpti
     checksum: await sha256(payloadBytes),
     payload,
   };
-  return canonicalBytes(envelope);
+  return gzip(canonicalBytes(envelope));
+}
+
+/** Unchecked version metadata of a save this build may refuse, for describing it to the player. */
+export async function readSaveVersionMetadata(input: Uint8Array): Promise<Partial<SaveVersionIdentity> | undefined> {
+  const envelopeBytes = await gunzipBounded(input.slice(), envelopeLimit(DEFAULT_MAX_PAYLOAD_BYTES));
+  const envelope = JSON.parse(new TextDecoder().decode(envelopeBytes)) as unknown;
+  return isRecord(envelope) && isRecord(envelope.versionIdentity)
+    ? (envelope.versionIdentity as Partial<SaveVersionIdentity>)
+    : undefined;
 }
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ordered refusal gates must remain visible in the public decoder path.
@@ -1777,13 +1818,15 @@ export async function decodeSave(input: Uint8Array | ArrayBuffer, options: Decod
   if (!Number.isSafeInteger(maxPayloadBytes) || maxPayloadBytes < 1) {
     throw new Error('Invalid payload limit');
   }
-  if (bytes.byteLength > maxPayloadBytes + 1024 * 1024) {
+  const maxEnvelopeBytes = envelopeLimit(maxPayloadBytes);
+  if (bytes.byteLength > maxEnvelopeBytes) {
     throw new Error('Save envelope exceeds configured limit');
   }
+  const envelopeBytes = await gunzipBounded(bytes, maxEnvelopeBytes);
   let raw: string;
   let envelope: unknown;
   try {
-    raw = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    raw = new TextDecoder('utf-8', { fatal: true }).decode(envelopeBytes);
     envelope = JSON.parse(raw) as unknown;
   } catch (error) {
     throw new Error('Invalid or truncated UTF-8 JSON save', { cause: error });

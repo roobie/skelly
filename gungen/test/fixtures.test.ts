@@ -45,7 +45,7 @@ describe('fixtures', () => {
   }
 
   // Resolves every fixture and checks all of its parts.
-  it('places every part of every fixture', { timeout: 25_000 }, () => {
+  it('places every part of every fixture', () => {
     for (const fixture of fixtures) {
       const { resolved } = validate(fixture, gunDomain);
       expect([...resolved.placed.keys()].sort()).toEqual(Object.keys(fixture.parts).sort());

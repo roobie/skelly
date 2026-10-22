@@ -1,4 +1,5 @@
 // Item action availability. Views display these plans; commands revalidate at completion.
+// The to-hands and quickbar commands also enqueue their handling jobs here, so a refusal reaches the caller as text.
 
 import type { BlockEntity, DoorOperation } from './blockEntities.ts';
 import { dominantSide, offSide } from './character.ts';
@@ -469,7 +470,7 @@ const queueQuickbarStows = (
 };
 
 /** Quickbar tap: stow what fits without dropping anything, then take only with free hands. */
-export const quickbarTake = (inv: Inventory, queue: HandlingQueue, item: Item, _feet: Vec3): string | undefined => {
+export const quickbarTake = (inv: Inventory, queue: HandlingQueue, item: Item): string | undefined => {
   const def = defOf(inv.registry, item.type);
   const side = quickbarHand(inv, item);
   const needs: HandSide[] = def.twoHanded ? [...SIDES] : [side];

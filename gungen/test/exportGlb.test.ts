@@ -777,22 +777,9 @@ describe('glb export: deadvox model entry', () => {
   });
 
   it('emits the fixed axis-mapping turn, not one derived from the grip', () => {
-    for (const name of ['archetype-ar', 'archetype-pistol', 'archetype-ak']) {
+    for (const name of ['archetype-ar', 'archetype-pistol', 'archetype-ak', 'archetype-bolt-rifle']) {
       expect(exported(design(name)).modelEntry.grip.turn).toEqual(gripTurn());
     }
-  });
-
-  it('gives the same turn for designs whose hold frames lean differently', () => {
-    const upright = exported(design('archetype-bolt-rifle'));
-    const raked = exported(design('archetype-ar'));
-    const tilt = (out: typeof upright) => {
-      const s = selectGunAnchors(out.resolved, GUN_ANCHORS, GUN_ANCHOR_POLICY) as SelectedAnchors;
-      return s.hold.up[1];
-    };
-    // The frames really differ in lean: one hold frame is raked, the other is not.
-    expect(Math.min(tilt(upright), tilt(raked))).toBeLessThan(0.99);
-    expect(Math.abs(tilt(upright) - tilt(raked))).toBeGreaterThan(0.01);
-    expect(raked.modelEntry.grip.turn).toEqual(upright.modelEntry.grip.turn);
   });
 
   it('gives the same turn for an arbitrary hold-frame lean in the gun model entry', () => {

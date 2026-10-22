@@ -45,7 +45,8 @@ const badPaletteKey = (palette: Palette): string | undefined => {
   return entries.find(([, c]) => !validColor(c))?.[0];
 };
 
-const hex = (c: SrgbColor): string =>
+/** A glTF material's name: its sRGB colour as `#rrggbb`. */
+export const hex = (c: SrgbColor): string =>
   `#${c
     .map((x) =>
       Math.round(x * 255)

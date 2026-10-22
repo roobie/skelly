@@ -345,8 +345,24 @@ Leaving or reloading a live save-backed game asks the browser to confirm when it
 
 Uniform chunks keep the memory cost of the voxel world manageable. Saves use
 stable block names because runtime ids depend on the loaded content pack, and
-store only differences from seeded generation so unchanged terrain can be
-recreated. See `src/core/world.ts` and `src/core/saveFormat.ts`.
+store unchanged terrain only as the seed, so it can be recreated; a changed
+column is stored whole (`DESIGN.md`, "Edits persist"). See `src/core/world.ts`
+and `src/core/saveFormat.ts`.
+
+### Edits persist
+
+A block or piece the player removes never comes back, and one they place stays, when its
+column is generated again or the game is reloaded. Base building takes placed and
+authored pieces apart for resources and places a great many blocks and pieces, so a
+removal that undid itself would duplicate resources and erase the player's work, and
+keeping edits must stay cheap at that scale.
+
+A column is furnished once, and its pieces are then saved state, kept in memory for the
+session, so a removed piece has nothing to return from. A column whose blocks have
+changed is saved whole from then on, and its chunks stay in memory for the session, so
+it is never rebuilt from the seed; unchanged columns regenerate. The save is one
+compressed record. See `src/game/session.ts`, `rolledColumns`; `src/core/world.ts`,
+`World`; and `src/core/saveFormat.ts`, `encodeSave`.
 
 ### Edits persist
 
@@ -1853,6 +1869,12 @@ fog, not baked into chunks. See `src/core/lights.ts`, `lightSenseSourceFor`;
 `src/render/lightPool.ts`, `LightPool.update`; and `src/core/dayPhase.ts`,
 `dayPhaseAt`.
 
+A burning torch or candle set down keeps burning and spending its fuel, standing
+upright with its flame and light where the flame is: standing one up is how a player
+sets it down to light a room. Whether a model rests upright is content, so any such
+light stands the same way. See `src/render/models.ts`, `prepareModel`, and
+`src/render/modelFlame.ts`, `ModelFlames.onModel`.
+
 Zombies see light farther than they see a player in darkness, and see a player
 lit by any source. Aimed-down or covered flashlights shorten that reach. Light
 through doors and windows can make a building a beacon; covering or boarding
@@ -2424,7 +2446,7 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
 - **Voxel light**: light spread through the block grid, so that inside buildings
   it's pitch black at night and dim by day, lit only by what comes in through
   doors and windows. Only diffuse sky light goes through the grid
-  (`src/core/skylight.ts`, `buildSkylight`). The sun and the carried beam are lit
+  (`src/render/skylight.ts`, `Skylight`). The sun and the carried beam are lit
   on their own, and carried or dropped sources are the pool's shadowless point
   lights (`src/render/lightPool.ts`, `LightPool`; see "Light"). First-person
   hands share the room's sky visibility, so they do not glow in enclosed dark

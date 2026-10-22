@@ -74,43 +74,59 @@ const fixtures = loadFixtures().filter((fixture) => fixture.name.startsWith('arc
 const designs = designFiles.map(
   (file) => (JSON.parse(readFileSync(join(ROOT, 'designs', file), 'utf8')) as { assembly: Assembly }).assembly,
 );
-const generated = TEMPLATES.filter(
+const templatesWithSeparateGrip = TEMPLATES.filter(
   (template) =>
     template.slots.some((slot) => slot.id === 'lower' && slot.family === 'lower') &&
     template.slots.some((slot) => slot.id === 'grip' && slot.family === 'grip'),
-).map((template) => {
-  for (let seed = 0; seed < 100; seed++) {
-    const assembly = generate(template, gunDomain, seed);
-    if (separateGrip(assembly)) {
-      return { assembly, label: `${template.name} template seed ${seed}` };
-    }
-  }
-  throw new Error(`${template.name} did not generate a separate lower grip in 100 seeds`);
-});
+);
 
-const samples = [
-  ...fixtures.map((assembly) => ({ assembly, label: assembly.name })),
-  ...designs.map((assembly) => ({ assembly, label: `design ${assembly.name}` })),
-  ...generated,
-].flatMap(({ assembly, label }) => {
-  const grip = separateGrip(assembly);
-  return grip ? [{ assembly, label, ...grip }] : [];
-});
+const gripFitViolation = (assembly: Assembly, label: string, lower: string, grip: string): string | undefined => {
+  const resolved = resolve(assembly, gunDomain);
+  const lowerDef = resolved.defs.get(lower)!;
+  const lowerTransform = resolved.placed.get(lower)!;
+  const body = lowerDef.solids.filter(({ id }) => !id.startsWith('trigger-guard-'));
+  const [bodyRearX, bodyFrontX] = boundsX(body, lowerTransform);
+  const faceX = gripMountFace(assembly, grip).map(([x]) => x);
+  const faceRearX = Math.min(...faceX);
+  const faceFrontX = Math.max(...faceX);
+  const context = `${label}; layout=${resolved.params.get(lower)?.layout?.value}; grip-face=[${faceRearX.toFixed(6)}, ${faceFrontX.toFixed(6)}]; lower-body=[${bodyRearX.toFixed(6)}, ${bodyFrontX.toFixed(6)}]`;
+  return faceRearX >= bodyRearX && faceFrontX <= bodyFrontX ? undefined : context;
+};
 
 describe('separate grips fit under lower bodies', () => {
-  it('keeps every grip mount face within the lower body and not behind its rearmost solid', () => {
-    for (const { assembly, label, lower, grip } of samples) {
-      const resolved = resolve(assembly, gunDomain);
-      const lowerDef = resolved.defs.get(lower)!;
-      const lowerTransform = resolved.placed.get(lower)!;
-      const body = lowerDef.solids.filter(({ id }) => !id.startsWith('trigger-guard-'));
-      const [bodyRearX, bodyFrontX] = boundsX(body, lowerTransform);
-      const faceX = gripMountFace(assembly, grip).map(([x]) => x);
-      const faceRearX = Math.min(...faceX);
-      const faceFrontX = Math.max(...faceX);
-      const context = `${label}; layout=${resolved.params.get(lower)?.layout?.value}; grip-face=[${faceRearX.toFixed(6)}, ${faceFrontX.toFixed(6)}]; lower-body=[${bodyRearX.toFixed(6)}, ${bodyFrontX.toFixed(6)}]`;
-      expect(faceRearX, context).toBeGreaterThanOrEqual(bodyRearX);
-      expect(faceFrontX, context).toBeLessThanOrEqual(bodyFrontX);
-    }
+  const authored = [
+    ...fixtures.map((assembly) => ({ assembly, label: assembly.name })),
+    ...designs.map((assembly) => ({ assembly, label: `design ${assembly.name}` })),
+  ].flatMap(({ assembly, label }) => {
+    const grip = separateGrip(assembly);
+    return grip ? [{ assembly, label, ...grip }] : [];
   });
+
+  it('has authored assemblies with a separate grip to check', () => {
+    expect(authored.length).toBeGreaterThan(0);
+  });
+
+  it.each(authored.map((sample) => [sample.label, sample] as const))(
+    '%s: keeps the grip mount face within the lower body and not behind its rearmost solid',
+    (_label, { assembly, label, lower, grip }) => {
+      expect(gripFitViolation(assembly, label, lower, grip)).toBeUndefined();
+    },
+  );
+
+  it.each(templatesWithSeparateGrip.map((template) => [template.name, template] as const))(
+    '%s template: generates a separate grip that fits under its lower body',
+    (_name, template) => {
+      for (let seed = 0; seed < 100; seed++) {
+        const assembly = generate(template, gunDomain, seed);
+        const grip = separateGrip(assembly);
+        if (grip) {
+          expect(
+            gripFitViolation(assembly, `${template.name} template seed ${seed}`, grip.lower, grip.grip),
+          ).toBeUndefined();
+          return;
+        }
+      }
+      expect.fail(`${template.name} did not generate a separate lower grip in 100 seeds`);
+    },
+  );
 });

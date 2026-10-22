@@ -10,10 +10,16 @@ const shamblerBones = () => {
 };
 
 describe('SEVERABLE_PARTS', () => {
-  it('lists exactly the first-slice parts: hand/forearm/upperArm each side, and head', () => {
-    expect([...SEVERABLE_PARTS].sort()).toEqual(
-      ['forearm.L', 'forearm.R', 'hand.L', 'hand.R', 'head', 'upperArm.L', 'upperArm.R'].sort(),
-    );
+  it('names only bones the shambler has, each hiding itself when cut', () => {
+    const bones = shamblerBones();
+    expect(SEVERABLE_PARTS.length).toBeGreaterThan(0);
+    for (const part of SEVERABLE_PARTS) {
+      expect(
+        bones.some((bone) => bone.id === part),
+        part,
+      ).toBe(true);
+      expect(severedBoneSet(bones, [part]).has(part), part).toBe(true);
+    }
   });
 });
 

@@ -702,6 +702,8 @@ const LightSchema = strictObject({
       relight: vBoolean(),
     }),
   ),
+  /** Size of the drawn flame, in metres, standing on the model's `flame` anchor while lit. */
+  flame: optional(strictObject({ heightMetres: Positive, radiusMetres: Positive })),
   /** What powers it: an item with a battery component, and charge used per Game hour. */
   power: optional(strictObject({ battery: Id, chargePerGameHour: GamePerHour, swapSimSeconds: PositiveSimSeconds })),
   /** Stays lit while worn and answers the worn-light control, so a source not in the hand needs no new key. */

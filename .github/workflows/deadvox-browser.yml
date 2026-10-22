@@ -35,7 +35,8 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             packages/deadvox/tools/lit-check/package-lock.json
-      - run: npm ci --prefix ../..
+      # Registry-free install, same reason as the fast job in deadvox.yml.
+      - run: npm ci --prefix ../.. --no-audit --no-fund --prefer-offline
         timeout-minutes: 3
       - name: Install pinned go-jsonnet
         run: npm --prefix ../.. run jsonnet:setup
@@ -50,7 +51,7 @@ jobs:
         timeout-minutes: 3
         run: npx playwright install chromium
       - if: ${{ inputs.shard == 'control-check' }}
-        run: npm ci --prefix tools/lit-check
+        run: npm ci --prefix tools/lit-check --no-audit --no-fund --prefer-offline
         timeout-minutes: 3
       - if: ${{ inputs.shard == 'control-check' }}
         run: timeout 300 npm run lint:lit
