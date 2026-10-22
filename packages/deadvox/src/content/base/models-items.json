@@ -401,10 +401,10 @@
       "hold": "upright",
       "id": "frag_grenade",
       "lever": {
-        "launchMetresPerSecond": 3,
+        "launchMetresPerRealSecond": 3,
         "lifetimeRealSeconds": 1.5,
         "mergeGroup": "lever",
-        "spinDegreesPerSecond": 1080
+        "spinDegreesPerRealSecond": 1080
       },
       "parts": {
         "grenade": {

@@ -12,7 +12,7 @@ interface Prop {
   readonly holder: Group;
   readonly velocity: Vector3;
   readonly axis: Vector3;
-  spinRadiansPerSecond: number;
+  spinRadiansPerRealSecond: number;
   age: number;
   lifetimeRealSeconds: number;
   resting: boolean;
@@ -40,7 +40,7 @@ export class LeverProps {
         holder,
         velocity: new Vector3(),
         axis: new Vector3(),
-        spinRadiansPerSecond: 0,
+        spinRadiansPerRealSecond: 0,
         age: 0,
         lifetimeRealSeconds: 0,
         resting: true,
@@ -81,8 +81,8 @@ export class LeverProps {
     }
     outward.normalize();
     prop.axis.crossVectors(outward, UP).normalize();
-    prop.velocity.copy(outward).add(UP).normalize().multiplyScalar(lever.launchMetresPerSecond);
-    prop.spinRadiansPerSecond = (lever.spinDegreesPerSecond * Math.PI) / 180;
+    prop.velocity.copy(outward).add(UP).normalize().multiplyScalar(lever.launchMetresPerRealSecond);
+    prop.spinRadiansPerRealSecond = (lever.spinDegreesPerRealSecond * Math.PI) / 180;
     prop.age = 0;
     prop.lifetimeRealSeconds = lever.lifetimeRealSeconds;
     prop.resting = false;
@@ -121,7 +121,7 @@ export class LeverProps {
     const { position } = holder;
     const s = this.blockSize;
     velocity.y -= GRAVITY_MPS2 * dt;
-    holder.quaternion.premultiply(this.turn.setFromAxisAngle(prop.axis, prop.spinRadiansPerSecond * dt));
+    holder.quaternion.premultiply(this.turn.setFromAxisAngle(prop.axis, prop.spinRadiansPerRealSecond * dt));
     for (const axis of [0, 1, 2] as const) {
       const speed = velocity.getComponent(axis);
       const next = position.getComponent(axis) + speed * dt;

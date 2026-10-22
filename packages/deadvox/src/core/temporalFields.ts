@@ -104,6 +104,9 @@ export const TEMPORAL_FIELDS = [
   { path: 'models.gun.action.hand.unlockSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'models.gun.action.hand.lockSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'models.gun.action.roundsPerSimMinute', clock: 'Sim', unit: 'PerMinute', dimension: 'rate' },
+  { path: 'models.lever.launchMetresPerRealSecond', clock: 'Real', unit: 'PerSecond', dimension: 'rate' },
+  { path: 'models.lever.spinDegreesPerRealSecond', clock: 'Real', unit: 'PerSecond', dimension: 'rate' },
+  { path: 'models.lever.lifetimeRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
   { path: 'sounds.minIntervalSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'skills.training.practicePerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   {

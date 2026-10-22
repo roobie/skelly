@@ -29,7 +29,7 @@
     import 'things/jerry_can.model.json',
     import 'things/gas_canister.model.json',
     (import 'things/frag_grenade.model.json') + {
-      lever: { mergeGroup: 'lever', launchMetresPerSecond: 3, spinDegreesPerSecond: 1080, lifetimeRealSeconds: 1.5 },
+      lever: { mergeGroup: 'lever', launchMetresPerRealSecond: 3, spinDegreesPerRealSecond: 1080, lifetimeRealSeconds: 1.5 },
     },
     import 'things/torch.model.json',
     import 'things/candle.model.json',

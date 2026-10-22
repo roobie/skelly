@@ -1281,8 +1281,8 @@ const GunModelSchema = pipe(
  */
 const LeverModelSchema = strictObject({
   mergeGroup: pipe(string(), nonEmpty()),
-  launchMetresPerSecond: Positive,
-  spinDegreesPerSecond: NonNegative,
+  launchMetresPerRealSecond: Positive,
+  spinDegreesPerRealSecond: NonNegative,
   lifetimeRealSeconds: PositiveRealSeconds,
 });
 
