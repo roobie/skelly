@@ -62,7 +62,6 @@ import {
 
 export type PlayerMovement = 'walking' | 'jogging' | 'sprinting' | 'still';
 export type ZombieTier = 'active' | 'background' | 'unloaded';
-export const ACTIVE_ZOMBIE_RADIUS_METRES = 40;
 export const BACKGROUND_ZOMBIE_RATE = 2;
 export const BACKGROUND_ZOMBIE_SLICE_COUNT = 30;
 export const BACKGROUND_ZOMBIE_SLICE_RATE = BACKGROUND_ZOMBIE_RATE * BACKGROUND_ZOMBIE_SLICE_COUNT;
@@ -556,6 +555,7 @@ interface ZombieLightSource {
 }
 
 export interface ZombieSystemOptions {
+  activeZombieRadiusMetres: number;
   store?: EntityStore<Zombie>;
   terrainFloor?: TerrainFloorAt | undefined;
   seed?: number;
@@ -2282,7 +2282,7 @@ export class ZombieSystem {
     if (!loaded) {
       return 'unloaded';
     }
-    return horizontalDistance(position, player.pos) * this.options.blockSize <= ACTIVE_ZOMBIE_RADIUS_METRES
+    return horizontalDistance(position, player.pos) * this.options.blockSize <= this.options.activeZombieRadiusMetres
       ? 'active'
       : 'background';
   }

@@ -168,6 +168,14 @@
         "rightLeg": 24,
         "torso": 60
       },
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
+      },
       "sight": 25,
       "sightCone": 60,
       "sounds": {
@@ -378,6 +386,14 @@
         "rightArm": 24,
         "rightLeg": 24,
         "torso": 60
+      },
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
       },
       "sight": 25,
       "sightCone": 60,
@@ -590,6 +606,14 @@
         "rightLeg": 24,
         "torso": 60
       },
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
+      },
       "sight": 25,
       "sightCone": 60,
       "sounds": {
@@ -800,6 +824,14 @@
         "rightArm": 24,
         "rightLeg": 24,
         "torso": 60
+      },
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
       },
       "sight": 25,
       "sightCone": 60,
@@ -1012,6 +1044,14 @@
         "rightLeg": 24,
         "torso": 60
       },
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
+      },
       "sight": 25,
       "sightCone": 60,
       "sounds": {
@@ -1223,6 +1263,14 @@
         "rightLeg": 48,
         "torso": 120
       },
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
+      },
       "sight": 25,
       "sightCone": 60,
       "sounds": {
@@ -1400,6 +1448,14 @@
         "rightLeg": 18,
         "torso": 38
       },
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
+      },
       "sight": 25,
       "sightCone": 60,
       "sounds": {
@@ -1543,6 +1599,14 @@
         "rightArm": 18,
         "rightLeg": 10,
         "torso": 50
+      },
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
       },
       "sight": 16,
       "sightCone": 55,
@@ -1724,6 +1788,15 @@
         "member.rightArm": 24,
         "member.rightLeg": 24,
         "member.torso": 60
+      },
+      "severedItems": {
+        "core.trunk": null,
+        "member.head": null,
+        "member.leftArm": null,
+        "member.leftLeg": null,
+        "member.rightArm": null,
+        "member.rightLeg": null,
+        "member.torso": null
       },
       "sight": 25,
       "sightCone": 60,
@@ -1986,6 +2059,14 @@
         "rightArm": 24,
         "rightLeg": 24,
         "torso": 60
+      },
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
       },
       "sight": 25,
       "sightCone": 60,

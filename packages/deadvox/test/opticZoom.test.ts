@@ -12,6 +12,8 @@ const fixture = (rememberPerWeapon = true, fixed = false) => {
     name: 'Fixture optic',
     category: 'misc',
     economy: { usage: [], tiers: [] },
+    workInProgress: false,
+    notLoot: false,
     weight: 1,
     size: [1, 1],
     model: 'fixture_optic_model',

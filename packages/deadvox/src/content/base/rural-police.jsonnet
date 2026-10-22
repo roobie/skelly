@@ -302,6 +302,8 @@ breach.breaking(shape.colliding({
     size: [1, 1], key: { lock: 'gauntlet_police_armoury' }, model: 'gauntlet_police_armoury_key',
     description: 'A small key stamped ARMOURY.',
     economy: { usage: ['Police'], tiers: ['Tier1'] },
+    workInProgress: false,
+    notLoot: false,
   }],
   loot: [{
     id: 'gauntlet_police_roof_key', rolls: [1, 1],

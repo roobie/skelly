@@ -80,7 +80,13 @@ export const wornSlotOf = (registry: Registry, item: Item): WearSlot | undefined
   return def.wearable?.slot ?? (isLongGun(def) ? 'shoulder' : undefined);
 };
 
-export const WORK_IN_PROGRESS = 'work_in_progress';
+export const workInProgressItem = (registry: Registry): ItemDef => {
+  const definitions = [...registry.items.values()].filter((item) => item.workInProgress);
+  if (definitions.length !== 1) {
+    throw new Error('Expected exactly one work-in-progress item definition');
+  }
+  return definitions[0]!;
+};
 
 /** Ordinary dropping and craft retirement share the same bounded neighborhood. */
 export const dropSpots = (feet: Vec3): Vec3[] => [
@@ -888,7 +894,7 @@ export class Inventory {
     } else if (repair || !this.validDisassemblyPlan(plan)) {
       return undefined;
     }
-    const work = this.create(WORK_IN_PROGRESS);
+    const work = this.create(workInProgressItem(this.registry).id);
     if (plan.kind === 'craft') {
       this.escrowCraft(plan, work, repair);
     } else {
@@ -1644,7 +1650,7 @@ const validateInventoryTree = (registry: Registry, state: InventoryState): void 
   };
   for (const { item } of tree) {
     pockets(item.type, item.pockets, defOf(registry, item.type).container?.pockets);
-    if (item.type === WORK_IN_PROGRESS && !item.work) {
+    if (defOf(registry, item.type).workInProgress && !item.work) {
       throw new Error('Missing craft work payload');
     }
     if (item.work) {
@@ -1749,7 +1755,7 @@ const validateDisassemblyWorkItem = (
 export const validateWorkItem = (registry: Registry, item: ItemState): void => {
   const work = item.work!;
   const commonInvalid =
-    item.type !== WORK_IN_PROGRESS ||
+    !defOf(registry, item.type).workInProgress ||
     item.count !== 1 ||
     !Number.isFinite(work.elapsed) ||
     !Number.isFinite(work.duration) ||

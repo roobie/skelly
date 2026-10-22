@@ -2724,12 +2724,14 @@
       "id": "gauntlet_public_memo",
       "model": "paper_sheet",
       "name": "Maintenance route",
+      "notLoot": false,
       "readable": {
         "text": "The service store is on the block with the square raised water tank. Go around the low brick building to the rear apron. The two tall, narrow exhausts stand together there; the inspection hatch beside them opens onto the maintenance ladder. The office is not the basement access.\n\nSquare raised water tank → low brick store\n                           rear apron → paired exhausts → hatch\n",
         "title": "Maintenance route"
       },
       "size": [1, 1],
-      "weight": 5
+      "weight": 5,
+      "workInProgress": false
     },
     {
       "category": "note",
@@ -2740,12 +2742,14 @@
       "id": "gauntlet_public_directions",
       "model": "folded_note",
       "name": "Delivery instructions",
+      "notLoot": false,
       "readable": {
         "text": "Deliver instruments to the low brick service store beside the yellow loading frame. Do not leave them at a utility cabinet or a lone duct riser. Walk around to the rear apron, find the pair of narrow exhausts, and use the inspection hatch beside them. The lid is unlocked; the ladder below reaches the intake floor. Return by the same hatch when the shift ends.\n",
         "title": "Delivery instructions"
       },
       "size": [1, 1],
-      "weight": 5
+      "weight": 5,
+      "workInProgress": false
     },
     {
       "category": "note",
@@ -2756,12 +2760,14 @@
       "id": "gauntlet_maintenance_memo",
       "model": "paper_sheet",
       "name": "Ventilation invoice",
+      "notLoot": false,
       "readable": {
         "text": "Accounts queried the extra ducting again. The low brick service building beside the square water tank and yellow delivery frame has paired narrow exhausts on its rear apron, rather more ventilation than a stores room needs. The inspection hatch beside them has a ladder under the lid. Please use that access, not the office door.\n\nStreet → service building → rear apron\n                           paired exhausts → hatch\n",
         "title": "Ventilation invoice"
       },
       "size": [1, 1],
-      "weight": 5
+      "weight": 5,
+      "workInProgress": false
     },
     {
       "category": "note",
@@ -2772,12 +2778,14 @@
       "id": "gauntlet_cellar_note",
       "model": "folded_note",
       "name": "Note for Ray",
+      "notLoot": false,
       "readable": {
         "text": "Ray, I've taken the kids to my sister's. You won't come, I know. You've barely been up from the cellar since the radio started, and at night I hear you under the house, deeper than any cellar goes. Whatever you're keeping down there, I hope it's worth more to you than we were. Don't come after us until that bite has healed.\n\nM.\n",
         "title": "Note for Ray"
       },
       "size": [1, 1],
-      "weight": 5
+      "weight": 5,
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -2791,7 +2799,9 @@
       },
       "model": "gauntlet_lab_entry_card",
       "name": "Security keycard",
-      "size": [1, 1]
+      "notLoot": false,
+      "size": [1, 1],
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -2805,8 +2815,10 @@
       },
       "model": "folded_note",
       "name": "Clearance keycard",
+      "notLoot": false,
       "size": [1, 1],
-      "weight": 5
+      "weight": 5,
+      "workInProgress": false
     }
   ],
   "loot": [

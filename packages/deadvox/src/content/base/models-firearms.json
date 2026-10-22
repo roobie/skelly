@@ -34,8 +34,10 @@
       "id": "rifle_hunting",
       "model": "rifle_hunting",
       "name": "Hunting rifle",
+      "notLoot": false,
       "size": [2, 11],
-      "twoHanded": true
+      "twoHanded": true,
+      "workInProgress": false
     },
     {
       "category": "weapon",
@@ -69,8 +71,10 @@
       "id": "pump_shotgun",
       "model": "shotgun_pump",
       "name": "Pump shotgun",
+      "notLoot": false,
       "size": [2, 10],
-      "twoHanded": true
+      "twoHanded": true,
+      "workInProgress": false
     },
     {
       "category": "weapon",
@@ -82,8 +86,10 @@
       "id": "debug_shotgun_pump",
       "model": "shotgun_pump",
       "name": "Pump shotgun (debug)",
+      "notLoot": true,
       "size": [2, 10],
-      "twoHanded": true
+      "twoHanded": true,
+      "workInProgress": false
     },
     {
       "category": "weapon",
@@ -120,8 +126,10 @@
       "id": "rifle_assault",
       "model": "rifle_assault",
       "name": "AR-pattern rifle",
+      "notLoot": false,
       "size": [2, 9],
-      "twoHanded": true
+      "twoHanded": true,
+      "workInProgress": false
     },
     {
       "category": "weapon",
@@ -158,8 +166,10 @@
       "id": "rifle_ak",
       "model": "rifle_ak",
       "name": "AK-pattern rifle",
+      "notLoot": false,
       "size": [2, 9],
-      "twoHanded": true
+      "twoHanded": true,
+      "workInProgress": false
     }
   ],
   "models": [

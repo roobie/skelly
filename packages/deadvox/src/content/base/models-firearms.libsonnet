@@ -50,6 +50,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       "category": "weapon",
       "description": "Curated 12-gauge hunting-cabin pump from gungen, with a hand-racked action and four-shell tube. No loot table has it; it is available only in debug mode. Runtime pumping/loading is not implemented yet.",
       "id": "debug_shotgun_pump",
+      "notLoot": true,
       "model": "shotgun_pump",
       "name": "Pump shotgun (debug)",
       "size": [2, 10],

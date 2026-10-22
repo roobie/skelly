@@ -25,7 +25,9 @@
       "id": "frag_grenade",
       "model": "frag_grenade",
       "name": "Hand grenade",
-      "size": [1, 1]
+      "notLoot": false,
+      "size": [1, 1],
+      "workInProgress": false
     }
   ]
 }

@@ -644,6 +644,8 @@ describe('player figure', () => {
           name: 'Fixture',
           category: 'weapon' as const,
           economy: { usage: [], tiers: [] },
+          workInProgress: false,
+          notLoot: false,
           weight: 1,
           size: [1, 1] as [number, number],
           twoHanded: true,

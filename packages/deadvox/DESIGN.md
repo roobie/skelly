@@ -1577,13 +1577,14 @@ for minor wounds to close. See `Body.advance` in `src/core/body.ts`.
 
 Under normal play, blood loss progresses with simulation time; a stalled browser
 slows the whole simulation rather than skipping ahead. Content sets when
-bleeding refuses compression. Rest, sleep, and waiting are refused, and an
-already-running player long action returns to real-time pace. Debug time controls
-may advance bleeding, but real emitted interruptions still apply. Treatment,
-crafting, and reading remain available at real-time pace, leaving movement free;
-crafting stays available because it may let a player make what stops the wound.
-See `Body.compressionRefusal` and `Simulation.checkInterruptions` in
-`src/core/sim.ts`.
+bleeding refuses compression. Rest, sleep, and waiting must stop or stay refused:
+the player must stay conscious enough to act. Doable long actions remain available
+at real-time pace because making or using treatment may be the player's remaining
+chance to stop the wound. Harming exposure instead refuses every long action:
+leave the fire first, then treat. Unconsciousness permits no action. Debug time
+controls do not bypass real emitted interruptions. See `src/core/body.ts`, `Body.compressionRefusal`;
+`src/core/sim.ts`, `Simulation.actionRefusal` and `Simulation.checkInterruptions`;
+and `src/core/longAction.ts`, `LongActions.runsUncompressed`.
 
 Treatments declare bleeding strength, infection stages, or both. Treatment
 strength is spent progressively across severity bands, and applications stack;
