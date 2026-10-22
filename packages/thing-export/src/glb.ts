@@ -18,11 +18,13 @@ import type {
   ExportGlb,
   ExportPortMetadata,
   GlbExportError,
+  GlbExportInput,
   GlbExportResult,
   Palette,
   PartPortId,
   SrgbColor,
 } from './exportTypes.ts';
+import { voxelize } from './voxelize.ts';
 
 const ASSET_FILE = /^assets\/models\/[a-z0-9_-]+\.glb$/;
 /** glTF node name of a part: its id and registry key (`PartInstance.family`), e.g. `part-1:family-a`. */
@@ -82,6 +84,41 @@ const toMetres = (v: Vec3, metresPerUnit: number): Vec3 => [
   v[1] * metresPerUnit,
   v[2] * metresPerUnit,
 ];
+
+/**
+ * Where a part's voxel lattice must start, in part-local metres, so its voxels land on the world lattice. A part placed
+ * at a fraction of a voxel, or turned by a quarter turn, would otherwise leave steps and gaps against its neighbours. A
+ * part turned by any other angle has no matching lattice and keeps its own.
+ */
+const latticeOrigin = (placed: { readonly r: Mat3; readonly t: Vec3 }, grain: number, metresPerUnit: number): Vec3 => {
+  const { r, t } = placed;
+  if (!r.every((x) => [-1, 0, 1].some((q) => Math.abs(x - q) < 1e-9))) {
+    return [0, 0, 0];
+  }
+  // The inverse rotation of a rotation matrix is its transpose.
+  const local = [0, 1, 2].map((i) => -[0, 1, 2].reduce((sum, j) => sum + r[j * 3 + i]! * t[j]! * metresPerUnit, 0));
+  return local.map((v) => v - Math.floor(v / grain) * grain) as unknown as Vec3;
+};
+
+/** Part-definition tag that asks a voxelized export for the finer `voxelDetailGrain`. */
+export const VOXEL_DETAIL = 'voxel-detail';
+
+/**
+ * Every part's lattice is anchored at the world origin, so two grains nest exactly when the coarse one is a whole
+ * multiple of the fine one: each coarse voxel face then lies on a fine voxel face and the parts meet without steps.
+ */
+const checkNesting = ({ voxelGrain, voxelDetailGrain }: GlbExportInput): void => {
+  if (voxelDetailGrain === undefined) {
+    return;
+  }
+  if (voxelGrain === undefined) {
+    throw new Error('voxelDetailGrain needs voxelGrain');
+  }
+  const ratio = voxelGrain / voxelDetailGrain;
+  if (!(ratio >= 1 && Math.abs(ratio - Math.round(ratio)) < 1e-9)) {
+    throw new Error('voxelGrain must be a whole multiple of voxelDetailGrain so the lattices nest');
+  }
+};
 
 const isIdentity = (m: Mat3): boolean => m.every((x, i) => Math.abs(x - (i % 4 === 0 ? 1 : 0)) < 1e-12);
 
@@ -250,6 +287,7 @@ const refusal = (input: Parameters<ExportGlb>[0]): GlbExportError | undefined =>
  * and an asset file outside `assets/models/<name>.glb`.
  */
 export const exportGlb: ExportGlb = (input) => {
+  checkNesting(input);
   const error = refusal(input);
   if (error) {
     return fail(error);
@@ -320,15 +358,16 @@ export const exportGlb: ExportGlb = (input) => {
         ...(solid.slot === undefined ? {} : { solidSlot: solid.slot }),
       },
     });
-  const primitiveFor = (part: PartExport, item: DisplayItem): Json | undefined => {
-    const solid = item.solids[0]!;
-    const mesh = item.merged
+  const meshOf = (item: DisplayItem) =>
+    item.merged
       ? meshForSolidGroup(item.solids)
-      : meshForSolid(solid, displayBevel(solid, resolved.domain.units), input.revolveFacets);
-    if (mesh.triangleCount === 0 || mesh.indices.length === 0) {
-      return undefined;
-    }
-    const positions = mesh.positions.map((x) => x * metresPerUnit);
+      : meshForSolid(item.solids[0]!, displayBevel(item.solids[0]!, resolved.domain.units), input.revolveFacets);
+  const bufferPrimitive = (
+    mesh: { positions: Float32Array; normals: Float32Array; indices: Uint32Array },
+    material: number,
+    extras: Json,
+  ): Json => {
+    const { positions } = mesh;
     const points = Array.from(
       { length: positions.length / 3 },
       (_, index) => [positions[index * 3]!, positions[index * 3 + 1]!, positions[index * 3 + 2]!] as Vec3,
@@ -349,29 +388,72 @@ export const exportGlb: ExportGlb = (input) => {
       { componentType: UNSIGNED_INT, count: mesh.indices.length, type: 'SCALAR' },
       ELEMENT_ARRAY_BUFFER,
     );
+    return { attributes: { POSITION: position, NORMAL: normal }, indices, material, mode: 4, extras };
+  };
+  const appearanceExtras = (appearance: ReturnType<typeof resolveAppearance>): Json => ({
+    ...(appearance.material === undefined ? {} : { material: appearance.material }),
+    ...(appearance.slot === undefined ? {} : { slot: appearance.slot }),
+  });
+  const primitiveFor = (part: PartExport, item: DisplayItem): Json | undefined => {
+    const solid = item.solids[0]!;
+    const mesh = meshOf(item);
+    if (mesh.triangleCount === 0 || mesh.indices.length === 0) {
+      return undefined;
+    }
     const appearance = appearanceFor(part, solid);
-    return {
-      attributes: { POSITION: position, NORMAL: normal },
-      indices,
-      material: materialFor(appearance),
-      mode: 4,
-      extras: {
+    return bufferPrimitive(
+      { positions: mesh.positions.map((x) => x * metresPerUnit), normals: mesh.normals, indices: mesh.indices },
+      materialFor(appearance),
+      {
         ...(item.merged ? { mergeGroup: item.id, solids: item.solids.map(({ id }) => id) } : { solid: solid.id }),
-        ...(appearance.material === undefined ? {} : { material: appearance.material }),
-        ...(appearance.slot === undefined ? {} : { slot: appearance.slot }),
+        ...appearanceExtras(appearance),
       },
-    };
+    );
+  };
+  /** One primitive per finish: the part's drawn solids sampled at the grain, so later solids paint over earlier ones. */
+  const voxelPrimitivesFor = (part: PartExport, items: DisplayItem[], grain: number): Json[] => {
+    const finishes: { appearance: ReturnType<typeof resolveAppearance>; solids: string[] }[] = [];
+    const groupOf = new Map<string, number>();
+    const sources = items.flatMap((item) => {
+      const mesh = meshOf(item);
+      if (mesh.triangleCount === 0 || mesh.indices.length === 0) {
+        return [];
+      }
+      const appearance = appearanceFor(part, item.solids[0]!);
+      const key = JSON.stringify([materialFor(appearance), appearance.material, appearance.slot]);
+      let group = groupOf.get(key);
+      if (group === undefined) {
+        group = finishes.push({ appearance, solids: [] }) - 1;
+        groupOf.set(key, group);
+      }
+      finishes[group]!.solids.push(...item.solids.map(({ id }) => id));
+      return [{ positions: mesh.positions.map((x) => x * metresPerUnit), indices: mesh.indices, group }];
+    });
+    const { groups } = voxelize(sources, grain, latticeOrigin(part.placed, grain, metresPerUnit));
+    return [...groups].map(([group, buffers]) =>
+      bufferPrimitive(buffers, materialFor(finishes[group]!.appearance), {
+        voxelGrain: grain,
+        solids: finishes[group]!.solids,
+        ...appearanceExtras(finishes[group]!.appearance),
+      }),
+    );
   };
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: existing glTF node construction; appearance metadata is conditional by contract.
   const addPart = (part: PartExport): void => {
     const drawn = part.def.displaySolids ?? part.def.solids;
-    const primitives = splitMixedAppearance(displayItems(drawn), (solid) => appearanceFor(part, solid)).flatMap(
-      (item) => {
-        const primitive = primitiveFor(part, item);
-        return primitive ? [primitive] : [];
-      },
-    );
+    const items = splitMixedAppearance(displayItems(drawn), (solid) => appearanceFor(part, solid));
+    const primitives =
+      input.voxelGrain === undefined
+        ? items.flatMap((item) => {
+            const primitive = primitiveFor(part, item);
+            return primitive ? [primitive] : [];
+          })
+        : voxelPrimitivesFor(
+            part,
+            items,
+            part.def.tags?.includes(VOXEL_DETAIL) ? (input.voxelDetailGrain ?? input.voxelGrain) : input.voxelGrain,
+          );
     const name = partNodeName(part.id, part.family);
     const node: Json = { name };
     const rotation = quaternion(part.placed.r);

@@ -7,6 +7,10 @@
   {
     "id": "rifle_ak",
     "kind": "design",
+    "options": {
+      "voxelDetailGrain": 0.002,
+      "voxelGrain": 0.0040000000000000001
+    },
     "source": "gungen/designs/archetype-ak-akm.json"
   },
   {
@@ -192,7 +196,8 @@
     "kind": "magazine",
     "options": {
       "appearanceProfile": "ak",
-      "cartridge": "gungen/cartridges/7.62x39.json"
+      "cartridge": "gungen/cartridges/7.62x39.json",
+      "voxelGrain": 0.0040000000000000001
     },
     "source": "akm-30"
   }

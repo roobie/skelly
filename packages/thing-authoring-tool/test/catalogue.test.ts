@@ -137,6 +137,28 @@ it('refuses recipe mass ownership that differs from the authored item', () => {
     ]),
   ).toThrow('Recipe mass ownership differs');
 });
+const primitiveExtras = (glb: Uint8Array): readonly Record<string, unknown>[] => {
+  const length = new DataView(glb.buffer, glb.byteOffset).getUint32(12, true);
+  const json = JSON.parse(new TextDecoder().decode(glb.subarray(20, 20 + length)));
+  return json.meshes.flatMap((mesh: { primitives: { extras?: Record<string, unknown> }[] }) =>
+    mesh.primitives.map(({ extras }) => extras ?? {}),
+  );
+};
+it('passes a recipe row grain to the voxel meshes in the exported GLB, and only for that row', () => {
+  const item = catalogue.items[0]!;
+  const row = (options: object) => ({ id: 'fixture', kind: 'item', source: item.id, options });
+  const grain = 0.05;
+  const [voxel] = loadThingRecipe([row({ mass: item.exportMass, voxelGrain: grain })]);
+  const [smooth] = loadThingRecipe([row({ mass: item.exportMass })]);
+  expect(primitiveExtras(voxel!.generate().glb).every((extras) => extras.voxelGrain === grain)).toBe(true);
+  expect(primitiveExtras(smooth!.generate().glb).some((extras) => 'voxelGrain' in extras)).toBe(false);
+});
+it.each([0, -1])('refuses a recipe row grain of %s', (voxelGrain) => {
+  const item = catalogue.items[0]!;
+  expect(() =>
+    loadThingRecipe([{ id: 'fixture', kind: 'item', source: item.id, options: { mass: item.exportMass, voxelGrain } }]),
+  ).toThrow('Invalid');
+});
 it('refuses unknown geometry families during catalogue loading', () => {
   const input = fixture();
   input.items[0]!.parts[0]!.family = 'fixture-unknown';
