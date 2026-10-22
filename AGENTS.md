@@ -188,6 +188,8 @@ Every tracked doc's `read_if` front matter says why to read it. Use
 `python3 tools/read_if.py` to list them or add terms to filter; the script also reports
 missing front matter.
 
+When you grade options by tech debt, use the definition in `GLOSSARY.md`, "Tech debt".
+
 ## Before pushing: tiered checks
 
 Size each local run to the change. CI runs everything, in parallel and unbilled, on every
