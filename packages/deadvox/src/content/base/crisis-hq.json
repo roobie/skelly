@@ -562,12 +562,12 @@
         "A": {
           "facing": "e",
           "furniture": "hq_weapon_cabinet",
-          "loot": "armoury_arms"
+          "loot": "armoury_cabinet"
         },
         "C": {
           "facing": "e",
           "furniture": "hq_weapon_cabinet",
-          "loot": "armoury_arms"
+          "loot": "armoury_cabinet"
         },
         "V": {
           "facing": "s",

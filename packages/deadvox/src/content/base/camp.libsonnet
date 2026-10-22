@@ -161,6 +161,7 @@ local campWallRunCrouchHole = campWallRun + {
       "door": {
         "handlingSimSeconds": 0.6,
         material: 'steel',
+        breach: { minimumStrength: 9, toughness: 300 },
         "methods": { pry: {
           "quality": 'prying', level: 3, strikeSound: 'lock_pry',
           "skill": "mechanics",
@@ -348,7 +349,7 @@ local campWallRunCrouchHole = campWallRun + {
       "size": [6, 5, 1],
       "color": "#666c70",
       "door": {
-        material: 'steel', methods: {},
+        material: 'steel', methods: {}, breach: { minimumStrength: 9, toughness: 300 },
         "handlingSimSeconds": 1.2
       }
     }

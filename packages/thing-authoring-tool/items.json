@@ -4,6 +4,7 @@
   "items": [
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -41,6 +42,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -78,6 +80,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -115,6 +118,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -152,6 +156,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -189,6 +194,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -226,6 +232,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -263,6 +270,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -300,6 +308,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -337,6 +346,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -374,6 +384,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -411,6 +422,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -448,6 +460,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -485,6 +498,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -522,6 +536,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -559,6 +574,1152 @@
     },
     {
       "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "wall",
+        "turn": [0, 0, -90]
+      },
+      "id": "opened_beans",
+      "parts": [
+        {
+          "family": "openTin",
+          "finish": {
+            "body": "steel-grey",
+            "food": "paint-terracotta",
+            "label": "paint-terracotta",
+            "stripe": "paperboard-tan"
+          },
+          "id": "body",
+          "massKg": 0.10000000000000001,
+          "params": {
+            "beanCount": "6",
+            "beanRadius": "0.0060000000000000001",
+            "foodDepth": "0.0253",
+            "height": "0.11",
+            "hingeHeight": "0.0040000000000000001",
+            "hingeWidth": "0.012",
+            "labelHeight": "0.074800000000000005",
+            "labelThickness": "0.00029999999999999997",
+            "radius": "0.036999999999999998",
+            "rimWidth": "0.0014",
+            "serving": "beans",
+            "stripeHeight": "0.0030000000000000001",
+            "wall": "0.00080000000000000004"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "wall",
+        "turn": [0, 0, -90]
+      },
+      "id": "opened_soup",
+      "parts": [
+        {
+          "family": "openTin",
+          "finish": {
+            "body": "steel-grey",
+            "food": "paint-terracotta",
+            "label": "paperboard-tan",
+            "stripe": "paperboard-tan"
+          },
+          "id": "body",
+          "massKg": 0.10000000000000001,
+          "params": {
+            "beanCount": "6",
+            "beanRadius": "0.0060000000000000001",
+            "foodDepth": "0.0276",
+            "height": "0.12",
+            "hingeHeight": "0.0040000000000000001",
+            "hingeWidth": "0.012",
+            "labelHeight": "0.081600000000000006",
+            "labelThickness": "0.00029999999999999997",
+            "radius": "0.034000000000000002",
+            "rimWidth": "0.0014",
+            "serving": "soup",
+            "stripeHeight": "0.0030000000000000001",
+            "wall": "0.00080000000000000004"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "wall",
+        "turn": [0, 0, -90]
+      },
+      "id": "empty_can",
+      "parts": [
+        {
+          "family": "openTin",
+          "finish": {
+            "body": "steel-grey",
+            "food": "paint-terracotta",
+            "label": "paint-terracotta",
+            "stripe": "paperboard-tan"
+          },
+          "id": "body",
+          "massKg": 0.10000000000000001,
+          "params": {
+            "beanCount": "6",
+            "beanRadius": "0.0060000000000000001",
+            "foodDepth": "0.0253",
+            "height": "0.11",
+            "hingeHeight": "0.0040000000000000001",
+            "hingeWidth": "0.012",
+            "labelHeight": "0.074800000000000005",
+            "labelThickness": "0.00029999999999999997",
+            "radius": "0.036999999999999998",
+            "rimWidth": "0.0014",
+            "serving": "empty",
+            "stripeHeight": "0.0030000000000000001",
+            "wall": "0.00080000000000000004"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 90,
+        "solid": "grip-left",
+        "turn": [0, 0, 0]
+      },
+      "id": "can_opener",
+      "parts": [
+        {
+          "family": "handOpener",
+          "finish": {
+            "body": "steel-grey",
+            "grip": "plastic-red",
+            "key": "paint-charcoal",
+            "wheel": "steel-parkerized"
+          },
+          "id": "body",
+          "massKg": 0.10000000000000001,
+          "params": {
+            "cutterRadius": "0.0080000000000000002",
+            "cutterThickness": "0.002",
+            "feedRadius": "0.0089999999999999993",
+            "feedThickness": "0.0050000000000000001",
+            "gripDepth": "0.014",
+            "gripLength": "0.091999999999999998",
+            "gripWidth": "0.014",
+            "handleGap": "0.0080000000000000002",
+            "handleLength": "0.127",
+            "handleSplay": "9",
+            "jawGap": "0.01",
+            "jawLength": "0.036999999999999998",
+            "jawThickness": "0.0040000000000000001",
+            "jawWidth": "0.021000000000000001",
+            "keyLength": "0.042000000000000003",
+            "keyThickness": "0.0060000000000000001",
+            "keyWidth": "0.014",
+            "pivotRadius": "0.0040000000000000001",
+            "spindleHeight": "0.021999999999999999",
+            "spindleRadius": "0.0030000000000000001",
+            "tangDepth": "0.0060000000000000001",
+            "tangWidth": "0.0080000000000000002",
+            "toothCount": "12",
+            "toothDepth": "0.002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "aa_battery",
+      "parts": [
+        {
+          "family": "vessel",
+          "finish": {
+            "body": "steel-grey",
+            "cap": "steel-stainless",
+            "label": "paint-charcoal"
+          },
+          "id": "material",
+          "massKg": 0.023,
+          "params": {
+            "bandHeight": "0.034000000000000002",
+            "bandInset": "0.00014999999999999999",
+            "capHeight": "0.002",
+            "capRadius": "0.0030000000000000001",
+            "height": "0.045999999999999999",
+            "neckHeight": "0.001",
+            "neckRadius": "0.0030000000000000001",
+            "radius": "0.0070000000000000001",
+            "rimHeight": "0.001",
+            "shoulderHeight": "0.00050000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "fold-4",
+        "turn": [0, 0, 0]
+      },
+      "id": "rag",
+      "parts": [
+        {
+          "family": "foldedSheet",
+          "finish": {
+            "body": "cloth-rag",
+            "fold": "cloth-rag-shadow"
+          },
+          "id": "material",
+          "massKg": 0.050000000000000003,
+          "params": {
+            "faces": "[\n    {\n        \"indices\": [\n            0,\n            3,\n            4\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            0,\n            4,\n            1\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            1,\n            4,\n            2\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            2,\n            4,\n            5\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            3,\n            6,\n            4\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            6,\n            7,\n            4\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            4,\n            7,\n            8\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            4,\n            8,\n            5\n        ],\n        \"slot\": \"body\"\n    }\n]",
+            "thickness": "0.002",
+            "vertices": "[\n    [\n        -0.125,\n        0.003,\n        -0.07\n    ],\n    [\n        -0.018,\n        0.012,\n        -0.095\n    ],\n    [\n        0.1,\n        0.002,\n        -0.073\n    ],\n    [\n        -0.11,\n        0.018,\n        0.006\n    ],\n    [\n        0.005,\n        0.035,\n        -0.01\n    ],\n    [\n        0.125,\n        0.006,\n        0.018\n    ],\n    [\n        -0.083,\n        0.002,\n        0.095\n    ],\n    [\n        0.025,\n        0.009,\n        0.078\n    ],\n    [\n        0.105,\n        0.003,\n        0.095\n    ]\n]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.87, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, 0]
+      },
+      "id": "duct_tape",
+      "parts": [
+        {
+          "family": "ring",
+          "finish": {
+            "body": "tape-grey",
+            "core": "paperboard-tan"
+          },
+          "id": "material",
+          "massKg": 0.14999999999999999,
+          "params": {
+            "coreRadius": "0.02",
+            "height": "0.048000000000000001",
+            "innerRadius": "0.017999999999999999",
+            "outerRadius": "0.050000000000000003"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, 0]
+      },
+      "id": "nails",
+      "parts": [
+        {
+          "family": "turnedStock",
+          "finish": {
+            "body": "steel-grey"
+          },
+          "id": "material",
+          "massKg": 0.0050000000000000001,
+          "params": {
+            "axis": "x",
+            "profile": "[\n    [\n        0,\n        0\n    ],\n    [\n        0.008,\n        0.0017\n    ],\n    [\n        0.067,\n        0.0017\n    ],\n    [\n        0.067,\n        0.0042\n    ],\n    [\n        0.07,\n        0.0042\n    ],\n    [\n        0.07,\n        0\n    ],\n    [\n        0,\n        0\n    ]\n]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "fold-0",
+        "turn": [0, 0, 0]
+      },
+      "id": "scrap_metal",
+      "parts": [
+        {
+          "family": "foldedSheet",
+          "finish": {
+            "body": "scrap-rusted",
+            "fold": "steel-grey"
+          },
+          "id": "material",
+          "massKg": 0.5,
+          "params": {
+            "faces": "[\n    {\n        \"indices\": [\n            0,\n            1,\n            2\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            0,\n            2,\n            3\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            0,\n            3,\n            4\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            0,\n            4,\n            5\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            0,\n            5,\n            6\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            0,\n            6,\n            7\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            0,\n            7,\n            8\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            0,\n            8,\n            9\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            0,\n            9,\n            10\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            0,\n            10,\n            1\n        ],\n        \"slot\": \"body\"\n    }\n]",
+            "thickness": "0.0030000000000000001",
+            "vertices": "[\n    [\n        0,\n        0.014,\n        0\n    ],\n    [\n        -0.125,\n        0.004,\n        -0.045\n    ],\n    [\n        -0.04,\n        0.008,\n        -0.075\n    ],\n    [\n        -0.02,\n        0.006,\n        -0.035\n    ],\n    [\n        0.015,\n        0.006,\n        -0.095\n    ],\n    [\n        0.105,\n        0.003,\n        -0.045\n    ],\n    [\n        0.075,\n        0.018,\n        0.015\n    ],\n    [\n        0.125,\n        0.036,\n        0.07\n    ],\n    [\n        0.025,\n        0.029,\n        0.095\n    ],\n    [\n        0.005,\n        0.014,\n        0.045\n    ],\n    [\n        -0.09,\n        0.004,\n        0.07\n    ]\n]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, 0]
+      },
+      "id": "stick",
+      "parts": [
+        {
+          "family": "turnedStock",
+          "finish": {
+            "body": "wood-walnut"
+          },
+          "id": "material",
+          "massKg": 0.20000000000000001,
+          "params": {
+            "axis": "x",
+            "profile": "[\n    [\n        0,\n        0\n    ],\n    [\n        0,\n        0.009\n    ],\n    [\n        0.025,\n        0.013\n    ],\n    [\n        0.11,\n        0.01\n    ],\n    [\n        0.125,\n        0.016\n    ],\n    [\n        0.145,\n        0.011\n    ],\n    [\n        0.27,\n        0.009\n    ],\n    [\n        0.29,\n        0.012\n    ],\n    [\n        0.31,\n        0.008\n    ],\n    [\n        0.395,\n        0.006\n    ],\n    [\n        0.4,\n        0\n    ],\n    [\n        0,\n        0\n    ]\n]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, 0]
+      },
+      "id": "wax",
+      "parts": [
+        {
+          "family": "turnedStock",
+          "finish": {
+            "body": "wax-cream"
+          },
+          "id": "material",
+          "massKg": 0.050000000000000003,
+          "params": {
+            "axis": "y",
+            "profile": "[\n    [\n        0,\n        0\n    ],\n    [\n        0,\n        0.021\n    ],\n    [\n        0.007,\n        0.03\n    ],\n    [\n        0.02,\n        0.027\n    ],\n    [\n        0.029,\n        0.015\n    ],\n    [\n        0.031,\n        0\n    ],\n    [\n        0,\n        0\n    ]\n]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, 0]
+      },
+      "id": "wooden_plank",
+      "parts": [
+        {
+          "family": "cutStock",
+          "finish": {
+            "body": "wood-birch"
+          },
+          "id": "material",
+          "massKg": 0.5,
+          "params": {
+            "axis": "y",
+            "end": "0.021999999999999999",
+            "profile": "[\n    [\n        -0.045,\n        -0.4\n    ],\n    [\n        0.045,\n        -0.395\n    ],\n    [\n        0.045,\n        0.395\n    ],\n    [\n        -0.04,\n        0.4\n    ]\n]",
+            "start": "0"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "fold-2",
+        "turn": [0, 0, 0]
+      },
+      "id": "field_patch",
+      "parts": [
+        {
+          "family": "foldedSheet",
+          "finish": {
+            "body": "steel-grey",
+            "fold": "paint-charcoal"
+          },
+          "id": "material",
+          "massKg": 0.12,
+          "params": {
+            "faces": "[\n    {\n        \"indices\": [\n            0,\n            1,\n            2\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            1,\n            3,\n            2\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            2,\n            3,\n            4\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            3,\n            5,\n            4\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            4,\n            5,\n            6\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            5,\n            7,\n            6\n        ],\n        \"slot\": \"body\"\n    }\n]",
+            "thickness": "0.0015",
+            "vertices": "[\n    [\n        -0.09,\n        0.002,\n        -0.06\n    ],\n    [\n        -0.09,\n        0.002,\n        0.06\n    ],\n    [\n        -0.02,\n        0.009,\n        -0.058\n    ],\n    [\n        -0.02,\n        0.009,\n        0.058\n    ],\n    [\n        0.02,\n        0.004,\n        -0.058\n    ],\n    [\n        0.02,\n        0.004,\n        0.058\n    ],\n    [\n        0.09,\n        0.002,\n        -0.055\n    ],\n    [\n        0.09,\n        0.002,\n        0.055\n    ]\n]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "beans",
+      "parts": [
+        {
+          "family": "foodPortion",
+          "finish": {
+            "body": "paint-terracotta",
+            "chunks": "paperboard-tan"
+          },
+          "id": "body",
+          "massKg": 0.34999999999999998,
+          "params": {
+            "chunkLength": "0.010999999999999999",
+            "chunkRadius": "0.0030000000000000001",
+            "chunks": "27",
+            "height": "0.0040000000000000001",
+            "radius": "0.037499999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "soup",
+      "parts": [
+        {
+          "family": "foodPortion",
+          "finish": {
+            "body": "paint-terracotta",
+            "chunks": "plastic-green"
+          },
+          "id": "body",
+          "massKg": 0.33000000000000002,
+          "params": {
+            "chunkLength": "0.0060000000000000001",
+            "chunkRadius": "0.002",
+            "chunks": "7",
+            "height": "0.0089999999999999993",
+            "radius": "0.037499999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "apple",
+      "parts": [
+        {
+          "family": "stemmedFruit",
+          "finish": {
+            "body": "plastic-red",
+            "leaf": "plastic-green",
+            "stem": "wood-walnut"
+          },
+          "id": "body",
+          "massKg": 0.17999999999999999,
+          "params": {
+            "height": "0.070999999999999994",
+            "leafLength": "0.021000000000000001",
+            "leafThickness": "0.00080000000000000004",
+            "leafWidth": "0.010999999999999999",
+            "radius": "0.040000000000000001",
+            "stemHeight": "0.017000000000000001",
+            "stemRadius": "0.0016999999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "bandage",
+      "parts": [
+        {
+          "family": "woundRoll",
+          "finish": {
+            "body": "plastic-white",
+            "edge": "paperboard-tan"
+          },
+          "id": "body",
+          "massKg": 0.02,
+          "params": {
+            "boreRadius": "0.0089999999999999993",
+            "groove": "0.00069999999999999999",
+            "layers": "8",
+            "radius": "0.037499999999999999",
+            "tailLength": "0.035000000000000003",
+            "tailThickness": "0.00080000000000000004",
+            "width": "0.044999999999999998"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "antiseptic",
+      "parts": [
+        {
+          "family": "vessel",
+          "finish": {
+            "body": "paperboard-brown",
+            "cap": "plastic-red",
+            "label": "plastic-white"
+          },
+          "id": "body",
+          "massKg": 0.10000000000000001,
+          "params": {
+            "bandHeight": "0.044399999999999995",
+            "bandInset": "0.00029999999999999997",
+            "capHeight": "0.01",
+            "capRadius": "0.0184",
+            "height": "0.073999999999999996",
+            "neckHeight": "0.0080000000000000002",
+            "neckRadius": "0.01495",
+            "radius": "0.023",
+            "rimHeight": "0.001",
+            "shoulderHeight": "0.0080000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "antibiotics",
+      "parts": [
+        {
+          "family": "vessel",
+          "finish": {
+            "body": "plastic-white",
+            "cap": "plastic-white",
+            "label": "plastic-blue"
+          },
+          "id": "body",
+          "massKg": 0.050000000000000003,
+          "params": {
+            "bandHeight": "0.032399999999999998",
+            "bandInset": "0.00029999999999999997",
+            "capHeight": "0.016",
+            "capRadius": "0.019",
+            "height": "0.053999999999999999",
+            "neckHeight": "0.0050000000000000001",
+            "neckRadius": "0.0117",
+            "radius": "0.017999999999999999",
+            "rimHeight": "0.001",
+            "shoulderHeight": "0.0050000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "painkillers",
+      "parts": [
+        {
+          "family": "vessel",
+          "finish": {
+            "body": "plastic-white",
+            "cap": "plastic-white",
+            "label": "plastic-red"
+          },
+          "id": "body",
+          "massKg": 0.001,
+          "params": {
+            "bandHeight": "0.026399999999999996",
+            "bandInset": "0.00029999999999999997",
+            "capHeight": "0.016",
+            "capRadius": "0.019",
+            "height": "0.043999999999999997",
+            "neckHeight": "0.0050000000000000001",
+            "neckRadius": "0.0117",
+            "radius": "0.017999999999999999",
+            "rimHeight": "0.001",
+            "shoulderHeight": "0.0050000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "codeine",
+      "parts": [
+        {
+          "family": "vessel",
+          "finish": {
+            "body": "paperboard-brown",
+            "cap": "plastic-blue",
+            "label": "plastic-white"
+          },
+          "id": "body",
+          "massKg": 0.001,
+          "params": {
+            "bandHeight": "0.032399999999999998",
+            "bandInset": "0.00029999999999999997",
+            "capHeight": "0.016",
+            "capRadius": "0.019",
+            "height": "0.053999999999999999",
+            "neckHeight": "0.0050000000000000001",
+            "neckRadius": "0.0117",
+            "radius": "0.017999999999999999",
+            "rimHeight": "0.001",
+            "shoulderHeight": "0.0050000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "morphine",
+      "parts": [
+        {
+          "family": "vessel",
+          "finish": {
+            "body": "glass-grey",
+            "cap": "plastic-blue",
+            "label": "plastic-white"
+          },
+          "id": "body",
+          "massKg": 0.02,
+          "params": {
+            "bandHeight": "0.02",
+            "bandInset": "0.00029999999999999997",
+            "capHeight": "0.0080000000000000002",
+            "capRadius": "0.0050000000000000001",
+            "height": "0.050999999999999997",
+            "neckHeight": "0.0089999999999999993",
+            "neckRadius": "0.0040000000000000001",
+            "radius": "0.0089999999999999993",
+            "rimHeight": "0.001",
+            "shoulderHeight": "0.012"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "part",
+        "roll": 0,
+        "solid": "chest",
+        "turn": [0, 0, 0]
+      },
+      "id": "shambler_torso",
+      "parts": [
+        {
+          "family": "torso",
+          "finish": {
+            "bone": "body-bone",
+            "gore": "body-gore",
+            "pants": "cloth-pants-grey",
+            "shirt": "cloth-shirt-faded",
+            "skin": "body-skin-sickly"
+          },
+          "id": "part",
+          "massKg": 12,
+          "params": {
+            "chestDepth": "0.22",
+            "chestWidth": "0.40000000000000002",
+            "height": "0.59999999999999998",
+            "neckHeight": "0.059999999999999998",
+            "neckWidth": "0.10000000000000001",
+            "pelvisDepth": "0.20999999999999999",
+            "pelvisHeight": "0.20000000000000001",
+            "pelvisWidth": "0.34000000000000002",
+            "tear": "0.10000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "part",
+        "roll": 0,
+        "solid": "skull",
+        "turn": [0, 0, 0]
+      },
+      "id": "shambler_head",
+      "parts": [
+        {
+          "family": "head",
+          "finish": {
+            "bone": "body-bone",
+            "eye": "body-eye",
+            "gore": "body-gore",
+            "hair": "body-hair",
+            "mouth": "body-mouth",
+            "skin": "body-skin-sickly"
+          },
+          "id": "part",
+          "massKg": 5,
+          "params": {
+            "depth": "0.20000000000000001",
+            "hairCover": "0.059999999999999998",
+            "height": "0.23000000000000001",
+            "jawHeight": "0.070000000000000007",
+            "width": "0.17000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "forward",
+        "part": "part",
+        "roll": 0,
+        "solid": "end",
+        "turn": [0, 0, 0]
+      },
+      "id": "shambler_left_arm",
+      "parts": [
+        {
+          "family": "limb",
+          "finish": {
+            "bone": "body-bone",
+            "cloth": "cloth-shirt-faded",
+            "end": "body-skin-sickly",
+            "gore": "body-gore",
+            "skin": "body-skin-sickly"
+          },
+          "id": "part",
+          "massKg": 2.5,
+          "params": {
+            "endDepth": "0.035000000000000003",
+            "endLength": "0.17000000000000001",
+            "endReach": "0",
+            "endWidth": "0.085000000000000006",
+            "length": "0.65000000000000002",
+            "lowerDepth": "0.074999999999999997",
+            "lowerWidth": "0.074999999999999997",
+            "sleeve": "0.17999999999999999",
+            "upper": "0.29999999999999999",
+            "upperDepth": "0.095000000000000001",
+            "upperWidth": "0.095000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "forward",
+        "part": "part",
+        "roll": 0,
+        "solid": "end",
+        "turn": [0, 0, 0]
+      },
+      "id": "shambler_right_arm",
+      "parts": [
+        {
+          "family": "limb",
+          "finish": {
+            "bone": "body-bone",
+            "cloth": "cloth-shirt-faded",
+            "end": "body-skin-sickly",
+            "gore": "body-gore",
+            "skin": "body-skin-sickly"
+          },
+          "id": "part",
+          "massKg": 2.5,
+          "params": {
+            "endDepth": "0.035000000000000003",
+            "endLength": "0.17000000000000001",
+            "endReach": "0",
+            "endWidth": "0.085000000000000006",
+            "length": "0.65000000000000002",
+            "lowerDepth": "0.074999999999999997",
+            "lowerWidth": "0.074999999999999997",
+            "sleeve": "0.17999999999999999",
+            "upper": "0.29999999999999999",
+            "upperDepth": "0.095000000000000001",
+            "upperWidth": "0.095000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.20000000000000001, 0.5],
+        "hold": "forward",
+        "part": "part",
+        "roll": 0,
+        "solid": "lower-cloth",
+        "turn": [0, 0, 0]
+      },
+      "id": "shambler_left_leg",
+      "parts": [
+        {
+          "family": "limb",
+          "finish": {
+            "bone": "body-bone",
+            "cloth": "cloth-pants-grey",
+            "end": "rubber-black",
+            "gore": "body-gore",
+            "skin": "body-skin-sickly"
+          },
+          "id": "part",
+          "massKg": 4,
+          "params": {
+            "endDepth": "0.26000000000000001",
+            "endLength": "0.080000000000000002",
+            "endReach": "0.10000000000000001",
+            "endWidth": "0.10000000000000001",
+            "length": "0.84999999999999998",
+            "lowerDepth": "0.10000000000000001",
+            "lowerWidth": "0.10000000000000001",
+            "sleeve": "0.78000000000000003",
+            "upper": "0.41999999999999998",
+            "upperDepth": "0.14000000000000001",
+            "upperWidth": "0.14000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.20000000000000001, 0.5],
+        "hold": "forward",
+        "part": "part",
+        "roll": 0,
+        "solid": "lower-cloth",
+        "turn": [0, 0, 0]
+      },
+      "id": "shambler_right_leg",
+      "parts": [
+        {
+          "family": "limb",
+          "finish": {
+            "bone": "body-bone",
+            "cloth": "cloth-pants-grey",
+            "end": "rubber-black",
+            "gore": "body-gore",
+            "skin": "body-skin-sickly"
+          },
+          "id": "part",
+          "massKg": 4,
+          "params": {
+            "endDepth": "0.26000000000000001",
+            "endLength": "0.080000000000000002",
+            "endReach": "0.10000000000000001",
+            "endWidth": "0.10000000000000001",
+            "length": "0.84999999999999998",
+            "lowerDepth": "0.10000000000000001",
+            "lowerWidth": "0.10000000000000001",
+            "sleeve": "0.78000000000000003",
+            "upper": "0.41999999999999998",
+            "upperDepth": "0.14000000000000001",
+            "upperWidth": "0.14000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "base": {
+          "fraction": [0.5, 0, 0.5],
+          "part": "body",
+          "solid": "body"
+        },
+        "terminal_positive": {
+          "fraction": [0.80000000000000004, 1, 0.20000000000000001],
+          "part": "body",
+          "solid": "lid"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "car_battery",
+      "parts": [
+        {
+          "family": "carton",
+          "finish": {
+            "body": "plastic-black",
+            "cap": "plastic-black",
+            "label": "plastic-red"
+          },
+          "id": "body",
+          "massKg": 14,
+          "params": {
+            "bandHeight": "0.059999999999999998",
+            "bandInset": "0.00050000000000000001",
+            "depth": "0.17499999999999999",
+            "handleDepth": "0.040000000000000001",
+            "handleHeight": "0",
+            "handleWall": "0.0060000000000000001",
+            "handleWidth": "0.12",
+            "height": "0.17000000000000001",
+            "lidHeight": "0.02",
+            "width": "0.23999999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "beam": {
+          "fraction": [1, 0.5, 0.5],
+          "part": "body",
+          "solid": "body"
+        },
+        "mount": {
+          "fraction": [0, 0.5, 0.14999999999999999],
+          "part": "body",
+          "solid": "body"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "car_headlamp",
+      "parts": [
+        {
+          "family": "block",
+          "finish": {
+            "body": "glass-grey"
+          },
+          "id": "body",
+          "massKg": 1.2,
+          "params": {
+            "depth": "0.22",
+            "height": "0.16",
+            "width": "0.080000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "seat": {
+          "fraction": [0.5, 1, 0.5],
+          "part": "body",
+          "solid": "body"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hatchback_battery_tray",
+      "parts": [
+        {
+          "family": "block",
+          "finish": {
+            "body": "steel-grey"
+          },
+          "id": "body",
+          "massKg": 1.5,
+          "params": {
+            "depth": "0.20999999999999999",
+            "height": "0.02",
+            "width": "0.28000000000000003"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "seat": {
+          "fraction": [0.5, 1, 0.5],
+          "part": "body",
+          "solid": "body"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "pickup_battery_tray",
+      "parts": [
+        {
+          "family": "block",
+          "finish": {
+            "body": "steel-grey"
+          },
+          "id": "body",
+          "massKg": 2.2000000000000002,
+          "params": {
+            "depth": "0.23999999999999999",
+            "height": "0.029999999999999999",
+            "width": "0.32000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
       "id": "electrical_tape",
       "parts": [
         {
@@ -581,6 +1742,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "id": "sewing_thread",
       "parts": [
         {
@@ -607,6 +1769,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "id": "nylon_cord",
       "parts": [
         {
@@ -628,6 +1791,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "id": "fuse",
       "parts": [
         {
@@ -649,6 +1813,42 @@
       ]
     },
     {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "bear_trap",
+      "parts": [
+        {
+          "family": "bearTrap",
+          "finish": {
+            "chain": "steel-grey",
+            "frame": "steel-parkerized",
+            "jaw": "steel-grey"
+          },
+          "id": "bear_trap",
+          "massKg": 4.5,
+          "params": {
+            "barHeight": "0.012",
+            "barWidth": "0.035000000000000003",
+            "jawRadius": "0.16",
+            "jawSegments": "8",
+            "jawThickness": "0.0080000000000000002",
+            "jawWidth": "0.014",
+            "linkCount": "5",
+            "linkRadius": "0.017999999999999999",
+            "linkWire": "0.0050000000000000001",
+            "panHeight": "0.0060000000000000001",
+            "panRadius": "0.059999999999999998",
+            "springLength": "0.17000000000000001",
+            "springThickness": "0.01",
+            "springWidth": "0.040000000000000001",
+            "toothCount": "9",
+            "toothHeight": "0.017999999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
       "connections": [
         {
           "from": "base.arm",
@@ -659,6 +1859,7 @@
           "to": "shade.arm"
         }
       ],
+      "exportMass": "parts",
       "id": "dead_desk_lamp",
       "parts": [
         {

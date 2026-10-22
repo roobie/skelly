@@ -409,6 +409,26 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
       'prying sound is played',
       played.slice(soundCount).some(({ sound }) => sound.event === 'lock_pry'),
     );
+    const feet = session.feet();
+    const struckOrigin: Vec3 = [Math.floor(feet[0]) - 1, Math.floor(feet[1]), Math.floor(feet[2]) - 2];
+    session.entities.add({ type: 'wood_door', pos: struckOrigin, size: doorSize, facing: 'n' });
+    state.doorPosition = [struckOrigin[0] + 1, struckOrigin[1] + 2, struckOrigin[2] + 0.5];
+    const strikeEvents = events.length;
+    session.playerCombat.beginMeleeSwing({
+      origin: session.chest(),
+      direction: [0, 0, -1],
+      weapon: FISTS_MELEE,
+      profile: 'fists',
+      twoHanded: false,
+      hands: { right: null, left: null },
+    });
+    advance(60);
+    scenario.drainEvents();
+    observe(
+      scenario,
+      'a strike on a closed door enters the noise path',
+      events.slice(strikeEvents).some((event) => event.kind === 'noise' && event.event === 'door_bash'),
+    );
   };
 
   const exerciseFurnitureMove = (scenario: NoiseScenario) => {

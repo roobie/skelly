@@ -140,11 +140,26 @@ local items = [
   },
   {
     id: 'can_opener',
+    model: 'can_opener',
     name: 'Can opener',
     category: 'tool',
-    weight: 100,
     size: [1, 1],
     tool: { qualities: { opening: 5 } },
+  },
+  {
+    id: 'bear_trap',
+    model: 'bear_trap',
+    name: 'Bear trap',
+    category: 'tool',
+    size: [5, 5],
+    description: 'Steel jaws on a spring. It shuts on whatever steps in it.',
+    trap: {
+      setSimSeconds: 4,
+      disarmSimSeconds: 6,
+      holdSimSeconds: 20,
+      playerInjury: { region: 'leftLeg', damage: 25, kind: 'pierce' },
+      zombieLegDamage: 60,
+    },
   },
   {
     id: 'baseball_bat',

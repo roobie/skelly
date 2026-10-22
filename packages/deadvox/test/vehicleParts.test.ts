@@ -18,6 +18,7 @@ import {
 import { MOTORBIKE } from '../src/vehicles/motorbike.ts';
 import { PICKUP } from '../src/vehicles/pickup.ts';
 import { RANGE_ROVER, STRIPPED_REMOVED } from '../src/vehicles/rangeRover.ts';
+import { SEDAN } from '../src/vehicles/sedan.ts';
 import {
   GLASS,
   keyVoxel,
@@ -51,6 +52,7 @@ const BLUEPRINTS: readonly { readonly blueprint: Blueprint; readonly builds: rea
   { blueprint: RANGE_ROVER, builds: [[], STRIPPED_REMOVED] },
   { blueprint: PICKUP, builds: [[]] },
   { blueprint: HOIST, builds: [[]] },
+  { blueprint: SEDAN, builds: [[]] },
   { blueprint: MOTORBIKE, builds: [[]] },
 ];
 

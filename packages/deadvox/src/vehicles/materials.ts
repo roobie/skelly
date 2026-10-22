@@ -35,8 +35,10 @@ export const MATERIALS: Readonly<Record<string, string>> = {
   headliner: '#bfb8a7',
   seatTan: '#8e7558',
   seatVinyl: '#6f6458',
+  seatCloth: '#55595d',
   saddle: '#202325',
   doorCardTan: '#7b6b56',
   doorCardBrown: '#5b5249',
+  doorCardGrey: '#4d5154',
   crane: '#d6a32b',
 };

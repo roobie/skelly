@@ -80,8 +80,9 @@ doorway door, and only the front of a shaped container (a cabinet, a safe) keeps
 Boarding is a barricade made from inside, so it holds against the street. The boarded door's
 content names the barricaded side (`door.barredFrom`, a face of the door's facing), and a door
 refuses opening from that side while it opens from the other. The refusal is the player's
-ordinary door refusal. Forcing it from the street waits for #800 ("deadvox: player forces or bashes blocks,
-starting with boarded doors"); #273 covers the zombie side.
+ordinary door refusal. From the street the only way in is breaking the leaf with blows, the
+player's or a zombie's; damage short of that leaves the boarded side refusing and the other side
+opening, so boarding never becomes a wall or a free passage (`packages/deadvox/DESIGN.md`, "Base building and electricity").
 See `src/content/base/gauntlet-city-doors.libsonnet`, `furniture`; `src/core/blockEntities.ts`,
 `doorRefusal`; `test/locks.test.ts`, "boarded doors"; and `test/cityKitPlan.test.ts`,
 "gauntlet door openings".

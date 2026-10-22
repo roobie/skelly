@@ -1,0 +1,14 @@
+{
+  "id": "field_patch",
+  "file": "assets/models/field_patch.glb",
+  "parts": {
+    "material": {
+      "node": "material:foldedSheet",
+      "massKg": 0.12,
+      "centreOfMass": [-0.0011212558065032932, 0.004018220406855679, 0]
+    }
+  },
+  "grip": { "at": [3.469446951953614e-18, 0.00575, -1.3877787807814457e-17], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 0
+}

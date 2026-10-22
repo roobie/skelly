@@ -61,6 +61,7 @@ import {
 import { MOTORBIKE } from '../vehicles/motorbike.ts';
 import { PICKUP } from '../vehicles/pickup.ts';
 import { RANGE_ROVER, STRIPPED_REMOVED, wheel } from '../vehicles/rangeRover.ts';
+import { SEDAN } from '../vehicles/sedan.ts';
 import { gridBounds, type MeshBuffers, meshGrid, type Rgb, type VoxelGrid } from '../vehicles/voxels.ts';
 import { fittingWear, type WearSite, wearGrid, wearKey, wearPalette } from '../vehicles/wear.ts';
 import { type PanelActions, type PanelModel, panelTemplate } from './vehicleSpikePanel.ts';
@@ -149,6 +150,13 @@ const BUILDS = {
     removed: [],
     viewScale: 1.06,
     views: { interior: { position: [0.45, 1.7, 1.9], target: [0.85, 0.95, -0.35] } },
+  },
+  sedan: {
+    label: 'Family sedan',
+    button: 'Sedan',
+    blueprint: SEDAN,
+    removed: [],
+    views: { interior: { position: [0.2, 1.55, 1.7], target: [0.6, 0.65, -0.3] } },
   },
   hoist: {
     label: 'Canter-type crane truck',

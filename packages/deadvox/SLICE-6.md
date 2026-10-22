@@ -234,11 +234,9 @@ leaving saves to an integration finale.
    feasibility envelope so neither becomes a late exception. BR judges handling,
    the constrained boundary and the mass-placement difference. Select neither a
    library nor its version without evidence and the dependency-age check.
-2. **Authoring-to-game contract.** A shared exported thing must validate and load on
-   two hosts; a mod-authored compatible part needs no code edit. Refuse broken
-   references, invalid supports and unsupported capabilities. Exercise reflected
-   datums and baked collision geometry. Keep VAT production deployment in #323
-   rather than making a full editor a prerequisite for reproducible exports.
+2. **Authoring-to-game contract.** Settled in
+   `docs/vehicle-spike.md`, "Export contract". VAT production deployment stays in
+   #323 rather than making a full editor a prerequisite for reproducible exports.
 3. **Persistent parked instances and light salvage.** Replace selected wreck
    placements with vehicle-owned state. Prove independent instances, saved removals
    and contents, deterministic placement and cache invalidation. Add install,
