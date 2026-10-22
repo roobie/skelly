@@ -1,6 +1,6 @@
 import type { SaveVersionComponents, SaveWorldOptions } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
-import { reviveSaveStorageError, SaveStorageLockError, type SaveStorageErrorKind } from './saveStorageErrors.ts';
+import { SaveStorageError, type SaveStorageErrorKind } from './saveStorageErrors.ts';
 import {
   commitSavePayload,
   inspectSaveSlots,
@@ -108,7 +108,7 @@ export class SaveStorage {
         this.pending.delete(data.id);
         clearTimeout(request.timer);
         if (data.error) {
-          request.reject(reviveSaveStorageError(data.error, data.errorKind));
+          request.reject(data.errorKind ? new SaveStorageError(data.errorKind, data.error) : new Error(data.error));
         } else {
           request.resolve(data.result);
         }
@@ -334,7 +334,7 @@ export class SaveStorage {
         b: slots.b === null ? null : new Uint8Array(slots.b),
       };
     } catch (error) {
-      if (!(error instanceof SaveStorageLockError) || attempt + 1 >= SAVE_READ_RETRIES) {
+      if (!(error instanceof SaveStorageError && error.kind === 'lock') || attempt + 1 >= SAVE_READ_RETRIES) {
         throw error;
       }
       await new Promise((resolve) => globalThis.setTimeout(resolve, SAVE_READ_RETRY_MS * (attempt + 1)));

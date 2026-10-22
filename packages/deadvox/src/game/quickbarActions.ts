@@ -26,8 +26,7 @@ export class QuickbarActions {
     if (!at) {
       return;
     }
-    const reason =
-      at.kind === 'hand' ? quickbarPutAway(inventory, queue, item) : quickbarTake(inventory, queue, item);
+    const reason = at.kind === 'hand' ? quickbarPutAway(inventory, queue, item) : quickbarTake(inventory, queue, item);
     if (reason) {
       notice(reason);
     }

@@ -1,14 +1,7 @@
 import { PerspectiveCamera, PointLight, Scene, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { Inventory } from '../src/core/inventory.ts';
-import {
-  chargeOf,
-  drainLight,
-  inventoryLightSources,
-  lightSenseSourceFor,
-  toggleLight,
-} from '../src/core/lights.ts';
-import { sunExposedAt } from './fixtures/sunOracle.ts';
+import { chargeOf, drainLight, inventoryLightSources, lightSenseSourceFor, toggleLight } from '../src/core/lights.ts';
 import { slotsReason } from '../src/core/magazine.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -20,6 +13,7 @@ import { LightPool, POINT_LIGHT_POOL_SIZE } from '../src/render/lightPool.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_DAY_CYCLE, dayStateAtHour } from './dayPhaseFixture.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
+import { sunExposedAt } from './fixtures/sunOracle.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const registry = baseRegistry();

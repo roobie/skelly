@@ -1,4 +1,4 @@
-import { canonicalJson } from './canonicalJson.ts';
+import { canonicalJson, SHA256_HEX } from './canonicalJson.ts';
 import type { ContentSource } from './content.ts';
 
 export interface BundleStamp {
@@ -6,7 +6,6 @@ export interface BundleStamp {
   proofHash: string;
 }
 
-const HASH = /^[0-9a-f]{64}$/;
 const sourceKey = (sources: readonly ContentSource[]): string =>
   canonicalJson(sources.map(({ source, data }) => [source, data]));
 const digest = async (key: string): Promise<string> => {
@@ -34,8 +33,8 @@ export class BundleAdmission {
       !(
         stamp &&
         proofHash &&
-        HASH.test(stamp.sourceHash) &&
-        HASH.test(proofHash) &&
+        SHA256_HEX.test(stamp.sourceHash) &&
+        SHA256_HEX.test(proofHash) &&
         stamp.proofHash === proofHash &&
         globalThis.crypto?.subtle
       )

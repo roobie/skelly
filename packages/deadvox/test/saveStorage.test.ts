@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SaveStorageConflictError } from '../src/game/saveStorageErrors.ts';
+import { SaveStorageError } from '../src/game/saveStorageErrors.ts';
 import {
   commitSavePayload,
   inspectSaveSlots,
@@ -82,7 +82,7 @@ class MemorySaveDriver implements SaveCommitDriver {
   async commit(request: SaveCommitRequest): Promise<void> {
     const record = await sealSaveSlot(request.namespace, request.generation, request.payload);
     if (!samePair(this.slots, request.expected)) {
-      throw new SaveStorageConflictError('fake slots changed');
+      throw new SaveStorageError('conflict', 'fake slots changed');
     }
     if (this.backend === 'opfs') {
       if (this.crashAt === 'before-truncate') {

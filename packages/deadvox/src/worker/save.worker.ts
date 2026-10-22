@@ -1,19 +1,14 @@
+import { SHA256_HEX } from '../core/canonicalJson.ts';
 import { encodeSave, type SaveVersionComponents, type SaveWorldOptions } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { createDurableWriteTransaction } from '../game/indexedDbCommit.ts';
-import {
-  SaveStorageConflictError,
-  type SaveStorageErrorKind,
-  SaveStorageLockError,
-  saveStorageErrorKind,
-} from '../game/saveStorageErrors.ts';
+import { SaveStorageError, type SaveStorageErrorKind } from '../game/saveStorageErrors.ts';
 import { SAVE_RECORD_HEADER_BYTES, SAVE_RECORD_MAX_BYTES, sealSaveSlot } from '../game/saveStorageRecord.ts';
 
 const DATABASE = 'deadvox-save-slots';
 const DATABASE_VERSION = 1;
 const STORE = 'slots';
 const ROOT_DIRECTORY = 'deadvox-saves';
-const NAMESPACE_PATTERN = /^[0-9a-f]{64}$/;
 const SLOT_NAMES = ['a', 'b'] as const;
 type SlotName = (typeof SLOT_NAMES)[number];
 type Backend = 'opfs' | 'indexeddb';
@@ -89,7 +84,7 @@ const openDatabase = (): Promise<IDBDatabase> => {
 };
 
 const namespaceDirectory = async (namespace: string, create: boolean): Promise<FileSystemDirectoryHandle> => {
-  if (!NAMESPACE_PATTERN.test(namespace)) {
+  if (!SHA256_HEX.test(namespace)) {
     throw new Error('Save namespace must be a lowercase SHA-256 digest');
   }
   const root = await scope.navigator.storage.getDirectory();
@@ -172,7 +167,7 @@ const listOpfsNamespaces = async (): Promise<string[]> => {
   }
   const namespaces: string[] = [];
   for await (const handle of saves.values()) {
-    if (handle.kind === 'directory' && NAMESPACE_PATTERN.test(handle.name)) {
+    if (handle.kind === 'directory' && SHA256_HEX.test(handle.name)) {
       namespaces.push(handle.name);
     }
   }
@@ -208,7 +203,7 @@ const readSlots = async (namespace: string): Promise<SlotPair> => {
         result.reason.name === 'NoModificationAllowedError',
     );
     if (lockFailure) {
-      throw new SaveStorageLockError('OPFS save slot is open in another context; retry the read');
+      throw new SaveStorageError('lock', 'OPFS save slot is open in another context; retry the read');
     }
     const failure = results.find((result): result is PromiseRejectedResult => result.status === 'rejected');
     if (failure) {
@@ -414,16 +409,22 @@ const commitRequest = async (request: RequestMessage): Promise<void> => {
   if (backend === 'opfs') {
     const current = await readSlots(namespace);
     if (!samePair(current, request.expected!)) {
-      throw new SaveStorageConflictError('Save slots changed during OPFS commit');
+      throw new SaveStorageError('conflict', 'Save slots changed during OPFS commit');
     }
     await writeOpfs(request, packed);
     return;
   }
   const result = await writeIdb(request, packed);
   if (result === 'conflict') {
-    throw new SaveStorageConflictError('Save slots changed during IndexedDB commit');
+    throw new SaveStorageError('conflict', 'Save slots changed during IndexedDB commit');
   }
 };
+
+const errorReply = (id: number, error: unknown): ResponseMessage => ({
+  id,
+  error: error instanceof Error ? error.message : String(error),
+  errorKind: error instanceof SaveStorageError ? error.kind : undefined,
+});
 
 scope.onmessage = async ({ data }: MessageEvent<RequestMessage>) => {
   const request = data;
@@ -454,10 +455,6 @@ scope.onmessage = async ({ data }: MessageEvent<RequestMessage>) => {
       reply({ id: request.id, result: { slot: request.slot, generation: request.generation } });
     }
   } catch (error) {
-    reply({
-      id: request.id,
-      error: error instanceof Error ? error.message : String(error),
-      errorKind: saveStorageErrorKind(error),
-    });
+    reply(errorReply(request.id, error));
   }
 };

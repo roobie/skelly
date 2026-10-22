@@ -4,6 +4,7 @@ import { pickWeighted, Rng } from './random.ts';
 import type { ScenarioRouteSpace } from './scenarioRoute.ts';
 import type { MapPoolDef, PerimeterCrossingDef, ScenarioDef } from './schema.ts';
 import { eligibilityExclusion } from './settlementPools.ts';
+import { rectsOverlap } from './site.ts';
 import { footprint, type Placement, placedPoint } from './templates.ts';
 
 type Lot = NonNullable<ScenarioDef['city']['lots']>[number];
@@ -52,8 +53,6 @@ export const lotRect = (lot: Lot) => ({
   x1: lot.position[0] + lot.size[0],
   z1: lot.position[1] + lot.size[1],
 });
-export const rectsOverlap = (a: ReturnType<typeof lotRect>, b: ReturnType<typeof lotRect>): boolean =>
-  a.x0 < b.x1 && b.x0 < a.x1 && a.z0 < b.z1 && b.z0 < a.z1;
 
 export const lotChoices = (registry: Registry, city: LotContext, lot: Lot): Choice[] => {
   if (!lot.source) {

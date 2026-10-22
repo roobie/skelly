@@ -5,10 +5,10 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { skyAt, sunDirection } from '../src/core/sky.ts';
-import { sunExposedAt } from './fixtures/sunOracle.ts';
 import { type HordeState, perceivePlayer, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { sunExposedAt } from './fixtures/sunOracle.ts';
 
 const registry = baseRegistry();
 const cycle = requireDayCycle(registry);
