@@ -62,7 +62,7 @@ local rooms = {
     finish: { floor: 'planks', wall: 'dressed', base: 'dressed' }, ceilingDrop: 1, floorRise: 0,
     openings: [{ token: 't', at: [26, 8], axis: 'x', width: 2 }],
     dressing: [
-      { id: 'director_desk', at: [21, 3], kit: 'desk', fixture: 'working' },
+      { id: 'director_desk', at: [21, 3], kit: 'desk', fixture: 'working', loot: 'gauntlet_lab_administration_margin' },
       { id: 'director_cabinets', at: [24, 5], kit: 'cabinets', fixture: null },
     ],
   },
@@ -120,7 +120,7 @@ local rooms = {
     openings: [{ token: 'I', at: [25, 26], axis: 'z', width: 4 }],
     dressing: [
       { id: 'canteen_fridge', at: [14, 23], kit: 'fridge', fixture: 'broken' },
-      { id: 'canteen_cupboards', at: [14, 25], kit: 'kitchen', fixture: null },
+      { id: 'canteen_cupboards', at: [14, 25], kit: 'kitchen', fixture: null, loot: 'gauntlet_lab_administration_margin' },
       { id: 'canteen_table_west', at: [18, 25], kit: 'desk', fixture: 'working' },
       { id: 'canteen_table_east', at: [21, 25], kit: 'desk', fixture: null },
       { id: 'canteen_bench', at: [18, 27], kit: 'bench', fixture: null },
@@ -154,7 +154,7 @@ local rooms = {
     tokens: ['x', 'X', '0', 'T'], wall: 'X', floor: 'x', band: '[',
     finish: { floor: 'floor', wall: 'metal', base: 'concrete' }, ceilingDrop: 2, floorRise: 0,
     openings: [{ token: 'T', at: [28, 28], axis: 'z', width: 2 }],
-    dressing: [{ id: 'store_south_shelves', at: [31, 28], kit: 'shelves', fixture: 'working' }],
+    dressing: [{ id: 'store_south_shelves', at: [31, 28], kit: 'shelves', fixture: 'working', loot: 'gauntlet_lab_administration_margin' }],
   },
   shaft_arrival: {
     tokens: ['s', 'U', 'P'], wall: 'U', floor: 's', band: ']',
@@ -180,7 +180,11 @@ local built = level.build({
   card: { at: [22, 6] },
   through: arrivals,
   holes: [{ at: [stairAt[0], stairAt[2]], size: [level.stair.size[0], level.stair.size[2]] }, shaftLid],
-  markers: [],
+  // The briefing hall is the crowd room; the offices stay sparse and the stair hall quiet.
+  // A spawn body reaches one block west and north of its marker, so each marker sits one block into its cell.
+  markers: [[c[0] * scale + 1, 1, c[1] * scale + 1] for c in [
+    [10, 12], [4, 21], [9, 22], [6, 26], [11, 17], [22, 23], [16, 27], [18, 19], [26, 17], [32, 14], [14, 7],
+  ]],
 });
 {
   rooms: rooms, plan: plan, size: built.size,
@@ -192,4 +196,8 @@ local built = level.build({
   items: [{ id: 'gauntlet_lab_administration_card', name: 'Clearance keycard', category: 'tool', weight: 5, size: [1, 1], economy: { usage: ['Industrial'], tiers: ['Tier1'] }, model: 'folded_note', key: { lock: 'gauntlet_lab_administration_seal' } }],
   mapPieces: built.mapPieces,
   mapAssemblies: [built.mapAssembly],
+  loot: [{ id: 'gauntlet_lab_administration_margin', rolls: [1, 2], entries: [
+    { table: 'gauntlet_food_stock', weight: 2 }, { table: 'gauntlet_medical_stock', weight: 1 }, { item: 'flashlight', weight: 1 },
+    { nothing: true, weight: 3 },
+  ] }],
 }
