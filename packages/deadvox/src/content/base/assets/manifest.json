@@ -83,6 +83,10 @@
         "assets/models/painkillers.glb",
         "assets/models/codeine.glb",
         "assets/models/morphine.glb",
+        "assets/models/frag_grenade.glb",
+        "assets/models/torch.glb",
+        "assets/models/candle.glb",
+        "assets/models/dead_desk_lamp.glb",
         "assets/models/shambler_torso.glb",
         "assets/models/shambler_head.glb",
         "assets/models/shambler_left_arm.glb",
@@ -97,8 +101,7 @@
         "assets/models/thread_spool.glb",
         "assets/models/cord_coil.glb",
         "assets/models/fuse.glb",
-        "assets/models/bear_trap.glb",
-        "assets/models/desk_lamp.glb"
+        "assets/models/bear_trap.glb"
       ],
       "licence": "CC0-1.0",
       "title": "Thing tool authored models",

@@ -10,7 +10,7 @@ export const exportItem = (
   asset: ReturnType<typeof recipeAsset>,
   { collision = false }: { readonly collision?: boolean } = {},
 ) => {
-  const { report, masses, handling } = buildItem(item);
+  const { report, masses, handling, glow } = buildItem(item);
   const out = exportGlb({
     resolved: report.resolved,
     asset,
@@ -38,7 +38,12 @@ export const exportItem = (
   }
   return {
     glb: out.glb,
-    modelEntry: { ...asset, ...(item.exportMass === 'parts' ? { parts } : {}), ...handling },
+    modelEntry: {
+      ...asset,
+      ...(item.exportMass === 'parts' ? { parts } : {}),
+      ...handling,
+      ...(glow ? { emissiveMaterial: glow } : {}),
+    },
     physical: assemblyProperties(parts),
   };
 };
