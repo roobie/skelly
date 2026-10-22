@@ -3594,6 +3594,14 @@ describe('stagger', () => {
     expect(control.zombie.body.pos).not.toEqual(controlBefore);
   });
 
+  it('never adds a second stagger to the remaining time', () => {
+    const { system, zombie } = windingUp();
+    const ray = regionRay(zombie, 'torso');
+    system.swing(ray.origin, ray.direction, heavy);
+    system.swing(ray.origin, ray.direction, heavy);
+    expect(zombie.staggerSimSeconds).toBe(stagger.durationSimSeconds);
+  });
+
   it('keeps the remaining stagger across a snapshot/restore', () => {
     const { system, id, zombie } = windingUp();
     const ray = regionRay(zombie, 'torso');

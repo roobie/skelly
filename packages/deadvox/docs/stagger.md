@@ -18,7 +18,7 @@ Slice 5 defence needs hits that interrupt an approaching threat (`SLICE-5.md`, "
 
 **It never moves the zombie.** Stagger stops the zombie's own movement and leaves its position alone. Displacement is knockback's job, and keeping the two apart means a stagger can never push a body through a door or wall, and its timing can be proved separately from brute displacement (`SLICE-5.md`, "Reviewable build order").
 
-**A new stagger never shortens or extends one in progress.** The longer remaining time wins. Stacking would let repeated hits lock a zombie forever. The charge's time and stamina cost is what limits how often the player can stagger.
+**Staggers never add up.** A new stagger keeps whichever remaining time is longer, so it can never shorten one in progress. Adding the durations would let a burst of hits bank stagger time and lock a zombie for longer than any single hit earns. The charge's time and stamina cost is what limits how often the player can renew a stagger.
 
 **It persists in saves.** Saving and loading must not free a staggered zombie or grant a new stagger, so the remaining time is part of the zombie's snapshot.
 
