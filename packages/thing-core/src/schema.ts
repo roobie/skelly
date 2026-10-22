@@ -19,6 +19,11 @@ import {
 } from 'valibot';
 
 export const ModelPointSchema = tuple([pipe(number(), finite()), pipe(number(), finite()), pipe(number(), finite())]);
+const dotOf = (a: readonly number[], b: readonly number[]) => a.reduce((sum, value, axis) => sum + value * b[axis]!, 0);
+const UnitVectorSchema = pipe(
+  ModelPointSchema,
+  check((point) => Math.abs(Math.hypot(...point) - 1) <= 1e-6, 'must be a unit vector'),
+);
 const Id = pipe(string(), regex(/^[a-z0-9_]+$/, 'must be lowercase letters, digits and _'));
 
 export const ModelBoxSchema = pipe(
@@ -49,6 +54,13 @@ export const NeutralModelSchema = strictObject({
   rest: optional(picklist(['lying', 'upright'])),
   roll: optional(pipe(number(), finite(), minValue(-180), maxValue(180))),
   anchors: optional(record(Id, ModelPointSchema)),
+  /** The screen of an item that shows something: its centre, the way it faces and the way its top points. */
+  display: optional(
+    pipe(
+      strictObject({ at: ModelPointSchema, normal: UnitVectorSchema, up: UnitVectorSchema }),
+      check(({ normal, up }) => Math.abs(dotOf(normal, up)) <= 1e-6, 'display up must be across its normal'),
+    ),
+  ),
 });
 
 export const modelSchema = <const Packs extends ObjectEntries>(packs: Packs) => {

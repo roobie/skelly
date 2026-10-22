@@ -121,6 +121,8 @@ export const FIRST_PERSON_SHOULDER: Readonly<Record<HandSide, Vec3>> = {
   right: [0.3, -0.55, 0.05],
   left: [-0.3, -0.55, 0.05],
 };
+/** The first-person hand's box: across the palm, along the fingers, and through from palm to back. */
+export const FIRST_PERSON_PALM: Vec3 = [0.09, 0.08, 0.09];
 const SEGMENT_UP = new Vector3(0, 1, 0);
 const segmentDirection = new Vector3();
 
@@ -184,7 +186,7 @@ export const createFirstPersonArm = (palette: FigureDef['palette'], side: HandSi
   const forearm = new Mesh(geometry, skin);
   placeFirstPersonSegment(forearm, elbow, wrist, { width: 0.09, depth: 0.09 });
   arm.add(forearm);
-  const palm = new Mesh(new BoxGeometry(0.09, 0.08, 0.09), skin);
+  const palm = new Mesh(new BoxGeometry(...FIRST_PERSON_PALM), skin);
   palm.position.copy(wrist);
   palm.quaternion.setFromUnitVectors(SEGMENT_UP, wrist.clone().sub(elbow).normalize());
   arm.add(palm);

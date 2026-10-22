@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import {
   Box3,
   BoxGeometry,
+  Group,
   InstancedMesh,
   type Loader,
   LoadingManager,
@@ -14,15 +15,18 @@ import {
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ContentSource } from '../src/core/content.ts';
+import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory, type Pile } from '../src/core/inventory.ts';
 import { PILE_GRID } from '../src/core/inventoryScale.ts';
 import { toggleLight } from '../src/core/lights.ts';
 import { pileLayout } from '../src/core/pileLayout.ts';
 import { spentCaseItemId } from '../src/game/firearmHandling.ts';
 import { createCompass } from '../src/render/compass.ts';
+import { presentHeldDisplay } from '../src/render/heldDisplay.ts';
 import { itemLook } from '../src/render/itemLook.ts';
 import { fittedPartFrame, groundModelFrame, heldModelFrame, prepareModel } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
+import { FIRST_PERSON_PALM } from '../src/render/playerFigure.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
 const BASE = 'src/content/base';
@@ -84,30 +88,54 @@ it('prepares every thing recipe export for ground and held drawing with its grip
 
 afterEach(() => vi.unstubAllGlobals());
 
-it('attaches outward-facing compass live parts above exported model anchors', async () => {
-  const definition = registry.models.get('compass')!;
-  const { scene } = await parseGlb(readFileSync(`${BASE}/${definition.file}`));
-  const { held } = prepareModel(definition, scene);
-  const context = { fillRect: vi.fn(), fillText: vi.fn(), beginPath: vi.fn(), arc: vi.fn(), stroke: vi.fn() };
-  vi.stubGlobal('document', { createElement: () => ({ getContext: () => context }) });
-  const compass = createCompass({
-    root: held,
-    displayMount: definition.anchors!.display_mount!,
-    needleMount: definition.anchors!.needle_mount!,
-  });
-  const frame = heldModelFrame(held);
-  const display = compass.group.getObjectByName('compass-live-display')!;
-  const needle = compass.group.getObjectByName('compass-live-needle')!;
-  expect(display.parent).toBe(frame);
-  expect(needle.parent).toBe(frame);
-  expect(display.position.y).toBeGreaterThan(definition.anchors!.display_mount![1]);
-  expect(needle.position.y).toBeGreaterThan(display.position.y);
-  held.updateMatrixWorld(true);
-  const outward = new Vector3(0, 1, 0).applyQuaternion(frame.getWorldQuaternion(new Quaternion()));
-  expect(display.getWorldDirection(new Vector3()).dot(outward)).toBeGreaterThan(0.99);
-  expect(needle.getWorldDirection(new Vector3()).dot(outward)).toBeGreaterThan(0.99);
-  compass.dispose();
-});
+it.each<[string, Vec3]>([
+  ['right', [0.14, -0.13, -0.3]],
+  ['left', [-0.14, -0.13, -0.3]],
+])(
+  'turns a %s-held compass screen to the eye, upright, with the whole model in front of the palm',
+  async (_side, heldAt) => {
+    const definition = registry.models.get('compass')!;
+    const { scene } = await parseGlb(readFileSync(`${BASE}/${definition.file}`));
+    const { held } = prepareModel(definition, scene);
+    const context = { fillRect: vi.fn(), fillText: vi.fn(), beginPath: vi.fn(), arc: vi.fn(), stroke: vi.fn() };
+    vi.stubGlobal('document', { createElement: () => ({ getContext: () => context }) });
+    const compass = createCompass({
+      root: held,
+      display: definition.display!,
+      needleMount: definition.anchors!.needle_mount!,
+    });
+    const hand = new Group().add(held);
+    hand.position.set(...heldAt);
+    const palm = presentHeldDisplay(held, definition.display!, heldAt);
+    hand.add(palm);
+    hand.updateMatrixWorld(true);
+    const toEye = new Vector3(...heldAt).negate().normalize();
+    for (const name of ['compass-live-display', 'compass-live-needle']) {
+      expect(compass.group.getObjectByName(name)!.getWorldDirection(new Vector3()).dot(toEye), name).toBeGreaterThan(
+        0.99,
+      );
+    }
+    const display = compass.group.getObjectByName('compass-live-display')!;
+    const top = new Vector3(0, 1, 0).applyQuaternion(display.getWorldQuaternion(new Quaternion()));
+    expect(top.y).toBeGreaterThan(0.9);
+    const palmFront = FIRST_PERSON_PALM[2] / 2;
+    const palmForward = new Vector3(0, 0, 1).applyQuaternion(palm.getWorldQuaternion(new Quaternion()));
+    expect(palmForward.dot(toEye)).toBeGreaterThan(0.99);
+    const handAt = new Vector3(...heldAt);
+    let nearestToPalm = Number.POSITIVE_INFINITY;
+    held.traverse((child) => {
+      if (child instanceof Mesh) {
+        const position = child.geometry.getAttribute('position');
+        for (let index = 0; index < position.count; index += 1) {
+          const vertex = new Vector3().fromBufferAttribute(position, index).applyMatrix4(child.matrixWorld);
+          nearestToPalm = Math.min(nearestToPalm, vertex.sub(handAt).dot(toEye));
+        }
+      }
+    });
+    expect(nearestToPalm).toBeGreaterThanOrEqual(palmFront - 1e-6);
+    compass.dispose();
+  },
+);
 
 describe('piles with models', () => {
   const inventory = new Inventory(registry);

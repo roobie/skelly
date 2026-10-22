@@ -68,6 +68,7 @@ import {
 import { sightedFirearmModel } from './firearmSight.ts';
 import { grabPose } from './grabPose.ts';
 import { handlingRotation } from './handlingTurn.ts';
+import { presentHeldDisplay } from './heldDisplay.ts';
 import { applyItemEmissive, disposeItemEmissiveMaterials } from './itemEmissive.ts';
 import { itemLook } from './itemLook.ts';
 import {
@@ -202,6 +203,8 @@ export class HeldItems {
   private readonly armLengths = new Map<Group, readonly [number, number]>();
   private readonly handBases = new Map<HandSide, Vec3>();
   private readonly heldByHand = new Map<HandSide, Object3D>();
+  /** The frame each hand's palm takes behind a held screen. */
+  private readonly displayPalms = new Map<HandSide, Object3D>();
   private readonly relativeCamera = new Quaternion();
   private opticWindowShape = '';
   private opticViewFrame: OpticLensFrame | undefined;
@@ -320,7 +323,7 @@ export class HeldItems {
       compass.update(main.rotation.y);
     }
     for (const [side, arm] of this.arms) {
-      this.updateArmChain(side, arm, this.revolverGripFrame(side, firearmPoses));
+      this.updateArmChain(side, arm, this.revolverGripFrame(side, firearmPoses) ?? this.displayPalms.get(side));
     }
     this.view.updateMatrixWorld(true);
   }
@@ -1246,6 +1249,7 @@ export class HeldItems {
     this.armLengths.clear();
     this.handBases.clear();
     this.heldByHand.clear();
+    this.displayPalms.clear();
     const { hands } = this.inventory;
     this.syncHand('right', hands.right);
     this.syncHand('left', hands.left);
@@ -1424,6 +1428,12 @@ export class HeldItems {
     const held = new Group();
     held.position.set(...heldAt);
     held.add(this.shape(item));
+    const model = def.heldDisplay === undefined ? undefined : this.inventory.registry.models.get(def.model!);
+    if (model?.display && this.models?.has(model.id)) {
+      const palm = presentHeldDisplay(held.children[0]!, model.display, heldAt);
+      held.add(palm);
+      this.displayPalms.set(side, palm);
+    }
     addShadowReceiver(this.view, held);
     this.shown.set(item.uid, held);
     this.heldByHand.set(side, held);
@@ -1452,13 +1462,17 @@ export class HeldItems {
     const def = defOf(this.inventory.registry, item.type);
     const look = itemLook(this.inventory.registry, item);
     const model = look && this.models?.heldLook(look);
-    if (def.heldDisplay === HELD_DISPLAY_KIND.compass) {
-      const anchors = def.model === undefined ? undefined : this.inventory.registry.models.get(def.model)?.anchors;
-      const compass = createCompass(
-        model && anchors?.display_mount && anchors.needle_mount
-          ? { root: model.root, displayMount: anchors.display_mount, needleMount: anchors.needle_mount }
-          : undefined,
-      );
+    // Until its model loads, a held display shows the placeholder any item does.
+    if (def.heldDisplay === HELD_DISPLAY_KIND.compass && model) {
+      const definition = this.inventory.registry.models.get(def.model!);
+      if (!(definition?.display && definition.anchors?.needle_mount)) {
+        throw new Error(`Held compass ${item.type} needs a model with a display and a needle_mount anchor`);
+      }
+      const compass = createCompass({
+        root: model.root,
+        display: definition.display,
+        needleMount: definition.anchors.needle_mount,
+      });
       this.compasses.set(item.uid, compass);
       return compass.group;
     }

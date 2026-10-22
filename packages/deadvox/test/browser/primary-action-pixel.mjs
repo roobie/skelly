@@ -282,9 +282,20 @@ try {
     await page.waitForFunction((previous) => globalThis.primaryActionTest.frames > previous + 3, frame);
     const shot = await capture();
     await writeFile(resolve(projectRoot, 'test-results/primary-action/held-compass.png'), shot);
-    const pixels = await heldCompassPixels(page, shot);
-    process.stdout.write(`Held compass green pixels: ${JSON.stringify(pixels)}\n`);
-    assert.ok(pixels.green > 200, 'the held compass display contributes green pixels beyond the dark-night background');
+    const shown = await heldCompassPixels(page, shot);
+    // Hiding only the live display isolates its own pixels from the lit floor and the arm around it.
+    const hiddenFrame = await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      r.view.held.warmUpTarget.scene.getObjectByName('compass-live-display').visible = false;
+      return r.frames;
+    });
+    await page.waitForFunction((previous) => globalThis.primaryActionTest.frames > previous + 3, hiddenFrame);
+    const hidden = await heldCompassPixels(page, await capture());
+    process.stdout.write(`Held compass green pixels: ${JSON.stringify({ shown, hidden })}\n`);
+    assert.ok(
+      shown.green - hidden.green > shown.pixels / 10,
+      'the held compass display is visible: showing it adds green pixels over the same frame with it hidden',
+    );
   });
   await page.evaluate(() => {
     const r = globalThis.primaryActionTest;

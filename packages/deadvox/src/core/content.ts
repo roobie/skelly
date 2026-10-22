@@ -33,6 +33,7 @@ import {
   type ContentSection,
   type DayCycleDef,
   type FurnitureDef,
+  HELD_DISPLAY_KIND,
   type ItemDef,
   type ModelDef,
   type RecipeDef,
@@ -426,6 +427,19 @@ const checkItemLightModel = (item: ItemDef, registry: Registry, report: Report) 
   }
 };
 
+const checkItemHeldDisplay = (item: ItemDef, registry: Registry, report: Report) => {
+  if (item.heldDisplay === undefined) {
+    return;
+  }
+  const model = item.model === undefined ? undefined : registry.models.get(item.model);
+  if (!model?.display) {
+    report('items', item.id, '.model', 'a held display needs a model with a display');
+  }
+  if (item.heldDisplay === HELD_DISPLAY_KIND.compass && !model?.anchors?.needle_mount) {
+    report('items', item.id, '.model', 'a held compass needs a model with a needle_mount anchor');
+  }
+};
+
 const checkItemLight = (item: ItemDef, hasIgniter: boolean, registry: Registry, report: Report) => {
   const { light, igniter } = item;
   const battery = light?.power?.battery;
@@ -752,6 +766,7 @@ const checkItems = (registry: Registry, report: Report) => {
     checkItemMass(item, registry, report);
     checkItemLight(item, hasIgniter, registry, report);
     checkItemLightModel(item, registry, report);
+    checkItemHeldDisplay(item, registry, report);
     checkItemFirearm(item, registry, report);
     checkMeleeSounds(item, registry, report);
     checkItemOptic(item, registry, obtainable, report);

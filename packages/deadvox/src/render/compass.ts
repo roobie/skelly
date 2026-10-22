@@ -1,39 +1,29 @@
 // A deliberately rough electronic compass: its lit screen belongs to the held object,
 // not the HUD. Battery consumption is outside this readability spike.
 import {
-  BoxGeometry,
   CanvasTexture,
   CircleGeometry,
   Group,
+  Matrix4,
   Mesh,
   MeshBasicMaterial,
-  MeshLambertMaterial,
   type Object3D,
   PlaneGeometry,
   SRGBColorSpace,
+  Vector3,
 } from 'three';
 import { compassBearing, headingLabel, yawFromBearing } from '../core/coords.ts';
+import type { ModelDef } from '../core/schema.ts';
 import { heldModelFrame } from './models.ts';
 
 const FULL_TURN = Math.PI * 2;
 
-export const createCompass = (model?: {
+export const createCompass = (model: {
   readonly root: Object3D;
-  readonly displayMount?: readonly [number, number, number];
-  readonly needleMount?: readonly [number, number, number];
+  readonly display: NonNullable<ModelDef['display']>;
+  readonly needleMount: readonly [number, number, number];
 }) => {
-  const group = model?.root ?? new Group();
-  const fallback = model === undefined;
-  let caseGeometry: BoxGeometry | undefined;
-  let caseMaterial: MeshLambertMaterial | undefined;
-  if (fallback) {
-    // Keep a display available while a model is still loading.
-    group.position.y = 0.13;
-    caseGeometry = new BoxGeometry(0.1, 0.13, 0.018);
-    caseMaterial = new MeshLambertMaterial({ color: 0x34_3b_38 });
-    group.add(new Mesh(caseGeometry, caseMaterial));
-  }
-
+  const { root, display: screen, needleMount } = model;
   const canvas = document.createElement('canvas');
   canvas.width = 512;
   canvas.height = 512;
@@ -43,31 +33,30 @@ export const createCompass = (model?: {
   }
   const texture = new CanvasTexture(canvas);
   texture.colorSpace = SRGBColorSpace;
-  const displayGeometry = new PlaneGeometry(fallback ? 0.086 : 0.024, fallback ? 0.112 : 0.012);
+  const displayGeometry = new PlaneGeometry(0.024, 0.012);
   const displayMaterial = new MeshBasicMaterial({ map: texture, color: 0x9d_c9_b2 });
   const display = new Mesh(displayGeometry, displayMaterial);
   display.name = 'compass-live-display';
-  const needleGeometry = new CircleGeometry(fallback ? 0.019 : 0.006, 3);
+  const needleGeometry = new CircleGeometry(0.006, 3);
   const needleMaterial = new MeshBasicMaterial({ color: 0xff_9f_86 });
   const needle = new Mesh(needleGeometry, needleMaterial);
   needle.name = 'compass-live-needle';
   needle.geometry.rotateZ(Math.PI / 2);
   needle.scale.x = 0.45;
-  if (fallback) {
-    display.position.z = 0.0095;
-    needle.position.set(0, -0.022, 0.0105);
-    group.add(display, needle);
-  } else {
-    // The authored mounts sit on the compass's +y face. A plane's front is +z, so
-    // turn that front toward +y and separate the live layers to avoid z-fighting.
-    display.rotation.x = -Math.PI / 2;
-    needle.rotation.x = -Math.PI / 2;
-    display.position.set(...model.displayMount!);
-    display.position.y += 0.001;
-    needle.position.set(...model.needleMount!);
-    needle.position.y += 0.002;
-    heldModelFrame(group).add(display, needle);
-  }
+  // A plane's front is +z and its top +y: the face turns them to the screen's normal and up,
+  // and the live layers stand off the screen to avoid z-fighting.
+  const normal = new Vector3(...screen.normal);
+  const up = new Vector3(...screen.up);
+  const face = new Group();
+  face.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(up.clone().cross(normal), up, normal));
+  face.position.set(...screen.at).addScaledVector(normal, 0.001);
+  needle.position
+    .set(...needleMount)
+    .sub(new Vector3(...screen.at))
+    .applyQuaternion(face.quaternion.clone().invert());
+  needle.position.z += 0.001;
+  face.add(display, needle);
+  heldModelFrame(root).add(face);
   let displayed = -1;
   const update = (yaw: number) => {
     const bearing = compassBearing(yaw);
@@ -98,11 +87,9 @@ export const createCompass = (model?: {
   };
   update(yawFromBearing(0));
   return {
-    group,
+    group: root,
     update,
     dispose: () => {
-      caseGeometry?.dispose();
-      caseMaterial?.dispose();
       displayGeometry.dispose();
       displayMaterial.dispose();
       needleGeometry.dispose();
