@@ -704,7 +704,7 @@ describe('quick move rules', () => {
   it('keeps a wielded item in hand and returns the fit hint when there is no room', () => {
     const t = setup();
     const item = t.add('canned_beans', { kind: 'hand', side: 'right' });
-    const plan = quickMove(item, t.view()).plan;
+    const { plan } = quickMove(item, t.view());
     expect(plan.ok).toBe(false);
     expect(plan.ok ? undefined : plan.reason).toBeTruthy();
     expect(t.inventory.hands.right).toBe(item);
@@ -736,7 +736,7 @@ describe('quick move rules', () => {
   it('returns the fit hint and leaves a floor item in place when no inventory slot fits', () => {
     const t = setup();
     const item = t.add('canned_beans', { kind: 'pile', pos: [0, 0, 0] });
-    const plan = quickMove(item, t.view()).plan;
+    const { plan } = quickMove(item, t.view());
     expect(plan.ok).toBe(false);
     expect(plan.ok ? undefined : plan.reason).toBeTruthy();
     expect(t.inventory.locate(item)?.kind).toBe('pile');
