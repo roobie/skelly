@@ -4,6 +4,7 @@ read_if:
   - you change content schemas, validation, registry merging, browser-mod identity or content-loading test fixtures
   - you add or change a bundled mod such as beginner mode, or how `?mods=` selects one
   - you add code that reads a content row by a fixed id
+  - you add or change a refusal, notice or option label that core code shows the player
   - you change recipe, skill, workstation or book content, content references, static reachability or disassembly-output contracts
   - you change item economy metadata, source contexts, loot selection, loot-point descriptions or fixed loot
   - you're authoring or changing authored sites or gauntlet lots, template geometry, palettes, site-generation tuning, time-windowed spawns, curated map kits, role styles or connector contracts
@@ -116,6 +117,30 @@ requires every field, so a pack that omits one fails validation instead of silen
 inheriting a code default. Readers take the values from the registry. See
 `src/core/schema.ts`, `InventoryTuningSchema` and `UiTuningSchema`, and `src/core/reach.ts`,
 `reachTuning`.
+
+## Core text
+
+What core says to the player, its refusals, notices and option labels, is mod content
+like any other text (#393, #456), so a mod can reword or translate it without a code
+change. It lives in the core ui row, in its own file so other text tables can grow beside
+it without touching the same lines. See `src/content/base/ui-core-text.libsonnet`.
+
+- **Read by key.** Code names each message by a stable key and never compares or matches
+  wording, so rewording a message cannot change what the game does. A rule that treats
+  some refusals specially, such as hiding the obvious ones from the item options, lists
+  keys. See `src/core/coreText.ts`, `coreMessage`, and `src/core/options.ts`, `OBVIOUS`.
+- **Required, with named slots.** One table of keys and slots drives both the schema and
+  the lookup's type, so a key code asks for and content lacks fails validation, not play.
+  A template names the values code fills in, such as `{item}`, and validation rejects one
+  that drops or invents a slot. See `src/core/coreText.ts`, `CORE_MESSAGE_SLOTS`, and
+  `src/core/schema.ts`, `slottedTable`.
+- **Owner rows.** The knockout refusal sits in the body row beside the bleeding refusal,
+  because the body that owns the state words its refusal and needs no registry. The
+  simulation takes the registry so its long actions can word theirs. See
+  `src/core/body.ts`, `Body.actionRefusal`, and `src/core/sim.ts`, `SimOptions`.
+
+Internal invariant reasons that only a code defect can produce, such as a missing action
+owner, stay in code: no player meets them, and content would only hide the defect.
 
 ## Handling range
 
