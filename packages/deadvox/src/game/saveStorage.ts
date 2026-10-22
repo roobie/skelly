@@ -1,6 +1,6 @@
 import type { SaveVersionComponents, SaveWorldOptions } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
-import { SaveStorageLockError } from './saveStorageLockError.ts';
+import { reviveSaveStorageError, SaveStorageLockError, type SaveStorageErrorKind } from './saveStorageErrors.ts';
 import {
   commitSavePayload,
   inspectSaveSlots,
@@ -36,6 +36,7 @@ interface WorkerResponse {
   readonly id: number;
   readonly result?: unknown;
   readonly error?: string;
+  readonly errorKind?: SaveStorageErrorKind | undefined;
 }
 export interface SaveStorageOptions {
   /** Force a backend in tests; production should leave this on `auto`. */
@@ -107,9 +108,7 @@ export class SaveStorage {
         this.pending.delete(data.id);
         clearTimeout(request.timer);
         if (data.error) {
-          request.reject(
-            data.error.startsWith('LOCKED:') ? new SaveStorageLockError(data.error) : new Error(data.error),
-          );
+          request.reject(reviveSaveStorageError(data.error, data.errorKind));
         } else {
           request.resolve(data.result);
         }

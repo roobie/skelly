@@ -1,3 +1,4 @@
+import { SaveStorageConflictError } from './saveStorageErrors.ts';
 import { openSaveSlot, SAVE_RECORD_MAX_BYTES, type SaveSlotRecord } from './saveStorageRecord.ts';
 
 type SlotName = 'a' | 'b';
@@ -94,8 +95,6 @@ const nextCommit = async (
   return { request: { namespace, slot, generation, payload, expected: slots } };
 };
 
-const isConflict = (error: unknown): boolean => error instanceof Error && error.message.startsWith('CONFLICT:');
-
 export async function commitSavePayload(
   driver: SaveCommitDriver,
   namespace: string,
@@ -110,7 +109,7 @@ export async function commitSavePayload(
       await driver.commit(request);
       return { generation: request.generation, slot: request.slot };
     } catch (error) {
-      if (!isConflict(error)) {
+      if (!(error instanceof SaveStorageConflictError)) {
         throw error;
       }
     }

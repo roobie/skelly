@@ -1,6 +1,12 @@
 import { encodeSave, type SaveVersionComponents, type SaveWorldOptions } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { createDurableWriteTransaction } from '../game/indexedDbCommit.ts';
+import {
+  SaveStorageConflictError,
+  type SaveStorageErrorKind,
+  SaveStorageLockError,
+  saveStorageErrorKind,
+} from '../game/saveStorageErrors.ts';
 import { SAVE_RECORD_HEADER_BYTES, SAVE_RECORD_MAX_BYTES, sealSaveSlot } from '../game/saveStorageRecord.ts';
 
 const DATABASE = 'deadvox-save-slots';
@@ -35,6 +41,7 @@ interface ResponseMessage {
   readonly id: number;
   readonly result?: unknown;
   readonly error?: string;
+  readonly errorKind?: SaveStorageErrorKind | undefined;
 }
 
 interface SaveStorageManager extends StorageManager {
@@ -201,7 +208,7 @@ const readSlots = async (namespace: string): Promise<SlotPair> => {
         result.reason.name === 'NoModificationAllowedError',
     );
     if (lockFailure) {
-      throw new Error('LOCKED: OPFS save slot is open in another context; retry the read');
+      throw new SaveStorageLockError('OPFS save slot is open in another context; retry the read');
     }
     const failure = results.find((result): result is PromiseRejectedResult => result.status === 'rejected');
     if (failure) {
@@ -407,14 +414,14 @@ const commitRequest = async (request: RequestMessage): Promise<void> => {
   if (backend === 'opfs') {
     const current = await readSlots(namespace);
     if (!samePair(current, request.expected!)) {
-      throw new Error('CONFLICT: save slots changed during OPFS commit');
+      throw new SaveStorageConflictError('Save slots changed during OPFS commit');
     }
     await writeOpfs(request, packed);
     return;
   }
   const result = await writeIdb(request, packed);
   if (result === 'conflict') {
-    throw new Error('CONFLICT: save slots changed during IndexedDB commit');
+    throw new SaveStorageConflictError('Save slots changed during IndexedDB commit');
   }
 };
 
@@ -447,6 +454,10 @@ scope.onmessage = async ({ data }: MessageEvent<RequestMessage>) => {
       reply({ id: request.id, result: { slot: request.slot, generation: request.generation } });
     }
   } catch (error) {
-    reply({ id: request.id, error: error instanceof Error ? error.message : String(error) });
+    reply({
+      id: request.id,
+      error: error instanceof Error ? error.message : String(error),
+      errorKind: saveStorageErrorKind(error),
+    });
   }
 };
