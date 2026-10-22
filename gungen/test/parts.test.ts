@@ -21,8 +21,8 @@ import { runSweeps, sweepGroup } from './sweeps.ts';
  * Keys of `FAMILIES` (not family names: `ak-receiver` is also named `receiver`) whose default-run cases are a 3-wise covering array instead of the full product. Any
  * family not listed here (including every family added later) gets the full product.
  *
- * Why these three: `receiver` (the AR/pump one) is 32,256 of the 37,320 combinations, `barrel` and
- * `handguard` 1,944 each. The array keeps coverage of the built geometry: on a sample of
+ * Why these: they are the families whose full products dominate the default run (`receiver` alone is
+ * most of the combinations). The array keeps coverage of the built geometry: on a sample of
  * `parts.ts` mutants it killed every mutant the full product killed, where 2-wise missed one.
  * `lower` stays a full product: the 3-wise array misses its `magazineOrientation=tilt` classes.
  * `sight` is sampled as an array so future optic parameters compose without making its full product
@@ -31,7 +31,16 @@ import { runSweeps, sweepGroup } from './sweeps.ts';
  * `handleStyle` is deliberately excluded from these unconstrained products: arbitrary combinations
  * create invalid owner/pattern pairings. The compatible style × pattern × owner matrix below tests it.
  */
-const ARRAY_SAMPLED_KEYS = ['receiver', 'barrel', 'handguard', 'sight'] as const;
+const ARRAY_SAMPLED_KEYS = [
+  'receiver',
+  'barrel',
+  'handguard',
+  'sight',
+  'bolt-carrier',
+  'bolt-handle-arm',
+  'bolt-handle-knob',
+  'magazine',
+] as const;
 const ARRAY_STRENGTH = 3;
 // Sporter joints/support and cartridge-driven motion/export have dedicated contract tests;
 // multiplying their look controls through unrelated mechanisms only repeats geometry classes.
@@ -122,17 +131,19 @@ const isArraySampled = (key: string): boolean => (ARRAY_SAMPLED_KEYS as readonly
 const sameParams = (a: Record<string, string>, b: Record<string, string>): boolean =>
   Object.keys(a).length === Object.keys(b).length && Object.entries(a).every(([k, v]) => b[k] === v);
 
+// Straight STANAG only accepts M; the rejected lengths have a dedicated contract test.
+const acceptedCases = (key: string, cases: Record<string, string>[]): Record<string, string>[] =>
+  key === 'magazine'
+    ? cases.filter(({ profile, length: lengthClass }) => profile !== 'stanag-straight' || lengthClass === 'M')
+    : cases;
+
 /** The default product/covering-array cases; owner-specific styles are covered separately below. */
 const defaultCases = (key: string, family: PartFamily): Record<string, string>[] => {
   const params = withoutHandleStyle(family);
   if (!isArraySampled(key)) {
-    const cases = fullProduct(params);
-    // Straight STANAG only accepts M; the rejected lengths have a dedicated contract test.
-    return key === 'magazine'
-      ? cases.filter(({ profile, length: lengthClass }) => profile !== 'stanag-straight' || lengthClass === 'M')
-      : cases;
+    return acceptedCases(key, fullProduct(params));
   }
-  const cases = tWiseCases(params, ARRAY_STRENGTH);
+  const cases = acceptedCases(key, tWiseCases(params, ARRAY_STRENGTH));
   for (const extra of EXPLICIT_CASES[key] ?? []) {
     for (const [name, spec] of Object.entries(params)) {
       if (!spec.values.includes(extra[name] ?? '')) {
@@ -699,7 +710,7 @@ describe('part library', () => {
       describe(key, () => {
         // A skipped group still registers its cases, so build none in the default run.
         // Batch exhaustive cases to cap Vitest registration memory; failures retain the exact params.
-        definePartChecks(family, runSweeps ? fullProduct(withoutHandleStyle(family)) : [], 256);
+        definePartChecks(family, runSweeps ? acceptedCases(key, fullProduct(withoutHandleStyle(family))) : [], 256);
       });
     }
   });
