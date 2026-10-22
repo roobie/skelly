@@ -2,7 +2,6 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
-import { Chunk } from '../src/core/chunk.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { CHUNK } from '../src/core/coords.ts';
@@ -12,7 +11,6 @@ import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import type { Site } from '../src/core/site.ts';
 import { type RealSeconds, realSeconds, simSeconds } from '../src/core/time.ts';
-import { World } from '../src/core/world.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { QuickbarActions } from '../src/game/quickbarActions.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
@@ -21,7 +19,6 @@ import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 import {
   advance,
   blockId,
-  blockName,
   capture,
   contentLookup,
   createRuntime,
@@ -594,22 +591,6 @@ describe('snapshot state components', () => {
     second.scheduler.advance(0.4);
     expect(count).toBe(12);
     expect(second.scheduler.time).toBe(first.scheduler.time);
-  });
-
-  it('stores stable-ID block deltas and restores them over matching generated chunks', () => {
-    const source = new World();
-    source.addChunk(new Chunk(0, 0, 0, blockId('dirt')));
-    source.setBlock(1, 2, 3, blockId('planks'));
-    const state = source.snapshotDiffs(blockName);
-    expect(state.chunks).toEqual([
-      { cx: 0, cy: 0, cz: 0, cells: [{ index: 1 + CHUNK * (3 + CHUNK * 2), base: 'dirt', id: 'planks' }] },
-    ]);
-    const restored = new World();
-    restored.addChunk(new Chunk(0, 0, 0, blockId('dirt')));
-    restored.restoreDiffs(structuredClone(state), (id) => blockId(id));
-    expect(restored.getBlock(1, 2, 3)).toBe(blockId('planks'));
-    restored.setBlock(1, 2, 3, blockId('dirt'));
-    expect(restored.snapshotDiffs(blockName).chunks).toEqual([]);
   });
 
   it('projects queued tagged jobs as canceled only in the snapshot copy', () => {

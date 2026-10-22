@@ -56,7 +56,7 @@ const inspectLiveSession = (session: Session): unknown => ({
     godMode: session.sim.godMode,
   },
   body: structuredClone(session.body),
-  worldDiffs: session.worldDiffs(),
+  worldColumns: session.worldColumns(),
   inventory: session.inventory.snapshotState(),
   quickbar: session.quickbar.snapshotState(session.inventory),
   searching: [...session.entities.all].map((entity) => [entity.uid, entity.searched, session.searching(entity)]),

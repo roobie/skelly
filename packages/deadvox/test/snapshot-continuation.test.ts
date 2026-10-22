@@ -479,12 +479,12 @@ describe('hamlet save/load continuation', () => {
     original.zombies.add(registry.zombies.get('shambler')!, original.player.body.pos);
     original = prepareAudioContinuation(original);
     const saved = capture(original);
-    expect(saved.world.diffs.chunks.length).toBeGreaterThan(0);
+    expect(saved.world.columns.length).toBeGreaterThan(0);
     const baseline = runtimeFrom(saved);
     advance(baseline, 1);
 
     const noDelta = structuredClone(saved);
-    noDelta.world.diffs.chunks[0]!.cells.pop();
+    noDelta.world.columns = [];
     const withoutDelta = runtimeFrom(noDelta);
     advance(withoutDelta, 1);
     expect(inspect(withoutDelta)).not.toEqual(inspect(baseline));

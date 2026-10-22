@@ -345,8 +345,9 @@ Leaving or reloading a live save-backed game asks the browser to confirm when it
 
 Uniform chunks keep the memory cost of the voxel world manageable. Saves use
 stable block names because runtime ids depend on the loaded content pack, and
-store only differences from seeded generation so unchanged terrain can be
-recreated. See `src/core/world.ts` and `src/core/saveFormat.ts`.
+store unchanged terrain only as the seed, so it can be recreated; a changed
+column is stored whole (`DESIGN.md`, "Edits persist"). See `src/core/world.ts`
+and `src/core/saveFormat.ts`.
 
 ### Edits persist
 
@@ -357,8 +358,11 @@ removal that undid itself would duplicate resources and erase the player's work,
 keeping edits must stay cheap at that scale.
 
 A column is furnished once, and its pieces are then saved state, kept in memory for the
-session, so a removed piece has nothing to return from. The save is one compressed record.
-See `src/game/session.ts`, `rolledColumns`, and `src/core/saveFormat.ts`, `encodeSave`.
+session, so a removed piece has nothing to return from. A column whose blocks have
+changed is saved whole from then on, and its chunks stay in memory for the session, so
+it is never rebuilt from the seed; unchanged columns regenerate. The save is one
+compressed record. See `src/game/session.ts`, `rolledColumns`; `src/core/world.ts`,
+`World`; and `src/core/saveFormat.ts`, `encodeSave`.
 
 ### Block entities
 

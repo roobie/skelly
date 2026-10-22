@@ -621,7 +621,9 @@ describe('canonical save format', () => {
     // scheduler cursors without running the fixed-rate physics ticks.
     setBudgetClock(runtime);
     const snapshot = capture(runtime);
-    expect(snapshot.world.diffs.chunks.length).toBeGreaterThanOrEqual(worldStats.editedChunks);
+    expect(snapshot.world.columns.flatMap(({ chunks }) => chunks).length).toBeGreaterThanOrEqual(
+      worldStats.editedChunks,
+    );
     expect(snapshot.world.spawned.length).toBe(population.spawned);
     expect(snapshot.world.zombies.zombies.length).toBe(population.alive);
     expect(snapshot.character.inventory.piles.length).toBe(pileStats.pileCount + pileStats.baselinePileCount);
@@ -854,26 +856,30 @@ describe('canonical save format', () => {
     const firstRun = (firstChunk.runs as Record<string, unknown>[])[0]!;
     firstRun.id = (firstChunk.palette as unknown[]).length;
     malformed.push({ name: 'RLE', bytes: sealEnvelope(badRle), message: 'Malformed RLE run' });
-    const adjacentSnapshot = structuredClone(capture(createRuntime())) as SaveSnapshot;
-    const changedChunk = adjacentSnapshot.world.diffs.chunks[0]!;
-    changedChunk.cells.push({ ...changedChunk.cells[0]!, index: changedChunk.cells[0]!.index + 1 });
-    const nonMaximalRle = parseEnvelope(await encodeFixture(adjacentSnapshot));
-    const nonMaximalPayload = getObject(nonMaximalRle.payload);
-    const nonMaximalWorld = getObject(nonMaximalPayload.world);
-    const nonMaximalRegion = Object.values(getObject(nonMaximalWorld.regions))[0] as Record<string, unknown>;
-    const nonMaximalChunk = (nonMaximalRegion.chunks as Record<string, unknown>[])[0]!;
-    const nonMaximalRuns = nonMaximalChunk.runs as Record<string, unknown>[];
-    const maximalRun = nonMaximalRuns[0]!;
+    const firstSavedChunk = (envelope: Record<string, unknown>) => {
+      const world = getObject(getObject(envelope.payload).world);
+      const region = Object.values(getObject(world.regions)).find(
+        (candidate) => (getObject(candidate).chunks as unknown[]).length > 0,
+      );
+      return (getObject(region).chunks as Record<string, unknown>[])[0]!;
+    };
+    const nonMaximalRle = parseEnvelope(valid);
+    const nonMaximalRuns = firstSavedChunk(nonMaximalRle).runs as Record<string, unknown>[];
+    const runIndex = nonMaximalRuns.findIndex(({ length }) => Number(length) > 1);
+    const maximalRun = nonMaximalRuns[runIndex]!;
     const runStart = Number(maximalRun.start);
     const runLength = Number(maximalRun.length);
-    expect(runLength).toBeGreaterThan(1);
     nonMaximalRuns.splice(
-      0,
+      runIndex,
       1,
       { ...maximalRun, length: 1 },
       { ...maximalRun, start: runStart + 1, length: runLength - 1 },
     );
     malformed.push({ name: 'non-maximal RLE', bytes: sealEnvelope(nonMaximalRle), message: 'Non-maximal RLE runs' });
+    const shortRle = parseEnvelope(valid);
+    const shortRuns = firstSavedChunk(shortRle).runs as Record<string, unknown>[];
+    getObject(shortRuns.at(-1)).length = Number(shortRuns.at(-1)!.length) - 1;
+    malformed.push({ name: 'short RLE', bytes: sealEnvelope(shortRle), message: 'do not cover the chunk' });
 
     const duplicate = parseEnvelope(valid);
     const duplicatePayload = getObject(duplicate.payload);

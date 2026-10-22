@@ -15,14 +15,14 @@ import type { ScenarioRunState } from './scenarioRun.ts';
 import type { Simulation, SimulationState } from './sim.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundPickerState } from './soundPicker.ts';
-import type { World, WorldDiffs } from './world.ts';
+import type { SavedColumn, World } from './world.ts';
 import type { ZombieSpawner } from './zombieSpawns.ts';
 import type { VocalNoise, ZombieSystem, ZombieSystemState } from './zombies.ts';
 
 export interface SaveSnapshot {
   world: {
     id: string;
-    diffs: WorldDiffs;
+    columns: SavedColumn[];
     zombies: ZombieSystemState;
     spawned: readonly string[];
     rolledColumns: readonly string[];
@@ -116,7 +116,7 @@ export const snapshotSession = ({
   return freezeSnapshot({
     world: {
       id: worldId,
-      diffs: world.snapshotDiffs(blockContentId) as WorldDiffs,
+      columns: world.snapshotColumns(blockContentId) as SavedColumn[],
       zombies: zombies.snapshotState() as ZombieSystemState,
       spawned: [...spawner.snapshotState()],
       rolledColumns: [...rolledColumns],

@@ -463,7 +463,7 @@ export class SaveController {
     render(html`${label}`, $('go'));
   }
 
-  /** Protects a decoded save when lazy chunk-diff restoration finds a different generated base. */
+  /** Protects a decoded save when generating the restored world fails, so autosave cannot overwrite it. */
   refuseRestore(error: unknown): boolean {
     if (!(this.isRestored && this.namespace)) {
       return false;
