@@ -168,6 +168,7 @@ const INPUT_ACTIONS: readonly Action[] = [
   debugRow('debug.god-toggle', 'God mode'),
   debugRow('debug.noclip-toggle', 'Noclip'),
   debugRow('debug.spectator-camera-toggle', 'Spectator camera'),
+  debugRow('debug.spectator-teleport', 'Teleport avatar to spectator camera'),
   debugRow('debug.third-person-toggle', 'Third-person avatar view'),
   debugRow('debug.perception-labels-toggle', 'Perception labels'),
   debugRow('debug.spawn-unaware-shambler', 'Spawn unaware shambler'),

@@ -95,7 +95,7 @@ local opticZoom = { step: 1, rememberPerWeapon: true };
       "id": "weapon_sling",
       "name": "Weapon sling",
       "category": "misc",
-      "weight": 150,
+      "model": "weapon_sling",
       "size": [1, 1],
       "description": "A two-point carry strap. Fitted to a long gun, it lets you carry the gun on your shoulder with your hands free.",
       "sling": true

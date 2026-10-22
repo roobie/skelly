@@ -1,0 +1,13 @@
+{
+  "id": "hoist_frame_rail",
+  "file": "assets/models/hoist_frame_rail.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 110,
+      "centreOfMass": [0, 0.46875, 0.5],
+      "collision": [{ "min": [-2.875, 0.40625, 0.4375], "max": [2.875, 0.53125, 0.5625] }]
+    }
+  },
+  "anchors": {}
+}

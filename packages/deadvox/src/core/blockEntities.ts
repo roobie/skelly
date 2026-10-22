@@ -7,7 +7,7 @@
 import { solidBlocks } from '../vehicles/solid.ts';
 import type { FurnitureDef, Registry } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
-import type { Vec3 } from './coords.ts';
+import { toChunk, type Vec3 } from './coords.ts';
 import { type Placed, type PlacedState, restorePlaced, snapshotPlaced } from './items.ts';
 import { type Pose, rotatedSize, rotationOf, type Tip } from './orientation.ts';
 import { type Body, bodyOverlapsBlock } from './physics.ts';
@@ -173,10 +173,11 @@ export const isBodyDoor = (def: FurnitureDef): boolean =>
   def.door !== undefined && def.shape !== undefined && def.container !== undefined;
 
 const key = (x: number, y: number, z: number) => `${x},${y},${z}`;
+const columnKey = (cx: number, cz: number) => `${cx},${cz}`;
 
 /** Everything a piece's drawn look and blocking cells follow from, so a view can skip pieces that didn't change. */
-export const poseKey = (entity: BlockEntity): string =>
-  `${entity.pos}|${entity.size}|${entity.facing}|${entity.tip ?? ''}|${entity.open}|${entity.broken ?? false}`;
+export const poseKey = (entity: BlockEntity, wear = 0): string =>
+  `${entity.pos}|${entity.size}|${entity.facing}|${entity.tip ?? ''}|${entity.open}|${entity.broken ?? false}|${wear}`;
 
 export interface BlockingBox {
   readonly pos: Readonly<Vec3>;
@@ -233,6 +234,16 @@ export class BlockEntities {
   private readonly masks = new WeakMap<FurnitureDef, ReadonlySet<string>>();
   private readonly boxes = new WeakMap<BlockEntity, { pose: string; boxes: readonly BlockingBox[] }>();
   private readonly reservedUids = new Set<number>();
+  /**
+   * Derived from `byOrigin` and rebuilt on restore, never saved: every explored piece stays in memory, so a lookup
+   * must not scan them all (`DESIGN.md`, "Edits persist").
+   */
+  private readonly uids = new Map<number, BlockEntity>();
+  /** Each standing piece under every world column its cells reach into. */
+  private readonly columns = new Map<string, Set<BlockEntity>>();
+  /** Each piece's place in `byOrigin`, so a by-column lookup lists pieces in the order `all` does. */
+  private readonly sequence = new Map<BlockEntity, number>();
+  private sequenced = 0;
   private nextUid = 1;
   /** Goes up on every change, so views know when to redraw. */
   version = 0;
@@ -261,7 +272,23 @@ export class BlockEntities {
   }
 
   byUid(uid: number): BlockEntity | undefined {
-    return [...this.byOrigin.values()].find((entity) => entity.uid === uid);
+    return this.uids.get(uid);
+  }
+
+  /**
+   * The standing pieces whose cells reach into any world column that a box of points, in blocks, spans, in the order
+   * `all` lists them. Columns are coarse, so callers still test each piece's own box.
+   */
+  near(low: Readonly<Vec3>, high: Readonly<Vec3>): BlockEntity[] {
+    const found = new Set<BlockEntity>();
+    for (let cx = toChunk(Math.floor(low[0])); cx <= toChunk(Math.floor(high[0])); cx++) {
+      for (let cz = toChunk(Math.floor(low[2])); cz <= toChunk(Math.floor(high[2])); cz++) {
+        for (const entity of this.columns.get(columnKey(cx, cz)) ?? []) {
+          found.add(entity);
+        }
+      }
+    }
+    return [...found].sort((a, b) => this.sequence.get(a)! - this.sequence.get(b)!);
   }
 
   /** The piece in the player's hands. */
@@ -311,6 +338,7 @@ export class BlockEntities {
     for (const [cell, entity] of restored.doorways) {
       this.doorways.set(cell, entity);
     }
+    this.reindex();
     this.nextUid = restored.nextUid;
     // A restored count could repeat one a view cached for another state, and the view would keep the stale state.
     this.version = Math.max(this.version, restored.version) + 1;
@@ -342,6 +370,38 @@ export class BlockEntities {
       entities.reservedUids.add(uid);
     }
     return entities;
+  }
+
+  private reindex(): void {
+    this.uids.clear();
+    this.columns.clear();
+    this.sequence.clear();
+    for (const entity of this.byOrigin.values()) {
+      this.track(entity);
+      if (!entity.carried) {
+        this.index(entity, true);
+      }
+    }
+  }
+
+  private track(entity: BlockEntity): void {
+    this.uids.set(entity.uid, entity);
+    this.sequence.set(entity, this.sequenced);
+    this.sequenced += 1;
+  }
+
+  private index(entity: BlockEntity, filled: boolean): void {
+    for (let cx = toChunk(entity.pos[0]); cx <= toChunk(entity.pos[0] + entity.size[0] - 1); cx++) {
+      for (let cz = toChunk(entity.pos[2]); cz <= toChunk(entity.pos[2] + entity.size[2] - 1); cz++) {
+        const column = columnKey(cx, cz);
+        const pieces = this.columns.get(column);
+        if (filled) {
+          (pieces ?? this.columns.set(column, new Set()).get(column)!).add(entity);
+        } else if (pieces?.delete(entity) && pieces.size === 0) {
+          this.columns.delete(column);
+        }
+      }
+    }
   }
 
   private restoreEntity(saved: BlockEntityState): void {
@@ -432,6 +492,7 @@ export class BlockEntities {
       entity.pockets = def.container.pockets.map(() => []);
     }
     this.byOrigin.set(origin, entity);
+    this.track(entity);
     if (!entity.carried) {
       this.occupy(entity, true);
     }
@@ -451,6 +512,7 @@ export class BlockEntities {
         cells.delete(cell);
       }
     }
+    this.index(entity, filled);
   }
 
   /**
@@ -560,6 +622,8 @@ export class BlockEntities {
     }
     this.occupy(entity, false);
     this.byOrigin.delete(key(...entity.origin));
+    this.uids.delete(entity.uid);
+    this.sequence.delete(entity);
     this.reservedUids.delete(entity.uid);
     this.version += 1;
     this.standing += 1;
@@ -785,6 +849,20 @@ export class BlockEntities {
   }
 
   /**
+   * How many of its door material's damage looks a leaf has reached, 0 when none; a view redraws a leaf when this
+   * changes, not on every blow (`FurnitureMeshes.doorLook`).
+   */
+  wearOf(entity: BlockEntity): number {
+    const { door } = this.defOf(entity);
+    const steps = door && this.registry.doorMaterials.get(door.material)?.damaged;
+    if (!(door?.breach && steps && entity.damage)) {
+      return 0;
+    }
+    const fraction = entity.damage / door.breach.toughness;
+    return steps.filter((step) => step.from <= fraction).length;
+  }
+
+  /**
    * One blow against a closed leaf, a zombie's bash or a player's strike alike. A blow below the leaf's minimum
    * strength leaves no mark, so waiting never lets a weak attacker through; stronger blows add their strength until
    * it reaches the toughness. A broken leaf stands open and its lock is gone, so the breach is one-way, as forcing is.
@@ -800,7 +878,11 @@ export class BlockEntities {
     const damage = (entity.damage ?? 0) + strength;
     this.version += 1;
     if (damage < breach.toughness) {
+      const worn = this.wearOf(entity);
       entity.damage = damage;
+      if (this.wearOf(entity) !== worn) {
+        this.standing += 1;
+      }
       return 'damaged';
     }
     entity.damage = undefined;

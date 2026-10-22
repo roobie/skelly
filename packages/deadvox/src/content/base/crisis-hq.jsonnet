@@ -57,6 +57,25 @@ local furnished = [
   '#........#....O........O..MMBB.#',
   '###########VV#####DD############',
 ];
+// Soldiers (Z), a few ordinary shamblers (z) and loot piles (L) stand on open floor of the ground storey's lower layer only.
+local markers = [
+  [2, 2, 'Z'], [12, 2, 'Z'], [2, 8, 'Z'], [12, 8, 'Z'], [4, 9, 'Z'],
+  [16, 8, 'Z'], [21, 8, 'Z'], [21, 4, 'z'],
+  [25, 2, 'Z'], [28, 7, 'Z'], [30, 3, 'Z'], [29, 8, 'z'],
+  [19, 13, 'Z'], [24, 12, 'Z'], [28, 12, 'Z'],
+  [12, 13, 'Z'], [20, 14, 'z'],
+  [7, 16, 'Z'], [5, 17, 'Z'], [7, 23, 'Z'], [3, 23, 'z'],
+  [16, 12, 'L'], [20, 12, 'L'], [25, 4, 'L'],
+];
+local marked = [
+  std.join('', [
+    local hits = [m[2] for m in markers if m[0] == x && m[1] == z];
+    if std.length(hits) == 0 then furnished[z][x]
+    else assert furnished[z][x] == '.' : 'a marker must stand on open floor'; hits[0]
+    for x in std.range(0, std.length(furnished[z]) - 1)
+  ])
+  for z in std.range(0, std.length(furnished) - 1)
+];
 local windows = [
   '###===###===###===##===##===####',
   '#.............#rr...rr.#....ff.#',
@@ -187,12 +206,14 @@ local pitchHigh = [air, air, air, air, air, air, air, air, sheet, sheet, sheet, 
       c: { furniture: 'chair', facing: 's' }, p: { furniture: 'chair', tip: 'left' },
       r: { furniture: 'police_desk_radio', facing: 's' },
       f: { furniture: 'police_file_cabinet', facing: 's', loot: 'equipment_locker' },
-      S: { furniture: 'shelf', loot: 'equipment_locker', facing: 's' },
+      S: { furniture: 'shelf', loot: 'hq_field_supplies', facing: 's' },
+      Z: { spawn: 'military_shambler' }, z: { spawn: 'shambler', chance: 0.7 },
+      L: { groundLoot: { kind: 'table', table: 'hq_field_supplies' } },
       M: { furniture: 'shelf', loot: 'gauntlet_medical_stock', lootUsage: ['Medical'], facing: 'n' },
       B: { furniture: 'bed' }, s: { furniture: 'sofa', facing: 's' },
       u: { furniture: 'station_toilet', facing: 's' }, b: { furniture: 'station_washbasin', facing: 'n' },
     },
-    layers: [foundation, furnished, furnished, windows, windowOpenings, windowHeads, heads, foundation, pitchLow, pitchHigh],
+    layers: [foundation, marked, furnished, windows, windowOpenings, windowHeads, heads, foundation, pitchLow, pitchHigh],
     access: { ground: 'ground', entrance: [19, 1, 25], storeys: [{ id: 'ground', floor: 1 }], stairs: [] },
   }, vault.template] + yard.templates,
   layouts: [{

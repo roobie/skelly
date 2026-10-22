@@ -22,6 +22,11 @@ const applyMaterial = (material: Material, table: Readonly<Record<string, Materi
   );
   material.metalness = definition.finish.metallic;
   material.roughness = definition.finish.roughness;
+  const opacity = definition.finish.opacity ?? 1;
+  material.opacity = opacity;
+  material.transparent = opacity < 1;
+  // A see-through surface must not hide what lies behind it from later draws.
+  material.depthWrite = opacity >= 1;
 };
 
 export const applyModelMaterials = (scene: Object3D, table: Readonly<Record<string, MaterialDef>>): void => {

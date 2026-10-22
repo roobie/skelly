@@ -4,18 +4,24 @@ import battery from '../src/content/base/things/car_battery.model.json' with { t
 import { buildRegistry, type ContentSource, type Registry } from '../src/core/content.ts';
 import { loadVehicleBlueprint, type PlacedFitting } from '../src/core/vehicleBlueprint.ts';
 import { baseSources } from '../src/game/bundledContent.ts';
+import { PLAYER } from '../src/game/player.ts';
 
-const HOSTS = ['hatchback', 'pickup'];
+const HOSTS = ['hatchback', 'pickup', 'hoist'];
 const MOD = 'mods/vehicle-fixture.json';
 
 // A mod case needs the vehicle content it refers to, not the whole base: a full rebuild per case grows with every
-// content file and times out on loaded runners.
-const FIXTURE_BASE = ['vehicles.json', 'models-items.json'];
+// content file and times out on loaded runners. Cargo spaces are measured in the inventory's cell size.
+const FIXTURE_BASE = ['vehicles.json', 'models-items.json', 'inventory.json'];
 const fixtureSources = baseSources.filter(({ source }) => FIXTURE_BASE.some((file) => source.endsWith(`/${file}`)));
 
 const withMod = (data: object) => buildRegistry([...fixtureSources, { source: MOD, data } satisfies ContentSource]);
 
-const modPart = (id: string, capabilities: readonly string[], model: object = { ...battery, id }) => ({
+const modPart = (
+  id: string,
+  capabilities: readonly string[],
+  model: object = { ...battery, id },
+  ratedLoadKg?: number,
+) => ({
   models: [model],
   items: [
     {
@@ -25,7 +31,7 @@ const modPart = (id: string, capabilities: readonly string[], model: object = { 
       model: id,
       size: [3, 2],
       economy: { usage: [], tiers: [] },
-      vehicle: { capabilities },
+      vehicle: { capabilities, ...(ratedLoadKg === undefined ? {} : { ratedLoadKg }) },
     },
   ],
 });
@@ -39,7 +45,7 @@ const fittingOf = (registry: Registry, host: string, id: string): PlacedFitting 
 describe('vehicle export contract', () => {
   const base = buildRegistry(baseSources);
 
-  it('loads both hosts from exported parts, with each part mass and collision from its export', () => {
+  it('loads each host from exported parts, with each part mass and collision from its export', () => {
     expect(base.issues).toEqual([]);
     const parts = HOSTS.map((host) => {
       const vehicle = loadVehicleBlueprint(base.registry, host);
@@ -97,6 +103,17 @@ describe('vehicle export contract', () => {
       blueprint(fitting('a', 'car_battery', ['b']), fitting('b', 'hatchback_battery_tray', ['a'])),
       'vehicleBlueprints[0].fittings',
     ],
+    ['a lifting part without a rated load', modPart('fixture_cell', ['lift']), 'items[0].vehicle'],
+    [
+      'a rated load on a part that does not lift',
+      modPart('fixture_cell', ['structure'], undefined, 500),
+      'items[0].vehicle',
+    ],
+    [
+      'a lifting vehicle without stabilisers',
+      { ...modPart('fixture_cell', ['lift'], undefined, 500), ...blueprint(fitting('crane', 'fixture_cell')) },
+      'vehicleBlueprints[0].fittings',
+    ],
   ];
   it.each(refusals)('refuses %s and drops the file that authors it', (_, data, path) => {
     const { issues, registry } = withMod(data);
@@ -104,6 +121,22 @@ describe('vehicle export contract', () => {
     expect(issues.every(({ source }) => source === MOD)).toBe(true);
     expect(registry.vehicleBlueprints.has('fixture_cart')).toBe(false);
     expect(registry.items.has('fixture_cell')).toBe(false);
+  });
+
+  it('gives every vehicle with a seat a way in at least as wide as the player', () => {
+    const seated = [...base.registry.vehicleBlueprints.keys()]
+      .map((id) => loadVehicleBlueprint(base.registry, id))
+      .filter(({ fittings }) => fittings.some(({ capabilities }) => capabilities.includes('seat')));
+    expect(seated.map(({ id }) => id)).toContain(HOSTS[0]);
+    for (const { fittings } of seated) {
+      const entries = fittings.filter(({ capabilities }) => capabilities.includes('entry'));
+      expect(entries.length).toBeGreaterThan(0);
+      for (const { collision } of entries) {
+        const span = (axis: 0 | 2) =>
+          Math.max(...collision.map(({ max }) => max[axis])) - Math.min(...collision.map(({ min }) => min[axis]));
+        expect(Math.max(span(0), span(2))).toBeGreaterThanOrEqual(2 * PLAYER.halfWidth);
+      }
+    }
   });
 
   it('reflects a mirrored fitting’s datums, collision and centre of mass with its geometry', () => {

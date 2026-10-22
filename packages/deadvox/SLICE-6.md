@@ -26,7 +26,9 @@ The hatchback and pickup are the first transport hosts, with genuinely shared
 service parts and a freely placed capability-matched add-on. Two hosts expose
 accidental blueprint-specific restrictions; the add-on exposes a disguised fixed
 socket system. The motorbike follows after the four-wheel loop, rather than putting
-balance and lean on the first playtest's critical path.
+balance and lean on the first playtest's critical path. Each host is authored as
+content parts and a content blueprint, the hatchback remade from a real car, so no
+vehicle is authored twice; see `docs/vehicle-spike.md`, "The hatchback from content".
 
 Building starts from factory structures with compatible parts and add-ons, not raw
 rails and plates. Factory welded structure is one player-facing assembly while
@@ -36,7 +38,10 @@ fabrication or cutting.
 
 Heavy salvage uses a mobile heavy-part-hoist that is itself a vehicle, built and
 driven through the same vehicle systems. It is not a separate equipment kind or a
-workshop-only transfer exception. Field engine recovery therefore has a physical
+workshop-only transfer exception. Lifting is a capability of its fitted crane parts,
+not of a hoist vehicle kind: removing or breaking the crane removes the capability,
+and a salvaged crane stays an ordinary part, so no vehicle-wide flag can outlive the
+parts that justify it. Field engine recovery therefore has a physical
 workflow, with lifting, load ownership and clearance to prove. The hoist is required
 utility content alongside the two transport hosts, not a third transport host that
 reopens the roster choice.

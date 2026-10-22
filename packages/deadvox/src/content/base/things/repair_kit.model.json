@@ -1,0 +1,14 @@
+{
+  "id": "repair_kit",
+  "file": "assets/models/repair_kit.glb",
+  "parts": {
+    "equipment": {
+      "node": "equipment:repairKit",
+      "massKg": 1.25,
+      "centreOfMass": [-0.006085890427079189, 0.01452519781179876, 0.003059317324053617]
+    }
+  },
+  "grip": { "at": [-0.0985, 0.0175, 0], "turn": [0, 0, 0] },
+  "hold": "forward",
+  "roll": 0
+}

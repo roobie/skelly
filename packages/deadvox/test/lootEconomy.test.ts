@@ -5,6 +5,7 @@ import { buildRegistry, type Registry } from '../src/core/content.ts';
 import {
   economyEligible,
   ItemEconomySchema,
+  LOOT_TIERS,
   type LootContext,
   LootContextSchema,
   type LootPointSource,
@@ -13,13 +14,14 @@ import {
   lootSpawnPoint,
   lootTypeIssue,
   militaryOnlyEconomy,
+  rollLoot,
 } from '../src/core/loot.ts';
 import { lootSourcesOf } from '../src/core/site.ts';
 import { compileTemplate, stackTemplate } from '../src/core/templates.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const context: LootContext = { usage: ['Medical'], tier: 'Tier2' };
-const TIERS: readonly LootContext['tier'][] = ['Tier1', 'Tier2', 'Tier3'];
+const TIERS = LOOT_TIERS;
 
 /**
  * Every loot context a loaded source can roll under: each `lootContext`, and each `lootUsage` override paired with
@@ -100,6 +102,40 @@ describe('loot economy descriptions', () => {
       expect(safeParse(ItemEconomySchema, economy).success).toBe(false);
     }
     expect(safeParse(LootContextSchema, { usage: ['Medical'] }).success).toBe(false);
+  });
+
+  it('rolls only items of the context tier, so a tier no item carries rolls nothing and breaks no table', () => {
+    const registry = baseRegistry();
+    const tables = [...registry.loot.keys()];
+    expect(tables.length).toBeGreaterThan(0);
+    const usage: LootContext['usage'] = ['Residential', 'Industrial', 'Medical', 'Hunting', 'Police', 'Military'];
+    let rolledInCarriedTier = 0;
+    for (const tier of LOOT_TIERS) {
+      const unused = ![...registry.items.values()].some((item) => item.economy?.tiers.includes(tier));
+      for (const table of tables) {
+        const point = lootSpawnPoint({
+          site: 'tier',
+          building: table,
+          anchor: [0, 0, 0],
+          channel: 'container',
+          position: [0, 0, 0],
+          destination: [0, 0, 0],
+          context: { usage, tier },
+          supply: { kind: 'table', table },
+          required: false,
+        });
+        const rolled = rollLoot(registry, point, lootPointStream(1, point));
+        if (unused) {
+          expect(rolled, `${table} rolls nothing in the unused ${tier}`).toEqual([]);
+        } else {
+          rolledInCarriedTier += rolled.length;
+        }
+        for (const { type } of rolled) {
+          expect(registry.items.get(type)?.economy?.tiers, `${type} rolled in ${tier}`).toContain(tier);
+        }
+      }
+    }
+    expect(rolledInCarriedTier, 'some table rolls something in a tier items carry').toBeGreaterThan(0);
   });
 
   it('admits no Military-only item under Police and no Police-only item under Hunting, in the loaded content', () => {

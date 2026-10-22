@@ -356,6 +356,7 @@ describe('firearm case wall contact', () => {
     const faceEyeX = (wallX + 1) * scale.blockSize - portOffsetX;
     const firstStep = (PLAYER.walk / scale.blockSize / 60) * Math.sin(yaw);
     const body = createPlayerBody(scale, faceEyeX / scale.blockSize + firstStep, 1.01, 0);
+    body.onGround = true;
     steer(body, scale, yaw, { forward: 1, right: 0, jump: false, sprint: false, walk: true });
     stepBody(body, 1 / 60, isSolid, physicsFor(scale));
     for (let frame = 0; frame < 10; frame++) {

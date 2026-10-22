@@ -370,6 +370,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "portable_radio",
+      "model": "portable_radio",
       "name": "Portable radio",
       "salvage": [
         {
@@ -382,8 +383,7 @@
         }
       ],
       "salvageTimeGameMinutes": 5,
-      "size": [2, 2],
-      "weight": 600
+      "size": [2, 2]
     },
     {
       "category": "misc",

@@ -16,6 +16,10 @@ const MAX_ORBIT_PITCH = THIRD_PERSON_CAMERA.elevationLimit - THIRD_PERSON_CAMERA
 export const isPlayerThirdPersonView = (thirdPerson: boolean, spectatorCamera: boolean): boolean =>
   thirdPerson && !spectatorCamera;
 
+/** The avatar is drawn whole, head included, whenever the camera is not its own eyes. */
+export const isPlayerFigureWhole = (thirdPerson: boolean, spectatorCamera: boolean): boolean =>
+  thirdPerson || spectatorCamera;
+
 export const isOrbitResetMovementAction = (action: string): boolean =>
   action === 'movement.forward' ||
   action === 'movement.back' ||

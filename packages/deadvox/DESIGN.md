@@ -373,6 +373,16 @@ deconstruction reserves its piece against use until the job is cancelled or fini
 paused work keeps its piece; under lockstep the reservation is ordinary simulation state,
 resolved in tick order. See `src/core/blockEntities.ts`, `BlockEntities.remove`.
 
+Because every explored piece stays in memory, a lookup must not cost more as the explored
+area grows, so lookups find pieces through an index by column. See
+`src/core/blockEntities.ts`, `BlockEntities.near`.
+
+Save size and save time are held to a budget measured against explored area. One record
+holding every explored piece makes save work grow with exploration, so crossing the
+budget reopens whether explored furniture stays in memory and saved and whether the save
+stays one record; the budget is not raised to make room. See
+`test/exploredSaveBudget.test.ts` (its budget constants).
+
 ### Block entities
 
 Stateful blocks keep their changing state separate from static block identity.
@@ -789,41 +799,71 @@ The lab's target is four levels below the hatch, with the nuclear objective at t
 bottom. Each function from the drawn plan gets a level, but the drawing is inspiration,
 not a blueprint: its mood guides the rebuild and BR judges fidelity in play. Looped
 circulation and separated descents make exploration and retreat choices rather than
-one corridor and a continuous climb. Entry and security replaces the grid's top
-storey; the lower grid remains until its top-down review rounds, with one grid storey
-to retire when the final rebuild establishes the target depth. See
-`src/content/base/gauntlet-lab-entry.libsonnet`, `plan`, and
-`src/content/base/gauntlet-lab.libsonnet`, `mapAssemblies`.
+one corridor and a continuous climb. Entry and security, then administration, replace
+the grid's top storeys; the lower grid remains until its top-down review rounds, with
+one grid storey to retire when the final rebuild establishes the target depth. Rebuilt
+levels share one builder and one scale, so a level's rooms keep their proportions and a
+fix to the builder reaches every level. See `src/content/base/gauntlet-lab-level.libsonnet`,
+`build`, and `src/content/base/gauntlet-lab.libsonnet`, `mapAssemblies`.
 
 The stair is the main way down because a building's descent should read as one. A
-lidded shaft remains an alternate return route. Both join the grid below through a
-temporary landing; administration's rebuild replaces that join. Threat may drop down
-a shaft but never climb up, so deep threat cannot reach the top and depth ordering
-holds. A lid then defends only against threat above. Until d508, threat stays on its
-own level. See `src/content/base/gauntlet-lab-entry.libsonnet`, `stair`, and `src/content/base/gauntlet-lab-equipment.libsonnet`, `mapPieces`.
+lidded shaft remains an alternate return route. Each level's stair and shaft leave from
+different places than the ways that arrive on it, so the next way down is something to
+find and retreat by the other route is a real choice. The lowest rebuilt level joins
+the grid below through a temporary landing named in one place, which each rebuild moves
+down a storey. Threat may drop down a shaft but never climb up, so deep threat cannot
+reach the top and depth ordering holds. A lid then defends only against threat above.
+Until d508, threat stays on its own level. See
+`src/content/base/gauntlet-lab-administration.libsonnet`, `stair`;
+`src/content/base/gauntlet-lab.libsonnet`, `join`; and
+`src/content/base/gauntlet-lab-equipment.libsonnet`, `mapPieces`.
 
-The hatch-side entrance is open. Level one's ways down need a keycard from one authored
-spot on the open side, the same spot every run. Acquisition cannot depend on the seal
+The hatch-side entrance is open. Each rebuilt level's ways down need that level's own
+keycard, from one authored spot on its open side. A card may be stock in a container
+instead of lying in the open, so that finding it is a search rather than a sighting.
+Acquisition cannot depend on the seal
 it opens. The seals are vault or bulkhead doors, which a crowbar cannot force: only
-the card opens them. The certificate checks that the matching placed card is present,
-reachable from the hatch landing with the seals closed, and within visible pickup reach
-before admitting those locks to the descent proof. This prevents a missing or self-locked
-card from making the run a dead end. See `src/content/base/gauntlet-lab-entry.libsonnet`,
-`seal`; `src/core/scenarioCertificate.ts`, `seals`; and `src/core/prying.ts`, `pryPlan`.
+the card opens them. The certificate checks seals top-down: each level's matching
+card must be present, reachable from the hatch landing with only the seals above it
+open, and within pickup reach, in the open or in its container, before its locks are admitted to the descent
+proof. Checking in that order means no card can depend on its own seal or a deeper one,
+which would make the run a dead end. See
+`src/content/base/gauntlet-lab-administration.libsonnet`, `seal`;
+`src/content/base/gauntlet-lab-level.libsonnet`, `cardStock`;
+`src/core/scenarioCertificate.ts`, `seals`; and `src/core/prying.ts`, `pryPlan`.
 
 Each level is fully rebuilt and judged in play before the next one, so the first
 level sets the look and the destination is built last. Unrebuilt grid storeys keep
 their shafts without seals or fixtures. Their shell and circulation retire with
 them; equipment, descent lids, threat and the holding cap are reused where they fit.
 The authored plan scales rooms together while equipment and doors stay human-sized.
-The content scale is provisional until level one's play review. Rooms differ in
+Rooms differ in
 height, finish and furnishing so each reads as its own space under a carried light.
 Loops run between rooms instead of along a one-sided excavation corridor that serves
 nothing; unused excavation stays solid rather than making the rooms larger and emptier.
 Delegated equipment bays prevent furnishings from borrowing thresholds or circulation.
-Those cues are not a danger or balance proof. See
-`src/content/base/gauntlet-lab-entry.libsonnet`, `rooms` and `plan`, and
+Those cues are not a danger or balance proof. A room stocks from a loot context that
+fits its use, so what a search turns up says what the room was for; few rolls and
+heavy nothing weights keep the lab scarce. Rebuilt levels carry no readables until the
+destination round, because what the lab's papers tell depends on the destination. See
+`src/content/base/gauntlet-lab-entry.libsonnet`, `rooms` and `plan`;
+`src/content/base/gauntlet-lab-administration.libsonnet`, `rooms`; and
 `src/content/base/gauntlet-lab-equipment.libsonnet`, `furnished`.
+
+Level two's briefing hall is double height: it sinks into the grid storey below, as the
+holding room rises into the storey above it, so a level gains one tall space without
+a storey of its own. That touched a second level in a one-level round, an exception to
+one level per round that BR accepted with this choice. The well keeps its
+walls whole so the grid's threat cannot reach the hall, and its floor steps up so a
+player can climb back out. Level three's rebuild must leave the well its slot. See
+`src/content/base/gauntlet-lab-administration.libsonnet`, `well`, and
+`src/content/base/gauntlet-lab.libsonnet`, `join`.
+
+Level two carries a larger population than level one because BR judged it too thin in
+play. Its spawns spread over the briefing hall, the corridor, the canteen and the offices,
+so no single room holds the danger, and the storey below stays at least as dense so threat
+still grows with depth. See `src/content/base/gauntlet-lab-administration.libsonnet`,
+`markers`, and `src/content/base/gauntlet-lab-threat.libsonnet`, `rows`.
 
 The underground campus extends beyond the small service facade because a surface
 disguise must not dictate the lab's capacity. One compiled assembly owns their common
@@ -875,11 +915,13 @@ and `src/game/session.ts`, `activateGoal`.
 
 Darkness uses world-derived sky transport and an ordinary carried light. The lab's
 fixtures are intended to light only after power is restored, so light is earned,
-not given. Entry's working and broken fixtures are inert set dressing. Its breaker
-belongs in the security post; d509 builds that interaction and its saved per-level
-power state. Later levels' switch positions are decided at their own reviews. The
+not given. Rebuilt levels' working and broken fixtures are inert set dressing. Entry's breaker
+belongs in the security post. Level two's is in a plant room off its circulation, so
+power is found by exploring. Until d509 builds that interaction and its saved per-level
+power state, the room and its marking are enough. Deeper levels' switch positions are decided at their own reviews. The
 lab has no lighting category until its light round. See
-`src/content/base/gauntlet-lab-entry.libsonnet`, `rooms`. Finished site placements
+`src/content/base/gauntlet-lab-entry.libsonnet`, `rooms`, and
+`src/content/base/gauntlet-lab-administration.libsonnet`, `rooms`. Finished site placements
 expose the same sky eligibility contract across authored layouts, hamlets and
 scenario composition. Benchmark city plans do not opt into scenario
 sky work, preserving their stress policy. Demo stock stays outside ordinary
@@ -1068,7 +1110,9 @@ balance; stacking can't multiply it while only empty soft bags nest.
 
 Pockets have no weight limit, but total carried
 weight slows movement and costs stamina. Condition is readable as a word, with
-exact values available on inspection.
+exact values available on inspection. Condition reads as a band word from one
+content table shared by items and furniture, so a mod retunes or renames the
+bands without a code change.
 
 Item descriptions identify the item, not its controls. Controls belong to the
 binding table and displayed controls list, because bindings can change. See
@@ -1326,6 +1370,13 @@ counts distinct item units taken from containers, not inventory actions, so
 returning and retaking an item is not another find. See `die` in
 `src/game/play.ts`, `showDeath` in `src/ui/death.ts`, and `Inventory.countLooted`
 in `src/core/inventory.ts`.
+
+### Moving in the air
+
+Movement input steers only a body on the ground. A body in the air has nothing to push against, so input cannot
+change its horizontal velocity: the momentum it had at takeoff carries until it lands, and only collisions alter
+it. A ladder climber is held by the ladder, not airborne. See `steer` in `src/game/player.ts` and
+`advancePlayerBody` in `src/game/session.ts`.
 
 ### Landing injuries
 
@@ -1977,13 +2028,13 @@ reused across types: `grab`, `leap`, `scream`, `explode`, `acidSpit`,
 | 1 | Bloater | Bursts into a noxious cloud |
 | 1 | Acid zombie | Spits acid from a distance; the first ranged enemy and first of the acid evolution line, lab storeys only. See `packages/deadvox/docs/acid-zombie.md`, "Acid zombie" |
 | 2 | Brute | Big, knocks you back, breaks doors |
-| 2 | Soldier | Armoured; carries ordinary kit at the military camp |
+| 2 | Soldier | Armoured; carries ordinary kit at the military camp and the crisis HQ |
 | 2 | Hazmat | Resists acid and fire (from lab sites) |
 | 3 | Smoulderer | Hot to the touch; sets flammable things on fire |
 | 3 | Incandescent hulk | A brute running a fever of a thousand degrees: glows, sets fires, warps glass. Seen from far away at night |
 | 3 | Lantern | Bioluminescent lure that draws you in, and others |
 
-Zombie types are content definitions used by shared systems; choose behavior through content properties rather than type-id cases. `src/core/schema.ts`, `ZombieSchema`, defines those properties, and `src/core/zombies.ts`, `ZombieSystem.emitFootsteps`, uses the declared footstep family. The soldier appears only at military-camp markers and explicit camp spawns; `src/core/hamlet.ts`, `ordinaryHamletSpawnWeights`, excludes authored-only kinds from ordinary selection. Its kit uses ordinary items; military loot remains restricted to site containers. For #487, defer the military clothing palette, armour, and body searching; the soldier first appears in civilian clothes, carries ordinary kit, and drops loot on death.
+Zombie types are content definitions used by shared systems; choose behavior through content properties rather than type-id cases. `src/core/schema.ts`, `ZombieSchema`, defines those properties, and `src/core/zombies.ts`, `ZombieSystem.emitFootsteps`, uses the declared footstep family. The soldier appears only at military-camp markers, explicit camp spawns and the crisis HQ's markers, because the HQ is a military site whose threat should be mostly soldiers; no other place that merely looks military takes them; `src/core/hamlet.ts`, `ordinaryHamletSpawnWeights`, excludes authored-only kinds from ordinary selection. Its kit uses ordinary items; military loot remains restricted to site containers. For #487, defer the military clothing palette, armour, and body searching; the soldier first appears in civilian clothes, carries ordinary kit, and drops loot on death.
 
 The brute shambler guards the secret cellar (`packages/deadvox/docs/content.md`, "City building types"). It is an authored-only type on mobgen's brute body, with more health and harder hits than the shambler as content values. It wears the brute body rather than a shambler's so it reads as a different kind of zombie in the dark. It bashes doors with no more strength than the shambler and never knocks the player back: the tier-2 Brute's door breaking and knockback arrive together (`packages/deadvox/EPIC.md`, "5. Holding ground"). What that leaves open: a player meets the brute's look in a city house before the evolution line introduces brutes. See `src/core/schema.ts`, `ZOMBIE_MODEL`.
 
@@ -2187,7 +2238,7 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 - **Construction is crafting that places blocks and block entities:** walls,
   doors, barricades, furniture, workbenches, machines. Deconstruction is
   disassembly.
-- **Doors and locks.** A matching key is the quiet route. The noisy fallback needs the door's forcing tool, not always a crowbar, so finding that tool is part of the trade. How a door yields follows from its material and its own resistance; flimsy and burglary-safe leaves need not yield alike. Forced entry destroys the lock so the breach is one-way. A broken leaf shows that it is broken, because the player has to see which doors no longer hold before trusting one; its door material authors how it is repainted, so a mod retunes the look. See `src/core/schema.ts`, `DoorMaterialSchema`, and `src/render/furniture.ts`, `FurnitureMeshes.brokenMaterial`.
+- **Doors and locks.** A matching key is the quiet route. The noisy fallback needs the door's forcing tool, not always a crowbar, so finding that tool is part of the trade. How a door yields follows from its material and its own resistance; flimsy and burglary-safe leaves need not yield alike. Forced entry destroys the lock so the breach is one-way. A leaf shows its state, because the player has to see which doors no longer hold, and how close the rest are to giving way, before trusting one: damage repaints it in steps as it grows toward breaking, and a broken leaf has its own look. The door material authors both, so a mod retunes them, and a view redraws a leaf only when its damage crosses into a different step, not on every blow. See `src/core/schema.ts`, `DoorMaterialSchema`, `src/core/blockEntities.ts`, `BlockEntities.wearOf`, and `src/render/furniture.ts`, `FurnitureMeshes.doorLook`.
 - **Breach by strength.** Every leaf yields to enough strength, and its own breach values say how, so flimsy and burglary-safe leaves yield differently. A blow below the leaf's minimum strength does nothing, so a weak attacker cannot grind through by waiting; blows at or above it add their strength to the leaf's saved damage until it reaches the leaf's toughness. Zombie strength and a melee weapon's impulse share one scale, so a zombie's bash and a player's strike meet the same gate through one resolution; a swing that meets no zombie strikes the closed leaf in its reach. Every blow makes a noise that reaches zombies through ordinary hearing. A broken leaf stands open with its lock gone and cannot be shut, so the breach is one-way, as forcing is, and movement, sight and sound treat it as an open doorway. Damage short of breaking leaves a boarded leaf's opening sides as they were. A container's front is its body, so it has no breach. See `src/core/blockEntities.ts`, `BlockEntities.bash`, `src/game/session.ts`, `bashLeaf` and `strikeLeaf`, and `src/core/schema.ts`, `FurnitureSchema`.
 - **Cutting.** Cutting a wooden door will start a fire, so wood offers no cut method until a fire model exists. Cutting steel is a flame-cutting quality apart from a knife's `cutting`, and a finished cut spends gas from the torch's swappable cartridge, so one torch does not settle every cut door; a cut without enough gas won't start. Refilling a cartridge is direction only, with no source yet. See `src/core/prying.ts`, `pryPlan`, `src/core/torch.ts`, `spendFuel`, `src/core/longAction.ts`, `LongActions.beginForcing`, and `src/core/schema.ts`, `DoorMaterialSchema` and `DoorForcingSchema`.
 - **Electricity** keeps topology separate from energy balance so rate changes
@@ -2264,13 +2315,7 @@ their state.
    does not become assembly bookkeeping. A body fitted to a chassis cab, such as a box
    van's cargo box, is its own factory structure resting on the frame, not part of the
    cab's, so the chassis cab stays a complete drivable unit without it and the box can
-   move to another frame. A body's storage and its contents belong to a cargo space: a
-   separate part resting on the load floor whose own shape is the hold, so storage
-   travels with the part, losing a wall does not lose the load, and a player can build
-   one for any body with a load floor. The game reads the pocket grid from that shape
-   rather than from authored numbers. A part's capabilities are names; its sizes live
-   in its own data, so each size has one source. The cargo space arrives with #1124.
-   See `src/vehicles/boxVan.ts`, `BOX_VAN`.
+   move to another frame. See `src/vehicles/boxVan.ts`, `BOX_VAN`.
 9. **Cheap at scale.** A parked street must not pay continuous driving-physics cost.
    Part-level changes should not require rebuilding unrelated vehicles.
 10. **Obstruction follows the build.** Render, collision and picking derive from the
@@ -2289,6 +2334,25 @@ see [CHALLENGES.md](CHALLENGES.md#8-vehicles-on-voxels). Determinism and streami
 follow `docs/decisions/0008-deterministic-world.md`, "Decision". Leaving a moving
 vehicle is allowed: coasting, collision and bystander consequences must not vanish
 when a column unloads. Parked vehicles retain their derived world collision.
+
+**Cargo space.** A body's storage and its contents belong to a cargo space: a separate
+part resting on a load floor whose own shape is the hold, so storage travels with the
+part and losing a wall does not lose the load. The game reads the pocket grid from that
+shape rather than from authored numbers; a part's capabilities are names and its sizes
+live in its own data, so each size has one source. Only the floor area counts toward
+capacity, so open beds and flatbeds hold cargo the same way boxes do; the block's height
+only has to clear what is above it. A player sizes a cargo space while placing it by
+dragging out a rectangle, which stops at the edge of the free floor the game works out
+from the load floor and the parts standing on it. Dragging is the complete form of
+choosing a size, so a proposed size can be added on top later without redoing it. The
+floor is a rectangle because storage is a rectangle of pockets, as in a backpack: an odd
+floor takes several spaces, and a rectangle stays valid if shaped spaces ever come, so
+nothing fitted or saved is redone. A space grown to fill walls and roof was not chosen
+because open beds have neither. The block then keeps its size, and a part can't be
+fitted into it. Players build cargo spaces on load floors the vehicle already has; load
+floors and walls built from nothing wait for scratch-built frames, which add to the
+cargo space rather than replace it. Player placement arrives with #1124. See
+`src/core/cargoSpace.ts`, `freeFloor`.
 
 Entry is seated through animated usable doors for the first loop. Walking through
 plausible interiors is an important long-term requirement for the #322 trucks, RVs

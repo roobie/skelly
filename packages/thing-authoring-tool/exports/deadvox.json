@@ -412,6 +412,627 @@
     "source": "pickup_battery_tray"
   },
   {
+    "id": "cargo_space",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "cargo_space"
+  },
+  {
+    "id": "pickup_bed_floor",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "pickup_bed_floor"
+  },
+  {
+    "id": "pickup_bed_side",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "pickup_bed_side"
+  },
+  {
+    "id": "pickup_bed_front",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "pickup_bed_front"
+  },
+  {
+    "id": "box_van_floor",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "box_van_floor"
+  },
+  {
+    "id": "box_van_side",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "box_van_side"
+  },
+  {
+    "id": "box_van_front",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "box_van_front"
+  },
+  {
+    "id": "box_van_roof",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "box_van_roof"
+  },
+  {
+    "id": "wheel_205_55r16",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "wheel_205_55r16"
+  },
+  {
+    "id": "front_seat",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "front_seat"
+  },
+  {
+    "id": "door_mirror",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "door_mirror"
+  },
+  {
+    "id": "steering_wheel",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "steering_wheel"
+  },
+  {
+    "id": "gear_lever",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "gear_lever"
+  },
+  {
+    "id": "hatchback_shell",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_shell"
+  },
+  {
+    "id": "hatchback_front_door",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_front_door"
+  },
+  {
+    "id": "hatchback_rear_door",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_rear_door"
+  },
+  {
+    "id": "hatchback_tailgate",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_tailgate"
+  },
+  {
+    "id": "hatchback_windscreen",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_windscreen"
+  },
+  {
+    "id": "hatchback_bonnet",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_bonnet"
+  },
+  {
+    "id": "hatchback_front_wing",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_front_wing"
+  },
+  {
+    "id": "hatchback_front_bumper",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_front_bumper"
+  },
+  {
+    "id": "hatchback_rear_bumper",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_rear_bumper"
+  },
+  {
+    "id": "hatchback_tail_lamp",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_tail_lamp"
+  },
+  {
+    "id": "hatchback_front_strut",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_front_strut"
+  },
+  {
+    "id": "hatchback_rear_axle",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_rear_axle"
+  },
+  {
+    "id": "hatchback_engine",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_engine"
+  },
+  {
+    "id": "hatchback_gearbox",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_gearbox"
+  },
+  {
+    "id": "hatchback_radiator",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_radiator"
+  },
+  {
+    "id": "hatchback_fuel_tank",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_fuel_tank"
+  },
+  {
+    "id": "hatchback_exhaust",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_exhaust"
+  },
+  {
+    "id": "hatchback_dashboard",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_dashboard"
+  },
+  {
+    "id": "hatchback_rear_seat",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_rear_seat"
+  },
+  {
+    "id": "hoist_frame_rail",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_frame_rail"
+  },
+  {
+    "id": "hoist_crossmember",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_crossmember"
+  },
+  {
+    "id": "hoist_wheel",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_wheel"
+  },
+  {
+    "id": "hoist_front_axle",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_front_axle"
+  },
+  {
+    "id": "hoist_rear_axle",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_rear_axle"
+  },
+  {
+    "id": "hoist_engine",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_engine"
+  },
+  {
+    "id": "hoist_gearbox",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_gearbox"
+  },
+  {
+    "id": "hoist_prop_shaft",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_prop_shaft"
+  },
+  {
+    "id": "hoist_fuel_tank",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_fuel_tank"
+  },
+  {
+    "id": "hoist_exhaust",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_exhaust"
+  },
+  {
+    "id": "hoist_radiator",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_radiator"
+  },
+  {
+    "id": "hoist_cab_floor",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_cab_floor"
+  },
+  {
+    "id": "hoist_cab_skirt",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_cab_skirt"
+  },
+  {
+    "id": "hoist_cab_back",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_cab_back"
+  },
+  {
+    "id": "hoist_front_panel",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_front_panel"
+  },
+  {
+    "id": "hoist_a_post",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_a_post"
+  },
+  {
+    "id": "hoist_windscreen",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_windscreen"
+  },
+  {
+    "id": "hoist_roof",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_roof"
+  },
+  {
+    "id": "hoist_door",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_door"
+  },
+  {
+    "id": "hoist_front_bumper",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_front_bumper"
+  },
+  {
+    "id": "hoist_dashboard",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_dashboard"
+  },
+  {
+    "id": "hoist_engine_cover",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_engine_cover"
+  },
+  {
+    "id": "hoist_bench",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_bench"
+  },
+  {
+    "id": "hoist_deck_floor",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_deck_floor"
+  },
+  {
+    "id": "hoist_headboard",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_headboard"
+  },
+  {
+    "id": "hoist_mudguard",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_mudguard"
+  },
+  {
+    "id": "hoist_rear_underrun",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_rear_underrun"
+  },
+  {
+    "id": "hoist_tail_lamp",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_tail_lamp"
+  },
+  {
+    "id": "hoist_crane_base",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_crane_base"
+  },
+  {
+    "id": "hoist_stabiliser",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_stabiliser"
+  },
+  {
+    "id": "hoist_crane_column",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_crane_column"
+  },
+  {
+    "id": "hoist_boom",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_boom"
+  },
+  {
+    "id": "hoist_boom_extension",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_boom_extension"
+  },
+  {
+    "id": "hoist_luff_ram",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_luff_ram"
+  },
+  {
+    "id": "hoist_winch",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_winch"
+  },
+  {
+    "id": "hoist_hook_block",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_hook_block"
+  },
+  {
+    "id": "hoist_boom_rest",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_boom_rest"
+  },
+  {
     "id": "jeans",
     "kind": "item",
     "options": {
@@ -490,6 +1111,70 @@
       "mass": "parts"
     },
     "source": "baseball_cap"
+  },
+  {
+    "id": "blowtorch",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "blowtorch"
+  },
+  {
+    "id": "headlamp",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "headlamp"
+  },
+  {
+    "id": "weapon_sling",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "weapon_sling"
+  },
+  {
+    "id": "repair_kit",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "repair_kit"
+  },
+  {
+    "id": "wire_strippers",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "wire_strippers"
+  },
+  {
+    "id": "adjustable_pliers",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "adjustable_pliers"
+  },
+  {
+    "id": "sewing_repair_kit",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "sewing_repair_kit"
+  },
+  {
+    "id": "portable_radio",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "portable_radio"
   },
   {
     "id": "compass",

@@ -26,16 +26,18 @@ import { requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { BLOCK_SIZE } from '../core/scale.ts';
+import type { VehicleFittingDef } from '../core/schema.ts';
 import { skyAt } from '../core/sky.ts';
+import { assembledVehicle, loadVehicleBlueprint, type PlacedFitting } from '../core/vehicleBlueprint.ts';
 import { FIGURE_BOXES } from '../core/zombieRegions.ts';
 import { buildBundledContent } from '../game/bundledContent.ts';
+import { ModelLibrary } from '../render/models.ts';
 import { PlayerMeshes } from '../render/playerFigure.ts';
 import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
 import { applySky } from '../render/sky.ts';
 import { APC } from '../vehicles/apc.ts';
 import { BOX_VAN } from '../vehicles/boxVan.ts';
 import { CATALOGUE } from '../vehicles/catalogue.ts';
-import { HATCHBACK, HATCHBACK_ADD_ONS } from '../vehicles/hatchback.ts';
 import { MATERIALS } from '../vehicles/materials.ts';
 import {
   addFitting,
@@ -108,6 +110,17 @@ interface BuildSpec {
   readonly views?: Partial<Record<ViewId, ViewOverride>>;
 }
 type ViewOverride = Pick<ViewPreset, 'position' | 'target'> & { readonly label?: string };
+/** A build loaded from a content blueprint and its exported part models (`docs/vehicle-spike.md`, "Export contract"). */
+interface ContentBuildSpec {
+  readonly label: string;
+  readonly button: string;
+  /** The vehicle blueprint's content id. */
+  readonly content: string;
+  readonly viewScale?: number;
+  readonly views?: Partial<Record<ViewId, ViewOverride>>;
+}
+type AnyBuildSpec = BuildSpec | ContentBuildSpec;
+const isContentBuild = (spec: AnyBuildSpec): spec is ContentBuildSpec => 'content' in spec;
 
 /** Metres from a seated rider's hips to their eyes, and to the road ahead, low enough to keep the bars in view. */
 const RIDER_EYE = [0.05, 0.8, 0] as const;
@@ -167,6 +180,12 @@ const BUILDS = {
     removed: [],
     views: { interior: { position: [0.2, 1.55, 1.7], target: [0.6, 0.65, -0.3] } },
   },
+  hoist: {
+    label: 'Canter-type crane truck · from content',
+    button: 'Crane truck',
+    content: 'hoist',
+    viewScale: 1.3,
+  },
   motorbike: {
     label: 'CG125-type motorbike',
     button: 'Motorbike',
@@ -176,11 +195,10 @@ const BUILDS = {
     views: { interior: riderView(MOTORBIKE) },
   },
   hatchback: {
-    label: 'Hatchback · cutaway (round 3)',
-    button: 'Hatchback (round 3)',
-    blueprint: HATCHBACK,
-    removed: ['hatch-door-near'],
-    addOns: HATCHBACK_ADD_ONS,
+    label: 'Golf-type hatchback · from content',
+    button: 'Hatchback',
+    content: 'hatchback',
+    views: { interior: { position: [-0.1, 1.55, 2.5], target: [0.35, 0.7, -0.2] } },
   },
   apc: {
     label: 'Wheeled APC',
@@ -190,7 +208,7 @@ const BUILDS = {
     viewScale: 1.6,
     views: { interior: { label: 'Troop compartment', position: [-2.7, 1.75, 0], target: [1.5, 1.2, 0] } },
   },
-} as const satisfies Record<string, BuildSpec>;
+} as const satisfies Record<string, AnyBuildSpec>;
 type BuildId = keyof typeof BUILDS;
 const isBuildId = (id: string | null | undefined): id is BuildId => id !== null && id !== undefined && id in BUILDS;
 
@@ -249,10 +267,9 @@ const library = new PartLibrary(CATALOGUE);
 
 /** Each build is its own vehicle, made from its blueprint the first time it's shown. */
 const vehicles = new Map<BuildId, VehicleInstance>();
-const vehicleFor = (id: BuildId): VehicleInstance => {
+const vehicleFor = (id: BuildId, spec: BuildSpec): VehicleInstance => {
   let vehicle = vehicles.get(id);
   if (!vehicle) {
-    const spec: BuildSpec = BUILDS[id];
     vehicle = newInstance(spec.blueprint, id, spec.removed);
     vehicles.set(id, vehicle);
   }
@@ -407,7 +424,8 @@ const scene = new Scene();
 let vehicleGroup = new Group();
 let liftGroup: Group | undefined;
 let wheelPivots: Group[] = [];
-let doorPivots: { readonly pivot: Group; readonly sign: number }[] = [];
+let doorPivots: { readonly pivot: Group; readonly axis: Vector3; readonly sign: number }[] = [];
+const UP = new Vector3(0, 1, 0);
 
 /** A fitting in vehicle space: wheels spin about their axle and doors swing about their hinge line. */
 const placeFitting = (spec: BuildSpec, vehicle: VehicleInstance, fitting: Fitting): Object3D => {
@@ -429,8 +447,76 @@ const placeFitting = (spec: BuildSpec, vehicle: VehicleInstance, fitting: Fittin
   } else {
     const sign = fitting.mirror ? -1 : 1;
     pivot.rotation.y = doorsOpen ? sign * DOOR_OPEN : 0;
-    doorPivots.push({ pivot, sign });
+    doorPivots.push({ pivot, axis: UP, sign });
   }
+  return pivot;
+};
+
+const { registry } = buildBundledContent();
+const partModels = new ModelLibrary(registry, (message) => {
+  errorText = message;
+  renderPanel();
+});
+/** Each content build's fittings: the blueprint's placement beside what loading placed from the export. */
+interface ContentFitting {
+  readonly def: VehicleFittingDef;
+  readonly placed: PlacedFitting;
+}
+const contentFittings = new Map<string, readonly ContentFitting[]>();
+const contentFittingsOf = (spec: ContentBuildSpec): readonly ContentFitting[] => {
+  let fittings = contentFittings.get(spec.content);
+  if (!fittings) {
+    const defs = registry.vehicleBlueprints.get(spec.content)?.fittings ?? [];
+    const { fittings: placed } = loadVehicleBlueprint(registry, spec.content);
+    fittings = defs.map((def, i) => ({ def, placed: placed[i]! }));
+    contentFittings.set(spec.content, fittings);
+  }
+  return fittings;
+};
+/** Fittings taken off each content build on this page. */
+const contentRemoved = new Map<string, Set<string>>();
+const removedOf = (spec: ContentBuildSpec): Set<string> => {
+  let removed = contentRemoved.get(spec.content);
+  if (!removed) {
+    removed = new Set();
+    contentRemoved.set(spec.content, removed);
+  }
+  return removed;
+};
+const presentContent = (spec: ContentBuildSpec): readonly ContentFitting[] => {
+  const removed = removedOf(spec);
+  return contentFittingsOf(spec).filter(({ def }) => !removed.has(def.id));
+};
+/** Set while a content build waits on part models, which load after the page starts. */
+let modelsPending = false;
+
+/** A content fitting at its place; an entry swings about its exported hinge line, its far twin the other way. */
+const placeContentFitting = ({ def, placed }: ContentFitting): Object3D | undefined => {
+  const model = partModels.part(placed.part);
+  if (!model) {
+    return undefined;
+  }
+  model.traverse((object) => {
+    object.castShadow = true;
+    object.receiveShadow = true;
+  });
+  const holder = new Group().add(model);
+  holder.position.set(...def.at);
+  if (def.mirror) {
+    holder.scale.z = -1;
+  }
+  const { hinge_a: hingeA, hinge_b: hingeB } = placed.datums;
+  if (!(placed.capabilities.includes('entry') && hingeA && hingeB)) {
+    return holder;
+  }
+  const pivot = new Group();
+  pivot.position.set(...hingeA);
+  holder.position.sub(pivot.position);
+  pivot.add(holder);
+  const axis = new Vector3(...hingeB).sub(pivot.position).normalize();
+  const sign = def.mirror ? -1 : 1;
+  pivot.quaternion.setFromAxisAngle(axis, doorsOpen ? sign * DOOR_OPEN : 0);
+  doorPivots.push({ pivot, axis, sign });
   return pivot;
 };
 
@@ -510,18 +596,13 @@ const floorItems = (spec: BuildSpec, vehicle: VehicleInstance): LooseItem[] => {
     .map((fitting, k) => ({ type: fitting.type, ...floor.place(k) }));
 };
 
-const renderVehicle = (): void => {
-  const started = performance.now();
-  const spec: BuildSpec = BUILDS[activeBuild];
-  const vehicle = vehicleFor(activeBuild);
-  if (liftGroup) {
-    scene.remove(liftGroup);
-    liftGroup = undefined;
-  }
-  scene.remove(vehicleGroup);
-  vehicleGroup = new Group();
-  wheelPivots = [];
-  doorPivots = [];
+const signed = (value: number): string => `${value >= 0 ? '+' : ''}${value.toFixed(2)}`;
+const massText = (count: number, massKg: number, [x, y, z]: readonly number[]): string =>
+  `${count} fittings · ${Math.round(massKg).toLocaleString('en')} kg · centre of mass ${signed(x!)} m forward, ${y!.toFixed(2)} m up, ${signed(z!)} m toward the near side`;
+
+/** Fills the vehicle group with a voxel build and returns its stats line. */
+const assembleVoxelBuild = (spec: BuildSpec): string => {
+  const vehicle = vehicleFor(activeBuild, spec);
   for (const fitting of vehicle.fittings) {
     vehicleGroup.add(placeFitting(spec, vehicle, fitting));
   }
@@ -533,21 +614,82 @@ const renderVehicle = (): void => {
     scene.add(liftGroup);
     vehicleGroup.position.y = LIFT_HEIGHT;
   }
+  massReport = measure(library, vehicle.fittings);
+  const { massKg, centre } = massReport;
+  const [lx, , lz] = latticeVoxels(spec.blueprint);
+  const noise = noiseRadius(CATALOGUE, vehicle.fittings);
+  const metres = [(centre[0] - lx / 2) * VOXEL, centre[1] * VOXEL, (centre[2] - lz / 2) * VOXEL];
+  return `${massText(vehicle.fittings.length, massKg, metres)} · engine noise heard to ${Math.round(noise)} m at idle`;
+};
+
+/** Fills the vehicle group with a content build's loaded part models and returns its stats line. */
+const assembleContentBuild = (spec: ContentBuildSpec): string => {
+  const present = presentContent(spec);
+  modelsPending = false;
+  for (const fitting of present) {
+    const object = placeContentFitting(fitting);
+    if (object) {
+      vehicleGroup.add(object);
+    } else {
+      modelsPending = true;
+    }
+  }
+  massReport = { massKg: 0, centre: [0, 0, 0] };
+  const { massKg, centreOfMass } = assembledVehicle(
+    spec.content,
+    present.map(({ placed }) => placed),
+  );
+  return `${massText(present.length, massKg, centreOfMass)} · exported part masses${modelsPending ? ' · loading part models…' : ''}`;
+};
+
+let watchingModels = false;
+let drawnModels = 0;
+/** Redraws a content build as its part models arrive, and marks the page ready once all are drawn. */
+const watchModels = (): void => {
+  if (watchingModels) {
+    return;
+  }
+  watchingModels = true;
+  const step = (): void => {
+    if (!modelsPending) {
+      watchingModels = false;
+      document.body.dataset.ready = 'true';
+      return;
+    }
+    if (partModels.version !== drawnModels) {
+      drawnModels = partModels.version;
+      renderVehicle();
+    }
+    requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+};
+
+const renderVehicle = (): void => {
+  const started = performance.now();
+  const spec: AnyBuildSpec = BUILDS[activeBuild];
+  if (liftGroup) {
+    scene.remove(liftGroup);
+    liftGroup = undefined;
+  }
+  scene.remove(vehicleGroup);
+  vehicleGroup = new Group();
+  wheelPivots = [];
+  doorPivots = [];
+  modelsPending = false;
+  statsText = isContentBuild(spec) ? assembleContentBuild(spec) : assembleVoxelBuild(spec);
   scene.add(vehicleGroup);
   const shift = (spec.viewScale ?? 1) - 1;
   playerGroup.position.set(PLAYER_AT[0] * shift, 0, PLAYER_AT[2] * shift);
   const assemblyMs = performance.now() - started;
-  massReport = measure(library, vehicle.fittings);
-  const { massKg, centre } = massReport;
-  const [lx, , lz] = latticeVoxels(spec.blueprint);
-  const signed = (value: number): string => `${value >= 0 ? '+' : ''}${value.toFixed(2)}`;
-  const noise = noiseRadius(CATALOGUE, vehicle.fittings);
-  statsText = `${vehicle.fittings.length} fittings · ${Math.round(massKg).toLocaleString('en')} kg · centre of mass ${signed((centre[0] - lx / 2) * VOXEL)} m forward, ${(centre[1] * VOXEL).toFixed(2)} m up, ${signed((centre[2] - lz / 2) * VOXEL)} m toward the near side · engine noise heard to ${Math.round(noise)} m at idle`;
   renderPanel();
   drawSchematic();
   renderScene();
   perfText = `${renderer.info.render.calls} draw calls · ${renderer.info.render.triangles.toLocaleString('en')} triangles · ${meshCost.types} part meshes built since load, in ${meshCost.ms.toFixed(0)} ms · assembly ${assemblyMs.toFixed(1)} ms`;
   renderPanel();
+  if (modelsPending) {
+    watchModels();
+  }
 };
 
 interface CellRect {
@@ -620,6 +762,64 @@ const fittingColor = (paint: Paint, fitting: Fitting): string => {
   return first ? hexOf(paint, first.mat) : '#777777';
 };
 
+/** A content fitting's footprint from above, in vehicle metres: the extent of its exported collision. */
+interface MetreRect {
+  readonly id: string;
+  readonly x0: number;
+  readonly z0: number;
+  readonly x1: number;
+  readonly z1: number;
+}
+const contentRects = (spec: ContentBuildSpec): readonly MetreRect[] =>
+  contentFittingsOf(spec).map(({ placed }) => ({
+    id: placed.id,
+    x0: Math.min(...placed.collision.map(({ min }) => min[0])),
+    z0: Math.min(...placed.collision.map(({ min }) => min[2])),
+    x1: Math.max(...placed.collision.map(({ max }) => max[0])),
+    z1: Math.max(...placed.collision.map(({ max }) => max[2])),
+  }));
+
+/** Pixels per metre and where the vehicle origin falls on the schematic. */
+const contentLayout = (
+  rects: readonly MetreRect[],
+): { readonly scale: number; readonly originX: number; readonly originY: number } => {
+  const schematic = schematicCanvas();
+  const reachX = Math.max(...rects.flatMap(({ x0, x1 }) => [-x0, x1]));
+  const reachZ = Math.max(...rects.flatMap(({ z0, z1 }) => [-z0, z1]));
+  const scale = Math.min((schematic.width - 100) / (2 * reachX), (schematic.height - 40) / (2 * reachZ));
+  return { scale, originX: schematic.width / 2, originY: schematic.height / 2 };
+};
+
+/** Top-down: each content fitting as its collision footprint, smallest drawn last; near side at the bottom. */
+const drawContentSchematic = (ctx: CanvasRenderingContext2D, spec: ContentBuildSpec): void => {
+  const schematic = schematicCanvas();
+  const rects = contentRects(spec);
+  const { scale, originX, originY } = contentLayout(rects);
+  const removed = removedOf(spec);
+  ctx.fillStyle = '#171b20';
+  ctx.fillRect(0, 0, schematic.width, schematic.height);
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#d9cda8';
+  ctx.fillText('REAR', 24, originY);
+  ctx.fillText('FRONT →', schematic.width - 32, originY);
+  const area = ({ x0, z0, x1, z1 }: MetreRect): number => (x1 - x0) * (z1 - z0);
+  for (const rect of [...rects].sort((a, b) => area(b) - area(a))) {
+    const present = !removed.has(rect.id);
+    const [x, y] = [originX + rect.x0 * scale, originY + rect.z0 * scale];
+    const [width, height] = [(rect.x1 - rect.x0) * scale, (rect.z1 - rect.z0) * scale];
+    ctx.globalAlpha = present ? 0.35 : 0.15;
+    ctx.fillStyle = present ? '#8a7a5c' : '#252a2d';
+    ctx.fillRect(x, y, width, height);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = present ? '#d9ddcf' : '#8a8f88';
+    ctx.setLineDash(present ? [] : [4, 3]);
+    ctx.strokeRect(x, y, width, height);
+    ctx.setLineDash([]);
+  }
+};
+
 /** Top-down lattice: each fitting of the selected layer as the cells its voxels cover; z grows downward. */
 const drawSchematic = (): void => {
   const schematic = schematicCanvas();
@@ -627,8 +827,13 @@ const drawSchematic = (): void => {
   if (!ctx) {
     throw new Error('Vehicle schematic canvas is unavailable');
   }
-  const spec: BuildSpec = BUILDS[activeBuild];
-  const vehicle = vehicleFor(activeBuild);
+  const anySpec: AnyBuildSpec = BUILDS[activeBuild];
+  if (isContentBuild(anySpec)) {
+    drawContentSchematic(ctx, anySpec);
+    return;
+  }
+  const spec = anySpec;
+  const vehicle = vehicleFor(activeBuild, spec);
   const [, , cz] = spec.blueprint.lattice;
   const layout = schematicLayout(spec.blueprint);
   const { cell, left, top } = layout;
@@ -672,10 +877,48 @@ const drawSchematic = (): void => {
   }
 };
 
+/** The content build's version of `togglePart`, by the blueprint's supports. */
+const toggleContentPart = (spec: ContentBuildSpec, id: string): void => {
+  const fittings = contentFittingsOf(spec);
+  const removed = removedOf(spec);
+  const labelOf = (fittingId: string): string => {
+    const part = fittings.find(({ def }) => def.id === fittingId)?.def.part;
+    const name = part === undefined ? undefined : registry.items.get(part)?.name;
+    return name ? `${name.toLowerCase()} (${fittingId})` : fittingId;
+  };
+  if (!fittings.some(({ def }) => def.id === id)) {
+    return;
+  }
+  if (removed.has(id)) {
+    const missing = fittings.find(({ def }) => def.id === id)!.def.supportedBy.filter((s) => removed.has(s));
+    if (missing.length > 0) {
+      notice = `Can't fit ${labelOf(id)}: it rests on ${missing.map(labelOf).join(', ')}.`;
+      renderPanel();
+      return;
+    }
+    removed.delete(id);
+  } else {
+    const blockers = presentContent(spec).filter(({ def }) => def.supportedBy.includes(id));
+    if (blockers.length > 0) {
+      notice = `Can't take off ${labelOf(id)}: ${blockers.map(({ def }) => labelOf(def.id)).join(', ')} rest on it.`;
+      renderPanel();
+      return;
+    }
+    removed.add(id);
+  }
+  notice = '';
+  renderVehicle();
+};
+
 /** Fits or removes a fitting, refusing a removal something still rests on and a fit whose supports are off. */
 const togglePart = (id: string): void => {
-  const spec: BuildSpec = BUILDS[activeBuild];
-  const vehicle = vehicleFor(activeBuild);
+  const anySpec: AnyBuildSpec = BUILDS[activeBuild];
+  if (isContentBuild(anySpec)) {
+    toggleContentPart(anySpec, id);
+    return;
+  }
+  const spec = anySpec;
+  const vehicle = vehicleFor(activeBuild, spec);
   const offered = fittingById(offeredFittings(spec, vehicle));
   const labelOf = (fittingId: string): string => {
     const fitting = offered.get(fittingId);
@@ -725,16 +968,31 @@ const selectLayer = (id: string): void => {
 /** Toggles the smallest fitting of the selected layer under the clicked cell. */
 const pickSchematic = (event: PointerEvent): void => {
   const schematic = schematicCanvas();
-  const spec: BuildSpec = BUILDS[activeBuild];
-  const [cx, , cz] = spec.blueprint.lattice;
+  const anySpec: AnyBuildSpec = BUILDS[activeBuild];
   const bounds = schematic.getBoundingClientRect();
+  const px = (event.clientX - bounds.left) * (schematic.width / bounds.width);
+  const py = (event.clientY - bounds.top) * (schematic.height / bounds.height);
+  if (isContentBuild(anySpec)) {
+    const rects = contentRects(anySpec);
+    const { scale, originX, originY } = contentLayout(rects);
+    const [x, z] = [(px - originX) / scale, (py - originY) / scale];
+    const [hit] = rects
+      .filter((rect) => x >= rect.x0 && x <= rect.x1 && z >= rect.z0 && z <= rect.z1)
+      .sort((a, b) => (a.x1 - a.x0) * (a.z1 - a.z0) - (b.x1 - b.x0) * (b.z1 - b.z0));
+    if (hit) {
+      toggleContentPart(anySpec, hit.id);
+    }
+    return;
+  }
+  const spec = anySpec;
+  const [cx, , cz] = spec.blueprint.lattice;
   const { cell, left, top } = schematicLayout(spec.blueprint);
-  const x = Math.floor(((event.clientX - bounds.left) * (schematic.width / bounds.width) - left) / cell);
-  const z = cz - 1 - Math.floor(((event.clientY - bounds.top) * (schematic.height / bounds.height) - top) / cell);
+  const x = Math.floor((px - left) / cell);
+  const z = cz - 1 - Math.floor((py - top) / cell);
   if (x < 0 || z < 0 || x >= cx || z >= cz) {
     return;
   }
-  const hits = layerFittings(spec, vehicleFor(activeBuild))
+  const hits = layerFittings(spec, vehicleFor(activeBuild, spec))
     .map((fitting) => ({ fitting, rect: fittingCells(fitting) }))
     .filter(({ rect }) => x >= rect.x0 && x < rect.x1 && z >= rect.z0 && z < rect.z1)
     .sort(
@@ -754,10 +1012,7 @@ renderer.setSize(stage.clientWidth, stage.clientHeight);
 const sunlight = new DirectionalLight();
 const ambient = new HemisphereLight();
 scene.add(sunlight, sunlight.target, ambient);
-applySky(
-  { scene, light: sunlight, ambient, camera, radiusM: 96 },
-  skyAt(12, requireDayCycle(buildBundledContent().registry)),
-);
+applySky({ scene, light: sunlight, ambient, camera, radiusM: 96 }, skyAt(12, requireDayCycle(registry)));
 sunlight.position.normalize().multiplyScalar(20);
 sunlight.castShadow = true;
 sunlight.shadow.mapSize.set(2048, 2048);
@@ -796,8 +1051,8 @@ const scheduleRender = (): void => {
 
 const setDoors = (open: boolean): void => {
   doorsOpen = open;
-  for (const { pivot, sign } of doorPivots) {
-    pivot.rotation.y = open ? sign * DOOR_OPEN : 0;
+  for (const { pivot, axis, sign } of doorPivots) {
+    pivot.quaternion.setFromAxisAngle(axis, open ? sign * DOOR_OPEN : 0);
   }
   renderPanel();
   scheduleRender();
@@ -806,8 +1061,8 @@ const setDoors = (open: boolean): void => {
 const applyView = (id: ViewId): void => {
   activeView = id;
   const view: ViewPreset = VIEWS[id];
-  const spec: BuildSpec = BUILDS[activeBuild];
-  const lift = spec.lift ? LIFT_HEIGHT : 0;
+  const spec: AnyBuildSpec = BUILDS[activeBuild];
+  const lift = !isContentBuild(spec) && spec.lift ? LIFT_HEIGHT : 0;
   const scale = spec.viewScale ?? 1;
   const override = spec.views?.[id];
   const position = override?.position ?? (id === 'far' ? view.position : view.position.map((v) => v * scale));
@@ -921,7 +1176,7 @@ const playerGroup = new Group();
 scene.add(playerGroup);
 
 const addPlayer = (): void => {
-  const player = buildBundledContent().registry.figures.get(CORE_CONTENT_IDS.player);
+  const player = registry.figures.get(CORE_CONTENT_IDS.player);
   if (!player) {
     throw new Error('The bundled player figure is missing');
   }
@@ -984,11 +1239,26 @@ const LAYER_LABELS: Readonly<Record<PartLayer, string>> = {
 };
 
 const panelModel = (): PanelModel => {
-  const active: BuildSpec = BUILDS[activeBuild];
-  const vehicle = vehicleFor(activeBuild);
-  const fitted = fittingById(vehicle.fittings);
+  const active: AnyBuildSpec = BUILDS[activeBuild];
+  let fittings: PanelModel['fittings'];
+  if (isContentBuild(active)) {
+    const removed = removedOf(active);
+    fittings = contentFittingsOf(active).map(({ def }) => ({
+      id: def.id,
+      label: registry.items.get(def.part)?.name ?? def.part,
+      fitted: !removed.has(def.id),
+    }));
+  } else {
+    const vehicle = vehicleFor(activeBuild, active);
+    const fitted = fittingById(vehicle.fittings);
+    fittings = layerFittings(active, vehicle).map((fitting) => ({
+      id: fitting.id,
+      label: partTypeOf(CATALOGUE, fitting).label,
+      fitted: fitted.has(fitting.id),
+    }));
+  }
   return {
-    builds: (Object.entries(BUILDS) as [BuildId, BuildSpec][]).map(([id, spec]) => ({ id, label: spec.button })),
+    builds: (Object.entries(BUILDS) as [BuildId, AnyBuildSpec][]).map(([id, spec]) => ({ id, label: spec.button })),
     build: activeBuild,
     views: (Object.entries(VIEWS) as [ViewId, ViewPreset][]).map(([id, view]) => ({
       id,
@@ -1003,11 +1273,7 @@ const panelModel = (): PanelModel => {
     spin: wheelsSpinning,
     doors: doorsOpen,
     wear: Math.round(wearLevel * 100),
-    fittings: layerFittings(active, vehicle).map((fitting) => ({
-      id: fitting.id,
-      label: partTypeOf(CATALOGUE, fitting).label,
-      fitted: fitted.has(fitting.id),
-    })),
+    fittings,
     grain: GRAIN_NOTE,
     perf: perfText,
     error: errorText,
@@ -1044,4 +1310,6 @@ applyView(activeView);
 if (wheelsSpinning) {
   startWheels();
 }
-document.body.dataset.ready = 'true';
+if (!modelsPending) {
+  document.body.dataset.ready = 'true';
+}

@@ -262,7 +262,7 @@ export interface PlayerInputSample {
   readonly worldReady: boolean;
 }
 
-interface SessionControls {
+export interface SessionControls {
   /** True when input reaches the world: the pointer is locked and no menu has it. */
   active: () => boolean;
   intent: () => MoveIntent;
@@ -1449,7 +1449,7 @@ export const createSession = (options: SessionOptions) => {
     if (climbing && Math.hypot(...body.pos.map((value, axis) => value - before[axis]!)) > 2 * CONTACT_SKIN) {
       run.discover('entranceTravel', sim.calendar);
     }
-    for (const entity of entities.all) {
+    for (const entity of entities.near(discovery.entrance.min, discovery.entrance.max)) {
       if (
         entities.defOf(entity).door?.hatch &&
         nearDiscoveryBox(entity.pos, discovery.entrance, 0) &&
@@ -1486,11 +1486,11 @@ export const createSession = (options: SessionOptions) => {
     // A climber uses its free hand standing still: the ladder holds it while an item action runs.
     const acting = queue.busy || firearms.busy || playerCombat.activeMeleeAction !== undefined || throwCharge.active;
     const steered = ladderHold.on && acting ? { ...pacedIntent, forward: 0, right: 0 } : pacedIntent;
-    steer(body, scale, sampledInput().yaw, steered);
+    const ladder = ladderHold.piece(pacedIntent.jump || sim.body.actionRefusal !== undefined);
+    steer(body, scale, sampledInput().yaw, { ...steered, onLadder: ladder !== undefined });
     if (jumpStarted) {
       playPlayerSound('player_strain', time);
     }
-    const ladder = ladderHold.piece(pacedIntent.jump || sim.body.actionRefusal !== undefined);
     refuseThrowForLadder();
     const climbing =
       ladder !== undefined &&
