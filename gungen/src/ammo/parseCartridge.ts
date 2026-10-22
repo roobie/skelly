@@ -118,6 +118,11 @@ const number: Parse<number> = (value, path) =>
     ? value
     : fail(path, `expected a finite number, got ${describe(value)}`);
 
+const positive: Parse<number> = (value, path) => {
+  const amount = number(value, path);
+  return amount > 0 ? amount : fail(path, 'expected a positive number');
+};
+
 const boolean: Parse<boolean> = (value, path) =>
   typeof value === 'boolean' ? value : fail(path, `expected a boolean, got ${describe(value)}`);
 
@@ -279,6 +284,7 @@ const parseBase = (source: Obj, path: string): CartridgeBase => {
     primarySource: field(source, 'primarySource', path, nonEmptyString),
     relatedTo: field(source, 'relatedTo', path, list(parseRelation)),
     notes: field(source, 'notes', path, list(nonEmptyString)),
+    ...optional(source, 'voxelGrain', path, positive),
   };
 };
 
@@ -475,7 +481,7 @@ const SHOTSHELL_KEYS = [
 
 const parseCartridgeOrThrow = (value: unknown): Cartridge => {
   const kind = discriminant(value, '', 'kind', ['metallic', 'shotshell'] as const);
-  const source = object(value, '', kind === 'metallic' ? METALLIC_KEYS : SHOTSHELL_KEYS);
+  const source = object(value, '', kind === 'metallic' ? METALLIC_KEYS : SHOTSHELL_KEYS, ['voxelGrain']);
   return kind === 'metallic' ? parseMetallic(source, '') : parseShotshell(source, '');
 };
 

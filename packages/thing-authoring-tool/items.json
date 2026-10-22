@@ -876,7 +876,8 @@
           },
           "ports": []
         }
-      ]
+      ],
+      "voxelGrain": 0.002
     },
     {
       "connections": [],
@@ -1463,7 +1464,8 @@
           },
           "ports": []
         }
-      ]
+      ],
+      "voxelGrain": 0.002
     },
     {
       "connections": [

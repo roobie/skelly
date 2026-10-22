@@ -1,8 +1,10 @@
 {
   "id": "cartridge_box_7_d_62x39",
   "file": "assets/models/cartridge_box_7_d_62x39.glb",
-  "parts": { "package": { "node": "package:carton", "massKg": 0.36, "centreOfMass": [0, 0.03319213680004027, 0] } },
-  "grip": { "at": [0, 0.0325, 0], "turn": [0, 0, -90] },
+  "parts": {
+    "package": { "node": "package:carton", "massKg": 0.36, "centreOfMass": [-0.003407079646017699, 0.035, 0] }
+  },
+  "grip": { "at": [-0.0049999999999999975, 0.03, 0], "turn": [0, 0, -90] },
   "hold": "upright",
   "roll": 0
 }

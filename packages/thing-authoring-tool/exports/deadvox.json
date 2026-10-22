@@ -5,7 +5,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "canned_beans"
+    "source": "canned_beans",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "canned_soup",
@@ -13,7 +17,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "canned_soup"
+    "source": "canned_soup",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "crackers",
@@ -21,7 +29,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "crackers"
+    "source": "crackers",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "chocolate_bar",
@@ -29,16 +41,23 @@
     "options": {
       "mass": "parts"
     },
-    "source": "chocolate_bar"
+    "source": "chocolate_bar",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "soda_can",
     "kind": "item",
     "options": {
-      "mass": "parts",
-      "voxelGrain": 0.01
+      "mass": "parts"
     },
-    "source": "soda_can"
+    "source": "soda_can",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "water_bottle",
@@ -46,7 +65,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "water_bottle"
+    "source": "water_bottle",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "juice_carton",
@@ -54,7 +77,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "juice_carton"
+    "source": "juice_carton",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "cartridge_box_308_h_winchester",
@@ -62,7 +89,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "cartridge_box_308_h_winchester"
+    "source": "cartridge_box_308_h_winchester",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "cartridge_box_5_d_56x45",
@@ -70,7 +101,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "cartridge_box_5_d_56x45"
+    "source": "cartridge_box_5_d_56x45",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "cartridge_box_7_d_62x39",
@@ -78,7 +113,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "cartridge_box_7_d_62x39"
+    "source": "cartridge_box_7_d_62x39",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "cartridge_box_357_h_magnum",
@@ -86,7 +125,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "cartridge_box_357_h_magnum"
+    "source": "cartridge_box_357_h_magnum",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "shotshell_box",
@@ -94,7 +137,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "shotshell_box"
+    "source": "shotshell_box",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "ammo_can",
@@ -102,7 +149,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "ammo_can"
+    "source": "ammo_can",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "jerry_can",
@@ -110,7 +161,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "jerry_can"
+    "source": "jerry_can",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "gas_canister",
@@ -118,7 +173,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "gas_canister"
+    "source": "gas_canister",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "opened_beans",
@@ -126,7 +185,11 @@
     "options": {
       "mass": "inventory-atom"
     },
-    "source": "opened_beans"
+    "source": "opened_beans",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "opened_soup",
@@ -134,7 +197,11 @@
     "options": {
       "mass": "inventory-atom"
     },
-    "source": "opened_soup"
+    "source": "opened_soup",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "empty_can",
@@ -142,16 +209,23 @@
     "options": {
       "mass": "inventory-atom"
     },
-    "source": "empty_can"
+    "source": "empty_can",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "can_opener",
     "kind": "item",
     "options": {
-      "mass": "parts",
-      "voxelGrain": 0.01
+      "mass": "parts"
     },
-    "source": "can_opener"
+    "source": "can_opener",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "aa_battery",
@@ -159,7 +233,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "aa_battery"
+    "source": "aa_battery",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "rag",
@@ -167,7 +245,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "rag"
+    "source": "rag",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "duct_tape",
@@ -175,7 +257,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "duct_tape"
+    "source": "duct_tape",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "nails",
@@ -183,7 +269,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "nails"
+    "source": "nails",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.002
+    }
   },
   {
     "id": "scrap_metal",
@@ -191,7 +281,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "scrap_metal"
+    "source": "scrap_metal",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "stick",
@@ -199,7 +293,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "stick"
+    "source": "stick",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "wax",
@@ -207,7 +305,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "wax"
+    "source": "wax",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "wooden_plank",
@@ -215,7 +317,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "wooden_plank"
+    "source": "wooden_plank",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "field_patch",
@@ -223,7 +329,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "field_patch"
+    "source": "field_patch",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "beans",
@@ -231,7 +341,11 @@
     "options": {
       "mass": "inventory-atom"
     },
-    "source": "beans"
+    "source": "beans",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "soup",
@@ -239,7 +353,11 @@
     "options": {
       "mass": "inventory-atom"
     },
-    "source": "soup"
+    "source": "soup",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "apple",
@@ -247,7 +365,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "apple"
+    "source": "apple",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "bandage",
@@ -255,7 +377,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "bandage"
+    "source": "bandage",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "antiseptic",
@@ -263,7 +389,11 @@
     "options": {
       "mass": "inventory-atom"
     },
-    "source": "antiseptic"
+    "source": "antiseptic",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "antibiotics",
@@ -271,7 +401,11 @@
     "options": {
       "mass": "inventory-atom"
     },
-    "source": "antibiotics"
+    "source": "antibiotics",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "painkillers",
@@ -279,7 +413,11 @@
     "options": {
       "mass": "inventory-atom"
     },
-    "source": "painkillers"
+    "source": "painkillers",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "codeine",
@@ -287,7 +425,11 @@
     "options": {
       "mass": "inventory-atom"
     },
-    "source": "codeine"
+    "source": "codeine",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "morphine",
@@ -295,7 +437,11 @@
     "options": {
       "mass": "inventory-atom"
     },
-    "source": "morphine"
+    "source": "morphine",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "frag_grenade",
@@ -303,7 +449,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "frag_grenade"
+    "source": "frag_grenade",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "torch",
@@ -311,7 +461,11 @@
     "options": {
       "mass": "inventory-atom"
     },
-    "source": "torch"
+    "source": "torch",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "candle",
@@ -319,7 +473,11 @@
     "options": {
       "mass": "inventory-atom"
     },
-    "source": "candle"
+    "source": "candle",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.002
+    }
   },
   {
     "id": "dead_desk_lamp",
@@ -327,7 +485,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "dead_desk_lamp"
+    "source": "dead_desk_lamp",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "shambler_torso",
@@ -335,7 +497,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "shambler_torso"
+    "source": "shambler_torso",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "shambler_head",
@@ -343,7 +509,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "shambler_head"
+    "source": "shambler_head",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "shambler_left_arm",
@@ -351,7 +521,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "shambler_left_arm"
+    "source": "shambler_left_arm",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "shambler_right_arm",
@@ -359,7 +533,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "shambler_right_arm"
+    "source": "shambler_right_arm",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "shambler_left_leg",
@@ -367,7 +545,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "shambler_left_leg"
+    "source": "shambler_left_leg",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "shambler_right_leg",
@@ -375,37 +557,47 @@
     "options": {
       "mass": "parts"
     },
-    "source": "shambler_right_leg"
+    "source": "shambler_right_leg",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "car_battery",
     "kind": "item",
     "options": {
       "collision": true,
-      "mass": "parts",
-      "voxelGrain": 0.03125
+      "mass": "parts"
     },
-    "source": "car_battery"
+    "source": "car_battery",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "car_headlamp",
     "kind": "item",
     "options": {
       "collision": true,
-      "mass": "parts",
-      "voxelGrain": 0.03125
+      "mass": "parts"
     },
-    "source": "car_headlamp"
+    "source": "car_headlamp",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hatchback_battery_tray",
     "kind": "item",
     "options": {
       "collision": true,
-      "mass": "parts",
-      "voxelGrain": 0.03125
+      "mass": "parts"
     },
-    "source": "hatchback_battery_tray"
+    "source": "hatchback_battery_tray",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "pickup_battery_tray",
@@ -414,7 +606,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "pickup_battery_tray"
+    "source": "pickup_battery_tray",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "cargo_space",
@@ -423,7 +618,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "cargo_space"
+    "source": "cargo_space",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "pickup_bed_floor",
@@ -432,7 +630,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "pickup_bed_floor"
+    "source": "pickup_bed_floor",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "pickup_bed_side",
@@ -441,7 +642,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "pickup_bed_side"
+    "source": "pickup_bed_side",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "pickup_bed_front",
@@ -450,7 +654,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "pickup_bed_front"
+    "source": "pickup_bed_front",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "box_van_floor",
@@ -459,7 +666,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "box_van_floor"
+    "source": "box_van_floor",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "box_van_side",
@@ -468,7 +678,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "box_van_side"
+    "source": "box_van_side",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "box_van_front",
@@ -477,7 +690,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "box_van_front"
+    "source": "box_van_front",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "box_van_roof",
@@ -486,7 +702,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "box_van_roof"
+    "source": "box_van_roof",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "wheel_205_55r16",
@@ -495,7 +714,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "wheel_205_55r16"
+    "source": "wheel_205_55r16",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "front_seat",
@@ -504,7 +726,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "front_seat"
+    "source": "front_seat",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "door_mirror",
@@ -513,7 +738,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "door_mirror"
+    "source": "door_mirror",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "steering_wheel",
@@ -522,7 +750,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "steering_wheel"
+    "source": "steering_wheel",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "gear_lever",
@@ -531,7 +762,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "gear_lever"
+    "source": "gear_lever",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hatchback_shell",
@@ -540,7 +774,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hatchback_shell"
+    "source": "hatchback_shell",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hatchback_front_door",
@@ -549,7 +786,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hatchback_front_door"
+    "source": "hatchback_front_door",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hatchback_rear_door",
@@ -558,7 +798,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hatchback_rear_door"
+    "source": "hatchback_rear_door",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hatchback_tailgate",
@@ -567,7 +810,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hatchback_tailgate"
+    "source": "hatchback_tailgate",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hatchback_windscreen",
@@ -576,7 +822,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hatchback_windscreen"
+    "source": "hatchback_windscreen",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hatchback_bonnet",
@@ -585,7 +834,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hatchback_bonnet"
+    "source": "hatchback_bonnet",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hatchback_front_wing",
@@ -594,7 +846,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hatchback_front_wing"
+    "source": "hatchback_front_wing",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hatchback_front_bumper",
@@ -603,7 +858,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hatchback_front_bumper"
+    "source": "hatchback_front_bumper",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hatchback_rear_bumper",
@@ -612,7 +870,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hatchback_rear_bumper"
+    "source": "hatchback_rear_bumper",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hatchback_tail_lamp",
@@ -621,7 +882,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hatchback_tail_lamp"
+    "source": "hatchback_tail_lamp",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hatchback_front_strut",
@@ -630,7 +894,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hatchback_front_strut"
+    "source": "hatchback_front_strut",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hatchback_rear_axle",
@@ -639,7 +906,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hatchback_rear_axle"
+    "source": "hatchback_rear_axle",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hatchback_engine",
@@ -648,7 +918,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hatchback_engine"
+    "source": "hatchback_engine",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hatchback_gearbox",
@@ -657,7 +930,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hatchback_gearbox"
+    "source": "hatchback_gearbox",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hatchback_radiator",
@@ -666,7 +942,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hatchback_radiator"
+    "source": "hatchback_radiator",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hatchback_fuel_tank",
@@ -675,7 +954,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hatchback_fuel_tank"
+    "source": "hatchback_fuel_tank",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hatchback_exhaust",
@@ -684,7 +966,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hatchback_exhaust"
+    "source": "hatchback_exhaust",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hatchback_dashboard",
@@ -693,7 +978,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hatchback_dashboard"
+    "source": "hatchback_dashboard",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hatchback_rear_seat",
@@ -702,7 +990,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hatchback_rear_seat"
+    "source": "hatchback_rear_seat",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_frame_rail",
@@ -711,7 +1002,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_frame_rail"
+    "source": "hoist_frame_rail",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_crossmember",
@@ -720,7 +1014,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_crossmember"
+    "source": "hoist_crossmember",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_wheel",
@@ -729,7 +1026,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_wheel"
+    "source": "hoist_wheel",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_front_axle",
@@ -738,7 +1038,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_front_axle"
+    "source": "hoist_front_axle",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_rear_axle",
@@ -747,7 +1050,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_rear_axle"
+    "source": "hoist_rear_axle",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_engine",
@@ -756,7 +1062,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_engine"
+    "source": "hoist_engine",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_gearbox",
@@ -765,7 +1074,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_gearbox"
+    "source": "hoist_gearbox",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_prop_shaft",
@@ -774,7 +1086,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_prop_shaft"
+    "source": "hoist_prop_shaft",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_fuel_tank",
@@ -783,7 +1098,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_fuel_tank"
+    "source": "hoist_fuel_tank",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_exhaust",
@@ -792,7 +1110,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_exhaust"
+    "source": "hoist_exhaust",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_radiator",
@@ -801,7 +1122,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_radiator"
+    "source": "hoist_radiator",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_cab_floor",
@@ -810,7 +1134,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_cab_floor"
+    "source": "hoist_cab_floor",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_cab_skirt",
@@ -819,7 +1146,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_cab_skirt"
+    "source": "hoist_cab_skirt",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_cab_back",
@@ -828,7 +1158,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_cab_back"
+    "source": "hoist_cab_back",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_front_panel",
@@ -837,7 +1170,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_front_panel"
+    "source": "hoist_front_panel",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_a_post",
@@ -846,7 +1182,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_a_post"
+    "source": "hoist_a_post",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_windscreen",
@@ -855,7 +1194,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_windscreen"
+    "source": "hoist_windscreen",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_roof",
@@ -864,7 +1206,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_roof"
+    "source": "hoist_roof",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_door",
@@ -873,7 +1218,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_door"
+    "source": "hoist_door",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_front_bumper",
@@ -882,7 +1230,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_front_bumper"
+    "source": "hoist_front_bumper",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_dashboard",
@@ -891,7 +1242,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_dashboard"
+    "source": "hoist_dashboard",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_engine_cover",
@@ -900,7 +1254,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_engine_cover"
+    "source": "hoist_engine_cover",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_bench",
@@ -909,7 +1266,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_bench"
+    "source": "hoist_bench",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_deck_floor",
@@ -918,7 +1278,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_deck_floor"
+    "source": "hoist_deck_floor",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_headboard",
@@ -927,7 +1290,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_headboard"
+    "source": "hoist_headboard",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_mudguard",
@@ -936,7 +1302,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_mudguard"
+    "source": "hoist_mudguard",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_rear_underrun",
@@ -945,7 +1314,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_rear_underrun"
+    "source": "hoist_rear_underrun",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_tail_lamp",
@@ -954,7 +1326,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_tail_lamp"
+    "source": "hoist_tail_lamp",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_crane_base",
@@ -963,7 +1338,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_crane_base"
+    "source": "hoist_crane_base",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_stabiliser",
@@ -972,7 +1350,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_stabiliser"
+    "source": "hoist_stabiliser",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_crane_column",
@@ -981,7 +1362,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_crane_column"
+    "source": "hoist_crane_column",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_boom",
@@ -990,7 +1374,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_boom"
+    "source": "hoist_boom",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_boom_extension",
@@ -999,7 +1386,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_boom_extension"
+    "source": "hoist_boom_extension",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_luff_ram",
@@ -1008,7 +1398,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_luff_ram"
+    "source": "hoist_luff_ram",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_winch",
@@ -1017,7 +1410,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_winch"
+    "source": "hoist_winch",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_hook_block",
@@ -1026,7 +1422,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_hook_block"
+    "source": "hoist_hook_block",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "hoist_boom_rest",
@@ -1035,7 +1434,10 @@
       "collision": true,
       "mass": "parts"
     },
-    "source": "hoist_boom_rest"
+    "source": "hoist_boom_rest",
+    "voxel": {
+      "grain": 0.03125
+    }
   },
   {
     "id": "jeans",
@@ -1043,7 +1445,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "jeans"
+    "source": "jeans",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "rubber_boots",
@@ -1051,7 +1457,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "rubber_boots"
+    "source": "rubber_boots",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "cargo_pants",
@@ -1059,7 +1469,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "cargo_pants"
+    "source": "cargo_pants",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "hoodie",
@@ -1067,7 +1481,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "hoodie"
+    "source": "hoodie",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "jacket",
@@ -1075,7 +1493,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "jacket"
+    "source": "jacket",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "utility_vest",
@@ -1083,7 +1505,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "utility_vest"
+    "source": "utility_vest",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "fanny_pack",
@@ -1091,7 +1517,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "fanny_pack"
+    "source": "fanny_pack",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "school_backpack",
@@ -1099,7 +1529,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "school_backpack"
+    "source": "school_backpack",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "hiking_backpack",
@@ -1107,7 +1541,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "hiking_backpack"
+    "source": "hiking_backpack",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "baseball_cap",
@@ -1115,7 +1553,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "baseball_cap"
+    "source": "baseball_cap",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "blowtorch",
@@ -1123,7 +1565,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "blowtorch"
+    "source": "blowtorch",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "headlamp",
@@ -1131,7 +1577,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "headlamp"
+    "source": "headlamp",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "weapon_sling",
@@ -1139,7 +1589,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "weapon_sling"
+    "source": "weapon_sling",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "repair_kit",
@@ -1147,7 +1601,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "repair_kit"
+    "source": "repair_kit",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "wire_strippers",
@@ -1155,7 +1613,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "wire_strippers"
+    "source": "wire_strippers",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "adjustable_pliers",
@@ -1163,7 +1625,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "adjustable_pliers"
+    "source": "adjustable_pliers",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "sewing_repair_kit",
@@ -1171,7 +1637,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "sewing_repair_kit"
+    "source": "sewing_repair_kit",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "portable_radio",
@@ -1179,7 +1649,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "portable_radio"
+    "source": "portable_radio",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "compass",
@@ -1187,7 +1661,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "compass"
+    "source": "compass",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "lighter",
@@ -1195,7 +1673,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "lighter"
+    "source": "lighter",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "matches",
@@ -1203,7 +1685,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "matches"
+    "source": "matches",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "dad_cabin_key",
@@ -1211,7 +1697,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "dad_cabin_key"
+    "source": "dad_cabin_key",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "pharmacy_key",
@@ -1219,7 +1709,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "pharmacy_key"
+    "source": "pharmacy_key",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "camp_armoury_key",
@@ -1227,7 +1721,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "camp_armoury_key"
+    "source": "camp_armoury_key",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "camp_hq_safe_key",
@@ -1235,7 +1733,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "camp_hq_safe_key"
+    "source": "camp_hq_safe_key",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "shed_key",
@@ -1243,7 +1745,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "shed_key"
+    "source": "shed_key",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "gauntlet_police_armoury_key",
@@ -1251,7 +1757,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "gauntlet_police_armoury_key"
+    "source": "gauntlet_police_armoury_key",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "gauntlet_lab_entry_card",
@@ -1259,16 +1769,23 @@
     "options": {
       "mass": "parts"
     },
-    "source": "gauntlet_lab_entry_card"
+    "source": "gauntlet_lab_entry_card",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "player_bust",
     "kind": "item",
     "options": {
-      "mass": "parts",
-      "voxelGrain": 0.01
+      "mass": "parts"
     },
-    "source": "player_bust"
+    "source": "player_bust",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "tape_roll",
@@ -1276,7 +1793,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "electrical_tape"
+    "source": "electrical_tape",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "thread_spool",
@@ -1284,7 +1805,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "sewing_thread"
+    "source": "sewing_thread",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "cord_coil",
@@ -1292,16 +1817,23 @@
     "options": {
       "mass": "parts"
     },
-    "source": "nylon_cord"
+    "source": "nylon_cord",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "fuse",
     "kind": "item",
     "options": {
-      "mass": "parts",
-      "voxelGrain": 0.01
+      "mass": "parts"
     },
-    "source": "fuse"
+    "source": "fuse",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "bear_trap",
@@ -1309,6 +1841,10 @@
     "options": {
       "mass": "parts"
     },
-    "source": "bear_trap"
+    "source": "bear_trap",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   }
 ]

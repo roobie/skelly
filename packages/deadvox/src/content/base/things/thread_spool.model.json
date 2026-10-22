@@ -1,7 +1,5 @@
 {
   "id": "thread_spool",
   "file": "assets/models/thread_spool.glb",
-  "parts": {
-    "sewing_thread": { "node": "sewing_thread:spool", "massKg": 0.015, "centreOfMass": [0, 0.025000000000000005, 0] }
-  }
+  "parts": { "sewing_thread": { "node": "sewing_thread:spool", "massKg": 0.015, "centreOfMass": [0, 0.025, 0] } }
 }
