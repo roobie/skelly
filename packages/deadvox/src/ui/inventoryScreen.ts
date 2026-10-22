@@ -419,7 +419,7 @@ const furnitureBodyTemplate = (
 
 const inventoryTemplate = (
   vm: InventoryScreenViewModel,
-  { tab, splitRatio }: { tab: InventoryTab; splitRatio: number },
+  { tab, splitRatio, text }: { tab: InventoryTab; splitRatio: number; text: InventoryText },
   selectTab: (tab: InventoryTab) => void,
   {
     find,
@@ -436,7 +436,6 @@ const inventoryTemplate = (
     wait: () => void;
     stepWake: (step: 1 | -1) => void;
   },
-  text: InventoryText,
 ): TemplateResult => html`
   <header class="inv-head">
     <div class="inv-title"><h2>${factDetail(text.heading, text.headingFact)}</h2><span class="inv-weight">${fillText(text.carrying, { weight: vm.weight })}</span></div>
@@ -1022,7 +1021,7 @@ export class InventoryScreen {
     render(
       inventoryTemplate(
         vm,
-        { tab: this.tabs.active, splitRatio: this.splitRatio },
+        { tab: this.tabs.active, splitRatio: this.splitRatio, text: this.text() },
         (tab) => this.selectTab(tab),
         {
           find: {
@@ -1086,7 +1085,6 @@ export class InventoryScreen {
             }
           },
         },
-        this.text(),
       ),
       this.root,
     );
