@@ -118,6 +118,18 @@ export const TEMPORAL_FIELDS = [
     unit: 'PerSecond',
     dimension: 'rate',
   },
+  {
+    path: 'skills.combat.firearms.caseEjection.speedMetresPerSimSecond',
+    clock: 'Sim',
+    unit: 'PerSecond',
+    dimension: 'rate',
+  },
+  {
+    path: 'skills.combat.firearms.caseEjection.flightSimSeconds',
+    clock: 'Sim',
+    unit: 'Seconds',
+    dimension: 'duration',
+  },
   { path: 'skills.combat.firearms.raiseMinimumSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'skills.combat.firearms.raiseRangeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   {

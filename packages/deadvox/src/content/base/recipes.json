@@ -383,7 +383,7 @@
           "caseEjection": {
             "flightSimSeconds": 0.47999999999999998,
             "landingLiftMetres": 0.0060000000000000001,
-            "speedMetresPerSecond": 3.5
+            "speedMetresPerSimSecond": 3.5
           },
           "loweredPitchRadians": 0.55000000000000004,
           "rackFactorFloor": 0.16,

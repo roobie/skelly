@@ -2719,7 +2719,7 @@ const SkillSchema = pipe(
             attachmentFactorFloor: Fraction,
             attachmentFactorHalfLifeLevels: Positive,
             caseEjection: strictObject({
-              speedMetresPerSecond: Positive,
+              speedMetresPerSimSecond: Positive,
               flightSimSeconds: PositiveSimSeconds,
               /** A landed case rests this far above its settled voxel surface, so it never z-fights the floor. */
               landingLiftMetres: NonNegative,

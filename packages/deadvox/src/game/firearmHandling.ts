@@ -1608,9 +1608,9 @@ export class FirearmMechanics {
   }
 
   private landing(emission: Omit<PendingCase, 'seed'>): CaseLanding | undefined {
-    const { speedMetresPerSecond, flightSimSeconds, landingLiftMetres } = this.caseEjection();
+    const { speedMetresPerSimSecond, flightSimSeconds, landingLiftMetres } = this.caseEjection();
     const origin: Vec3 = emission.origin.map((axis) => axis / this.blockSize) as Vec3;
-    const distanceBlocks = (speedMetresPerSecond * flightSimSeconds) / this.blockSize;
+    const distanceBlocks = (speedMetresPerSimSecond * flightSimSeconds) / this.blockSize;
     const hit = raycast(origin, emission.direction, distanceBlocks, this.isSolid);
     const safeDistance = hit ? Math.max(0, hit.distance - 1e-6) : distanceBlocks;
     const endpoint: Vec3 = origin.map(
@@ -1623,7 +1623,7 @@ export class FirearmMechanics {
       return undefined;
     }
     const dropHeight = emission.origin[1] - (position[1] * this.blockSize + landingLiftMetres);
-    const speed = hit ? Math.max(0, dropHeight / flightSimSeconds) : speedMetresPerSecond;
+    const speed = hit ? Math.max(0, dropHeight / flightSimSeconds) : speedMetresPerSimSecond;
     return { position, direction: hit ? [0, -1, 0] : emission.direction, speed, verticalDrop: hit !== undefined };
   }
 

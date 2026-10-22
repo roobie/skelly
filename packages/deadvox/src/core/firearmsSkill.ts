@@ -61,7 +61,7 @@ export interface FirearmsCombatTuning {
   readonly attachmentFactorFloor: number;
   readonly attachmentFactorHalfLifeLevels: number;
   readonly caseEjection: {
-    readonly speedMetresPerSecond: number;
+    readonly speedMetresPerSimSecond: number;
     readonly flightSimSeconds: number;
     readonly landingLiftMetres: number;
   };
