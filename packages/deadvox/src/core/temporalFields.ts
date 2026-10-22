@@ -20,6 +20,8 @@ export interface TemporalField {
 
 /** Authored temporal schema fields; the lint rule checks this catalogue against schemas and base content. */
 export const TEMPORAL_FIELDS = [
+  { path: 'powerTuning[].tickSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'powerDevices[].burnLitresPerGameHour', clock: 'Game', unit: 'PerHour', dimension: 'rate' },
   { path: 'graphics[].renderScale.adaptive.targetRealMs', clock: 'Real', unit: 'Milliseconds', dimension: 'duration' },
   {
     path: 'graphics[].renderScale.adaptive.hysteresisRealMs',
