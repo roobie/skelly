@@ -8,3 +8,4 @@ local item(id, source, exportMass='parts') = { id: id, kind: 'item', source: sou
 ] + [item(package.id, package.id, package.exportMass) for package in import '../packages.libsonnet']
 + [item(can.id, can.id, can.exportMass) for can in (import '../cans.libsonnet').items]
 + [item(food.id, food.id, food.exportMass) for food in import '../food-medical.libsonnet']
++ [item(part.id, part.id) + { options+: { collision: true } } for part in import '../vehicle-parts.libsonnet']

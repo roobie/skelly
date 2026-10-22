@@ -48,6 +48,7 @@ import {
   templateSpawnClearanceIssues,
 } from './templateSpatial.ts';
 import { compileTemplate, findPieces, pieceSize, templateLockIds, templateResolves } from './templates.ts';
+import { vehicleContentIssues } from './vehicleBlueprint.ts';
 
 export type {
   FigureDef,
@@ -1468,6 +1469,9 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   }
   checkScenarios(registry, report);
   for (const { section, id, path, message } of settlementCollectionIssues(registry)) {
+    report(section, id, path, message);
+  }
+  for (const { section, id, path, message } of vehicleContentIssues(registry)) {
     report(section, id, path, message);
   }
   return issues;

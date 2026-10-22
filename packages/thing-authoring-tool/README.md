@@ -19,7 +19,9 @@ unsupported selections are errors rather than substitutes. See `src/catalogue.ts
 Handling datums refer to a named solid rather than duplicate its dimensions, so resizing
 a handle or moving its part also moves the hand. Pose corrections stay authored beside
 the geometry because the consumer's held frame need not match the tool's upright frame.
-See `src/catalogue.ts`, `buildItem`, and `packages.libsonnet`.
+See `src/catalogue.ts`, `buildItem`, and `packages.libsonnet`. Attachment datums, exported
+as named anchors, use the same solid reference for the same reason: a vehicle part's mount
+follows its geometry. See `vehicle-parts.libsonnet`.
 
 The preview draws the same engine report the exporter consumes, so visual inspection is
 not a second model implementation. See `src/main.ts` and `packages/tool-ui/src/scene.ts`,

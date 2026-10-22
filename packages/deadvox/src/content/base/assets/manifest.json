@@ -78,7 +78,11 @@
         "assets/models/antibiotics.glb",
         "assets/models/painkillers.glb",
         "assets/models/codeine.glb",
-        "assets/models/morphine.glb"
+        "assets/models/morphine.glb",
+        "assets/models/car_battery.glb",
+        "assets/models/car_headlamp.glb",
+        "assets/models/hatchback_battery_tray.glb",
+        "assets/models/pickup_battery_tray.glb"
       ],
       "licence": "CC0-1.0",
       "title": "Thing tool authored models",

@@ -15,6 +15,7 @@ local notSpawnable = [
   'beans', 'soup', 'opened_beans', 'opened_soup', 'empty_can',
   'shambler_torso', 'shambler_head', 'shambler_left_arm', 'shambler_right_arm',
   'shambler_left_leg', 'shambler_right_leg',
+  'car_battery', 'car_headlamp', 'hatchback_battery_tray', 'pickup_battery_tray',
 ];
 local commonItems = [
   'rifle_hunting', 'cartridge_308_h_winchester', 'cartridge_box_308_h_winchester', 'optic_hunting_3_9x',
