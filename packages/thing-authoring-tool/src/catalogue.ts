@@ -31,6 +31,7 @@ import { bearTrap } from './families/bearTrap.ts';
 import { block } from './families/block.ts';
 import { head, limb, torso } from './families/body.ts';
 import { coil } from './families/coil.ts';
+import { blowtorch, headlamp, pliers, portableRadio, repairKit, webbingSling } from './families/equipment.ts';
 import { foodPortion, stemmedFruit, woundRoll } from './families/food-medical.ts';
 import { fuse } from './families/fuse.ts';
 import { handOpener } from './families/handOpener.ts';
@@ -128,6 +129,12 @@ const builders = {
   foodPortion,
   stemmedFruit,
   woundRoll,
+  blowtorch,
+  headlamp,
+  pliers,
+  portableRadio,
+  repairKit,
+  webbingSling,
 } satisfies Record<string, (params: Readonly<Record<string, string>>) => readonly Solid[]>;
 const buildPart = (part: ToolPart, params = part.params): PartDef => {
   if (!Object.hasOwn(builders, part.family)) {

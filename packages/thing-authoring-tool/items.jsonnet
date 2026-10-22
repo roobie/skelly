@@ -6,7 +6,7 @@ local atom(id, family, massKg, dimensions, finish, exportMass) = { id: id, expor
   units: { metresPerUnit: 1, grid: 0.001, bevel: 0 },
   facets: 48,
   defaultMaterial: 'paint-charcoal',
-  items: (import 'packages.libsonnet') + (import 'cans.libsonnet').items + (import 'materials.libsonnet') + (import 'food-medical.libsonnet') + (import 'shamblerParts.libsonnet') + (import 'vehicle-parts.libsonnet') + [
+  items: (import 'packages.libsonnet') + (import 'cans.libsonnet').items + (import 'materials.libsonnet') + (import 'food-medical.libsonnet') + (import 'shamblerParts.libsonnet') + (import 'vehicle-parts.libsonnet') + (import 'equipment.libsonnet') + [
     atom('electrical_tape', 'ring', 0.030, { outerRadius: 0.04, innerRadius: 0.012, coreRadius: 0.016, height: 0.021 }, { body: 'paint-terracotta', core: 'paperboard-tan' }, exportMass='parts'),
     atom('sewing_thread', 'spool', 0.015, { outerRadius: 0.027, coreRadius: 0.018, windingRadius: 0.026, height: 0.05, flangeHeight: 0.008, flangeInset: 0.004, windings: 5, grooveDepth: 0.0015 }, { core: 'paperboard-tan', winding: 'paint-terracotta' }, exportMass='parts'),
     atom('nylon_cord', 'coil', 0.060, { radius: 0.029, tubeRadius: 0.0035, turns: 4, pitch: 0.006 }, { body: 'cord-olive' }, exportMass='parts'),

@@ -1,0 +1,14 @@
+{
+  "id": "blowtorch",
+  "file": "assets/models/blowtorch.glb",
+  "parts": {
+    "equipment": {
+      "node": "equipment:blowtorch",
+      "massKg": 0.9,
+      "centreOfMass": [0.003492439512906028, 0.07294486617694432, 0]
+    }
+  },
+  "grip": { "at": [0, 0.061500000000000006, 0], "turn": [0, 0, 0] },
+  "hold": "forward",
+  "roll": 0
+}

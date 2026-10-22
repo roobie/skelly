@@ -1,0 +1,15 @@
+{
+  "id": "headlamp",
+  "file": "assets/models/headlamp.glb",
+  "parts": {
+    "equipment": {
+      "node": "equipment:headlamp",
+      "massKg": 0.18,
+      "centreOfMass": [0.00009124309083862351, 0.016805785974029187, -0.055611748094746914]
+    }
+  },
+  "grip": { "at": [0, 0.011, 0.095], "turn": [0, -90, 0] },
+  "hold": "forward",
+  "roll": 0,
+  "anchors": { "lens": [0, 0.020000000000000004, -0.1155] }
+}
