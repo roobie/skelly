@@ -148,9 +148,9 @@ local items = [
   },
   {
     id: 'can_opener',
+    model: 'can_opener',
     name: 'Can opener',
     category: 'tool',
-    weight: 100,
     size: [1, 1],
     tool: { qualities: { opening: 5 } },
   },

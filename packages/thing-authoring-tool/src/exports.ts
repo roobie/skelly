@@ -1,7 +1,7 @@
 import { exportGlb } from '@skelly/thing-export/glb.ts';
 import { assemblyProperties, modelParts } from '@skelly/thing-export/physical.ts';
 import { loadRecipe, type RecipeRow, recipeAsset, recipeOptions } from '@skelly/thing-export/recipe.ts';
-import { parse, strictObject } from 'valibot';
+import { parse, picklist, strictObject } from 'valibot';
 import recipe from '../exports/deadvox.json' with { type: 'json' };
 import { buildItem, catalogue, palette, type ToolItem } from './catalogue.ts';
 
@@ -25,14 +25,21 @@ export const exportItem = (item: ToolItem, asset: ReturnType<typeof recipeAsset>
     }
     return { part, massKg };
   });
-  return { glb: out.glb, modelEntry: { ...asset, parts, ...handling }, physical: assemblyProperties(parts) };
+  return {
+    glb: out.glb,
+    modelEntry: { ...asset, ...(item.exportMass === 'parts' ? { parts } : {}), ...handling },
+    physical: assemblyProperties(parts),
+  };
 };
 const exporters = {
   item: (row: RecipeRow) => {
-    parse(strictObject({}), recipeOptions(row));
+    const options = parse(strictObject({ mass: picklist(['parts', 'inventory-atom']) }), recipeOptions(row));
     const item = catalogue.items.find(({ id }) => id === row.source);
     if (!item) {
       throw new Error(`Unknown tool item ${row.source}`);
+    }
+    if (options.mass !== item.exportMass) {
+      throw new Error(`Recipe mass ownership differs from tool item ${row.source}`);
     }
     return () => exportItem(item, recipeAsset(row));
   },

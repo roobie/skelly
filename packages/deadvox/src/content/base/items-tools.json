@@ -258,14 +258,14 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "can_opener",
+      "model": "can_opener",
       "name": "Can opener",
       "size": [1, 1],
       "tool": {
         "qualities": {
           "opening": 5
         }
-      },
-      "weight": 100
+      }
     },
     {
       "category": "weapon",

@@ -482,7 +482,8 @@ export interface HordeState {
   type: string;
   home: Vec3;
   target: Vec3;
-  mode: 'home' | 'roam' | 'noise';
+  /** `release` heads for `target` without forgetting it, so an event's horde reaches where it was sent. */
+  mode: 'home' | 'roam' | 'noise' | 'release';
   roamTimer: number;
   stimulusAt?: number | undefined;
   lastNoiseId: number;
@@ -501,7 +502,7 @@ const validHordeSnapshotState = (
   resolveType(horde.type) !== undefined &&
   validVec3State(horde.home) &&
   validVec3State(horde.target) &&
-  ['home', 'roam', 'noise'].includes(horde.mode) &&
+  ['home', 'roam', 'noise', 'release'].includes(horde.mode) &&
   Number.isFinite(horde.roamTimer) &&
   horde.roamTimer >= 0 &&
   Number.isSafeInteger(horde.lastNoiseId) &&
@@ -2245,6 +2246,15 @@ export class ZombieSystem {
     }
   }
 
+  /** A horde sent from `center` to `target`, which also becomes its home once it arrives. */
+  releaseHorde(id: string, type: ZombieDef, { center, count, target }: { center: Vec3; count: number; target: Vec3 }) {
+    this.addHorde(id, type, center, count);
+    const horde = this.hordes.get(id)!.state;
+    horde.home = copy(target);
+    horde.target = copy(target);
+    horde.mode = 'release';
+  }
+
   private tickFrozen(dt: number, entries: readonly (readonly [EntityId, Zombie])[] = [...this.store.entries()]): void {
     for (const [, zombie] of entries) {
       this.captureRenderPrevious(zombie);
@@ -2342,16 +2352,17 @@ export class ZombieSystem {
         horde.stimulusAt = undefined;
         horde.roamTimer = 0;
       }
-      if (horde.mode === 'noise' && arrived) {
+      if ((horde.mode === 'noise' || horde.mode === 'release') && arrived) {
         horde.mode = night ? 'roam' : 'home';
         horde.stimulusAt = undefined;
         horde.roamTimer = 0;
       }
-      if (!night && horde.mode !== 'noise') {
+      const driven = horde.mode === 'noise' || horde.mode === 'release';
+      if (!(night || driven)) {
         horde.mode = 'home';
         horde.target = copy(horde.home);
         horde.roamTimer = 0;
-      } else if (night && horde.mode !== 'noise') {
+      } else if (night && !driven) {
         horde.roamTimer -= dt;
         if (horde.mode !== 'roam' || horde.roamTimer <= 0 || arrived) {
           const angle = rng.range(-Math.PI, Math.PI);
