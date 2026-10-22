@@ -310,7 +310,7 @@ try {
       );
       // Native pointer activation of the practice exits is quarantined in #705; its root cause is unresolved.
       await Promise.all([
-        page.waitForURL((target) => !target.searchParams.has('tutorial'), { waitUntil: 'commit' }),
+        page.waitForURL((target) => !target.searchParams.has('tutorial')),
         page.locator('#death button').press('Enter'),
       ]);
       await page.waitForFunction(
@@ -321,7 +321,7 @@ try {
       await page.click('#tutorial-start');
       await page.waitForFunction(() => globalThis.tutorialSession !== undefined);
       await Promise.all([
-        page.waitForURL((target) => !target.searchParams.has('tutorial'), { waitUntil: 'commit' }),
+        page.waitForURL((target) => !target.searchParams.has('tutorial')),
         page.getByRole('button', { name: 'Exit practice', exact: true }).press('Enter'),
       ]);
       await page.waitForFunction(() => document.querySelector('#startup-screen').hidden);

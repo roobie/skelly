@@ -32,6 +32,7 @@ const sense = (pos: Vec3, facing: Vec3): PlayerSense => ({
   movement: 'still',
   lit: true,
   lightSeenFrom: 40,
+  eyeHeightMetres: 1.3,
 });
 
 const makeWorld = (player: PlayerSense, isSolid = FLOOR) => {

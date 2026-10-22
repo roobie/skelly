@@ -33,6 +33,7 @@ const senses = (isSolid: (x: number, y: number, z: number) => boolean) => ({
     movement: 'still' as const,
     lit: false,
     lightSeenFrom: 40,
+    eyeHeightMetres: 1.3,
   }),
   dayPhase: () => dayStateAtHour(12),
   hurtPlayer: () => undefined,

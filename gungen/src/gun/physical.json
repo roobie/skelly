@@ -32,6 +32,14 @@
     },
     {
       "family": "receiver",
+      "id": "receiver-compact-smg",
+      "massKg": 0.69999999999999996,
+      "match": {
+        "section": "compact-smg"
+      }
+    },
+    {
+      "family": "receiver",
       "id": "receiver-bolt",
       "massKg": 0.84999999999999998,
       "match": {
@@ -218,6 +226,15 @@
     },
     {
       "family": "lower",
+      "id": "lower-compact-smg",
+      "massKg": 0.20000000000000001,
+      "match": {
+        "layout": "conventional",
+        "section": "compact-smg"
+      }
+    },
+    {
+      "family": "lower",
       "id": "lower-conventional",
       "massKg": 0.25,
       "match": {
@@ -331,6 +348,14 @@
       "match": {
         "length": "L",
         "section": "sporter"
+      }
+    },
+    {
+      "family": "barrel",
+      "id": "barrel-compact-smg",
+      "massKg": 0.29999999999999999,
+      "match": {
+        "section": "compact-smg"
       }
     },
     {
@@ -513,6 +538,15 @@
       "match": {
         "layout": "standard",
         "section": "sporter"
+      }
+    },
+    {
+      "family": "handguard",
+      "id": "handguard-compact-smg",
+      "massKg": 0.25,
+      "match": {
+        "layout": "standard",
+        "section": "compact-smg"
       }
     },
     {
@@ -783,9 +817,23 @@
       }
     },
     {
+      "family": "front-sight",
+      "id": "front-sight-ringed",
+      "massKg": 0.040000000000000001,
+      "match": {
+        "style": "ringed"
+      }
+    },
+    {
       "family": "sporting-rear-sight",
       "id": "rear-sight-sporting",
       "massKg": 0.035000000000000003,
+      "match": {}
+    },
+    {
+      "family": "drum-rear-sight",
+      "id": "rear-sight-drum",
+      "massKg": 0.059999999999999998,
       "match": {}
     },
     {

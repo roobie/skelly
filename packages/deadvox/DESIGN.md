@@ -480,6 +480,13 @@ separate actions that come later. See `src/core/furnitureMove.ts`,
   nothing fits the piece stays held until something does, because dropping it
   through a wall or a body is worse than holding it a moment longer. See
   `src/game/session.ts`, `putDownWornOut`.
+- **Carried sleep surface.** A bedroll lets the player sleep where they are at
+  worse recovery than a bed, paid for by carrying it in the hands, so resting
+  becomes a choice between place and quality. It lifts because a cover piece is
+  exempt from the size cap, not because of any rule about bedrolls, and its
+  recovery stays below every fixed sleep surface. See
+  `src/core/furnitureMove.ts`, `movableRefusal`. Packing it into the inventory
+  is a separate item-to-furniture conversion that waits for its own decision.
 - **Noise.** Moving scrapes, and shamblers hear it like any other world sound,
   so barricading under pressure has a price.
 - **Stacks settle once.** What loses its support falls, lowest first, so each
@@ -1246,7 +1253,13 @@ guns make this carrying option discoverable. See `SLING_SLOT` in
 Moving an item takes real time while the world keeps running; that makes
 looting a consequential choice. Handling stops sprinting and slows walking.
 Queued actions transfer one at a time, so each move remains visible and
-interruptible. Tune handling duration in content, not in this rulebook.
+interruptible.
+
+The handling weights are content, authored beside the Inventory Management
+skill that scales them, so a mod can retune how long moving things takes. The
+schema requires them and no reader falls back to a code default, because a
+silent default would hide a mod that left one out. See `src/core/inventory.ts`,
+`handlingWeights`, and `src/content/base/recipes.libsonnet`.
 
 ### Inventory screen
 
@@ -2012,6 +2025,13 @@ while the lantern zombie uses the same principle against the player. Most
 portable lights occupy a hand; a headlamp frees both at the cost of a weaker
 beam. Fuel, batteries, and powered fixed lights keep illumination consequential.
 
+A road flare spends a light to buy a lure. It is snap-lit, cannot be doused and
+stays lit where it lands, so the player gives up a light they could have kept, and
+is seen while holding it, to move shamblers off a route or a doorway. It draws from
+farther than a glowstick because its `seenFrom` is larger; the draw is content, read
+by the same light sense as every other lit light, and a flare adds no damage. See
+`src/core/lights.ts`, `lightSenseSourceFor`.
+
 Night-vision goggles are a worn light, because power, battery swaps, the worn-light
 hold and how far others notice a source already belong to the light component. Their
 light stands in for the infrared lamp: dim, green and seen only from close up. While
@@ -2095,6 +2115,7 @@ reused across types: `grab`, `leap`, `scream`, `explode`, `acidSpit`,
 | --- | --- | --- |
 | 0 | Shambler | Slow, weak, many |
 | 0 | Crawler | Low profile, grabs your legs |
+| 0 | Farmer, site worker, medic | A shambler carrying its trade's kit |
 | 1 | Runner | Fast, fragile |
 | 1 | Screamer | Weak, but its scream pulls in the horde |
 | 1 | Bloater | Bursts into a noxious cloud |
@@ -2106,7 +2127,9 @@ reused across types: `grab`, `leap`, `scream`, `explode`, `acidSpit`,
 | 3 | Incandescent hulk | A brute running a fever of a thousand degrees: glows, sets fires, warps glass. Seen from far away at night |
 | 3 | Lantern | Bioluminescent lure that draws you in, and others |
 
-Zombie types are content definitions used by shared systems; choose behavior through content properties rather than type-id cases. `src/core/schema.ts`, `ZombieSchema`, defines those properties, and `src/core/zombies.ts`, `ZombieSystem.emitFootsteps`, uses the declared footstep family. The soldier appears only at military-camp markers, explicit camp spawns and the crisis HQ's markers, because the HQ is a military site whose threat should be mostly soldiers; no other place that merely looks military takes them; `src/core/hamlet.ts`, `ordinaryHamletSpawnWeights`, excludes authored-only kinds from ordinary selection. Its kit uses ordinary items; military loot remains restricted to site containers. For #487, defer the military clothing palette, armour, and body searching; the soldier first appears in civilian clothes, carries ordinary kit, and drops loot on death.
+Zombie types are content definitions used by shared systems; choose behavior through content properties rather than type-id cases. `src/core/schema.ts`, `ZombieSchema`, defines those properties, and `src/core/zombies.ts`, `ZombieSystem.emitFootsteps`, uses the declared footstep family. The soldier appears only at military-camp markers, explicit camp spawns and the crisis HQ's markers, because the HQ is a military site whose threat should be mostly soldiers; no other place that merely looks military takes them; `src/core/hamlet.ts`, `ordinaryHamletSpawnWeights`, excludes authored-only kinds from ordinary selection.
+
+A shambler's kit is the loot table its type names in `loot`, rolled when it dies from the world seed and the zombie's id (see `src/game/session.ts`, `onDeath`), so it is deterministic and needs no state of its own: the drop is an ordinary pile that saves already cover. Kit belongs to the kind and lives in content, not in code, because a kind such as the farmer, the site worker or the medic then differs from a plain shambler by one more type and one more table, never by a branch on its id. Kinds with a kit are authored-only and spawn only where their place puts them. Kit uses ordinary items; military loot remains restricted to site containers. A corpse drops only what its loot context admits, so a base kit item outside that context is dead content and a base-content test rejects it; validate does not, because a table supplies weights, not a second geography authority (`DESIGN.md`, "Military loot"). For #487, defer rendering what a kind wears and carries, the military clothing palette, armour, and body searching; until then clothes and tools appear only as drops.
 
 The brute shambler guards the secret cellar (`packages/deadvox/docs/content.md`, "City building types"). It is an authored-only type on mobgen's brute body, with more health and harder hits than the shambler as content values. It wears the brute body rather than a shambler's so it reads as a different kind of zombie in the dark. It bashes doors with no more strength than the shambler and never knocks the player back: the tier-2 Brute's door breaking and knockback arrive together (`packages/deadvox/EPIC.md`, "5. Holding ground"). What that leaves open: a player meets the brute's look in a city house before the evolution line introduces brutes. See `src/core/schema.ts`, `ZOMBIE_MODEL`.
 
@@ -2266,7 +2289,7 @@ crouch rules. See `src/core/zombies.ts`, `hearingTier`, `hearVocalNoise` and
 - For #281, visible prey suppresses obstacle wandering; an active wander ends when the prey becomes visible, and the shambler resumes beelining while retaining its slide. Unseen targets and idle strolling can still wander. See `packages/deadvox/src/core/zombies.ts`, `seesPlayer` and `ZombieSystem.tick`.
 - The named phases in `src/core/zombies.ts`, `ZombieSystem.tick`, make the established order reviewable because later steps consume state produced by earlier simulation steps; keep that order when changing the per-tick behavior. See `ZombieSystem.updateAttention`, `ZombieSystem.stepZombieBody`, `ZombieSystem.updateObstacleContact`, `ZombieSystem.resolveZombieAttack` and `ZombieSystem.emitFootsteps`.
 - **Attention and attacks:** Sight, hearing, `lastPerceived`, chase/investigate transitions and `withinAttackReach` remain the authorities for choosing and acting on targets. Far-hearing direction stays uncertain: a grounded listener projects it onto known terrain rather than learning the source's height. See `src/core/zombies.ts`, `seesPlayer`, `farBearingTarget` and `withinAttackReach`.
-- Background zombies beeline in big, cheap steps.
+- **Background steps:** Background zombies beeline in big, cheap steps. Each type's content caps how far one step moves it, because that cap, not the chase speed, sets how fast a fast type closes in while unseen. The background tick rate stays in code: it is the scheduler's cadence, saved with its phase, so it is engine timing rather than tuning. See `src/core/schema.ts`, `ZombieSchema`, and `src/core/zombies.ts`, `ZombieSystem.tickBackground`.
 - **Distant attention and noise persistence:** A horde retains a heard noise target until it arrives or forgets it; its sun-derived preference for home or roaming does not replace an active noise target. Once the target ends, the horde roams only from sunset to sunrise. A background zombie with no horde or stimulus uses idle behavior instead of treating the player as an implicit target, because distance alone must not make an unseen zombie pursue. See `src/core/zombies.ts`, `ZombieSystem.updateHordes` and `ZombieSystem.tickBackground`.
 - **Stimulus memory:** Individual zombies and hordes forget unreachable stimuli after the shared content duration. The stimulus timestamp is saved so loading does not restart the wait. Whether this duration should use real time or game time remains open for BR's decision; the current simulation-seconds behavior is not a settled design choice. A horde resumes the sun-derived roam or home behavior after forgetting. See `ZombieSchema` in `src/core/schema.ts` and `ZombieSystem.updateHordes` in `src/core/zombies.ts`.
 - **Background cadence persistence:** Save/load resumes the background scheduler's actor phase so a mid-cycle save does not reorder attention and movement updates. See `zombie-background` in `src/game/session.ts`.
