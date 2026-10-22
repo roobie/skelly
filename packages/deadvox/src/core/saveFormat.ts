@@ -16,6 +16,7 @@ import { itemIds as collectItemIds, savedItemTree } from './itemTree.ts';
 import { validateLongJob } from './longAction.ts';
 import { MELEE_MOTIONS } from './meleeMotion.ts';
 import type { PlayerCombatState } from './playerCombat.ts';
+import { PLAYER_STANCES } from './playerStance.ts';
 import type { SaveSnapshot } from './saveState.ts';
 import { assertScenarioRun } from './scenarioRun.ts';
 import { freezeSnapshot } from './snapshotData.ts';
@@ -648,7 +649,7 @@ const playerState = obj({
   yaw: finite,
   pitch: finite,
   walk: bool,
-  crouching: bool,
+  stance: enumeration(PLAYER_STANCES),
   sprinting: bool,
   firearmReadyWalking: bool,
   handlingPausedForKnockout: bool,

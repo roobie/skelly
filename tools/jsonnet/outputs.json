@@ -113,6 +113,10 @@
       "output": "packages/deadvox/src/content/base/crisis-hq.json"
     },
     {
+      "source": "packages/deadvox/src/content/base/figures-player.jsonnet",
+      "output": "packages/deadvox/src/content/base/figures-player.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/furniture-cabins.jsonnet",
       "output": "packages/deadvox/src/content/base/furniture-cabins.json"
     },

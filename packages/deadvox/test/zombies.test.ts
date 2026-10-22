@@ -78,7 +78,15 @@ const player = (
   movement: PlayerSense['movement'] = 'still',
   lit = false,
   crouching = false,
-): PlayerSense => ({ pos, facing, movement, lit, lightSeenFrom: 40, eyeHeightMetres: 1.3, crouching });
+): PlayerSense => ({
+  pos,
+  facing,
+  movement,
+  lit,
+  lightSeenFrom: 40,
+  eyeHeightMetres: 1.3,
+  stance: crouching ? 'crouching' : 'standing',
+});
 const senses = (
   playerFn: () => PlayerSense,
   isSolid: SolidAt = FLOOR,

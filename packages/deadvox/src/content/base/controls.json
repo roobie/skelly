@@ -76,6 +76,14 @@
       ]
     },
     {
+      "id": "player.prone-toggle",
+      "keys": [
+        {
+          "code": "KeyN"
+        }
+      ]
+    },
+    {
       "id": "player.throw",
       "keys": [
         {

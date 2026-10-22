@@ -2766,10 +2766,25 @@ const zombieRegionsMatchModel = (zombie: InferOutput<typeof ZombieSchema>): bool
   return keys.length === expected.length && expected.every((key) => Object.hasOwn(zombie.regions, key));
 };
 
-/** Actor palettes are content so appearance doesn't live in renderer code. */
+/** A lowered stance's drawn pose, pivoting about the hip; `DESIGN.md`, "Crouching and lying prone". */
+const StancePoseSchema = strictObject({
+  hipDropMetres: NonNegative,
+  /** Torso, head and arms pitch forward about the hip. */
+  torsoForwardDegrees: Degrees,
+  /** Legs and feet swing forward about the hip; negative swings them back. */
+  legsForwardDegrees: Degrees,
+});
+
+/** Actor palettes and poses are content so appearance doesn't live in renderer code. */
 const FigureSchema = strictObject({
   id: Id,
   palette: strictObject({ skin: Color, shirt: Color, trousers: Color }),
+  stancePoses: strictObject({
+    crouching: StancePoseSchema,
+    prone: StancePoseSchema,
+    /** How long the drawn body takes to settle into a new stance. */
+    blendRealSeconds: PositiveRealSeconds,
+  }),
 });
 
 // ---- skills and recipes ----
@@ -3025,6 +3040,14 @@ const HandlingRangeSchema = strictObject({
   table: strictObject({ offset: Count, lateral: BlockOffset }),
 });
 
+const LoweredStanceSchema = strictObject({
+  speedMetresPerSimSecond: SimRate,
+  hearingRangeScale: Fraction,
+  sightRangeScale: Fraction,
+  eyeDropMetres: Positive,
+  bodyHeightMetres: Positive,
+});
+
 const SenseSchema = strictObject({
   id: Id,
   movement: strictObject({
@@ -3033,13 +3056,9 @@ const SenseSchema = strictObject({
   }),
   /** Chest height as a fraction of the eye height, so a stance that lowers the eyes lowers the chest. */
   chestEyeFraction: Fraction,
-  crouch: strictObject({
-    speedMetresPerSimSecond: SimRate,
-    hearingRangeScale: Fraction,
-    sightRangeScale: Fraction,
-    eyeDropMetres: Positive,
-    bodyHeightMetres: Positive,
-  }),
+  crouch: LoweredStanceSchema,
+  /** Below crouch: the player lies down and crawls. */
+  prone: LoweredStanceSchema,
   wall: strictObject({
     hearingRangeScale: Fraction,
     gain: Fraction,

@@ -70,9 +70,9 @@ export class SpectatorCamera {
     return {
       ...controls,
       intent: () => (detached() ? IDLE : controls.intent()),
-      consumeCrouchToggle: () => {
-        const toggled = controls.consumeCrouchToggle?.() ?? false;
-        return toggled && !detached();
+      consumeStanceToggle: () => {
+        const toggled = controls.consumeStanceToggle?.();
+        return detached() ? undefined : toggled;
       },
       useDominant: () => (detached() ? undefined : controls.useDominant?.()),
       useOff: () => (detached() ? undefined : controls.useOff?.()),
