@@ -156,10 +156,7 @@ export const placementLootIssues = (
         fixedItemIssue(
           registry,
           fixed,
-          withLootDepth(
-            { ...context, usage: override.lootUsage ?? piece.lootUsage ?? context.usage },
-            piece.lootDepth,
-          ),
+          withLootDepth({ ...context, usage: override.lootUsage ?? piece.lootUsage ?? context.usage }, piece.lootDepth),
         ) ?? pocketFitIssue(registry, fixed, piece.furniture, pockets);
       if (issue !== undefined) {
         issues.push([`${at}.items[${itemIndex}].item`, issue]);

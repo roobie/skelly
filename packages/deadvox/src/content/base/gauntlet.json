@@ -4515,6 +4515,7 @@
       "id": "gauntlet_lab_level_entry",
       "joins": [],
       "lootContext": {
+        "lowerTiers": true,
         "tier": "Tier1",
         "usage": ["Industrial"]
       },
@@ -7074,7 +7075,8 @@
       "id": "gauntlet_lab_storey_research",
       "joins": [],
       "lootContext": {
-        "tier": "Tier1",
+        "lowerTiers": true,
+        "tier": "Tier2",
         "usage": ["Industrial", "Medical"]
       },
       "ports": [],
@@ -7960,7 +7962,8 @@
       "id": "gauntlet_lab_storey_containment",
       "joins": [],
       "lootContext": {
-        "tier": "Tier1",
+        "lowerTiers": true,
+        "tier": "Tier3",
         "usage": ["Industrial", "Medical"]
       },
       "ports": [],
@@ -8919,7 +8922,8 @@
       "id": "gauntlet_lab_storey_failure",
       "joins": [],
       "lootContext": {
-        "tier": "Tier1",
+        "lowerTiers": true,
+        "tier": "Tier3",
         "usage": ["Industrial", "Medical"]
       },
       "ports": [],
@@ -10027,7 +10031,8 @@
       "id": "gauntlet_lab_storey_bottom",
       "joins": [],
       "lootContext": {
-        "tier": "Tier1",
+        "lowerTiers": true,
+        "tier": "Tier3",
         "usage": ["Industrial", "Medical"]
       },
       "ports": [],
