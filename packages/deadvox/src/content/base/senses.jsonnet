@@ -28,7 +28,7 @@
         hardLandingMetres: 2.5,
       },
       vocalNoiseLifetimeSimSeconds: 0.5,
-      // The tiny end is pitched 1.2× the old law and the large end keeps its old-law pitch.
+      // The tiny end is pitched above the old law and the large end keeps its old-law pitch.
       shamblerVoice: {
         oldLawReferenceHeightMetres: 1.7,
         smallestAnchorMultiplier: 1.2,

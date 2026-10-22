@@ -441,6 +441,32 @@ describe('content', () => {
     expect(validateContent({ source: 'body.json', data: { body: [withRegionFactor({ chest: 1 })] } })).not.toEqual([]);
   });
 
+  it('rejects a heartbeat sound that is missing or has more than one variant', () => {
+    const body = baseRegistry.body.get('player')!;
+    const [onlyVariant] = [...baseRegistry.sounds.values()][0]!.variants;
+    const single = { ...[...baseRegistry.sounds.values()][0]!, id: 'heartbeat_fixture_single' };
+    const pair = { ...single, id: 'heartbeat_fixture_pair', variants: [onlyVariant, onlyVariant] };
+    const events = [single.id, pair.id, 'heartbeat_fixture_absent'];
+    const { issues } = buildRegistry([
+      {
+        source: 'heartbeat-fixture.json',
+        data: {
+          sounds: [single, pair],
+          body: events.map((event, index) => ({
+            ...body,
+            id: `heartbeat_fixture_${index}`,
+            heartbeat: { ...body.heartbeat, sounds: { slow: event, fast: single.id } },
+          })),
+        },
+      },
+    ]);
+
+    expect(issues.filter(({ source }) => source === 'heartbeat-fixture.json').map(({ path }) => path)).toEqual([
+      'body[1].heartbeat.sounds.slow',
+      'body[2].heartbeat.sounds.slow',
+    ]);
+  });
+
   it('accepts a touch slot covering some regions only, and rejects one covering none', () => {
     const body = baseRegistry.body.get('player')!;
     const handSlot = body.touchFirst.hand;
