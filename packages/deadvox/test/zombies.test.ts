@@ -9,7 +9,7 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { lightSenseSourceFor, sunExposedAt, toggleLight } from '../src/core/lights.ts';
+import { lightSenseSourceFor, toggleLight } from '../src/core/lights.ts';
 import { type Body, bodyOverlapsBlock, stepBody } from '../src/core/physics.ts';
 import { Rng } from '../src/core/random.ts';
 import { raycast, type SolidAt } from '../src/core/raycast.ts';
@@ -48,6 +48,7 @@ import { MobActorMeshes, mobFigurePoolSizeThrough } from '../src/render/mobActor
 import { ZombieMeshes } from '../src/render/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
+import { sunExposedAt } from './fixtures/sunOracle.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 

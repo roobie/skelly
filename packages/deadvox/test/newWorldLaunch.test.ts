@@ -551,3 +551,30 @@ it('continues a won record as terminal but refuses an ordinary dead record', asy
   expect(deadController.isEntered).toBe(false);
   expect(document.getElementById('continue')!.hidden).toBe(true);
 });
+
+it('shows a save failure that escapes the write handler and still accepts the next save', async () => {
+  enableSaveEnvironment();
+  const identity = await currentSaveVersionIdentity();
+  const controller = title();
+  stubLiveRecord(controller, await recordFor('fixture-world', identity));
+  sessionStorage.setItem('deadvox.continue-namespace', identity.digest);
+  await controller.prepare();
+  await controller.validateContent(saveFixtureRegistry);
+  controller.bindSession(
+    () => fixtureSnapshot,
+    () => 0,
+    { blockSize: 0.5, site: 'forest', storeys: 1, density: 0.75 },
+    { checkpointSimSeconds: 1 },
+  );
+  const save = vi
+    .spyOn(controller.storage, 'save')
+    .mockResolvedValue({ generation: 2, slot: 'a', backend: 'indexeddb' });
+  const render = vi.spyOn(controller as unknown as { render: () => void }, 'render');
+  render.mockImplementationOnce(() => {
+    throw new Error('fixture presentation failure');
+  });
+  controller.beforeSleep();
+  await vi.waitFor(() => expect(document.getElementById('save-status')!.textContent).toContain('fixture presentation'));
+  controller.beforeSleep();
+  await vi.waitFor(() => expect(save).toHaveBeenCalledTimes(2));
+});

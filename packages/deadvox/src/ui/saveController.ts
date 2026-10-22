@@ -14,6 +14,7 @@ import {
   type SaveWorldOptions,
 } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
+import { KNOWN_SCHEDULER_IDS } from '../core/schedulerIds.ts';
 import { type RealTimestamp, realTimestamp } from '../core/time.ts';
 import {
   type SaveBackendPreference,
@@ -26,18 +27,6 @@ import { CheckpointSchedule } from './checkpointSchedule.ts';
 import { factDetail } from './factDetail.ts';
 import { computeMenuState } from './menuState.ts';
 
-const SCHEDULER_IDS = new Set([
-  'damage-exposure',
-  'needs',
-  'body',
-  'long-action',
-  'lights',
-  'zombies',
-  'zombie-background',
-  'player',
-  'handling',
-  'firearms',
-]);
 const BROWSER_MOD_DIFFERENCE_PREFIX = /^(Missing|Different|Additional) mod: browser\./;
 const CONTINUE_KEY = 'deadvox.continue-namespace';
 const RESTORE_REFUSAL_KEY = 'deadvox.restore-refusal';
@@ -58,7 +47,7 @@ export const contentLookup = (registry: Registry, kind: SaveContentKind, id: str
     case 'sound':
       return registry.sounds.has(id);
     case 'scheduler':
-      return SCHEDULER_IDS.has(id);
+      return KNOWN_SCHEDULER_IDS.has(id);
     case 'skill':
       return registry.skills.has(id);
     case 'recipe':
@@ -170,8 +159,12 @@ export class SaveController {
       },
       { capture: true },
     );
-    $('save-persist')?.addEventListener('click', () => this.requestPersistence().catch(() => undefined));
-    $('save-export')?.addEventListener('click', () => this.exportCurrentRecords().catch(() => undefined));
+    $('save-persist')?.addEventListener('click', () =>
+      this.requestPersistence().catch((error: unknown) => this.reportFailure('Save storage request failed', error)),
+    );
+    $('save-export')?.addEventListener('click', () =>
+      this.exportCurrentRecords().catch((error: unknown) => this.reportFailure('Save export failed', error)),
+    );
     $('save-replace-confirm').addEventListener('click', (event) => {
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -181,7 +174,9 @@ export class SaveController {
     });
     $('save-retry').addEventListener('click', () => this.retrySave());
     $('save-rescan').addEventListener('click', () => location.reload());
-    $('save-export-current').addEventListener('click', () => this.exportCurrentSnapshot().catch(() => undefined));
+    $('save-export-current').addEventListener('click', () =>
+      this.exportCurrentSnapshot().catch((error: unknown) => this.reportFailure('Save export failed', error)),
+    );
     $('save-replace-cancel').addEventListener('click', () => {
       $('save-confirmation').hidden = true;
     });
@@ -550,7 +545,26 @@ export class SaveController {
     this.recordSnapshotDuration?.(performance.now() - startedAt);
     this.queued = { snapshot, reason };
     if (!this.writing) {
-      this.flush().catch(() => undefined);
+      this.startFlush();
+    }
+  }
+
+  private startFlush(): void {
+    this.flush().catch((error: unknown) => {
+      // A throw past the save's own handler (presentation) must not leave `writing` set and block every later save.
+      this.writing = false;
+      this.reportFailure('Save failed', error);
+    });
+  }
+
+  /** Puts a failure no handler owned in the status line, the way a failed save is shown. */
+  private reportFailure(what: string, error: unknown): void {
+    this.failure = `${what}: ${errorMessage(error)}`;
+    this.statusText = this.failure;
+    try {
+      this.render();
+    } catch {
+      // The failure text is kept for the next render; presentation is what just failed.
     }
   }
 
@@ -594,10 +608,10 @@ export class SaveController {
       this.failure = `Save failed (${task.reason}): ${errorMessage(error)}`;
       this.statusText = this.failure;
     }
-    this.render();
     this.writing = false;
+    this.render();
     if (this.queued) {
-      this.flush().catch(() => undefined);
+      this.startFlush();
     }
   }
 
@@ -702,7 +716,7 @@ export class SaveController {
     this.queued = { snapshot: this.snapshot(), reason: 'manual retry' };
     this.failure = '';
     if (!this.writing) {
-      this.flush().catch(() => undefined);
+      this.startFlush();
     }
     this.render();
   }

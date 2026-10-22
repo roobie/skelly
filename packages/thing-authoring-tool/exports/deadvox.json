@@ -296,6 +296,38 @@
     "source": "morphine"
   },
   {
+    "id": "frag_grenade",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "frag_grenade"
+  },
+  {
+    "id": "torch",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "torch"
+  },
+  {
+    "id": "candle",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "candle"
+  },
+  {
+    "id": "dead_desk_lamp",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "dead_desk_lamp"
+  },
+  {
     "id": "shambler_torso",
     "kind": "item",
     "options": {
@@ -418,13 +450,5 @@
       "mass": "parts"
     },
     "source": "bear_trap"
-  },
-  {
-    "id": "desk_lamp",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "dead_desk_lamp"
   }
 ]

@@ -761,7 +761,7 @@ export class FirearmMechanics {
     this.onShot(pellets, input.simTime, item);
     this.onTrajectory({ eye: input.eye, muzzle, origin: shotOrigin, directions: pellets.directions }, input.simTime);
     this.onCommittedShot(seed, data.recoilKickRadians, shotKind, item.uid);
-    wearFirearmAttachments(this.inventory.registry, item);
+    wearFirearmAttachments(this.inventory, item);
     this.previousShotAt.set(item.uid, input.simTime);
     return true;
   }
@@ -805,7 +805,7 @@ export class FirearmMechanics {
     this.onShot(projectileShot(ammo, shotOrigin, [direction]), input.simTime, item);
     this.onTrajectory({ eye: input.eye, muzzle, origin: shotOrigin, directions: [direction] }, input.simTime);
     this.onCommittedShot(seed, data.recoilKickRadians, shotKind, item.uid);
-    wearFirearmAttachments(this.inventory.registry, item);
+    wearFirearmAttachments(this.inventory, item);
     this.previousShotAt.set(item.uid, input.simTime);
     return true;
   }

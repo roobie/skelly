@@ -199,7 +199,7 @@ const checkSolidOverlap = (r: Resolved, focusParts?: readonly string[]): Issue[]
 };
 
 /** No two parts interpenetrate. Directly connected parts may nest a little. */
-const solidOverlap: Rule = {
+export const solidOverlap: Rule = {
   id: 'solid-overlap',
   title: 'Solids do not overlap',
   check: (r) => checkSolidOverlap(r),

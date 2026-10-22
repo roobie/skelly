@@ -5,22 +5,11 @@
 import { chance, pick, type Rng, seededRng } from '../foundation/random.ts';
 import { resolve } from './resolve.ts';
 import type { Assembly, Connection, Domain, PartInstance } from './schema.ts';
-import type {
-  Choice,
-  ConditionalChoice,
-  ConnectionTemplate,
-  ParamChoice,
-  ParamCondition,
-  ParamReference,
-  Template,
-} from './template.ts';
+import type { Choice, ConnectionTemplate, ParamChoice, Template } from './template.ts';
+import { chosenParam, conditionMatches, isConditionalChoice, isParamReference } from './templateChoice.ts';
 import { type Report, validate } from './validate.ts';
 
 const choose = <T>(rng: Rng, c: Choice<T>): T => (Array.isArray(c) ? pick(rng, c as readonly T[]) : (c as T));
-const isParamReference = (choice: Choice<string> | ParamReference): choice is ParamReference =>
-  typeof choice === 'object' && !Array.isArray(choice);
-const isConditionalChoice = (choice: ParamChoice): choice is ConditionalChoice =>
-  typeof choice === 'object' && !Array.isArray(choice) && 'when' in choice;
 const chooseParam = (
   rng: Rng,
   choice: ParamChoice,
@@ -33,23 +22,11 @@ const chooseParam = (
   if (!isParamReference(choice)) {
     return choose(rng, choice);
   }
-  const reference = parts[choice.fromSlot];
-  const family = reference && domain.families[reference.family];
-  const value = reference?.params?.[choice.param] ?? family?.params[choice.param]?.default;
+  const value = chosenParam(parts, domain, choice.fromSlot, choice.param);
   if (value === undefined) {
     throw new Error(`Template parameter reference ${choice.fromSlot}.${choice.param} has no value.`);
   }
   return value;
-};
-const conditionMatches = (
-  condition: ParamCondition,
-  parts: Readonly<Record<string, PartInstance>>,
-  domain: Domain,
-): boolean => {
-  const instance = parts[condition.part];
-  const family = instance && domain.families[instance.family];
-  const value = instance?.params?.[condition.param] ?? family?.params[condition.param]?.default;
-  return value === condition.equals;
 };
 
 const partOf = (ref: string): string => ref.slice(0, ref.indexOf('.'));

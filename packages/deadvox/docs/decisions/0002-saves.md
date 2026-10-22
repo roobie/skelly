@@ -4,6 +4,7 @@ read_if:
   - you're changing the save envelope or deciding whether its schema number changes
   - you're changing how a save record is compressed or which size its caps bound
   - you're changing when the game autosaves
+  - you're adding or removing a scheduler system, or replacing the known scheduler id list
   - you're deciding what happens to a save whose mod state no longer matches its mod
 tags: [deadvox, adr, saves, persistence, determinism]
 ---
@@ -27,6 +28,8 @@ Bump `INPUT_REPLAY_SCHEMA_VERSION` only when a field of `src/game/inputReplay.ts
 Change a generator's id in `defaultVersion` when its output for the same seed and options changes. The fingerprint refuses that change too, but the id is the part of identity that says saved columns now border other terrain, and a refusal names it.
 
 Persist every future-affecting owner state with the change that introduces it. Entity projections are explicit and exhaustive so each new field gets a save decision and unset optional runtime fields cannot leak into canonical saves; see `src/core/zombies.ts`, `projectSnapshot`. Keep input, rendering and external playback out of the snapshot. Debug toggles are not saved, while world changes made with them are. Presentation changes preserve save identity only when their modules remain outside the simulation dependency graph; gameplay rules remain fingerprinted.
+
+A saved scheduler system id that no registered system has is a reference that does not resolve, so `decodeSave` refuses it as an incompatible save the controller leaves untouched, not later as a crash in `src/core/scheduler.ts`, `Scheduler.restoreState`. The ids it accepts are `src/core/schedulerIds.ts`, `KNOWN_SCHEDULER_IDS`, a typed list kept beside the registration sites. Systems register through `Scheduler.register` in four files, `src/core/sim.ts`, `Simulation`, `src/core/longAction.ts`, `LongActions`, `src/game/survival.ts`, `Survival`, and `src/game/session.ts`, and two of them, `src/game/session.ts` and `src/core/longAction.ts`, are held by open PRs #1106, #1097, #1095 and #1072, which is why the list is not yet derived from the sites. `test/saveSchedulerIds.test.ts` fails when a registered system is missing from the list, so a new system cannot be left out silently. When the last of those four PRs merges or closes, replace the list with one derived from the registration sites, so that each site declares its id once, and delete this paragraph's exception.
 
 Write snapshots through crash-safe A/B records. Disk work is asynchronous; a failed write leaves the previous valid record available. A back/forward-cache transition does not require another save: a frozen page can hold the origin lock, so the last committed generation remains the recovery point. These safeguards reduce corruption risk but are not backups.
 

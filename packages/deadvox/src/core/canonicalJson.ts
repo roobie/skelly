@@ -5,7 +5,10 @@ export interface CanonicalJsonOptions {
   acceptTaggedNegativeZero?: boolean;
 }
 
-function isPlainRecord(value: unknown): value is Record<string, unknown> {
+/** A lowercase hex SHA-256 digest. */
+export const SHA256_HEX = /^[0-9a-f]{64}$/;
+
+export function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return (
     typeof value === 'object' &&
     value !== null &&

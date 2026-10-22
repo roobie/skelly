@@ -3,7 +3,7 @@ import { SECONDS_PER_DAY } from '../src/core/clock.ts';
 import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
-import { sunExposedAt } from '../src/core/lights.ts';
+import { SunExposureCache } from '../src/core/lights.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { skyAt, sunDirection } from '../src/core/sky.ts';
 import { type HordeState, perceivePlayer, ZombieSystem } from '../src/core/zombies.ts';
@@ -67,10 +67,9 @@ describe('sun-owned day phases', () => {
       const state = dayPhaseAt(cycle, time);
       const hour = hours(time);
       expect(sunDirection(hour, cycle)[1] > 0, `sun at ${time}`).toBe(state.phase === 'day');
-      expect(
-        sunExposedAt({ position: [0, 1, 0], gameHours: hour, skyTop: 10, isOpaque: () => false, cycle }),
-        `exposure at ${time}`,
-      ).toBe(state.phase === 'day');
+      expect(new SunExposureCache(10, 0, () => false).isExposedAt([0, 1, 0], hour, cycle), `exposure at ${time}`).toBe(
+        state.phase === 'day',
+      );
       const sky = skyAt(hour, cycle);
       expect(sky.dayPhase, `sky at ${time}`).toBe(state.phase);
       const horizontalDot = sky.light[0] * state.sunDirection[0] + sky.light[2] * state.sunDirection[2];
