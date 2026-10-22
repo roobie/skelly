@@ -10,7 +10,7 @@ read_if:
 # How work gets done in skelly
 
 This document owns roles, decision gates and slice coordination. Project principles are in
-`README.md`; shared worktree, install and check rules are in `AGENTS.md`. The rules hold for
+`PILLARS.md`; shared worktree, install and check rules are in `AGENTS.md`. The rules hold for
 any contributor and any clone; how a team staffs and runs the work stays out of this doc,
 because that is local and changes on its own schedule.
 
