@@ -816,6 +816,12 @@ player can climb back out. Level three's rebuild must leave the well its slot. S
 `src/content/base/gauntlet-lab-administration.libsonnet`, `well`, and
 `src/content/base/gauntlet-lab.libsonnet`, `join`.
 
+Level two carries a larger population than level one because BR judged it too thin in
+play. Its spawns spread over the briefing hall, the corridor, the canteen and the offices,
+so no single room holds the danger, and the storey below stays at least as dense so threat
+still grows with depth. See `src/content/base/gauntlet-lab-administration.libsonnet`,
+`markers`, and `src/content/base/gauntlet-lab-threat.libsonnet`, `rows`.
+
 The underground campus extends beyond the small service facade because a surface
 disguise must not dictate the lab's capacity. One compiled assembly owns their common
 excavation; an independent copy would let the visual preview and playable routes drift.

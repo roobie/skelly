@@ -208,10 +208,11 @@ local built = level.build({
     { at: [stairAt[0], stairAt[2]], size: [level.stair.size[0], level.stair.size[2]] }, shaftLid,
     { at: [well.at[0] + 1, well.at[2] + 1], size: [well.size[0] - 2, well.size[2] - 2] },
   ],
-  // The briefing hall is the crowd room; the offices stay sparse and the stair hall quiet.
+  // The briefing hall is the crowd room and the corridor carries the rest between the rooms; the stair hall stays quiet.
   // A spawn body reaches one block west and north of its marker, so each marker sits one block into its cell.
   markers: [[c[0] * scale + 1, 1, c[1] * scale + 1] for c in [
     [10, 12], [4, 19], [10, 20], [12, 25], [11, 17], [22, 23], [16, 27], [18, 19], [26, 17], [32, 14], [14, 7],
+    [26, 13], [27, 25], [22, 6],
   ]],
 });
 {

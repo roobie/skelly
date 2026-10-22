@@ -5397,14 +5397,14 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 1
             },
             {
               "ref": {
                 "id": "gauntlet_lab_marker_shambler_60",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 2
             }
           ],
           "id": "administration_threat_0",
@@ -5419,14 +5419,14 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 1
             },
             {
               "ref": {
                 "id": "gauntlet_lab_marker_shambler_60",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 2
             }
           ],
           "id": "administration_threat_1",
@@ -5441,14 +5441,14 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 1
             },
             {
               "ref": {
                 "id": "gauntlet_lab_marker_shambler_60",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 2
             }
           ],
           "id": "administration_threat_2",
@@ -5463,14 +5463,14 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 1
             },
             {
               "ref": {
                 "id": "gauntlet_lab_marker_shambler_60",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 2
             }
           ],
           "id": "administration_threat_3",
@@ -5485,14 +5485,14 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 1
             },
             {
               "ref": {
                 "id": "gauntlet_lab_marker_shambler_60",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 2
             }
           ],
           "id": "administration_threat_4",
@@ -5507,14 +5507,14 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 1
             },
             {
               "ref": {
                 "id": "gauntlet_lab_marker_shambler_60",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 2
             }
           ],
           "id": "administration_threat_5",
@@ -5529,14 +5529,14 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 1
             },
             {
               "ref": {
                 "id": "gauntlet_lab_marker_shambler_60",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 2
             }
           ],
           "id": "administration_threat_6",
@@ -5551,14 +5551,14 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 1
             },
             {
               "ref": {
                 "id": "gauntlet_lab_marker_shambler_60",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 2
             }
           ],
           "id": "administration_threat_7",
@@ -5573,14 +5573,14 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 1
             },
             {
               "ref": {
                 "id": "gauntlet_lab_marker_shambler_60",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 2
             }
           ],
           "id": "administration_threat_8",
@@ -5595,14 +5595,14 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 1
             },
             {
               "ref": {
                 "id": "gauntlet_lab_marker_shambler_60",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 2
             }
           ],
           "id": "administration_threat_9",
@@ -5617,17 +5617,83 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 1
             },
             {
               "ref": {
                 "id": "gauntlet_lab_marker_shambler_60",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 2
             }
           ],
           "id": "administration_threat_10",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [53, 1, 27],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "administration_threat_11",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [55, 1, 51],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "administration_threat_12",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [45, 1, 13],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "administration_threat_13",
           "size": [1, 1, 1],
           "turn": 0
         }
@@ -7965,11 +8031,11 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 5
@@ -7987,11 +8053,11 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 5
@@ -8024,11 +8090,11 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 5
@@ -8076,11 +8142,11 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 5
@@ -8128,11 +8194,11 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 5
@@ -8180,11 +8246,11 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 5
@@ -8232,11 +8298,11 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 5
@@ -8284,11 +8350,11 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 5
@@ -8306,11 +8372,11 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 5
@@ -27365,6 +27431,31 @@
     },
     {
       "anchors": {},
+      "id": "gauntlet_lab_marker_shambler_80",
+      "layers": [["Z"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [["R"]]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "Z": {
+          "chance": 0.80000000000000004,
+          "spawn": "shambler"
+        }
+      },
+      "ports": [],
+      "size": [1, 1, 1],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
       "id": "gauntlet_lab_stair",
       "layers": [
         ["..pppppppppp", "..pppppppppp"],
@@ -30370,7 +30461,7 @@
             "SSRRRRRR............RRSSRR....RRRR....SSRRRRRRRR....RRSSRRRRRRRRSSSSSSSS",
             "SSRRRRRR............RRSSRR....RRRR....SSRRRRRRRR....RRSSRRRRRRRRSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRR....SSRRRRRRRR....RRSSRRRRRRRRSS....SS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRR....SSRRRRRRRR....RRSSRRRRRRRRSS....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRR....SSRRRRR.RR....RRSSRRRRRRRRSS....SS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSS....SS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRRRRR.RRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSS....SS",
             "SSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSRRSSSSSSSSSSSSSSSSSSRRSSSSSSSSSSSSRRRRSS",
@@ -30384,7 +30475,7 @@
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRR....RR....SS",
             "SSRRRRRRRRRRRRRRRRRRR.RRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRR....RR....SS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSR.RRSSRR....RR....SS",
             "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRSS",
             "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRR.RRRRSS",
             "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
@@ -30408,7 +30499,7 @@
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSRRRRRR...RRRRRSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSRRRRRR...RRRRRSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRSSRRRRRRRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRR.SS....RRRR....RR....RRRRSSRRRRRRRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRR.SS....RRRR....RR....RRRRSSRRR.RRRRRRRRRRSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRRRRRRRSSRRRRRRRRSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRRRRRRRSSRRRRRRRRSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRR....RRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSS",
