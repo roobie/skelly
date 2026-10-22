@@ -333,6 +333,10 @@
         },
         {
           "item": "lamp_oil",
+          "weight": 2
+        },
+        {
+          "item": "oil_lamp",
           "weight": 1
         },
         {

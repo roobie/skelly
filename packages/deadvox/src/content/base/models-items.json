@@ -637,6 +637,30 @@
       }
     },
     {
+      "anchors": {
+        "flame": [0.069000000000000006, 0.050000000000000003, 0]
+      },
+      "file": "assets/models/dead_desk_lamp.glb",
+      "id": "oil_lamp",
+      "parts": {
+        "arm": {
+          "centreOfMass": [0.00099999999999999937, 0.077499999999999986, -9.7561600103919698e-18],
+          "massKg": 0.25,
+          "node": "arm:arm"
+        },
+        "base": {
+          "centreOfMass": [0, 0.0050000000000000001, 0],
+          "massKg": 0.5,
+          "node": "base:base"
+        },
+        "shade": {
+          "centreOfMass": [0.069232558139534883, 0.061325581395348834, -0.00058139534883721743],
+          "massKg": 0.14999999999999999,
+          "node": "shade:shade"
+        }
+      }
+    },
+    {
       "file": "assets/models/table_fan.glb",
       "id": "table_fan"
     },

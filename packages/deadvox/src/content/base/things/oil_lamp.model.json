@@ -1,0 +1,18 @@
+{
+  "id": "oil_lamp",
+  "file": "assets/models/dead_desk_lamp.glb",
+  "parts": {
+    "base": { "node": "base:base", "massKg": 0.5, "centreOfMass": [0, 0.005, 0] },
+    "arm": {
+      "node": "arm:arm",
+      "massKg": 0.25,
+      "centreOfMass": [0.0009999999999999994, 0.07749999999999999, -9.75616001039197e-18]
+    },
+    "shade": {
+      "node": "shade:shade",
+      "massKg": 0.15,
+      "centreOfMass": [0.06923255813953488, 0.061325581395348834, -0.0005813953488372174]
+    }
+  },
+  "anchors": { "flame": [0.069, 0.05, 0] }
+}
