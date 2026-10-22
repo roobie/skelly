@@ -263,7 +263,9 @@ describe('revolver cylinder handling', () => {
       expect(f.cylinder().aligned).toBe((previous + 1) % f.cylinder().chambers.length);
       expect(f.shots).toHaveLength(shots);
     }
-    expect(f.sounds.filter((sound) => sound === 'revolver_dry_click')).toHaveLength(f.cylinder().chambers.length);
+    const dryClick = defOf(f.registry, f.gun.type).firearm?.dryFireSound;
+    expect(dryClick).toBeDefined();
+    expect(f.sounds.filter((sound) => sound === dryClick)).toHaveLength(f.cylinder().chambers.length);
   });
 
   it('an open crane refuses a shot without rotating or losing ammunition', () => {

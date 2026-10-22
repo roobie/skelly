@@ -39,6 +39,8 @@ import { type RevolverFrame, RevolverHandling } from './revolverHandling.ts';
 /** Gameplay estimates for transient ballistics, not claimed as measured export data. */
 const CASE_SPEED = 3.5;
 const CASE_FLIGHT_SECONDS = 0.48;
+/** A landed case rests this far above its settled voxel surface, so it never z-fights the floor. */
+export const CASE_LANDING_LIFT = 0.006;
 const COCK_ACTION = 'firearm.cock';
 const LOAD_ACTION = 'firearm.load';
 const MAGAZINE_ACTION = 'firearm.magazine';
@@ -1615,7 +1617,7 @@ export class FirearmMechanics {
     if (!position) {
       return undefined;
     }
-    const dropHeight = emission.origin[1] - (position[1] * this.blockSize + 0.006);
+    const dropHeight = emission.origin[1] - (position[1] * this.blockSize + CASE_LANDING_LIFT);
     const speed = hit ? Math.max(0, dropHeight / CASE_FLIGHT_SECONDS) : CASE_SPEED;
     return { position, direction: hit ? [0, -1, 0] : emission.direction, speed, verticalDrop: hit !== undefined };
   }

@@ -39,6 +39,8 @@ import {
 
 // Bounds the decompressed envelope, which tracks saved-state growth; compression would hide it.
 const TEN_HOUR_SAVE_BUDGET_BYTES = 5 * 1024 * 1024;
+// biome-ignore lint/style/noProcessEnv: timings print only under the bench script.
+const benchmarking = process.env.DEADVOX_BENCH === '1';
 // biome-ignore lint/style/noProcessEnv: distinguish local measurements from the named CI runner.
 const measurementRunner = process.env.GITHUB_ACTIONS === 'true' ? 'ubuntu-latest' : 'local';
 
@@ -440,7 +442,6 @@ describe('canonical save format', () => {
       [0, 0, 1],
     );
     const zombie = source.zombies.store.get(id)!;
-    zombie.body.onGround = true;
     source.zombies.setFrozen(true);
     const posed = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, scale.blockSize));
     const { center } = posed.head.find((box) => box.bone === 'head')!;
@@ -567,11 +568,8 @@ describe('canonical save format', () => {
     source.zombies.add(registry.zombies.get('shambler')!, source.player.body.pos);
     source = prepareAudioContinuation(source);
     const snapshot = capture(source);
-    const started = performance.now();
     const bytes = await encodeFixture(snapshot);
-    const encodedAt = performance.now();
     const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
-    const decodedAt = performance.now();
     const wirePayload = getObject(parseEnvelope(bytes).payload);
     const wireWorld = getObject(wirePayload.world);
     expect(Object.keys(getObject(wireWorld.regions)).length).toBeGreaterThan(0);
@@ -600,8 +598,6 @@ describe('canonical save format', () => {
 
     const reversed = reverseObjectKeys(snapshot) as SaveSnapshot;
     expect(await encodeFixture(reversed)).toEqual(bytes);
-    expect(encodedAt - started).toBeGreaterThanOrEqual(0);
-    expect(decodedAt - encodedAt).toBeGreaterThanOrEqual(0);
   });
 
   it('checks a representative ten-hour hamlet save and records its size and timings', async () => {
@@ -647,6 +643,9 @@ describe('canonical save format', () => {
     const restoreMs = performance.now() - loadStarted;
     const loadMs = decodeMs + restoreMs;
     expect(capture(loaded)).toEqual(decoded.snapshot);
+    if (!benchmarking) {
+      return;
+    }
     process.stdout.write(
       `SAVE_BUDGET_TEN_HOUR runner=${measurementRunner} visited=${worldStats.visitedChunks} edited=${worldStats.editedChunks} edits=${worldStats.editedChunks * 8} syntheticPiles=${pileStats.pileCount} totalPiles=${snapshot.character.inventory.piles.length} items=${pileStats.pileCount * pileStats.pileCapacity + pileStats.baselinePileItems} touchedContainers=${population.touchedContainers} spawnedKeys=${population.spawned} alive=${population.alive} size=${inflatedBytes} compressedSize=${bytes.byteLength} encodeMs=${encodeMs.toFixed(1)} decodeMs=${decodeMs.toFixed(1)} restoreMs=${restoreMs.toFixed(1)} loadMs=${loadMs.toFixed(1)}\n`,
     );

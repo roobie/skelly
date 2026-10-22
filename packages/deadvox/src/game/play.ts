@@ -112,7 +112,7 @@ import { debugTargetRay } from './debugTargetRay.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
 import { firearmBoreRay, firearmBoreTarget } from './firearmAim.ts';
-import { firearmHandlingFor } from './firearmHandling.ts';
+import { CASE_LANDING_LIFT, firearmHandlingFor } from './firearmHandling.ts';
 import { FirearmTrigger } from './firearmTrigger.ts';
 import { advanceLiveFrame, observeRealFrame, realNow, startRealFrames } from './frameDriver.ts';
 import { adjustLookPitch, Input } from './input.ts';
@@ -193,7 +193,7 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 
 const caseLandingWorldPosition = ([x, y, z]: Vec3, blockSize: number): Vec3 => [
   (x + 0.5) * blockSize,
-  y * blockSize + 0.006,
+  y * blockSize + CASE_LANDING_LIFT,
   (z + 0.5) * blockSize,
 ];
 
