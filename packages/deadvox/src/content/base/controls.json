@@ -591,6 +591,14 @@
       ]
     },
     {
+      "id": "debug.spectator-teleport",
+      "keys": [
+        {
+          "code": "KeyR"
+        }
+      ]
+    },
+    {
       "id": "debug.third-person-toggle",
       "keys": [
         {

@@ -61,7 +61,12 @@ export interface DebugHooks {
   readonly measureSnapshot: () => SnapshotMeasurement;
   readonly impactLaser: { enabled: () => boolean; toggle: () => void };
   readonly reviewMap: { isOpen: () => boolean; toggle: () => void };
-  readonly spectatorCamera: { enabled: () => boolean; toggle: () => void };
+  readonly spectatorCamera: {
+    enabled: () => boolean;
+    toggle: () => void;
+    /** Moves the avatar under the camera; `blocked` when that spot is inside solid terrain, undefined unless detached. */
+    teleport: () => 'moved' | 'blocked' | undefined;
+  };
   readonly thirdPerson: { enabled: () => boolean; toggle: () => void };
   readonly perceptionLabels: { enabled: () => boolean; toggle: () => void };
   /** Emits the existing `player_hurt_light` sound and its player-noise event; this debug action changes simulation state. */

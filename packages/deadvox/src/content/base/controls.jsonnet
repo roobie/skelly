@@ -71,6 +71,7 @@ local digits(prefix, count) = [one(prefix + '.' + i, 'Digit' + i) for i in std.r
     one('debug.god-toggle', 'KeyH'),
     one('debug.noclip-toggle', 'KeyP'),
     one('debug.spectator-camera-toggle', 'F6'),
+    one('debug.spectator-teleport', 'KeyR'),
     one('debug.third-person-toggle', 'Numpad0'),
     one('debug.perception-labels-toggle', 'F7'),
     one('debug.spawn-unaware-shambler', 'Numpad3'),

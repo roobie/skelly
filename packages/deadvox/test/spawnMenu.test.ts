@@ -111,7 +111,7 @@ describe('spawnMenuViewModel', () => {
       sim,
       reviewMap: { isOpen: () => false, toggle: () => undefined },
       compress: () => undefined,
-      spectatorCamera: { enabled: () => false, toggle: () => undefined },
+      spectatorCamera: { enabled: () => false, toggle: () => undefined, teleport: () => undefined },
       thirdPerson: { enabled: () => false, toggle: () => undefined },
       perceptionLabels: { enabled: () => false, toggle: () => undefined },
       emitTestNoise: () => true,

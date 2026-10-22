@@ -31,7 +31,6 @@ import {
 import { chargeShare, offHandUse, wornNightVision } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
 import { doorOptions, doorPlan, dropTarget, pocketGroundItem, toHands } from '../core/options.ts';
-import type { Body } from '../core/physics.ts';
 import { pryPlan } from '../core/prying.ts';
 import { raycast } from '../core/raycast.ts';
 import { reachTuning } from '../core/reach.ts';
@@ -176,9 +175,11 @@ import { applyReplayActionPayload, type ReplayActionPayload, type ReplayCommandO
 import { restKindForFurniture } from './rest.ts';
 import { createScreenCommandDispatcher } from './screenCommandDispatcher.ts';
 import { createSession, type PlayerInputSample } from './session.ts';
+import { SpectatorCamera } from './spectatorCamera.ts';
 import { populateTestHouseRepairCorner } from './testHouse.ts';
 import {
   isOrbitResetMovementAction,
+  isPlayerFigureWhole,
   isPlayerThirdPersonView,
   ThirdPersonOrbit,
   type ThirdPersonOrbitAngle,
@@ -795,9 +796,7 @@ export const startPlay = (
       automaticFireUid = undefined;
     }
   };
-  let spectatorCameraEnabled = false;
-  let spectatorCameraBody: Body | undefined;
-  let spectatorBodyView: { readonly yaw: number; readonly pitch: number } | undefined;
+  const spectator = new SpectatorCamera();
   let thirdPersonViewEnabled = false;
   const thirdPersonOrbit = new ThirdPersonOrbit();
   let backquoteGesture: BackquoteOrbitGesture | undefined;
@@ -822,10 +821,9 @@ export const startPlay = (
     ...(options.restore ? { restore: options.restore } : {}),
     ready: (x, z) => streamer.isReady(x, z),
     zombieReady: (x, z) => replayPlayer?.isReady(x, z) ?? streamer.isReady(x, z),
-    controls: {
+    controls: spectator.guard({
       active: () => worldLoading.ready && (Boolean(options.replay) || (input.locked && !input.menuPointer)),
-      intent: (): MoveIntent =>
-        spectatorCameraEnabled ? { forward: 0, right: 0, jump: false, sprint: false, walk: false } : input.intent(),
+      intent: (): MoveIntent => input.intent(),
       sampleAtPlayerTick: samplePlayerInput,
       readyHeld: () => input.rightMouseHeld,
       blocking: () => shouldPlayerBlock(),
@@ -896,11 +894,11 @@ export const startPlay = (
           performHandUse(offSide(inventory.character));
         }
       },
-      yaw: () => spectatorBodyView?.yaw ?? input.yaw,
-      pitch: () => spectatorBodyView?.pitch ?? input.pitch,
+      yaw: () => input.yaw,
+      pitch: () => input.pitch,
       walking: () => input.walking,
       descending: () => keyboardInput.held('noclip.descend'),
-    },
+    }),
     // The session works in blocks; playback is in metres.
     audio: {
       play: playSessionSound,
@@ -1077,11 +1075,7 @@ export const startPlay = (
     box.textContent = [box.textContent, message].filter(Boolean).join('\n');
   });
   input.setMouseLookOverride((movementX, movementY) =>
-    thirdPersonOrbit.rotate(
-      movementX,
-      movementY,
-      isPlayerThirdPersonView(thirdPersonViewEnabled, spectatorCameraEnabled),
-    ),
+    thirdPersonOrbit.rotate(movementX, movementY, isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled)),
   );
   const { weather, caseEffects, itemThrows, impactEffects, flashlight, zombieMeshes } = view;
   const damageEvents = sim.events.reader();
@@ -1506,14 +1500,12 @@ export const startPlay = (
     roll: () => view.cameraRoll,
     zombies: () => zombieSystem,
     spectatorCamera: {
-      enabled: () => spectatorCameraEnabled,
+      enabled: () => spectator.enabled,
       toggle: () => {
-        spectatorCameraEnabled = !spectatorCameraEnabled;
-        spectatorCameraBody = spectatorCameraEnabled
-          ? { ...body, pos: [...eye()], vel: [0, 0, 0], onGround: false }
-          : undefined;
-        spectatorBodyView = spectatorCameraEnabled ? { yaw: input.yaw, pitch: input.pitch } : undefined;
+        cancelHeldInput();
+        spectator.toggle(body, eye(), input.yaw, input.pitch);
       },
+      teleport: () => spectator.teleport(body, session.playerEyeHeightMetres / s, engine.isSolid),
     },
     thirdPerson,
     perceptionLabels: {
@@ -2005,7 +1997,7 @@ export const startPlay = (
     if (debugTools?.buildOn) {
       return 'build';
     }
-    return debugTools?.noclip || spectatorCameraEnabled ? 'noclip' : footContext();
+    return debugTools?.noclip || spectator.enabled ? 'noclip' : footContext();
   };
   const footContext = (): InputContext => (entities.carrying() ? 'carrying' : 'play');
   const inputContext = (): InputContext => {
@@ -2191,7 +2183,7 @@ export const startPlay = (
       backquoteGesture,
       debugTools,
       facingYaw: input.yaw,
-      thirdPerson: isPlayerThirdPersonView(thirdPersonViewEnabled, spectatorCameraEnabled),
+      thirdPerson: isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled),
       toggleReviewMap,
       syncMenuState,
     });
@@ -2199,7 +2191,7 @@ export const startPlay = (
     routeBackquoteInput(backquoteGesture, action, {
       phase,
       at,
-      thirdPerson: isPlayerThirdPersonView(thirdPersonViewEnabled, spectatorCameraEnabled),
+      thirdPerson: isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled),
       debugPanelAvailable: keyboardInput.held('debug.gate'),
       facingYaw: input.yaw,
     });
@@ -2255,7 +2247,7 @@ export const startPlay = (
     }
   };
   const dispatchInputCommand = ({ action, phase, at }: InputCommand, fromReplay = false): void => {
-    if (!worldLoading.ready || (replayPlayer && !fromReplay)) {
+    if (!worldLoading.ready || (replayPlayer && !fromReplay) || !spectator.allowsCommand(action)) {
       return;
     }
     const context = inputContext();
@@ -2344,7 +2336,7 @@ export const startPlay = (
       if (input.locked && mainMenuOpen) {
         $('overlay').querySelector<HTMLElement>('.card')!.scrollTop += e.deltaY;
         e.preventDefault();
-      } else if (input.locked && !input.menuPointer) {
+      } else if (input.locked && !input.menuPointer && !spectator.enabled) {
         if (opticZoom.wheel(zoomFirearm(), isAimingDownSights(), e.deltaY)) {
           e.preventDefault();
         } else if (debugTools?.buildOn || !cycleWieldedAction(e.deltaY)) {
@@ -3000,7 +2992,7 @@ export const startPlay = (
     if (!(isForwardButton(e) && forwardPress.accept(e.timeStamp))) {
       return;
     }
-    if (!input.locked || input.menuPointer || compression.locksInput || debugTools?.buildOn) {
+    if (!input.locked || input.menuPointer || compression.locksInput || spectator.enabled || debugTools?.buildOn) {
       return;
     }
     if (refusePrimaryUseWhileHandling()) {
@@ -3016,7 +3008,7 @@ export const startPlay = (
   document.addEventListener('pointerdown', onForwardPress, true);
   document.addEventListener('mousedown', onForwardPress, true);
   inputTarget.addEventListener('mousedown', (e) => {
-    if (!input.locked || input.menuPointer || compression.locksInput || !debugTools?.buildOn) {
+    if (!input.locked || input.menuPointer || compression.locksInput || spectator.enabled || !debugTools?.buildOn) {
       return;
     }
     debugTools.click(e.button, eye(), lookDir());
@@ -3165,7 +3157,7 @@ export const startPlay = (
         view.damage(event.amount);
       }
     }
-    const orbitAngle = thirdPersonOrbit.angle(isPlayerThirdPersonView(thirdPersonViewEnabled, spectatorCameraEnabled));
+    const orbitAngle = thirdPersonOrbit.angle(isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled));
     view.updateCamera(
       {
         dt,
@@ -3176,10 +3168,10 @@ export const startPlay = (
         pitch: input.pitch,
         stridePhase: session.playerStridePhase,
         eye: eye(),
-        ...(spectatorCameraEnabled && spectatorCameraBody
-          ? { spectator: { position: [...spectatorCameraBody.pos], yaw: input.yaw, pitch: input.pitch } }
+        ...(spectator.body
+          ? { spectator: { position: [...spectator.body.pos], yaw: input.yaw, pitch: input.pitch } }
           : {}),
-        thirdPerson: isPlayerThirdPersonView(thirdPersonViewEnabled, spectatorCameraEnabled),
+        thirdPerson: isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled),
         ...thirdPersonOrbitFrame(orbitAngle),
         sightImpaired: sim.body.consequences.sightImpaired,
         drugVignette: sim.body.drugVignette,
@@ -3285,7 +3277,7 @@ export const startPlay = (
       : 0;
     const pose = renderMeleePose(action, elapsed, ready, dominantSide(inventory.character));
     const { job: handlingJob, progress: grabProgress } = handlingPresentation();
-    view.updateHeld(dt, pose, survival.lit, {
+    view.updateHeld(dt, pose, spectator.enabled ? undefined : survival.lit, {
       firearms: firearms.frames(),
       opticZoom: opticZoom.frame(zoomFirearm(), isAimingDownSights()),
       ...(readiness === undefined ? {} : { readiness }),
@@ -3372,7 +3364,7 @@ export const startPlay = (
         frozenAndPlaying &&
         !replayPlayer &&
         debugTools?.noclip &&
-        !spectatorCameraEnabled &&
+        !spectator.enabled &&
         input.locked &&
         !input.menuPointer
       )
@@ -3491,9 +3483,9 @@ export const startPlay = (
       rollInputRecorderWindow();
     }
     stepFrozenNoclip(realDt, gameFrozen && !menuPaused);
-    if (spectatorCameraEnabled && spectatorCameraBody && input.locked && !input.menuPointer) {
+    if (spectator.body && input.locked && !input.menuPointer) {
       debugTools?.stepNoclip({
-        body: spectatorCameraBody,
+        body: spectator.body,
         scale,
         yaw: input.yaw,
         pitch: input.pitch,
@@ -3570,7 +3562,7 @@ export const startPlay = (
         pos: body.pos,
         yaw: input.yaw,
         drip: playerDrip,
-        thirdPerson: isPlayerThirdPersonView(thirdPersonViewEnabled, spectatorCameraEnabled),
+        thirdPerson: isPlayerFigureWhole(thirdPersonViewEnabled, spectator.enabled),
       },
     });
   };
