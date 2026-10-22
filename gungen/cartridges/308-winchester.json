@@ -225,5 +225,6 @@
       "title": "C.I.P. TDCC Tab. I, 308 Win.: cartridge maximum dimensions",
       "url": "https://bobp.cip-bobp.org/uploads/tdcc/tab-i/tabical-en-page125.pdf"
     }
-  }
+  },
+  "voxelGrain": 0.002
 }

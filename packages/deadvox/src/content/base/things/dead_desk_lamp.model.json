@@ -2,16 +2,16 @@
   "id": "dead_desk_lamp",
   "file": "assets/models/dead_desk_lamp.glb",
   "parts": {
-    "base": { "node": "base:base", "massKg": 0.5, "centreOfMass": [0, 0.006, 0] },
+    "base": { "node": "base:base", "massKg": 0.5, "centreOfMass": [0, 0.005, 0] },
     "arm": {
       "node": "arm:arm",
       "massKg": 0.25,
-      "centreOfMass": [0.0025013109481772274, 0.07563779376164786, -7.842536372901592e-18]
+      "centreOfMass": [0.0009999999999999994, 0.07749999999999999, -9.75616001039197e-18]
     },
     "shade": {
       "node": "shade:shade",
       "massKg": 0.15,
-      "centreOfMass": [0.06914814814814814, 0.06138888888888889, -8.214205012058728e-18]
+      "centreOfMass": [0.06923255813953488, 0.061325581395348834, -0.0005813953488372174]
     }
   }
 }
