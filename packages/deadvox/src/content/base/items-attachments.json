@@ -3,6 +3,18 @@
     {
       "category": "misc",
       "economy": {
+        "tiers": ["Tier2", "Tier3"],
+        "usage": ["Military"]
+      },
+      "id": "ak_slant_compensator",
+      "model": "ak_slant_compensator",
+      "name": "Slant compensator",
+      "size": [1, 1],
+      "weight": 80
+    },
+    {
+      "category": "misc",
+      "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },

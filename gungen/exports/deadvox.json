@@ -165,6 +165,15 @@
     }
   },
   {
+    "id": "ak_slant_compensator",
+    "kind": "attachment",
+    "source": "ak-slant-compensator",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
     "id": "foregrip",
     "kind": "attachment",
     "source": "foregrip",

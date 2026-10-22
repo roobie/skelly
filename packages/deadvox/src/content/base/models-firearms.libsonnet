@@ -81,6 +81,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
         "dispersionRadians": 0.017999999999999999,
         "recoilKickRadians": 0.012,
         "shotSound": "gunshot",
+        "suppressedShotSound": "gunshot_m4_suppressed",
         "dryFireSound": "firearm_dry_click",
         "skillZeroHandling": {
           "automaticFollowup": { "recoilKickScale": 12, "recoilRecoveryScale": 0.25, "variance": 40 },

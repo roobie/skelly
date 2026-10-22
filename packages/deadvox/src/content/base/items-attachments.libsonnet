@@ -3,6 +3,10 @@ local opticZoom = { step: 1, rememberPerWeapon: true };
 {
   "items": [
     {
+      id: 'ak_slant_compensator', name: 'Slant compensator', category: 'misc',
+      weight: 80, size: [1, 1], model: 'ak_slant_compensator',
+    },
+    {
       id: 'optic_hunting_3_9x', name: '3–9× hunting scope', category: 'misc',
       weight: 400, size: [2, 2], model: 'optic_hunting_3_9x', opticMagnification: 6, opticZoom: opticZoom,
     },

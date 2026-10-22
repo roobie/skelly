@@ -151,7 +151,8 @@
             "recoilRecoveryScale": 0.5,
             "variance": 20
           }
-        }
+        },
+        "suppressedShotSound": "gunshot_m4_suppressed"
       },
       "id": "rifle_ak",
       "model": "rifle_ak",
@@ -1703,13 +1704,6 @@
             "up": [0, 1, 0]
           },
           {
-            "direction": [1, 0, 2.4492935982947064e-16],
-            "id": "muzzle-device.muzzle.0",
-            "mount": "muzzle",
-            "position": [0.39100000000000001, 0, 0],
-            "up": [0, 1, 0]
-          },
-          {
             "direction": [0, 1, 0],
             "id": "handguard.rail.0",
             "mount": "rail-top",
@@ -1872,11 +1866,24 @@
             "up": [1, 0, 1.2246467991473532e-16]
           }
         ],
-        "attachments": [],
+        "attachments": [
+          {
+            "id": "ak-slant-compensator",
+            "kind": "muzzle-device",
+            "mount": "muzzle",
+            "mountFrame": {
+              "normal": [-1, 0, 0],
+              "up": [0, 1, 0]
+            },
+            "mountedAt": "barrel.muzzle.0",
+            "node": "muzzle-device:ak-muzzle-device",
+            "properties": {}
+          }
+        ],
         "calibre": "7.62x39",
         "chargingHandleDegrees": 90,
         "compatibility": {
-          "barrel.muzzle.0": [],
+          "barrel.muzzle.0": ["real-suppressor", "improvised-suppressor", "ak-slant-compensator", "ak74-muzzle-brake"],
           "handguard.rail-bottom.0": [],
           "handguard.rail-bottom.1": ["foregrip"],
           "handguard.rail-bottom.2": ["foregrip"],
@@ -1894,10 +1901,49 @@
           "handguard.rail.2": [],
           "handguard.rail.3": [],
           "handguard.rail.4": [],
-          "handguard.rail.5": [],
-          "muzzle-device.muzzle.0": []
+          "handguard.rail.5": []
         },
         "compatibilityPairs": [
+          [["barrel.muzzle.0", "ak-slant-compensator"], ["handguard.rail-bottom.1", "foregrip"]],
+          [["barrel.muzzle.0", "ak-slant-compensator"], ["handguard.rail-bottom.2", "foregrip"]],
+          [["barrel.muzzle.0", "ak-slant-compensator"], ["handguard.rail-bottom.3", "foregrip"]],
+          [["barrel.muzzle.0", "ak-slant-compensator"], ["handguard.rail-bottom.4", "foregrip"]],
+          [["barrel.muzzle.0", "ak-slant-compensator"], ["handguard.rail-side.0", "tactical-flashlight-mount"]],
+          [["barrel.muzzle.0", "ak-slant-compensator"], ["handguard.rail-side.1", "tactical-flashlight-mount"]],
+          [["barrel.muzzle.0", "ak-slant-compensator"], ["handguard.rail-side.2", "tactical-flashlight-mount"]],
+          [["barrel.muzzle.0", "ak-slant-compensator"], ["handguard.rail-side.3", "tactical-flashlight-mount"]],
+          [["barrel.muzzle.0", "ak-slant-compensator"], ["handguard.rail-side.4", "tactical-flashlight-mount"]],
+          [["barrel.muzzle.0", "ak-slant-compensator"], ["handguard.rail-side.5", "tactical-flashlight-mount"]],
+          [["barrel.muzzle.0", "ak74-muzzle-brake"], ["handguard.rail-bottom.1", "foregrip"]],
+          [["barrel.muzzle.0", "ak74-muzzle-brake"], ["handguard.rail-bottom.2", "foregrip"]],
+          [["barrel.muzzle.0", "ak74-muzzle-brake"], ["handguard.rail-bottom.3", "foregrip"]],
+          [["barrel.muzzle.0", "ak74-muzzle-brake"], ["handguard.rail-bottom.4", "foregrip"]],
+          [["barrel.muzzle.0", "ak74-muzzle-brake"], ["handguard.rail-side.0", "tactical-flashlight-mount"]],
+          [["barrel.muzzle.0", "ak74-muzzle-brake"], ["handguard.rail-side.1", "tactical-flashlight-mount"]],
+          [["barrel.muzzle.0", "ak74-muzzle-brake"], ["handguard.rail-side.2", "tactical-flashlight-mount"]],
+          [["barrel.muzzle.0", "ak74-muzzle-brake"], ["handguard.rail-side.3", "tactical-flashlight-mount"]],
+          [["barrel.muzzle.0", "ak74-muzzle-brake"], ["handguard.rail-side.4", "tactical-flashlight-mount"]],
+          [["barrel.muzzle.0", "ak74-muzzle-brake"], ["handguard.rail-side.5", "tactical-flashlight-mount"]],
+          [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-bottom.1", "foregrip"]],
+          [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-bottom.2", "foregrip"]],
+          [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-bottom.3", "foregrip"]],
+          [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-bottom.4", "foregrip"]],
+          [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-side.0", "tactical-flashlight-mount"]],
+          [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-side.1", "tactical-flashlight-mount"]],
+          [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-side.2", "tactical-flashlight-mount"]],
+          [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-side.3", "tactical-flashlight-mount"]],
+          [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-side.4", "tactical-flashlight-mount"]],
+          [["barrel.muzzle.0", "improvised-suppressor"], ["handguard.rail-side.5", "tactical-flashlight-mount"]],
+          [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-bottom.1", "foregrip"]],
+          [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-bottom.2", "foregrip"]],
+          [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-bottom.3", "foregrip"]],
+          [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-bottom.4", "foregrip"]],
+          [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-side.0", "tactical-flashlight-mount"]],
+          [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-side.1", "tactical-flashlight-mount"]],
+          [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-side.2", "tactical-flashlight-mount"]],
+          [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-side.3", "tactical-flashlight-mount"]],
+          [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-side.4", "tactical-flashlight-mount"]],
+          [["barrel.muzzle.0", "real-suppressor"], ["handguard.rail-side.5", "tactical-flashlight-mount"]],
           [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-bottom.3", "foregrip"]],
           [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-bottom.4", "foregrip"]],
           [["handguard.rail-bottom.1", "foregrip"], ["handguard.rail-side.0", "tactical-flashlight-mount"]],
@@ -1986,7 +2032,7 @@
             ["handguard.rail-side.5", "tactical-flashlight-mount"]
           ]
         ],
-        "muzzleDirection": [1, 0, 2.4492935982947064e-16],
+        "muzzleDirection": [1, 0, 1.2246467991473532e-16],
         "sight": {
           "direction": [0.99999999999999989, 0, 0],
           "eye": [-0.028750000000000001, 0.048000000000000001, 0],
@@ -2043,11 +2089,6 @@
           "centreOfMass": [-0.13580781294553751, -0.022650128314798974, -2.2241231822067367e-5],
           "massKg": 0.25,
           "node": "lower:lower"
-        },
-        "muzzle-device": {
-          "centreOfMass": [0.37755555555555553, -0.0011111111111111111, 9.2474440522282363e-17],
-          "massKg": 0.080000000000000002,
-          "node": "muzzle-device:ak-muzzle-device"
         },
         "rear-sight": {
           "centreOfMass": [-0.029000000000000001, 0.045999999999999999, -5.6616598073888948e-18],
