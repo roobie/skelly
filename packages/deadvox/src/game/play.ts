@@ -1097,9 +1097,10 @@ export const startPlay = (
     return Boolean(definition?.book?.recipes.every((recipe) => session.character.knownRecipes.has(recipe)));
   };
   const hud = $('hud');
+  const screenText = registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText;
   const hudOptions = readHudOptions();
   const drawHudOptions = () =>
-    renderHudOptions($('hud-options'), hudOptions, (key, value) => {
+    renderHudOptions($('hud-options'), screenText.hudOptionLabels, hudOptions, (key, value) => {
       hudOptions[key] = value;
       writeHudOptions(hudOptions);
       drawHudOptions();
@@ -1111,7 +1112,9 @@ export const startPlay = (
   const handlingBox = $('handling');
   const restBox = $('rest');
   $('errors').textContent = [$('errors').textContent, engine.contentErrors].filter(Boolean).join('\n');
-  renderAudioOptions($('audio-options'), audio.settings, (category, value) => audio.setVolume(category, value));
+  renderAudioOptions($('audio-options'), screenText.audioVolumeLabels, audio.settings, (category, value) =>
+    audio.setVolume(category, value),
+  );
   renderGraphicsOptions($('graphics-options'), engine.graphics);
 
   /** A message that isn't an interruption, such as why a move was refused. */
@@ -3763,6 +3766,7 @@ export const startPlay = (
         session.throwCharge.startedAt === undefined
           ? undefined
           : {
+              label: screenText.handlingLabels.throwForce,
               elapsedSimSeconds: Math.max(0, sim.time - session.throwCharge.startedAt),
               chargeSimSeconds: throwChargeSimSeconds,
               minimumHoldSimSeconds: throwMinimumHoldSimSeconds,
@@ -3841,6 +3845,7 @@ export const startPlay = (
       seed: sim.seed,
       run: session.scenarioRun!,
       checkpoint: options.saveController?.winCheckpointStatus ?? 'unavailable',
+      checkpointMessages: screenText.winCheckpointMessages,
       newWorld: () => location.assign(newWorldQuery(location.search, config.seed)),
       freshAttempt: () => location.assign(newWorldQuery(location.search, config.seed - 1)),
       exportRun: exportMetrics,

@@ -40,6 +40,53 @@
         "rest": "Resting",
         "sleep": "Sleeping"
       },
+      "screenText": {
+        "audioVolumeLabels": {
+          "body": "Body",
+          "master": "Master",
+          "ui": "UI",
+          "world": "World"
+        },
+        "craftingMessages": {
+          "cheapestAvailable": "Cheapest available",
+          "noRepairTarget": "No damaged repair target in reach"
+        },
+        "handlingLabels": {
+          "throwForce": "Throw force"
+        },
+        "hudOptionLabels": {
+          "clock": "Clock and time compression",
+          "crosshair": "Crosshair",
+          "details": "World details (FPS, seed, position, chunks and movement)",
+          "handling": "Handling progress",
+          "interaction": "Interaction hints and target name",
+          "interactionOutline": "Interactible outline",
+          "messages": "Messages and interruptions",
+          "quickbar": "Quickbar",
+          "stats": "Health, blood, bleeding, food, water, fatigue, pain, stamina and carrying weight"
+        },
+        "inventoryMessages": {
+          "noRoom": "No room on you",
+          "nothingQueued": "Nothing queued",
+          "nothingToSearch": "Nothing here to search"
+        },
+        "pointerButtonLabels": {
+          "hand.off-instant": "Mouse 5",
+          "hand.use-dominant": "Left click",
+          "pointer.look": "Mouse"
+        },
+        "saveMessages": {
+          "apisUnavailable": "Required save APIs are unavailable; this session will not be saved.",
+          "insecurePage": "Saves need a secure (https) page; this session won't be saved",
+          "noSavedWorld": "No saved world found."
+        },
+        "winCheckpointMessages": {
+          "failed": "Storage has not confirmed the win.",
+          "pending": "Saving the completed attempt…",
+          "saved": "The completed attempt is saved.",
+          "unavailable": "Saving is unavailable; this win is not saved."
+        }
+      },
       "spacing": 1,
       "wearSlotLabels": {
         "back": "Back",

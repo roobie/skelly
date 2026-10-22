@@ -76,7 +76,7 @@ describe('crafting read-only presentation', () => {
     expect(torch.reason).toBe('missing' in result ? result.missing.reason : undefined);
     const root = document.createElement('section');
     const start = vi.fn();
-    renderCrafting(root, rows, { start, prefer: vi.fn() });
+    renderCrafting(root, rows, { start, prefer: vi.fn() }, { cheapestAvailable: 'fixture cheapest' });
     const button = root.querySelector<HTMLButtonElement>('[data-recipe="torch"] .craft-start');
     expect(button).toBeDefined();
     expect(button!.disabled).toBe(torch.reason !== undefined);

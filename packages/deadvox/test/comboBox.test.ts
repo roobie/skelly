@@ -160,7 +160,7 @@ it('sends a crafting material choice to the recipe preference', () => {
     workstation: null,
   };
   const prefer = vi.fn();
-  renderCrafting(root, [row], { start: vi.fn(), prefer });
+  renderCrafting(root, [row], { start: vi.fn(), prefer }, { cheapestAvailable: 'fixture cheapest' });
   const field = root.querySelector<HTMLInputElement>('[role="combobox"]')!;
   expect(field.getAttribute('aria-label')).toBe('Bandage material group 1');
 

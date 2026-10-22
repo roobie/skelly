@@ -347,8 +347,36 @@ const InventoryTuningSchema = strictObject({
   }),
 });
 
+/** Labels and messages the screens under `src/ui` draw. */
+const UiScreenTextSchema = strictObject({
+  /** What the HUD options call each element they switch. */
+  hudOptionLabels: strictObject({
+    stats: Name,
+    clock: Name,
+    details: Name,
+    crosshair: Name,
+    interaction: Name,
+    interactionOutline: Name,
+    quickbar: Name,
+    handling: Name,
+    messages: Name,
+  }),
+  /** What the audio options call each volume. */
+  audioVolumeLabels: strictObject({ master: Name, world: Name, body: Name, ui: Name }),
+  /** The fixed pointer input each unbindable pointer action names. */
+  pointerButtonLabels: strictObject({ 'hand.use-dominant': Name, 'hand.off-instant': Name, 'pointer.look': Name }),
+  /** What the win card says about saving the completed attempt. */
+  winCheckpointMessages: strictObject({ saved: Name, pending: Name, failed: Name, unavailable: Name }),
+  /** Why this session cannot save, and what Continue found. */
+  saveMessages: strictObject({ insecurePage: Name, apisUnavailable: Name, noSavedWorld: Name }),
+  inventoryMessages: strictObject({ nothingQueued: Name, nothingToSearch: Name, noRoom: Name }),
+  handlingLabels: strictObject({ throwForce: Name }),
+  craftingMessages: strictObject({ cheapestAvailable: Name, noRepairTarget: Name }),
+});
+
 const UiTuningSchema = strictObject({
   id: Id,
+  screenText: UiScreenTextSchema,
   /** Multiplies every UI margin, padding and gap; below 1 packs the UI for smaller screens. */
   spacing: Positive,
   /** Multiplies the root font size the UI is measured in; the world canvas is not scaled. */

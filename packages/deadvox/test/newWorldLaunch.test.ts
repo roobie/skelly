@@ -5,6 +5,7 @@ import { gunzipSync } from 'node:zlib';
 import { afterEach, expect, it, vi } from 'vitest';
 import { Character } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { type ActiveBrowserMod, currentSaveVersionIdentity, encodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { ScenarioRun } from '../src/core/scenarioRun.ts';
@@ -19,6 +20,7 @@ import { SaveController } from '../src/ui/saveController.ts';
 import { showWin } from '../src/ui/win.ts';
 import { capture, createRuntime, registry as saveFixtureRegistry } from './snapshotTestSupport.ts';
 
+const screenText = saveFixtureRegistry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText;
 const FULL_HASH = /[a-f0-9]{64}/;
 const BODY_MARKUP = /<body\b[^>]*>([\s\S]*)<\/body>/;
 const SCRIPT_MARKUP = /<script\b[^>]*>[\s\S]*?<\/script>/g;
@@ -95,7 +97,7 @@ const title = (mods: readonly ActiveBrowserMod[] = []) => {
     throw new Error('Title fixture needs the actual body markup');
   }
   document.body.innerHTML = body.replace(SCRIPT_MARKUP, '');
-  return new SaveController('auto', [], mods);
+  return new SaveController(screenText.saveMessages, 'auto', [], mods);
 };
 
 const browserMods = [{ id: 'fixture-mod', version: '1', data: { items: [] } }];
@@ -490,6 +492,7 @@ it('acknowledges only the won checkpoint and keeps a failed completion visible f
     seed: 13,
     run: run.snapshot(),
     checkpoint: controller.winCheckpointStatus,
+    checkpointMessages: screenText.winCheckpointMessages,
     newWorld: () => undefined,
     freshAttempt: () => undefined,
     exportRun: () => undefined,

@@ -110,6 +110,7 @@ export interface HandlingViewModel {
 }
 
 interface ThrowChargePresentation {
+  readonly label: string;
   readonly elapsedSimSeconds: number;
   readonly chargeSimSeconds: number;
   readonly minimumHoldSimSeconds: number;
@@ -140,12 +141,12 @@ export const timedActionHandlingPresentation = (action: TimedActionPresentation)
 export const handlingViewModel = (queue: HandlingPresentationSource): HandlingViewModel => {
   const [job, next] = queue.jobs;
   if (queue.throwCharge) {
-    const { elapsedSimSeconds, chargeSimSeconds, minimumHoldSimSeconds } = queue.throwCharge;
+    const { label, elapsedSimSeconds, chargeSimSeconds, minimumHoldSimSeconds } = queue.throwCharge;
     const percent = (seconds: number) =>
       Math.round((Math.max(0, Math.min(chargeSimSeconds, seconds)) / chargeSimSeconds) * 100);
     return {
       visible: true,
-      label: 'Throw force',
+      label,
       simSecondsLabel: `${Math.max(0, Math.min(chargeSimSeconds, elapsedSimSeconds)).toFixed(1)} / ${chargeSimSeconds.toFixed(1)} s`,
       percent: percent(elapsedSimSeconds),
       minimumPercent: percent(minimumHoldSimSeconds),

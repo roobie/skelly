@@ -13,7 +13,12 @@ export interface CraftPanelActions {
   start: (id: string) => void;
   prefer: (id: string, group: number, item: string) => void;
 }
-export const renderCrafting = (root: HTMLElement, rows: readonly CraftRow[], actions: CraftPanelActions): void => {
+export const renderCrafting = (
+  root: HTMLElement,
+  rows: readonly CraftRow[],
+  actions: CraftPanelActions,
+  messages: { readonly cheapestAvailable: string },
+): void => {
   render(
     html`<header><h2>${factDetail('Crafting', 'Starting a recipe requires both hands free.')}</h2></header>
     ${repeat(
@@ -30,7 +35,7 @@ export const renderCrafting = (root: HTMLElement, rows: readonly CraftRow[], act
             ? html`<div class="craft-use">Use ${comboBox({
                 label: `${row.name} material group ${group.group + 1}`,
                 options: [
-                  { value: '', label: 'Cheapest available' },
+                  { value: '', label: messages.cheapestAvailable },
                   ...group.alternatives.map((a) => ({ value: a.id, label: a.name })),
                 ],
                 value: group.preferred,

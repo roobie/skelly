@@ -4,14 +4,10 @@ const AUDIO_VOLUME_CATEGORIES = ['master', 'world', 'body', 'ui'] as const;
 export type AudioVolumeCategory = (typeof AUDIO_VOLUME_CATEGORIES)[number];
 export type AudioVolumes = Readonly<Record<AudioVolumeCategory, number>>;
 
-const LABELS: Record<AudioVolumeCategory, string> = {
-  master: 'Master',
-  world: 'World',
-  body: 'Body',
-  ui: 'UI',
-};
+export type AudioVolumeLabels = Readonly<Record<AudioVolumeCategory, string>>;
 
 const optionsTemplate = (
+  labels: AudioVolumeLabels,
   volumes: AudioVolumes,
   change: (category: AudioVolumeCategory, value: number) => void,
 ): TemplateResult => html`
@@ -30,7 +26,7 @@ const optionsTemplate = (
       };
       return html`
         <label class="audio-options__row" for="audio-volume-${category}">
-          <span>${LABELS[category]}</span>
+          <span>${labels[category]}</span>
           <input
             id="audio-volume-${category}"
             type="range"
@@ -38,7 +34,7 @@ const optionsTemplate = (
             max="1"
             step="0.01"
             .value=${String(volumes[category])}
-            aria-label="${LABELS[category]} volume"
+            aria-label="${labels[category]} volume"
             @input=${(event: Event) => change(category, Number((event.currentTarget as HTMLInputElement).value))}
             @pointerdown=${setFromPointer}
             @click=${setFromPointer}
@@ -53,6 +49,7 @@ const optionsTemplate = (
 /** Renders persistent audio controls into the lit-html main menu. */
 export const renderAudioOptions = (
   root: HTMLElement,
+  labels: AudioVolumeLabels,
   initial: AudioVolumes,
   setVolume: (category: AudioVolumeCategory, value: number) => void,
 ): void => {
@@ -61,7 +58,7 @@ export const renderAudioOptions = (
     const clamped = Math.max(0, Math.min(1, value));
     setVolume(category, clamped);
     volumes = { ...volumes, [category]: clamped };
-    render(optionsTemplate(volumes, change), root);
+    render(optionsTemplate(labels, volumes, change), root);
   };
-  render(optionsTemplate(volumes, change), root);
+  render(optionsTemplate(labels, volumes, change), root);
 };

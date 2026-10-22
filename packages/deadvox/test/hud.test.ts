@@ -161,11 +161,11 @@ describe('handlingViewModel', () => {
     for (const elapsedSimSeconds of [0, chargeSimSeconds / 2, chargeSimSeconds * 2]) {
       const vm = handlingViewModel({
         jobs: [],
-        throwCharge: { elapsedSimSeconds, chargeSimSeconds, minimumHoldSimSeconds },
+        throwCharge: { label: 'fixture throw', elapsedSimSeconds, chargeSimSeconds, minimumHoldSimSeconds },
       });
 
       expect(vm.visible).toBe(true);
-      expect(vm.label.trim()).not.toBe('');
+      expect(vm.label).toBe('fixture throw');
       expect(vm.percent).toBe(Math.round((Math.min(chargeSimSeconds, elapsedSimSeconds) / chargeSimSeconds) * 100));
       expect(vm.minimumPercent).toBe(Math.round((minimumHoldSimSeconds / chargeSimSeconds) * 100));
     }

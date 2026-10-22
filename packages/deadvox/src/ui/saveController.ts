@@ -60,11 +60,15 @@ export const contentLookup = (registry: Registry, kind: SaveContentKind, id: str
 };
 
 const errorMessage = (error: unknown): string => (error instanceof Error ? error.message : String(error));
-const INSECURE_CONTEXT_MESSAGE = "Saves need a secure (https) page; this session won't be saved";
+export interface SaveMessages {
+  readonly insecurePage: string;
+  readonly apisUnavailable: string;
+  readonly noSavedWorld: string;
+}
 
-const saveEnvironmentProblem = (): string | undefined => {
+const saveEnvironmentProblem = (messages: SaveMessages): string | undefined => {
   if (!globalThis.isSecureContext) {
-    return INSECURE_CONTEXT_MESSAGE;
+    return messages.insecurePage;
   }
   if (
     typeof globalThis.crypto?.randomUUID !== 'function' ||
@@ -72,7 +76,7 @@ const saveEnvironmentProblem = (): string | undefined => {
     !navigator.storage ||
     !globalThis.indexedDB
   ) {
-    return 'Required save APIs are unavailable; this session will not be saved.';
+    return messages.apisUnavailable;
   }
   return undefined;
 };
@@ -113,6 +117,7 @@ export class SaveController {
   private recordSnapshotDuration: ((durationMs: number) => void) | undefined;
   private worldId = '';
   private characterId = '';
+  private readonly messages: SaveMessages;
   private readonly environmentProblem: string | undefined;
   private checkpoints: CheckpointSchedule | undefined;
   private queued: { snapshot: Readonly<SaveSnapshot>; reason: string } | undefined;
@@ -137,11 +142,13 @@ export class SaveController {
   }
 
   constructor(
+    messages: SaveMessages,
     backend: SaveBackendPreference = 'auto',
     bundledMods: readonly ActiveBundledMod[] = [],
     browserMods: readonly ActiveBrowserMod[] = [],
   ) {
-    this.environmentProblem = saveEnvironmentProblem();
+    this.messages = messages;
+    this.environmentProblem = saveEnvironmentProblem(messages);
     if (!this.environmentProblem) {
       this.identity = currentSaveVersionIdentity(bundledMods, browserMods);
       this.worldId = globalThis.crypto.randomUUID();
@@ -276,7 +283,7 @@ export class SaveController {
       return;
     }
     if (!this.currentRecord) {
-      this.statusText = 'No saved world found.';
+      this.statusText = this.messages.noSavedWorld;
       return;
     }
     this.candidate = this.currentRecord;

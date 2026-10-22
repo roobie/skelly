@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { expect, it } from 'vitest';
+import baseUi from '../src/content/base/ui.json' with { type: 'json' };
 import { buildRegistry, requiredContentIssues, validateContent } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { applyUiTokens } from '../src/ui/uiTokens.ts';
@@ -29,6 +30,7 @@ const tuning = {
   doorCloseBlockedMessages: { player: 'fixture player blocks', other: 'fixture other blocks' },
   itemActionLabels: { stripRound: 'fixture strip' },
   wearSlotLabels,
+  screenText: baseUi.ui[0]!.screenText,
   furnitureMoveMessages: Object.fromEntries(
     [
       'tooBig',
@@ -98,10 +100,12 @@ it('rejects UI tuning missing any player-facing text field, with no code default
     itemActionLabels: _i,
     wearSlotLabels: _w,
     furnitureMoveMessages: _f,
+    screenText: _s,
     ...bare
   } = tuning;
   const missing = validateContent({ source: 'no-text.json', data: { ui: [bare] } });
   expect(missing.map(({ path }) => path)).toEqual([
+    'ui[0].screenText',
     'ui[0].restLabels',
     'ui[0].doorCloseBlockedMessages',
     'ui[0].furnitureMoveMessages',
@@ -114,6 +118,12 @@ it('rejects UI tuning missing any player-facing text field, with no code default
     data: { ui: [{ ...tuning, wearSlotLabels: partialSlots }] },
   });
   expect(partial.map(({ path }) => path)).toEqual(['ui[0].wearSlotLabels.head']);
+  const { noRoom: _n, ...partialInventory } = tuning.screenText.inventoryMessages;
+  const partialScreen = validateContent({
+    source: 'partial-screen-text.json',
+    data: { ui: [{ ...tuning, screenText: { ...tuning.screenText, inventoryMessages: partialInventory } }] },
+  });
+  expect(partialScreen.map(({ path }) => path)).toEqual(['ui[0].screenText.inventoryMessages.noRoom']);
 });
 
 it('reports content without the core UI tuning at validation, not at startup', () => {

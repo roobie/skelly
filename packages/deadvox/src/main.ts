@@ -10,6 +10,7 @@ import assetManifest from './content/base/assets/manifest.json' with { type: 'js
 import { validateManifest } from './core/assets.ts';
 import { getBuildRevision } from './core/buildInfo.ts';
 import { parseTimeOfDay } from './core/clock.ts';
+import { CORE_CONTENT_IDS } from './core/contentIds.ts';
 import { bundledModIdsFromUrl, selectBundledMods } from './game/bundledMods.ts';
 import { applyWeatheringConfig, configFromUrl, DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
 import { mountControlsCard } from './game/controls.ts';
@@ -51,6 +52,8 @@ const browserSelection = showMods ? await chooseMods(modsScreen) : undefined;
 const content = browserSelection?.content ?? bundled.content;
 startupScreen.hidden = false;
 applyUiTokens(content.registry, document.documentElement);
+const screenText = content.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText;
+inputBindings.setPointerLabels(screenText.pointerButtonLabels);
 const saveStatus = document.getElementById('save-status')!;
 const saveStatusHome = saveStatus.parentElement!;
 const saveStatusNextSibling = saveStatus.nextSibling;
@@ -204,7 +207,12 @@ if (bench === 'report') {
     });
     const saveBackend = params.get('save-backend');
     const backend: SaveBackendPreference = saveBackend === 'opfs' || saveBackend === 'indexeddb' ? saveBackend : 'auto';
-    const saveController = new SaveController(backend, bundled.admitted, browserSelection?.admitted);
+    const saveController = new SaveController(
+      screenText.saveMessages,
+      backend,
+      bundled.admitted,
+      browserSelection?.admitted,
+    );
     startupScreen.append(saveStatus);
     if (params.get('save-test') === '1') {
       Object.assign(globalThis, {

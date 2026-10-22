@@ -30,7 +30,7 @@ import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
 import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_RANGES } from '../src/core/weather.ts';
-import { INPUT_BINDINGS, inputBindings, POINTER_ACTIONS } from '../src/game/inputBindings.ts';
+import { INPUT_BINDINGS, inputBindings } from '../src/game/inputBindings.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { camoShaderConfig } from '../src/render/surfacePatterns.ts';
 import { buildFixtureRegistry as buildRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
@@ -317,7 +317,7 @@ describe('content', () => {
       ...INPUT_BINDINGS.flatMap((binding) =>
         binding.defaults.map((_, index) => inputBindings.alternativeLabel(binding.id, index).split(' + ').at(-1)!),
       ),
-      ...POINTER_ACTIONS.map(({ label }) => label),
+      ...Object.values(baseRegistry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.pointerButtonLabels),
     ];
     const controlPatterns = [...new Set(bindingLabels)].map((label) => {
       const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replaceAll(' ', '\\s+');
@@ -326,15 +326,7 @@ describe('content', () => {
       }
       return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, 'iu');
     });
-    const buttonAliases = POINTER_ACTIONS.flatMap(({ id }) => {
-      if (id === 'hand.use-dominant') {
-        return [LMB_ALIAS];
-      }
-      if (id === 'stance.ready') {
-        return [RMB_ALIAS];
-      }
-      return [];
-    });
+    const buttonAliases = [LMB_ALIAS, RMB_ALIAS];
     const namesInput = (description: string) =>
       [...controlPatterns, ...buttonAliases].some((pattern) => pattern.test(description)) ||
       INPUT_GESTURE.test(description);

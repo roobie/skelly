@@ -605,7 +605,10 @@ const inventoryTemplate = (
   <div class="inv-gutter-probe" aria-hidden="true"></div>
 `;
 
-const queueTemplate = (queue: Pick<HandlingQueue, 'jobs' | 'busy' | 'remaining'>): TemplateResult => {
+const queueTemplate = (
+  queue: Pick<HandlingQueue, 'jobs' | 'busy' | 'remaining'>,
+  nothingQueued: string,
+): TemplateResult => {
   const rows = queue.jobs.map((job, i) => ({
     n: String(i + 1),
     label: job.label,
@@ -615,7 +618,7 @@ const queueTemplate = (queue: Pick<HandlingQueue, 'jobs' | 'busy' | 'remaining'>
   return html`
     <div class="inv-queue-title">
       <strong>${factDetail('Doing next', 'Handling halves movement speed and prevents sprinting.')}</strong>
-      <span class="inv-muted">${queue.busy ? html`${secs(queue.remaining)} left · Cancel (${keyCap('handling.stop')})` : 'Nothing queued'}</span>
+      <span class="inv-muted">${queue.busy ? html`${secs(queue.remaining)} left · Cancel (${keyCap('handling.stop')})` : nothingQueued}</span>
     </div>
     ${rows.map(
       (row) => html`
@@ -869,7 +872,7 @@ export class InventoryScreen {
     if (action === 'inventory.search') {
       const next = this.hooks.containers().find((c) => !(c.searched || this.hooks.searching(c)));
       this.report(
-        next ? this.hooks.dispatch({ kind: 'inventory.search', entityUid: next.uid }) : 'Nothing here to search',
+        next ? this.hooks.dispatch({ kind: 'inventory.search', entityUid: next.uid }) : this.messages().nothingToSearch,
       );
       return true;
     }
@@ -901,7 +904,7 @@ export class InventoryScreen {
         return true;
       case 'inventory.best-pocket': {
         const best = bestPocket(this.inv, item);
-        this.report(best ? this.tryQueue(item, best.target) : 'No room on you');
+        this.report(best ? this.tryQueue(item, best.target) : this.messages().noRoom);
         return true;
       }
       case 'inventory.take-all-like':
@@ -1389,10 +1392,14 @@ export class InventoryScreen {
     return lines;
   }
 
+  private messages() {
+    return this.inv.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.inventoryMessages;
+  }
+
   private renderQueue(): void {
     const queueRoot = this.root.querySelector<HTMLElement>('.inv-queue');
     if (queueRoot) {
-      render(queueTemplate(this.queue), queueRoot);
+      render(queueTemplate(this.queue, this.messages().nothingQueued), queueRoot);
     }
   }
 

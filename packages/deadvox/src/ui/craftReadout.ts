@@ -1,6 +1,7 @@
 // Read-only crafting projection: one reach index, no item ownership or commands.
 import type { CraftCharacter } from '../core/character.ts';
 import type { RecipeDef, Registry } from '../core/content.ts';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { type CraftPreference, planCraft, requirementStatus } from '../core/crafting.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
@@ -81,6 +82,7 @@ const recipeStartReason = (
   result: ReturnType<typeof planCraft>,
   reach: ReachSnapshot,
   startReason: string | undefined,
+  noRepairTarget: string,
 ): string | undefined => {
   if (startReason) {
     return startReason;
@@ -94,7 +96,7 @@ const recipeStartReason = (
       (entry) => entry.item.type === recipe.result.item && entry.item.count === 1 && entry.item.condition < 1,
     )
   ) {
-    return 'No damaged repair target in reach';
+    return noRepairTarget;
   }
   return undefined;
 };
@@ -122,7 +124,13 @@ export const craftRows = ({
       name: `${recipe.kind === 'repair' ? 'Repair: ' : ''}${registry.items.get(recipe.result.item)!.name}`,
       kind: recipe.kind === 'repair' ? 'repair' : 'craft',
       time: craftTime('plan' in result ? result.plan.gather + result.plan.work : recipe.timeGameMinutes),
-      reason: recipeStartReason(recipe, result, reach, startReason),
+      reason: recipeStartReason(
+        recipe,
+        result,
+        reach,
+        startReason,
+        registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.craftingMessages.noRepairTarget,
+      ),
       components: status.components.map(({ alternatives, group }) => ({
         group,
         preferred: prefer?.[group] ?? '',

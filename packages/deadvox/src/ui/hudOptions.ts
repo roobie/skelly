@@ -66,17 +66,7 @@ export const writeHudOptions = (state: HudSettings): void => {
   }
 };
 
-const LABELS: Record<HudOptionKey, string> = {
-  stats: 'Health, blood, bleeding, food, water, fatigue, pain, stamina and carrying weight',
-  clock: 'Clock and time compression',
-  details: 'World details (FPS, seed, position, chunks and movement)',
-  crosshair: 'Crosshair',
-  interaction: 'Interaction hints and target name',
-  interactionOutline: 'Interactible outline',
-  quickbar: 'Quickbar',
-  handling: 'Handling progress',
-  messages: 'Messages and interruptions',
-};
+export type HudOptionLabels = Readonly<Record<HudOptionKey, string>>;
 
 const optionTemplate = (
   key: HudSettingKey,
@@ -88,20 +78,22 @@ const optionTemplate = (
 `;
 
 const optionsTemplate = (
+  labels: HudOptionLabels,
   state: HudSettings,
   change: (key: HudSettingKey, value: boolean) => void,
 ): TemplateResult => html`
   <section class="hud-options">
     <h2>HUD</h2>
     ${optionTemplate('shown', html`Show the HUD (hold ${keyCap('hud.toggle')} in play)`, state, change)}
-    ${HUD_OPTION_KEYS.map((key) => optionTemplate(key, LABELS[key], state, change))}
+    ${HUD_OPTION_KEYS.map((key) => optionTemplate(key, labels[key], state, change))}
   </section>
 `;
 
 export const renderHudOptions = (
   root: HTMLElement,
+  labels: HudOptionLabels,
   state: HudSettings,
   change: (key: HudSettingKey, value: boolean) => void,
 ): void => {
-  render(optionsTemplate(state, change), root);
+  render(optionsTemplate(labels, state, change), root);
 };
