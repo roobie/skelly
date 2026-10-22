@@ -377,6 +377,12 @@ Because every explored piece stays in memory, a lookup must not cost more as the
 area grows, so lookups find pieces through an index by column. See
 `src/core/blockEntities.ts`, `BlockEntities.near`.
 
+Save size and save time are held to a budget measured against explored area. One record
+holding every explored piece makes save work grow with exploration, so crossing the
+budget reopens whether explored furniture stays in memory and saved and whether the save
+stays one record; the budget is not raised to make room. See
+`test/exploredSaveBudget.test.ts` (its budget constants).
+
 ### Block entities
 
 Stateful blocks keep their changing state separate from static block identity.
