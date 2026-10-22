@@ -141,6 +141,22 @@ describe('gungen exports satisfy deadvox model validation', () => {
     }
   });
 
+  // A fitted muzzle attachment is an item the player can remove and refit, so its host must certify it.
+  it('certifies every fitted muzzle attachment on the host it is mounted at', () => {
+    const fitted = EXPORTED.flatMap(({ modelEntry }) =>
+      (modelEntry.gun?.attachments ?? [])
+        .filter(({ mount }) => mount === 'muzzle')
+        .map((attachment) => ({ model: modelEntry, attachment })),
+    );
+    assert.ok(fitted.length > 0);
+    for (const { model, attachment } of fitted) {
+      assert.ok(
+        model.gun.compatibility?.[attachment.mountedAt]?.includes(attachment.id),
+        `${model.id}: ${attachment.id} is not certified on ${attachment.mountedAt}`,
+      );
+    }
+  });
+
   it('loads exported suppressor material colours unchanged through the Deadvox loader', async () => {
     const suppressors = EXPORTED.filter(({ modelEntry }) => modelEntry.gun?.attachment?.kind === 'suppressor');
     assert.ok(suppressors.length > 0);

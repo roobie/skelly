@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { Body } from '../src/core/body.ts';
 import { SECONDS_PER_HOUR, simSecondsPerHour } from '../src/core/clock.ts';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
+import { coreMessage } from '../src/core/coreText.ts';
 import { freshnessWord, isRotten, spoilage } from '../src/core/food.ts';
 import { Inventory, type Target } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
-import { NO_GROUND_ROOM_REFUSAL, NO_LANDING_REFUSAL } from '../src/core/itemThrow.ts';
 import { chargeOf, drainLight, swapBattery, toggleLight } from '../src/core/lights.ts';
 import { canSprint, consume, type Needs, stepNeeds, stepStamina } from '../src/core/needs.ts';
 import { freshDropTarget } from '../src/core/options.ts';
@@ -22,12 +22,13 @@ const base = (file: string): ContentSource => {
   const source = `src/content/base/${file}`;
   const data = JSON.parse(readFileSync(source, 'utf8'));
   if (file === 'items-tools.json') {
-    data.items = data.items.filter((item: { id: string }) => !['torch', 'candle'].includes(item.id));
+    data.items = data.items.filter((item: { id: string }) => !['torch', 'candle', 'oil_lamp'].includes(item.id));
   }
   return { source, data };
 };
 const { registry } = buildRegistry(
   [
+    'ui.json',
     'sounds.json',
     'sounds-pump.json',
     'sounds-weapons.json',
@@ -241,7 +242,7 @@ describe('flashlight', () => {
     const { inventory, light, old, batteries } = halfSpent();
     inventory.landing = () => undefined;
     const spent = (item: Item) => freshDropTarget(inventory, item, [0, 0, 0]);
-    expect(swapBattery(inventory, light, batteries, spent)).toBe(NO_LANDING_REFUSAL);
+    expect(swapBattery(inventory, light, batteries, spent)).toBe(coreMessage(inventory.registry, 'noLanding'));
     expect(light.slots!.battery).toBe(old);
     expect(batteries.count).toBe(3);
   });
@@ -274,7 +275,7 @@ describe('flashlight', () => {
     while (inventory.add(inventory.create('flashlight'), pile)) {
       // Fill the pile until it refuses.
     }
-    expect(swapBattery(inventory, light, batteries, () => pile)).toBe(NO_GROUND_ROOM_REFUSAL);
+    expect(swapBattery(inventory, light, batteries, () => pile)).toBe(coreMessage(inventory.registry, 'noGroundRoom'));
     expect(light.slots!.battery).toBe(old);
     expect(batteries.count).toBe(3);
   });
@@ -336,8 +337,9 @@ describe('death', () => {
     const events = live.events.reader();
     expect(untilDeath(live, false)).toBeCloseTo(expected, -1);
     expect(untilDeath(fast, true)).toBeCloseTo(expected, -2);
-    expect(live.dead!.cause).toBe('thirst and hunger');
-    expect(fast.dead!.cause).toBe('thirst and hunger');
+    const cause = coreMessage(live.registry, 'causeThirstAndHunger');
+    expect(live.dead!.cause).toBe(cause);
+    expect(fast.dead!.cause).toBe(cause);
     // Nothing moves after death.
     const at = live.time;
     expect(live.frame(1)).toBe(0);

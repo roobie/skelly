@@ -59,7 +59,8 @@ const runEngagement = (seed: number): EngagementResult => {
     movement: playerMovement,
     lit: false,
     lightSeenFrom: 40,
-    crouching: false,
+    eyeHeightMetres: 1.3,
+    stance: 'standing',
   });
   let hits = 0;
   const system = new ZombieSystem({
@@ -190,7 +191,8 @@ const runTierHandoff = (): TierResult => {
     movement: 'sprinting',
     lit: false,
     lightSeenFrom: 40,
-    crouching: false,
+    eyeHeightMetres: 1.3,
+    stance: 'standing',
   });
   const system = new ZombieSystem({
     player,

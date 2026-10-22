@@ -55,6 +55,8 @@ export interface SurvivalHooks {
   /** Whether the book has already taught every recipe it owns. */
   bookRead?: (bookUid: number) => boolean;
   consumed?: ((type: string) => void) | undefined;
+  /** A battery went into a light of this type. */
+  batterySwapped?: ((lightType: string) => void) | undefined;
 }
 
 export class Survival {
@@ -132,7 +134,11 @@ export class Survival {
       if (!this.hooks.reach().entries.some((entry) => entry.item === battery)) {
         return 'The battery is no longer in reach';
       }
-      return swapBattery(this.inventory, light, battery, this.hooks.feet);
+      const reason = swapBattery(this.inventory, light, battery, this.hooks.feet);
+      if (reason === undefined) {
+        this.hooks.batterySwapped?.(light.type);
+      }
+      return reason;
     });
     this.queue.registerAction('survival.canister', (params) => {
       const tool = this.inventory.itemByUid(numberParam(params, 'toolUid'));

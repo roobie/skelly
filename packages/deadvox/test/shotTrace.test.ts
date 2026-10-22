@@ -5,6 +5,7 @@ import type { FirearmTrajectory } from '../src/game/firearmHandling.ts';
 import { IMPACT_MARK_CAP, ImpactEffects, PING_SECONDS } from '../src/render/impactEffects.ts';
 import { traceShot } from '../src/render/shotTrace.ts';
 
+const RANGE_BLOCKS = 12;
 const plane = (x: number, y: number, z: number): boolean => x === 3 && y >= 0 && z === 0;
 const normalize = (direction: Vec3): Vec3 => {
   const length = Math.hypot(...direction);
@@ -26,8 +27,8 @@ describe('shot traces and diegetic impacts', () => {
       visited.push({ solid });
       return solid;
     };
-    const straight = traceShot([0.5, 0.5, 0.5], [[1, 0, 0]], 12, layered)[0]!;
-    const spread = traceShot([0.5, 0.5, 0.5], [normalize([1, 0.6, 0])], 12, plane)[0]!;
+    const straight = traceShot([0.5, 0.5, 0.5], [[1, 0, 0]], RANGE_BLOCKS, layered)[0]!;
+    const spread = traceShot([0.5, 0.5, 0.5], [normalize([1, 0.6, 0])], RANGE_BLOCKS, plane)[0]!;
     expect(straight.hit).toBeDefined();
     expect(spread.hit).toBeDefined();
     expect(visited.at(-1)?.solid).toBe(true);
@@ -36,7 +37,7 @@ describe('shot traces and diegetic impacts', () => {
   });
 
   it('reuses the oldest impact slot without growing the presentation pool', () => {
-    const effects = new ImpactEffects(0.5, plane);
+    const effects = new ImpactEffects(0.5, RANGE_BLOCKS, plane);
     const initialChildren = effects.group.children.length;
     effects.fire(trajectory(0.5), false);
     const firstMatrix = new Matrix4();
@@ -57,7 +58,7 @@ describe('shot traces and diegetic impacts', () => {
   });
 
   it('pings content-designated target hits and fades the ping', () => {
-    const effects = new ImpactEffects(0.5, plane, (block) => block[0] === 3);
+    const effects = new ImpactEffects(0.5, RANGE_BLOCKS, plane, (block) => block[0] === 3);
     effects.fire(trajectory(0.5), false);
     const pingMatrix = new Matrix4();
     effects.pings.getMatrixAt(0, pingMatrix);
@@ -67,7 +68,7 @@ describe('shot traces and diegetic impacts', () => {
     expect(pingMatrix.determinant()).toBe(0);
     effects.dispose();
 
-    const nonTargetEffects = new ImpactEffects(0.5, plane, () => false);
+    const nonTargetEffects = new ImpactEffects(0.5, RANGE_BLOCKS, plane, () => false);
     nonTargetEffects.fire(trajectory(0.5), false);
     nonTargetEffects.pings.getMatrixAt(0, pingMatrix);
     expect(pingMatrix.determinant()).toBe(0);
@@ -75,7 +76,7 @@ describe('shot traces and diegetic impacts', () => {
   });
 
   it('draws the laser to the same traced impact used by the mark', () => {
-    const effects = new ImpactEffects(0.5, plane);
+    const effects = new ImpactEffects(0.5, RANGE_BLOCKS, plane);
     effects.fire(trajectory(0.5, [1, 0.4, 0]), true);
     const holeMatrix = new Matrix4();
     effects.holes.getMatrixAt(0, holeMatrix);
@@ -87,7 +88,7 @@ describe('shot traces and diegetic impacts', () => {
   });
 
   it('keeps updated laser segments from being rejected by stale geometry bounds', () => {
-    const effects = new ImpactEffects(0.5, () => false);
+    const effects = new ImpactEffects(0.5, RANGE_BLOCKS, () => false);
     effects.fire({ eye: [100, 30, 20], muzzle: [100, 30, 20], origin: [100, 30, 20], directions: [[1, 0, 0]] }, true);
     effects.laser.geometry.computeBoundingSphere();
     effects.fire(
@@ -108,7 +109,7 @@ describe('shot traces and diegetic impacts', () => {
     const blockSize = 0.5;
     const wallX = 1;
     const eye: Vec3 = [0.5, 0.5, 0.5];
-    const effects = new ImpactEffects(blockSize, (x) => x === wallX);
+    const effects = new ImpactEffects(blockSize, RANGE_BLOCKS, (x) => x === wallX);
     effects.fire(
       {
         eye,

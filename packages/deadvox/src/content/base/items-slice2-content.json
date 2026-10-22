@@ -1,6 +1,9 @@
 {
   "items": [
     {
+      "canister": {
+        "capacity": 8
+      },
       "category": "material",
       "description": "A small sealed bottle of fuel for lamps and improvised lighting.",
       "economy": {
@@ -11,6 +14,7 @@
       "model": "lamp_oil_bottle",
       "name": "Lamp oil",
       "size": [1, 2],
+      "stack": 2,
       "weight": 500
     },
     {
@@ -697,8 +701,7 @@
         "qualities": {
           "wrenching": 1
         }
-      },
-      "weight": 500
+      }
     },
     {
       "category": "weapon",
@@ -720,6 +723,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "firearmAttachmentEffects": {
+        "kind": "suppressor",
         "recoilReduction": 0.050000000000000003,
         "wearPerShot": 0.02
       },

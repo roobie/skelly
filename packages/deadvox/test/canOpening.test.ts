@@ -169,7 +169,8 @@ describe('held can opening', () => {
 
   it('a tutorial opening is earned by completion, not activation or cancellation', () => {
     const f = fixture();
-    const tutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, vi.fn());
+    const lightKit = baseRegistry().layouts.get('tutorial')!.practice!.light;
+    const tutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, lightKit);
     f.opened.mockImplementation(() => tutorial.opened('canned_beans'));
     expect(f.unpacking.activate(f.can)).toBeUndefined();
     f.queue.cancel();
@@ -182,6 +183,7 @@ describe('held can opening', () => {
       looted: true,
       wielded: true,
       lightOn: false,
+      litType: undefined,
       paused: false,
     });
     expect(tutorial.stage).toBe('open');

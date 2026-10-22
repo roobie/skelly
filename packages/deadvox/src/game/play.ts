@@ -12,6 +12,7 @@ import { formatClock, nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
+import { coreMessage } from '../core/coreText.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
 import { crosshairTarget } from '../core/crosshairTarget.ts';
 import type { EntityId } from '../core/entities.ts';
@@ -22,12 +23,7 @@ import { interactionAffordance } from '../core/interactionAffordance.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
 import type { HandSide, Inventory, Pile, Target } from '../core/inventory.ts';
 import { damageWord, type Item } from '../core/items.ts';
-import {
-  hasMetThrowMinimumHold,
-  NO_LANDING_REFUSAL,
-  throwDistanceForItem,
-  traceItemLanding,
-} from '../core/itemThrow.ts';
+import { hasMetThrowMinimumHold, throwDistanceForItem, traceItemLanding } from '../core/itemThrow.ts';
 import { chargeShare, offHandUse, wornNightVision } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
 import { doorOptions, doorPlan, dropTarget, pocketGroundItem, toHands } from '../core/options.ts';
@@ -39,6 +35,7 @@ import { pileScatterPlacements } from '../core/scatterPile.ts';
 import { discoveryForPlan } from '../core/scenarioDiscovery.ts';
 import type { BodyTuningDef } from '../core/schema.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
+import { firearmsCombatTuning } from '../core/skillTraining.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
 import { soundVariantKey } from '../core/soundSynth.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, realTimestamp } from '../core/time.ts';
@@ -111,7 +108,7 @@ import { debugTargetRay } from './debugTargetRay.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
 import { firearmBoreRay, firearmBoreTarget } from './firearmAim.ts';
-import { CASE_LANDING_LIFT, firearmHandlingFor } from './firearmHandling.ts';
+import { firearmHandlingFor } from './firearmHandling.ts';
 import { FirearmTrigger } from './firearmTrigger.ts';
 import { advanceLiveFrame, observeRealFrame, realNow, startRealFrames } from './frameDriver.ts';
 import { adjustLookPitch, Input } from './input.ts';
@@ -192,9 +189,9 @@ import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
-const caseLandingWorldPosition = ([x, y, z]: Vec3, blockSize: number): Vec3 => [
+const caseLandingWorldPosition = ([x, y, z]: Vec3, blockSize: number, liftMetres: number): Vec3 => [
   (x + 0.5) * blockSize,
-  y * blockSize + CASE_LANDING_LIFT,
+  y * blockSize + liftMetres,
   (z + 0.5) * blockSize,
 ];
 
@@ -637,14 +634,15 @@ const createPlayTutorial = (engine: Engine, enabled: boolean | undefined) => {
     return {};
   }
   const exitBeat = engine.site?.playtestMarks?.beats.find((beat) => beat.id === 'tutorial_exit');
-  if (!exitBeat) {
-    throw new Error('Practice requires an authored exit');
+  const lightKit = engine.site?.lightPractice;
+  if (!(exitBeat && lightKit)) {
+    throw new Error('Practice requires an authored exit and light module content');
   }
   const tutorial = new Tutorial(
     engine.spawn.pos.map((coordinate) => coordinate / engine.config.scale.blockSize) as Vec3,
     engine.spawn.yaw,
     exitBeat.area,
-    leaveTutorial,
+    lightKit,
   );
   const drawTutorial = mountTutorial(tutorial, leaveTutorial, () => location.reload());
   return { tutorial, drawTutorial };
@@ -829,7 +827,7 @@ export const startPlay = (
       blocking: () => shouldPlayerBlock(),
       consumeDominantUse: () => input.consumeDominantUse(),
       consumeOffUse: () => input.consumeOffUse(),
-      consumeCrouchToggle: () => input.consumeCrouchToggle(),
+      consumeStanceToggle: () => input.consumeStanceToggle(),
       useDominant: () =>
         routeDominantUse(throwingStance, beginItemThrow, () => {
           // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
@@ -925,8 +923,16 @@ export const startPlay = (
     },
     onHandlingOutcomes: (result) => playtestObserver?.handlingOutcomes(result),
     onConsumed: (type) => tutorial?.consumed(type),
+    onBatterySwapped: (lightType) => tutorial?.batterySwapped(lightType),
     onFirearmEjection: (effect) =>
-      caseEffects.spawn({ ...effect, landingPosition: caseLandingWorldPosition(effect.landingPosition, s) }),
+      caseEffects.spawn({
+        ...effect,
+        landingPosition: caseLandingWorldPosition(
+          effect.landingPosition,
+          s,
+          firearmsCombatTuning(registry).caseEjection.landingLiftMetres,
+        ),
+      }),
     onFirearmCaseLanded: (seed, item, instanceIndex) => {
       const location = inventory.locate(item);
       if (location?.kind !== 'pile') {
@@ -2107,7 +2113,10 @@ export const startPlay = (
         input.walking = toggleWalking(input.walking, replayPlayer ? undefined : inputRecorder, inputContext());
         break;
       case 'player.crouch-toggle':
-        withUnlockedInput(() => input.requestCrouchToggle());
+        withUnlockedInput(() => input.requestStanceToggle('crouch'));
+        break;
+      case 'player.prone-toggle':
+        withUnlockedInput(() => input.requestStanceToggle('prone'));
         break;
       case 'player.throw':
         withUnlockedInput(() => throwStanceInput.keyDown(action, at));
@@ -2682,7 +2691,7 @@ export const startPlay = (
     }
     const target = itemLandingTarget(distanceMetres);
     if (!target) {
-      showRefusal(NO_LANDING_REFUSAL, sim.time);
+      showRefusal(coreMessage(registry, 'noLanding'), sim.time);
       return;
     }
     const throwOffset: Vec3 = throwingStance
@@ -3169,6 +3178,7 @@ export const startPlay = (
         yaw: spectator.avatarYaw(input.yaw),
         pitch: input.pitch,
         stridePhase: session.playerStridePhase,
+        stance: session.stance,
         eye: eye(),
         ...(spectator.body
           ? { spectator: { position: [...spectator.body.pos], yaw: input.yaw, pitch: input.pitch } }
@@ -3337,10 +3347,12 @@ export const startPlay = (
   };
 
   const targetAlongBore = (bore: ReturnType<typeof firearmBoreRay>) => {
+    const rangeBlocks = firearmsCombatTuning(registry).shotTraceRangeBlocks;
     const surface = crosshairTarget(
       { world: engine.world, registry, entities, isSolid: engine.isSolid, blockSize: s },
       bore.origin,
       bore.direction,
+      rangeBlocks,
     );
     return firearmBoreTarget({
       eye: bore.origin,
@@ -3349,6 +3361,7 @@ export const startPlay = (
       zombies: zombieSystem,
       blockSize: s,
       weapon: unarmedMeleeWeapon(registry.meleeClasses),
+      rangeBlocks,
     });
   };
 
@@ -3608,7 +3621,7 @@ export const startPlay = (
     tutorial?.observe({
       position: body.pos,
       yaw: input.yaw,
-      crouching: session.crouching,
+      crouching: session.stance === 'crouching',
       doorOpen: [...entities.all].some((entity) => entity.type === 'wood_door' && entity.open),
       searched: [...entities.all].some((entity) => entity.type === 'tutorial_cabinet' && entity.searched),
       looted: inventory.looted.size > 0,
@@ -3616,6 +3629,7 @@ export const startPlay = (
         Object.values(inventory.hands).some((item) => item?.type === 'canned_beans') &&
         Object.values(inventory.hands).some((item) => item?.type === 'can_opener'),
       lightOn: survival.lit?.type === 'flashlight' && survival.lit.on === true,
+      litType: survival.lit?.on === true ? survival.lit.type : undefined,
       paused: mainMenuOpen && started,
     });
     drawTutorial?.({

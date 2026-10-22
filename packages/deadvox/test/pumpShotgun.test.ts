@@ -881,10 +881,11 @@ describe('real pump ammunition', () => {
     const events = s.sim.events.reader();
     expect(s.firearms.fire({ ...pose, item: gun, seed: 71, simTime: shotAt })).toBe(true);
     const emitted = events.read().filter((event) => event.kind === 'sound' || event.kind === 'noise');
-    const shotSound = defOf(registry, gun.type).firearm!.shotSound!;
+    const { shotSound, shotBodySound } = defOf(registry, gun.type).firearm!;
     expect(emitted.map((event) => [event.kind, event.event])).toEqual([
       ['sound', shotSound],
       ['noise', shotSound],
+      ['sound', shotBodySound],
     ]);
     expect(s.playerAudio.vocalNoise?.radiusMetres).toBe(registry.sounds.get(shotSound)!.noise.radiusMetres);
     expect(s.playerAudio.vocalNoise?.radiusMetres).toBeGreaterThan(0);

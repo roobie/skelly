@@ -3,7 +3,7 @@ import type { Manifest } from '../core/assets.ts';
 import type { SoundDef } from '../core/content.ts';
 import type { SoundId } from '../core/soundEvents.ts';
 import { soundVariantKey } from '../core/soundSynth.ts';
-import { HEARTBEAT_FILES, HEARTBEAT_TUNING, heartbeatForStamina } from '../game/audioPresentation.ts';
+import { type HeartbeatTuning, heartbeatForStamina } from '../game/audioPresentation.ts';
 
 export interface SoundTriggerGuide {
   readonly trigger: string;
@@ -49,6 +49,13 @@ const TRIGGER_ENTRIES = [
     {
       trigger: 'Strike a locked door with a crowbar to force its padlock.',
       note: 'Temporary stand-in: shares the door-blocked recording.',
+    },
+  ],
+  [
+    'lock_hammer',
+    {
+      trigger: 'Strike a locked door with a sledgehammer to break its lock open.',
+      note: 'Temporary stand-in: shares the door-blocked recording, pitched down. It carries farther than a crowbar strike.',
     },
   ],
   [
@@ -245,6 +252,13 @@ const TRIGGER_ENTRIES = [
       debugHint:
         '?debug=1&loadout=pump: wield and activate the sealed box to unpack; wield the pump, then use the generated reload binding to load loose shells and rack.',
       note: 'Winchester Model 12 near shots from BR’s CC0 library. Approved as-is with #209 by BR (2026-10-04); further improvements deferred. Hearing radius remains a gameplay estimate.',
+    },
+  ],
+  [
+    'shotgun_boom',
+    {
+      trigger: 'Fire a chambered pump shotgun with LMB; this deep layer sounds with the blast.',
+      note: 'The bolt rifle’s CC0 report slowed under the blast for body.',
     },
   ],
   [
@@ -489,7 +503,9 @@ export interface HeartbeatSoundGuide {
   readonly category: 'body';
   readonly trigger: string;
   readonly status: string;
-  readonly variants: readonly SoundVariantGuide[];
+  readonly variants: readonly (SoundVariantGuide & { readonly event: SoundId })[];
+  /** In-game gains to preview each recording at. */
+  readonly levels: readonly { readonly label: string; readonly gain: number }[];
 }
 
 /** Joins the live sound definitions to their source/author/licence rows in the asset manifest. */
@@ -514,28 +530,40 @@ const synthesisedVariant = (file: string): SoundVariantGuide => ({
   synthesised: true,
 });
 
-export const buildHeartbeatSoundGuide = (manifest: Manifest): HeartbeatSoundGuide => {
+/** The heartbeat's own card, previewed at in-game loudness; its sound events stay out of the trigger guide. */
+export const buildHeartbeatSoundGuide = (
+  heartbeat: HeartbeatTuning,
+  sounds: ReadonlyMap<SoundId, SoundDef>,
+  manifest: Manifest,
+): HeartbeatSoundGuide => {
   const byFile = assetSourcesByFile(manifest);
   return {
     id: 'player-heartbeat',
     category: 'body',
     trigger: 'Sprint to lower stamina, then stop and listen as it recovers.',
     status: "placeholder, awaiting BR's verdict.",
-    variants: Object.values(HEARTBEAT_FILES).map((file) => soundVariant(file, byFile.get(file))),
+    variants: Object.values(heartbeat.sounds).flatMap((event) =>
+      (sounds.get(event)?.variants ?? []).map((variant) => {
+        const file = soundVariantKey(event, variant);
+        return {
+          ...(typeof variant === 'string' ? soundVariant(file, byFile.get(file)) : synthesisedVariant(file)),
+          event,
+        };
+      }),
+    ),
+    levels: [
+      {
+        label: `at ${heartbeat.startStamina}% stamina`,
+        gain: heartbeatForStamina(heartbeat, heartbeat.startStamina).gain,
+      },
+      { label: 'at exhaustion', gain: heartbeatForStamina(heartbeat, 0).gain },
+    ],
   };
 };
 
-export const HEARTBEAT_PREVIEW_LEVELS = [
-  {
-    label: `at ${HEARTBEAT_TUNING.startStamina}% stamina`,
-    gain: heartbeatForStamina(HEARTBEAT_TUNING.startStamina).gain,
-  },
-  { label: 'at exhaustion', gain: heartbeatForStamina(0).gain },
-] as const;
-
 export const renderHeartbeatSoundGuide = (
   heartbeat: HeartbeatSoundGuide,
-  preview: (file: string, gain: number) => void,
+  preview: (event: SoundId, gain: number) => void,
 ) => html`
   <article class="sound-event" data-sound-event=${heartbeat.id}>
     <header>
@@ -556,9 +584,9 @@ export const renderHeartbeatSoundGuide = (
               }
               · ${variant.author} · ${variant.licence}
             </span>
-            ${HEARTBEAT_PREVIEW_LEVELS.map(
+            ${heartbeat.levels.map(
               ({ label, gain }) => html`
-                <button type="button" @click=${() => preview(variant.file, gain)}>Play ${label}</button>
+                <button type="button" @click=${() => preview(variant.event, gain)}>Play ${label}</button>
               `,
             )}
           </li>

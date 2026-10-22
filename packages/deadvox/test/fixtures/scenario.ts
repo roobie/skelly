@@ -112,6 +112,11 @@ export const fixtureScenarioSources = (
   const {
     body: [body],
   } = JSON.parse(readFileSync('src/content/base/body.json', 'utf8'));
+  // The base body's heartbeat names base sound events, so they come along with it.
+  const heartbeatSounds = new Set(Object.values(body.heartbeat.sounds));
+  const bodySounds = (
+    JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')).sounds as { id: string }[]
+  ).filter(({ id }) => heartbeatSounds.has(id));
   const {
     compression: [compression],
   } = JSON.parse(readFileSync('src/content/base/compression.json', 'utf8'));
@@ -123,7 +128,7 @@ export const fixtureScenarioSources = (
       source: 'scenario-fixture.json',
       data: {
         furnitureMaterials: fixtureMaterials(),
-        sounds: fixtureSounds(),
+        sounds: [...fixtureSounds(), ...bodySounds],
         blocks: [
           { id: 'fixture_solid', name: 'Fixture solid', solid: true, color: '#808080' },
           { id: 'asphalt', name: 'Fixture asphalt', solid: true, color: '#404040' },

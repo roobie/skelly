@@ -29,6 +29,14 @@
       "output": "gungen/designs/archetype-revolver.json"
     },
     {
+      "source": "gungen/designs/compact-smg-plain.jsonnet",
+      "output": "gungen/designs/compact-smg-plain.json"
+    },
+    {
+      "source": "gungen/designs/compact-smg.jsonnet",
+      "output": "gungen/designs/compact-smg.json"
+    },
+    {
       "source": "gungen/designs/hunting-rifle.jsonnet",
       "output": "gungen/designs/hunting-rifle.json"
     },
@@ -55,6 +63,10 @@
     {
       "source": "packages/deadvox/src/config/bundled-mods.jsonnet",
       "output": "packages/deadvox/src/config/bundled-mods.json"
+    },
+    {
+      "source": "packages/deadvox/src/config/bundled/beginner.jsonnet",
+      "output": "packages/deadvox/src/config/bundled/beginner.json"
     },
     {
       "source": "packages/deadvox/src/config/perf-baseline.jsonnet",
@@ -99,6 +111,10 @@
     {
       "source": "packages/deadvox/src/content/base/crisis-hq.jsonnet",
       "output": "packages/deadvox/src/content/base/crisis-hq.json"
+    },
+    {
+      "source": "packages/deadvox/src/content/base/figures-player.jsonnet",
+      "output": "packages/deadvox/src/content/base/figures-player.json"
     },
     {
       "source": "packages/deadvox/src/content/base/furniture-cabins.jsonnet",
@@ -271,6 +287,10 @@
     {
       "source": "packages/deadvox/src/content/base/senses.jsonnet",
       "output": "packages/deadvox/src/content/base/senses.json"
+    },
+    {
+      "source": "packages/deadvox/src/content/base/site-generation.jsonnet",
+      "output": "packages/deadvox/src/content/base/site-generation.json"
     },
     {
       "source": "packages/deadvox/src/content/base/sounds-block.jsonnet",

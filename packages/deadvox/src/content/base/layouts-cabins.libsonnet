@@ -12,7 +12,10 @@
         { "template": "hunter_cabin", "position": [80, 21, 55], "rotation": 0 }
       ],
       "player": { "position": [61.5, 21.5, 53], "bearing": 180 },
-      "shamblers": [{ "type": "shambler", "position": [84.25, 21.5, 60.25], "chance": 1 }],
+      "shamblers": [
+        { "type": "shambler", "position": [84.25, 21.5, 60.25], "chance": 1 },
+        { "type": "farmer_shambler", "position": [72.5, 21.5, 63.5], "chance": 1 }
+      ],
       "woodlands": [],
       "tracks": []
     }

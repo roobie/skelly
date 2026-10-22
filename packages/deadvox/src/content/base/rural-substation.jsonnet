@@ -133,7 +133,7 @@ local flue = [
     ground: 21, terrain: [],
     buildings: [{ template: 'rural_substation', position: [50, 21, 50], rotation: 0 }] + yard.buildings,
     player: { position: [55.5, 21.5, 70], bearing: 0 },
-    shamblers: [], woodlands: [],
+    shamblers: [{ type: 'worker_shambler', position: [60.5, 21.5, 64.5], chance: 1 }], woodlands: [],
     tracks: [{ points: [[34, 67], [94, 67]], width: 4, surface: 'dirt' }],
   }],
 }

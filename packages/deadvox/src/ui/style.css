@@ -944,6 +944,9 @@ body.unconscious::after {
 .inv-pile[data-entity-uid] {
   flex: 0 1 auto;
 }
+.inv-target > .inv-pile-label {
+  color: var(--text);
+}
 /* One grid cell is 3rem: `GRID_CELL_REM` in src/core/inventoryGridName.ts. */
 #inventory .inv-grid-packed {
   display: grid;
