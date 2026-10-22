@@ -205,7 +205,7 @@ passage, where small objects fit through openings and large ones stop, is the
 expected direction rather than a promise that visible holes already simulate size.
 Firearm aiming must not offer a target behind a physical blocker; opacity still
 hides targets in foliage. See `src/core/zombies.ts`, `ZombieSystem.aimAt` and
-`ZombieSystem.firePellets`; and `src/core/itemThrow.ts`, `traceItemLanding`.
+`ZombieSystem.firePellets`; and `src/core/itemThrow.ts`, `steppedItemFlight`.
 
 Wire passes only thrusting melee: a directed strike can reach through an opening,
 while a swing or wrestle needs space the fence denies. This gives fence defence a
