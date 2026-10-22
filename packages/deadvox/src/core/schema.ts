@@ -2216,7 +2216,12 @@ const ScenarioSchema = strictObject({
       storeys: pipe(array(strictObject({ id: Id, standing: CellPosition })), minLength(1), maxLength(16)),
       seals: optional(
         array(
-          strictObject({ doors: pipe(array(CellPosition), nonEmpty()), key: CellPosition, standing: CellPosition }),
+          strictObject({
+            doors: pipe(array(CellPosition), nonEmpty()),
+            key: CellPosition,
+            held: optional(literal(true)),
+            standing: CellPosition,
+          }),
         ),
         [],
       ),
