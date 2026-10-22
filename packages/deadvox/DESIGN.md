@@ -1246,7 +1246,13 @@ guns make this carrying option discoverable. See `SLING_SLOT` in
 Moving an item takes real time while the world keeps running; that makes
 looting a consequential choice. Handling stops sprinting and slows walking.
 Queued actions transfer one at a time, so each move remains visible and
-interruptible. Tune handling duration in content, not in this rulebook.
+interruptible.
+
+The handling weights are content, authored beside the Inventory Management
+skill that scales them, so a mod can retune how long moving things takes. The
+schema requires them and no reader falls back to a code default, because a
+silent default would hide a mod that left one out. See `src/core/inventory.ts`,
+`handlingWeights`, and `src/content/base/recipes.libsonnet`.
 
 ### Inventory screen
 

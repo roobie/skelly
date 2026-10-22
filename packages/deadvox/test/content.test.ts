@@ -1692,6 +1692,32 @@ describe('content references', () => {
     ).toBe(true);
   });
 
+  it('rejects the Inventory Management skill without its handling tuning block', () => {
+    const recipes = structuredClone(recipeFile().data) as {
+      skills: { id: string; inventory?: unknown }[];
+    };
+    delete recipes.skills.find(({ id }) => id === 'inventory_management')!.inventory;
+    const { issues } = buildRegistry([{ source: 'recipes.json', data: recipes }]);
+    expect(
+      issues.some(
+        (issue) => issue.source === 'recipes.json' && issue.message.includes('missing required skill tuning'),
+      ),
+    ).toBe(true);
+  });
+
+  it('rejects a handling tuning block that leaves out a weight', () => {
+    const recipes = structuredClone(recipeFile().data) as {
+      skills: { id: string; inventory?: Record<string, number> }[];
+    };
+    const tuning = recipes.skills.find(({ id }) => id === 'inventory_management')!.inventory!;
+    for (const key of Object.keys(tuning).filter((name) => name !== 'handlingFactorFloor')) {
+      const partial = structuredClone(recipes);
+      delete partial.skills.find(({ id }) => id === 'inventory_management')!.inventory![key];
+      const { issues } = buildRegistry([{ source: 'recipes.json', data: partial }]);
+      expect(issues.some((issue) => issue.source === 'recipes.json'), key).toBe(true);
+    }
+  });
+
   it('requires Inventory Management training to be untiered', () => {
     const baseActivity = baseRegistry.skills.get('inventory_management')?.training?.activities?.handling;
     expect(baseActivity?.practice).toBeDefined();

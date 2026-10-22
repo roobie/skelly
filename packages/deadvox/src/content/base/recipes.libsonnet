@@ -11,7 +11,13 @@
       "id": "inventory_management",
       "name": "Inventory Management (IM)",
       "training": { "activities": { "handling": { "practice": 2.5 } } },
-      "inventory": { "handlingFactorFloor": 0, "handlingFactorHalfLifeLevels": 1.1 }
+      "inventory": {
+        "handlingFactorFloor": 0,
+        "handlingFactorHalfLifeLevels": 1.1,
+        "handlingPerCellSeconds": 0.05,
+        "handlingGroundSeconds": 1,
+        "handlingWearSeconds": 2
+      }
     },
     {
       "id": "firearms_combat",
