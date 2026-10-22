@@ -257,9 +257,9 @@ export class FurnitureMeshes {
     return piece;
   }
 
-  /** `plain` moved toward its door material's broken tint, so a broken leaf reads as broken; no look authored leaves it. */
-  private brokenMaterial(plain: MeshLambertMaterial, body: FurnitureDef): MeshLambertMaterial {
-    const look = this.registry?.doorMaterials.get(body.door!.material)?.broken;
+  /** `plain` moved toward its door material's broken tint once the leaf is broken; no look authored leaves it. */
+  private brokenMaterial(entity: BlockEntity, plain: MeshLambertMaterial, body: FurnitureDef): MeshLambertMaterial {
+    const look = entity.broken ? this.registry?.doorMaterials.get(body.door!.material)?.broken : undefined;
     if (!look) {
       return plain;
     }
@@ -270,11 +270,9 @@ export class FurnitureMeshes {
   private door(entity: BlockEntity, plain: MeshLambertMaterial, body: FurnitureDef): Group {
     const box = panelFor(entity, body, this.blockSize);
     const bodyDoor = isBodyDoor(body);
-    const material = entity.broken ? this.brokenMaterial(plain, body) : plain;
+    const material = this.brokenMaterial(entity, plain, body);
     const panelMaterial = bodyDoor
-      ? this.material(
-          `#${new Color(material.color).multiplyScalar(BODY_DOOR_SHADE).getHexString()}`,
-        )
+      ? this.material(`#${new Color(material.color).multiplyScalar(BODY_DOOR_SHADE).getHexString()}`)
       : material;
     const pivot = new Group();
     const panel = new Mesh(this.geometry, panelMaterial);
