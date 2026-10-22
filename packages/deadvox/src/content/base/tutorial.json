@@ -242,6 +242,28 @@
           "position": [-3, 0, -4],
           "rotation": 0,
           "template": "tutorial_station"
+        },
+        {
+          "fixedLoot": [
+            {
+              "at": [1, 1, 1],
+              "items": [
+                {
+                  "charge": 0.01,
+                  "fitted": {
+                    "battery": "aa_battery"
+                  },
+                  "item": "flashlight"
+                },
+                {
+                  "item": "aa_battery"
+                }
+              ]
+            }
+          ],
+          "position": [5, 0, 10],
+          "rotation": 0,
+          "template": "tutorial_store"
         }
       ],
       "demo": true,
@@ -254,6 +276,19 @@
       "player": {
         "bearing": 0,
         "position": [0, 0.5, 8]
+      },
+      "practice": {
+        "light": {
+          "battery": "aa_battery",
+          "labels": {
+            "assign": "Assign quickbar 1",
+            "on": "Switch on",
+            "relight": "Switch on",
+            "start": "Light and power (optional)",
+            "swap": "Hold to put in the battery"
+          },
+          "light": "flashlight"
+        }
       },
       "shamblers": [
         {
@@ -374,6 +409,36 @@
         "W": "siding_blue"
       },
       "size": [12, 7, 9]
+    },
+    {
+      "id": "tutorial_store",
+      "layers": [
+        ["######", "######", "######", "######", "######"],
+        ["WWWWWW", "WCC..W", "WCC..W", "W....W", "WWDDWW"],
+        ["WWWWWW", "WCC..W", "WCC..W", "W....W", "WWDDWW"],
+        ["WWWWWW", "W....W", "W....W", "W....W", "WWDDWW"],
+        ["WWWWWW", "W....W", "W....W", "W....W", "WWDDWW"],
+        ["WWWWWW", "W....W", "W....W", "W....W", "WWWWWW"],
+        ["RRRRRR", "RRRRRR", "RRRRRR", "RRRRRR", "RRRRRR"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "palette": {
+        "#": "planks",
+        ".": "air",
+        "C": {
+          "furniture": "crate"
+        },
+        "D": {
+          "facing": "s",
+          "furniture": "wood_door"
+        },
+        "R": "roof",
+        "W": "siding_blue"
+      },
+      "size": [6, 7, 5]
     }
   ]
 }
