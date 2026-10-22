@@ -1,11 +1,13 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { safeParse } from 'valibot';
 import { expect, it } from 'vitest';
 import type { BashOutcome, BlockEntity } from '../src/core/blockEntities.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { type FurnitureMover, ruinFurniture } from '../src/core/furnitureMove.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import type { Body } from '../src/core/physics.ts';
+import { ContentFileSchema } from '../src/core/schema.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 import { createRuntime } from './snapshotTestSupport.ts';
 
@@ -27,34 +29,31 @@ const box = (id: string, size: Vec3) => ({
   container: { pockets: [{ grid: [4, 4], handlingSimSeconds: 0.5 }] },
   ruin: { debris: [DEBRIS] },
 });
-const fixture = (extra: Record<string, unknown>[] = []) =>
-  buildFixtureRegistry([
-    ...base,
-    {
-      source: 'ruin-fixture',
-      data: {
-        doorMaterials: [{ id: 'ruin_fixture_material', methods: [] }],
-        furniture: [
-          box('ruin_fixture_box', [1, 1, 1]),
-          box('ruin_fixture_plank', [2, 1, 1]),
-          {
-            id: 'ruin_fixture_door',
-            name: 'Fixture door',
-            size: [2, 4, 1],
-            color: '#777777',
-            breach: BREACH,
-            door: { material: 'ruin_fixture_material', handlingSimSeconds: 0.5, methods: {} },
-          },
-          ...extra,
-        ],
-        items: [
-          { id: 'ruin_fixture_item', name: 'Fixture item', category: 'material', size: [1, 1], weight: 1 },
-          { id: DEBRIS.item, name: 'Fixture debris', category: 'material', size: [1, 1], weight: 1, stack: 2 },
-        ],
-      },
+const DOOR_LEAF = {
+  name: 'Fixture door',
+  size: [2, 4, 1],
+  color: '#777777',
+  breach: BREACH,
+  door: { material: 'ruin_fixture_material', handlingSimSeconds: 0.5, methods: {} },
+};
+const { registry, issues } = buildFixtureRegistry([
+  ...base,
+  {
+    source: 'ruin-fixture',
+    data: {
+      doorMaterials: [{ id: 'ruin_fixture_material', methods: [] }],
+      furniture: [
+        box('ruin_fixture_box', [1, 1, 1]),
+        box('ruin_fixture_plank', [2, 1, 1]),
+        { id: 'ruin_fixture_door', ...DOOR_LEAF },
+      ],
+      items: [
+        { id: 'ruin_fixture_item', name: 'Fixture item', category: 'material', size: [1, 1], weight: 1 },
+        { id: DEBRIS.item, name: 'Fixture debris', category: 'material', size: [1, 1], weight: 1, stack: 2 },
+      ],
     },
-  ]);
-const { registry, issues } = fixture();
+  },
+]);
 if (issues.length > 0) {
   throw new Error(JSON.stringify(issues));
 }
@@ -95,6 +94,9 @@ const floating = (inventory: Inventory) =>
     }
     return !under.some(([x, y, z]) => terrainSolid(x, y) || inventory.entities.filling(x, y, z) !== undefined);
   });
+/** Piles lying in a cell a standing piece fills, which the game never allows. */
+const buried = (inventory: Inventory) =>
+  [...inventory.piles.values()].filter(({ pos: [x, y, z] }) => inventory.entities.filling(x, y, z) !== undefined);
 
 it('reports a ruin only on the blow that brings a piece to its durability', () => {
   const inventory = new Inventory(registry);
@@ -123,6 +125,7 @@ it("drops every item a ruined container held, and its content's debris, as piles
   expect(debris.reduce((sum, { item }) => sum + item.count, 0)).toBe(DEBRIS.count);
   expect(uids.length).toBe(held.length + debris.length);
   expect([...inventory.piles.values()].every((pile) => terrainSolid(pile.pos[0], pile.pos[1] - 1))).toBe(true);
+  expect(buried(inventory)).toEqual([]);
 });
 
 it('lets what rested on a ruined piece fall, destroys what cannot come down clear, and leaves nothing floating', () => {
@@ -143,6 +146,7 @@ it('lets what rested on a ruined piece fall, destroys what cannot come down clea
   expect(inventory.entities.byUid(top.uid)).toBe(top);
   expect(top.pos[1]).toBe(FLOOR);
   expect(floating(inventory)).toEqual([]);
+  expect(buried(inventory)).toEqual([]);
   expect(piled(inventory).map(({ item }) => item.uid)).toEqual(expect.arrayContaining(held));
 });
 
@@ -177,21 +181,24 @@ it('breaks a door leaf at its durability and keeps it standing broken, never des
   expect(runtime.entities.byUid(door.uid)).toBe(door);
 });
 
-it('refuses debris naming no item, and debris on a door leaf, which breaks rather than being ruined', () => {
-  const unknown = fixture([
-    { ...box('ruin_fixture_bad', [1, 1, 1]), ruin: { debris: [{ item: 'no_such', count: 1 }] } },
-  ]);
-  expect(unknown.issues.some((issue) => JSON.stringify(issue).includes('ruin'))).toBe(true);
-  const leaf = fixture([
+it('refuses debris naming no item', () => {
+  const { issues: refused } = buildFixtureRegistry([
     {
-      id: 'ruin_fixture_bad_door',
-      name: 'Fixture door',
-      size: [2, 4, 1],
-      color: '#777777',
-      breach: BREACH,
-      door: { material: 'ruin_fixture_material', handlingSimSeconds: 0.5, methods: {} },
-      ruin: { debris: [DEBRIS] },
+      source: 'ruin-fixture',
+      data: {
+        furniture: [
+          { ...box('ruin_fixture_unknown_debris', [1, 1, 1]), ruin: { debris: [{ item: 'no_such', count: 1 }] } },
+        ],
+      },
     },
   ]);
-  expect(leaf.issues.length).toBeGreaterThan(0);
+  // Only the fixture's own content is loaded, so the registry builds quickly and reports nothing else.
+  expect(refused.map(({ path }) => path)).toEqual(['furniture[0].ruin.debris[0].item']);
+});
+
+it('refuses debris on a door leaf, which breaks rather than being ruined', () => {
+  // The schema alone decides this, so no registry is built; the bare leaf parsing shows nothing else fails.
+  const leaf = { id: 'ruin_fixture_leaf', ...DOOR_LEAF };
+  expect(safeParse(ContentFileSchema, { furniture: [leaf] }).success).toBe(true);
+  expect(safeParse(ContentFileSchema, { furniture: [{ ...leaf, ruin: { debris: [DEBRIS] } }] }).success).toBe(false);
 });
