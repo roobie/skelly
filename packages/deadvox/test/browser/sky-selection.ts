@@ -1,6 +1,6 @@
 import { Camera, Mesh, PlaneGeometry, Scene, ShaderMaterial, Vector3, WebGLRenderer, WebGLRenderTarget } from 'three';
 import type { Vec3 } from '../../src/core/coords.ts';
-import { buildSkylight } from '../../src/core/skylight.ts';
+import { buildSkylight } from '../fixtures/skyOracle.ts';
 import { growSky, SKY_HALO } from '../../src/core/skySnapshot.ts';
 import { sampleSky } from '../../src/core/skyTransport.ts';
 import { skyFixture } from '../fixtures/sky.ts';

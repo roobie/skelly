@@ -308,7 +308,7 @@ describe('handling move admission', () => {
       const refusal =
         route === 'toHands'
           ? toHands(t.inventory, t.queue, crowbar, [0, 0, 0])
-          : quickbarTake(t.inventory, t.queue, crowbar, [0, 0, 0]);
+          : quickbarTake(t.inventory, t.queue, crowbar);
       expect(refusal).toBeUndefined();
       t.queue.tick(10);
 

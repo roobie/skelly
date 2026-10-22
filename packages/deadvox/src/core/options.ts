@@ -469,7 +469,7 @@ const queueQuickbarStows = (
 };
 
 /** Quickbar tap: stow what fits without dropping anything, then take only with free hands. */
-export const quickbarTake = (inv: Inventory, queue: HandlingQueue, item: Item, _feet: Vec3): string | undefined => {
+export const quickbarTake = (inv: Inventory, queue: HandlingQueue, item: Item): string | undefined => {
   const def = defOf(inv.registry, item.type);
   const side = quickbarHand(inv, item);
   const needs: HandSide[] = def.twoHanded ? [...SIDES] : [side];

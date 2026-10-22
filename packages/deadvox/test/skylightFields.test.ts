@@ -1,7 +1,7 @@
 import { BoxGeometry, Mesh, MeshLambertMaterial } from 'three';
 import { expect, it, vi } from 'vitest';
 import type { Vec3 } from '../src/core/coords.ts';
-import { buildSkylight } from '../src/core/skylight.ts';
+import { buildSkylight } from './fixtures/skyOracle.ts';
 import { growSky, SKY_HALO } from '../src/core/skySnapshot.ts';
 import { sampleSky } from '../src/core/skyTransport.ts';
 import { skyFixture } from './fixtures/sky.ts';

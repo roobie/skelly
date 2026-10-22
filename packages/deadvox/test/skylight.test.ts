@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest';
-import { buildSkylight, SKY_LOSS, skyIndex } from '../src/core/skylight.ts';
+import { SKY_LOSS, skyIndex } from '../src/core/skylight.ts';
+import { buildSkylight } from './fixtures/skyOracle.ts';
 
 it('a sealed roof prevents diffuse sky while a real hole admits it only along air paths', () => {
   const bounds = { min: [0, 0, 0] as [number, number, number], max: [8, 8, 8] as [number, number, number] };

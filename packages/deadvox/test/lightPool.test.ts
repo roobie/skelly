@@ -6,9 +6,9 @@ import {
   drainLight,
   inventoryLightSources,
   lightSenseSourceFor,
-  sunExposedAt,
   toggleLight,
 } from '../src/core/lights.ts';
+import { sunExposedAt } from './fixtures/sunOracle.ts';
 import { slotsReason } from '../src/core/magazine.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
