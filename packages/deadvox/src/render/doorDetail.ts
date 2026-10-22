@@ -2,7 +2,7 @@ import { type BoxGeometry, type BufferGeometry, Color } from 'three';
 import type { FurnitureDef } from '../core/schema.ts';
 import { type Box, colouredBox, mergedDetail } from './furnitureDetail.ts';
 
-export type DoorDetail = NonNullable<NonNullable<FurnitureDef['door']>['detail']>;
+type DoorDetail = NonNullable<NonNullable<FurnitureDef['door']>['detail']>;
 
 /** Where the hinges sit along the hinge edge, as shares of it: near both ends, and evenly between. */
 const HINGE_SPREAD = { from: 0.12, to: 0.88 } as const;
