@@ -249,6 +249,8 @@ const VEHICLE_CAPABILITIES = [
   'protection',
   /** Frame, tray or mount that other fittings rest on. */
   'structure',
+  /** A road wheel, the part a vehicle rolls on. */
+  'wheel',
 ] as const;
 export type VehicleCapability = (typeof VEHICLE_CAPABILITIES)[number];
 

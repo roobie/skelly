@@ -71,7 +71,7 @@
       "name": "Wheel 205/55 R16",
       "size": [6, 6],
       "vehicle": {
-        "capabilities": []
+        "capabilities": ["wheel"]
       }
     },
     {

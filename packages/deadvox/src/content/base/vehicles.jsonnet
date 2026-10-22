@@ -23,7 +23,8 @@ local headlamps(x, y, z, supportedBy=[]) = pair('headlamp', 'car_headlamp', [x, 
 // The hatchback's own panels are pressed for its body and authored where they sit on it, so they fit at
 // its origin; shared parts are placed by their own frames.
 local origin = [0, 0, 0];
-// `src/core/inventoryScale.ts`, `PILE_GRID`.
+// `src/core/inventoryScale.ts`, `PILE_GRID`. A body panel is larger than a floor pile; the cap costs
+// nothing until a carrying design gives oversized parts their own class.
 local pileSize = [12, 6];
 local hatchback = [
   fitting('shell', 'hatchback_shell', origin),
@@ -89,7 +90,7 @@ local hatchback = [
     part('car_headlamp', 'Headlamp unit', [2, 2], ['light', 'glazing'], 'A sealed lamp and its lens.'),
     part('hatchback_battery_tray', 'Hatchback battery tray', [3, 2], ['structure'], 'A pressed steel shelf for a battery.'),
     part('pickup_battery_tray', 'Pickup battery tray', [4, 3], ['structure'], 'A heavy steel shelf for a battery.'),
-    part('wheel_205_55r16', 'Wheel 205/55 R16', [6, 6], []),
+    part('wheel_205_55r16', 'Wheel 205/55 R16', [6, 6], ['wheel']),
     part('front_seat', 'Front seat', [5, 10], ['seat']),
     part('door_mirror', 'Door mirror', [2, 2], []),
     part('steering_wheel', 'Steering wheel', [4, 4], ['steered']),
