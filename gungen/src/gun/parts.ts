@@ -1325,6 +1325,12 @@ const receiverPorts = (context: ReceiverContext): PortDef[] => {
   } else if (params.stockStyle === 'sporting') {
     stockPortY = SPORTER_PROPORTIONS.stock.genericSeatY;
   }
+  let barrelPortX = frontFaceX;
+  if (params.section === 'ar') {
+    barrelPortX -= AR_ACTION_LAYOUT.barrelExtensionLengthU;
+  } else if (params.section === 'compact-smg') {
+    barrelPortX = COMPACT_SMG_PROPORTIONS.barrel.breechU;
+  }
   const ports: PortDef[] = [
     ...(context.carrierPattern === 'bolt' && params.section !== 'sporter'
       ? [
@@ -1355,15 +1361,7 @@ const receiverPorts = (context: ReceiverContext): PortDef[] => {
       mount: 'barrel',
       gender: 'female',
       size: bore,
-      pos: [
-        params.section === 'ar'
-          ? frontFaceX - AR_ACTION_LAYOUT.barrelExtensionLengthU
-          : params.section === 'compact-smg'
-            ? COMPACT_SMG_PROPORTIONS.barrel.breechU
-            : frontFaceX,
-        0,
-        0,
-      ],
+      pos: [barrelPortX, 0, 0],
       normal: X,
       up: Y,
       required: true,
@@ -2828,8 +2826,10 @@ const barrelLength = (params: Readonly<Record<string, string>>): number => {
     return SPORTER_PROPORTIONS.barrel.lengthU[sizeClass];
   }
   if (params.section === 'compact-smg') {
-    return COMPACT_SMG_PROPORTIONS.barrel.tipU[params.muzzle === 'plain' ? 'plain' : 'threaded'] -
-      COMPACT_SMG_PROPORTIONS.barrel.breechU;
+    return (
+      COMPACT_SMG_PROPORTIONS.barrel.tipU[params.muzzle === 'plain' ? 'plain' : 'threaded'] -
+      COMPACT_SMG_PROPORTIONS.barrel.breechU
+    );
   }
   return params.section === 'ak' ? akBarrelLength(sizeClass) : { S: 26, M: 36, L: 46 }[sizeClass];
 };
