@@ -116,3 +116,38 @@ it('a save round-trip keeps the barred side of a door', async () => {
   expect(opensFrom(loaded.inventory, restored, FRONT)).toBe(false);
   expect(opensFrom(loaded.inventory, restored, BACK)).toBe(true);
 });
+
+it('a save round-trip restores a discounted door-bar craft in progress', async () => {
+  const runtime = createRuntime(undefined, false, undefined, { registry, spawn: [0, 1, 0] });
+  const recipe = registry.recipes.get('door_bar')!;
+  const [component] = recipe.components[0]!;
+  const pos = runtime.player.body.pos.map(Math.floor) as Vec3;
+  for (const side of ['right', 'left'] as const) {
+    const held = runtime.inventory.hands[side];
+    if (held) {
+      expect(runtime.inventory.move(held, { kind: 'pile', pos }).ok).toBe(true);
+    }
+  }
+  runtime.inventory.entities.add({
+    type: 'workbench',
+    pos,
+    size: registry.furniture.get('workbench')!.size,
+    facing: 'n',
+  });
+  expect(
+    runtime.inventory.add(runtime.inventory.create(component!.item, component!.count), { kind: 'pile', pos }),
+  ).toBe(true);
+  expect(runtime.session.crafting.start(recipe.id)).toBeUndefined();
+  const work = runtime.inventory.hands.right!.work!;
+  expect(work.duration).toBeLessThan(recipe.timeGameMinutes);
+
+  const bytes = await encodeFixture(capture(runtime));
+  const decoded = await decodeSave(bytes, {
+    version: formatVersion,
+    contentLookup: (kind, id) => contentLookup(registry, kind, id),
+  });
+  const loaded = createRuntime(decoded.snapshot, false, undefined, { registry });
+  const restored = loaded.inventory.itemByUid(runtime.inventory.hands.right!.uid)!;
+  expect(restored.work).toMatchObject({ kind: 'craft', recipe: recipe.id });
+  expect(loaded.session.crafting.currentUid).toBe(restored.uid);
+});
