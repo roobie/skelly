@@ -235,7 +235,6 @@ local pills(weight, least, parts, of) =
         item('antiseptic', 1),
         item('antibiotics', 0.5),
         pills(1, 2, 1, 2),
-        item('morphine', 0.2),
         item('fanny_pack', 0.5),
         item('flashlight', 0.5),
       ],

@@ -2085,13 +2085,13 @@ reused across types: `grab`, `leap`, `scream`, `explode`, `acidSpit`,
 | --- | --- | --- |
 | 0 | Shambler | Slow, weak, many |
 | 0 | Crawler | Low profile, grabs your legs |
+| 0 | Farmer, site worker, medic | A shambler carrying its trade's kit |
 | 1 | Runner | Fast, fragile |
 | 1 | Screamer | Weak, but its scream pulls in the horde |
 | 1 | Bloater | Bursts into a noxious cloud |
 | 1 | Acid zombie | Spits acid from a distance; the first ranged enemy and first of the acid evolution line, lab storeys only. See `packages/deadvox/docs/acid-zombie.md`, "Acid zombie" |
 | 2 | Brute | Big, knocks you back, breaks doors |
 | 2 | Soldier | Armoured; carries ordinary kit at the military camp and the crisis HQ |
-| 0 | Farmer, site worker, medic | A shambler carrying its trade's kit |
 | 2 | Hazmat | Resists acid and fire (from lab sites) |
 | 3 | Smoulderer | Hot to the touch; sets flammable things on fire |
 | 3 | Incandescent hulk | A brute running a fever of a thousand degrees: glows, sets fires, warps glass. Seen from far away at night |
@@ -2099,7 +2099,7 @@ reused across types: `grab`, `leap`, `scream`, `explode`, `acidSpit`,
 
 Zombie types are content definitions used by shared systems; choose behavior through content properties rather than type-id cases. `src/core/schema.ts`, `ZombieSchema`, defines those properties, and `src/core/zombies.ts`, `ZombieSystem.emitFootsteps`, uses the declared footstep family. The soldier appears only at military-camp markers, explicit camp spawns and the crisis HQ's markers, because the HQ is a military site whose threat should be mostly soldiers; no other place that merely looks military takes them; `src/core/hamlet.ts`, `ordinaryHamletSpawnWeights`, excludes authored-only kinds from ordinary selection.
 
-A shambler's kit is the loot table its type names in `loot`, rolled when it dies from the world seed and the zombie's id, so it is deterministic and needs no state of its own: the drop is an ordinary pile that saves already cover. Kit belongs to the kind and lives in content, not in code, because a kind such as the farmer, the site worker or the medic then differs from a plain shambler by one more type and one more table, never by a branch on its id. Kinds with a kit are authored-only and spawn where their place does: the medic from the clinic template's spawn marker, the site worker in the substation demo layout, the farmer in the cabins demo layout, which stands in until a farm place exists. Kit uses ordinary items; military loot remains restricted to site containers. For #487, defer rendering what a kind wears and carries, the military clothing palette, armour, and body searching; until then clothes and tools appear only as drops.
+A shambler's kit is the loot table its type names in `loot`, rolled when it dies from the world seed and the zombie's id (see `src/game/session.ts`, `onDeath`), so it is deterministic and needs no state of its own: the drop is an ordinary pile that saves already cover. Kit belongs to the kind and lives in content, not in code, because a kind such as the farmer, the site worker or the medic then differs from a plain shambler by one more type and one more table, never by a branch on its id. Kinds with a kit are authored-only and spawn only where their place puts them. Kit uses ordinary items; military loot remains restricted to site containers. A corpse drops only what its loot context admits, so a base kit item outside that context is dead content and a base-content test rejects it; validate does not, because a table supplies weights, not a second geography authority (`DESIGN.md`, "Military loot"). For #487, defer rendering what a kind wears and carries, the military clothing palette, armour, and body searching; until then clothes and tools appear only as drops.
 
 The brute shambler guards the secret cellar (`packages/deadvox/docs/content.md`, "City building types"). It is an authored-only type on mobgen's brute body, with more health and harder hits than the shambler as content values. It wears the brute body rather than a shambler's so it reads as a different kind of zombie in the dark. It bashes doors with no more strength than the shambler and never knocks the player back: the tier-2 Brute's door breaking and knockback arrive together (`packages/deadvox/EPIC.md`, "5. Holding ground"). What that leaves open: a player meets the brute's look in a city house before the evolution line introduces brutes. See `src/core/schema.ts`, `ZOMBIE_MODEL`.
 
