@@ -52,6 +52,7 @@ const zombiesFor = (body: ReturnType<typeof player>, isSolid: (x: number, y: num
       movement: 'still',
       lit: false,
       lightSeenFrom: 40,
+      eyeHeightMetres: 1.3,
     }),
     dayPhase: () => dayStateAtHour(12),
     hurtPlayer: () => undefined,

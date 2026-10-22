@@ -181,7 +181,8 @@ try {
         ) {
           throw new Error('Can fixture must fit');
         }
-        const lootTutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, () => undefined);
+        const lightKit = gauntletWitness.engine.site.lightPractice;
+        const lootTutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, lightKit);
         lootTutorial.observe({
           position: [8, 0, 0],
           yaw: 1,
@@ -193,7 +194,7 @@ try {
           lightOn: false,
           paused: false,
         });
-        const tutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, () => undefined);
+        const tutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, lightKit);
         tutorial.observe({
           position: [8, 0, 0],
           yaw: 1,
@@ -310,7 +311,7 @@ try {
       );
       // Native pointer activation of the practice exits is quarantined in #705; its root cause is unresolved.
       await Promise.all([
-        page.waitForURL((target) => !target.searchParams.has('tutorial'), { waitUntil: 'commit' }),
+        page.waitForURL((target) => !target.searchParams.has('tutorial')),
         page.locator('#death button').press('Enter'),
       ]);
       await page.waitForFunction(
@@ -321,7 +322,7 @@ try {
       await page.click('#tutorial-start');
       await page.waitForFunction(() => globalThis.tutorialSession !== undefined);
       await Promise.all([
-        page.waitForURL((target) => !target.searchParams.has('tutorial'), { waitUntil: 'commit' }),
+        page.waitForURL((target) => !target.searchParams.has('tutorial')),
         page.getByRole('button', { name: 'Exit practice', exact: true }).press('Enter'),
       ]);
       await page.waitForFunction(() => document.querySelector('#startup-screen').hidden);
