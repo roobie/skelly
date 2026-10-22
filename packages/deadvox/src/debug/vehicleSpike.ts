@@ -26,8 +26,8 @@ import { requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { BLOCK_SIZE } from '../core/scale.ts';
-import { skyAt } from '../core/sky.ts';
 import type { VehicleFittingDef } from '../core/schema.ts';
+import { skyAt } from '../core/sky.ts';
 import { assembledVehicle, loadVehicleBlueprint, type PlacedFitting } from '../core/vehicleBlueprint.ts';
 import { FIGURE_BOXES } from '../core/zombieRegions.ts';
 import { buildBundledContent } from '../game/bundledContent.ts';
@@ -428,7 +428,7 @@ const placeFitting = (spec: BuildSpec, vehicle: VehicleInstance, fitting: Fittin
   return pivot;
 };
 
-const registry = buildBundledContent().registry;
+const { registry } = buildBundledContent();
 const partModels = new ModelLibrary(registry, (message) => {
   errorText = message;
   renderPanel();
@@ -988,10 +988,7 @@ renderer.setSize(stage.clientWidth, stage.clientHeight);
 const sunlight = new DirectionalLight();
 const ambient = new HemisphereLight();
 scene.add(sunlight, sunlight.target, ambient);
-applySky(
-  { scene, light: sunlight, ambient, camera, radiusM: 96 },
-  skyAt(12, requireDayCycle(registry)),
-);
+applySky({ scene, light: sunlight, ambient, camera, radiusM: 96 }, skyAt(12, requireDayCycle(registry)));
 sunlight.position.normalize().multiplyScalar(20);
 sunlight.castShadow = true;
 sunlight.shadow.mapSize.set(2048, 2048);

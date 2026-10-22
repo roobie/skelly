@@ -25,8 +25,21 @@ const axis = picklist(['x', 'y', 'z']);
 const named = { id: pipe(string(), nonEmpty()), slot: pipe(string(), nonEmpty()) };
 const Piece = variant('kind', [
   strictObject({ ...named, kind: picklist(['box']), min: point3, max: point3 }),
-  strictObject({ ...named, kind: picklist(['prism']), axis, profile: pipe(array(point2), minLength(3)), start: coordinate, end: coordinate }),
-  strictObject({ ...named, kind: picklist(['turned']), axis, origin: optional(point3), profile: pipe(array(point2), minLength(3)) }),
+  strictObject({
+    ...named,
+    kind: picklist(['prism']),
+    axis,
+    profile: pipe(array(point2), minLength(3)),
+    start: coordinate,
+    end: coordinate,
+  }),
+  strictObject({
+    ...named,
+    kind: picklist(['turned']),
+    axis,
+    origin: optional(point3),
+    profile: pipe(array(point2), minLength(3)),
+  }),
 ]);
 const Pieces = pipe(
   string(),
