@@ -85,12 +85,11 @@ A voxelized model replaces the smooth one in place rather than shipping beside i
 files per model would need a selector and a second registration for no consumer that
 wants the smooth one.
 
-Wear on a voxelized part recolours or removes faces at runtime, and the export gives it one
-quad per exposed voxel face to act on, because a greedy-merged mesh no longer has the grid
-that wear edits. Wear then works at any export grain without extra data, and nothing about
-wear is left open. The price is heavier files and more triangles, which grows with each
-voxelized item. The exporter's second meshing mode and deadvox's face-to-voxel wear belong
-to g89; until g89 lands, voxelized parts show no wear.
+Voxelized parts show no wear until g89 lands. Wear recolours or removes faces at runtime,
+and a greedy-merged mesh no longer has the grid it edits. g89 adds a second meshing mode
+that gives wear one quad per exposed voxel face, and deadvox's face-to-voxel wear to act on
+it; wear then works at any export grain without extra data. The price is heavier files and
+more triangles, growing with each voxelized item.
 
 ## Physical model
 
