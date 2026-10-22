@@ -268,9 +268,7 @@ describe('watertightness (welded at 1e-5u)', () => {
   });
 
   // Checks every solid, including display geometry, across templates and seeds.
-  it('is watertight for every solid (including displaySolids) of every template at a few seeds', {
-    timeout: 10_000,
-  }, () => {
+  it('is watertight for every solid (including displaySolids) of every template at a few seeds', () => {
     for (const t of TEMPLATES) {
       for (const seed of [0, 1, 2]) {
         const resolved = resolve(generate(t, gunDomain, seed), gunDomain);
