@@ -328,7 +328,31 @@ const magazineSlotData = (resolved: Resolved): NonNullable<GunModelFields['slots
   };
 };
 
-const sightMetadata = (resolved: Resolved): GunModelFields['sight'] => {
+interface GlbSightJson {
+  readonly nodes: { translation?: Vec3; rotation?: unknown; mesh?: number; extras?: { part?: string } }[];
+  // biome-ignore lint/style/useNamingConvention: glTF attribute semantics are upper case
+  readonly meshes: { primitives: { attributes: { POSITION: number } }[] }[];
+  readonly accessors: { max: Vec3 }[];
+}
+
+/** Highest point of a part's drawn mesh in the model file, so a voxelized sight reports the top it actually draws. */
+const drawnTopMetres = (glb: Uint8Array, partId: string): number | undefined => {
+  const jsonLength = new DataView(glb.buffer, glb.byteOffset, glb.byteLength).getUint32(12, true);
+  const json = JSON.parse(new TextDecoder().decode(glb.subarray(20, 20 + jsonLength))) as GlbSightJson;
+  const node = json.nodes.find((candidate) => candidate.extras?.part === partId);
+  if (node?.mesh === undefined) {
+    return undefined;
+  }
+  if (node.rotation !== undefined) {
+    throw new Error(`Sight part ${partId} needs an unrotated mesh to give its drawn top`);
+  }
+  const tops = json.meshes[node.mesh]!.primitives.map(
+    (primitive) => json.accessors[primitive.attributes.POSITION]!.max[1],
+  );
+  return round6((node.translation?.[1] ?? 0) + Math.max(...tops));
+};
+
+const sightMetadata = (resolved: Resolved, voxelGlb?: Uint8Array): GunModelFields['sight'] => {
   const candidates = [...resolved.defs.entries()].flatMap(([id, part]) => {
     const candidate = sightCandidate(resolved, id, part);
     return candidate ? [candidate] : [];
@@ -345,7 +369,10 @@ const sightMetadata = (resolved: Resolved): GunModelFields['sight'] => {
     eyeReliefMetres,
     ocularDiameterMetres,
   } = chosen;
+  const toModel = (point: Vec3): Vec3 => modelPoint(point, resolved.domain.units.metresPerUnit);
   let direction = chosenDirection;
+  let modelEye = toModel(eye);
+  let aimInModel: Vec3 | undefined;
   if (sightKind === 'iron' && resolved.assembly.parts[sightId]!.family === 'ak-rear-sight') {
     const frontId = Object.entries(resolved.assembly.parts).find(([, part]) => part.family === 'front-sight')?.[0];
     const frontTransform = frontId && resolved.placed.get(frontId);
@@ -356,6 +383,12 @@ const sightMetadata = (resolved: Resolved): GunModelFields['sight'] => {
     }
     const postTip = applyPoint(frontTransform, frontAxis.origin);
     direction = normalize([postTip[0] - eye[0], postTip[1] - eye[1], postTip[2] - eye[2]]);
+    const drawnTop = voxelGlb && drawnTopMetres(voxelGlb, sightId);
+    if (drawnTop !== undefined) {
+      modelEye = [modelEye[0], drawnTop, modelEye[2]];
+      const tip = toModel(postTip);
+      aimInModel = normalize([tip[0] - modelEye[0], tip[1] - modelEye[1], tip[2] - modelEye[2]]);
+    }
   }
   const upAxis = normalize(applyDir(resolved.placed.get(sightId)!, [0, 1, 0]));
   const upDot = upAxis[0] * direction[0] + upAxis[1] * direction[1] + upAxis[2] * direction[2];
@@ -364,12 +397,11 @@ const sightMetadata = (resolved: Resolved): GunModelFields['sight'] => {
     upAxis[1] - direction[1] * upDot,
     upAxis[2] - direction[2] * upDot,
   ]);
-  const toModel = (point: Vec3): Vec3 => modelPoint(point, resolved.domain.units.metresPerUnit);
   const toModelDirection = (vector: Vec3): Vec3 => normalize(toFileAxes(vector));
   return {
     kind: sightKind,
-    eye: toModel(eye),
-    direction: toModelDirection(direction),
+    eye: modelEye,
+    direction: aimInModel ?? toModelDirection(direction),
     up: toModelDirection(up),
     eyeReliefMetres: round6(eyeReliefMetres),
     ...(ocularDiameterMetres === undefined ? {} : { ocularDiameterMetres: round6(ocularDiameterMetres) }),
@@ -519,7 +551,7 @@ export const exportGunGlb = (
       ...(handling ? { handling } : {}),
       ...(internalCapacity === undefined ? {} : { internalCapacity }),
     },
-    sight: sightMetadata(resolved),
+    sight: sightMetadata(resolved, voxelGrain === undefined ? undefined : result.glb),
   });
   const attachmentSlotsData = attachmentSlots(resolved).map(({ position, direction, up, ...slot }) => ({
     ...slot,

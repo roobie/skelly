@@ -42,11 +42,14 @@ rows that opt in change, and the selection is an explicit list in each recipe. T
 lives here because this package may not import deadvox's mesher; see `src/voxelize.ts`,
 `voxelize`, and `src/glb.ts`, `voxelPrimitivesFor`.
 
-Two grains, both content values: a coarse one for vehicles, furniture and the parts made
-to attach to them, and a finer one for every other item or component. A vehicle part must match
-the grain of the vehicle it sits on, while a tool, a can or a rifle drawn at that grain
-collapses to a few voxels. A row picks its class, never a number, so one tuning moves a
-whole class. See `tools/jsonnet/lib/voxel-grains.libsonnet`, and the recipes
+Three grains, all content values: a coarse one for vehicles, furniture and the parts made
+to attach to them; a fine one for firearms and their magazines; and a middle one for every
+other item or component. A vehicle part must match the grain of the vehicle it sits on,
+while a tool or a can drawn at that grain collapses to a few voxels. A gun needs its own
+because its sights and small controls are detail at a few millimetres that the item grain
+cannot hold, and a magazine shares its gun's grain so a seated magazine matches the
+receiver's voxels. A row picks its class, never a number, so one tuning moves a whole
+class. See `tools/jsonnet/lib/voxel-grains.libsonnet`, and the recipes
 `packages/thing-authoring-tool/exports/deadvox.jsonnet` and `gungen/exports/deadvox.jsonnet`.
 
 Every part's voxels sit on one lattice shared by the whole model, not on a lattice of the
@@ -55,6 +58,10 @@ leave steps and gaps where parts meet, so a receiver, a handguard and a magazine
 reading as one body. A part turned by a quarter turn shares the lattice too; one turned by
 any other angle keeps its own. See `src/glb.ts`, `latticeOrigin`, and `src/voxelize.ts`,
 `voxelize`.
+
+A voxelized gun's iron-sight datum comes from the rear sight the file draws, not from the
+smooth design, because voxels move the top the player lines up on. See
+`gungen/src/gun/exportGlb.ts`, `sightMetadata`.
 
 A solid thinner than the grain keeps one voxel of thickness instead of vanishing, because
 glass, blades and sheet parts are thin by design and losing them breaks the item; the cost
