@@ -99,6 +99,8 @@ export interface MoveIntent {
   useOff?: boolean;
   /** Speed factor from load and handling (paceFactor); 1 when absent. */
   pace?: number;
+  /** On a ladder: not airborne, and `climb` reads the steered velocity. */
+  onLadder?: boolean;
 }
 
 /** Grams: carrying more than `light` slows you, down to `slowest` at `heavy`. */
@@ -136,8 +138,14 @@ export const movementPace = (
   pace: paceFactor(grams, handling) * movementSpeed * readyMovementFactor,
 });
 
-/** Sets the body's horizontal velocity from the intent and view yaw; starts a jump if grounded. */
+/**
+ * Sets the body's horizontal velocity from the intent and view yaw; starts a jump if grounded. An airborne body keeps
+ * the velocity it left the ground with (`DESIGN.md`, "Moving in the air"); a ladder climber is not airborne.
+ */
 export const steer = (body: Body, scale: Scale, yaw: number, intent: MoveIntent): void => {
+  if (!(body.onGround || intent.onLadder)) {
+    return;
+  }
   let { forward, right } = intent;
   const len = Math.hypot(forward, right);
   const direction = intent.directionalSpeed;
