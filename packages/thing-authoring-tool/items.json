@@ -753,6 +753,279 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "aa_battery",
+      "parts": [
+        {
+          "family": "vessel",
+          "finish": {
+            "body": "steel-grey",
+            "cap": "steel-stainless",
+            "label": "paint-charcoal"
+          },
+          "id": "material",
+          "massKg": 0.023,
+          "params": {
+            "bandHeight": "0.034000000000000002",
+            "bandInset": "0.00014999999999999999",
+            "capHeight": "0.002",
+            "capRadius": "0.0030000000000000001",
+            "height": "0.045999999999999999",
+            "neckHeight": "0.001",
+            "neckRadius": "0.0030000000000000001",
+            "radius": "0.0070000000000000001",
+            "rimHeight": "0.001",
+            "shoulderHeight": "0.00050000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "fold-4",
+        "turn": [0, 0, 0]
+      },
+      "id": "rag",
+      "parts": [
+        {
+          "family": "foldedSheet",
+          "finish": {
+            "body": "cloth-rag",
+            "fold": "cloth-rag-shadow"
+          },
+          "id": "material",
+          "massKg": 0.050000000000000003,
+          "params": {
+            "faces": "[\n    {\n        \"indices\": [\n            0,\n            3,\n            4\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            0,\n            4,\n            1\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            1,\n            4,\n            2\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            2,\n            4,\n            5\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            3,\n            6,\n            4\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            6,\n            7,\n            4\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            4,\n            7,\n            8\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            4,\n            8,\n            5\n        ],\n        \"slot\": \"body\"\n    }\n]",
+            "thickness": "0.002",
+            "vertices": "[\n    [\n        -0.125,\n        0.003,\n        -0.07\n    ],\n    [\n        -0.018,\n        0.012,\n        -0.095\n    ],\n    [\n        0.1,\n        0.002,\n        -0.073\n    ],\n    [\n        -0.11,\n        0.018,\n        0.006\n    ],\n    [\n        0.005,\n        0.035,\n        -0.01\n    ],\n    [\n        0.125,\n        0.006,\n        0.018\n    ],\n    [\n        -0.083,\n        0.002,\n        0.095\n    ],\n    [\n        0.025,\n        0.009,\n        0.078\n    ],\n    [\n        0.105,\n        0.003,\n        0.095\n    ]\n]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.87, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, 0]
+      },
+      "id": "duct_tape",
+      "parts": [
+        {
+          "family": "ring",
+          "finish": {
+            "body": "tape-grey",
+            "core": "paperboard-tan"
+          },
+          "id": "material",
+          "massKg": 0.14999999999999999,
+          "params": {
+            "coreRadius": "0.02",
+            "height": "0.048000000000000001",
+            "innerRadius": "0.017999999999999999",
+            "outerRadius": "0.050000000000000003"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, 0]
+      },
+      "id": "nails",
+      "parts": [
+        {
+          "family": "turnedStock",
+          "finish": {
+            "body": "steel-grey"
+          },
+          "id": "material",
+          "massKg": 0.0050000000000000001,
+          "params": {
+            "axis": "x",
+            "profile": "[\n    [\n        0,\n        0\n    ],\n    [\n        0.008,\n        0.0017\n    ],\n    [\n        0.067,\n        0.0017\n    ],\n    [\n        0.067,\n        0.0042\n    ],\n    [\n        0.07,\n        0.0042\n    ],\n    [\n        0.07,\n        0\n    ],\n    [\n        0,\n        0\n    ]\n]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "fold-0",
+        "turn": [0, 0, 0]
+      },
+      "id": "scrap_metal",
+      "parts": [
+        {
+          "family": "foldedSheet",
+          "finish": {
+            "body": "scrap-rusted",
+            "fold": "steel-grey"
+          },
+          "id": "material",
+          "massKg": 0.5,
+          "params": {
+            "faces": "[\n    {\n        \"indices\": [\n            0,\n            1,\n            2\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            0,\n            2,\n            3\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            0,\n            3,\n            4\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            0,\n            4,\n            5\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            0,\n            5,\n            6\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            0,\n            6,\n            7\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            0,\n            7,\n            8\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            0,\n            8,\n            9\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            0,\n            9,\n            10\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            0,\n            10,\n            1\n        ],\n        \"slot\": \"body\"\n    }\n]",
+            "thickness": "0.0030000000000000001",
+            "vertices": "[\n    [\n        0,\n        0.014,\n        0\n    ],\n    [\n        -0.125,\n        0.004,\n        -0.045\n    ],\n    [\n        -0.04,\n        0.008,\n        -0.075\n    ],\n    [\n        -0.02,\n        0.006,\n        -0.035\n    ],\n    [\n        0.015,\n        0.006,\n        -0.095\n    ],\n    [\n        0.105,\n        0.003,\n        -0.045\n    ],\n    [\n        0.075,\n        0.018,\n        0.015\n    ],\n    [\n        0.125,\n        0.036,\n        0.07\n    ],\n    [\n        0.025,\n        0.029,\n        0.095\n    ],\n    [\n        0.005,\n        0.014,\n        0.045\n    ],\n    [\n        -0.09,\n        0.004,\n        0.07\n    ]\n]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, 0]
+      },
+      "id": "stick",
+      "parts": [
+        {
+          "family": "turnedStock",
+          "finish": {
+            "body": "wood-walnut"
+          },
+          "id": "material",
+          "massKg": 0.20000000000000001,
+          "params": {
+            "axis": "x",
+            "profile": "[\n    [\n        0,\n        0\n    ],\n    [\n        0,\n        0.009\n    ],\n    [\n        0.025,\n        0.013\n    ],\n    [\n        0.11,\n        0.01\n    ],\n    [\n        0.125,\n        0.016\n    ],\n    [\n        0.145,\n        0.011\n    ],\n    [\n        0.27,\n        0.009\n    ],\n    [\n        0.29,\n        0.012\n    ],\n    [\n        0.31,\n        0.008\n    ],\n    [\n        0.395,\n        0.006\n    ],\n    [\n        0.4,\n        0\n    ],\n    [\n        0,\n        0\n    ]\n]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, 0]
+      },
+      "id": "wax",
+      "parts": [
+        {
+          "family": "turnedStock",
+          "finish": {
+            "body": "wax-cream"
+          },
+          "id": "material",
+          "massKg": 0.050000000000000003,
+          "params": {
+            "axis": "y",
+            "profile": "[\n    [\n        0,\n        0\n    ],\n    [\n        0,\n        0.021\n    ],\n    [\n        0.007,\n        0.03\n    ],\n    [\n        0.02,\n        0.027\n    ],\n    [\n        0.029,\n        0.015\n    ],\n    [\n        0.031,\n        0\n    ],\n    [\n        0,\n        0\n    ]\n]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, 0]
+      },
+      "id": "wooden_plank",
+      "parts": [
+        {
+          "family": "cutStock",
+          "finish": {
+            "body": "wood-birch"
+          },
+          "id": "material",
+          "massKg": 0.5,
+          "params": {
+            "axis": "y",
+            "end": "0.021999999999999999",
+            "profile": "[\n    [\n        -0.045,\n        -0.4\n    ],\n    [\n        0.045,\n        -0.395\n    ],\n    [\n        0.045,\n        0.395\n    ],\n    [\n        -0.04,\n        0.4\n    ]\n]",
+            "start": "0"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "fold-2",
+        "turn": [0, 0, 0]
+      },
+      "id": "field_patch",
+      "parts": [
+        {
+          "family": "foldedSheet",
+          "finish": {
+            "body": "steel-grey",
+            "fold": "paint-charcoal"
+          },
+          "id": "material",
+          "massKg": 0.12,
+          "params": {
+            "faces": "[\n    {\n        \"indices\": [\n            0,\n            1,\n            2\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            1,\n            3,\n            2\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            2,\n            3,\n            4\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            3,\n            5,\n            4\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            4,\n            5,\n            6\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            5,\n            7,\n            6\n        ],\n        \"slot\": \"body\"\n    }\n]",
+            "thickness": "0.0015",
+            "vertices": "[\n    [\n        -0.09,\n        0.002,\n        -0.06\n    ],\n    [\n        -0.09,\n        0.002,\n        0.06\n    ],\n    [\n        -0.02,\n        0.009,\n        -0.058\n    ],\n    [\n        -0.02,\n        0.009,\n        0.058\n    ],\n    [\n        0.02,\n        0.004,\n        -0.058\n    ],\n    [\n        0.02,\n        0.004,\n        0.058\n    ],\n    [\n        0.09,\n        0.002,\n        -0.055\n    ],\n    [\n        0.09,\n        0.002,\n        0.055\n    ]\n]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
       "exportMass": "inventory-atom",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
