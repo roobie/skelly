@@ -1,0 +1,16 @@
+{
+  "id": "hoist_hook_block",
+  "file": "assets/models/hoist_hook_block.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 15,
+      "centreOfMass": [-2.53125, 1.2230113636363638, 0],
+      "collision": [
+        { "min": [-2.625, 1.15625, -0.0625], "max": [-2.4375, 1.3125, 0.0625] },
+        { "min": [-2.5625, 1.0625, -0.03125], "max": [-2.5, 1.15625, 0.03125] }
+      ]
+    }
+  },
+  "anchors": {}
+}

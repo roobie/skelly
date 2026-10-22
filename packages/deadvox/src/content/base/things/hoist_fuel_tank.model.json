@@ -1,0 +1,13 @@
+{
+  "id": "hoist_fuel_tank",
+  "file": "assets/models/hoist_fuel_tank.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 55,
+      "centreOfMass": [-0.34375, 0.390625, -0.71875],
+      "collision": [{ "min": [-0.8125, 0.25, -0.875], "max": [0.125, 0.53125, -0.5625] }]
+    }
+  },
+  "anchors": {}
+}

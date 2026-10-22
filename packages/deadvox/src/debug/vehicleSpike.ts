@@ -180,6 +180,12 @@ const BUILDS = {
     removed: [],
     views: { interior: { position: [0.2, 1.55, 1.7], target: [0.6, 0.65, -0.3] } },
   },
+  hoist: {
+    label: 'Canter-type crane truck · from content',
+    button: 'Crane truck',
+    content: 'hoist',
+    viewScale: 1.3,
+  },
   motorbike: {
     label: 'CG125-type motorbike',
     button: 'Motorbike',

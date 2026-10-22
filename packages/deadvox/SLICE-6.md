@@ -38,7 +38,10 @@ fabrication or cutting.
 
 Heavy salvage uses a mobile heavy-part-hoist that is itself a vehicle, built and
 driven through the same vehicle systems. It is not a separate equipment kind or a
-workshop-only transfer exception. Field engine recovery therefore has a physical
+workshop-only transfer exception. Lifting is a capability of its fitted crane parts,
+not of a hoist vehicle kind: removing or breaking the crane removes the capability,
+and a salvaged crane stays an ordinary part, so no vehicle-wide flag can outlive the
+parts that justify it. Field engine recovery therefore has a physical
 workflow, with lifting, load ownership and clearance to prove. The hoist is required
 utility content alongside the two transport hosts, not a third transport host that
 reopens the roster choice.

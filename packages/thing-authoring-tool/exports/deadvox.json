@@ -700,6 +700,339 @@
     "source": "hatchback_rear_seat"
   },
   {
+    "id": "hoist_frame_rail",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_frame_rail"
+  },
+  {
+    "id": "hoist_crossmember",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_crossmember"
+  },
+  {
+    "id": "hoist_wheel",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_wheel"
+  },
+  {
+    "id": "hoist_front_axle",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_front_axle"
+  },
+  {
+    "id": "hoist_rear_axle",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_rear_axle"
+  },
+  {
+    "id": "hoist_engine",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_engine"
+  },
+  {
+    "id": "hoist_gearbox",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_gearbox"
+  },
+  {
+    "id": "hoist_prop_shaft",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_prop_shaft"
+  },
+  {
+    "id": "hoist_fuel_tank",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_fuel_tank"
+  },
+  {
+    "id": "hoist_exhaust",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_exhaust"
+  },
+  {
+    "id": "hoist_radiator",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_radiator"
+  },
+  {
+    "id": "hoist_cab_floor",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_cab_floor"
+  },
+  {
+    "id": "hoist_cab_skirt",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_cab_skirt"
+  },
+  {
+    "id": "hoist_cab_back",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_cab_back"
+  },
+  {
+    "id": "hoist_front_panel",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_front_panel"
+  },
+  {
+    "id": "hoist_a_post",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_a_post"
+  },
+  {
+    "id": "hoist_windscreen",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_windscreen"
+  },
+  {
+    "id": "hoist_roof",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_roof"
+  },
+  {
+    "id": "hoist_door",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_door"
+  },
+  {
+    "id": "hoist_front_bumper",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_front_bumper"
+  },
+  {
+    "id": "hoist_dashboard",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_dashboard"
+  },
+  {
+    "id": "hoist_engine_cover",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_engine_cover"
+  },
+  {
+    "id": "hoist_bench",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_bench"
+  },
+  {
+    "id": "hoist_deck_floor",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_deck_floor"
+  },
+  {
+    "id": "hoist_headboard",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_headboard"
+  },
+  {
+    "id": "hoist_mudguard",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_mudguard"
+  },
+  {
+    "id": "hoist_rear_underrun",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_rear_underrun"
+  },
+  {
+    "id": "hoist_tail_lamp",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_tail_lamp"
+  },
+  {
+    "id": "hoist_crane_base",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_crane_base"
+  },
+  {
+    "id": "hoist_stabiliser",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_stabiliser"
+  },
+  {
+    "id": "hoist_crane_column",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_crane_column"
+  },
+  {
+    "id": "hoist_boom",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_boom"
+  },
+  {
+    "id": "hoist_boom_extension",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_boom_extension"
+  },
+  {
+    "id": "hoist_luff_ram",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_luff_ram"
+  },
+  {
+    "id": "hoist_winch",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_winch"
+  },
+  {
+    "id": "hoist_hook_block",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_hook_block"
+  },
+  {
+    "id": "hoist_boom_rest",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hoist_boom_rest"
+  },
+  {
     "id": "jeans",
     "kind": "item",
     "options": {

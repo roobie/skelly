@@ -33,6 +33,20 @@ const partModelIssue = (registry: Registry, itemId: string): string | undefined 
   return bare.length === 0 ? undefined : `model "${item.model}" has no baked collision for ${bare.join(', ')}`;
 };
 
+const ratingIssue = ({
+  capabilities,
+  ratedLoadKg,
+}: {
+  capabilities: readonly VehicleCapability[];
+  ratedLoadKg?: number | undefined;
+}) => {
+  const lifts = capabilities.includes('lift');
+  if (lifts && ratedLoadKg === undefined) {
+    return 'a lifting part needs a rated load';
+  }
+  return !lifts && ratedLoadKg !== undefined ? 'only a lifting part has a rated load' : undefined;
+};
+
 type PathIssue = readonly [path: string, message: string];
 
 const cargoSizeIssue = (item: ItemDef, fitting: VehicleFittingDef): string | undefined => {
@@ -42,7 +56,14 @@ const cargoSizeIssue = (item: ItemDef, fitting: VehicleFittingDef): string | und
   return fitting.cargo && `item "${item.id}" is not a cargo space`;
 };
 
-/** Fittings naming no vehicle part, cargo sizes on the wrong parts, and broken supports. */
+const bracingIssue = (registry: Registry, fittings: readonly VehicleFittingDef[]): PathIssue[] => {
+  const fitted = fittings.flatMap(({ part }) => registry.items.get(part)?.vehicle?.capabilities ?? []);
+  return fitted.includes('lift') && !fitted.includes('stabiliser')
+    ? [['.fittings', 'a vehicle that lifts needs a stabiliser fitted']]
+    : [];
+};
+
+/** Fittings naming no vehicle part, cargo sizes on the wrong parts, broken supports, and lifting unbraced. */
 const fittingIssues = (registry: Registry, fittings: readonly VehicleFittingDef[]): PathIssue[] => [
   ...fittings.flatMap((fitting, i): PathIssue[] => {
     const item = registry.items.get(fitting.part);
@@ -54,6 +75,7 @@ const fittingIssues = (registry: Registry, fittings: readonly VehicleFittingDef[
     return message ? [[`.fittings[${i}].cargo`, message]] : [];
   }),
   ...supportProblems(fittings).map((message): PathIssue => ['.fittings', message]),
+  ...bracingIssue(registry, fittings),
 ];
 
 /** Each fitting placed beside all the others: cargo spaces off their free floor, and parts inside one. */
@@ -77,8 +99,8 @@ const placementIssues = (
 };
 
 /**
- * Parts without exported physics; blueprints with broken references or supports; cargo spaces off their free
- * floor, and parts inside a cargo space.
+ * Parts without exported physics or a lift rating; blueprints with broken references, supports or bracing;
+ * cargo spaces off their free floor, and parts inside a cargo space.
  */
 export const vehicleContentIssues = (registry: Registry): VehicleIssue[] => {
   const issues: VehicleIssue[] = [];
@@ -90,6 +112,10 @@ export const vehicleContentIssues = (registry: Registry): VehicleIssue[] => {
     }
     if (item.vehicle && (message || !registry.models.get(item.model!)?.parts)) {
       unsound.add(item.id);
+    }
+    const rating = item.vehicle && ratingIssue(item.vehicle);
+    if (rating) {
+      issues.push({ section: 'items', id: item.id, path: '.vehicle', message: rating });
     }
   }
   const cellMetres = registry.inventory.get(CORE_CONTENT_IDS.player)?.cellMetres;
