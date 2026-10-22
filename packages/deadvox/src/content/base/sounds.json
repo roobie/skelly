@@ -694,6 +694,16 @@
       "noise": { "enabled": true, "radiusMetres": 60 }
     },
     {
+      "id": "lock_hammer",
+      "variants": ["assets/audio/door_blocked_close-01.ogg"],
+      "gain": 1,
+      "pitchJitter": [0.6, 0.7],
+      "gainJitter": [0.9, 1.1],
+      "minIntervalSimSeconds": 0,
+      "category": "world",
+      "noise": { "enabled": true, "radiusMetres": 110 }
+    },
+    {
       "id": "door_open",
       "variants": ["assets/audio/door-open-03.ogg"],
       "gain": 0.65,

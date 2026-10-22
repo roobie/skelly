@@ -733,6 +733,15 @@
       "door": {
         "handlingSimSeconds": 0.59999999999999998,
         "methods": {
+          "hammer": {
+            "fastestTimeSimSeconds": 2.5,
+            "level": 3,
+            "quality": "hammering",
+            "skill": "mechanics",
+            "strikeIntervalSimSeconds": 0.80000000000000004,
+            "strikeSound": "lock_hammer",
+            "timeSimSeconds": 4
+          },
           "pry": {
             "fastestTimeSimSeconds": 7.5,
             "level": 3,
@@ -758,6 +767,15 @@
       "door": {
         "handlingSimSeconds": 0.59999999999999998,
         "methods": {
+          "hammer": {
+            "fastestTimeSimSeconds": 2.5,
+            "level": 3,
+            "quality": "hammering",
+            "skill": "mechanics",
+            "strikeIntervalSimSeconds": 0.80000000000000004,
+            "strikeSound": "lock_hammer",
+            "timeSimSeconds": 4
+          },
           "pry": {
             "fastestTimeSimSeconds": 3,
             "level": 1,
@@ -792,6 +810,15 @@
             "strikeIntervalSimSeconds": 1,
             "strikeSound": "lock_pry",
             "timeSimSeconds": 90
+          },
+          "hammer": {
+            "fastestTimeSimSeconds": 7,
+            "level": 3,
+            "quality": "hammering",
+            "skill": "mechanics",
+            "strikeIntervalSimSeconds": 0.80000000000000004,
+            "strikeSound": "lock_hammer",
+            "timeSimSeconds": 12
           }
         }
       },
@@ -826,7 +853,7 @@
         }
       ],
       "id": "wood",
-      "methods": ["pry"]
+      "methods": ["pry", "hammer"]
     },
     {
       "blowSound": "door_bash",
@@ -852,7 +879,7 @@
         }
       ],
       "id": "steel",
-      "methods": ["pry", "cut"]
+      "methods": ["pry", "cut", "hammer"]
     },
     {
       "blowSound": "door_bash",
