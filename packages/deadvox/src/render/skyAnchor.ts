@@ -41,6 +41,8 @@ interface OpeningField {
   readonly cellSize: number;
   readonly materialAt: (cell: readonly [number, number, number]) => string | undefined;
   readonly isOpening: (material: string) => boolean;
+  /** The cells `isOpening` accepts, so the outlooks come from them alone rather than a scan of the lattice. */
+  readonly openings: readonly Point[];
 }
 const dominantAxis = (direction: Point): number =>
   direction.reduce((best, value, index) => (Math.abs(value) > Math.abs(direction[best]!) ? index : best), 0);
@@ -88,29 +90,36 @@ const openingAnchor = ({
   return { anchor: undefined, sealed: false };
 };
 
-/** Where each opening cell looks out: its centre carried horizontally past the envelope, away from the cabin's middle. */
-const openingOutlooks = (
-  { size, cellSize, materialAt, isOpening }: OpeningField,
-  cells: Point,
-  lower: Point,
-): { centre: Point; out: Point }[] => {
-  const outlooks: { centre: Point; out: Point }[] = [];
+/** Six numbers per outlook: the window's centre, then the point past the envelope it looks out to. */
+const OUTLOOK_STRIDE = 6;
+const outlooksOf = new WeakMap<readonly Point[], Float64Array>();
+
+/**
+ * Where the openings look out: a window's centre carried horizontally past the envelope, away from the cabin's
+ * middle. Openings in the same block share one outlook, so the nearest-window search scales with the windows' extent
+ * rather than their voxel count. Built once per list of openings, which a look shares across its geometry passes.
+ */
+const openingOutlooks = ({ size, cellSize, openings }: OpeningField, lower: Point): Float64Array => {
+  const cached = outlooksOf.get(openings);
+  if (cached) {
+    return cached;
+  }
   const reach = size.map((extent) => extent / 2);
-  for (let x = 0; x < cells[0]; x++) {
-    for (let y = 0; y < cells[1]; y++) {
-      for (let z = 0; z < cells[2]; z++) {
-        const material = materialAt([x, y, z]);
-        if (material === undefined || !isOpening(material)) {
-          continue;
-        }
-        const centre = [x, y, z].map((cell, index) => lower[index]! + (cell + 0.5) * cellSize) as Point;
-        const axis = Math.abs(centre[0]) / reach[0]! > Math.abs(centre[2]) / reach[2]! ? 0 : 2;
-        const out = [...centre] as Point;
-        out[axis] = Math.sign(centre[axis]!) * (reach[axis]! + BLOCK_SIZE);
-        outlooks.push({ centre, out });
-      }
+  const seen = new Set<string>();
+  const found: number[] = [];
+  for (const cell of openings) {
+    const centre = cell.map((value, index) => lower[index]! + (value + 0.5) * cellSize) as Point;
+    const axis = Math.abs(centre[0]) / reach[0]! > Math.abs(centre[2]) / reach[2]! ? 0 : 2;
+    const out = [...centre] as Point;
+    out[axis] = Math.sign(centre[axis]!) * (reach[axis]! + BLOCK_SIZE);
+    const block = `${centre.map((value) => Math.floor(value / BLOCK_SIZE)).join()}:${axis}`;
+    if (!seen.has(block)) {
+      seen.add(block);
+      found.push(...centre, ...out);
     }
   }
+  const outlooks = Float64Array.from(found);
+  outlooksOf.set(openings, outlooks);
   return outlooks;
 };
 
@@ -118,20 +127,19 @@ const openingOutlooks = (
  * An interior receiver whose face ray meets a window samples the sky there; one whose ray meets the roof or body
  * samples from the nearest window instead, as diffuse light spreads through a room from its openings. Without any
  * opening the cabin stays sealed and dark. Exterior faces retain the envelope anchor that relieves their
- * self-occlusion in the coarse sky field. Returns the vertices that borrowed a window's sky.
+ * self-occlusion in the coarse sky field.
  */
-export const addSkyOpeningAnchors = (geometry: BufferGeometry, field: OpeningField): number[] => {
+export const addSkyOpeningAnchors = (geometry: BufferGeometry, field: OpeningField): void => {
   addSkyAnchors(geometry, field.size);
   const position = geometry.getAttribute('position');
   const normal = geometry.getAttribute('normal');
   const anchors = geometry.getAttribute(SKY_ANCHOR_ATTRIBUTE);
   if (!anchors) {
-    return [];
+    return;
   }
   const lower: Point = [-field.size[0] / 2, 0, -field.size[2] / 2];
   const cells = field.size.map((extent) => Math.round(extent / field.cellSize)) as Point;
-  let outlooks: ReturnType<typeof openingOutlooks> | undefined;
-  const borrowed: number[] = [];
+  let outlooks: Float64Array | undefined;
   // The receiver interpolates the anchor across a face, so a quad's corners must not look out of different windows:
   // the line between them crosses the envelope, which the sky field counts as blocked.
   for (let first = 0; first < position.count; first += QUAD_VERTICES) {
@@ -154,21 +162,23 @@ export const addSkyOpeningAnchors = (geometry: BufferGeometry, field: OpeningFie
       });
       continue;
     }
-    outlooks ??= openingOutlooks(field, cells, lower);
+    outlooks ??= openingOutlooks(field, lower);
     const centre = points[0]!.map((_, axis) => points.reduce((sum, point) => sum + point[axis]!, 0) / points.length);
-    let nearest: Point | undefined;
+    let nearest = -1;
     let best = Number.POSITIVE_INFINITY;
-    for (const outlook of outlooks) {
-      const distance = Math.hypot(...outlook.centre.map((value, axis) => value - centre[axis]!));
+    for (let at = 0; at < outlooks.length; at += OUTLOOK_STRIDE) {
+      const dx = outlooks[at]! - centre[0]!;
+      const dy = outlooks[at + 1]! - centre[1]!;
+      const dz = outlooks[at + 2]! - centre[2]!;
+      const distance = dx * dx + dy * dy + dz * dz;
       if (distance < best) {
         best = distance;
-        nearest = outlook.out;
+        nearest = at;
       }
     }
-    if (nearest) {
+    if (nearest >= 0) {
       for (const vertex of quad) {
-        anchors.setXYZ(vertex, ...nearest);
-        borrowed.push(vertex);
+        anchors.setXYZ(vertex, outlooks[nearest + 3]!, outlooks[nearest + 4]!, outlooks[nearest + 5]!);
       }
     } else {
       quad.forEach((vertex, index) => {
@@ -180,5 +190,4 @@ export const addSkyOpeningAnchors = (geometry: BufferGeometry, field: OpeningFie
       });
     }
   }
-  return borrowed;
 };

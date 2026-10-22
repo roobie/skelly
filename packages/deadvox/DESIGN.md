@@ -1940,8 +1940,10 @@ the envelope on that line; one that meets roof or body borrows the nearest windo
 sky, as a room is lit from its openings. Every vertex of a quad takes the same borrowed
 anchor, because the shader interpolates anchors across a face and a line between two
 windows crosses the blocked envelope. The choice is made once per vehicle look when its
-geometry is built, so it adds nothing to the frame (#680). A cabin with no window stays
-dark. See `src/core/skyTransport.ts`, `buildSkyResult`, `src/render/skylight.ts`, `Skylight`,
+geometry is built, on the main thread, so that build must stay cheap: it reads only the
+window voxels, shares one outlook per block of window, and compares distances without
+allocating, because a stall on first sight of each look would cost frame rate on weak
+GPUs (#680). A cabin with no window stays dark. See `src/core/skyTransport.ts`, `buildSkyResult`, `src/render/skylight.ts`, `Skylight`,
 and `src/render/skyAnchor.ts`, `addSkyAnchors` and `addSkyOpeningAnchors`.
 
 Mesh-first admission protects the first visible geometry without making it wait for

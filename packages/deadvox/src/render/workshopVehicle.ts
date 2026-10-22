@@ -19,7 +19,7 @@ import { BLUEPRINTS } from '../vehicles/catalogue.ts';
 import { MATERIALS } from '../vehicles/materials.ts';
 import { newInstance, type Paint, VOXEL } from '../vehicles/model.ts';
 import { fittedGrid } from '../vehicles/solid.ts';
-import { GLASS, type MeshBuffers, meshGrid, type Rgb, voxelKey } from '../vehicles/voxels.ts';
+import { GLASS, keyVoxel, type MeshBuffers, meshGrid, type Rgb, voxelKey } from '../vehicles/voxels.ts';
 import { addSkyOpeningAnchors } from './skyAnchor.ts';
 
 /** A furniture def's procedural variant of a vehicle: its blueprint, paint, dirt and absent parts. */
@@ -58,6 +58,7 @@ const geometryOf = (
   buffers: MeshBuffers,
   lattice: readonly [number, number, number],
   materialAt: (cell: readonly [number, number, number]) => string | undefined,
+  openings: readonly [number, number, number][],
 ): BufferGeometry | undefined => {
   if (buffers.quads === 0) {
     return undefined;
@@ -75,6 +76,7 @@ const geometryOf = (
     cellSize: VOXEL,
     materialAt,
     isOpening: (material) => material === GLASS,
+    openings,
   });
   geometry.computeBoundingSphere();
   return geometry;
@@ -94,10 +96,11 @@ const displayOf = (look: VehicleLook): Display => {
     );
     const { lattice } = BLUEPRINTS[look.blueprint]!;
     const materialAt = (cell: readonly [number, number, number]) => grid.get(voxelKey(...cell));
+    const openings = [...grid].filter(([, voxel]) => voxel === GLASS).map(([key]) => keyVoxel(key));
     display = {
       solidBaseY: baseY * VOXEL,
-      solidGeometry: geometryOf(solid, lattice, materialAt),
-      clearGeometry: geometryOf(clear, lattice, materialAt),
+      solidGeometry: geometryOf(solid, lattice, materialAt, openings),
+      clearGeometry: geometryOf(clear, lattice, materialAt, openings),
     };
     displays.set(key, display);
   }
