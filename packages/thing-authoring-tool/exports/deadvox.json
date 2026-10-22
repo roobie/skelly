@@ -1182,6 +1182,33 @@
     "source": "portable_radio"
   },
   {
+    "id": "crowbar",
+    "kind": "item",
+    "options": {
+      "mass": "parts",
+      "voxelGrain": 0.01
+    },
+    "source": "crowbar"
+  },
+  {
+    "id": "hammer",
+    "kind": "item",
+    "options": {
+      "mass": "parts",
+      "voxelGrain": 0.01
+    },
+    "source": "hammer"
+  },
+  {
+    "id": "baseball_bat",
+    "kind": "item",
+    "options": {
+      "mass": "parts",
+      "voxelGrain": 0.01
+    },
+    "source": "baseball_bat"
+  },
+  {
     "id": "compass",
     "kind": "item",
     "options": {

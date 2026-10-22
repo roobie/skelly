@@ -45,8 +45,7 @@
           "wearPerHit": 0.014999999999999999,
           "windupCapSimSeconds": 0.25
         }
-      },
-      "weight": 1500
+      }
     },
     {
       "category": "tool",
@@ -114,8 +113,7 @@
           "wearPerHit": 0.012,
           "windupCapSimSeconds": 0.25
         }
-      },
-      "weight": 700
+      }
     },
     {
       "category": "tool",
@@ -280,8 +278,7 @@
           "wearPerHit": 0.01,
           "windupCapSimSeconds": 0.25
         }
-      },
-      "weight": 900
+      }
     },
     {
       "category": "weapon",

@@ -362,14 +362,11 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
       "licence": "CC0-1.0",
       "download": "flatshadedmelee.zip",
       "files": [
-        "assets/models/baseball_bat.glb",
         "assets/models/baton.glb",
         "assets/models/cleaver.glb",
-        "assets/models/crowbar.glb",
         "assets/models/fire_axe.glb",
         "assets/models/frying_pan.glb",
         "assets/models/golf_club.glb",
-        "assets/models/hammer.glb",
         "assets/models/hand_axe.glb",
         "assets/models/kabar.glb",
         "assets/models/katana.glb",
@@ -383,7 +380,7 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
         "assets/models/tanto.glb",
         "assets/models/wrench.glb"
       ],
-      "changes": "Converted all 20 source OBJ meshes with their MTL palette material and shared T_PCL_Palette_c.png in Blender to self-contained GLBs; applied transforms, baked flat shading, kept the 1-unit-equals-1-metre scale, and oriented each long axis from the grip toward the striking end along +x. The OBJ MTL's palette path was resolved to the shared texture at the archive root."
+      "changes": "Converted the 17 source OBJ meshes still used with their MTL palette material and shared T_PCL_Palette_c.png in Blender to self-contained GLBs; applied transforms, baked flat shading, kept the 1-unit-equals-1-metre scale, and oriented each long axis from the grip toward the striking end along +x. The OBJ MTL's palette path was resolved to the shared texture at the archive root."
     },
     {
       "title": "Pipe",

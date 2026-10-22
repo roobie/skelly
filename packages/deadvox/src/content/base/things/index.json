@@ -1999,6 +1999,35 @@
     "roll": 0
   },
   {
+    "id": "crowbar",
+    "file": "assets/models/crowbar.glb",
+    "parts": {
+      "crowbar": {
+        "node": "crowbar:crowbar",
+        "massKg": 1.5,
+        "centreOfMass": [-0.07727522007661856, -0.011872158044400808, 1.4088065491976803e-35]
+      }
+    }
+  },
+  {
+    "id": "hammer",
+    "file": "assets/models/hammer.glb",
+    "parts": {
+      "hammer": {
+        "node": "hammer:hammer",
+        "massKg": 0.7,
+        "centreOfMass": [-0.0053759919486760935, -0.008217727665414665, 4.388959477862014e-20]
+      }
+    }
+  },
+  {
+    "id": "baseball_bat",
+    "file": "assets/models/baseball_bat.glb",
+    "parts": {
+      "baseball_bat": { "node": "baseball_bat:bat", "massKg": 0.9, "centreOfMass": [0.16490543979996053, 0, 0] }
+    }
+  },
+  {
     "id": "compass",
     "file": "assets/models/compass.glb",
     "parts": {

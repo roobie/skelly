@@ -1,0 +1,11 @@
+{
+  "id": "crowbar",
+  "file": "assets/models/crowbar.glb",
+  "parts": {
+    "crowbar": {
+      "node": "crowbar:crowbar",
+      "massKg": 1.5,
+      "centreOfMass": [-0.07727522007661856, -0.011872158044400808, 1.4088065491976803e-35]
+    }
+  }
+}

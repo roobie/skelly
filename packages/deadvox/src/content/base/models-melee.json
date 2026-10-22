@@ -10,6 +10,13 @@
       },
       "hold": "upright",
       "id": "baseball_bat",
+      "parts": {
+        "baseball_bat": {
+          "centreOfMass": [0.16490543979996053, 0, 0],
+          "massKg": 0.90000000000000002,
+          "node": "baseball_bat:bat"
+        }
+      },
       "roll": 0
     },
     {
@@ -47,6 +54,13 @@
       },
       "hold": "upright",
       "id": "crowbar",
+      "parts": {
+        "crowbar": {
+          "centreOfMass": [-0.077275220076618564, -0.011872158044400808, 1.4088065491976803e-35],
+          "massKg": 1.5,
+          "node": "crowbar:crowbar"
+        }
+      },
       "roll": 90
     },
     {
@@ -98,6 +112,13 @@
       },
       "hold": "upright",
       "id": "hammer",
+      "parts": {
+        "hammer": {
+          "centreOfMass": [-0.0053759919486760935, -0.0082177276654146654, 4.3889594778620142e-20],
+          "massKg": 0.69999999999999996,
+          "node": "hammer:hammer"
+        }
+      },
       "roll": 90
     },
     {

@@ -1323,6 +1323,11 @@ item the player actually owns. See `itemLook` in `src/render/itemLook.ts` and
 - **Licences.** Asset files (models, sounds, textures) are made for the game,
   or are CC0 1.0, CC BY 3.0 or CC BY 4.0. Other licences, such as share-alike
   or non-commercial ones, aren't accepted.
+- **Models are our own.** Every item and thing model is authored in the
+  project's model tools and voxelized on its class grain; no model comes from a
+  third party, whatever its licence. A third-party mesh isn't an authored recipe
+  row, so it can't be voxelized on a class grain, and it would stay outside the
+  one look every other model shares.
 - **The asset manifest.** Each pack records the source, author, licence and
   changes for its assets. Validation rejects disallowed licences, missing CC BY
   attribution, duplicate or unlisted files, and missing files. The manifest and

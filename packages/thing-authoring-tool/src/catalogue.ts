@@ -44,6 +44,7 @@ import { handOpener } from './families/handOpener.ts';
 import { arm, base, shade } from './families/lamp.ts';
 import { candle, torch } from './families/lights.ts';
 import { cutStock, foldedSheet, turnedStock } from './families/materials.ts';
+import { bat, crowbar, hammer } from './families/melee.ts';
 import { openTin } from './families/openTin.ts';
 import { carton, vessel } from './families/package.ts';
 import { ring } from './families/ring.ts';
@@ -125,6 +126,9 @@ const builders = {
   coil,
   compound,
   fuse,
+  crowbar,
+  hammer,
+  bat,
   compass,
   lighter,
   matchbox,
