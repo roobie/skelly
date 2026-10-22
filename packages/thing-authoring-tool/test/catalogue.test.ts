@@ -170,8 +170,8 @@ it('refuses recipe references outside the authored item set', () => {
   ).toThrow('Unknown tool item');
 });
 it('exports the player bust with joint anchors that seat the limbs symmetrically about the centre line', () => {
-  const item = catalogue.items.find((candidate) => candidate.id === 'player_bust')!;
-  const anchors = exportItem(item, { id: 'player_bust', file: 'assets/models/player_bust.glb' }).modelEntry.anchors!;
+  const row = loadThingRecipe().find((candidate) => candidate.id === 'player_bust')!;
+  const anchors = row.generate().modelEntry.anchors!;
   for (const joint of ['neck', 'head', 'shoulder_left', 'shoulder_right', 'hip_left', 'hip_right']) {
     expect(anchors[joint], joint).toBeDefined();
   }

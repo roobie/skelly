@@ -498,8 +498,8 @@ const drawnNotchWidth = (file: VoxelFile, part: { readonly id: string; readonly 
 };
 
 /**
- * A rear sight is aimed through its notch, so the voxels must leave it open: at least one voxel of the gun grain wide,
- * which the lattice can always draw. A narrower notch fills, and the player would line up the top of a solid block.
+ * A rear sight is aimed through its notch, so the voxels must leave it open: at least one voxel of the gun grain wide.
+ * A notch one voxel wide or narrower of its own grain can fill, and the player would line up the top of a solid block.
  */
 const openNotchOrThrow = (file: VoxelFile, resolved: Resolved, partId: string, eye: Vec3): void => {
   const grain = partVoxelGrain(resolved.defs.get(partId)!, file.grains);

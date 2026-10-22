@@ -400,8 +400,8 @@ const rearSightSolids = (): Solid[] => {
     [-6, 1.75],
     [-6.5, 1.75],
   ];
-  // The frame is drawn on the gun grain, whose lattice has a plane through the notch's middle: a notch under two
-  // voxels wide fills (see `gungen/test/rearSightNotch.test.ts`).
+  // The frame is drawn on the gun grain, and a notch one voxel wide or narrower can fill when no voxel centre falls in
+  // it (see `gungen/test/rearSightNotch.test.ts`).
   return [
     polySolid('rear-sight-far', sight, [-0.625, -0.25], 'z', 'revolver-frame'),
     polySolid('rear-sight-near', sight, [0.25, 0.625], 'z', 'revolver-frame'),
