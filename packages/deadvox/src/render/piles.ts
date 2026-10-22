@@ -16,7 +16,7 @@ import {
   Vector3,
 } from 'three';
 import type { Inventory } from '../core/inventory.ts';
-import { defOf, type Placed } from '../core/items.ts';
+import { defOf, type Item, type Placed } from '../core/items.ts';
 import { type EffectivePileDisplay, effectivePileDisplays } from '../core/pileDisplay.ts';
 import { PILE_BUNDLE_WIDTH } from '../core/pileLayout.ts';
 import type { PileScatterPlacement } from '../core/scatterPile.ts';
@@ -26,7 +26,8 @@ import type { ColumnReveal } from './columnReveal.ts';
 import { withHeightFog } from './heightFog.ts';
 import { applyItemEmissive, disposeItemEmissiveMaterials } from './itemEmissive.ts';
 import { itemLook } from './itemLook.ts';
-import type { GroundModelPart, ModelLibrary } from './models.ts';
+import { ModelFlames } from './modelFlame.ts';
+import { type GroundModelPart, groundModelFrame, type ModelLibrary } from './models.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 
 interface CasePose {
@@ -60,6 +61,19 @@ export class PileMeshes {
   private readonly reveal: ColumnReveal | undefined;
   private drawn = '';
   private readonly itemBounds = new Map<number, Box3>();
+  private readonly flames = new ModelFlames('pile-light-flame');
+  /** Where each drawn flame burns, in world metres. */
+  private readonly flamePositions = new Map<number, Vector3>();
+
+  /** Sets `out` to where a lit item on the ground burns, if it is drawn with a flame. */
+  lightPositionOf(item: Item, out: Vector3): boolean {
+    const at = this.flamePositions.get(item.uid);
+    if (!at) {
+      return false;
+    }
+    out.copy(at);
+    return true;
+  }
 
   boundsFor(uid: number): { position: [number, number, number]; size: [number, number, number] } | undefined {
     const bounds = this.itemBounds.get(uid);
@@ -90,6 +104,7 @@ export class PileMeshes {
     }
     this.drawn = version;
     this.itemBounds.clear();
+    this.flamePositions.clear();
     disposeItemEmissiveMaterials(this.group);
     this.group.clear();
     const casePlans = new Map<string, CasePlan>();
@@ -129,8 +144,10 @@ export class PileMeshes {
     }
     this.caseVisuals.clear();
     this.itemBounds.clear();
+    this.flamePositions.clear();
     disposeItemEmissiveMaterials(this.group);
     this.group.clear();
+    this.flames.dispose();
     this.geometry.dispose();
     this.material.dispose();
     this.glowstickGeometry.dispose();
@@ -167,6 +184,10 @@ export class PileMeshes {
       model.rotation.y = yaw;
       this.group.add(castsAndReceives(model));
       this.itemBounds.set(item.uid, new Box3().setFromObject(model));
+      const flame = this.flames.onModel(inventory.registry, item, model, groundModelFrame);
+      if (flame) {
+        this.flamePositions.set(item.uid, flame);
+      }
     }
   }
 

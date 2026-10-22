@@ -7,6 +7,27 @@ import { chargeOf } from './lights.ts';
 export const fitsFuelledTool = (inventory: Inventory, tool: Item, canister: Item): boolean =>
   defOf(inventory.registry, tool.type).tool?.fuel?.canister === canister.type;
 
+/** Plans where the old cartridge lands; a refusal leaves its fill as it was. */
+const planOldLanding = (
+  inventory: Inventory,
+  old: Item,
+  spent: (item: Item) => Target | undefined,
+): { target: Target | undefined; refusal: string | undefined } => {
+  const before = old.charges;
+  // Written before planning because the fill decides whether the old cartridge can merge where it lands.
+  old.charges = chargeOf(inventory.registry, old) ?? 0;
+  const target = spent(old);
+  const refusal = putDownRefusal(inventory, old, target);
+  if (refusal) {
+    if (before === undefined) {
+      Reflect.deleteProperty(old, 'charges');
+    } else {
+      old.charges = before;
+    }
+  }
+  return { target, refusal };
+};
+
 /**
  * Puts one of `canister` into `tool`, in place. The old canister comes out to `spent` whatever
  * its fill, since an empty one can be refilled later. Returns why it couldn't, or undefined;
@@ -22,16 +43,11 @@ export const swapCanister = (
     return "It doesn't take that cartridge";
   }
   const old = tool.slots?.canister;
-  if (old) {
-    old.charges = chargeOf(inventory.registry, old) ?? 0;
+  const landing = old && planOldLanding(inventory, old, spent);
+  if (landing?.refusal) {
+    return landing.refusal;
   }
-  const target = old && spent(old);
-  if (old) {
-    const refusal = putDownRefusal(inventory, old, target);
-    if (refusal) {
-      return refusal;
-    }
-  }
+  const target = landing?.target;
   const replacement = canister.count > 1 ? inventory.create(canister.type, 1, canister.condition) : canister;
   if (canister.charges !== undefined) {
     replacement.charges = canister.charges;

@@ -9,7 +9,7 @@ local items = [
     id: 'frag_grenade',
     name: 'Hand grenade',
     category: 'weapon',
-    weight: 400,
+    model: 'frag_grenade',
     size: [1, 1],
     description: 'A fragmentation grenade. With the pin pulled, its fuse lights as it leaves the hand.',
     explosive: {

@@ -296,7 +296,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     ? { structures: [], spawn: built.spawn, furniture: house?.furniture ?? [] }
     : (house ?? testHouseScene(config, registry));
   const shape = terrainShapeOf(registry);
-  // Without a site this is the formula the 1.0 and 1.1 benchmarks used, so their results still compare.
+  // Without a site the ground is the shared formula, so benchmark runs of the same seed stay comparable.
   const groundAt = (xm: number, zm: number): number =>
     worldGroundAt({ seed, shape, scale, surface: built?.surface, xm, zm });
   const houseLootPoints = lootPointsByColumn(house?.lootSources ?? []);

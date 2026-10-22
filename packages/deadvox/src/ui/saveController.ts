@@ -7,12 +7,14 @@ import {
   contentPackDifferences,
   currentSaveVersionIdentity,
   decodeSave,
+  readSaveVersionMetadata,
   type SaveContentKind,
   type SaveVersionIdentity,
   type SaveWorldIdentity,
   type SaveWorldOptions,
 } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
+import { KNOWN_SCHEDULER_IDS } from '../core/schedulerIds.ts';
 import { type RealTimestamp, realTimestamp } from '../core/time.ts';
 import {
   type SaveBackendPreference,
@@ -25,18 +27,6 @@ import { CheckpointSchedule } from './checkpointSchedule.ts';
 import { factDetail } from './factDetail.ts';
 import { computeMenuState } from './menuState.ts';
 
-const SCHEDULER_IDS = new Set([
-  'damage-exposure',
-  'needs',
-  'body',
-  'long-action',
-  'lights',
-  'zombies',
-  'zombie-background',
-  'player',
-  'handling',
-  'firearms',
-]);
 const BROWSER_MOD_DIFFERENCE_PREFIX = /^(Missing|Different|Additional) mod: browser\./;
 const CONTINUE_KEY = 'deadvox.continue-namespace';
 const RESTORE_REFUSAL_KEY = 'deadvox.restore-refusal';
@@ -57,7 +47,7 @@ export const contentLookup = (registry: Registry, kind: SaveContentKind, id: str
     case 'sound':
       return registry.sounds.has(id);
     case 'scheduler':
-      return SCHEDULER_IDS.has(id);
+      return KNOWN_SCHEDULER_IDS.has(id);
     case 'skill':
       return registry.skills.has(id);
     case 'recipe':
@@ -87,18 +77,10 @@ const saveEnvironmentProblem = (): string | undefined => {
   return undefined;
 };
 
-const versionLabel = (payload: Uint8Array): string => {
-  try {
-    const envelope = JSON.parse(new TextDecoder().decode(payload)) as {
-      versionIdentity?: { digest?: string; buildRevision?: string };
-    };
-    const revision = envelope.versionIdentity?.buildRevision;
-    const digest = envelope.versionIdentity?.digest;
-    return `${revision ?? 'unknown build'} · ${digest?.slice(0, 12) ?? 'unknown version'}`;
-  } catch {
-    return 'unreadable version metadata';
-  }
-};
+const versionLabel = (saved: Partial<SaveVersionIdentity> | undefined | null): string =>
+  saved === null
+    ? 'unreadable version metadata'
+    : `${saved?.buildRevision ?? 'unknown build'} · ${saved?.digest?.slice(0, 12) ?? 'unknown version'}`;
 
 /** Title-screen discovery, checkpoint scheduling and lifecycle save triggers. */
 export class SaveController {
@@ -177,8 +159,12 @@ export class SaveController {
       },
       { capture: true },
     );
-    $('save-persist')?.addEventListener('click', () => this.requestPersistence().catch(() => undefined));
-    $('save-export')?.addEventListener('click', () => this.exportCurrentRecords().catch(() => undefined));
+    $('save-persist')?.addEventListener('click', () =>
+      this.requestPersistence().catch((error: unknown) => this.reportFailure('Save storage request failed', error)),
+    );
+    $('save-export')?.addEventListener('click', () =>
+      this.exportCurrentRecords().catch((error: unknown) => this.reportFailure('Save export failed', error)),
+    );
     $('save-replace-confirm').addEventListener('click', (event) => {
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -188,7 +174,9 @@ export class SaveController {
     });
     $('save-retry').addEventListener('click', () => this.retrySave());
     $('save-rescan').addEventListener('click', () => location.reload());
-    $('save-export-current').addEventListener('click', () => this.exportCurrentSnapshot().catch(() => undefined));
+    $('save-export-current').addEventListener('click', () =>
+      this.exportCurrentSnapshot().catch((error: unknown) => this.reportFailure('Save export failed', error)),
+    );
     $('save-replace-cancel').addEventListener('click', () => {
       $('save-confirmation').hidden = true;
     });
@@ -313,7 +301,7 @@ export class SaveController {
         this.clearDeadWorldMarker();
       }
       this.restoreWorldOptions = decoded.worldOptions;
-      this.statusText = `Saved world available · ${versionLabel(this.currentRecord.payload)}${this.currentRecord.corruptSlots.length > 0 ? ` · inactive slot(s) ${this.currentRecord.corruptSlots.join(', ')} are corrupt but retained` : ''}`;
+      this.statusText = `Saved world available · ${versionLabel(decoded.versionIdentity)}${this.currentRecord.corruptSlots.length > 0 ? ` · inactive slot(s) ${this.currentRecord.corruptSlots.join(', ')} are corrupt but retained` : ''}`;
     } catch (error) {
       this.protectedCurrent = true;
       this.statusText = `Saved world cannot be loaded and was left untouched: ${errorMessage(error)}`;
@@ -351,13 +339,11 @@ export class SaveController {
     try {
       const record = await this.storage.load(namespace);
       if (record) {
-        this.oldVersionLabel = `An older or different-version save is preserved · ${namespace.slice(0, 12)} · ${versionLabel(record.payload)}`;
+        const saved = await readSaveVersionMetadata(record.payload).catch(() => null);
+        this.oldVersionLabel = `An older or different-version save is preserved · ${namespace.slice(0, 12)} · ${versionLabel(saved)}`;
         try {
-          const envelope = JSON.parse(new TextDecoder().decode(record.payload)) as {
-            versionIdentity: SaveVersionIdentity;
-          };
           const differences = contentPackDifferences(
-            envelope.versionIdentity.components.contentPacks,
+            saved!.components!.contentPacks,
             this.identityValue!.components.contentPacks,
           ).map((difference) => difference.replace(BROWSER_MOD_DIFFERENCE_PREFIX, '$1 mod: '));
           if (differences.length > 0) {
@@ -472,7 +458,7 @@ export class SaveController {
     render(html`${label}`, $('go'));
   }
 
-  /** Protects a decoded save when lazy chunk-diff restoration finds a different generated base. */
+  /** Protects a decoded save when generating the restored world fails, so autosave cannot overwrite it. */
   refuseRestore(error: unknown): boolean {
     if (!(this.isRestored && this.namespace)) {
       return false;
@@ -559,7 +545,26 @@ export class SaveController {
     this.recordSnapshotDuration?.(performance.now() - startedAt);
     this.queued = { snapshot, reason };
     if (!this.writing) {
-      this.flush().catch(() => undefined);
+      this.startFlush();
+    }
+  }
+
+  private startFlush(): void {
+    this.flush().catch((error: unknown) => {
+      // A throw past the save's own handler (presentation) must not leave `writing` set and block every later save.
+      this.writing = false;
+      this.reportFailure('Save failed', error);
+    });
+  }
+
+  /** Puts a failure no handler owned in the status line, the way a failed save is shown. */
+  private reportFailure(what: string, error: unknown): void {
+    this.failure = `${what}: ${errorMessage(error)}`;
+    this.statusText = this.failure;
+    try {
+      this.render();
+    } catch {
+      // The failure text is kept for the next render; presentation is what just failed.
     }
   }
 
@@ -603,10 +608,10 @@ export class SaveController {
       this.failure = `Save failed (${task.reason}): ${errorMessage(error)}`;
       this.statusText = this.failure;
     }
-    this.render();
     this.writing = false;
+    this.render();
     if (this.queued) {
-      this.flush().catch(() => undefined);
+      this.startFlush();
     }
   }
 
@@ -711,7 +716,7 @@ export class SaveController {
     this.queued = { snapshot: this.snapshot(), reason: 'manual retry' };
     this.failure = '';
     if (!this.writing) {
-      this.flush().catch(() => undefined);
+      this.startFlush();
     }
     this.render();
   }

@@ -301,7 +301,7 @@ describe('game audio playback', () => {
     expect(oldest.stop).toHaveBeenCalledWith(10.01);
     expect(context.sources.every(({ start }) => start.mock.calls.length === 1)).toBe(true);
     expect(new Set(audio.heardSounds.map(({ file }) => file))).toEqual(
-      new Set(['assets/audio/gunshot-akm-01.ogg', 'assets/audio/gunshot-akm-02.ogg']),
+      new Set(baseRegistry.sounds.get('gunshot')!.variants),
     );
     expect(fetchBuffer).toHaveBeenCalledTimes(2);
     expect(context.decodeAudioData).toHaveBeenCalledTimes(2);

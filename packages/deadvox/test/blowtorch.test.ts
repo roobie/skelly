@@ -158,6 +158,13 @@ it('a cartridge swap with no ground for the old one to land on refuses and keeps
   expect(inventory.locate(fresh)?.kind).toBe('hand');
 });
 
+it('a refused cartridge swap leaves the fitted cartridge exactly as it was', () => {
+  const { inventory, torch, old, fresh } = fittedTorch();
+  const before = { ...old };
+  expect(swapCanister(inventory, torch, fresh, () => undefined)).toBe(NO_LANDING_REFUSAL);
+  expect(old).toEqual(before);
+});
+
 it('plans where the old cartridge lands with the fill it comes out with', () => {
   const { inventory, torch, old, fresh } = fittedTorch();
   // The feet pile has room only by merging into a fresh cartridge; the old one's fill, once written, won't merge.

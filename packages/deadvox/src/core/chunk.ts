@@ -12,8 +12,6 @@ export class Chunk {
   readonly cx: number;
   readonly cy: number;
   readonly cz: number;
-  /** Changed by play (not worldgen), so it can't be regenerated from the seed. */
-  edited = false;
   /** Goes up on every block change, so caches built from this chunk (core/solidBricks.ts) know to rebuild. */
   revision = 0;
   private data: Uint16Array | undefined;
@@ -24,6 +22,14 @@ export class Chunk {
     this.cy = cy;
     this.cz = cz;
     this.fill = fill;
+  }
+
+  /** A chunk holding `data`, which it takes ownership of. */
+  static fromArray(cx: number, cy: number, cz: number, data: Uint16Array): Chunk {
+    const chunk = new Chunk(cx, cy, cz);
+    chunk.data = data;
+    chunk.compact();
+    return chunk;
   }
 
   /** The id every block has, or undefined if the chunk stores a full array. */

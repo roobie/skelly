@@ -45,7 +45,7 @@ export interface NourishmentScale {
   readonly ml: number;
 }
 
-const clamp = (v: number): number => Math.min(100, Math.max(0, v));
+export const clamp = (v: number): number => Math.min(100, Math.max(0, v));
 
 /** Fatigue is sleep debt and only has a floor; the other needs run from 0 to 100. */
 const bound = (need: Need, v: number): number => (need === 'fatigue' ? Math.max(0, v) : clamp(v));

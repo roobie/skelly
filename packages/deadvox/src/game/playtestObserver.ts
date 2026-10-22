@@ -56,7 +56,7 @@ const inspectLiveSession = (session: Session): unknown => ({
     godMode: session.sim.godMode,
   },
   body: structuredClone(session.body),
-  worldDiffs: session.worldDiffs(),
+  worldColumns: session.worldColumns(),
   inventory: session.inventory.snapshotState(),
   quickbar: session.quickbar.snapshotState(session.inventory),
   searching: [...session.entities.all].map((entity) => [entity.uid, entity.searched, session.searching(entity)]),
@@ -285,6 +285,7 @@ export class PlaytestObserver {
       }
       return false;
     } catch {
+      // Like `guard`, a metrics fault must not fail the frame; the missed persist is retried next frame.
       return false;
     }
   }
@@ -298,6 +299,7 @@ export class PlaytestObserver {
         timerQuantum: snapshotTimerQuantumForUserAgent(userAgent),
       });
     } catch {
+      // A failed measurement reports as a zeroed one with the checks false, so the playtest report shows it.
       return {
         batchCount: 0,
         batchSize: 0,
