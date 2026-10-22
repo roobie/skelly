@@ -14,6 +14,7 @@ type PrimaryItemAction =
   | 'ignite'
   | 'firearm'
   | 'key'
+  | 'bar'
   | 'unpack'
   | 'open-can'
   | 'pin'
@@ -30,6 +31,7 @@ export type PrimaryActionSelection =
         | 'ignite'
         | 'firearm'
         | 'key'
+        | 'bar'
         | 'unpack'
         | 'open-can'
         | 'pin'
@@ -55,6 +57,7 @@ const CAPABILITY_DISPATCH: readonly CapabilityDispatch[] = [
   { kind: 'light', supports: (definition) => definition.light !== undefined },
   { kind: 'firearm', supports: (definition) => definition.firearm !== undefined },
   { kind: 'key', supports: (definition) => definition.key !== undefined },
+  { kind: 'bar', supports: (definition) => definition.doorBar !== undefined },
   { kind: 'unpack', supports: (definition) => definition.unpack !== undefined },
   { kind: 'pin', supports: (definition) => definition.explosive !== undefined },
   { kind: 'read', supports: (definition) => definition.book !== undefined },

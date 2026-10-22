@@ -30,7 +30,7 @@ import {
 } from '../core/itemThrow.ts';
 import { chargeShare, offHandUse, wornNightVision } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
-import { doorOptions, doorPlan, dropTarget, pocketGroundItem, toHands } from '../core/options.ts';
+import { doorOptions, doorPlan, dropTarget, heldDoorBar, pocketGroundItem, toHands } from '../core/options.ts';
 import { pryPlan } from '../core/prying.ts';
 import { raycast } from '../core/raycast.ts';
 import { reachTuning } from '../core/reach.ts';
@@ -1202,6 +1202,25 @@ export const startPlay = (
     });
   };
 
+  /** Sets a held bar across the door or lifts the bar off it, from the side the player stands on. */
+  const enqueueDoorBar = (entity: BlockEntity, barring: boolean): string | undefined => {
+    const plan = doorPlan(inventory, entity, barring ? 'bar' : 'unbar');
+    if (!plan.ok) {
+      return plan.reason;
+    }
+    const label = barring ? `Bar the ${nameOf(entity)}` : 'Lift the bar';
+    queue.enqueueAction(DOOR_ACTION, label, plan.time, { entityUid: entity.uid, barring });
+    return undefined;
+  };
+
+  const activateBar = () => {
+    const entity = lookedAt();
+    const reason = entity && entities.defOf(entity).door ? enqueueDoorBar(entity, true) : undefined;
+    if (reason) {
+      showRefusal(reason, sim.time);
+    }
+  };
+
   const hooks: ScreenHooks = {
     feet,
     reach: session.reach,
@@ -1781,7 +1800,10 @@ export const startPlay = (
     },
     pickup: pickupGroundItem,
     interact: interactFurniture,
-    lift: (uid) => session.liftFurniture(uid),
+    lift: (uid) => {
+      const entity = entities.byUid(uid);
+      return entity?.bar ? enqueueDoorBar(entity, false) : session.liftFurniture(uid);
+    },
     place: (pos) => session.placeFurniture(pos),
     turn: () => session.turnFurniture(),
     tip: () => session.tipFurniture(),
@@ -2409,6 +2431,14 @@ export const startPlay = (
     return `${operation === 'lock' ? 'Lock' : 'Unlock'}${plan.ok ? '' : ` — ${plan.reason}`}`;
   };
 
+  const barHint = (entity: BlockEntity): string | undefined => {
+    if (!heldDoorBar(inventory)) {
+      return undefined;
+    }
+    const plan = doorPlan(inventory, entity, 'bar');
+    return `Bar${plan.ok ? '' : ` — ${plan.reason}`}`;
+  };
+
   const pryHint = (entity: BlockEntity): string | undefined => {
     if (!(entity.lock?.locked && Object.keys(entities.defOf(entity).door?.methods ?? {}).length > 0)) {
       return undefined;
@@ -2441,7 +2471,7 @@ export const startPlay = (
     const doorReason = !prying && door?.plan.ok === false ? door.plan.reason : undefined;
     return playInteractionText({
       doorReason,
-      lock: keyLockHint(entity),
+      lock: keyLockHint(entity) ?? (entities.defOf(entity).door ? barHint(entity) : undefined),
       prying,
       door: Boolean(entities.defOf(entity).door),
       open: entity.open,
@@ -2467,7 +2497,7 @@ export const startPlay = (
       case 'body':
         return { kind: 'zombie.downed', zombieId: target.id, way: mode === 'pocket' ? 'finish-off' : 'dismember' };
       default:
-        return mode === 'wield' && liftable(target.entity)
+        return mode === 'wield' && (liftable(target.entity) || target.entity.bar)
           ? { kind: 'furniture.lift', entityUid: target.entity.uid }
           : { kind: 'furniture.interact', entityUid: target.entity.uid };
     }
@@ -2968,6 +2998,9 @@ export const startPlay = (
       case 'key':
         activateKey(action.item);
         return;
+      case 'bar':
+        activateBar();
+        return;
       case 'none':
         showRefusal(primaryActionHint(registry, action.item), sim.time);
         return;
@@ -3110,8 +3143,13 @@ export const startPlay = (
     switch (target?.kind) {
       case 'item':
         return html`${key}: pocket ${inventory.name(target.item)} · ${key} (hold): wield`;
-      case 'furniture':
+      case 'furniture': {
+        if (target.entity.bar) {
+          const lift = doorPlan(inventory, target.entity, 'unbar');
+          return html`${useText(target.entity)} · ${key} (hold): lift the bar${lift.ok ? '' : ` — ${lift.reason}`}`;
+        }
         return liftable(target.entity) ? html`${useText(target.entity)} · ${key} (hold): lift` : useText(target.entity);
+      }
       case 'body':
         return downedBodyHint(target.id);
       default:

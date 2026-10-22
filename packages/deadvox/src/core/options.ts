@@ -21,6 +21,25 @@ export const heldKeyLocks = (inventory: Inventory): string[] =>
     return lock === undefined ? [] : [lock];
   });
 
+/** A door bar the player holds; a bar is two-handed, so the other hand is empty. */
+export const heldDoorBar = (inventory: Inventory): Item | undefined =>
+  [inventory.hands.right, inventory.hands.left].find(
+    (held) => held !== undefined && defOf(inventory.registry, held.type).doorBar !== undefined,
+  );
+
+/** Setting a bar takes it from both hands; lifting one needs both hands free. */
+const barHands = (inventory: Inventory, entity: BlockEntity, operation: 'bar' | 'unbar'): Plan => {
+  if (operation === 'unbar') {
+    const reason = inventory.liftRefusal();
+    const time = defOf(inventory.registry, entity.bar!.item).doorBar!.liftSimSeconds;
+    return reason ? { ok: false, reason } : { ok: true, time };
+  }
+  const bar = heldDoorBar(inventory);
+  return bar
+    ? { ok: true, time: defOf(inventory.registry, bar.type).doorBar!.setSimSeconds }
+    : { ok: false, reason: 'Hold a door bar' };
+};
+
 export const doorPlan = (
   inventory: Inventory,
   entity: BlockEntity,
@@ -28,12 +47,14 @@ export const doorPlan = (
   keyLocks = heldKeyLocks(inventory),
 ): Plan => {
   const refusal = inventory.entities.doorRefusal(entity, operation, keyLocks, inventory.actorPosition());
-  const reason =
-    refusal ??
-    ((operation === 'lock' || operation === 'unlock') && !inventory.canReachEntity(entity)
-      ? 'Too far away'
-      : undefined);
-  return reason ? { ok: false, reason } : { ok: true, time: inventory.entities.defOf(entity).door!.handlingSimSeconds };
+  const handled = operation !== 'open' && operation !== 'close';
+  const reason = refusal ?? (handled && !inventory.canReachEntity(entity) ? 'Too far away' : undefined);
+  if (reason) {
+    return { ok: false, reason };
+  }
+  return operation === 'bar' || operation === 'unbar'
+    ? barHands(inventory, entity, operation)
+    : { ok: true, time: inventory.entities.defOf(entity).door!.handlingSimSeconds };
 };
 
 export const doorOptions = (

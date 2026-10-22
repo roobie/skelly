@@ -12,7 +12,14 @@ import {
   Vector3,
 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { type BlockEntities, type BlockEntity, isBodyDoor, panelFor, poseKey } from '../core/blockEntities.ts';
+import {
+  type BlockEntities,
+  type BlockEntity,
+  doorBarBox,
+  isBodyDoor,
+  panelFor,
+  poseKey,
+} from '../core/blockEntities.ts';
 import { rotationOf } from '../core/orientation.ts';
 import type { FurnitureDef } from '../core/schema.ts';
 import type { ColumnReveal } from './columnReveal.ts';
@@ -289,6 +296,14 @@ export class FurnitureMeshes {
     panel.scale.set(...box.size);
     panel.position.set(...box.center);
     pivot.add(panel);
+    const barLook = entity.bar && this.entities?.registry.items.get(entity.bar.item)?.doorBar?.look;
+    if (barLook) {
+      const bar = new Mesh(this.geometry, this.material(barLook.color));
+      const { center, size } = doorBarBox(entity, box, barLook.thickness);
+      bar.scale.set(...size);
+      bar.position.set(...center);
+      pivot.add(bar);
+    }
     if (bodyDoor) {
       const alongX = entity.facing === 'n' || entity.facing === 's';
       const faceOutward = entity.facing === 'n' || entity.facing === 'w' ? -1 : 1;

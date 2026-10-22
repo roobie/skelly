@@ -961,6 +961,17 @@ const ItemSchema = strictObject({
   sling: optional(vBoolean()),
   /** One authored/global lock id; no per-placement key payload. */
   key: optional(strictObject({ lock: Id })),
+  /**
+   * Dropped across a closed door from the side the player stands on, it bars the door from the other side
+   * (`DESIGN.md`, "Door bar"). Held in both hands to set; `look` draws it on the door.
+   */
+  doorBar: optional(
+    strictObject({
+      setSimSeconds: PositiveSimSeconds,
+      liftSimSeconds: PositiveSimSeconds,
+      look: strictObject({ color: Color, thickness: Positive }),
+    }),
+  ),
   /** Its model (the `models` section); without one it's a bundle in a pile and a box in the hand. */
   model: optional(Id),
   /** A vehicle part: blueprints may fit it, and its model must export parts with baked collision. */

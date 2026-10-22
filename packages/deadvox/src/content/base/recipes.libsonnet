@@ -3,7 +3,7 @@
     {
       "id": "crafting",
       "name": "Crafting",
-      "startingRecipes": ["torch", "candle", "repair_kit", "repair_crowbar", "sawn_plank"],
+      "startingRecipes": ["torch", "candle", "repair_kit", "repair_crowbar", "sawn_plank", "door_bar"],
       "training": { "craftingTierOffset": 1 },
     },
     { "id": "mechanics", "name": "Mechanics" },
@@ -214,6 +214,15 @@
       "skills": { "crafting": 0 },
       "qualities": { "sawing": 1 },
       "components": [[{ "item": "stick", "count": 2 }]],
+      "workstation": "workbench"
+    },
+    {
+      "id": "door_bar",
+      "result": { "item": "door_bar", "count": 1 },
+      "timeGameMinutes": 10,
+      "skills": { "crafting": 0 },
+      "qualities": { "sawing": 1 },
+      "components": [[{ "item": "wooden_plank", "count": 2 }]],
       "workstation": "workbench"
     }
   ]

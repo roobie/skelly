@@ -344,13 +344,36 @@
       },
       "timeGameMinutes": 4,
       "workstation": "workbench"
+    },
+    {
+      "components": [
+        [
+          {
+            "count": 2,
+            "item": "wooden_plank"
+          }
+        ]
+      ],
+      "id": "door_bar",
+      "qualities": {
+        "sawing": 1
+      },
+      "result": {
+        "count": 1,
+        "item": "door_bar"
+      },
+      "skills": {
+        "crafting": 0
+      },
+      "timeGameMinutes": 10,
+      "workstation": "workbench"
     }
   ],
   "skills": [
     {
       "id": "crafting",
       "name": "Crafting",
-      "startingRecipes": ["torch", "candle", "repair_kit", "repair_crowbar", "sawn_plank"],
+      "startingRecipes": ["torch", "candle", "repair_kit", "repair_crowbar", "sawn_plank", "door_bar"],
       "training": {
         "craftingTierOffset": 1
       }
