@@ -6,13 +6,13 @@ import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
+import { decodeSave } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SoundEmission } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
 import { type PlayerSense, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
@@ -199,7 +199,10 @@ const throughSaveFile = async (entities: BlockEntities): Promise<BlockEntities> 
       inventory: { ...captured.character.inventory, entities: entities.snapshotState() },
     },
   };
-  const decoded = await decodeSave(await encodeFixture(snapshot), { contentLookup: () => true, version: formatVersion });
+  const decoded = await decodeSave(await encodeFixture(snapshot), {
+    contentLookup: () => true,
+    version: formatVersion,
+  });
   return BlockEntities.restoreState(registry, decoded.snapshot.character.inventory.entities);
 };
 
