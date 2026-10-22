@@ -1,6 +1,8 @@
 // Native resumable actions. Scheduler owns time; Inventory owns craft work trees.
 
 import { BODY_REGIONS, type BodyRegion } from './body.ts';
+import type { Registry } from './content.ts';
+import { coreMessage } from './coreText.ts';
 import type { WorkPlan } from './crafting.ts';
 import { SCHEDULER_TIME_EPSILON } from './scheduler.ts';
 import type { Simulation } from './sim.ts';
@@ -57,17 +59,17 @@ export interface RestStartOptions {
   wakeAt?: number;
   sleepOnsetGameSeconds?: number;
 }
-const restActionRefusal = (job: LongJob | undefined): string | undefined => {
+const restActionRefusal = (registry: Pick<Registry, 'ui'>, job: LongJob | undefined): string | undefined => {
   if (!job || job.stopped) {
     return undefined;
   }
   switch (job.jobType) {
     case 'craft':
-      return 'Stop crafting first';
+      return coreMessage(registry, 'busyCrafting');
     case 'reading':
-      return 'Stop reading first';
+      return coreMessage(registry, 'busyReading');
     case 'forceDoor':
-      return 'Stop forcing the door first';
+      return coreMessage(registry, 'busyForcing');
     default:
       return undefined;
   }
@@ -359,7 +361,7 @@ export class LongActions {
       return actionRefusal;
     }
     if (this.current && !this.current.stopped) {
-      return 'Stop the current action first';
+      return coreMessage(this.sim.registry, 'busy');
     }
     const result = this.sim.compressLongAction('wait');
     if (!result.ok) {
@@ -376,9 +378,9 @@ export class LongActions {
       return actionRefusal;
     }
     if (wakeAt === undefined && this.sim.needs.fatigue <= 0) {
-      return "You're not tired";
+      return coreMessage(this.sim.registry, 'notTired');
     }
-    const currentActionRefusal = restActionRefusal(this.current);
+    const currentActionRefusal = restActionRefusal(this.sim.registry, this.current);
     if (currentActionRefusal) {
       return currentActionRefusal;
     }
@@ -416,16 +418,16 @@ export class LongActions {
       return 'Missing craft action owner';
     }
     if (this.current?.jobType === 'craft' && !this.current.stopped) {
-      return 'Another craft is active';
+      return coreMessage(this.sim.registry, 'otherCraft');
     }
     if (repair && plan.kind !== 'craft') {
       return 'A disassembly cannot repair an item';
     }
     if (this.current?.jobType === 'reading' && !this.current.stopped) {
-      return 'Stop reading first';
+      return coreMessage(this.sim.registry, 'busyReading');
     }
     if (this.current?.jobType === 'forceDoor' && !this.current.stopped) {
-      return 'Stop forcing the door first';
+      return coreMessage(this.sim.registry, 'busyForcing');
     }
     const reason = this.craft.admit(plan);
     if (reason) {
@@ -444,7 +446,7 @@ export class LongActions {
     }
     if (uid === undefined) {
       this.stop();
-      return 'The materials or hands changed';
+      return coreMessage(this.sim.registry, 'materialsChanged');
     }
     this.current = { jobType: 'craft', stopped: false, last: this.sim.time, workUid: uid };
     return undefined;
@@ -452,7 +454,7 @@ export class LongActions {
   /** Release a legal unreferenced/stopped work item through its native effect owner. */
   cancelCraft(workUid: number): string | undefined {
     if (!this.craft?.owns(workUid)) {
-      return 'The work item is missing';
+      return coreMessage(this.sim.registry, 'gone');
     }
     if (this.current?.jobType === 'craft' && this.current.workUid === workUid) {
       this.cancel();
@@ -482,7 +484,7 @@ export class LongActions {
       return 'Missing forcing action owner';
     }
     if (this.current && !this.current.stopped) {
-      return 'Stop the current action first';
+      return coreMessage(this.sim.registry, 'busy');
     }
     const reason = this.forcing.validate(entityUid, toolUid, method);
     if (reason) {
@@ -532,7 +534,7 @@ export class LongActions {
       return reason;
     }
     if (this.current && !this.current.stopped) {
-      return 'Stop the current action first';
+      return coreMessage(this.sim.registry, 'busy');
     }
     if (!Number.isFinite(duration) || duration <= 0) {
       return 'Invalid treatment time';
@@ -569,7 +571,7 @@ export class LongActions {
       return 'Missing reading action owner';
     }
     if (this.current && !this.current.stopped) {
-      return 'Stop the current action first';
+      return coreMessage(this.sim.registry, 'busy');
     }
     const reason = this.reading.validate(bookUid);
     if (reason) {
@@ -597,16 +599,16 @@ export class LongActions {
       return reason ?? 'Missing craft action owner';
     }
     if (this.current?.jobType === 'reading' && !this.current.stopped) {
-      return 'Stop reading first';
+      return coreMessage(this.sim.registry, 'busyReading');
     }
     if (this.current?.jobType === 'treatment' && !this.current.stopped) {
-      return 'Stop treatment first';
+      return coreMessage(this.sim.registry, 'busyTreating');
     }
     if (this.current?.jobType === 'forceDoor' && !this.current.stopped) {
-      return 'Stop forcing the door first';
+      return coreMessage(this.sim.registry, 'busyForcing');
     }
     if (this.current && this.current.jobType === 'craft' && !this.current.stopped && this.current.workUid !== workUid) {
-      return 'Another craft is active';
+      return coreMessage(this.sim.registry, 'otherCraft');
     }
     const refusal = this.startTiming('craft');
     if (refusal) {
@@ -741,7 +743,7 @@ export class LongActions {
       const wasFallingAsleep = job.rest.sleepOnset !== undefined;
       this.current = undefined;
       this.sim.compression.stop();
-      this.notice(wasFallingAsleep ? `You can't fall asleep: ${reason}` : `You wake up: ${reason}`);
+      this.notice(coreMessage(this.sim.registry, wasFallingAsleep ? 'cantFallAsleep' : 'wokenBy', { reason }));
       return;
     }
     // A job bleeding held at 1× compresses again once the body allows it, rather than stopping.
@@ -829,7 +831,7 @@ export class LongActions {
           this.failedEffect(job, new Error(reason));
         }
       } else if (job.jobType !== 'wait') {
-        this.notice('You feel rested');
+        this.notice(coreMessage(this.sim.registry, 'rested'));
       }
     } catch (error) {
       this.failedEffect(job, error);

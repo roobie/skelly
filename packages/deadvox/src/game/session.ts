@@ -735,6 +735,7 @@ export const createSession = (options: SessionOptions) => {
   const bodyTuning = playerBodyTuning(registry, options.scenario?.body);
   const sim = new Simulation({
     seed,
+    registry,
     bodyTuning,
     ...playerWearHooks(inventory, bodyTuning),
     analgesics: (item) => registry.items.get(item)?.analgesic,

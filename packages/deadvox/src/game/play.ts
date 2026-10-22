@@ -12,6 +12,7 @@ import { formatClock, nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
+import { coreMessage } from '../core/coreText.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
 import { crosshairTarget } from '../core/crosshairTarget.ts';
 import type { EntityId } from '../core/entities.ts';
@@ -22,12 +23,7 @@ import { interactionAffordance } from '../core/interactionAffordance.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
 import type { HandSide, Inventory, Pile, Target } from '../core/inventory.ts';
 import { damageWord, type Item } from '../core/items.ts';
-import {
-  hasMetThrowMinimumHold,
-  NO_LANDING_REFUSAL,
-  throwDistanceForItem,
-  traceItemLanding,
-} from '../core/itemThrow.ts';
+import { hasMetThrowMinimumHold, throwDistanceForItem, traceItemLanding } from '../core/itemThrow.ts';
 import { chargeShare, offHandUse, wornNightVision } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
 import { doorOptions, doorPlan, dropTarget, pocketGroundItem, toHands } from '../core/options.ts';
@@ -2695,7 +2691,7 @@ export const startPlay = (
     }
     const target = itemLandingTarget(distanceMetres);
     if (!target) {
-      showRefusal(NO_LANDING_REFUSAL, sim.time);
+      showRefusal(coreMessage(registry, 'noLanding'), sim.time);
       return;
     }
     const throwOffset: Vec3 = throwingStance
