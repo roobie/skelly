@@ -28,6 +28,10 @@ can keep its own finish across firearms without changing its physical inputs; se
 
 A muzzle device fits only a muzzle cut for the bore it was built for, because fit is a property of both the gun and the device: shotguns take muzzle devices, but not rifle suppressors. Both muzzle ports declare that bore as their port `standard` (`src/gun/mounts.ts`, `MuzzleBore`). The engine's `portCompat` (`packages/engine/src/assembly/rules.ts`) requires both sides of a connection to declare the same standard or neither, so the rule holds for designs and certificates alike, and an undeclared side fits nothing that declares one. The pump's smoothbore muzzle keeps its slot, and a device built for smoothbores certifies there without a rule change.
 
+A removable muzzle device, such as the AK's compensator, is an attachment fitted at the barrel's muzzle rather than part of the gun. The player can fit or remove it like any other muzzle attachment, so the rifle and the device are separate items, and a suppressor can take its place. The device offers no muzzle of its own because the export lists only hosts that validate, and a suppressor threaded on the device would cross the barrel's keep-out. The gun therefore fires from its barrel whichever device is fitted.
+
+A port's `size` names its thread pattern, which the engine matches only when both sides declare one. A device cut for one pattern declares it and threads only on that barrel, while a suppressor that declares none fits any muzzle of its bore. See `src/gun/parts.ts`, `akMuzzleDevice`, and `src/gun/attachments.ts`, `akMuzzleDevices`.
+
 ## Viewer previews
 
 Use repeatable `fit` query parameters to preview attachments without editing the curated design. The viewer resolves the preview as an assembly connection (see `src/gun/attachmentPreview.ts`, `previewFittedAttachments`), so it uses the same mount transform and part geometry as a fitted attachment in an export. World bounds must include each exported node transform because accessor-local ranges omit offsets from fitted attachments; see `src/gun/exportGlb.ts`, `exportGunGlb`.
