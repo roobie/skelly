@@ -1,4 +1,8 @@
 local figureSeeds = std.range(1, 8);
+local senseHeightMetres = 1.3;
+local hordeSpacing = { innerMetres: 0.35, stepMetres: 0.38 };
+local grabBandMetres = 1.7;
+local backgroundStepMetres = 1;
 
 local meleeMotions = { clobber: 'swing', bite: 'wrestle', tentacle_strike: 'thrust' };
 local content = {
@@ -36,7 +40,8 @@ local content = {
       },
       "speed": {
         "wanderMetresPerSimSecond": 0.8,
-        "chaseMetresPerSimSecond": 2.8
+        "chaseMetresPerSimSecond": 2.8,
+        "backgroundStepMetres": backgroundStepMetres
       },
       "stepLength": 0.6,
       "wander": {
@@ -58,6 +63,9 @@ local content = {
       "nightSight": 10,
       "stimulusMemorySimSeconds": 180,
       "sightCone": 60,
+      "eyeHeightMetres": senseHeightMetres,
+      "earHeightMetres": senseHeightMetres,
+      "hordeSpacing": hordeSpacing,
       "hearing": 1,
       "hearingRange": { "walk": 3, "jog": 8, "sprint": 15 },
       "hearingModel": {
@@ -83,6 +91,7 @@ local content = {
         "reach": 1.2,
         "cooldownSimSeconds": 1.5,
         "windupSimSeconds": 0.3,
+        "grabBandMetres": grabBandMetres,
         "moves": [
           {
             "id": "clobber",
@@ -155,7 +164,8 @@ local content = {
       },
       "speed": {
         "wanderMetresPerSimSecond": 0.8,
-        "chaseMetresPerSimSecond": 2.8
+        "chaseMetresPerSimSecond": 2.8,
+        "backgroundStepMetres": backgroundStepMetres
       },
       "stepLength": 0.6,
       "wander": {
@@ -177,6 +187,9 @@ local content = {
       "nightSight": 10,
       "stimulusMemorySimSeconds": 180,
       "sightCone": 60,
+      "eyeHeightMetres": senseHeightMetres,
+      "earHeightMetres": senseHeightMetres,
+      "hordeSpacing": hordeSpacing,
       "hearing": 1,
       "hearingRange": { "walk": 3, "jog": 8, "sprint": 15 },
       "hearingModel": {
@@ -202,6 +215,7 @@ local content = {
         "reach": 1.2,
         "cooldownSimSeconds": 1.5,
         "windupSimSeconds": 0.3,
+        "grabBandMetres": grabBandMetres,
         "moves": [
           {
             "id": "clobber",
@@ -255,13 +269,15 @@ local content = {
       },
       "speed": {
         "wanderMetresPerSimSecond": 0.8,
-        "chaseMetresPerSimSecond": 2.4
+        "chaseMetresPerSimSecond": 2.4,
+        "backgroundStepMetres": backgroundStepMetres
       },
       "stepLength": 0.8,
       "attack": {
         "reach": 1.2,
         "cooldownSimSeconds": 1.8,
         "windupSimSeconds": 0.3,
+        "grabBandMetres": grabBandMetres,
         "moves": [
           {
             "id": "clobber",
@@ -312,12 +328,15 @@ local content = {
         "leftLeg": 18,
         "rightLeg": 18
       },
-      "speed": { "wanderMetresPerSimSecond": 0.8, "chaseMetresPerSimSecond": 6.5 },
+      "speed": { "wanderMetresPerSimSecond": 0.8, "chaseMetresPerSimSecond": 6.5, "backgroundStepMetres": backgroundStepMetres },
       "stepLength": 0.8,
       "sight": 25,
       "nightSight": 10,
       "stimulusMemorySimSeconds": 180,
       "sightCone": 60,
+      "eyeHeightMetres": senseHeightMetres,
+      "earHeightMetres": senseHeightMetres,
+      "hordeSpacing": hordeSpacing,
       "hearing": 1,
       "hearingRange": { "walk": 3, "jog": 8, "sprint": 15 },
       "hearingModel": {
@@ -358,6 +377,7 @@ local content = {
         "reach": 1.2,
         "cooldownSimSeconds": 1.3,
         "windupSimSeconds": 0.25,
+        "grabBandMetres": grabBandMetres,
         "moves": [
           {
             "id": "clobber",
@@ -415,12 +435,15 @@ local content = {
         "leftLeg": 10,
         "rightLeg": 10
       },
-      "speed": { "wanderMetresPerSimSecond": 0.35, "chaseMetresPerSimSecond": 1.1 },
+      "speed": { "wanderMetresPerSimSecond": 0.35, "chaseMetresPerSimSecond": 1.1, "backgroundStepMetres": backgroundStepMetres },
       "stepLength": 0.45,
       "sight": 16,
       "nightSight": 7,
       "stimulusMemorySimSeconds": 180,
       "sightCone": 55,
+      "eyeHeightMetres": senseHeightMetres,
+      "earHeightMetres": senseHeightMetres,
+      "hordeSpacing": hordeSpacing,
       "hearing": 1,
       "hearingRange": { "walk": 2, "jog": 5, "sprint": 9 },
       "hearingModel": {
@@ -461,6 +484,7 @@ local content = {
         "reach": 1.2,
         "cooldownSimSeconds": 1.7,
         "windupSimSeconds": 0.4,
+        "grabBandMetres": grabBandMetres,
         "moves": [
           {
             "id": "bite",
@@ -515,13 +539,17 @@ local content = {
       },
       "speed": {
         "wanderMetresPerSimSecond": 0.25,
-        "chaseMetresPerSimSecond": 1.4
+        "chaseMetresPerSimSecond": 1.4,
+        "backgroundStepMetres": backgroundStepMetres
       },
       "stepLength": 0.6,
       "sight": 25,
       "nightSight": 10,
       "stimulusMemorySimSeconds": 180,
       "sightCone": 60,
+      "eyeHeightMetres": senseHeightMetres,
+      "earHeightMetres": senseHeightMetres,
+      "hordeSpacing": hordeSpacing,
       "hearing": 1,
       "hearingRange": { "walk": 3, "jog": 8, "sprint": 15 },
       "hearingModel": {

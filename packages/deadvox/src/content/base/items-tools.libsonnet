@@ -292,6 +292,24 @@ local items = [
     },
   },
   {
+    id: 'road_flare',
+    name: 'Road flare',
+    category: 'light',
+    weight: 200,
+    size: [1, 2],
+    description: 'A road flare. It burns red and bright until it is spent.',
+    model: 'road_flare',
+    light: {
+      radius: 4,
+      seenFrom: 40,
+      color: '#ff3b24',
+      intensity: 3,
+      emissive: 1,
+      burnTimeGameHours: 1,
+      burning: burns('snap', douse=false, sprint='stay', stow='stay', drop='stay', relight=false),
+    },
+  },
+  {
     id: 'lighter',
     name: 'Lighter',
     category: 'light',
@@ -319,6 +337,7 @@ assert std.all([std.member(classIds, item.weapon.melee.type) for item in items i
 {
   models: [
     { id: 'glowstick', file: 'assets/models/glowstick.glb', emissiveMaterial: 'chemical-light tube' },
+    { id: 'road_flare', file: 'assets/models/glowstick.glb', emissiveMaterial: 'chemical-light tube' },
   ],
   meleeClasses: meleeClasses,
   items: items,

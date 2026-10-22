@@ -45,7 +45,14 @@ export const zombieAimFixture = (registry: Registry, origin: Vec3, direction: Ve
     physics: physicsFor(scale),
     jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
-    player: () => ({ pos: origin, facing: direction, movement: 'still', lit: false, lightSeenFrom: 40 }),
+    player: () => ({
+      pos: origin,
+      facing: direction,
+      movement: 'still',
+      lit: false,
+      lightSeenFrom: 40,
+      eyeHeightMetres: 1.3,
+    }),
     dayPhase: () => dayStateAtHour(12),
     hurtPlayer: () => undefined,
   });
