@@ -21,9 +21,17 @@ const stageTopics: Record<Tutorial['stage'], string> = {
   light: 'hand',
   escape: 'crouch',
   pause: 'main menu',
+  finish: 'main menu',
+  'light-on': 'hand',
+  'light-swap': 'quickbar',
+  'light-relight': 'hand',
 };
 
-const stageHint = (stage: Tutorial['stage'], { inventory, inventoryOpen, lightOn }: TutorialPresentation) => {
+const stageHint = (
+  stage: Tutorial['stage'],
+  kit: Tutorial['lightKit'],
+  { inventory, inventoryOpen, lightOn }: TutorialPresentation,
+) => {
   const action = (id: string, label: string) => html`<span data-tutorial-action=${id}>${label} ${keyCap(id)}</span>`;
   const inventoryAction = action('ui.inventory-toggle', inventoryOpen ? 'Close inventory' : 'Inventory');
   const quickAction = html`
@@ -37,6 +45,7 @@ const stageHint = (stage: Tutorial['stage'], { inventory, inventoryOpen, lightOn
       ? html`${label}: ${action('inventory.hands', 'Wield selected item')}`
       : html`${label}: ${inventoryAction}`;
   const held = (type: string) => Object.values(inventory.hands).some((item) => item?.type === type);
+  const nameOf = (type: string) => inventory.registry.items.get(type)?.name ?? type;
   const use = (type: string, label: string) =>
     inventoryOpen
       ? inventoryAction
@@ -53,6 +62,10 @@ const stageHint = (stage: Tutorial['stage'], { inventory, inventoryOpen, lightOn
     }
     return held('canned_beans') ? use('canned_beans', 'Open can') : wield('Can of beans');
   };
+  const swapHint = () =>
+    inventoryOpen
+      ? html`${nameOf(kit.battery)}: ${action('quickbar.assign.1', kit.labels.assign)}`
+      : html`${inventoryAction} · ${action('quickbar.use.1', kit.labels.swap)}`;
   const hints = {
     move: html`${action('movement.forward', 'Forward')} · ${action('movement.back', 'Back')} · ${action('movement.left', 'Left')} · ${action('movement.right', 'Right')} · ${action('pointer.look', 'Look')}`,
     door: action('world.interact', 'Open station door'),
@@ -75,6 +88,10 @@ const stageHint = (stage: Tutorial['stage'], { inventory, inventoryOpen, lightOn
       : wield('Flashlight — On / off'),
     escape: html`${action('player.crouch-toggle', 'Crouch')} · Exit path`,
     pause: action('ui.main-menu-toggle', 'Main menu'),
+    finish: action('ui.main-menu-toggle', 'Main menu'),
+    'light-on': held(kit.light) ? use(kit.light, kit.labels.on) : wield(nameOf(kit.light)),
+    'light-swap': held(kit.light) ? swapHint() : wield(nameOf(kit.light)),
+    'light-relight': held(kit.light) ? use(kit.light, kit.labels.relight) : wield(nameOf(kit.light)),
   };
   return hints[stage];
 };
@@ -92,7 +109,7 @@ export const mountTutorial = (tutorial: Tutorial, exit: () => void, restart: () 
   return (state: TutorialPresentation) => {
     render(
       html`
-      <p class="tutorial-copy" data-tutorial-stage=${tutorial.stage}>${stageHint(tutorial.stage, state)}</p>
+      <p class="tutorial-copy" data-tutorial-stage=${tutorial.stage}>${stageHint(tutorial.stage, tutorial.lightKit, state)}</p>
       <p class="tutorial-copy tutorial-note">Unsaved practice</p>
     `,
       box,
@@ -100,6 +117,11 @@ export const mountTutorial = (tutorial: Tutorial, exit: () => void, restart: () 
     render(
       html`
       <div class="tutorial-action-buttons">
+        ${
+          tutorial.canStartLight
+            ? html`<button type="button" data-tutorial-light @click=${() => tutorial.startLight()}>${tutorial.lightKit.labels.start}</button>`
+            : ''
+        }
         <button type="button" @click=${openControls}>Practice controls</button>
         <button type="button" @click=${restart}>Restart practice</button>
         <button type="button" @click=${exit}>Exit practice</button>

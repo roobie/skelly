@@ -1699,6 +1699,8 @@ const FixedLootItem = strictObject({
   placement: optional(picklist(['surface', 'container'], 'placement must be surface or container')),
   /** Item types fitted at spawn, by slot id: a found gun that comes with its sling. */
   fitted: optional(record(Id, Id)),
+  /** Battery charge at spawn as a share of full, for the item if it is a battery and for its fitted batteries. */
+  charge: optional(Fraction),
 });
 const GroundLootSupplySchema = union([
   strictObject({ kind: literal('empty') }),
@@ -2094,6 +2096,16 @@ const SiteLayoutSchema = strictObject({
   ),
   /** Observation only: playtest metrics record when the player first stands in each beat's area. */
   beats: optional(array(strictObject({ id: Id, area: LayoutRect }))),
+  /** Practice's optional modules: the items each teaches and the labels its steps show. */
+  practice: optional(
+    strictObject({
+      light: strictObject({
+        light: Id,
+        battery: Id,
+        labels: strictObject({ start: Name, on: Name, assign: Name, swap: Name, relight: Name }),
+      }),
+    }),
+  ),
 });
 
 const PoolRefSchema = union([KitRefSchema, strictObject({ kind: literal('template'), id: Id, style: optional(Id) })]);
@@ -3357,6 +3369,7 @@ export type StairDef = InferOutput<typeof StairSchema>;
 export type TemplateAccess = InferOutput<typeof TemplateAccessSchema>;
 export type FixedLootItemDef = InferOutput<typeof FixedLootItem>;
 export type SiteLayoutDef = InferOutput<typeof SiteLayoutSchema>;
+export type LightPracticeDef = NonNullable<SiteLayoutDef['practice']>['light'];
 export type ScenarioDef = InferOutput<typeof ScenarioSchema>;
 export type FixedLootOverrideDef = InferOutput<typeof FixedLootOverride>;
 export type DoorLockDef = InferOutput<typeof DoorLockSchema>;
