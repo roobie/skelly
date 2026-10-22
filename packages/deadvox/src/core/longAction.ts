@@ -693,6 +693,17 @@ export class LongActions {
       }
     }
   }
+  /** Cancels the job that names a piece of furniture: a door it forces, or what it rests on. */
+  cancelNaming(entityUid: number): void {
+    const job = this.current;
+    const names =
+      job?.jobType === 'forceDoor'
+        ? job.entityUid === entityUid
+        : (job?.jobType === 'rest' || job?.jobType === 'sleep') && job.rest.furnitureUid === entityUid;
+    if (names) {
+      this.cancel();
+    }
+  }
   private failedEffect(job: LongJob, error: unknown): void {
     // Native effects preflight before structural transfer; a refusal retains the owned work.
     this.current = job;

@@ -14,8 +14,8 @@
           "properties": {
             "handlingClass": "vertical",
             "railSpanNotches": {
-              "maxOffset": 0,
-              "minOffset": 0
+              "maxOffset": 1,
+              "minOffset": -1
             }
           }
         }

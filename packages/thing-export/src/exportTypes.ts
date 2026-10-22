@@ -22,7 +22,7 @@ export interface AppearanceContext {
 
 export interface MaterialAppearance {
   readonly colour: SrgbColor;
-  readonly finish: { readonly metallic: number; readonly roughness: number };
+  readonly finish: { readonly metallic: number; readonly roughness: number; readonly opacity?: number | undefined };
 }
 
 export interface Palette {

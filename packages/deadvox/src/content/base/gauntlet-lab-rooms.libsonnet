@@ -67,7 +67,7 @@ local room = {
       dressed: { role: 'shell', block: 'dressed_stone' }, rock: { role: 'shell', block: 'rock' },
       hazard_wall: { role: 'shell', block: 'hazard_yellow' }, wire: { role: 'shell', block: 'chain_link' },
       tiles: { role: 'interior_floor', block: 'tiles' }, carpet: { role: 'interior_floor', block: 'carpet' },
-      hazard: { role: 'interior_floor', block: 'hazard_yellow' },
+      hazard: { role: 'interior_floor', block: 'hazard_yellow' }, planks: { role: 'interior_floor', block: 'planks' },
       air: { role: 'opening', block: 'air' },
     },
   }],

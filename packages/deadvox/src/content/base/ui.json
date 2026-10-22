@@ -6,6 +6,7 @@
         "player": "You're in the way"
       },
       "furnitureMoveMessages": {
+        "barricaded": "Something's in the doorway",
         "blocksLadder": "It would block the ladder",
         "coversHatch": "It would cover the hatch",
         "emptyHands": "I'm not carrying anything",
@@ -14,11 +15,15 @@
         "fastened": "It's fixed in place",
         "handsFull": "My hands are full",
         "hatchCovered": "Something's lying on it",
+        "holdsItems": "There's still something in it",
+        "holdsUp": "Something's resting on it",
         "noRoom": "There's no room for it there",
         "nowhereToLand": "There's nowhere for what's on it to land",
         "otherInWay": "Someone's in the way",
         "outOfReach": "I can't reach there",
         "playerInWay": "I'm in the way",
+        "reserved": "I'm taking it apart",
+        "someoneOnIt": "Someone's standing on it",
         "standingOn": "I'm standing on it",
         "staysUpright": "It has to stay upright",
         "tired": "I'm too tired to lift it",

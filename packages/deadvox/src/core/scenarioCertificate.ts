@@ -248,14 +248,21 @@ class Certificate {
     return spawn && [...spawn.loot, ...(spawn.surfaceLoot ?? [])];
   }
 
-  stocked(resource: ScenarioResource): boolean {
-    const source = this.entityAt(resource.at);
+  stocked(holder: Pick<ScenarioResource, 'at' | 'standing'>): boolean {
+    const source = this.entityAt(holder.at);
     return Boolean(
-      this.fixedSource(resource.at) &&
+      this.fixedSource(holder.at) &&
         source &&
-        this.space.visibleReach(resource.standing, source) &&
-        (this.stockAt(resource.at)?.length ?? 0) > 0,
+        this.space.visibleReach(holder.standing, source) &&
+        (this.stockAt(holder.at)?.length ?? 0) > 0,
     );
+  }
+
+  heldLocks(at: Readonly<Vec3>): string[] {
+    return (this.stockAt(at) ?? []).flatMap((item) => {
+      const lock = this.site.registry.items.get(item.type)?.key?.lock;
+      return lock ? [lock] : [];
+    });
   }
 
   resource(resource: ScenarioResource, index: number, reached: Set<number>): void {
@@ -288,10 +295,7 @@ class Certificate {
       this.fail(`${path}.key`, 'key holder needs a reachable visible face on the key route');
       return undefined;
     }
-    const locks = (this.stockAt(key.at) ?? []).flatMap((item) => {
-      const lock = this.site.registry.items.get(item.type)?.key?.lock;
-      return lock ? [lock] : [];
-    });
+    const locks = this.heldLocks(key.at);
     if (locks.length === 0) {
       this.fail(`${path}.key`, 'key holder holds no key');
       return undefined;
@@ -332,28 +336,31 @@ class Certificate {
     });
   }
 
+  groundCard(at: Readonly<Vec3>, lock: string): boolean {
+    const source = this.site
+      .lootPointsIn(toChunk(at[0]), toChunk(at[2]))
+      .find((point) => point.channel === 'ground' && point.destination.every((value, axis) => value === at[axis]));
+    return (
+      source?.supply.kind === 'fixed' &&
+      source.supply.items.some(
+        (item) => this.site.registry.items.get(item.item)?.key?.lock === lock && (item.count ?? 1) > 0,
+      )
+    );
+  }
+
   seals(): void {
     for (const [index, seal] of this.composition.seals.entries()) {
       const path = `.composition.seals[${index}]`;
       const doors = seal.doors.map((point) => this.entityAt(point));
       const lock = doors[0]?.lock?.id;
-      const source = this.site
-        .lootPointsIn(toChunk(seal.key[0]), toChunk(seal.key[2]))
-        .find(
-          (point) => point.channel === 'ground' && point.destination.every((value, axis) => value === seal.key[axis]),
-        );
-      const present =
-        source?.supply.kind === 'fixed' &&
-        source.supply.items.some(
-          (item) => this.site.registry.items.get(item.item)?.key?.lock === lock && (item.count ?? 1) > 0,
-        );
       if (
         !(
           lock &&
           doors.every((door) => door?.lock?.id === lock && door.lock.locked) &&
-          present &&
           this.space.path(this.site.plan.portal!.lower, seal.standing, { steps: true }) &&
-          this.space.visibleGroundReach(seal.standing, seal.key)
+          (seal.held
+            ? this.stocked({ at: seal.key, standing: seal.standing }) && this.heldLocks(seal.key).includes(lock)
+            : this.groundCard(seal.key, lock) && this.space.visibleGroundReach(seal.standing, seal.key))
         )
       ) {
         this.fail(path, 'seal needs its matching placed keycard reachable on the open side before unlocking');

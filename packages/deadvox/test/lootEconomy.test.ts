@@ -109,6 +109,7 @@ describe('loot economy descriptions', () => {
     const tables = [...registry.loot.keys()];
     expect(tables.length).toBeGreaterThan(0);
     const usage: LootContext['usage'] = ['Residential', 'Industrial', 'Medical', 'Hunting', 'Police', 'Military'];
+    let rolledInCarriedTier = 0;
     for (const tier of LOOT_TIERS) {
       const unused = ![...registry.items.values()].some((item) => item.economy?.tiers.includes(tier));
       for (const table of tables) {
@@ -126,12 +127,15 @@ describe('loot economy descriptions', () => {
         const rolled = rollLoot(registry, point, lootPointStream(1, point));
         if (unused) {
           expect(rolled, `${table} rolls nothing in the unused ${tier}`).toEqual([]);
+        } else {
+          rolledInCarriedTier += rolled.length;
         }
         for (const { type } of rolled) {
           expect(registry.items.get(type)?.economy?.tiers, `${type} rolled in ${tier}`).toContain(tier);
         }
       }
     }
+    expect(rolledInCarriedTier, 'some table rolls something in a tier items carry').toBeGreaterThan(0);
   });
 
   it('admits no Military-only item under Police and no Police-only item under Hunting, in the loaded content', () => {

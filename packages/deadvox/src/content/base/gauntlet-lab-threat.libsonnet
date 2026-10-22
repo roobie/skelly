@@ -3,7 +3,7 @@ local quiet = row(null, 0, 1);
 // Per storey, weighted rows of what one marker cell holds; weight on a null-type row leaves the cell quiet.
 local rows = {
   entry: [row(null, 0, 2), row('shambler', 0.6, 3)],
-  research: [row(null, 0, 2), row('shambler', 0.8, 6)],
+  administration: [row(null, 0, 1), row('shambler', 0.6, 2)],
   containment: [row(null, 0, 1), row('shambler', 0.8, 5)],
   failure: [row(null, 0, 1), row('shambler', 0.8, 4), row('runner', 0.8, 3), row('crawler', 0.8, 3)],
   bottom: [row(null, 0, 1), row('shambler', 0.8, 3), row('runner', 0.8, 4), row('crawler', 0.8, 4)],

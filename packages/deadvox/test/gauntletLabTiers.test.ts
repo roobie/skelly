@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { GauntletSite } from '../src/core/gauntlet.ts';
-import { economyEligible, LOOT_TIERS, type LootContext, withLootDepth } from '../src/core/loot.ts';
+import {
+  economyEligible,
+  LOOT_TIERS,
+  type LootContext,
+  lootPointStream,
+  lootSpawnPoint,
+  militaryOnlyEconomy,
+  rollLoot,
+  withLootDepth,
+} from '../src/core/loot.ts';
 import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
 import { lootSourcesOf } from '../src/core/site.ts';
 import { compileAssembly, placedGroundLoot, placedPieces } from '../src/core/templates.ts';
@@ -126,6 +135,46 @@ describe('gauntlet lab loot tiers by depth', () => {
       for (const tier of top.tiers) {
         expect(bottom.tiers, 'a deeper level keeps the lower tiers').toContain(tier);
       }
+    },
+    GAUNTLET_SITE_MS,
+  );
+
+  it(
+    'rolls rifle supplies only from containers that carry a Military usage on a level below the first',
+    () => {
+      const scenario = [...registry.scenarios.values()].find((candidate) => candidate.kind === 'gauntlet')!;
+      const site = new GauntletSite({ seed: 1, registry, scale, scenario });
+      const sources = site.placements.flatMap((placement) =>
+        lootSourcesOf(
+          registry,
+          'city',
+          placement,
+          site.plan.composition?.lootSources.find((source) => source.placement === placement)?.fixedLoot,
+        ),
+      );
+      // A Military-only item of the second tier stands for rifle supplies without naming one.
+      const rifle = { usage: ['Military' as const], tiers: ['Tier2' as const] };
+      const lab = sources.filter((source) => source.context.lowerTiers === true);
+      expect(lab.length, 'the lab declares tier ranges').toBeGreaterThan(0);
+      const reaching = lab.filter((source) =>
+        economyEligible(rifle, { ...source.context, usage: [...(source.usage ?? source.context.usage)] }),
+      );
+      expect(reaching.length, 'a lab container admits rifle supplies').toBeGreaterThan(0);
+      for (const source of reaching) {
+        expect(source.usage, 'only an explicit Military usage reaches them').toContain('Military');
+        expect(source.context.tier, 'they sit below level one').not.toBe(TIERS[0]);
+      }
+      const container = reaching.find((source) => source.supply.kind === 'table')!;
+      expect(container, 'a reaching container rolls a table').toBeDefined();
+      let rolledMilitaryOnly = 0;
+      for (let seed = 1; seed <= 60; seed++) {
+        const point = lootSpawnPoint(container);
+        for (const { type } of rollLoot(registry, point, lootPointStream(seed, point))) {
+          const economy = registry.items.get(type)?.economy;
+          rolledMilitaryOnly += economy !== undefined && militaryOnlyEconomy(economy) ? 1 : 0;
+        }
+      }
+      expect(rolledMilitaryOnly, 'the container can roll a rifle row at its level tier').toBeGreaterThan(0);
     },
     GAUNTLET_SITE_MS,
   );

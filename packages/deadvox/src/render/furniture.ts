@@ -13,7 +13,6 @@ import {
 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { type BlockEntities, type BlockEntity, isBodyDoor, panelFor, poseKey } from '../core/blockEntities.ts';
-import type { Registry } from '../core/content.ts';
 import { rotationOf } from '../core/orientation.ts';
 import type { FurnitureDef } from '../core/schema.ts';
 import type { ColumnReveal } from './columnReveal.ts';
@@ -60,7 +59,7 @@ export class FurnitureMeshes {
     markerEdges(),
     withHeightFog(new MeshLambertMaterial({ color: '#ffe36e', depthTest: true }), 'furniture'),
   );
-  private registry: Registry | undefined;
+  private entities: BlockEntities | undefined;
   private markedUid: string | undefined;
   private markedOpen: boolean | undefined;
   private drawn = -1;
@@ -134,13 +133,13 @@ export class FurnitureMeshes {
     if (entities.standing === this.drawn && revealVersion === this.drawnReveal) {
       return;
     }
-    this.registry = entities.registry;
+    this.entities = entities;
     this.drawn = entities.standing;
     this.drawnReveal = revealVersion;
     const pieces = new Map<BlockEntity, { pose: string; mesh: Group | Mesh }>();
     this.group.clear();
     for (const entity of entities.all) {
-      const pose = poseKey(entity);
+      const pose = poseKey(entity, entities.wearOf(entity));
       const kept = this.pieces.get(entity);
       const piece =
         kept?.pose === pose ? kept : { pose, mesh: castsAndReceives(this.meshFor(entity, entities.defOf(entity))) };
@@ -257,9 +256,15 @@ export class FurnitureMeshes {
     return piece;
   }
 
-  /** `plain` moved toward its door material's broken tint once the leaf is broken; no look authored leaves it. */
-  private brokenMaterial(entity: BlockEntity, plain: MeshLambertMaterial, body: FurnitureDef): MeshLambertMaterial {
-    const look = entity.broken ? this.registry?.doorMaterials.get(body.door!.material)?.broken : undefined;
+  /**
+   * `plain` moved toward its door material's broken tint once the leaf is broken, or toward the damage look it has
+   * reached before that; no look authored leaves it.
+   */
+  private doorLook(entity: BlockEntity, plain: MeshLambertMaterial, body: FurnitureDef): MeshLambertMaterial {
+    const material = this.entities?.registry.doorMaterials.get(body.door!.material);
+    const wear = this.entities?.wearOf(entity) ?? 0;
+    const worn = wear > 0 ? material?.damaged?.[wear - 1] : undefined;
+    const look = entity.broken ? material?.broken : worn;
     if (!look) {
       return plain;
     }
@@ -270,7 +275,7 @@ export class FurnitureMeshes {
   private door(entity: BlockEntity, plain: MeshLambertMaterial, body: FurnitureDef): Group {
     const box = panelFor(entity, body, this.blockSize);
     const bodyDoor = isBodyDoor(body);
-    const material = this.brokenMaterial(entity, plain, body);
+    const material = this.doorLook(entity, plain, body);
     const panelMaterial = bodyDoor
       ? this.material(`#${new Color(material.color).multiplyScalar(BODY_DOOR_SHADE).getHexString()}`)
       : material;
