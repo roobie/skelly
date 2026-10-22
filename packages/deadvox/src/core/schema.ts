@@ -2689,9 +2689,9 @@ const SkillSchema = pipe(
       strictObject({
         handlingFactorFloor: Fraction,
         handlingFactorHalfLifeLevels: Positive,
-        handlingPerCellSeconds: NonNegative,
-        handlingGroundSeconds: NonNegative,
-        handlingWearSeconds: NonNegative,
+        handlingPerCellSimSeconds: NonNegative,
+        handlingGroundSimSeconds: NonNegative,
+        handlingWearSimSeconds: NonNegative,
       }),
     ),
     combat: optional(

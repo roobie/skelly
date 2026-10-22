@@ -60,11 +60,11 @@ export const handlingWeights = (registry: Registry) => {
   const tuning = inventoryManagementTuning(registry);
   return {
     /** Added per cell of the item's size, taking it out and putting it in. */
-    perCell: tuning.handlingPerCellSeconds,
+    perCell: tuning.handlingPerCellSimSeconds,
     /** Taking from or putting on the ground. */
-    ground: tuning.handlingGroundSeconds,
+    ground: tuning.handlingGroundSimSeconds,
     /** Putting on or taking off a worn item. */
-    wear: tuning.handlingWearSeconds,
+    wear: tuning.handlingWearSimSeconds,
   };
 };
 

@@ -14,9 +14,9 @@
       "inventory": {
         "handlingFactorFloor": 0,
         "handlingFactorHalfLifeLevels": 1.1,
-        "handlingPerCellSeconds": 0.05,
-        "handlingGroundSeconds": 1,
-        "handlingWearSeconds": 2
+        "handlingPerCellSimSeconds": 0.05,
+        "handlingGroundSimSeconds": 1,
+        "handlingWearSimSeconds": 2
       }
     },
     {
