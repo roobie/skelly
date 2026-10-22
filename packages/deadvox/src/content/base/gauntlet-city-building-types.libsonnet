@@ -203,7 +203,19 @@ local yard(block) = { role: 'trim', block: block };
       { item: 'cartridge_5_d_56x45', weight: 3, count: [10, 30] },
       { item: 'cartridge_box_5_d_56x45', weight: 2 },
       { item: 'cartridge_7_d_62x39', weight: 3, count: [10, 30] },
-      { item: 'cartridge_box_7_d_62x39', weight: 2 }, { nothing: true, weight: 2 },
+      { item: 'cartridge_box_7_d_62x39', weight: 2 },
+      { item: 'magazine_stanag_30', weight: 2, condition: [0.5, 0.9] },
+      { item: 'magazine_stanag_20', weight: 1, condition: [0.5, 0.9] },
+      { item: 'magazine_akm_30', weight: 2, condition: [0.5, 0.9] }, { nothing: true, weight: 2 },
+    ] },
+    // Rifle supplies for the rooms outside the armoury, so the HQ's ammunition and magazines are not all in one cabinet.
+    { id: 'hq_field_supplies', rolls: [1, 2], entries: [
+      { item: 'cartridge_5_d_56x45', weight: 2, count: [8, 20] },
+      { item: 'cartridge_7_d_62x39', weight: 2, count: [8, 20] },
+      { item: 'cartridge_box_5_d_56x45', weight: 1 }, { item: 'cartridge_box_7_d_62x39', weight: 1 },
+      { item: 'magazine_stanag_30', weight: 2, condition: [0.5, 0.9] },
+      { item: 'magazine_stanag_20', weight: 1, condition: [0.5, 0.9] },
+      { item: 'magazine_akm_30', weight: 2, condition: [0.5, 0.9] }, { nothing: true, weight: 3 },
     ] },
     { id: 'armoury_cabinet', rolls: [2, 3], entries: [
       { table: 'armoury_arms', weight: 1 }, { table: 'armoury_ammunition', weight: 2 },
