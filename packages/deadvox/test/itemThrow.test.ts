@@ -91,8 +91,9 @@ describe('held-item throws', () => {
     expect(flimsyRange).toBeLessThan(compactRange);
   });
 
-  it('never lengthens a throw as drag rises', () => {
-    const shares = [0, 0.1, 1, 10, 100].map(dragRangeShare);
+  it('never lengthens a throw as drag rises, and lands however light the item', () => {
+    // Drag past the stepper's stable limit made the arc diverge and never come back down.
+    const shares = [0, 0.1, 1, 10, 100, 1e3, 1e6].map(dragRangeShare);
 
     expect(shares[0]).toBeCloseTo(1, 5);
     for (let index = 1; index < shares.length; index++) {

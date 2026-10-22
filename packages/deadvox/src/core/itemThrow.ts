@@ -9,20 +9,25 @@ export const hasMetThrowMinimumHold = (heldSimSeconds: number, minimumHoldSimSec
   heldSimSeconds >= minimumHoldSimSeconds;
 
 const DRAG_FLIGHT_STEPS = 1024;
+// Explicit steps stay stable while drag × speed × dt is at most a half; above release height no speed exceeds launch.
+const STABLE_DRAG = DRAG_FLIGHT_STEPS / (2 * Math.SQRT2);
 
 /**
  * The share of its drag-free range that a 45-degree throw keeps against quadratic drag, back at release height.
  * Scaled so launch speed, gravity and the drag-free range are all 1, the flight depends only on the drag per metre
- * of drag-free range, `dragPerMetre * dragFreeRangeMetres`, so no gravity constant is needed.
+ * of drag-free range, `dragPerMetre * dragFreeRangeMetres`, so no gravity constant is needed. Drag beyond the
+ * stepper's stable limit is clamped to it: the throw already keeps almost none of its range there, and past it the
+ * stepped arc diverges and never lands.
  */
 export const dragRangeShare = (drag: number): number => {
   const dt = Math.SQRT2 / DRAG_FLIGHT_STEPS;
+  const stableDrag = Math.min(drag, STABLE_DRAG);
   let [x, y] = [0, 0];
   let [vx, vy] = [Math.SQRT1_2, Math.SQRT1_2];
   for (;;) {
     const speed = Math.hypot(vx, vy);
-    const ax = -drag * speed * vx;
-    const ay = -1 - drag * speed * vy;
+    const ax = -stableDrag * speed * vx;
+    const ay = -1 - stableDrag * speed * vy;
     const nextX = x + vx * dt + 0.5 * ax * dt * dt;
     const nextY = y + vy * dt + 0.5 * ay * dt * dt;
     if (nextY <= 0 && vy < 0) {
