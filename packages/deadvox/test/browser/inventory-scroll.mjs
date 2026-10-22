@@ -21,10 +21,19 @@ const RACK_GRID = [5, 6];
 const {
   inventory: [baseInventoryRow],
 } = JSON.parse(readFileSync(resolve(root, 'src/content/base/inventory.json'), 'utf8'));
+// The fixture's material takes its blow sound from the shipped materials, with that sound's shipped definition, so a
+// newly required material or sound field is met by the content rather than by this file.
+const baseContent = (file) => JSON.parse(readFileSync(resolve(root, 'src/content/base', file), 'utf8'));
+const { blowSound } = baseContent('furniture.json').furnitureMaterials[0];
+const blowSoundDefinition = baseContent('sounds-furniture.json').sounds.find(({ id }) => id === blowSound);
+if (!blowSoundDefinition) {
+  throw new Error(`Base content lacks the blow sound ${blowSound}`);
+}
 const refusalSound = {
   source: 'inventory-scroll-sounds',
   data: {
     sounds: [
+      blowSoundDefinition,
       {
         id: 'player_nope',
         variants: ['assets/audio/nope.ogg'],
@@ -45,7 +54,7 @@ const content = [
     source: 'inventory-scroll-fixture',
     data: {
       inventory: [{ ...baseInventoryRow, containerMaxWidthCells: 5 }],
-      furnitureMaterials: [{ id: 'scroll_material', blowSound: 'door_bash' }],
+      furnitureMaterials: [{ id: 'scroll_material', blowSound }],
       furniture: [
         {
           id: 'scroll_rack',
