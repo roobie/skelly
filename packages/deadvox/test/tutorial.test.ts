@@ -8,7 +8,13 @@ import { BASE_CLOCK } from './dayPhaseFixture.ts';
 const BUNDLED_CONTENT = startupContent();
 
 import { Survival } from '../src/game/survival.ts';
-import { Tutorial, type TutorialObservation, tutorialRequested, tutorialUrl } from '../src/game/tutorial.ts';
+import {
+  type CombatObservation,
+  Tutorial,
+  type TutorialObservation,
+  tutorialRequested,
+  tutorialUrl,
+} from '../src/game/tutorial.ts';
 import { Simulation } from './simulationFixture.ts';
 
 const observation = (): TutorialObservation => ({
@@ -22,12 +28,25 @@ const observation = (): TutorialObservation => ({
   lightOn: false,
   paused: false,
 });
+const kit = BUNDLED_CONTENT.registry.layouts.get('tutorial')!.practice!;
 const fixture = () => {
-  const tutorial = new Tutorial([0, 1, 0], 0, { x0: 10, z0: 10, x1: 12, z1: 12 });
+  const tutorial = new Tutorial([0, 1, 0], 0, { x0: 10, z0: 10, x1: 12, z1: 12 }, kit);
   const state = observation();
   const observe = () => tutorial.observe(state);
   return { tutorial, state, observe };
 };
+
+const combatState = (patch: Partial<CombatObservation> = {}): CombatObservation => ({
+  revolverHeld: false,
+  revolverRounds: 0,
+  aiming: false,
+  shotgunHeld: false,
+  shotgunRounds: 0,
+  shotgunChambered: false,
+  inventoryOpen: false,
+  targetAlive: true,
+  ...patch,
+});
 
 const finishEssentials = ({ tutorial, state, observe }: ReturnType<typeof fixture>) => {
   tutorial.opened('canned_beans');
@@ -111,17 +130,12 @@ describe('practice objectives', () => {
     expect(tutorial.stage).toBe('finish');
     observe();
     expect(tutorial.stage).toBe('finish');
+    tutorial.fired(kit.revolver);
+    tutorial.fired(kit.shotgun);
+    tutorial.zombieDowned();
     tutorial.startCombat();
     expect(tutorial.canStartCombat).toBe(false);
-    const combat = {
-      revolverHeld: false,
-      revolverRounds: 0,
-      aiming: false,
-      shotgunHeld: false,
-      shotgunRounds: 0,
-      shotgunChambered: false,
-      inventoryOpen: false,
-    };
+    const combat = combatState();
     state.combat = combat;
     const advance = (patch: Partial<typeof combat>, next: string) => {
       const before = tutorial.stage;
@@ -130,22 +144,52 @@ describe('practice objectives', () => {
       expect(tutorial.stage, `leaving ${before}`).toBe(next);
     };
     observe();
-    expect(tutorial.stage).toBe('revolver-wield');
-    advance({ revolverHeld: true }, 'revolver-load');
+    expect(tutorial.stage, 'shots and downings before the module starts earn nothing').toBe('revolver-wield');
+    // The guns and rounds come out of the cabinet, so a screen is open with a gun in hand while loading.
+    advance({ inventoryOpen: true, revolverHeld: true }, 'revolver-load');
     advance({ revolverRounds: 3 }, 'revolver-aim');
-    advance({ aiming: true }, 'revolver-fire');
+    advance({ aiming: true, inventoryOpen: false }, 'revolver-fire');
     tutorial.zombieDowned();
     expect(tutorial.stage, 'a downing without a shot earns nothing').toBe('revolver-fire');
-    tutorial.fired('revolver_357');
+    tutorial.fired(kit.revolver);
     expect(tutorial.stage).toBe('pump-wield');
-    advance({ revolverHeld: false, shotgunHeld: true }, 'pump-load');
+    advance({ inventoryOpen: true, revolverHeld: false, shotgunHeld: true }, 'pump-load');
     advance({ shotgunRounds: 2 }, 'pump-rack');
-    advance({ shotgunChambered: true }, 'pump-fire');
-    tutorial.fired('pump_shotgun');
+    advance({ shotgunChambered: true, inventoryOpen: false }, 'pump-fire');
+    tutorial.fired(kit.shotgun);
     expect(tutorial.stage).toBe('down');
     tutorial.zombieDowned();
     expect(tutorial.stage).toBe('ammo');
+    advance({ inventoryOpen: true }, 'ammo');
+    advance({ inventoryOpen: false }, 'ammo');
     advance({ inventoryOpen: true }, 'finish');
+  });
+
+  it('asks for the content target when the module reaches its shooting step with nothing left to shoot', () => {
+    const { tutorial, state, observe } = fixture();
+    // The practice shambler was killed in melee during the essentials.
+    finishEssentials({ tutorial, state, observe });
+    tutorial.zombieDowned();
+    tutorial.startCombat();
+    state.combat = combatState({
+      revolverHeld: true,
+      revolverRounds: 1,
+      aiming: true,
+      shotgunHeld: true,
+      shotgunRounds: 1,
+      shotgunChambered: true,
+      targetAlive: false,
+    });
+    observe();
+    tutorial.fired(kit.revolver);
+    tutorial.fired(kit.shotgun);
+    expect(tutorial.stage).toBe('down');
+    expect(tutorial.needsTarget).toBe(true);
+    state.combat.targetAlive = true;
+    observe();
+    expect(tutorial.needsTarget).toBe(false);
+    tutorial.zombieDowned();
+    expect(tutorial.stage).toBe('ammo');
   });
 
   it('remembers out-of-order supplies instead of requiring already consumed items again', () => {

@@ -27,10 +27,15 @@ export interface CombatObservation {
   shotgunRounds: number;
   shotgunChambered: boolean;
   inventoryOpen: boolean;
+  /** A shambler is still alive to shoot at. */
+  targetAlive: boolean;
 }
 
-export const COMBAT_REVOLVER = 'revolver_357';
-export const COMBAT_SHOTGUN = 'pump_shotgun';
+/** The practice guns, named by the layout's content rather than chosen here. */
+export interface CombatKit {
+  readonly revolver: string;
+  readonly shotgun: string;
+}
 
 const COMBAT_STAGES = [
   'revolver-wield',
@@ -54,15 +59,24 @@ export class Tutorial {
   private essentialsDone = false;
   private combatStarted = false;
   private shotSinceDowning = false;
+  private armedForAmmo = false;
+  private targetAlive = true;
 
   private readonly spawn: Vec3;
   private readonly startingYaw: number;
   private readonly exit: Rect;
+  readonly kit: CombatKit;
 
-  constructor(spawn: Vec3, startingYaw: number, exit: Rect) {
+  constructor(spawn: Vec3, startingYaw: number, exit: Rect, kit: CombatKit) {
     this.spawn = spawn;
     this.startingYaw = startingYaw;
     this.exit = exit;
+    this.kit = kit;
+  }
+
+  /** The module is on its shooting step with nothing left to shoot, so the game places the content's target. */
+  get needsTarget(): boolean {
+    return this.stage === 'down' && !this.targetAlive;
   }
 
   /** The essentials route is finished and the optional combat module can be chosen. */
@@ -76,14 +90,20 @@ export class Tutorial {
     }
   }
 
-  /** The firearm owner admitted a shot. */
+  /** The firearm owner admitted a shot; shots before the module starts teach nothing. */
   fired(type: string): void {
+    if (!this.combatStarted) {
+      return;
+    }
     this.achieved.add(`fired:${type}`);
     this.shotSinceDowning = true;
   }
 
   /** A shambler went down; it counts for the module only after a firearm shot since the last one. */
   zombieDowned(): void {
+    if (!this.combatStarted) {
+      return;
+    }
     if (this.shotSinceDowning) {
       this.achieved.add('downed');
     }
@@ -119,18 +139,36 @@ export class Tutorial {
         state.position[2] >= this.exit.z0 &&
         state.position[2] < this.exit.z1,
     );
-    const { combat } = state;
-    if (this.combatStarted && combat) {
-      remember('revolver-wield', combat.revolverHeld);
-      remember('revolver-load', combat.revolverRounds > 0);
-      remember('revolver-aim', combat.revolverHeld && combat.aiming);
-      remember('pump-wield', combat.shotgunHeld);
-      remember('pump-load', combat.shotgunRounds > 0);
-      remember('pump-rack', combat.shotgunChambered);
-      remember('ammo', combat.inventoryOpen && (combat.revolverHeld || combat.shotgunHeld));
+    if (this.combatStarted && state.combat) {
+      this.observeCombat(state.combat);
     }
     if (this.stage === 'pause' && state.paused) {
       this.essentialsDone = true;
+    }
+  }
+
+  private observeCombat(combat: CombatObservation): void {
+    const remember = (id: string, outcome: boolean) => {
+      if (outcome) {
+        this.achieved.add(id);
+      }
+    };
+    remember('revolver-wield', combat.revolverHeld);
+    remember('revolver-load', combat.revolverRounds > 0);
+    remember('revolver-aim', combat.revolverHeld && combat.aiming);
+    remember('pump-wield', combat.shotgunHeld);
+    remember('pump-load', combat.shotgunRounds > 0);
+    remember('pump-rack', combat.shotgunChambered);
+    this.targetAlive = combat.targetAlive;
+    if (this.stage !== 'ammo') {
+      return;
+    }
+    // Loading from the cabinet keeps a screen open, so reading the ammo counts only as opening it afresh
+    // once the step is current.
+    if (!combat.inventoryOpen) {
+      this.armedForAmmo = true;
+    } else if (this.armedForAmmo && (combat.revolverHeld || combat.shotgunHeld)) {
+      this.achieved.add('ammo');
     }
   }
 
@@ -143,11 +181,11 @@ export class Tutorial {
       'revolver-wield': this.achieved.has('revolver-wield'),
       'revolver-load': this.achieved.has('revolver-load'),
       'revolver-aim': this.achieved.has('revolver-aim'),
-      'revolver-fire': this.achieved.has(`fired:${COMBAT_REVOLVER}`),
+      'revolver-fire': this.achieved.has(`fired:${this.kit.revolver}`),
       'pump-wield': this.achieved.has('pump-wield'),
       'pump-load': this.achieved.has('pump-load'),
       'pump-rack': this.achieved.has('pump-rack'),
-      'pump-fire': this.achieved.has(`fired:${COMBAT_SHOTGUN}`),
+      'pump-fire': this.achieved.has(`fired:${this.kit.shotgun}`),
       down: this.achieved.has('downed'),
       ammo: this.achieved.has('ammo'),
     };

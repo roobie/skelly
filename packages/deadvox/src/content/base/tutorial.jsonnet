@@ -60,6 +60,8 @@ breach.breaking(shape.colliding({
     }],
     player: { position: [0, 0.5, 8], bearing: 0 },
     shamblers: [{ type: 'shambler', position: [24, 0.5, 2] }],
+    // The combat module's guns (the kit in the cabinet) and the target it places when no shambler is left.
+    practice: { revolver: 'revolver_357', shotgun: 'pump_shotgun', target: { type: 'shambler', position: [24, 0.5, 2] } },
     woodlands: [],
     tracks: [{ points: [[0, 12], [0, 1], [-8, 1], [-8, -12]], width: 3, surface: 'dirt' }],
     beats: [{ id: 'tutorial_exit', area: { x0: -10, z0: -15, x1: -6, z1: -11 } }],

@@ -181,7 +181,8 @@ try {
         ) {
           throw new Error('Can fixture must fit');
         }
-        const lootTutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 });
+        const kit = { revolver: 'revolver', shotgun: 'shotgun' };
+        const lootTutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, kit);
         lootTutorial.observe({
           position: [8, 0, 0],
           yaw: 1,
@@ -193,7 +194,7 @@ try {
           lightOn: false,
           paused: false,
         });
-        const tutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 });
+        const tutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, kit);
         tutorial.observe({
           position: [8, 0, 0],
           yaw: 1,

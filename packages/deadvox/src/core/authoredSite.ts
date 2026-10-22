@@ -27,6 +27,7 @@ import {
   type HordeSpawn,
   lootSourcesOf,
   type PlaytestMarks,
+  type PracticeMarks,
   type Rect,
   type Site,
   type ZombieSpawn,
@@ -56,6 +57,7 @@ export class AuthoredSite implements Site {
   private readonly treeIndex: TreeIndex;
   private readonly lootColumns: ReadonlyMap<string, readonly LootSpawnPoint[]>;
   readonly playtestMarks: PlaytestMarks;
+  readonly practice?: PracticeMarks;
   readonly seed: number;
   readonly registry: Registry;
 
@@ -340,6 +342,10 @@ export class AuthoredSite implements Site {
         pos: spawn.pos,
         ...(spawn.window ? { window: spawn.window } : {}),
       }));
+    if (layout.practice) {
+      const { revolver, shotgun, target } = layout.practice;
+      this.practice = { revolver, shotgun, target: { type: target.type, pos: blocks(target.position) } };
+    }
     this.hordes = (layout.hordes ?? []).map(({ id, position }) => ({
       id: `${layout.id}_${id}`,
       type: HAMLET_HORDE_TYPE,

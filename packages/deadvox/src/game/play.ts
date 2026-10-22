@@ -185,7 +185,7 @@ import {
   type ThirdPersonOrbitAngle,
 } from './thirdPersonOrbit.ts';
 import { TierNotice } from './tierNotice.ts';
-import { COMBAT_REVOLVER, COMBAT_SHOTGUN, type CombatObservation, Tutorial, tutorialUrl } from './tutorial.ts';
+import { type CombatKit, type CombatObservation, Tutorial, tutorialUrl } from './tutorial.ts';
 import { Unpacking } from './unpacking.ts';
 import { WorldLoading } from './worldLoading.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
@@ -637,13 +637,15 @@ const createPlayTutorial = (engine: Engine, enabled: boolean | undefined) => {
     return {};
   }
   const exitBeat = engine.site?.playtestMarks?.beats.find((beat) => beat.id === 'tutorial_exit');
-  if (!exitBeat) {
-    throw new Error('Practice requires an authored exit');
+  const kit = engine.site?.practice;
+  if (!(exitBeat && kit)) {
+    throw new Error('Practice requires an authored exit and combat content');
   }
   const tutorial = new Tutorial(
     engine.spawn.pos.map((coordinate) => coordinate / engine.config.scale.blockSize) as Vec3,
     engine.spawn.yaw,
     exitBeat.area,
+    kit,
   );
   const drawTutorial = mountTutorial(tutorial, leaveTutorial, () => location.reload());
   return { tutorial, drawTutorial };
@@ -3610,10 +3612,10 @@ export const startPlay = (
     }
   };
 
-  const combatObservation = (): CombatObservation => {
+  const combatObservation = (kit: CombatKit): CombatObservation => {
     const heldGun = (type: string) => Object.values(inventory.hands).find((item): item is Item => item?.type === type);
-    const revolver = heldGun(COMBAT_REVOLVER);
-    const shotgun = heldGun(COMBAT_SHOTGUN);
+    const revolver = heldGun(kit.revolver);
+    const shotgun = heldGun(kit.shotgun);
     const readied = [revolver, shotgun].some((gun) => gun !== undefined && isFirearmReady(gun.uid));
     return {
       revolverHeld: revolver !== undefined,
@@ -3623,7 +3625,17 @@ export const startPlay = (
       shotgunRounds: (shotgun?.firearm?.tube?.length ?? 0) + (shotgun?.firearm?.chamber === 'round' ? 1 : 0),
       shotgunChambered: shotgun?.firearm?.chamber === 'round',
       inventoryOpen: screen.isOpen,
+      targetAlive: zombieStore.size > 0,
     };
+  };
+
+  /** The module needs something to shoot: place the content's target when the practice shambler is gone. */
+  const placePracticeTarget = () => {
+    const target = engine.site?.practice?.target;
+    const type = target && registry.zombies.get(target.type);
+    if (target && type) {
+      zombieSystem.add(type, target.pos, [-1, 0, 0]);
+    }
   };
 
   const updateTutorial = () => {
@@ -3639,8 +3651,11 @@ export const startPlay = (
         Object.values(inventory.hands).some((item) => item?.type === 'can_opener'),
       lightOn: survival.lit?.type === 'flashlight' && survival.lit.on === true,
       paused: mainMenuOpen && started,
-      combat: combatObservation(),
+      ...(tutorial ? { combat: combatObservation(tutorial.kit) } : {}),
     });
+    if (tutorial?.needsTarget) {
+      placePracticeTarget();
+    }
     drawTutorial?.({
       inventory,
       inventoryOpen: screen.isOpen,

@@ -2092,6 +2092,14 @@ const SiteLayoutSchema = strictObject({
   ),
   /** Observation only: playtest metrics record when the player first stands in each beat's area. */
   beats: optional(array(strictObject({ id: Id, area: LayoutRect }))),
+  /** Practice's optional combat module: the guns it teaches and the target placed when no shambler is left. */
+  practice: optional(
+    strictObject({
+      revolver: Id,
+      shotgun: Id,
+      target: strictObject({ type: Id, position: MetrePosition }),
+    }),
+  ),
 });
 
 const PoolRefSchema = union([KitRefSchema, strictObject({ kind: literal('template'), id: Id, style: optional(Id) })]);

@@ -155,7 +155,12 @@ describe('held can opening', () => {
 
   it('a tutorial opening is earned by completion, not activation or cancellation', () => {
     const f = fixture();
-    const tutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 });
+    const tutorial = new Tutorial(
+      [0, 0, 0],
+      0,
+      { x0: 20, x1: 21, z0: 20, z1: 21 },
+      { revolver: 'revolver', shotgun: 'shotgun' },
+    );
     f.opened.mockImplementation(() => tutorial.opened('canned_beans'));
     expect(f.unpacking.activate(f.can)).toBeUndefined();
     f.queue.cancel();

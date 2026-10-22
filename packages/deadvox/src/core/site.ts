@@ -80,7 +80,16 @@ export interface PlaytestMarks {
   readonly keyLoot: ReadonlyMap<string, ReadonlySet<string>>;
 }
 
+/** Practice's combat module content: the guns it teaches and a fallback target (feet, in blocks). */
+export interface PracticeMarks {
+  readonly revolver: string;
+  readonly shotgun: string;
+  readonly target: { readonly type: string; readonly pos: Vec3 };
+}
+
 export interface Site {
+  /** An authored practice site's combat module content. */
+  readonly practice?: PracticeMarks;
   /** Finished authored footprints eligible for world-derived sky transport. */
   readonly authoredPlacements?: readonly Placement[];
   /** An authored site's playtest beats and key fixed loot. */

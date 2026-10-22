@@ -274,6 +274,14 @@
         "bearing": 0,
         "position": [0, 0.5, 8]
       },
+      "practice": {
+        "revolver": "revolver_357",
+        "shotgun": "pump_shotgun",
+        "target": {
+          "position": [24, 0.5, 2],
+          "type": "shambler"
+        }
+      },
       "shamblers": [
         {
           "position": [24, 0.5, 2],
