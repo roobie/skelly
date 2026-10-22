@@ -100,9 +100,7 @@ unbuilt. Unanswered gates block only their dependent work.
 - **Support:** persist authored support dependencies, so removal can resolve what
   depends on a structure rather than forgetting support after placement. Prove
   destructive cascades; physical stress simulation is not required.
-- **Removal contents:** require empty contents at start and completion, so removal
-  cannot lose, duplicate or silently relocate stored items. Automatic unloading is
-  outside this rule.
+- **Removal contents:** see `DESIGN.md`, "Edits persist".
 - **Interrupted deconstruction:** reserve the structure against use while work is
   pending, including pauses, so resumed work retains exclusive ownership. Keep
   resumable work and snapshotted yields under `INTERACTIONS.md`, "Crafting";

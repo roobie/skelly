@@ -348,6 +348,24 @@ stable block names because runtime ids depend on the loaded content pack, and
 store only differences from seeded generation so unchanged terrain can be
 recreated. See `src/core/world.ts` and `src/core/saveFormat.ts`.
 
+### Edits persist
+
+A block or piece the player removes never comes back, and one they place stays, when its
+column is generated again or the game is reloaded. Base building takes placed and
+authored pieces apart for resources and places a great many blocks and pieces, so a
+removal that undid itself would duplicate resources and erase the player's work, and
+keeping edits must stay cheap at that scale.
+
+A column is furnished once, and its pieces are then saved state, kept in memory for the
+session, so a removed piece has nothing to return from. See `src/game/session.ts`,
+`rolledColumns`; `src/core/world.ts`, `World`; and `src/core/saveFormat.ts`, `encodeSave`.
+
+A piece cannot be removed while anything rests or stands on it, while a barricade stands
+in its doorway, or while it holds items, so removal never strands, floats or loses
+anything. Removing through a piece handle taken before a load throws, so the mistake
+shows at once instead of corrupting occupancy. See `src/core/blockEntities.ts`,
+`BlockEntities.remove`.
+
 ### Block entities
 
 Stateful blocks keep their changing state separate from static block identity.
