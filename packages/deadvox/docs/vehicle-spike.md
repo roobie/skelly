@@ -22,7 +22,7 @@ The spike is a debug page for judging vehicle appearance and disassembly before 
 
 A blueprint is content; a vehicle instance owns its fitting state. This lets builds omit or change fittings without creating a second model, and lets two vehicles of one blueprint evolve independently. Part types have one catalogue identity so a removed part can remain the same type across vehicles. See `src/vehicles/model.ts`, `PartType`, `Blueprint`, `VehicleInstance` and `Fitting`.
 
-Two authoring paths live side by side. Vehicles authored as TypeScript under `src/vehicles` before the content path began (d602, the vehicle export contract) merge as built, because their looks were approved on that path and rebuilding them would redo those looks. They move to the content path together in one later port (d613), so the port happens once. Until then a new vehicle uses only the content path; see "Export contract".
+Two authoring paths live side by side. Vehicles authored as TypeScript under `src/vehicles` before the content path began merge as built, because their looks were approved on that path and rebuilding them would redo those looks. They move to the content path together in one later port (d613), so the port happens once. Until then a new vehicle uses only the content path; see "Export contract".
 
 Support prevents floating assemblies during deliberate editing; see `src/vehicles/model.ts`, `addFitting` and `removeFitting`. Those editor refusal rules do not implement impact detachment. The game must cascade through unsupported dependents while preserving surviving items, as specified in `SLICE-6.md`, "Condition, appearance and attachment".
 
