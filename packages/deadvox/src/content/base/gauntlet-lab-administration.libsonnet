@@ -182,28 +182,49 @@ local base = 24;
 local arrivals = [{ at: [4 * scale, 5 * scale], size: [12, 2] }, { at: [29 * scale, 24 * scale], size: [3, 2] }];
 local stairAt = [31, base - 7, 29];
 local shaftLid = { at: [29 * scale, 5 * scale], size: [3, 2] };
+// The briefing hall is double height: its south end sinks a storey into the grid's south-west room slot, as the holding
+// room rises into the storey above it. The well's walls stay whole so the grid cannot reach the hall, and its floor steps
+// down a block at a time so a player can climb back out. Level three's rebuild must leave this slot to the well.
+local well = { id: 'gauntlet_lab_administration_well', at: [4, base - self.size[1], 42], size: [18, 8, 14] };
+local wellGlyph = function(x, y, z)
+  if x == 0 || x == well.size[0] - 1 || z == 0 || z == well.size[2] - 1 then '='
+  else if y <= std.max(0, well.size[1] - z) then 'p'
+  else '.';
+local wellLayer = function(y, glyph) [std.join('', [glyph(wellGlyph(x, y, z)) for x in std.range(0, well.size[0] - 1)]) for z in std.range(0, well.size[2] - 1)];
+local wellPiece = {
+  id: well.id, size: well.size, style: 'concrete_lab', lootContext: { usage: ['Industrial'], tier: 'Tier1' },
+  palette: { '=': { role: 'shell', material: rooms.briefing.finish.wall }, p: { role: 'interior_floor', material: rooms.briefing.finish.floor },
+    '.': { role: 'opening', material: 'air' } },
+  layers: [wellLayer(y, function(g) g) for y in std.range(0, well.size[1] - 1)],
+  ownership: { layers: [wellLayer(y, function(g) if g == '.' then 'A' else 'S') for y in std.range(0, well.size[1] - 1)] },
+  anchors: {}, ports: [],
+};
 local built = level.build({
   id: 'administration', base: base, plan: plan, rooms: rooms, context: { usage: ['Industrial'], tier: 'Tier1' },
   lock: 'gauntlet_lab_administration_seal', cardItem: 'gauntlet_lab_administration_card',
   card: { container: 'director_desk' },
   through: arrivals,
-  holes: [{ at: [stairAt[0], stairAt[2]], size: [level.stair.size[0], level.stair.size[2]] }, shaftLid],
+  holes: [
+    { at: [stairAt[0], stairAt[2]], size: [level.stair.size[0], level.stair.size[2]] }, shaftLid,
+    { at: [well.at[0] + 1, well.at[2] + 1], size: [well.size[0] - 2, well.size[2] - 2] },
+  ],
   // The briefing hall is the crowd room; the offices stay sparse and the stair hall quiet.
   // A spawn body reaches one block west and north of its marker, so each marker sits one block into its cell.
   markers: [[c[0] * scale + 1, 1, c[1] * scale + 1] for c in [
-    [10, 12], [4, 21], [9, 22], [6, 26], [11, 17], [22, 23], [16, 27], [18, 19], [26, 17], [32, 14], [14, 7],
+    [10, 12], [4, 19], [10, 20], [12, 25], [11, 17], [22, 23], [16, 27], [18, 19], [26, 17], [32, 14], [14, 7],
   ]],
 });
 {
   rooms: rooms, plan: plan, size: built.size,
   loop: { from: [5, 25, 13], through: [5, 25, 19], to: [31, 25, 21], cut: { min: [4, 25, 16], size: [4, 5, 2] } },
-  standing: [6 * scale, base + 1, 24 * scale],
+  standing: [6 * scale, base + 1, 20 * scale],
   stairAt: stairAt,
+  well: well,
   stair: { upper: [stairAt[0] + 11, base + 1, stairAt[2] + 1], lower: [stairAt[0] + 1, stairAt[1], stairAt[2] + 1] },
   seal: { doors: [[20 * scale, base + 1, 12 * scale], [29 * scale, base + 1, 8 * scale]] } + built.cardSeal,
   fixedLoot: built.cardStock,
   items: [{ id: 'gauntlet_lab_administration_card', name: 'Clearance keycard', category: 'tool', weight: 5, size: [1, 1], economy: { usage: rooms.director.lootUsage, tiers: ['Tier1'] }, model: 'folded_note', key: { lock: 'gauntlet_lab_administration_seal' } }],
-  mapPieces: built.mapPieces,
+  mapPieces: built.mapPieces + [wellPiece],
   mapAssemblies: [built.mapAssembly],
   // Each room rolls what it was used for, kept as thin as the lab's other margins; offices hold desk clutter, not paper,
   // because the level carries no readables until the destination round.

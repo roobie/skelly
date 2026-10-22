@@ -14,14 +14,16 @@ local storey = function(id, rooms) {
   slots: circulation.slots + rooms + threat.slots(id, [r for r in rooms if r.choices[0].ref.id != 'gauntlet_lab_culture_stair_join']),
   joins: [], ports: [], anchors: {},
 };
-// Where level two hands over to the grid below, in one place so level three's round rewrites only this.
+// Where level two hands over to the grid below, in one place so level three's round rewrites only this. The briefing
+// hall's well takes the south-west room slot and stays through that rewrite.
 local join = {
-  landings: { middle_middle: 'culture_stair_join', north_east: 'cold_store_incoming_east', south_west: 'breach' },
+  landings: { middle_middle: 'culture_stair_join', north_east: 'cold_store_incoming_east' },
   standing: [35, 17, 33],
   descent: { ladder: [59, 17, 10], upper: [58, 25, 11], lower: [58, 17, 11] },
   slots: [
     slot('administration_stair', 'piece', level.stair.id, administration.stairAt, level.stair.size),
     slot('administration_shaft', 'piece', descents.mapPieces[3].id, [58, 17, 10], [3, 8, 2]),
+    slot('administration_well', 'piece', administration.well.id, administration.well.at, administration.well.size),
   ],
 };
 local cabinetShape = [
@@ -97,7 +99,7 @@ local cabinetShape = [
     storey('containment', [
       placedRoom('north_west', 'containment', [4, 0, 4]), placedRoom('north_middle', 'assay_outgoing', [27, 0, 4]), placedRoom('north_east', join.landings.north_east, [50, 0, 4]),
       placedRoom('middle_west', 'observation', [4, 0, 23]), placedRoom('middle_middle', join.landings.middle_middle, [27, 0, 23]), placedRoom('middle_east', 'decon', [50, 0, 23]),
-      placedRoom('south_west', join.landings.south_west, [4, 0, 42]), placedRoom('south_middle', 'security_outgoing', [27, 0, 42]), placedRoom('south_east', 'containment', [50, 0, 42]),
+      placedRoom('south_middle', 'security_outgoing', [27, 0, 42]), placedRoom('south_east', 'containment', [50, 0, 42]),
     ]),
     storey('failure', [
       placedRoom('north_west', 'breach', [4, 0, 4]), placedRoom('north_middle', 'quarantine_incoming', [27, 0, 4]), placedRoom('north_east', 'containment', [50, 0, 4]),

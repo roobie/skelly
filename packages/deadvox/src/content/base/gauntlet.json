@@ -5412,7 +5412,7 @@
           "turn": 0
         },
         {
-          "at": [9, 1, 43],
+          "at": [9, 1, 39],
           "choices": [
             {
               "ref": {
@@ -5434,7 +5434,7 @@
           "turn": 0
         },
         {
-          "at": [19, 1, 45],
+          "at": [21, 1, 41],
           "choices": [
             {
               "ref": {
@@ -5456,7 +5456,7 @@
           "turn": 0
         },
         {
-          "at": [13, 1, 53],
+          "at": [25, 1, 51],
           "choices": [
             {
               "ref": {
@@ -7928,21 +7928,6 @@
           "turn": 0
         },
         {
-          "at": [4, 0, 42],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_breach",
-                "kind": "assembly"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "south_west",
-          "size": [18, 8, 14],
-          "turn": 0
-        },
-        {
           "at": [27, 0, 42],
           "choices": [
             {
@@ -8240,72 +8225,6 @@
           "turn": 0
         },
         {
-          "at": [16, 1, 48],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 3
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 5
-            }
-          ],
-          "id": "south_west_threat_0",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [8, 1, 50],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 3
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 5
-            }
-          ],
-          "id": "south_west_threat_1",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [17, 1, 47],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 3
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 5
-            }
-          ],
-          "id": "south_west_threat_2",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
           "at": [39, 1, 48],
           "choices": [
             {
@@ -8458,21 +8377,6 @@
             }
           ],
           "id": "middle_east_threat_centre",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [13, 1, 49],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "south_west_threat_centre",
           "size": [1, 1, 1],
           "turn": 0
         },
@@ -11099,6 +11003,21 @@
           ],
           "id": "administration_shaft",
           "size": [3, 8, 2],
+          "turn": 0
+        },
+        {
+          "at": [4, 16, 42],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_well",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "administration_well",
+          "size": [18, 8, 14],
           "turn": 0
         },
         {
@@ -29880,18 +29799,18 @@
           "hhhhhhhhhhhhhhhhhhhhhhhhhhhhmmmmmmmmmmmmmmwwwwwwwwwwccccgggggggggggggggg",
           "hhhhhhhhhhhhhhhhhhhhhhhhhhhhmmmmmmmmmmmmmmwwwwwwwwwwccccgggggggggggggggg",
           "hhhhhhhhhhhhhhhhhhhhhhhhhhhhmmmmmmmmmmmmmmwwwwwwwwwwccccgggggggggggggggg",
-          "hhhhhhhhhhhhhhhhhhhhhhhhhhhhmmmmmmmmmmmmmmwwwwwwwwwwccccgggggggggggggggg",
-          "hhhhhhhhhhhhhhhhhhhhhhhhhhhhmmmmmmmmmmmmmmwwwwwwwwwwccccgggggggggggggggg",
-          "hhhhhhhhhhhhhhhhhhhhhhhhhhhhmmmmmmmmmmmmmmwwwwwwwwwwccccgggggggggggggggg",
-          "hhhhhhhhhhhhhhhhhhhhhhhhhhhhnnnnnnnnnnnnnnnnnnnnnnnnccccssssssssssss####",
-          "hhhhhhhhhhhhhhhhhhhhhhhhhhhhnnnnnnnnnnnnnnnnnnnnnnnnccccssssssssssss####",
-          "hhhhhhhhhhhhhhhhhhhhhhhhhhhhnnnnnnnnnnnnnnnnnnnnnnnnccccssssssssssss####",
-          "hhhhhhhhhhhhhhhhhhhhhhhhhhhhnnnnnnnnnnnnnnnnnnnnnnnnccccssssssssssss####",
-          "hhhhhhhhhhhhhhhhhhhhhhhhhhhhnnnnnnnnnnnnnnnnnnnnnnnnccccssssssssssss####",
-          "hhhhhhhhhhhhhhhhhhhhhhhhhhhhnnnnnnnnnnnnnnnnnnnnnnnnccccssssssssssss####",
-          "hhhhhhhhhhhhhhhhhhhhhhhhhhhhnnnnnnnnnnnnnnnnnnnnnnnnccccssssssssssss####",
-          "hhhhhhhhhhhhhhhhhhhhhhhhhhhhnnnnnnnnnnnnnnnnnnnnnnnnccccssssssssssss####",
-          "hhhhhhhhhhhhhhhhhhhhhhhhhhhhnnnnnnnnnnnnnnnnnnnnnnnnccccssssssssssss####",
+          "hhhhh................hhhhhhhmmmmmmmmmmmmmmwwwwwwwwwwccccgggggggggggggggg",
+          "hhhhh................hhhhhhhmmmmmmmmmmmmmmwwwwwwwwwwccccgggggggggggggggg",
+          "hhhhh................hhhhhhhmmmmmmmmmmmmmmwwwwwwwwwwccccgggggggggggggggg",
+          "hhhhh................hhhhhhhnnnnnnnnnnnnnnnnnnnnnnnnccccssssssssssss####",
+          "hhhhh................hhhhhhhnnnnnnnnnnnnnnnnnnnnnnnnccccssssssssssss####",
+          "hhhhh................hhhhhhhnnnnnnnnnnnnnnnnnnnnnnnnccccssssssssssss####",
+          "hhhhh................hhhhhhhnnnnnnnnnnnnnnnnnnnnnnnnccccssssssssssss####",
+          "hhhhh................hhhhhhhnnnnnnnnnnnnnnnnnnnnnnnnccccssssssssssss####",
+          "hhhhh................hhhhhhhnnnnnnnnnnnnnnnnnnnnnnnnccccssssssssssss####",
+          "hhhhh................hhhhhhhnnnnnnnnnnnnnnnnnnnnnnnnccccssssssssssss####",
+          "hhhhh................hhhhhhhnnnnnnnnnnnnnnnnnnnnnnnnccccssssssssssss####",
+          "hhhhh................hhhhhhhnnnnnnnnnnnnnnnnnnnnnnnnccccssssssssssss####",
           "hhhhhhhhhhhhhhhhhhhhhhhhhhhhnnnnnnnnnnnnnnnnnnnnnnnnccccssssssssssss####",
           "hhhhhhhhhhhhhhhhhhhhhhhhhhhhnnnnnnnnnnnnnnnnnnnnnnnnccccxxxxxxxxxxxx####",
           "hhhhhhhhhhhhhhhhhhhhhhhhhhhhnnnnnnnnnnnnnnnnnnnnnnnnccccxxxxxxxxxxxx####",
@@ -30415,18 +30334,18 @@
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSS................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSS................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSS................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSS................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSS................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSS................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSS................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSS................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSS................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSS................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSS................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSS................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
@@ -30477,21 +30396,21 @@
             "SSRRRR....RRRR....RRRRRRRRSSRR....RRRRRRSS........SSRRRRSSSSSSSSSSSSSSSS",
             "SSRRRR....RRRR....RRRRRRRRSSRR....RRRRRRSS........SSRRRRSSSSSSSSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRR....RRRRRRSS........SSRRRRSSRRRR........SS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRR....RRR.RRSS........SSRRRRSSRRRR........SS",
+            "SSRRRRRRR.RRRRRRRRRRRRRRRRRRRR....RRR.RRSS........SSRRRRSSRRRR........SS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRRRRRRR........SS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRRRRRRR........SS",
+            "SSRRRRRRRRRRRRRRRRRRR.RRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRRRRRRR........SS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRR.RRRRRRRRRRRRRRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRSSSSSSSSSSRRSSSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRR.RRRRRRSSSSSSSSRRSSSSSSSSSSRRSSSSRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRSSSSSSSSSSRRSSSSRRRRSSSSSSSSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRR.RRRRSSRRRRRRRRRRRRRRSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSRRRRRR...RRRRRSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSRRRRRR...RRRRRSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRSSRRRRRRRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRSSRRRRRRRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRR.SS....RRRR....RR....RRRRSSRRRRRRRRRRRRRRSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRRRRRRRSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRR.RRRRRRRRRRRRSS....RRRR....RR....RRRRRRRRRRSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRRRRRRRSSRRRRRRRRSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRR....RRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRR.RR....RRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRR....RRRRRRRRRRSSRRRRRRRRRR....SSSSSS",
@@ -32757,6 +32676,293 @@
       },
       "ports": [],
       "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_well",
+      "layers": [
+        [
+          "==================",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=================="
+        ],
+        [
+          "==================",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=================="
+        ],
+        [
+          "==================",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=================="
+        ],
+        [
+          "==================",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=================="
+        ],
+        [
+          "==================",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=================="
+        ],
+        [
+          "==================",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=================="
+        ],
+        [
+          "==================",
+          "=pppppppppppppppp=",
+          "=pppppppppppppppp=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=================="
+        ],
+        [
+          "==================",
+          "=pppppppppppppppp=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=================="
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SAAAAAAAAAAAAAAAAS",
+            "SSSSSSSSSSSSSSSSSS"
+          ]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "dressed",
+          "role": "shell"
+        },
+        "p": {
+          "material": "carpet",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [18, 8, 14],
       "style": "concrete_lab"
     },
     {
