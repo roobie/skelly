@@ -133,5 +133,5 @@ contract without creating competing rule owners.
 ## Unresolved dependencies
 
 - **Additional lenses:** a lens such as accessibility needs an owning project rule
-  first. The skill applies settled rules; it doesn't make policy through review
-  findings.
+  before it joins the list. The skill applies settled rules; it doesn't make policy
+  through review findings.

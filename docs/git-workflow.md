@@ -11,7 +11,8 @@ reviewed PR. The steps from spec to merge, and who may merge, are in `PROCESS.md
 
 Skelly is a public repository, so anyone who clones it, and CI, must be able to follow its
 workflow with stock git and GitHub alone. The workflow is therefore written out here in
-full and depends on no private tooling. Many agents work in parallel: separate branches
+full. Only minting work item IDs needs the work tracker (`AGENTS.md`, "Work item IDs"); a
+clone without it uses stock git and GitHub for every other step. Many agents work in parallel: separate branches
 and worktrees keep them from blocking each other, and review and CI on every push catch
 defects before they reach `main`.
 
