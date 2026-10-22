@@ -87,6 +87,7 @@ const nextCommit = async (
   }
   const slot: SlotName = newest?.slot === 'a' ? 'b' : 'a';
   const payload = await encodePayload(generation);
+  // The compressed record; its decompressed payload was capped when it was encoded.
   if (payload.byteLength > SAVE_RECORD_MAX_BYTES) {
     throw new Error(`Save payload exceeds ${SAVE_RECORD_MAX_BYTES} bytes`);
   }

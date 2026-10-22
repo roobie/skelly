@@ -1,4 +1,5 @@
 import process from 'node:process';
+import { gunzipSync, gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import { NEGATIVE_ZERO_TAG } from '../src/core/canonicalJson.ts';
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from '../src/core/character.ts';
@@ -345,10 +346,10 @@ const sealEnvelope = async (envelope: Record<string, unknown>, preserveLength = 
   }
   const digest = await crypto.subtle.digest('SHA-256', payloadBytes.slice().buffer as ArrayBuffer);
   envelope.checksum = [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
-  return new TextEncoder().encode(jsonCanonical(envelope));
+  return gzipSync(jsonCanonical(envelope));
 };
 const parseEnvelope = (bytes: Uint8Array): Record<string, unknown> =>
-  JSON.parse(new TextDecoder().decode(bytes)) as Record<string, unknown>;
+  JSON.parse(gunzipSync(bytes).toString('utf8')) as Record<string, unknown>;
 const getObject = (value: unknown): Record<string, unknown> => value as Record<string, unknown>;
 const reverseObjectKeys = (value: unknown): unknown => {
   if (Array.isArray(value)) {
@@ -793,6 +794,16 @@ describe('canonical save format', () => {
     ).toThrow('Invalid saved explosive pin or fuse');
   });
 
+  it('refuses a record that inflates past the cap before inflating it fully', async () => {
+    const maxPayloadBytes = 16;
+    // Without its trailer the record only fails at the end of inflation, so reaching
+    // that error means the size bound was not applied while streaming.
+    const inflatesPastCap = gzipSync(new Uint8Array(4 * (maxPayloadBytes + 1024 * 1024))).subarray(0, -8);
+    await expect(
+      decodeSave(inflatesPastCap, { version: formatVersion, contentLookup, maxPayloadBytes }),
+    ).rejects.toThrow('Save envelope exceeds configured limit');
+  });
+
   it('rejects truncated, corrupted, non-canonical, over-limit, invalid-version, and malformed payloads', async () => {
     const valid = await encodeFixture(capture(createRuntime()));
     const malformed: {
@@ -802,10 +813,13 @@ describe('canonical save format', () => {
       message: string;
     }[] = [];
     malformed.push({ name: 'truncated', bytes: valid.slice(0, -1), message: 'truncated' });
+    const corrupted = valid.slice();
+    corrupted[corrupted.length >> 1]! ^= 0xff;
+    malformed.push({ name: 'corrupted', bytes: corrupted, message: 'Invalid or truncated compressed save' });
     malformed.push({ name: 'over limit', bytes: valid, options: { maxPayloadBytes: 16 }, message: 'configured limit' });
     malformed.push({
       name: 'noncanonical',
-      bytes: new TextEncoder().encode(` ${new TextDecoder().decode(valid)}`),
+      bytes: gzipSync(` ${gunzipSync(valid).toString('utf8')}`),
       message: 'Non-canonical',
     });
 
@@ -813,7 +827,7 @@ describe('canonical save format', () => {
     badChecksum.checksum = `${String(badChecksum.checksum)[0] === '0' ? '1' : '0'}${String(badChecksum.checksum).slice(1)}`;
     malformed.push({
       name: 'checksum',
-      bytes: new TextEncoder().encode(jsonCanonical(badChecksum)),
+      bytes: gzipSync(jsonCanonical(badChecksum)),
       message: 'checksum mismatch',
     });
     const badLength = parseEnvelope(valid);

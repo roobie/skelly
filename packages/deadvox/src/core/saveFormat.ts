@@ -79,6 +79,7 @@ export interface DecodeSaveOptions {
   /** Running revision is shown in refusal messages but never gates compatibility. */
   buildRevision?: string;
   contentLookup: SaveContentLookup;
+  /** Bounds the decompressed payload, so it is enforced while inflating. */
   maxPayloadBytes?: number;
 }
 
@@ -930,6 +931,57 @@ async function sha256(bytes: Uint8Array): Promise<string> {
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
+/** Returns undefined once more than `maxBytes` arrive, without reading the rest. */
+async function readStream(
+  stream: ReadableStream<Uint8Array>,
+  maxBytes = Number.POSITIVE_INFINITY,
+): Promise<Uint8Array | undefined> {
+  const reader = stream.getReader();
+  const parts: Uint8Array[] = [];
+  let length = 0;
+  for (;;) {
+    // biome-ignore lint/performance/noAwaitInLoops: stream chunks arrive in order.
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+    length += value.byteLength;
+    if (length > maxBytes) {
+      await reader.cancel();
+      return undefined;
+    }
+    parts.push(value);
+  }
+  const bytes = new Uint8Array(length);
+  let offset = 0;
+  for (const part of parts) {
+    bytes.set(part, offset);
+    offset += part.byteLength;
+  }
+  return bytes;
+}
+
+async function gzip(bytes: Uint8Array): Promise<Uint8Array> {
+  const compressed = new Blob([bytes.slice()]).stream().pipeThrough(new CompressionStream('gzip'));
+  return (await readStream(compressed))!;
+}
+
+const envelopeLimit = (maxPayloadBytes: number): number => maxPayloadBytes + 1024 * 1024;
+
+async function gunzipBounded(bytes: Uint8Array<ArrayBuffer>, maxBytes: number): Promise<Uint8Array> {
+  // A small record must not inflate without limit, so the bound applies while streaming.
+  let inflated: Uint8Array | undefined;
+  try {
+    inflated = await readStream(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')), maxBytes);
+  } catch (error) {
+    throw new Error('Invalid or truncated compressed save', { cause: error });
+  }
+  if (!inflated) {
+    throw new Error('Save envelope exceeds configured limit');
+  }
+  return inflated;
+}
+
 function validateVersion(version: SaveVersionComponents): void {
   validateSchema(versionComponentsSchema, version, 'version');
   if (!HASH.test(version.simulationHash)) {
@@ -1752,7 +1804,16 @@ export async function encodeSave(snapshot: SaveSnapshot, options: EncodeSaveOpti
     checksum: await sha256(payloadBytes),
     payload,
   };
-  return canonicalBytes(envelope);
+  return gzip(canonicalBytes(envelope));
+}
+
+/** Unchecked version metadata of a save this build may refuse, for describing it to the player. */
+export async function readSaveVersionMetadata(input: Uint8Array): Promise<Partial<SaveVersionIdentity> | undefined> {
+  const envelopeBytes = await gunzipBounded(input.slice(), envelopeLimit(DEFAULT_MAX_PAYLOAD_BYTES));
+  const envelope = JSON.parse(new TextDecoder().decode(envelopeBytes)) as unknown;
+  return isRecord(envelope) && isRecord(envelope.versionIdentity)
+    ? (envelope.versionIdentity as Partial<SaveVersionIdentity>)
+    : undefined;
 }
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ordered refusal gates must remain visible in the public decoder path.
@@ -1769,13 +1830,15 @@ export async function decodeSave(input: Uint8Array | ArrayBuffer, options: Decod
   if (!Number.isSafeInteger(maxPayloadBytes) || maxPayloadBytes < 1) {
     throw new Error('Invalid payload limit');
   }
-  if (bytes.byteLength > maxPayloadBytes + 1024 * 1024) {
+  const maxEnvelopeBytes = envelopeLimit(maxPayloadBytes);
+  if (bytes.byteLength > maxEnvelopeBytes) {
     throw new Error('Save envelope exceeds configured limit');
   }
+  const envelopeBytes = await gunzipBounded(bytes, maxEnvelopeBytes);
   let raw: string;
   let envelope: unknown;
   try {
-    raw = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    raw = new TextDecoder('utf-8', { fatal: true }).decode(envelopeBytes);
     envelope = JSON.parse(raw) as unknown;
   } catch (error) {
     throw new Error('Invalid or truncated UTF-8 JSON save', { cause: error });
