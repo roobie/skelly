@@ -35,6 +35,42 @@ export const torch = (params: Readonly<Record<string, string>>): readonly Solid[
   ];
 };
 
+// The lens end faces +x, where the beam starts; the tail cap sits at the origin.
+export const flashlight = (params: Readonly<Record<string, string>>): readonly Solid[] => {
+  const d = parse(
+    strictObject({
+      length: positive,
+      bodyRadius: positive,
+      headRadius: positive,
+      headLength: positive,
+      lensDepth: positive,
+    }),
+    params,
+  );
+  if (!(d.bodyRadius < d.headRadius && d.headLength + d.lensDepth < d.length)) {
+    throw new Error('A flashlight head must be wider than its body and fit its length');
+  }
+  const headAt = d.length - d.headLength - d.lensDepth;
+  return [
+    alongX(
+      revolve(
+        'body',
+        [
+          [0, 0],
+          [0, d.bodyRadius * 0.9],
+          [d.length * 0.05, d.bodyRadius],
+          [headAt, d.bodyRadius],
+          [headAt + d.headLength, d.headRadius],
+          [headAt + d.headLength, 0],
+          [0, 0],
+        ],
+        'body',
+      ),
+    ),
+    alongX(cylinder('lens', d.headRadius * 0.9, d.lensDepth, 'lens'), d.length - d.lensDepth),
+  ];
+};
+
 export const candle = (params: Readonly<Record<string, string>>): readonly Solid[] => {
   const d = parse(
     strictObject({ radius: positive, height: positive, wickRadius: positive, wickHeight: positive }),

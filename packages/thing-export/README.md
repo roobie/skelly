@@ -44,12 +44,15 @@ this package may not import deadvox's mesher; see `src/recipe.ts`, `RowSchema`,
 `src/voxelize.ts`, `voxelize`, and `src/glb.ts`, `voxelPrimitivesFor`.
 
 Four grains, all content values: a coarse one for vehicles, furniture and the parts made
-to attach to them; a fine one for firearms and their magazines; a middle one for every
-other item or component; and a finest one for fine-detail parts. A vehicle part must match
-the grain of the vehicle it sits on, while a tool or a can drawn at that grain collapses to
-a few voxels. A gun needs its own because its small controls are detail at a few
-millimetres that the item grain cannot hold, and a magazine shares its gun's grain so a
-seated magazine matches the receiver's voxels. A sight notch or post is only a few
+to attach to them; a fine one for firearms, their magazines and hand-held items; a middle
+one for every other item or component; and a finest one for fine-detail parts. A vehicle
+part must match the grain of the vehicle it sits on, while a tool or a can drawn at that
+grain collapses to a few voxels. A gun needs its own because its small controls are detail
+at a few millimetres that the item grain cannot hold, and a magazine shares its gun's grain
+so a seated magazine matches the receiver's voxels. A hand-held item (a melee weapon, a
+knife, a wrench, a flashlight, a pipe) takes the gun class as well: it is long and thin,
+and at the item grain a bat's taper and a crowbar's hook read as blunt steps. The larger
+files are accepted. A sight notch or post is only a few
 millimetres wide, so the gun grain fills a notch and a post hides behind its neighbours;
 the finest grain gives those parts voxels small enough to keep them.
 
