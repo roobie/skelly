@@ -287,13 +287,15 @@ export const exportGlb: ExportGlb = (input) => {
     if (index === undefined) {
       index = materials.length;
       materialIndex.set(key, index);
+      const opacity = finish.opacity ?? 1;
       materials.push({
         name: hex(srgb),
         pbrMetallicRoughness: {
-          baseColorFactor: [...linear, 1],
+          baseColorFactor: [...linear, opacity],
           metallicFactor: finish.metallic,
           roughnessFactor: finish.roughness,
         },
+        ...(opacity < 1 ? { alphaMode: 'BLEND' } : {}),
         ...(material === undefined ? {} : { extras: { materialId: material, colourMultiplier: shade } }),
       });
     }

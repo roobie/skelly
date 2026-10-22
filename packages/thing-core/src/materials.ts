@@ -5,6 +5,7 @@ import {
   minValue,
   nonEmpty,
   number,
+  optional,
   parse,
   pipe,
   record,
@@ -17,7 +18,8 @@ import content from './materials.json' with { type: 'json' };
 const Fraction = pipe(number(), finite(), minValue(0), maxValue(1));
 export const MaterialSchema = strictObject({
   colour: tuple([Fraction, Fraction, Fraction]),
-  finish: strictObject({ metallic: Fraction, roughness: Fraction }),
+  /** `opacity` below 1 is see-through, such as glazing; omitted is opaque. */
+  finish: strictObject({ metallic: Fraction, roughness: Fraction, opacity: optional(Fraction) }),
 });
 
 export const MATERIALS = parse(record(string(), MaterialSchema), content);

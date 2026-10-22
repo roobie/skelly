@@ -4,6 +4,7 @@ import battery from '../src/content/base/things/car_battery.model.json' with { t
 import { buildRegistry, type ContentSource, type Registry } from '../src/core/content.ts';
 import { loadVehicleBlueprint, type PlacedFitting } from '../src/core/vehicleBlueprint.ts';
 import { baseSources } from '../src/game/bundledContent.ts';
+import { PLAYER } from '../src/game/player.ts';
 
 const HOSTS = ['hatchback', 'pickup'];
 const MOD = 'mods/vehicle-fixture.json';
@@ -104,6 +105,22 @@ describe('vehicle export contract', () => {
     expect(issues.every(({ source }) => source === MOD)).toBe(true);
     expect(registry.vehicleBlueprints.has('fixture_cart')).toBe(false);
     expect(registry.items.has('fixture_cell')).toBe(false);
+  });
+
+  it('gives every vehicle with a seat a way in at least as wide as the player', () => {
+    const seated = [...base.registry.vehicleBlueprints.keys()]
+      .map((id) => loadVehicleBlueprint(base.registry, id))
+      .filter(({ fittings }) => fittings.some(({ capabilities }) => capabilities.includes('seat')));
+    expect(seated.map(({ id }) => id)).toContain(HOSTS[0]);
+    for (const { fittings } of seated) {
+      const entries = fittings.filter(({ capabilities }) => capabilities.includes('entry'));
+      expect(entries.length).toBeGreaterThan(0);
+      for (const { collision } of entries) {
+        const span = (axis: 0 | 2) =>
+          Math.max(...collision.map(({ max }) => max[axis])) - Math.min(...collision.map(({ min }) => min[axis]));
+        expect(Math.max(span(0), span(2))).toBeGreaterThanOrEqual(2 * PLAYER.halfWidth);
+      }
+    }
   });
 
   it('reflects a mirrored fitting’s datums, collision and centre of mass with its geometry', () => {
