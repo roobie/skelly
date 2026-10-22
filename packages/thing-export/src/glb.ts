@@ -9,7 +9,7 @@
 
 import { portFrame } from '@skelly/engine/assembly/resolve.ts';
 import type { PartDef, PartInstance, PortDef } from '@skelly/engine/assembly/schema.ts';
-import { compose, type Mat3, type Transform, type Vec3 } from '@skelly/engine/foundation/math.ts';
+import { applyPoint, compose, invert, type Mat3, type Transform, type Vec3 } from '@skelly/engine/foundation/math.ts';
 import { type DisplayItem, displayItems } from '@skelly/engine/shapes/display.ts';
 import { boundsOfPoints } from '@skelly/engine/shapes/geometry.ts';
 import { displayBevel, meshForSolid, meshForSolidGroup } from '@skelly/engine/shapes/mesh.ts';
@@ -90,7 +90,11 @@ const toMetres = (v: Vec3, metresPerUnit: number): Vec3 => [
  * at a fraction of a voxel, or turned by a quarter turn, would otherwise leave steps and gaps against its neighbours. A
  * part turned by any other angle has no matching lattice and keeps its own.
  */
-const latticeOrigin = (placed: { readonly r: Mat3; readonly t: Vec3 }, grain: number, metresPerUnit: number): Vec3 => {
+export const latticeOrigin = (
+  placed: { readonly r: Mat3; readonly t: Vec3 },
+  grain: number,
+  metresPerUnit: number,
+): Vec3 => {
   const { r, t } = placed;
   if (!r.every((x) => [-1, 0, 1].some((q) => Math.abs(x - q) < 1e-9))) {
     return [0, 0, 0];
@@ -102,6 +106,12 @@ const latticeOrigin = (placed: { readonly r: Mat3; readonly t: Vec3 }, grain: nu
 
 /** Part-definition tag that asks a voxelized export for the finer `voxelDetailGrain`. */
 export const VOXEL_DETAIL = 'voxel-detail';
+
+/** The grain a voxelized export samples this part at. */
+export const partVoxelGrain = (
+  def: PartDef,
+  { voxelGrain, voxelDetailGrain }: { readonly voxelGrain: number; readonly voxelDetailGrain?: number | undefined },
+): number => (def.tags?.includes(VOXEL_DETAIL) ? (voxelDetailGrain ?? voxelGrain) : voxelGrain);
 
 /**
  * Every part's lattice is anchored at the world origin, so two grains nest exactly when the coarse one is a whole
@@ -410,13 +420,76 @@ export const exportGlb: ExportGlb = (input) => {
       },
     );
   };
+  const itemsOf = (part: PartExport): DisplayItem[] =>
+    splitMixedAppearance(displayItems(part.def.displaySolids ?? part.def.solids), (solid) =>
+      appearanceFor(part, solid),
+    );
+  /** The part's drawn meshes in part-local metres, one per display item, or none for an empty one. */
+  const drawnMeshes = new Map<string, ({ positions: Float32Array; indices: Uint32Array } | undefined)[]>();
+  const drawnOf = (part: PartExport) => {
+    let drawn = drawnMeshes.get(part.id);
+    if (drawn === undefined) {
+      drawn = itemsOf(part).map((item) => {
+        const mesh = meshOf(item);
+        return mesh.triangleCount === 0 || mesh.indices.length === 0
+          ? undefined
+          : { positions: mesh.positions.map((x) => x * metresPerUnit), indices: mesh.indices };
+      });
+      drawnMeshes.set(part.id, drawn);
+    }
+    return drawn;
+  };
+  /** Bounds of a mesh after `transform`, in metres. */
+  const boundsAfter = (positions: ArrayLike<number>, transform: Transform): [number[], number[]] => {
+    const low = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
+    const high = [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY];
+    for (let v = 0; v < positions.length; v += 3) {
+      const p = applyPoint(transform, [positions[v]!, positions[v + 1]!, positions[v + 2]!]);
+      for (let axis = 0; axis < 3; axis += 1) {
+        low[axis] = Math.min(low[axis]!, p[axis]!);
+        high[axis] = Math.max(high[axis]!, p[axis]!);
+      }
+    }
+    return [low, high];
+  };
+  const placedInMetres = (part: PartExport): Transform => ({
+    r: part.placed.r,
+    t: toMetres(part.placed.t, metresPerUnit),
+  });
+  /** Other parts' drawn meshes that come within a voxel of this part, moved into this part's frame. */
+  const neighboursOf = (part: PartExport, grain: number) => {
+    const world = placedInMetres(part);
+    const own = drawnOf(part).flatMap((mesh) => (mesh ? [boundsAfter(mesh.positions, world)] : []));
+    const near = ([low, high]: [number[], number[]]) =>
+      own.some(([ownLow, ownHigh]) =>
+        [0, 1, 2].every((axis) => low[axis]! <= ownHigh[axis]! + grain && high[axis]! >= ownLow[axis]! - grain),
+      );
+    const toLocal = invert(world);
+    return parts.flatMap((other) => {
+      if (other.id === part.id) {
+        return [];
+      }
+      const into = compose(toLocal, placedInMetres(other));
+      return drawnOf(other).flatMap((mesh) => {
+        if (!(mesh && near(boundsAfter(mesh.positions, placedInMetres(other))))) {
+          return [];
+        }
+        const positions = new Float32Array(mesh.positions.length);
+        for (let v = 0; v < positions.length; v += 3) {
+          positions.set(applyPoint(into, [mesh.positions[v]!, mesh.positions[v + 1]!, mesh.positions[v + 2]!]), v);
+        }
+        return [{ positions, indices: mesh.indices, group: 0 }];
+      });
+    });
+  };
   /** One primitive per finish: the part's drawn solids sampled at the grain, so later solids paint over earlier ones. */
   const voxelPrimitivesFor = (part: PartExport, items: DisplayItem[], grain: number): Json[] => {
     const finishes: { appearance: ReturnType<typeof resolveAppearance>; solids: string[] }[] = [];
     const groupOf = new Map<string, number>();
-    const sources = items.flatMap((item) => {
-      const mesh = meshOf(item);
-      if (mesh.triangleCount === 0 || mesh.indices.length === 0) {
+    const drawn = drawnOf(part);
+    const sources = items.flatMap((item, index) => {
+      const mesh = drawn[index];
+      if (mesh === undefined) {
         return [];
       }
       const appearance = appearanceFor(part, item.solids[0]!);
@@ -427,9 +500,14 @@ export const exportGlb: ExportGlb = (input) => {
         groupOf.set(key, group);
       }
       finishes[group]!.solids.push(...item.solids.map(({ id }) => id));
-      return [{ positions: mesh.positions.map((x) => x * metresPerUnit), indices: mesh.indices, group }];
+      return [{ ...mesh, group }];
     });
-    const { groups } = voxelize(sources, grain, latticeOrigin(part.placed, grain, metresPerUnit));
+    const { groups } = voxelize(
+      sources,
+      grain,
+      latticeOrigin(part.placed, grain, metresPerUnit),
+      neighboursOf(part, grain),
+    );
     return [...groups].map(([group, buffers]) =>
       bufferPrimitive(buffers, materialFor(finishes[group]!.appearance), {
         voxelGrain: grain,
@@ -442,7 +520,7 @@ export const exportGlb: ExportGlb = (input) => {
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: existing glTF node construction; appearance metadata is conditional by contract.
   const addPart = (part: PartExport): void => {
     const drawn = part.def.displaySolids ?? part.def.solids;
-    const items = splitMixedAppearance(displayItems(drawn), (solid) => appearanceFor(part, solid));
+    const items = itemsOf(part);
     const primitives =
       input.voxelGrain === undefined
         ? items.flatMap((item) => {
@@ -452,7 +530,7 @@ export const exportGlb: ExportGlb = (input) => {
         : voxelPrimitivesFor(
             part,
             items,
-            part.def.tags?.includes(VOXEL_DETAIL) ? (input.voxelDetailGrain ?? input.voxelGrain) : input.voxelGrain,
+            partVoxelGrain(part.def, { voxelGrain: input.voxelGrain, voxelDetailGrain: input.voxelDetailGrain }),
           );
     const name = partNodeName(part.id, part.family);
     const node: Json = { name };

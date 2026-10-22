@@ -22,7 +22,7 @@ const show = () => {
     const row = rows.find(({ id }) => id === select.value)!;
     const item = catalogue.items.find(({ id }) => id === row.source)!;
     const { report } = buildItem(item);
-    const { physical } = exportItem(item, recipeAsset(row));
+    const { physical } = exportItem(item, recipeAsset(row), row.voxel);
     const layers = buildLayers(
       report,
       [],

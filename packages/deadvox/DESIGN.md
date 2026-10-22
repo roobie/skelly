@@ -2422,8 +2422,11 @@ nothing fitted or saved is redone. A space grown to fill walls and roof was not 
 because open beds have neither. The block then keeps its size, and a part can't be
 fitted into it. Players build cargo spaces on load floors the vehicle already has; load
 floors and walls built from nothing wait for scratch-built frames, which add to the
-cargo space rather than replace it. Player placement arrives with #1124. See
-`src/core/cargoSpace.ts`, `freeFloor`.
+cargo space rather than replace it. Player placement arrives with #1124. A cargo
+space is a datum, so it fits the drawn vehicle the way grips and anchors do: its block
+is its cells, and the block and each free-floor cell snap onto the voxel lattice the
+load floor is drawn on. A space that fills a drawn bed then fits it at any vehicle grain,
+with no tolerance tuned to that grain. See `src/core/cargoSpace.ts`, `freeFloor`.
 
 Entry is seated through animated usable doors for the first loop. Walking through
 plausible interiors is an important long-term requirement for the #322 trucks, RVs

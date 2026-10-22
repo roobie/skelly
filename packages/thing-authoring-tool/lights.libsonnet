@@ -29,6 +29,8 @@ local port(id, gender, pos, normal, up=[1, 0, 0]) = { id: id, mount: 'assembly-j
     connections: [],
     handling: { part: 'candle', solid: 'body', fraction: [0.4, 0.5, 0.5], turn: [0, 0, 0], hold: 'upright', rest: 'upright', roll: 0 },
     anchors: { flame: { part: 'candle', solid: 'wick', fraction: [1, 0.5, 0.5] } },
+    // Fine enough for the wick to read and the flame to sit on it; the item grain draws the candle as a square block.
+    voxelGrain: 0.002,
   },
   // Broken in a fall: the arm is kinked and the shade hangs forward off its joint.
   {
