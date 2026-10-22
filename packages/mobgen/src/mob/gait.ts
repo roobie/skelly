@@ -18,7 +18,22 @@
 // k (executed by sideForStep(k)) — see legAndFootRotations for how neighbouring steps' plans combine.
 
 import type { Bone } from '../core/body.ts';
-import { add, applyPoint, type Mat3, mulMM, mulMV, rotX, rotY, rotZ, sub, transpose, type Vec3 } from '../core/math.ts';
+import {
+  add,
+  applyPoint,
+  clamp,
+  hermite,
+  type Mat3,
+  mulMM,
+  mulMV,
+  rotX,
+  rotY,
+  rotZ,
+  smoothstep,
+  sub,
+  transpose,
+  type Vec3,
+} from '../core/math.ts';
 import { blendPose, boneTransforms, type EulerDeg, type Pose } from '../core/pose.ts';
 import { cellIndex, type Voxels, worldPosition } from '../core/voxelize.ts';
 import { FEET_BONES, type HumanoidParams } from './humanoid.ts';
@@ -27,9 +42,6 @@ import { createStepPlanMemo, type StepPlan, type StepPlanMemo, stepPlanFor } fro
 const TAU = Math.PI * 2;
 const toDeg = (rad: number): number => (rad * 180) / Math.PI;
 const toRad = (deg: number): number => (deg * Math.PI) / 180;
-const clamp = (x: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, x));
-/** Smooth 0->1 ease with zero slope at both ends (3x²-2x³). */
-const smoothstep = (x: number): number => x * x * (3 - 2 * x);
 // Smooth minimum of a whole list at once (log-sum-exp): exact min at smoothing=0, otherwise undershoots by
 // smoothing*ln(#values within ~smoothing of the true min) — bounded and *not* per-pair-cumulative, unlike
 // folding a pairwise smooth-min across many corners one at a time (tried first: a foot's own rest-box
@@ -259,23 +271,6 @@ const stanceFootTarget = (t: number, len: number, lateralX: number, geom: FootGe
 };
 
 const HERMITE_H = 1e-4; // step for the numeric d/dt of stanceFootTarget at its own endpoints
-
-interface Keyframe {
-  readonly value: number;
-  readonly slope: number;
-}
-
-/** Cubic Hermite basis: k0 at t=0, k1 at t=1. */
-const hermite = (t: number, k0: Keyframe, k1: Keyframe): number => {
-  const t2 = t * t;
-  const t3 = t2 * t;
-  return (
-    (2 * t3 - 3 * t2 + 1) * k0.value +
-    (t3 - 2 * t2 + t) * k0.slope +
-    (-2 * t3 + 3 * t2) * k1.value +
-    (t3 - t2) * k1.slope
-  );
-};
 
 /** Central-difference d/dt of stanceFootTarget at t, extending slightly past [0,1] — safe since each
  * branch's formula is just a smooth polynomial in t past its nominal domain. */
@@ -624,8 +619,7 @@ interface LegResult {
 // (and so its params object) across many members with different speeds and different current stepIndex
 // (a cache keyed on params alone, with one speed/window slot, thrashed on almost every call once more
 // than one member referenced it; how much slower that was is not recorded — 6fdc40c cached the whole
-// posing path for about 2x, 1da3048 then gave each stress actor its own cache). GaitCache below lives on the actor (WalkActor.cache, or
-// the walkActorCacheFallback WeakMap for a caller that doesn't set one), so each member gets its own
+// posing path for about 2x, 1da3048 then gave each stress actor its own cache). GaitCache below lives on the actor (WalkActor.cache), so each member gets its own
 // entries and never evicts another member's. It's still a pure memoization — a hit is bit-identical to
 // recomputing (test/poseEquivalence.test.ts covers this through walkPose) — and the stored geom
 // signatures guard the "same cache, different body" case.
@@ -653,23 +647,6 @@ const stepPlansOf = (cache: GaitCache, seed: number): StepPlanMemo => {
     cache.stepPlans = createStepPlanMemo(seed);
   }
   return cache.stepPlans;
-};
-
-/** For a WalkActor built without its own `cache` (older call sites, ad-hoc test fixtures): still correct
- * (each distinct WalkActor object gets its own entries here), just only as warm as that object's own
- * lifetime — callers that pose the same actor every frame from a stable WalkActor still benefit fully. */
-const walkActorCacheFallback = new WeakMap<WalkActor, GaitCache>();
-
-const cacheFor = (actor: WalkActor): GaitCache => {
-  if (actor.cache) {
-    return actor.cache;
-  }
-  let cache = walkActorCacheFallback.get(actor);
-  if (!cache) {
-    cache = createGaitCache();
-    walkActorCacheFallback.set(actor, cache);
-  }
-  return cache;
 };
 
 /** Grouped (see GaitBasis's own comment on the same pattern) since they always travel together and
@@ -726,8 +703,7 @@ const legAndFootRotations = (ctx: GaitContext): LegResult => {
   const hipWidthTotal = legR.thigh.head[0] - legL.thigh.head[0];
   const widthExtra = stepWidthExtra(params, hipWidthTotal);
   // The step's *base* (stagger-free) landing X — used for the sway amplitude below, so a stagger's own
-  // drift never inflates it (it used to read the full, stagger-included landing X; the inflation was not
-  // measured, 596311a records only that the sway is now taken from the centreline between the feet).
+  // drift never inflates it (the sway is taken from the centreline between the feet).
   const baseFootX = (side: Side): number => legFor(side).thigh.head[0] + widthSign(side) * widthExtra;
   // Limit crossover: even a stagger's own inward jitter can't pull this foot's *world* X past
   // MIN_WORLD_OUTWARD off-centre — swingFootTarget's Hermite has zero slope at both ends (see its own
@@ -906,16 +882,13 @@ const legAndFootRotations = (ctx: GaitContext): LegResult => {
     // just out of it): solving rotZ(θ)·(0, yb, lz-hipZ) = (vx, ly-hipY, lz-hipZ) for θ and yb gives an
     // exact (non-iterative) fix — yb = -hypot(vx, ly-hipY), θ = atan2(vx, hipY-ly) — so the 2-bone solve
     // below targets yb, not ly directly, and ends up exactly on target once abducted. (No division:
-    // hypot/atan2 stay well-behaved even as the lever arm shrinks, unlike the plain asin(vx/yPrime) this
-    // replaced.)
+    // hypot/atan2 stay well-behaved even as the lever arm shrinks.)
     const vx = target.x - hipShift[0] - rootX;
     const vy = ly - thigh.head[1];
     // This rig's own thigh/shin rest vectors already lean inward (hip wider than ankle) — nativeX is that
     // fixed lateral offset (rotX, used for the sagittal bend, never touches X, so it survives any bend
-    // angle unchanged). The old formula implicitly assumed nativeX = 0 — fine while abduction only had to
-    // cancel yaw (tiny), but the wider base's routine, larger lateral targets exposed a real gap between
-    // the intended and actual placement (sideways foot targets ended up to 16 cm short, per 596311a). Solving rotZ(θ)·(nativeX, yPrime) = (vx, vy)
-    // for θ and yPrime generalizes the old (nativeX=0) closed form exactly.
+    // angle unchanged). Ignoring it leaves sideways foot targets short once the wider base makes lateral
+    // targets large. Solve rotZ(θ)·(nativeX, yPrime) = (vx, vy) for θ and yPrime.
     const nativeX = shin.tail[0] - thigh.head[0];
     const yPrime = -Math.sqrt(Math.max(vx * vx + vy * vy - nativeX * nativeX, 0));
     const abductionDeg = toDeg(Math.atan2(vy, vx) - Math.atan2(yPrime, nativeX));
@@ -926,7 +899,7 @@ const legAndFootRotations = (ctx: GaitContext): LegResult => {
     const shinDelta = shinAbs - restAngleDeg(shin) - thighDelta;
     // Cancel pelvis Z-roll (swing-hip drop, see walkPose) here too: it's a rotZ term, same axis as
     // abduction, so cancelling it is just subtracting it from that same angle — pelvisR ∘ thighR then
-    // reduces to the same rotX(roll) ∘ rotZ(abduction) ∘ rotX(bend) as before, algebraically unchanged.
+    // reduces to rotX(roll) ∘ rotZ(abduction) ∘ rotX(bend).
     const thighR = mulMM(mulMM(rotY(-ctx.yawDeg), rotZ(abductionDeg - ctx.pelvisZRollDeg)), rotX(thighDelta));
     const shinR = rotX(shinDelta);
     // Keep the foot level in *world* space: undo pelvis(roll+yaw) ∘ thigh ∘ shin exactly, by matrix
@@ -1034,10 +1007,8 @@ export interface WalkActor {
    * actor's lifetime; never share one between actors that differ in params (step plans are checked
    * against the seed only, footfallPeak against speed and leg geometry). Give each crowd member its own
    * (e.g. `{ ...poolEntry.walkActor, cache: createGaitCache() }`) when several actors share one pool
-   * entry's WalkActor/params. Omitted, walkPose falls back to a WeakMap keyed on this WalkActor object,
-   * so a one-off actor stays warm only while the caller passes the same object every frame (a fresh
-   * object literal per frame recomputes everything). The identity of `params` itself does not matter. */
-  readonly cache?: GaitCache;
+   * entry's WalkActor/params. The identity of `params` itself does not matter. */
+  readonly cache: GaitCache;
 }
 
 /** Below this speed (m/s), walkPose's own idle-blend weight ramps from 1 (speed 0: exactly `idle`) to 0. */
@@ -1072,7 +1043,7 @@ export const walkPose = (
 ): Pose => {
   const { recordAngles = false, idle } = typeof options === 'boolean' ? { recordAngles: options } : options;
   const { bones, extents, params, seed } = actor;
-  const cache = cacheFor(actor);
+  const { cache } = actor;
   const byId = boneMap(bones);
   const pelvis = byId.get('pelvis')!;
   // Opt-in: the angle record costs an allocation per bone per call, on a path that is measured in µs.
