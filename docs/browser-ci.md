@@ -30,6 +30,8 @@ issue's bounded diagnosis and before/after/restored-before evidence, not a retry
 timeout. See `packages/deadvox/test/browser/save-storage.mjs`, `navigationOnly`, and
 `test/browser-ci-manifest.mjs`, `quarantinedScripts`.
 
+The stage clears the `pageshow` marker before Back, because the destination page writes the same session-storage key and would otherwise satisfy the wait while the old document is still loading. It then asserts that Back restored the cached page and, if not, fails with the navigation entry's `notRestoredReasons`. Reinstatement starts from that eviction reason: a Back that Chromium declines to restore is a bfcache eviction, not a slow save.
+
 Asynchronous save checks must poll the resolved result, not the truthiness of the promise:
 a false first observation must not certify quiescence. Separate browser capture and storage
 durations from host phase timings, because renderer dispatch delay can precede the work
