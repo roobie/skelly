@@ -108,7 +108,9 @@ export const playerPockets = (
     (defOf(inv.registry, owner.type).container?.pockets ?? []).map((spec, pocket) => ({
       owner,
       pocket,
-      label: `${inv.name(owner)}${spec.name ? ` · ${spec.name}` : ''}`,
+      label: spec.name
+        ? coreLabel(inv.registry, 'pocket', { container: inv.name(owner), pocket: spec.name })
+        : inv.name(owner),
     })),
   );
 
@@ -636,7 +638,7 @@ const wieldTwoHanded = (inv: Inventory, queue: HandlingQueue, item: Item, feet: 
   );
   if (!stowsHeldFirst(inv, displaced, { source: sourceGrid(inv, item) })) {
     const direct = queue.enqueue(item, target);
-    if (direct.ok || direct.reason === 'Already queued') {
+    if (direct.ok || direct.key === 'alreadyQueued') {
       return direct.ok ? undefined : direct.reason;
     }
     if (inv.hands[preferred] === item && inv.hands[secondary] === item) {

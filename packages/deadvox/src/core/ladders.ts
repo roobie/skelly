@@ -5,6 +5,7 @@
 import type { BlockEntities, BlockEntity } from './blockEntities.ts';
 import { dominantSide, offSide } from './character.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
+import { coreMessage } from './coreText.ts';
 import type { HandHold, HandSide, Inventory } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import type { Body } from './physics.ts';
@@ -152,7 +153,8 @@ export class LadderHold implements HandHold {
   }
 
   private holding(): string {
-    return `Your ${this.hand()} hand is holding the ladder`;
+    const key = this.hand() === 'right' ? 'rightHandOnLadder' : 'leftHandOnLadder';
+    return coreMessage(this.options.inventory.registry, key);
   }
 
   private bothHands(item: Item): boolean {

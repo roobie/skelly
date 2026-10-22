@@ -337,8 +337,9 @@ describe('death', () => {
     const events = live.events.reader();
     expect(untilDeath(live, false)).toBeCloseTo(expected, -1);
     expect(untilDeath(fast, true)).toBeCloseTo(expected, -2);
-    expect(live.dead!.cause).toBe('thirst and hunger');
-    expect(fast.dead!.cause).toBe('thirst and hunger');
+    const cause = coreMessage(live.registry, 'causeThirstAndHunger');
+    expect(live.dead!.cause).toBe(cause);
+    expect(fast.dead!.cause).toBe(cause);
     // Nothing moves after death.
     const at = live.time;
     expect(live.frame(1)).toBe(0);

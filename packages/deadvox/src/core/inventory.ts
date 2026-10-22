@@ -15,7 +15,7 @@ import {
 import type { ItemDef, Registry } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
-import { coreMessage } from './coreText.ts';
+import { coreLabel, coreMessage } from './coreText.ts';
 import type { WorkPlan } from './crafting.ts';
 import {
   disassemblyOutputs,
@@ -1785,17 +1785,17 @@ export const sameGrid = (at: Location, spot: Spot | undefined): Target | undefin
 export const describeTarget = (inventory: Inventory, target: Target): string => {
   switch (target.kind) {
     case 'hand':
-      return `${target.side} hand`;
+      return coreLabel(inventory.registry, target.side === 'right' ? 'toRightHand' : 'toLeftHand');
     case 'worn':
-      return 'wear it';
+      return coreLabel(inventory.registry, 'toWorn');
     case 'pocket': {
       const pocket = defOf(inventory.registry, target.owner.type).container?.pockets[target.pocket];
       const name = inventory.name(target.owner);
-      return pocket?.name ? `${name} · ${pocket.name}` : name;
+      return pocket?.name ? coreLabel(inventory.registry, 'pocket', { container: name, pocket: pocket.name }) : name;
     }
     case 'furniture':
       return inventory.entities.defOf(target.entity).name.toLowerCase();
     default:
-      return 'the floor';
+      return coreLabel(inventory.registry, 'toFloor');
   }
 };

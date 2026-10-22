@@ -132,7 +132,7 @@ export class Simulation {
           this.emit({ kind: 'interrupt', reason });
         }
         if (this.body.health <= 0) {
-          this.die(causeOf(this.needs) ?? 'your injuries');
+          this.die(coreMessage(this.registry, causeOf(this.needs) ?? 'causeInjuries'));
         }
       },
     });
@@ -148,7 +148,7 @@ export class Simulation {
           recoveryFactor: this.recoveryFactor,
         });
         if (cause) {
-          this.die(cause);
+          this.die(coreMessage(this.registry, cause));
         }
       },
     });
