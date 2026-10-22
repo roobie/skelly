@@ -6,6 +6,8 @@ import type { Registry } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 
 const PLACEHOLDER = /\{(\w+)\}/g;
+const PLACEHOLDER_SPLIT = /(\{\w+\})/;
+const PLACEHOLDER_PART = /^\{(\w+)\}$/;
 
 const placeholdersIn = (text: string): Set<string> =>
   new Set([...text.matchAll(PLACEHOLDER)].map((match) => match[1]!));
@@ -42,9 +44,75 @@ export const fillText = <N extends string>(
   values: Readonly<Record<N, string | number>>,
 ): string => template.replace(PLACEHOLDER, (_, name: string) => String(values[name as N]));
 
+/** A template split around its placeholders, each replaced by its value, for a view that renders values such as key caps. */
+export const fillParts = <N extends string, V>(template: Template<N>, values: Readonly<Record<N, V>>): (string | V)[] =>
+  template
+    .split(PLACEHOLDER_SPLIT)
+    .filter((part) => part !== '')
+    .map((part) => {
+      const name = PLACEHOLDER_PART.exec(part)?.[1];
+      return name === undefined ? part : values[name as N];
+    });
+
 export const ActionTextSchema = strictObject({
   /** Refusals many actions share. */
-  common: strictObject({ tooFar: Line, busy: Line, gone: Line, notHeld: Line }),
+  common: strictObject({ tooFar: Line, busy: Line, gone: Line, notHeld: Line, notCarried: Line }),
+  /** What the death screen names as the cause, for harm the game deals without a weapon of its own. */
+  causes: strictObject({ foodPoisoning: Line, grenade: Line, bearTrap: Line }),
+  /** Refusals and notices of the play loop: resting, dropping, throwing, quickbar and fuses. */
+  play: strictObject({
+    restRefused: Template('reason'),
+    sleepRefused: Template('reason'),
+    continueRefused: Template('reason'),
+    dropRefused: Template('reason'),
+    throwRefused: Template('reason'),
+    throwLostItem: Line,
+    waitingForHandling: Line,
+    quickbarEmpty: Template('slot'),
+    onQuickbar: Template('item', 'slot'),
+    notHoldingGun: Line,
+    gunNotReady: Line,
+    pinPulled: Line,
+    pinIn: Line,
+    fuseBurning: Line,
+    noRoomToStand: Line,
+    search: Template('furniture'),
+  }),
+  /** Door handling labels, and the fragments the interaction hint shows for a lock or a locked door. */
+  doors: strictObject({
+    operate: Template('action', 'door'),
+    lock: Template('door'),
+    unlock: Template('door'),
+    lockHint: Line,
+    unlockHint: Line,
+    refusedHint: Template('hint', 'reason'),
+    pryWith: Template('tool'),
+    pryWithAny: Template('tools', 'reason'),
+    anyTool: Line,
+    toolSeparator: Line,
+  }),
+  /** Interaction hints; `{key}` is drawn as the bound key's cap. */
+  hints: strictObject({
+    cancel: Template('key'),
+    activate: Template('key', 'name'),
+    setDown: Template('key', 'name'),
+    groundItem: Template('key', 'item'),
+    lift: Template('use', 'key'),
+    downedBody: Template('key', 'finish'),
+    downedBodyRefused: Template('key', 'finish', 'reason'),
+  }),
+  attachments: strictObject({
+    gone: Line,
+    noSuchSlot: Line,
+    slotTaken: Line,
+    slingOnly: Line,
+    slotEmpty: Line,
+    onShoulder: Line,
+    noLongerFits: Line,
+    nowhereToPut: Line,
+    fit: Template('item'),
+    remove: Template('item'),
+  }),
   /** Loading rounds into a gun or magazine. */
   loading: strictObject({
     roundsNotCarried: Line,
@@ -145,6 +213,8 @@ export const ActionTextSchema = strictObject({
   }),
   /** Labels in the held-item action list whose wording does not depend on the item or wound. */
   itemActions: strictObject({ stripRound: Line, swing: Line, use: Line, openCan: Line }),
+  /** What a treatment's action label calls a wound's infection, by stage. */
+  infection: strictObject({ none: Line, early: Line, advanced: Line, resolved: Line }),
   melee: strictObject({ tooTired: Line }),
   /** Labels of long actions in the handling readout. */
   longActions: strictObject({

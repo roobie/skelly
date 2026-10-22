@@ -2,7 +2,7 @@
 // The simulation core runs the clock, the player's physics, needs and the handling
 // queue; Esc pauses it. When health runs out, the death screen offers a new world.
 
-import { actionText, fillText } from '../core/actionText.ts';
+import { actionText, fillParts, fillText } from '../core/actionText.ts';
 import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import type { BodyRegion } from '../core/body.ts';
@@ -550,7 +550,11 @@ const handlingPresentationFor = ({
   if (throwCharge) {
     return { jobs: [], throwCharge };
   }
-  const inactive = { ...queue, cancelLabel: queue.cancelLabel ?? html`Cancel (${keyCap('handling.stop')})` };
+  const { cancel } = actionText(inventory.registry).hints;
+  const inactive = {
+    ...queue,
+    cancelLabel: queue.cancelLabel ?? html`${fillParts(cancel, { key: keyCap('handling.stop') })}`,
+  };
   if (!job || job.stopped || !isTimedLongJob(job)) {
     return inactive;
   }
@@ -660,6 +664,7 @@ export const startPlay = (
   assertPracticeIsolation(options);
   const { config, registry, streamer, renderer, camera, meshes } = engine;
   const lines = actionText(registry);
+  const restRefusals = { rest: lines.play.restRefused, sleep: lines.play.sleepRefused };
   const autosave = autosaveTuning(registry);
   const inputTarget = renderer?.domElement ?? $('view');
   const { owner: worldLoading, draw: drawWorldLoading } = playLoadingFor(engine, options);
@@ -1153,7 +1158,7 @@ export const startPlay = (
     }
     const reason = rest.toggle(kind, entity.uid);
     if (reason) {
-      showRefusal(`Can't ${kind}: ${reason}`, sim.time);
+      showRefusal(fillText(restRefusals[kind], { reason }), sim.time);
     }
   };
 
@@ -1178,7 +1183,8 @@ export const startPlay = (
       showRefusal(option.plan.reason, sim.time);
       return;
     }
-    queue.enqueueAction(DOOR_ACTION, `${option.label} the ${nameOf(entity)}`, option.plan.time, {
+    const label = fillText(lines.doors.operate, { action: option.label, door: nameOf(entity) });
+    queue.enqueueAction(DOOR_ACTION, label, option.plan.time, {
       entityUid: entity.uid,
       closing: option.operation === 'close',
     });
@@ -1199,7 +1205,8 @@ export const startPlay = (
       showRefusal(plan.reason, sim.time);
       return;
     }
-    queue.enqueueAction(DOOR_ACTION, `${operation === 'lock' ? 'Lock' : 'Unlock'} the ${nameOf(entity)}`, plan.time, {
+    const label = fillText(operation === 'lock' ? lines.doors.lock : lines.doors.unlock, { door: nameOf(entity) });
+    queue.enqueueAction(DOOR_ACTION, label, plan.time, {
       entityUid: entity.uid,
       locked: operation === 'lock',
     });
@@ -1660,7 +1667,7 @@ export const startPlay = (
     queue.cancel();
     const result = sim.compress();
     if (!result.ok) {
-      showRefusal(`Can't rest: ${result.reason}`, sim.time);
+      showRefusal(fillText(lines.play.restRefused, { reason: result.reason }), sim.time);
     }
   };
 
@@ -1716,7 +1723,7 @@ export const startPlay = (
     }
     const reason = actOnWork(workUid, 'continue');
     if (reason) {
-      showRefusal(`Can't continue: ${reason}`, sim.time);
+      showRefusal(fillText(lines.play.continueRefused, { reason }), sim.time);
     }
     return true;
   };
@@ -1734,7 +1741,7 @@ export const startPlay = (
     if (rest.action || continueActionResumesJob(sim.actions.job?.jobType)) {
       const reason = rest.action ? rest.resume() : sim.actions.resume();
       if (reason) {
-        showRefusal(`Can't continue: ${reason}`, sim.time);
+        showRefusal(fillText(lines.play.continueRefused, { reason }), sim.time);
       }
     } else {
       compress();
@@ -1877,7 +1884,7 @@ export const startPlay = (
     }
     const item = quickbar.resolve(slot, inventory);
     if (!item) {
-      showRefusal(`Quickbar ${slot + 1} is empty`, sim.time);
+      showRefusal(fillText(lines.play.quickbarEmpty, { slot: slot + 1 }), sim.time);
       return;
     }
     if (held) {
@@ -1962,7 +1969,7 @@ export const startPlay = (
       }
       return reason === undefined;
     };
-    const target = reloadTarget(firearms, magazines);
+    const target = reloadTarget(firearms, magazines, lines.play.notHoldingGun);
     if (!target) {
       return;
     }
@@ -2409,7 +2416,8 @@ export const startPlay = (
     }
     const operation = entity.lock?.locked ? 'unlock' : 'lock';
     const plan = doorPlan(inventory, entity, operation, [keyLock]);
-    return `${operation === 'lock' ? 'Lock' : 'Unlock'}${plan.ok ? '' : ` — ${plan.reason}`}`;
+    const hint = operation === 'lock' ? lines.doors.lockHint : lines.doors.unlockHint;
+    return plan.ok ? hint : fillText(lines.doors.refusedHint, { hint, reason: plan.reason });
   };
 
   const pryHint = (entity: BlockEntity): string | undefined => {
@@ -2417,11 +2425,12 @@ export const startPlay = (
       return undefined;
     }
     const plan = pryPlan(inventory, entity, undefined, session.character);
+    const { doors } = lines;
     if (plan.ok) {
-      return `with the ${inventory.name(plan.tool).toLowerCase()}`;
+      return fillText(doors.pryWith, { tool: inventory.name(plan.tool).toLowerCase() });
     }
-    const tools = plan.toolNames.map((name) => name.toLowerCase()).join(' or ') || 'a suitable tool';
-    return `with ${tools} — ${plan.reason}`;
+    const tools = plan.toolNames.map((name) => name.toLowerCase()).join(doors.toolSeparator) || doors.anyTool;
+    return fillText(doors.pryWithAny, { tools, reason: plan.reason });
   };
 
   const downedBodyHint = (id: EntityId): HintText => {
@@ -2430,14 +2439,18 @@ export const startPlay = (
       return finish.reason;
     }
     const dismember = session.downedBodyPlan(id, 'dismember');
-    const reason = dismember.ok ? '' : ` — ${dismember.reason.toLowerCase()}`;
-    return html`${keyCap('world.interact')}: ${finish.label.toLowerCase()} · ${keyCap('world.interact')} (hold): dismember${reason}`;
+    const values = { key: keyCap('world.interact'), finish: finish.label.toLowerCase() };
+    return html`${
+      dismember.ok
+        ? fillParts(lines.hints.downedBody, values)
+        : fillParts(lines.hints.downedBodyRefused, { ...values, reason: dismember.reason.toLowerCase() })
+    }`;
   };
 
   /** Describes the displayed action for the selected target. */
   const useText = (entity: BlockEntity): HintText => {
     if (session.isObjective(entity)) {
-      return html`${keyCap('world.interact')}: activate ${nameOf(entity)}`;
+      return html`${fillParts(lines.hints.activate, { key: keyCap('world.interact'), name: nameOf(entity) })}`;
     }
     const door = entities.defOf(entity).door ? doorOptions(inventory, entity)[0] : undefined;
     const prying = pryHint(entity);
@@ -2576,7 +2589,7 @@ export const startPlay = (
     const drop = dropTarget(inventory, item, feet());
     const result = drop.plan.ok ? inventory.move(item, drop.target) : drop.plan;
     if (!result.ok) {
-      showRefusal(`Can't drop it: ${result.reason}`, sim.time);
+      showRefusal(fillText(lines.play.dropRefused, { reason: result.reason }), sim.time);
       return;
     }
     if (session.throwCharge.itemUid === item.uid) {
@@ -2595,7 +2608,7 @@ export const startPlay = (
     if (begun.kind === 'refused') {
       showRefusal(begun.reason, sim.time);
     } else if (begun.kind === 'waiting') {
-      showNotice('Waiting for handling to finish');
+      showNotice(lines.play.waitingForHandling);
     }
   }
 
@@ -2666,7 +2679,7 @@ export const startPlay = (
       return;
     }
     if (!charge.start(sim.time)) {
-      showRefusal('The item left your hand before the throw began', sim.time);
+      showRefusal(lines.play.throwLostItem, sim.time);
       return;
     }
     showNotice('');
@@ -2881,7 +2894,7 @@ export const startPlay = (
     if (!(queue.busy || firearms.busy)) {
       return false;
     }
-    showRefusal('Already handling something', sim.time);
+    showRefusal(lines.common.busy, sim.time);
     return true;
   };
 
@@ -2907,16 +2920,16 @@ export const startPlay = (
     if (!isFirearmReady(item.uid) || session.sprinting || fireWeapon(item, sim.time)) {
       return;
     }
-    showRefusal(firearms.fireReason(item.uid) ?? 'Firearm is not ready', sim.time);
+    showRefusal(firearms.fireReason(item.uid) ?? lines.play.gunNotReady, sim.time);
   };
   const togglePin = (item: Item): void => {
     const state = session.fuses.togglePin(item);
     if (state === 'pulled') {
-      showNotice('Pin pulled');
+      showNotice(lines.play.pinPulled);
     } else if (state === 'in') {
-      showNotice('Pin back in');
+      showNotice(lines.play.pinIn);
     } else if (state === 'burning') {
-      showRefusal('The fuse is already burning', sim.time);
+      showRefusal(lines.play.fuseBurning, sim.time);
     }
   };
   performHandUse = (hand: 'right' | 'left') => {
@@ -2959,7 +2972,7 @@ export const startPlay = (
         refusalReason(
           survival.selectedItemAction(action.item)?.magazine === 'strip'
             ? magazines.strip(action.item.uid, sim.time, replaySample?.intent.useDominantHeld ?? input.dominantUseHeld)
-            : 'Magazine is empty',
+            : lines.magazine.empty,
         );
         return;
       case 'fists':
@@ -3107,14 +3120,18 @@ export const startPlay = (
     const key = keyCap('world.interact');
     if (carry) {
       return playCarryText(
-        'refusal' in carry.spot ? carry.spot.refusal : html`${key}: set down ${nameOf(carry.entity)}`,
+        'refusal' in carry.spot
+          ? carry.spot.refusal
+          : html`${fillParts(lines.hints.setDown, { key, name: nameOf(carry.entity) })}`,
       );
     }
     switch (target?.kind) {
       case 'item':
-        return html`${key}: pocket ${inventory.name(target.item)} · ${key} (hold): wield`;
+        return html`${fillParts(lines.hints.groundItem, { key, item: inventory.name(target.item) })}`;
       case 'furniture':
-        return liftable(target.entity) ? html`${useText(target.entity)} · ${key} (hold): lift` : useText(target.entity);
+        return liftable(target.entity)
+          ? html`${fillParts(lines.hints.lift, { use: useText(target.entity), key })}`
+          : useText(target.entity);
       case 'body':
         return downedBodyHint(target.id);
       default:

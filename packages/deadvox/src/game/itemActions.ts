@@ -1,4 +1,4 @@
-import { actionText } from '../core/actionText.ts';
+import { type ActionText, actionText } from '../core/actionText.ts';
 import type { Body } from '../core/body.ts';
 import { BODY_REGIONS, type BodyRegion, bodyRegionLabel } from '../core/body.ts';
 import type { Inventory } from '../core/inventory.ts';
@@ -21,9 +21,14 @@ export interface ItemAction {
 }
 
 /** What the treatment treats in the wound (`Body.canTreat`): its bleeding tier, else its infection stage. */
-const woundDescription = (body: Body, region: BodyRegion, treatment: TreatmentDef): string => {
+const woundDescription = (
+  body: Body,
+  region: BodyRegion,
+  treatment: TreatmentDef,
+  infection: ActionText['infection'],
+): string => {
   const tier = treatment.bleeding === undefined ? undefined : body.bleedingTier(region);
-  return tier?.label ?? `${body.wounds[region]!.infection} infection`;
+  return tier?.label ?? infection[body.wounds[region]!.infection];
 };
 
 export const itemActionsFor = (item: Item, inventory: Inventory, body: Body): readonly ItemAction[] => {
@@ -59,7 +64,7 @@ const ordinaryItemActions = (item: Item, inventory: Inventory, body: Body): read
     return [
       {
         id: `${item.type}:${region}`,
-        label: `${bodyRegionLabel(region)} · ${woundDescription(body, region, treatment)}`,
+        label: `${bodyRegionLabel(region)} · ${woundDescription(body, region, treatment, actionText(inventory.registry).infection)}`,
         priority: { bleeding: wound.bleeding, damage: body.regionDamage[region] },
         treatment: { region, itemType: item.type },
       },

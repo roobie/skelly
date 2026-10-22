@@ -2,11 +2,41 @@
   "ui": [
     {
       "actionText": {
+        "attachments": {
+          "fit": "Fit {item}",
+          "gone": "The attachment isn't there any more",
+          "noLongerFits": "Attachment no longer fits",
+          "noSuchSlot": "Firearm has no such attachment slot",
+          "nowhereToPut": "There is nowhere to put the attachment",
+          "onShoulder": "It's on my shoulder",
+          "remove": "Remove {item}",
+          "slingOnly": "Only a sling fits the sling mount",
+          "slotEmpty": "That slot is empty",
+          "slotTaken": "That slot is occupied"
+        },
+        "causes": {
+          "bearTrap": "a bear trap",
+          "foodPoisoning": "food poisoning",
+          "grenade": "a grenade"
+        },
         "common": {
           "busy": "My hands are busy",
           "gone": "It isn't there any more",
+          "notCarried": "I'm not carrying that",
           "notHeld": "I'm not holding it",
           "tooFar": "Too far away"
+        },
+        "doors": {
+          "anyTool": "a suitable tool",
+          "lock": "Lock the {door}",
+          "lockHint": "Lock",
+          "operate": "{action} the {door}",
+          "pryWith": "with the {tool}",
+          "pryWithAny": "with {tools} — {reason}",
+          "refusedHint": "{hint} — {reason}",
+          "toolSeparator": " or ",
+          "unlock": "Unlock the {door}",
+          "unlockHint": "Unlock"
         },
         "downedBody": {
           "dismember": "Dismember the {zombie} with the {tool}",
@@ -42,6 +72,21 @@
           "spentCase": "spent case",
           "takesNoMagazine": "It takes no magazine",
           "tubeDetail": "Tube: {count}/{capacity} shells"
+        },
+        "hints": {
+          "activate": "{key}: activate {name}",
+          "cancel": "Cancel ({key})",
+          "downedBody": "{key}: {finish} · {key} (hold): dismember",
+          "downedBodyRefused": "{key}: {finish} · {key} (hold): dismember — {reason}",
+          "groundItem": "{key}: pocket {item} · {key} (hold): wield",
+          "lift": "{use} · {key} (hold): lift",
+          "setDown": "{key}: set down {name}"
+        },
+        "infection": {
+          "advanced": "advanced infection",
+          "early": "early infection",
+          "none": "no infection",
+          "resolved": "resolved infection"
         },
         "itemActions": {
           "openCan": "Open can",
@@ -81,6 +126,24 @@
           "notObjective": "This isn't the objective",
           "nothingToRead": "There's nothing to read",
           "survivorDied": "This survivor died"
+        },
+        "play": {
+          "continueRefused": "Can't continue: {reason}",
+          "dropRefused": "Can't drop it: {reason}",
+          "fuseBurning": "The fuse is already burning",
+          "gunNotReady": "The gun isn't ready",
+          "noRoomToStand": "No room to stand up",
+          "notHoldingGun": "I'm not holding a gun",
+          "onQuickbar": "{item} on quickbar {slot}",
+          "pinIn": "Pin back in",
+          "pinPulled": "Pin pulled",
+          "quickbarEmpty": "Quickbar {slot} is empty",
+          "restRefused": "Can't rest: {reason}",
+          "search": "Search the {furniture}",
+          "sleepRefused": "Can't sleep: {reason}",
+          "throwLostItem": "It left my hand before I could throw it",
+          "throwRefused": "Can't throw it there: {reason}",
+          "waitingForHandling": "Waiting for handling to finish"
         },
         "rest": {
           "unusable": "I can't use it for that"

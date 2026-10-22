@@ -391,7 +391,7 @@ export class Survival {
       this.sim.body.takeAnalgesic(item.type);
     } else if (rotten) {
       this.hooks.notice(fillText(this.text.survival.rotten, { item: def.name.toLowerCase() }));
-      this.sim.hurt(def.food!.poisonHealth!, 'food poisoning');
+      this.sim.hurt(def.food!.poisonHealth!, this.text.causes.foodPoisoning);
     } else {
       consume(this.sim.needs, def.food!, this.sim.body.nourishmentScale);
     }

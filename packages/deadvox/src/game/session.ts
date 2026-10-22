@@ -5,7 +5,7 @@
 // callbacks; nothing here draws or listens.
 
 import type { Body as MobBody } from '@mobgen/core/body.ts';
-import { actionText } from '../core/actionText.ts';
+import { actionText, fillText } from '../core/actionText.ts';
 import { AimController, type AimWobbleNoiseTuning, aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import { BearTraps } from '../core/bearTrap.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
@@ -422,17 +422,12 @@ const setStanceHeight = (stance: StanceBody, crouching: boolean): void => {
 };
 
 /** Crouching shrinks the collision body; standing up is refused, keeping the crouch, without room overhead. */
-const settleStance = (
-  stance: StanceBody,
-  crouching: boolean,
-  wanted: boolean,
-  refuse: (text: string) => void,
-): boolean => {
+const settleStance = (stance: StanceBody, crouching: boolean, wanted: boolean, refuse: () => void): boolean => {
   if (wanted === crouching) {
     return crouching;
   }
   if (!wanted && bodyOverlapsTerrain({ ...stance.body, height: stance.standingHeight }, stance.isSolid)) {
-    refuse('No room to stand up');
+    refuse();
     return crouching;
   }
   setStanceHeight(stance, wanted);
@@ -631,7 +626,9 @@ export const createSession = (options: SessionOptions) => {
   setStanceHeight(stance, crouching);
   const updateStance = (): void => {
     const wanted = nextCrouchState(controls.consumeCrouchToggle?.() ?? false, debug?.()?.noclip ?? false, crouching);
-    crouching = settleStance(stance, crouching, wanted, options.refusal ?? options.notice);
+    crouching = settleStance(stance, crouching, wanted, () =>
+      (options.refusal ?? options.notice)(text.play.noRoomToStand),
+    );
   };
   const restoredLook: RestoredLook | undefined = restoredPlayer && {
     yaw: restoredPlayer.yaw,
@@ -1337,10 +1334,10 @@ export const createSession = (options: SessionOptions) => {
       spec.blast.damage *
       blastShare(spec.blast, Math.hypot(centre[0] - at[0], centre[1] - at[1], centre[2] - at[2]) * s);
     if (blast > 0 && inSight(at, centre, isSolid)) {
-      sim.hit(blast, 'a grenade', 'torso', { kind: 'blunt' });
+      sim.hit(blast, text.causes.grenade, 'torso', { kind: 'blunt' });
     }
     for (const region of fragmentHitsOnBody({ origin: at, directions, rangeBlocks: rangeMetres / s, body, isSolid })) {
-      sim.hit(damage, 'a grenade', region, { kind: 'pierce' });
+      sim.hit(damage, text.causes.grenade, region, { kind: 'pierce' });
     }
     options.onDetonation?.([at[0] * s, at[1] * s, at[2] * s], spec.blast.radiusMetres);
     // The blast is the player's doing, so it is heard as their noise, from where it went off.
@@ -1371,7 +1368,7 @@ export const createSession = (options: SessionOptions) => {
         zombies: [...zombieStore.entries()].map(([id, zombie]) => [id, zombie.body.pos] as const),
         blockSize: s,
         alive: (id) => zombieStore.get(id) !== undefined,
-        hurtPlayer: ({ region, damage, kind }) => sim.hit(damage, 'a bear trap', region, { kind }),
+        hurtPlayer: ({ region, damage, kind }) => sim.hit(damage, text.causes.bearTrap, region, { kind }),
         injureZombie: (id, damage) => zombieSystem.injureLegs(id, damage),
       });
       lastZombieStep = time;
@@ -2080,7 +2077,7 @@ export const createSession = (options: SessionOptions) => {
       }
       queue.enqueueAction(
         'furniture.search',
-        `Search the ${nameOf(entity)}`,
+        fillText(text.play.search, { furniture: nameOf(entity) }),
         inventory.scaleHandlingTime(searchTime(entities.defOf(entity), reachTuning(inventory.registry))),
         {
           entityUid: entity.uid,

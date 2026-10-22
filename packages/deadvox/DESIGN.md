@@ -2745,13 +2745,15 @@ decoration.
   on the document root at startup, and validation requires the core entry
   (`src/core/content.ts`, `requiredContentIssues`).
 - **Action text is content.** What the character says when an action is
-  refused, the handling labels and the held-item details are mod content
-  (#393, #456): a mod can reword or translate them without code, and wording
-  is edited in one place rather than across the game's modules. Every line is
-  required, so a missing one fails validation instead of showing nothing in
-  play; a template must use exactly the placeholders the game fills, so a
-  mistyped one fails validation too. See `src/core/actionText.ts`,
-  `ActionTextSchema`. A reason that reports broken content or engine state
+  refused, the handling labels, interaction hints, held-item details and the
+  causes the death screen names are mod content (#393, #456): a mod can reword
+  or translate them without code, and wording is edited in one place rather
+  than across the game's modules. Every line is required, so a missing one
+  fails validation instead of showing nothing in play; a template must use
+  exactly the placeholders the game fills, so a mistyped one fails validation
+  too. A hint's `{key}` is drawn as the bound key's cap, so the template places
+  the key without naming it. See `src/core/actionText.ts`, `ActionTextSchema`
+  and `fillParts`. A reason that reports broken content or engine state
   rather than the world, such as a gun model without exported action data,
   stays in code: it is a diagnostic for the author, not the character's voice.
 - **UI lengths are in rem.** The root font size is the browser's font size times

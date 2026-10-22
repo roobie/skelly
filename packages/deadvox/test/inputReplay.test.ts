@@ -513,7 +513,7 @@ const createCraftReplayFixture = () => {
 
 /** An R gesture as play applies it: through `reloadTarget`, the same routing as the play loop's reload binding. */
 const reloadGesture = (runtime: ReturnType<typeof createRuntime>, action: string): void => {
-  const target = reloadTarget(runtime.session.firearms, runtime.session.magazines);
+  const target = reloadTarget(runtime.session.firearms, runtime.session.magazines, 'fixture not holding a gun');
   const act =
     target && { 'firearm.load': target.load, 'firearm.rack': target.rack, 'firearm.remove': target.remove }[action];
   const reason = act ? act(runtime.sim.time) : 'Nothing takes R';
@@ -577,7 +577,7 @@ const recordHeldRack = (
   const input = new ReloadInput();
   const busy = () => source.handling.busy || source.session.firearms.busy;
   const binding = (): ReloadBinding | undefined => {
-    const target = reloadTarget(source.session.firearms, source.session.magazines);
+    const target = reloadTarget(source.session.firearms, source.session.magazines, 'fixture not holding a gun');
     return (
       target && {
         uid: target.uid,
