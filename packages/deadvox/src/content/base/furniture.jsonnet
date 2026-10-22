@@ -19,8 +19,8 @@ local woodDoor = {
 };
 shape.colliding({
   doorMaterials: [
-    { id: 'wood', methods: ['pry'] },
-    { id: 'steel', methods: ['pry', 'cut'] },
+    { id: 'wood', methods: ['pry'], broken: { tint: '#d8c9a6', strength: 0.6 } },
+    { id: 'steel', methods: ['pry', 'cut'], broken: { tint: '#9a4a28', strength: 0.55 } },
   ],
   "furniture": [
     {

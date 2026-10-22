@@ -1348,6 +1348,8 @@ export const ModelSchema = pipe(
 const DoorMaterialSchema = strictObject({
   id: Id,
   methods: array(Id),
+  /** How a broken leaf of this material is painted: its colour moves `strength` of the way to `tint`. */
+  broken: optional(strictObject({ tint: Color, strength: Fraction })),
 });
 
 const DoorForcingSchema = pipe(
