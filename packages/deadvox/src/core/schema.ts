@@ -1369,7 +1369,7 @@ const DoorMaterialSchema = pipe(
     broken: optional(strictObject({ tint: Color, strength: Fraction })),
     /**
      * How a leaf is painted as its damage grows toward breaking, so the player sees how close it is to giving way.
-     * Each step applies once the damage reaches `from`, a fraction of the leaf's toughness; the last step reached wins.
+     * Each step applies once the damage reaches `from`, a fraction of the leaf's durability; the last step reached wins.
      */
     damaged: optional(array(strictObject({ from: Fraction, tint: Color, strength: Fraction }))),
   }),
@@ -1441,14 +1441,14 @@ const FurnitureSchema = pipe(
         hatch: optional(literal(true)),
         /** Barricaded from this side, the facing side (`front`) or its opposite (`back`): it opens only from the other. */
         barredFrom: optional(picklist(['front', 'back'])),
-        /**
-         * How the leaf yields to blows (`DESIGN.md`, "Base building and electricity"); every leaf has it, and the front
-         * of a shaped container has none. Strength is in the N·s of a melee weapon's `impulse`: a blow below
-         * `minimumStrength` does nothing, and the strengths of blows at or above it add up to `toughness`, which breaks it.
-         */
-        breach: optional(strictObject({ minimumStrength: Positive, toughness: Positive })),
       }),
     ),
+    /**
+     * How the piece yields to blows (`DESIGN.md`, "Block entities"); every piece has it. Strength is in the N·s of a
+     * melee weapon's `impulse`: a blow below `minimumStrength` does nothing, and the strengths of blows at or above it
+     * add up to `durability`, which ruins the piece.
+     */
+    breach: strictObject({ minimumStrength: Positive, durability: Positive }),
     /** The player climbs it; its facing is the side the climber stands on (`DESIGN.md`, "Ladders and hatches"). */
     climbable: optional(strictObject({ speedMetresPerSimSecond: Positive })),
     appearance: optional(

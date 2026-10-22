@@ -1,4 +1,5 @@
 local shape = import 'furniture-shape.libsonnet';
+local breach = import 'furniture-breach.libsonnet';
 local cabinets = import 'cabinet-shapes.libsonnet';
 local vehicles = import 'vehicles.libsonnet';
 local plaque(id, name, color, readable) = {
@@ -11,7 +12,7 @@ local plaque(id, name, color, readable) = {
   shape: [{ position: [0, 0, 0.875], size: [1, 1, 0.125] }],
   readable: readable,
 };
-shape.colliding({
+breach.breaking(shape.colliding({
   furniture: [
     plaque('clinic_sign', 'Clinic direction sign', '#99794c', {
       title: 'Hand-painted sign',
@@ -43,9 +44,9 @@ shape.colliding({
       name: 'Roller door',
       size: [6, 5, 1],
       color: '#666c70',
+      breach: { minimumStrength: 9, durability: 400 },
       door: {
         material: 'steel', methods: {}, handlingSimSeconds: 1.2, openNoise: { sound: 'door_roller_open' },
-        breach: { minimumStrength: 9, toughness: 400 },
       },
     },
     { id: 'workshop_service_pit', name: 'Service pit', size: [6, 1, 2], color: '#373a3b', solid: false },
@@ -118,4 +119,4 @@ shape.colliding({
       text: 'The clinic is south, past the hamlet. The military camp lies beyond it.',
     }),
   ],
-})
+}))

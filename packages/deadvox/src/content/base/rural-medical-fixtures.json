@@ -1,6 +1,10 @@
 {
   "furniture": [
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#d8d2bd",
       "id": "medical_folding_screen",
       "name": "Folding screen",
@@ -18,6 +22,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#71828a",
       "id": "medical_examination_couch",
       "name": "Examination couch",
@@ -47,6 +55,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#7f8987",
       "id": "medical_steam_sterilizer",
       "name": "Steam sterilizer",
@@ -68,6 +80,10 @@
         "kind": "drawers",
         "surface": "painted-metal"
       },
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#89918e",
       "container": {
         "pockets": [
@@ -82,6 +98,10 @@
       "size": [1, 2, 1]
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#66706c",
       "id": "medical_bike_rack",
       "name": "Bike rack",
@@ -107,6 +127,10 @@
       "solid": false
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#657069",
       "id": "medical_bin_enclosure",
       "name": "Bin enclosure",

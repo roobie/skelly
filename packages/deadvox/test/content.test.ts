@@ -33,7 +33,7 @@ import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_RANGES } from '../src/core/we
 import { INPUT_BINDINGS, inputBindings, POINTER_ACTIONS } from '../src/game/inputBindings.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { camoShaderConfig } from '../src/render/surfacePatterns.ts';
-import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
+import { buildFixtureRegistry as buildRegistry, fixtureBreach } from './economyFixtures.ts';
 
 const BASE = 'src/content/base';
 const CONTEXTUAL_KEY_LABEL = /^(?:[A-Za-z]+|[0-9]|[^\p{L}\p{N}\s]+)$/u;
@@ -208,7 +208,6 @@ describe('content', () => {
                 material: 'wood',
                 methods: {},
                 handlingSimSeconds: 0.5,
-                breach: { minimumStrength: 1, toughness: 1 },
               },
             },
           ],
@@ -774,8 +773,22 @@ describe('content', () => {
     const source = 'restable-furniture-fixture.json';
     const data: ContentFile = {
       furniture: [
-        { id: 'fixture_chair', name: 'Chair', size: [1, 2, 1], color: '#123456', rest: { quality: 0.5 } },
-        { id: 'fixture_sofa', name: 'Sofa', size: [4, 2, 2], color: '#654321', rest: { quality: 0.5, sleep: true } },
+        {
+          id: 'fixture_chair',
+          name: 'Chair',
+          size: [1, 2, 1],
+          color: '#123456',
+          rest: { quality: 0.5 },
+          breach: fixtureBreach(),
+        },
+        {
+          id: 'fixture_sofa',
+          name: 'Sofa',
+          size: [4, 2, 2],
+          color: '#654321',
+          rest: { quality: 0.5, sleep: true },
+          breach: fixtureBreach(),
+        },
       ],
     };
     const accepted = buildRegistry([{ source, data }]);
@@ -799,6 +812,7 @@ describe('content', () => {
         color: '#123456',
         shape: [{ position: [0.5, 0.5, 0.25], size: [0.75, 0.5, 0.5] }],
         solidFill: 0.01,
+        breach: fixtureBreach(),
       },
       {
         id: 'fixture_furniture_y',
@@ -807,6 +821,7 @@ describe('content', () => {
         color: '#123456',
         shape: [{ position: [0.25, 1.5, 0.25], size: [0.5, 0.75, 0.5] }],
         solidFill: 0.01,
+        breach: fixtureBreach(),
       },
       {
         id: 'fixture_furniture_z',
@@ -815,6 +830,7 @@ describe('content', () => {
         color: '#123456',
         shape: [{ position: [0.25, 0.5, 0.5], size: [0.5, 0.5, 0.75] }],
         solidFill: 0.01,
+        breach: fixtureBreach(),
       },
     ];
     const issues = validateContent({ source: 'outside-furniture-shape.json', data: { furniture } });
@@ -1807,7 +1823,6 @@ describe('content references', () => {
               methods: {},
               handlingSimSeconds: 0.4,
               openNoise: { sound: 'door_open' },
-              breach: { minimumStrength: 1, toughness: 1 },
             },
           },
         ],
@@ -2145,7 +2160,6 @@ describe('content references', () => {
             door: {
               handlingSimSeconds: 0.4,
               material: 'wood',
-              breach: { minimumStrength: 1, toughness: 1 },
               methods: {
                 pry: {
                   quality: 'prying',
@@ -2422,7 +2436,6 @@ describe('templates', () => {
               material: 'wood',
               methods: {},
               handlingSimSeconds: 0.5,
-              breach: { minimumStrength: 1, toughness: 1 },
             },
           },
         ],

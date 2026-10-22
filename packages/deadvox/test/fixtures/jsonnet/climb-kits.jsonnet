@@ -9,6 +9,7 @@ base + {
   furniture: [{
     id: 'fixture_ladder', name: 'Ladder', color: '#808080', size: [2, 1, 1],
     solid: false, climbable: { speedMetresPerSimSecond: 1.5 },
+    breach: { minimumStrength: 1, durability: 1 },
   }],
   mapPieces: [{
     id: 'fixture_descent', size: [8, 11, 8], style: 'fixture_style',

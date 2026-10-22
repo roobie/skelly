@@ -6,6 +6,8 @@ export const fixtureEconomy = (): ItemEconomy => ({
   tiers: ['Tier1', 'Tier2', 'Tier3'],
 });
 export const fixtureLootContext = (): LootContext => ({ usage: ['Residential'], tier: 'Tier1' });
+/** A breach for fixture furniture whose strength no test reads; content needs one on every piece. */
+export const fixtureBreach = () => ({ minimumStrength: 1, durability: 1 });
 
 export const fixtureLootPoint = (
   supply: LootSpawnPoint['supply'],
@@ -33,6 +35,9 @@ const fixtureEntry = (entry: unknown, section: string): unknown => {
   if (section === 'templates') {
     return { lootContext: fixtureLootContext(), ...entry };
   }
+  if (section === 'furniture') {
+    return { breach: fixtureBreach(), ...entry };
+  }
   const { buildings } = entry;
   return {
     lootContext: fixtureLootContext(),
@@ -55,7 +60,7 @@ export const buildFixtureRegistry = (sources: readonly ContentSource[]) =>
         return source;
       }
       const data = { ...source.data };
-      for (const section of ['items', 'templates', 'layouts']) {
+      for (const section of ['items', 'templates', 'layouts', 'furniture']) {
         const entries = data[section];
         if (Array.isArray(entries)) {
           data[section] = entries.map((entry: unknown) => fixtureEntry(entry, section));

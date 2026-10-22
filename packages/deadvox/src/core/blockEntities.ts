@@ -40,7 +40,7 @@ export interface BlockEntity {
   /** Doors only. */
   open: boolean;
   lock?: DoorLockDef | undefined;
-  /** Strength of the blows a door has taken toward its material's toughness. */
+  /** Strength of the blows the piece has taken toward its breach durability; absent while intact. */
   damage?: number | undefined;
   /** A door beaten in: it stands open with no lock and can't be shut again. */
   broken?: true;
@@ -361,22 +361,24 @@ export class BlockEntities {
   }
 
   private restoreDamage(entity: BlockEntity, { damage, broken }: BlockEntityState): void {
-    if (damage === undefined && !broken) {
+    if (damage !== undefined && !(Number.isFinite(damage) && damage > 0)) {
+      throw new Error('Invalid furniture damage');
+    }
+    if (damage !== undefined && damage >= this.defOf(entity).breach.durability) {
+      throw new Error("A standing piece's damage must stay below its durability");
+    }
+    if (!broken) {
+      entity.damage = damage;
       return;
     }
     if (!this.breachable(entity)) {
-      throw new Error('Only a door leaf can be damaged');
+      throw new Error('Only a door leaf can be broken');
     }
-    if (damage !== undefined && !(Number.isFinite(damage) && damage > 0)) {
-      throw new Error('Invalid door damage');
-    }
-    if (broken && !(entity.open && entity.lock === undefined)) {
+    if (!(entity.open && entity.lock === undefined)) {
       throw new Error('A broken door stands open without a lock');
     }
     entity.damage = damage;
-    if (broken) {
-      entity.broken = true;
-    }
+    entity.broken = true;
   }
 
   defOf(entity: BlockEntity): FurnitureDef {
@@ -785,27 +787,32 @@ export class BlockEntities {
   }
 
   /**
-   * How many of its door material's damage looks a leaf has reached, 0 when none; a view redraws a leaf when this
-   * changes, not on every blow (`FurnitureMeshes.doorLook`).
+   * How many of its material's damage looks a piece has reached, 0 when none; a view redraws a piece when this
+   * changes, not on every blow (`FurnitureMeshes.doorLook`). Only door materials author steps.
    */
   wearOf(entity: BlockEntity): number {
-    const { door } = this.defOf(entity);
+    const { door, breach } = this.defOf(entity);
     const steps = door && this.registry.doorMaterials.get(door.material)?.damaged;
-    if (!(door?.breach && steps && entity.damage)) {
+    if (!(steps && entity.damage)) {
       return 0;
     }
-    const fraction = entity.damage / door.breach.toughness;
+    const fraction = entity.damage / breach.durability;
     return steps.filter((step) => step.from <= fraction).length;
+  }
+
+  /** The share of its durability a piece has left, from 1 intact to 0 broken; derived from damage, never stored. */
+  conditionOf(entity: BlockEntity): number {
+    return entity.broken ? 0 : Math.max(0, 1 - (entity.damage ?? 0) / this.defOf(entity).breach.durability);
   }
 
   /**
    * One blow against a closed leaf, a zombie's bash or a player's strike alike. A blow below the leaf's minimum
    * strength leaves no mark, so waiting never lets a weak attacker through; stronger blows add their strength until
-   * it reaches the toughness. A broken leaf stands open and its lock is gone, so the breach is one-way, as forcing is.
+   * it reaches the durability. A broken leaf stands open and its lock is gone, so the breach is one-way, as forcing is.
    */
   bash(entity: BlockEntity, strength: number): BashOutcome | undefined {
-    const breach = this.defOf(entity).door?.breach;
-    if (!(breach && this.breachable(entity)) || entity.open || entity.carried) {
+    const { breach } = this.defOf(entity);
+    if (!this.breachable(entity) || entity.open || entity.carried) {
       return undefined;
     }
     if (strength < breach.minimumStrength) {
@@ -813,7 +820,7 @@ export class BlockEntities {
     }
     const damage = (entity.damage ?? 0) + strength;
     this.version += 1;
-    if (damage < breach.toughness) {
+    if (damage < breach.durability) {
       const worn = this.wearOf(entity);
       entity.damage = damage;
       if (this.wearOf(entity) !== worn) {

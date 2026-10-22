@@ -82,7 +82,6 @@ export function skyWorldFixture(boxes: SkyBounds[] = [fixtureBox]) {
               material: 'wood',
               methods: {},
               handlingSimSeconds: 1,
-              breach: { minimumStrength: 1, toughness: 1 },
             },
           },
         ],

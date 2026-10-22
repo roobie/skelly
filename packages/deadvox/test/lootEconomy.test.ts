@@ -17,6 +17,7 @@ import {
 import { lootSourcesOf } from '../src/core/site.ts';
 import { compileTemplate, stackTemplate } from '../src/core/templates.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { fixtureBreach } from './economyFixtures.ts';
 
 const context: LootContext = { usage: ['Medical'], tier: 'Tier2' };
 const TIERS: readonly LootContext['tier'][] = ['Tier1', 'Tier2', 'Tier3'];
@@ -171,6 +172,7 @@ describe('loot economy descriptions', () => {
               size: [1, 1, 1],
               color: '#123456',
               container: { pockets: [{ grid: [1, 1], handlingSimSeconds: 1 }] },
+              breach: fixtureBreach(),
             },
           ],
           templates: [

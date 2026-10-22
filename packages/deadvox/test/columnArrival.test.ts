@@ -11,6 +11,7 @@ import { createWorldSetup, type WorldSetup } from '../src/game/worldSetup.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { startupContent } from './baseRegistry.ts';
+import { fixtureBreach } from './economyFixtures.ts';
 
 vi.mock('../src/game/testHouse.ts', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../src/game/testHouse.ts')>()),
@@ -22,7 +23,13 @@ afterEach(() => vi.unstubAllGlobals());
 const content = startupContent();
 const { registry } = content;
 const crate: EntitySpec = { type: 'fixture_overlay_crate', pos: [3, 1, 1], size: [1, 1, 1], facing: 'n' };
-registry.furniture.set(crate.type, { id: crate.type, name: 'Fixture crate', size: crate.size, color: '#808080' });
+registry.furniture.set(crate.type, {
+  id: crate.type,
+  name: 'Fixture crate',
+  size: crate.size,
+  color: '#808080',
+  breach: fixtureBreach(),
+});
 const floor = registry.blocks.length;
 registry.blocks.push({ id: 'fixture_floor', name: 'Fixture floor', solid: true, color: '#808080' });
 registry.blockIds.set('fixture_floor', floor);
