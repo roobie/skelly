@@ -37,7 +37,10 @@ export const isAttachmentWorkAction = (job: Job): boolean => job.kind === 'actio
 const attachmentWorkSeconds = (inventory: Inventory): number => {
   const tuning = firearmsCombatTuning(inventory.registry);
   const level = skillEffectLevel(inventory.character.skills?.[ATTACHMENT_WORK_SKILL] ?? SKILL_LEVEL_MIN);
-  return handlingWeights(inventory.registry).ground * skillSaturation(level, tuning.attachmentFactorFloor, tuning.attachmentFactorHalfLifeLevels);
+  return (
+    handlingWeights(inventory.registry).ground *
+    skillSaturation(level, tuning.attachmentFactorFloor, tuning.attachmentFactorHalfLifeLevels)
+  );
 };
 
 /** Firearm attachment changes are serialized handling actions, with all fit rules rechecked at completion. */

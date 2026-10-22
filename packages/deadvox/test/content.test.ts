@@ -1696,7 +1696,9 @@ describe('content references', () => {
     const recipes = structuredClone(recipeFile().data) as {
       skills: { id: string; inventory?: unknown }[];
     };
-    delete recipes.skills.find(({ id }) => id === 'inventory_management')!.inventory;
+    recipes.skills = recipes.skills.map(({ inventory, ...skill }) =>
+      skill.id === 'inventory_management' ? skill : { ...skill, ...(inventory === undefined ? {} : { inventory }) },
+    );
     const { issues } = buildRegistry([{ source: 'recipes.json', data: recipes }]);
     expect(
       issues.some(
@@ -1712,9 +1714,13 @@ describe('content references', () => {
     const tuning = recipes.skills.find(({ id }) => id === 'inventory_management')!.inventory!;
     for (const key of Object.keys(tuning).filter((name) => name !== 'handlingFactorFloor')) {
       const partial = structuredClone(recipes);
-      delete partial.skills.find(({ id }) => id === 'inventory_management')!.inventory![key];
+      const { [key]: _omitted, ...rest } = partial.skills.find(({ id }) => id === 'inventory_management')!.inventory!;
+      partial.skills.find(({ id }) => id === 'inventory_management')!.inventory = rest;
       const { issues } = buildRegistry([{ source: 'recipes.json', data: partial }]);
-      expect(issues.some((issue) => issue.source === 'recipes.json'), key).toBe(true);
+      expect(
+        issues.some((issue) => issue.source === 'recipes.json'),
+        key,
+      ).toBe(true);
     }
   });
 
