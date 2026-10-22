@@ -1464,7 +1464,11 @@ export const startPlay = (
       keyboardInput.releaseForwarded(keyEvent);
     }
   };
-  installReviewMapMessageListener(() => reviewMapFrame, routeReviewMapKey, () => toggleReviewMap(false));
+  installReviewMapMessageListener(
+    () => reviewMapFrame,
+    routeReviewMapKey,
+    () => toggleReviewMap(false),
+  );
   const thirdPerson = {
     enabled: () => thirdPersonViewEnabled,
     toggle: () => {
