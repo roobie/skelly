@@ -8,10 +8,11 @@ import {
   Mesh,
   type MeshBasicMaterial,
   type MeshStandardMaterial,
+  Quaternion,
   Vector3,
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ContentSource } from '../src/core/content.ts';
 import { Inventory, type Pile } from '../src/core/inventory.ts';
 import { PILE_GRID } from '../src/core/inventoryScale.ts';
@@ -81,7 +82,9 @@ it('prepares every thing recipe export for ground and held drawing with its grip
   );
 });
 
-it('attaches compass live parts to exported model anchors', async () => {
+afterEach(() => vi.unstubAllGlobals());
+
+it('attaches outward-facing compass live parts above exported model anchors', async () => {
   const definition = registry.models.get('compass')!;
   const { scene } = await parseGlb(readFileSync(`${BASE}/${definition.file}`));
   const { held } = prepareModel(definition, scene);
@@ -93,14 +96,17 @@ it('attaches compass live parts to exported model anchors', async () => {
     needleMount: definition.anchors!.needle_mount!,
   });
   const frame = heldModelFrame(held);
-  const display = compass.group.getObjectByName('compass-live-display');
-  const needle = compass.group.getObjectByName('compass-live-needle');
-  expect(display?.parent).toBe(frame);
-  expect(needle?.parent).toBe(frame);
-  expect(display?.position.toArray()).toEqual(definition.anchors!.display_mount);
-  expect(needle?.position.toArray()).toEqual(definition.anchors!.needle_mount);
+  const display = compass.group.getObjectByName('compass-live-display')!;
+  const needle = compass.group.getObjectByName('compass-live-needle')!;
+  expect(display.parent).toBe(frame);
+  expect(needle.parent).toBe(frame);
+  expect(display.position.y).toBeGreaterThan(definition.anchors!.display_mount![1]);
+  expect(needle.position.y).toBeGreaterThan(display.position.y);
+  held.updateMatrixWorld(true);
+  const outward = new Vector3(0, 1, 0).applyQuaternion(frame.getWorldQuaternion(new Quaternion()));
+  expect(display.getWorldDirection(new Vector3()).dot(outward)).toBeGreaterThan(0.99);
+  expect(needle.getWorldDirection(new Vector3()).dot(outward)).toBeGreaterThan(0.99);
   compass.dispose();
-  vi.unstubAllGlobals();
 });
 
 describe('piles with models', () => {

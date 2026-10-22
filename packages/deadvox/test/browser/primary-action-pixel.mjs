@@ -66,6 +66,38 @@ const measureGlowstickFloor = async (page, uid, label, capture) => {
   return { measurement, screenshot };
 };
 
+const heldCompassPixels = (page, shot) =>
+  page.evaluate(async (base64) => {
+    const r = globalThis.primaryActionTest;
+    const { scene, camera } = r.view.held.warmUpTarget;
+    const display = scene.getObjectByName('compass-live-display');
+    if (!display) {
+      throw new Error('Held compass display is missing');
+    }
+    scene.updateMatrixWorld(true);
+    camera.updateMatrixWorld(true);
+    const point = display.getWorldPosition(display.position.clone()).project(camera);
+    const image = new Image();
+    image.src = `data:image/png;base64,${base64}`;
+    await image.decode();
+    const canvas = document.createElement('canvas');
+    canvas.width = image.width;
+    canvas.height = image.height;
+    const context = canvas.getContext('2d');
+    context.drawImage(image, 0, 0);
+    const x = Math.round(((point.x + 1) / 2) * image.width);
+    const y = Math.round(((1 - point.y) / 2) * image.height);
+    const radius = 16;
+    const { data } = context.getImageData(x - radius, y - radius, radius * 2 + 1, radius * 2 + 1);
+    let green = 0;
+    for (let index = 0; index < data.length; index += 4) {
+      if (data[index + 1] > data[index] + 8 && data[index + 1] > data[index + 2] + 4) {
+        green += 1;
+      }
+    }
+    return { green, pixels: data.length / 4, x, y };
+  }, shot.toString('base64'));
+
 const visorRatio = (page, shot) =>
   page.evaluate(async (base64) => {
     const image = new Image();
@@ -240,6 +272,22 @@ try {
     process.stdout.write(`Visor edge/centre ratios: ${JSON.stringify({ baseline, worn, restored })}\n`);
     assert.ok(Math.abs(restored / baseline - 1) < 0.02, 'removing the helmet restores the scene ratio');
     assert.deepEqual(pageErrors, []);
+  });
+  await timePhase('held-compass-pixel-assertion', async () => {
+    const frame = await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      r.setHand(r.dominant, r.inventory.create('compass'));
+      return r.frames;
+    });
+    await page.waitForFunction((previous) => globalThis.primaryActionTest.frames > previous + 3, frame);
+    const shot = await capture();
+    await writeFile(resolve(projectRoot, 'test-results/primary-action/held-compass.png'), shot);
+    const pixels = await heldCompassPixels(page, shot);
+    process.stdout.write(`Held compass green pixels: ${JSON.stringify(pixels)}\n`);
+    assert.ok(
+      pixels.x > 16 && pixels.y > 16 && pixels.x < clip.width - 16 && pixels.y < clip.height - 16,
+      'the held compass display projects inside the pixel sample',
+    );
   });
   await page.evaluate(() => {
     const r = globalThis.primaryActionTest;

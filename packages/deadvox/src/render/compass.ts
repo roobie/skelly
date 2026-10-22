@@ -58,10 +58,14 @@ export const createCompass = (model?: {
     needle.position.set(0, -0.022, 0.0105);
     group.add(display, needle);
   } else {
-    display.rotation.x = Math.PI / 2;
-    needle.rotation.x = Math.PI / 2;
+    // The authored mounts sit on the compass's +y face. A plane's front is +z, so
+    // turn that front toward +y and separate the live layers to avoid z-fighting.
+    display.rotation.x = -Math.PI / 2;
+    needle.rotation.x = -Math.PI / 2;
     display.position.set(...model.displayMount!);
+    display.position.y += 0.001;
     needle.position.set(...model.needleMount!);
+    needle.position.y += 0.002;
     heldModelFrame(group).add(display, needle);
   }
   let displayed = -1;

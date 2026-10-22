@@ -8,7 +8,7 @@ read_if:
 
 The compass is a held object with a self-lit heading display, not HUD text. That choice keeps its information attached to the item and readable at night because held objects do not receive the world's flashlight beam. It must not add a second gameplay input or hand-motion authority. See `src/render/compass.ts`, `createCompass`, and `src/core/coords.ts`, `compassBearing`.
 
-A live handheld uses its exported model plus live parts at named anchors. The world and hand therefore share one model while the live display or indicator remains dynamic. See `src/render/hands.ts`, `Hands.shape`, and `packages/thing-authoring-tool/src/catalogue.ts`, `buildItem`.
+A live handheld uses its exported model plus live parts at named anchors. The world and hand therefore share one model while the live display or indicator remains dynamic. See `src/render/hands.ts`, `HeldItems`, and `packages/thing-authoring-tool/src/catalogue.ts`, `buildItem`.
 
 The display uses the world's canonical north convention and converts camera yaw to clockwise bearings. The numeric bearing and cardinal label describe facing; the triangle points north. See `src/core/coords.ts`, `WORLD_NORTH` and `headingLabel`.
 
