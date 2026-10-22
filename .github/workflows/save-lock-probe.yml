@@ -1,8 +1,11 @@
 name: save-lock probe
 
-# Manual only: repeats the two stages behind the unreproduced save-lock flakes on the CI image
-# and keeps their timeout diagnostics. See docs/browser-ci.md.
+# Repeats the two stages behind the unreproduced save-lock flakes on the CI image and keeps their
+# timeout diagnostics. GitHub dispatches a workflow only once its file is on the default branch, so
+# the push trigger, limited to the probe's own branch, is what starts it before merge. See docs/browser-ci.md.
 on:
+  push:
+    branches: [deadvox/weathering-firefox-flake]
   workflow_dispatch:
     inputs:
       repeats:
@@ -57,7 +60,7 @@ jobs:
       - name: Repeat the stage
         timeout-minutes: 24
         env:
-          REPEATS: ${{ inputs.repeats }}
+          REPEATS: ${{ inputs.repeats || '3' }}
           STAGE: ${{ matrix.stage }}
           DEADVOX_FIREFOX_UI_WEATHERING_TEST: '1'
         run: |
