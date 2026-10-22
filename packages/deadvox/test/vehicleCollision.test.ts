@@ -10,7 +10,7 @@ import type { ContentFile } from '../src/core/schema.ts';
 import { createPlayerBody, physicsFor, steer } from '../src/game/player.ts';
 import { BLUEPRINTS } from '../src/vehicles/catalogue.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials } from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 
 const half = makeScale(0.5);
 const base = baseRegistry();
@@ -33,6 +33,7 @@ const frame = {
 
 const fixtures: ContentFile = {
   furnitureMaterials: fixtureMaterials(),
+  sounds: fixtureSounds(),
   furniture: [
     ...['fixture_car', 'fixture_car_wheel_off'].map((id, at) => ({
       id,

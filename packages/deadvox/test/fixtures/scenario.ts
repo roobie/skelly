@@ -9,6 +9,7 @@ import {
   fixtureEconomy,
   fixtureLootContext,
   fixtureMaterials,
+  fixtureSounds,
 } from '../economyFixtures.ts';
 import { playerInventorySource } from './playerInventory.ts';
 
@@ -122,6 +123,7 @@ export const fixtureScenarioSources = (
       source: 'scenario-fixture.json',
       data: {
         furnitureMaterials: fixtureMaterials(),
+        sounds: fixtureSounds(),
         blocks: [
           { id: 'fixture_solid', name: 'Fixture solid', solid: true, color: '#808080' },
           { id: 'asphalt', name: 'Fixture asphalt', solid: true, color: '#404040' },

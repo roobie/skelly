@@ -1,5 +1,6 @@
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import type { ItemEconomy, LootContext, LootSpawnPoint } from '../src/core/loot.ts';
+import { simSeconds } from '../src/core/time.ts';
 
 export const fixtureEconomy = (): ItemEconomy => ({
   usage: ['Residential', 'Industrial', 'Medical', 'Hunting', 'Police', 'Military', 'Infected'],
@@ -11,11 +12,25 @@ export const fixtureBreach = () => ({ minimumStrength: 1, durability: 1 });
 /** A material for fixture furniture whose damage look no test reads; content needs one on every piece. */
 export const FIXTURE_MATERIAL = 'fixture_material';
 /** The material table entry `FIXTURE_MATERIAL` names, for a fixture registry built without base content. */
-export const fixtureMaterials = () => [{ id: FIXTURE_MATERIAL, methods: [] }];
+export const fixtureMaterials = () => [{ id: FIXTURE_MATERIAL, blowSound: FIXTURE_BLOW_SOUND, methods: [] }];
+/** The sound a blow on fixture furniture makes; materials must name one that alerts hearing. */
+export const FIXTURE_BLOW_SOUND = 'fixture_blow';
+export const fixtureSounds = () => [
+  {
+    id: FIXTURE_BLOW_SOUND,
+    variants: ['assets/audio/fixture-blow.ogg'],
+    gain: 1,
+    pitchJitter: [1, 1] as [number, number],
+    gainJitter: [1, 1] as [number, number],
+    minIntervalSimSeconds: simSeconds(0),
+    category: 'world' as const,
+    noise: { enabled: true, radiusMetres: 10 },
+  },
+];
 /** A content file holding only `fixtureMaterials`, to go first so a fixture that authors its own overrides it. */
 export const fixtureMaterialSource = (): ContentSource => ({
   source: 'fixture-materials.json',
-  data: { furnitureMaterials: fixtureMaterials() },
+  data: { furnitureMaterials: fixtureMaterials(), sounds: fixtureSounds() },
 });
 
 export const fixtureLootPoint = (

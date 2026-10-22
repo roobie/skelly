@@ -61,7 +61,8 @@ const TRIGGER_ENTRIES = [
   [
     'door_bash',
     {
-      trigger: 'Strike a closed door in melee, or let a zombie chasing you reach one.',
+      trigger:
+        'Strike a door or any piece of furniture in melee, or let a zombie chasing you bash one that blocks its way.',
       note: 'Temporary stand-in: shares the door-blocked recording, pitched further down.',
     },
   ],
