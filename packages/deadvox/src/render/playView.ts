@@ -71,6 +71,10 @@ export interface PlayCameraFrame {
   readonly painTier?: BodyTuningDef['pain']['tiers'][number] | undefined;
 }
 
+/** The hurt vignette and the sight-impairment dimming belong to the player's eyes, so a detached view has none. */
+const damageOpacity = (detached: boolean, vignette: number, sightImpaired: boolean): string =>
+  detached ? '0' : String(Math.max(vignette, sightImpaired ? 0.2 : 0));
+
 /** The drug vignette and night vision belong to the player's eyes, so a spectator gets neither. */
 const setViewEffects = (mood: Engine['mood'], frame: PlayCameraFrame): NightVision | undefined => {
   const player = frame.spectator === undefined;
@@ -255,6 +259,8 @@ export const createPlayView = (
   const painCue = new PainCue();
   let cameraRoll = 0;
   let thirdPerson = false;
+  /** The spectator camera leaves the player's own view (arms, held item, vignettes) with the avatar. */
+  let detached = false;
   let meleeRecoilStrength = 0;
   let meleeRecoilTime = 0;
   let meleeRecoilDuration = 0;
@@ -423,7 +429,16 @@ export const createPlayView = (
       const travel = Math.hypot(body.vel[0], body.vel[2]) * s * dt;
       const moving = travel > 0.001 && !paused;
       const gaitPhase = stridePhase * Math.PI * 2;
-      playerMeshes.sync({ body, yaw, stepOffset: offset, gaitPhase, moving, inventory, thirdPerson });
+      detached = spectator !== undefined;
+      playerMeshes.sync({
+        body,
+        yaw,
+        stepOffset: offset,
+        gaitPhase,
+        moving,
+        inventory,
+        thirdPerson: thirdPerson || detached,
+      });
       const [ex, ey, ez] = spectator?.position ?? eye;
       const feedback = stepBodyCues(dt, paused, spectator !== undefined, frame.painTier);
       cameraRoll = spectator || thirdPerson ? 0 : feedback.roll;
@@ -439,7 +454,7 @@ export const createPlayView = (
       } else {
         updateFirstPersonCamera({ target, stepOffset: offset, spectator, yaw, pitch });
       }
-      damage.style.opacity = String(Math.max(feedback.vignetteOpacity, sightImpaired ? 0.2 : 0));
+      damage.style.opacity = damageOpacity(detached, feedback.vignetteOpacity, sightImpaired);
       nightVision = setViewEffects(engine.mood, frame);
     },
     updateHeld: (
@@ -472,15 +487,16 @@ export const createPlayView = (
         return null;
       }
       const start = performance.now();
+      const ownView = !(thirdPerson || detached);
       drawCounters?.begin();
       try {
         mood.render(
           () => {
-            if (!thirdPerson) {
+            if (ownView) {
               held.render(renderer, camera, engine.sky);
             }
           },
-          thirdPerson ? undefined : held.opticLensFrame,
+          ownView ? held.opticLensFrame : undefined,
         );
       } finally {
         drawCounters?.end();

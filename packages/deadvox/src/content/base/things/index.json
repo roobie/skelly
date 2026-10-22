@@ -526,6 +526,121 @@
     "anchors": { "seat": [0, 0.03, 0] }
   },
   {
+    "id": "cargo_space",
+    "file": "assets/models/cargo_space.glb",
+    "parts": {
+      "body": {
+        "node": "body:block",
+        "massKg": 0.2,
+        "centreOfMass": [0, 0.05, 0],
+        "collision": [{ "min": [-0.05, 0, -0.05], "max": [0.05, 0.1, 0.05] }]
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "pickup_bed_floor",
+    "file": "assets/models/pickup_bed_floor.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 45,
+        "centreOfMass": [-1.1500000000000001, 0.7143442622950821, 0],
+        "collision": [
+          { "min": [-2.2, 0.7999999999999999, -0.8], "max": [-0.10000000000000009, 0.85, 0.8] },
+          { "min": [-2.2, 0.55, -0.45], "max": [-0.10000000000000009, 0.8, 0.45] }
+        ]
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "pickup_bed_side",
+    "file": "assets/models/pickup_bed_side.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 24,
+        "centreOfMass": [-1.1757069408740362, 0.8325964010282777, 0.7631619537275066],
+        "collision": [
+          { "min": [-2.2, 0.6199999999999999, 0.8], "max": [-0.10000000000000009, 1.22, 0.8600000000000001] },
+          { "min": [-1.7, 0.55, 0.5999999999999999], "max": [-0.7, 0.95, 0.8] }
+        ]
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "pickup_bed_front",
+    "file": "assets/models/pickup_bed_front.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 10,
+        "centreOfMass": [-0.06999999999999999, 1.01, 0],
+        "collision": [
+          { "min": [-0.1, 0.8, -0.8600000000000001], "max": [-0.04000000000000001, 1.22, 0.8600000000000001] }
+        ]
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "box_van_floor",
+    "file": "assets/models/box_van_floor.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 180,
+        "centreOfMass": [-0.8999999999999999, 0.8744736842105264, 0],
+        "collision": [
+          { "min": [-3, 0.97, -1], "max": [1.2000000000000002, 1, 1] },
+          { "min": [-3, 0.72, -0.45], "max": [1.2000000000000002, 0.97, 0.45] }
+        ]
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "box_van_side",
+    "file": "assets/models/box_van_side.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 70,
+        "centreOfMass": [-0.9, 1.9499999999999997, 1.03],
+        "collision": [{ "min": [-3, 0.8999999999999999, 1], "max": [1.2000000000000002, 3, 1.06] }]
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "box_van_front",
+    "file": "assets/models/box_van_front.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 45,
+        "centreOfMass": [1.23, 2, 0],
+        "collision": [{ "min": [1.2, 1, -1.06], "max": [1.26, 3, 1.06] }]
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "box_van_roof",
+    "file": "assets/models/box_van_roof.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 40,
+        "centreOfMass": [-0.87, 3.03, 0],
+        "collision": [{ "min": [-3, 3, -1.06], "max": [1.2599999999999998, 3.0600000000000005, 1.06] }]
+      }
+    },
+    "anchors": {}
+  },
+  {
     "id": "wheel_205_55r16",
     "file": "assets/models/wheel_205_55r16.glb",
     "parts": {
@@ -1768,6 +1883,119 @@
     },
     "grip": { "at": [0, 0.04, 0], "turn": [0, 0, -90] },
     "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "blowtorch",
+    "file": "assets/models/blowtorch.glb",
+    "parts": {
+      "equipment": {
+        "node": "equipment:blowtorch",
+        "massKg": 0.9,
+        "centreOfMass": [0.003492439512906028, 0.07294486617694432, 0]
+      }
+    },
+    "grip": { "at": [0, 0.061500000000000006, 0], "turn": [0, 0, 0] },
+    "hold": "forward",
+    "roll": 0
+  },
+  {
+    "id": "headlamp",
+    "file": "assets/models/headlamp.glb",
+    "parts": {
+      "equipment": {
+        "node": "equipment:headlamp",
+        "massKg": 0.18,
+        "centreOfMass": [0.00009124309083862351, 0.016805785974029187, -0.055611748094746914]
+      }
+    },
+    "grip": { "at": [0, 0.011, 0.095], "turn": [0, -90, 0] },
+    "hold": "forward",
+    "roll": 0,
+    "anchors": { "lens": [0, 0.020000000000000004, -0.1155] }
+  },
+  {
+    "id": "weapon_sling",
+    "file": "assets/models/weapon_sling.glb",
+    "parts": {
+      "equipment": {
+        "node": "equipment:webbingSling",
+        "massKg": 0.15,
+        "centreOfMass": [0.002237475814853401, 0.00468931388599494, 2.0518445516521005e-20]
+      }
+    },
+    "grip": { "at": [-0.11599999999999999, 0.0045000000000000005, 0], "turn": [0, 0, 0] },
+    "hold": "forward",
+    "roll": 0
+  },
+  {
+    "id": "repair_kit",
+    "file": "assets/models/repair_kit.glb",
+    "parts": {
+      "equipment": {
+        "node": "equipment:repairKit",
+        "massKg": 1.25,
+        "centreOfMass": [-0.006085890427079189, 0.01452519781179876, 0.003059317324053617]
+      }
+    },
+    "grip": { "at": [-0.0985, 0.0175, 0], "turn": [0, 0, 0] },
+    "hold": "forward",
+    "roll": 0
+  },
+  {
+    "id": "wire_strippers",
+    "file": "assets/models/wire_strippers.glb",
+    "parts": {
+      "equipment": {
+        "node": "equipment:pliers",
+        "massKg": 0.18,
+        "centreOfMass": [0.07842316732801535, -1.8519349040395148e-19, 6.452800353873034e-19]
+      }
+    },
+    "grip": { "at": [0.04775, 0, -0.018000000000000002], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "adjustable_pliers",
+    "file": "assets/models/adjustable_pliers.glb",
+    "parts": {
+      "equipment": {
+        "node": "equipment:pliers",
+        "massKg": 0.3,
+        "centreOfMass": [0.0995385477147247, 0.00005419542316399051, 2.307395759650897e-18]
+      }
+    },
+    "grip": { "at": [0.05600000000000001, 0, -0.020625], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "sewing_repair_kit",
+    "file": "assets/models/sewing_repair_kit.glb",
+    "parts": {
+      "equipment": {
+        "node": "equipment:repairKit",
+        "massKg": 0.42,
+        "centreOfMass": [0.0037262431422244394, 0.012317862473998718, 2.0335500613498806e-19]
+      }
+    },
+    "grip": { "at": [-0.089, 0.015, 0], "turn": [0, 0, 0] },
+    "hold": "forward",
+    "roll": 0
+  },
+  {
+    "id": "portable_radio",
+    "file": "assets/models/portable_radio.glb",
+    "parts": {
+      "equipment": {
+        "node": "equipment:portableRadio",
+        "massKg": 0.6,
+        "centreOfMass": [0.00007534330506784346, 0.06560110085313642, -0.00034903912059921485]
+      }
+    },
+    "grip": { "at": [0, 0.0325, 0], "turn": [0, 90, 0] },
+    "hold": "forward",
     "roll": 0
   },
   {

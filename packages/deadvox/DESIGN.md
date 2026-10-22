@@ -373,6 +373,16 @@ deconstruction reserves its piece against use until the job is cancelled or fini
 paused work keeps its piece; under lockstep the reservation is ordinary simulation state,
 resolved in tick order. See `src/core/blockEntities.ts`, `BlockEntities.remove`.
 
+Because every explored piece stays in memory, a lookup must not cost more as the explored
+area grows, so lookups find pieces through an index by column. See
+`src/core/blockEntities.ts`, `BlockEntities.near`.
+
+Save size and save time are held to a budget measured against explored area. One record
+holding every explored piece makes save work grow with exploration, so crossing the
+budget reopens whether explored furniture stays in memory and saved and whether the save
+stays one record; the budget is not raised to make room. See
+`test/exploredSaveBudget.test.ts` (its budget constants).
+
 ### Block entities
 
 Stateful blocks keep their changing state separate from static block identity.
@@ -1100,7 +1110,9 @@ balance; stacking can't multiply it while only empty soft bags nest.
 
 Pockets have no weight limit, but total carried
 weight slows movement and costs stamina. Condition is readable as a word, with
-exact values available on inspection.
+exact values available on inspection. Condition reads as a band word from one
+content table shared by items and furniture, so a mod retunes or renames the
+bands without a code change.
 
 Item descriptions identify the item, not its controls. Controls belong to the
 binding table and displayed controls list, because bindings can change. See
@@ -1997,13 +2009,13 @@ reused across types: `grab`, `leap`, `scream`, `explode`, `acidSpit`,
 | 1 | Bloater | Bursts into a noxious cloud |
 | 1 | Acid zombie | Spits acid from a distance; the first ranged enemy and first of the acid evolution line, lab storeys only. See `packages/deadvox/docs/acid-zombie.md`, "Acid zombie" |
 | 2 | Brute | Big, knocks you back, breaks doors |
-| 2 | Soldier | Armoured; carries ordinary kit at the military camp |
+| 2 | Soldier | Armoured; carries ordinary kit at the military camp and the crisis HQ |
 | 2 | Hazmat | Resists acid and fire (from lab sites) |
 | 3 | Smoulderer | Hot to the touch; sets flammable things on fire |
 | 3 | Incandescent hulk | A brute running a fever of a thousand degrees: glows, sets fires, warps glass. Seen from far away at night |
 | 3 | Lantern | Bioluminescent lure that draws you in, and others |
 
-Zombie types are content definitions used by shared systems; choose behavior through content properties rather than type-id cases. `src/core/schema.ts`, `ZombieSchema`, defines those properties, and `src/core/zombies.ts`, `ZombieSystem.emitFootsteps`, uses the declared footstep family. The soldier appears only at military-camp markers and explicit camp spawns; `src/core/hamlet.ts`, `ordinaryHamletSpawnWeights`, excludes authored-only kinds from ordinary selection. Its kit uses ordinary items; military loot remains restricted to site containers. For #487, defer the military clothing palette, armour, and body searching; the soldier first appears in civilian clothes, carries ordinary kit, and drops loot on death.
+Zombie types are content definitions used by shared systems; choose behavior through content properties rather than type-id cases. `src/core/schema.ts`, `ZombieSchema`, defines those properties, and `src/core/zombies.ts`, `ZombieSystem.emitFootsteps`, uses the declared footstep family. The soldier appears only at military-camp markers, explicit camp spawns and the crisis HQ's markers, because the HQ is a military site whose threat should be mostly soldiers; no other place that merely looks military takes them; `src/core/hamlet.ts`, `ordinaryHamletSpawnWeights`, excludes authored-only kinds from ordinary selection. Its kit uses ordinary items; military loot remains restricted to site containers. For #487, defer the military clothing palette, armour, and body searching; the soldier first appears in civilian clothes, carries ordinary kit, and drops loot on death.
 
 The brute shambler guards the secret cellar (`packages/deadvox/docs/content.md`, "City building types"). It is an authored-only type on mobgen's brute body, with more health and harder hits than the shambler as content values. It wears the brute body rather than a shambler's so it reads as a different kind of zombie in the dark. It bashes doors with no more strength than the shambler and never knocks the player back: the tier-2 Brute's door breaking and knockback arrive together (`packages/deadvox/EPIC.md`, "5. Holding ground"). What that leaves open: a player meets the brute's look in a city house before the evolution line introduces brutes. See `src/core/schema.ts`, `ZOMBIE_MODEL`.
 
@@ -2284,13 +2296,7 @@ their state.
    does not become assembly bookkeeping. A body fitted to a chassis cab, such as a box
    van's cargo box, is its own factory structure resting on the frame, not part of the
    cab's, so the chassis cab stays a complete drivable unit without it and the box can
-   move to another frame. A body's storage and its contents belong to a cargo space: a
-   separate part resting on the load floor whose own shape is the hold, so storage
-   travels with the part, losing a wall does not lose the load, and a player can build
-   one for any body with a load floor. The game reads the pocket grid from that shape
-   rather than from authored numbers. A part's capabilities are names; its sizes live
-   in its own data, so each size has one source. The cargo space arrives with #1124.
-   See `src/vehicles/boxVan.ts`, `BOX_VAN`.
+   move to another frame. See `src/vehicles/boxVan.ts`, `BOX_VAN`.
 9. **Cheap at scale.** A parked street must not pay continuous driving-physics cost.
    Part-level changes should not require rebuilding unrelated vehicles.
 10. **Obstruction follows the build.** Render, collision and picking derive from the
@@ -2309,6 +2315,25 @@ see [CHALLENGES.md](CHALLENGES.md#8-vehicles-on-voxels). Determinism and streami
 follow `docs/decisions/0008-deterministic-world.md`, "Decision". Leaving a moving
 vehicle is allowed: coasting, collision and bystander consequences must not vanish
 when a column unloads. Parked vehicles retain their derived world collision.
+
+**Cargo space.** A body's storage and its contents belong to a cargo space: a separate
+part resting on a load floor whose own shape is the hold, so storage travels with the
+part and losing a wall does not lose the load. The game reads the pocket grid from that
+shape rather than from authored numbers; a part's capabilities are names and its sizes
+live in its own data, so each size has one source. Only the floor area counts toward
+capacity, so open beds and flatbeds hold cargo the same way boxes do; the block's height
+only has to clear what is above it. A player sizes a cargo space while placing it by
+dragging out a rectangle, which stops at the edge of the free floor the game works out
+from the load floor and the parts standing on it. Dragging is the complete form of
+choosing a size, so a proposed size can be added on top later without redoing it. The
+floor is a rectangle because storage is a rectangle of pockets, as in a backpack: an odd
+floor takes several spaces, and a rectangle stays valid if shaped spaces ever come, so
+nothing fitted or saved is redone. A space grown to fill walls and roof was not chosen
+because open beds have neither. The block then keeps its size, and a part can't be
+fitted into it. Players build cargo spaces on load floors the vehicle already has; load
+floors and walls built from nothing wait for scratch-built frames, which add to the
+cargo space rather than replace it. Player placement arrives with #1124. See
+`src/core/cargoSpace.ts`, `freeFloor`.
 
 Entry is seated through animated usable doors for the first loop. Walking through
 plausible interiors is an important long-term requirement for the #322 trucks, RVs

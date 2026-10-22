@@ -5,8 +5,10 @@
 import { modelMassKg } from '@skelly/thing-core/mass';
 import type { ModelBox } from '@skelly/thing-core/schema';
 import { supportProblems } from '../vehicles/model.ts';
+import { type CargoCells, cargoGrid, fitIssue } from './cargoSpace.ts';
 import type { Registry } from './content.ts';
-import type { ContentSection, VehicleCapability, VehicleFittingDef } from './schema.ts';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
+import type { ContentSection, ItemDef, VehicleCapability, VehicleFittingDef } from './schema.ts';
 
 type Vec3 = readonly [number, number, number];
 
@@ -45,38 +47,84 @@ const ratingIssue = ({
   return !lifts && ratedLoadKg !== undefined ? 'only a lifting part has a rated load' : undefined;
 };
 
-/** Parts without exported physics or a lift rating, and blueprints with broken references, supports or bracing. */
+type PathIssue = readonly [path: string, message: string];
+
+const cargoSizeIssue = (item: ItemDef, fitting: VehicleFittingDef): string | undefined => {
+  if (item.vehicle?.cargoSpace) {
+    return fitting.cargo ? undefined : 'a cargo space needs its size';
+  }
+  return fitting.cargo && `item "${item.id}" is not a cargo space`;
+};
+
+const bracingIssue = (registry: Registry, fittings: readonly VehicleFittingDef[]): PathIssue[] => {
+  const fitted = fittings.flatMap(({ part }) => registry.items.get(part)?.vehicle?.capabilities ?? []);
+  return fitted.includes('lift') && !fitted.includes('stabiliser')
+    ? [['.fittings', 'a vehicle that lifts needs a stabiliser fitted']]
+    : [];
+};
+
+/** Fittings naming no vehicle part, cargo sizes on the wrong parts, broken supports, and lifting unbraced. */
+const fittingIssues = (registry: Registry, fittings: readonly VehicleFittingDef[]): PathIssue[] => [
+  ...fittings.flatMap((fitting, i): PathIssue[] => {
+    const item = registry.items.get(fitting.part);
+    if (!item?.vehicle) {
+      const message = item ? `item "${fitting.part}" is not a vehicle part` : `no item "${fitting.part}"`;
+      return [[`.fittings[${i}].part`, message]];
+    }
+    const message = cargoSizeIssue(item, fitting);
+    return message ? [[`.fittings[${i}].cargo`, message]] : [];
+  }),
+  ...supportProblems(fittings).map((message): PathIssue => ['.fittings', message]),
+  ...bracingIssue(registry, fittings),
+];
+
+/** Each fitting placed beside all the others: cargo spaces off their free floor, and parts inside one. */
+const placementIssues = (
+  registry: Registry,
+  fittings: readonly VehicleFittingDef[],
+  cellMetres: number | undefined,
+): PathIssue[] => {
+  if (cellMetres === undefined) {
+    return [['.fittings', 'a cargo space needs the inventory cell size']];
+  }
+  const placed = fittings.map((fitting) => placeFitting(registry, fitting));
+  return placed.flatMap((fitting, i): PathIssue[] => {
+    const message = fitIssue(
+      placed.filter((other) => other !== fitting),
+      fitting,
+      cellMetres,
+    );
+    return message ? [[`.fittings[${i}]`, message]] : [];
+  });
+};
+
+/**
+ * Parts without exported physics or a lift rating; blueprints with broken references, supports or bracing;
+ * cargo spaces off their free floor, and parts inside a cargo space.
+ */
 export const vehicleContentIssues = (registry: Registry): VehicleIssue[] => {
   const issues: VehicleIssue[] = [];
+  const unsound = new Set<string>();
   for (const item of registry.items.values()) {
     const message = item.vehicle && partModelIssue(registry, item.id);
     if (message) {
       issues.push({ section: 'items', id: item.id, path: '.model', message });
+    }
+    if (item.vehicle && (message || !registry.models.get(item.model!)?.parts)) {
+      unsound.add(item.id);
     }
     const rating = item.vehicle && ratingIssue(item.vehicle);
     if (rating) {
       issues.push({ section: 'items', id: item.id, path: '.vehicle', message: rating });
     }
   }
-  for (const blueprint of registry.vehicleBlueprints.values()) {
-    const capabilities = new Set<VehicleCapability>();
-    blueprint.fittings.forEach((fitting, i) => {
-      const item = registry.items.get(fitting.part);
-      if (!item?.vehicle) {
-        const message = item ? `item "${fitting.part}" is not a vehicle part` : `no item "${fitting.part}"`;
-        issues.push({ section: 'vehicleBlueprints', id: blueprint.id, path: `.fittings[${i}].part`, message });
-      }
-      for (const capability of item?.vehicle?.capabilities ?? []) {
-        capabilities.add(capability);
-      }
-    });
-    for (const message of supportProblems(blueprint.fittings)) {
-      issues.push({ section: 'vehicleBlueprints', id: blueprint.id, path: '.fittings', message });
+  const cellMetres = registry.inventory.get(CORE_CONTENT_IDS.player)?.cellMetres;
+  for (const { id, fittings } of registry.vehicleBlueprints.values()) {
+    let found = fittingIssues(registry, fittings);
+    if (found.length === 0 && fittings.some(({ cargo }) => cargo) && fittings.every(({ part }) => !unsound.has(part))) {
+      found = placementIssues(registry, fittings, cellMetres);
     }
-    if (capabilities.has('lift') && !capabilities.has('stabiliser')) {
-      const message = 'a vehicle that lifts needs a stabiliser fitted';
-      issues.push({ section: 'vehicleBlueprints', id: blueprint.id, path: '.fittings', message });
-    }
+    issues.push(...found.map(([path, message]) => ({ section: 'vehicleBlueprints' as const, id, path, message })));
   }
   return issues;
 };
@@ -86,10 +134,18 @@ export interface PlacedFitting {
   readonly id: string;
   readonly part: string;
   readonly capabilities: readonly VehicleCapability[];
+  /** Every fitting it rests on. */
+  readonly supportedBy: readonly string[];
   readonly massKg: number;
   readonly centreOfMass: Vec3;
   readonly collision: readonly ModelBox[];
   readonly datums: Readonly<Record<string, Vec3>>;
+  /** A cargo space's size, its pocket and the clearance it assumes where nothing is above. */
+  readonly cargo?: {
+    readonly cells: CargoCells;
+    readonly grid: ReturnType<typeof cargoGrid>;
+    readonly openClearanceCells: number;
+  };
 }
 
 export interface LoadedVehicle {
@@ -120,27 +176,39 @@ const massCentre = (masses: readonly { readonly massKg: number; readonly centreO
   return [moment(0), moment(1), moment(2)];
 };
 
-/** Places a fitting of validated content; mass and centre come only from the part's export. */
-const placeFitting = (registry: Registry, fitting: VehicleFittingDef): PlacedFitting => {
+/**
+ * Places a fitting of validated content; mass and centre come only from the part's export. A cargo space's
+ * one-cell model is scaled to its size, so its block is its own shape.
+ */
+export const placeFitting = (registry: Registry, fitting: VehicleFittingDef): PlacedFitting => {
   const item = registry.items.get(fitting.part);
   const model = item?.model === undefined ? undefined : registry.models.get(item.model);
   if (!(item?.vehicle && model?.parts)) {
     throw new Error(`Fitting ${fitting.id} names ${fitting.part}, which is not a loaded vehicle part`);
   }
+  const space = item.vehicle.cargoSpace;
+  const cells = space && fitting.cargo;
+  const grow = ([x, y, z]: Vec3): Vec3 => (cells ? [x * cells[0], y * cells[1], z * cells[2]] : [x, y, z]);
   const parts = Object.values(model.parts).map((part) => ({
     ...part,
-    centreOfMass: place(fitting, part.centreOfMass),
+    centreOfMass: place(fitting, grow(part.centreOfMass)),
   }));
   return {
     id: fitting.id,
     part: fitting.part,
     capabilities: item.vehicle.capabilities,
+    supportedBy: fitting.supportedBy,
     massKg: modelMassKg({ parts: model.parts }),
     centreOfMass: parts.length > 0 ? massCentre(parts) : place(fitting, [0, 0, 0]),
     collision: Object.values(model.parts).flatMap((part) =>
-      (part.collision ?? []).map((box) => placeBox(fitting, box)),
+      (part.collision ?? []).map(({ min, max }) => placeBox(fitting, { min: grow(min), max: grow(max) })),
     ),
-    datums: Object.fromEntries(Object.entries(model.anchors ?? {}).map(([id, point]) => [id, place(fitting, point)])),
+    datums: Object.fromEntries(
+      Object.entries(model.anchors ?? {}).map(([id, point]) => [id, place(fitting, grow(point))]),
+    ),
+    ...(cells && space
+      ? { cargo: { cells, grid: cargoGrid(cells, space), openClearanceCells: space.openClearanceCells } }
+      : {}),
   };
 };
 

@@ -232,7 +232,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "wire_strippers",
-      "model": "pliers",
+      "model": "wire_strippers",
       "name": "Wire strippers",
       "size": [1, 2],
       "tool": {
@@ -240,8 +240,7 @@
           "cutting": 1,
           "screwing": 1
         }
-      },
-      "weight": 180
+      }
     },
     {
       "category": "tool",
@@ -250,7 +249,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "adjustable_pliers",
-      "model": "pliers",
+      "model": "adjustable_pliers",
       "name": "Adjustable pliers",
       "salvage": [
         {
@@ -269,8 +268,7 @@
           "cutting": 1,
           "wrenching": 1
         }
-      },
-      "weight": 300
+      }
     },
     {
       "category": "tool",
@@ -475,7 +473,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "sewing_repair_kit",
-      "model": "sewing_kit",
+      "model": "sewing_repair_kit",
       "name": "Clothing repair kit",
       "size": [2, 2],
       "tool": {
@@ -483,8 +481,7 @@
           "repairing": 1,
           "sewing": 1
         }
-      },
-      "weight": 420
+      }
     },
     {
       "category": "tool",

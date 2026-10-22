@@ -192,6 +192,36 @@ local rearSeat = compound('hatchback_rear_seat', 20, [
   prism('back', 'cloth', [[-1.05, 0.53], [-0.95, 0.53], [-1.12, 1.2], [-1.22, 1.2]], [-0.68, 0.68]),
 ], { frame: 'steel-grey', cloth: 'cloth-seat' });
 
+// Load bodies, authored where they sit on their host and fitted at its origin. Floor edges lie on the 0.1 m
+// inventory cell lattice, so cargo spaces can cover the whole floor.
+local bed = { rear: -2.2, front: -0.1, side: 0.8, floor: 0.85, top: 1.22 };
+local bedFloor = compound('pickup_bed_floor', 45, [
+  box('deck', 'deck', [bed.rear, bed.floor - 0.05, -bed.side], [bed.front, bed.floor, bed.side]),
+  box('bearers', 'steel', [bed.rear, 0.55, -0.45], [bed.front, bed.floor - 0.05, 0.45]),
+], { deck: 'paint-charcoal', steel: 'steel-grey' });
+// A 4WD's wheel tub rises through the bed floor's edge, leaving the widest cargo space between the tubs.
+local bedSide = compound('pickup_bed_side', 24, [
+  box('panel', 'paint', [bed.rear, 0.62, bed.side], [bed.front, bed.top, bed.side + 0.06]),
+  box('wheel_tub', 'paint', [-1.7, 0.55, 0.6], [-0.7, bed.floor + 0.1, bed.side]),
+], { paint: 'paint-terracotta' });
+local bedFront = compound('pickup_bed_front', 10, [
+  box('headboard', 'paint', [bed.front, bed.floor - 0.05, -bed.side - 0.06], [bed.front + 0.06, bed.top, bed.side + 0.06]),
+], { paint: 'paint-terracotta' });
+local van = { rear: -3.0, front: 1.2, side: 1.0, floor: 1.0, roof: 3.0, skin: 0.06 };
+local vanFloor = compound('box_van_floor', 180, [
+  box('deck', 'deck', [van.rear, van.floor - 0.03, -van.side], [van.front, van.floor, van.side]),
+  box('subframe', 'steel', [van.rear, 0.72, -0.45], [van.front, van.floor - 0.03, 0.45]),
+], { deck: 'paint-charcoal', steel: 'steel-grey' });
+local vanSide = compound('box_van_side', 70, [
+  box('panel', 'paint', [van.rear, van.floor - 0.1, van.side], [van.front, van.roof, van.side + van.skin]),
+], { paint: 'plastic-white' });
+local vanFront = compound('box_van_front', 45, [
+  box('panel', 'paint', [van.front, van.floor, -van.side - van.skin], [van.front + van.skin, van.roof, van.side + van.skin]),
+], { paint: 'plastic-white' });
+local vanRoof = compound('box_van_roof', 40, [
+  box('panel', 'paint', [van.rear, van.roof, -van.side - van.skin], [van.front + van.skin, van.roof + van.skin, van.side + van.skin]),
+], { paint: 'plastic-white' });
+
 // Parts real cars share: each has its own frame, about its mount or centre, so any host can place it.
 local wheel = compound('wheel_205_55r16', 18, [
   turned('tyre', 'tyre', 'z', [[-0.1025, 0.203], [-0.1025, 0.295], [-0.085, 0.316], [0.085, 0.316], [0.1025, 0.295], [0.1025, 0.203], [-0.1025, 0.203]]),
@@ -450,6 +480,16 @@ local hoistBoomRest = hpart('hoist_boom_rest', 8, [hbox('rest', 'crane', [22, 30
   }, exportMass='parts'),
   tray('hatchback_battery_tray', 1.5, 0.28, 0.02, 0.21, exportMass='parts'),
   tray('pickup_battery_tray', 2.2, 0.32, 0.03, 0.24, exportMass='parts'),
+  // One inventory cell; a fitting scales it to the cargo space's size. The space weighs next to nothing: its
+  // load is its contents.
+  part('cargo_space', 'block', 0.2, { width: 0.1, height: 0.1, depth: 0.1 }, { body: 'plastic-green' }, {}, exportMass='parts'),
+  bedFloor,
+  bedSide,
+  bedFront,
+  vanFloor,
+  vanSide,
+  vanFront,
+  vanRoof,
   wheel,
   frontSeat,
   doorMirror,

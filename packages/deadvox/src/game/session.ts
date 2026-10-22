@@ -262,7 +262,7 @@ export interface PlayerInputSample {
   readonly worldReady: boolean;
 }
 
-interface SessionControls {
+export interface SessionControls {
   /** True when input reaches the world: the pointer is locked and no menu has it. */
   active: () => boolean;
   intent: () => MoveIntent;
@@ -1449,7 +1449,7 @@ export const createSession = (options: SessionOptions) => {
     if (climbing && Math.hypot(...body.pos.map((value, axis) => value - before[axis]!)) > 2 * CONTACT_SKIN) {
       run.discover('entranceTravel', sim.calendar);
     }
-    for (const entity of entities.all) {
+    for (const entity of entities.near(discovery.entrance.min, discovery.entrance.max)) {
       if (
         entities.defOf(entity).door?.hatch &&
         nearDiscoveryBox(entity.pos, discovery.entrance, 0) &&

@@ -21,6 +21,9 @@ local batteryBay(tray, at, supportedBy=[]) = [
   fitting('battery', 'car_battery', [at[0], at[1] + 0.03, at[2]], ['battery_tray']),
 ];
 local headlamps(x, y, z, supportedBy=[]) = pair('headlamp', 'car_headlamp', [x, y, z], on(supportedBy));
+// A factory cargo space: `at` is the centre of its footprint on the load floor, `cells` its size in inventory
+// cells along x, y and z (`src/core/cargoSpace.ts`).
+local cargoSpace(id, at, cells, floor) = fitting(id, 'cargo_space', at, [floor]) + { cargo: cells };
 // The hatchback's own panels are pressed for its body and authored where they sit on it, so they fit at
 // its origin; shared parts are placed by their own frames.
 local origin = [0, 0, 0];
@@ -103,6 +106,19 @@ local hoist = pair('frame_rail', 'hoist_frame_rail', origin, on()) + [
   + pair('stabiliser', 'hoist_stabiliser', origin, on(['crane_base']))
   + headlamps(2.88, 1.125, 0.64, ['front_panel'])
   + batteryBay('pickup_battery_tray', [0.96875, 0.25, 0.25], ['frame_rail_near']);
+// The bed's factory cargo space runs between the wheel tubs; the strips beside them stay free floor.
+local pickup = batteryBay('pickup_battery_tray', [1.9, 0.8, 0.35]) + headlamps(2.35, 0.85, 0.65) + [
+  fitting('bed_floor', 'pickup_bed_floor', origin),
+  fitting('bed_front', 'pickup_bed_front', origin, ['bed_floor']),
+  cargoSpace('bed_cargo', [-1.15, 0.85, 0], [21, 4, 12], 'bed_floor'),
+] + pair('bed_side', 'pickup_bed_side', origin, on(['bed_floor']));
+// The van's cargo box: its factory cargo space covers the whole floor up to the roof.
+local boxVan = [
+  fitting('box_floor', 'box_van_floor', origin),
+  fitting('box_front', 'box_van_front', origin, ['box_floor']),
+  fitting('box_roof', 'box_van_roof', origin, ['box_front', 'box_side_near', 'box_side_far']),
+  cargoSpace('box_cargo', [-0.9, 1, 0], [42, 20, 20], 'box_floor'),
+] + pair('box_side', 'box_van_side', origin, on(['box_floor']));
 (import 'economy.libsonnet').pack({
   models: [
     import 'things/car_battery.model.json',
@@ -170,6 +186,14 @@ local hoist = pair('frame_rail', 'hoist_frame_rail', origin, on()) + [
     import 'things/hoist_winch.model.json',
     import 'things/hoist_hook_block.model.json',
     import 'things/hoist_boom_rest.model.json',
+    import 'things/cargo_space.model.json',
+    import 'things/pickup_bed_floor.model.json',
+    import 'things/pickup_bed_side.model.json',
+    import 'things/pickup_bed_front.model.json',
+    import 'things/box_van_floor.model.json',
+    import 'things/box_van_side.model.json',
+    import 'things/box_van_front.model.json',
+    import 'things/box_van_roof.model.json',
   ],
   items: [
     part('car_battery', 'Car battery', [3, 2], ['electricity'], 'Twelve volts, if it still holds a charge.'),
@@ -239,10 +263,27 @@ local hoist = pair('frame_rail', 'hoist_frame_rail', origin, on()) + [
     part('hoist_winch', 'Crane winch', [4, 3], []),
     part('hoist_hook_block', 'Crane hook block', [2, 3], []),
     part('hoist_boom_rest', 'Crane boom rest', [3, 4], ['structure']),
+    part('cargo_space', 'Cargo space', [1, 1], ['storage'], 'Room marked out on a load floor for what the vehicle carries.') + {
+      vehicle+: {
+        cargoSpace: {
+          handlingSimSeconds: 1.2,
+          openClearanceCells: 20,
+          wideReason: 'A cargo space is as wide as the floor it covers, not a carried bag.',
+        },
+      },
+    },
+    part('pickup_bed_floor', 'Pickup bed floor', pileSize, ['structure', 'load_floor']),
+    part('pickup_bed_side', 'Pickup bed side', pileSize, ['protection']),
+    part('pickup_bed_front', 'Pickup headboard', pileSize, ['protection']),
+    part('box_van_floor', 'Box van floor', pileSize, ['structure', 'load_floor']),
+    part('box_van_side', 'Box van side wall', pileSize, ['protection']),
+    part('box_van_front', 'Box van front wall', pileSize, ['protection']),
+    part('box_van_roof', 'Box van roof', pileSize, ['protection']),
   ],
   vehicleBlueprints: [
     { id: 'hatchback', name: 'Hatchback', fittings: hatchback },
-    { id: 'pickup', name: 'Pickup', fittings: batteryBay('pickup_battery_tray', [1.9, 0.8, 0.35]) + headlamps(2.35, 0.85, 0.65) },
+    { id: 'pickup', name: 'Pickup', fittings: pickup },
+    { id: 'box_van', name: 'Box van', fittings: boxVan },
     { id: 'hoist', name: 'Crane truck', fittings: hoist },
   ],
 })

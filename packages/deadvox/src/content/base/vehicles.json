@@ -914,6 +914,124 @@
       "vehicle": {
         "capabilities": ["structure"]
       }
+    },
+    {
+      "category": "misc",
+      "description": "Room marked out on a load floor for what the vehicle carries.",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "cargo_space",
+      "model": "cargo_space",
+      "name": "Cargo space",
+      "size": [1, 1],
+      "vehicle": {
+        "capabilities": ["storage"],
+        "cargoSpace": {
+          "handlingSimSeconds": 1.2,
+          "openClearanceCells": 20,
+          "wideReason": "A cargo space is as wide as the floor it covers, not a carried bag."
+        }
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "pickup_bed_floor",
+      "model": "pickup_bed_floor",
+      "name": "Pickup bed floor",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure", "load_floor"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "pickup_bed_side",
+      "model": "pickup_bed_side",
+      "name": "Pickup bed side",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["protection"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "pickup_bed_front",
+      "model": "pickup_bed_front",
+      "name": "Pickup headboard",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["protection"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "box_van_floor",
+      "model": "box_van_floor",
+      "name": "Box van floor",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure", "load_floor"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "box_van_side",
+      "model": "box_van_side",
+      "name": "Box van side wall",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["protection"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "box_van_front",
+      "model": "box_van_front",
+      "name": "Box van front wall",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["protection"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "box_van_roof",
+      "model": "box_van_roof",
+      "name": "Box van roof",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["protection"]
+      }
     }
   ],
   "models": [
@@ -2834,6 +2952,162 @@
           "node": "body:compound"
         }
       }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/cargo_space.glb",
+      "id": "cargo_space",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0.050000000000000003, 0],
+          "collision": [
+            {
+              "max": [0.050000000000000003, 0.10000000000000001, 0.050000000000000003],
+              "min": [-0.050000000000000003, 0, -0.050000000000000003]
+            }
+          ],
+          "massKg": 0.20000000000000001,
+          "node": "body:block"
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/pickup_bed_floor.glb",
+      "id": "pickup_bed_floor",
+      "parts": {
+        "body": {
+          "centreOfMass": [-1.1500000000000001, 0.71434426229508208, 0],
+          "collision": [
+            {
+              "max": [-0.10000000000000009, 0.84999999999999998, 0.80000000000000004],
+              "min": [-2.2000000000000002, 0.79999999999999993, -0.80000000000000004]
+            },
+            {
+              "max": [-0.10000000000000009, 0.80000000000000004, 0.45000000000000001],
+              "min": [-2.2000000000000002, 0.55000000000000004, -0.45000000000000001]
+            }
+          ],
+          "massKg": 45,
+          "node": "body:compound"
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/pickup_bed_side.glb",
+      "id": "pickup_bed_side",
+      "parts": {
+        "body": {
+          "centreOfMass": [-1.1757069408740362, 0.8325964010282777, 0.76316195372750661],
+          "collision": [
+            {
+              "max": [-0.10000000000000009, 1.22, 0.8600000000000001],
+              "min": [-2.2000000000000002, 0.61999999999999988, 0.80000000000000004]
+            },
+            {
+              "max": [-0.69999999999999996, 0.94999999999999996, 0.80000000000000004],
+              "min": [-1.7, 0.55000000000000004, 0.59999999999999987]
+            }
+          ],
+          "massKg": 24,
+          "node": "body:compound"
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/pickup_bed_front.glb",
+      "id": "pickup_bed_front",
+      "parts": {
+        "body": {
+          "centreOfMass": [-0.069999999999999993, 1.01, 0],
+          "collision": [
+            {
+              "max": [-0.040000000000000008, 1.22, 0.8600000000000001],
+              "min": [-0.10000000000000001, 0.80000000000000004, -0.8600000000000001]
+            }
+          ],
+          "massKg": 10,
+          "node": "body:compound"
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/box_van_floor.glb",
+      "id": "box_van_floor",
+      "parts": {
+        "body": {
+          "centreOfMass": [-0.89999999999999991, 0.8744736842105264, 0],
+          "collision": [
+            {
+              "max": [1.2000000000000002, 1, 1],
+              "min": [-3, 0.96999999999999997, -1]
+            },
+            {
+              "max": [1.2000000000000002, 0.96999999999999997, 0.45000000000000001],
+              "min": [-3, 0.71999999999999997, -0.45000000000000001]
+            }
+          ],
+          "massKg": 180,
+          "node": "body:compound"
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/box_van_side.glb",
+      "id": "box_van_side",
+      "parts": {
+        "body": {
+          "centreOfMass": [-0.90000000000000002, 1.9499999999999997, 1.03],
+          "collision": [
+            {
+              "max": [1.2000000000000002, 3, 1.0600000000000001],
+              "min": [-3, 0.89999999999999991, 1]
+            }
+          ],
+          "massKg": 70,
+          "node": "body:compound"
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/box_van_front.glb",
+      "id": "box_van_front",
+      "parts": {
+        "body": {
+          "centreOfMass": [1.23, 2, 0],
+          "collision": [
+            {
+              "max": [1.26, 3, 1.0600000000000001],
+              "min": [1.2, 1, -1.0600000000000001]
+            }
+          ],
+          "massKg": 45,
+          "node": "body:compound"
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/box_van_roof.glb",
+      "id": "box_van_roof",
+      "parts": {
+        "body": {
+          "centreOfMass": [-0.87, 3.0299999999999998, 0],
+          "collision": [
+            {
+              "max": [1.2599999999999998, 3.0600000000000005, 1.0600000000000001],
+              "min": [-3, 3, -1.0600000000000001]
+            }
+          ],
+          "massKg": 40,
+          "node": "body:compound"
+        }
+      }
     }
   ],
   "vehicleBlueprints": [
@@ -3107,10 +3381,86 @@
           "mirror": true,
           "part": "car_headlamp",
           "supportedBy": []
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "bed_floor",
+          "part": "pickup_bed_floor",
+          "supportedBy": []
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "bed_front",
+          "part": "pickup_bed_front",
+          "supportedBy": ["bed_floor"]
+        },
+        {
+          "at": [-1.1499999999999999, 0.84999999999999998, 0],
+          "cargo": [21, 4, 12],
+          "id": "bed_cargo",
+          "part": "cargo_space",
+          "supportedBy": ["bed_floor"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "bed_side_near",
+          "part": "pickup_bed_side",
+          "supportedBy": ["bed_floor"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "bed_side_far",
+          "mirror": true,
+          "part": "pickup_bed_side",
+          "supportedBy": ["bed_floor"]
         }
       ],
       "id": "pickup",
       "name": "Pickup"
+    },
+    {
+      "fittings": [
+        {
+          "at": [0, 0, 0],
+          "id": "box_floor",
+          "part": "box_van_floor",
+          "supportedBy": []
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "box_front",
+          "part": "box_van_front",
+          "supportedBy": ["box_floor"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "box_roof",
+          "part": "box_van_roof",
+          "supportedBy": ["box_front", "box_side_near", "box_side_far"]
+        },
+        {
+          "at": [-0.90000000000000002, 1, 0],
+          "cargo": [42, 20, 20],
+          "id": "box_cargo",
+          "part": "cargo_space",
+          "supportedBy": ["box_floor"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "box_side_near",
+          "part": "box_van_side",
+          "supportedBy": ["box_floor"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "box_side_far",
+          "mirror": true,
+          "part": "box_van_side",
+          "supportedBy": ["box_floor"]
+        }
+      ],
+      "id": "box_van",
+      "name": "Box van"
     },
     {
       "fittings": [

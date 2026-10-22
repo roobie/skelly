@@ -150,7 +150,7 @@ interface Envelope {
 
 const MAGIC = 'DEADVOX_SAVE';
 export const SAVE_SCHEMA_VERSION = 54;
-const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
+export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
 const REGION_KEY = /^(0|-?[1-9]\d*),(0|-?[1-9]\d*)$/;
@@ -363,6 +363,7 @@ itemSchema = obj({
   madeAtGameTimestamp: opt(nonNegative),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
   cartridges: opt(arr(str({ id: true }))),
+  cargo: opt(arr(positiveInt)),
   slots: opt(record(lazy(() => itemSchema))),
   firearm: opt(
     obj({

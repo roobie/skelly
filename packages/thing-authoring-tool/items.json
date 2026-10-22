@@ -1936,6 +1936,170 @@
       ]
     },
     {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "cargo_space",
+      "parts": [
+        {
+          "family": "block",
+          "finish": {
+            "body": "plastic-green"
+          },
+          "id": "body",
+          "massKg": 0.20000000000000001,
+          "params": {
+            "depth": "0.10000000000000001",
+            "height": "0.10000000000000001",
+            "width": "0.10000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "pickup_bed_floor",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "deck": "paint-charcoal",
+            "steel": "steel-grey"
+          },
+          "id": "body",
+          "massKg": 45,
+          "params": {
+            "pieces": "[{\"id\": \"deck\", \"kind\": \"box\", \"max\": [-0.10000000000000001, 0.84999999999999998, 0.80000000000000004], \"min\": [-2.2000000000000002, 0.79999999999999993, -0.80000000000000004], \"slot\": \"deck\"}, {\"id\": \"bearers\", \"kind\": \"box\", \"max\": [-0.10000000000000001, 0.79999999999999993, 0.45000000000000001], \"min\": [-2.2000000000000002, 0.55000000000000004, -0.45000000000000001], \"slot\": \"steel\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "pickup_bed_side",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "paint": "paint-terracotta"
+          },
+          "id": "body",
+          "massKg": 24,
+          "params": {
+            "pieces": "[{\"id\": \"panel\", \"kind\": \"box\", \"max\": [-0.10000000000000001, 1.22, 0.8600000000000001], \"min\": [-2.2000000000000002, 0.62, 0.80000000000000004], \"slot\": \"paint\"}, {\"id\": \"wheel_tub\", \"kind\": \"box\", \"max\": [-0.69999999999999996, 0.94999999999999996, 0.80000000000000004], \"min\": [-1.7, 0.55000000000000004, 0.59999999999999998], \"slot\": \"paint\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "pickup_bed_front",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "paint": "paint-terracotta"
+          },
+          "id": "body",
+          "massKg": 10,
+          "params": {
+            "pieces": "[{\"id\": \"headboard\", \"kind\": \"box\", \"max\": [-0.040000000000000008, 1.22, 0.8600000000000001], \"min\": [-0.10000000000000001, 0.79999999999999993, -0.8600000000000001], \"slot\": \"paint\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "box_van_floor",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "deck": "paint-charcoal",
+            "steel": "steel-grey"
+          },
+          "id": "body",
+          "massKg": 180,
+          "params": {
+            "pieces": "[{\"id\": \"deck\", \"kind\": \"box\", \"max\": [1.2, 1, 1], \"min\": [-3, 0.96999999999999997, -1], \"slot\": \"deck\"}, {\"id\": \"subframe\", \"kind\": \"box\", \"max\": [1.2, 0.96999999999999997, 0.45000000000000001], \"min\": [-3, 0.71999999999999997, -0.45000000000000001], \"slot\": \"steel\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "box_van_side",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "paint": "plastic-white"
+          },
+          "id": "body",
+          "massKg": 70,
+          "params": {
+            "pieces": "[{\"id\": \"panel\", \"kind\": \"box\", \"max\": [1.2, 3, 1.0600000000000001], \"min\": [-3, 0.90000000000000002, 1], \"slot\": \"paint\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "box_van_front",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "paint": "plastic-white"
+          },
+          "id": "body",
+          "massKg": 45,
+          "params": {
+            "pieces": "[{\"id\": \"panel\", \"kind\": \"box\", \"max\": [1.26, 3, 1.0600000000000001], \"min\": [1.2, 1, -1.0600000000000001], \"slot\": \"paint\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "box_van_roof",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "paint": "plastic-white"
+          },
+          "id": "body",
+          "massKg": 40,
+          "params": {
+            "pieces": "[{\"id\": \"panel\", \"kind\": \"box\", \"max\": [1.26, 3.0600000000000001, 1.0600000000000001], \"min\": [-3, 3, -1.0600000000000001], \"slot\": \"paint\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
       "anchors": {
         "hub": {
           "fraction": [0.5, 0.5, 0.5],
@@ -4400,6 +4564,317 @@
             "brimWidth": "0.19",
             "height": "0.080000000000000002",
             "radius": "0.10000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "forward",
+        "part": "equipment",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, 0]
+      },
+      "id": "blowtorch",
+      "parts": [
+        {
+          "family": "blowtorch",
+          "finish": {
+            "body": "plastic-blue",
+            "control": "plastic-red",
+            "metal": "steel-grey",
+            "rubber": "paint-charcoal"
+          },
+          "id": "equipment",
+          "massKg": 0.90000000000000002,
+          "params": {
+            "bodyHeight": "0.115",
+            "footHeight": "0.0080000000000000002",
+            "mouthLength": "0.02",
+            "mouthRadius": "0.012999999999999999",
+            "neckHeight": "0.035000000000000003",
+            "neckRadius": "0.012",
+            "nozzleLength": "0.071999999999999995",
+            "nozzleRadius": "0.0070000000000000001",
+            "radius": "0.025999999999999999",
+            "valveRadius": "0.016"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "lens": {
+          "fraction": [0.5, 0.5, 0],
+          "part": "equipment",
+          "solid": "lens"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 1],
+        "hold": "forward",
+        "part": "equipment",
+        "roll": 0,
+        "solid": "strap",
+        "turn": [0, -90, 0]
+      },
+      "id": "headlamp",
+      "parts": [
+        {
+          "family": "headlamp",
+          "finish": {
+            "body": "plastic-red",
+            "control": "paint-charcoal",
+            "lens": "glass-grey",
+            "metal": "steel-grey",
+            "strap": "cord-olive"
+          },
+          "id": "equipment",
+          "massKg": 0.17999999999999999,
+          "params": {
+            "housingDepth": "0.029999999999999999",
+            "housingHeight": "0.040000000000000001",
+            "housingWidth": "0.059999999999999998",
+            "lensDepth": "0.0050000000000000001",
+            "lensRadius": "0.017000000000000001",
+            "strapRadius": "0.095000000000000001",
+            "strapWall": "0.0030000000000000001",
+            "strapWidth": "0.021999999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.10000000000000001, 0.5, 0.5],
+        "hold": "forward",
+        "part": "equipment",
+        "roll": 0,
+        "solid": "webbing-1",
+        "turn": [0, 0, 0]
+      },
+      "id": "weapon_sling",
+      "parts": [
+        {
+          "family": "webbingSling",
+          "finish": {
+            "metal": "steel-grey",
+            "strap": "cord-olive"
+          },
+          "id": "equipment",
+          "massKg": 0.14999999999999999,
+          "params": {
+            "buckleDepth": "0.035999999999999997",
+            "buckleWall": "0.0040000000000000001",
+            "buckleWidth": "0.025999999999999999",
+            "clipLength": "0.025999999999999999",
+            "clipWall": "0.0040000000000000001",
+            "clipWidth": "0.02",
+            "foldedLength": "0.28999999999999998",
+            "thickness": "0.0030000000000000001",
+            "width": "0.028000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "forward",
+        "part": "equipment",
+        "roll": 0,
+        "solid": "rim-left",
+        "turn": [0, 0, 0]
+      },
+      "id": "repair_kit",
+      "parts": [
+        {
+          "family": "repairKit",
+          "finish": {
+            "body": "paint-charcoal",
+            "cloth": "paperboard-tan",
+            "metal": "steel-grey",
+            "patch": "steel-grey",
+            "roll": "steel-grey"
+          },
+          "id": "equipment",
+          "massKg": 1.25,
+          "params": {
+            "depth": "0.13",
+            "height": "0.035000000000000003",
+            "kind": "patches",
+            "patchDepth": "0.089999999999999997",
+            "patchWidth": "0.080000000000000002",
+            "rollHeight": "0.032000000000000001",
+            "rollRadius": "0.029000000000000001",
+            "wall": "0.0030000000000000001",
+            "width": "0.20000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "equipment",
+        "roll": 0,
+        "solid": "grip--1",
+        "turn": [0, 0, 0]
+      },
+      "id": "wire_strippers",
+      "parts": [
+        {
+          "family": "pliers",
+          "finish": {
+            "dark": "paint-charcoal",
+            "grip": "plastic-red",
+            "metal": "steel-grey"
+          },
+          "id": "equipment",
+          "massKg": 0.17999999999999999,
+          "params": {
+            "gripWidth": "0.014",
+            "jawLength": "0.042000000000000003",
+            "kind": "wire",
+            "length": "0.16",
+            "pivotRadius": "0.012",
+            "spread": "0.048000000000000001",
+            "teeth": "5",
+            "thickness": "0.0070000000000000001",
+            "toothDepth": "0.0040000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "equipment",
+        "roll": 0,
+        "solid": "grip--1",
+        "turn": [0, 0, 0]
+      },
+      "id": "adjustable_pliers",
+      "parts": [
+        {
+          "family": "pliers",
+          "finish": {
+            "dark": "paint-charcoal",
+            "grip": "plastic-blue",
+            "metal": "steel-grey"
+          },
+          "id": "equipment",
+          "massKg": 0.29999999999999999,
+          "params": {
+            "gripWidth": "0.014",
+            "jawLength": "0.059999999999999998",
+            "kind": "groove",
+            "length": "0.20000000000000001",
+            "pivotRadius": "0.017000000000000001",
+            "spread": "0.055",
+            "teeth": "5",
+            "thickness": "0.0080000000000000002",
+            "toothDepth": "0.0040000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "forward",
+        "part": "equipment",
+        "roll": 0,
+        "solid": "rim-left",
+        "turn": [0, 0, 0]
+      },
+      "id": "sewing_repair_kit",
+      "parts": [
+        {
+          "family": "repairKit",
+          "finish": {
+            "body": "paint-terracotta",
+            "cloth": "paperboard-tan",
+            "metal": "steel-grey",
+            "patch": "cord-olive",
+            "roll": "plastic-red"
+          },
+          "id": "equipment",
+          "massKg": 0.41999999999999998,
+          "params": {
+            "depth": "0.11",
+            "height": "0.029999999999999999",
+            "kind": "sewing",
+            "patchDepth": "0.074999999999999997",
+            "patchWidth": "0.070000000000000007",
+            "rollHeight": "0.028000000000000001",
+            "rollRadius": "0.014999999999999999",
+            "wall": "0.002",
+            "width": "0.17999999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.25, 0.5],
+        "hold": "forward",
+        "part": "equipment",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 90, 0]
+      },
+      "id": "portable_radio",
+      "parts": [
+        {
+          "family": "portableRadio",
+          "finish": {
+            "body": "polymer-od-green",
+            "control": "paint-charcoal",
+            "display": "glass-grey",
+            "marker": "plastic-red",
+            "metal": "steel-grey"
+          },
+          "id": "equipment",
+          "massKg": 0.59999999999999998,
+          "params": {
+            "antennaLength": "0.048000000000000001",
+            "antennaRadius": "0.002",
+            "depth": "0.040000000000000001",
+            "dialDepth": "0.0080000000000000002",
+            "dialRadius": "0.01",
+            "grilleBars": "9",
+            "height": "0.13",
+            "speakerRadius": "0.025999999999999999",
+            "width": "0.074999999999999997"
           },
           "ports": []
         }

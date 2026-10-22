@@ -120,15 +120,22 @@ local rooms = {
     openings: [{ token: 'D', at: [5, 10], axis: 'x', width: 4, height: 5 }, { token: 'D', at: [29, 27], axis: 'x', width: 4, height: 5 }], dressing: [],
   },
 };
+// Plan cells whose first sub-cell holds a threat marker; each stands on open floor and outside every dressing bay.
+local markerCells = [
+  [8, 17], [16, 18], [25, 28],
+  [20, 15], [14, 16], [28, 18], [20, 22], [6, 17], [9, 20], [3, 12], [15, 12], [22, 6], [29, 8], [21, 4],
+];
 local base = 32;
 local hatch = { at: [21 * scale, 19 * scale + 1], size: [3, 2] };
 local built = level.build({
   id: 'entry', base: base, plan: plan, rooms: rooms, context: { usage: ['Industrial'], tier: 'Tier1' },
+  // Level one rolls the first tier alone.
+  range: { lowerTiers: true },
   lock: 'gauntlet_lab_entry_seal', cardItem: 'gauntlet_lab_entry_card',
   card: { at: [24, 19] },
   through: [hatch],
   holes: [{ at: [4 * scale, 5 * scale], size: [12, 2] }, { at: [29 * scale, 24 * scale], size: [3, 2] }],
-  markers: [[8 * scale, 1, 17 * scale], [16 * scale, 1, 18 * scale], [24 * scale, 1, 28 * scale]],
+  markers: [[c[0] * scale, 1, c[1] * scale] for c in markerCells],
 });
 local size = built.size;
 {

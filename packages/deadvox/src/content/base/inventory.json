@@ -3,6 +3,28 @@
     {
       "cellMetres": 0.10000000000000001,
       "chestHeightMetres": 1,
+      "conditionBands": [
+        {
+          "from": 0,
+          "word": "ruined"
+        },
+        {
+          "from": 0.10000000000000001,
+          "word": "badly damaged"
+        },
+        {
+          "from": 0.29999999999999999,
+          "word": "damaged"
+        },
+        {
+          "from": 0.59999999999999998,
+          "word": "worn"
+        },
+        {
+          "from": 0.90000000000000002,
+          "word": "pristine"
+        }
+      ],
       "containerMaxWidthCells": 10,
       "furnitureMove": {
         "carriedView": {

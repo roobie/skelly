@@ -135,9 +135,8 @@
       "id": "wire_strippers",
       "name": "Wire strippers",
       "category": "tool",
-      "weight": 180,
       "size": [1, 2],
-      "model": "pliers",
+      "model": "wire_strippers",
       "tool": { "qualities": { "cutting": 1, "screwing": 1 } },
       "disassembly": {
         "timeGameMinutes": 8,
@@ -152,9 +151,8 @@
       "id": "adjustable_pliers",
       "name": "Adjustable pliers",
       "category": "tool",
-      "weight": 300,
       "size": [1, 2],
-      "model": "pliers",
+      "model": "adjustable_pliers",
       "tool": { "qualities": { "wrenching": 1, "cutting": 1 } },
       "salvageTimeGameMinutes": 5,
       "salvage": [{ "item": "scrap_metal", "count": 1 }, { "item": "rubber_strip", "count": 1 }]
@@ -251,9 +249,8 @@
       "id": "sewing_repair_kit",
       "name": "Clothing repair kit",
       "category": "tool",
-      "weight": 420,
       "size": [2, 2],
-      "model": "sewing_kit",
+      "model": "sewing_repair_kit",
       "description": "Thread, patches and needles for mending clothing.",
       "tool": { "qualities": { "sewing": 1, "repairing": 1 } },
       "disassembly": {

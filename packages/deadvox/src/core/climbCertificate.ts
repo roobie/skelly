@@ -18,17 +18,24 @@ export interface ClimbLink {
   readonly lower: Readonly<Vec3>;
 }
 
+/** How far, in blocks, a link's lower end may lie from the foot of the ladder that serves it. */
+const LADDER_FOOT_REACH = 3;
+
 const bottomOf = (space: ClimbSpace, link: ClimbLink): BlockEntity | undefined => {
   if (link.ladder) {
     return space.entityAt(link.ladder);
   }
   space.clear(link.lower);
-  return [...space.entities.all].find(
-    (entity) =>
-      space.entities.defOf(entity).climbable &&
-      entity.pos[1] === link.lower[1] &&
-      Math.hypot(entity.pos[0] - link.lower[0], entity.pos[2] - link.lower[2]) <= 3,
-  );
+  const low: Vec3 = [link.lower[0] - LADDER_FOOT_REACH, link.lower[1], link.lower[2] - LADDER_FOOT_REACH];
+  const high: Vec3 = [link.lower[0] + LADDER_FOOT_REACH, link.lower[1], link.lower[2] + LADDER_FOOT_REACH];
+  return space.entities
+    .near(low, high)
+    .find(
+      (entity) =>
+        space.entities.defOf(entity).climbable &&
+        entity.pos[1] === link.lower[1] &&
+        Math.hypot(entity.pos[0] - link.lower[0], entity.pos[2] - link.lower[2]) <= LADDER_FOOT_REACH,
+    );
 };
 
 const shaft = (space: ClimbSpace, link: ClimbLink, bottom: BlockEntity, centre: Vec3): boolean => {
