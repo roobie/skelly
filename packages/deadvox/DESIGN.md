@@ -500,6 +500,13 @@ separate actions that come later. See `src/core/furnitureMove.ts`,
   nothing fits the piece stays held until something does, because dropping it
   through a wall or a body is worse than holding it a moment longer. See
   `src/game/session.ts`, `putDownWornOut`.
+- **Carried sleep surface.** A bedroll lets the player sleep where they are at
+  worse recovery than a bed, paid for by carrying it in the hands, so resting
+  becomes a choice between place and quality. It lifts because a cover piece is
+  exempt from the size cap, not because of any rule about bedrolls, and its
+  recovery stays below every fixed sleep surface. See
+  `src/core/furnitureMove.ts`, `movableRefusal`. Packing it into the inventory
+  is a separate item-to-furniture conversion that waits for its own decision.
 - **Noise.** Moving scrapes, and shamblers hear it like any other world sound,
   so barricading under pressure has a price.
 - **Stacks settle once.** What loses its support falls, lowest first, so each
