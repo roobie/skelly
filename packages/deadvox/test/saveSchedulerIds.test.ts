@@ -4,6 +4,7 @@ import { createRuntime } from './snapshotTestSupport.ts';
 
 it('lists every registered scheduler system as one the decoder accepts, and nothing else', () => {
   const registered = createRuntime().sim.scheduler.persistedIds();
+  expect(registered.size).toBeGreaterThan(0);
   expect([...registered].filter((id) => !KNOWN_SCHEDULER_IDS.has(id))).toEqual([]);
   expect([...KNOWN_SCHEDULER_IDS].filter((id) => !registered.has(id))).toEqual([]);
 });
