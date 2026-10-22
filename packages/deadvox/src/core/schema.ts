@@ -906,6 +906,8 @@ const ItemSchema = strictObject({
   /** Cells it takes in a grid, as [w, h]; it can be rotated. */
   size: Area,
   description: optional(string()),
+  /** Extra words a player may type to find it on the inventory screen, besides its name. */
+  keywords: optional(array(Name)),
   /** Identical, stateless instances stack, up to this many (nails, batteries). */
   stack: optional(pipe(Count, minValue(2, 'must be at least 2'))),
   /** Held in both hands. */
@@ -1542,7 +1544,7 @@ const FurnitureSchema = pipe(
     climbable: optional(strictObject({ speedMetresPerSimSecond: Positive })),
     appearance: optional(
       strictObject({
-        kind: picklist(['cabinet', 'drawers', 'fridge']),
+        kind: picklist(['cabinet', 'drawers', 'fridge', 'door', 'lid', 'rack']),
         surface: picklist(['wood', 'painted-metal', 'plastic']),
       }),
     ),
