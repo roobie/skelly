@@ -1449,7 +1449,7 @@ export const createSession = (options: SessionOptions) => {
     if (climbing && Math.hypot(...body.pos.map((value, axis) => value - before[axis]!)) > 2 * CONTACT_SKIN) {
       run.discover('entranceTravel', sim.calendar);
     }
-    for (const entity of entities.all) {
+    for (const entity of entities.near(discovery.entrance.min, discovery.entrance.max)) {
       if (
         entities.defOf(entity).door?.hatch &&
         nearDiscoveryBox(entity.pos, discovery.entrance, 0) &&

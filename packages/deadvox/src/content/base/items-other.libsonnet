@@ -270,7 +270,7 @@ local spentCase(id, name, weight, description, model) = {
       id: 'portable_radio',
       name: 'Portable radio',
       category: 'misc',
-      weight: 600,
+      model: 'portable_radio',
       size: [2, 2],
       description: 'A battered handheld radio. Its battery and metal casing can be salvaged.',
       salvageTimeGameMinutes: 5,

@@ -1,0 +1,14 @@
+{
+  "id": "sewing_repair_kit",
+  "file": "assets/models/sewing_repair_kit.glb",
+  "parts": {
+    "equipment": {
+      "node": "equipment:repairKit",
+      "massKg": 0.42,
+      "centreOfMass": [0.0037262431422244394, 0.012317862473998718, 2.0335500613498806e-19]
+    }
+  },
+  "grip": { "at": [-0.089, 0.015, 0], "turn": [0, 0, 0] },
+  "hold": "forward",
+  "roll": 0
+}

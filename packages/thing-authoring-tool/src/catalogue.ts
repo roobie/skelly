@@ -33,6 +33,8 @@ import { block } from './families/block.ts';
 import { head, limb, torso } from './families/body.ts';
 import { bag, boots, cap } from './families/carried.ts';
 import { coil } from './families/coil.ts';
+import { compound } from './families/compound.ts';
+import { blowtorch, headlamp, pliers, portableRadio, repairKit, webbingSling } from './families/equipment.ts';
 import { foodPortion, stemmedFruit, woundRoll } from './families/food-medical.ts';
 import { fuse } from './families/fuse.ts';
 import { foldedGarment } from './families/garment.ts';
@@ -118,6 +120,7 @@ const builders = {
   ring,
   spool,
   coil,
+  compound,
   fuse,
   cylinder: base,
   arm,
@@ -141,6 +144,12 @@ const builders = {
   foodPortion,
   stemmedFruit,
   woundRoll,
+  blowtorch,
+  headlamp,
+  pliers,
+  portableRadio,
+  repairKit,
+  webbingSling,
   torch,
   candle,
 } satisfies Record<string, (params: Readonly<Record<string, string>>) => readonly Solid[]>;

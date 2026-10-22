@@ -29,7 +29,7 @@ local threshold = [lab.port.x + lab.port.width / 2, intake, lab.depth - 1];
       }, {
         at: [lab.surfaceOffset + 15, ground + 1, lab.surfaceOffset + 14],
         items: [{ item: 'gauntlet_maintenance_memo', placement: 'surface' }],
-      }],
+      }] + lab.fixedLoot,
       leads: [
         { template: 'gauntlet_public_memo', lot: 'hq', at: [26, 0, 13], standing: [25, 1, 14], fixedLoot: [{ at: [0, 1, 0], items: [{ item: 'gauntlet_public_memo', placement: 'surface' }] }] },
         { template: 'gauntlet_public_directions', lot: 'police', at: [23, 0, 17], standing: [25, 1, 20], fixedLoot: [{ at: [0, 1, 0], items: [{ item: 'gauntlet_public_directions', placement: 'surface' }] }] },
@@ -42,7 +42,7 @@ local threshold = [lab.port.x + lab.port.width / 2, intake, lab.depth - 1];
           { at: [18, 1, 5], items: [{ item: 'pump_shotgun', condition: 0.7, key: true }] },
           { at: [22, 1, 13], items: [{ item: 'stab_vest', condition: 0.7 }] },
         ] },
-        { lot: 'hq', fixedLoot: [{ at: [7, 1, 33], items: [{ item: 'rifle_ak', condition: 0.7, key: true }, { item: 'cartridge_box_7_d_62x39' }] }] },
+        { lot: 'hq', fixedLoot: [{ at: [7, 1, 33], items: [{ item: 'rifle_ak', condition: 0.7, key: true }, { item: 'magazine_akm_30', condition: 0.7 }, { item: 'cartridge_box_7_d_62x39' }] }] },
       ],
       landmarks: ['gauntlet_water_tank', 'gauntlet_loading_frame'],
       landmarkPositions: [[-16, 0, -82], [-34, 0, -24]],

@@ -411,10 +411,18 @@ export const gauntletFlow = async (browser, baseUrl) => {
         }
         await until(() => !session.inventory.hands[side], Math.ceil((drop.job.duration + 1) * 60), 'free card hand');
       };
+      const sealStock = async (seal) => {
+        const holder = seal.held ? engine.entities.at(...seal.key) : undefined;
+        if (!holder) {
+          return session.inventory.pileAt(seal.key)?.items ?? [];
+        }
+        session.search(holder);
+        await until(() => holder.searched, Math.ceil((session.queue.remaining + 1) * 60), 'keycard container search');
+        return (holder.pockets ?? []).flat();
+      };
       const takeCard = async (seal) => {
-        const card = session.inventory
-          .pileAt(seal.key)
-          ?.items.find(({ item }) => engine.registry.items.get(item.type)?.key)?.item;
+        const stock = await sealStock(seal);
+        const card = stock.find(({ item }) => engine.registry.items.get(item.type)?.key)?.item;
         if (!card) {
           throw new Error('Placed seal keycard absent');
         }
