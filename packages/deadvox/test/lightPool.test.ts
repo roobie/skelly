@@ -206,6 +206,29 @@ describe('made-light point pool', () => {
     expect(zombies.store.get(id)!.lastPerceived).toEqual(source?.pos);
   });
 
+  it('shines a set-down light from the flame its pile draws', () => {
+    const pool = new LightPool(new Scene());
+    const inventory = new Inventory(registry);
+    const glowstick = inventory.create('glowstick');
+    expect(toggleLight(registry, glowstick, 0)).toBeUndefined();
+    expect(inventory.add(glowstick, { kind: 'pile', pos: [3, 1, 0] })).toBe(true);
+    const flame = new Vector3(1.7, 0.9, 0.2);
+    pool.update(inventory, {
+      held: { lightPositionOf: () => false },
+      piles: {
+        lightPositionOf: (item, out) => {
+          out.copy(flame);
+          return item === glowstick;
+        },
+      },
+      camera: new PerspectiveCamera(),
+      blockSize: SCALE.blockSize,
+      daylightScale: 1,
+    });
+    expect(pool.lights[4]!.intensity).toBeGreaterThan(0);
+    expect(pool.lights[4]!.position.distanceTo(flame)).toBeLessThan(1e-9);
+  });
+
   it('shares exposure for carried pockets but excludes lights stored in furniture', () => {
     const mounted = withDefaultMountedLight(registryWithTestLights(), 'rifle_assault', 'flashlight');
     const fixtureRegistry = mounted.registry;

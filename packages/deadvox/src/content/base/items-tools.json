@@ -233,6 +233,29 @@
       }
     },
     {
+      "category": "tool",
+      "description": "Steel jaws on a spring. It shuts on whatever steps in it.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Hunting"]
+      },
+      "id": "bear_trap",
+      "model": "bear_trap",
+      "name": "Bear trap",
+      "size": [5, 5],
+      "trap": {
+        "disarmSimSeconds": 6,
+        "holdSimSeconds": 20,
+        "playerInjury": {
+          "damage": 25,
+          "kind": "pierce",
+          "region": "leftLeg"
+        },
+        "setSimSeconds": 4,
+        "zombieLegDamage": 60
+      }
+    },
+    {
       "category": "weapon",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
@@ -447,7 +470,7 @@
         "burnTimeGameHours": 4,
         "burning": {
           "douse": true,
-          "drop": "douse",
+          "drop": "stay",
           "ignition": "firestarter",
           "relight": true,
           "sprint": "stay",
@@ -498,7 +521,7 @@
         "burnTimeGameHours": 6,
         "burning": {
           "douse": true,
-          "drop": "douse",
+          "drop": "stay",
           "ignition": "firestarter",
           "relight": true,
           "sprint": "douse",

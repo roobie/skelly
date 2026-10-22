@@ -564,6 +564,8 @@ export interface ZombieSystemOptions {
   solidBricks?: SolidBricks | undefined;
   /** True only while terrain at the actor's position is loaded; unloaded actors wait for Slice 4b catch-up. */
   isLoaded?: ((x: number, z: number) => boolean) | undefined;
+  /** Held where it stands, by a trap shut on its leg (core/bearTrap.ts); it can still turn and attack. */
+  restrained?: ((id: EntityId) => boolean) | undefined;
   /** Visibility alone uses sight opacity. */
   isOpaque: SolidAt;
   blockSize: number;
@@ -2428,6 +2430,9 @@ export class ZombieSystem {
         direction = movementDirection;
         speed = desiredSpeed;
       }
+      if (this.options.restrained?.(id) === true) {
+        speed = 0;
+      }
       zombie.horizontalSpeed = speed;
       zombie.body.vel[0] = (direction[0] * speed) / blockSize;
       zombie.body.vel[2] = (direction[2] * speed) / blockSize;
@@ -2785,7 +2790,10 @@ export class ZombieSystem {
   private updateMovementSpeed(): void {
     const scratch = this.tickScratch;
     const { zombie, type, dt } = scratch;
-    if (zombie.regions.leftLeg! <= 0 && zombie.regions.rightLeg! <= 0) {
+    if (
+      (zombie.regions.leftLeg! <= 0 && zombie.regions.rightLeg! <= 0) ||
+      this.options.restrained?.(scratch.id) === true
+    ) {
       scratch.desiredSpeed = 0;
       scratch.direction = [0, 0, 0];
       scratch.aimDirection = undefined;
@@ -3792,6 +3800,22 @@ export class ZombieSystem {
       this.options.onSevered?.(zombie, region as ZombieRegion);
     }
     return incapacitated;
+  }
+
+  /** Takes health from a zombie's legs not yet destroyed, shared between them, as a hit there would. */
+  injureLegs(id: EntityId, damage: number): void {
+    const zombie = this.store.get(id);
+    if (!zombie || damage <= 0) {
+      return;
+    }
+    const legs = (Object.keys(zombie.regions) as ZombieHitRegion[]).filter(
+      (region) => ['leftLeg', 'rightLeg'].includes(zombieRegionClass(region)) && zombie.regions[region]! > 0,
+    );
+    for (const region of legs) {
+      if (this.store.get(id) === zombie) {
+        this.resolveRegionDamage(id, zombie, region, this.damageRegion(zombie, region, damage / legs.length));
+      }
+    }
   }
 
   private damageRegion(zombie: Zombie, region: ZombieHitRegion, damage: number): number {

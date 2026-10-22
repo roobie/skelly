@@ -1,0 +1,13 @@
+{
+  "id": "pickup_battery_tray",
+  "file": "assets/models/pickup_battery_tray.glb",
+  "parts": {
+    "body": {
+      "node": "body:block",
+      "massKg": 2.2,
+      "centreOfMass": [0, 0.015, 0],
+      "collision": [{ "min": [-0.16, 0, -0.12], "max": [0.16, 0.03, 0.12] }]
+    }
+  },
+  "anchors": { "seat": [0, 0.03, 0] }
+}

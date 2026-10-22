@@ -1,5 +1,5 @@
 // Item models (`DESIGN.md`, "Piles and item models"): glTF binaries in the base pack, loaded once
-// with three.js's GLTFLoader. Each is prepared twice: lying on the ground, centred
+// with three.js's GLTFLoader. Each is prepared twice: on the ground as it rests, centred
 // over the origin, for piles; and held at its grip in the data-selected pose.
 // Until a model has loaded, or if it can't, its items show as if they had none.
 
@@ -134,8 +134,13 @@ export const prepareModel = (def: ModelDef, scene: Object3D): Prepared => {
   applyModelMaterials(scene, MATERIALS);
   const box = visibleBounds(scene);
   const centre = box.getCenter(new Vector3());
-  // Lying: centred on x and z over the origin, resting on y = 0.
-  const ground = around(scene, new Vector3(centre.x, box.min.y, centre.z));
+  // On the ground: turned as it rests, then centred on x and z over the origin and resting on y = 0.
+  // Standing upright raises the model's +x as an upright hold does.
+  const rest = new Matrix4().makeRotationZ(def.rest === 'upright' ? Math.PI / 2 : 0);
+  const rested = box.clone().applyMatrix4(rest);
+  const restedCentre = rested.getCenter(new Vector3());
+  const ground = around(scene, new Vector3(restedCentre.x, rested.min.y, restedCentre.z));
+  modelFrame(ground, 'ground').quaternion.setFromRotationMatrix(rest);
   // Held: the grip at the origin, turned and rolled as the entry says, then oriented by its hold pose.
   // The lens is the `lens` anchor, else the `flame` anchor, else the middle of the model's front end.
   const anchor = def.anchors?.lens ?? def.anchors?.flame;
@@ -166,6 +171,9 @@ const modelFrame = (root: Object3D, form: 'ground' | 'held'): Object3D =>
 
 /** A held copy's group in the model file's own frame, for points authored in that frame. */
 export const heldModelFrame = (root: Object3D): Object3D => modelFrame(root, 'held');
+
+/** A ground copy's group in the model file's own frame, for points authored in that frame. */
+export const groundModelFrame = (root: Object3D): Object3D => modelFrame(root, 'ground');
 
 export class ModelLibrary {
   /** Goes up each time a model loads, so what's drawn can catch up. */
@@ -214,7 +222,7 @@ export class ModelLibrary {
     return this.ready.get(id)?.groundParts;
   }
 
-  /** A copy lying on the ground: centred over its origin, resting on y = 0, its long side along x. */
+  /** A copy on the ground as its model rests: centred over its origin, resting on y = 0. */
   ground(id: string): Object3D | undefined {
     return this.ready.get(id)?.ground.clone();
   }
@@ -247,7 +255,7 @@ export class ModelLibrary {
     return { ...held, slots: this.attachParts(modelFrame(held.root, 'held'), look) };
   }
 
-  /** An item's look lying on the ground, resting on y = 0 with whatever is fitted; built once per look. */
+  /** An item's look on the ground, resting on y = 0 with whatever is fitted; built once per look. */
   groundLook(look: ItemLook): Object3D | undefined {
     const cached = this.composedGround.get(look.key);
     if (cached) {
