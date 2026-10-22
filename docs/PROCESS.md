@@ -144,8 +144,8 @@ slice checklist issue.
   and deliberate distinctions; review callers and secondary consumers, not only
   the new owner.
 - **At slice start and exit:** the slice checklist tracks a history-and-planned-change
-  maintainability survey for each subproject. Keep the `maintainability-review` skill
-  untracked and link its report from #159 or a linked issue. Reuse an exit survey only when its
+  maintainability survey for each subproject. Follow the untracked `maintainability-review`
+  skill and link its report from #159 or a linked issue. Reuse an exit survey only when its
   base and next-change assumptions still hold; inspect the intervening delta. A recurring
   smell or repeated boundary failure triggers a targeted survey, not automatically a full
   survey. Keep reports out of repository files.
@@ -191,7 +191,16 @@ If mixed changes cannot be isolated, say so rather than estimate.
 
 At slice closure, remove the plan after its live content has moved to current
 owners. Record the retrospective as a comment on that slice's checklist issue or
-a linked issue, not as a tracked file.
+a linked issue, not as a tracked file. It reports what the next slice plans from, so
+that unfinished work, review load and waiting time stay visible:
+
+- findings opened, completed, partly completed, carried and dropped;
+- review-caught defects, kept apart from escaped regressions;
+- standalone versus folded deliveries;
+- carried-forward work;
+- known waits;
+- a speedup only with a defensible comparison; unknown effort or time saved stays
+  unknown.
 
 ## Owned work
 

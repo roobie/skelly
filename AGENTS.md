@@ -79,8 +79,9 @@ Mint every feature, round, review and card ID with `agent-work mint` (for exampl
 one by hand. Mint checks the tracker and `.agent-mail/scratch/` to prevent collisions from
 overwriting briefs and misrouting mail.
 
-These IDs belong to local, private tooling. Generate them there, and never cite them in a
-GitHub issue, PR title, PR body or commit message. Private tooling may cite GitHub issues,
+These IDs belong to local, private tooling. Generate them there, and never cite them
+anywhere on GitHub (issues, PRs, their comments and reviews) or in a commit message.
+Private tooling may cite GitHub issues,
 PRs and commits. A clone or contributor using only git and GitHub must be able to read every
 GitHub artifact without private tooling, so references point only from the private side.
 

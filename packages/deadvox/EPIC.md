@@ -303,7 +303,7 @@ Q and E remain reserved for later actions and have no world bindings.
 
 - Items carried in clothing can be damaged when that clothing is hit.
 - Condition can affect an item's performance before it is ruined.
-- Books teach recipes.
+- Books teach recipes and may teach skill too.
 - Learning from books will become gradual: reading lets the player use the book
   as a reference while doing the work, until the recipe is learned fully.
 - Condition may lower salvage yield.
