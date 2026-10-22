@@ -16,21 +16,26 @@ const declared = (() => {
   const withGrid = (id: string, grids: readonly [number, number][]) => {
     const container = registry.items.get(id)!.container!;
     return {
-      container: { ...container, pockets: container.pockets.map((pocket, index) => (grids[index] ? { ...pocket, grid: grids[index] } : pocket)),
+      container: {
+        ...container,
+        pockets: container.pockets.map((pocket, index) => (grids[index] ? { ...pocket, grid: grids[index] } : pocket)),
       },
     };
   };
-  const overrides: Record<string, object> = {
-    rag: { size: [1, 1], stack: 6 },
-    canned_beans: { size: [1, 2] },
-    canned_soup: { size: [1, 2] },
-    kabar: { size: [1, 3] },
-    hoodie: withGrid('hoodie', [[3, 2]]),
-    jeans: withGrid('jeans', [[1, 2]]),
-  };
+  const overrides = new Map<string, object>([
+    ['rag', { size: [1, 1], stack: 6 }],
+    ['canned_beans', { size: [1, 2] }],
+    ['canned_soup', { size: [1, 2] }],
+    ['kabar', { size: [1, 3] }],
+    ['hoodie', withGrid('hoodie', [[3, 2]])],
+    ['jeans', withGrid('jeans', [[1, 2]])],
+    ['school_backpack', withGrid('school_backpack', [[5, 6]])],
+    ['water_bottle', { size: [1, 3] }],
+    ['machete', { size: [1, 6] }],
+  ]);
   return {
     ...registry,
-    items: new Map([...registry.items].map(([id, def]) => [id, id in overrides ? { ...def, ...overrides[id] } : def])),
+    items: new Map([...registry.items].map(([id, def]) => [id, { ...def, ...overrides.get(id) }])),
   } as typeof registry;
 })();
 
@@ -94,14 +99,14 @@ describe('grid placement', () => {
   });
 
   it('checks cells against every item in the grid', () => {
-    const { inv, backpack } = dressed();
+    const { inv, backpack } = dressed(declared);
     const water = onFloor(inv, 'water_bottle');
     inv.move(water, { kind: 'pocket', owner: backpack, pocket: 0, at: { x: 1, y: 1, rotated: false } });
     const grid = { size: inv.pocketGrid(backpack, 0), placed: backpack.pockets![0]! };
     const bat = inv.create('machete');
-    expect(fitsAt(registry, grid, bat, { x: 1, y: 0, rotated: false })).toBe(false);
-    expect(fitsAt(registry, grid, bat, { x: 0, y: 0, rotated: false })).toBe(true);
-    expect(fitsAt(registry, grid, bat, { x: 0, y: 0, rotated: true })).toBe(false);
+    expect(fitsAt(declared, grid, bat, { x: 1, y: 0, rotated: false })).toBe(false);
+    expect(fitsAt(declared, grid, bat, { x: 0, y: 0, rotated: false })).toBe(true);
+    expect(fitsAt(declared, grid, bat, { x: 0, y: 0, rotated: true })).toBe(false);
   });
 
   it('lets an item move within its own grid', () => {

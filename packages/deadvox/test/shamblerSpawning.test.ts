@@ -19,7 +19,7 @@ const registry = baseRegistry();
 const SCALE = makeScale(0.5);
 const player = () => createPlayerBody(SCALE, 0, 1, 0);
 
-const footprint = (type: (typeof registry.zombies extends ReadonlyMap<string, infer T> ? T : never)): number => {
+const footprint = (type: typeof registry.zombies extends ReadonlyMap<string, infer T> ? T : never): number => {
   const body = zombieBodyDimensions(type, SCALE.blockSize);
   return Math.max(body.halfWidth, body.halfDepth ?? body.halfWidth);
 };

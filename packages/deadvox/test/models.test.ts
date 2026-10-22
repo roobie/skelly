@@ -726,15 +726,22 @@ describe('base pack modeled ammunition and spent cases', () => {
       if (item.ammo && item.model) {
         ids.add(item.model);
         const fired = registry.items.get(spentCaseItemId(item.ammo.calibre));
-        if (fired?.model) ids.add(fired.model);
+        if (fired?.model) {
+          ids.add(fired.model);
+        }
       }
     }
     expect(ids.size).toBeGreaterThan(0);
-    for (const id of ids) {
-      const def = registry.models.get(id)!;
+    const loaded = await Promise.all(
+      [...ids].map(async (id) => ({
+        id,
+        def: registry.models.get(id)!,
+        ...(await parseGlb(readFileSync(`${BASE}/${registry.models.get(id)!.file}`))),
+      })),
+    );
+    for (const { id, def, scene } of loaded) {
       expect(def.gun?.calibre, id).toBeDefined();
       expect(def.grip, id).toBeUndefined();
-      const { scene } = await parseGlb(readFileSync(`${BASE}/${def.file}`));
       const { ground, groundParts } = prepareModel(def, scene);
       const bounds = new Box3().setFromObject(ground);
       const size = bounds.getSize(new Vector3());
