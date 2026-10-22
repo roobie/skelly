@@ -1486,11 +1486,11 @@ export const createSession = (options: SessionOptions) => {
     // A climber uses its free hand standing still: the ladder holds it while an item action runs.
     const acting = queue.busy || firearms.busy || playerCombat.activeMeleeAction !== undefined || throwCharge.active;
     const steered = ladderHold.on && acting ? { ...pacedIntent, forward: 0, right: 0 } : pacedIntent;
-    steer(body, scale, sampledInput().yaw, steered);
+    const ladder = ladderHold.piece(pacedIntent.jump || sim.body.actionRefusal !== undefined);
+    steer(body, scale, sampledInput().yaw, { ...steered, onLadder: ladder !== undefined });
     if (jumpStarted) {
       playPlayerSound('player_strain', time);
     }
-    const ladder = ladderHold.piece(pacedIntent.jump || sim.body.actionRefusal !== undefined);
     refuseThrowForLadder();
     const climbing =
       ladder !== undefined &&

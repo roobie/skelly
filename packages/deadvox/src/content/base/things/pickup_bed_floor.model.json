@@ -1,0 +1,16 @@
+{
+  "id": "pickup_bed_floor",
+  "file": "assets/models/pickup_bed_floor.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 45,
+      "centreOfMass": [-1.1500000000000001, 0.7143442622950821, 0],
+      "collision": [
+        { "min": [-2.2, 0.7999999999999999, -0.8], "max": [-0.10000000000000009, 0.85, 0.8] },
+        { "min": [-2.2, 0.55, -0.45], "max": [-0.10000000000000009, 0.8, 0.45] }
+      ]
+    }
+  },
+  "anchors": {}
+}

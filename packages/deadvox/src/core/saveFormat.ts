@@ -363,6 +363,7 @@ itemSchema = obj({
   madeAtGameTimestamp: opt(nonNegative),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
   cartridges: opt(arr(str({ id: true }))),
+  cargo: opt(arr(positiveInt)),
   slots: opt(record(lazy(() => itemSchema))),
   firearm: opt(
     obj({

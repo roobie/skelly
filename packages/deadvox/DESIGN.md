@@ -1367,6 +1367,13 @@ returning and retaking an item is not another find. See `die` in
 `src/game/play.ts`, `showDeath` in `src/ui/death.ts`, and `Inventory.countLooted`
 in `src/core/inventory.ts`.
 
+### Moving in the air
+
+Movement input steers only a body on the ground. A body in the air has nothing to push against, so input cannot
+change its horizontal velocity: the momentum it had at takeoff carries until it lands, and only collisions alter
+it. A ladder climber is held by the ladder, not airborne. See `steer` in `src/game/player.ts` and
+`advancePlayerBody` in `src/game/session.ts`.
+
 ### Landing injuries
 
 A fall loads the body at terrain contact, not at its highest point: catching a
@@ -2304,13 +2311,7 @@ their state.
    does not become assembly bookkeeping. A body fitted to a chassis cab, such as a box
    van's cargo box, is its own factory structure resting on the frame, not part of the
    cab's, so the chassis cab stays a complete drivable unit without it and the box can
-   move to another frame. A body's storage and its contents belong to a cargo space: a
-   separate part resting on the load floor whose own shape is the hold, so storage
-   travels with the part, losing a wall does not lose the load, and a player can build
-   one for any body with a load floor. The game reads the pocket grid from that shape
-   rather than from authored numbers. A part's capabilities are names; its sizes live
-   in its own data, so each size has one source. The cargo space arrives with #1124.
-   See `src/vehicles/boxVan.ts`, `BOX_VAN`.
+   move to another frame. See `src/vehicles/boxVan.ts`, `BOX_VAN`.
 9. **Cheap at scale.** A parked street must not pay continuous driving-physics cost.
    Part-level changes should not require rebuilding unrelated vehicles.
 10. **Obstruction follows the build.** Render, collision and picking derive from the
@@ -2329,6 +2330,25 @@ see [CHALLENGES.md](CHALLENGES.md#8-vehicles-on-voxels). Determinism and streami
 follow `docs/decisions/0008-deterministic-world.md`, "Decision". Leaving a moving
 vehicle is allowed: coasting, collision and bystander consequences must not vanish
 when a column unloads. Parked vehicles retain their derived world collision.
+
+**Cargo space.** A body's storage and its contents belong to a cargo space: a separate
+part resting on a load floor whose own shape is the hold, so storage travels with the
+part and losing a wall does not lose the load. The game reads the pocket grid from that
+shape rather than from authored numbers; a part's capabilities are names and its sizes
+live in its own data, so each size has one source. Only the floor area counts toward
+capacity, so open beds and flatbeds hold cargo the same way boxes do; the block's height
+only has to clear what is above it. A player sizes a cargo space while placing it by
+dragging out a rectangle, which stops at the edge of the free floor the game works out
+from the load floor and the parts standing on it. Dragging is the complete form of
+choosing a size, so a proposed size can be added on top later without redoing it. The
+floor is a rectangle because storage is a rectangle of pockets, as in a backpack: an odd
+floor takes several spaces, and a rectangle stays valid if shaped spaces ever come, so
+nothing fitted or saved is redone. A space grown to fill walls and roof was not chosen
+because open beds have neither. The block then keeps its size, and a part can't be
+fitted into it. Players build cargo spaces on load floors the vehicle already has; load
+floors and walls built from nothing wait for scratch-built frames, which add to the
+cargo space rather than replace it. Player placement arrives with #1124. See
+`src/core/cargoSpace.ts`, `freeFloor`.
 
 Entry is seated through animated usable doors for the first loop. Walking through
 plausible interiors is an important long-term requirement for the #322 trucks, RVs

@@ -61,6 +61,8 @@ export interface ItemFields<Node> {
   firearm?: FirearmState;
   /** A magazine's cartridge item types in feed order, top round first (core/magazine.ts). */
   cartridges?: string[];
+  /** A cargo space's size in inventory cells along x, y and z, kept from fitting to salvage (core/cargoSpace.ts). */
+  cargo?: [x: number, y: number, z: number];
   /** Items fitted to this one, owned by it like work components. Keys are exported mount IDs or named device slots. */
   slots?: ItemSlots<Node>;
   work?: CraftWork<Node> | undefined;
@@ -96,6 +98,9 @@ export type PlacedState = PlacedItem<ItemState>;
 const trapField = (trap: TrapState | undefined): { trap?: TrapState } =>
   trap === undefined ? {} : { trap: { ...trap } };
 
+const cargoField = (cargo: ItemFields<unknown>['cargo']): Pick<ItemFields<unknown>, 'cargo'> =>
+  cargo === undefined ? {} : { cargo: [...cargo] };
+
 /** Immutable, isolated item tree suitable for a save snapshot. */
 export const snapshotItem = (item: Item): Readonly<ItemState> =>
   freezeSnapshot({
@@ -114,6 +119,7 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
     ...(item.madeAtGameTimestamp === undefined ? {} : { madeAtGameTimestamp: item.madeAtGameTimestamp }),
     ...(item.firearm === undefined ? {} : { firearm: snapshotFirearm(item.firearm) }),
     ...(item.cartridges === undefined ? {} : { cartridges: [...item.cartridges] }),
+    ...cargoField(item.cargo),
     ...(item.slots === undefined
       ? {}
       : {
@@ -195,6 +201,23 @@ const assertSavedTrap = (def: ItemDef, state: ItemState): void => {
   }
 };
 
+/** Only a cargo space has a size, in whole cells, and its one pocket is its floor. */
+const assertSavedCargo = (def: ItemDef, state: ItemState): void => {
+  const { cargo } = state;
+  if (
+    cargo !== undefined &&
+    !(
+      def.vehicle?.cargoSpace &&
+      state.count === 1 &&
+      cargo.length === 3 &&
+      cargo.every((cells) => Number.isSafeInteger(cells) && cells >= 1) &&
+      state.pockets?.length === 1
+    )
+  ) {
+    throw new Error('Invalid saved cargo space');
+  }
+};
+
 const assertSavedLootCount = (state: ItemState): void => {
   if (
     state.lootedCount !== undefined &&
@@ -237,6 +260,7 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
   assertSavedFuse(def, state);
   assertSavedTrap(def, state);
   assertSavedLootCount(state);
+  assertSavedCargo(def, state);
   const firearm = restoreFirearmState(registry, def, state);
   const magazineReason =
     magazineContentsReason(registry, state.type, state.cartridges) ?? slotsReason(registry, state.type, state.slots);
@@ -261,6 +285,7 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
     ...(state.madeAtGameTimestamp === undefined ? {} : { madeAtGameTimestamp: state.madeAtGameTimestamp }),
     ...(firearm === undefined ? {} : { firearm }),
     ...(state.cartridges === undefined ? {} : { cartridges: [...state.cartridges] }),
+    ...cargoField(state.cargo),
     ...(state.slots === undefined
       ? {}
       : {

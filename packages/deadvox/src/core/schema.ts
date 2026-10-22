@@ -251,6 +251,8 @@ const VEHICLE_CAPABILITIES = [
   'structure',
   /** A road wheel, the part a vehicle rolls on. */
   'wheel',
+  /** A floor a cargo space can rest on (`src/core/cargoSpace.ts`, `freeFloor`). */
+  'load_floor',
 ] as const;
 export type VehicleCapability = (typeof VEHICLE_CAPABILITIES)[number];
 
@@ -961,6 +963,20 @@ const ItemSchema = strictObject({
         array(picklist(VEHICLE_CAPABILITIES)),
         check((list) => new Set(list).size === list.length, 'capabilities must be distinct'),
       ),
+      /**
+       * A cargo space: a block whose footprint is its one pocket (`DESIGN.md`, "Vehicles", **Cargo space.**).
+       * Its model is one inventory cell, and a fitting's `cargo` scales it.
+       */
+      cargoSpace: optional(
+        strictObject({
+          /** Sim seconds to take an item out or put one in, before the per-cell part. */
+          handlingSimSeconds: SimSeconds,
+          /** The clearance above a free-floor cell with nothing over it, in cells. */
+          openClearanceCells: Cells,
+          /** Why its pocket may be wider than the inventory width tuning allows. */
+          wideReason: optional(pipe(string(), nonEmpty('must not be empty'))),
+        }),
+      ),
     }),
   ),
 });
@@ -975,6 +991,8 @@ const VehicleFittingSchema = strictObject({
   mirror: optional(literal(true)),
   /** Every fitting it rests on; an authored structural choice, not inferred from contact. */
   supportedBy: array(Id),
+  /** A factory cargo space's size in inventory cells along x, y and z; its pocket is x by z. */
+  cargo: optional(tuple([Cells, Cells, Cells])),
 });
 
 /** A factory build, as a vehicle authoring export: parts by item id, placed and supported. */

@@ -1,0 +1,15 @@
+{
+  "id": "pickup_bed_front",
+  "file": "assets/models/pickup_bed_front.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 10,
+      "centreOfMass": [-0.06999999999999999, 1.01, 0],
+      "collision": [
+        { "min": [-0.1, 0.8, -0.8600000000000001], "max": [-0.04000000000000001, 1.22, 0.8600000000000001] }
+      ]
+    }
+  },
+  "anchors": {}
+}
