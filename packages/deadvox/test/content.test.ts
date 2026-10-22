@@ -267,8 +267,10 @@ describe('content', () => {
     const layoutSpawns = [...baseRegistry.layouts.values()].flatMap((layout) =>
       layout.shamblers.some(({ type }) => type === soldier.id) ? [layout] : [],
     );
+    const soldierSite = (id: string) => id.startsWith('camp_') || id.startsWith('crisis_hq');
     expect(templateSpawns.some((id) => id.startsWith('camp_'))).toBe(true);
-    expect(templateSpawns.every((id) => id.startsWith('camp_'))).toBe(true);
+    expect(templateSpawns.some((id) => id.startsWith('crisis_hq'))).toBe(true);
+    expect(templateSpawns.every(soldierSite)).toBe(true);
     expect(layoutSpawns.length).toBeGreaterThan(0);
     expect(layoutSpawns.every((layout) => layout.buildings.some(({ template }) => template.startsWith('camp_')))).toBe(
       true,
@@ -1417,6 +1419,46 @@ describe('content', () => {
     for (const section of sections) {
       expect(registry[section], section).toBeInstanceOf(Map);
     }
+  });
+});
+
+describe('condition bands', () => {
+  const baseRow = (base.find((file) => file.source === 'inventory.json')!.data as ContentFile).inventory![0]!;
+  const withBands = (conditionBands: { from: number; word: string }[]) =>
+    buildRegistry([{ source: 'bands.json', data: { inventory: [{ ...baseRow, conditionBands }] } }]).issues.map(
+      ({ path }) => path,
+    );
+
+  it('accepts bands that start at 0 and rise', () => {
+    expect(
+      withBands([
+        { from: 0, word: 'a' },
+        { from: 0.5, word: 'b' },
+      ]),
+    ).toEqual([]);
+  });
+
+  it.each([
+    ['a gap below the first bound', [{ from: 0.2, word: 'a' }]],
+    [
+      'an overlap',
+      [
+        { from: 0, word: 'a' },
+        { from: 0.5, word: 'b' },
+        { from: 0.5, word: 'c' },
+      ],
+    ],
+    [
+      'unordered bounds',
+      [
+        { from: 0, word: 'a' },
+        { from: 0.6, word: 'b' },
+        { from: 0.3, word: 'c' },
+      ],
+    ],
+    ['no bands', []],
+  ])('rejects %s', (_label, bands) => {
+    expect(withBands(bands)).not.toEqual([]);
   });
 });
 

@@ -1,0 +1,14 @@
+{
+  "id": "adjustable_pliers",
+  "file": "assets/models/adjustable_pliers.glb",
+  "parts": {
+    "equipment": {
+      "node": "equipment:pliers",
+      "massKg": 0.3,
+      "centreOfMass": [0.0995385477147247, 0.00005419542316399051, 2.307395759650897e-18]
+    }
+  },
+  "grip": { "at": [0.05600000000000001, 0, -0.020625], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 0
+}

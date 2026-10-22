@@ -2,6 +2,13 @@
   inventory: [
     {
       id: 'player',
+      conditionBands: [
+        { from: 0, word: 'ruined' },
+        { from: 0.1, word: 'badly damaged' },
+        { from: 0.3, word: 'damaged' },
+        { from: 0.6, word: 'worn' },
+        { from: 0.9, word: 'pristine' },
+      ],
       cellMetres: 0.1,
       containerMaxWidthCells: 10,
       groundPileStateCap: 65536,

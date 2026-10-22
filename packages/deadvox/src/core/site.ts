@@ -17,6 +17,7 @@ import {
   lootPointsByColumn,
   type Rolled,
   rollLootParts,
+  withLootDepth,
 } from './loot.ts';
 import type { FixedLootItemDef, FixedLootOverrideDef } from './schema.ts';
 import { type Placement, placedGroundLoot, placedPieces } from './templates.ts';
@@ -121,7 +122,7 @@ export const lootSourcesOf = (
       building,
       anchor: piece.pos,
       destination: world.pos,
-      context,
+      context: withLootDepth(context, world.lootDepth),
       ...(usage === undefined ? {} : { usage }),
     };
     const sources: LootPointSource[] = [];
@@ -153,7 +154,7 @@ export const lootSourcesOf = (
       channel: 'ground',
       position: point.pos,
       destination: point.pos,
-      context,
+      context: withLootDepth(context, point.lootDepth),
       ...(point.lootUsage === undefined ? {} : { usage: point.lootUsage }),
       supply: point.supply,
       required: point.supply.kind === 'fixed',

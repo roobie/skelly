@@ -139,6 +139,19 @@ const clearLine = (
 const lineInReach = (player: ReachGeometry, box: Box, target?: BlockEntity): boolean =>
   player.obstacles === undefined || clearLine(player, player.obstacles, box, target);
 
+/**
+ * The pieces in the columns within the reach limit of the chest; `furnitureInReach` still decides each. A box's high
+ * face lies one past its last cell, so the low end reaches a cell further.
+ */
+const piecesInReach = (player: ReachPlayer): BlockEntity[] => {
+  const chest = chestOf(player);
+  const limit = reachTuning(player.inventory.registry).reachMetres / player.blockSize;
+  return player.inventory.entities.near(
+    chest.map((value) => value - limit - 1) as Vec3,
+    chest.map((value) => value + limit) as Vec3,
+  );
+};
+
 const furnitureInReach = (player: ReachPlayer, entity: BlockEntity): boolean =>
   furnitureDistance(player, entity) <= reachTuning(player.inventory.registry).reachMetres &&
   lineInReach(player, [entity.pos, entity.pos.map((value, axis) => value + entity.size[axis]!) as Vec3], entity);
@@ -191,7 +204,8 @@ export const reach = (player: ReachPlayer): ReachSnapshot => {
   const piles = [...inventory.piles.values()]
     .filter((pile) => pileInReach(player, pile.pos))
     .sort((a, b) => pileDistanceOf(a) - pileDistanceOf(b));
-  const furniture = [...inventory.entities.all]
+  const nearby = piecesInReach(player);
+  const furniture = nearby
     .filter((entity) => entity.pockets !== undefined && furnitureInReach(player, entity))
     .sort((a, b) => furnitureDistance(player, a) - furnitureDistance(player, b));
   const entries: ReachEntry[] = [];
@@ -211,7 +225,7 @@ export const reach = (player: ReachPlayer): ReachSnapshot => {
       handlingTime: inventory.handlingTime(item, location, { kind: 'hand', side: dominantSide(inventory.character) }),
     });
   }
-  const workstations = [...inventory.entities.all]
+  const workstations = nearby
     .filter((entity) => furnitureInReach(player, entity))
     .flatMap((entity) => {
       const station = inventory.entities.defOf(entity).workstation;

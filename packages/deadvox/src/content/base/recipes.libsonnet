@@ -104,7 +104,7 @@
       "id": "repair_kit",
       "name": "Repair kit",
       "category": "tool",
-      "weight": 1250,
+      "model": "repair_kit",
       "size": [2, 2],
       "description": "Metal patches, tape and rags for a makeshift repair.",
       "disassembly": {

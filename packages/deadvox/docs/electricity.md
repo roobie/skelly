@@ -3,7 +3,7 @@ read_if:
   - you're implementing or reviewing electricity balance, blackout history or power saves
   - you're integrating appliances with power catch-up or changing electrical content
   - you're checking the reasons for electricity priorities, storage losses or restart behaviour
-  - you're designing solar panel quality and condition for d587
+  - you're designing better solar panels and panel damage for d587
 ---
 
 # Electricity
@@ -43,9 +43,10 @@ orientation remain open. See `src/core/dayPhase.ts`, `dayPhaseAt`, and
 `src/core/power.ts`, `PowerNetwork.solar`.
 
 The approved per-phase output is authored in `src/content/base/power.jsonnet`,
-`solar_panel`. When d587 introduces panel quality and condition, output must rise
-with quality and fall with damage. Better and less damaged panels should be worth
-seeking out and repairing, so quality and condition carry a power payoff.
+`solar_panel`. There is no manufacturing grade: a better panel is another item
+type with more authored output, and damage lowers output. Better and less damaged
+panels are therefore worth seeking out and repairing. d587 builds this when the
+session constructs, ticks and saves a power network.
 
 Elapsed time settles resource and phase boundaries before changing rates so a
 load or wiring change cannot rewrite earlier service. Appliance owners receive

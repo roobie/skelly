@@ -214,6 +214,7 @@ const makeActions = (
       toggle: () => {
         spectatorCamera = !spectatorCamera;
       },
+      teleport: () => (spectatorCamera ? 'moved' : undefined),
     },
     thirdPerson: {
       enabled: () => thirdPerson,
