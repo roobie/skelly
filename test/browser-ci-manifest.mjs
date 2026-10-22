@@ -63,30 +63,14 @@ export const browserStagesOfScripts = (scripts) =>
       .filter(([, stages]) => stages.length),
   );
 
-const routePattern = /^\$\{\{ inputs\.shard == '(control-[\w-]+)' \|\| inputs\.shard == '([\w-]+)' \}\}$/;
-const diagnosticRoutePattern =
-  /^\$\{\{ !cancelled\(\) && \(inputs\.shard == '(control-[\w-]+)' \|\| inputs\.shard == '([\w-]+)'\) \}\}$/;
+const routePattern = /^\$\{\{ inputs\.shard == '([\w-]+)' \}\}$/;
+const diagnosticRoutePattern = /^\$\{\{ !cancelled\(\) && \(inputs\.shard == '([\w-]+)'\) \}\}$/;
 const reusablePath = './.github/workflows/deadvox-browser.yml';
 
 const matrixShards = (jobs) => {
   requireEqual(jobs.browser.uses, reusablePath, 'matrix must execute the checked reusable workflow');
   requireEqual(jobs.browser.with.shard, expression('matrix.shard'));
-  requireEqual(
-    jobs.browser.if,
-    expression("github.event.inputs.layout != 'control'"),
-    'matrix must not be draft-gated',
-  );
-  for (const name of ['control-check', 'control-stages']) {
-    const job = jobs[name];
-    requireEqual(job.uses, reusablePath, 'control must execute the same reusable workflow');
-    requireEqual(job.with.shard, name);
-    requireEqual(
-      job.if,
-      expression("github.event_name == 'workflow_dispatch' && github.event.inputs.layout == 'control'"),
-      'control layout selection drifted',
-    );
-    requireValue(!('needs' in job), 'main control jobs must start independently');
-  }
+  requireValue(!('if' in jobs.browser), 'matrix must not be draft-gated');
   requireEqual(jobs.browser.strategy['fail-fast'], false, 'a failed shard must not cancel its siblings');
   const shards = jobs.browser.strategy.matrix.shard;
   requireValue(Array.isArray(shards) && shards.length > 0, 'empty shard matrix');
@@ -103,31 +87,26 @@ const partitionSteps = (reusable, shards) => {
   });
   const full = [];
   const partition = Object.fromEntries(shards.map((name) => [name, []]));
-  const control = { 'control-check': [], 'control-stages': [] };
   for (const step of steps) {
     const stages = stepStages(step);
     if (stages.length === 0) {
       continue;
     }
     requireValue(!('continue-on-error' in step), 'browser failures cannot be optional');
-    const [, group, route] = step.if?.match(routePattern) ?? step.if?.match(diagnosticRoutePattern) ?? [];
-    requireValue(
-      group && Object.hasOwn(control, group) && route && Object.hasOwn(partition, route),
-      `unsupported browser route: ${step.if}`,
-    );
+    const [, route] = step.if?.match(routePattern) ?? step.if?.match(diagnosticRoutePattern) ?? [];
+    requireValue(route && Object.hasOwn(partition, route), `unsupported browser route: ${step.if}`);
     for (const stage of stages) {
       const key = describeStage(stage);
       full.push(key);
       partition[route].push(key);
-      control[group].push(key);
     }
   }
-  return { full, partition, control };
+  return { full, partition };
 };
 
 export function browserManifest({ caller, reusable, scripts }) {
   const shards = matrixShards(parse(caller).jobs);
-  const { full, partition, control } = partitionSteps(reusable, shards);
+  const { full, partition } = partitionSteps(reusable, shards);
   const declared = browserStagesOfScripts(scripts);
   const expected = new Set(
     Object.entries(declared)
@@ -147,11 +126,7 @@ export function browserManifest({ caller, reusable, scripts }) {
     shards.every((name) => partition[name].length > 0),
     'empty shard',
   );
-  requireValue(
-    Object.values(control).every((cases) => cases.length > 0),
-    'empty control job',
-  );
-  return { full, partition, control };
+  return { full, partition };
 }
 
 export function repositoryManifest(root = dirname(dirname(fileURLToPath(import.meta.url)))) {
