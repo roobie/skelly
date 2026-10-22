@@ -1286,8 +1286,19 @@ const LeverModelSchema = strictObject({
   lifetimeRealSeconds: PositiveRealSeconds,
 });
 
+/**
+ * The safety pin a fused throwable hides while it is pulled: the exported solids drawn as the pin and its ring
+ * (`DESIGN.md`, "Hand grenade"). Solids, not a merge group, because mesh groups cannot merge revolved solids.
+ * Hand-authored: the export does not carry it.
+ */
+const PinModelSchema = strictObject({ solids: pipe(array(pipe(string(), nonEmpty())), minLength(1)) });
+
 export const ModelSchema = pipe(
-  modelSchema({ gun: optional(GunModelSchema), lever: optional(LeverModelSchema) }),
+  modelSchema({
+    gun: optional(GunModelSchema),
+    lever: optional(LeverModelSchema),
+    pin: optional(PinModelSchema),
+  }),
   check(
     ({ gun, anchors }) => gun?.internalMagazine === undefined || anchors?.loading_port !== undefined,
     'internal magazine metadata needs a loading_port anchor',

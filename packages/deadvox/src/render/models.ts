@@ -113,13 +113,17 @@ const visibleBounds = (object: Object3D): Box3 => {
   return box;
 };
 
-/** Hides the exported merge groups an item has shed; the glb keeps each group's name in its primitive's extras. */
+/** Hides what an item has shed; the glb names each primitive's merge group or lone solid in its extras. */
 const hideShed = (root: Object3D, hidden: ItemLook['hidden']): void => {
   if (hidden.length === 0) {
     return;
   }
   root.traverse((child) => {
-    if (child instanceof Mesh && hidden.includes(child.geometry.userData.mergeGroup)) {
+    if (!(child instanceof Mesh)) {
+      return;
+    }
+    const { mergeGroup, solid } = child.geometry.userData;
+    if (hidden.includes(mergeGroup) || hidden.includes(solid)) {
       child.visible = false;
     }
   });

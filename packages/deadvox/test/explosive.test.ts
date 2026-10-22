@@ -205,6 +205,24 @@ describe('hand grenade', () => {
     expect(lit).toEqual([grenade]);
   });
 
+  it('is drawn without its pin while the pin is out, and with it again once the pin goes back in', () => {
+    const session = runtime();
+    const { solids } = registry.models.get(registry.items.get(GRENADE)!.model!)!.pin!;
+    const pinHidden = (item: Item) => solids.every((solid) => itemLook(registry, item)!.hidden.includes(solid));
+    const grenade = session.inventory.create(GRENADE);
+    expect(session.inventory.add(grenade, { kind: 'hand', side: 'right' })).toBe(true);
+    const hidden = [pinHidden(grenade)];
+    session.fuses.togglePin(grenade);
+    hidden.push(pinHidden(grenade));
+    session.fuses.togglePin(grenade);
+    hidden.push(pinHidden(grenade));
+    session.fuses.togglePin(grenade);
+    expect(session.inventory.move(grenade, { kind: 'pile', pos: [1, 0, 0] }).ok).toBe(true);
+    session.sim.scheduler.advance(FUSE / 4);
+    hidden.push(pinHidden(grenade));
+    expect(hidden).toEqual([false, true, false, true]);
+  });
+
   it('goes off in the hand of whoever picks it up while its fuse burns', () => {
     const session = runtime();
     const grenade = landedGrenade(session, [1, 0, 0]);

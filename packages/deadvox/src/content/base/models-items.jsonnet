@@ -30,6 +30,7 @@
     import 'things/gas_canister.model.json',
     (import 'things/frag_grenade.model.json') + {
       lever: { mergeGroup: 'lever', launchMetresPerRealSecond: 3, spinDegreesPerRealSecond: 1080, lifetimeRealSeconds: 1.5 },
+      pin: { solids: ['pin', 'ring'] },
     },
     import 'things/torch.model.json',
     import 'things/candle.model.json',

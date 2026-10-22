@@ -23,16 +23,20 @@ export interface ItemLookSlot {
 export interface ItemLook {
   readonly model: string;
   readonly slots: readonly ItemLookSlot[];
-  /** Exported merge groups the item has shed, such as a lit grenade's lever. */
+  /** Exported merge groups or solids the item has shed, such as a lit grenade's lever or a pulled pin. */
   readonly hidden: readonly string[];
   /** Equal exactly when two items draw the same. */
   readonly key: string;
 }
 
-/** A lit fuse has let the lever go, so the model no longer draws it. */
+/** A pulled pin leaves the model until it goes back in; a lit fuse has let the lever go for good. */
 const shedGroups = (registry: Registry, model: string, item: Item): string[] => {
-  const lever = registry.models.get(model)?.lever;
-  return lever && item.fuseRemainingSimSeconds !== undefined ? [lever.mergeGroup] : [];
+  const modelDef = registry.models.get(model);
+  const lit = item.fuseRemainingSimSeconds !== undefined;
+  return [
+    ...(modelDef?.pin && (item.pinPulled || lit) ? modelDef.pin.solids : []),
+    ...(modelDef?.lever && lit ? [modelDef.lever.mergeGroup] : []),
+  ];
 };
 
 /** The item's model with its fitted magazine's own model in the magazine slot; undefined without a model. */

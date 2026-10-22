@@ -413,6 +413,9 @@
           "node": "grenade:grenade"
         }
       },
+      "pin": {
+        "solids": ["pin", "ring"]
+      },
       "roll": 0
     },
     {
