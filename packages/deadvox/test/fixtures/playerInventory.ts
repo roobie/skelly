@@ -3,7 +3,11 @@ import type { ContentSource } from '../../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../../src/core/contentIds.ts';
 
 const baseJson = (name: string) =>
-  JSON.parse(readFileSync(`src/content/base/${name}`, 'utf8')) as { skills?: { id: string }[] };
+  JSON.parse(readFileSync(`src/content/base/${name}`, 'utf8')) as {
+    skills?: { id: string }[];
+    ui?: { id: string; refusalSound: string }[];
+    sounds?: { id: string }[];
+  };
 
 const baseSkill = (id: string) => {
   const skill = baseJson('recipes.json').skills?.find((candidate) => candidate.id === id);
@@ -13,10 +17,16 @@ const baseSkill = (id: string) => {
   return structuredClone(skill);
 };
 
-/** The core player inventory row and the inventory skill's handling tuning, which every registry needs for the reach and handling rules; taken from base content so no test restates their values. */
+const coreUi = () => {
+  const ui = baseJson('ui.json').ui!.filter(({ id }) => id === CORE_CONTENT_IDS.coreUi);
+  const sounds = baseJson('sounds.json').sounds!.filter(({ id }) => ui.some((tuning) => tuning.refusalSound === id));
+  return { ui, sounds };
+};
+
+/** The core player inventory row, the inventory skill's handling tuning and the core UI text its refusals read, which every registry needs for the reach and handling rules; taken from base content so no test restates their values. */
 export const playerInventorySource = (): ContentSource => ({
   source: 'player-inventory-fixture.json',
-  data: { ...baseJson('inventory.json'), skills: [baseSkill(CORE_CONTENT_IDS.inventoryManagement)] },
+  data: { ...baseJson('inventory.json'), ...coreUi(), skills: [baseSkill(CORE_CONTENT_IDS.inventoryManagement)] },
 });
 
 /** The firearms skill's tuning, which held-item rendering needs; taken from base content so no test restates its values. */

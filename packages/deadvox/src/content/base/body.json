@@ -133,6 +133,7 @@
       "id": "player",
       "infectionChance": 0.5,
       "infectionOnsetGameHours": 2,
+      "knockoutRefusal": "I'm out cold",
       "knockoutSimSeconds": 20,
       "landing": {
         "cause": "a fall",

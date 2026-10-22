@@ -2,6 +2,7 @@
 import { type Character, dominantSide, offSide } from './character.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
+import { coreMessage } from './coreText.ts';
 import { admissionRefusal } from './crafting.ts';
 import { planDisassembly, sameDisassemblyOutputs } from './disassembly.ts';
 import { type Inventory, validateWorkItem } from './inventory.ts';
@@ -27,14 +28,17 @@ const repairTargetRefusal = (inventory: Inventory, item: Item, reach: ReachSnaps
   }
   const target = inventory.itemByUid(targetUid);
   const { work } = item;
+  const { registry } = inventory;
   if (work?.kind !== 'craft') {
-    return 'The repair target is missing';
+    return coreMessage(registry, 'repairTargetGone');
   }
-  const recipe = inventory.registry.recipes.get(work.recipe);
+  const recipe = registry.recipes.get(work.recipe);
   if (!(recipe && target) || target.uid === item.uid || target.type !== recipe.result.item || target.count !== 1) {
-    return 'The repair target is missing';
+    return coreMessage(registry, 'repairTargetGone');
   }
-  return reach.entries.some((entry) => entry.item === target) ? undefined : 'The repair target is out of reach';
+  return reach.entries.some((entry) => entry.item === target)
+    ? undefined
+    : coreMessage(registry, 'repairTargetOutOfReach');
 };
 
 export const craftActionHooks = (
@@ -62,7 +66,7 @@ export const craftActionHooks = (
       sameTools &&
       sameDisassemblyOutputs(current.outputs, plan.outputs)
       ? undefined
-      : 'The item or its yield changed';
+      : coreMessage(inventory.registry, 'yieldChanged');
   },
   begin: (plan, repair) => inventory.beginWork(plan, repair)?.uid,
   owns: (uid) => inventory.itemByUid(uid)?.work !== undefined,
@@ -70,13 +74,13 @@ export const craftActionHooks = (
     const item = inventory.itemByUid(uid);
     const work = item?.work;
     if (!(item && work)) {
-      return 'The work item is missing';
+      return coreMessage(inventory.registry, 'gone');
     }
     if (!inputsValid(inventory, item)) {
-      return 'Craft inputs changed';
+      return coreMessage(inventory.registry, 'craftInputsChanged');
     }
     if (inventory.hands[dominantSide(inventory.character)] !== item || inventory.hands[offSide(inventory.character)]) {
-      return 'The work needs both hands';
+      return coreMessage(inventory.registry, 'workNeedsBothHands');
     }
     const repairRefusal = repairTargetRefusal(inventory, item, reach());
     if (repairRefusal) {

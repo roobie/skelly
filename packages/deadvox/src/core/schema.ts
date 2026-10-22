@@ -51,6 +51,7 @@ import {
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { SPAWN_TIME_NAMES } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
+import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS, SLOT_PATTERN } from './coreText.ts';
 import { DAY_PHASES } from './dayPhase.ts';
 import { DECAL_KINDS, type DecalKind } from './decalKinds.ts';
 import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
@@ -353,6 +354,29 @@ const InventoryTuningSchema = strictObject({
   }),
 });
 
+/** Text whose `{slot}` names are exactly `slots`, so a template can't drop or invent what code fills in. */
+const slotted = (slots: readonly string[]) =>
+  pipe(
+    Name,
+    check(
+      (text) => {
+        const named = new Set([...text.matchAll(SLOT_PATTERN)].map(([, slot]) => slot));
+        return named.size === slots.length && slots.every((slot) => named.has(slot));
+      },
+      slots.length === 0
+        ? 'must not name a {slot}'
+        : `must name exactly ${slots.map((slot) => `{${slot}}`).join(', ')}`,
+    ),
+  );
+
+const slottedTable = <K extends string>(slots: Readonly<Record<K, readonly string[]>>) =>
+  strictObject(
+    Object.fromEntries(Object.entries<readonly string[]>(slots).map(([key, names]) => [key, slotted(names)])) as Record<
+      K,
+      ReturnType<typeof slotted>
+    >,
+  );
+
 const UiTuningSchema = strictObject({
   id: Id,
   /** Multiplies every UI margin, padding and gap; below 1 packs the UI for smaller screens. */
@@ -398,6 +422,10 @@ const UiTuningSchema = strictObject({
   }),
   /** What the item action list calls an action whose wording does not depend on the item or wound. */
   itemActionLabels: strictObject({ stripRound: Name }),
+  /** Core's refusals and notices, by the key code asks for. */
+  coreMessages: slottedTable(CORE_MESSAGE_SLOTS),
+  /** What core's item, door and work options are called, by the key code asks for. */
+  coreActionLabels: slottedTable(CORE_LABEL_SLOTS),
   /** What the inventory screen calls each wear slot. */
   wearSlotLabels: strictObject({
     head: Name,
@@ -3203,6 +3231,8 @@ const BodyTuningSchema = pipe(
     infectionChance: Fraction,
     /** Sim seconds that the player remains unconscious. */
     knockoutSimSeconds: PositiveSimSeconds,
+    /** Why the player can't act while unconscious. */
+    knockoutRefusal: Name,
     /** Sim seconds to wait after stamina reaches zero before recovery begins. */
     staminaRegenDelaySimSeconds: PositiveSimSeconds,
     /** Player eye height in metres while unconscious and prone. */

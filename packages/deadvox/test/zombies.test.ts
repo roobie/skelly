@@ -2013,6 +2013,7 @@ describe('shambler scenarios', () => {
     const simulateAttacks = (godMode: boolean) => {
       const sim = new Simulation({
         seed: 9,
+        registry,
         bodyTuning: registry.body.get('player')!,
         compressionCaps: registry.compression.get('player')!.caps,
         clock: BASE_CLOCK,
