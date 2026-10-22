@@ -147,6 +147,20 @@ export const SIDES: readonly HandSide[] = ['right', 'left'];
 const other = (side: HandSide): HandSide => (side === 'right' ? 'left' : 'right');
 const pileKey = (pos: Vec3) => pos.join(',');
 const refuse = (reason: string): Plan => ({ ok: false, reason });
+
+/** Why an item can't leave where it is, whatever the target. */
+const heldInPlace = (item: Item, from: Location): string | undefined => {
+  if (from.kind === 'work') {
+    return 'Inputs are held by the work item';
+  }
+  if (from.kind === 'slot') {
+    return 'It is fitted to the firearm';
+  }
+  if (item.trap) {
+    return item.trap.state === 'armed' ? 'The trap is set' : 'The trap is shut on a leg';
+  }
+  return undefined;
+};
 const validSpot = (spot: unknown): boolean =>
   spot !== null &&
   typeof spot === 'object' &&
@@ -604,11 +618,9 @@ export class Inventory {
     if (!from) {
       return refuse("It isn't there any more");
     }
-    if (from.kind === 'work') {
-      return refuse('Inputs are held by the work item');
-    }
-    if (from.kind === 'slot') {
-      return refuse('It is fitted to the firearm');
+    const held = heldInPlace(item, from);
+    if (held) {
+      return refuse(held);
     }
     if (!Number.isInteger(count) || count < 1 || count > item.count) {
       return refuse(`Can't move ${count} of ${item.count}`);

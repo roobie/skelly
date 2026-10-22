@@ -712,6 +712,19 @@ const ExplosiveSchema = strictObject({
   sound: picklist(SOUND_EVENT_IDS),
 });
 
+/** A trap set on the floor that springs on whatever enters its cell (`SLICE-5.md`, "Settled bear-trap rules — issue #107"). */
+const TrapSchema = strictObject({
+  setSimSeconds: PositiveSimSeconds,
+  /** One uninterrupted bare-hands attempt; an interrupted attempt starts again from nothing. */
+  disarmSimSeconds: PositiveSimSeconds,
+  /** How long its jaws hold a caught leg before the victim pulls free. */
+  holdSimSeconds: PositiveSimSeconds,
+  /** The player's wound when it springs on them. */
+  playerInjury: strictObject({ region: picklist(BODY_REGIONS), damage: Positive, kind: picklist(DAMAGE_KINDS) }),
+  /** Health taken from a caught zombie's legs, shared between those not yet destroyed. */
+  zombieLegDamage: NonNegative,
+});
+
 const FirearmAttachmentEffectsSchema = strictObject({
   /** Fraction of the firearm's committed recoil kick removed at full condition. */
   recoilReduction: optional(Fraction),
@@ -868,6 +881,7 @@ const ItemSchema = strictObject({
   light: optional(LightSchema),
   igniter: optional(IgniterSchema),
   explosive: optional(ExplosiveSchema),
+  trap: optional(TrapSchema),
   readable: optional(ReadableSchema),
   /** Display capability shown in first person; later devices can share this rendering seam. */
   heldDisplay: optional(picklist(HELD_DISPLAY_KINDS)),

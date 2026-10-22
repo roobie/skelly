@@ -27,6 +27,7 @@ local authored = [
     import 'things/ammo_can.model.json',
     import 'things/jerry_can.model.json',
     import 'things/gas_canister.model.json',
+    import 'things/bear_trap.model.json',
     {
       "id": "hand_saw",
       "file": "assets/models/hand_saw.glb",
