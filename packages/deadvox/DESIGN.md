@@ -1757,16 +1757,21 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
 - **Shot impacts.** Each round that meets world geometry leaves a surface
   mark. Marks and dust are presentation, not simulation damage or save state.
   When a wall lies between eye and muzzle, tracing from the eye lets the near
-  wall receive its visible impact mark. See `traceShot` in
+  wall receive its visible impact mark. The shot trace's reach is shared
+  firearms tuning in content, so the crosshair, bore target and impact marks
+  agree on one range and a mod changes it once
+  (`PILLARS.md`, "Content forward compatibility"). See `traceShot` in
   `src/render/shotTrace.ts` and `ImpactEffects.fire` in
-  `src/render/impactEffects.ts`.
+  `src/render/impactEffects.ts`; the range comes from
+  `src/core/skillTraining.ts`, `firearmsCombatTuning`, and
+  `src/content/base/recipes.json`, `firearms_combat`.
 - **Magazines:** A detachable magazine is an item whose exported model carries gungen's fitted round column. Its calibre and capacity come from that model, as the pump's tube capacity does, so the geometry that fits the rounds also sets how many go in. Its cartridges are item state in feed order, top round first, and save with the magazine; loading pushes onto the top and stripping takes from it, as with a real spring-fed box. Each round loaded or stripped is one handling job, so releasing R loses nothing and the inputs replay deterministically. Hold R loads; stripping is the held magazine's item action, not an R gesture, because R's gestures load, rack and remove (`CONTROLS.md`, "Reload, rack, remove"). Loading and stripping a round both use the firearms skill's reload factor. See `src/core/magazine.ts`, `magazineSpec`, and `src/game/magazineHandling.ts`, `MagazineHandling`.
 - **Rifles:** A magazine is a child item of its firearm, so removing it preserves its identity and state; nested accessories and batteries use the same ownership. Cartridge data owns calibre-specific damage. A magazine change is one handling motion, so holding R does not repeat it and releasing R does not cancel it. Deadvox hand-authors `chargingHandleDegrees` because Gungen exports no value for it. See `CONTROLS.md`, "Reload, rack, remove" and `docs/firearm-cycle-playback.md` for the player actions and their presentation; `src/core/saveFormat.ts`, `wirePayloadSchema`; `src/core/pellets.ts`, `projectileShot`; `src/core/zombies.ts`, `ZombieSystem.firePellets`; `src/core/magazine.ts`, `magazineWellCalibre` and `slotsReason`; `src/game/firearmHandling.ts`, `FirearmMechanics`; and `src/render/handlingTurn.ts`, `handlingRotation`.
 - **Modular weapons:** Fitted accessories remain complete child items so removal and saving preserve identity, condition and nested contents. Default and fitted models use the same slot-frame contract; connector axes keep distinct attachment shapes aligned without per-kind guesses. Dynamic fitting trusts gungen's certificates instead of duplicating its geometry solver, while rail footprints remain separate because a slot anchor does not describe the full occupied span. The sling mount, which gungen does not export, is the one mount deadvox owns (see [Shoulder and sling](#shoulder-and-sling)). These boundaries keep rendering, saves and compatibility consistent. Firearm details must remain responsive as the inventory fills while the world continues; see `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.candidates`; `src/ui/inventoryScreen.ts`, `viewModel`; `src/core/items.ts`, `ItemFactory.create`, `snapshotItem` and `restoreItem`; `src/core/itemTree.ts`, `walkItemTree`; `src/render/itemLook.ts`, `itemLook`; and `src/render/models.ts`, `hideSlotNodes` and `ModelLibrary.attachParts`.
 
   A fitted optic owns the aiming sight line because its mount can obstruct the irons. Visible placement and aiming must share the connector transform so the view and shot remain aligned; see `src/render/firearmSight.ts`, `sightedFirearmModel`. Magnification changes the local sight picture, not the weapon or its ballistics, so zoom selection stays outside saved item and replay state. Content-controlled per-weapon memory lasts for the play session; a fresh session starts at the authored power rather than making a camera preference authoritative simulation state. See `src/game/opticZoom.ts`, `OpticZoom`; `src/core/opticView.ts`, `mountedOptic`, `opticViewSettings` and `projectLensAperture`; and `src/render/opticLens.ts`, `OpticLensRenderer`. The digital thermal optic stays out of loot, fitting and ADS until its thermal view exists; exposing an optic without its defining view would mislead the player. See `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`.
 
-  An attachment is an atom, so its mass is the mass authored for its item, and a fitted gun weighs the sum of its own parts and its fitted items; see `things/README.md`, "Rules". Every atom's item `weight` is authoritative even when atoms share a visual model. Assemblies author no competing item total: their model carries authored body-part masses, with replaceable geometry owned by the fitted child item instead. See `src/core/items.ts`, `typeWeightGrams`, and `src/core/modelMass.ts`, `modelBodyMassKg`. `muzzleLoad` combines fitted attachment mass with mount distance from the grip to feed the existing handling response. Runtime skill-zero tuning remains separate from attachment response so editing a debug endpoint cannot apply the attachment effect twice. Suppressors affect recoil, noise and wear; foregrips affect aim and stance; a powered light nested under a held firearm remains exposed to carried-light and sense behavior and drains its owned battery on simulation time. Effect estimates remain tunable until attachment behavior has been playtested. See `src/core/firearmAttachments.ts`, `muzzleLoad`, `firearmAttachmentResponse` and `wearFirearmAttachments`; `src/game/firearmHandling.ts`, `skillZeroHandlingSettingFor` and `skillZeroHandlingFor`; `src/core/items.ts`, `weightOf`; and `src/core/lights.ts`, `lightExposureFor`. Heat (#366), improvised accuracy, fouling and smoke (#365, all in #367) are deferred until after the playtest.
+  An attachment is an atom, so its mass is the mass authored for its item, and a fitted gun weighs the sum of its own parts and its fitted items; see `things/README.md`, "Rules". Every atom's item `weight` is authoritative even when atoms share a visual model. Assemblies author no competing item total: their model carries authored body-part masses, with replaceable geometry owned by the fitted child item instead. See `src/core/items.ts`, `typeWeightGrams`, and `src/core/modelMass.ts`, `modelBodyMassKg`. `muzzleLoad` combines fitted attachment mass with mount distance from the grip to feed the existing handling response. Runtime skill-zero tuning remains separate from attachment response so editing a debug endpoint cannot apply the attachment effect twice. Suppressors affect recoil, noise and wear, and foregrips affect aim, stance and wear. Effects are tagged with their model's attachment kind, each kind authors every effect it has, wear included as zero for none, and a suppressor model always exports its noise factor: a missing value is a content error rather than a silent neutral default, so an unfinished attachment cannot ship as one that does nothing (see `src/core/schema.ts`, `FirearmAttachmentEffectsSchema` and `AttachmentSchema`; `src/core/content.ts`, `checkItemAttachmentEffects`); a powered light nested under a held firearm remains exposed to carried-light and sense behavior and drains its owned battery on simulation time. Effect estimates remain tunable until attachment behavior has been playtested. See `src/core/firearmAttachments.ts`, `muzzleLoad`, `firearmAttachmentResponse` and `wearFirearmAttachments`; `src/game/firearmHandling.ts`, `skillZeroHandlingSettingFor` and `skillZeroHandlingFor`; `src/core/items.ts`, `weightOf`; and `src/core/lights.ts`, `lightExposureFor`. Heat (#366), improvised accuracy, fouling and smoke (#365, all in #367) are deferred until after the playtest.
 
 - **Military loot (3.2):** Authored Military-only usage protects military progression without inferring admission from calibre or furniture type. Shared supplies remain craftable even when military sources can carry them; ordinary crafting, salvage and unpacking cannot manufacture Military-only supplies. Fixed stock and its installed descendants must match their resolved source context. Tables supply weights, not a second geography authority. See `src/core/loot.ts`, `economyEligible` and `lootTypeIssue`, `src/core/magazine.ts`, `militaryLootItems`, and `src/core/content.ts`, `checkMilitaryLoot`.
 - **Spent cases per block:** Cases must never end inside terrain; use only clear,
@@ -1782,9 +1787,13 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   the case at the landing on Continue, without replaying
   the presentation arc. The landing is gameplay state; the arc is transient
   presentation. This avoids saving an individual physics body for every shot. A
-  deterministic scatter represents the pile visually. See
-  `docs/decisions/0006-firearm-handling.md`, `src/game/firearmHandling.ts`,
-  `FirearmMechanics`, and `src/core/scatterPile.ts`, `spentCaseScatter`.
+  deterministic scatter represents the pile visually. Ejection speed, flight
+  time and landing lift are shared firearms tuning in content rather than per
+  firearm, because every gun ejects the same presentation case and a mod should
+  change it in one place. See `docs/decisions/0006-firearm-handling.md`,
+  `src/game/firearmHandling.ts`, `FirearmMechanics`,
+  `src/core/scatterPile.ts`, `spentCaseScatter`, and
+  `src/content/base/recipes.json`, `firearms_combat`.
 - **Noise** is an event with loudness and position. Sprinting makes footsteps
   louder; melee, gunshots, doors, breaking glass and engines also make noise.
   Walls reduce how far it travels. Zombies hear, investigate and pass noise on
@@ -2080,12 +2089,23 @@ sole owner and preserving ordinary fuse and save behavior. The flight is
 presentation only: the pile renderer hides the item while its arc plays, and the
 arc follows the pile's visible pose so the landing does not jump. No second owner
 exists while an item is in flight, so saves and fuses see only the pile; behavior
-during flight is new work on a new issue. Mass limits range; #368 is
-the trigger for deciding whether atmospheric drag adds another limit. A throw
-adds no hit damage or landing lure; explosive effects belong to the grenade.
+during flight is new work on a new issue. A throw adds no hit damage or landing
+lure; explosive effects belong to the grenade.
 See `src/game/throwCharge.ts`, `ThrowCharge.place`;
 `src/render/itemThrows.ts`, `ItemThrows.update`; and `src/render/piles.ts`,
 `PileMeshes.sync`.
+
+Mass and air both limit range. Mass caps the speed the arm can give; drag then
+takes a share of that range by how much air the item pushes for its mass, so a
+flimsy glowstick falls shorter than a dense grenade thrown with the same effort.
+Drag derives from the item's footprint and mass, so no item needs its own row.
+The footprint is a cell-rounded outline, not the face that meets the air, so one
+coefficient against it stands in for shape and tumbling. The range comes from
+stepping a level 45-degree flight with drag at a fixed step, so the same throw
+always lands at the same place, and a replay records that range. The arc's
+height and flight time do not depend on drag. See `src/core/itemThrow.ts`,
+`throwDistanceForItem` and `dragRangeShare`, and
+`src/content/base/inventory.jsonnet`, `throwDrag`.
 
 ## Hand grenade
 

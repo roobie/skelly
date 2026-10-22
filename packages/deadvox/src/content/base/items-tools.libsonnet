@@ -142,6 +142,15 @@ local items = [
     tool: { qualities: { opening: 5 } },
   },
   {
+    id: 'whetstone',
+    name: 'Whetstone',
+    category: 'tool',
+    size: [1, 2],
+    description: 'A small stone for honing a blade by hand.',
+    model: 'whetstone',
+    tool: { qualities: { sharpening: 1 } },
+  },
+  {
     id: 'bear_trap',
     model: 'bear_trap',
     name: 'Bear trap',

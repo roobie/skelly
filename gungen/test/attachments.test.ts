@@ -254,6 +254,69 @@ const singleObstructionFixture = (obstructionKind: 'solid' | 'keep-out') => {
   return { rail, blockedIndex, clearIndex, slots, compatibility };
 };
 
+/**
+ * A rail host whose bore and clearance shorten the rail front sight's post, beneath an obstruction
+ * that only the post built with the host's inherited values clears.
+ */
+const inheritedHostParamFixture = () => {
+  const sightFamily = FAMILIES['rail-front-sight'];
+  if (!sightFamily) {
+    throw new Error('Rail front sight family is missing');
+  }
+  const postTop = (value: string) => {
+    const post = sightFamily.build({ bore: value, clearance: value }).solids.find(({ id }) => id === 'post');
+    if (!post) {
+      throw new Error('Rail front sight has no post');
+    }
+    return localSolidBounds(post)[1][1];
+  };
+  const { values, default: defaultValue } = sightFamily.params.bore!;
+  const hostValue = [...values].sort((a, b) => postTop(a) - postTop(b))[0]!;
+  const inheritedTop = postTop(hostValue);
+  const defaultTop = postTop(defaultValue);
+  const host: PartFamily = {
+    name: 'fixture-inheriting-host',
+    params: {
+      barrelBore: { values, default: defaultValue },
+      clearance: { values, default: defaultValue },
+    },
+    build: () => ({
+      family: 'fixture-inheriting-host',
+      ports: [
+        {
+          id: 'rail',
+          mount: 'rail-top',
+          gender: 'female',
+          pos: [0, 0, 0],
+          normal: [0, 1, 0],
+          up: [1, 0, 0],
+          slots: { count: 5, pitch: 2 },
+        },
+      ],
+      solids: [{ id: 'fixture-host-body', kind: 'box', box: { center: [4, -2, 0], half: [8, 2, 3] } }],
+      // A keep-out, not a solid: overlap between connected solids is allowed an interface depth the
+      // gap between the two post tops does not exceed.
+      keepOuts: [
+        {
+          id: 'fixture-post-obstruction',
+          kind: 'fixture obstruction',
+          box: { center: [4, (inheritedTop + 3 * defaultTop) / 4, 0], half: [8, (defaultTop - inheritedTop) / 4, 3] },
+        },
+      ],
+      axes: [],
+    }),
+  };
+  const domain: Domain = { ...gunDomain, families: { ...gunDomain.families, [host.name]: host } };
+  const assembly: Assembly = {
+    name: 'inherited-host-param-fixture',
+    root: 'host',
+    parts: { host: { family: host.name, params: { barrelBore: hostValue, clearance: hostValue } } },
+    connections: [],
+  };
+  const slots = attachmentSlots(resolve(assembly, domain));
+  return { inheritedTop, defaultTop, slots, compatibility: attachmentCompatibility(assembly, slots, domain) };
+};
+
 const compareText = (a: string, b: string): number => {
   if (a < b) {
     return -1;
@@ -901,6 +964,13 @@ describe('attachment parts and export metadata', () => {
     for (const id of certified) {
       expect(passesValidation(id), id).toBe(true);
     }
+  });
+
+  it('certifies an attachment as built with the params it inherits from its host', () => {
+    const { inheritedTop, defaultTop, slots, compatibility } = inheritedHostParamFixture();
+    // The obstruction sits between the two post tops, so only the inherited build clears it.
+    expect(inheritedTop).toBeLessThan(defaultTop);
+    expect(slots.some(({ id }) => compatibility[id]?.includes('rail-front-sight'))).toBe(true);
   });
 
   it('fits a foregrip to the AK handguard bottom rail that validation accepts', () => {

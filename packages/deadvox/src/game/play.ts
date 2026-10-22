@@ -40,6 +40,7 @@ import { pileScatterPlacements } from '../core/scatterPile.ts';
 import { discoveryForPlan } from '../core/scenarioDiscovery.ts';
 import type { BodyTuningDef } from '../core/schema.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
+import { firearmsCombatTuning } from '../core/skillTraining.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
 import { soundVariantKey } from '../core/soundSynth.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, realTimestamp } from '../core/time.ts';
@@ -112,7 +113,7 @@ import { debugTargetRay } from './debugTargetRay.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
 import { firearmBoreRay, firearmBoreTarget } from './firearmAim.ts';
-import { CASE_LANDING_LIFT, firearmHandlingFor } from './firearmHandling.ts';
+import { firearmHandlingFor } from './firearmHandling.ts';
 import { FirearmTrigger } from './firearmTrigger.ts';
 import { advanceLiveFrame, observeRealFrame, realNow, startRealFrames } from './frameDriver.ts';
 import { adjustLookPitch, Input } from './input.ts';
@@ -193,9 +194,9 @@ import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
-const caseLandingWorldPosition = ([x, y, z]: Vec3, blockSize: number): Vec3 => [
+const caseLandingWorldPosition = ([x, y, z]: Vec3, blockSize: number, liftMetres: number): Vec3 => [
   (x + 0.5) * blockSize,
-  y * blockSize + CASE_LANDING_LIFT,
+  y * blockSize + liftMetres,
   (z + 0.5) * blockSize,
 ];
 
@@ -936,7 +937,14 @@ export const startPlay = (
     onConsumed: (type) => tutorial?.consumed(type),
     onBatterySwapped: (lightType) => tutorial?.batterySwapped(lightType),
     onFirearmEjection: (effect) =>
-      caseEffects.spawn({ ...effect, landingPosition: caseLandingWorldPosition(effect.landingPosition, s) }),
+      caseEffects.spawn({
+        ...effect,
+        landingPosition: caseLandingWorldPosition(
+          effect.landingPosition,
+          s,
+          firearmsCombatTuning(registry).caseEjection.landingLiftMetres,
+        ),
+      }),
     onFirearmCaseLanded: (seed, item, instanceIndex) => {
       const location = inventory.locate(item);
       if (location?.kind !== 'pile') {
@@ -3359,10 +3367,12 @@ export const startPlay = (
   };
 
   const targetAlongBore = (bore: ReturnType<typeof firearmBoreRay>) => {
+    const rangeBlocks = firearmsCombatTuning(registry).shotTraceRangeBlocks;
     const surface = crosshairTarget(
       { world: engine.world, registry, entities, isSolid: engine.isSolid, blockSize: s },
       bore.origin,
       bore.direction,
+      rangeBlocks,
     );
     return firearmBoreTarget({
       eye: bore.origin,
@@ -3371,6 +3381,7 @@ export const startPlay = (
       zombies: zombieSystem,
       blockSize: s,
       weapon: unarmedMeleeWeapon(registry.meleeClasses),
+      rangeBlocks,
     });
   };
 

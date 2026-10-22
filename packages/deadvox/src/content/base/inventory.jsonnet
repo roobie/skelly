@@ -18,6 +18,7 @@
       search: { minSimSeconds: 1, maxSimSeconds: 3, cellsForMax: 160 },
       throwFlightSimSeconds: 0.75,
       throwArcHeightMetres: 1.1,
+      throwDrag: { airDensityKgPerCubicMetre: 1.2, footprintDragCoefficient: 0.25 },
       furnitureMove: {
         maxSizeMetres: 1,
         liftStamina: 15,
