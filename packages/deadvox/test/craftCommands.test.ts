@@ -6,12 +6,12 @@ import {
   practiceForNextLevel,
   SKILL_LEVEL_LEGENDARY,
 } from '../src/core/character.ts';
+import { coreMessage } from '../src/core/coreText.ts';
 import { CraftCommands } from '../src/core/craftCommands.ts';
 import { craftActionHooks } from '../src/core/craftWork.ts';
 import { disassemblyOutputs } from '../src/core/disassembly.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { type HandSide, Inventory } from '../src/core/inventory.ts';
-import { coreMessage } from '../src/core/coreText.ts';
 import { options } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { baseRegistry } from './baseRegistry.ts';

@@ -139,11 +139,11 @@ describe('door locks', () => {
   });
   it('lock options distinguish no held key from a wrong key and use the door handling time', () => {
     const { inventory, door } = make();
-    const text = (key: CoreMessageKey) => coreMessage(inventory.registry, key);
-    expect(doorOptions(inventory, door)[1]!.plan).toEqual({ ok: false, reason: text('noKey') });
+    const say = (message: CoreMessageKey) => coreMessage(inventory.registry, message);
+    expect(doorOptions(inventory, door)[1]!.plan).toEqual({ ok: false, reason: say('noKey') });
     const wrong = inventory.create('lock_test_key_b');
     inventory.add(wrong, { kind: 'hand', side: 'right' });
-    expect(doorOptions(inventory, door)[1]!.plan).toEqual({ ok: false, reason: text('wrongKey') });
+    expect(doorOptions(inventory, door)[1]!.plan).toEqual({ ok: false, reason: say('wrongKey') });
     inventory.consume(wrong);
     inventory.add(inventory.create('lock_test_key_a'), { kind: 'hand', side: 'left' });
     expect(doorOptions(inventory, door)[1]).toMatchObject({
@@ -151,7 +151,7 @@ describe('door locks', () => {
       plan: { ok: true, time: 0.3 },
     });
     inventory.canReachEntity = () => false;
-    expect(doorOptions(inventory, door)[1]!.plan).toEqual({ ok: false, reason: text('tooFar') });
+    expect(doorOptions(inventory, door)[1]!.plan).toEqual({ ok: false, reason: say('tooFar') });
   });
   it('open-close plans do not recheck F target reach', () => {
     const { inventory, door } = make();

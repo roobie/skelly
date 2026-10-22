@@ -17,7 +17,10 @@ const refusalSound = {
 };
 const slottedFixture = (slots: Readonly<Record<string, readonly string[]>>): Record<string, string> =>
   Object.fromEntries(
-    Object.entries(slots).map(([key, names]) => [key, [`fixture ${key}`, ...names.map((name) => `{${name}}`)].join(' ')]),
+    Object.entries(slots).map(([key, names]) => [
+      key,
+      [`fixture ${key}`, ...names.map((name) => `{${name}}`)].join(' '),
+    ]),
   );
 const coreMessages = slottedFixture(CORE_MESSAGE_SLOTS);
 const wearSlotLabels = Object.fromEntries(

@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
-import { Inventory, type Target } from '../src/core/inventory.ts';
 import { coreMessage } from '../src/core/coreText.ts';
+import { Inventory, type Target } from '../src/core/inventory.ts';
 import { chargeOf } from '../src/core/lights.ts';
 import { freshDropTarget } from '../src/core/options.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';

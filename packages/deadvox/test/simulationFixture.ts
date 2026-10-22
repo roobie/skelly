@@ -170,6 +170,11 @@ export const COMPRESSION_CAPS_FIXTURE: CompressionCaps = {
 };
 
 let baseUi: Pick<Registry, 'ui'> | undefined;
+/** The base content's UI tuning, which words the simulation's refusals; read once, since it is never changed. */
+const baseText = (): Pick<Registry, 'ui'> => {
+  baseUi ??= { ui: baseRegistry().ui };
+  return baseUi;
+};
 
 export class Simulation extends CoreSimulation {
   constructor(
@@ -182,7 +187,7 @@ export class Simulation extends CoreSimulation {
   ) {
     super({
       ...options,
-      registry: options.registry ?? (baseUi ??= { ui: baseRegistry().ui }),
+      registry: options.registry ?? baseText(),
       clock: options.clock ?? BASE_CLOCK,
       bodyTuning: options.bodyTuning ?? BODY_TUNING_FIXTURE,
       compressionCaps: options.compressionCaps ?? COMPRESSION_CAPS_FIXTURE,

@@ -357,7 +357,9 @@ const slotted = (slots: readonly string[]) =>
         const named = new Set([...text.matchAll(SLOT_PATTERN)].map(([, slot]) => slot));
         return named.size === slots.length && slots.every((slot) => named.has(slot));
       },
-      slots.length === 0 ? 'must not name a {slot}' : `must name exactly ${slots.map((slot) => `{${slot}}`).join(', ')}`,
+      slots.length === 0
+        ? 'must not name a {slot}'
+        : `must name exactly ${slots.map((slot) => `{${slot}}`).join(', ')}`,
     ),
   );
 
