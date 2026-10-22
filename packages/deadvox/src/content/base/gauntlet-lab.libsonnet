@@ -14,6 +14,16 @@ local storey = function(id, rooms) {
   slots: circulation.slots + rooms + threat.slots(id, [r for r in rooms if r.choices[0].ref.id != 'gauntlet_lab_culture_stair_join']),
   joins: [], ports: [], anchors: {},
 };
+// Where level two hands over to the grid below, in one place so level three's round rewrites only this.
+local join = {
+  landings: { middle_middle: 'culture_stair_join', north_east: 'cold_store_incoming_east', south_west: 'breach' },
+  standing: [35, 17, 33],
+  descent: { ladder: [59, 17, 10], upper: [58, 25, 11], lower: [58, 17, 11] },
+  slots: [
+    slot('administration_stair', 'piece', level.stair.id, administration.stairAt, level.stair.size),
+    slot('administration_shaft', 'piece', descents.mapPieces[3].id, [58, 17, 10], [3, 8, 2]),
+  ],
+};
 local cabinetShape = [
   { position: [0, 0, 0], size: [4, 0.3, 2] }, { position: [0, 0.3, 0], size: [0.3, 4.7, 2] },
   { position: [3.7, 0.3, 0], size: [0.3, 4.7, 2] }, { position: [0.3, 4.7, 0], size: [3.4, 0.3, 2] },
@@ -25,18 +35,18 @@ local cabinetShape = [
   anchors: {
     storeys: [
       { id: 'entry', standing: entry.standing }, { id: 'administration', standing: administration.standing },
-      { id: 'containment', standing: [35, 17, 29] }, { id: 'failure', standing: [35, 9, 29] },
+      { id: 'containment', standing: join.standing }, { id: 'failure', standing: [35, 9, 29] },
       { id: 'bottom', standing: [35, 1, 29] },
     ],
     descents: [
       entry.shaft,
-      { ladder: [59, 17, 10], upper: [58, 25, 11], lower: [58, 17, 11] },
+      join.descent,
       { ladder: [35, 9, 10], upper: [34, 17, 11], lower: [34, 9, 11] },
       { ladder: [35, 9, 48], upper: [34, 17, 49], lower: [34, 9, 49] },
       { ladder: [12, 1, 29], upper: [11, 9, 30], lower: [11, 1, 30] },
       { ladder: [59, 1, 29], upper: [58, 9, 30], lower: [58, 1, 30] },
     ],
-    stairs: [entry.stair],
+    stairs: [entry.stair, administration.stair],
     seals: [entry.seal, administration.seal],
     objective: [30, 3, 26],
   },
@@ -84,9 +94,9 @@ local cabinetShape = [
     room('quarantine', '', 'breach', 'breach'), room('breach', '', 'breach', 'spill'), room('decon', '', 'pump', 'spill'), room('holding', '', 'spill', 'spill'),
     room('objective', '', 'objective', 'breach'), room('quarantine_incoming_east', '_incoming_east', 'breach', 'breach'),
     storey('containment', [
-      placedRoom('north_west', 'containment', [4, 0, 4]), placedRoom('north_middle', 'assay_outgoing', [27, 0, 4]), placedRoom('north_east', 'cold_store_incoming_east', [50, 0, 4]),
-      placedRoom('middle_west', 'observation', [4, 0, 23]), placedRoom('middle_middle', 'culture', [27, 0, 23]), placedRoom('middle_east', 'decon', [50, 0, 23]),
-      placedRoom('south_west', 'breach_incoming', [4, 0, 42]), placedRoom('south_middle', 'security_outgoing', [27, 0, 42]), placedRoom('south_east', 'containment', [50, 0, 42]),
+      placedRoom('north_west', 'containment', [4, 0, 4]), placedRoom('north_middle', 'assay_outgoing', [27, 0, 4]), placedRoom('north_east', join.landings.north_east, [50, 0, 4]),
+      placedRoom('middle_west', 'observation', [4, 0, 23]), placedRoom('middle_middle', join.landings.middle_middle, [27, 0, 23]), placedRoom('middle_east', 'decon', [50, 0, 23]),
+      placedRoom('south_west', join.landings.south_west, [4, 0, 42]), placedRoom('south_middle', 'security_outgoing', [27, 0, 42]), placedRoom('south_east', 'containment', [50, 0, 42]),
     ]),
     storey('failure', [
       placedRoom('north_west', 'breach', [4, 0, 4]), placedRoom('north_middle', 'quarantine_incoming', [27, 0, 4]), placedRoom('north_east', 'containment', [50, 0, 4]),
@@ -109,7 +119,7 @@ local cabinetShape = [
         slot('holding_top', 'piece', 'gauntlet_lab_holding_top', [4, 8, 42], [18, 4, 14]),
         slot('entry_stair', 'piece', level.stair.id, entry.stairAt, level.stair.size),
         slot('entry_shaft', 'piece', descents.mapPieces[3].id, [entry.shaft.ladder[0] - 1, entry.shaft.ladder[1], entry.shaft.ladder[2]], [3, 8, 2]),
-        slot('research_east_descent', 'piece', descents.mapPieces[3].id, [58, 17, 10], [3, 8, 2]),
+      ] + join.slots + [
         slot('containment_north_descent', 'piece', descents.mapPieces[3].id, [34, 9, 10], [3, 8, 2]),
         slot('containment_south_descent', 'piece', descents.mapPieces[3].id, [34, 9, 48], [3, 8, 2]),
         slot('failure_west_descent', 'piece', descents.mapPieces[3].id, [11, 1, 29], [3, 8, 2]),
