@@ -1,6 +1,6 @@
 import type { Design, DesignIssue, DesignLoadResult } from '@skelly/engine/assembly/design.ts';
 import type { DesignLoadInputs } from '@skelly/engine/assembly/designLoader.ts';
-import { loadDesign, loadDesignValue } from '@skelly/engine/assembly/designLoader.ts';
+import { loadDesignValue, readDeclaredStatus } from '@skelly/engine/assembly/designLoader.ts';
 import { describeValue, parseAssemblyJson } from '@skelly/engine/assembly/parseAssembly.ts';
 import type { Resolved } from '@skelly/engine/assembly/schema.ts';
 import type { Template } from '@skelly/engine/assembly/template.ts';
@@ -170,16 +170,25 @@ export const loadGunDesign = (text: string): GunDesignLoadResult => {
   let raw: unknown;
   try {
     raw = JSON.parse(text);
-  } catch {
-    return loadDesign(text, {
-      domain: gunDomain,
-      template: TEMPLATES[0]!,
-      prefabs: GUN_PREFABS,
-    }) as GunDesignLoadResult;
+  } catch (err) {
+    return {
+      ok: false,
+      declaredStatus: undefined,
+      error: { code: 'invalid-json', message: `invalid JSON: ${err instanceof Error ? err.message : String(err)}` },
+    };
   }
-  const template =
-    isRecord(raw) && typeof raw.template === 'string'
-      ? (TEMPLATES.find((candidate) => candidate.name === raw.template) ?? TEMPLATES[0]!)
-      : TEMPLATES[0]!;
+  // A non-string template reaches the engine loader, which refuses it as an invalid shape.
+  let template = TEMPLATES[0]!;
+  if (isRecord(raw) && typeof raw.template === 'string') {
+    const found = TEMPLATES.find((candidate) => candidate.name === raw.template);
+    if (!found) {
+      return {
+        ok: false,
+        declaredStatus: readDeclaredStatus(raw),
+        error: { code: 'invalid-shape', path: 'template', message: `unknown template ${JSON.stringify(raw.template)}` },
+      };
+    }
+    template = found;
+  }
   return loadGunDesignValue(raw, { domain: gunDomain, template, prefabs: GUN_PREFABS });
 };

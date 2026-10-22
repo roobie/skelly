@@ -41,9 +41,9 @@ local familyHex = {
 {
   finishSlots: [slot[0] for slot in slots],
   fixtureProfiles: {
-    'archetype-ak': 'ak', 'archetype-ar': 'ar', 'archetype-ar-free-float': 'ar-free-float',
+    'archetype-ak': 'ak', 'archetype-ak-akm': 'ak', 'archetype-anti-materiel': 'anti-materiel', 'archetype-ar': 'ar', 'archetype-ar-free-float': 'ar-free-float',
     'archetype-awm': 'awm', 'archetype-battle-rifle': 'battle-rifle', 'archetype-bolt-rifle': 'bolt-rifle',
-    'archetype-bolt-rifle-box': 'bolt-rifle-box', 'archetype-bullpup': 'bullpup', 'archetype-pistol': 'pistol',
+    'archetype-bolt-rifle-box': 'bolt-rifle-box', 'archetype-pistol': 'pistol',
     'archetype-pump-shotgun': 'pump-shotgun', 'archetype-revolver': 'revolver', 'archetype-smg': 'smg',
   },
   slotMaterials: slotMaterials,
@@ -66,8 +66,6 @@ local familyHex = {
       pistol: finish('polymer-black', 'steel-blued'), revolver: finish('wood-walnut', 'steel-stainless'),
       'battle-rifle': finish('wood-walnut', 'steel-parkerized'), 'bolt-rifle': finish('wood-walnut', 'steel-parkerized'),
       'bolt-rifle-box': finish('wood-walnut', 'steel-parkerized'), 'bolt-rifle-thumbhole': finish('wood-walnut', 'steel-parkerized'),
-      bullpup: finish('polymer-black', 'steel-parkerized'),
-      barrett: finish('steel-parkerized', 'steel-parkerized', 'steel-parkerized'),
       'anti-materiel': finish('polymer-fde', 'steel-parkerized'),
     },
   },
