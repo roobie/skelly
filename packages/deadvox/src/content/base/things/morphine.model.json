@@ -1,0 +1,7 @@
+{
+  "id": "morphine",
+  "file": "assets/models/morphine.glb",
+  "grip": { "at": [0, 0.036, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1,0 +1,10 @@
+{
+  "id": "wax",
+  "file": "assets/models/wax.glb",
+  "parts": {
+    "material": { "node": "material:turnedStock", "massKg": 0.05, "centreOfMass": [0, 0.013361871616395973, 0] }
+  },
+  "grip": { "at": [0, 0.0155, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -86,13 +86,13 @@
     }
   ],
   "items": [
-    { "id": "stick", "name": "Stick", "category": "material", "weight": 200, "size": [1, 4], "stack": 6 },
-    { "id": "wax", "name": "Wax lump", "category": "material", "weight": 50, "size": [1, 1], "stack": 10 },
+    { "id": "stick", "name": "Stick", "category": "material", "model": "stick", "size": [1, 4], "stack": 6 },
+    { "id": "wax", "name": "Wax lump", "category": "material", "model": "wax", "size": [1, 1], "stack": 10 },
     {
       "id": "wooden_plank",
       "name": "Wooden plank",
       "category": "material",
-      "weight": 500,
+      "model": "wooden_plank",
       "size": [2, 4],
       "disassembly": {
         "timeGameMinutes": 4,
@@ -135,7 +135,7 @@
       "id": "field_patch",
       "name": "Field repair patch",
       "category": "material",
-      "weight": 120,
+      "model": "field_patch",
       "size": [1, 2],
       "disassembly": {
         "timeGameMinutes": 12,

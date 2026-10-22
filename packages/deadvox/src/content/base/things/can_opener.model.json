@@ -1,0 +1,14 @@
+{
+  "id": "can_opener",
+  "file": "assets/models/can_opener.glb",
+  "parts": {
+    "body": {
+      "node": "body:handOpener",
+      "massKg": 0.1,
+      "centreOfMass": [-0.058518256502378914, 0.008871417720597692, 0.00038065804559504746]
+    }
+  },
+  "grip": { "at": [-0.08000275558820616, 0.007, -0.0166711916682587], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

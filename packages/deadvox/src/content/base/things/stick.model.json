@@ -1,0 +1,10 @@
+{
+  "id": "stick",
+  "file": "assets/models/stick.glb",
+  "parts": {
+    "material": { "node": "material:turnedStock", "massKg": 0.2, "centreOfMass": [0.1638533875934888, 0, 0] }
+  },
+  "grip": { "at": [0.2, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 0
+}

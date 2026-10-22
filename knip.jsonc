@@ -6,6 +6,7 @@
       "project": ["site/**/*.js!", "test/**/*.{js,mjs,ts,tsx}", "tools/**/*.{js,mjs,ts,tsx}"]
     },
     "packages/deadvox": {
+      "ignore": ["vendor/rapier-f64/**"],
       "ignoreBinaries": [
         // Local publication uses the operator's mise-managed, authenticated Surge CLI.
         "mise",
@@ -42,7 +43,8 @@
         "/src/spikes/expressions/luau.ts",
         "/src/spikes/expressions/benchmark.ts",
         "/test/expressionWasmCases.ts",
-        "/src/vehicles/feasibility/runner.ts"
+        "/src/vehicles/feasibility/runner.ts",
+        "/tools/rapier-f64/candidate.ts"
       ],
       "entry": [
         "index.html!",
@@ -58,6 +60,7 @@
         "tools/police-item-models.mjs",
         "tools/military-item-models.mjs",
         "tools/probe-wasm-expressions.mjs",
+        "tools/rapier-f64/candidate.ts",
         "src/spikes/expressions/benchmark.ts",
         "tools/bench-rigid-body.mjs",
         "tools/bench-zombie-swings.mjs",
