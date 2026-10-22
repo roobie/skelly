@@ -232,6 +232,7 @@ local campWallRunCrouchHole = campWallRun + {
       "name": "Ammunition can",
       "size": [1, 1, 1],
       "color": "#5b6142",
+      "appearance": { "kind": "lid", "surface": "painted-metal" },
       "container": {
         "pockets": [
           {

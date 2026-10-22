@@ -201,6 +201,10 @@
       "solidFill": 0.01
     },
     {
+      "appearance": {
+        "kind": "lid",
+        "surface": "painted-metal"
+      },
       "breach": {
         "durability": 60,
         "minimumStrength": 3.5
@@ -215,7 +219,7 @@
         ]
       },
       "id": "ammo_can",
-      "material": "wood",
+      "material": "steel",
       "name": "Ammunition can",
       "size": [1, 1, 1]
     },

@@ -1542,7 +1542,7 @@ const FurnitureSchema = pipe(
     climbable: optional(strictObject({ speedMetresPerSimSecond: Positive })),
     appearance: optional(
       strictObject({
-        kind: picklist(['cabinet', 'drawers', 'fridge']),
+        kind: picklist(['cabinet', 'drawers', 'fridge', 'door', 'lid', 'rack']),
         surface: picklist(['wood', 'painted-metal', 'plastic']),
       }),
     ),
