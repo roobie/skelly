@@ -263,7 +263,7 @@ const canisterOption = (canister: Item, inv: Inventory): UseOption => {
   return tool
     ? {
         kind: 'use',
-        label: `Put a gas cartridge in the ${inv.name(tool).toLowerCase()}`,
+        label: `Put ${inv.name(canister).toLowerCase()} in the ${inv.name(tool).toLowerCase()}`,
         operation: 'canister',
         tool,
         canister,
@@ -275,6 +275,13 @@ const canisterOption = (canister: Item, inv: Inventory): UseOption => {
 const lightOption = (item: Item, view: ReachSnapshot): UseOption => {
   const inv = view.player.inventory;
   if (!item.on && chargeOf(inv.registry, item) === 0) {
+    if (defOf(inv.registry, item.type).tool?.fuel) {
+      const [fuel] = view.entries
+        .map((entry) => entry.item)
+        .filter((candidate) => fitsFuelledTool(inv, item, candidate) && (chargeOf(inv.registry, candidate) ?? 0) > 0)
+        .sort((a, b) => (chargeOf(inv.registry, b) ?? 0) - (chargeOf(inv.registry, a) ?? 0));
+      return fuel ? canisterOption(fuel, inv) : refuseUse("It's out of fuel, and you have no spare");
+    }
     if (!defOf(inv.registry, item.type).light?.power) {
       return refuseUse("It's out of fuel");
     }

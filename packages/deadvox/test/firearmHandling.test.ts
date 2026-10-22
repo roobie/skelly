@@ -418,7 +418,9 @@ describe('rifle firearm handling', () => {
       distanceMetres: 2 * pose.blockSize,
       point: bore.origin.map((value, axis) => value + bore.direction[axis]! * 2) as [number, number, number],
     };
-    const point = crosshairAimPoint(bore.origin, bore.direction, nearSurface);
+    const point = crosshairAimPoint(bore.origin, bore.direction, tuning.shotTraceRangeBlocks, [
+      nearSurface?.distanceBlocks,
+    ]);
     const direction = firedTrajectory.directions[0]!;
     expect(direction.every((value, axis) => Math.abs(value - bore.direction[axis]!) < 1e-9)).toBe(true);
     const alongRay = point.reduce(

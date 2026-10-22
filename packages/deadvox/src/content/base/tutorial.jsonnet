@@ -30,6 +30,21 @@ breach.breaking(shape.colliding({
     layers: [rows.repeat('############', 9)]
       + rows.repeat(cabinetWall, 3) + [wall] + [wall[:8] + ['WWWWWWWWWWWW']]
       + [rows.repeat('RRRRRRRRRRRR', 9)],
+  }, {
+    // The optional light module's windowless store; its crate sits in the corner farthest from the door.
+    id: 'tutorial_store',
+    lootContext: lootContext,
+    size: [6, 7, 5],
+    palette: {
+      '.': 'air', '#': 'planks', W: 'siding_blue', R: 'roof',
+      D: { furniture: 'wood_door', facing: 's' },
+      C: { furniture: 'crate' },
+    },
+    layers: [rows.repeat('######', 5)]
+      + rows.repeat(['WWWWWW', 'WCC..W', 'WCC..W', 'W....W', 'WWDDWW'], 2)
+      + rows.repeat(['WWWWWW', 'W....W', 'W....W', 'W....W', 'WWDDWW'], 2)
+      + [['WWWWWW', 'W....W', 'W....W', 'W....W', 'WWWWWW']]
+      + [rows.repeat('RRRRRR', 5)],
   }],
   layouts: [{
     id: 'tutorial',
@@ -48,11 +63,29 @@ breach.breaking(shape.colliding({
         { item: 'flashlight', fitted: { battery: 'aa_battery' } },
         { item: 'bandage', count: 2 },
       ] }],
+    }, {
+      // The charge lasts moments of light, so the light module's swap is needed rather than suggested.
+      template: 'tutorial_store', position: [5, 0, 10], rotation: 0,
+      fixedLoot: [{ at: [1, 1, 1], items: [
+        { item: 'flashlight', fitted: { battery: 'aa_battery' }, charge: 0.01 },
+        { item: 'aa_battery' },
+      ] }],
     }],
     player: { position: [0, 0.5, 8], bearing: 0 },
     shamblers: [{ type: 'shambler', position: [24, 0.5, 2] }],
     woodlands: [],
     tracks: [{ points: [[0, 12], [0, 1], [-8, 1], [-8, -12]], width: 3, surface: 'dirt' }],
     beats: [{ id: 'tutorial_exit', area: { x0: -10, z0: -15, x1: -6, z1: -11 } }],
+    practice: { light: {
+      light: 'flashlight',
+      battery: 'aa_battery',
+      labels: {
+        start: 'Light and power (optional)',
+        on: 'Switch on',
+        assign: 'Assign quickbar 1',
+        swap: 'Hold to put in the battery',
+        relight: 'Switch on',
+      },
+    } },
   }],
 }))

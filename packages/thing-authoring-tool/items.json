@@ -1003,6 +1003,36 @@
         "hold": "upright",
         "part": "material",
         "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, 0]
+      },
+      "id": "whetstone",
+      "parts": [
+        {
+          "family": "cutStock",
+          "finish": {
+            "body": "stone-whet"
+          },
+          "id": "material",
+          "massKg": 0.25,
+          "params": {
+            "axis": "y",
+            "end": "0.025000000000000001",
+            "profile": "[\n    [\n        -0.075,\n        -0.024\n    ],\n    [\n        0.075,\n        -0.024\n    ],\n    [\n        0.075,\n        0.024\n    ],\n    [\n        -0.075,\n        0.024\n    ]\n]",
+            "start": "0"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
         "solid": "fold-2",
         "turn": [0, 0, 0]
       },

@@ -22,7 +22,7 @@ const base = (file: string): ContentSource => {
   const source = `src/content/base/${file}`;
   const data = JSON.parse(readFileSync(source, 'utf8'));
   if (file === 'items-tools.json') {
-    data.items = data.items.filter((item: { id: string }) => !['torch', 'candle'].includes(item.id));
+    data.items = data.items.filter((item: { id: string }) => !['torch', 'candle', 'oil_lamp'].includes(item.id));
   }
   return { source, data };
 };

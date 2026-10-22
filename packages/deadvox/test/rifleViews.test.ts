@@ -22,6 +22,7 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { heldFirearmTransform } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { Rng } from '../src/core/random.ts';
+import { firearmsCombatTuning } from '../src/core/skillTraining.ts';
 import { type FirearmBoreRay, firearmBoreRay } from '../src/game/firearmAim.ts';
 import { FirearmMechanics, firearmHandlingFor } from '../src/game/firearmHandling.ts';
 import { handlingRotation } from '../src/render/handlingTurn.ts';
@@ -469,7 +470,10 @@ it.each([RIFLE, PUMP])('keeps the crosshair on the drawn %s bore through a rack,
     });
   };
   const onScreen = ({ muzzle, direction }: { muzzle: Vec3; direction: Vec3 }): Vector3 =>
-    new Vector3(...crosshairAimPoint(muzzle, direction, undefined)).multiplyScalar(BLOCK).project(camera).setZ(0);
+    new Vector3(...crosshairAimPoint(muzzle, direction, firearmsCombatTuning(registry).shotTraceRangeBlocks, []))
+      .multiplyScalar(BLOCK)
+      .project(camera)
+      .setZ(0);
   const { action } = firearmHandlingFor(gun, content);
   try {
     const restFrame = heldFrame();

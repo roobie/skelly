@@ -5,35 +5,34 @@ import { makeScale } from '../src/core/scale.ts';
 import type { SoundEmission } from '../src/core/soundPicker.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
-import {
-  createRefusalPresenter,
-  firearmShotSound,
-  HEARTBEAT_TUNING,
-  heartbeatForStamina,
-} from '../src/game/audioPresentation.ts';
+import { createRefusalPresenter, firearmShotSound, heartbeatForStamina } from '../src/game/audioPresentation.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 import { chargedRifle } from './rifleFixture.ts';
+import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 
 describe('heartbeat audio presentation', () => {
+  const tuning = BODY_TUNING_FIXTURE.heartbeat;
+  const heartbeat = (stamina: number) => heartbeatForStamina(tuning, stamina);
+
   it('uses the tuning anchors at the start stamina and exhaustion', () => {
-    const { startStamina, normalGain, veryHighGain } = HEARTBEAT_TUNING;
-    expect(heartbeatForStamina(startStamina).gain).toBe(normalGain);
-    expect(heartbeatForStamina(0).gain).toBe(veryHighGain);
+    const { startStamina, startGain, exhaustedGain } = tuning;
+    expect(heartbeat(startStamina).gain).toBe(startGain);
+    expect(heartbeat(0).gain).toBe(exhaustedGain);
   });
 
   it('is silent above the start stamina and meets the tuned rate endpoints', () => {
-    const { startStamina, startHz, exhaustedHz } = HEARTBEAT_TUNING;
-    expect(heartbeatForStamina(100).gain).toBe(0);
-    expect(heartbeatForStamina(startStamina + 1).gain).toBe(0);
-    expect(heartbeatForStamina(startStamina).bpm).toBeCloseTo(startHz * 60);
-    expect(heartbeatForStamina(0).bpm).toBeCloseTo(exhaustedHz * 60);
-    expect(heartbeatForStamina(startStamina).gain).toBeGreaterThan(0);
+    const { startStamina, startHz, exhaustedHz } = tuning;
+    expect(heartbeat(100).gain).toBe(0);
+    expect(heartbeat(startStamina + 1).gain).toBe(0);
+    expect(heartbeat(startStamina).bpm).toBeCloseTo(startHz * 60);
+    expect(heartbeat(0).bpm).toBeCloseTo(exhaustedHz * 60);
+    expect(heartbeat(startStamina).gain).toBeGreaterThan(0);
   });
 
   it('raises rate and loudness monotonically from the start to exhaustion', () => {
-    const samples = [85, 60, 30, 0].map(heartbeatForStamina);
+    const samples = [1, 0.7, 0.35, 0].map((share) => heartbeat(tuning.startStamina * share));
     for (let index = 1; index < samples.length; index++) {
       expect(samples[index]!.bpm).toBeGreaterThanOrEqual(samples[index - 1]!.bpm);
       expect(samples[index]!.gain).toBeGreaterThanOrEqual(samples[index - 1]!.gain);
@@ -42,10 +41,10 @@ describe('heartbeat audio presentation', () => {
   });
 
   it('interpolates rate and loudness linearly halfway to exhaustion', () => {
-    const { startStamina, startHz, exhaustedHz, normalGain, veryHighGain } = HEARTBEAT_TUNING;
-    const halfway = heartbeatForStamina(startStamina / 2);
+    const { startStamina, startHz, exhaustedHz, startGain, exhaustedGain } = tuning;
+    const halfway = heartbeat(startStamina / 2);
     expect(halfway.bpm).toBeCloseTo(((startHz + exhaustedHz) / 2) * 60);
-    expect(halfway.gain).toBeCloseTo((normalGain + veryHighGain) / 2);
+    expect(halfway.gain).toBeCloseTo((startGain + exhaustedGain) / 2);
   });
 });
 

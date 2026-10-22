@@ -25,6 +25,7 @@ const tuning = {
   spacing: 1,
   hudScale: 1,
   refusalSound: refusalSound.id,
+  audioVolumes: { master: 0.5, world: 0.5, body: 0.5, ui: 0.5 },
   restLabels: { rest: 'fixture rest', sleep: 'fixture sleep' },
   doorCloseBlockedMessages: { player: 'fixture player blocks', other: 'fixture other blocks' },
   itemActionLabels: { stripRound: 'fixture strip' },

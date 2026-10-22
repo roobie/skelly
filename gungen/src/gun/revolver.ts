@@ -1157,6 +1157,7 @@ const revolverBarrel: PartFamily = {
           id: 'muzzle',
           mount: 'muzzle',
           standard: 'rifled',
+          size: 'revolver',
           gender: 'female',
           pos: [len, 0, 0],
           normal: [1, 0, 0],

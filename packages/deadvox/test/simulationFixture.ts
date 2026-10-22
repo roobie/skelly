@@ -14,6 +14,7 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   knockoutSimSeconds: simSeconds(1),
   staminaRegenDelaySimSeconds: simSeconds(5),
   proneEyeHeightMetres: 0.2,
+  fragmentRegionHeights: { head: 0.85, torso: 0.45 },
   shockPerDamage: { blunt: 2, cut: 0, pierce: 0, acid: 1 },
   outerWearMultiplier: { blunt: 1, cut: 1, pierce: 1, acid: 4 },
   coverage: {
@@ -124,6 +125,14 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
       { need: 'fatigue', above: 90, message: 'Fixture exhausted' },
     ],
     badlyHurt: { below: 25, message: 'Fixture badly hurt' },
+  },
+  heartbeat: {
+    sounds: { slow: 'player_heartbeat_slow', fast: 'player_heartbeat_fast' },
+    startStamina: 80,
+    startHz: 1,
+    exhaustedHz: 3,
+    startGain: 0.1,
+    exhaustedGain: 0.8,
   },
   fatigueRisePerGameHour: gamePerHour(4),
   restFatigueRecoveryPerGameHour: gamePerHour(5),

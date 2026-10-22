@@ -114,6 +114,7 @@ describe('beginner mode light spotting', () => {
           movement: 'still',
           lit: true,
           lightSeenFrom: 40,
+          eyeHeightMetres: 1.3,
           sunlit: false,
         },
         dayPhase: 'night',

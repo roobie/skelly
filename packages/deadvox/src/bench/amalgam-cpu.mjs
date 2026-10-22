@@ -117,7 +117,14 @@ for (const { name, corridor } of scenarios) {
   const right = Math.ceil(envelope.halfWidth * 2 + 1);
   const solid = (x, y, z) => y === 0 || (y > 0 && (corridor ? x < 0 || x >= right : z < 0));
   const { bricks: terrain, isSolid } = arena(solid);
-  const sense = { pos: [0, 1, 0], facing: [0, 0, -1], movement: 'jogging', lit: false, lightSeenFrom: 40 };
+  const sense = {
+    pos: [0, 1, 0],
+    facing: [0, 0, -1],
+    movement: 'jogging',
+    lit: false,
+    lightSeenFrom: 40,
+    eyeHeightMetres: PLAYER.eye,
+  };
   const createSystem = () =>
     new ZombieSystem({
       player: () => sense,
