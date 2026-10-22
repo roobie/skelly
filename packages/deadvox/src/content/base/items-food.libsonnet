@@ -22,6 +22,7 @@ local soupGrams = 330;
     {
       id: 'canned_beans',
       name: 'Can of beans',
+      keywords: ['tin', 'legumes'],
       category: 'food',
       model: 'canned_beans',
       weight: canShellGrams + beansGrams,
