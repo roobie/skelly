@@ -342,7 +342,7 @@ describe('handling move admission', () => {
     }
     expect
       .soft(t.queue.enqueue(item, quickMove(item, t.view()).target))
-      .toEqual({ ok: false, reason: expect.any(String) });
+      .toEqual({ ok: false, reason: expect.any(String), key: 'alreadyQueued' });
     expect.soft(t.queue.jobs).toHaveLength(1);
     expect(t.queue.tick(first.job.duration).done).toEqual([first.job]);
     expect(t.queue.remaining).toBe(0);

@@ -128,7 +128,9 @@ it without touching the same lines. See `src/content/base/ui-core-text.libsonnet
 - **Read by key.** Code names each message by a stable key and never compares or matches
   wording, so rewording a message cannot change what the game does. A rule that treats
   some refusals specially, such as hiding the obvious ones from the item options, lists
-  keys. See `src/core/coreText.ts`, `coreMessage`, and `src/core/options.ts`, `OBVIOUS`.
+  keys, and a refusal another rule reacts to carries its key beside its text. See
+  `src/core/coreText.ts`, `coreMessage`; `src/core/options.ts`, `OBVIOUS`; and
+  `src/core/handling.ts`, `HandlingQueue.enqueue`.
 - **Required, with named slots.** One table of keys and slots drives both the schema and
   the lookup's type, so a key code asks for and content lacks fails validation, not play.
   A template names the values code fills in, such as `{item}`, and validation rejects one
@@ -136,11 +138,15 @@ it without touching the same lines. See `src/content/base/ui-core-text.libsonnet
   `src/core/schema.ts`, `slottedTable`.
 - **Owner rows.** The knockout refusal sits in the body row beside the bleeding refusal,
   because the body that owns the state words its refusal and needs no registry. The
-  simulation takes the registry so its long actions can word theirs. See
-  `src/core/body.ts`, `Body.actionRefusal`, and `src/core/sim.ts`, `SimOptions`.
+  simulation takes the registry so its long actions can word theirs, and it words the
+  death cause that the body and needs report as a key. See `src/core/body.ts`,
+  `Body.actionRefusal` and `Body.advance`, and `src/core/sim.ts`, `SimOptions`.
 
 Internal invariant reasons that only a code defect can produce, such as a missing action
-owner, stay in code: no player meets them, and content would only hide the defect.
+owner, stay in code: no player meets them, and content would only hide the defect. So do
+the reasons that check saves, placed loot and fitted-item slots against content, since
+they report broken data to a developer, and play only offers fits that already pass them
+(`src/core/magazine.ts`, `slotsReason`).
 
 ## Handling range
 
