@@ -1,8 +1,9 @@
 // What you hold, in first person (`DESIGN.md`, "Hands: what you see is what's there"):
 // the right hand, the left hand, or both for a two-handed item. Held items are drawn
 // after the world, in their own scene with the depth buffer cleared, so they never
-// clip into walls. The scene receives the world's sun shadow and local point lights;
-// burning fallback models still need their own flame or self-lit material. An item
+// clip into walls. The scene receives only the world's sun, its shadow and the sky's
+// ambient light, so no nearby lamp or fire lights a held item, and burning fallback
+// models need their own flame or self-lit material. An item
 // without a model (or whose model hasn't loaded) is a plain box sized from its cells.
 
 import {
@@ -82,7 +83,12 @@ import {
 } from './magazineLoadPose.ts';
 import { ModelFlames } from './modelFlame.ts';
 import { type ComposedSlot, heldModelFrame, LENS, type ModelLibrary } from './models.ts';
-import { createFirstPersonArm, FIRST_PERSON_SHOULDER, placeFirstPersonSegment } from './playerFigure.ts';
+import {
+  createFirstPersonArm,
+  FIRST_PERSON_PALM,
+  FIRST_PERSON_SHOULDER,
+  placeFirstPersonSegment,
+} from './playerFigure.ts';
 import { rummageFrame, rummageGrip } from './rummagePose.ts';
 import { shellLoadPose } from './shellLoadPose.ts';
 import type { SkyTargets } from './sky.ts';
@@ -323,7 +329,9 @@ export class HeldItems {
       compass.update(main.rotation.y);
     }
     for (const [side, arm] of this.arms) {
-      this.updateArmChain(side, arm, this.revolverGripFrame(side, firearmPoses) ?? this.displayPalms.get(side));
+      const revolver = this.revolverGripFrame(side, firearmPoses);
+      const displayPalm = revolver ? undefined : this.displayPalms.get(side);
+      this.updateArmChain(side, arm, revolver ?? displayPalm, displayPalm !== undefined);
     }
     this.view.updateMatrixWorld(true);
   }
@@ -1346,7 +1354,7 @@ export class HeldItems {
     this.arms.clear();
   }
 
-  private updateArmChain(side: HandSide, arm: Group, gripFrame: Object3D | undefined): void {
+  private updateArmChain(side: HandSide, arm: Group, gripFrame: Object3D | undefined, behindScreen = false): void {
     const sleeve = arm.children[0] as Mesh;
     const forearm = arm.children[1] as Mesh;
     const palm = arm.children[2] as Mesh;
@@ -1354,7 +1362,14 @@ export class HeldItems {
     if (!(sleeve && forearm && palm && anchor)) {
       return;
     }
-    const wristWorld = anchor.getWorldPosition(new Vector3());
+    const palmWorld = anchor.getWorldPosition(new Vector3());
+    const wristWorld = palmWorld.clone();
+    if (gripFrame && behindScreen) {
+      // A palm on a screen's back takes the forearm at its own back face, so the forearm's
+      // end cannot reach past the palm into the screen.
+      const back = new Vector3(0, 0, -1).applyQuaternion(gripFrame.getWorldQuaternion(new Quaternion()));
+      wristWorld.addScaledVector(back, FIRST_PERSON_PALM[2] / 2);
+    }
     const baseShoulder = new Vector3(...FIRST_PERSON_SHOULDER[side]);
     const shoulderView =
       arm.parent === this.torso
@@ -1382,7 +1397,7 @@ export class HeldItems {
     const elbow = shoulder.clone().addScaledVector(axis, along).addScaledVector(bend, bendHeight);
     placeFirstPersonSegment(sleeve, shoulder, elbow, { width: sleeve.scale.x, depth: sleeve.scale.z });
     placeFirstPersonSegment(forearm, elbow, wrist, { width: forearm.scale.x, depth: forearm.scale.z });
-    palm.position.copy(wrist);
+    palm.position.copy(arm.worldToLocal(palmWorld));
     if (gripFrame) {
       palm.quaternion.copy(
         arm.getWorldQuaternion(new Quaternion()).invert().multiply(gripFrame.getWorldQuaternion(new Quaternion())),

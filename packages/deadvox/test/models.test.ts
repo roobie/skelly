@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import {
   Box3,
   BoxGeometry,
+  type CircleGeometry,
   Group,
   InstancedMesh,
   type Loader,
@@ -9,7 +10,9 @@ import {
   Mesh,
   type MeshBasicMaterial,
   type MeshStandardMaterial,
+  PerspectiveCamera,
   Quaternion,
+  Raycaster,
   Vector3,
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -22,9 +25,16 @@ import { toggleLight } from '../src/core/lights.ts';
 import { pileLayout } from '../src/core/pileLayout.ts';
 import { spentCaseItemId } from '../src/game/firearmHandling.ts';
 import { createCompass } from '../src/render/compass.ts';
+import { HeldItems } from '../src/render/hands.ts';
 import { presentHeldDisplay } from '../src/render/heldDisplay.ts';
 import { itemLook } from '../src/render/itemLook.ts';
-import { fittedPartFrame, groundModelFrame, heldModelFrame, prepareModel } from '../src/render/models.ts';
+import {
+  fittedPartFrame,
+  groundModelFrame,
+  heldModelFrame,
+  type ModelLibrary,
+  prepareModel,
+} from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
 import { FIRST_PERSON_PALM } from '../src/render/playerFigure.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
@@ -135,6 +145,44 @@ it.each<[string, Vec3]>([
     compass.dispose();
   },
 );
+
+it.each(['right', 'left'] as const)('keeps the %s arm out of every sight line to a held compass card', async (side) => {
+  const definition = registry.models.get('compass')!;
+  const { scene } = await parseGlb(readFileSync(`${BASE}/${definition.file}`));
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => new Proxy({}, { get: () => vi.fn() }) }) });
+  const inventory = new Inventory(registry);
+  expect(inventory.add(inventory.create('compass'), { kind: 'hand', side })).toBeTruthy();
+  const models = {
+    version: 0,
+    has: () => true,
+    heldLook: () => ({ root: prepareModel(definition, scene.clone()).held, parts: [], slots: {} }),
+  } as unknown as ModelLibrary;
+  const held = new HeldItems(inventory, models, { skin: '#bbaa99', shirt: '#556677', trousers: '#334455' });
+  held.update(new PerspectiveCamera(), undefined, 0, { firearms: [] });
+  const { scene: view } = held.warmUpTarget;
+  view.updateMatrixWorld(true);
+  const card = view.getObjectByName('compass-live-dial') as Mesh<CircleGeometry>;
+  const arm = view.getObjectByName(`first-person-arm-${side}`)!;
+  const eye = new Vector3();
+  const raycaster = new Raycaster();
+  // Sight lines from the eye to the card's rim and rings inside it.
+  const blocked: string[] = [];
+  for (const ring of [1, 0.66, 0.33]) {
+    for (let step = 0; step < 24; step += 1) {
+      const angle = (step / 24) * Math.PI * 2;
+      const radius = card.geometry.parameters.radius * ring;
+      const target = card.localToWorld(new Vector3(Math.cos(angle) * radius, Math.sin(angle) * radius, 0));
+      raycaster.set(eye, target.clone().sub(eye).normalize());
+      raycaster.far = target.distanceTo(eye);
+      const [hit] = raycaster.intersectObject(arm, true);
+      if (hit) {
+        blocked.push(`${ring}@${step}: arm part ${arm.children.indexOf(hit.object)}`);
+      }
+    }
+  }
+  expect(blocked).toEqual([]);
+  held.dispose();
+});
 
 describe('piles with models', () => {
   const inventory = new Inventory(registry);

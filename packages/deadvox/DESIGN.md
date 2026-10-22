@@ -1157,7 +1157,9 @@ faces and which way its top points. The engine turns the item from those facts, 
 no numbers tuned to the arm and later changes to arm size, pose or animation keep
 screens visible; arm animation must keep the screen's line of sight free. Radios
 and GPS units reuse the rule unchanged, a watch is the same rule with the wrist as
-the back, and handedness stays mirroring of placement only. Validation rejects a
+the back, and handedness stays mirroring of placement only. The forearm meets a
+screen-holding palm at the palm's back face rather than its centre, so no part of
+the arm reaches past the palm into the item or its screen. Validation rejects a
 held-display item whose model has no screen. See `src/render/heldDisplay.ts`,
 `presentHeldDisplay`, and `packages/thing-core/src/schema.ts`, `NeutralModelSchema`.
 
