@@ -264,34 +264,37 @@ describe('final composed body-route certificate', () => {
     GAUNTLET_SITE_MS,
   );
 
-  it.each(witness.loops)('keeps storey %# an interior loop when a public room doorway is blocked with the bulkheads closed', (loop) => {
-    const site = siteOf();
-    const point = (at: Vec3) => placedPoint(site.plan.service!, at);
-    const from = point(loop.from);
-    const through = point(loop.through);
-    const to = point(loop.to);
-    const clear = new ScenarioRouteSpace(site);
-    expect(clear.sweep(from, through)).toBe(true);
-    expect(clear.path(through, to, { steps: true })).toBeDefined();
-    const original = site.stamp.bind(site);
-    const stamp = vi.spyOn(site, 'stamp').mockImplementation((chunk) => {
-      original(chunk);
-      for (let y = 0; y < loop.cut.size[1]; y++) {
-        for (let z = 0; z < loop.cut.size[2]; z++) {
-          for (let x = 0; x < loop.cut.size[0]; x++) {
-            obstruct(chunk, point([loop.cut.min[0] + x, loop.cut.min[1] + y, loop.cut.min[2] + z]));
+  it.each(witness.loops)(
+    'keeps storey %# an interior loop when a public room doorway is blocked with the bulkheads closed',
+    (loop) => {
+      const site = siteOf();
+      const point = (at: Vec3) => placedPoint(site.plan.service!, at);
+      const from = point(loop.from);
+      const through = point(loop.through);
+      const to = point(loop.to);
+      const clear = new ScenarioRouteSpace(site);
+      expect(clear.sweep(from, through)).toBe(true);
+      expect(clear.path(through, to, { steps: true })).toBeDefined();
+      const original = site.stamp.bind(site);
+      const stamp = vi.spyOn(site, 'stamp').mockImplementation((chunk) => {
+        original(chunk);
+        for (let y = 0; y < loop.cut.size[1]; y++) {
+          for (let z = 0; z < loop.cut.size[2]; z++) {
+            for (let x = 0; x < loop.cut.size[0]; x++) {
+              obstruct(chunk, point([loop.cut.min[0] + x, loop.cut.min[1] + y, loop.cut.min[2] + z]));
+            }
           }
         }
+      });
+      try {
+        const detour = new ScenarioRouteSpace(site);
+        expect(detour.sweep(from, through)).toBe(false);
+        expect(detour.path(from, to, { steps: true })).toBeDefined();
+      } finally {
+        stamp.mockRestore();
       }
-    });
-    try {
-      const detour = new ScenarioRouteSpace(site);
-      expect(detour.sweep(from, through)).toBe(false);
-      expect(detour.path(from, to, { steps: true })).toBeDefined();
-    } finally {
-      stamp.mockRestore();
-    }
-  });
+    },
+  );
 
   it('rejects a missing seal keycard instead of admitting its bulkheads', () => {
     const site = siteOf();
@@ -304,33 +307,37 @@ describe('final composed body-route certificate', () => {
     expect(scenarioCertificate(site).issues.some(([path]) => path === '.composition.seals[0]')).toBe(true);
   });
 
-  it("keeps each level's ways down behind its bulkheads until its card, reached through the seals above, is admitted", () => {
-    const site = siteOf();
-    const space = new ScenarioRouteSpace(site);
-    const entry = site.plan.portal!.lower;
-    const composition = site.plan.composition!;
-    expect(composition.seals.length).toBeGreaterThan(0);
-    for (const seal of composition.seals) {
-      expect(space.path(entry, seal.standing, { steps: true })).toBeDefined();
-      for (const door of seal.doors) {
-        space.blocked(...door);
-        const definition = space.entities.defOf(space.entities.at(...door)!);
-        expect(definition.door).toBeDefined();
-        expect(definition.door!.methods).toEqual({});
+  it(
+    "keeps each level's ways down behind its bulkheads until its card, reached through the seals above, is admitted",
+    () => {
+      const site = siteOf();
+      const space = new ScenarioRouteSpace(site);
+      const entry = site.plan.portal!.lower;
+      const composition = site.plan.composition!;
+      expect(composition.seals.length).toBeGreaterThan(0);
+      for (const seal of composition.seals) {
+        expect(space.path(entry, seal.standing, { steps: true })).toBeDefined();
+        for (const door of seal.doors) {
+          space.blocked(...door);
+          const definition = space.entities.defOf(space.entities.at(...door)!);
+          expect(definition.door).toBeDefined();
+          expect(definition.door!.methods).toEqual({});
+        }
+        const [, level] = seal.doors[0]!;
+        const links = [...composition.descents, ...composition.stairs].filter((link) => link.upper[1] === level);
+        expect(links.length).toBeGreaterThan(0);
+        for (const link of links) {
+          expect(space.path(entry, link.upper, { steps: true })).toBeUndefined();
+        }
+        space.admitLock(space.entities.at(...seal.doors[0]!)!.lock!.id);
+        for (const link of links) {
+          expect(space.path(entry, link.upper, { steps: true })).toBeDefined();
+        }
       }
-      const level = seal.doors[0]![1];
-      const links = [...composition.descents, ...composition.stairs].filter((link) => link.upper[1] === level);
-      expect(links.length).toBeGreaterThan(0);
-      for (const link of links) {
-        expect(space.path(entry, link.upper, { steps: true })).toBeUndefined();
-      }
-      space.admitLock(space.entities.at(...seal.doors[0]!)!.lock!.id);
-      for (const link of links) {
-        expect(space.path(entry, link.upper, { steps: true })).toBeDefined();
-      }
-    }
-    expect(scenarioCertificate(site).issues).toEqual([]);
-  }, profile.composition!.storeys.length * WALK_MS_PER_STOREY);
+      expect(scenarioCertificate(site).issues).toEqual([]);
+    },
+    profile.composition!.storeys.length * WALK_MS_PER_STOREY,
+  );
 
   it('rejects a keyed lot resource whose key route has lost its climb', () => {
     const index = base.composition!.resources.findIndex((resource) => resource.key?.climbs.length);
