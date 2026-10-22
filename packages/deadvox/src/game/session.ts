@@ -1099,28 +1099,32 @@ export const createSession = (options: SessionOptions) => {
     );
   const meleeBlocker = worldMeleeBlocker(world, registry, inventory.entities, isSolid);
   /**
-   * One blow on a piece, a zombie's bash or the player's strike; every blow is heard, whatever it does. A blow that
-   * ruins a piece destroys it, and whatever came down with it, with the work that names them.
+   * One blow on a piece, a zombie's bash or the player's strike; every blow is heard, whatever it does, in the sound
+   * its material names. A blow that ruins a piece destroys it, and whatever came down with it, with the work that
+   * names them; where what it held has no room to fall, the piece stands until a blow finds room.
    */
-  const bashLeaf = (leaf: BlockEntity | undefined, strength: number): boolean => {
-    const outcome = leaf && entities.bash(leaf, strength);
-    if (!(leaf && outcome)) {
+  const bashPiece = (target: BlockEntity | undefined, strength: number): boolean => {
+    const outcome = target && entities.bash(target, strength);
+    if (!(target && outcome)) {
       return false;
     }
-    playNoisyWorldSound('door_bash', boxCentre(leaf.pos, leaf.size));
+    playNoisyWorldSound(
+      registry.furnitureMaterials.get(entities.defOf(target).material)!.blowSound,
+      boxCentre(target.pos, target.size),
+    );
     if (outcome === 'ruined') {
-      for (const piece of ruinFurniture(furnitureMover(), leaf)) {
+      for (const piece of ruinFurniture(furnitureMover(), target) ?? []) {
         forgetPiece(piece);
       }
     }
     return true;
   };
-  /** A swing that meets no zombie strikes the closed leaf in its reach with the weapon's impulse. */
-  const strikeLeaf = (origin: Vec3, direction: Vec3, weapon: MeleeWeapon): boolean => {
+  /** A swing that meets no zombie strikes the piece in its reach with the weapon's impulse. */
+  const strikePiece = (origin: Vec3, direction: Vec3, weapon: MeleeWeapon): boolean => {
     const reachBlocks = (PLAYER_ARM_REACH_M + weapon.reach) / s;
     const hit = raycast(origin, direction, reachBlocks, meleeBlocker({ kind: 'player', motion: weapon.motion }));
-    const leaf = hit && entities.doorAt(...hit.block);
-    return bashLeaf(leaf && !leaf.open && entities.breachable(leaf) ? leaf : undefined, weapon.impulse ?? 0);
+    const piece = hit && entities.at(...hit.block);
+    return bashPiece(piece && entities.isSolid(...hit.block) ? piece : undefined, weapon.impulse ?? 0);
   };
   const traps = new BearTraps(inventory);
   const zombieSystem = new ZombieSystem({
@@ -1134,7 +1138,7 @@ export const createSession = (options: SessionOptions) => {
     isOpaque: options.isOpaque,
     isSoundBlocking: worldSoundBlocking(world, registry, inventory.entities, isSolid),
     meleeBlocker,
-    bashObstacle: (ahead, strength) => bashLeaf(entities.closedLeafTouching(ahead), strength),
+    bashObstacle: (ahead, strength) => bashPiece(entities.pieceTouching(ahead), strength),
     blockSize: s,
     physics,
     // Metres per second, as PLAYER.jump is: the system divides by blockSize itself.
@@ -1236,7 +1240,7 @@ export const createSession = (options: SessionOptions) => {
     {
       playPlayerMeleeSwing: (origin, weapon) => zombieSystem.playPlayerMeleeSwing(origin, weapon),
       resolvePlayerMelee: (origin, direction, weapon, isFist) =>
-        zombieSystem.resolvePlayerMelee(origin, direction, weapon, isFist) || strikeLeaf(origin, direction, weapon),
+        zombieSystem.resolvePlayerMelee(origin, direction, weapon, isFist) || strikePiece(origin, direction, weapon),
     },
     (uid) => wearMeleeWeaponOnHit(inventory, uid),
     character,
@@ -2100,7 +2104,7 @@ export const createSession = (options: SessionOptions) => {
     placeFurniture: placePiece,
     removeFurniture: removePiece,
     /** One blow on a piece, landed as a zombie's bash or the player's strike lands it. */
-    bashFurniture: bashLeaf,
+    bashFurniture: bashPiece,
     turnFurniture: () => turnCarried(inventory),
     tipFurniture: () => tipCarried(inventory),
     /** Where the carried piece would stand if put down at an aimed cell, or why it can't be. */

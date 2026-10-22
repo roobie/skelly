@@ -875,6 +875,14 @@ const checkMaterial = (registry: Registry, furniture: FurnitureDef, report: Repo
   }
 };
 
+const checkMaterialSounds = (registry: Registry, report: Report) => {
+  for (const material of registry.furnitureMaterials.values()) {
+    if (!registry.sounds.get(material.blowSound)?.noise.enabled) {
+      report('furnitureMaterials', material.id, '.blowSound', 'blows need a sound that alerts hearing');
+    }
+  }
+};
+
 const checkDoorForcing = (registry: Registry, furniture: FurnitureDef, report: Report) => {
   const { door } = furniture;
   if (!door) {
@@ -928,6 +936,7 @@ const checkToolFuel = (item: ItemDef, registry: Registry, report: Report) => {
 
 const checkFurniture = (registry: Registry, report: Report) => {
   const cellMetres = registry.inventory.get(CORE_CONTENT_IDS.player)?.cellMetres;
+  checkMaterialSounds(registry, report);
   for (const furniture of registry.furniture.values()) {
     if (furniture.container) {
       checkContainerWidth({ section: 'furniture', id: furniture.id, container: furniture.container, registry, report });

@@ -706,6 +706,7 @@
   ],
   "furnitureMaterials": [
     {
+      "blowSound": "door_bash",
       "broken": {
         "strength": 0.59999999999999998,
         "tint": "#d8c9a6"
@@ -731,6 +732,7 @@
       "methods": ["pry"]
     },
     {
+      "blowSound": "door_bash",
       "broken": {
         "strength": 0.55000000000000004,
         "tint": "#9a4a28"
@@ -756,6 +758,7 @@
       "methods": ["pry", "cut"]
     },
     {
+      "blowSound": "door_bash",
       "damaged": [
         {
           "from": 0.01,

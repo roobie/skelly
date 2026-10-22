@@ -1408,6 +1408,8 @@ export const ModelSchema = pipe(
 const FurnitureMaterialSchema = pipe(
   strictObject({
     id: Id,
+    /** What a blow on a piece of this material sounds like; it must alert hearing, since every blow is heard. */
+    blowSound: Id,
     /** Forcing methods a door of this material admits; a door's material must list them. */
     methods: optional(array(Id)),
     /** How a broken leaf of this material is painted: its colour moves `strength` of the way to `tint`. */
@@ -2493,6 +2495,11 @@ const ZombieSchema = strictObject({
   wander: strictObject({
     obstacleWanderChance: Fraction,
     obstacleWanderDistanceMetres: Positive,
+    /**
+     * How far a zombie held up at a piece looks for a way past it (`DESIGN.md`, "Senses and AI"). It bashes the piece
+     * only when no way past gains ground toward its target within this reach.
+     */
+    wayAroundReachMetres: Positive,
     idleSimSeconds: SimDurationRange,
     strollSimSeconds: SimDurationRange,
     leashMetres: Positive,

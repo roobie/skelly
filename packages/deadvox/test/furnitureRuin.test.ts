@@ -169,6 +169,43 @@ it('cancels the work that names a ruined piece', () => {
   expect(session.queue.jobs).toEqual([]);
 });
 
+it('keeps a full piece standing at full damage when its drops have no room, losing nothing, and ruins it once there is', () => {
+  const runtime = createRuntime(undefined, false, undefined, { registry, spawn: [0, FLOOR, 0] });
+  const floor = registry.blockIds.get(registry.blocks.find((block) => block.solid)!.id)!;
+  runtime.world.setBlock(0, 0, 0, floor);
+  runtime.world.setBlock(-2, 0, -2, floor);
+  const { session, inventory } = runtime;
+  const target = piece(inventory, 'ruin_fixture_box', [-2, FLOOR, -2], 16);
+  const held = target.pockets!.flat().map(({ item }) => item.uid);
+  expect(held.length, 'the box must be full').toBe(16);
+  // A pile on the box falls into the only floor cell, and leaves too little of it for what the box held.
+  const resting: Vec3 = [-2, FLOOR + 1, -2];
+  for (let at = 0; at < 60; at++) {
+    expect(inventory.add(inventory.create('ruin_fixture_item'), { kind: 'pile', pos: resting })).toBe(true);
+  }
+  const lying = piled(inventory).map(({ item }) => item.uid);
+
+  expect(() => session.bashFurniture(target, BREACH.durability)).not.toThrow();
+
+  expect(runtime.entities.byUid(target.uid)).toBe(target);
+  expect(target.damage).toBe(BREACH.durability);
+  expect(target.pockets!.flat().map(({ item }) => item.uid)).toEqual(held);
+  expect(piled(inventory).map(({ item }) => item.uid)).toEqual(lying);
+
+  for (const [x, z] of [
+    [-1, -2],
+    [-3, -2],
+    [-2, -1],
+    [-2, -3],
+  ]) {
+    runtime.world.setBlock(x!, 0, z!, floor);
+  }
+  expect(session.bashFurniture(target, BREACH.minimumStrength)).toBe(true);
+
+  expect(runtime.entities.byUid(target.uid)).toBeUndefined();
+  expect(piled(inventory).map(({ item }) => item.uid)).toEqual(expect.arrayContaining([...held, ...lying]));
+});
+
 it('breaks a door leaf at its durability and keeps it standing broken, never destroyed', () => {
   const runtime = createRuntime(undefined, false, undefined, { registry, spawn: [0, FLOOR, 0] });
   const door = piece(runtime.inventory, 'ruin_fixture_door', [0, FLOOR, 2]);

@@ -211,7 +211,8 @@
         "strollSimSeconds": {
           "max": 12,
           "min": 3
-        }
+        },
+        "wayAroundReachMetres": 2
       }
     }
   ]

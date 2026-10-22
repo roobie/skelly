@@ -4,7 +4,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import { corpseLootPoint, type LootSpawnPoint, rollLoot, selectLootType } from '../src/core/loot.ts';
 import { Rng } from '../src/core/random.ts';
 import { gamePerHour, simSeconds } from '../src/core/time.ts';
-import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials } from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
 
 const context = { usage: ['Medical'], tier: 'Tier2' } as const;
@@ -24,6 +24,7 @@ const fixture = () => {
       source: 'selector-fixture',
       data: {
         furnitureMaterials: fixtureMaterials(),
+        sounds: fixtureSounds(),
         items: [
           itemDefinition('stock', ['Medical'], ['Tier2']),
           itemDefinition('wrong_usage', ['Military'], ['Tier2']),
