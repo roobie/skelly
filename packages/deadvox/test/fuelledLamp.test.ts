@@ -52,8 +52,14 @@ const heldLamp = (fill: number | undefined) => {
   const { session, tick } = runtime();
   const lamp = session.inventory.create(lampType.id);
   const lighter = session.inventory.create(lighterType.id);
-  expect(session.inventory.add(lamp, { kind: 'hand', side: 'right' })).toBe(true);
-  expect(session.inventory.add(lighter, { kind: 'hand', side: 'left' })).toBe(true);
+  if (
+    !(
+      session.inventory.add(lamp, { kind: 'hand', side: 'right' }) &&
+      session.inventory.add(lighter, { kind: 'hand', side: 'left' })
+    )
+  ) {
+    throw new Error('fixture could not fill the hands');
+  }
   if (fill !== undefined) {
     const canister = session.inventory.create(lampType.tool!.fuel!.canister);
     canister.charges = fill;
