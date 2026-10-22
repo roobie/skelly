@@ -6,7 +6,7 @@ import {
   drainLight,
   inventoryLightSources,
   lightSenseSourceFor,
-  sunExposedAt,
+  SunExposureCache,
   toggleLight,
 } from '../src/core/lights.ts';
 import { slotsReason } from '../src/core/magazine.ts';
@@ -289,16 +289,12 @@ describe('made-light point pool', () => {
   it('uses daytime sky exposure for light gating, not direct sun angle', () => {
     const wallShadow: SolidAt = (_x, y, z) => y >= 0 && z === -1;
     const cycle = BASE_DAY_CYCLE;
-    const open = sunExposedAt({ position: [0.5, 1, 0.5], gameHours: 12, skyTop: 20, isOpaque: () => false, cycle });
-    const roofed = sunExposedAt({
-      position: [0.5, 1, 0.5],
-      gameHours: 12,
-      skyTop: 20,
-      isOpaque: (_x, y) => y === 2,
-      cycle,
-    });
-    const shadow = sunExposedAt({ position: [0.5, 1, 0.5], gameHours: 12, skyTop: 20, isOpaque: wallShadow, cycle });
-    const night = sunExposedAt({ position: [0.5, 1, 0.5], gameHours: 0, skyTop: 20, isOpaque: () => false, cycle });
+    const exposed = (isOpaque: SolidAt, gameHours: number) =>
+      new SunExposureCache(20, 0, isOpaque).isExposedAt([0.5, 1, 0.5], gameHours, cycle);
+    const open = exposed(() => false, 12);
+    const roofed = exposed((_x, y) => y === 2, 12);
+    const shadow = exposed(wallShadow, 12);
+    const night = exposed(() => false, 0);
 
     expect(open).toBe(true);
     expect(roofed).toBe(false);

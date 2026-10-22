@@ -7,10 +7,9 @@ import { HAMLET_BLOCK_SIZE, HAMLET_HORDE_TYPE } from './hamlet.ts';
 import { placementLootIssues } from './placementLoot.ts';
 import { WORLD_BOTTOM_M } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
-import type { Rect } from './site.ts';
+import { type Rect, rectsOverlap } from './site.ts';
 import { spawnOverlappingSolidBlock, zombieBodyDimensions } from './spawnClearance.ts';
 import { type Placement, placedBlockAt, placedPieces, templateLockIds, templateResolves } from './templates.ts';
-import { rectsOverlap } from './vegetation.ts';
 
 export type LayoutPoint = readonly [number, number];
 const insideLayout = (bounds: Rect, [x, z]: LayoutPoint, inset = 0): boolean =>

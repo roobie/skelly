@@ -2419,7 +2419,7 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
 - **Voxel light**: light spread through the block grid, so that inside buildings
   it's pitch black at night and dim by day, lit only by what comes in through
   doors and windows. Only diffuse sky light goes through the grid
-  (`src/core/skylight.ts`, `buildSkylight`). The sun and the carried beam are lit
+  (`src/render/skylight.ts`, `Skylight`). The sun and the carried beam are lit
   on their own, and carried or dropped sources are the pool's shadowless point
   lights (`src/render/lightPool.ts`, `LightPool`; see "Light"). First-person
   hands share the room's sky visibility, so they do not glow in enclosed dark

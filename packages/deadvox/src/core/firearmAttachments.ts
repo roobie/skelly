@@ -1,4 +1,5 @@
 import type { ModelDef, Registry } from './content.ts';
+import type { Inventory } from './inventory.ts';
 import { defOf, type Item, typeWeightGrams } from './items.ts';
 
 /** Sum of attachment mass times its mount distance from the grip, in kg·m. */
@@ -50,7 +51,8 @@ export const firearmAttachmentResponse = (registry: Registry, firearm: Item): Fi
 };
 
 /** Wear fitted suppressors once per committed shot; a broken suppressor gives no further benefit. */
-export const wearFirearmAttachments = (registry: Registry, firearm: Item): void => {
+export const wearFirearmAttachments = (inventory: Inventory, firearm: Item): void => {
+  const { registry } = inventory;
   for (const attachment of attachedItems(firearm)) {
     const modelId = defOf(registry, attachment.type).model;
     const metadata = modelId === undefined ? undefined : registry.models.get(modelId)?.gun?.attachment;
@@ -58,7 +60,7 @@ export const wearFirearmAttachments = (registry: Registry, firearm: Item): void 
       continue;
     }
     const wear = defOf(registry, attachment.type).firearmAttachmentEffects?.wearPerShot ?? 0;
-    attachment.condition = Math.max(0, attachment.condition - wear);
+    inventory.changeCondition(attachment.uid, -wear);
   }
 };
 
