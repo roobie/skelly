@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
-import type { BlockEntity } from '../src/core/blockEntities.ts';
+import type { BashOutcome, BlockEntity } from '../src/core/blockEntities.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { type FurnitureMover, ruinFurniture } from '../src/core/furnitureMove.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -77,7 +77,7 @@ const piece = (inventory: Inventory, type: string, pos: Vec3, stock = 0) => {
 const piled = (inventory: Inventory) => [...inventory.piles.values()].flatMap((pile) => pile.items);
 /** Brings a piece to its durability in whole blows of its minimum strength, as the last of them ruins it. */
 const ruinBlows = (inventory: Inventory, entity: BlockEntity) => {
-  const outcomes = [];
+  const outcomes: (BashOutcome | undefined)[] = [];
   for (let dealt = 0; dealt < BREACH.durability; dealt += BREACH.minimumStrength) {
     outcomes.push(inventory.entities.bash(entity, BREACH.minimumStrength));
   }
@@ -178,7 +178,9 @@ it('breaks a door leaf at its durability and keeps it standing broken, never des
 });
 
 it('refuses debris naming no item, and debris on a door leaf, which breaks rather than being ruined', () => {
-  const unknown = fixture([{ ...box('ruin_fixture_bad', [1, 1, 1]), ruin: { debris: [{ item: 'no_such', count: 1 }] } }]);
+  const unknown = fixture([
+    { ...box('ruin_fixture_bad', [1, 1, 1]), ruin: { debris: [{ item: 'no_such', count: 1 }] } },
+  ]);
   expect(unknown.issues.some((issue) => JSON.stringify(issue).includes('ruin'))).toBe(true);
   const leaf = fixture([
     {

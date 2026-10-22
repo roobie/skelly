@@ -1584,7 +1584,7 @@ const FurnitureSchema = pipe(
   check(({ door, shape }) => !(door?.hatch && shape), 'a hatch is its own panel and cannot have a shape'),
   // The same reading as `src/core/blockEntities.ts`, `isBodyDoor`: any other door breaks instead of being ruined.
   check(
-    ({ ruin, door, shape, container }) => !ruin || !door || (shape !== undefined && container !== undefined),
+    ({ ruin, door, shape, container }) => !(ruin && door) || (shape !== undefined && container !== undefined),
     'a door leaf breaks rather than being ruined, so it leaves no debris',
   ),
   check(({ climbable, solid }) => !climbable || solid === false, 'a climbable piece must not be solid'),
