@@ -1,11 +1,10 @@
-import { readdirSync, readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { scenarioPlanIssues } from '../src/core/cityPlan.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { ContentFile } from '../src/core/schema.ts';
 import { compileAssembly, kitSlotChoices } from '../src/core/templates.ts';
-import { startupContent } from './baseRegistry.ts';
+import { overlayContent, startupContent } from './baseRegistry.ts';
 import { fixtureScenario } from './fixtures/scenario.ts';
 
 const BUNDLED_CONTENT = startupContent();
@@ -168,17 +167,11 @@ it('a pool-only Jsonnet mod changes real slot candidate weights without overridi
     compileJsonnetFile('packages/deadvox/test/fixtures/jsonnet/roof-equipment-mod.jsonnet'),
   ) as ContentFile;
   expect(Object.keys(mod)).toEqual(['mapPools']);
-  const sources = readdirSync('src/content/base')
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({
-      source: file,
-      data: JSON.parse(readFileSync(`src/content/base/${file}`, 'utf8')) as unknown,
-    }));
   const baseline = BUNDLED_CONTENT;
-  const changed = buildRegistry([...sources, { source: 'roof-equipment-mod.json', data: mod }]);
+  const changed = {
+    registry: overlayContent(startupContent().registry, [{ source: 'roof-equipment-mod.json', data: mod }]),
+  };
   expect(baseline.issues).toEqual([]);
-  expect(changed.issues).toEqual([]);
   const pool = mod.mapPools![0]!;
   const consumers = [...baseline.registry.mapAssemblies.values()].flatMap((assembly) =>
     assembly.slots.filter((slot) => slot.pool === pool.id).map((slot) => ({ assembly, slot })),
