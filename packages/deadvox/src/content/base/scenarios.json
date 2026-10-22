@@ -948,6 +948,9 @@
                     "item": "magazine_stanag_30"
                   },
                   {
+                    "item": "cartridge_box_5_d_56x45"
+                  },
+                  {
                     "condition": 0.69999999999999996,
                     "item": "night_vision_goggles"
                   }
@@ -1111,6 +1114,15 @@
                     "key": true
                   }
                 ]
+              },
+              {
+                "at": [22, 1, 13],
+                "items": [
+                  {
+                    "condition": 0.69999999999999996,
+                    "item": "stab_vest"
+                  }
+                ]
               }
             ],
             "lot": "police"
@@ -1124,6 +1136,9 @@
                     "condition": 0.69999999999999996,
                     "item": "rifle_ak",
                     "key": true
+                  },
+                  {
+                    "item": "cartridge_box_7_d_62x39"
                   }
                 ]
               }
