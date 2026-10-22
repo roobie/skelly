@@ -8,6 +8,32 @@ import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();
 
+/**
+ * The base registry with the footprints the slot expectations below follow from declared here, so retuning base
+ * content sizes cannot move them.
+ */
+const declared = (() => {
+  const withGrid = (id: string, grids: readonly [number, number][]) => {
+    const container = registry.items.get(id)!.container!;
+    return {
+      container: { ...container, pockets: container.pockets.map((pocket, index) => (grids[index] ? { ...pocket, grid: grids[index] } : pocket)),
+      },
+    };
+  };
+  const overrides: Record<string, object> = {
+    rag: { size: [1, 1], stack: 6 },
+    canned_beans: { size: [1, 2] },
+    canned_soup: { size: [1, 2] },
+    kabar: { size: [1, 3] },
+    hoodie: withGrid('hoodie', [[3, 2]]),
+    jeans: withGrid('jeans', [[1, 2]]),
+  };
+  return {
+    ...registry,
+    items: new Map([...registry.items].map(([id, def]) => [id, id in overrides ? { ...def, ...overrides[id] } : def])),
+  } as typeof registry;
+})();
+
 /** A player in jeans, a hoodie and a school backpack, standing by an empty floor. */
 const dressed = (content = registry) => {
   const inv = new Inventory(content);
@@ -38,7 +64,7 @@ const onFloor = (inv: Inventory, type: string, count = 1, condition = 1) => {
 
 describe('grid placement', () => {
   it('places in free spots, swaps equal footprints, and refuses placements beyond grid bounds', () => {
-    const { inv, hoodie } = dressed();
+    const { inv, hoodie } = dressed(declared);
     const beans = onFloor(inv, 'canned_beans');
     const pocket = { kind: 'pocket', owner: hoodie, pocket: 0 } as const;
     expect(inv.move(beans, pocket)).toMatchObject({ ok: true, at: { x: 0, y: 0, rotated: false } });
@@ -55,7 +81,7 @@ describe('grid placement', () => {
   });
 
   it('rotates an item to fit, and refuses one too big either way', () => {
-    const { inv, hoodie, jeans } = dressed();
+    const { inv, hoodie, jeans } = dressed(declared);
     const knife = onFloor(inv, 'kabar');
     expect(inv.plan(knife, { kind: 'pocket', owner: jeans, pocket: 0 })).toEqual({
       ok: false,
@@ -244,7 +270,7 @@ describe('stacking', () => {
   });
 
   it("doesn't stack items that differ", () => {
-    const { inv, hoodie } = dressed();
+    const { inv, hoodie } = dressed(declared);
     const pocket = { kind: 'pocket', owner: hoodie, pocket: 0 } as const;
     const fresh = onFloor(inv, 'rag', 1, 1);
     const dirty = onFloor(inv, 'rag', 1, 0.4);
