@@ -70,14 +70,17 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             packages/deadvox/tools/lit-check/package-lock.json
-      - run: npm ci --prefix ../..
+      # A warm-cache install takes seconds, so the 3-minute limit stays. The restored cache holds
+      # every tarball; audit and revalidation are the only registry calls left, and a silent
+      # stall in one of them is what timed the step out (#1108).
+      - run: npm ci --prefix ../.. --no-audit --no-fund --prefer-offline
         timeout-minutes: 3
       - name: Install pinned go-jsonnet
         run: npm --prefix ../.. run jsonnet:setup
       - name: Browser partition manifest
         timeout-minutes: 1
         run: node ../../test/browser-ci-manifest.mjs
-      - run: npm ci --prefix tools/lit-check
+      - run: npm ci --prefix tools/lit-check --no-audit --no-fund --prefer-offline
         timeout-minutes: 3
       - run: timeout 300 npm run lint:lit
       - run: timeout 300 npm run lint:time
