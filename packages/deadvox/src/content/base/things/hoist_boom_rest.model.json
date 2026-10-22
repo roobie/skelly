@@ -1,0 +1,13 @@
+{
+  "id": "hoist_boom_rest",
+  "file": "assets/models/hoist_boom_rest.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 8,
+      "centreOfMass": [-2.25, 1.125, 0],
+      "collision": [{ "min": [-2.3125, 0.9375, -0.09375], "max": [-2.1875, 1.3125, 0.09375] }]
+    }
+  },
+  "anchors": {}
+}

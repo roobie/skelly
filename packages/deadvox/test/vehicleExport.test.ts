@@ -6,7 +6,7 @@ import { loadVehicleBlueprint, type PlacedFitting } from '../src/core/vehicleBlu
 import { baseSources } from '../src/game/bundledContent.ts';
 import { PLAYER } from '../src/game/player.ts';
 
-const HOSTS = ['hatchback', 'pickup'];
+const HOSTS = ['hatchback', 'pickup', 'hoist'];
 const MOD = 'mods/vehicle-fixture.json';
 
 // A mod case needs the vehicle content it refers to, not the whole base: a full rebuild per case grows with every
@@ -16,7 +16,12 @@ const fixtureSources = baseSources.filter(({ source }) => FIXTURE_BASE.some((fil
 
 const withMod = (data: object) => buildRegistry([...fixtureSources, { source: MOD, data } satisfies ContentSource]);
 
-const modPart = (id: string, capabilities: readonly string[], model: object = { ...battery, id }) => ({
+const modPart = (
+  id: string,
+  capabilities: readonly string[],
+  model: object = { ...battery, id },
+  ratedLoadKg?: number,
+) => ({
   models: [model],
   items: [
     {
@@ -26,7 +31,7 @@ const modPart = (id: string, capabilities: readonly string[], model: object = { 
       model: id,
       size: [3, 2],
       economy: { usage: [], tiers: [] },
-      vehicle: { capabilities },
+      vehicle: { capabilities, ...(ratedLoadKg === undefined ? {} : { ratedLoadKg }) },
     },
   ],
 });
@@ -40,7 +45,7 @@ const fittingOf = (registry: Registry, host: string, id: string): PlacedFitting 
 describe('vehicle export contract', () => {
   const base = buildRegistry(baseSources);
 
-  it('loads both hosts from exported parts, with each part mass and collision from its export', () => {
+  it('loads each host from exported parts, with each part mass and collision from its export', () => {
     expect(base.issues).toEqual([]);
     const parts = HOSTS.map((host) => {
       const vehicle = loadVehicleBlueprint(base.registry, host);
@@ -96,6 +101,17 @@ describe('vehicle export contract', () => {
     [
       'a support cycle',
       blueprint(fitting('a', 'car_battery', ['b']), fitting('b', 'hatchback_battery_tray', ['a'])),
+      'vehicleBlueprints[0].fittings',
+    ],
+    ['a lifting part without a rated load', modPart('fixture_cell', ['lift']), 'items[0].vehicle'],
+    [
+      'a rated load on a part that does not lift',
+      modPart('fixture_cell', ['structure'], undefined, 500),
+      'items[0].vehicle',
+    ],
+    [
+      'a lifting vehicle without stabilisers',
+      { ...modPart('fixture_cell', ['lift'], undefined, 500), ...blueprint(fitting('crane', 'fixture_cell')) },
       'vehicleBlueprints[0].fittings',
     ],
   ];

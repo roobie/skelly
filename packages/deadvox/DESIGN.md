@@ -1359,6 +1359,13 @@ returning and retaking an item is not another find. See `die` in
 `src/game/play.ts`, `showDeath` in `src/ui/death.ts`, and `Inventory.countLooted`
 in `src/core/inventory.ts`.
 
+### Moving in the air
+
+Movement input steers only a body on the ground. A body in the air has nothing to push against, so input cannot
+change its horizontal velocity: the momentum it had at takeoff carries until it lands, and only collisions alter
+it. A ladder climber is held by the ladder, not airborne. See `steer` in `src/game/player.ts` and
+`advancePlayerBody` in `src/game/session.ts`.
+
 ### Landing injuries
 
 A fall loads the body at terrain contact, not at its highest point: catching a

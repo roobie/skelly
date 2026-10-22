@@ -5,6 +5,7 @@ read_if:
   - you start vehicle content, in-game vehicles or saved vehicle state
   - you derive vehicle behavior from its parts
   - you distinguish the visual spike from the settled vehicle slice design
+  - you change the crane truck or its lifting rule
 ---
 
 # Vehicle spike: vehicles built from parts
@@ -34,7 +35,7 @@ Vehicle noise is expressed as hearing radius so it can join Deadvox sound admiss
 
 ## Proportions
 
-The 4×4 follows a Range Rover Classic four-door; the pickup follows a Toyota Hilux N80 regular-cab long-bed 4WD; the sedan follows the mid-size class of the Ford Mondeo Mk3 saloon; the motorbike follows an early Honda CG125; the hatchback follows a Volkswagen Golf Mk4 five-door. The box van follows no single model: it takes the sizes common to European 3.5-tonne chassis cabs with a dry-freight box, because the commonest van a survivor finds is the class, and its in-game name stays generic. The chosen references keep prototypes recognizable without claiming manufacturer-exact geometry. The eight-wheeled APC takes the Stryker family as visual reference only; its content name stays generic, so no manufacturer or programme name enters content. Measurements live in `src/vehicles/rangeRover.ts`, `src/vehicles/pickup.ts`, `src/vehicles/boxVan.ts`, `src/vehicles/sedan.ts`, `src/vehicles/motorbike.ts`, `src/vehicles/apc.ts` and, for the hatchback, `packages/thing-authoring-tool/vehicle-parts.libsonnet`, `hb`.
+The 4×4 follows a Range Rover Classic four-door; the pickup follows a Toyota Hilux N80 regular-cab long-bed 4WD; the sedan follows the mid-size class of the Ford Mondeo Mk3 saloon; the crane truck, the heavy-part hoist, follows a light cab-over truck of the Mitsubishi Fuso Canter class with a deck-mounted telescopic boom; the motorbike follows an early Honda CG125; the hatchback follows a Volkswagen Golf Mk4 five-door. The box van follows no single model: it takes the sizes common to European 3.5-tonne chassis cabs with a dry-freight box, because the commonest van a survivor finds is the class, and its in-game name stays generic. The chosen references keep prototypes recognizable without claiming manufacturer-exact geometry. The eight-wheeled APC takes the Stryker family as visual reference only; its content name stays generic, so no manufacturer or programme name enters content. Measurements live in `src/vehicles/rangeRover.ts`, `src/vehicles/pickup.ts`, `src/vehicles/boxVan.ts`, `src/vehicles/sedan.ts`, `src/vehicles/motorbike.ts`, `src/vehicles/apc.ts` and, for the hatchback and the crane truck, `packages/thing-authoring-tool/vehicle-parts.libsonnet`, `hb` and `ht`.
 
 The sedan's content name stays generic: a class reference guides shape, while a manufacturer or model name in game content would claim a specific car. It has no separate frame, so its welded shell components are the roots its other parts rest on. Its door mirrors rest on the A-pillars, because a fitting does not follow the pose of a hinged fitting it rests on; see `src/vehicles/sedan.ts`, `mirror`.
 
@@ -44,7 +45,7 @@ A troop carrier stows its crew's kit and ammunition: without storage it reads as
 
 The APC's hull is several frame fittings that stand in for one factory-welded assembly, because the spike's part model has no assembly grouping. Its add-on armour panels are fittings on the hull side, so protection comes off and goes on like any other part instead of becoming a hull property.
 
-The pickup's regular-cab split is not published: its front clip follows the double-cab elevation and its door follows a period two-door, leaving bed length an estimate. The bike has no cabin, so its seat carries the rider viewpoint. References: [Range Rover Classic](https://en.wikipedia.org/wiki/Range_Rover_Classic), [1981 four-door elevation](https://getoutlines.com/blueprints/26562/1981-land-rover-range-rover-3.5-v8-4-door-suv-blueprints), [Hilux model range](https://www.pakwheels.com/new-cars/toyota/hilux/1988-1997), [1989 Hilux](https://www.carsales.com.au/research/toyota/hilux/1989/no-badge), [Hilux 4×4 specifications](https://itstillruns.com/1989-toyota-4x4-truck-specs-7657039.html), [N80 elevations](https://getoutlines.com/requests/3395/1992-toyota-hilux-v-4wd-drawings), [Mondeo Mk3](https://en.wikipedia.org/wiki/Ford_Mondeo_(second_generation)), [Honda CG125](https://en.wikipedia.org/wiki/Honda_CG125), [CG125 specifications](https://motodealers.co.uk/bikes/atlas-honda/cg125/2012/specs), [scaled side view](https://the-blueprints.com/vectordrawings/show/25351/honda_cg_125_ml_today), [Stryker family](https://en.wikipedia.org/wiki/Stryker), [Golf Mk4](https://en.wikipedia.org/wiki/Volkswagen_Golf_Mk4) and [Golf Mk4 dimensions](https://www.carexpert.com.au/volkswagen/golf/2001/dimensions).
+The pickup's regular-cab split is not published: its front clip follows the double-cab elevation and its door follows a period two-door, leaving bed length an estimate. The bike has no cabin, so its seat carries the rider viewpoint. References: [Range Rover Classic](https://en.wikipedia.org/wiki/Range_Rover_Classic), [1981 four-door elevation](https://getoutlines.com/blueprints/26562/1981-land-rover-range-rover-3.5-v8-4-door-suv-blueprints), [Hilux model range](https://www.pakwheels.com/new-cars/toyota/hilux/1988-1997), [1989 Hilux](https://www.carsales.com.au/research/toyota/hilux/1989/no-badge), [Hilux 4×4 specifications](https://itstillruns.com/1989-toyota-4x4-truck-specs-7657039.html), [N80 elevations](https://getoutlines.com/requests/3395/1992-toyota-hilux-v-4wd-drawings), [Mondeo Mk3](https://en.wikipedia.org/wiki/Ford_Mondeo_(second_generation)), [Mitsubishi Fuso Canter](https://en.wikipedia.org/wiki/Mitsubishi_Fuso_Canter), [Honda CG125](https://en.wikipedia.org/wiki/Honda_CG125), [CG125 specifications](https://motodealers.co.uk/bikes/atlas-honda/cg125/2012/specs), [scaled side view](https://the-blueprints.com/vectordrawings/show/25351/honda_cg_125_ml_today), [Stryker family](https://en.wikipedia.org/wiki/Stryker), [Golf Mk4](https://en.wikipedia.org/wiki/Volkswagen_Golf_Mk4) and [Golf Mk4 dimensions](https://www.carexpert.com.au/volkswagen/golf/2001/dimensions).
 
 ## The hatchback from content
 
@@ -59,6 +60,22 @@ The body shell carries the mass of wiring, trim and sound deadening that no part
 A body panel is larger than a floor pile, so panels stay capped at the pile's whole size; see `src/content/base/vehicles.jsonnet`, `pileSize`. The cap costs nothing until a carrying design gives oversized parts their own carry class.
 
 Real dimensions stay, and the only seated check is entry: every vehicle with a seat has a door or hatch at least as wide as the player. Whether the player figure fits a seat waits until a seated pose exists, because without the pose any fit test would measure the standing figure. See `test/vehicleExport.test.ts`.
+
+## The crane truck from content
+
+The crane truck is on the content path because heavy recovery depends on it, and building it from authored parts lets its parts be salvaged and fitted like any other vehicle's. It shares the parts that fit across hosts, such as the battery, headlamps, steering wheel and gear lever, and keeps its own road wheel, because a light truck's wheel does not fit a car.
+
+Every part is its own item, so the first loop's welded assemblies do not apply to the crane truck, because each of its parts breaks, wears and is salvaged on its own. The cost, accepted, is a long fitting list.
+
+The boom is telescopic, with its extension a separate part, even though that carries the most debt: a sliding stage sets the vocabulary for vehicle motion early, before other moving parts need it.
+
+The crane has one fixed rated load, carried by its lifting part, because a fixed rating carries the least debt; a chart over reach can replace it when lifting needs one. See `src/core/schema.ts`, `ratedLoadKg`.
+
+The rating is the heaviest load the crane lifts with the hook at the boom's working reach, not a lifting moment, because a moment read as a load would let a light truck lift more than it weighs.
+
+A vehicle that lifts must have a stabiliser fitted, because the stabilisers are a precondition for lifting, not a factor on the rating. A reduced rating with stabilisers stowed stays open.
+
+The rear wheels are single, which adds no debt; a twinned wheel part can come when a heavier truck needs one. The load bed is a flat deck, so the crane sets a part down from either side or the rear without dropping sides in the way.
 
 ## Grain and shape
 
@@ -76,7 +93,7 @@ The first loop builds from factory structures, uses welded assemblies as player-
 
 A vehicle part is an item whose exported model carries per-part mass, centre of mass, baked collision and named datums, so salvage, inventory and fitting share one identity and the game never evaluates authoring shapes. A blueprint is content that names parts by item id and places each fitting in the vehicle frame, so a mod adds a compatible part or host with data alone. See `src/core/schema.ts`, `VehicleBlueprintSchema`, and `src/content/base/vehicles.jsonnet`.
 
-Capabilities are a closed vocabulary because each one needs game code to mean anything; content naming another is refused rather than ignored. See `src/core/schema.ts`, `VEHICLE_CAPABILITIES`. They stay bare words until slice item 4, which decides what numbers each needs; the rows are reshaped then rather than guessed now.
+Capabilities are a closed vocabulary because each one needs game code to mean anything; content naming another is refused rather than ignored. See `src/core/schema.ts`, `VEHICLE_CAPABILITIES`. They stay bare words until slice item 4, which decides what numbers each needs; the rows are reshaped then rather than guessed now. The exception is lifting: a lift rating is required for a crane to mean anything, so a lifting part carries its rated load.
 
 Driven and steered belong to the part type, not the fitting. Converting a vehicle's drive then means swapping a part, which is also a gameplay hook: finding a driven axle.
 
@@ -84,6 +101,6 @@ A frame, tray or mount that other fittings rest on names the `structure` capabil
 
 Left and right parts are one item, mirrored by the slot, so one inventory item fits either side; a handed part therefore cannot refuse the wrong side. Part collision is one axis-aligned box per solid until the physics solver needs a convex hull per solid; the move is cheap because the schema slot is already per part. Attachment points get an optional direction and fittings a rotation the first time a fitting must align; the change only adds fields.
 
-Validation refuses a part whose export lacks part masses or baked collision, a fitting that names no vehicle part, and supports that are absent or cyclic, so the content file that authors them is dropped whole like any other broken content. See `src/core/vehicleBlueprint.ts`, `vehicleContentIssues`. Loading takes mass and centre only from the export; a mirrored fitting reflects its centre, collision and datums across z about its position, so a far-side twin needs no second export. See `src/core/vehicleBlueprint.ts`, `placeFitting`.
+Validation refuses a part whose export lacks part masses or baked collision, a fitting that names no vehicle part, supports that are absent or cyclic, a lifting part without a rated load or a rated load on any other part, and a lifting vehicle without a stabiliser, so the content file that authors them is dropped whole like any other broken content. See `src/core/vehicleBlueprint.ts`, `vehicleContentIssues`. Loading takes mass and centre only from the export; a mirrored fitting reflects its centre, collision and datums across z about its position, so a far-side twin needs no second export. See `src/core/vehicleBlueprint.ts`, `placeFitting`.
 
 Until VAT ships in #323, hand-written content blueprints stand in for its output, so the contract does not wait on an editor. VAT must write the same shape.

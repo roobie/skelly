@@ -1,0 +1,13 @@
+{
+  "id": "hoist_engine_cover",
+  "file": "assets/models/hoist_engine_cover.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 12,
+      "centreOfMass": [2.09375, 1.140625, 0],
+      "collision": [{ "min": [1.6875, 1.03125, -0.25], "max": [2.5, 1.25, 0.25] }]
+    }
+  },
+  "anchors": {}
+}

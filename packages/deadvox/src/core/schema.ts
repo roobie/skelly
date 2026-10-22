@@ -251,6 +251,10 @@ const VEHICLE_CAPABILITIES = [
   'structure',
   /** A road wheel, the part a vehicle rolls on. */
   'wheel',
+  /** Raises heavy loads; the part names its rated load. */
+  'lift',
+  /** Braces a lifting vehicle against the ground; a vehicle that lifts needs one. */
+  'stabiliser',
   /** A floor a cargo space can rest on (`src/core/cargoSpace.ts`, `freeFloor`). */
   'load_floor',
 ] as const;
@@ -963,6 +967,8 @@ const ItemSchema = strictObject({
         array(picklist(VEHICLE_CAPABILITIES)),
         check((list) => new Set(list).size === list.length, 'capabilities must be distinct'),
       ),
+      /** The heaviest load a `lift` part raises; one rating, not a chart over reach. */
+      ratedLoadKg: optional(Positive),
       /**
        * A cargo space: a block whose footprint is its one pocket (`DESIGN.md`, "Vehicles", **Cargo space.**).
        * Its model is one inventory cell, and a fitting's `cargo` scales it.
