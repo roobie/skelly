@@ -403,6 +403,10 @@ that matters, such as a scenario goal or a needed ladder, by authoring a high mi
 strength and durability. See `src/core/schema.ts`, `FurnitureSchema`, and
 `src/core/blockEntities.ts`, `BlockEntities.conditionOf`.
 
+Ruin is final: a destroyed piece or a broken door is never repaired, only replaced,
+because a ruined thing is mostly fragments; mending partial damage belongs to
+construction.
+
 ### Ladders and hatches
 
 Roof perches reward exploration and can make the finale easier, but do not
