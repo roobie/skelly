@@ -25,7 +25,7 @@ const whereText = (inv: Inventory, item: Item, at: Location | undefined, text: Q
     case 'pocket':
       return fillText(text.pocket, {
         container: inv.name(at.owner).toLowerCase(),
-        seconds: (inv.pocketHandling(at.owner, at.pocket) + handlingWeights(inv.registry).perCell * cells).toFixed(1),
+        secs: (inv.pocketHandling(at.owner, at.pocket) + handlingWeights(inv.registry).perCell * cells).toFixed(1),
       });
     default:
       return '';
@@ -152,7 +152,7 @@ export const timedActionHandlingPresentation = (
 });
 
 const progressLabel = (text: HandlingText, elapsed: number, total: number): string =>
-  fillText(text.progress, { elapsed: elapsed.toFixed(1), total: total.toFixed(1) });
+  fillText(text.progress, { done: elapsed.toFixed(1), total: total.toFixed(1) });
 
 /** The current move and the next one, while the inventory is closed. */
 export const handlingViewModel = (queue: HandlingPresentationSource, text: HandlingText): HandlingViewModel => {

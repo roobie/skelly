@@ -161,7 +161,6 @@ try {
       const canHints = await page.evaluate(async () => {
         const { Tutorial } = await import('/src/game/tutorial.ts');
         const { mountTutorial } = await import('/src/ui/tutorial.ts');
-        const { CORE_CONTENT_IDS } = await import('/src/core/contentIds.ts');
         const { Inventory } = await import('/src/core/inventory.ts');
         const { HandlingQueue } = await import('/src/core/handling.ts');
         const { Unpacking } = await import('/src/game/unpacking.ts');
@@ -216,7 +215,7 @@ try {
         );
         gauntletWitness.manual = true;
         try {
-          const tutorialText = gauntletWitness.engine.registry.ui.get(CORE_CONTENT_IDS.coreUi).screenText.tutorial;
+          const tutorialText = gauntletWitness.engine.registry.ui.get('core').screenText.tutorial;
           const draw = mountTutorial(
             tutorial,
             tutorialText,

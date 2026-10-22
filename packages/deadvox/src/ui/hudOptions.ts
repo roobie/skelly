@@ -66,7 +66,7 @@ export const writeHudOptions = (state: HudSettings): void => {
   }
 };
 
-export type HudOptionLabels = Readonly<Record<HudOptionKey, string>>;
+type HudOptionLabels = Readonly<Record<HudOptionKey, string>>;
 
 const optionTemplate = (
   key: HudSettingKey,

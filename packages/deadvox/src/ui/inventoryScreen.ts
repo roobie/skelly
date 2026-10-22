@@ -238,7 +238,7 @@ interface InventoryScreenViewModel {
 
 type InventoryText = ScreenText['inventory'];
 
-const secs = (text: InventoryText, s: number) => fillText(text.seconds, { value: s.toFixed(1) });
+const secs = (text: InventoryText, s: number) => fillText(text.secs, { value: s.toFixed(1) });
 const kg = (text: InventoryText, g: number) => fillText(text.kg, { value: (g / 1000).toFixed(2) });
 const occupiedHand = (inv: Pick<Inventory, 'hands' | 'registry'>, side: 'right' | 'left'): string | undefined => {
   const other = inv.hands[side === 'right' ? 'left' : 'right'];
@@ -628,7 +628,7 @@ const queueTemplate = (
   return html`
     <div class="inv-queue-title">
       <strong>${factDetail(text.doingNext, text.doingNextFact)}</strong>
-      <span class="inv-muted">${queue.busy ? fillHint(text.queueLeft, { time: secs(text, queue.remaining), key: keyCap('handling.stop') }) : text.nothingQueued}</span>
+      <span class="inv-muted">${queue.busy ? fillHint(text.queueLeft, { span: secs(text, queue.remaining), key: keyCap('handling.stop') }) : text.nothingQueued}</span>
     </div>
     ${rows.map(
       (row) => html`
@@ -1196,9 +1196,9 @@ export class InventoryScreen {
         ? (def.container?.pockets ?? []).map((spec, i) => ({
             label:
               def.container!.pockets.length > 1 || spec.name
-                ? fillText(text.pocketTime, {
+                ? fillText(text.pocketReach, {
                     pocket: spec.name ?? fillText(text.pocket, { number: i + 1 }),
-                    time: secs(text, spec.handlingSimSeconds),
+                    span: secs(text, spec.handlingSimSeconds),
                   })
                 : undefined,
             grid: this.gridViewModel(
@@ -1253,9 +1253,9 @@ export class InventoryScreen {
     const specs = defOf(this.inv.registry, owner.type).container?.pockets ?? [];
     const text = this.text();
     return specs.map((spec, i) => ({
-      label: fillText(text.pocketTime, {
+      label: fillText(text.pocketReach, {
         pocket: spec.name ?? text.pocketName,
-        time: secs(text, spec.handlingSimSeconds),
+        span: secs(text, spec.handlingSimSeconds),
       }),
       grid: this.gridViewModel(
         { w: spec.grid[0], h: spec.grid[1] },
@@ -1394,8 +1394,8 @@ export class InventoryScreen {
           ? fillText(text.recipe, { recipe: item.work.recipe })
           : fillText(text.takingApart, { item: defOf(this.inv.registry, item.work.source).name }),
         fillText(text.progress, {
-          elapsed: item.work.elapsed.toFixed(1),
-          duration: item.work.duration.toFixed(1),
+          done: item.work.elapsed.toFixed(1),
+          total: item.work.duration.toFixed(1),
         }),
       );
     }
@@ -1418,7 +1418,7 @@ export class InventoryScreen {
     if (def.weapon) {
       const m = def.weapon.melee;
       lines.push(
-        fillText(text.melee, { damage: m.damage, type: m.type, reach: m.reach, cooldown: m.cooldownSimSeconds }),
+        fillText(text.melee, { damage: m.damage, type: m.type, reach: m.reach, recovery: m.cooldownSimSeconds }),
       );
     }
     if (def.light) {

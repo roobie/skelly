@@ -28,7 +28,7 @@ export const renderCrafting = (
       rows,
       (row) => row.id,
       (row) => html`<article class="craft-recipe" data-recipe=${row.id}>
-      <h3>${row.name}</h3><div class="craft-time">${fillText(text.time, { time: row.time })}</div>
+      <h3>${row.name}</h3><div class="craft-time">${fillText(text.length, { span: row.time })}</div>
       ${row.components.map(
         (group) => html`<div class="craft-components">
         ${group.alternatives.map((a) => html`<div class=${a.found < a.needed ? 'craft-gap' : ''}>${fillText(text.found, { item: a.name, found: a.found, needed: a.needed })}</div>`)}

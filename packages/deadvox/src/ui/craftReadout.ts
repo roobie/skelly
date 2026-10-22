@@ -14,8 +14,8 @@ export const craftingText = (registry: Registry): ScreenText['crafting'] =>
   registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.crafting;
 export const craftTime = (seconds: number, text: ScreenText['crafting']): string =>
   seconds >= 60
-    ? fillText(text.minutes, { value: (seconds / 60).toFixed(1) })
-    : fillText(text.seconds, { value: seconds.toFixed(1) });
+    ? fillText(text.mins, { value: (seconds / 60).toFixed(1) })
+    : fillText(text.secs, { value: seconds.toFixed(1) });
 export const workName = (registry: Registry, item: Item): string => {
   const { work } = item;
   const text = craftingText(registry);
@@ -63,9 +63,9 @@ export const craftStatus = (
     name: workName(inventory.registry, item),
     progress:
       elapsed < gather
-        ? fillText(text.gathering, { elapsed: craftTime(elapsed, text), total: craftTime(gather, text) })
+        ? fillText(text.gathering, { done: craftTime(elapsed, text), total: craftTime(gather, text) })
         : fillText(text.work, {
-            elapsed: craftTime(Math.max(0, elapsed - gather), text),
+            done: craftTime(Math.max(0, elapsed - gather), text),
             total: craftTime(work, text),
           }),
     percent: Math.round((elapsed / duration) * 100),

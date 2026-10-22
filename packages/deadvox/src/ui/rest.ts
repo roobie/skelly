@@ -48,7 +48,7 @@ export const restViewModel = (
     const slept = job?.jobType === 'sleep' ? job.elapsed : 0;
     const remaining = Math.max(0, action.wakeAt - sim.time);
     percent = slept + remaining > 0 ? (slept / (slept + remaining)) * 100 : 100;
-    label = fillText(text.rest.until, { rest: label, time: formatClock(calendarAt(sim.clock, action.wakeAt)) });
+    label = fillText(text.rest.until, { rest: label, clock: formatClock(calendarAt(sim.clock, action.wakeAt)) });
   } else if ('startFatigue' in action) {
     percent =
       action.startFatigue > 0

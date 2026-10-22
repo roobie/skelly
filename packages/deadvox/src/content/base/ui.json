@@ -53,26 +53,26 @@
           "craft": "Craft {item}",
           "disassembly": "{item} disassembly",
           "found": "{item}: {found} found / {needed} needed",
-          "gathering": "Gathering · {elapsed} / {total}",
+          "gathering": "Gathering · {done} / {total}",
           "group": "{recipe} material group {group}",
           "heading": "Crafting",
           "headingFact": "Starting a recipe requires both hands free.",
           "inProgress": "{item} in progress",
-          "minutes": "{value} min",
+          "length": "{span} game time",
+          "mins": "{value} min",
           "noMatches": "No matches",
           "noRepairTarget": "No damaged repair target in reach",
           "quality": "{quality}: best {best} / needs {required}",
           "repair": "Repair {item}",
           "repairName": "Repair: {item}",
           "repairing": "Repairing {item}",
-          "seconds": "{value} s",
+          "secs": "{value} s",
           "skill": "{skill}: level {level} / needs {required}",
           "station": "Station: {station}",
           "stop": "Stop ({key})",
           "stopped": "Stopped",
-          "time": "{time} game time",
           "use": "Use {choice}",
-          "work": "Work · {elapsed} / {total}"
+          "work": "Work · {done} / {total}"
         },
         "credits": {
           "back": "Back",
@@ -87,19 +87,19 @@
           "cause": "Cause: {cause} · Survived: {span}",
           "feedback": "Send feedback",
           "heading": "You died",
-          "hoursMinutes": "{hours} h {minutes} min",
           "lootCount": "{count} × {item}",
-          "minutes": "{minutes} min",
           "newWorld": "New world",
           "noLoot": "none",
           "seed": "World seed: {seed}",
+          "spanLong": "{hrs} h {mins} min",
+          "spanShort": "{mins} min",
           "summary": "Containers searched: {searched} · Loot: {loot}"
         },
         "handling": {
           "minimumRelease": "Minimum release {percent}%",
           "next": "Then: {job}",
           "pause": "Pause ({key})",
-          "progress": "{elapsed} / {total} s",
+          "progress": "{done} / {total} s",
           "throwForce": "Throw force"
         },
         "hudOptionLabels": {
@@ -175,7 +175,7 @@
           "leftHand": "Left hand",
           "level": "Level {level}",
           "light": "Lights {radius} m · seen from {seenFrom} m",
-          "melee": "Melee {damage} {type} · reach {reach} m beyond hand · {cooldown} s a swing",
+          "melee": "Melee {damage} {type} · reach {reach} m beyond hand · {recovery} s a swing",
           "needsLabel": "Needs",
           "noRoom": "No room on you",
           "noSelection": "No item selected",
@@ -187,14 +187,14 @@
           "open": "Open",
           "pocket": "pocket {number}",
           "pocketName": "pocket",
+          "pocketReach": "{pocket} · {span}",
           "pocketSize": "{width} × {height}",
-          "pocketTime": "{pocket} · {time}",
           "pockets": "Pockets: {sizes}",
           "practice": "{practice} / {next} practice",
           "practiceMax": "{practice} practice · no next level",
-          "progress": "Progress: {elapsed} / {duration} game seconds",
+          "progress": "Progress: {done} / {total} game seconds",
           "quality": "{quality} {level}",
-          "queueLeft": "{time} left · Cancel ({key})",
+          "queueLeft": "{span} left · Cancel ({key})",
           "recipe": "Recipe: {recipe}",
           "regionDamage": "{damage} damage",
           "remove": "Remove",
@@ -202,7 +202,7 @@
           "rightHand": "Right hand",
           "searchIt": "Search it ({key})",
           "searching": "Searching…",
-          "seconds": "{value} s",
+          "secs": "{value} s",
           "skillProgress": "{skill} progress",
           "skillsHeading": "Skills",
           "slot": "{slot}: {item}",
@@ -286,7 +286,7 @@
           "empty": "empty",
           "inLeftHand": "in left hand",
           "inRightHand": "in right hand",
-          "pocket": "{container} · {seconds} s",
+          "pocket": "{container} · {secs} s",
           "worn": "worn"
         },
         "reading": {
@@ -298,7 +298,7 @@
         "rest": {
           "fallingAsleep": "Falling asleep",
           "stop": "Stop ({key})",
-          "until": "{rest} until {time}",
+          "until": "{rest} until {clock}",
           "waiting": "Waiting"
         },
         "save": {
@@ -426,11 +426,11 @@
           "wieldSelectedItem": "Wield selected item"
         },
         "win": {
-          "elapsed": "Elapsed game hours: {hours}",
           "export": "Export attempt",
           "freshAttempt": "Fresh attempt on this seed",
           "heading": "You won",
           "newWorld": "New world",
+          "played": "Elapsed game hours: {hrs}",
           "seed": "World seed: {seed}"
         },
         "winCheckpointMessages": {

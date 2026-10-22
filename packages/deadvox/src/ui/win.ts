@@ -27,12 +27,12 @@ export const showWin = (
     exportRun: () => void;
   },
 ): void => {
-  const hours = ((run.completedAtGameTimestamp! - run.startedAtGameTimestamp) / 3600).toFixed(1);
+  const hrs = ((run.completedAtGameTimestamp! - run.startedAtGameTimestamp) / 3600).toFixed(1);
   render(
     html`<div class="card">
     <h1>${text.heading}</h1>
     <p>${fillText(text.seed, { seed })}</p>
-    <p>${fillText(text.elapsed, { hours })}</p>
+    <p>${fillText(text.played, { hrs })}</p>
     <p>${checkpointMessages[checkpoint]}</p>
     <button type="button" @click=${exportRun}>${text.export}</button>
     <button type="button" @click=${newWorld}>${text.newWorld}</button>

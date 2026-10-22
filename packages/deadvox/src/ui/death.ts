@@ -26,7 +26,7 @@ const formatSpan = (seconds: number, text: DeathText): string => {
   const minutes = Math.floor(seconds / 60);
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  return h > 0 ? fillText(text.hoursMinutes, { hours: h, minutes: m }) : fillText(text.minutes, { minutes: m });
+  return h > 0 ? fillText(text.spanLong, { hrs: h, mins: m }) : fillText(text.spanShort, { mins: m });
 };
 
 /** The page's query with the next seed, keeping the other settings but not the start time. */
