@@ -5,7 +5,7 @@ local vehicleParts = std.set([part.id for part in import '../vehicle-parts.libso
 // Voxelizing at export is an evaluation: only the rows named here export as voxel meshes. A vehicle part takes the
 // vehicle grain and every other row the item grain; both are content values.
 local grains = import 'tools/jsonnet/lib/voxel-grains.libsonnet';
-local voxelized = std.set(['car_battery', 'car_headlamp', 'hatchback_battery_tray', 'can_opener', 'soda_can', 'fuse']);
+local voxelized = std.set(['car_battery', 'car_headlamp', 'hatchback_battery_tray', 'can_opener', 'soda_can', 'fuse', 'player_bust']);
 local voxelGrainOf(id) = if std.setMember(id, vehicleParts) then grains.vehicle else grains.item;
 [
   {

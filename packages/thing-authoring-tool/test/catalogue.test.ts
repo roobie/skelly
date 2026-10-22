@@ -169,3 +169,13 @@ it('refuses recipe references outside the authored item set', () => {
     loadThingRecipe([{ id: 'fixture', kind: 'item', source: 'fixture-unknown', options: { mass: 'parts' } }]),
   ).toThrow('Unknown tool item');
 });
+it('exports the player bust with joint anchors that seat the limbs symmetrically about the centre line', () => {
+  const item = catalogue.items.find((candidate) => candidate.id === 'player_bust')!;
+  const anchors = exportItem(item, { id: 'player_bust', file: 'assets/models/player_bust.glb' }).modelEntry.anchors!;
+  for (const joint of ['neck', 'head', 'shoulder_left', 'shoulder_right', 'hip_left', 'hip_right']) {
+    expect(anchors[joint], joint).toBeDefined();
+  }
+  expect(anchors.shoulder_left![1]).toBeCloseTo(anchors.shoulder_right![1]);
+  expect(anchors.shoulder_left![0]).toBeCloseTo(-anchors.shoulder_right![0]);
+  expect(anchors.hip_left![0]).toBeCloseTo(-anchors.hip_right![0]);
+});

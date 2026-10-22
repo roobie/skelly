@@ -28,6 +28,7 @@ import { PainCue } from '../game/painCue.ts';
 import { PLAYER } from '../game/player.ts';
 import { THIRD_PERSON_CAMERA } from '../game/thirdPersonOrbit.ts';
 import { AcidEffects } from './acidEffects.ts';
+import { createAvatarStudy } from './avatarStudy.ts';
 import { BlastFlashes } from './blastFlashes.ts';
 import { CarriedPiece } from './carriedPiece.ts';
 import { CaseEffects } from './caseEffects.ts';
@@ -238,6 +239,7 @@ export const createPlayView = (
   const lightPool = new LightPool(scene, held.warmUpTarget.scene);
   engine.shadows?.attachTorches(flashlight.lights);
   scene.add(piles.group, furniture.group, playerMeshes.group);
+  const avatarStudy = createAvatarStudy(scene, config.debug, s, models);
   // Both actors implement the same presentation contract. Gameplay keeps synchronous
   // death/sever callbacks so an actor is removed before a subsequent sync/prune.
   const zombieMeshes: ZombieRenderer =
@@ -439,6 +441,7 @@ export const createPlayView = (
         inventory,
         thirdPerson: thirdPerson || detached,
       });
+      avatarStudy.sync({ bodyPosition: body.pos, yaw, stepOffset: offset, visible: thirdPerson || detached });
       const [ex, ey, ez] = spectator?.position ?? eye;
       const feedback = stepBodyCues(dt, paused, spectator !== undefined, frame.painTier);
       cameraRoll = spectator || thirdPerson ? 0 : feedback.roll;
