@@ -1355,7 +1355,15 @@ const receiverPorts = (context: ReceiverContext): PortDef[] => {
       mount: 'barrel',
       gender: 'female',
       size: bore,
-      pos: [params.section === 'ar' ? frontFaceX - AR_ACTION_LAYOUT.barrelExtensionLengthU : frontFaceX, 0, 0],
+      pos: [
+        params.section === 'ar'
+          ? frontFaceX - AR_ACTION_LAYOUT.barrelExtensionLengthU
+          : params.section === 'compact-smg'
+            ? COMPACT_SMG_PROPORTIONS.barrel.breechU
+            : frontFaceX,
+        0,
+        0,
+      ],
       normal: X,
       up: Y,
       required: true,
@@ -2820,7 +2828,8 @@ const barrelLength = (params: Readonly<Record<string, string>>): number => {
     return SPORTER_PROPORTIONS.barrel.lengthU[sizeClass];
   }
   if (params.section === 'compact-smg') {
-    return COMPACT_SMG_PROPORTIONS.barrel.tipU[params.muzzle === 'plain' ? 'plain' : 'threaded'];
+    return COMPACT_SMG_PROPORTIONS.barrel.tipU[params.muzzle === 'plain' ? 'plain' : 'threaded'] -
+      COMPACT_SMG_PROPORTIONS.barrel.breechU;
   }
   return params.section === 'ak' ? akBarrelLength(sizeClass) : { S: 26, M: 36, L: 46 }[sizeClass];
 };
@@ -3023,6 +3032,7 @@ const barrel: PartFamily = {
     const len = barrelLength(params);
     const r = Math.ceil((PISTOL_BARREL_RADIUS[bore] * (params.profile === 'heavy' ? 1.5 : 1)) / GRID) * GRID;
     const handguardLengthClass = cls(params, 'handguardLength');
+    const barrelSeatX = params.section === 'compact-smg' ? -COMPACT_SMG_PROPORTIONS.barrel.breechU : 0;
     let fore: number;
     if (params.handguardLayout === 'ak') {
       fore = akHandguardLength(handguardLengthClass);
@@ -3033,6 +3043,9 @@ const barrel: PartFamily = {
     } else {
       fore = snapAkGrid(len * HANDGUARD_REACH.barrelFraction);
     }
+    if (params.section === 'compact-smg') {
+      fore += barrelSeatX;
+    }
     const tubeLengthPercent = params.tubeLengthPercent ?? '75';
     const tubeDrop = tubeDropForBore(bore);
     const tubeEnd = pumpTubeLength(len, tubeLengthPercent);
@@ -3040,7 +3053,7 @@ const barrel: PartFamily = {
       tubeEnd > fore
         ? [{ id: 'support-lug', mount: 'lug', gender: 'female', pos: [fore, -tubeDrop, 0], normal: NEG_X, up: Y }]
         : [];
-    const tube = octagonalPrism('tube', r, [0, len]);
+    const tube = octagonalPrism('tube', r, [barrelSeatX, len]);
     const breechX = params.section === 'ar' ? -AR_ACTION_LAYOUT.barrelExtensionLengthU : 0;
     const extension =
       breechX < 0
