@@ -9,8 +9,9 @@ breach.breaking(shape.colliding({
       name: "Dad's cabin front door",
       size: [2, 4, 1],
       color: '#7a5534',
+      material: 'wood',
       breach: { minimumStrength: 3.5, durability: 60 },
-      door: { material: 'wood', methods: {}, handlingSimSeconds: 0.6 },
+      door: { methods: {}, handlingSimSeconds: 0.6 },
     },
     {
       id: 'gun_cabinet',

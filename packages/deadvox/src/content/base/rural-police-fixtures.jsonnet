@@ -85,9 +85,9 @@ breach.breaking(shape.colliding({
       ],
     },
     {
-      id: 'station_coal_hatch', name: 'Coal delivery hatch', size: [2, 2, 1], color: '#596562',
+      id: 'station_coal_hatch', name: 'Coal delivery hatch', size: [2, 2, 1], color: '#596562', material: 'steel',
       breach: { minimumStrength: 9, durability: 300 },
-      door: { material: 'steel', methods: {}, handlingSimSeconds: 0.6 },
+      door: { methods: {}, handlingSimSeconds: 0.6 },
     },
     {
       id: 'station_cooker', name: 'Cooker', size: [2, 2, 1], color: '#b7b9ae',
@@ -106,9 +106,9 @@ breach.breaking(shape.colliding({
       ],
     },
     {
-      id: 'station_emergency_door', name: 'Emergency exit door', size: [2, 4, 1], color: '#8c9b91',
+      id: 'station_emergency_door', name: 'Emergency exit door', size: [2, 4, 1], color: '#8c9b91', material: 'steel',
       breach: { minimumStrength: 9, durability: 300 },
-      door: { material: 'steel', methods: {}, handlingSimSeconds: 0.6 },
+      door: { methods: {}, handlingSimSeconds: 0.6 },
     },
   ],
 }))

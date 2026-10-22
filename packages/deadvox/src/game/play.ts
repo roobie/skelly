@@ -21,7 +21,7 @@ import { heldFirearmTransform, throwStanceWorldOffset } from '../core/heldPose.t
 import { interactionAffordance } from '../core/interactionAffordance.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
 import type { HandSide, Inventory, Pile, Target } from '../core/inventory.ts';
-import type { Item } from '../core/items.ts';
+import { damageWord, type Item } from '../core/items.ts';
 import {
   hasMetThrowMinimumHold,
   NO_LANDING_REFUSAL,
@@ -2452,6 +2452,7 @@ export const startPlay = (
       searched: entity.searched,
       name: nameOf(entity),
       fullName: entities.defOf(entity).name,
+      damage: damageWord(entities.registry, entities.conditionOf(entity)),
     });
   };
 

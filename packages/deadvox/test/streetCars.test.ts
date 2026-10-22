@@ -11,7 +11,7 @@ import { footprint } from '../src/core/templates.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
 import { BLUEPRINTS } from '../src/vehicles/catalogue.ts';
 import { startupContent } from './baseRegistry.ts';
-import { fixtureBreach } from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials } from './economyFixtures.ts';
 
 const { registry, issues } = startupContent();
 
@@ -30,6 +30,7 @@ const look = (templateId: string) => registry.furniture.get(templateId)!.vehicle
 const fixtureCar = { blueprint: 'rover', body: '#112233', dirt: 0.5, removed: [] as string[], solidFill: 0.4 };
 const checkCar = (override: Partial<typeof fixtureCar>, size: [number, number, number] = [4, 4, 9]) => {
   const data: ContentFile = {
+    furnitureMaterials: fixtureMaterials(),
     furniture: [
       {
         id: 'fixture_car',
@@ -38,6 +39,7 @@ const checkCar = (override: Partial<typeof fixtureCar>, size: [number, number, n
         color: '#5b605c',
         vehicle: { ...fixtureCar, ...override },
         breach: fixtureBreach(),
+        material: FIXTURE_MATERIAL,
       },
     ],
   };
@@ -123,6 +125,7 @@ it('rejects a vehicle look naming an unknown blueprint or part', () => {
 const checkShaped = (solidFill: number, height = 0.5) => {
   const shape = [{ position: [0, 0, 0] as [number, number, number], size: [1, height, 1] as [number, number, number] }];
   const data: ContentFile = {
+    furnitureMaterials: fixtureMaterials(),
     furniture: [
       {
         id: 'fixture_bench',
@@ -132,6 +135,7 @@ const checkShaped = (solidFill: number, height = 0.5) => {
         shape,
         solidFill,
         breach: fixtureBreach(),
+        material: FIXTURE_MATERIAL,
       },
     ],
   };

@@ -3,7 +3,7 @@ import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { compileMapSite } from '../src/core/mapKit.ts';
 import type { ContentFile, MapAssemblyDef, MapSiteDef } from '../src/core/schema.ts';
 import { startupContent } from './baseRegistry.ts';
-import { fixtureBreach } from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
@@ -108,6 +108,7 @@ it('rejects connector furniture substituted into the shaft-owned clearance', () 
           size: [1, 1, 1] as [number, number, number],
           color: '#aaaaaa',
           breach: fixtureBreach(),
+          material: FIXTURE_MATERIAL,
         },
       ],
     ]),

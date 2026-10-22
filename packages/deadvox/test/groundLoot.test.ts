@@ -14,13 +14,14 @@ import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { fixtureBreach } from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials } from './economyFixtures.ts';
 
 const base = baseRegistry();
 const seed = 7;
 const PIECES_PATH = /^.*\.pieces/;
 const floor = { id: 'fixture_floor', name: 'Fixture floor', solid: true, color: '#808080' };
 const fixtureData = (): ContentFile => ({
+  furnitureMaterials: fixtureMaterials(),
   blocks: [floor],
   inventory: [...base.inventory.values()],
   items: [
@@ -68,6 +69,7 @@ const fixtureData = (): ContentFile => ({
       color: '#808080',
       container: { pockets: [{ grid: [2, 2], handlingSimSeconds: simSeconds(0) }] },
       breach: fixtureBreach(),
+      material: FIXTURE_MATERIAL,
     },
   ],
   templates: [
@@ -280,6 +282,7 @@ describe('ground loot', () => {
         size: [1, 1, 1],
         color: '#808080',
         breach: fixtureBreach(),
+        material: FIXTURE_MATERIAL,
       });
       data.templates![0]!.palette.C = { furniture, items: [{ item }] };
       return data;

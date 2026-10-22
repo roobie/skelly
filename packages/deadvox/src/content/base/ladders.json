@@ -10,6 +10,7 @@
       },
       "color": "#7d7a72",
       "id": "ladder",
+      "material": "steel",
       "name": "Ladder",
       "shape": [
         {
@@ -41,10 +42,10 @@
       "door": {
         "handlingSimSeconds": 0.80000000000000004,
         "hatch": true,
-        "material": "steel",
         "methods": {}
       },
       "id": "roof_hatch",
+      "material": "steel",
       "name": "Roof hatch",
       "size": [2, 1, 3]
     }
