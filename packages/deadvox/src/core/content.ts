@@ -1380,6 +1380,17 @@ const checkLayoutReferences = (layout: SiteLayoutDef, registry: Registry, report
   for (const [path, message] of authoredLayoutIssues(layout, registry)) {
     report('layouts', layout.id, path, message);
   }
+  const { practice } = layout;
+  if (practice) {
+    for (const key of ['revolver', 'shotgun'] as const) {
+      if (registry.items.get(practice[key])?.firearm === undefined) {
+        report('layouts', layout.id, `.practice.${key}`, `no firearm "${practice[key]}"`);
+      }
+    }
+    if (!registry.zombies.has(practice.target.type)) {
+      report('layouts', layout.id, '.practice.target.type', `no zombie type "${practice.target.type}"`);
+    }
+  }
 };
 
 const reportMissingCamoSettings = (block: BlockDef, report: Report): void => {

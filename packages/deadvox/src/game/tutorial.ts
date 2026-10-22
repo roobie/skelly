@@ -31,6 +31,16 @@ export interface CombatObservation {
   targetAlive: boolean;
 }
 
+/** A downed shambler is still in the store, so only one that is not incapacitated is something to shoot at. */
+export const targetRemains = (zombies: Iterable<{ readonly incapacitated: boolean }>): boolean => {
+  for (const zombie of zombies) {
+    if (!zombie.incapacitated) {
+      return true;
+    }
+  }
+  return false;
+};
+
 /** The practice guns, named by the layout's content rather than chosen here. */
 export interface CombatKit {
   readonly revolver: string;

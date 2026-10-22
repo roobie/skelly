@@ -185,7 +185,7 @@ import {
   type ThirdPersonOrbitAngle,
 } from './thirdPersonOrbit.ts';
 import { TierNotice } from './tierNotice.ts';
-import { type CombatKit, type CombatObservation, Tutorial, tutorialUrl } from './tutorial.ts';
+import { type CombatKit, type CombatObservation, Tutorial, targetRemains, tutorialUrl } from './tutorial.ts';
 import { Unpacking } from './unpacking.ts';
 import { WorldLoading } from './worldLoading.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
@@ -3625,7 +3625,7 @@ export const startPlay = (
       shotgunRounds: (shotgun?.firearm?.tube?.length ?? 0) + (shotgun?.firearm?.chamber === 'round' ? 1 : 0),
       shotgunChambered: shotgun?.firearm?.chamber === 'round',
       inventoryOpen: screen.isOpen,
-      targetAlive: zombieStore.size > 0,
+      targetAlive: targetRemains([...zombieStore.entries()].map(([, zombie]) => zombie)),
     };
   };
 

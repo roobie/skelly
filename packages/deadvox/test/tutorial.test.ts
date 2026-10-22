@@ -12,6 +12,7 @@ import {
   type CombatObservation,
   Tutorial,
   type TutorialObservation,
+  targetRemains,
   tutorialRequested,
   tutorialUrl,
 } from '../src/game/tutorial.ts';
@@ -190,6 +191,12 @@ describe('practice objectives', () => {
     expect(tutorial.needsTarget).toBe(false);
     tutorial.zombieDowned();
     expect(tutorial.stage).toBe('ammo');
+  });
+
+  it('leaves nothing to shoot at when the only shamblers left in the store are incapacitated', () => {
+    expect(targetRemains([])).toBe(false);
+    expect(targetRemains([{ incapacitated: true }, { incapacitated: true }])).toBe(false);
+    expect(targetRemains([{ incapacitated: true }, { incapacitated: false }])).toBe(true);
   });
 
   it('remembers out-of-order supplies instead of requiring already consumed items again', () => {
