@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { coreLabel, coreMessage } from '../src/core/coreText.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { pickInteractionTarget } from '../src/core/interactionPick.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -94,18 +95,23 @@ describe('authored readable text', () => {
     });
     const note = inventory.create('note');
     inventory.add(note, { kind: 'pile', pos: [0, 0, 0] });
+    const notHeld = coreMessage(registry, 'notInHands', { item: 'note' });
     expect(useOption(note, reach()).plan.ok).toBe(false);
-    expect(owner.use(note)).toContain('hands');
+    expect(owner.use(note)).toBe(notHeld);
     expect(shown).toEqual([]);
     expect(inventory.move(note, { kind: 'hand', side: 'right' }).ok).toBe(true);
-    expect(useOption(note, reach())).toMatchObject({ label: 'Read', operation: 'read', plan: { ok: true, time: 0 } });
+    expect(useOption(note, reach())).toMatchObject({
+      label: coreLabel(registry, 'read'),
+      operation: 'read',
+      plan: { ok: true, time: 0 },
+    });
     const before = { time: sim.time, count: note.count, version: inventory.version };
     expect(owner.use(note)).toBeUndefined();
     expect(shown).toEqual([readable]);
     expect({ time: sim.time, count: note.count, version: inventory.version }).toEqual(before);
     expect(queue.jobs).toHaveLength(0);
     inventory.move(note, { kind: 'pile', pos: [0, 0, 0] });
-    expect(owner.use(note)).toContain('hands');
+    expect(owner.use(note)).toBe(notHeld);
     expect(shown).toHaveLength(1);
   });
   it('picks a wall-face plaque for reading and admits only its live in-reach owner', () => {

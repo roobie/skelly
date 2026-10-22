@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { coreMessage } from '../src/core/coreText.ts';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { HANDLING, Inventory } from '../src/core/inventory.ts';
@@ -90,7 +91,7 @@ describe('grid placement', () => {
     const knife = onFloor(inv, 'kabar');
     expect(inv.plan(knife, { kind: 'pocket', owner: jeans, pocket: 0 })).toEqual({
       ok: false,
-      reason: 'Too big for it',
+      reason: coreMessage(registry, 'tooBig'),
     });
     expect(inv.move(knife, { kind: 'pocket', owner: hoodie, pocket: 0 })).toMatchObject({
       ok: true,

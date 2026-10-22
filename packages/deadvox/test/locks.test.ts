@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { toChunk, type Vec3 } from '../src/core/coords.ts';
+import { type CoreMessageKey, coreLabel, coreMessage } from '../src/core/coreText.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { doorOptions, doorPlan } from '../src/core/options.ts';
@@ -113,7 +114,7 @@ describe('door locks', () => {
         .furnitureIn(toChunk(piece.pos[0]), toChunk(piece.pos[2]))
         .find(({ spec }) => spec.lock?.id === piece.lock!.id)!;
       const door = inventory.furnish(spawn.spec, spawn.loot)!;
-      expect(inventory.entities.setOpen(door, true)).toBe("It's locked");
+      expect(inventory.entities.setOpen(door, true)).toBe(coreMessage(inventory.registry, 'locked'));
       const held = inventory.create(`${piece.lock!.id}_key`);
       inventory.add(held, { kind: 'hand', side: 'right' });
       const unlock = doorOptions(inventory, door)[1]!;
@@ -131,21 +132,26 @@ describe('door locks', () => {
   });
   it('the door owner refuses opening a locked door even without the interaction adapter', () => {
     const { inventory, door } = make();
-    expect(inventory.entities.setOpen(door, true)).toBe("It's locked");
+    const locked = coreMessage(inventory.registry, 'locked');
+    expect(inventory.entities.setOpen(door, true)).toBe(locked);
     expect(door.open).toBe(false);
-    expect(doorOptions(inventory, door)[0]!.plan).toEqual({ ok: false, reason: "It's locked" });
+    expect(doorOptions(inventory, door)[0]!.plan).toEqual({ ok: false, reason: locked });
   });
   it('lock options distinguish no held key from a wrong key and use the door handling time', () => {
     const { inventory, door } = make();
-    expect(doorOptions(inventory, door)[1]!.plan).toEqual({ ok: false, reason: 'Hold the key in your hands' });
+    const text = (key: CoreMessageKey) => coreMessage(inventory.registry, key);
+    expect(doorOptions(inventory, door)[1]!.plan).toEqual({ ok: false, reason: text('noKey') });
     const wrong = inventory.create('lock_test_key_b');
     inventory.add(wrong, { kind: 'hand', side: 'right' });
-    expect(doorOptions(inventory, door)[1]!.plan).toEqual({ ok: false, reason: "The key doesn't fit" });
+    expect(doorOptions(inventory, door)[1]!.plan).toEqual({ ok: false, reason: text('wrongKey') });
     inventory.consume(wrong);
     inventory.add(inventory.create('lock_test_key_a'), { kind: 'hand', side: 'left' });
-    expect(doorOptions(inventory, door)[1]).toMatchObject({ label: 'Unlock', plan: { ok: true, time: 0.3 } });
+    expect(doorOptions(inventory, door)[1]).toMatchObject({
+      label: coreLabel(inventory.registry, 'unlock'),
+      plan: { ok: true, time: 0.3 },
+    });
     inventory.canReachEntity = () => false;
-    expect(doorOptions(inventory, door)[1]!.plan).toEqual({ ok: false, reason: 'Too far away' });
+    expect(doorOptions(inventory, door)[1]!.plan).toEqual({ ok: false, reason: text('tooFar') });
   });
   it('open-close plans do not recheck F target reach', () => {
     const { inventory, door } = make();
@@ -153,7 +159,10 @@ describe('door locks', () => {
     expect(inventory.entities.setOpen(door, true)).toBeUndefined();
     inventory.canReachEntity = () => false;
     expect(doorOptions(inventory, door)[0]!.plan).toEqual({ ok: true, time: 0.3 });
-    expect(doorOptions(inventory, door)[1]!.plan).toEqual({ ok: false, reason: 'Close the door first' });
+    expect(doorOptions(inventory, door)[1]!.plan).toEqual({
+      ok: false,
+      reason: coreMessage(inventory.registry, 'doorOpen'),
+    });
   });
   it('queued unlocking rechecks reach at completion', () => {
     const { inventory, door } = make();
@@ -171,7 +180,7 @@ describe('door locks', () => {
     queue.enqueueAction(DOOR_ACTION, 'Unlock', 0.3, { entityUid: door.uid, locked: false });
     queue.tick(0.1);
     inventory.canReachEntity = () => false;
-    expect(queue.tick(0.2).failed[0]?.reason).toBe('Too far away');
+    expect(queue.tick(0.2).failed[0]?.reason).toBe(coreMessage(inventory.registry, 'tooFar'));
     expect(door.lock!.locked).toBe(true);
   });
   it('queued unlocking rechecks the held key and does not emit a sound on success or refusal', () => {
@@ -192,7 +201,7 @@ describe('door locks', () => {
     queue.tick(0.1);
     expect(door.lock!.locked).toBe(true);
     inventory.move(held, { kind: 'pile', pos: [0, 0, 0] });
-    expect(queue.tick(0.2).failed[0]?.reason).toBe('Hold the key in your hands');
+    expect(queue.tick(0.2).failed[0]?.reason).toBe(coreMessage(inventory.registry, 'noKey'));
     expect(door.lock!.locked).toBe(true);
     inventory.move(held, { kind: 'hand', side: 'right' });
     queue.enqueueAction(DOOR_ACTION, 'Unlock', 0.3, { entityUid: door.uid, locked: false });
@@ -200,7 +209,7 @@ describe('door locks', () => {
     expect(door.lock!.locked).toBe(false);
     expect(sounds).toEqual([]);
     inventory.entities.setOpen(door, true);
-    expect(inventory.entities.setLocked(door, true, ['test_a'])).toBe('Close the door first');
+    expect(inventory.entities.setLocked(door, true, ['test_a'])).toBe(coreMessage(inventory.registry, 'doorOpen'));
   });
   it('rejects an empty authored door lock id', () => {
     const data = fixture();
@@ -331,7 +340,10 @@ describe('boarded doors', () => {
     const [street, inside] = barred === 'back' ? [back, front] : [front, back];
 
     inventory.actorPosition = () => street;
-    expect(doorPlan(inventory, door, 'open')).toMatchObject({ ok: false, reason: "It's boarded up" });
+    expect(doorPlan(inventory, door, 'open')).toMatchObject({
+      ok: false,
+      reason: coreMessage(inventory.registry, 'boardedUp'),
+    });
     inventory.actorPosition = () => inside;
     expect(doorPlan(inventory, door, 'open').ok).toBe(true);
   });

@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { Character, dominantSide, offSide } from '../src/core/character.ts';
+import { coreMessage } from '../src/core/coreText.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bestPocket } from '../src/core/options.ts';
@@ -253,7 +254,8 @@ describe('quickbar tap and hold actions', () => {
     const stranded = toolStowed ? light : tool;
     const strandedSide = stranded === tool ? dominantSide(inventory.character) : offSide(inventory.character);
     expect(inventory.locate(stranded)).toMatchObject({ kind: 'hand', side: strandedSide });
-    expect(notices.some((notice) => notice.includes(inventory.name(stranded)))).toBe(true);
+    const report = coreMessage(inventory.registry, 'cantStow', { item: inventory.name(stranded).toLowerCase() });
+    expect(notices).toContain(report);
     expect(inventory.locate(twoHanded)?.kind).toBe('pile');
   });
 

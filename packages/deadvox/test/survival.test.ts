@@ -28,6 +28,7 @@ const base = (file: string): ContentSource => {
 };
 const { registry } = buildRegistry(
   [
+    'ui.json',
     'sounds.json',
     'sounds-pump.json',
     'sounds-weapons.json',
