@@ -78,6 +78,17 @@ describe('voxelize', () => {
     expect(stats.voxels).toBe(72);
   });
 
+  it('puts every voxel corner on the lattice that starts at the given origin', () => {
+    const origin = [0.013, -0.021, 0.034];
+    const { groups } = voxelize([box([0.01, 0.02, 0.0], [0.31, 0.16, 0.2])], grain, origin);
+    const [mesh] = [...groups.values()];
+    expect(mesh!.positions.length).toBeGreaterThan(0);
+    for (let i = 0; i < mesh!.positions.length; i += 1) {
+      const cells = (mesh!.positions[i]! - origin[i % 3]!) / grain;
+      expect(Math.abs(cells - Math.round(cells))).toBeLessThan(1e-3);
+    }
+  });
+
   it('refuses a grain that is not a positive number', () => {
     expect(() => voxelize([box([0, 0, 0], [1, 1, 1])], 0)).toThrow(POSITIVE);
     expect(() => voxelize([box([0, 0, 0], [1, 1, 1])], Number.NaN)).toThrow(POSITIVE);

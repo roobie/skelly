@@ -42,6 +42,23 @@ it('writes the design row grain into the exported GLB', () => {
   expect(extras.every((entry) => entry.voxelGrain === grain)).toBe(true);
 });
 
+it('writes the magazine row grain into the exported GLB', () => {
+  const grain = 0.05;
+  const [exported] = loadExportRecipe([
+    {
+      id: 'fixture',
+      kind: 'magazine',
+      source: 'akm-30',
+      options: { cartridge: 'gungen/cartridges/7.62x39.json', appearanceProfile: 'ak', voxelGrain: grain },
+    },
+  ]);
+  const extras = readGlb(exported!.generate().glb).json.meshes.flatMap(({ primitives }) =>
+    primitives.map((primitive) => (primitive.extras ?? {}) as Record<string, unknown>),
+  );
+  expect(extras.length).toBeGreaterThan(0);
+  expect(extras.every((entry) => entry.voxelGrain === grain)).toBe(true);
+});
+
 it('rejects options not taken by the selected exporter', () => {
   expect(() =>
     loadExportRecipe([{ id: 'fixture', kind: 'design', source: 'fixture-source', options: { component: 'round' } }]),

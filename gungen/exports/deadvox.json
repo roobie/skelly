@@ -195,7 +195,8 @@
     "kind": "magazine",
     "options": {
       "appearanceProfile": "ak",
-      "cartridge": "gungen/cartridges/7.62x39.json"
+      "cartridge": "gungen/cartridges/7.62x39.json",
+      "voxelGrain": 0.01
     },
     "source": "akm-30"
   }

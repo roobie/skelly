@@ -19,6 +19,7 @@ export interface MagazineExportInput {
   readonly params: Readonly<Record<string, string>>;
   readonly cartridge: MetallicCartridge;
   readonly appearance?: AppearanceContext;
+  readonly voxelGrain?: number;
 }
 
 export type MagazineExportResult =
@@ -41,6 +42,7 @@ export const exportMagazineGlb = (input: MagazineExportInput): MagazineExportRes
     palette: GUN_PALETTE,
     ...(input.appearance ? { appearance: input.appearance } : {}),
     asset: input.asset,
+    ...(input.voxelGrain === undefined ? {} : { voxelGrain: input.voxelGrain }),
   });
   if (!output.ok) {
     return output;

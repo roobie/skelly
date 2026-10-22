@@ -84,6 +84,21 @@ const toMetres = (v: Vec3, metresPerUnit: number): Vec3 => [
   v[2] * metresPerUnit,
 ];
 
+/**
+ * Where a part's voxel lattice must start, in part-local metres, so its voxels land on the world lattice. A part placed
+ * at a fraction of a voxel, or turned by a quarter turn, would otherwise leave steps and gaps against its neighbours. A
+ * part turned by any other angle has no matching lattice and keeps its own.
+ */
+const latticeOrigin = (placed: { readonly r: Mat3; readonly t: Vec3 }, grain: number, metresPerUnit: number): Vec3 => {
+  const { r, t } = placed;
+  if (!r.every((x) => [-1, 0, 1].some((q) => Math.abs(x - q) < 1e-9))) {
+    return [0, 0, 0];
+  }
+  // The inverse rotation of a rotation matrix is its transpose.
+  const local = [0, 1, 2].map((i) => -[0, 1, 2].reduce((sum, j) => sum + r[j * 3 + i]! * t[j]! * metresPerUnit, 0));
+  return local.map((v) => v - Math.floor(v / grain) * grain) as unknown as Vec3;
+};
+
 const isIdentity = (m: Mat3): boolean => m.every((x, i) => Math.abs(x - (i % 4 === 0 ? 1 : 0)) < 1e-12);
 
 // ---- binary buffer assembly ----
@@ -390,7 +405,7 @@ export const exportGlb: ExportGlb = (input) => {
       finishes[group]!.solids.push(...item.solids.map(({ id }) => id));
       return [{ positions: mesh.positions.map((x) => x * metresPerUnit), indices: mesh.indices, group }];
     });
-    const { groups } = voxelize(sources, grain);
+    const { groups } = voxelize(sources, grain, latticeOrigin(part.placed, grain, metresPerUnit));
     return [...groups].map(([group, buffers]) =>
       bufferPrimitive(buffers, materialFor(finishes[group]!.appearance), {
         voxelGrain: grain,

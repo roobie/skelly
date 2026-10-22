@@ -10,6 +10,8 @@ local magazine(id, source, calibre, appearanceProfile) = {
   id: id, kind: 'magazine', source: source,
   options: { cartridge: 'gungen/cartridges/' + calibre + '.json', appearanceProfile: appearanceProfile },
 };
+local voxelMagazine(id, source, calibre, appearanceProfile) =
+  magazine(id, source, calibre, appearanceProfile) { options+: { voxelGrain: grains.item } };
 [
   design('rifle_assault', 'archetype-ar'),
   voxelDesign('rifle_ak', 'archetype-ak-akm'),
@@ -41,5 +43,5 @@ local magazine(id, source, calibre, appearanceProfile) = {
   attachment('tactical-flashlight-mount'),
   magazine('magazine_stanag_20', 'stanag-20', '5.56x45', 'ar'),
   magazine('magazine_stanag_30', 'stanag-30', '5.56x45', 'ar'),
-  magazine('magazine_akm_30', 'akm-30', '7.62x39', 'ak'),
+  voxelMagazine('magazine_akm_30', 'akm-30', '7.62x39', 'ak'),
 ]

@@ -69,7 +69,11 @@ const exporters = {
   },
   magazine: (row: Row, root: string) => {
     const options = parse(
-      strictObject({ cartridge: pipe(string(), nonEmpty()), appearanceProfile: pipe(string(), nonEmpty()) }),
+      strictObject({
+        cartridge: pipe(string(), nonEmpty()),
+        appearanceProfile: pipe(string(), nonEmpty()),
+        voxelGrain: optional(pipe(number(), gtValue(0))),
+      }),
       optionsFor(row),
     );
     const prefab = GUN_PREFABS.find(({ id, family }) => id === row.source && family === 'magazine');
@@ -86,6 +90,7 @@ const exporters = {
         params: prefab.fixedParams,
         cartridge,
         appearance: { appearanceProfile: options.appearanceProfile },
+        ...(options.voxelGrain === undefined ? {} : { voxelGrain: options.voxelGrain }),
       });
       if (!result.ok) {
         throw new Error(JSON.stringify(result.error));

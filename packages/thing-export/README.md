@@ -50,6 +50,13 @@ collapses to a few voxels. A row picks its class, never a number, so one tuning 
 whole class. See `tools/jsonnet/lib/voxel-grains.libsonnet`, and the recipes
 `packages/thing-authoring-tool/exports/deadvox.jsonnet` and `gungen/exports/deadvox.jsonnet`.
 
+Every part's voxels sit on one lattice shared by the whole model, not on a lattice of the
+part's own. Parts are placed at fractions of a voxel, and voxels from different lattices
+leave steps and gaps where parts meet, so a receiver, a handguard and a magazine well stop
+reading as one body. A part turned by a quarter turn shares the lattice too; one turned by
+any other angle keeps its own. See `src/glb.ts`, `latticeOrigin`, and `src/voxelize.ts`,
+`voxelize`.
+
 A solid thinner than the grain keeps one voxel of thickness instead of vanishing, because
 glass, blades and sheet parts are thin by design and losing them breaks the item; the cost
 is that they draw thicker than authored.

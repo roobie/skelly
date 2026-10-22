@@ -337,14 +337,32 @@ const meshGrid = (grid: Grid, grain: number): Voxelized => {
   return { groups, stats: { voxels: grid.size, faces, quads } };
 };
 
-/** Voxelizes the sources at `grain` metres, on a lattice anchored at the part origin. Empty input gives no groups. */
-export const voxelize = (sources: readonly VoxelSource[], grain: number): Voxelized => {
+const shifted = (values: ArrayLike<number>, by: readonly number[], sign: 1 | -1): Float32Array =>
+  Float32Array.from({ length: values.length }, (_, i) => values[i]! + sign * by[i % 3]!);
+
+/**
+ * Voxelizes the sources at `grain` metres, on a lattice anchored at `origin` (part-local metres, the part origin by
+ * default) so a caller can put the voxels of parts placed at fractions of a voxel on one shared lattice. Empty input
+ * gives no groups.
+ */
+export const voxelize = (
+  sources: readonly VoxelSource[],
+  grain: number,
+  origin: readonly number[] = [0, 0, 0],
+): Voxelized => {
   if (!(Number.isFinite(grain) && grain > 0)) {
     throw new Error(`Voxel grain must be a positive number of metres, got ${grain}`);
   }
   const grid: Grid = new Map();
   for (const source of sources) {
-    fillSource(grid, source, grain);
+    fillSource(grid, { ...source, positions: shifted(source.positions, origin, -1) }, grain);
   }
-  return grid.size === 0 ? { groups: new Map(), stats: { voxels: 0, faces: 0, quads: 0 } } : meshGrid(grid, grain);
+  if (grid.size === 0) {
+    return { groups: new Map(), stats: { voxels: 0, faces: 0, quads: 0 } };
+  }
+  const { groups, stats } = meshGrid(grid, grain);
+  return {
+    groups: new Map([...groups].map(([group, b]) => [group, { ...b, positions: shifted(b.positions, origin, 1) }])),
+    stats,
+  };
 };
