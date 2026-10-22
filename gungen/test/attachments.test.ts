@@ -533,33 +533,22 @@ describe('attachment parts and export metadata', () => {
     });
   });
 
-  it('rejects a candidate at a solid-obstructed slot while certifying the same mount at a clear slot', () => {
-    const { rail, blockedIndex, clearIndex, slots, compatibility } = singleObstructionFixture('solid');
-    const blocked = slots.find(({ notchIndex }) => notchIndex === blockedIndex);
-    const clear = slots.find(({ notchIndex }) => notchIndex === clearIndex);
-    const optic = OPTIC_CATALOG['mini-reflex'];
-    if (!(blocked && clear && optic)) {
-      throw new Error('Fixture did not produce both optic slots');
-    }
-    expect(mountCanAccept(rail, optic.mount, blockedIndex)).toBe(true);
-    expect(mountCanAccept(rail, optic.mount, clearIndex)).toBe(true);
-    expect(compatibility[blocked.id]).not.toContain('optic-mini-reflex');
-    expect(compatibility[clear.id]).toContain('optic-mini-reflex');
-  });
-
-  it('rejects a candidate in a keep-out at one slot while certifying it at a clear slot', () => {
-    const { rail, blockedIndex, clearIndex, slots, compatibility } = singleObstructionFixture('keep-out');
-    const blocked = slots.find(({ notchIndex }) => notchIndex === blockedIndex);
-    const clear = slots.find(({ notchIndex }) => notchIndex === clearIndex);
-    const optic = OPTIC_CATALOG['mini-reflex'];
-    if (!(blocked && clear && optic)) {
-      throw new Error('Fixture did not produce both optic slots');
-    }
-    expect(mountCanAccept(rail, optic.mount, blockedIndex)).toBe(true);
-    expect(mountCanAccept(rail, optic.mount, clearIndex)).toBe(true);
-    expect(compatibility[blocked.id]).not.toContain('optic-mini-reflex');
-    expect(compatibility[clear.id]).toContain('optic-mini-reflex');
-  });
+  it.each(['solid', 'keep-out'] as const)(
+    'rejects a candidate at a %s-obstructed slot while certifying the same mount at a clear slot',
+    (obstructionKind) => {
+      const { rail, blockedIndex, clearIndex, slots, compatibility } = singleObstructionFixture(obstructionKind);
+      const blocked = slots.find(({ notchIndex }) => notchIndex === blockedIndex);
+      const clear = slots.find(({ notchIndex }) => notchIndex === clearIndex);
+      const optic = OPTIC_CATALOG['mini-reflex'];
+      if (!(blocked && clear && optic)) {
+        throw new Error('Fixture did not produce both optic slots');
+      }
+      expect(mountCanAccept(rail, optic.mount, blockedIndex)).toBe(true);
+      expect(mountCanAccept(rail, optic.mount, clearIndex)).toBe(true);
+      expect(compatibility[blocked.id]).not.toContain('optic-mini-reflex');
+      expect(compatibility[clear.id]).toContain('optic-mini-reflex');
+    },
+  );
 
   it('certifies clear attachment pairs and rejects a pair that overlaps on fixture geometry', () => {
     const { slots, compatibility, pairs } = pairFixture();
