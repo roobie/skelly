@@ -9,7 +9,7 @@ import type { Chunk } from './chunk.ts';
 import type { SpawnTimeWindowField } from './clock.ts';
 import type { Registry, TemplateDef } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
-import type { LootContext } from './loot.ts';
+import { type LootContext, type LootDepth, lootDepthOf } from './loot.ts';
 import type { Tip } from './orientation.ts';
 import { pickWeighted, Rng } from './random.ts';
 import type {
@@ -136,6 +136,7 @@ export const templateLockIds = (registry: Registry, template: TemplateDef | MapP
 /** A piece of furniture in a template, in template coordinates. */
 interface Piece {
   lootUsage?: LootContext['usage'];
+  lootDepth?: LootDepth;
   lock?: DoorLockDef;
   fixed?: true;
   items?: readonly FixedLootItemDef[];
@@ -152,6 +153,7 @@ export interface GroundLootMarker {
   readonly pos: Vec3;
   readonly supply: GroundLootSupply;
   readonly lootUsage?: LootContext['usage'];
+  readonly lootDepth?: LootDepth;
 }
 
 export interface SpawnMarker extends SpawnTimeWindowField {
@@ -770,6 +772,11 @@ export const compileAssembly = (
       { cause: error },
     );
   }
+  // An assembly that declares a tier range hands it to its pieces, and the innermost range wins, so a storey's range
+  // outlasts the building around it. Any other assembly leaves its pieces to the placement's own context.
+  const depth = assembly.lootContext.lowerTiers === true ? lootDepthOf(assembly.lootContext) : undefined;
+  const handDown = <T extends { lootDepth?: LootDepth }>(item: T): T =>
+    depth === undefined || item.lootDepth !== undefined ? item : { ...item, lootDepth: depth };
   // Resolving every slot first prevents chunk demand from owning selection.
   const resolved = slots.map((slot) => ({ slot, placement: resolveSlot(registry, assembly, slot, childContext) }));
   const ports = validateJoins(
@@ -784,9 +791,9 @@ export const compileAssembly = (
     ports,
     ...templateEnvelope(assembly),
     ...composeAssemblyVoxels(assembly, resolved, context),
-    pieces: resolved.flatMap(({ placement }) => placedPieces(placement)),
+    pieces: resolved.flatMap(({ placement }) => placedPieces(placement).map(handDown)),
     spawns: resolved.flatMap(({ placement }) => placedSpawns(placement)),
-    groundLoot: resolved.flatMap(({ placement }) => placedGroundLoot(placement)),
+    groundLoot: resolved.flatMap(({ placement }) => placedGroundLoot(placement).map(handDown)),
     decals: resolved.flatMap(({ placement }) => placedDecals(placement)),
     ...(assembly.access ? { access: assembly.access } : {}),
   };
@@ -857,6 +864,7 @@ const composePlacement = (
 /** A placed piece in world coordinates. */
 export interface PlacedPiece {
   lootUsage?: LootContext['usage'];
+  lootDepth?: LootDepth;
   lock?: DoorLockDef;
   fixed?: true;
   items?: readonly FixedLootItemDef[];
@@ -882,6 +890,7 @@ export const placedPieces = ({ template, origin, turn }: Placement): PlacedPiece
       ...(piece.items ? { items: piece.items } : {}),
       loot: piece.loot,
       ...(piece.lootUsage === undefined ? {} : { lootUsage: piece.lootUsage }),
+      ...(piece.lootDepth === undefined ? {} : { lootDepth: piece.lootDepth }),
       facing: turnFacing(piece.facing, turn),
       ...(piece.tip ? { tip: piece.tip } : {}),
       pos: [origin[0] + Math.min(ax, bx), origin[1] + piece.pos[1], origin[2] + Math.min(az, bz)],

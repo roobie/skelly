@@ -79,14 +79,14 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "repair_kit",
+      "model": "repair_kit",
       "name": "Repair kit",
       "size": [2, 2],
       "tool": {
         "qualities": {
           "repairing": 1
         }
-      },
-      "weight": 1250
+      }
     },
     {
       "category": "material",

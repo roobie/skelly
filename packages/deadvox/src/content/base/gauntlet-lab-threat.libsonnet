@@ -2,11 +2,11 @@ local row = function(type, chance, weight) { type: type, chance: chance, weight:
 local quiet = row(null, 0, 1);
 // Per storey, weighted rows of what one marker cell holds; weight on a null-type row leaves the cell quiet.
 local rows = {
-  entry: [row(null, 0, 6), row('shambler', 0.6, 3)],
+  entry: [row(null, 0, 2), row('shambler', 0.6, 3)],
   administration: [row(null, 0, 1), row('shambler', 0.6, 2)],
   containment: [row(null, 0, 1), row('shambler', 0.8, 5)],
-  failure: [row(null, 0, 2), row('shambler', 0.6, 3), row('runner', 0.6, 2), row('crawler', 0.6, 2)],
-  bottom: [row(null, 0, 1), row('shambler', 0.6, 2), row('runner', 0.6, 3), row('crawler', 0.6, 3)],
+  failure: [row(null, 0, 1), row('shambler', 0.8, 4), row('runner', 0.8, 3), row('crawler', 0.8, 3)],
+  bottom: [row(null, 0, 1), row('shambler', 0.8, 3), row('runner', 0.8, 4), row('crawler', 0.8, 4)],
   // The sewer is the quieter trade for the street run, so its few cells stay sparse.
   sewer: [row(null, 0, 2), row('shambler', 0.6, 1)],
 };

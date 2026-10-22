@@ -76,7 +76,8 @@ local rooms = {
     openings: [{ token: 'u', at: [25, 10], axis: 'z', width: 2 }],
     dressing: [
       { id: 'checkpoint_console', at: [19, 9], kit: 'console', fixture: 'broken' },
-      { id: 'checkpoint_desk', at: [22, 9], kit: 'desk', fixture: 'working' },
+      // The guards' weapon locker: its own Military usage lets rifle supplies roll here and nowhere else on the level.
+      { id: 'checkpoint_weapon_locker', at: [22, 9], kit: 'locker', fixture: 'working', loot: 'gauntlet_lab_checkpoint_rifles', lootUsage: ['Military'] },
     ],
   },
   stair_down: {
@@ -201,6 +202,8 @@ local wellPiece = {
 };
 local built = level.build({
   id: 'administration', base: base, plan: plan, rooms: rooms, context: { usage: ['Industrial'], tier: 'Tier1' },
+  // Level two rolls the first two tiers.
+  range: { tier: 'Tier2', lowerTiers: true },
   lock: 'gauntlet_lab_administration_seal', cardItem: 'gauntlet_lab_administration_card',
   card: { container: 'director_desk' },
   through: arrivals,
@@ -230,6 +233,11 @@ local built = level.build({
   // Each room rolls what it was used for, kept as thin as the lab's other margins; offices hold desk clutter, not paper,
   // because the level carries no readables until the destination round.
   loot: [
+    { id: 'gauntlet_lab_checkpoint_rifles', rolls: [1, 2], entries: [
+      { item: 'cartridge_5_d_56x45', weight: 2, count: [6, 14] }, { item: 'cartridge_7_d_62x39', weight: 2, count: [6, 14] },
+      { item: 'magazine_stanag_30', weight: 1, condition: [0.4, 0.8] }, { item: 'magazine_akm_30', weight: 1, condition: [0.4, 0.8] },
+      { nothing: true, weight: 3 },
+    ] },
     { id: 'gauntlet_lab_administration_canteen', rolls: [1, 1], entries: [
       { table: 'gauntlet_food_stock', weight: 3 }, { item: 'water_bottle', weight: 2 }, { item: 'soda_can', weight: 1 },
       { item: 'juice_carton', weight: 1 }, { item: 'chocolate_bar', weight: 1 }, { nothing: true, weight: 8 },

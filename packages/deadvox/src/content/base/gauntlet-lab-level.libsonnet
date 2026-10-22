@@ -119,7 +119,7 @@ local stair = {
           L: { furniture: if d.fixture == 'broken' then 'gauntlet_lab_fixture_broken' else 'gauntlet_lab_fixture' },
         } + { [glyph]: { furniture: if std.type(kit.furniture[glyph]) == 'object' then kit.furniture[glyph].id else kit.furniture[glyph],
                      loot: std.get(d, 'loot', 'd41_empty') }
-                     + (if std.objectHas(d.room, 'lootUsage') then { lootUsage: d.room.lootUsage } else {})
+                     + (if std.objectHas(d, 'lootUsage') then { lootUsage: d.lootUsage } else if std.objectHas(d.room, 'lootUsage') then { lootUsage: d.room.lootUsage } else {})
                      + (if std.type(kit.furniture[glyph]) == 'object' then { tip: kit.furniture[glyph].tip } else {}) for glyph in std.objectFields(kit.furniture) },
         layers: layers,
         ownership: { layers: [[std.join('', [if c == '.' then 'A' else 'S' for c in std.stringChars(row)]) for row in layer] for layer in layers] },
@@ -142,7 +142,7 @@ local stair = {
       cardStock: if cardBay == null then [] else [{ at: cardSeal.key, items: [{ item: level.cardItem, key: true }] }],
       mapPieces: [shell] + [bay(d) for d in dressing],
       mapAssembly: {
-        id: 'gauntlet_lab_level_' + level.id, size: size, lootContext: level.context,
+        id: 'gauntlet_lab_level_' + level.id, size: size, lootContext: level.context + level.range,
         slots: [slot('shell', 'piece', shell.id, [0, 0, 0], size)]
           + [slot(d.id, 'piece', prefix + '_bay_' + d.id, [d.at[0] * scale, 1, d.at[1] * scale], [4, height - 1, 4]) for d in dressing]
           + threat.markerSlots(level.id, level.id, level.markers),

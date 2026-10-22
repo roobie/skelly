@@ -2,7 +2,7 @@ import { Box3, Group, type Mesh, Quaternion, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import type { BlockEntity } from '../src/core/blockEntities.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
-import type { Vec3 } from '../src/core/coords.ts';
+import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import {
   type FurnitureMover,
   liftFurniture,
@@ -106,6 +106,23 @@ describe('movable furniture', () => {
     expect(middle.pos).toEqual(at(0));
     expect(top.pos).toEqual(at(1));
     expect(inventory.pileAt(at(2))?.items).toEqual([beans]);
+  });
+
+  it('lets a piece fall with the piece under it across a column seam the lifted piece does not reach', () => {
+    const inventory = new Inventory(registry);
+    const [width, height] = crate.size;
+    expect(width, 'the fixture piece must be wide enough to straddle a seam').toBeGreaterThan(1);
+    const level = (x: number, step: number): Vec3 => [x, origin[1] + step * height, origin[2]];
+    // The lifted piece ends at the seam, the middle one straddles it, and the top one lies wholly past it.
+    const lifted = inventory.furnish({ ...spec, pos: level(CHUNK - width, 0) })!;
+    const middle = inventory.furnish({ ...spec, pos: level(CHUNK - 1, 1) })!;
+    const top = inventory.furnish({ ...spec, pos: level(CHUNK, 2) })!;
+    expect(toChunk(lifted.pos[0] + width - 1)).toBeLessThan(toChunk(top.pos[0]));
+
+    expect(liftFurniture(mover(inventory), lifted)).toBeUndefined();
+
+    expect(middle.pos).toEqual(level(CHUNK - 1, 0));
+    expect(top.pos).toEqual(level(CHUNK, 1));
   });
 
   it('takes both empty hands to carry a piece', () => {
