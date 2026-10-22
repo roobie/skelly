@@ -92,6 +92,10 @@
   ],
   "furniture": [
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_0_intact",
       "name": "Car",
@@ -105,6 +109,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_0_doors",
       "name": "Stripped car",
@@ -118,6 +126,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_0_wheels",
       "name": "Stripped car",
@@ -131,6 +143,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_0_front",
       "name": "Stripped car",
@@ -153,6 +169,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_0_rear",
       "name": "Stripped car",
@@ -173,6 +193,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_0_shell",
       "name": "Stripped car",
@@ -206,6 +230,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_1_intact",
       "name": "Car",
@@ -219,6 +247,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_1_doors",
       "name": "Stripped car",
@@ -232,6 +264,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_1_wheels",
       "name": "Stripped car",
@@ -245,6 +281,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_1_front",
       "name": "Stripped car",
@@ -267,6 +307,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_1_rear",
       "name": "Stripped car",
@@ -287,6 +331,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_1_shell",
       "name": "Stripped car",
@@ -320,6 +368,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_2_intact",
       "name": "Car",
@@ -333,6 +385,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_2_doors",
       "name": "Stripped car",
@@ -346,6 +402,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_2_wheels",
       "name": "Stripped car",
@@ -359,6 +419,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_2_front",
       "name": "Stripped car",
@@ -381,6 +445,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_2_rear",
       "name": "Stripped car",
@@ -401,6 +469,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_0_2_shell",
       "name": "Stripped car",
@@ -434,6 +506,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_0_intact",
       "name": "Car",
@@ -447,6 +523,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_0_doors",
       "name": "Stripped car",
@@ -460,6 +540,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_0_wheels",
       "name": "Stripped car",
@@ -473,6 +557,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_0_front",
       "name": "Stripped car",
@@ -495,6 +583,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_0_rear",
       "name": "Stripped car",
@@ -515,6 +607,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_0_shell",
       "name": "Stripped car",
@@ -548,6 +644,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_1_intact",
       "name": "Car",
@@ -561,6 +661,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_1_doors",
       "name": "Stripped car",
@@ -574,6 +678,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_1_wheels",
       "name": "Stripped car",
@@ -587,6 +695,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_1_front",
       "name": "Stripped car",
@@ -609,6 +721,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_1_rear",
       "name": "Stripped car",
@@ -629,6 +745,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_1_shell",
       "name": "Stripped car",
@@ -662,6 +782,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_2_intact",
       "name": "Car",
@@ -675,6 +799,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_2_doors",
       "name": "Stripped car",
@@ -688,6 +816,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_2_wheels",
       "name": "Stripped car",
@@ -701,6 +833,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_2_front",
       "name": "Stripped car",
@@ -723,6 +859,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_2_rear",
       "name": "Stripped car",
@@ -743,6 +883,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_1_2_shell",
       "name": "Stripped car",
@@ -776,6 +920,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_0_intact",
       "name": "Car",
@@ -789,6 +937,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_0_doors",
       "name": "Stripped car",
@@ -802,6 +954,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_0_wheels",
       "name": "Stripped car",
@@ -815,6 +971,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_0_front",
       "name": "Stripped car",
@@ -837,6 +997,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_0_rear",
       "name": "Stripped car",
@@ -857,6 +1021,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_0_shell",
       "name": "Stripped car",
@@ -890,6 +1058,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_1_intact",
       "name": "Car",
@@ -903,6 +1075,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_1_doors",
       "name": "Stripped car",
@@ -916,6 +1092,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_1_wheels",
       "name": "Stripped car",
@@ -929,6 +1109,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_1_front",
       "name": "Stripped car",
@@ -951,6 +1135,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_1_rear",
       "name": "Stripped car",
@@ -971,6 +1159,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_1_shell",
       "name": "Stripped car",
@@ -1004,6 +1196,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_2_intact",
       "name": "Car",
@@ -1017,6 +1213,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_2_doors",
       "name": "Stripped car",
@@ -1030,6 +1230,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_2_wheels",
       "name": "Stripped car",
@@ -1043,6 +1247,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_2_front",
       "name": "Stripped car",
@@ -1065,6 +1273,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_2_rear",
       "name": "Stripped car",
@@ -1085,6 +1297,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_2_2_shell",
       "name": "Stripped car",
@@ -1118,6 +1334,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_0_intact",
       "name": "Car",
@@ -1131,6 +1351,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_0_doors",
       "name": "Stripped car",
@@ -1144,6 +1368,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_0_wheels",
       "name": "Stripped car",
@@ -1157,6 +1385,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_0_front",
       "name": "Stripped car",
@@ -1179,6 +1411,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_0_rear",
       "name": "Stripped car",
@@ -1199,6 +1435,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_0_shell",
       "name": "Stripped car",
@@ -1232,6 +1472,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_1_intact",
       "name": "Car",
@@ -1245,6 +1489,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_1_doors",
       "name": "Stripped car",
@@ -1258,6 +1506,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_1_wheels",
       "name": "Stripped car",
@@ -1271,6 +1523,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_1_front",
       "name": "Stripped car",
@@ -1293,6 +1549,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_1_rear",
       "name": "Stripped car",
@@ -1313,6 +1573,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_1_shell",
       "name": "Stripped car",
@@ -1346,6 +1610,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_2_intact",
       "name": "Car",
@@ -1359,6 +1627,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_2_doors",
       "name": "Stripped car",
@@ -1372,6 +1644,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_2_wheels",
       "name": "Stripped car",
@@ -1385,6 +1661,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_2_front",
       "name": "Stripped car",
@@ -1407,6 +1687,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_2_rear",
       "name": "Stripped car",
@@ -1427,6 +1711,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_3_2_shell",
       "name": "Stripped car",
@@ -1460,6 +1748,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_0_intact",
       "name": "Car",
@@ -1473,6 +1765,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_0_doors",
       "name": "Stripped car",
@@ -1486,6 +1782,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_0_wheels",
       "name": "Stripped car",
@@ -1499,6 +1799,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_0_front",
       "name": "Stripped car",
@@ -1521,6 +1825,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_0_rear",
       "name": "Stripped car",
@@ -1541,6 +1849,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_0_shell",
       "name": "Stripped car",
@@ -1574,6 +1886,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_1_intact",
       "name": "Car",
@@ -1587,6 +1903,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_1_doors",
       "name": "Stripped car",
@@ -1600,6 +1920,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_1_wheels",
       "name": "Stripped car",
@@ -1613,6 +1937,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_1_front",
       "name": "Stripped car",
@@ -1635,6 +1963,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_1_rear",
       "name": "Stripped car",
@@ -1655,6 +1987,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_1_shell",
       "name": "Stripped car",
@@ -1688,6 +2024,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_2_intact",
       "name": "Car",
@@ -1701,6 +2041,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_2_doors",
       "name": "Stripped car",
@@ -1714,6 +2058,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_2_wheels",
       "name": "Stripped car",
@@ -1727,6 +2075,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_2_front",
       "name": "Stripped car",
@@ -1749,6 +2101,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_2_rear",
       "name": "Stripped car",
@@ -1769,6 +2125,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_4_2_shell",
       "name": "Stripped car",
@@ -1802,13 +2162,13 @@
       }
     },
     {
+      "breach": {
+        "durability": 150,
+        "minimumStrength": 4.5
+      },
       "color": "#7a5534",
       "door": {
         "barredFrom": "front",
-        "breach": {
-          "minimumStrength": 4.5,
-          "toughness": 150
-        },
         "handlingSimSeconds": 0.59999999999999998,
         "material": "wood",
         "methods": {
@@ -1846,6 +2206,10 @@
       "size": [2, 4, 1]
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#8d8f8a",
       "id": "gauntlet_roof_parapet",
       "name": "Parapet wall",
@@ -1859,6 +2223,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#a7aa9f",
       "id": "gauntlet_roof_ac",
       "name": "Air conditioner",
@@ -1892,6 +2260,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#747c79",
       "id": "gauntlet_roof_vent",
       "name": "Roof vent",
@@ -1913,6 +2285,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#526a38",
       "id": "gauntlet_yard_shrub",
       "name": "Shrub",
@@ -1938,6 +2314,10 @@
       "solid": false
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#74664d",
       "id": "gauntlet_yard_fence",
       "name": "Wooden fence",
@@ -1963,12 +2343,12 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 150,
+        "minimumStrength": 4.5
+      },
       "color": "#626d70",
       "door": {
-        "breach": {
-          "minimumStrength": 4.5,
-          "toughness": 150
-        },
         "handlingSimSeconds": 0.59999999999999998,
         "material": "wood",
         "methods": {
@@ -2018,6 +2398,10 @@
       "size": [2, 4, 1]
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#4d5048",
       "container": {
         "pockets": [
@@ -2051,6 +2435,10 @@
       "solid": false
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#c94b3d",
       "id": "gauntlet_button",
       "name": "Nuclear objective button",
@@ -2065,6 +2453,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#554f43",
       "container": {
         "pockets": [
@@ -2098,6 +2490,10 @@
       "solid": false
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#dfd6b9",
       "id": "gauntlet_perimeter_notice",
       "name": "Notice",
@@ -2115,6 +2511,10 @@
       "solid": false
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#dfd6b9",
       "id": "gauntlet_perimeter_gate_notice",
       "name": "Notice",
@@ -2132,6 +2532,10 @@
       "solid": false
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#707b7e",
       "id": "gauntlet_water_tank",
       "name": "Square raised water tank",
@@ -2165,6 +2569,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#c7b16d",
       "id": "gauntlet_loading_frame",
       "name": "Yellow loading frame",

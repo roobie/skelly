@@ -10,6 +10,7 @@ import { bindReach, type ReachSnapshot } from '../src/core/reach.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
+import { fixtureBreach } from './economyFixtures.ts';
 
 const inputs = readdirSync('src/content/base')
   .filter((file) => file.endsWith('.json'))
@@ -97,6 +98,7 @@ const fixtureWorkstationRegistry = () => {
             size: [1, 3, 1],
             color: '#ffffff',
             workstation: { id: 'fixture_station', qualities: { sawing: 1 }, workFactorBonus },
+            breach: fixtureBreach(),
           },
         ],
       },

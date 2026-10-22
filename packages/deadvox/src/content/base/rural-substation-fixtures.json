@@ -1,6 +1,10 @@
 {
   "furniture": [
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#7f8d89",
       "id": "substation_switchgear",
       "name": "Switchgear cabinet",
@@ -34,6 +38,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#6f7d7a",
       "id": "substation_panel",
       "name": "Control panel",
@@ -82,6 +90,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#5d6c73",
       "id": "substation_transformer",
       "name": "Transformer",
@@ -150,6 +162,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#8c9488",
       "id": "substation_disconnector",
       "name": "Disconnector",
@@ -191,6 +207,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#6b5a47",
       "id": "substation_pole",
       "name": "Power line pole",

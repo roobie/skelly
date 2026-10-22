@@ -35,7 +35,7 @@ import { CATALOGUE } from '../src/vehicles/catalogue.ts';
 import { PartLibrary, VOXEL } from '../src/vehicles/model.ts';
 import { wheel } from '../src/vehicles/rangeRover.ts';
 import { GLASS, keyVoxel } from '../src/vehicles/voxels.ts';
-import { fixtureLootPoint } from './economyFixtures.ts';
+import { fixtureBreach, fixtureLootPoint } from './economyFixtures.ts';
 
 const sources = readdirSync('src/content/base')
   .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))
@@ -1279,6 +1279,7 @@ describe('authored fixed loot', () => {
             color: '#888888',
             size: [1, 1, 1] as [number, number, number],
             solid: false,
+            breach: fixtureBreach(),
           },
         ],
       ]),

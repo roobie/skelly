@@ -14,7 +14,6 @@ it('matches keys to actual kit-piece doors and rejects a missing key or an unuse
           material: 'fixture_material',
           methods: {},
           handlingSimSeconds: 0.3,
-          breach: { minimumStrength: 1, toughness: 1 },
         },
       },
     ],

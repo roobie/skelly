@@ -26,7 +26,6 @@ const door = (id: string) => ({
   door: {
     material: 'fixture_material',
     handlingSimSeconds: 0.5,
-    breach: { minimumStrength: 1, toughness: 1 },
     methods: {
       [methodId]: {
         quality: qualityId,

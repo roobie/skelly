@@ -21,6 +21,7 @@ import {
 import { DOOR_ACTION, registerDoorAction } from '../src/game/doorAction.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { fixtureBreach } from './economyFixtures.ts';
 
 const registry = baseRegistry();
 
@@ -267,6 +268,7 @@ describe('furniture', () => {
       name: 'Fixture shaped furniture',
       size: [1, 2, 1] as [number, number, number],
       color: '#123456',
+      breach: fixtureBreach(),
       shape: [
         { position: [0.1, 0, 0.1], size: [0.3, 0.5, 0.3] },
         { position: [0.6, 0.5, 0.1], size: [0.3, 0.5, 0.3] },
@@ -297,6 +299,7 @@ describe('furniture', () => {
       name: 'Fixture plaque',
       size: [1, 1, 1],
       color: '#99794c',
+      breach: fixtureBreach(),
       mount: 'wall',
       solid: false,
       shape: [{ position: [0, 0, 0.875], size: [1, 1, 0.125] }],
@@ -361,8 +364,8 @@ describe('furniture', () => {
     };
     furniture.sync(entities);
     const intact = colours();
-    const { toughness } = entities.defOf(door).door!.breach!;
-    expect(entities.bash(door, toughness * 0.8)).toBe('damaged');
+    const { durability } = entities.defOf(door).breach;
+    expect(entities.bash(door, durability * 0.8)).toBe('damaged');
     furniture.sync(entities);
     expect(door.broken).toBeUndefined();
     expect(colours()).not.toEqual(intact);
@@ -371,9 +374,9 @@ describe('furniture', () => {
   it('keeps a drawn door leaf when a blow leaves its look unchanged', () => {
     const entities = new BlockEntities(registry);
     const door = entities.add({ type: 'wood_door', pos: [4, 1, 0], size: [2, 4, 1], facing: 'n' })!;
-    const { toughness, minimumStrength } = entities.defOf(door).door!.breach!;
+    const { durability, minimumStrength } = entities.defOf(door).breach;
     const furniture = new FurnitureMeshes(BLOCK_SIZE);
-    entities.bash(door, toughness * 0.8);
+    entities.bash(door, durability * 0.8);
     furniture.sync(entities);
     const [drawn] = furniture.group.children;
     const { standing } = entities;
@@ -474,6 +477,7 @@ describe('furniture', () => {
       name: 'Fixture body',
       size: [4, 2, 2],
       color: '#554f43',
+      breach: fixtureBreach(),
       solid: false,
       container: { pockets: [{ grid: [6, 4], handlingSimSeconds: 1.2 }] },
       shape: [{ position: [0, 0, 0], size: [4, 0.5, 2] }],

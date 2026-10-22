@@ -14,6 +14,7 @@ import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { fixtureBreach } from './economyFixtures.ts';
 
 const base = baseRegistry();
 const seed = 7;
@@ -66,6 +67,7 @@ const fixtureData = (): ContentFile => ({
       size: [1, 1, 1],
       color: '#808080',
       container: { pockets: [{ grid: [2, 2], handlingSimSeconds: simSeconds(0) }] },
+      breach: fixtureBreach(),
     },
   ],
   templates: [
@@ -272,7 +274,13 @@ describe('ground loot', () => {
   it('turns palette furniture stock into a required source and rejects stock it cannot hold or admit', () => {
     const stocked = (item: string, furniture = 'fixture_container') => {
       const data = fixtureData();
-      data.furniture!.push({ id: 'fixture_board', name: 'Fixture board', size: [1, 1, 1], color: '#808080' });
+      data.furniture!.push({
+        id: 'fixture_board',
+        name: 'Fixture board',
+        size: [1, 1, 1],
+        color: '#808080',
+        breach: fixtureBreach(),
+      });
       data.templates![0]!.palette.C = { furniture, items: [{ item }] };
       return data;
     };

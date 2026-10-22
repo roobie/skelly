@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import { buildRegistry, type TemplateDef } from '../src/core/content.ts';
 import { compileTemplate, findPieces } from '../src/core/templates.ts';
-import { fixtureLootContext } from './economyFixtures.ts';
+import { fixtureBreach, fixtureLootContext } from './economyFixtures.ts';
 
 it.each(['P', '🧪'])('indexes furniture and blocks by code point for marker %s', (marker) => {
   const template: TemplateDef = {
@@ -16,7 +16,9 @@ it.each(['P', '🧪'])('indexes furniture and blocks by code point for marker %s
       source: 'markers.json',
       data: {
         blocks: [{ id: 'fixture_solid', name: 'Fixture solid', solid: true, color: '#808080' }],
-        furniture: [{ id: 'fixture_piece', name: 'Fixture piece', size: [1, 1, 1], color: '#808080' }],
+        furniture: [
+          { id: 'fixture_piece', name: 'Fixture piece', size: [1, 1, 1], color: '#808080', breach: fixtureBreach() },
+        ],
         templates: [template],
       },
     },
@@ -47,6 +49,7 @@ it('rejects a furniture loot table', () => {
             color: '#808080',
             container: { pockets: [{ grid: [1, 1], handlingSimSeconds: 1 }] },
             loot: 'fixture_supply',
+            breach: fixtureBreach(),
           },
         ],
       },

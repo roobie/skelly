@@ -53,6 +53,10 @@
   ],
   "furniture": [
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#7a2f2f",
       "cover": true,
       "id": "rug",
@@ -67,6 +71,10 @@
       "solid": false
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#3d5a6c",
       "cover": true,
       "id": "tarp",
@@ -84,6 +92,10 @@
       "appearance": {
         "kind": "cabinet",
         "surface": "wood"
+      },
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
       },
       "color": "#8a6a48",
       "container": {
@@ -103,6 +115,10 @@
         "kind": "drawers",
         "surface": "plastic"
       },
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#b8b2a6",
       "container": {
         "pockets": [
@@ -120,6 +136,10 @@
       "appearance": {
         "kind": "fridge",
         "surface": "painted-metal"
+      },
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
       },
       "color": "#d8dcd8",
       "container": {
@@ -140,6 +160,10 @@
         "kind": "cabinet",
         "surface": "wood"
       },
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#6e5037",
       "container": {
         "pockets": [
@@ -154,6 +178,10 @@
       "size": [2, 4, 1]
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#7a5c3e",
       "container": {
         "pockets": [
@@ -218,6 +246,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#786b55",
       "id": "range_table",
       "name": "Simple wooden table",
@@ -247,6 +279,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#e9e3cf",
       "id": "range_target",
       "name": "Paper target",
@@ -254,6 +290,10 @@
       "size": [1, 4, 5]
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#494b4e",
       "container": {
         "pockets": [
@@ -268,6 +308,10 @@
       "size": [2, 4, 1]
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#8d7355",
       "container": {
         "pockets": [
@@ -317,6 +361,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#98734f",
       "id": "workbench",
       "name": "Workbench",
@@ -370,6 +418,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#9a7b4f",
       "container": {
         "pockets": [
@@ -459,6 +511,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#6f7f95",
       "id": "bed",
       "name": "Bed",
@@ -527,6 +583,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#8b7355",
       "id": "chair",
       "name": "Chair",
@@ -563,6 +623,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#66776d",
       "id": "sofa",
       "name": "Sofa",
@@ -600,12 +664,12 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 150,
+        "minimumStrength": 4.5
+      },
       "color": "#7a5534",
       "door": {
-        "breach": {
-          "minimumStrength": 4.5,
-          "toughness": 150
-        },
         "handlingSimSeconds": 0.59999999999999998,
         "material": "wood",
         "methods": {
@@ -625,12 +689,12 @@
       "size": [2, 4, 1]
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#7a5534",
       "door": {
-        "breach": {
-          "minimumStrength": 3.5,
-          "toughness": 60
-        },
         "handlingSimSeconds": 0.59999999999999998,
         "material": "wood",
         "methods": {
@@ -650,12 +714,12 @@
       "size": [2, 4, 1]
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#626a70",
       "door": {
-        "breach": {
-          "minimumStrength": 9,
-          "toughness": 300
-        },
         "handlingSimSeconds": 0.59999999999999998,
         "material": "steel",
         "methods": {

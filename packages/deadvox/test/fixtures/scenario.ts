@@ -3,7 +3,7 @@ import type { ContentSource } from '../../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../../src/core/contentIds.ts';
 import type { MapPoolDef, ScenarioDef, TemplateDef } from '../../src/core/schema.ts';
 import { gameHours } from '../../src/core/time.ts';
-import { fixtureEconomy, fixtureLootContext } from '../economyFixtures.ts';
+import { fixtureBreach, fixtureEconomy, fixtureLootContext } from '../economyFixtures.ts';
 import { playerInventorySource } from './playerInventory.ts';
 
 export const fixtureScenario = (): ScenarioDef => ({
@@ -157,18 +157,19 @@ export const fixtureScenarioSources = (
             color: '#808080',
             solid: false,
             climbable: { speedMetresPerSimSecond: 1.5 },
+            breach: fixtureBreach(),
           },
           {
             id: 'fixture_hatch',
             name: 'Fixture hatch',
             size: [2, 1, 3],
             color: '#808080',
+            breach: fixtureBreach(),
             door: {
               material: 'wood',
               methods: {},
               handlingSimSeconds: 0.2,
               hatch: true,
-              breach: { minimumStrength: 1, toughness: 1 },
             },
           },
           {
@@ -177,6 +178,7 @@ export const fixtureScenarioSources = (
             name: 'Fixture crate',
             size: [1, 1, 1],
             color: '#808080',
+            breach: fixtureBreach(),
             container: { pockets: [{ grid: [2, 2], handlingSimSeconds: 1 }] },
           },
         ],
