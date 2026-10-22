@@ -3786,7 +3786,7 @@ export class ZombieSystem {
 
   /** Doc: `docs/stagger.md`. A heavy enough hit spoils the attack in progress; position is never touched. */
   private stagger(zombie: Zombie, impulse: number): void {
-    const stagger = zombie.type.stagger;
+    const { stagger } = zombie.type;
     if (!stagger || impulse < stagger.impulseThreshold) {
       return;
     }
