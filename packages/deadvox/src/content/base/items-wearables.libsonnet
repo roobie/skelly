@@ -4,7 +4,7 @@
       "id": "jeans",
       "name": "Jeans",
       "category": "clothing",
-      "weight": 700,
+      "model": "jeans",
       "size": [3, 3],
       "wearable": {
         "slot": "legs",
@@ -25,7 +25,7 @@
       "id": "rubber_boots",
       "name": "Rubber boots",
       "category": "clothing",
-      "weight": 1800,
+      "model": "rubber_boots",
       "size": [2, 3],
       "wearable": {
         "slot": "feet",
@@ -39,7 +39,7 @@
       "id": "cargo_pants",
       "name": "Cargo pants",
       "category": "clothing",
-      "weight": 800,
+      "model": "cargo_pants",
       "size": [3, 3],
       "wearable": {
         "slot": "legs",
@@ -60,7 +60,7 @@
       "id": "hoodie",
       "name": "Hoodie",
       "category": "clothing",
-      "weight": 600,
+      "model": "hoodie",
       "size": [3, 3],
       "wearable": {
         "slot": "torso",
@@ -74,7 +74,7 @@
       "id": "jacket",
       "name": "Jacket",
       "category": "clothing",
-      "weight": 1200,
+      "model": "jacket",
       "size": [3, 3],
       "wearable": {
         "slot": "torso",
@@ -94,7 +94,7 @@
       "id": "utility_vest",
       "name": "Utility vest",
       "category": "clothing",
-      "weight": 900,
+      "model": "utility_vest",
       "size": [3, 3],
       "wearable": {
         "slot": "vest",
@@ -147,7 +147,7 @@
       "id": "fanny_pack",
       "name": "Fanny pack",
       "category": "bag",
-      "weight": 200,
+      "model": "fanny_pack",
       "size": [2, 2],
       "wearable": { "slot": "waist", "encumbrance": 3 },
       "container": { "pockets": [{ "grid": [3, 2], "handlingSimSeconds": 0.8 }] }
@@ -156,7 +156,7 @@
       "id": "school_backpack",
       "name": "School backpack",
       "category": "bag",
-      "weight": 600,
+      "model": "school_backpack",
       "size": [4, 4],
       "wearable": { "slot": "back", "encumbrance": 10 },
       "container": {
@@ -170,7 +170,7 @@
       "id": "hiking_backpack",
       "name": "Hiking backpack",
       "category": "bag",
-      "weight": 1400,
+      "model": "hiking_backpack",
       "size": [4, 5],
       "wearable": { "slot": "back", "encumbrance": 12 },
       "container": {

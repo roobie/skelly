@@ -336,6 +336,56 @@
     "roll": 0
   },
   {
+    "id": "frag_grenade",
+    "file": "assets/models/frag_grenade.glb",
+    "parts": {
+      "grenade": {
+        "node": "grenade:grenade",
+        "massKg": 0.4,
+        "centreOfMass": [0.00036723627359508854, 0.03698690246572386, 0.00004708352064786988]
+      }
+    },
+    "grip": { "at": [0, 0.03314860191316883, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "torch",
+    "file": "assets/models/torch.glb",
+    "grip": { "at": [0.11099999999999997, 0, 0], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "rest": "upright",
+    "roll": 0,
+    "anchors": { "flame": [0.41999999999999993, 0, 0] },
+    "emissiveMaterial": "#2b241c"
+  },
+  {
+    "id": "candle",
+    "file": "assets/models/candle.glb",
+    "grip": { "at": [0.04000000000000001, 0, 0], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "rest": "upright",
+    "roll": 0,
+    "anchors": { "flame": [0.112, 0, 0] }
+  },
+  {
+    "id": "dead_desk_lamp",
+    "file": "assets/models/dead_desk_lamp.glb",
+    "parts": {
+      "base": { "node": "base:base", "massKg": 0.5, "centreOfMass": [0, 0.006, 0] },
+      "arm": {
+        "node": "arm:arm",
+        "massKg": 0.25,
+        "centreOfMass": [0.0025013109481772274, 0.07563779376164786, -7.842536372901592e-18]
+      },
+      "shade": {
+        "node": "shade:shade",
+        "massKg": 0.15,
+        "centreOfMass": [0.06914814814814814, 0.06138888888888889, -8.214205012058728e-18]
+      }
+    }
+  },
+  {
     "id": "shambler_torso",
     "file": "assets/models/shambler_torso.glb",
     "parts": {
@@ -912,6 +962,140 @@
     "anchors": {}
   },
   {
+    "id": "jeans",
+    "file": "assets/models/jeans.glb",
+    "parts": { "jeans": { "node": "jeans:folded-garment", "massKg": 0.7, "centreOfMass": [0, 0.0225, 0] } },
+    "grip": { "at": [0, 0.0225, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "rubber_boots",
+    "file": "assets/models/rubber_boots.glb",
+    "parts": {
+      "rubber_boots": {
+        "node": "rubber_boots:boots",
+        "massKg": 1.8,
+        "centreOfMass": [-2.2858766166511495e-18, 0.07795014927677973, 0.02364257476707675]
+      }
+    },
+    "grip": { "at": [-0.07625, 0.1144, 0.0884], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "cargo_pants",
+    "file": "assets/models/cargo_pants.glb",
+    "parts": {
+      "cargo_pants": {
+        "node": "cargo_pants:folded-garment",
+        "massKg": 0.8,
+        "centreOfMass": [0, 0.024977008519786608, 0]
+      }
+    },
+    "grip": { "at": [0, 0.025, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "hoodie",
+    "file": "assets/models/hoodie.glb",
+    "parts": {
+      "hoodie": {
+        "node": "hoodie:folded-garment",
+        "massKg": 0.6,
+        "centreOfMass": [0, 0.032171332212486685, 0.002356165516555255]
+      }
+    },
+    "grip": { "at": [0, 0.03, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "jacket",
+    "file": "assets/models/jacket.glb",
+    "parts": {
+      "jacket": {
+        "node": "jacket:folded-garment",
+        "massKg": 1.2,
+        "centreOfMass": [0, 0.034981540563067244, -0.0018420077792183737]
+      }
+    },
+    "grip": { "at": [0, 0.035, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "utility_vest",
+    "file": "assets/models/utility_vest.glb",
+    "parts": {
+      "utility_vest": {
+        "node": "utility_vest:folded-garment",
+        "massKg": 0.9,
+        "centreOfMass": [0, 0.030021072944808942, -0.005268236202238517]
+      }
+    },
+    "grip": { "at": [0, 0.03, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "fanny_pack",
+    "file": "assets/models/fanny_pack.glb",
+    "parts": {
+      "fanny_pack": {
+        "node": "fanny_pack:bag",
+        "massKg": 0.2,
+        "centreOfMass": [0, 0.06710683747827785, -0.005065462493879393]
+      }
+    },
+    "grip": { "at": [0, 0.07, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "school_backpack",
+    "file": "assets/models/school_backpack.glb",
+    "parts": {
+      "school_backpack": {
+        "node": "school_backpack:bag",
+        "massKg": 0.6,
+        "centreOfMass": [0, 0.22388789538589104, -0.003683382110621972]
+      }
+    },
+    "grip": { "at": [0, 0.48, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "hiking_backpack",
+    "file": "assets/models/hiking_backpack.glb",
+    "parts": {
+      "hiking_backpack": {
+        "node": "hiking_backpack:bag",
+        "massKg": 1.4,
+        "centreOfMass": [0, 0.28700701378194504, -0.010220862005107311]
+      }
+    },
+    "grip": { "at": [0, 0.605, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "baseball_cap",
+    "file": "assets/models/baseball_cap.glb",
+    "parts": {
+      "baseball_cap": {
+        "node": "baseball_cap:cap",
+        "massKg": 0.08,
+        "centreOfMass": [0, 0.038430401717786285, -0.006131243289897298]
+      }
+    },
+    "grip": { "at": [0, 0.04, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
     "id": "tape_roll",
     "file": "assets/models/tape_roll.glb",
     "parts": {
@@ -949,23 +1133,6 @@
         "node": "bear_trap:bearTrap",
         "massKg": 4.5,
         "centreOfMass": [-0.007978212127787243, 0.009364679069232785, 4.736746180037985e-18]
-      }
-    }
-  },
-  {
-    "id": "desk_lamp",
-    "file": "assets/models/desk_lamp.glb",
-    "parts": {
-      "base": { "node": "base:base", "massKg": 0.5, "centreOfMass": [0, 0.006, 0] },
-      "arm": {
-        "node": "arm:arm",
-        "massKg": 0.25,
-        "centreOfMass": [0.006492253707648635, 0.08977132831420462, -9.547963039385005e-18]
-      },
-      "shade": {
-        "node": "shade:shade",
-        "massKg": 0.15,
-        "centreOfMass": [0.07, 0.1596851851851852, -2.0252029474788637e-17]
       }
     }
   }

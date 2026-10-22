@@ -364,6 +364,15 @@ it is never rebuilt from the seed; unchanged columns regenerate. The save is one
 compressed record. See `src/game/session.ts`, `rolledColumns`; `src/core/world.ts`,
 `World`; and `src/core/saveFormat.ts`, `encodeSave`.
 
+A piece cannot be removed while anything rests or stands on it, while a barricade stands
+in its doorway, or while it holds items, so removal never strands, floats or loses
+anything. Removing through a piece handle taken before a load throws, so the mistake
+shows at once instead of corrupting occupancy. The action that removes a piece first
+cancels the jobs that name it, so a save never refers to a missing piece. Pending
+deconstruction reserves its piece against use until the job is cancelled or finished, so
+paused work keeps its piece; under lockstep the reservation is ordinary simulation state,
+resolved in tick order. See `src/core/blockEntities.ts`, `BlockEntities.remove`.
+
 ### Block entities
 
 Stateful blocks keep their changing state separate from static block identity.
@@ -444,6 +453,12 @@ separate actions that come later. See `src/core/furnitureMove.ts`,
   their own tidying would punish an action the game wants them to take, and
   crushing shamblers with a stack would be a cheaper weapon than any the game
   balances.
+- **Nothing lifts from under a body.** Any body standing on a piece, the
+  player's or a shambler's, stops the player lifting it, as it stops removal.
+  Lifting and removal share one support query, so no second rule exists to
+  drift. A way to clear a body off a piece, such as a shove or the piece
+  tipping, is left to a later feature of its own. See
+  `src/core/furnitureMove.ts`, `supportRefusal`.
 - **What lies on top.** Loose items on a moved or falling piece go with it or
   beside it, and a container's pockets go with it, because moving a container
   is not searching it. When the items have nowhere to go the move is refused,
@@ -1848,6 +1863,12 @@ fog, not baked into chunks. See `src/core/lights.ts`, `lightSenseSourceFor`;
 `src/render/lightPool.ts`, `LightPool.update`; and `src/core/dayPhase.ts`,
 `dayPhaseAt`.
 
+A burning torch or candle set down keeps burning and spending its fuel, standing
+upright with its flame and light where the flame is: standing one up is how a player
+sets it down to light a room. Whether a model rests upright is content, so any such
+light stands the same way. See `src/render/models.ts`, `prepareModel`, and
+`src/render/modelFlame.ts`, `ModelFlames.onModel`.
+
 Zombies see light farther than they see a player in darkness, and see a player
 lit by any source. Aimed-down or covered flashlights shorten that reach. Light
 through doors and windows can make a building a beacon; covering or boarding
@@ -2154,7 +2175,7 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 - **Construction is crafting that places blocks and block entities:** walls,
   doors, barricades, furniture, workbenches, machines. Deconstruction is
   disassembly.
-- **Doors and locks.** A matching key is the quiet route. The noisy fallback needs the door's forcing tool, not always a crowbar, so finding that tool is part of the trade. How a door yields follows from its material and its own resistance; flimsy and burglary-safe leaves need not yield alike. Forced entry destroys the lock so the breach is one-way.
+- **Doors and locks.** A matching key is the quiet route. The noisy fallback needs the door's forcing tool, not always a crowbar, so finding that tool is part of the trade. How a door yields follows from its material and its own resistance; flimsy and burglary-safe leaves need not yield alike. Forced entry destroys the lock so the breach is one-way. A broken leaf shows that it is broken, because the player has to see which doors no longer hold before trusting one; its door material authors how it is repainted, so a mod retunes the look. See `src/core/schema.ts`, `DoorMaterialSchema`, and `src/render/furniture.ts`, `FurnitureMeshes.brokenMaterial`.
 - **Breach by strength.** Every leaf yields to enough strength, and its own breach values say how, so flimsy and burglary-safe leaves yield differently. A blow below the leaf's minimum strength does nothing, so a weak attacker cannot grind through by waiting; blows at or above it add their strength to the leaf's saved damage until it reaches the leaf's toughness. Zombie strength and a melee weapon's impulse share one scale, so a zombie's bash and a player's strike meet the same gate through one resolution; a swing that meets no zombie strikes the closed leaf in its reach. Every blow makes a noise that reaches zombies through ordinary hearing. A broken leaf stands open with its lock gone and cannot be shut, so the breach is one-way, as forcing is, and movement, sight and sound treat it as an open doorway. Damage short of breaking leaves a boarded leaf's opening sides as they were. A container's front is its body, so it has no breach. See `src/core/blockEntities.ts`, `BlockEntities.bash`, `src/game/session.ts`, `bashLeaf` and `strikeLeaf`, and `src/core/schema.ts`, `FurnitureSchema`.
 - **Cutting.** Cutting a wooden door will start a fire, so wood offers no cut method until a fire model exists. Cutting steel is a flame-cutting quality apart from a knife's `cutting`, and a finished cut spends gas from the torch's swappable cartridge, so one torch does not settle every cut door; a cut without enough gas won't start. Refilling a cartridge is direction only, with no source yet. See `src/core/prying.ts`, `pryPlan`, `src/core/torch.ts`, `spendFuel`, `src/core/longAction.ts`, `LongActions.beginForcing`, and `src/core/schema.ts`, `DoorMaterialSchema` and `DoorForcingSchema`.
 - **Electricity** keeps topology separate from energy balance so rate changes
