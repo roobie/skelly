@@ -2249,7 +2249,16 @@ their state.
    Factory structures plus compatible parts and capability-matched add-ons come
    before scratch-building, without reducing mounting to fixed sockets. Keep the grain
    at named swappable parts, not individual bolts, wire runs or plumbing, so repair
-   does not become assembly bookkeeping.
+   does not become assembly bookkeeping. A body fitted to a chassis cab, such as a box
+   van's cargo box, is its own factory structure resting on the frame, not part of the
+   cab's, so the chassis cab stays a complete drivable unit without it and the box can
+   move to another frame. A body's storage and its contents belong to a cargo space: a
+   separate part resting on the load floor whose own shape is the hold, so storage
+   travels with the part, losing a wall does not lose the load, and a player can build
+   one for any body with a load floor. The game reads the pocket grid from that shape
+   rather than from authored numbers. A part's capabilities are names; its sizes live
+   in its own data, so each size has one source. The cargo space arrives with #1124.
+   See `src/vehicles/boxVan.ts`, `BOX_VAN`.
 9. **Cheap at scale.** A parked street must not pay continuous driving-physics cost.
    Part-level changes should not require rebuilding unrelated vehicles.
 10. **Obstruction follows the build.** Render, collision and picking derive from the
