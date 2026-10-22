@@ -297,6 +297,20 @@
     "roll": 0
   },
   {
+    "id": "whetstone",
+    "file": "assets/models/whetstone.glb",
+    "parts": {
+      "material": {
+        "node": "material:cutStock",
+        "massKg": 0.25,
+        "centreOfMass": [0, 0.01478723404255319, -0.0015957446808510633]
+      }
+    },
+    "grip": { "at": [0, 0.015, 0], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
     "id": "field_patch",
     "file": "assets/models/field_patch.glb",
     "parts": {

@@ -783,17 +783,25 @@ const TrapSchema = strictObject({
   zombieLegDamage: NonNegative,
 });
 
-const FirearmAttachmentEffectsSchema = strictObject({
-  /** Fraction of the firearm's committed recoil kick removed at full condition. */
-  recoilReduction: optional(Fraction),
-  /** Condition lost per committed shot; absent means the attachment does not wear. */
-  wearPerShot: optional(Fraction),
-  /** Multipliers applied to the existing aim and stance response. */
-  swayScale: optional(Positive),
-  recoveryScale: optional(Positive),
-  raiseScale: optional(Positive),
-  swingScale: optional(Positive),
-});
+/** Tagged with its model's attachment kind, so each kind authors every effect it has and no other. */
+const FirearmAttachmentEffectsSchema = variant('kind', [
+  strictObject({
+    kind: literal('suppressor'),
+    /** Fraction of the firearm's committed recoil kick removed at full condition. */
+    recoilReduction: Fraction,
+    /** Condition lost per committed shot; zero means the attachment does not wear. */
+    wearPerShot: Fraction,
+  }),
+  strictObject({
+    kind: literal('foregrip'),
+    /** Multipliers applied to the existing aim and stance response. */
+    swayScale: Positive,
+    recoveryScale: Positive,
+    raiseScale: Positive,
+    swingScale: Positive,
+    wearPerShot: Fraction,
+  }),
+]);
 
 const BatterySchema = strictObject({
   /** Charge when full, in the units lights use per hour. */
@@ -1265,7 +1273,14 @@ const attachmentSpanCheck = check(
   attachmentSpanMatchesMount,
   'rail attachments need a notch span and muzzle attachments cannot have one',
 );
-const AttachmentSchema = pipe(AttachmentFieldsSchema, attachmentSpanCheck);
+const AttachmentSchema = pipe(
+  AttachmentFieldsSchema,
+  attachmentSpanCheck,
+  check(
+    ({ kind, properties }) => (kind === 'suppressor') === (properties.noiseFactor !== undefined),
+    'suppressors need a noise factor and other attachments cannot have one',
+  ),
+);
 const FittedAttachmentSchema = pipe(
   strictObject({
     ...AttachmentFieldsSchema.entries,
@@ -1699,6 +1714,8 @@ const FixedLootItem = strictObject({
   placement: optional(picklist(['surface', 'container'], 'placement must be surface or container')),
   /** Item types fitted at spawn, by slot id: a found gun that comes with its sling. */
   fitted: optional(record(Id, Id)),
+  /** Battery charge at spawn as a share of full, for the item if it is a battery and for its fitted batteries. */
+  charge: optional(Fraction),
 });
 const GroundLootSupplySchema = union([
   strictObject({ kind: literal('empty') }),
@@ -2094,6 +2111,16 @@ const SiteLayoutSchema = strictObject({
   ),
   /** Observation only: playtest metrics record when the player first stands in each beat's area. */
   beats: optional(array(strictObject({ id: Id, area: LayoutRect }))),
+  /** Practice's optional modules: the items each teaches and the labels its steps show. */
+  practice: optional(
+    strictObject({
+      light: strictObject({
+        light: Id,
+        battery: Id,
+        labels: strictObject({ start: Name, on: Name, assign: Name, swap: Name, relight: Name }),
+      }),
+    }),
+  ),
 });
 
 const PoolRefSchema = union([KitRefSchema, strictObject({ kind: literal('template'), id: Id, style: optional(Id) })]);
@@ -2733,6 +2760,13 @@ const SkillSchema = pipe(
             rackFactorHalfLifeLevels: Positive,
             attachmentFactorFloor: Fraction,
             attachmentFactorHalfLifeLevels: Positive,
+            caseEjection: strictObject({
+              speedMetresPerSimSecond: Positive,
+              flightSimSeconds: PositiveSimSeconds,
+              /** A landed case rests this far above its settled voxel surface, so it never z-fights the floor. */
+              landingLiftMetres: NonNegative,
+            }),
+            shotTraceRangeBlocks: Positive,
           }),
         ),
         melee: optional(
@@ -3425,6 +3459,7 @@ export type StairDef = InferOutput<typeof StairSchema>;
 export type TemplateAccess = InferOutput<typeof TemplateAccessSchema>;
 export type FixedLootItemDef = InferOutput<typeof FixedLootItem>;
 export type SiteLayoutDef = InferOutput<typeof SiteLayoutSchema>;
+export type LightPracticeDef = NonNullable<SiteLayoutDef['practice']>['light'];
 export type ScenarioDef = InferOutput<typeof ScenarioSchema>;
 export type FixedLootOverrideDef = InferOutput<typeof FixedLootOverride>;
 export type DoorLockDef = InferOutput<typeof DoorLockSchema>;
