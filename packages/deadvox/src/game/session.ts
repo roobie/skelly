@@ -62,6 +62,7 @@ import { canSprint, spendStamina, stepStamina } from '../core/needs.ts';
 import { freshDropTarget } from '../core/options.ts';
 import { type Body, bodyOverlapsTerrain, CONTACT_SKIN, stepBody } from '../core/physics.ts';
 import { PlayerCombat } from '../core/playerCombat.ts';
+import type { PlayerStance } from '../core/playerStance.ts';
 import { pryPlan } from '../core/prying.ts';
 import { Rng } from '../core/random.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
@@ -96,7 +97,6 @@ import {
   type MeleeWeapon,
   PLAYER_ARM_REACH_M,
   type PlayerMovement,
-  type PlayerStance,
   type VocalNoise,
   type Zombie,
   ZombieSystem,

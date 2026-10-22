@@ -38,6 +38,7 @@ import {
   stepBody,
   stepBodyHorizontal,
 } from './physics.ts';
+import type { PlayerStance } from './playerStance.ts';
 import { Rng, type RngState } from './random.ts';
 import { raycast, type SolidAt } from './raycast.ts';
 import type { SenseDef } from './schema.ts';
@@ -61,8 +62,6 @@ import {
 } from './zombieRegions.ts';
 
 export type PlayerMovement = 'walking' | 'jogging' | 'sprinting' | 'still';
-export const PLAYER_STANCES = ['standing', 'crouching', 'prone'] as const;
-export type PlayerStance = (typeof PLAYER_STANCES)[number];
 
 /** A lowered stance's tuning, or undefined standing. */
 export const loweredStanceTuning = (tuning: SenseDef, stance: PlayerStance | undefined) => {

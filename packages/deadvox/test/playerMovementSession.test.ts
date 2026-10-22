@@ -570,6 +570,23 @@ describe('lying prone', () => {
     expect(runtime.refusals).toEqual([]);
   });
 
+  it('refuses a jump while prone, and the same jump lifts the body once it rises to a crouch', () => {
+    const runtime = makeRuntime();
+    const { session } = runtime;
+    runtime.toggleProne();
+    runtime.advance(60);
+    expect(session.body.onGround).toBe(true);
+    runtime.setIntent({ ...IDLE, jump: true });
+    for (let frame = 0; frame < 30; frame++) {
+      runtime.advance(1);
+      expect(session.body.onGround).toBe(true);
+    }
+    runtime.toggleCrouch();
+    runtime.advance(10);
+    expect(session.stance).toBe('crouching');
+    expect(session.body.onGround).toBe(false);
+  });
+
   // A slab over z = -4..-2 leaves the lowest whole-block opening above the prone body; a crouched body can't fit.
   const gapBlocks = Math.floor(heightOf.prone) + 1;
   const SlabNear = -1;

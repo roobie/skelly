@@ -2,9 +2,9 @@
 
 import type { LadderHoldState } from '../core/ladders.ts';
 import type { Body, PhysicsParams } from '../core/physics.ts';
+import type { PlayerStance } from '../core/playerStance.ts';
 import type { Scale } from '../core/scale.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
-import type { PlayerStance } from '../core/zombies.ts';
 
 /** Player constants in metres and metres per second (`DESIGN.md`, "Performance and scale"). */
 export const PLAYER = {
