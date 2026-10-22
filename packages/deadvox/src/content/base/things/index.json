@@ -2038,6 +2038,105 @@
     "roll": 0
   },
   {
+    "id": "crowbar",
+    "file": "assets/models/crowbar.glb",
+    "parts": {
+      "crowbar": {
+        "node": "crowbar:crowbar",
+        "massKg": 1.5,
+        "centreOfMass": [-0.07926048565121413, -0.011432671081677703, 0]
+      }
+    }
+  },
+  {
+    "id": "hammer",
+    "file": "assets/models/hammer.glb",
+    "parts": {
+      "hammer": {
+        "node": "hammer:hammer",
+        "massKg": 0.7,
+        "centreOfMass": [-0.004246817930271172, -0.007920468021187444, -0.0005342714839117716]
+      }
+    }
+  },
+  {
+    "id": "baseball_bat",
+    "file": "assets/models/baseball_bat.glb",
+    "parts": {
+      "baseball_bat": {
+        "node": "baseball_bat:bat",
+        "massKg": 0.9,
+        "centreOfMass": [0.16811516120885597, -0.00009478912366360825, -0.0000873810926845695]
+      }
+    }
+  },
+  {
+    "id": "kabar",
+    "file": "assets/models/kabar.glb",
+    "parts": {
+      "kabar": {
+        "node": "kabar:knife",
+        "massKg": 0.3,
+        "centreOfMass": [-0.011265993265993273, -0.00013973063973063976, -0.00006902356902356909]
+      }
+    }
+  },
+  {
+    "id": "kitchen_knife",
+    "file": "assets/models/kitchen_knife.glb",
+    "parts": {
+      "kitchen_knife": {
+        "node": "kitchen_knife:knife",
+        "massKg": 0.15,
+        "centreOfMass": [0.03870005058168944, -0.003254425897824988, -0.000023267577137076356]
+      }
+    }
+  },
+  {
+    "id": "machete",
+    "file": "assets/models/machete.glb",
+    "parts": {
+      "machete": {
+        "node": "machete:knife",
+        "massKg": 0.55,
+        "centreOfMass": [-0.05444100932030008, -0.010371902705160264, -0.00003409865878608778]
+      }
+    }
+  },
+  {
+    "id": "wrench",
+    "file": "assets/models/wrench.glb",
+    "parts": {
+      "wrench": {
+        "node": "wrench:wrench",
+        "massKg": 0.5,
+        "centreOfMass": [0.0033004926108374435, 0.00793103448275862, 0]
+      }
+    }
+  },
+  {
+    "id": "steel_pipe",
+    "file": "assets/models/steel_pipe.glb",
+    "parts": {
+      "steel_pipe": {
+        "node": "steel_pipe:steelPipe",
+        "massKg": 1.8,
+        "centreOfMass": [0.5098691547096871, 0.000004311947067132557, -0.004980298862538101]
+      }
+    }
+  },
+  {
+    "id": "flashlight",
+    "file": "assets/models/flashlight.glb",
+    "parts": {
+      "flashlight": {
+        "node": "flashlight:flashlight",
+        "massKg": 0.25,
+        "centreOfMass": [0.11609390178089583, -0.00016945493793847795, -0.00013707501349163534]
+      }
+    }
+  },
+  {
     "id": "compass",
     "file": "assets/models/compass.glb",
     "parts": {
