@@ -72,6 +72,7 @@ const player = {
   movement: 'still',
   lit: true,
   lightSeenFrom: 40,
+  eyeHeightMetres: PLAYER.eye,
 };
 const startTime = parseTimeOfDay('23:30');
 

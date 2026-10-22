@@ -1,7 +1,7 @@
 // The quickbar and handling progress shown while playing (`DESIGN.md`, "Inventory screen").
 
 import { html, render, type TemplateResult } from 'lit-html';
-import { HANDLING, type Inventory, type Location } from '../core/inventory.ts';
+import { handlingWeights, type Inventory, type Location } from '../core/inventory.ts';
 import { cellCount, defOf, type Item } from '../core/items.ts';
 import { inputBindings, labelForAction } from '../game/inputBindings.ts';
 import type { Quickbar } from '../game/quickbar.ts';
@@ -17,7 +17,7 @@ const whereText = (inv: Inventory, item: Item, at: Location | undefined): string
     case 'worn':
       return 'worn';
     case 'pocket':
-      return `${inv.name(at.owner).toLowerCase()} · ${(inv.pocketHandling(at.owner, at.pocket) + HANDLING.perCell * cells).toFixed(1)} s`;
+      return `${inv.name(at.owner).toLowerCase()} · ${(inv.pocketHandling(at.owner, at.pocket) + handlingWeights(inv.registry).perCell * cells).toFixed(1)} s`;
     default:
       return '';
   }

@@ -643,14 +643,15 @@ const createPlayTutorial = (engine: Engine, enabled: boolean | undefined) => {
     return {};
   }
   const exitBeat = engine.site?.playtestMarks?.beats.find((beat) => beat.id === 'tutorial_exit');
-  if (!exitBeat) {
-    throw new Error('Practice requires an authored exit');
+  const lightKit = engine.site?.lightPractice;
+  if (!(exitBeat && lightKit)) {
+    throw new Error('Practice requires an authored exit and light module content');
   }
   const tutorial = new Tutorial(
     engine.spawn.pos.map((coordinate) => coordinate / engine.config.scale.blockSize) as Vec3,
     engine.spawn.yaw,
     exitBeat.area,
-    leaveTutorial,
+    lightKit,
   );
   const drawTutorial = mountTutorial(tutorial, leaveTutorial, () => location.reload());
   return { tutorial, drawTutorial };
@@ -933,6 +934,7 @@ export const startPlay = (
     },
     onHandlingOutcomes: (result) => playtestObserver?.handlingOutcomes(result),
     onConsumed: (type) => tutorial?.consumed(type),
+    onBatterySwapped: (lightType) => tutorial?.batterySwapped(lightType),
     onFirearmEjection: (effect) =>
       caseEffects.spawn({ ...effect, landingPosition: caseLandingWorldPosition(effect.landingPosition, s) }),
     onFirearmCaseLanded: (seed, item, instanceIndex) => {
@@ -3636,6 +3638,7 @@ export const startPlay = (
         Object.values(inventory.hands).some((item) => item?.type === 'canned_beans') &&
         Object.values(inventory.hands).some((item) => item?.type === 'can_opener'),
       lightOn: survival.lit?.type === 'flashlight' && survival.lit.on === true,
+      litType: survival.lit?.on === true ? survival.lit.type : undefined,
       paused: mainMenuOpen && started,
     });
     drawTutorial?.({

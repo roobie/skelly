@@ -76,7 +76,7 @@ import {
   simRate,
   simSeconds,
 } from './time.ts';
-import { TREE_SHAPES } from './treeShapes.ts';
+import { TREE_SHAPES, type TreeShape } from './treeShapes.ts';
 import { WEATHERING_RANGES } from './weather.ts';
 import { ZOMBIE_REGION_NAMES } from './zombieRegionNames.ts';
 
@@ -1699,6 +1699,8 @@ const FixedLootItem = strictObject({
   placement: optional(picklist(['surface', 'container'], 'placement must be surface or container')),
   /** Item types fitted at spawn, by slot id: a found gun that comes with its sling. */
   fitted: optional(record(Id, Id)),
+  /** Battery charge at spawn as a share of full, for the item if it is a battery and for its fitted batteries. */
+  charge: optional(Fraction),
 });
 const GroundLootSupplySchema = union([
   strictObject({ kind: literal('empty') }),
@@ -2094,6 +2096,16 @@ const SiteLayoutSchema = strictObject({
   ),
   /** Observation only: playtest metrics record when the player first stands in each beat's area. */
   beats: optional(array(strictObject({ id: Id, area: LayoutRect }))),
+  /** Practice's optional modules: the items each teaches and the labels its steps show. */
+  practice: optional(
+    strictObject({
+      light: strictObject({
+        light: Id,
+        battery: Id,
+        labels: strictObject({ start: Name, on: Name, assign: Name, swap: Name, relight: Name }),
+      }),
+    }),
+  ),
 });
 
 const PoolRefSchema = union([KitRefSchema, strictObject({ kind: literal('template'), id: Id, style: optional(Id) })]);
@@ -2499,8 +2511,12 @@ const ZombieSchema = strictObject({
   meleeDamageResistance: optional(MeleeDamageResistanceSchema),
   /** Fraction of acid damage resisted, whatever the region; 1 is immune and omitted is neutral. */
   acidResistance: optional(Fraction),
-  /** Metres per Sim second. */
-  speed: strictObject({ wanderMetresPerSimSecond: SimRate, chaseMetresPerSimSecond: SimRate }),
+  speed: strictObject({
+    wanderMetresPerSimSecond: SimRate,
+    chaseMetresPerSimSecond: SimRate,
+    /** The farthest one background-tier tick moves it toward its target. */
+    backgroundStepMetres: Positive,
+  }),
   /** Metres advanced by one half-cycle of the leg gait. */
   stepLength: Positive,
   /** Surface-step sound family for grounded travel; omitted types do not emit footfalls. */
@@ -2528,6 +2544,12 @@ const ZombieSchema = strictObject({
   stimulusMemorySimSeconds: Positive,
   /** Half-angle of the sight cone, in degrees. */
   sightCone: pipe(Positive, maxValue(180, 'must be at most 180')),
+  /** Height above its feet that it sees from. */
+  eyeHeightMetres: Positive,
+  /** Height above its feet that it hears at; a sound's occlusion line runs level from the source at this height. */
+  earHeightMetres: Positive,
+  /** A horde of this type stands on a golden-angle spiral whose radius grows from `innerMetres` by `stepMetres` × √member. */
+  hordeSpacing: strictObject({ innerMetres: NonNegative, stepMetres: Positive }),
   /** Idle/stroll timing, home leash and eased look controls. */
   wander: strictObject({
     obstacleWanderChance: Fraction,
@@ -2607,6 +2629,8 @@ const ZombieSchema = strictObject({
       reach: Positive,
       cooldownSimSeconds: PositiveSimSeconds,
       windupSimSeconds: PositiveSimSeconds,
+      /** A grab lands only while the player's feet are less than this far above or below its own. */
+      grabBandMetres: optional(Positive),
       moves: ZombieMovesSchema,
     }),
     check((attack) => attack.windupSimSeconds < attack.cooldownSimSeconds, 'windup must be less than cooldown'),
@@ -2689,6 +2713,9 @@ const SkillSchema = pipe(
       strictObject({
         handlingFactorFloor: Fraction,
         handlingFactorHalfLifeLevels: Positive,
+        handlingPerCellSimSeconds: NonNegative,
+        handlingGroundSimSeconds: NonNegative,
+        handlingWearSimSeconds: NonNegative,
       }),
     ),
     combat: optional(
@@ -2772,6 +2799,41 @@ const SkillSchema = pipe(
     'inventory-management handling activity must be untiered',
   ),
 );
+/** Tree shapes in metres from the trunk's foot, built from half-metre slices (`src/core/vegetation.ts`, `treeShapes`). */
+const TreeCrownSchema = variant('kind', [
+  /** Leaves filling an ellipsoid around the trunk. */
+  strictObject({
+    kind: literal('ellipsoid'),
+    centreMetres: PositiveMetres,
+    radiiMetres: tuple([PositiveMetres, PositiveMetres, PositiveMetres]),
+  }),
+  /** Square leaf layers from `baseMetres` up to `topMetres`, narrowing by `taper` metres per metre of height. */
+  strictObject({
+    kind: literal('cone'),
+    baseMetres: NonNegative,
+    topMetres: PositiveMetres,
+    taper: Positive,
+    minHalfWidthMetres: PositiveMetres,
+  }),
+]);
+
+const TreeShapeSchema = pipe(
+  strictObject({ crown: TreeCrownSchema, heightMetres: PositiveMetres, branchReachMetres: PositiveMetres }),
+  check(({ crown }) => crown.kind !== 'cone' || crown.baseMetres < crown.topMetres, 'cone base must be below top'),
+);
+
+const TreesSchema = strictObject({
+  trunkHalfWidthMetres: PositiveMetres,
+  /** Two crossed branch layers, each this thick, the upper one this far below the trunk top. */
+  branchLayer: strictObject({ topDropMetres: NonNegative, thicknessMetres: PositiveMetres }),
+  shapes: strictObject(
+    Object.fromEntries(TREE_SHAPES.map((shape) => [shape, TreeShapeSchema])) as Record<
+      TreeShape,
+      typeof TreeShapeSchema
+    >,
+  ),
+});
+
 const SiteGenerationSchema = strictObject({
   id: Id,
   topography: strictObject({
@@ -2801,6 +2863,9 @@ const SiteGenerationSchema = strictObject({
     // One entry per draw, so repeating a shape weights it.
     treeMix: pipe(array(picklist(TREE_SHAPES)), minLength(1)),
     treeCellMetres: PositiveMetres,
+    /** How far a tree may stray from its cell's centre on each axis. */
+    treeJitterMetres: NonNegative,
+    trees: TreesSchema,
     hamletDensity: Fraction,
     forestHalfExtentMetres: PositiveMetres,
     forestDensityField: strictObject({
@@ -2904,6 +2969,11 @@ const SenseSchema = strictObject({
     renderedBeamLimit: pipe(Count, minValue(2)),
     throwArmSpeedMetresPerRealSecond: Positive,
     throwArmEnergyJoules: Positive,
+    /**
+     * A light set down: the height a zombie's sight line aims at, and the drawn point light's lift when its model
+     * has no flame to shine from, high enough that the near-field falloff reaches nearby surfaces.
+     */
+    groundLight: strictObject({ senseHeightMetres: Positive, renderLiftMetres: Positive }),
   }),
 });
 /** Counts are whole items, never millilitres; no partial-liquid storage contract exists yet. */
@@ -3089,6 +3159,11 @@ const BodyTuningSchema = pipe(
     staminaRegenDelaySimSeconds: PositiveSimSeconds,
     /** Player eye height in metres while unconscious and prone. */
     proneEyeHeightMetres: Positive,
+    /** Where on the upright body a grenade fragment strikes, as fractions of its height: above `head` hits the head, above `torso` the torso, else a leg. */
+    fragmentRegionHeights: pipe(
+      strictObject({ head: Fraction, torso: Fraction }),
+      check(({ head, torso }) => torso < head, 'torso must start below head'),
+    ),
     /** Shock damage per point of health damage, by the hit's damage kind. */
     shockPerDamage: perDamageKind(NonNegative),
     /** How much harder a hit of each damage kind wears the outermost worn item on the struck region; 1 is the item's own rate. */
@@ -3291,6 +3366,11 @@ const SECTION_DESCRIPTOR = {
           (types) => types.every((zombie) => (zombie.model === 'amalgam') === (zombie.figureSeeds === undefined)),
           'every type but the amalgam, whose figure seed is fixed, must define figureSeeds',
         ),
+        check(
+          (types) =>
+            types.every((zombie) => (zombie.model === 'amalgam') === (zombie.attack.grabBandMetres === undefined)),
+          'every type but the amalgam, which strikes from its core, must define attack.grabBandMetres',
+        ),
         check((types) => types.every(zombieRegionsMatchModel), 'zombie region keys must match the model'),
         check(
           (types) => types.every(zombieAcidSpitMatchesAbility),
@@ -3357,6 +3437,7 @@ export type StairDef = InferOutput<typeof StairSchema>;
 export type TemplateAccess = InferOutput<typeof TemplateAccessSchema>;
 export type FixedLootItemDef = InferOutput<typeof FixedLootItem>;
 export type SiteLayoutDef = InferOutput<typeof SiteLayoutSchema>;
+export type LightPracticeDef = NonNullable<SiteLayoutDef['practice']>['light'];
 export type ScenarioDef = InferOutput<typeof ScenarioSchema>;
 export type FixedLootOverrideDef = InferOutput<typeof FixedLootOverride>;
 export type DoorLockDef = InferOutput<typeof DoorLockSchema>;
@@ -3376,6 +3457,7 @@ export type CompressionCaps = InferOutput<typeof CompressionTuningSchema>['caps'
 export type HandlingRangeDef = InferOutput<typeof HandlingRangeSchema>;
 export type WeatheringDef = InferOutput<typeof WeatheringSchema>;
 export type SenseDef = InferOutput<typeof SenseSchema>;
+export type TreeConeCrown = Extract<InferOutput<typeof TreeCrownSchema>, { kind: 'cone' }>;
 export type DayCycleDef = InferOutput<typeof DayCycleSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof typeof SECTION_DESCRIPTOR;

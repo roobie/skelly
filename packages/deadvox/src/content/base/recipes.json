@@ -363,7 +363,10 @@
       "id": "inventory_management",
       "inventory": {
         "handlingFactorFloor": 0,
-        "handlingFactorHalfLifeLevels": 1.1000000000000001
+        "handlingFactorHalfLifeLevels": 1.1000000000000001,
+        "handlingGroundSimSeconds": 1,
+        "handlingPerCellSimSeconds": 0.050000000000000003,
+        "handlingWearSimSeconds": 2
       },
       "name": "Inventory Management (IM)",
       "training": {
