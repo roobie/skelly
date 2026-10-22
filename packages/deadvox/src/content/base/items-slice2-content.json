@@ -719,6 +719,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "firearmAttachmentEffects": {
+        "kind": "suppressor",
         "recoilReduction": 0.050000000000000003,
         "wearPerShot": 0.02
       },

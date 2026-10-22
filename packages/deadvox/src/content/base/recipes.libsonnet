@@ -81,7 +81,9 @@ local sharpenRecipes = [sharpen(blade, method) for blade in blades for method in
           "rackFactorFloor": 0.16,
           "rackFactorHalfLifeLevels": 3,
           "attachmentFactorFloor": 0,
-          "attachmentFactorHalfLifeLevels": 1.1
+          "attachmentFactorHalfLifeLevels": 1.1,
+          "caseEjection": { "speedMetresPerSimSecond": 3.5, "flightSimSeconds": 0.48, "landingLiftMetres": 0.006 },
+          "shotTraceRangeBlocks": 240
         }
       }
     },

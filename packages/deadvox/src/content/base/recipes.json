@@ -521,6 +521,11 @@
           "adsApertureFill": 0.84999999999999998,
           "attachmentFactorFloor": 0,
           "attachmentFactorHalfLifeLevels": 1.1000000000000001,
+          "caseEjection": {
+            "flightSimSeconds": 0.47999999999999998,
+            "landingLiftMetres": 0.0060000000000000001,
+            "speedMetresPerSimSecond": 3.5
+          },
           "loweredPitchRadians": 0.55000000000000004,
           "rackFactorFloor": 0.16,
           "rackFactorHalfLifeLevels": 3,
@@ -532,6 +537,7 @@
           "readyMovementRange": 0.34999999999999998,
           "reloadFactorFloor": 0.025000000000000001,
           "reloadFactorHalfLifeLevels": 5,
+          "shotTraceRangeBlocks": 240,
           "skillZeroHandling": {
             "automaticFollowup": {
               "recoilKickScale": 12,
