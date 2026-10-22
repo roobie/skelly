@@ -36,6 +36,7 @@ import { PlayerMeshes } from '../render/playerFigure.ts';
 import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
 import { applySky } from '../render/sky.ts';
 import { APC } from '../vehicles/apc.ts';
+import { BOX_VAN } from '../vehicles/boxVan.ts';
 import { CATALOGUE } from '../vehicles/catalogue.ts';
 import { MATERIALS } from '../vehicles/materials.ts';
 import {
@@ -163,6 +164,14 @@ const BUILDS = {
     removed: [],
     viewScale: 1.06,
     views: { interior: { position: [0.45, 1.7, 1.9], target: [0.85, 0.95, -0.35] } },
+  },
+  van: {
+    label: 'Box van',
+    button: 'Box van',
+    blueprint: BOX_VAN,
+    removed: [],
+    viewScale: 1.4,
+    views: { interior: { position: [1.2, 2.4, 2.2], target: [1.75, 1.35, -0.3] } },
   },
   sedan: {
     label: 'Family sedan',

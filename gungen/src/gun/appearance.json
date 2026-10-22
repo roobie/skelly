@@ -32,13 +32,14 @@
   "finishSlots": ["metal", "furniture", "accent"],
   "fixtureProfiles": {
     "archetype-ak": "ak",
+    "archetype-ak-akm": "ak",
+    "archetype-anti-materiel": "anti-materiel",
     "archetype-ar": "ar",
     "archetype-ar-free-float": "ar-free-float",
     "archetype-awm": "awm",
     "archetype-battle-rifle": "battle-rifle",
     "archetype-bolt-rifle": "bolt-rifle",
     "archetype-bolt-rifle-box": "bolt-rifle-box",
-    "archetype-bullpup": "bullpup",
     "archetype-pistol": "pistol",
     "archetype-pump-shotgun": "pump-shotgun",
     "archetype-revolver": "revolver",
@@ -117,11 +118,6 @@
         "furniture": "polymer-od-green",
         "metal": "steel-parkerized"
       },
-      "barrett": {
-        "accent": "steel-parkerized",
-        "furniture": "steel-parkerized",
-        "metal": "steel-parkerized"
-      },
       "battle-rifle": {
         "accent": "rubber-black",
         "furniture": "wood-walnut",
@@ -140,11 +136,6 @@
       "bolt-rifle-thumbhole": {
         "accent": "rubber-black",
         "furniture": "wood-walnut",
-        "metal": "steel-parkerized"
-      },
-      "bullpup": {
-        "accent": "rubber-black",
-        "furniture": "polymer-black",
         "metal": "steel-parkerized"
       },
       "pistol": {
