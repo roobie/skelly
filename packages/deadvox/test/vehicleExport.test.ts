@@ -111,7 +111,7 @@ describe('vehicle export contract', () => {
     const seated = [...base.registry.vehicleBlueprints.keys()]
       .map((id) => loadVehicleBlueprint(base.registry, id))
       .filter(({ fittings }) => fittings.some(({ capabilities }) => capabilities.includes('seat')));
-    expect(seated.map(({ id }) => id)).toContain('hatchback');
+    expect(seated.map(({ id }) => id)).toContain(HOSTS[0]);
     for (const { fittings } of seated) {
       const entries = fittings.filter(({ capabilities }) => capabilities.includes('entry'));
       expect(entries.length).toBeGreaterThan(0);
