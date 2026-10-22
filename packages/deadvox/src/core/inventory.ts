@@ -15,7 +15,7 @@ import {
 import type { ItemDef, Registry } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
-import { coreLabel, coreMessage } from './coreText.ts';
+import { type CoreMessageKey, coreLabel, coreMessage, coreRefusal } from './coreText.ts';
 import type { WorkPlan } from './crafting.ts';
 import {
   disassemblyOutputs,
@@ -144,7 +144,9 @@ export type Target =
 /** Where in the world an item lies, if it isn't on the player: a pile, or furniture. */
 type Place = { kind: 'pile'; pile: Pile } | { kind: 'furniture'; entity: BlockEntity };
 
-export type Plan = { ok: true; time: number; merge?: Item; at?: Spot; swap?: Item } | { ok: false; reason: string };
+export type Plan =
+  | { ok: true; time: number; merge?: Item; at?: Spot; swap?: Item }
+  | { ok: false; reason: string; key?: CoreMessageKey };
 
 export const SIDES: readonly HandSide[] = ['right', 'left'];
 const other = (side: HandSide): HandSide => (side === 'right' ? 'left' : 'right');
@@ -637,14 +639,14 @@ export class Inventory {
   plan(item: Item, target: Target, count = item.count): Plan {
     const from = this.locate(item);
     if (!from) {
-      return refuse(coreMessage(this.registry, 'gone'));
+      return coreRefusal(this.registry, 'gone');
     }
     const held = heldInPlace(this.registry, item, from);
     if (held) {
       return refuse(held);
     }
     if (!Number.isInteger(count) || count < 1 || count > item.count) {
-      return refuse(coreMessage(this.registry, 'partCount', { count: String(count), total: String(item.count) }));
+      return coreRefusal(this.registry, 'partCount', { count: String(count), total: String(item.count) });
     }
     const handHeld = this.handMoveRefusal(item, from, target);
     if (handHeld) {
@@ -652,12 +654,12 @@ export class Inventory {
     }
     const { light } = defOf(this.registry, item.type);
     if (item.on && light?.burning?.stow === 'refuse' && target.kind !== 'hand' && target.kind !== 'pile') {
-      return refuse(coreMessage(this.registry, 'stillLit'));
+      return coreRefusal(this.registry, 'stillLit');
     }
     const source = this.placeOf(from);
     const destination = this.targetPlace(target);
     if (!(this.reachable(source) && (this.reachable(destination) || this.dropLanding(target)))) {
-      return refuse(coreMessage(this.registry, 'tooFar'));
+      return coreRefusal(this.registry, 'tooFar');
     }
     const access = this.accessRefusal(source, destination);
     if (access) {
@@ -1113,26 +1115,26 @@ export class Inventory {
       case 'worn': {
         const slot = wornSlotOf(this.registry, item);
         if (!slot) {
-          return refuse(coreMessage(this.registry, 'cantWear'));
+          return coreRefusal(this.registry, 'cantWear');
         }
         const current = this.worn[slot];
         if (current === item) {
-          return refuse(coreMessage(this.registry, 'alreadyWearing'));
+          return coreRefusal(this.registry, 'alreadyWearing');
         }
         const shoulder = this.shoulderRefusal(slot, item);
         if (shoulder) {
           return refuse(shoulder);
         }
         return current
-          ? refuse(coreMessage(this.registry, 'wearingOther', { item: this.name(current).toLowerCase() }))
+          ? coreRefusal(this.registry, 'wearingOther', { item: this.name(current).toLowerCase() })
           : { ok: true, time: 0 };
       }
       case 'pocket': {
         if (target.owner === item) {
-          return refuse(coreMessage(this.registry, 'insideItself'));
+          return coreRefusal(this.registry, 'insideItself');
         }
         if (!this.locate(target.owner)) {
-          return refuse(coreMessage(this.registry, 'cantReach'));
+          return coreRefusal(this.registry, 'cantReach');
         }
         return this.gridPlacement(item, count, this.gridOf(target), target);
       }
@@ -1344,7 +1346,7 @@ export class Inventory {
     const { item, otherItem, from, target, plan } = swap;
     const otherFrom = this.locate(otherItem);
     if (!otherFrom) {
-      return refuse(coreMessage(this.registry, 'gone'));
+      return coreRefusal(this.registry, 'gone');
     }
     const sourceTarget = this.targetForLocation(from);
     const itemOrigin = this.quickbarOriginOf(item, from);
@@ -1389,15 +1391,15 @@ export class Inventory {
 
   private handPlacement(item: Item, side: HandSide, from: Location): Plan {
     if (item.work && side !== dominantSide(this.character)) {
-      return refuse(coreMessage(this.registry, 'workHand'));
+      return coreRefusal(this.registry, 'workHand');
     }
     if (from.kind === 'hand' && from.side === side) {
-      return refuse(coreMessage(this.registry, 'alreadyInHand'));
+      return coreRefusal(this.registry, 'alreadyInHand');
     }
     const held = this.hands[side];
     if (held && held !== item) {
       const key = side === 'right' ? 'rightHandHolding' : 'leftHandHolding';
-      return refuse(coreMessage(this.registry, key, { item: this.name(held).toLowerCase() }));
+      return coreRefusal(this.registry, key, { item: this.name(held).toLowerCase() });
     }
     const conflict = this.handPairRefusal(item, this.hands[other(side)]);
     return conflict ? refuse(conflict) : { ok: true, time: 0 };
@@ -1487,7 +1489,7 @@ export class Inventory {
       return refuse(nesting);
     }
     if (!couldFit(this.registry, grid.size, item)) {
-      return refuse(coreMessage(this.registry, 'tooBig'));
+      return coreRefusal(this.registry, 'tooBig');
     }
     const joins = (p: Placed | undefined) => p !== undefined && stackRoom(this.registry, p.item, item) >= count;
     // Moving a whole item within its grid frees its own cells; moving part of a stack doesn't.
@@ -1499,14 +1501,14 @@ export class Inventory {
       }
       return fitsAt(this.registry, grid, item, { ...at, ignore })
         ? { ok: true, time: 0, at }
-        : refuse(coreMessage(this.registry, 'noRoomThere'));
+        : coreRefusal(this.registry, 'noRoomThere');
     }
     const stack = grid.placed.find(joins);
     if (stack) {
       return { ok: true, time: 0, merge: stack.item };
     }
     const spot = findSpot(this.registry, grid, item, ignore);
-    return spot ? { ok: true, time: 0, at: spot } : refuse(coreMessage(this.registry, 'noRoom'));
+    return spot ? { ok: true, time: 0, at: spot } : coreRefusal(this.registry, 'noRoom');
   }
 
   transform(item: Item, type: string): void {

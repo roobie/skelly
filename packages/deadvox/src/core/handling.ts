@@ -3,7 +3,7 @@
 // mutating the running queue.
 
 import { canonicalJson } from './canonicalJson.ts';
-import { type CoreMessageKey, coreLabel, coreMessage } from './coreText.ts';
+import { type CoreMessageKey, coreLabel, coreMessage, coreRefusal } from './coreText.ts';
 import { describeTarget, type Inventory, type Location, type Target, type TargetState } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 
@@ -140,7 +140,7 @@ export class HandlingQueue {
           canonicalJson(pending.target) === canonicalJson(state),
       )
     ) {
-      return { ok: false, reason: coreMessage(registry, 'alreadyQueued'), key: 'alreadyQueued' };
+      return coreRefusal(registry, 'alreadyQueued');
     }
     const from = this.inventory.locate(item);
     const plan = this.inventory.plan(item, target, count);

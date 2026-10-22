@@ -309,6 +309,18 @@ it('hides an obvious refusal by its key, so rewording it in content keeps it hid
   expect(hands).toEqual(['left']);
 });
 
+it('shows a refusal that content words like an obvious one, since only the key hides it', () => {
+  const core = registry.ui.get(CORE_CONTENT_IDS.coreUi)!;
+  const shared = core.coreMessages.alreadyInHand;
+  const sameWords = { ...core, coreMessages: { ...core.coreMessages, tooFar: shared } };
+  const t = setup('right', { ...registry, ui: new Map(registry.ui).set(core.id, sameWords) });
+  const knife = t.add('kabar', { kind: 'pile', pos: [20, 0, 20] });
+  const hands = options(knife, t.view()).flatMap((option) =>
+    option.kind === 'move' && option.target.kind === 'hand' && !option.plan.ok ? [option.plan.reason] : [],
+  );
+  expect(hands).toEqual([shared, shared]);
+});
+
 describe('handling move admission', () => {
   it.each(['toHands', 'quickbarTake'] as const)(
     'stows a sling-fitted long gun on the shoulder when %s wields a one-hand tool',

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { coreMessage } from '../src/core/coreText.ts';
+import { coreRefusal } from '../src/core/coreText.ts';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { handlingWeights, Inventory } from '../src/core/inventory.ts';
@@ -90,10 +90,7 @@ describe('grid placement', () => {
   it('rotates an item to fit, and refuses one too big either way', () => {
     const { inv, hoodie, jeans } = dressed(declared);
     const knife = onFloor(inv, 'kabar');
-    expect(inv.plan(knife, { kind: 'pocket', owner: jeans, pocket: 0 })).toEqual({
-      ok: false,
-      reason: coreMessage(registry, 'tooBig'),
-    });
+    expect(inv.plan(knife, { kind: 'pocket', owner: jeans, pocket: 0 })).toEqual(coreRefusal(registry, 'tooBig'));
     expect(inv.move(knife, { kind: 'pocket', owner: hoodie, pocket: 0 })).toMatchObject({
       ok: true,
       at: { x: 0, y: 0, rotated: true },
@@ -323,7 +320,7 @@ describe('hands and wearing', () => {
     expect(inv.move(jacket, { kind: 'worn' }).ok).toBe(true);
     expect(inv.worn.torso).toBe(jacket);
     expect(inv.locate(hoodie)?.kind).toBe('pile');
-    expect(inv.plan(inv.create('crowbar'), { kind: 'worn' })).toEqual({ ok: false, reason: "It isn't there any more" });
+    expect(inv.plan(inv.create('crowbar'), { kind: 'worn' })).toEqual(coreRefusal(registry, 'gone'));
   });
 
   it('puts a long gun on the shoulder only with a sling fitted', () => {

@@ -169,6 +169,13 @@ export const coreMessage = <K extends CoreMessageKey>(
   ...values: SlotValues<(typeof CORE_MESSAGE_SLOTS)[K]>
 ): string => fill(coreUi(registry).coreMessages[key], values[0]);
 
+/** A refusal worded by core text that carries its key, so a rule reacting to it compares the key, never wording. */
+export const coreRefusal = <K extends CoreMessageKey>(
+  registry: Pick<Registry, 'ui'>,
+  key: K,
+  ...values: SlotValues<(typeof CORE_MESSAGE_SLOTS)[K]>
+): { ok: false; reason: string; key: K } => ({ ok: false, reason: coreMessage(registry, key, ...values), key });
+
 export const coreLabel = <K extends CoreLabelKey>(
   registry: Pick<Registry, 'ui'>,
   key: K,

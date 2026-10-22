@@ -129,8 +129,8 @@ it without touching the same lines. See `src/content/base/ui-core-text.libsonnet
   wording, so rewording a message cannot change what the game does. A rule that treats
   some refusals specially, such as hiding the obvious ones from the item options, lists
   keys, and a refusal another rule reacts to carries its key beside its text. See
-  `src/core/coreText.ts`, `coreMessage`; `src/core/options.ts`, `OBVIOUS`; and
-  `src/core/handling.ts`, `HandlingQueue.enqueue`.
+  `src/core/coreText.ts`, `coreMessage` and `coreRefusal`, and `src/core/options.ts`,
+  `OBVIOUS`.
 - **Required, with named slots.** One table of keys and slots drives both the schema and
   the lookup's type, so a key code asks for and content lacks fails validation, not play.
   A template names the values code fills in, such as `{item}`, and validation rejects one

@@ -412,8 +412,7 @@ export const options = (item: Item, view: ReachSnapshot): Option[] => {
     quickMove(item, view),
     useOption(item, view),
   );
-  const obvious = new Set(OBVIOUS.map((key) => coreMessage(inv.registry, key)));
-  return out.filter((o) => o.plan.ok || !obvious.has(o.plan.reason));
+  return out.filter((o) => o.plan.ok || o.plan.key === undefined || !OBVIOUS.includes(o.plan.key));
 };
 
 const quickbarHand = (inv: Inventory, item: Item): HandSide => {
