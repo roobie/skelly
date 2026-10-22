@@ -10,7 +10,13 @@ import { buildRegistry } from '../src/core/content.ts';
 
 const makeCharacter = (): Character => {
   const { registry, issues } = buildRegistry([
-    { source: 'skill.json', data: { skills: [{ id: 'fixture_skill', name: 'Fixture skill' }] } },
+    {
+      source: 'skill.json',
+      data: {
+        skillProgression: [{ id: 'core', practicePerLevel: 10 }],
+        skills: [{ id: 'fixture_skill', name: 'Fixture skill' }],
+      },
+    },
   ]);
   if (issues.length > 0) {
     throw new Error('Could not build skill progression fixture');

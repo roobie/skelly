@@ -280,6 +280,16 @@ const merge = (files: readonly { source: string; file: ContentFile }[]) => {
       }
       const map = registry[section];
       (file[section] ?? []).forEach((def, i) => {
+        if (section === 'skills') {
+          const skill = def as NonNullable<ContentFile['skills']>[number];
+          const entry =
+            skill.combat?.firearms === undefined
+              ? skill
+              : { ...skill, combat: { ...skill.combat, firearms: { ...skill.combat.firearms, curve: skill.curve } } };
+          registry.skills.set(entry.id, entry);
+          note(section, entry.id, source, i);
+          return;
+        }
         (map as Map<string, typeof def>).set(def.id, def);
         note(section, def.id, source, i);
       });
@@ -1585,6 +1595,7 @@ export const REQUIRED_CORE_CONTENT = [
   { section: 'compression', id: CORE_CONTENT_IDS.player },
   { section: 'figures', id: CORE_CONTENT_IDS.player },
   { section: 'handlingRange', id: CORE_CONTENT_IDS.testRange },
+  { section: 'skillProgression', id: 'core' },
   { section: 'inventory', id: CORE_CONTENT_IDS.player },
   { section: 'meleeClasses', id: CORE_CONTENT_IDS.fistsMeleeClass },
   { section: 'saves', id: CORE_CONTENT_IDS.autosave },

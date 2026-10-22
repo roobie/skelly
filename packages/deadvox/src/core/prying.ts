@@ -23,11 +23,16 @@ export type PryPlan =
     }
   | { ok: false; reason: string; toolNames: string[] };
 
-const durationForSkill = (time: number, fastestTime: number, skillLevel: number): number => {
+const durationForSkill = (
+  time: number,
+  fastestTime: number,
+  skillLevel: number,
+  curve: { floor: number; halfLifeLevels: number },
+): number => {
   const effectLevel = skillEffectLevel(skillLevel);
-  const slowEffect = skillSaturation(SKILL_LEVEL_MIN, 0.42, 4);
-  const fastEffect = skillSaturation(SKILL_LEVEL_MAX, 0.42, 4);
-  const effect = skillSaturation(effectLevel, 0.42, 4);
+  const slowEffect = skillSaturation(SKILL_LEVEL_MIN, curve);
+  const fastEffect = skillSaturation(SKILL_LEVEL_MAX, curve);
+  const effect = skillSaturation(effectLevel, curve);
   const progress = (slowEffect - effect) / (slowEffect - fastEffect);
   return time + (fastestTime - time) * progress;
 };
@@ -72,7 +77,7 @@ export const pryPlan = (
     const capable = carried.filter((item) => meets(item.type, tuning));
     const tool = capable.find((item) => (chargeOf(inventory.registry, item) ?? 0) >= (tuning.fuel ?? 0));
     if (tool) {
-      return planFor(method, tuning, tool, character);
+      return planFor({ inventory, method, tuning, tool, character });
     }
     fuelRefusal = capable.length > 0 ? dryRefusal(capable) : fuelRefusal;
   }
@@ -87,9 +92,28 @@ const dryRefusal = (capable: Item[]): string =>
     ? "There isn't enough gas left for that"
     : "There's no gas cartridge in it";
 
-const planFor = (method: string, tuning: Tuning, tool: Item, character?: PryCharacter): PryPlan => {
+const planFor = ({
+  inventory,
+  method,
+  tuning,
+  tool,
+  character,
+}: {
+  inventory: Inventory;
+  method: string;
+  tuning: Tuning;
+  tool: Item;
+  character?: PryCharacter | undefined;
+}): PryPlan => {
   const skillLevel = character?.skills[tuning.skill] ?? SKILL_LEVEL_MIN;
-  const time = durationForSkill(tuning.timeSimSeconds, tuning.fastestTimeSimSeconds, skillLevel);
+  const curve = inventory.registry.skills.get(tuning.skill)?.curve;
+  if (curve === undefined) {
+    throw new Error(`Missing skill curve content for ${tuning.skill}`);
+  }
+  const time = durationForSkill(tuning.timeSimSeconds, tuning.fastestTimeSimSeconds, skillLevel, {
+    floor: curve.saturationFloor,
+    halfLifeLevels: curve.saturationHalfLifeLevels,
+  });
   const strikeInterval = tuning.strikeIntervalSimSeconds * (time / tuning.timeSimSeconds);
   return {
     ok: true,

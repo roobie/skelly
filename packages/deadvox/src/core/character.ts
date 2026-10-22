@@ -28,26 +28,39 @@ const LEGENDARY_LEVEL_PRACTICE = 1_000_000;
 /** Legendary is mostly vanity: its effects match ordinary level 10. */
 export const skillEffectLevel = (level: number): number => Math.min(level, SKILL_LEVEL_MAX);
 
-/** Shared diminishing-return curve for effects that improve with skill. */
-export const skillSaturation = (effectLevel: number, floor: number, halfLife: number): number =>
-  floor + (1 - floor) * (halfLife / (halfLife + effectLevel));
-
-/** Practice required for the next level grows with the level already reached. */
-export const practiceForNextLevel = (level: number): number => {
-  if (level === SKILL_LEVEL_LEGENDARY) {
-    return Number.POSITIVE_INFINITY;
-  }
-  if (level === SKILL_LEVEL_MAX) {
-    return LEGENDARY_LEVEL_PRACTICE;
-  }
-  return 10 * (level + 1);
+/** Diminishing-return curve for effects that improve with a content-defined skill. */
+export const skillSaturation = (
+  effectLevel: number,
+  curve: { floor: number; halfLifeLevels: number } | number,
+  legacyHalfLifeLevels?: number,
+): number => {
+  const floor = typeof curve === 'number' ? curve : curve.floor;
+  const halfLifeLevels = typeof curve === 'number' ? legacyHalfLifeLevels! : curve.halfLifeLevels;
+  return floor + (1 - floor) * (halfLifeLevels / (halfLifeLevels + effectLevel));
 };
 
-const validSkillPractice = (level: number, practice: number | undefined): practice is number =>
+/** Practice required for the next level grows with the level already reached. */
+export const practiceForNextLevel = (registry: Registry | number, level?: number): number => {
+  const currentLevel = typeof registry === 'number' ? registry : level!;
+  if (currentLevel === SKILL_LEVEL_LEGENDARY) {
+    return Number.POSITIVE_INFINITY;
+  }
+  if (currentLevel === SKILL_LEVEL_MAX) {
+    return LEGENDARY_LEVEL_PRACTICE;
+  }
+  const progression = typeof registry === 'number' ? undefined : registry.skillProgression.get('core');
+  if (typeof registry !== 'number' && progression === undefined) {
+    throw new Error('Missing skill progression content');
+  }
+  const practicePerLevel = typeof registry === 'number' ? 10 : progression!.practicePerLevel;
+  return practicePerLevel * (currentLevel + 1);
+};
+
+const validSkillPractice = (registry: Registry, level: number, practice: number | undefined): practice is number =>
   practice !== undefined &&
   Number.isFinite(practice) &&
   practice >= 0 &&
-  (level === SKILL_LEVEL_LEGENDARY ? practice === 0 : practice < practiceForNextLevel(level));
+  (level === SKILL_LEVEL_LEGENDARY ? practice === 0 : practice < practiceForNextLevel(registry, level));
 
 /** Content validation guarantees each authored starting recipe exists. */
 export const startingKnownRecipes = (registry: Registry): string[] => [
@@ -56,6 +69,7 @@ export const startingKnownRecipes = (registry: Registry): string[] => [
 
 export class Character implements HandedCharacter {
   private readonly side: HandSide;
+  private readonly registry: Registry;
   get handedness(): HandSide {
     return this.side;
   }
@@ -70,6 +84,7 @@ export class Character implements HandedCharacter {
       throw new Error('Invalid character handedness');
     }
     this.side = side;
+    this.registry = registry;
     this.skills = Object.fromEntries([...registry.skills.keys()].map((id) => [id, SKILL_LEVEL_MIN]));
     this.practice = Object.fromEntries([...registry.skills.keys()].map((id) => [id, 0]));
     this.knownRecipes = new Set(startingKnownRecipes(registry));
@@ -100,8 +115,8 @@ export class Character implements HandedCharacter {
       return;
     }
     let remaining = this.practice[skill]! + amount;
-    while (level < tier && remaining >= practiceForNextLevel(level)) {
-      remaining -= practiceForNextLevel(level);
+    while (level < tier && remaining >= practiceForNextLevel(this.registry, level)) {
+      remaining -= practiceForNextLevel(this.registry, level);
       level += 1;
     }
     this.skills[skill] = level;
@@ -137,7 +152,7 @@ export class Character implements HandedCharacter {
       }
       character.skills[id] = level;
       const practice = state.practice[id];
-      if (!validSkillPractice(level, practice)) {
+      if (!validSkillPractice(registry, level, practice)) {
         throw new Error(`Invalid skill practice for ${id}`);
       }
       character.practice[id] = practice;

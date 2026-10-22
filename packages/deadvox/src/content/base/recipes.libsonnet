@@ -21,8 +21,9 @@ local sharpen(blade, method) = {
   workstation: method.workstation,
 };
 local sharpenRecipes = [sharpen(blade, method) for blade in blades for method in sharpening];
+local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
 {
-  "skills": [
+  "skills": [skill + { curve: skillCurve } for skill in [
     {
       "id": "crafting",
       "name": "Crafting",
@@ -115,7 +116,8 @@ local sharpenRecipes = [sharpen(blade, method) for blade in blades for method in
         }
       }
     }
-  ],
+  ]],
+  "skillProgression": [{ "id": "core", "practicePerLevel": 10 }],
   "items": [
     { "id": "stick", "name": "Stick", "category": "material", "model": "stick", "size": [1, 4], "stack": 6 },
     { "id": "wax", "name": "Wax lump", "category": "material", "model": "wax", "size": [1, 1], "stack": 10 },
