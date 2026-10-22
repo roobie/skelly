@@ -1096,6 +1096,119 @@
     "roll": 0
   },
   {
+    "id": "blowtorch",
+    "file": "assets/models/blowtorch.glb",
+    "parts": {
+      "equipment": {
+        "node": "equipment:blowtorch",
+        "massKg": 0.9,
+        "centreOfMass": [0.003492439512906028, 0.07294486617694432, 0]
+      }
+    },
+    "grip": { "at": [0, 0.061500000000000006, 0], "turn": [0, 0, 0] },
+    "hold": "forward",
+    "roll": 0
+  },
+  {
+    "id": "headlamp",
+    "file": "assets/models/headlamp.glb",
+    "parts": {
+      "equipment": {
+        "node": "equipment:headlamp",
+        "massKg": 0.18,
+        "centreOfMass": [0.00009124309083862351, 0.016805785974029187, -0.055611748094746914]
+      }
+    },
+    "grip": { "at": [0, 0.011, 0.095], "turn": [0, -90, 0] },
+    "hold": "forward",
+    "roll": 0,
+    "anchors": { "lens": [0, 0.020000000000000004, -0.1155] }
+  },
+  {
+    "id": "weapon_sling",
+    "file": "assets/models/weapon_sling.glb",
+    "parts": {
+      "equipment": {
+        "node": "equipment:webbingSling",
+        "massKg": 0.15,
+        "centreOfMass": [0.002237475814853401, 0.00468931388599494, 2.0518445516521005e-20]
+      }
+    },
+    "grip": { "at": [-0.11599999999999999, 0.0045000000000000005, 0], "turn": [0, 0, 0] },
+    "hold": "forward",
+    "roll": 0
+  },
+  {
+    "id": "repair_kit",
+    "file": "assets/models/repair_kit.glb",
+    "parts": {
+      "equipment": {
+        "node": "equipment:repairKit",
+        "massKg": 1.25,
+        "centreOfMass": [-0.006085890427079189, 0.01452519781179876, 0.003059317324053617]
+      }
+    },
+    "grip": { "at": [-0.0985, 0.0175, 0], "turn": [0, 0, 0] },
+    "hold": "forward",
+    "roll": 0
+  },
+  {
+    "id": "wire_strippers",
+    "file": "assets/models/wire_strippers.glb",
+    "parts": {
+      "equipment": {
+        "node": "equipment:pliers",
+        "massKg": 0.18,
+        "centreOfMass": [0.07842316732801535, -1.8519349040395148e-19, 6.452800353873034e-19]
+      }
+    },
+    "grip": { "at": [0.04775, 0, -0.018000000000000002], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "adjustable_pliers",
+    "file": "assets/models/adjustable_pliers.glb",
+    "parts": {
+      "equipment": {
+        "node": "equipment:pliers",
+        "massKg": 0.3,
+        "centreOfMass": [0.0995385477147247, 0.00005419542316399051, 2.307395759650897e-18]
+      }
+    },
+    "grip": { "at": [0.05600000000000001, 0, -0.020625], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "sewing_repair_kit",
+    "file": "assets/models/sewing_repair_kit.glb",
+    "parts": {
+      "equipment": {
+        "node": "equipment:repairKit",
+        "massKg": 0.42,
+        "centreOfMass": [0.0037262431422244394, 0.012317862473998718, 2.0335500613498806e-19]
+      }
+    },
+    "grip": { "at": [-0.089, 0.015, 0], "turn": [0, 0, 0] },
+    "hold": "forward",
+    "roll": 0
+  },
+  {
+    "id": "portable_radio",
+    "file": "assets/models/portable_radio.glb",
+    "parts": {
+      "equipment": {
+        "node": "equipment:portableRadio",
+        "massKg": 0.6,
+        "centreOfMass": [0.00007534330506784346, 0.06560110085313642, -0.00034903912059921485]
+      }
+    },
+    "grip": { "at": [0, 0.0325, 0], "turn": [0, 90, 0] },
+    "hold": "forward",
+    "roll": 0
+  },
+  {
     "id": "tape_roll",
     "file": "assets/models/tape_roll.glb",
     "parts": {

@@ -1905,6 +1905,145 @@
         }
       },
       "roll": 0
+    },
+    {
+      "file": "assets/models/blowtorch.glb",
+      "grip": {
+        "at": [0, 0.061500000000000006, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "forward",
+      "id": "blowtorch",
+      "parts": {
+        "equipment": {
+          "centreOfMass": [0.0034924395129060279, 0.072944866176944317, 0],
+          "massKg": 0.90000000000000002,
+          "node": "equipment:blowtorch"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "anchors": {
+        "lens": [0, 0.020000000000000004, -0.11550000000000001]
+      },
+      "file": "assets/models/headlamp.glb",
+      "grip": {
+        "at": [0, 0.010999999999999999, 0.095000000000000001],
+        "turn": [0, -90, 0]
+      },
+      "hold": "forward",
+      "id": "headlamp",
+      "parts": {
+        "equipment": {
+          "centreOfMass": [9.1243090838623509e-5, 0.016805785974029187, -0.055611748094746914],
+          "massKg": 0.17999999999999999,
+          "node": "equipment:headlamp"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/weapon_sling.glb",
+      "grip": {
+        "at": [-0.11599999999999999, 0.0045000000000000005, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "forward",
+      "id": "weapon_sling",
+      "parts": {
+        "equipment": {
+          "centreOfMass": [0.002237475814853401, 0.0046893138859949402, 2.0518445516521005e-20],
+          "massKg": 0.14999999999999999,
+          "node": "equipment:webbingSling"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/repair_kit.glb",
+      "grip": {
+        "at": [-0.098500000000000004, 0.017500000000000002, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "forward",
+      "id": "repair_kit",
+      "parts": {
+        "equipment": {
+          "centreOfMass": [-0.0060858904270791889, 0.01452519781179876, 0.003059317324053617],
+          "massKg": 1.25,
+          "node": "equipment:repairKit"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/wire_strippers.glb",
+      "grip": {
+        "at": [0.047750000000000001, 0, -0.018000000000000002],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "wire_strippers",
+      "parts": {
+        "equipment": {
+          "centreOfMass": [0.078423167328015353, -1.8519349040395148e-19, 6.4528003538730343e-19],
+          "massKg": 0.17999999999999999,
+          "node": "equipment:pliers"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/adjustable_pliers.glb",
+      "grip": {
+        "at": [0.056000000000000008, 0, -0.020625000000000001],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "adjustable_pliers",
+      "parts": {
+        "equipment": {
+          "centreOfMass": [0.099538547714724701, 5.4195423163990507e-5, 2.3073957596508969e-18],
+          "massKg": 0.29999999999999999,
+          "node": "equipment:pliers"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/sewing_repair_kit.glb",
+      "grip": {
+        "at": [-0.088999999999999996, 0.014999999999999999, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "forward",
+      "id": "sewing_repair_kit",
+      "parts": {
+        "equipment": {
+          "centreOfMass": [0.0037262431422244394, 0.012317862473998718, 2.0335500613498806e-19],
+          "massKg": 0.41999999999999998,
+          "node": "equipment:repairKit"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/portable_radio.glb",
+      "grip": {
+        "at": [0, 0.032500000000000001, 0],
+        "turn": [0, 90, 0]
+      },
+      "hold": "forward",
+      "id": "portable_radio",
+      "parts": {
+        "equipment": {
+          "centreOfMass": [7.5343305067843464e-5, 0.065601100853136418, -0.00034903912059921485],
+          "massKg": 0.59999999999999998,
+          "node": "equipment:portableRadio"
+        }
+      },
+      "roll": 0
     }
   ]
 }

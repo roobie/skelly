@@ -56,6 +56,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "blowtorch",
+      "model": "blowtorch",
       "name": "Blowtorch",
       "size": [2, 3],
       "tool": {
@@ -66,8 +67,7 @@
         "qualities": {
           "flame_cutting": 1
         }
-      },
-      "weight": 900
+      }
     },
     {
       "canister": {
@@ -375,13 +375,13 @@
         "seenFrom": 30,
         "wornSwitch": true
       },
+      "model": "headlamp",
       "name": "Headlamp",
       "size": [1, 2],
       "wearable": {
         "encumbrance": 0,
         "slot": "head"
-      },
-      "weight": 180
+      }
     },
     {
       "category": "light",

@@ -708,6 +708,70 @@
     "source": "baseball_cap"
   },
   {
+    "id": "blowtorch",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "blowtorch"
+  },
+  {
+    "id": "headlamp",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "headlamp"
+  },
+  {
+    "id": "weapon_sling",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "weapon_sling"
+  },
+  {
+    "id": "repair_kit",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "repair_kit"
+  },
+  {
+    "id": "wire_strippers",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "wire_strippers"
+  },
+  {
+    "id": "adjustable_pliers",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "adjustable_pliers"
+  },
+  {
+    "id": "sewing_repair_kit",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "sewing_repair_kit"
+  },
+  {
+    "id": "portable_radio",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "portable_radio"
+  },
+  {
     "id": "tape_roll",
     "kind": "item",
     "options": {

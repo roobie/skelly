@@ -159,10 +159,10 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "weapon_sling",
+      "model": "weapon_sling",
       "name": "Weapon sling",
       "size": [1, 1],
-      "sling": true,
-      "weight": 150
+      "sling": true
     },
     {
       "category": "misc",
