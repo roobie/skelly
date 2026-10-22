@@ -1,3 +1,4 @@
+local level = import 'gauntlet-lab-level.libsonnet';
 local entry = import 'gauntlet-lab-entry.libsonnet';
 local circulation = import 'gauntlet-lab-circulation.libsonnet';
 local equipment = import 'gauntlet-lab-equipment.libsonnet';
@@ -67,7 +68,7 @@ local cabinetShape = [
     { id: 'gauntlet_look_pump', name: 'Prototype pressure plant', size: [4, 4, 3], color: '#738981', shape: [{ position: [0, 0, 0], size: [4, 0.4, 3] }, { position: [0.3, 0.4, 0.3], size: [1.2, 3.6, 2.4] }, { position: [2.5, 0.4, 0.3], size: [1.2, 3.6, 2.4] }] },
     { id: 'gauntlet_look_culture', name: 'Prototype culture apparatus', size: [4, 4, 2], color: '#91a978', shape: [{ position: [0, 0, 0], size: [4, 0.4, 2] }, { position: [0.2, 0.4, 0.2], size: [0.6, 3.6, 1.6] }, { position: [1.7, 0.4, 0.2], size: [0.6, 3.6, 1.6] }, { position: [3.2, 0.4, 0.2], size: [0.6, 3.6, 1.6] }] },
   ],
-  mapPieces: circulation.mapPieces + equipment.mapPieces + threat.mapPieces + entry.mapPieces,
+  mapPieces: circulation.mapPieces + equipment.mapPieces + threat.mapPieces + [level.stair] + entry.mapPieces,
   mapAssemblies: entry.mapAssemblies + [
     room('culture_stair_join', '_stair_join', 'culture', 'bench'),
     room('intake_outgoing', '_outgoing', 'bench', 'bench'), room('records', '', 'archive', 'archive'), room('clinic', '', 'exam', 'bench'),
@@ -111,7 +112,7 @@ local cabinetShape = [
         slot('failure', 'assembly', 'gauntlet_lab_storey_failure', [0, 8, 0], [72, 8, 64]),
         slot('bottom', 'assembly', 'gauntlet_lab_storey_bottom', [0, 0, 0], [72, 8, 64]),
         slot('holding_top', 'piece', 'gauntlet_lab_holding_top', [4, 8, 42], [18, 4, 14]),
-        slot('entry_stair', 'piece', 'gauntlet_lab_entry_stair', entry.stairAt, [12, 8, 2]),
+        slot('entry_stair', 'piece', level.stair.id, entry.stairAt, level.stair.size),
         slot('entry_shaft', 'piece', descents.mapPieces[3].id, [entry.shaft.ladder[0] - 1, entry.shaft.ladder[1], entry.shaft.ladder[2]], [3, 8, 2]),
         slot('research_east_descent', 'piece', descents.mapPieces[3].id, [58, 17, 10], [3, 8, 2]),
         slot('research_west_descent', 'piece', descents.mapPieces[3].id, [11, 17, 48], [3, 8, 2]),
