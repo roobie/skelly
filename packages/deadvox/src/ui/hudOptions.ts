@@ -49,7 +49,7 @@ export const readHudOptions = (): HudSettings => {
     }
     const parsed = JSON.parse(saved) as Partial<HudSettings>;
     const options = Object.fromEntries(
-      HUD_OPTION_KEYS.map((key) => [key, typeof parsed[key] === 'boolean' ? parsed[key] : false]),
+      HUD_OPTION_KEYS.map((key) => [key, typeof parsed[key] === 'boolean' ? parsed[key] : DEFAULT_HUD_OPTIONS[key]]),
     ) as HudOptionsState;
     // Only an explicit hide keeps the HUD hidden; a missing switch must not blank every option at once.
     return { ...options, shown: parsed.shown !== false };

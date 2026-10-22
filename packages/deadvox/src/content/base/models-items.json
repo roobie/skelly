@@ -393,6 +393,52 @@
       "roll": 0
     },
     {
+      "file": "assets/models/frag_grenade.glb",
+      "grip": {
+        "at": [0, 0.033148601913168832, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "frag_grenade",
+      "parts": {
+        "grenade": {
+          "centreOfMass": [0.00036723627359508854, 0.036986902465723857, 4.7083520647869879e-5],
+          "massKg": 0.40000000000000002,
+          "node": "grenade:grenade"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "anchors": {
+        "flame": [0.41999999999999993, 0, 0]
+      },
+      "emissiveMaterial": "#2b241c",
+      "file": "assets/models/torch.glb",
+      "grip": {
+        "at": [0.11099999999999997, 0, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "torch",
+      "rest": "upright",
+      "roll": 0
+    },
+    {
+      "anchors": {
+        "flame": [0.112, 0, 0]
+      },
+      "file": "assets/models/candle.glb",
+      "grip": {
+        "at": [0.040000000000000008, 0, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "candle",
+      "rest": "upright",
+      "roll": 0
+    },
+    {
       "file": "assets/models/bear_trap.glb",
       "id": "bear_trap",
       "parts": {
@@ -534,11 +580,11 @@
       "id": "broken_toaster"
     },
     {
-      "file": "assets/models/desk_lamp.glb",
-      "id": "desk_lamp",
+      "file": "assets/models/dead_desk_lamp.glb",
+      "id": "dead_desk_lamp",
       "parts": {
         "arm": {
-          "centreOfMass": [0.0064922537076486349, 0.089771328314204618, -9.5479630393850054e-18],
+          "centreOfMass": [0.0025013109481772274, 0.075637793761647865, -7.8425363729015917e-18],
           "massKg": 0.25,
           "node": "arm:arm"
         },
@@ -548,7 +594,7 @@
           "node": "base:base"
         },
         "shade": {
-          "centreOfMass": [0.070000000000000007, 0.15968518518518521, -2.0252029474788637e-17],
+          "centreOfMass": [0.069148148148148139, 0.061388888888888889, -8.2142050120587278e-18],
           "massKg": 0.14999999999999999,
           "node": "shade:shade"
         }

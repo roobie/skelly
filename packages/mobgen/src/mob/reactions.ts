@@ -2,13 +2,10 @@
 // already in — walk, standing, or mid-attack) and a death fall (a whole-body topple to lying on the
 // ground). EPIC.md asks for "animations for taking damage"; this is that, for mobgen actors.
 
-import { IDENTITY_M, type Mat3, mulMM, rotX, rotZ, type Vec3 } from '../core/math.ts';
+import { clamp, IDENTITY_M, type Mat3, mulMM, rotX, rotZ, smoothstep, type Vec3 } from '../core/math.ts';
 import type { Pose } from '../core/pose.ts';
 import { type AttackClip, attackPose, zeroKey } from './attack.ts';
 import { type Extent, GROUND_SMOOTHING, groundOffset, type WalkActor } from './gait.ts';
-
-const clamp = (x: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, x));
-const smoothstep = (x: number): number => x * x * (3 - 2 * x);
 
 // ---- hit flinch: an AttackClip, played through the exact same interpolator/layering as an attack ----
 

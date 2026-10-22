@@ -310,13 +310,6 @@ const pocketTemplate = (vm: PocketViewModel): TemplateResult => html`
   </div>
 `;
 
-const aroundPocketTemplate = (vm: PocketViewModel): TemplateResult => html`
-  <div class="inv-pocket">
-    <span class="inv-pocket-label">${vm.label}</span>
-    ${gridTemplate(vm.grid)}
-  </div>
-`;
-
 const optionTemplate = (
   option: OptionViewModel,
   item: Item,
@@ -506,7 +499,7 @@ const inventoryTemplate = (
             (bag) => html`
             <div class="inv-around-section inv-around-container" data-around-section="container">
               <div class="inv-pile-label">${bag.name}, on the floor</div>
-              <div class="inv-pockets">${bag.pockets.map(aroundPocketTemplate)}</div>
+              <div class="inv-pockets">${bag.pockets.map(pocketTemplate)}</div>
             </div>
           `,
           )}

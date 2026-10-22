@@ -1,7 +1,9 @@
 import { Group, type PerspectiveCamera, PointLight, type Scene, Vector3 } from 'three';
 import type { Inventory, Location } from '../core/inventory.ts';
+import type { Item } from '../core/items.ts';
 import { lightExposureFor, WORLD_LIGHT_HEIGHT_METRES } from '../core/lights.ts';
 import type { HeldItems } from './hands.ts';
+import type { PileMeshes } from './piles.ts';
 
 /** Fixed shader-light budget: carried sources and dropped sources have stable partitions. */
 const CARRIED_POINT_LIGHTS = 4;
@@ -12,6 +14,8 @@ export const NIGHT_VISION_HALOS = 4;
 
 interface LightPoolContext {
   held: Pick<HeldItems, 'lightPositionOf'>;
+  /** A light set down shines from its drawn flame; one drawn without a flame shines from over its cell. */
+  piles?: Pick<PileMeshes, 'lightPositionOf'>;
   camera: PerspectiveCamera;
   blockSize: number;
   daylightScale: number;
@@ -22,6 +26,26 @@ function handPriority(location: Location): number {
     return 2;
   }
   return location.side === 'right' ? 0 : 1;
+}
+
+function sourcePosition(
+  item: Item,
+  location: Location,
+  { held, piles, camera, blockSize }: LightPoolContext,
+  out: Vector3,
+): void {
+  if (location.kind === 'hand') {
+    if (!held.lightPositionOf(item, out)) {
+      out.copy(camera.position);
+    }
+  } else if (location.kind === 'pile') {
+    if (!piles?.lightPositionOf(item, out)) {
+      const [x, y, z] = location.pile.pos;
+      out.set((x + 0.5) * blockSize, y * blockSize + WORLD_LIGHT_HEIGHT_METRES, (z + 0.5) * blockSize);
+    }
+  } else {
+    out.copy(camera.position);
+  }
 }
 
 export class LightPool {
@@ -62,7 +86,8 @@ export class LightPool {
     handLight.decay = source.decay;
   }
 
-  update(inventory: Inventory, { held, camera, blockSize, daylightScale }: LightPoolContext): void {
+  update(inventory: Inventory, context: LightPoolContext): void {
+    const { camera, blockSize, daylightScale } = context;
     const entries = [...inventory.items()]
       .map((entry, order) => ({
         ...entry,
@@ -103,16 +128,7 @@ export class LightPool {
       }
       const spec = inventory.registry.items.get(entry.item.type)!.light!;
       const position = this.positions[index]!;
-      if (entry.location.kind === 'hand') {
-        if (!held.lightPositionOf(entry.item, position)) {
-          position.copy(camera.position);
-        }
-      } else if (entry.location.kind === 'pile') {
-        const [x, y, z] = entry.location.pile.pos;
-        position.set((x + 0.5) * blockSize, y * blockSize + WORLD_LIGHT_HEIGHT_METRES, (z + 0.5) * blockSize);
-      } else {
-        position.copy(camera.position);
-      }
+      sourcePosition(entry.item, entry.location, context, position);
       light.position.copy(position);
       light.color.set(spec.color);
       light.distance = spec.radius;

@@ -178,7 +178,12 @@ describe('silhouette profile', () => {
       supportBones: new Set<string>(),
       budgets: { totalTriangles: { min: 1, max: FAR_LOD_HALF_BLOCK_TRIANGLE_CAP } },
     });
-    expect(report.issues).toEqual([{ rule: 'budget', message: 'Total triangles 401 is outside [1, 400].' }]);
+    expect(report.issues).toEqual([
+      {
+        rule: 'budget',
+        message: `Total triangles ${FAR_LOD_HALF_BLOCK_TRIANGLE_CAP + 1} is outside [1, ${FAR_LOD_HALF_BLOCK_TRIANGLE_CAP}].`,
+      },
+    ]);
   });
 
   it('rejects a width or height change beyond the coarse and reference-cell quantization allowance', () => {

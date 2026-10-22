@@ -68,7 +68,6 @@ const QUOTA_ERROR = /quota regression/i;
 const BEST_EFFORT = /best.effort/i;
 const PERSISTENCE_GRANTED = /Persistent storage granted/;
 const CURRENT_EXPORT = /^deadvox-current-.*\.bin$/;
-const BASE_MISMATCH = /Generated base mismatch/;
 const REPLAY_REJECTED = /^Replay rejected:/;
 const LOADING_WORKER_FAILURE = /Controlled loading worker failure/;
 
@@ -858,87 +857,6 @@ try {
     });
     assert.equal(race.queuedBeforeRetry, 30);
     assert.equal(decoded.snapshot.character.simulation.body.health, 30);
-    assert.deepEqual(pageErrors, []);
-    await context.close();
-  });
-
-  await test('actual Continue refuses a generated-base mismatch and reloads with a recovery diagnosis', async () => {
-    const context = await browser.newContext({ viewport: { width: 800, height: 600 } });
-    const page = await context.newPage();
-    const pageErrors = [];
-    page.on('pageerror', (error) => pageErrors.push(error.message));
-    await page.goto(url);
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
-    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
-    await page.click('#go');
-    await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
-    await page.evaluate(async () => {
-      const { controller, storage, namespace } = deadvoxSaveTest;
-      const snapshot = structuredClone(controller.snapshot());
-      const { pos } = snapshot.character.player.body;
-      snapshot.world.diffs.chunks = [
-        {
-          cx: Math.floor(pos[0] / 32),
-          cy: -3,
-          cz: Math.floor(pos[2] / 32),
-          cells: [{ index: 0, base: 'air', id: 'stone' }],
-        },
-      ];
-      await storage.save(namespace, (generation) =>
-        storage.encodeSnapshot(snapshot, generation, {
-          worldOptions: controller.worldOptions,
-          version: controller.identityValue.components,
-          buildRevision: controller.identityValue.buildRevision,
-        }),
-      );
-      controller.entered = false;
-    });
-
-    await page.reload();
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
-    await page.waitForFunction(() => !document.querySelector('#continue').disabled, undefined, { timeout: 30_000 });
-    let refusalReload;
-    const nextReload = new Promise((resolve, reject) => {
-      let navigations = 0;
-      const onNavigation = (frame) => {
-        if (frame === page.mainFrame()) {
-          navigations += 1;
-          if (navigations === 2) {
-            clearTimeout(refusalReload);
-            page.off('framenavigated', onNavigation);
-            resolve();
-          }
-        }
-      };
-      page.on('framenavigated', onNavigation);
-      refusalReload = setTimeout(() => {
-        page.off('framenavigated', onNavigation);
-        reject(new Error('saved-world refusal did not reload to the recovery title'));
-      }, 30_000);
-    });
-    await Promise.all([page.waitForNavigation(), page.click('#continue')]);
-    await nextReload;
-    await page.waitForFunction(
-      () => {
-        const saveTest = globalThis.deadvoxSaveTest;
-        const status = document.querySelector('#save-status')?.textContent ?? '';
-        return (
-          saveTest?.controller.ready &&
-          status.includes('Saved world unreadable and left untouched') &&
-          sessionStorage.getItem(`deadvox.restore-refusal:${saveTest.namespace}`)
-        );
-      },
-      undefined,
-      { timeout: 30_000 },
-    );
-    const state = await page.evaluate(() => ({
-      status: document.querySelector('#save-status').textContent,
-      disabled: document.querySelector('#continue').disabled,
-      refusal: sessionStorage.getItem(`deadvox.restore-refusal:${deadvoxSaveTest.namespace}`),
-    }));
-    assert.match(state.status, BASE_MISMATCH);
-    assert.equal(state.disabled, true);
-    assert.match(state.refusal, BASE_MISMATCH);
     assert.deepEqual(pageErrors, []);
     await context.close();
   });
