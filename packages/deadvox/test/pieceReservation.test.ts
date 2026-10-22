@@ -137,6 +137,20 @@ it('removes a door with a pending forcing job, so the save encodes and decodes w
   expect(loaded.sim.actions.job).toBeUndefined();
 });
 
+it('lets go of a grabbed ladder it removes, so the save encodes and decodes', async () => {
+  const { runtime, ladder } = site();
+  const { session } = runtime;
+  expect(session.grabLadder(ladder)).toBeUndefined();
+  expect(session.ladderHold.snapshotState()).toEqual({ on: false, grabbedUid: ladder.uid });
+
+  expect(session.removeFurniture(ladder)).toBeUndefined();
+  expect(session.ladderHold.snapshotState()).toBeNull();
+
+  const loaded = await decodeInto(runtime);
+  expect(loaded.entities.byUid(ladder.uid)).toBeUndefined();
+  expect(loaded.session.ladderHold.snapshotState()).toBeNull();
+});
+
 it('refuses every use of a reserved piece, and allows each again once released', () => {
   const { runtime, locked, plain, crate, chest, ladder, tool } = site();
   const { session, inventory, entities } = runtime;

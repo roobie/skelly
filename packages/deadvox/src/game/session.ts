@@ -1756,6 +1756,7 @@ export const createSession = (options: SessionOptions) => {
     sim.actions.cancelNaming(entity.uid);
     queue.cancelNaming(entity.uid);
     searching.delete(entity);
+    ladderHold.releasePiece(entity);
     return removeFurniture(mover, entity);
   };
   queue.registerAction('furniture.search', (params) => {

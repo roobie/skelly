@@ -173,6 +173,14 @@ export class LadderHold implements HandHold {
     return undefined;
   }
 
+  /** Lets go of a ladder that is being removed, so the hold never names a missing piece. */
+  releasePiece(entity: BlockEntity): void {
+    const held = this.hold?.on ? this.reached() : this.hold?.grabbed;
+    if (held?.uid === entity.uid) {
+      this.hold = undefined;
+    }
+  }
+
   /**
    * The ladder piece the player climbs this step, updating the hold: `letGo` (a jump or a knockout) lets go, as does
    * leaving the ladder once on it, walking away from one grabbed but not reached, or lifting a piece meanwhile.
