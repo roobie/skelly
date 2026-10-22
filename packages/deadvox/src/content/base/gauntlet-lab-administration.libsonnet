@@ -157,8 +157,8 @@ local rooms = {
     openings: [{ token: 'T', at: [28, 28], axis: 'z', width: 2 }],
     dressing: [{ id: 'store_south_shelves', at: [31, 28], kit: 'shelves', fixture: 'working', loot: 'gauntlet_lab_administration_store' }],
   },
-  // The breaker's place until d509 wires it: a dead panel in a hazard-marked room off the corridor's blind end, found
-  // by exploring rather than passed on the route.
+  // The breaker's place until the per-level power switch is built: a dead panel in a hazard-marked room off the
+  // corridor's blind end, found by exploring rather than passed on the route.
   plant: {
     tokens: ['z', 'B', '?', 'S'], wall: 'B', floor: 'z', band: '}', bay: '?',
     finish: { floor: 'hazard', wall: 'metal', base: 'hazard_wall' }, ceilingDrop: 2, floorRise: 0,

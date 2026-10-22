@@ -116,8 +116,3 @@ choice. Replacement names its destructive effect and still requires confirmation
 an empty canvas click must not choose it. Storage and build diagnostics stay secondary
 so they cannot bury the decision. Without a compatible save, the simple start remains.
 See `src/ui/saveController.ts`, `SaveController`, and `src/ui/style.css`, "#overlay.startup-ready.saved-choice".
-
-## Open direction
-
-- #746: Add the playtest profile without god mode, spawning, noclip or time controls, and shape a diegetic first-run introduction from playtest findings.
-- #183: Make the clock diegetic through a watch.
