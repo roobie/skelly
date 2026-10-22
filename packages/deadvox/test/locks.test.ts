@@ -23,7 +23,7 @@ const furniture = {
   name: 'Test door',
   size: [1, 1, 1],
   color: '#666666',
-  door: { material: 'wood', methods: {}, handlingSimSeconds: 0.3 },
+  door: { material: 'wood', methods: {}, handlingSimSeconds: 0.3, breach: { minimumStrength: 1, toughness: 1 } },
 };
 const template = (id: string, lock: string, door = 'lock_test_door') => ({
   id,

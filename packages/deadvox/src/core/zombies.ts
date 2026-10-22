@@ -564,6 +564,8 @@ export interface ZombieSystemOptions {
   solidBricks?: SolidBricks | undefined;
   /** True only while terrain at the actor's position is loaded; unloaded actors wait for Slice 4b catch-up. */
   isLoaded?: ((x: number, z: number) => boolean) | undefined;
+  /** Held where it stands, by a trap shut on its leg (core/bearTrap.ts); it can still turn and attack. */
+  restrained?: ((id: EntityId) => boolean) | undefined;
   /** Visibility alone uses sight opacity. */
   isOpaque: SolidAt;
   blockSize: number;
@@ -613,6 +615,11 @@ export interface ZombieSystemOptions {
   onMeleeResult?: (result: MeleeResult) => void;
   /** Presentation-only recoil for a confirmed hit. */
   onMeleeContact?: (impulse: number) => void;
+  /**
+   * A bash at a pursuing zombie's obstacle contact: `ahead` is its box moved the obstacle lookahead along its aim.
+   * The owner of doors resolves it against the leaf there and makes its noise; true when a leaf took the blow.
+   */
+  bashObstacle?: (ahead: Body, strength: number) => boolean;
 }
 
 const AMALGAM_MEMBER_REGION = /^(member\.\d+)\./;
@@ -2428,6 +2435,9 @@ export class ZombieSystem {
         direction = movementDirection;
         speed = desiredSpeed;
       }
+      if (this.options.restrained?.(id) === true) {
+        speed = 0;
+      }
       zombie.horizontalSpeed = speed;
       zombie.body.vel[0] = (direction[0] * speed) / blockSize;
       zombie.body.vel[2] = (direction[2] * speed) / blockSize;
@@ -2785,7 +2795,10 @@ export class ZombieSystem {
   private updateMovementSpeed(): void {
     const scratch = this.tickScratch;
     const { zombie, type, dt } = scratch;
-    if (zombie.regions.leftLeg! <= 0 && zombie.regions.rightLeg! <= 0) {
+    if (
+      (zombie.regions.leftLeg! <= 0 && zombie.regions.rightLeg! <= 0) ||
+      this.options.restrained?.(scratch.id) === true
+    ) {
       scratch.desiredSpeed = 0;
       scratch.direction = [0, 0, 0];
       scratch.aimDirection = undefined;
@@ -2867,17 +2880,19 @@ export class ZombieSystem {
    * its centre, so its shape is moved as far ahead instead.
    */
   private wallAhead(aim: Vec3): boolean {
-    const { zombie, beforeStep, blockSize, isSolid } = this.tickScratch;
+    const { zombie, isSolid } = this.tickScratch;
     const shape = this.shapeOf(zombie.body);
     if (shape) {
       return this.fleshMeets(shape, aim);
     }
+    return bodyOverlapsTerrain(this.bodyAhead(aim), isSolid);
+  }
+
+  /** The zombie's box at its tick start, moved the obstacle lookahead along `aim`. */
+  private bodyAhead(aim: Vec3): Body {
+    const { zombie, beforeStep, blockSize } = this.tickScratch;
     const reach = OBSTACLE_LOOKAHEAD_METRES / blockSize;
-    const ahead: Body = {
-      ...zombie.body,
-      pos: [beforeStep[0] + aim[0] * reach, beforeStep[1], beforeStep[2] + aim[2] * reach],
-    };
-    return bodyOverlapsTerrain(ahead, isSolid);
+    return { ...zombie.body, pos: [beforeStep[0] + aim[0] * reach, beforeStep[1], beforeStep[2] + aim[2] * reach] };
   }
 
   /** Whether an amalgam's flesh, moved the obstacle lookahead along `heading` and lifted over a step, meets terrain. */
@@ -2964,6 +2979,31 @@ export class ZombieSystem {
     this.updateObstacleSlideSide();
     this.startObstacleWander();
     zombie.obstacleContact = obstacleContact;
+    this.bashObstacle();
+  }
+
+  /**
+   * A zombie held up on the way to its target bashes what holds it, once per attack cooldown. Whether the blow does
+   * anything is the door's gate, not the zombie's (`DESIGN.md`, "Base building and electricity"); a type of strength 0
+   * never bashes. A zombie whose blow lands stays at the leaf instead of sliding or wandering off along the wall.
+   */
+  private bashObstacle(): void {
+    const { zombie, type, obstacleContact, aimDirection } = this.tickScratch;
+    const { bashObstacle } = this.options;
+    if (
+      !(bashObstacle && obstacleContact && aimDirection) ||
+      type.strength <= 0 ||
+      (zombie.mode !== 'chase' && zombie.mode !== 'investigate') ||
+      zombie.attackWait > 0 ||
+      zombie.attackWindup > 0 ||
+      !bashObstacle(this.bodyAhead(aimDirection), type.strength)
+    ) {
+      return;
+    }
+    zombie.attackWait = type.attack.cooldownSimSeconds;
+    zombie.obstacleSlideSide = 0;
+    zombie.obstacleWanderHeading = undefined;
+    zombie.obstacleWanderRemaining = 0;
   }
 
   private updateMovementAfterStep(): void {
@@ -3792,6 +3832,22 @@ export class ZombieSystem {
       this.options.onSevered?.(zombie, region as ZombieRegion);
     }
     return incapacitated;
+  }
+
+  /** Takes health from a zombie's legs not yet destroyed, shared between them, as a hit there would. */
+  injureLegs(id: EntityId, damage: number): void {
+    const zombie = this.store.get(id);
+    if (!zombie || damage <= 0) {
+      return;
+    }
+    const legs = (Object.keys(zombie.regions) as ZombieHitRegion[]).filter(
+      (region) => ['leftLeg', 'rightLeg'].includes(zombieRegionClass(region)) && zombie.regions[region]! > 0,
+    );
+    for (const region of legs) {
+      if (this.store.get(id) === zombie) {
+        this.resolveRegionDamage(id, zombie, region, this.damageRegion(zombie, region, damage / legs.length));
+      }
+    }
   }
 
   private damageRegion(zombie: Zombie, region: ZombieHitRegion, damage: number): number {
