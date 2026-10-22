@@ -1,0 +1,11 @@
+{
+  "id": "baseball_bat",
+  "file": "assets/models/baseball_bat.glb",
+  "parts": {
+    "baseball_bat": {
+      "node": "baseball_bat:bat",
+      "massKg": 0.9,
+      "centreOfMass": [0.16811516120885597, -0.00009478912366360825, -0.0000873810926845695]
+    }
+  }
+}

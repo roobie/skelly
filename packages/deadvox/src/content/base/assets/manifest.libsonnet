@@ -185,33 +185,6 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
       "changes": "Whole files, 0–0.255 s and 0–0.209 s. Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
     },
     {
-      "title": "Torch",
-      "url": "https://opengameart.org/content/torch",
-      "author": "jpsweber",
-      "licence": "CC0-1.0",
-      "download": "torch.zip",
-      "files": ["assets/models/flashlight.glb"],
-      "changes": "Converted torch.obj to glTF binary, scaled to 0.2 m long, turned to lie along +x with the lens at +x, lens no longer emissive, both materials opaque (the OBJ's transmission filter had made them glass)"
-    },
-    {
-      "title": "CC0 Flat Guns West",
-      "url": "https://opengameart.org/content/cc0-flat-guns-west",
-      "author": "Pichuliru",
-      "licence": "CC0-1.0",
-      "download": "flat_guns_west.zip",
-      "files": [
-        "assets/models/pistol_compact.glb",
-        "assets/models/pistol_full.glb",
-        "assets/models/rifle_battle.glb",
-        "assets/models/shotgun_auto.glb",
-        "assets/models/smg_compact.glb",
-        "assets/models/smg_full.glb",
-        "assets/models/sniper_material.glb",
-        "assets/models/sniper_rifle.glb"
-      ],
-      "changes": "From the GLB files: rig baked into static meshes at rest and removed, stray icosphere removed, turned to lie on the side along +x with the muzzle at +x, renamed"
-    },
-    {
       "title": "15 vocal male strain/hurt/pain/jump sounds",
       "url": "https://opengameart.org/content/15-vocal-male-strainhurtpainjump-sounds",
       "author": "qubodup",
@@ -354,45 +327,6 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
       "download": "jumpland48000.mp3",
       "files": ["assets/audio/player-landing-hard-01.ogg"],
       "changes": "Converted the 48 kHz MP3 source to mono Opus in an Ogg container"
-    },
-    {
-      "title": "CC0 Flat Shaded Melee Weapons",
-      "url": "https://opengameart.org/content/cc0-flat-shaded-melee-weapons",
-      "author": "Pichuliru",
-      "licence": "CC0-1.0",
-      "download": "flatshadedmelee.zip",
-      "files": [
-        "assets/models/baseball_bat.glb",
-        "assets/models/baton.glb",
-        "assets/models/cleaver.glb",
-        "assets/models/crowbar.glb",
-        "assets/models/fire_axe.glb",
-        "assets/models/frying_pan.glb",
-        "assets/models/golf_club.glb",
-        "assets/models/hammer.glb",
-        "assets/models/hand_axe.glb",
-        "assets/models/kabar.glb",
-        "assets/models/katana.glb",
-        "assets/models/kitchen_knife.glb",
-        "assets/models/machete.glb",
-        "assets/models/pickaxe.glb",
-        "assets/models/pocket_knife.glb",
-        "assets/models/shovel.glb",
-        "assets/models/sickle.glb",
-        "assets/models/sledgehammer.glb",
-        "assets/models/tanto.glb",
-        "assets/models/wrench.glb"
-      ],
-      "changes": "Converted all 20 source OBJ meshes with their MTL palette material and shared T_PCL_Palette_c.png in Blender to self-contained GLBs; applied transforms, baked flat shading, kept the 1-unit-equals-1-metre scale, and oriented each long axis from the grip toward the striking end along +x. The OBJ MTL's palette path was resolved to the shared texture at the archive root."
-    },
-    {
-      "title": "Pipe",
-      "url": "https://opengameart.org/content/pipe-0",
-      "author": "neincenets",
-      "licence": "CC0-1.0",
-      "download": "pipe.obj",
-      "files": ["assets/models/steel_pipe.glb"],
-      "changes": "Converted pipe.obj in Blender to a self-contained GLB; the download references a missing pipe.mtl, so applied a neutral metallic steel material. Used a non-uniform source-unit scale of 0.18 m/unit along the 5.15-unit shaft and 0.05 m/unit across both transverse axes (0.278 relative scale), yielding a 0.927 m shaft, 3.3 cm tube diameter and 11.7 cm elbow extent. The grip is at the lower end and the strike anchor at the upper open end; oriented the long shaft along +x."
     },
     {
       "title": "Cursor pack",
