@@ -204,6 +204,62 @@ describe('piles with models', () => {
     expect((marker.material as MeshBasicMaterial).vertexColors).toBe(false);
     bundle.dispose();
   });
+
+  it('keeps a set-down flame burning upright over its model’s flame anchor, and shines from there', async () => {
+    const flameLights = [...registry.items.values()].filter(
+      ({ light, model }) =>
+        light?.burning?.ignition === 'firestarter' &&
+        light.flame !== undefined &&
+        model !== undefined &&
+        registry.models.get(model)?.anchors?.flame !== undefined,
+    );
+    expect(flameLights.length).toBeGreaterThan(0);
+    const scenes = await Promise.all(
+      flameLights.map(
+        async ({ model }) => (await parseGlb(readFileSync(`${BASE}/${registry.models.get(model!)!.file}`))).scene,
+      ),
+    );
+    for (const [index, definition] of flameLights.entries()) {
+      const modelDefinition = registry.models.get(definition.model!)!;
+      const { ground } = prepareModel(modelDefinition, scenes[index]!);
+      const models = {
+        version: 1,
+        has: (id: string) => id === modelDefinition.id,
+        groundLook: () => ground.clone(),
+      } as unknown as import('../src/render/models.ts').ModelLibrary;
+      const render = (on: boolean) => {
+        const items = new Inventory(registry);
+        const light = items.create(definition.id);
+        if (on) {
+          expect(toggleLight(registry, light, 0)).toBeUndefined();
+        }
+        expect(items.add(light, { kind: 'pile', pos: [2, 1, -1] })).toBe(true);
+        const piles = new PileMeshes(S, models);
+        piles.sync(items);
+        const model = piles.group.children.find((child) => !(child instanceof InstancedMesh))!;
+        return { piles, light, model, flame: model.getObjectByName('pile-light-flame') };
+      };
+
+      const unlit = render(false);
+      expect(unlit.flame, definition.id).toBeUndefined();
+      expect(unlit.piles.lightPositionOf(unlit.light, new Vector3()), definition.id).toBe(false);
+      unlit.piles.dispose();
+
+      const { piles, light, model, flame } = render(true);
+      expect(flame, definition.id).toBeDefined();
+      const at = new Vector3();
+      expect(piles.lightPositionOf(light, at), definition.id).toBe(true);
+      const anchor = groundModelFrame(model).localToWorld(new Vector3(...modelDefinition.anchors!.flame!));
+      expect(at.distanceTo(anchor), definition.id).toBeLessThan(1e-9);
+      const flameBounds = new Box3().setFromObject(flame!);
+      const centre = flameBounds.getCenter(new Vector3());
+      expect(flameBounds.min.y, definition.id).toBeCloseTo(at.y);
+      expect(flameBounds.max.y - flameBounds.min.y, definition.id).toBeCloseTo(definition.light!.flame!.heightMetres);
+      expect(centre.x, definition.id).toBeCloseTo(at.x);
+      expect(centre.z, definition.id).toBeCloseTo(at.z);
+      piles.dispose();
+    }
+  });
 });
 
 it('prepares integral-magazine manual exports and binds movers by glTF node index, not sanitized name', async () => {
