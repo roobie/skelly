@@ -1,6 +1,7 @@
 import { Scene } from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
+import type { Chunk } from '../src/core/chunk.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -186,23 +187,15 @@ it('lets replay drive terrain generation and unloading without live streaming si
   expect(liveUnloads).not.toHaveBeenCalled();
 });
 
-describe('lazy restored world diffs', () => {
-  it('turns a generated-base mismatch into a refusal callback instead of throwing from Streamer.update', () => {
+describe('saved columns', () => {
+  const scale = makeScale(0.5);
+  const terrain = { grass: 1, dirt: 2, rock: 3, sand: 4 };
+  const generate = (cx: number, cz: number) =>
+    generateColumn({ seed: 17, blocks: terrain, shape: baseTerrainShape(), scale }, cx, cz, []);
+  const streamerFor = (world: World, stamp: (chunk: Chunk) => void) => {
     vi.stubGlobal('Worker', QuietWorker);
-    const scale = makeScale(0.5);
-    const terrain = { grass: 1, dirt: 2, rock: 3, sand: 4 };
-    const generated = generateColumn({ seed: 17, blocks: terrain, shape: baseTerrainShape(), scale }, 0, 0, [])[0]!;
-    const actualBase = generated.at(0);
-    const wrongBase = actualBase === 0xff_ff ? 0xff_fe : 0xff_ff;
-    const world = new World();
-    world.restoreDiffs(
-      {
-        chunks: [{ cx: 0, cy: scale.minCy, cz: 0, cells: [{ index: 0, base: 'base', id: 'changed' }] }],
-      },
-      (id) => (id === 'base' ? wrongBase : 0),
-    );
     const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
-    const streamer = new Streamer({
+    return new Streamer({
       world,
       meshes: meshes as never,
       seed: 17,
@@ -214,24 +207,89 @@ describe('lazy restored world diffs', () => {
       scale,
       structures: [],
       radius: 0,
+      stamp,
+    });
+  };
+  // Column 0,0 with one changed cell, saved and restored into a fresh world.
+  const restoredWorld = () => {
+    const source = new World();
+    for (const chunk of generate(0, 0)) {
+      source.addChunk(chunk);
+    }
+    const y = scale.minCy * CHUNK + 1;
+    source.setBlock(1, y, 1, source.getBlock(1, y, 1) === terrain.sand ? terrain.rock : terrain.sand);
+    const world = new World();
+    world.restoreColumns(structuredClone(source.snapshotColumns(String)), Number);
+    return { source, world };
+  };
+  const stampedColumns = () => {
+    const columns = new Set<string>();
+    return { columns, stamp: (chunk: Chunk) => columns.add(`${chunk.cx},${chunk.cz}`) };
+  };
+  const streamUntilReady = (streamer: Streamer): boolean => {
+    for (let attempt = 0; attempt < 32 && !streamer.isReady(0, 0); attempt += 1) {
+      streamer.update(0, 0);
+    }
+    return streamer.isReady(0, 0);
+  };
+  const cellsOfColumn00 = (world: World) => {
+    const cells: (Uint16Array | undefined)[] = [];
+    for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
+      cells.push(world.getChunk(0, cy, 0)?.toArray());
+    }
+    return cells;
+  };
+
+  it('installs a saved column with its saved cells instead of generating it', () => {
+    const { source, world } = restoredWorld();
+    const { columns, stamp } = stampedColumns();
+    expect(streamUntilReady(streamerFor(world, stamp))).toBe(true);
+    expect(columns).toContain('1,0');
+    expect(columns).not.toContain('0,0');
+    expect(cellsOfColumn00(world)).toEqual(cellsOfColumn00(source));
+  });
+
+  it('leaves an untouched column out of the save and regenerates it equal to a fresh generation', () => {
+    const { world } = restoredWorld();
+    expect(streamUntilReady(streamerFor(world, () => undefined))).toBe(true);
+    expect(world.snapshotColumns(String).map(({ cx, cz }) => [cx, cz])).toEqual([[0, 0]]);
+    for (const chunk of generate(1, 0)) {
+      expect(world.getChunk(1, chunk.cy, 0)!.toArray()).toEqual(chunk.toArray());
+    }
+  });
+
+  it("keeps a touched column's chunks in memory after the player moves out of range", () => {
+    const { source, world } = restoredWorld();
+    const streamer = streamerFor(world, () => undefined);
+    expect(streamUntilReady(streamer)).toBe(true);
+    streamer.update(20 * CHUNK, 20 * CHUNK);
+    expect(streamer.hasGeneratedColumn(0, 0)).toBe(false);
+    expect(world.getChunk(1, scale.minCy, 0)).toBeUndefined();
+    expect(cellsOfColumn00(world)).toEqual(cellsOfColumn00(source));
+  });
+
+  it('reads the saved column when replay drives a touched column in and out', () => {
+    const { source, world } = restoredWorld();
+    const { columns, stamp } = stampedColumns();
+    const streamer = streamerFor(world, stamp);
+    streamer.setReplayControlled();
+    streamer.update(0, 0);
+    expect(streamer.generateForReplay(0, 0)).toBe(true);
+    expect(columns).not.toContain('0,0');
+    streamer.unloadForReplay(0, 0);
+    expect(cellsOfColumn00(world)).toEqual(cellsOfColumn00(source));
+  });
+
+  it('turns a generation failure into a refusal callback instead of throwing from Streamer.update', () => {
+    const streamer = streamerFor(new World(), () => {
+      throw new Error('fixture generation failure');
     });
     const failures: unknown[] = [];
-    const title = { continueEnabled: true, status: '' };
-    streamer.onGenerationError = (error) => {
-      failures.push(error);
-      title.continueEnabled = false;
-      title.status = `Saved world unreadable: ${error instanceof Error ? error.message : String(error)}`;
-    };
+    streamer.onGenerationError = (error) => failures.push(error);
 
     expect(() => streamer.update(0, 0)).not.toThrow();
     expect(failures).toHaveLength(1);
-    expect(failures[0]).toMatchObject({ message: expect.stringContaining('Generated base mismatch') });
-    expect(streamer.failure).toContain('Generated base mismatch');
-    expect(title).toEqual({
-      continueEnabled: false,
-      status: expect.stringContaining('Saved world unreadable: Generated base mismatch'),
-    });
-    expect(world.snapshotDiffs((id) => String(id)).chunks).toHaveLength(1);
+    expect(streamer.failure).toContain('fixture generation failure');
     expect(() => streamer.update(0, 0)).not.toThrow();
     expect(failures).toHaveLength(1);
   });

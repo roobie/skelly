@@ -35,6 +35,7 @@ import { ModelLibrary } from '../render/models.ts';
 import { PlayerMeshes } from '../render/playerFigure.ts';
 import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
 import { applySky } from '../render/sky.ts';
+import { APC } from '../vehicles/apc.ts';
 import { CATALOGUE } from '../vehicles/catalogue.ts';
 import { MATERIALS } from '../vehicles/materials.ts';
 import {
@@ -183,6 +184,14 @@ const BUILDS = {
     button: 'Hatchback',
     content: 'hatchback',
     views: { interior: { position: [-0.1, 1.55, 2.5], target: [0.35, 0.7, -0.2] } },
+  },
+  apc: {
+    label: 'Wheeled APC',
+    button: 'APC',
+    blueprint: APC,
+    removed: [],
+    viewScale: 1.6,
+    views: { interior: { label: 'Troop compartment', position: [-2.7, 1.75, 0], target: [1.5, 1.2, 0] } },
   },
 } as const satisfies Record<string, AnyBuildSpec>;
 type BuildId = keyof typeof BUILDS;

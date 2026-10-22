@@ -45,6 +45,20 @@ export interface PartType {
   /** Where a rider's hips sit on this part, in its frame: the saddle of a bike with no cabin to sit in. */
   readonly rider?: readonly [x: number, y: number, z: number];
   readonly noise?: PartNoise;
+  /** Where the part holds items. Cargo is items in these pockets, never fittings. */
+  readonly storage?: PartStorage;
+}
+
+/** Pockets sized like a furniture container's (`packages/deadvox/src/core/schema.ts`, `ContainerSchema`): a grid in inventory cells. */
+export interface PartStorage {
+  readonly pockets: readonly PartPocket[];
+}
+
+interface PartPocket {
+  readonly name: string;
+  readonly grid: readonly [w: number, h: number];
+  /** Sim seconds to take an item out or put one in, before the per-cell part. */
+  readonly handlingSimSeconds: number;
 }
 
 /**

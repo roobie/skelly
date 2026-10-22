@@ -9,18 +9,11 @@ import { HAMLET, Hamlet } from '../src/core/hamlet.ts';
 import { PlayerCombat } from '../src/core/playerCombat.ts';
 import { raycast } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { grow } from '../src/core/site.ts';
+import { grow, rectsOverlap } from '../src/core/site.ts';
 import { siteGenerationOf } from '../src/core/sitePalette.ts';
 import { soundOcclusion } from '../src/core/soundOcclusion.ts';
 import { simRate, simSeconds } from '../src/core/time.ts';
-import {
-  forestDensityAt,
-  leafLitterAt,
-  placeTree,
-  rectsOverlap,
-  stampTrees,
-  TreeIndex,
-} from '../src/core/vegetation.ts';
+import { forestDensityAt, leafLitterAt, placeTree, stampTrees, TreeIndex } from '../src/core/vegetation.ts';
 import { World } from '../src/core/world.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';

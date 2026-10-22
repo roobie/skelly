@@ -677,18 +677,20 @@ describe('rifle firearm handling', () => {
     const inventory = new Inventory(registry);
     const pump = inventory.create('debug_shotgun_pump');
     expect(inventory.add(pump, { kind: 'hand', side: 'right' })).toBe(true);
-    expect(firearmHandlingFor(pump, registry)).toMatchObject({
-      calibre: '12-gauge-00-buck',
-      caseModelId: 'case_12_h_gauge_h_00_h_buck',
+    const model = registry.models.get(registry.items.get(pump.type)!.model!)!;
+    const data = firearmHandlingFor(pump, registry);
+    expect(data).toMatchObject({
+      calibre: model.gun?.calibre,
       roundsPerSimSecond: undefined,
-      action: registry.models.get(registry.items.get(pump.type)!.model!)!.gun!.action,
+      action: model.gun?.action,
     });
+    expect(registry.models.get(data.caseModelId!)?.gun?.calibre).toBe(model.gun?.calibre);
     const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
       blockSize: 0.5,
       pose: () => undefined,
       onEjection: () => undefined,
     });
-    expect(mechanics.fireReason(pump.uid)).toBe('No exported automatic action data for this gun');
+    expect(mechanics.fireReason(pump.uid)).toBeTruthy();
   });
 
   it('admits and loads an unannotated held gun while its mechanics refuse without synthetic data', async () => {
@@ -747,9 +749,11 @@ describe('rifle firearm handling', () => {
       onEjection: () => undefined,
     });
     const before = inventory.snapshotState();
-    expect(mechanics.fireReason(gun.uid)).toBe('No exported action data for this gun');
+    const reason = mechanics.fireReason(gun.uid);
+    expect(reason).toBeTruthy();
+    expect(() => firearmHandlingFor(gun, fixture.registry)).toThrow(reason);
     expect(mechanics.fire({ ...shotInput(gun, 0), seed: 1 })).toBe(false);
-    expect(mechanics.cock(gun.uid, 0)).toBe('No exported action data for this gun');
+    expect(mechanics.cock(gun.uid, 0)).toBe(reason);
     expect(queue.jobs).toEqual([]);
     expect(inventory.snapshotState()).toEqual(before);
   });

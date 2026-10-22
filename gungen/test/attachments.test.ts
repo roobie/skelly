@@ -5,6 +5,7 @@ import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import { keepOutBetweenParts, solidOverlapBetweenParts } from '@skelly/engine/assembly/rules.ts';
 import type { Assembly, Domain, PartDef, PartFamily, PortDef } from '@skelly/engine/assembly/schema.ts';
 import { validate } from '@skelly/engine/assembly/validate.ts';
+import type { Issue } from '@skelly/engine/foundation/issue.ts';
 import { applyPoint } from '@skelly/engine/foundation/math.ts';
 import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
 import { partNodeName } from '@skelly/thing-export/glb.ts';
@@ -18,6 +19,7 @@ import {
   ATTACHMENT_IDS,
   type AttachmentMetadata,
   type AttachmentSlotMetadata,
+  attachmentInstanceForId,
   attachmentMetadata,
   attachmentSlots,
 } from '../src/gun/attachments.ts';
@@ -28,6 +30,7 @@ import { exportGunGlb } from '../src/gun/exportGlb.ts';
 import { MOUNT_STANDARDS, mountCanAccept } from '../src/gun/mounts.ts';
 import { OPTIC_CATALOG, opticRailContactSolids } from '../src/gun/optics.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
+import { opticEyeRelief } from '../src/gun/rules.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
 import { readGlb } from './glbReader.ts';
 import { loadCorpus } from './helpers.ts';
@@ -64,7 +67,7 @@ const pairFixture = (withInstalledDefault = false) => {
           up: [1, 0, 0],
         },
       ],
-      solids: [],
+      solids: [{ id: 'fixture-pair-rail-body', kind: 'box', box: { center: [0, 1, 50], half: [2, 1, 53] } }],
       keepOuts: [],
       axes: [],
     }),
@@ -110,7 +113,12 @@ const sightlinePairFixture = () => {
       axes: [],
     }),
   };
-  const domain: Domain = { ...gunDomain, families: { ...gunDomain.families, receiver } };
+  // The fixture has no stock, so it leaves out the eye-relief rule a long optic would fail.
+  const domain: Domain = {
+    ...gunDomain,
+    families: { ...gunDomain.families, receiver },
+    rules: (gunDomain.rules ?? []).filter((rule) => rule !== opticEyeRelief),
+  };
   const assembly: Assembly = {
     name: 'optic-sightline-pair-fixture',
     root: 'receiver',
@@ -533,33 +541,22 @@ describe('attachment parts and export metadata', () => {
     });
   });
 
-  it('rejects a candidate at a solid-obstructed slot while certifying the same mount at a clear slot', () => {
-    const { rail, blockedIndex, clearIndex, slots, compatibility } = singleObstructionFixture('solid');
-    const blocked = slots.find(({ notchIndex }) => notchIndex === blockedIndex);
-    const clear = slots.find(({ notchIndex }) => notchIndex === clearIndex);
-    const optic = OPTIC_CATALOG['mini-reflex'];
-    if (!(blocked && clear && optic)) {
-      throw new Error('Fixture did not produce both optic slots');
-    }
-    expect(mountCanAccept(rail, optic.mount, blockedIndex)).toBe(true);
-    expect(mountCanAccept(rail, optic.mount, clearIndex)).toBe(true);
-    expect(compatibility[blocked.id]).not.toContain('optic-mini-reflex');
-    expect(compatibility[clear.id]).toContain('optic-mini-reflex');
-  });
-
-  it('rejects a candidate in a keep-out at one slot while certifying it at a clear slot', () => {
-    const { rail, blockedIndex, clearIndex, slots, compatibility } = singleObstructionFixture('keep-out');
-    const blocked = slots.find(({ notchIndex }) => notchIndex === blockedIndex);
-    const clear = slots.find(({ notchIndex }) => notchIndex === clearIndex);
-    const optic = OPTIC_CATALOG['mini-reflex'];
-    if (!(blocked && clear && optic)) {
-      throw new Error('Fixture did not produce both optic slots');
-    }
-    expect(mountCanAccept(rail, optic.mount, blockedIndex)).toBe(true);
-    expect(mountCanAccept(rail, optic.mount, clearIndex)).toBe(true);
-    expect(compatibility[blocked.id]).not.toContain('optic-mini-reflex');
-    expect(compatibility[clear.id]).toContain('optic-mini-reflex');
-  });
+  it.each(['solid', 'keep-out'] as const)(
+    'rejects a candidate at a %s-obstructed slot while certifying the same mount at a clear slot',
+    (obstructionKind) => {
+      const { rail, blockedIndex, clearIndex, slots, compatibility } = singleObstructionFixture(obstructionKind);
+      const blocked = slots.find(({ notchIndex }) => notchIndex === blockedIndex);
+      const clear = slots.find(({ notchIndex }) => notchIndex === clearIndex);
+      const optic = OPTIC_CATALOG['mini-reflex'];
+      if (!(blocked && clear && optic)) {
+        throw new Error('Fixture did not produce both optic slots');
+      }
+      expect(mountCanAccept(rail, optic.mount, blockedIndex)).toBe(true);
+      expect(mountCanAccept(rail, optic.mount, clearIndex)).toBe(true);
+      expect(compatibility[blocked.id]).not.toContain('optic-mini-reflex');
+      expect(compatibility[clear.id]).toContain('optic-mini-reflex');
+    },
+  );
 
   it('certifies clear attachment pairs and rejects a pair that overlaps on fixture geometry', () => {
     const { slots, compatibility, pairs } = pairFixture();
@@ -839,6 +836,64 @@ describe('attachment parts and export metadata', () => {
     };
     const report = validate(invalid, gunDomain).issues;
     expect(report.some(({ rule }) => rule === 'port-compat')).toBe(true);
+  });
+
+  it('certifies no attachment that validation rejects once fitted', () => {
+    const firearm: Assembly = {
+      name: 'stockless-receiver',
+      root: 'receiver',
+      parts: { receiver: { family: 'receiver', params: { rail: 'full' } } },
+      connections: [],
+    };
+    const slots = attachmentSlots(resolve(firearm, gunDomain));
+    const byGunDomain = attachmentCompatibility(firearm, slots, gunDomain);
+    const slot = slots.find(({ id }) => (byGunDomain[id] ?? []).length > 0);
+    const [rejectedId] = slot ? (byGunDomain[slot.id] ?? []) : [];
+    if (!(slot && rejectedId)) {
+      throw new Error('The receiver certifies nothing on any slot');
+    }
+    // A domain rule rejects one fit the gun domain certifies, so validation always rejects something here.
+    const rejected = attachmentInstanceForId(rejectedId);
+    const domain: Domain = {
+      ...gunDomain,
+      rules: [
+        ...(gunDomain.rules ?? []),
+        {
+          id: 'fixture-reject',
+          title: 'Rejects one attachment',
+          check: (r) =>
+            Object.entries(r.assembly.parts)
+              .filter(
+                ([, part]) =>
+                  part.family === rejected.family && JSON.stringify(part.params) === JSON.stringify(rejected.params),
+              )
+              .map(([id]) => ({ rule: 'fixture-reject', message: `${id} is rejected`, parts: [id] })),
+        },
+      ],
+    };
+    const key = (issue: Issue) => JSON.stringify(issue);
+    const bareIssues = new Set(validate(firearm, domain).issues.map(key));
+    const passesValidation = (id: string) =>
+      validate(
+        {
+          ...firearm,
+          parts: { ...firearm.parts, fitted: attachmentInstanceForId(id) },
+          connections: [
+            {
+              from: slot.id.split('.').slice(0, 2).join('.'),
+              to: 'fitted.base',
+              ...(slot.notchIndex === undefined ? {} : { slot: slot.notchIndex }),
+            },
+          ],
+        },
+        domain,
+      ).issues.every((issue) => bareIssues.has(key(issue)));
+    const certified = attachmentCompatibility(firearm, [slot], domain)[slot.id] ?? [];
+    expect(passesValidation(rejectedId)).toBe(false);
+    expect(certified).not.toContain(rejectedId);
+    for (const id of certified) {
+      expect(passesValidation(id), id).toBe(true);
+    }
   });
 
   it("certifies rifle muzzle devices on a rifled barrel but not on a shotgun's smoothbore barrel", () => {

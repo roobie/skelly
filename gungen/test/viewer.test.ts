@@ -12,7 +12,7 @@ import { loadFixture } from './helpers.ts';
 
 describe('viewer geometry', () => {
   // Builds viewer representations for the authored design corpus.
-  it('defaults to archetype finishes and preserves role colours as a geometry-check mode', { timeout: 10_000 }, () => {
+  it('defaults to archetype finishes and preserves role colours as a geometry-check mode', () => {
     const report = validate(loadFixture('archetype-ar'), gunDomain);
     const finish = buildLayers(report, [], 'finish', { appearanceProfile: 'ar' });
     const override = buildLayers(report, [], 'finish', {

@@ -9,7 +9,12 @@ import { PLAYER } from '../src/game/player.ts';
 const HOSTS = ['hatchback', 'pickup'];
 const MOD = 'mods/vehicle-fixture.json';
 
-const withMod = (data: object) => buildRegistry([...baseSources, { source: MOD, data } satisfies ContentSource]);
+// A mod case needs the vehicle content it refers to, not the whole base: a full rebuild per case grows with every
+// content file and times out on loaded runners.
+const FIXTURE_BASE = ['vehicles.json', 'models-items.json'];
+const fixtureSources = baseSources.filter(({ source }) => FIXTURE_BASE.some((file) => source.endsWith(`/${file}`)));
+
+const withMod = (data: object) => buildRegistry([...fixtureSources, { source: MOD, data } satisfies ContentSource]);
 
 const modPart = (id: string, capabilities: readonly string[], model: object = { ...battery, id }) => ({
   models: [model],
@@ -65,7 +70,24 @@ describe('vehicle export contract', () => {
     ['an unsupported capability', modPart('fixture_cell', ['teleport']), '.vehicle.capabilities[0]'],
     ['a part without baked collision', modPart('fixture_cell', [], bare), 'items[0].model'],
     ['a fitting naming no item', blueprint(fitting('cell', 'fixture_missing')), '.fittings[0].part'],
-    ['a fitting naming an item that is not a vehicle part', blueprint(fitting('cell', 'apple')), '.fittings[0].part'],
+    [
+      'a fitting naming an item that is not a vehicle part',
+      {
+        models: [{ ...battery, id: 'fixture_plain' }],
+        items: [
+          {
+            id: 'fixture_plain',
+            name: 'Fixture plain item',
+            category: 'misc',
+            model: 'fixture_plain',
+            size: [1, 1],
+            economy: { usage: [], tiers: [] },
+          },
+        ],
+        ...blueprint(fitting('cell', 'fixture_plain')),
+      },
+      '.fittings[0].part',
+    ],
     [
       'a fitting resting on an absent support',
       blueprint(fitting('cell', 'car_battery', ['tray'])),

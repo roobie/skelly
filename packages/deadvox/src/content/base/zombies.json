@@ -176,6 +176,7 @@
       },
       "stepLength": 0.59999999999999998,
       "stimulusMemorySimSeconds": 180,
+      "strength": 5,
       "wander": {
         "bodyLookArcDegrees": 150,
         "bodyTurnDegreesPerSimSecond": 90,
@@ -376,6 +377,7 @@
       },
       "stepLength": 0.59999999999999998,
       "stimulusMemorySimSeconds": 180,
+      "strength": 5,
       "wander": {
         "bodyLookArcDegrees": 150,
         "bodyTurnDegreesPerSimSecond": 90,
@@ -576,6 +578,7 @@
       },
       "stepLength": 0.80000000000000004,
       "stimulusMemorySimSeconds": 180,
+      "strength": 5,
       "wander": {
         "bodyLookArcDegrees": 150,
         "bodyTurnDegreesPerSimSecond": 90,
@@ -742,6 +745,7 @@
       },
       "stepLength": 0.80000000000000004,
       "stimulusMemorySimSeconds": 180,
+      "strength": 4,
       "wander": {
         "bodyLookArcDegrees": 150,
         "bodyTurnDegreesPerSimSecond": 90,
@@ -875,6 +879,7 @@
       },
       "stepLength": 0.45000000000000001,
       "stimulusMemorySimSeconds": 180,
+      "strength": 3,
       "wander": {
         "bodyLookArcDegrees": 150,
         "bodyTurnDegreesPerSimSecond": 90,
@@ -1047,6 +1052,7 @@
       },
       "stepLength": 0.59999999999999998,
       "stimulusMemorySimSeconds": 180,
+      "strength": 0,
       "wander": {
         "bodyLookArcDegrees": 150,
         "bodyTurnDegreesPerSimSecond": 90,
@@ -1297,6 +1303,7 @@
       },
       "stepLength": 0.59999999999999998,
       "stimulusMemorySimSeconds": 180,
+      "strength": 5,
       "wander": {
         "bodyLookArcDegrees": 150,
         "bodyTurnDegreesPerSimSecond": 90,

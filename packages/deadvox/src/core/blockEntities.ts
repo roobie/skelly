@@ -40,6 +40,10 @@ export interface BlockEntity {
   /** Doors only. */
   open: boolean;
   lock?: DoorLockDef | undefined;
+  /** Strength of the blows a door has taken toward its material's toughness. */
+  damage?: number | undefined;
+  /** A door beaten in: it stands open with no lock and can't be shut again. */
+  broken?: true;
 }
 
 /** What worldgen asks for: a piece of furniture at a place. */
@@ -56,10 +60,15 @@ export interface BlockEntityState {
   searched: boolean;
   open: boolean;
   lock?: DoorLockDef;
+  damage?: number;
+  broken?: true;
   pockets?: PlacedState[][];
 }
 
 export type DoorOperation = 'open' | 'close' | 'lock' | 'unlock';
+
+/** What one blow did to a closed door: nothing below its minimum strength, else damage that may break it. */
+export type BashOutcome = 'resisted' | 'damaged' | 'broken';
 
 export interface BlockEntitiesState {
   nextUid: number;
@@ -273,6 +282,8 @@ export class BlockEntities {
         searched: entity.searched,
         open: entity.open,
         ...(entity.lock ? { lock: { ...entity.lock } } : {}),
+        ...(entity.damage === undefined ? {} : { damage: entity.damage }),
+        ...(entity.broken ? { broken: true as const } : {}),
         ...(entity.pockets === undefined ? {} : { pockets: entity.pockets.map((grid) => grid.map(snapshotPlaced)) }),
       })),
     });
@@ -329,8 +340,28 @@ export class BlockEntities {
       throw new Error('A locked door cannot be open');
     }
     entity.open = saved.open;
+    this.restoreDamage(entity, saved);
     if (saved.pockets) {
       entity.pockets = saved.pockets.map((grid) => grid.map((placed) => restorePlaced(this.registry, placed)));
+    }
+  }
+
+  private restoreDamage(entity: BlockEntity, { damage, broken }: BlockEntityState): void {
+    if (damage === undefined && !broken) {
+      return;
+    }
+    if (!this.breachable(entity)) {
+      throw new Error('Only a door leaf can be damaged');
+    }
+    if (damage !== undefined && !(Number.isFinite(damage) && damage > 0)) {
+      throw new Error('Invalid door damage');
+    }
+    if (broken && !(entity.open && entity.lock === undefined)) {
+      throw new Error('A broken door stands open without a lock');
+    }
+    entity.damage = damage;
+    if (broken) {
+      entity.broken = true;
     }
   }
 
@@ -580,7 +611,7 @@ export class BlockEntities {
 
   /** Close an open door only when neither the player nor any other body or piece occupies its cells. */
   closeDoor(entity: BlockEntity, player: Body, otherBodies: Iterable<Body>): 'player' | 'other' | undefined {
-    if (!(this.defOf(entity).door && entity.open)) {
+    if (!(this.defOf(entity).door && entity.open) || entity.broken) {
       return undefined;
     }
     if (this.bodyIntersects(entity, player)) {
@@ -617,9 +648,16 @@ export class BlockEntities {
       return entity.lock?.locked ? "It's locked" : undefined;
     }
     if (operation === 'close') {
-      return entity.open ? undefined : "It's already closed";
+      return this.closeRefusal(entity);
     }
     return this.lockRefusal(entity, operation === 'lock', keys);
+  }
+
+  private closeRefusal(entity: BlockEntity): string | undefined {
+    if (entity.broken) {
+      return "It's broken";
+    }
+    return entity.open ? undefined : "It's already closed";
   }
 
   /** Whether a piece lies on the cells just above a hatch, where its lid would swing. */
@@ -654,11 +692,9 @@ export class BlockEntities {
 
   /** Use closeDoor for a gameplay close, which also checks occupying bodies. */
   setOpen(entity: BlockEntity, open: boolean): string | undefined {
-    if (open) {
-      const reason = this.doorRefusal(entity, 'open', []);
-      if (reason) {
-        return reason;
-      }
+    const reason = open ? this.doorRefusal(entity, 'open', []) : entity.broken && this.doorRefusal(entity, 'close', []);
+    if (reason) {
+      return reason;
     }
     entity.open = open;
     this.version += 1;
@@ -687,6 +723,56 @@ export class BlockEntities {
     entity.lock = undefined;
     this.version += 1;
     return undefined;
+  }
+
+  /** A closed leaf a body's box overlaps, such as the door a zombie presses against. */
+  closedLeafTouching(body: Body): BlockEntity | undefined {
+    const halfDepth = body.halfDepth ?? body.halfWidth;
+    const [px, py, pz] = body.pos;
+    for (let x = Math.floor(px - body.halfWidth); x <= Math.floor(px + body.halfWidth); x++) {
+      for (let y = Math.floor(py); y <= Math.floor(py + body.height); y++) {
+        for (let z = Math.floor(pz - halfDepth); z <= Math.floor(pz + halfDepth); z++) {
+          const door = this.doorAt(x, y, z);
+          if (door && !door.open && this.breachable(door) && bodyOverlapsBlock(body, [x, y, z])) {
+            return door;
+          }
+        }
+      }
+    }
+    return undefined;
+  }
+
+  /** A leaf that blows can break: an upright door or a hatch, not a cabinet's front, whose body stays standing. */
+  breachable(entity: BlockEntity): boolean {
+    const def = this.defOf(entity);
+    return def.door !== undefined && !isBodyDoor(def);
+  }
+
+  /**
+   * One blow against a closed leaf, a zombie's bash or a player's strike alike. A blow below the leaf's minimum
+   * strength leaves no mark, so waiting never lets a weak attacker through; stronger blows add their strength until
+   * it reaches the toughness. A broken leaf stands open and its lock is gone, so the breach is one-way, as forcing is.
+   */
+  bash(entity: BlockEntity, strength: number): BashOutcome | undefined {
+    const breach = this.defOf(entity).door?.breach;
+    if (!(breach && this.breachable(entity)) || entity.open || entity.carried) {
+      return undefined;
+    }
+    if (strength < breach.minimumStrength) {
+      return 'resisted';
+    }
+    const damage = (entity.damage ?? 0) + strength;
+    this.version += 1;
+    if (damage < breach.toughness) {
+      entity.damage = damage;
+      return 'damaged';
+    }
+    entity.damage = undefined;
+    entity.broken = true;
+    entity.lock = undefined;
+    entity.open = true;
+    this.standing += 1;
+    return 'broken';
   }
 
   markSearched(entity: BlockEntity): void {

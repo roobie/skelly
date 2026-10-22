@@ -1,11 +1,4 @@
-import {
-  cityLotIssues,
-  cityLotQuotaIssues,
-  lotRect,
-  type PlannedLot,
-  placeCityLots,
-  rectsOverlap,
-} from './cityLots.ts';
+import { cityLotIssues, cityLotQuotaIssues, lotRect, type PlannedLot, placeCityLots } from './cityLots.ts';
 import { cityUndergroundIssues, type PlannedUnderground, placeUnderground } from './cityUnderground.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
@@ -16,7 +9,7 @@ import { portalLadderPoint, scenarioPortalIssues, undergroundPortIssues } from '
 import { scenarioStartIssues, startTemplate } from './scenarioStart.ts';
 import type { CityBenchmarkDef, MapPoolDef, ScenarioDef } from './schema.ts';
 import { admittedChoices, cityRowDepth, eligibilityExclusion } from './settlementPools.ts';
-import type { Rect } from './site.ts';
+import { type Rect, rectsOverlap } from './site.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
 import type { BlockBox } from './structure.ts';

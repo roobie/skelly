@@ -1,6 +1,13 @@
 import { SECONDS_PER_HOUR } from './clock.ts';
 import { type ModifiedEffect, type Modifier, type ModifierActor, modified } from './modifiers.ts';
-import type { CriticalRule, Needs, NourishmentScale, RecoveryState, StaminaRules } from './needs.ts';
+import {
+  type CriticalRule,
+  clamp,
+  type Needs,
+  type NourishmentScale,
+  type RecoveryState,
+  type StaminaRules,
+} from './needs.ts';
 import {
   type AnalgesicLookup,
   ageDoses,
@@ -91,7 +98,6 @@ const BODY_START: Readonly<BodyState> = Object.freeze({
   pain: Object.freeze({ acute: 0, doses: [] }),
 });
 
-const clamp = (value: number): number => Math.max(0, Math.min(100, value));
 const validVitals = (value: number): boolean => Number.isFinite(value) && value >= 0 && value <= 100;
 const validWound = (value: unknown, tierCount: number): value is BodyWound | null =>
   value === null ||

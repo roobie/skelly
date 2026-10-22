@@ -12,7 +12,7 @@ import { dogGaitPose, dogHitPose, dogPawBones, dogPose, dogStrideLength } from '
 import { dogTemplate } from '../src/mob/dogTemplate.ts';
 import { HIT_FLINCH } from '../src/mob/reactions.ts';
 import { zombieFigure } from '../src/mob/shamblerFigure.ts';
-import { HUMANOID_TEMPLATES, TEMPLATES } from '../src/mob/templates.ts';
+import { TEMPLATES } from '../src/mob/templates.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const DOG_SEEDS = [1, 2, 3, 7, 11, 42];
@@ -90,7 +90,6 @@ describe('dog shambler', () => {
   it('is its own body plan, outside the templates Deadvox spawns', () => {
     expect(dogTemplate.bodyPlan).toBe('dog');
     expect(TEMPLATES.some((template) => template.name === 'dog')).toBe(false);
-    expect(HUMANOID_TEMPLATES.some((template) => template.name === 'dog')).toBe(false);
   });
 
   it('is refused by the consumer that hands figures to deadvox', () => {

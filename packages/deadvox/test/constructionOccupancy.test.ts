@@ -32,7 +32,12 @@ const { registry, issues } = buildRegistry([
           name: 'Fixture door',
           size: [2, 4, 1],
           color: '#666666',
-          door: { material: 'wood', methods: {}, handlingSimSeconds: 0.3 },
+          door: {
+            material: 'wood',
+            methods: {},
+            handlingSimSeconds: 0.3,
+            breach: { minimumStrength: 1, toughness: 1 },
+          },
         },
         {
           id: 'occupancy_crate',

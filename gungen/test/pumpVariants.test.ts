@@ -164,7 +164,7 @@ describe('pump shotgun variants', () => {
       expect(layouts).toEqual(new Set(['pump', 'trigger']));
     });
 
-    it('validates the generated pump population', { timeout: 25_000 }, () => {
+    it('validates the generated pump population', () => {
       for (const seed of VALIDATED_SEEDS) {
         expect(validate(generate(pumpShotgun, gunDomain, seed), gunDomain).ok, `seed ${seed}`).toBe(true);
       }

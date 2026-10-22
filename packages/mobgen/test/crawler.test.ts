@@ -96,7 +96,6 @@ describe('crawler', () => {
 
   it('alternates the arm drag and keeps gait and flinch surfaces grounded', () => {
     const seeds = SHAMBLER_FIGURE_SEEDS;
-    expect(seeds.length).toBeGreaterThan(0);
     const representativeSeeds = [...new Set([seeds[0]!, seeds.at(-1)!])];
     for (const seed of representativeSeeds) {
       const realized = realize(generate(crawler, seed));

@@ -71,6 +71,8 @@ const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
     'Presentation-only development render selection; does not alter simulation or save identity.',
   'src/core/rigidBody.ts': 'Presentation-only debris physics, excluded with the renderer from save identity.',
   'src/core/soundOcclusion.ts': 'Presentation-only filtering, reached only through the excluded WebAudio adapter.',
+  'src/core/schedulerIds.ts':
+    'Reached only through the excluded save controller; test/saveSchedulerIds.test.ts keeps it equal to the fingerprinted registrations, so it cannot change without them.',
   'src/core/temporalFields.ts': 'Authored-field catalogue used by the time linter, not game runtime.',
 };
 
