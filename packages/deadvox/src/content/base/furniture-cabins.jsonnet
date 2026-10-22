@@ -1,6 +1,7 @@
 local shape = import 'furniture-shape.libsonnet';
 local breach = import 'furniture-breach.libsonnet';
 local cabinets = import 'cabinet-shapes.libsonnet';
+local detail = import 'door-detail.libsonnet';
 local wood = '#6e5037';
 breach.breaking(shape.colliding({
   furniture: [
@@ -11,7 +12,7 @@ breach.breaking(shape.colliding({
       color: '#7a5534',
       material: 'wood',
       breach: { minimumStrength: 3.5, durability: 60 },
-      door: { methods: {}, handlingSimSeconds: 0.6 },
+      door: { methods: {}, handlingSimSeconds: 0.6, detail: detail.panelled },
     },
     {
       id: 'gun_cabinet',

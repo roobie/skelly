@@ -67,6 +67,11 @@ local cabinetShape = [
         { position: [0.3, 0.5, 0.4], size: [0.3, 4, 1.2] },
         { position: [3.4, 0.5, 0.4], size: [0.3, 4, 1.2] },
         { position: [2.6, 2, 0.2], size: [0.7, 0.7, 0.3] },
+        // Its panel lies inside the slab, so the strap hinges on its hinge edge are part of the shape.
+        { position: [0, 0.8, 0.3], size: [0.8, 0.3, 0.3], color: '#3f474b' },
+        { position: [0, 3.9, 0.3], size: [0.8, 0.3, 0.3], color: '#3f474b' },
+        { position: [0, 0.8, 1.4], size: [0.8, 0.3, 0.3], color: '#3f474b' },
+        { position: [0, 3.9, 1.4], size: [0.8, 0.3, 0.3], color: '#3f474b' },
       ] },
     { id: 'gauntlet_lab_dead_lift', name: 'Freight lift', size: [4, 5, 2], color: '#62696c', shape: [
       { position: [0, 0, 0], size: [4, 0.3, 2] }, { position: [0, 0, 0], size: [0.3, 5, 2] },

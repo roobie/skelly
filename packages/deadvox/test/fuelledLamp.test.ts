@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { chargeOf } from '../src/core/lights.ts';
+import { useOption } from '../src/core/options.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
@@ -69,6 +70,15 @@ const heldLamp = (fill: number | undefined) => {
 };
 
 describe('fuelled lamp', () => {
+  it('names a compatible canister when offering to fuel a lamp', () => {
+    const { session } = heldLamp(undefined);
+    const canister = session.inventory.create(lampType.tool!.fuel!.canister);
+    expect(session.inventory.add(canister, { kind: 'pile', pos: session.feet() })).toBe(true);
+    const option = useOption(canister, session.reach());
+    expect(option.operation).toBe('canister');
+    expect(option.label).toContain(session.inventory.name(canister).toLowerCase());
+  });
+
   it('will not light without fuel in its canister slot', () => {
     const { session, lamp } = heldLamp(undefined);
     expect(session.survival.use(lamp)).toBeDefined();

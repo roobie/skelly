@@ -2259,6 +2259,25 @@
       "color": "#7a5534",
       "door": {
         "barredFrom": "front",
+        "detail": {
+          "fields": [1, 2],
+          "frame": 0.10000000000000001,
+          "handle": {
+            "along": 0.5,
+            "fromFreeEdge": 0.10000000000000001,
+            "kind": "lever",
+            "length": 0.12,
+            "thickness": 0.02
+          },
+          "hardware": "#c6b98e",
+          "hinges": {
+            "count": 3,
+            "length": 0.16,
+            "width": 0.050000000000000003
+          },
+          "relief": 0.012,
+          "seam": 0.12
+        },
         "handlingSimSeconds": 0.59999999999999998,
         "methods": {
           "hammer": {
@@ -2453,6 +2472,25 @@
       },
       "color": "#626d70",
       "door": {
+        "detail": {
+          "fields": [1, 1],
+          "frame": 0.050000000000000003,
+          "handle": {
+            "along": 0.34999999999999998,
+            "fromFreeEdge": 0.12,
+            "kind": "pull",
+            "length": 0.14999999999999999,
+            "thickness": 0.025000000000000001
+          },
+          "hardware": "#a9adb0",
+          "hinges": {
+            "count": 3,
+            "length": 0.10000000000000001,
+            "width": 0.059999999999999998
+          },
+          "relief": 0.0080000000000000002,
+          "seam": 0.050000000000000003
+        },
         "handlingSimSeconds": 0.59999999999999998,
         "methods": {
           "hammer": {
@@ -34146,7 +34184,7 @@
           ]
         },
         {
-          "at": [12, 2.3999999999999999, 0.44],
+          "at": [12, 2.3999999999999999, 0.40999999999999998],
           "door": [11, 0, 0],
           "kind": "paint",
           "normal": "n",

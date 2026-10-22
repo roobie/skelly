@@ -10,6 +10,7 @@ import {
   skipTarget,
 } from '../src/core/clock.ts';
 import { SKIP_COMPRESSION } from '../src/core/compression.ts';
+import { coreMessage } from '../src/core/coreText.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { awakeRates } from '../src/core/needs.ts';
 import { SCHEDULER_TIME_EPSILON } from '../src/core/scheduler.ts';
@@ -151,7 +152,7 @@ describe('Simulation', () => {
     sim.scheduler.advance((sim.body.blood / tiers[critical]!.bloodLossPerSimSecond) * 1.1);
 
     expect(sim.body.blood).toBe(0);
-    expect(sim.dead?.cause).toBe('blood loss');
+    expect(sim.dead?.cause).toBe(coreMessage(sim.registry, 'causeBloodLoss'));
   });
 
   it('keeps debug compression running while bleeding refuses a player wait', () => {

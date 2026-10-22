@@ -836,7 +836,7 @@ it('debug test noise reaches a shambler behind a wall and starts its hearing gaz
   for (let frame = 0; frame < 3; frame++) {
     session.frame(1 / 60);
   }
-  expect(zombie.mode).toBe('investigate');
+  expect(zombie.mode).toBe('hesitate');
   expect(zombie.investigationTier).toBe('near');
   expect(zombie.lastPerceived).toEqual(noise.pos);
 

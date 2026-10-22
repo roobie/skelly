@@ -113,6 +113,7 @@ export const createBenchLightFixture = (engine: RenderedEngine, calendar: number
 
   const simulation = new Simulation({
     seed: config.seed,
+    registry,
     bodyTuning: registry.body.get(CORE_CONTENT_IDS.player)!,
     compressionCaps: registry.compression.get(CORE_CONTENT_IDS.player)!.caps,
     clock: { ratio: requireDayCycle(registry).clockRatio, start: calendar },
