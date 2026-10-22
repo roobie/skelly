@@ -31,7 +31,13 @@ const partModelIssue = (registry: Registry, itemId: string): string | undefined 
   return bare.length === 0 ? undefined : `model "${item.model}" has no baked collision for ${bare.join(', ')}`;
 };
 
-const ratingIssue = ({ capabilities, ratedLoadKg }: { capabilities: readonly VehicleCapability[]; ratedLoadKg?: number }) => {
+const ratingIssue = ({
+  capabilities,
+  ratedLoadKg,
+}: {
+  capabilities: readonly VehicleCapability[];
+  ratedLoadKg?: number | undefined;
+}) => {
   const lifts = capabilities.includes('lift');
   if (lifts && ratedLoadKg === undefined) {
     return 'a lifting part needs a rated load';

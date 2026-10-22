@@ -16,7 +16,12 @@ const fixtureSources = baseSources.filter(({ source }) => FIXTURE_BASE.some((fil
 
 const withMod = (data: object) => buildRegistry([...fixtureSources, { source: MOD, data } satisfies ContentSource]);
 
-const modPart = (id: string, capabilities: readonly string[], model: object = { ...battery, id }, ratedLoadKg?: number) => ({
+const modPart = (
+  id: string,
+  capabilities: readonly string[],
+  model: object = { ...battery, id },
+  ratedLoadKg?: number,
+) => ({
   models: [model],
   items: [
     {
@@ -99,7 +104,11 @@ describe('vehicle export contract', () => {
       'vehicleBlueprints[0].fittings',
     ],
     ['a lifting part without a rated load', modPart('fixture_cell', ['lift']), 'items[0].vehicle'],
-    ['a rated load on a part that does not lift', modPart('fixture_cell', ['structure'], undefined, 500), 'items[0].vehicle'],
+    [
+      'a rated load on a part that does not lift',
+      modPart('fixture_cell', ['structure'], undefined, 500),
+      'items[0].vehicle',
+    ],
     [
       'a lifting vehicle without stabilisers',
       { ...modPart('fixture_cell', ['lift'], undefined, 500), ...blueprint(fitting('crane', 'fixture_cell')) },

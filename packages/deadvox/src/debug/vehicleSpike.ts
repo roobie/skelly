@@ -38,7 +38,6 @@ import { applySky } from '../render/sky.ts';
 import { APC } from '../vehicles/apc.ts';
 import { BOX_VAN } from '../vehicles/boxVan.ts';
 import { CATALOGUE } from '../vehicles/catalogue.ts';
-import { HOIST } from '../vehicles/hoist.ts';
 import { MATERIALS } from '../vehicles/materials.ts';
 import {
   addFitting,
@@ -182,10 +181,9 @@ const BUILDS = {
     views: { interior: { position: [0.2, 1.55, 1.7], target: [0.6, 0.65, -0.3] } },
   },
   hoist: {
-    label: 'Canter-type crane truck',
+    label: 'Canter-type crane truck · from content',
     button: 'Crane truck',
-    blueprint: HOIST,
-    removed: [],
+    content: 'hoist',
     viewScale: 1.3,
   },
   motorbike: {

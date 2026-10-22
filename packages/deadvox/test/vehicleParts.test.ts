@@ -5,7 +5,6 @@ import { APC } from '../src/vehicles/apc.ts';
 import { pairAcross } from '../src/vehicles/authoring.ts';
 import { BOX_VAN } from '../src/vehicles/boxVan.ts';
 import { CATALOGUE } from '../src/vehicles/catalogue.ts';
-import { HOIST } from '../src/vehicles/hoist.ts';
 import {
   addFitting,
   type Blueprint,
@@ -59,7 +58,6 @@ const BLUEPRINTS: readonly { readonly blueprint: Blueprint; readonly builds: rea
   { blueprint: RANGE_ROVER, builds: [[], STRIPPED_REMOVED] },
   { blueprint: PICKUP, builds: [[]] },
   { blueprint: BOX_VAN, builds: [[]] },
-  { blueprint: HOIST, builds: [[]] },
   { blueprint: SEDAN, builds: [[]] },
   { blueprint: MOTORBIKE, builds: [[]] },
   { blueprint: APC, builds: [[]] },
