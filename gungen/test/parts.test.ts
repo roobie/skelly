@@ -22,9 +22,13 @@ import { runSweeps, sweepGroup } from './sweeps.ts';
  * family not listed here (including every family added later) gets the full product.
  *
  * Why these: they are the families whose full products dominate the default run (`receiver` alone is
- * most of the combinations). The array keeps coverage of the built geometry: on a sample of
- * `parts.ts` mutants it killed every mutant the full product killed, where 2-wise missed one.
+ * most of the combinations). For `receiver`, `barrel` and `handguard`, on a sample of `parts.ts`
+ * mutants the array killed every mutant the full product killed, where 2-wise missed one. The
+ * other sampled families were not measured; they are sampled for run time and the sweep keeps their
+ * full products.
  * `lower` stays a full product: the 3-wise array misses its `magazineOrientation=tilt` classes.
+ * `magazine` stays a full product: `acceptedCases` drops invalid length/profile rows, and filtering
+ * an array after generation would leave valid triples uncovered.
  * `sight` is sampled as an array so future optic parameters compose without making its full product
  * the default; the optic contract tests explicitly cover every stable catalog type. The full product
  * of these families still runs under `GUNGEN_SWEEPS` (see `sweepGroup` below).
@@ -39,7 +43,6 @@ const ARRAY_SAMPLED_KEYS = [
   'bolt-carrier',
   'bolt-handle-arm',
   'bolt-handle-knob',
-  'magazine',
 ] as const;
 const ARRAY_STRENGTH = 3;
 // Sporter joints/support and cartridge-driven motion/export have dedicated contract tests;
