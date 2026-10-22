@@ -455,14 +455,19 @@ const checkItemLight = (item: ItemDef, hasIgniter: boolean, registry: Registry, 
   if (light?.power && light.burnTimeGameHours !== undefined) {
     report('items', item.id, '.light.burnTimeGameHours', 'battery lights cannot also have a burn time');
   }
-  if (light?.fuelPerGameHour !== undefined && !igniter) {
-    report('items', item.id, '.light.fuelPerGameHour', 'self-fuelled lights need an igniter fuel component');
+  if (light?.fuelPerGameHour !== undefined && !igniter && !item.tool?.fuel) {
+    report(
+      'items',
+      item.id,
+      '.light.fuelPerGameHour',
+      'self-fuelled lights need an igniter or a swappable fuel canister',
+    );
   }
   if (light?.fuelPerGameHour !== undefined && light.burnTimeGameHours !== undefined) {
     report('items', item.id, '.light.fuelPerGameHour', 'self-fuelled lights cannot also have a burn time');
   }
-  if (light?.burning && light.burnTimeGameHours === undefined) {
-    report('items', item.id, '.light.burning', 'burning rules need a burn time');
+  if (light?.burning && light.burnTimeGameHours === undefined && light.fuelPerGameHour === undefined) {
+    report('items', item.id, '.light.burning', 'burning rules need a burn time or a fuel rate');
   }
   if (light?.burning?.ignition === 'firestarter' && !hasIgniter) {
     report('items', item.id, '.light.burning.ignition', 'needs at least one item with an igniter component');

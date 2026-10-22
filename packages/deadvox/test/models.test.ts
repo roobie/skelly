@@ -334,6 +334,11 @@ describe('piles with models', () => {
       const render = (on: boolean) => {
         const items = new Inventory(registry);
         const light = items.create(definition.id);
+        if (on && definition.tool?.fuel) {
+          const canister = items.create(definition.tool.fuel.canister);
+          canister.charges = registry.items.get(canister.type)!.canister!.capacity;
+          items.fitSlot(light, 'canister', canister);
+        }
         if (on) {
           expect(toggleLight(registry, light, 0)).toBeUndefined();
         }

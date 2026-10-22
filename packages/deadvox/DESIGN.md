@@ -2026,6 +2026,15 @@ sets it down to light a room. Whether a model rests upright is content, so any s
 light stands the same way. See `src/render/models.ts`, `prepareModel`, and
 `src/render/modelFlame.ts`, `ModelFlames.onModel`.
 
+An oil lamp gives lamp oil a use, and a lit lamp set down at night makes the base a
+beacon: the player trades light for being seen, either lighting the room and being
+noticed from far off, or sitting in the dark. A lamp carried lit keeps a hand busy;
+a doused one stows. The lamp is a fuelled light whose oil sits in its canister slot,
+and it is refilled by swapping the oil in, not pouring, because refilling a cartridge
+is direction only; pouring and partial refills stay open (#536). The lamp is content
+only: any light with a fuel rate and a swappable fuel canister behaves the same. See
+`src/core/lights.ts`, `drainLight`, and `src/core/torch.ts`, `swapCanister`.
+
 Zombies see light farther than they see a player in darkness, and see a player
 lit by any source. Aimed-down or covered flashlights shorten that reach. Light
 through doors and windows can make a building a beacon; covering or boarding
