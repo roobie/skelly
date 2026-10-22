@@ -602,6 +602,8 @@ const FirearmSchema = strictObject({
   shotSound: Id,
   /** Shot event while a suppressor is fitted; required when the model can mount one. */
   suppressedShotSound: optional(Id),
+  /** Low-frequency layer played with the shot, for a gun whose report needs more body than one recording has; skipped while suppressed. */
+  shotBodySound: optional(Id),
   /** Trigger pulled on an empty chamber; absent stays silent. */
   dryFireSound: optional(Id),
   /** The trigger pull cocks the hammer itself (double action), so every empty pull clicks; otherwise only working the action re-cocks it. */

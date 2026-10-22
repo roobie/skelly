@@ -51,6 +51,7 @@
         "pump": true,
         "recoilKickRadians": 0.035000000000000003,
         "roundLoadSimSeconds": 0.90000000000000002,
+        "shotBodySound": "shotgun_boom",
         "shotSound": "shotgun_blast",
         "skillZeroHandling": {
           "automaticFollowup": {

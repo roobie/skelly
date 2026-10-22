@@ -927,6 +927,9 @@ export const createSession = (options: SessionOptions) => {
         sourceLabel: sound.sourceLabel,
         noiseRadiusScale: firearms.noiseFactorFor(firearm),
       });
+      if (sound.bodyEvent !== undefined) {
+        playPlayerSound(sound.bodyEvent, time, { sourceLabel: sound.sourceLabel });
+      }
     },
     onSound: (event, position, time) =>
       position ? playWorldSound(event, position, time) : playPlayerSound(event, time),

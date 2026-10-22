@@ -123,6 +123,20 @@ describe('firearm audio presentation', () => {
     expect(firearmShotSound(registry, suppressed, 'actor').listenerRelative).toBe(false);
   });
 
+  it('adds a gun’s body layer to the shot, and drops it under a suppressor', () => {
+    const registry = fixture(true);
+    const carbine = registry.items.get('fixture_carbine')!;
+    registry.items.set('fixture_carbine', {
+      ...carbine,
+      firearm: { ...carbine.firearm!, shotBodySound: 'fixture_report' },
+    });
+    expect(firearmShotSound(registry, firearm('fixture_carbine')).bodyEvent).toBe('fixture_report');
+    const suppressed = firearm('fixture_carbine', {
+      adapter: firearm('fixture_carbine', { muzzle: firearm('fixture_suppressor') }),
+    });
+    expect(firearmShotSound(registry, suppressed).bodyEvent).toBeUndefined();
+  });
+
   it.each([false, true])('routes a committed session shot to its fixture profile (suppressed=%s)', (suppressed) => {
     const registry = fixture(suppressed);
     const played: SoundEmission[] = [];
