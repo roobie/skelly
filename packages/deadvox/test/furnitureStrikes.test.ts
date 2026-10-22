@@ -107,7 +107,7 @@ const chasePastWardrobe = (strength: number, walled: boolean) => {
     movement: 'sprinting',
     lit: false,
     lightSeenFrom: 40,
-    crouching: false,
+    stance: 'standing',
   });
   const system = new ZombieSystem({
     player: sense,

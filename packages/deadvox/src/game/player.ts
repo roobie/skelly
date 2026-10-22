@@ -4,6 +4,7 @@ import type { LadderHoldState } from '../core/ladders.ts';
 import type { Body, PhysicsParams } from '../core/physics.ts';
 import type { Scale } from '../core/scale.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
+import type { PlayerStance } from '../core/zombies.ts';
 
 /** Player constants in metres and metres per second (`DESIGN.md`, "Performance and scale"). */
 export const PLAYER = {
@@ -36,12 +37,29 @@ export const createPlayerBody = (scale: Scale, x: number, y: number, z: number):
   onGround: false,
 });
 
+/** Which stance key was pressed; `DESIGN.md`, "Crouching and lying prone". */
+export type StanceToggle = 'crouch' | 'prone';
+
+/** The stance a key press asks for: crouch toggles standing, prone toggles a crouch, and either rises from prone. */
+export const nextStance = (stance: PlayerStance, toggle: StanceToggle | undefined): PlayerStance => {
+  if (toggle === undefined) {
+    return stance;
+  }
+  if (stance === 'prone') {
+    return 'crouching';
+  }
+  if (toggle === 'prone') {
+    return 'prone';
+  }
+  return stance === 'crouching' ? 'standing' : 'crouching';
+};
+
 export interface PlayerState {
   body: Body;
   yaw: number;
   pitch: number;
   walk: boolean;
-  crouching: boolean;
+  stance: PlayerStance;
   sprinting: boolean;
   firearmReadyWalking: boolean;
   handlingPausedForKnockout: boolean;
@@ -71,7 +89,7 @@ export const restorePlayer = (state: PlayerState): PlayerState => ({
   yaw: state.yaw,
   pitch: state.pitch,
   walk: state.walk,
-  crouching: state.crouching,
+  stance: state.stance,
   sprinting: state.sprinting,
   firearmReadyWalking: state.firearmReadyWalking,
   handlingPausedForKnockout: state.handlingPausedForKnockout,
@@ -85,10 +103,8 @@ export interface MoveIntent {
   sprint: boolean;
   /** Walk instead of jog. Sprinting wins over walking. */
   walk: boolean;
-  /** Persistent crouch stance overrides walking and sprinting pace. */
-  crouch?: boolean | undefined;
-  /** Crouch pace from the loaded base/mod content. */
-  crouchSpeed?: number | undefined;
+  /** A lowered stance's pace from the loaded base/mod content; it overrides walking and sprinting pace. */
+  stanceSpeed?: number | undefined;
   /** Directional pace factors from the loaded base/mod content. */
   directionalSpeed?: { sideways: number; backward: number } | undefined;
   /** Edge-triggered dominant-hand use; the player tick consumes this once. */
@@ -120,20 +136,19 @@ export const movementPace = (
     handling,
     readyMovementFactor,
     movementSpeed,
-    crouchSpeed,
+    stanceSpeed,
     directionalSpeed,
   }: {
     grams: number;
     handling: boolean;
     readyMovementFactor: number;
     movementSpeed: number;
-    crouchSpeed: number;
+    stanceSpeed: number | undefined;
     directionalSpeed: { sideways: number; backward: number };
   },
 ): MoveIntent => ({
   ...intent,
-  crouch: intent.crouch,
-  crouchSpeed,
+  stanceSpeed,
   directionalSpeed,
   pace: paceFactor(grams, handling) * movementSpeed * readyMovementFactor,
 });
@@ -162,11 +177,12 @@ export const steer = (body: Body, scale: Scale, yaw: number, intent: MoveIntent)
   if (intent.walk) {
     pace = PLAYER.walk;
   }
-  if (intent.crouch) {
-    pace = intent.crouchSpeed ?? PLAYER.walk;
+  if (intent.stanceSpeed !== undefined) {
+    pace = intent.stanceSpeed;
+  } else if (intent.sprint) {
+    pace = PLAYER.sprint;
   }
-  const speed =
-    ((intent.sprint && !intent.crouch ? PLAYER.sprint : pace) * (intent.pace ?? 1) * directionFactor) / scale.blockSize;
+  const speed = (pace * (intent.pace ?? 1) * directionFactor) / scale.blockSize;
   const sin = Math.sin(yaw);
   const cos = Math.cos(yaw);
   // yaw 0 looks down -z; +x is to the right.

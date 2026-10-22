@@ -829,7 +829,7 @@ export const startPlay = (
       blocking: () => shouldPlayerBlock(),
       consumeDominantUse: () => input.consumeDominantUse(),
       consumeOffUse: () => input.consumeOffUse(),
-      consumeCrouchToggle: () => input.consumeCrouchToggle(),
+      consumeStanceToggle: () => input.consumeStanceToggle(),
       useDominant: () =>
         routeDominantUse(throwingStance, beginItemThrow, () => {
           // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
@@ -2107,7 +2107,10 @@ export const startPlay = (
         input.walking = toggleWalking(input.walking, replayPlayer ? undefined : inputRecorder, inputContext());
         break;
       case 'player.crouch-toggle':
-        withUnlockedInput(() => input.requestCrouchToggle());
+        withUnlockedInput(() => input.requestStanceToggle('crouch'));
+        break;
+      case 'player.prone-toggle':
+        withUnlockedInput(() => input.requestStanceToggle('prone'));
         break;
       case 'player.throw':
         withUnlockedInput(() => throwStanceInput.keyDown(action, at));
@@ -3608,7 +3611,7 @@ export const startPlay = (
     tutorial?.observe({
       position: body.pos,
       yaw: input.yaw,
-      crouching: session.crouching,
+      crouching: session.stance === 'crouching',
       doorOpen: [...entities.all].some((entity) => entity.type === 'wood_door' && entity.open),
       searched: [...entities.all].some((entity) => entity.type === 'tutorial_cabinet' && entity.searched),
       looted: inventory.looted.size > 0,

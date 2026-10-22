@@ -2861,6 +2861,14 @@ const HandlingRangeSchema = strictObject({
   table: strictObject({ offset: Count, lateral: BlockOffset }),
 });
 
+const LoweredStanceSchema = strictObject({
+  speedMetresPerSimSecond: SimRate,
+  hearingRangeScale: Fraction,
+  sightRangeScale: Fraction,
+  eyeDropMetres: Positive,
+  bodyHeightMetres: Positive,
+});
+
 const SenseSchema = strictObject({
   id: Id,
   movement: strictObject({
@@ -2869,13 +2877,9 @@ const SenseSchema = strictObject({
   }),
   /** Chest height as a fraction of the eye height, so a stance that lowers the eyes lowers the chest. */
   chestEyeFraction: Fraction,
-  crouch: strictObject({
-    speedMetresPerSimSecond: SimRate,
-    hearingRangeScale: Fraction,
-    sightRangeScale: Fraction,
-    eyeDropMetres: Positive,
-    bodyHeightMetres: Positive,
-  }),
+  crouch: LoweredStanceSchema,
+  /** Below crouch: the player lies down and crawls. */
+  prone: LoweredStanceSchema,
   wall: strictObject({
     hearingRangeScale: Fraction,
     gain: Fraction,

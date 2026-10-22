@@ -17,6 +17,7 @@ local digits(prefix, count) = [one(prefix + '.' + i, 'Digit' + i) for i in std.r
     many('movement.sprint', ['ShiftLeft', 'ShiftRight']),
     one('movement.walk-toggle', 'KeyZ'),
     one('player.crouch-toggle', 'KeyC'),
+    one('player.prone-toggle', 'KeyN'),
     one('player.throw', 'KeyT'),
     one('movement.jump', 'Space'),
     one('carry.tip', 'KeyR'),

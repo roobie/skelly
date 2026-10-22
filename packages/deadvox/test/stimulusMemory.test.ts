@@ -20,7 +20,7 @@ const player = (pos: Vec3): PlayerSense => ({
   movement: 'still',
   lit: false,
   lightSeenFrom: 40,
-  crouching: false,
+  stance: 'standing',
 });
 const senses = (playerFn: () => PlayerSense, isSolid: SolidAt = FLOOR, hour = 12) => ({
   player: playerFn,

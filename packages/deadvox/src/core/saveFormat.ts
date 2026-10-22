@@ -21,7 +21,7 @@ import { assertScenarioRun } from './scenarioRun.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SavedChunk, SavedColumn } from './world.ts';
 import { regionIndex, WORLD_REGION_METRES } from './worldRegion.ts';
-import type { HordeState, ZombieState, ZombieSystemState } from './zombies.ts';
+import { type HordeState, PLAYER_STANCES, type ZombieState, type ZombieSystemState } from './zombies.ts';
 
 /** Disk-format API. The implementation is data-only and safe to use in Node, workers, and browsers. */
 export interface SaveVersionComponents {
@@ -645,7 +645,7 @@ const playerState = obj({
   yaw: finite,
   pitch: finite,
   walk: bool,
-  crouching: bool,
+  stance: enumeration(PLAYER_STANCES),
   sprinting: bool,
   firearmReadyWalking: bool,
   handlingPausedForKnockout: bool,
