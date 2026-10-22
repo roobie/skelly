@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { GauntletSite } from '../src/core/gauntlet.ts';
 import { lootPointStream, lootPointsByColumn, rollLootParts } from '../src/core/loot.ts';
-import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
 import { magazineFits } from '../src/core/magazine.ts';
+import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
 import { lootSourcesOf } from '../src/core/site.ts';
 import { firearmModelForType } from '../src/game/firearmHandling.ts';
 import { startupContent } from './baseRegistry.ts';
