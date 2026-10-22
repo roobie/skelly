@@ -151,7 +151,7 @@ const railSpanNotches = (part: PartDef | undefined, mount: MountKind, solids = p
 };
 
 // The resolver accepts integer indices below a fractional slot count, so enumerate them with ceil too.
-export const railNotchCount = (port: Pick<PortDef, 'slots'>): number => Math.ceil(port.slots?.count ?? 1);
+const railNotchCount = (port: Pick<PortDef, 'slots'>): number => Math.ceil(port.slots?.count ?? 1);
 
 /** Whether an attachment seated on a notch keeps its whole rail span on the rail's notches. */
 export const railSpanFitsNotch = (
