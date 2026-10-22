@@ -51,7 +51,7 @@ interface RevolverVariant {
 
 /**
  * The default run covers every pair of variant values; explicit guard canaries below target the detached-segment fault.
- * The full 216-case product runs only in the gated sweep.
+ * The full product runs only in the gated sweep.
  */
 const revolverParams = {
   frameSize: { values: ['S', 'M', 'L'] },
@@ -64,6 +64,7 @@ const revolverParams = {
 const defaultRevolverVariants = tWiseCases(revolverParams, 2) as unknown as RevolverVariant[];
 
 const REVOLVER_COMBINATION_COUNT = 216;
+const REVOLVER_CHUNK = 12;
 const revolverVariants: RevolverVariant[] = runSweeps
   ? (['S', 'M', 'L'] as const).flatMap((frameSize) =>
       (['round', 'square'] as const).flatMap((butt) =>
@@ -341,11 +342,17 @@ describe('revolver alignment rules', () => {
   });
 
   sweepGroup('revolver full assembly product', () => {
-    it('validates all 216 legitimate frame/grip/barrel/bore/style combinations', { timeout: 20_000 }, () => {
-      for (const combination of revolverVariants) {
-        const report = validate(variantAssembly(combination), gunDomain);
-        expect(report.issues, JSON.stringify(combination)).toEqual([]);
-      }
+    // Chunked so each test stays inside the default timeout.
+    for (let from = 0; from < revolverVariants.length; from += REVOLVER_CHUNK) {
+      it(`validates legitimate frame/grip/barrel/bore/style combinations ${from}-${from + REVOLVER_CHUNK - 1}`, () => {
+        for (const combination of revolverVariants.slice(from, from + REVOLVER_CHUNK)) {
+          const report = validate(variantAssembly(combination), gunDomain);
+          expect(report.issues, JSON.stringify(combination)).toEqual([]);
+        }
+      });
+    }
+
+    it('enumerates the whole legitimate combination product', () => {
       expect(revolverVariants).toHaveLength(REVOLVER_COMBINATION_COUNT);
     });
   });

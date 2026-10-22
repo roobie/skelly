@@ -2,11 +2,7 @@
   "id": "shambler_head",
   "file": "assets/models/shambler_head.glb",
   "parts": {
-    "part": {
-      "node": "part:head",
-      "massKg": 5,
-      "centreOfMass": [-3.662628507396982e-19, 0.14363995452417178, -0.01089267669210752]
-    }
+    "part": { "node": "part:head", "massKg": 5, "centreOfMass": [0, 0.1429883062305865, -0.010132468481637128] }
   },
   "grip": { "at": [0, 0.15000000000000002, 0], "turn": [0, 0, 0] },
   "hold": "upright",

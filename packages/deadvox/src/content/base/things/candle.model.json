@@ -1,7 +1,7 @@
 {
   "id": "candle",
   "file": "assets/models/candle.glb",
-  "grip": { "at": [0.04000000000000001, 0, 0], "turn": [0, 0, 0] },
+  "grip": { "at": [0.04000000000000001, -0.0010000000000000009, -0.0010000000000000009], "turn": [0, 0, 0] },
   "hold": "upright",
   "rest": "upright",
   "roll": 0,

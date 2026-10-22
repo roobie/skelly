@@ -1,8 +1,8 @@
 {
   "id": "jeans",
   "file": "assets/models/jeans.glb",
-  "parts": { "jeans": { "node": "jeans:folded-garment", "massKg": 0.7, "centreOfMass": [0, 0.0225, 0] } },
-  "grip": { "at": [0, 0.0225, 0], "turn": [0, 0, -90] },
+  "parts": { "jeans": { "node": "jeans:folded-garment", "massKg": 0.7, "centreOfMass": [0, 0.025, 0] } },
+  "grip": { "at": [0, 0.025, 0], "turn": [0, 0, -90] },
   "hold": "upright",
   "roll": 0
 }

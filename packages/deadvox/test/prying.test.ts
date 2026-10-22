@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { expect, it } from 'vitest';
 import { Character, practiceForNextLevel, SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -7,7 +5,8 @@ import { doorOptions } from '../src/core/options.ts';
 import { pryPlan } from '../src/core/prying.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
-import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
+import { baseRegistryWith } from './baseRegistry.ts';
+import { fixtureSources } from './economyFixtures.ts';
 import {
   advance,
   capture,
@@ -18,13 +17,6 @@ import {
   registry,
 } from './snapshotTestSupport.ts';
 
-const baseContent = readdirSync('src/content/base')
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({
-    source: file,
-    data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
-  }));
 const doorDef = registry.furniture.get('wood_door')!;
 const makeDoor = (runtime: ReturnType<typeof createRuntime>) => {
   const door = runtime.inventory.furnish({
@@ -245,25 +237,25 @@ it('the matching key still unlocks a pryable door silently', () => {
 
 it('refuses a carried tool below the content quality threshold', () => {
   const { level } = doorDef.door!.methods.pry!;
-  const { registry: weakRegistry, issues } = buildRegistry([
-    ...baseContent,
-    {
-      source: 'weak-prying-tool.json',
-      data: {
-        items: [
-          {
-            id: 'weak_crowbar',
-            name: 'Weak crowbar',
-            category: 'tool',
-            weight: 1,
-            size: [1, 1],
-            tool: { qualities: { prying: level - 1 } },
-          },
-        ],
+  const weakRegistry = baseRegistryWith(
+    fixtureSources([
+      {
+        source: 'weak-prying-tool.json',
+        data: {
+          items: [
+            {
+              id: 'weak_crowbar',
+              name: 'Weak crowbar',
+              category: 'tool',
+              weight: 1,
+              size: [1, 1],
+              tool: { qualities: { prying: level - 1 } },
+            },
+          ],
+        },
       },
-    },
-  ]);
-  expect(issues).toEqual([]);
+    ]),
+  );
   const inventory = new Inventory(weakRegistry);
   const weakDoor = inventory.furnish({
     type: doorDef.id,

@@ -11,16 +11,25 @@
       "primer": [0.48999999999999999, 0.40000000000000002, 0.23000000000000001]
     }
   },
-  "attachmentAppearances": {
+  "attachments": {
     "improvised-suppressor": {
-      "finish": {
-        "metal": "alu-anodized-black"
-      }
+      "appearance": {
+        "finish": {
+          "metal": "alu-anodized-black"
+        }
+      },
+      "voxelGrain": 0.0040000000000000001
     },
     "real-suppressor": {
-      "finish": {
-        "metal": "alu-anodized-black"
-      }
+      "appearance": {
+        "finish": {
+          "metal": "alu-anodized-black"
+        }
+      },
+      "voxelGrain": 0.0040000000000000001
+    },
+    "tactical-flashlight-mount": {
+      "voxelGrain": 0.002
     }
   },
   "cartridgeFinish": {

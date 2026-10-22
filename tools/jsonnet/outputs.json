@@ -1,12 +1,24 @@
 {
   "files": [
     {
+      "source": "gungen/cartridges/12-gauge-00-buck.jsonnet",
+      "output": "gungen/cartridges/12-gauge-00-buck.json"
+    },
+    {
       "source": "gungen/cartridges/308-winchester.jsonnet",
       "output": "gungen/cartridges/308-winchester.json"
     },
     {
       "source": "gungen/cartridges/357-magnum.jsonnet",
       "output": "gungen/cartridges/357-magnum.json"
+    },
+    {
+      "source": "gungen/cartridges/5.56x45.jsonnet",
+      "output": "gungen/cartridges/5.56x45.json"
+    },
+    {
+      "source": "gungen/cartridges/7.62x39.jsonnet",
+      "output": "gungen/cartridges/7.62x39.json"
     },
     {
       "source": "gungen/cartridges/catalogue/bolt.jsonnet",
@@ -35,6 +47,10 @@
     {
       "source": "gungen/src/gun/appearance.jsonnet",
       "output": "gungen/src/gun/appearance.json"
+    },
+    {
+      "source": "gungen/src/gun/gunVoxel.jsonnet",
+      "output": "gungen/src/gun/gunVoxel.json"
     },
     {
       "source": "gungen/src/gun/physical.jsonnet",

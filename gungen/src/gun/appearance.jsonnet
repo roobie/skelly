@@ -47,9 +47,14 @@ local familyHex = {
     'archetype-pump-shotgun': 'pump-shotgun', 'archetype-revolver': 'revolver', 'archetype-smg': 'smg',
   },
   slotMaterials: slotMaterials,
-  attachmentAppearances: {
-    'real-suppressor': { finish: { metal: 'alu-anodized-black' } },
-    'improvised-suppressor': { finish: { metal: 'alu-anodized-black' } },
+  // Each attachment's authored look: its default appearance and, where its item class grain does not fit it, the voxel
+  // grain its export takes.
+  attachments: {
+    // The gun grain, to match the receivers it mounts on; the item grain draws a plain square bar.
+    'real-suppressor': { appearance: { finish: { metal: 'alu-anodized-black' } }, voxelGrain: 0.004 },
+    'improvised-suppressor': { appearance: { finish: { metal: 'alu-anodized-black' } }, voxelGrain: 0.004 },
+    // A 20 mm mount is two item voxels across; the fine grain keeps its clamp and lamp apart.
+    'tactical-flashlight-mount': { voxelGrain: 0.002 },
   },
   gun: {
     familyColors: { [role]: rgb(familyHex[role]) for role in std.objectFields(familyHex) },
