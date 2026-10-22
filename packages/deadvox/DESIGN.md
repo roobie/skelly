@@ -1934,8 +1934,15 @@ and doors therefore change the estimate through geometry, not template categorie
 Blocking furniture counts as its whole envelope, so a shaped piece whose faces sit
 back from that envelope would read its own blocked cells and render black. Its
 surfaces sample the sky from the envelope face along their normal instead.
-See `src/core/skyTransport.ts`, `buildSkyResult`, `src/render/skylight.ts`, `Skylight`,
-and `src/render/skyAnchor.ts`, `addSkyAnchors`.
+A vehicle's cabin lies inside its blocked envelope, so a face sampling from where it
+sits reads black. A cabin face whose normal reaches a window samples the sky just past
+the envelope on that line; one that meets roof or body borrows the nearest window's
+sky, as a room is lit from its openings. Every vertex of a quad takes the same borrowed
+anchor, because the shader interpolates anchors across a face and a line between two
+windows crosses the blocked envelope. The choice is made once per vehicle look when its
+geometry is built, so it adds nothing to the frame (#680). A cabin with no window stays
+dark. See `src/core/skyTransport.ts`, `buildSkyResult`, `src/render/skylight.ts`, `Skylight`,
+and `src/render/skyAnchor.ts`, `addSkyAnchors` and `addSkyOpeningAnchors`.
 
 Mesh-first admission protects the first visible geometry without making it wait for
 lighting readiness. A copied sky request may wait outside the pool capacity;
@@ -1966,9 +1973,7 @@ eligibility. Arbitrary construction and caves remain outside this discovery scop
 
 Worker execution protects rendering from dense transport work, but copying, submission,
 publication and texture uploads still consume the main frame, so background execution
-alone does not show that a weak GPU holds its frame rate; #680 owns that. Building
-interiors are accepted as lit; vehicle interiors read too dark and belong to #1016.
-Lighting readiness is derived presentation, never simulation or save state.
+alone does not show that a weak GPU holds its frame rate; #680 owns that. Lighting readiness is derived presentation, never simulation or save state.
 Interior-source propagation remains separate work.
 
 Keep a carried item's glow attached to the item in hand, on the ground, and in

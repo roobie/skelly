@@ -87,6 +87,35 @@ it('keeps an interior receiver dark until its face ray reaches an opening', () =
   expect(lit(receiver('roof', true))).toBe(false);
 });
 
+it('lets a sealed cabin face borrow the nearest window, one anchor across the whole quad', () => {
+  // A roofed 4-cell cabin with one window in its +x wall: the floor's ray meets the roof, not the window.
+  const geometry = new BoxGeometry(2, 0.1, 2).translate(0, 1, 0);
+  const borrowed = addSkyOpeningAnchors(geometry, {
+    size: [4, 4, 4],
+    cellSize: 1,
+    materialAt: ([x, y, z]) => {
+      if (y === 3) {
+        return 'roof';
+      }
+      return x === 3 && y === 1 && z === 1 ? 'window' : undefined;
+    },
+    isOpening: (at) => at === 'window',
+  });
+  const normal = geometry.getAttribute('normal');
+  const anchor = geometry.getAttribute(SKY_ANCHOR_ATTRIBUTE)!;
+  const floor = Array.from({ length: normal.count }, (_, index) => index).filter((index) => normal.getY(index) > 0.9);
+  expect(floor.every((vertex) => borrowed.includes(vertex))).toBe(true);
+  const [first] = floor;
+  for (const vertex of floor) {
+    expect([anchor.getX(vertex), anchor.getY(vertex), anchor.getZ(vertex)]).toEqual([
+      anchor.getX(first!),
+      anchor.getY(first!),
+      anchor.getZ(first!),
+    ]);
+  }
+  expect(anchor.getX(first!)).toBeGreaterThan(2);
+});
+
 it('lights every upward and sideways face of a shaped piece set back inside its envelope', () => {
   const mesh = new FurnitureMeshes(BLOCK_SIZE).pieceMesh(entity, pole) as Mesh;
   const material = mesh.material as MeshLambertMaterial;
