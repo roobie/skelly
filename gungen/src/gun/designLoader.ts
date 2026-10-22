@@ -1,6 +1,6 @@
 import type { Design, DesignIssue, DesignLoadResult } from '@skelly/engine/assembly/design.ts';
 import type { DesignLoadInputs } from '@skelly/engine/assembly/designLoader.ts';
-import { loadDesignValue } from '@skelly/engine/assembly/designLoader.ts';
+import { loadDesignValue, readDeclaredStatus } from '@skelly/engine/assembly/designLoader.ts';
 import { describeValue, parseAssemblyJson } from '@skelly/engine/assembly/parseAssembly.ts';
 import type { Resolved } from '@skelly/engine/assembly/schema.ts';
 import type { Template } from '@skelly/engine/assembly/template.ts';
@@ -184,7 +184,7 @@ export const loadGunDesign = (text: string): GunDesignLoadResult => {
     if (!found) {
       return {
         ok: false,
-        declaredStatus: undefined,
+        declaredStatus: readDeclaredStatus(raw),
         error: { code: 'invalid-shape', path: 'template', message: `unknown template ${JSON.stringify(raw.template)}` },
       };
     }

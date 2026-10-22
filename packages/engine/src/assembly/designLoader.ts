@@ -58,7 +58,7 @@ const SUPPORTED_FORMAT = 1;
 const failure = (path: string, message: string): ParseFailure => ({ ok: false, error: { path, message } });
 const success = <T>(value: T): Parsed<T> => ({ ok: true, value });
 
-const readDeclaredStatus = (raw: unknown): DesignStatus | undefined =>
+export const readDeclaredStatus = (raw: unknown): DesignStatus | undefined =>
   isRecord(raw) && (raw.status === 'draft' || raw.status === 'published') ? raw.status : undefined;
 
 const fatal = (raw: unknown, error: DesignLoadError): DesignLoadResult => ({

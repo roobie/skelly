@@ -1,20 +1,21 @@
 import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import type { Domain, PartDef } from '@skelly/engine/assembly/schema.ts';
 import { expect, it } from 'vitest';
+import { ATTACHMENT_IDS, attachmentInstanceForId } from '../src/gun/attachments.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import physical from '../src/gun/physical.json' with { type: 'json' };
 import { gunModelParts, type PartMassRow } from '../src/gun/physical.ts';
 
 const MASS_CONTEXT = /mass-fixture.*body.*fixture.*plain.*matched/;
 const AMBIGUOUS_ROWS = /plain-body, second-body/;
-// Choices found without a mass row beyond the AK-74 brake; each needs an authored mass, so delete the entry when its row lands.
-const KNOWN_UNMASSED = new Set([
+// Body choices with no mass row, waiting on BR's ruling (br-1231, br-1232): masses, removal, or a deferred-assertions row.
+// The test also fails when an entry gains a row, so a stale entry cannot linger; delete this set when the last one goes.
+const AWAITING_BR = new Set([
   'receiver.section=ak',
   'lower.layout=bullpup',
   'lower.layout=trigger',
   'stock.style=dropped',
   'stock.style=tapered-sawed',
-  'magazine.integral=no',
 ]);
 
 it('refuses export with no matching authored mass row or several matching rows', () => {
@@ -41,10 +42,15 @@ it('refuses export with no matching authored mass row or several matching rows',
   expect(() => gunModelParts(resolved, new Set(), ambiguous)).toThrow(AMBIGUOUS_ROWS);
 });
 
-it('gives every choice of every param a mass row that admits it', () => {
+it('gives every choice of every body family param a mass row that admits it', () => {
   const rows = physical.partMasses as readonly PartMassRow[];
+  // Fitted attachments and the magazine are replaceable items; gunModelParts takes their mass from the item.
+  const replaceable = new Set(['magazine', ...ATTACHMENT_IDS.map((id) => attachmentInstanceForId(id).family)]);
   const unmassed: string[] = [];
   for (const family of new Set(rows.map((row) => row.family))) {
+    if (replaceable.has(family)) {
+      continue;
+    }
     const familyRows = rows.filter((row) => row.family === family);
     for (const [name, param] of Object.entries(gunDomain.families[family]!.params)) {
       for (const value of param.values) {
@@ -54,5 +60,5 @@ it('gives every choice of every param a mass row that admits it', () => {
       }
     }
   }
-  expect(unmassed.filter((choice) => !KNOWN_UNMASSED.has(choice))).toEqual([]);
+  expect(new Set(unmassed)).toEqual(AWAITING_BR);
 });
