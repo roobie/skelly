@@ -1,0 +1,8 @@
+{
+  "id": "compass",
+  "file": "assets/models/compass.glb",
+  "parts": { "compass": { "node": "compass:compass", "massKg": 0.12, "centreOfMass": [0, 0.005916140928369013, 0] } },
+  "grip": { "at": [0, 0.0045, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

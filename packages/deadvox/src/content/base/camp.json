@@ -499,9 +499,9 @@
       "key": {
         "lock": "camp_armoury"
       },
+      "model": "camp_armoury_key",
       "name": "Military armoury key",
-      "size": [1, 1],
-      "weight": 10
+      "size": [1, 1]
     },
     {
       "category": "book",
@@ -530,9 +530,9 @@
       "key": {
         "lock": "camp_hq_safe"
       },
+      "model": "camp_hq_safe_key",
       "name": "HQ reserve key",
-      "size": [1, 1],
-      "weight": 10
+      "size": [1, 1]
     },
     {
       "category": "note",

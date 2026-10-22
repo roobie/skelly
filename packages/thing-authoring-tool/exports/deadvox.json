@@ -25,6 +25,56 @@
     "source": "dead_desk_lamp"
   },
   {
+    "id": "compass",
+    "kind": "item",
+    "source": "compass"
+  },
+  {
+    "id": "lighter",
+    "kind": "item",
+    "source": "lighter"
+  },
+  {
+    "id": "matches",
+    "kind": "item",
+    "source": "matches"
+  },
+  {
+    "id": "dad_cabin_key",
+    "kind": "item",
+    "source": "dad_cabin_key"
+  },
+  {
+    "id": "pharmacy_key",
+    "kind": "item",
+    "source": "pharmacy_key"
+  },
+  {
+    "id": "camp_armoury_key",
+    "kind": "item",
+    "source": "camp_armoury_key"
+  },
+  {
+    "id": "camp_hq_safe_key",
+    "kind": "item",
+    "source": "camp_hq_safe_key"
+  },
+  {
+    "id": "shed_key",
+    "kind": "item",
+    "source": "shed_key"
+  },
+  {
+    "id": "gauntlet_police_armoury_key",
+    "kind": "item",
+    "source": "gauntlet_police_armoury_key"
+  },
+  {
+    "id": "gauntlet_lab_entry_card",
+    "kind": "item",
+    "source": "gauntlet_lab_entry_card"
+  },
+  {
     "id": "canned_beans",
     "kind": "item",
     "source": "canned_beans"

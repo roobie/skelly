@@ -14,6 +14,8 @@ if (new Set(ids).size !== ids.length) {
   throw new Error('Tool recipes cannot own the same model identity');
 }
 for (const { directory, recipe } of jobs) {
-  writeRecipeExports(recipe, resolve(REPOSITORY_ROOT, 'packages/deadvox/src/content/base'), directory);
+  writeRecipeExports(recipe, resolve(REPOSITORY_ROOT, 'packages/deadvox/src/content/base'), directory, {
+    modelIndex: directory === 'things',
+  });
 }
 compileJsonnetSources();

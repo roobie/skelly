@@ -1,0 +1,14 @@
+{
+  "id": "camp_hq_safe_key",
+  "file": "assets/models/camp_hq_safe_key.glb",
+  "parts": {
+    "camp_hq_safe_key": {
+      "node": "camp_hq_safe_key:key",
+      "massKg": 0.01,
+      "centreOfMass": [0.021029245289178437, 0.001983833674424799, 0.0008623724074781385]
+    }
+  },
+  "grip": { "at": [0.030000000000000002, 0.0015, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

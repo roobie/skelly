@@ -1,6 +1,241 @@
 {
   "models": [
     {
+      "file": "assets/models/tape_roll.glb",
+      "id": "tape_roll",
+      "parts": {
+        "electrical_tape": {
+          "centreOfMass": [0, 0.010499999999999999, 0],
+          "massKg": 0.029999999999999999,
+          "node": "electrical_tape:ring"
+        }
+      }
+    },
+    {
+      "file": "assets/models/thread_spool.glb",
+      "id": "thread_spool",
+      "parts": {
+        "sewing_thread": {
+          "centreOfMass": [0, 0.025000000000000005, 0],
+          "massKg": 0.014999999999999999,
+          "node": "sewing_thread:spool"
+        }
+      }
+    },
+    {
+      "file": "assets/models/cord_coil.glb",
+      "id": "cord_coil",
+      "parts": {
+        "nylon_cord": {
+          "centreOfMass": [0, 0.012500000000000004, 0],
+          "massKg": 0.059999999999999998,
+          "node": "nylon_cord:coil"
+        }
+      }
+    },
+    {
+      "file": "assets/models/fuse.glb",
+      "id": "fuse",
+      "parts": {
+        "fuse": {
+          "centreOfMass": [0, 0.010999999999999998, 0],
+          "massKg": 0.01,
+          "node": "fuse:fuse"
+        }
+      }
+    },
+    {
+      "file": "assets/models/desk_lamp.glb",
+      "id": "desk_lamp",
+      "parts": {
+        "arm": {
+          "centreOfMass": [0.0064922537076486349, 0.089771328314204618, -9.5479630393850054e-18],
+          "massKg": 0.25,
+          "node": "arm:arm"
+        },
+        "base": {
+          "centreOfMass": [0, 0.0060000000000000001, 0],
+          "massKg": 0.5,
+          "node": "base:base"
+        },
+        "shade": {
+          "centreOfMass": [0.070000000000000007, 0.15968518518518521, -2.0252029474788637e-17],
+          "massKg": 0.14999999999999999,
+          "node": "shade:shade"
+        }
+      }
+    },
+    {
+      "file": "assets/models/compass.glb",
+      "grip": {
+        "at": [0, 0.0044999999999999997, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "compass",
+      "parts": {
+        "compass": {
+          "centreOfMass": [0, 0.005916140928369013, 0],
+          "massKg": 0.12,
+          "node": "compass:compass"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/lighter.glb",
+      "grip": {
+        "at": [0, 0.0275, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "lighter",
+      "parts": {
+        "lighter": {
+          "centreOfMass": [0, 0.030088002775954543, -1.4791489859822659e-5],
+          "massKg": 0.02,
+          "node": "lighter:lighter"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/matches.glb",
+      "grip": {
+        "at": [0, 0.0074999999999999997, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "matches",
+      "parts": {
+        "matches": {
+          "centreOfMass": [0, 0.0096037416184675227, 0.00019996058760300968],
+          "massKg": 0.02,
+          "node": "matches:matchbox"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/dad_cabin_key.glb",
+      "grip": {
+        "at": [0.031000000000000003, 0.0015, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "dad_cabin_key",
+      "parts": {
+        "dad_cabin_key": {
+          "centreOfMass": [0.01858019090239605, 0.0021287794087121647, 0.00073936380279885294],
+          "massKg": 0.01,
+          "node": "dad_cabin_key:key"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/pharmacy_key.glb",
+      "grip": {
+        "at": [0.030500000000000003, 0.0015, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "pharmacy_key",
+      "parts": {
+        "pharmacy_key": {
+          "centreOfMass": [0.019810191642827119, 0.0020571359028949561, 0.00080016426531839911],
+          "massKg": 0.01,
+          "node": "pharmacy_key:key"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/camp_armoury_key.glb",
+      "grip": {
+        "at": [0.035499999999999997, 0.0015, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "camp_armoury_key",
+      "parts": {
+        "camp_armoury_key": {
+          "centreOfMass": [0.019602712100694909, 0.002197052981961932, 0.00068142324302168298],
+          "massKg": 0.01,
+          "node": "camp_armoury_key:key"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/camp_hq_safe_key.glb",
+      "grip": {
+        "at": [0.030000000000000002, 0.0015, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "camp_hq_safe_key",
+      "parts": {
+        "camp_hq_safe_key": {
+          "centreOfMass": [0.021029245289178437, 0.0019838336744247989, 0.0008623724074781385],
+          "massKg": 0.01,
+          "node": "camp_hq_safe_key:key"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/shed_key.glb",
+      "grip": {
+        "at": [0.031000000000000003, 0.0015, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "shed_key",
+      "parts": {
+        "shed_key": {
+          "centreOfMass": [0.01858019090239605, 0.0021287794087121647, 0.00073936380279885294],
+          "massKg": 0.01,
+          "node": "shed_key:key"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/gauntlet_police_armoury_key.glb",
+      "grip": {
+        "at": [0.035499999999999997, 0.0015, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "gauntlet_police_armoury_key",
+      "parts": {
+        "gauntlet_police_armoury_key": {
+          "centreOfMass": [0.019602712100694909, 0.002197052981961932, 0.00068142324302168298],
+          "massKg": 0.01,
+          "node": "gauntlet_police_armoury_key:key"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/gauntlet_lab_entry_card.glb",
+      "grip": {
+        "at": [0, 0.00050000000000000001, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "gauntlet_lab_entry_card",
+      "parts": {
+        "gauntlet_lab_entry_card": {
+          "centreOfMass": [0, 0.00050719648951730865, 0],
+          "massKg": 0.0050000000000000001,
+          "node": "gauntlet_lab_entry_card:keycard"
+        }
+      },
+      "roll": 0
+    },
+    {
       "file": "assets/models/canned_beans.glb",
       "grip": {
         "at": [0, 0.056500000000000002, 0],
@@ -272,17 +507,6 @@
       "id": "glass_shards"
     },
     {
-      "file": "assets/models/tape_roll.glb",
-      "id": "tape_roll",
-      "parts": {
-        "electrical_tape": {
-          "centreOfMass": [0, 0.010499999999999999, 0],
-          "massKg": 0.029999999999999999,
-          "node": "electrical_tape:ring"
-        }
-      }
-    },
-    {
       "file": "assets/models/fastener_pack.glb",
       "id": "fastener_pack"
     },
@@ -327,39 +551,6 @@
       "id": "night_vision_goggles"
     },
     {
-      "file": "assets/models/thread_spool.glb",
-      "id": "thread_spool",
-      "parts": {
-        "sewing_thread": {
-          "centreOfMass": [0, 0.025000000000000005, 0],
-          "massKg": 0.014999999999999999,
-          "node": "sewing_thread:spool"
-        }
-      }
-    },
-    {
-      "file": "assets/models/fuse.glb",
-      "id": "fuse",
-      "parts": {
-        "fuse": {
-          "centreOfMass": [0, 0.010999999999999998, 0],
-          "massKg": 0.01,
-          "node": "fuse:fuse"
-        }
-      }
-    },
-    {
-      "file": "assets/models/cord_coil.glb",
-      "id": "cord_coil",
-      "parts": {
-        "nylon_cord": {
-          "centreOfMass": [0, 0.012500000000000004, 0],
-          "massKg": 0.059999999999999998,
-          "node": "nylon_cord:coil"
-        }
-      }
-    },
-    {
       "file": "assets/models/pliers.glb",
       "id": "pliers"
     },
@@ -370,27 +561,6 @@
     {
       "file": "assets/models/broken_toaster.glb",
       "id": "broken_toaster"
-    },
-    {
-      "file": "assets/models/desk_lamp.glb",
-      "id": "desk_lamp",
-      "parts": {
-        "arm": {
-          "centreOfMass": [0.0064922537076486349, 0.089771328314204618, -9.5479630393850054e-18],
-          "massKg": 0.25,
-          "node": "arm:arm"
-        },
-        "base": {
-          "centreOfMass": [0, 0.0060000000000000001, 0],
-          "massKg": 0.5,
-          "node": "base:base"
-        },
-        "shade": {
-          "centreOfMass": [0.070000000000000007, 0.15968518518518521, -2.0252029474788637e-17],
-          "massKg": 0.14999999999999999,
-          "node": "shade:shade"
-        }
-      }
     },
     {
       "file": "assets/models/table_fan.glb",

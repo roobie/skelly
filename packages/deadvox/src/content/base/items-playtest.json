@@ -11,9 +11,9 @@
       "key": {
         "lock": "dad_cabin"
       },
+      "model": "dad_cabin_key",
       "name": "Dad's cabin key",
-      "size": [1, 1],
-      "weight": 10
+      "size": [1, 1]
     },
     {
       "category": "clothing",
@@ -74,9 +74,9 @@
       "key": {
         "lock": "medical_pharmacy"
       },
+      "model": "pharmacy_key",
       "name": "Medical pharmacy key",
-      "size": [1, 1],
-      "weight": 10
+      "size": [1, 1]
     },
     {
       "category": "book",

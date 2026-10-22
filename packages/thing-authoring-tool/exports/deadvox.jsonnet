@@ -5,4 +5,4 @@ local item(id, source) = { id: id, kind: 'item', source: source };
   item('cord_coil', 'nylon_cord'),
   item('fuse', 'fuse'),
   item('desk_lamp', 'dead_desk_lamp'),
-] + [item(package.id, package.id) for package in import '../packages.libsonnet']
+] + (import '../exports/deadvox-handhelds.libsonnet') + [item(package.id, package.id) for package in import '../packages.libsonnet']

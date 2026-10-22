@@ -225,7 +225,7 @@ assert std.all([std.length(row) == std.length(plan[0]) for row in plan]) : 'entr
   stairAt: [4 * scale, 25, 5 * scale],
   stair: { upper: [4 * scale + 11, 33, 5 * scale + 1], lower: [4 * scale + 1, 25, 5 * scale + 1] },
   seal: { doors: [[5 * scale, 33, 10 * scale], [29 * scale, 33, 27 * scale]], key: [24 * scale, 33, 19 * scale], standing: [24 * scale, 33, 19 * scale + 1] },
-  items: [{ id: 'gauntlet_lab_entry_card', name: 'Security keycard', category: 'tool', weight: 5, size: [1, 1], economy: { usage: ['Industrial'], tiers: ['Tier1'] }, model: 'folded_note', key: { lock: 'gauntlet_lab_entry_seal' } }],
+  items: [{ id: 'gauntlet_lab_entry_card', name: 'Security keycard', category: 'tool', size: [1, 1], economy: { usage: ['Industrial'], tiers: ['Tier1'] }, model: 'gauntlet_lab_entry_card', key: { lock: 'gauntlet_lab_entry_seal' } }],
   mapPieces: [shell, {
     id: 'gauntlet_lab_entry_cap', size: [size[0], 1, size[2]], style: shell.style, lootContext: context,
     palette: { p: { role: 'interior_floor', material: 'floor' }, '.': { role: 'opening', material: 'air' } },

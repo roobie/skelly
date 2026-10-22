@@ -1,20 +1,10 @@
+local things = import 'things/models.json';
+local visibleThings = [
+  if std.member(['canned_beans', 'canned_soup'], model.id) then std.objectRemoveKey(model, 'parts') else model
+  for model in things
+];
 {
-  "models": [
-    std.objectRemoveKey(import 'things/canned_beans.model.json', 'parts'),
-    std.objectRemoveKey(import 'things/canned_soup.model.json', 'parts'),
-    import 'things/crackers.model.json',
-    import 'things/chocolate_bar.model.json',
-    import 'things/soda_can.model.json',
-    import 'things/water_bottle.model.json',
-    import 'things/juice_carton.model.json',
-    import 'things/cartridge_box_308_h_winchester.model.json',
-    import 'things/cartridge_box_5_d_56x45.model.json',
-    import 'things/cartridge_box_7_d_62x39.model.json',
-    import 'things/cartridge_box_357_h_magnum.model.json',
-    import 'things/shotshell_box.model.json',
-    import 'things/ammo_can.model.json',
-    import 'things/jerry_can.model.json',
-    import 'things/gas_canister.model.json',
+  "models": visibleThings + [
     {
       "id": "hand_saw",
       "file": "assets/models/hand_saw.glb",
@@ -35,7 +25,6 @@
     },
     { "id": "lamp_oil_bottle", "file": "assets/models/lamp_oil_bottle.glb" },
     { "id": "glass_shards", "file": "assets/models/glass_shards.glb" },
-    import 'things/tape_roll.model.json',
     { "id": "fastener_pack", "file": "assets/models/fastener_pack.glb" },
     { "id": "wood_offcut", "file": "assets/models/wood_offcut.glb" },
     { "id": "rubber_strip", "file": "assets/models/rubber_strip.glb" },
@@ -47,13 +36,9 @@
     { "id": "riot_helmet", "file": "assets/models/riot_helmet.glb" },
     { "id": "riot_helmet_view", "file": "assets/models/riot_helmet_view.glb" },
     { "id": "night_vision_goggles", "file": "assets/models/night_vision_goggles.glb" },
-    import 'things/thread_spool.model.json',
-    import 'things/fuse.model.json',
-    import 'things/cord_coil.model.json',
     { "id": "pliers", "file": "assets/models/pliers.glb" },
     { "id": "sewing_kit", "file": "assets/models/sewing_kit.glb" },
     { "id": "broken_toaster", "file": "assets/models/broken_toaster.glb" },
-    import 'things/desk_lamp.model.json',
     { "id": "table_fan", "file": "assets/models/table_fan.glb" },
     { "id": "cracked_phone", "file": "assets/models/cracked_phone.glb" },
     { "id": "broken_clock", "file": "assets/models/broken_clock.glb" },

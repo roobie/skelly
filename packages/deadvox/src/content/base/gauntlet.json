@@ -2253,10 +2253,9 @@
       "key": {
         "lock": "gauntlet_lab_entry_seal"
       },
-      "model": "folded_note",
+      "model": "gauntlet_lab_entry_card",
       "name": "Security keycard",
-      "size": [1, 1],
-      "weight": 5
+      "size": [1, 1]
     }
   ],
   "loot": [

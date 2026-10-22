@@ -29,9 +29,9 @@ local content = {
     id: 'shed_key',
     name: 'Shed key',
     category: 'tool',
-    weight: 10,
     size: [1, 1],
     key: { lock: 'test_shed' },
+    model: 'shed_key',
     description: "A small key for the shed's door.",
   }],
   furniture: [{

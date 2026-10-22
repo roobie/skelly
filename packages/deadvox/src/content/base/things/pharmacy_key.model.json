@@ -1,0 +1,14 @@
+{
+  "id": "pharmacy_key",
+  "file": "assets/models/pharmacy_key.glb",
+  "parts": {
+    "pharmacy_key": {
+      "node": "pharmacy_key:key",
+      "massKg": 0.01,
+      "centreOfMass": [0.01981019164282712, 0.002057135902894956, 0.0008001642653183991]
+    }
+  },
+  "grip": { "at": [0.030500000000000003, 0.0015, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}
