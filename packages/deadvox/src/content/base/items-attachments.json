@@ -142,6 +142,8 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "firearmAttachmentEffects": {
+        "fitRefusal": "I can't fit this suppressor yet",
+        "fitSkillLevel": 4,
         "kind": "suppressor",
         "recoilReduction": 0.14999999999999999,
         "wearPerShot": 0.001
