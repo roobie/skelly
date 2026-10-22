@@ -268,8 +268,10 @@ describe('content', () => {
     const layoutSpawns = [...baseRegistry.layouts.values()].flatMap((layout) =>
       layout.shamblers.some(({ type }) => type === soldier.id) ? [layout] : [],
     );
+    const soldierSite = (id: string) => id.startsWith('camp_') || id.startsWith('crisis_hq');
     expect(templateSpawns.some((id) => id.startsWith('camp_'))).toBe(true);
-    expect(templateSpawns.every((id) => id.startsWith('camp_'))).toBe(true);
+    expect(templateSpawns.some((id) => id.startsWith('crisis_hq'))).toBe(true);
+    expect(templateSpawns.every(soldierSite)).toBe(true);
     expect(layoutSpawns.length).toBeGreaterThan(0);
     expect(layoutSpawns.every((layout) => layout.buildings.some(({ template }) => template.startsWith('camp_')))).toBe(
       true,

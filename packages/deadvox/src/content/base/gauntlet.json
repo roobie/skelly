@@ -7465,14 +7465,14 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 2
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 6
             }
           ],
           "id": "north_middle_threat_0",
@@ -7517,14 +7517,14 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 2
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 6
             }
           ],
           "id": "north_east_threat_0",
@@ -7569,14 +7569,14 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 2
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 6
             }
           ],
           "id": "middle_west_threat_0",
@@ -7621,14 +7621,14 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 2
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 6
             }
           ],
           "id": "middle_middle_threat_0",
@@ -7673,14 +7673,14 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 2
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 6
             }
           ],
           "id": "middle_east_threat_0",
@@ -7725,14 +7725,14 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 2
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 6
             }
           ],
           "id": "south_west_threat_0",
@@ -7777,14 +7777,14 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 2
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 6
             }
           ],
           "id": "south_middle_threat_0",
@@ -7799,14 +7799,14 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 2
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 6
             }
           ],
           "id": "south_middle_threat_1",
@@ -7836,14 +7836,14 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 2
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
-              "weight": 4
+              "weight": 6
             }
           ],
           "id": "south_east_threat_0",
@@ -8352,11 +8352,11 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 5
@@ -8374,11 +8374,11 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 5
@@ -8411,11 +8411,11 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 5
@@ -8463,11 +8463,11 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 5
@@ -8515,11 +8515,11 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 5
@@ -8567,11 +8567,11 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 5
@@ -8619,11 +8619,11 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 5
@@ -8671,11 +8671,11 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 5
@@ -8693,11 +8693,11 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 5
@@ -8715,11 +8715,11 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 5
@@ -8737,11 +8737,11 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 5
@@ -8789,11 +8789,11 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 5
@@ -8811,11 +8811,11 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 5
@@ -9297,28 +9297,28 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 2
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_crawler_80",
                 "kind": "piece"
               },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
-                "kind": "piece"
-              },
-              "weight": 2
+              "weight": 3
             }
           ],
           "id": "north_west_threat_0",
@@ -9333,28 +9333,28 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 2
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_crawler_80",
                 "kind": "piece"
               },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
-                "kind": "piece"
-              },
-              "weight": 2
+              "weight": 3
             }
           ],
           "id": "north_west_threat_1",
@@ -9369,28 +9369,28 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 2
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_crawler_80",
                 "kind": "piece"
               },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
-                "kind": "piece"
-              },
-              "weight": 2
+              "weight": 3
             }
           ],
           "id": "north_west_threat_2",
@@ -9405,28 +9405,28 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 2
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_crawler_80",
                 "kind": "piece"
               },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
-                "kind": "piece"
-              },
-              "weight": 2
+              "weight": 3
             }
           ],
           "id": "north_middle_threat_0",
@@ -9441,28 +9441,28 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 2
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_crawler_80",
                 "kind": "piece"
               },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
-                "kind": "piece"
-              },
-              "weight": 2
+              "weight": 3
             }
           ],
           "id": "north_middle_threat_1",
@@ -9477,28 +9477,28 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 2
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_crawler_80",
                 "kind": "piece"
               },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
-                "kind": "piece"
-              },
-              "weight": 2
+              "weight": 3
             }
           ],
           "id": "north_middle_threat_2",
@@ -9513,28 +9513,28 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 2
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_crawler_80",
                 "kind": "piece"
               },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
-                "kind": "piece"
-              },
-              "weight": 2
+              "weight": 3
             }
           ],
           "id": "north_east_threat_0",
@@ -9549,28 +9549,28 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 2
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_crawler_80",
                 "kind": "piece"
               },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
-                "kind": "piece"
-              },
-              "weight": 2
+              "weight": 3
             }
           ],
           "id": "north_east_threat_1",
@@ -9600,28 +9600,28 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 2
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_crawler_80",
                 "kind": "piece"
               },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
-                "kind": "piece"
-              },
-              "weight": 2
+              "weight": 3
             }
           ],
           "id": "middle_west_threat_0",
@@ -9666,28 +9666,28 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 2
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_crawler_80",
                 "kind": "piece"
               },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
-                "kind": "piece"
-              },
-              "weight": 2
+              "weight": 3
             }
           ],
           "id": "middle_middle_threat_0",
@@ -9732,28 +9732,28 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 2
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_crawler_80",
                 "kind": "piece"
               },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
-                "kind": "piece"
-              },
-              "weight": 2
+              "weight": 3
             }
           ],
           "id": "middle_east_threat_0",
@@ -9768,28 +9768,28 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 2
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_crawler_80",
                 "kind": "piece"
               },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
-                "kind": "piece"
-              },
-              "weight": 2
+              "weight": 3
             }
           ],
           "id": "middle_east_threat_1",
@@ -9804,28 +9804,28 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 2
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_crawler_80",
                 "kind": "piece"
               },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
-                "kind": "piece"
-              },
-              "weight": 2
+              "weight": 3
             }
           ],
           "id": "middle_east_threat_2",
@@ -9840,28 +9840,28 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 2
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_crawler_80",
                 "kind": "piece"
               },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
-                "kind": "piece"
-              },
-              "weight": 2
+              "weight": 3
             }
           ],
           "id": "south_middle_threat_0",
@@ -9906,28 +9906,28 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 2
+              "weight": 1
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
+                "id": "gauntlet_lab_marker_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_crawler_80",
                 "kind": "piece"
               },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
-                "kind": "piece"
-              },
-              "weight": 2
+              "weight": 3
             }
           ],
           "id": "south_east_threat_0",
@@ -10425,24 +10425,24 @@
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 4
             }
           ],
           "id": "north_west_threat_0",
@@ -10461,24 +10461,24 @@
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 4
             }
           ],
           "id": "north_west_threat_1",
@@ -10497,24 +10497,24 @@
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 4
             }
           ],
           "id": "north_west_threat_2",
@@ -10533,24 +10533,24 @@
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 4
             }
           ],
           "id": "north_middle_threat_0",
@@ -10569,24 +10569,24 @@
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 4
             }
           ],
           "id": "north_middle_threat_1",
@@ -10605,24 +10605,24 @@
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 4
             }
           ],
           "id": "north_middle_threat_2",
@@ -10641,24 +10641,24 @@
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 4
             }
           ],
           "id": "north_east_threat_0",
@@ -10677,24 +10677,24 @@
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 4
             }
           ],
           "id": "north_east_threat_1",
@@ -10713,24 +10713,24 @@
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 4
             }
           ],
           "id": "north_east_threat_2",
@@ -10749,24 +10749,24 @@
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 4
             }
           ],
           "id": "middle_west_threat_0",
@@ -10785,24 +10785,24 @@
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 4
             }
           ],
           "id": "middle_west_threat_1",
@@ -10821,24 +10821,24 @@
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 4
             }
           ],
           "id": "middle_west_threat_2",
@@ -10857,24 +10857,24 @@
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 4
             }
           ],
           "id": "middle_middle_threat_0",
@@ -10893,24 +10893,24 @@
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 4
             }
           ],
           "id": "middle_middle_threat_1",
@@ -10944,24 +10944,24 @@
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 4
             }
           ],
           "id": "middle_east_threat_0",
@@ -10980,24 +10980,24 @@
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 4
             }
           ],
           "id": "middle_east_threat_1",
@@ -11016,24 +11016,24 @@
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 4
             }
           ],
           "id": "middle_east_threat_2",
@@ -11097,24 +11097,24 @@
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 4
             }
           ],
           "id": "south_middle_threat_0",
@@ -11163,24 +11163,24 @@
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 4
             }
           ],
           "id": "south_east_threat_0",
@@ -11199,24 +11199,24 @@
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 4
             }
           ],
           "id": "south_east_threat_1",
@@ -11235,24 +11235,24 @@
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_60",
+                "id": "gauntlet_lab_marker_shambler_80",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_lab_marker_crawler_60",
+                "id": "gauntlet_lab_marker_runner_80",
                 "kind": "piece"
               },
-              "weight": 3
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 4
             }
           ],
           "id": "south_east_threat_2",
@@ -27776,7 +27776,7 @@
     },
     {
       "anchors": {},
-      "id": "gauntlet_lab_marker_crawler_60",
+      "id": "gauntlet_lab_marker_crawler_80",
       "layers": [["Z"]],
       "lootContext": {
         "tier": "Tier1",
@@ -27791,7 +27791,7 @@
           "role": "opening"
         },
         "Z": {
-          "chance": 0.59999999999999998,
+          "chance": 0.80000000000000004,
           "spawn": "crawler"
         }
       },
@@ -27822,7 +27822,7 @@
     },
     {
       "anchors": {},
-      "id": "gauntlet_lab_marker_runner_60",
+      "id": "gauntlet_lab_marker_runner_80",
       "layers": [["Z"]],
       "lootContext": {
         "tier": "Tier1",
@@ -27837,7 +27837,7 @@
           "role": "opening"
         },
         "Z": {
-          "chance": 0.59999999999999998,
+          "chance": 0.80000000000000004,
           "spawn": "runner"
         }
       },
@@ -27863,6 +27863,31 @@
         },
         "Z": {
           "chance": 0.59999999999999998,
+          "spawn": "shambler"
+        }
+      },
+      "ports": [],
+      "size": [1, 1, 1],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_marker_shambler_80",
+      "layers": [["Z"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [["R"]]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "Z": {
+          "chance": 0.80000000000000004,
           "spawn": "shambler"
         }
       },

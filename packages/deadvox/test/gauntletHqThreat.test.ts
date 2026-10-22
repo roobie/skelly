@@ -13,6 +13,7 @@ describe('gauntlet crisis HQ threat and supplies', () => {
   it(
     'is guarded mostly by soldiers and has loot piles lying in its rooms',
     () => {
+      expect(gauntlets.length, 'the registry has a gauntlet scenario').toBeGreaterThan(0);
       for (const scenario of gauntlets) {
         const site = new GauntletSite({ seed: 1, registry, scale, scenario });
         const hq = site.placements.filter((placement) => placement.template.id.includes('crisis_hq'));

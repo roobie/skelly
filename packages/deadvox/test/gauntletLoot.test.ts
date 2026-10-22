@@ -35,6 +35,7 @@ describe('gauntlet loot reachability', () => {
   it(
     'places ammunition for every rifle it places, and a stab vest',
     () => {
+      expect(gauntlets.length, 'the registry has a gauntlet scenario').toBeGreaterThan(0);
       for (const scenario of gauntlets) {
         const placed = placedTypes(SEED, scenario);
         const ammoCalibres = new Set(
