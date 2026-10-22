@@ -12,9 +12,11 @@ import { World } from '../src/core/world.ts';
 import { type PlayerSense, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { decodeSave } from '../src/core/saveFormat.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 
 const MINIMUM = 5;
 const TOUGHNESS = 20;
@@ -188,14 +190,27 @@ it('adds up blows at or above the minimum until the leaf breaks open with its lo
   expect(entities.bash(door, MINIMUM)).toBeUndefined();
 });
 
-it('keeps partial and broken damage through a save and load of the block entities', () => {
+const throughSaveFile = async (entities: BlockEntities): Promise<BlockEntities> => {
+  const captured = capture(createRuntime());
+  const snapshot = {
+    ...captured,
+    character: {
+      ...captured.character,
+      inventory: { ...captured.character.inventory, entities: entities.snapshotState() },
+    },
+  };
+  const decoded = await decodeSave(await encodeFixture(snapshot), { contentLookup: () => true, version: formatVersion });
+  return BlockEntities.restoreState(registry, decoded.snapshot.character.inventory.entities);
+};
+
+it('keeps partial and broken damage through a save file and load of the block entities', async () => {
   const { entities, door } = doorway();
   entities.bash(door, MINIMUM);
-  const restored = BlockEntities.restoreState(registry, JSON.parse(JSON.stringify(entities.snapshotState())));
+  const restored = await throughSaveFile(entities);
   const reloaded = restored.byUid(door.uid)!;
   expect(reloaded.damage).toBe(MINIMUM);
   expect(blowsToBreak(restored, reloaded, MINIMUM)).toBe(blowsToBreak(entities, door, MINIMUM));
-  const broken = BlockEntities.restoreState(registry, JSON.parse(JSON.stringify(restored.snapshotState())));
+  const broken = await throughSaveFile(restored);
   expect(broken.byUid(door.uid)).toMatchObject({ broken: true, open: true });
   expect(broken.isSolid(4, 1, 0)).toBe(false);
 });

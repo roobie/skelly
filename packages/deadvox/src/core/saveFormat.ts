@@ -491,6 +491,8 @@ const blockEntitySchema = obj({
   fixed: opt(enumeration([true])),
   searched: bool,
   open: bool,
+  damage: opt(positive),
+  broken: opt(enumeration([true])),
   lock: opt(obj({ id: str({ id: true }), locked: bool })),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
 });
