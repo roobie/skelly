@@ -48,7 +48,7 @@ Joins keep the shared receiver frame so struts, tube and lower cannot drift from
 - **Stock.** Telescoping and fixed stocks are both built, as design variants. Each is a recognisable configuration of the gun, and variants keep the choice in content rather than in the firing model.
 - **Handle lock-back.** The slot has a notch, and the handle has a held-back state in it. Holding the bolt open is part of how this gun is loaded and cleared, so travel alone would be incomplete.
 - **Reference length.** Each stock has its published overall length: 680 mm for the fixed stock ([Swedish Wikipedia MP5 article](https://sv.wikipedia.org/wiki/Heckler_%26_Koch_MP5)), and 700 mm extended and 550 mm collapsed for the telescoping stock (the MP5A3 specification). Both stocks sit on the one receiver the schematic gives. Each stock's profile, such as the butt outline, the strut spacing and the butt plate, is the model's own design within its lengths, because the schematic has no stock.
-- **Rear drum.** The drum is static. Its turning axis cannot be recovered from a side view, and a turning drum would add a mover for a sight that uses one aperture on the eye line.
+- **Rear drum.** The drum is static. Its turning axis cannot be recovered from a side view, and a turning drum would add a mover for a sight that uses one aperture on the eye line. The aperture stays a closed peep, and the export aims through its hole; see `docs/optics.md`.
 - **Muzzle.** The threaded muzzle provides a suppressor mount; the plain stub retains an unthreaded authoring alternative.
 
 ## Motion
