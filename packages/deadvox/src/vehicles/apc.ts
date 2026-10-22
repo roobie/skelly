@@ -310,6 +310,59 @@ const troopBench = authored(own('troop-bench', 'Troop bench', 'interior', 55), [
   box([16, 44, SIDE - 6], [110, 60, SIDE - 3], 'seatVinyl'),
 ]);
 
+/** A stowage pocket in inventory cells (0.1 m each), sized to what a troop carrier stows there. */
+const pocket = (name: string, w: number, h: number, handlingSimSeconds: number) => ({
+  name,
+  grid: [w, h] as const,
+  handlingSimSeconds,
+});
+
+/** Overhead kit locker on the troop compartment's side wall, above the bench backs. */
+const wallLocker = authored(
+  { ...own('wall-locker', 'Troop kit locker', 'interior', 40), storage: { pockets: [pocket('Locker', 8, 5, 1.2)] } },
+  [
+    box([18, 62, 77], [52, 72, 83], 'paint'),
+    paintBox([18, 62, 77], [19, 72, 78], 'seam'),
+    paintBox([51, 62, 77], [52, 72, 78], 'seam'),
+    box([34, 66, 76], [36, 68, 77], 'trim'),
+  ],
+);
+/** Rifle racks flank the ramp, so the squad arms as it boards. */
+const rifleRack = authored(
+  { ...own('rifle-rack', 'Rifle rack', 'interior', 18), storage: { pockets: [pocket('Rifle rack', 6, 10, 0.6)] } },
+  [
+    box([8, 44, 66], [9, 72, 82], 'chassis'),
+    box([9, 44, 66], [13, 46, 82], 'chassis'),
+    box([9, 70, 66], [13, 72, 82], 'chassis'),
+    ...[68, 73, 78].map((z) => box([9, 46, z], [11, 70, z + 1], 'trim')),
+  ],
+);
+/** Ammunition-can shelves on the wall behind the benches. */
+const ammoRack = authored(
+  {
+    ...own('ammo-rack', 'Ammunition rack', 'interior', 25),
+    storage: { pockets: [pocket('Ammunition cans', 6, 4, 0.8)] },
+  },
+  [
+    box([110, 41, 77], [126, 43, 83], 'chassis'),
+    box([110, 58, 77], [126, 60, 83], 'chassis'),
+    box([110, 43, 78], [118, 49, 83], 'tank'),
+    box([118, 43, 78], [126, 49, 83], 'tank'),
+    box([110, 60, 78], [118, 66, 83], 'tank'),
+    box([118, 60, 78], [126, 66, 83], 'tank'),
+  ],
+);
+/** An outside stowage bin on the hull side between the wheel stations. */
+const stowageBin = authored(
+  { ...own('stowage-bin', 'External stowage bin', 'body', 70), storage: { pockets: [pocket('Bin', 10, 6, 1.2)] } },
+  [
+    box([102, 20, SIDE - 10], [126, SPONSON_Y, SIDE], 'paint'),
+    paintBox([102, 20, SIDE - 1], [126, 21, SIDE], 'seam'),
+    paintBox([102, SPONSON_Y - 1, SIDE - 1], [126, SPONSON_Y, SIDE], 'seam'),
+    box([112, 30, SIDE], [116, 32, SIDE + 1], 'trim'),
+  ],
+);
+
 const PARTS: readonly Authored[] = [
   hullBelly,
   hullSide,
@@ -339,6 +392,10 @@ const PARTS: readonly Authored[] = [
   driverPanel,
   steering,
   troopBench,
+  wallLocker,
+  rifleRack,
+  ammoRack,
+  stowageBin,
 ];
 
 const HULL = ['hull-belly'];
@@ -385,6 +442,13 @@ const FITTINGS: readonly Fitting[] = [
   // The 4×4's wheel and column, mirrored to the left-hand driver's station.
   { ...place('steering', steering, ['driver-panel'], { at: [180, 48, 24] }), mirror: true },
   ...pair('troop-bench', troopBench, ['hull-side-near']),
+  ...[0, 1].flatMap((k) =>
+    pair(`wall-locker-${k + 1}`, wallLocker, ['hull-side-near'], { at: shiftX(wallLocker, k * 44) }),
+  ),
+  ...pair('rifle-rack', rifleRack, ['hull-rear']),
+  ...pair('ammo-rack', ammoRack, ['hull-side-near']),
+  // The exhaust runs along the near side, so the bin is on the far side only.
+  pair('stowage-bin', stowageBin, ['hull-side-near'])[1]!,
 ];
 
 export const APC_PARTS: readonly PartType[] = partsOf(PARTS);

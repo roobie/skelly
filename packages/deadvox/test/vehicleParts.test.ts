@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { sizeFits } from '../src/core/items.ts';
 import { PLAYER } from '../src/game/player.ts';
 import { APC } from '../src/vehicles/apc.ts';
 import { pairAcross } from '../src/vehicles/authoring.ts';
@@ -163,6 +164,28 @@ describe('the APC troop compartment', () => {
     const { min: farSide } = placed('hull-side-far').bounds;
     const { max: nearSide } = placed('hull-side-near').bounds;
     expect(frontReached(blockedColumns(floor), startX, farSide[2], nearSide[2])).toBeGreaterThanOrEqual(seatMin[0]);
+  });
+});
+
+describe('the APC stowage', () => {
+  const pockets = newInstance(APC, 'complete').fittings.flatMap(
+    (fitting) => partTypeOf(CATALOGUE, fitting).storage?.pockets ?? [],
+  );
+  const defs = [...baseRegistry().items.values()];
+  const holds = (def: (typeof defs)[number]): boolean =>
+    pockets.some(({ grid: [w, h] }) => sizeFits(def.size, { w, h }));
+
+  it('has fitted storage whose pockets are real grids', () => {
+    expect(pockets.length).toBeGreaterThan(0);
+    expect(pockets.filter(({ grid }) => !grid.every((cells) => Number.isInteger(cells) && cells >= 1))).toEqual([]);
+  });
+
+  it('holds a firearm in one pocket and ammunition in another', () => {
+    const firearms = defs.filter((def) => def.firearm !== undefined);
+    const ammunition = defs.filter((def) => def.category === 'ammo');
+    expect(firearms.length).toBeGreaterThan(0);
+    expect(firearms.some(holds)).toBe(true);
+    expect(ammunition.some(holds)).toBe(true);
   });
 });
 
