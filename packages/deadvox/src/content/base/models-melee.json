@@ -69,7 +69,14 @@
         "at": [-0.074999999999999997, 0, 0]
       },
       "hold": "forward",
-      "id": "kabar"
+      "id": "kabar",
+      "parts": {
+        "kabar": {
+          "centreOfMass": [-0.010694342749358507, -0.00027362493211819099, 1.8667296694321207e-20],
+          "massKg": 0.29999999999999999,
+          "node": "kabar:knife"
+        }
+      }
     },
     {
       "anchors": {
@@ -80,7 +87,14 @@
         "at": [-0.055, 0, 0]
       },
       "hold": "forward",
-      "id": "kitchen_knife"
+      "id": "kitchen_knife",
+      "parts": {
+        "kitchen_knife": {
+          "centreOfMass": [0.028560606567928783, -0.0029893668389899906, 2.3978866062530869e-20],
+          "massKg": 0.14999999999999999,
+          "node": "kitchen_knife:knife"
+        }
+      }
     },
     {
       "anchors": {
@@ -92,7 +106,14 @@
         "at": [-0.20000000000000001, 0, 0]
       },
       "hold": "forward",
-      "id": "machete"
+      "id": "machete",
+      "parts": {
+        "machete": {
+          "centreOfMass": [-0.068138083077574574, -0.0087300626549624578, -4.8364734944465589e-21],
+          "massKg": 0.55000000000000004,
+          "node": "machete:knife"
+        }
+      }
     },
     {
       "anchors": {
@@ -104,6 +125,13 @@
       },
       "hold": "upright",
       "id": "wrench",
+      "parts": {
+        "wrench": {
+          "centreOfMass": [-0.017394514767932502, 0.0064556962025316428, 0],
+          "massKg": 0.5,
+          "node": "wrench:wrench"
+        }
+      },
       "roll": 90
     },
     {
@@ -116,6 +144,13 @@
       },
       "hold": "upright",
       "id": "steel_pipe",
+      "parts": {
+        "steel_pipe": {
+          "centreOfMass": [0.50689228334956182, 0, -0.004736002921129503],
+          "massKg": 1.8,
+          "node": "steel_pipe:steelPipe"
+        }
+      },
       "roll": 0
     }
   ]

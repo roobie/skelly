@@ -1,0 +1,11 @@
+{
+  "id": "steel_pipe",
+  "file": "assets/models/steel_pipe.glb",
+  "parts": {
+    "steel_pipe": {
+      "node": "steel_pipe:steelPipe",
+      "massKg": 1.8,
+      "centreOfMass": [0.5068922833495618, 0, -0.004736002921129503]
+    }
+  }
+}

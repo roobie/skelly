@@ -42,9 +42,9 @@ import { grenade } from './families/grenade.ts';
 import { compass, keycard, key as keyFamily, lighter, matchbox } from './families/handheld.ts';
 import { handOpener } from './families/handOpener.ts';
 import { arm, base, shade } from './families/lamp.ts';
-import { candle, torch } from './families/lights.ts';
+import { candle, flashlight, torch } from './families/lights.ts';
 import { cutStock, foldedSheet, turnedStock } from './families/materials.ts';
-import { bat, crowbar, hammer } from './families/melee.ts';
+import { bat, crowbar, hammer, knife, steelPipe, wrench } from './families/melee.ts';
 import { openTin } from './families/openTin.ts';
 import { carton, vessel } from './families/package.ts';
 import { ring } from './families/ring.ts';
@@ -129,6 +129,9 @@ const builders = {
   crowbar,
   hammer,
   bat,
+  knife,
+  wrench,
+  steelPipe,
   compass,
   lighter,
   matchbox,
@@ -163,6 +166,7 @@ const builders = {
   repairKit,
   webbingSling,
   torch,
+  flashlight,
   candle,
 } satisfies Record<string, (params: Readonly<Record<string, string>>) => readonly Solid[]>;
 const buildPart = (part: ToolPart, params = part.params): PartDef => {

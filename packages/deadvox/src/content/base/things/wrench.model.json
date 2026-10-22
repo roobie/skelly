@@ -1,0 +1,11 @@
+{
+  "id": "wrench",
+  "file": "assets/models/wrench.glb",
+  "parts": {
+    "wrench": {
+      "node": "wrench:wrench",
+      "massKg": 0.5,
+      "centreOfMass": [-0.017394514767932502, 0.006455696202531643, 0]
+    }
+  }
+}

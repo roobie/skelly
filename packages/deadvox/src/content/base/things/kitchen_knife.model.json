@@ -1,0 +1,11 @@
+{
+  "id": "kitchen_knife",
+  "file": "assets/models/kitchen_knife.glb",
+  "parts": {
+    "kitchen_knife": {
+      "node": "kitchen_knife:knife",
+      "massKg": 0.15,
+      "centreOfMass": [0.028560606567928783, -0.0029893668389899906, 2.397886606253087e-20]
+    }
+  }
+}

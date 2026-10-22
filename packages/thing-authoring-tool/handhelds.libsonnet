@@ -26,6 +26,22 @@ local melee(id, family, massKg, dimensions, finish) = {
   melee('baseball_bat', 'bat', 0.9, {
     back: 0.352, front: 0.427, handleRadius: 0.0165, barrelRadius: 0.035, knobRadius: 0.019,
   }, { body: 'wood-birch' }),
+  melee('kabar', 'knife', 0.3, {
+    back: 0.132, joinAt: 0.01, reach: 0.2205, spine: 0.014, drop: 0.016, thickness: 0.008, handleRadius: 0.014, guardHalf: 0.037, guardDepth: 0.014,
+  }, { handle: 'rubber-black', guard: 'steel-blued', blade: 'steel-blued' }),
+  melee('kitchen_knife', 'knife', 0.15, {
+    back: 0.115, joinAt: 0.01, reach: 0.247, spine: 0.015, drop: 0.028, thickness: 0.006, handleRadius: 0.011, guardHalf: 0.016, guardDepth: 0.012,
+  }, { handle: 'plastic-black', guard: 'steel-stainless', blade: 'steel-stainless' }),
+  melee('machete', 'knife', 0.55, {
+    back: 0.274, joinAt: -0.15, reach: 0.245, spine: 0.02, drop: 0.05, thickness: 0.006, handleRadius: 0.014, guardHalf: 0.022, guardDepth: 0.014,
+  }, { handle: 'wood-walnut', guard: 'steel-grey', blade: 'steel-grey' }),
+  melee('wrench', 'wrench', 0.5, {
+    back: 0.245, handleHalf: 0.0125, headAt: 0.02, jawAt: 0.055, reach: 0.105, headUp: 0.055, headDown: 0.035, gap: 0.022, depth: 0.014,
+  }, { body: 'steel-grey' }),
+  melee('steel_pipe', 'steelPipe', 1.8, { length: 0.927, radius: 0.0165, bendDrop: 0.1 }, { body: 'steel-grey' }),
+  melee('flashlight', 'flashlight', 0.25, {
+    length: 0.2, bodyRadius: 0.022, headRadius: 0.033, headLength: 0.05, lensDepth: 0.006,
+  }, { body: 'polymer-black', lens: 'plastic-white' }),
   atom('compass', 'compass', 0.120, { radius: 0.03, height: 0.009, bezelHeight: 0.004, dialHeight: 0.001 }, { body: 'plastic-black', bezel: 'steel-grey', dial: 'paint-cream', lubber: 'plastic-white' }, 'body') + {
     display: { part: 'compass', solid: 'dial', fraction: [0.5, 1, 0.5], normal: [0, 1, 0], up: [0, 0, -1] },
     anchors: { needle_mount: { part: 'compass', solid: 'dial', fraction: [0.5, 1, 0.5] } },

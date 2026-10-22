@@ -1209,6 +1209,60 @@
     "source": "baseball_bat"
   },
   {
+    "id": "kabar",
+    "kind": "item",
+    "options": {
+      "mass": "parts",
+      "voxelGrain": 0.0040000000000000001
+    },
+    "source": "kabar"
+  },
+  {
+    "id": "kitchen_knife",
+    "kind": "item",
+    "options": {
+      "mass": "parts",
+      "voxelGrain": 0.0040000000000000001
+    },
+    "source": "kitchen_knife"
+  },
+  {
+    "id": "machete",
+    "kind": "item",
+    "options": {
+      "mass": "parts",
+      "voxelGrain": 0.0040000000000000001
+    },
+    "source": "machete"
+  },
+  {
+    "id": "wrench",
+    "kind": "item",
+    "options": {
+      "mass": "parts",
+      "voxelGrain": 0.0040000000000000001
+    },
+    "source": "wrench"
+  },
+  {
+    "id": "steel_pipe",
+    "kind": "item",
+    "options": {
+      "mass": "parts",
+      "voxelGrain": 0.0040000000000000001
+    },
+    "source": "steel_pipe"
+  },
+  {
+    "id": "flashlight",
+    "kind": "item",
+    "options": {
+      "mass": "parts",
+      "voxelGrain": 0.0040000000000000001
+    },
+    "source": "flashlight"
+  },
+  {
     "id": "compass",
     "kind": "item",
     "options": {

@@ -56,6 +56,7 @@ export const withDefaultMountedLight = (base: Registry, firearmType: string, lig
       ...sourceLight,
       id: fixtureType,
       name: 'Fixture mounted light',
+      weight: 250,
       model: fixtureModelId,
     }),
     models: new Map(base.models).set(fixtureModelId, { ...mountModel, id: fixtureModelId }),

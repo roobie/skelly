@@ -4956,6 +4956,165 @@
       ]
     },
     {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "kabar",
+      "parts": [
+        {
+          "family": "knife",
+          "finish": {
+            "blade": "steel-blued",
+            "guard": "steel-blued",
+            "handle": "rubber-black"
+          },
+          "id": "kabar",
+          "massKg": 0.29999999999999999,
+          "params": {
+            "back": "0.13200000000000001",
+            "drop": "0.016",
+            "guardDepth": "0.014",
+            "guardHalf": "0.036999999999999998",
+            "handleRadius": "0.014",
+            "joinAt": "0.01",
+            "reach": "0.2205",
+            "spine": "0.014",
+            "thickness": "0.0080000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "kitchen_knife",
+      "parts": [
+        {
+          "family": "knife",
+          "finish": {
+            "blade": "steel-stainless",
+            "guard": "steel-stainless",
+            "handle": "plastic-black"
+          },
+          "id": "kitchen_knife",
+          "massKg": 0.14999999999999999,
+          "params": {
+            "back": "0.115",
+            "drop": "0.028000000000000001",
+            "guardDepth": "0.012",
+            "guardHalf": "0.016",
+            "handleRadius": "0.010999999999999999",
+            "joinAt": "0.01",
+            "reach": "0.247",
+            "spine": "0.014999999999999999",
+            "thickness": "0.0060000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "machete",
+      "parts": [
+        {
+          "family": "knife",
+          "finish": {
+            "blade": "steel-grey",
+            "guard": "steel-grey",
+            "handle": "wood-walnut"
+          },
+          "id": "machete",
+          "massKg": 0.55000000000000004,
+          "params": {
+            "back": "0.27400000000000002",
+            "drop": "0.050000000000000003",
+            "guardDepth": "0.014",
+            "guardHalf": "0.021999999999999999",
+            "handleRadius": "0.014",
+            "joinAt": "-0.14999999999999999",
+            "reach": "0.245",
+            "spine": "0.02",
+            "thickness": "0.0060000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "wrench",
+      "parts": [
+        {
+          "family": "wrench",
+          "finish": {
+            "body": "steel-grey"
+          },
+          "id": "wrench",
+          "massKg": 0.5,
+          "params": {
+            "back": "0.245",
+            "depth": "0.014",
+            "gap": "0.021999999999999999",
+            "handleHalf": "0.012500000000000001",
+            "headAt": "0.02",
+            "headDown": "0.035000000000000003",
+            "headUp": "0.055",
+            "jawAt": "0.055",
+            "reach": "0.105"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "steel_pipe",
+      "parts": [
+        {
+          "family": "steelPipe",
+          "finish": {
+            "body": "steel-grey"
+          },
+          "id": "steel_pipe",
+          "massKg": 1.8,
+          "params": {
+            "bendDrop": "0.10000000000000001",
+            "length": "0.92700000000000005",
+            "radius": "0.016500000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "flashlight",
+      "parts": [
+        {
+          "family": "flashlight",
+          "finish": {
+            "body": "polymer-black",
+            "lens": "plastic-white"
+          },
+          "id": "flashlight",
+          "massKg": 0.25,
+          "params": {
+            "bodyRadius": "0.021999999999999999",
+            "headLength": "0.050000000000000003",
+            "headRadius": "0.033000000000000002",
+            "length": "0.20000000000000001",
+            "lensDepth": "0.0060000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
       "anchors": {
         "needle_mount": {
           "fraction": [0.5, 1, 0.5],

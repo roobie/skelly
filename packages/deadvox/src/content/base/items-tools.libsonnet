@@ -110,7 +110,6 @@ local items = [
     id: 'kitchen_knife',
     name: 'Kitchen knife',
     category: 'tool',
-    weight: 150,
     size: [1, 4],
     model: 'kitchen_knife',
     tool: { qualities: { cutting: 2, opening: 1 } },
@@ -120,7 +119,6 @@ local items = [
     id: 'kabar',
     name: 'Kabar',
     category: 'tool',
-    weight: 300,
     size: [1, 3],
     model: 'kabar',
     tool: { qualities: { cutting: 2, opening: 1 } },
@@ -130,7 +128,6 @@ local items = [
     id: 'machete',
     name: 'Machete',
     category: 'tool',
-    weight: 550,
     size: [1, 6],
     model: 'machete',
     tool: { qualities: { cutting: 2, opening: 1 } },
@@ -172,7 +169,6 @@ local items = [
     id: 'steel_pipe',
     name: 'Steel pipe',
     category: 'weapon',
-    weight: 1800,
     size: [1, 10],
     model: 'steel_pipe',
     weapon: melee('blunt', 'swing', damage=13, reach=0.6, cooldownSimSeconds=1.2, stamina=9, impulse=8, wearPerHit=0.015) + heavySwing + metalRing,
@@ -181,7 +177,6 @@ local items = [
     id: 'flashlight',
     name: 'Flashlight',
     category: 'light',
-    weight: 250,
     size: [1, 2],
     description: 'A battery-powered flashlight. Its light is visible to nearby zombies.',
     model: 'flashlight',
@@ -323,7 +318,6 @@ assert std.all([std.member(classIds, item.weapon.melee.type) for item in items i
 
 {
   models: [
-    { id: 'flashlight', file: 'assets/models/flashlight.glb', grip: { at: [0.085, 0, 0] }, anchors: { lens: [0.199, 0, 0] } },
     { id: 'glowstick', file: 'assets/models/glowstick.glb', emissiveMaterial: 'chemical-light tube' },
   ],
   meleeClasses: meleeClasses,

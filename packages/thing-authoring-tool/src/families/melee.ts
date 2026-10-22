@@ -1,6 +1,6 @@
 import type { BoxSolid, ExtrudedPolygonSolid, RevolvedSolid } from '@skelly/engine/shapes/solid.ts';
 import { parse, strictObject } from 'valibot';
-import { positive, strip } from './shapes.ts';
+import { positive, revolve, scalar, strip } from './shapes.ts';
 
 // Melee tools lie along +x with the grip end toward -x and the striking end toward +x, the frame deadvox's melee
 // model rows describe their grip and anchors in. The origin sits near the striking end, not at the centre.
@@ -112,6 +112,121 @@ export const hammer = (params: Readonly<Record<string, string>>) => {
     box('face', { x: [d.headBottom, d.headTop], y: [-d.faceReach, -neck * d.clawReach], depth: d.headDepth }, 'head'),
     box('eye', { x: [d.headBottom, d.headTop], y: [-neck * d.clawReach, neck * d.clawReach], depth: eye }, 'head'),
     claw,
+  ];
+};
+
+// One blade family for the fixed-blade tools: a turned handle, a thin guard and a flat blade whose edge runs along the
+// bottom and whose point sits level with the grip axis.
+export const knife = (params: Readonly<Record<string, string>>) => {
+  const d = parse(
+    strictObject({
+      back: positive,
+      joinAt: scalar,
+      reach: positive,
+      spine: positive,
+      drop: positive,
+      thickness: positive,
+      handleRadius: positive,
+      guardHalf: positive,
+      guardDepth: positive,
+    }),
+    params,
+  );
+  if (!(d.joinAt < d.reach && d.handleRadius < d.guardHalf)) {
+    throw new Error('Invalid knife dimensions');
+  }
+  const belly = d.joinAt + (d.reach - d.joinAt) * 0.7;
+  return [
+    turnedAlongX(
+      'handle',
+      [
+        [-d.back, d.handleRadius * 0.85],
+        [-d.back + d.handleRadius * 0.6, d.handleRadius * 1.1],
+        [d.joinAt - d.handleRadius, d.handleRadius],
+        [d.joinAt, d.handleRadius],
+      ],
+      'handle',
+    ),
+    box(
+      'guard',
+      { x: [d.joinAt - d.thickness * 1.2, d.joinAt], y: [-d.guardHalf, d.guardHalf], depth: d.guardDepth },
+      'guard',
+    ),
+    {
+      id: 'blade',
+      kind: 'extruded-polygon',
+      profile: [
+        [d.joinAt, -d.drop],
+        [belly, -d.drop],
+        [d.reach, 0],
+        [belly, d.spine],
+        [d.joinAt, d.spine],
+      ],
+      z: [-d.thickness / 2, d.thickness / 2],
+      slot: 'blade',
+    } satisfies ExtrudedPolygonSolid,
+  ];
+};
+
+// A flat spanner with an open jaw at the +x end, the head wider than the handle.
+export const wrench = (params: Readonly<Record<string, string>>) => {
+  const d = parse(
+    strictObject({
+      back: positive,
+      handleHalf: positive,
+      headAt: positive,
+      jawAt: positive,
+      reach: positive,
+      headUp: positive,
+      headDown: positive,
+      gap: positive,
+      depth: positive,
+    }),
+    params,
+  );
+  if (!(d.headAt < d.jawAt && d.jawAt < d.reach && d.gap / 2 < Math.min(d.headUp, d.headDown))) {
+    throw new Error('Invalid wrench dimensions');
+  }
+  const half = d.gap / 2;
+  return [
+    box('handle', { x: [-d.back, d.headAt], y: [-d.handleHalf, d.handleHalf], depth: d.depth * 0.8 }, 'body'),
+    box('head', { x: [d.headAt, d.jawAt], y: [-d.headDown, d.headUp], depth: d.depth }, 'body'),
+    box('fixed-jaw', { x: [d.jawAt, d.reach], y: [half, d.headUp], depth: d.depth }, 'body'),
+    box('moving-jaw', { x: [d.jawAt, d.reach], y: [-d.headDown, -half], depth: d.depth }, 'body'),
+  ];
+};
+
+// A straight length of tube with a short bend toward -z at its far end, the way a held pipe's elbow points forward; the bend ends at x = length.
+export const steelPipe = (params: Readonly<Record<string, string>>) => {
+  const d = parse(strictObject({ length: positive, radius: positive, bendDrop: positive }), params);
+  if (!(d.radius * 2 < d.length)) {
+    throw new Error('A pipe must be longer than it is wide');
+  }
+  const legAt = d.length - d.radius;
+  return [
+    turnedAlongX(
+      'tube',
+      [
+        [0, d.radius],
+        [legAt, d.radius],
+      ],
+      'body',
+    ),
+    {
+      ...revolve(
+        'bend',
+        [
+          [-d.bendDrop, 0],
+          [-d.bendDrop, d.radius],
+          [d.radius, d.radius],
+          [d.radius, 0],
+          [-d.bendDrop, 0],
+        ],
+        'body',
+      ),
+      axis: 'z' as const,
+      origin: [legAt, 0, 0] as const,
+    },
   ];
 };
 

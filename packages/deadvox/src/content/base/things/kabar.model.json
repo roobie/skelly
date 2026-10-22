@@ -1,0 +1,11 @@
+{
+  "id": "kabar",
+  "file": "assets/models/kabar.glb",
+  "parts": {
+    "kabar": {
+      "node": "kabar:knife",
+      "massKg": 0.3,
+      "centreOfMass": [-0.010694342749358507, -0.000273624932118191, 1.8667296694321207e-20]
+    }
+  }
+}

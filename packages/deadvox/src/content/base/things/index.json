@@ -2028,6 +2028,68 @@
     }
   },
   {
+    "id": "kabar",
+    "file": "assets/models/kabar.glb",
+    "parts": {
+      "kabar": {
+        "node": "kabar:knife",
+        "massKg": 0.3,
+        "centreOfMass": [-0.010694342749358507, -0.000273624932118191, 1.8667296694321207e-20]
+      }
+    }
+  },
+  {
+    "id": "kitchen_knife",
+    "file": "assets/models/kitchen_knife.glb",
+    "parts": {
+      "kitchen_knife": {
+        "node": "kitchen_knife:knife",
+        "massKg": 0.15,
+        "centreOfMass": [0.028560606567928783, -0.0029893668389899906, 2.397886606253087e-20]
+      }
+    }
+  },
+  {
+    "id": "machete",
+    "file": "assets/models/machete.glb",
+    "parts": {
+      "machete": {
+        "node": "machete:knife",
+        "massKg": 0.55,
+        "centreOfMass": [-0.06813808307757457, -0.008730062654962458, -4.836473494446559e-21]
+      }
+    }
+  },
+  {
+    "id": "wrench",
+    "file": "assets/models/wrench.glb",
+    "parts": {
+      "wrench": {
+        "node": "wrench:wrench",
+        "massKg": 0.5,
+        "centreOfMass": [-0.017394514767932502, 0.006455696202531643, 0]
+      }
+    }
+  },
+  {
+    "id": "steel_pipe",
+    "file": "assets/models/steel_pipe.glb",
+    "parts": {
+      "steel_pipe": {
+        "node": "steel_pipe:steelPipe",
+        "massKg": 1.8,
+        "centreOfMass": [0.5068922833495618, 0, -0.004736002921129503]
+      }
+    }
+  },
+  {
+    "id": "flashlight",
+    "file": "assets/models/flashlight.glb",
+    "parts": {
+      "flashlight": { "node": "flashlight:flashlight", "massKg": 0.25, "centreOfMass": [0.11220335142013572, 0, 0] }
+    }
+  },
+  {
     "id": "compass",
     "file": "assets/models/compass.glb",
     "parts": {

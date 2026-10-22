@@ -29,6 +29,7 @@ local authored = [
     import 'things/gas_canister.model.json',
     import 'things/frag_grenade.model.json',
     import 'things/torch.model.json',
+    (import 'things/flashlight.model.json') + { grip: { at: [0.085, 0, 0] }, anchors: { lens: [0.199, 0, 0] } },
     import 'things/candle.model.json',
     import 'things/bear_trap.model.json',
     (import 'things/compass.model.json') + {
