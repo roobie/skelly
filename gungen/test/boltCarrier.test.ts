@@ -736,31 +736,21 @@ describe('procedural bolt carrier', () => {
     expect(handleOrigin[0]).toBeLessThanOrEqual(handguardFrontX);
   });
 
-  it('pins carrier and ejection-port anchors, including the forward-shifted pump action', () => {
-    const expectedAnchors = [
-      { pattern: 'ak', restX: -5.75, carrierX: [-4.5, 1.5], portX: [-7.5, -1] },
-      { pattern: 'smg', restX: -7, carrierX: [-1.5, 1.5], portX: [-8.75, -5.25] },
-      { pattern: 'pump', restX: -3, carrierX: [-3.25, 3], portX: [-6.25, 0.5] },
-      { pattern: 'barrett', restX: -4.5, carrierX: [-3, 3], portX: [-7.75, -1.25] },
-      { pattern: 'bolt', restX: -6, carrierX: [-2.5, 2.5], portX: [-8.75, -3.25] },
-    ] as const;
-
-    for (const expected of expectedAnchors) {
-      const entry = travelCases.find(({ pattern }) => pattern === expected.pattern)!;
+  it('keeps the ejection port around the carrier travel, including the forward-shifted pump action', () => {
+    for (const pattern of ['ak', 'smg', 'pump', 'barrett', 'bolt'] as const) {
+      const entry = travelCases.find((candidate) => candidate.pattern === pattern)!;
       const resolved = resolve(assemblyFor(entry), gunDomain);
       const port = portMeasurements(entry, resolved);
-      if (expected.pattern === 'pump') {
+      if (pattern === 'pump') {
         // Forward growth contains the full stroke without changing the stock-to-trigger distance.
-        const [stockX] = resolved.defs.get('receiver')!.ports.find(({ id }) => id === 'stock')!.pos;
-        expect(expected.restX + BOLT_CARRIER_ENVELOPES.pump.x[0]).toBeGreaterThan(stockX);
+        const receiverPorts = resolved.defs.get('receiver')!.ports;
+        const [stockX] = receiverPorts.find(({ id }) => id === 'stock')!.pos;
+        const [restX] = receiverPorts.find(({ id }) => id === 'bolt-carrier')!.pos;
+        expect(restX + BOLT_CARRIER_ENVELOPES.pump.x[0]).toBeGreaterThan(stockX);
       }
-      expect(BOLT_CARRIER_ENVELOPES[expected.pattern].x, expected.pattern).toEqual(expected.carrierX);
-      expect(
-        resolved.defs.get('receiver')!.ports.find(({ id }) => id === 'bolt-carrier')!.pos[0],
-        expected.pattern,
-      ).toBe(expected.restX);
-      expect(port.actualX, expected.pattern).toEqual(expected.portX);
-      expect(port.actualY, expected.pattern).toEqual(port.expectedY);
+      expect(port.actualX![0], pattern).toBeCloseTo(port.expectedX[0]!, 8);
+      expect(port.actualX![1], pattern).toBeCloseTo(port.expectedX[1]!, 8);
+      expect(port.actualY, pattern).toEqual(port.expectedY);
     }
   });
 

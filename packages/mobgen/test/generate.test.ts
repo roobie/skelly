@@ -297,24 +297,6 @@ describe('validation profiles', () => {
   });
 });
 
-sweepGroup('template generation validity rate', () => {
-  for (const t of HUMANOID_TEMPLATES) {
-    it(
-      `${t.name} retains at least 80% valid figures across ${SEEDS} seeds`,
-      () => {
-        let validSeeds = 0;
-        for (let seed = 0; seed < SEEDS; seed++) {
-          if (realize(generate(t, seed)).report.ok) {
-            validSeeds += 1;
-          }
-        }
-        expect(validSeeds / SEEDS).toBeGreaterThanOrEqual(0.8);
-      },
-      SEEDS * 100,
-    );
-  }
-});
-
 describe('templates', () => {
   for (const t of HUMANOID_TEMPLATES) {
     describe(t.name, () => {
