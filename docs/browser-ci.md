@@ -7,7 +7,7 @@ read_if:
 
 # Browser CI ownership and evidence
 
-The Deadvox unit suite runs as vitest shards in the `unit` job of `.github/workflows/deadvox.yml`, not in `fast`. One step over the whole suite outgrew its flat bound with no failing test (#1140), and a bound must follow the work it covers. Each shard's bound is about twice its expected work, so adding shards when files grow keeps the bound proportional instead of raising it. Vitest assigns whole files to shards, so the save budget fixture's file runs in exactly one shard. The `check` job requires `unit` like every other job; see `tools/browser-ci-result.mjs`, `assertBrowserResult`.
+The Deadvox unit suite is sharded because one step over the whole suite outgrew its flat bound with no failing test (#1140), and a bound must follow the work it covers. Each shard's step bound is about twice the slowest shard's measured time, which includes per-shard costs (compile, global setup, imports) that more shards do not shrink. When files grow, add shards rather than raise the bound. See `.github/workflows/deadvox.yml`, `unit`, and `AGENTS.md`, "Zero drift".
 
 GitHub Actions owns browser scheduling, isolation and timeouts. Keeping orchestration in `.github/workflows/deadvox-browser.yml` avoids a second runner that could change what the measurements mean.
 

@@ -98,8 +98,9 @@ jobs:
           path: packages/deadvox/test-results/
           if-no-files-found: ignore
 
-  # One shard per test file group, so the save budget fixture's file runs in exactly one shard.
-  # The step bound is about twice a shard's expected work, so a hang or a runaway shard fails fast (#1140).
+  # Vitest assigns whole files to shards, so the save budget fixture's file runs in exactly one shard.
+  # The step bound is about twice the slowest shard's expected time, per-shard costs included, so a
+  # hang or a runaway shard fails fast; see docs/browser-ci.md (#1140).
   unit:
     if: ${{ github.event.inputs.layout != 'control' }}
     runs-on: ubuntu-latest
@@ -107,7 +108,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: ['1/4', '2/4', '3/4', '4/4']
+        shard: ['1/6', '2/6', '3/6', '4/6', '5/6', '6/6']
     defaults:
       run:
         working-directory: packages/deadvox
@@ -122,13 +123,18 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: |
+            package-lock.json
+            packages/deadvox/tools/lit-check/package-lock.json
       - run: npm ci --prefix ../.. --no-audit --no-fund --prefer-offline
         timeout-minutes: 3
       - name: Install pinned go-jsonnet
         run: npm --prefix ../.. run jsonnet:setup
+      # Any test file can hash to any shard, and some tests read the lit-check install.
+      - run: npm ci --prefix tools/lit-check --no-audit --no-fund --prefer-offline
+        timeout-minutes: 3
       - name: Unit suite shard ${{ matrix.shard }}
-        run: timeout 150 npm test -- --maxWorkers=2 --shard=${{ matrix.shard }}
+        run: timeout 180 npm test -- --maxWorkers=2 --shard=${{ matrix.shard }}
       - name: Upload check artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v4
