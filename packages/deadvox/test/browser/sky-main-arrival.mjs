@@ -19,6 +19,8 @@ export const mainSourceOverlays = [
   'game/graphicsControls.ts',
   'game/play.ts',
   'render/playView.ts',
+  // Keep the view and figure together: their constructor and per-frame pose contracts change together.
+  'render/playerFigure.ts',
   'render/acidEffects.ts',
   'game/worldLoading.ts',
   'ui/worldLoading.ts',

@@ -248,10 +248,10 @@ const makeCaseSession = ({ world, spawn, intent: startingIntent, crouched = fals
       active: () => true,
       intent: () => intent,
       readyHeld: () => true,
-      consumeCrouchToggle: () => {
+      consumeStanceToggle: () => {
         const pressed = crouchToggle;
         crouchToggle = false;
-        return pressed;
+        return pressed ? 'crouch' : undefined;
       },
       yaw: () => yaw,
       pitch: () => pitch,
@@ -524,7 +524,7 @@ describe('firearm case wall contact', () => {
   it('keeps a crouched corner drop descending to its landing without entering the floor', () => {
     const runtime = makeCrouchedCornerRuntime();
     advanceFrames(runtime.session, 120);
-    expect(runtime.session.crouching).toBe(true);
+    expect(runtime.session.stance).toBe('crouching');
     expect(runtime.session.body.onGround).toBe(true);
     expect(bodyOverlapsTerrain(runtime.session.body, runtime.isSolid)).toBe(false);
     runtime.setIntent({ ...IDLE });

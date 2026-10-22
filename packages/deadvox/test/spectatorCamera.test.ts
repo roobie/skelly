@@ -16,7 +16,7 @@ const isSolid = (_x: number, y: number): boolean => y === 0;
 const hostileControls = () => {
   const useDominant = vi.fn();
   const useOff = vi.fn();
-  let crouchPressed = true;
+  let pronePressed = true;
   const controls: SessionControls = {
     active: () => true,
     intent: () => ({
@@ -29,10 +29,10 @@ const hostileControls = () => {
       useDominantHeld: true,
       useOff: true,
     }),
-    consumeCrouchToggle: () => {
-      const pending = crouchPressed;
-      crouchPressed = false;
-      return pending;
+    consumeStanceToggle: () => {
+      const pending = pronePressed;
+      pronePressed = false;
+      return pending ? 'prone' : undefined;
     },
     useDominant,
     useOff,

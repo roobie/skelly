@@ -100,6 +100,7 @@ const INPUT_ACTIONS: readonly Action[] = [
   row('movement.sprint', 'Sprint', moving, 'held-state'),
   row('movement.walk-toggle', 'Walk / jog', moving),
   row('player.crouch-toggle', 'Toggle crouch', ['play', 'carrying', 'build']),
+  row('player.prone-toggle', 'Lie down or rise to a crouch', ['play', 'carrying', 'build']),
   row('player.throw', 'Tap to toggle throwing stance; hold to drop a held item', ['play']),
   row('movement.jump', 'Jump', ['play', 'carrying', 'build'], 'held-state'),
   row('carry.tip', 'Tip the carried piece over', ['carrying']),

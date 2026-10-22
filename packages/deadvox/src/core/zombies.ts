@@ -38,6 +38,7 @@ import {
   stepBody,
   stepBodyHorizontal,
 } from './physics.ts';
+import type { PlayerStance } from './playerStance.ts';
 import { Rng, type RngState } from './random.ts';
 import { raycast, type SolidAt } from './raycast.ts';
 import type { SenseDef } from './schema.ts';
@@ -61,6 +62,18 @@ import {
 } from './zombieRegions.ts';
 
 export type PlayerMovement = 'walking' | 'jogging' | 'sprinting' | 'still';
+
+/** A lowered stance's tuning, or undefined standing. */
+export const loweredStanceTuning = (tuning: SenseDef, stance: PlayerStance | undefined) => {
+  switch (stance) {
+    case 'crouching':
+      return tuning.crouch;
+    case 'prone':
+      return tuning.prone;
+    default:
+      return;
+  }
+};
 export type ZombieTier = 'active' | 'background' | 'unloaded';
 export const ACTIVE_ZOMBIE_RADIUS_METRES = 40;
 export const BACKGROUND_ZOMBIE_RATE = 2;
@@ -545,7 +558,7 @@ export interface PlayerSense {
   /** Direction the player faces, in the x/z plane. */
   facing: Vec3;
   movement: PlayerMovement;
-  crouching?: boolean | undefined;
+  stance?: PlayerStance | undefined;
   lit: boolean;
   lightSeenFrom: number;
   /** Also the height of the light the player carries. */
@@ -1166,7 +1179,8 @@ const hearingTier = ({
   isSolid,
   tuning,
 }: Omit<HearingInput, 'rng'>): HearingTier | undefined => {
-  const range = hearingRange(zombie, player.movement) * (player.crouching ? tuning.crouch.hearingRangeScale : 1);
+  const range =
+    hearingRange(zombie, player.movement) * (loweredStanceTuning(tuning, player.stance)?.hearingRangeScale ?? 1);
   if (range <= 0) {
     return undefined;
   }
@@ -1305,8 +1319,8 @@ const seesPlayer = ({
   const clear = raycast(rayOrigin, unit(toTarget), Math.hypot(...toTarget), isSolid) === undefined;
   if (player.lit && clear && playerLightScale > 0) {
     sightRange = Math.max(sightRange, player.lightSeenFrom * playerLightScale * lightSpotScale);
-  } else if (player.crouching) {
-    sightRange *= tuning.crouch.sightRangeScale;
+  } else {
+    sightRange *= loweredStanceTuning(tuning, player.stance)?.sightRangeScale ?? 1;
   }
   return clear && metres <= sightRange;
 };

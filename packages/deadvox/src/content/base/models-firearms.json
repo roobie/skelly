@@ -14,6 +14,7 @@
         "dispersionRadians": 0.0060000000000000001,
         "dryFireSound": "firearm_dry_click",
         "handling": {},
+        "pelletSpreadScale": 1,
         "recoilKickRadians": 0.025000000000000001,
         "roundLoadSimSeconds": 1.2,
         "shotSound": "gunshot_tikka",
@@ -48,6 +49,7 @@
         "dispersionRadians": 0,
         "dryFireSound": "shotgun_dry_click",
         "handling": {},
+        "pelletSpreadScale": 1,
         "pump": true,
         "recoilKickRadians": 0.035000000000000003,
         "roundLoadSimSeconds": 0.90000000000000002,
@@ -101,6 +103,7 @@
             "removeSimSeconds": 3
           }
         },
+        "pelletSpreadScale": 1,
         "recoilKickRadians": 0.0060000000000000001,
         "shotSound": "gunshot_m4",
         "skillZeroHandling": {
@@ -139,6 +142,7 @@
             "removeSimSeconds": 3
           }
         },
+        "pelletSpreadScale": 1,
         "recoilKickRadians": 0.012,
         "shotSound": "gunshot",
         "skillZeroHandling": {

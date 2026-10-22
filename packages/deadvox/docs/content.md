@@ -71,10 +71,9 @@ The panel remains opt-in pending BR's decision about making it the default entry
 A bundled mod ships with the game but is applied only when asked, with `?mods=` and
 a comma-separated list of ids; `?mods=1` is the separate mods panel. Each one goes through
 the same intake as a player mod, so an unknown id is refused at startup with the usual
-diagnostics instead of being ignored. A bundled mod is derived from the base sources when
-it is selected, never written out as a second set of numbers, so it follows base tuning.
-That derivation is the seam player mods lack: they replace whole rows and cannot scale a
-base value. See `src/game/bundledMods.ts`, `selectBundledMods`.
+diagnostics instead of being ignored. A bundled mod's Jsonnet source derives its compiled
+rows from core content at build time, so its transformation remains beside its content.
+See `src/config/bundled/beginner.jsonnet` and `src/game/bundledMods.ts`, `selectBundledMods`.
 
 The game and the site launcher must offer the same mods, and the launcher is a static page
 that cannot import game modules, so the list is one schema-checked content file rather than
@@ -82,13 +81,13 @@ two copies. The launcher is a developer entry point, so a missing or invalid lis
 its control instead of breaking it. See `src/core/bundledModCatalogue.ts`,
 `bundledModCatalogue`, and `site/launcher.js`, `loadBundledMods`.
 
-Beginner mode (`?mods=beginner`) scales every hostile kind, not a list of ids. Damage, movement
-speed (wander and chase), detection and health each have one factor, `BEGINNER_FACTORS`.
-Detection covers sight, night sight, the hearing multiplier (footsteps and noise alike) and
-light spotting, the zombie stat `lightSightScale` that multiplies the range at which a carried
-or placed light is spotted. Light is included so a beginner carrying a torch or flashlight at
-night does not draw enemies from full range. The mode exists so a new player can learn the
-game against slower, weaker enemies that notice less.
+Beginner mode (`?mods=beginner`) scales every hostile kind, not a list of ids. Its Jsonnet source
+owns the damage, movement speed (wander and chase), detection and health factors. Detection
+covers sight, night sight, the hearing multiplier (footsteps and noise alike) and light spotting,
+the zombie stat `lightSightScale` that multiplies the range at which a carried or placed light is
+spotted. Light is included so a beginner carrying a torch or flashlight at night does not draw
+enemies from full range. The mode exists so a new player can learn the game against slower,
+weaker enemies that notice less.
 
 A save records each active bundled mod as a content pack in its version identity, so a
 beginner-mode world is stored apart from a normal one. The URL alone decides the mode, because
