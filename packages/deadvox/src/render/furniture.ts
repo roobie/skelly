@@ -296,14 +296,7 @@ export class FurnitureMeshes {
     panel.scale.set(...box.size);
     panel.position.set(...box.center);
     pivot.add(panel);
-    const barLook = entity.bar && this.entities?.registry.items.get(entity.bar.item)?.doorBar?.look;
-    if (barLook) {
-      const bar = new Mesh(this.geometry, this.material(barLook.color));
-      const { center, size } = doorBarBox(entity, box, barLook.thickness);
-      bar.scale.set(...size);
-      bar.position.set(...center);
-      pivot.add(bar);
-    }
+    this.addDoorBar(pivot, entity, box);
     if (bodyDoor) {
       const alongX = entity.facing === 'n' || entity.facing === 's';
       const faceOutward = entity.facing === 'n' || entity.facing === 'w' ? -1 : 1;
@@ -338,5 +331,17 @@ export class FurnitureMeshes {
     assembly.add(shaped);
     assembly.add(pivot);
     return assembly;
+  }
+
+  private addDoorBar(pivot: Group, entity: BlockEntity, box: ReturnType<typeof panelFor>): void {
+    const look = entity.bar && this.entities?.registry.items.get(entity.bar.item)?.doorBar?.look;
+    if (!look) {
+      return;
+    }
+    const bar = new Mesh(this.geometry, this.material(look.color));
+    const { center, size } = doorBarBox(entity, box, look.thickness);
+    bar.scale.set(...size);
+    bar.position.set(...center);
+    pivot.add(bar);
   }
 }

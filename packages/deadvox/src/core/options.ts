@@ -28,16 +28,22 @@ export const heldDoorBar = (inventory: Inventory): Item | undefined =>
   );
 
 /** Setting a bar takes it from both hands; lifting one needs both hands free. */
-const barHands = (inventory: Inventory, entity: BlockEntity, operation: 'bar' | 'unbar'): Plan => {
+const barHandsRefusal = (inventory: Inventory, operation: DoorOperation): string | undefined => {
   if (operation === 'unbar') {
-    const reason = inventory.liftRefusal();
-    const time = defOf(inventory.registry, entity.bar!.item).doorBar!.liftSimSeconds;
-    return reason ? { ok: false, reason } : { ok: true, time };
+    return inventory.liftRefusal();
   }
-  const bar = heldDoorBar(inventory);
-  return bar
-    ? { ok: true, time: defOf(inventory.registry, bar.type).doorBar!.setSimSeconds }
-    : { ok: false, reason: 'Hold a door bar' };
+  return operation !== 'bar' || heldDoorBar(inventory) ? undefined : 'Hold a door bar';
+};
+
+const doorSimSeconds = (inventory: Inventory, entity: BlockEntity, operation: DoorOperation): number => {
+  switch (operation) {
+    case 'bar':
+      return defOf(inventory.registry, heldDoorBar(inventory)!.type).doorBar!.setSimSeconds;
+    case 'unbar':
+      return defOf(inventory.registry, entity.bar!.item).doorBar!.liftSimSeconds;
+    default:
+      return inventory.entities.defOf(entity).door!.handlingSimSeconds;
+  }
 };
 
 export const doorPlan = (
@@ -48,13 +54,11 @@ export const doorPlan = (
 ): Plan => {
   const refusal = inventory.entities.doorRefusal(entity, operation, keyLocks, inventory.actorPosition());
   const handled = operation !== 'open' && operation !== 'close';
-  const reason = refusal ?? (handled && !inventory.canReachEntity(entity) ? 'Too far away' : undefined);
-  if (reason) {
-    return { ok: false, reason };
-  }
-  return operation === 'bar' || operation === 'unbar'
-    ? barHands(inventory, entity, operation)
-    : { ok: true, time: inventory.entities.defOf(entity).door!.handlingSimSeconds };
+  const reason =
+    refusal ??
+    (handled && !inventory.canReachEntity(entity) ? 'Too far away' : undefined) ??
+    barHandsRefusal(inventory, operation);
+  return reason ? { ok: false, reason } : { ok: true, time: doorSimSeconds(inventory, entity, operation) };
 };
 
 export const doorOptions = (

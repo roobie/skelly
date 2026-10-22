@@ -76,13 +76,17 @@ export const registerDoorAction = ({
     if (!plan.ok) {
       return plan.reason;
     }
-    if (operation === 'lock' || operation === 'unlock') {
-      return entities.setLocked(entity, operation === 'lock', heldKeyLocks(inventory));
+    switch (operation) {
+      case 'lock':
+      case 'unlock':
+        return entities.setLocked(entity, operation === 'lock', heldKeyLocks(inventory));
+      case 'bar':
+        return setBar(inventory, entity);
+      case 'unbar':
+        return liftBar(inventory, entity);
+      default:
+        return openClose(entity, operation === 'open');
     }
-    if (operation === 'bar' || operation === 'unbar') {
-      return operation === 'bar' ? setBar(inventory, entity) : liftBar(inventory, entity);
-    }
-    return openClose(entity, operation === 'open');
   });
 };
 

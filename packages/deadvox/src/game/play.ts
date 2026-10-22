@@ -3130,6 +3130,13 @@ export const startPlay = (
       view.furniture.markBounds(undefined, [0, 0, 0], [0, 0, 0]);
     }
   };
+  const furnitureHint = (entity: BlockEntity, key: ReturnType<typeof keyCap>): HintText => {
+    if (entity.bar) {
+      const lift = doorPlan(inventory, entity, 'unbar');
+      return html`${useText(entity)} · ${key} (hold): lift the bar${lift.ok ? '' : ` — ${lift.reason}`}`;
+    }
+    return liftable(entity) ? html`${useText(entity)} · ${key} (hold): lift` : useText(entity);
+  };
   const interactionHintFor = (
     target: InteractionTarget | undefined,
     carry: ReturnType<typeof carryPreview>,
@@ -3143,13 +3150,8 @@ export const startPlay = (
     switch (target?.kind) {
       case 'item':
         return html`${key}: pocket ${inventory.name(target.item)} · ${key} (hold): wield`;
-      case 'furniture': {
-        if (target.entity.bar) {
-          const lift = doorPlan(inventory, target.entity, 'unbar');
-          return html`${useText(target.entity)} · ${key} (hold): lift the bar${lift.ok ? '' : ` — ${lift.reason}`}`;
-        }
-        return liftable(target.entity) ? html`${useText(target.entity)} · ${key} (hold): lift` : useText(target.entity);
-      }
+      case 'furniture':
+        return furnitureHint(target.entity, key);
       case 'body':
         return downedBodyHint(target.id);
       default:
