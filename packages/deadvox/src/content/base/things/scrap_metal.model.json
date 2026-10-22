@@ -1,0 +1,14 @@
+{
+  "id": "scrap_metal",
+  "file": "assets/models/scrap_metal.glb",
+  "parts": {
+    "material": {
+      "node": "material:foldedSheet",
+      "massKg": 0.5,
+      "centreOfMass": [-0.0010397965290245296, 0.011299371633752246, 0.00112956313584681]
+    }
+  },
+  "grip": { "at": [-0.0625, 0.007500000000000001, -0.0375], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 0
+}

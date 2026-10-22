@@ -25,6 +25,7 @@ const modes = Object.freeze({
   'firefox-ui': 'render-free',
   'firefox-first-click': 'render-free',
   'render-probe': 'pixel',
+  'vehicle-feasibility': 'render-free',
 });
 
 export const browserStageMode = (stage, override) => {

@@ -3,6 +3,7 @@ read_if:
   - you change item, recipe, appliance or handling ownership
   - you change compressed long actions, interruption, reading or save behavior
   - you change work-item escrow, salvage or reachability
+  - you change how a trap is set, springs, holds or is disarmed
 ---
 
 # Deadvox interactions
@@ -42,6 +43,16 @@ Craft completion awards practice; take-apart work does not. Recipe knowledge is 
 Movement and gameplay action input are ignored while resting, sleeping or crafting. Reading is the exception described above: movement closes the page and passes through. Each action keeps its own stop, cancel and wake behavior; an emitted interruption, such as a hit or critical need, drops compression and is handled by the action owner. A nearby or aware hostile alone neither refuses nor interrupts a long action. The player judges whether the area is safe.
 
 Wait stops on movement. Rest can be cancelled through its anchor or its cancel action; movement does not stop it. Sleep starts at sleepable furniture; movement and its cancel action do not stop it, but an emitted interruption wakes the player. Craft uses its cancel action and resumes after interruption. See `src/core/longAction.ts`, `LongActions.syncInterruption`, and `src/core/sim.ts`, `Simulation.checkInterruptions`.
+
+## Traps
+
+The bear-trap rules and their reasons are in `SLICE-5.md`, "Settled bear-trap rules — issue #107"; this section keeps their ownership.
+
+A set trap is an ordinary item lying in a ground pile, with its armed or holding state on the item. The pile already saves, splits by region and owns the item, so recovery is an ordinary pickup of that same item and no placed-object store is needed until construction places entities (`SLICE-5.md`, "Construction and persistent placement"). A set or holding trap refuses every move, so it cannot be picked up still armed or pulled off a caught leg. The holding state names its victim and how long its jaws still hold; the player's wound and the zombie's leg damage live in their own bodies. See `src/core/bearTrap.ts`, `BearTraps`, and `src/core/inventory.ts`, `Inventory.plan`.
+
+Setting and disarming are handling jobs. Handling jobs are never saved, which makes the disarm non-resumable across a save as the rule requires. A hit, a critical need or movement withdraws a pending disarm instead of pausing it, so the next attempt starts its full duration. Its completion clears the armed state and fires nothing. See `src/game/bearTrapActions.ts`, `interruptDisarm`.
+
+Only traps inside the block of nine regions around the player spring, and the test is positions only, never whether a column is loaded or drawn. See `src/core/worldRegion.ts`, `inPlayerBlock`. Unloaded zombies wait for Slice 4b catch-up without moving, so inside the block an unloaded zombie cannot newly enter a trap's cell; one already standing in it is still caught. See `src/core/zombies.ts`, `ZombieSystemOptions`.
 
 ## Appliances
 

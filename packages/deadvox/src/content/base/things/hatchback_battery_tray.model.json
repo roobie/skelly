@@ -1,0 +1,13 @@
+{
+  "id": "hatchback_battery_tray",
+  "file": "assets/models/hatchback_battery_tray.glb",
+  "parts": {
+    "body": {
+      "node": "body:block",
+      "massKg": 1.5,
+      "centreOfMass": [0, 0.010000000000000002, 0],
+      "collision": [{ "min": [-0.14, 0, -0.105], "max": [0.14, 0.02, 0.105] }]
+    }
+  },
+  "anchors": { "seat": [0, 0.02, 0] }
+}

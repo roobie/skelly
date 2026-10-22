@@ -1,0 +1,220 @@
+{
+  "items": [
+    {
+      "category": "misc",
+      "description": "Twelve volts, if it still holds a charge.",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "car_battery",
+      "model": "car_battery",
+      "name": "Car battery",
+      "size": [3, 2],
+      "vehicle": {
+        "capabilities": ["electricity"]
+      }
+    },
+    {
+      "category": "misc",
+      "description": "A sealed lamp and its lens.",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "car_headlamp",
+      "model": "car_headlamp",
+      "name": "Headlamp unit",
+      "size": [2, 2],
+      "vehicle": {
+        "capabilities": ["light", "glazing"]
+      }
+    },
+    {
+      "category": "misc",
+      "description": "A pressed steel shelf for a battery.",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hatchback_battery_tray",
+      "model": "hatchback_battery_tray",
+      "name": "Hatchback battery tray",
+      "size": [3, 2],
+      "vehicle": {
+        "capabilities": []
+      }
+    },
+    {
+      "category": "misc",
+      "description": "A heavy steel shelf for a battery.",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "pickup_battery_tray",
+      "model": "pickup_battery_tray",
+      "name": "Pickup battery tray",
+      "size": [4, 3],
+      "vehicle": {
+        "capabilities": []
+      }
+    }
+  ],
+  "models": [
+    {
+      "anchors": {
+        "base": [0, 0, 0],
+        "terminal_positive": [0.072000000000000008, 0.19000000000000003, -0.052499999999999998]
+      },
+      "file": "assets/models/car_battery.glb",
+      "id": "car_battery",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0.092581976558580761, 0],
+          "collision": [
+            {
+              "max": [0.12, 0.17000000000000001, 0.087499999999999994],
+              "min": [-0.12, 0, -0.087499999999999994]
+            },
+            {
+              "max": [0.12, 0.19000000000000003, 0.087499999999999994],
+              "min": [-0.12, 0.17000000000000001, -0.087499999999999994]
+            },
+            {
+              "max": [0.1205, 0.115, 0.087999999999999995],
+              "min": [-0.1205, 0.055000000000000007, -0.087999999999999995]
+            }
+          ],
+          "massKg": 14,
+          "node": "body:carton"
+        }
+      }
+    },
+    {
+      "anchors": {
+        "beam": [0.040000000000000001, 0.080000000000000002, 0],
+        "mount": [-0.040000000000000001, 0.080000000000000002, -0.076999999999999999]
+      },
+      "file": "assets/models/car_headlamp.glb",
+      "id": "car_headlamp",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0.080000000000000002, 0],
+          "collision": [
+            {
+              "max": [0.040000000000000001, 0.16, 0.11],
+              "min": [-0.040000000000000001, 0, -0.11]
+            }
+          ],
+          "massKg": 1.2,
+          "node": "body:block"
+        }
+      }
+    },
+    {
+      "anchors": {
+        "seat": [0, 0.02, 0]
+      },
+      "file": "assets/models/hatchback_battery_tray.glb",
+      "id": "hatchback_battery_tray",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0.010000000000000002, 0],
+          "collision": [
+            {
+              "max": [0.14000000000000001, 0.02, 0.105],
+              "min": [-0.14000000000000001, 0, -0.105]
+            }
+          ],
+          "massKg": 1.5,
+          "node": "body:block"
+        }
+      }
+    },
+    {
+      "anchors": {
+        "seat": [0, 0.029999999999999999, 0]
+      },
+      "file": "assets/models/pickup_battery_tray.glb",
+      "id": "pickup_battery_tray",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0.014999999999999999, 0],
+          "collision": [
+            {
+              "max": [0.16, 0.029999999999999999, 0.12],
+              "min": [-0.16, 0, -0.12]
+            }
+          ],
+          "massKg": 2.2000000000000002,
+          "node": "body:block"
+        }
+      }
+    }
+  ],
+  "vehicleBlueprints": [
+    {
+      "fittings": [
+        {
+          "at": [1.45, 0.55000000000000004, 0.29999999999999999],
+          "id": "battery_tray",
+          "part": "hatchback_battery_tray",
+          "supportedBy": []
+        },
+        {
+          "at": [1.45, 0.58000000000000007, 0.29999999999999999],
+          "id": "battery",
+          "part": "car_battery",
+          "supportedBy": ["battery_tray"]
+        },
+        {
+          "at": [1.8500000000000001, 0.62, 0.55000000000000004],
+          "id": "headlamp_near",
+          "part": "car_headlamp",
+          "supportedBy": []
+        },
+        {
+          "at": [1.8500000000000001, 0.62, -0.55000000000000004],
+          "id": "headlamp_far",
+          "mirror": true,
+          "part": "car_headlamp",
+          "supportedBy": []
+        }
+      ],
+      "id": "hatchback",
+      "name": "Hatchback"
+    },
+    {
+      "fittings": [
+        {
+          "at": [1.8999999999999999, 0.80000000000000004, 0.34999999999999998],
+          "id": "battery_tray",
+          "part": "pickup_battery_tray",
+          "supportedBy": []
+        },
+        {
+          "at": [1.8999999999999999, 0.83000000000000007, 0.34999999999999998],
+          "id": "battery",
+          "part": "car_battery",
+          "supportedBy": ["battery_tray"]
+        },
+        {
+          "at": [2.3500000000000001, 0.84999999999999998, 0.65000000000000002],
+          "id": "headlamp_near",
+          "part": "car_headlamp",
+          "supportedBy": []
+        },
+        {
+          "at": [2.3500000000000001, 0.84999999999999998, -0.65000000000000002],
+          "id": "headlamp_far",
+          "mirror": true,
+          "part": "car_headlamp",
+          "supportedBy": []
+        }
+      ],
+      "id": "pickup",
+      "name": "Pickup"
+    }
+  ]
+}

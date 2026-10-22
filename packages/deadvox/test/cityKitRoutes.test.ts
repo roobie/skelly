@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 import { cityGridOf } from '../src/core/cityPlan.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
-import { ownershipCell } from '../src/core/templateOwnership.ts';
+import { OWNERSHIP_AIR as OWNED_AIR, ownershipCell } from '../src/core/templateOwnership.ts';
 import { templateReachableStandingPositions } from '../src/core/templateSpatial.ts';
 import { type CompiledTemplate, cellsOf, compileAssembly, kitSlotChoices } from '../src/core/templates.ts';
 import { startupContent } from './baseRegistry.ts';
@@ -85,8 +85,6 @@ const cityAlternatives = function* (everyStyle = false) {
     }
   }
 };
-
-const OWNED_AIR = 2;
 
 /** Owned air below grade that no standing anchor reaches through owned air, hatches, ladders or covers, if any. */
 const sealedBelowGrade = (compiled: CompiledTemplate): Vec3 | undefined => {

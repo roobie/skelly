@@ -32,7 +32,15 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
       assert.ok(parsed.success, `${out.id}: ${JSON.stringify(parsed.issues)}`);
       assertExportSynced(out, base, 'things');
     }
-    for (const file of readdirSync(join(base, 'things'))) {
+    assert.equal(
+      exportDifference(
+        JSON.parse(readFileSync(join(base, 'things/index.json'), 'utf8')),
+        exported.map(({ modelEntry }) => modelEntry),
+      ),
+      null,
+      'the registration index derives from the recipe',
+    );
+    for (const file of readdirSync(join(base, 'things')).filter((entry) => entry !== 'index.json')) {
       assert.ok(
         file.endsWith('.model.json') && ids.has(file.slice(0, -'.model.json'.length)),
         `${file}: orphaned thing export`,
@@ -67,7 +75,12 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
       exported.map(async ({ modelEntry }) => {
         const bytes = readFileSync(join(base, modelEntry.file));
         const loaded = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
-        for (const part of Object.values(modelEntry.parts)) {
+        let hasMesh = false;
+        loaded.scene.traverse((node) => {
+          hasMesh ||= node.isMesh === true;
+        });
+        assert.ok(hasMesh, `${modelEntry.id}: missing geometry`);
+        for (const part of Object.values(modelEntry.parts ?? {})) {
           if (part.node !== undefined) {
             const [node] = namedNodes(loaded.scene, loaded.parser, [part.node]);
             assert.ok(

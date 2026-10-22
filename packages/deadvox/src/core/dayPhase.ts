@@ -1,6 +1,7 @@
 import type { Vec3 } from './coords.ts';
 
-export type DayPhase = 'night' | 'dawn' | 'day' | 'dusk';
+export const DAY_PHASES = ['night', 'dawn', 'day', 'dusk'] as const;
+export type DayPhase = (typeof DAY_PHASES)[number];
 
 export interface DayCycle {
   readonly latitudeDegrees: number;

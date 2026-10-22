@@ -6,6 +6,7 @@
 
 import type { Body as MobBody } from '@mobgen/core/body.ts';
 import { AimController, type AimWobbleNoiseTuning, aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
+import { BearTraps } from '../core/bearTrap.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import { Character, dominantSide, offSide, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
@@ -19,6 +20,7 @@ import { type CraftPreference, planCraft } from '../core/crafting.ts';
 import { craftActionHooks } from '../core/craftWork.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
 import { type EntityId, MapEntityStore } from '../core/entities.ts';
+import { advanceEventRules } from '../core/eventRules.ts';
 import { blastShare, bodyCentre, Fuses, fragmentDirections, fragmentHitsOnBody, inSight } from '../core/explosive.ts';
 import {
   type FirearmsCombatTuning,
@@ -59,13 +61,14 @@ import { type Body, bodyOverlapsTerrain, CONTACT_SKIN, stepBody } from '../core/
 import { PlayerCombat } from '../core/playerCombat.ts';
 import { pryPlan } from '../core/prying.ts';
 import { Rng } from '../core/random.ts';
-import type { SolidAt } from '../core/raycast.ts';
+import { raycast, type SolidAt } from '../core/raycast.ts';
 import { bindReach, pileDistance as distanceToPile, furnitureDistance, reachTuning } from '../core/reach.ts';
 import type { Readable } from '../core/readable.ts';
 import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../core/saveState.ts';
 import type { Scale } from '../core/scale.ts';
 import { nearDiscoveryBox, type ScenarioDiscovery } from '../core/scenarioDiscovery.ts';
 import { assertScenarioRun, ScenarioRun } from '../core/scenarioRun.ts';
+import type { EventRuleDef } from '../core/schema.ts';
 import { Simulation } from '../core/sim.ts';
 import type { ColumnSource } from '../core/site.ts';
 import { skillActivityPractice, skillActivityPracticeRate } from '../core/skillTraining.ts';
@@ -86,12 +89,15 @@ import {
   BACKGROUND_ZOMBIE_SLICE_RATE,
   type HitImpulse,
   type MeleeResult,
+  type MeleeWeapon,
+  PLAYER_ARM_REACH_M,
   type PlayerMovement,
   type VocalNoise,
   type Zombie,
   ZombieSystem,
 } from '../core/zombies.ts';
 import { firearmShotSound } from './audioPresentation.ts';
+import { interruptDisarm, registerTrapActions } from './bearTrapActions.ts';
 import type { DebugNoclipStep } from './debugInterface.ts';
 import { registerDoorAction } from './doorAction.ts';
 import { type DownedBodyWay, downedBodyPlan, queueDownedBody, registerDownedBodyAction } from './downedBody.ts';
@@ -304,7 +310,9 @@ interface SessionDebug {
 
 export interface SessionOptions {
   registry: Registry;
-  scenario?: Readonly<{ id: string; body: string; compression: string }> | undefined;
+  scenario?:
+    | Readonly<{ id: string; body: string; compression: string; eventRules?: readonly EventRuleDef[] }>
+    | undefined;
   objective?: Readonly<Vec3> | undefined;
   discovery?: Readonly<ScenarioDiscovery> | undefined;
   world: World;
@@ -722,6 +730,7 @@ export const createSession = (options: SessionOptions) => {
   const { compression } = sim;
   let scenarioRun: ScenarioRun | undefined;
   const audioEvents = sim.events.reader();
+  const trapInterrupts = sim.events.reader();
   const soundPicker = new SoundPicker(seed, registry.sounds);
 
   // The player's own noise, which shamblers can hear. Saved with the character.
@@ -1085,8 +1094,26 @@ export const createSession = (options: SessionOptions) => {
     [inventory.hands[dominantSide(character)], inventory.hands[offSide(character)]].find(
       (item) => item && registry.items.get(item.type)?.firearm,
     );
+  const meleeBlocker = worldMeleeBlocker(world, registry, inventory.entities, isSolid);
+  /** One blow on a closed leaf, a zombie's bash or the player's strike; every blow is heard, whatever it does. */
+  const bashLeaf = (leaf: BlockEntity | undefined, strength: number): boolean => {
+    if (!(leaf && entities.bash(leaf, strength))) {
+      return false;
+    }
+    playNoisyWorldSound('door_bash', boxCentre(leaf.pos, leaf.size));
+    return true;
+  };
+  /** A swing that meets no zombie strikes the closed leaf in its reach with the weapon's impulse. */
+  const strikeLeaf = (origin: Vec3, direction: Vec3, weapon: MeleeWeapon): boolean => {
+    const reachBlocks = (PLAYER_ARM_REACH_M + weapon.reach) / s;
+    const hit = raycast(origin, direction, reachBlocks, meleeBlocker({ kind: 'player', motion: weapon.motion }));
+    const leaf = hit && entities.doorAt(...hit.block);
+    return bashLeaf(leaf && !leaf.open && entities.breachable(leaf) ? leaf : undefined, weapon.impulse ?? 0);
+  };
+  const traps = new BearTraps(inventory);
   const zombieSystem = new ZombieSystem({
     store: zombieStore,
+    restrained: (id) => traps.holds(id),
     seed: sim.seed,
     isLoaded: zombieReadinessFor(options),
     terrainFloor: options.terrainFloor,
@@ -1094,7 +1121,8 @@ export const createSession = (options: SessionOptions) => {
     solidBricks: solidBricksFor(options),
     isOpaque: options.isOpaque,
     isSoundBlocking: worldSoundBlocking(world, registry, inventory.entities, isSolid),
-    meleeBlocker: worldMeleeBlocker(world, registry, inventory.entities, isSolid),
+    meleeBlocker,
+    bashObstacle: (ahead, strength) => bashLeaf(entities.closedLeafTouching(ahead), strength),
     blockSize: s,
     physics,
     // Metres per second, as PLAYER.jump is: the system divides by blockSize itself.
@@ -1193,7 +1221,11 @@ export const createSession = (options: SessionOptions) => {
     },
   });
   const playerCombat = new PlayerCombat(
-    zombieSystem,
+    {
+      playPlayerMeleeSwing: (origin, weapon) => zombieSystem.playPlayerMeleeSwing(origin, weapon),
+      resolvePlayerMelee: (origin, direction, weapon, isFist) =>
+        zombieSystem.resolvePlayerMelee(origin, direction, weapon, isFist) || strikeLeaf(origin, direction, weapon),
+    },
     (uid) => wearMeleeWeaponOnHit(inventory, uid),
     character,
     () => {
@@ -1296,7 +1328,26 @@ export const createSession = (options: SessionOptions) => {
         detonate(item);
       }
       spawner.advance({ calendar: sim.calendar, registry, zombies: zombieSystem });
+      if (scenarioRun) {
+        advanceEventRules({
+          rules: options.scenario?.eventRules ?? [],
+          run: scenarioRun,
+          calendar: sim.calendar,
+          dayPhase: dayPhaseAt(dayCycle, sim.calendar).phase,
+          player: body.pos,
+          registry,
+          zombies: zombieSystem,
+        });
+      }
       zombieSystem.tickActive(dt, time, heldItemUids());
+      traps.step(dt, {
+        player: body.pos,
+        zombies: [...zombieStore.entries()].map(([id, zombie]) => [id, zombie.body.pos] as const),
+        blockSize: s,
+        alive: (id) => zombieStore.get(id) !== undefined,
+        hurtPlayer: ({ region, damage, kind }) => sim.hit(damage, 'a bear trap', region, { kind }),
+        injureZombie: (id, damage) => zombieSystem.injureLegs(id, damage),
+      });
       lastZombieStep = time;
     },
   });
@@ -1536,8 +1587,16 @@ export const createSession = (options: SessionOptions) => {
     const tick = playerTick;
     playerTick += 1;
     playerInput = controls.sampleAtPlayerTick?.(tick, live, time, sim.compression.c) ?? live;
-    const moving = playerInput.active && !playerInput.inputLocked && !sim.body.actionRefusal;
+    const moving = playerInput.active && !playerInput.inputLocked && !sim.body.actionRefusal && !traps.holds(undefined);
     const intent = moving ? playerInput.intent : IDLE;
+    if (
+      trapInterrupts.read().some((event) => event.kind === 'interrupt') ||
+      intent.forward !== 0 ||
+      intent.right !== 0 ||
+      intent.jump
+    ) {
+      interruptDisarm(queue);
+    }
     const handling = queue.busy || firearms.busy;
     const readyGait = advancePlayerReadiness(dt, intent, moving);
     controls.consumeDominantUse?.();
@@ -1704,6 +1763,16 @@ export const createSession = (options: SessionOptions) => {
     closeBlockedMessages: registry.ui.get(CORE_CONTENT_IDS.coreUi)!.doorCloseBlockedMessages,
   });
   registerDownedBodyAction({ queue, player: reachPlayer, zombies: zombieSystem });
+  registerTrapActions({
+    queue,
+    inventory,
+    reach: () => reach(),
+    setCell: () => {
+      const [fx, , fz] = [-Math.sin(controls.yaw()), 0, -Math.cos(controls.yaw())];
+      const [x, y, z] = feet();
+      return inventory.landing([x + Math.round(fx), y, z + Math.round(fz)]);
+    },
+  });
   sim.actions.forcing = {
     validate: (entityUid, toolUid, method) => {
       const entity = entities.byUid(entityUid);
