@@ -73,6 +73,8 @@ export type BashOutcome = 'resisted' | 'damaged' | 'broken';
 export interface BlockEntitiesState {
   nextUid: number;
   entities: BlockEntityState[];
+  /** Pieces pending deconstruction, held against use; absent when none are. */
+  reserved?: number[];
 }
 
 export interface EntitySpec {
@@ -174,7 +176,7 @@ const key = (x: number, y: number, z: number) => `${x},${y},${z}`;
 
 /** Everything a piece's drawn look and blocking cells follow from, so a view can skip pieces that didn't change. */
 export const poseKey = (entity: BlockEntity): string =>
-  `${entity.pos}|${entity.size}|${entity.facing}|${entity.tip ?? ''}|${entity.open}`;
+  `${entity.pos}|${entity.size}|${entity.facing}|${entity.tip ?? ''}|${entity.open}|${entity.broken ?? false}`;
 
 export interface BlockingBox {
   readonly pos: Readonly<Vec3>;
@@ -230,6 +232,7 @@ export class BlockEntities {
   private readonly doorways = new Map<string, BlockEntity>();
   private readonly masks = new WeakMap<FurnitureDef, ReadonlySet<string>>();
   private readonly boxes = new WeakMap<BlockEntity, { pose: string; boxes: readonly BlockingBox[] }>();
+  private readonly reservedUids = new Set<number>();
   private nextUid = 1;
   /** Goes up on every change, so views know when to redraw. */
   version = 0;
@@ -286,6 +289,7 @@ export class BlockEntities {
         ...(entity.broken ? { broken: true as const } : {}),
         ...(entity.pockets === undefined ? {} : { pockets: entity.pockets.map((grid) => grid.map(snapshotPlaced)) }),
       })),
+      ...(this.reservedUids.size === 0 ? {} : { reserved: [...this.reservedUids].sort((a, b) => a - b) }),
     });
   }
 
@@ -294,6 +298,10 @@ export class BlockEntities {
     this.byOrigin.clear();
     this.cells.clear();
     this.doorways.clear();
+    this.reservedUids.clear();
+    for (const uid of restored.reservedUids) {
+      this.reservedUids.add(uid);
+    }
     for (const [origin, entity] of restored.byOrigin) {
       this.byOrigin.set(origin, entity);
     }
@@ -327,6 +335,12 @@ export class BlockEntities {
       throw new Error('Invalid next block entity id');
     }
     entities.nextUid = state.nextUid;
+    for (const uid of state.reserved ?? []) {
+      if (!ids.has(uid) || entities.reservedUids.has(uid)) {
+        throw new Error(`Reserved block entity ${uid} is missing or repeated`);
+      }
+      entities.reservedUids.add(uid);
+    }
     return entities;
   }
 
@@ -370,9 +384,9 @@ export class BlockEntities {
   }
 
   /**
-   * Adds a piece of furniture. A spec whose origin is already claimed is ignored and
-   * returns undefined, so a column that generates again doesn't bring back a piece
-   * the player moved away.
+   * Adds a piece of furniture. A spec whose origin is already claimed is ignored and returns undefined. A moved or
+   * removed piece stays away because a column is furnished once (`src/game/session.ts`, `rolledColumns`), not
+   * because of this claim.
    */
   add(spec: EntitySpec): BlockEntity | undefined {
     const entity = this.addWithUid(spec, this.nextUid, spec.pos);
@@ -513,18 +527,40 @@ export class BlockEntities {
   }
 
   /**
-   * Takes a standing piece out of the world for good. A container must be empty first, so removal cannot lose
-   * what it holds (`SLICE-5.md`, "Removal contents").
+   * Why a standing piece can't be taken out of the world by itself: it holds items, or it is a door with a piece
+   * barricading its doorway. What rests on it is the mover's to check (`src/core/furnitureMove.ts`,
+   * `removalRefusal`). See `DESIGN.md`, "Edits persist".
+   */
+  removalRefusal(entity: BlockEntity): string | undefined {
+    const messages = this.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages;
+    if (entity.pockets?.some((grid) => grid.length > 0)) {
+      return messages.holdsItems;
+    }
+    const [x0, y0, z0] = entity.pos;
+    const barricaded =
+      this.inDoorway(entity) &&
+      [...cellsOf(entity.size)].some(([x, y, z]) => this.cells.has(key(x0 + x, y0 + y, z0 + z)));
+    return barricaded ? messages.barricaded : undefined;
+  }
+
+  /**
+   * Takes a standing piece out of the world for good. A handle from before a restore throws, since its cells now
+   * belong to the restored piece; so does a piece `removalRefusal` refuses.
    */
   remove(entity: BlockEntity): void {
+    if (this.byOrigin.get(key(...entity.origin)) !== entity) {
+      throw new Error('Cannot remove a block entity that is no longer live');
+    }
     if (entity.carried) {
       throw new Error('Cannot remove a carried block entity');
     }
-    if (entity.pockets?.some((grid) => grid.length > 0)) {
-      throw new Error('Cannot remove a container that holds items');
+    const refusal = this.removalRefusal(entity);
+    if (refusal) {
+      throw new Error(refusal);
     }
     this.occupy(entity, false);
     this.byOrigin.delete(key(...entity.origin));
+    this.reservedUids.delete(entity.uid);
     this.version += 1;
     this.standing += 1;
   }
@@ -773,6 +809,31 @@ export class BlockEntities {
     entity.open = true;
     this.standing += 1;
     return 'broken';
+  }
+
+  /**
+   * Holds a standing piece against use while its deconstruction is pending, paused or not, until `release` or its
+   * removal (`DESIGN.md`, "Edits persist").
+   */
+  reserve(entity: BlockEntity): void {
+    if (this.byUid(entity.uid) !== entity || entity.carried) {
+      throw new Error('Only a live standing block entity can be reserved');
+    }
+    this.reservedUids.add(entity.uid);
+    this.version += 1;
+  }
+
+  release(entity: BlockEntity): void {
+    if (this.reservedUids.delete(entity.uid)) {
+      this.version += 1;
+    }
+  }
+
+  /** Why a piece can't be used now: its deconstruction holds it. Every use path that refuses a missing piece asks. */
+  useRefusal(entity: BlockEntity): string | undefined {
+    return this.reservedUids.has(entity.uid)
+      ? this.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.reserved
+      : undefined;
   }
 
   markSearched(entity: BlockEntity): void {

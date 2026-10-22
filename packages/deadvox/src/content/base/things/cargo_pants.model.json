@@ -1,0 +1,10 @@
+{
+  "id": "cargo_pants",
+  "file": "assets/models/cargo_pants.glb",
+  "parts": {
+    "cargo_pants": { "node": "cargo_pants:folded-garment", "massKg": 0.8, "centreOfMass": [0, 0.024977008519786608, 0] }
+  },
+  "grip": { "at": [0, 0.025, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

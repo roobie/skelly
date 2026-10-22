@@ -1,6 +1,9 @@
 import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import type { Domain, PartDef } from '@skelly/engine/assembly/schema.ts';
 import { expect, it } from 'vitest';
+import { ATTACHMENT_IDS, attachmentInstanceForId } from '../src/gun/attachments.ts';
+import { gunDomain } from '../src/gun/domain.ts';
+import physical from '../src/gun/physical.json' with { type: 'json' };
 import { gunModelParts, type PartMassRow } from '../src/gun/physical.ts';
 
 const MASS_CONTEXT = /mass-fixture.*body.*fixture.*plain.*matched/;
@@ -28,4 +31,28 @@ it('refuses export with no matching authored mass row or several matching rows',
     expect(() => gunModelParts(resolved, new Set(), rows)).toThrow(MASS_CONTEXT);
   }
   expect(() => gunModelParts(resolved, new Set(), ambiguous)).toThrow(AMBIGUOUS_ROWS);
+});
+
+it('gives every choice of every body family param a mass row that admits it', () => {
+  const rows = physical.partMasses as readonly PartMassRow[];
+  // Fitted attachments and the magazine are replaceable items; gunModelParts takes their mass from the item.
+  const replaceable = new Set(['magazine', ...ATTACHMENT_IDS.map((id) => attachmentInstanceForId(id).family)]);
+  const unmassed: string[] = [];
+  for (const [family, def] of Object.entries(gunDomain.families)) {
+    if (replaceable.has(family)) {
+      continue;
+    }
+    const familyRows = rows.filter((row) => row.family === family);
+    if (familyRows.length === 0) {
+      unmassed.push(family);
+    }
+    for (const [name, param] of Object.entries(def.params)) {
+      for (const value of param.values) {
+        if (!familyRows.some((row) => row.match[name] === undefined || row.match[name] === value)) {
+          unmassed.push(`${family}.${name}=${value}`);
+        }
+      }
+    }
+  }
+  expect(unmassed).toEqual([]);
 });

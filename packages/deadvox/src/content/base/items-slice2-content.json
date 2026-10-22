@@ -343,7 +343,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "dead_desk_lamp",
-      "model": "desk_lamp",
+      "model": "dead_desk_lamp",
       "name": "Dead desk lamp",
       "salvage": [
         {

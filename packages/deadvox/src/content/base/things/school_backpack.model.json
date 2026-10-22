@@ -1,0 +1,14 @@
+{
+  "id": "school_backpack",
+  "file": "assets/models/school_backpack.glb",
+  "parts": {
+    "school_backpack": {
+      "node": "school_backpack:bag",
+      "massKg": 0.6,
+      "centreOfMass": [0, 0.22388789538589104, -0.003683382110621972]
+    }
+  },
+  "grip": { "at": [0, 0.48, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

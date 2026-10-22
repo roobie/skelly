@@ -43,9 +43,10 @@ const makeFixture = (character?: HandedCharacter, prepareRegistry?: (registry: R
   return { registry, model, modelId, inventory, firearm, foregrip, withModel };
 };
 
+/** The first two bottom-rail slots the export certifies for the foregrip, so a multi-notch span stays on the rail. */
 const bottomRailSlots = (model: GunModelDef): string[] =>
   (model.attachmentSlots ?? [])
-    .filter((slot) => slot.mount === 'rail-bottom')
+    .filter((slot) => slot.mount === 'rail-bottom' && model.compatibility?.[slot.id]?.includes('foregrip'))
     .map((slot) => slot.id)
     .slice(0, 2);
 

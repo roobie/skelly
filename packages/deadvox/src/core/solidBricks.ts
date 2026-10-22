@@ -187,7 +187,7 @@ class WorldBricks implements SolidBricks {
 export const worldBricks = (world: World, registry: Registry, entities?: BlockEntities): SolidBricks =>
   new WorldBricks(world, registry, entities);
 
-/** Bricks from any block test, read afresh on every query, uncached: for callers without a world, such as tests. */
+/** Bricks from any block test, read afresh on every query, uncached: for callers without a world, such as the zombie system's own default and tests. */
 export const testedBricks = (isSolid: SolidAt): SolidBricks => ({
   version: Number.NaN,
   brick: (bx, by, bz, out) => {

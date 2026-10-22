@@ -1,4 +1,4 @@
-import type { PartAppearance, PartDef, PartInstance, Resolved } from '@skelly/engine/assembly/schema.ts';
+import type { PartAppearance, PartDef, PartInstance, PortDef, Resolved } from '@skelly/engine/assembly/schema.ts';
 import { applyDir, applyPoint, type Vec3 } from '@skelly/engine/foundation/math.ts';
 import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
 import appearanceContent from './appearance.json' with { type: 'json' };
@@ -150,6 +150,16 @@ const railSpanNotches = (part: PartDef | undefined, mount: MountKind, solids = p
   };
 };
 
+// The resolver accepts integer indices below a fractional slot count, so enumerate them with ceil too.
+const railNotchCount = (port: Pick<PortDef, 'slots'>): number => Math.ceil(port.slots?.count ?? 1);
+
+/** Whether an attachment seated on a notch keeps its whole rail span on the rail's notches. */
+export const railSpanFitsNotch = (
+  span: AttachmentProperties['railSpanNotches'],
+  notchIndex: number,
+  hostPort: Pick<PortDef, 'slots'>,
+): boolean => !span || (notchIndex + span.minOffset >= 0 && notchIndex + span.maxOffset < railNotchCount(hostPort));
+
 export const attachmentSlots = (resolved: Resolved): ResolvedAttachmentSlot[] =>
   [...resolved.defs.entries()].flatMap(([partId, definition]) => {
     if (definition.tags?.includes('attachment')) {
@@ -163,8 +173,7 @@ export const attachmentSlots = (resolved: Resolved): ResolvedAttachmentSlot[] =>
       if (port.gender !== 'female' || !MOUNT_SET.has(port.mount as MountKind)) {
         return [];
       }
-      // The resolver accepts integer indices below a fractional slot count, so enumerate them with ceil too.
-      const count = Math.ceil(port.slots?.count ?? 1);
+      const count = railNotchCount(port);
       return Array.from({ length: count }, (_, index) => index).flatMap((index) => {
         const id = `${partId}.${port.id}.${index}`;
         const localPosition = port.slots

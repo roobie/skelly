@@ -4,7 +4,7 @@ import type { Registry } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
 import { Rng, valueNoise2 } from './random.ts';
 import type { Scale } from './scale.ts';
-import { type Rect, rectDistance } from './site.ts';
+import { type Rect, rectDistance, rectsOverlap } from './site.ts';
 import { siteGenerationOf, sitePalette } from './sitePalette.ts';
 import { type BlockBox, type MetreBox, rasterize, stampChunk } from './structure.ts';
 import type { TreeShape } from './treeShapes.ts';
@@ -30,9 +30,6 @@ export interface TreePlacement {
   readonly bounds: Rect;
   readonly boxes: readonly BlockBox[];
 }
-
-/** The complete canopy footprint must clear a reserved rectangle, not just the trunk. */
-export const rectsOverlap = (a: Rect, b: Rect): boolean => a.x0 < b.x1 && b.x0 < a.x1 && a.z0 < b.z1 && b.z0 < a.z1;
 
 const crown = (leaf: number, centreY: number, [rx, ry, rz]: Vec3): MetreBox[] => {
   const boxes: MetreBox[] = [];

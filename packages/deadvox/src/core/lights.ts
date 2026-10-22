@@ -13,7 +13,7 @@ import type { Inventory, Location, Pile, Target } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { putDownRefusal } from './itemThrow.ts';
 import { isInHeldItemSlotTree, itemRoots } from './itemTree.ts';
-import { raycast, type SolidAt } from './raycast.ts';
+import type { SolidAt } from './raycast.ts';
 import type { NightVision, SenseDef, WearSlot } from './schema.ts';
 import { sunDirection } from './sky.ts';
 import { type GameRate, type GameSeconds, gameSeconds } from './time.ts';
@@ -125,31 +125,6 @@ export const inventoryLightSources = (
   collect(inventory.carriedTree());
   collect(itemRoots<Item, Pile, BlockEntity>({ hands: {}, worn: {}, piles: inventory.piles.values(), entities: [] }));
   return sources;
-};
-
-/** A daylight sky-exposure test for simulation senses; authored renderer skylight is not authoritative here. */
-export const sunExposedAt = ({
-  position,
-  gameHours,
-  skyTop,
-  isOpaque,
-  cycle,
-}: {
-  position: readonly [number, number, number];
-  gameHours: number;
-  skyTop: number;
-  isOpaque: SolidAt;
-  cycle: DayCycle;
-}): boolean => {
-  if (sunDirection(gameHours, cycle)[1] <= 0) {
-    return false;
-  }
-  const distance = skyTop - position[1];
-  if (distance <= 0) {
-    return false;
-  }
-  const origin: [number, number, number] = [position[0], position[1] + 1e-4, position[2]];
-  return raycast(origin, [0, 1, 0], distance, isOpaque) === undefined;
 };
 
 /** Reuses the highest opaque block in each vertical column for the session's sun checks. */

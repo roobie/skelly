@@ -2,7 +2,7 @@
 // forward and leg stumps trailing. crawlerGaitPose layers alternating arm reach, plant and pull onto it.
 
 import type { Realized } from '../core/generate.ts';
-import { applyPoint, IDENTITY_M, type Mat3, mulMM, rotX, rotZ } from '../core/math.ts';
+import { applyPoint, IDENTITY_M, type Mat3, mulMM, rotX, rotZ, smoothstep } from '../core/math.ts';
 import { boneTransforms, type Pose } from '../core/pose.ts';
 import { posedVoxelSurfaceBoundsForBones } from '../core/voxelBounds.ts';
 import { HIT_FLINCH } from './reactions.ts';
@@ -111,8 +111,6 @@ export const crawlerPose = (realized: Realized): Pose => {
   poseCache.set(realized, pose);
   return pose;
 };
-
-const smoothstep = (value: number): number => value * value * (3 - 2 * value);
 
 const GROUND_CONTACT_BONES = [
   'pelvis',

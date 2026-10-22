@@ -1,12 +1,15 @@
 import { mateTransform, resolve } from '@skelly/engine/assembly/resolve.ts';
 import {
+  keepOut,
   keepOutBetweenParts,
   keepOutForPart,
-  portCompat,
+  solidOverlap,
   solidOverlapBetweenParts,
   solidOverlapForPart,
 } from '@skelly/engine/assembly/rules.ts';
-import type { Assembly, Domain, PartDef, Resolved } from '@skelly/engine/assembly/schema.ts';
+import type { Assembly, Domain, PartDef, Resolved, Rule } from '@skelly/engine/assembly/schema.ts';
+import { checkRule, validationRules } from '@skelly/engine/assembly/validate.ts';
+import type { Issue } from '@skelly/engine/foundation/issue.ts';
 import type { Transform } from '@skelly/engine/foundation/math.ts';
 import {
   ATTACHMENT_IDS,
@@ -14,11 +17,12 @@ import {
   attachmentInstanceForId,
   attachmentMetadata,
   attachmentMountSlot,
+  railSpanFitsNotch,
 } from './attachments.ts';
 import { gunDomain } from './domain.ts';
 import { mountCanAccept } from './mounts.ts';
 import { getOptic } from './optics.ts';
-import { opticLoadingClearanceForPart, opticMountFitForPart } from './rules.ts';
+import { opticLoadingClearance, opticLoadingClearanceForPart, opticMountFit, opticMountFitForPart } from './rules.ts';
 
 interface Candidate {
   readonly id: string;
@@ -92,25 +96,43 @@ const withCandidate = ({
   };
 };
 
-const fitIssues = (resolved: Resolved, candidate: Candidate, partId: string) => {
-  const optic = candidate.family === 'sight' ? getOptic(candidate.params.type) : undefined;
-  return [
-    ...portCompat.check(resolved),
-    ...solidOverlapForPart(resolved, partId),
-    ...(optic ? opticMountFitForPart(resolved, partId) : []),
-    ...(optic ? opticLoadingClearanceForPart(resolved, partId) : []),
-    ...keepOutForPart(resolved, partId),
-  ];
-};
+// Certification runs validation's own rule list, so a certified fit cannot fail validation. Rules
+// with a per-part variant check only the candidate's interactions, which is all a fit can change.
+const PER_PART_RULES = new Map<Rule, (r: Resolved, part: string) => Issue[]>([
+  [solidOverlap, solidOverlapForPart],
+  [keepOut, keepOutForPart],
+  [opticMountFit, opticMountFitForPart],
+  [opticLoadingClearance, opticLoadingClearanceForPart],
+]);
+
+const issueKey = (issue: Issue): string => JSON.stringify(issue);
+
+/** Validation's issues on the bare firearm, which no fit is blamed for. */
+const bareIssueKeys = (base: Resolved): ReadonlySet<string> =>
+  new Set(
+    validationRules(base.domain)
+      .filter((rule) => !PER_PART_RULES.has(rule))
+      .flatMap((rule) => checkRule(rule, base).map(issueKey)),
+  );
+
+const fits = (resolved: Resolved, partId: string, bareIssues: ReadonlySet<string>): boolean =>
+  validationRules(resolved.domain).every((rule) => {
+    const perPart = PER_PART_RULES.get(rule);
+    return perPart
+      ? checkRule(rule, resolved, (r) => perPart(r, partId)).length === 0
+      : checkRule(rule, resolved).every((issue) => bareIssues.has(issueKey(issue)));
+  });
 
 const passesFitRules = ({
   base,
+  bareIssues,
   candidate,
   slot,
   host,
   port,
 }: {
   readonly base: Resolved;
+  readonly bareIssues: ReadonlySet<string>;
   readonly candidate: Candidate;
   readonly slot: Pick<AttachmentSlotMetadata, 'id' | 'mount' | 'notchIndex'>;
   readonly host: string;
@@ -121,12 +143,20 @@ const passesFitRules = ({
   if (mount !== slot.mount) {
     return false;
   }
+  const hostPort = base.defs.get(host)?.ports.find(({ id }) => id === port);
   const optic = candidate.family === 'sight' ? getOptic(candidate.params.type) : undefined;
-  if (optic) {
-    const hostPort = base.defs.get(host)?.ports.find(({ id }) => id === port);
-    if (!(hostPort && mountCanAccept(hostPort, optic.mount, slot.notchIndex ?? 0))) {
-      return false;
-    }
+  if (optic && !(hostPort && mountCanAccept(hostPort, optic.mount, slot.notchIndex ?? 0))) {
+    return false;
+  }
+  // The exported span is what the runtime fitter requires on the rail, so certify only what it will accept.
+  const span = attachmentMetadata(
+    candidate.family,
+    candidate.params,
+    base.domain.units.metresPerUnit,
+    candidate.definition,
+  )?.properties.railSpanNotches;
+  if (hostPort && slot.notchIndex !== undefined && !railSpanFitsNotch(span, slot.notchIndex, hostPort)) {
+    return false;
   }
   const partId = `candidate-${candidate.id}`;
   const connection = {
@@ -135,10 +165,10 @@ const passesFitRules = ({
     ...(slot.notchIndex === undefined ? {} : { slot: slot.notchIndex }),
   };
   const resolved = withCandidate({ base, candidate, connection, hostPart: host, hostPortId: port, partId });
-  return resolved !== undefined && fitIssues(resolved, candidate, partId).length === 0;
+  return resolved !== undefined && fits(resolved, partId, bareIssues);
 };
 
-/** Runs gungen's port, optic-support and keep-out rules for every viable attachment/slot pair. */
+/** Runs validation's rules for every viable attachment/slot pair. */
 export const attachmentCompatibility = (
   firearm: Assembly,
   slots: readonly Pick<AttachmentSlotMetadata, 'id' | 'mount' | 'notchIndex'>[],
@@ -169,6 +199,7 @@ export const attachmentCompatibility = (
     ),
   };
   const base = resolve(bareFirearm, domain);
+  const bareIssues = bareIssueKeys(base);
   const candidatesByMount = new Map<string, Candidate[]>();
   for (const id of ATTACHMENT_IDS) {
     const candidate = standaloneCandidate(id, domain);
@@ -189,7 +220,8 @@ export const attachmentCompatibility = (
       const accepted = (candidatesByMount.get(slot.mount) ?? [])
         .filter(
           (candidate) =>
-            !excludedAttachments.includes(candidate.id) && passesFitRules({ base, candidate, slot, host, port }),
+            !excludedAttachments.includes(candidate.id) &&
+            passesFitRules({ base, bareIssues, candidate, slot, host, port }),
         )
         .map(({ id }) => id);
       return [slot.id, accepted];
@@ -468,7 +500,7 @@ export const attachmentCompatibilityPairs = (
     if (!withSecond) {
       return false;
     }
-    // Singles certify connection and optic rules against the firearm; only pair-dependent geometry changes here.
+    // Singles certify every validation rule against the firearm; only pair-dependent geometry changes here.
     return (
       solidOverlapBetweenParts(withSecond.resolved, withFirst.partId, withSecond.partId).length === 0 &&
       keepOutBetweenParts(withSecond.resolved, withFirst.partId, withSecond.partId).length === 0

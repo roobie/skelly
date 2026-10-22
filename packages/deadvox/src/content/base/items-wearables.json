@@ -31,6 +31,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "jeans",
+      "model": "jeans",
       "name": "Jeans",
       "size": [3, 3],
       "wearable": {
@@ -38,8 +39,7 @@
         "slot": "legs",
         "warmth": 10,
         "wearPerDamage": 0.0011999999999999999
-      },
-      "weight": 700
+      }
     },
     {
       "category": "clothing",
@@ -48,6 +48,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "rubber_boots",
+      "model": "rubber_boots",
       "name": "Rubber boots",
       "size": [2, 3],
       "wearable": {
@@ -56,8 +57,7 @@
         "slot": "feet",
         "warmth": 5,
         "wearPerDamage": 0.0011999999999999999
-      },
-      "weight": 1800
+      }
     },
     {
       "category": "clothing",
@@ -90,6 +90,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "cargo_pants",
+      "model": "cargo_pants",
       "name": "Cargo pants",
       "size": [3, 3],
       "wearable": {
@@ -97,8 +98,7 @@
         "slot": "legs",
         "warmth": 12,
         "wearPerDamage": 0.0011999999999999999
-      },
-      "weight": 800
+      }
     },
     {
       "category": "clothing",
@@ -116,6 +116,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "hoodie",
+      "model": "hoodie",
       "name": "Hoodie",
       "size": [3, 3],
       "wearable": {
@@ -123,8 +124,7 @@
         "slot": "torso",
         "warmth": 25,
         "wearPerDamage": 0.0015
-      },
-      "weight": 600
+      }
     },
     {
       "category": "clothing",
@@ -152,6 +152,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "jacket",
+      "model": "jacket",
       "name": "Jacket",
       "size": [3, 3],
       "wearable": {
@@ -159,8 +160,7 @@
         "slot": "torso",
         "warmth": 35,
         "wearPerDamage": 0.001
-      },
-      "weight": 1200
+      }
     },
     {
       "category": "clothing",
@@ -193,6 +193,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "utility_vest",
+      "model": "utility_vest",
       "name": "Utility vest",
       "size": [3, 3],
       "wearable": {
@@ -200,8 +201,7 @@
         "slot": "vest",
         "warmth": 5,
         "wearPerDamage": 0.002
-      },
-      "weight": 900
+      }
     },
     {
       "category": "clothing",
@@ -276,13 +276,13 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "fanny_pack",
+      "model": "fanny_pack",
       "name": "Fanny pack",
       "size": [2, 2],
       "wearable": {
         "encumbrance": 3,
         "slot": "waist"
-      },
-      "weight": 200
+      }
     },
     {
       "category": "bag",
@@ -305,13 +305,13 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "school_backpack",
+      "model": "school_backpack",
       "name": "School backpack",
       "size": [4, 4],
       "wearable": {
         "encumbrance": 10,
         "slot": "back"
-      },
-      "weight": 600
+      }
     },
     {
       "category": "bag",
@@ -334,13 +334,13 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "hiking_backpack",
+      "model": "hiking_backpack",
       "name": "Hiking backpack",
       "size": [4, 5],
       "wearable": {
         "encumbrance": 12,
         "slot": "back"
-      },
-      "weight": 1400
+      }
     }
   ]
 }

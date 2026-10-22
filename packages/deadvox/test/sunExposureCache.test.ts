@@ -1,12 +1,13 @@
 import { expect, it } from 'vitest';
 import { parseTimeOfDay } from '../src/core/clock.ts';
 import { CHUNK } from '../src/core/coords.ts';
-import { SunExposureCache, sunExposedAt } from '../src/core/lights.ts';
+import { SunExposureCache } from '../src/core/lights.ts';
 import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { realSeconds } from '../src/core/time.ts';
 import { terrainHeight } from '../src/core/worldgen.ts';
 import { planRealFrame } from '../src/game/frameDriver.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
+import { sunExposedAt } from './fixtures/sunOracle.ts';
 import {
   createRuntime,
   fixtureColumns,

@@ -5,6 +5,7 @@ import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import { keepOutBetweenParts, solidOverlapBetweenParts } from '@skelly/engine/assembly/rules.ts';
 import type { Assembly, Domain, PartDef, PartFamily, PortDef } from '@skelly/engine/assembly/schema.ts';
 import { validate } from '@skelly/engine/assembly/validate.ts';
+import type { Issue } from '@skelly/engine/foundation/issue.ts';
 import { applyPoint } from '@skelly/engine/foundation/math.ts';
 import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
 import { partNodeName } from '@skelly/thing-export/glb.ts';
@@ -18,6 +19,7 @@ import {
   ATTACHMENT_IDS,
   type AttachmentMetadata,
   type AttachmentSlotMetadata,
+  attachmentInstanceForId,
   attachmentMetadata,
   attachmentSlots,
 } from '../src/gun/attachments.ts';
@@ -28,9 +30,14 @@ import { exportGunGlb } from '../src/gun/exportGlb.ts';
 import { MOUNT_STANDARDS, mountCanAccept } from '../src/gun/mounts.ts';
 import { OPTIC_CATALOG, opticRailContactSolids } from '../src/gun/optics.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
+import { opticEyeRelief } from '../src/gun/rules.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
 import { readGlb } from './glbReader.ts';
 import { loadCorpus } from './helpers.ts';
+
+/** The middle of three notches, where an attachment spanning its neighbours stays on the rail. */
+const PAIR_NOTCH = 1;
+const PAIR_RAIL_SLOTS = { count: 3, pitch: 2 };
 
 const pairFixture = (withInstalledDefault = false) => {
   const family: PartFamily = {
@@ -43,7 +50,8 @@ const pairFixture = (withInstalledDefault = false) => {
           id: 'blocked-left',
           mount: 'rail-bottom',
           gender: 'female',
-          pos: [0, 0, 0],
+          slots: PAIR_RAIL_SLOTS,
+          pos: [-2, 0, 0],
           normal: [0, -1, 0],
           up: [1, 0, 0],
         },
@@ -51,7 +59,8 @@ const pairFixture = (withInstalledDefault = false) => {
           id: 'blocked-right',
           mount: 'rail-bottom',
           gender: 'female',
-          pos: [0, 0, 0],
+          slots: PAIR_RAIL_SLOTS,
+          pos: [-2, 0, 0],
           normal: [0, -1, 0],
           up: [1, 0, 0],
         },
@@ -59,12 +68,13 @@ const pairFixture = (withInstalledDefault = false) => {
           id: 'clear',
           mount: 'rail-bottom',
           gender: 'female',
-          pos: [0, 0, 100],
+          slots: PAIR_RAIL_SLOTS,
+          pos: [-2, 0, 100],
           normal: [0, -1, 0],
           up: [1, 0, 0],
         },
       ],
-      solids: [],
+      solids: [{ id: 'fixture-pair-rail-body', kind: 'box', box: { center: [0, 1, 50], half: [2, 1, 53] } }],
       keepOuts: [],
       axes: [],
     }),
@@ -80,7 +90,7 @@ const pairFixture = (withInstalledDefault = false) => {
       mounts: { family: family.name, params: {} },
       ...(withInstalledDefault ? { installed: { family: 'foregrip', params: {} } } : {}),
     },
-    connections: withInstalledDefault ? [{ from: 'mounts.clear', to: 'installed.base' }] : [],
+    connections: withInstalledDefault ? [{ from: 'mounts.clear', to: 'installed.base', slot: PAIR_NOTCH }] : [],
   };
   const slots = attachmentSlots(resolve(assembly, domain));
   const compatibility = attachmentCompatibility(assembly, slots, domain);
@@ -110,7 +120,12 @@ const sightlinePairFixture = () => {
       axes: [],
     }),
   };
-  const domain: Domain = { ...gunDomain, families: { ...gunDomain.families, receiver } };
+  // The fixture has no stock, so it leaves out the eye-relief rule a long optic would fail.
+  const domain: Domain = {
+    ...gunDomain,
+    families: { ...gunDomain.families, receiver },
+    rules: (gunDomain.rules ?? []).filter((rule) => rule !== opticEyeRelief),
+  };
   const assembly: Assembly = {
     name: 'optic-sightline-pair-fixture',
     root: 'receiver',
@@ -552,9 +567,9 @@ describe('attachment parts and export metadata', () => {
 
   it('certifies clear attachment pairs and rejects a pair that overlaps on fixture geometry', () => {
     const { slots, compatibility, pairs } = pairFixture();
-    const blockedLeft = slots.find(({ id }) => id === 'mounts.blocked-left.0');
-    const blockedRight = slots.find(({ id }) => id === 'mounts.blocked-right.0');
-    const clear = slots.find(({ id }) => id === 'mounts.clear.0');
+    const blockedLeft = slots.find(({ id }) => id === `mounts.blocked-left.${PAIR_NOTCH}`);
+    const blockedRight = slots.find(({ id }) => id === `mounts.blocked-right.${PAIR_NOTCH}`);
+    const clear = slots.find(({ id }) => id === `mounts.clear.${PAIR_NOTCH}`);
     if (!(blockedLeft && blockedRight && clear)) {
       throw new Error('Pair fixture did not expose all mount slots');
     }
@@ -582,8 +597,8 @@ describe('attachment parts and export metadata', () => {
 
   it('certifies a dynamic single beside an installed default', () => {
     const { assembly, domain, slots, compatibility } = pairFixture(true);
-    const blocked = slots.find(({ id }) => id === 'mounts.blocked-left.0');
-    const installed = slots.find(({ id }) => id === 'mounts.clear.0');
+    const blocked = slots.find(({ id }) => id === `mounts.blocked-left.${PAIR_NOTCH}`);
+    const installed = slots.find(({ id }) => id === `mounts.clear.${PAIR_NOTCH}`);
     const blockedChoices = blocked ? compatibility[blocked.id] : undefined;
     if (!(blocked && installed && blockedChoices?.includes('foregrip'))) {
       throw new Error('Pair fixture did not expose a dynamic fit beside its default');
@@ -828,6 +843,106 @@ describe('attachment parts and export metadata', () => {
     };
     const report = validate(invalid, gunDomain).issues;
     expect(report.some(({ rule }) => rule === 'port-compat')).toBe(true);
+  });
+
+  it('certifies no attachment that validation rejects once fitted', () => {
+    const firearm: Assembly = {
+      name: 'stockless-receiver',
+      root: 'receiver',
+      parts: { receiver: { family: 'receiver', params: { rail: 'full' } } },
+      connections: [],
+    };
+    const slots = attachmentSlots(resolve(firearm, gunDomain));
+    const byGunDomain = attachmentCompatibility(firearm, slots, gunDomain);
+    const slot = slots.find(({ id }) => (byGunDomain[id] ?? []).length > 0);
+    const [rejectedId] = slot ? (byGunDomain[slot.id] ?? []) : [];
+    if (!(slot && rejectedId)) {
+      throw new Error('The receiver certifies nothing on any slot');
+    }
+    // A domain rule rejects one fit the gun domain certifies, so validation always rejects something here.
+    const rejected = attachmentInstanceForId(rejectedId);
+    const domain: Domain = {
+      ...gunDomain,
+      rules: [
+        ...(gunDomain.rules ?? []),
+        {
+          id: 'fixture-reject',
+          title: 'Rejects one attachment',
+          check: (r) =>
+            Object.entries(r.assembly.parts)
+              .filter(
+                ([, part]) =>
+                  part.family === rejected.family && JSON.stringify(part.params) === JSON.stringify(rejected.params),
+              )
+              .map(([id]) => ({ rule: 'fixture-reject', message: `${id} is rejected`, parts: [id] })),
+        },
+      ],
+    };
+    const key = (issue: Issue) => JSON.stringify(issue);
+    const bareIssues = new Set(validate(firearm, domain).issues.map(key));
+    const passesValidation = (id: string) =>
+      validate(
+        {
+          ...firearm,
+          parts: { ...firearm.parts, fitted: attachmentInstanceForId(id) },
+          connections: [
+            {
+              from: slot.id.split('.').slice(0, 2).join('.'),
+              to: 'fitted.base',
+              ...(slot.notchIndex === undefined ? {} : { slot: slot.notchIndex }),
+            },
+          ],
+        },
+        domain,
+      ).issues.every((issue) => bareIssues.has(key(issue)));
+    const certified = attachmentCompatibility(firearm, [slot], domain)[slot.id] ?? [];
+    expect(passesValidation(rejectedId)).toBe(false);
+    expect(certified).not.toContain(rejectedId);
+    for (const id of certified) {
+      expect(passesValidation(id), id).toBe(true);
+    }
+  });
+
+  it('fits a foregrip to the AK handguard bottom rail that validation accepts', () => {
+    const firearm = design('archetype-ak');
+    const slots = attachmentSlots(resolve(firearm, gunDomain)).filter(({ mount }) => mount === 'rail-bottom');
+    const certified = attachmentCompatibility(firearm, slots, gunDomain);
+    const fits = slots.flatMap((slot) =>
+      (certified[slot.id] ?? []).filter((id) => id === 'foregrip').map((id) => ({ slot, id })),
+    );
+    expect(fits.length).toBeGreaterThan(0);
+    const bareIssues = new Set(validate(firearm, gunDomain).issues.map((issue) => JSON.stringify(issue)));
+    for (const { slot, id } of fits) {
+      const fitted: Assembly = {
+        ...firearm,
+        parts: { ...firearm.parts, fitted: attachmentInstanceForId(id) },
+        connections: [
+          ...firearm.connections,
+          {
+            from: slot.id.split('.').slice(0, 2).join('.'),
+            to: 'fitted.base',
+            ...(slot.notchIndex === undefined ? {} : { slot: slot.notchIndex }),
+          },
+        ],
+      };
+      const added = validate(fitted, gunDomain).issues.filter((issue) => !bareIssues.has(JSON.stringify(issue)));
+      expect(added, slot.id).toEqual([]);
+    }
+  });
+
+  it('certifies a multi-notch attachment only where its whole span stays on the rail', () => {
+    const firearm = design('archetype-ak');
+    const slots = attachmentSlots(resolve(firearm, gunDomain))
+      .filter(({ mount }) => mount === 'rail-bottom')
+      .sort((a, b) => (a.notchIndex ?? 0) - (b.notchIndex ?? 0));
+    const certified = attachmentCompatibility(firearm, slots, gunDomain);
+    const span = attachmentMetadata('foregrip', {}, gunDomain.units.metresPerUnit, attachmentBuild('foregrip').part)
+      ?.properties.railSpanNotches;
+    expect(span && span.maxOffset > span.minOffset).toBe(true);
+    const has = (index: number) => (certified[slots[index]?.id ?? ''] ?? []).includes('foregrip');
+    expect(has(0)).toBe(false);
+    expect(has(slots.length - 1)).toBe(false);
+    expect(slots.some((_, index) => has(index))).toBe(true);
   });
 
   it("certifies rifle muzzle devices on a rifled barrel but not on a shotgun's smoothbore barrel", () => {

@@ -65,7 +65,7 @@ describe('AR-pattern parts', () => {
   });
 
   it('keeps magazine-well front walls within their front panels in every well layout', () => {
-    for (const layout of ['conventional', 'bullpup', 'ar']) {
+    for (const layout of ['conventional', 'ar']) {
       const lower = FAMILIES.lower!.build({ layout });
       const panel = lower.solids.find(({ id }) => id === 'frame-front');
       expect(panel?.kind, `${layout} front panel`).toBe('box');

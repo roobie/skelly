@@ -120,4 +120,4 @@ See `src/ui/saveController.ts`, `SaveController`, and `src/ui/style.css`, "#over
 ## Open direction
 
 - #746: Add the playtest profile without god mode, spawning, noclip or time controls, and shape a diegetic first-run introduction from playtest findings.
-- Make the clock diegetic through a watch.
+- #183: Make the clock diegetic through a watch.

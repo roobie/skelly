@@ -194,7 +194,7 @@
       "name": "Dead desk lamp",
       "category": "misc",
       "size": [2, 3],
-      "model": "desk_lamp",
+      "model": "dead_desk_lamp",
       "salvageTimeGameMinutes": 5,
       "salvage": [
         { "item": "glass_bulb", "count": 1 },
