@@ -285,7 +285,7 @@ describe('made light burn state', () => {
 
   it('keeps every dropped burn light burning on its fuel until it burns out on the floor', () => {
     const burnLights = [...registry.items.values()].filter(({ light }) => light?.burning !== undefined);
-    const igniter = [...registry.items.values()].find(({ igniter }) => igniter)!.id;
+    const igniter = [...registry.items.values()].find((definition) => definition.igniter)!.id;
     expect(burnLights.length).toBeGreaterThan(0);
 
     for (const definition of burnLights) {

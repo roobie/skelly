@@ -6,7 +6,7 @@ import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { startupContent } from './baseRegistry.ts';
 
-const registry = startupContent().registry;
+const { registry } = startupContent();
 const scale = makeScale(0.5);
 const FRAME = 1 / 60;
 
@@ -64,7 +64,7 @@ const roundTrip = async (snapshot: Readonly<SaveSnapshot>): Promise<SaveSnapshot
 
 describe('dropped light save', () => {
   it('restores a dropped firestarter light lit on the ground with the fuel it had left', async () => {
-    const type = [...registry.items.values()].find(({ light }) => light?.burning?.ignition === 'firestarter')!.id;
+    const type = [...registry.items.values()].find(({ light: spec }) => spec?.burning?.ignition === 'firestarter')!.id;
     const { session, tick } = runtime();
     const light = session.inventory.create(type);
     const lighter = session.inventory.create([...registry.items.values()].find(({ igniter }) => igniter)!.id);
