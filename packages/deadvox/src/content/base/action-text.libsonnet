@@ -119,7 +119,7 @@
   melee: {
     tooTired: "I'm too tired to swing",
   },
-  timedActions: {
+  longActions: {
     reading: 'Reading {item}',
     readingUnnamed: 'Reading',
     forcingPadlock: 'Forcing padlock',

@@ -496,7 +496,7 @@ const isTimedLongJob = (job: Readonly<LongJob>): job is TimedLongJob =>
   job.jobType === 'reading' || job.jobType === 'forceDoor' || job.jobType === 'treatment';
 
 const timedActionLabel = (job: TimedLongJob, inventory: Inventory): string => {
-  const labels = actionText(inventory.registry).timedActions;
+  const labels = actionText(inventory.registry).longActions;
   switch (job.jobType) {
     case 'reading': {
       const book = inventory.itemByUid(job.bookUid);
@@ -3576,7 +3576,7 @@ export const startPlay = (
     if (job?.jobType !== 'wait' || (job.stopped && compression.interruption === undefined)) {
       return undefined;
     }
-    return { label: lines.timedActions.waiting };
+    return { label: lines.longActions.waiting };
   };
   const renderRestAndWait = (messagesVisible: boolean): void => {
     const waitAction = waitViewAction();

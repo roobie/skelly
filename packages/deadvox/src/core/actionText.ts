@@ -146,8 +146,8 @@ export const ActionTextSchema = strictObject({
   /** Labels in the held-item action list whose wording does not depend on the item or wound. */
   itemActions: strictObject({ stripRound: Line, swing: Line, use: Line, openCan: Line }),
   melee: strictObject({ tooTired: Line }),
-  /** Labels of long timed actions in the handling readout. */
-  timedActions: strictObject({
+  /** Labels of long actions in the handling readout. */
+  longActions: strictObject({
     reading: Template('item'),
     readingUnnamed: Line,
     forcingPadlock: Line,

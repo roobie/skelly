@@ -61,6 +61,14 @@
           "roundsNotCarried": "I'm not carrying those rounds",
           "wrongRounds": "These rounds don't fit"
         },
+        "longActions": {
+          "forcingPadlock": "Forcing padlock",
+          "reading": "Reading {item}",
+          "readingUnnamed": "Reading",
+          "treating": "Treating {item}",
+          "treatingUnnamed": "Treating wound",
+          "waiting": "Waiting"
+        },
         "magazine": {
           "cartridgesDetail": "Cartridges: {count}/{capacity}",
           "empty": "It's empty"
@@ -112,14 +120,6 @@
           "outOfFuel": "It's out of fuel",
           "rotten": "The {item} was rotten",
           "toolNotInHands": "The tool isn't in my hands"
-        },
-        "timedActions": {
-          "forcingPadlock": "Forcing padlock",
-          "reading": "Reading {item}",
-          "readingUnnamed": "Reading",
-          "treating": "Treating {item}",
-          "treatingUnnamed": "Treating wound",
-          "waiting": "Waiting"
         },
         "trap": {
           "noGround": "There's no ground to set it on",
