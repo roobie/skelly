@@ -548,6 +548,15 @@
       "url": "https://opengameart.org/content/thwack-sounds"
     },
     {
+      "author": "Pichuliru",
+      "changes": "Converted the source OBJ mesh with its MTL palette material and shared T_PCL_Palette_c.png in Blender to a self-contained GLB; applied transforms, baked flat shading, kept the 1-unit-equals-1-metre scale, and oriented the long axis from the grip toward the striking end along +x. The OBJ MTL's palette path was resolved to the shared texture at the archive root.",
+      "download": "flatshadedmelee.zip",
+      "files": ["assets/models/sledgehammer.glb"],
+      "licence": "CC0-1.0",
+      "title": "CC0 Flat Shaded Melee Weapons",
+      "url": "https://opengameart.org/content/cc0-flat-shaded-melee-weapons"
+    },
+    {
       "author": "rubberduck",
       "changes": "Selected two wooden item-drop clips, a pouch-handling clip, and a placeholder fist hit; trimmed leading silence, faded tails, converted to 24 kHz mono Opus in Ogg, and applied loudness normalization plus true-peak limiting (final measured LUFS and true peak are in the d13b report). The fist-hit placeholder is wired to the live and restored melee-action path when the fists profile is active.",
       "download": "brk.zip",

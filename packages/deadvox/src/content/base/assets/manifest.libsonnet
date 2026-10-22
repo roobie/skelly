@@ -356,6 +356,15 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
       "changes": "Converted the selected PCM WAV; trimmed leading silence, faded the tail, converted to 24 kHz mono Opus in Ogg, and applied loudness normalization plus true-peak limiting (final measured LUFS and true peak are in the d13b report)."
     },
     {
+      "title": "CC0 Flat Shaded Melee Weapons",
+      "url": "https://opengameart.org/content/cc0-flat-shaded-melee-weapons",
+      "author": "Pichuliru",
+      "licence": "CC0-1.0",
+      "download": "flatshadedmelee.zip",
+      "files": ["assets/models/sledgehammer.glb"],
+      "changes": "Converted the source OBJ mesh with its MTL palette material and shared T_PCL_Palette_c.png in Blender to a self-contained GLB; applied transforms, baked flat shading, kept the 1-unit-equals-1-metre scale, and oriented the long axis from the grip toward the striking end along +x. The OBJ MTL's palette path was resolved to the shared texture at the archive root."
+    },
+    {
       "title": "75 CC0 Breaking/Falling/Hit SFX",
       "url": "https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx",
       "author": "rubberduck",
