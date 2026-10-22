@@ -87,6 +87,7 @@ const ItemSchema = strictObject({
       ...DatumEntries,
       turn: ModelPointSchema,
       hold: NeutralModelSchema.entries.hold,
+      rest: NeutralModelSchema.entries.rest,
       roll: NeutralModelSchema.entries.roll,
     }),
   ),
@@ -232,10 +233,11 @@ export const buildItem = (item: ToolItem) => {
     const point = min.map((value, axis) => value + datum.fraction[axis]! * (max[axis]! - value)) as unknown as Vec3;
     return scale(applyPoint(placed, point), catalogue.units.metresPerUnit);
   };
-  const handling: Pick<NeutralModel, 'grip' | 'hold' | 'roll'> = item.handling
+  const handling: Pick<NeutralModel, 'grip' | 'hold' | 'rest' | 'roll'> = item.handling
     ? {
         grip: { at: datumPoint('handling', item.handling), turn: item.handling.turn },
         hold: item.handling.hold,
+        ...(item.handling.rest ? { rest: item.handling.rest } : {}),
         roll: item.handling.roll,
       }
     : {};

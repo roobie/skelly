@@ -421,6 +421,7 @@
       },
       "hold": "upright",
       "id": "torch",
+      "rest": "upright",
       "roll": 0
     },
     {
@@ -434,6 +435,7 @@
       },
       "hold": "upright",
       "id": "candle",
+      "rest": "upright",
       "roll": 0
     },
     {

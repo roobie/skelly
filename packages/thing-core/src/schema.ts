@@ -38,6 +38,8 @@ export const NeutralModelSchema = strictObject({
   emissiveMaterial: optional(pipe(string(), nonEmpty('must not be empty'))),
   grip: optional(strictObject({ at: ModelPointSchema, turn: optional(ModelPointSchema) })),
   hold: optional(picklist(['forward', 'upright'])),
+  /** How the model rests on the ground: upright stands it on its −x end, the axis an upright hold raises. */
+  rest: optional(picklist(['lying', 'upright'])),
   roll: optional(pipe(number(), finite(), minValue(-180), maxValue(180))),
   anchors: optional(record(Id, ModelPointSchema)),
 });

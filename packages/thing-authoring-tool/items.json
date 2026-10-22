@@ -1399,6 +1399,7 @@
         "fraction": [0.29999999999999999, 0.5, 0.5],
         "hold": "upright",
         "part": "torch",
+        "rest": "upright",
         "roll": 0,
         "solid": "shaft",
         "turn": [0, 0, 0]
@@ -1435,6 +1436,7 @@
         "fraction": [0.40000000000000002, 0.5, 0.5],
         "hold": "upright",
         "part": "candle",
+        "rest": "upright",
         "roll": 0,
         "solid": "body",
         "turn": [0, 0, 0]

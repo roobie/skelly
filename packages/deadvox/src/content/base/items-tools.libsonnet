@@ -259,7 +259,7 @@ local items = [
       emissive: 0.6,
       flame: { heightMetres: 0.14, radiusMetres: 0.035 },
       burnTimeGameHours: 4,
-      burning: burns('firestarter', douse=true, sprint='stay', stow='refuse', drop='douse', relight=true),
+      burning: burns('firestarter', douse=true, sprint='stay', stow='refuse', drop='stay', relight=true),
     },
   },
   {
@@ -278,7 +278,7 @@ local items = [
       intensity: 1,
       flame: { heightMetres: 0.03, radiusMetres: 0.007 },
       burnTimeGameHours: 6,
-      burning: burns('firestarter', douse=true, sprint='douse', stow='douse', drop='douse', relight=true),
+      burning: burns('firestarter', douse=true, sprint='douse', stow='douse', drop='stay', relight=true),
     },
   },
   {

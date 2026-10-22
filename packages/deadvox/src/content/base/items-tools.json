@@ -470,7 +470,7 @@
         "burnTimeGameHours": 4,
         "burning": {
           "douse": true,
-          "drop": "douse",
+          "drop": "stay",
           "ignition": "firestarter",
           "relight": true,
           "sprint": "stay",
@@ -521,7 +521,7 @@
         "burnTimeGameHours": 6,
         "burning": {
           "douse": true,
-          "drop": "douse",
+          "drop": "stay",
           "ignition": "firestarter",
           "relight": true,
           "sprint": "douse",
