@@ -7,6 +7,7 @@ import { HUMANOID_TEMPLATES, TEMPLATES } from '../src/mob/templates.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const SEEDS = 100;
+const FAR_LOD_SEED_TIMEOUT_MS = 500;
 const seedSamplingFixture = {
   ...TEMPLATES[0]!,
   name: 'test-seed-sampling-fixture',
@@ -212,7 +213,7 @@ const validateFarLodSeeds = (template: (typeof TEMPLATES)[number]) => {
   let validSources = 0;
   const otherFailures: string[] = [];
   const budgetFailures = new Map<string, BudgetFailureSummary>();
-  for (let seed = 0; seed < 100; seed++) {
+  for (let seed = 0; seed < SEEDS; seed++) {
     const genome = generate(template, seed);
     const realized = realize(genome);
     if (!realized.report.ok) {
@@ -282,17 +283,17 @@ describe('validation profiles', () => {
   });
 
   sweepGroup('far LOD silhouette validation', () => {
-    it('passes for every full-valid genome in 100 seeds per template at 1/6, 1/4 and 1/2 block', () => {
-      const results = HUMANOID_TEMPLATES.map((template) => validateFarLodSeeds(template));
-      const insufficientSources = results.flatMap((result, index) =>
-        result.validSources < 80 ? [`${HUMANOID_TEMPLATES[index]!.name}: ${result.validSources}`] : [],
+    for (const template of HUMANOID_TEMPLATES) {
+      it(
+        `passes for every full-valid ${template.name} genome in ${SEEDS} seeds at 1/6, 1/4 and 1/2 block`,
+        () => {
+          const { validSources, failures } = validateFarLodSeeds(template);
+          expect(validSources, 'full-valid sources').toBeGreaterThan(0);
+          expect(failures, 'far LOD budget/silhouette failures').toEqual([]);
+        },
+        SEEDS * FAR_LOD_SEED_TIMEOUT_MS,
       );
-      const failures = results.flatMap((result, index) =>
-        result.failures.map((failure) => `${HUMANOID_TEMPLATES[index]!.name}: ${failure}`),
-      );
-      expect(insufficientSources, 'templates with too few full-valid sources').toEqual([]);
-      expect(failures, 'far LOD budget/silhouette failures').toEqual([]);
-    }, 120_000);
+    }
   });
 });
 

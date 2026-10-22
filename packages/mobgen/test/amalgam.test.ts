@@ -15,6 +15,11 @@ import { amalgamTemplate } from '../src/mob/amalgamTemplate.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const SAMPLE_SEEDS = [1, 17, 42];
+const VALIDITY_SEEDS = 100;
+const VALIDITY_CHUNK = 5;
+const VALIDITY_SEED_TIMEOUT_MS = 4000;
+const COVERAGE_SCAN_BOUND = 300;
+const COVERAGE_SEED_TIMEOUT_MS = 250;
 const sampleRealizations = new Map<number, ReturnType<typeof realize>>();
 const realizeSample = (seed: number) => {
   let realized = sampleRealizations.get(seed);
@@ -147,6 +152,43 @@ const inspectManifest = (manifest: ReturnType<typeof amalgamManifest>, boneIds: 
   };
 };
 
+const COVERAGE_CASES = ['hanging', 'upside-down', 'sideways', 'non-foot-contact', 'floor-bearing-head'];
+
+const memberPoses = (genome: ReturnType<typeof generate>, memberIds: readonly string[]): string[] =>
+  memberIds.flatMap((id) => {
+    const member = Number(id.slice('member.'.length));
+    const rotation = mulMM(
+      rotY(genome.params[`member.${member}.rotateY`]!),
+      mulMM(rotZ(genome.params[`member.${member}.rotateZ`]!), rotX(genome.params[`member.${member}.rotateX`]!)),
+    );
+    const up = mulMV(rotation, [0, 1, 0]);
+    return [...(up[1] < -0.9 ? ['upside-down'] : []), ...(Math.abs(up[1]) < 0.1 ? ['sideways'] : [])];
+  });
+
+const coverageSample = (seed: number): { memberCount: number; cases: string[] } => {
+  const genome = generate(amalgamTemplate, seed);
+  const realized = realize(genome);
+  const manifest = amalgamManifest(realized.body, realized.voxels);
+  const contacts = actualGroundOwners(realized);
+  const members = manifest.parts.filter((part) => part.severable);
+  const cases = [
+    ...(members.some((part) => part.boneIds.every((boneId) => !contacts.has(boneId))) ? ['hanging'] : []),
+    ...memberPoses(
+      genome,
+      members.map(({ id }) => id),
+    ),
+    ...([...contacts].some((boneId) => boneId.startsWith('member.') && !FOOT_BONE_PATTERN.test(boneId))
+      ? ['non-foot-contact']
+      : []),
+    ...(manifest.headBoneIds.some(
+      (boneId) => contacts.has(boneId) || contacts.has(boneId.replace(HEAD_BONE_PATTERN, '.jaw')),
+    )
+      ? ['floor-bearing-head']
+      : []),
+  ];
+  return { memberCount: members.length, cases };
+};
+
 describe('amalgam body plan', () => {
   it('generates valid connected bodies and a resolved part/region manifest across sample seeds', () => {
     for (const seed of SAMPLE_SEEDS) {
@@ -215,52 +257,47 @@ describe('amalgam body plan', () => {
   });
 
   sweepGroup('amalgam validity sweep', () => {
-    it('covers variable counts, hanging members, and non-foot ground contacts across seeds', () => {
-      const memberCounts = new Set<number>();
-      let sawHangingMember = false;
-      let sawUpsideDownMember = false;
-      let sawSidewaysMember = false;
-      let sawNonFootMemberContact = false;
-      let sawFloorBearingHead = false;
-      for (let seed = 0; seed < 100; seed++) {
-        const genome = generate(amalgamTemplate, seed);
-        const realized = realize(genome);
-        expect(realized.report.ok, `seed ${seed}: ${JSON.stringify(realized.report.issues)}`).toBe(true);
-        const manifest = amalgamManifest(realized.body, realized.voxels);
-        const contacts = actualGroundOwners(realized);
-        expect([...realized.supportBones].sort()).toEqual([...contacts].sort());
-        const members = manifest.parts.filter((part) => part.severable);
-        memberCounts.add(members.length);
-        expect(members.length).toBeGreaterThanOrEqual(MIN_AMALGAM_MEMBERS);
-        expect(members.length).toBeLessThanOrEqual(MAX_AMALGAM_MEMBERS);
-        sawHangingMember ||= members.some((part) => part.boneIds.every((boneId) => !contacts.has(boneId)));
-        for (const part of members) {
-          const member = Number(part.id.slice('member.'.length));
-          const rotation = mulMM(
-            rotY(genome.params[`member.${member}.rotateY`]!),
-            mulMM(rotZ(genome.params[`member.${member}.rotateZ`]!), rotX(genome.params[`member.${member}.rotateX`]!)),
-          );
-          const up = mulMV(rotation, [0, 1, 0]);
-          sawUpsideDownMember ||= up[1] < -0.9;
-          sawSidewaysMember ||= Math.abs(up[1]) < 0.1;
+    // Chunked by seed range so each test stays inside the default timeout.
+    for (let from = 0; from < VALIDITY_SEEDS; from += VALIDITY_CHUNK) {
+      it(
+        `keeps every body valid, supported and severable (seeds ${from}-${from + VALIDITY_CHUNK - 1})`,
+        () => {
+          for (let seed = from; seed < from + VALIDITY_CHUNK; seed++) {
+            const realized = realize(generate(amalgamTemplate, seed));
+            expect(realized.report.ok, `seed ${seed}: ${JSON.stringify(realized.report.issues)}`).toBe(true);
+            const manifest = amalgamManifest(realized.body, realized.voxels);
+            expect([...realized.supportBones].sort()).toEqual([...actualGroundOwners(realized)].sort());
+            const members = manifest.parts.filter((part) => part.severable);
+            expect(members.length).toBeGreaterThanOrEqual(MIN_AMALGAM_MEMBERS);
+            expect(members.length).toBeLessThanOrEqual(MAX_AMALGAM_MEMBERS);
+            for (const part of members) {
+              const report = bodyIssues(bodyWithoutAmalgamPart(realized.body, part.id), seed);
+              expect(report.ok, `seed ${seed}, sever ${part.id}: ${JSON.stringify(report.issues)}`).toBe(true);
+            }
+          }
+        },
+        VALIDITY_CHUNK * VALIDITY_SEED_TIMEOUT_MS,
+      );
+    }
+
+    // Scans seeds until every case is seen, up to a stated bound, so a generator change that
+    // shifts which seed rolls a case cannot flip the test; only losing a case entirely fails it.
+    it(
+      'generates variable counts, hanging members, and non-foot ground contacts',
+      () => {
+        const memberCounts = new Set<number>();
+        const seen = new Set<string>();
+        for (let seed = 0; seed < COVERAGE_SCAN_BOUND && !COVERAGE_CASES.every((name) => seen.has(name)); seed++) {
+          const sample = coverageSample(seed);
+          memberCounts.add(sample.memberCount);
+          for (const name of sample.cases) {
+            seen.add(name);
+          }
         }
-        sawNonFootMemberContact ||= [...contacts].some(
-          (boneId) => boneId.startsWith('member.') && !FOOT_BONE_PATTERN.test(boneId),
-        );
-        sawFloorBearingHead ||= manifest.headBoneIds.some(
-          (boneId) => contacts.has(boneId) || contacts.has(boneId.replace(HEAD_BONE_PATTERN, '.jaw')),
-        );
-        for (const part of members) {
-          const report = bodyIssues(bodyWithoutAmalgamPart(realized.body, part.id), seed);
-          expect(report.ok, `seed ${seed}, sever ${part.id}: ${JSON.stringify(report.issues)}`).toBe(true);
-        }
-      }
-      expect(memberCounts.size).toBeGreaterThan(1);
-      expect(sawHangingMember).toBe(true);
-      expect(sawUpsideDownMember).toBe(true);
-      expect(sawSidewaysMember).toBe(true);
-      expect(sawNonFootMemberContact).toBe(true);
-      expect(sawFloorBearingHead).toBe(true);
-    }, 180_000);
+        expect([...seen].sort()).toEqual([...COVERAGE_CASES].sort());
+        expect(memberCounts.size).toBeGreaterThan(1);
+      },
+      COVERAGE_SCAN_BOUND * COVERAGE_SEED_TIMEOUT_MS,
+    );
   });
 });
