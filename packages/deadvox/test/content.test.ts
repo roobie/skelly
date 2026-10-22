@@ -555,6 +555,39 @@ describe('content', () => {
     expect(issues.some(({ path }) => path.endsWith('.firearmAttachmentEffects.wearPerShot'))).toBe(true);
   });
 
+  it('rejects an attachment whose model kind has effects but whose item authors none', () => {
+    const data = {
+      items: [
+        {
+          id: 'fixture_suppressor',
+          economy: { usage: [], tiers: [] },
+          name: 'Fixture suppressor',
+          category: 'misc',
+          weight: 1,
+          size: [1, 2],
+          model: 'fixture_suppressor',
+        },
+      ],
+      models: [
+        {
+          id: 'fixture_suppressor',
+          file: 'assets/models/fixture_suppressor.glb',
+          gun: {
+            attachment: {
+              id: 'fixture-suppressor',
+              kind: 'suppressor',
+              mount: 'muzzle',
+              mountFrame: { normal: [-1, 0, 0], up: [0, 1, 0] },
+              properties: { noiseFactor: 0.25 },
+            },
+          },
+        },
+      ],
+    };
+    const { issues } = buildRegistry([{ source: 'effects-fixture.json', data }]);
+    expect(issues.map(({ path }) => path)).toEqual(['items[0].firearmAttachmentEffects']);
+  });
+
   it('rejects an item that lacks the handling time its kind needs', () => {
     type Raw = Record<string, unknown>;
     const at = (root: unknown, keys: string[]): unknown =>
@@ -706,6 +739,7 @@ describe('content', () => {
           weight: 1,
           size: [1, 2],
           model: 'fixture_suppressor',
+          firearmAttachmentEffects: { kind: 'suppressor', recoilReduction: 0.1, wearPerShot: 0.01 },
         },
       ],
       models: [

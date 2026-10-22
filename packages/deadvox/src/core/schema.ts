@@ -783,17 +783,25 @@ const TrapSchema = strictObject({
   zombieLegDamage: NonNegative,
 });
 
-const FirearmAttachmentEffectsSchema = strictObject({
-  /** Fraction of the firearm's committed recoil kick removed at full condition. */
-  recoilReduction: optional(Fraction),
-  /** Condition lost per committed shot; zero means the attachment does not wear. */
-  wearPerShot: Fraction,
-  /** Multipliers applied to the existing aim and stance response. */
-  swayScale: optional(Positive),
-  recoveryScale: optional(Positive),
-  raiseScale: optional(Positive),
-  swingScale: optional(Positive),
-});
+/** Tagged with its model's attachment kind, so each kind authors every effect it has and no other. */
+const FirearmAttachmentEffectsSchema = variant('kind', [
+  strictObject({
+    kind: literal('suppressor'),
+    /** Fraction of the firearm's committed recoil kick removed at full condition. */
+    recoilReduction: Fraction,
+    /** Condition lost per committed shot; zero means the attachment does not wear. */
+    wearPerShot: Fraction,
+  }),
+  strictObject({
+    kind: literal('foregrip'),
+    /** Multipliers applied to the existing aim and stance response. */
+    swayScale: Positive,
+    recoveryScale: Positive,
+    raiseScale: Positive,
+    swingScale: Positive,
+    wearPerShot: Fraction,
+  }),
+]);
 
 const BatterySchema = strictObject({
   /** Charge when full, in the units lights use per hour. */
@@ -1265,7 +1273,14 @@ const attachmentSpanCheck = check(
   attachmentSpanMatchesMount,
   'rail attachments need a notch span and muzzle attachments cannot have one',
 );
-const AttachmentSchema = pipe(AttachmentFieldsSchema, attachmentSpanCheck);
+const AttachmentSchema = pipe(
+  AttachmentFieldsSchema,
+  attachmentSpanCheck,
+  check(
+    ({ kind, properties }) => (kind === 'suppressor') === (properties.noiseFactor !== undefined),
+    'suppressors need a noise factor and other attachments cannot have one',
+  ),
+);
 const FittedAttachmentSchema = pipe(
   strictObject({
     ...AttachmentFieldsSchema.entries,
