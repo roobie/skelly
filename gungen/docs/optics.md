@@ -1,6 +1,7 @@
 ---
 read_if:
   - you're changing optic envelopes, geometry or receiver mounting constraints
+  - you're authoring or resizing an iron rear sight's notch
 ---
 
 # Optic reference envelopes
@@ -14,3 +15,5 @@ Persisted optic IDs are not display labels, so visual-class changes do not silen
 The pump shotgun's ADS uses a simple front bead rather than rifle-style iron sights, preserving the shotgun sight picture. Its exported eye line is derived from the bead and receiver; see `src/gun/exportGlb.ts`, `frontBeadSightLine`.
 
 The AK rear sight's ADS line uses the notch edge rather than the sight-block seat, so the aiming datum follows the opening instead of the mount surface; see `src/gun/parts.ts`, `akRearSight`, and `src/gun/exportGlb.ts`, `sightMetadata`.
+
+A rear sight's notch must be wide enough for the voxel lattice to leave it open. A voxelized file keeps a voxel wherever a solid's centre-sampled span reaches it, so a notch one voxel wide or narrower of the grain it is drawn at can hold no voxel centre and fill, and the player lines up a solid block. Author the notch wider than one voxel of whatever grain draws it, and export refuses a sight whose drawn notch is narrower than the gun grain; see `src/gun/exportGlb.ts`, `openNotchOrThrow`, and `test/rearSightNotch.test.ts`.
