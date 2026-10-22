@@ -10,7 +10,8 @@ describe('shared shambler benchmark placement', () => {
   it('uses the browser placement path for seed 1 N=10 and clears hamlet terrain and furniture', () => {
     const engine = createHeadlessShamblerWorld(1, registry);
     const player = findShamblerBenchPlayer(engine);
-    const positions = placeShamblerRing({ count: 10, seed: 1, player, engine });
+    const ring = { minRadiusMetres: 8, maxRadiusMetres: 20 };
+    const positions = placeShamblerRing({ count: 10, seed: 1, player, engine, ...ring });
     const s = engine.config.scale.blockSize;
     const halfWidth = 0.28 / s;
 
@@ -25,8 +26,8 @@ describe('shared shambler benchmark placement', () => {
       body.onGround = true;
       expect(bodyIsClear(body, engine.isSolid)).toBe(true);
       const distance = Math.hypot((position[0] - player.pos[0]) * s, (position[2] - player.pos[2]) * s);
-      expect(distance).toBeGreaterThanOrEqual(8);
-      expect(distance).toBeLessThanOrEqual(20);
+      expect(distance).toBeGreaterThanOrEqual(ring.minRadiusMetres);
+      expect(distance).toBeLessThanOrEqual(ring.maxRadiusMetres);
       for (const other of positions.slice(0, i)) {
         expect(
           Math.abs(position[0] - other[0]) >= halfWidth * 2 || Math.abs(position[2] - other[2]) >= halfWidth * 2,
