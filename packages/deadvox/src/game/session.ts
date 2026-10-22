@@ -262,7 +262,7 @@ export interface PlayerInputSample {
   readonly worldReady: boolean;
 }
 
-interface SessionControls {
+export interface SessionControls {
   /** True when input reaches the world: the pointer is locked and no menu has it. */
   active: () => boolean;
   intent: () => MoveIntent;
