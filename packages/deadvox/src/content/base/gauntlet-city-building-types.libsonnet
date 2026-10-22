@@ -203,7 +203,7 @@ local yard(block) = { role: 'trim', block: block };
       { item: 'cartridge_5_d_56x45', weight: 3, count: [10, 30] },
       { item: 'cartridge_box_5_d_56x45', weight: 2 },
       { item: 'cartridge_7_d_62x39', weight: 3, count: [10, 30] },
-      { item: 'cartridge_box_7_d_62x39', weight: 2 }, { nothing: true, weight: 1 },
+      { item: 'cartridge_box_7_d_62x39', weight: 2 }, { nothing: true, weight: 2 },
     ] },
     { id: 'armoury_cabinet', rolls: [2, 3], entries: [
       { table: 'armoury_arms', weight: 1 }, { table: 'armoury_ammunition', weight: 2 },

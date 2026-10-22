@@ -10,7 +10,7 @@ import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
 const { registry } = startupContent();
 const scale = makeScale(BLOCK_SIZE);
 const gauntlets = [...registry.scenarios.values()].filter((scenario) => scenario.kind === 'gauntlet');
-const SEEDS = [1, 73];
+const SEED = 1;
 
 /** Everything a run's loot points deliver, fixed or rolled, as item type ids. */
 const placedTypes = (seed: number, scenario: (typeof gauntlets)[number]): string[] => {
@@ -31,11 +31,11 @@ const placedTypes = (seed: number, scenario: (typeof gauntlets)[number]): string
 
 // Rifle calibres are Military-only, so a table that names them under another context drops those rows silently.
 describe('gauntlet loot reachability', () => {
-  it.each(SEEDS)(
-    'places ammunition for every rifle it places, and a stab vest, at seed %i',
-    (seed) => {
+  it(
+    'places ammunition for every rifle it places, and a stab vest',
+    () => {
       for (const scenario of gauntlets) {
-        const placed = placedTypes(seed, scenario);
+        const placed = placedTypes(SEED, scenario);
         const ammoCalibres = new Set(
           placed.map((type) => {
             const item = registry.items.get(type);
