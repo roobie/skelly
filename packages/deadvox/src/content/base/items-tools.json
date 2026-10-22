@@ -454,10 +454,16 @@
           "stow": "refuse"
         },
         "color": "#ffb36b",
+        "emissive": 0.59999999999999998,
+        "flame": {
+          "heightMetres": 0.14000000000000001,
+          "radiusMetres": 0.035000000000000003
+        },
         "intensity": 5,
         "radius": 6,
         "seenFrom": 60
       },
+      "model": "torch",
       "name": "Torch",
       "size": [1, 4],
       "weight": 350
@@ -499,10 +505,15 @@
           "stow": "douse"
         },
         "color": "#ffd28a",
+        "flame": {
+          "heightMetres": 0.029999999999999999,
+          "radiusMetres": 0.0070000000000000001
+        },
         "intensity": 1,
         "radius": 3,
         "seenFrom": 15
       },
+      "model": "candle",
       "name": "Candle",
       "size": [1, 1],
       "weight": 150

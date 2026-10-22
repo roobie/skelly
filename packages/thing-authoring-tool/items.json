@@ -1114,6 +1114,79 @@
       ]
     },
     {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "flame": {
+        "fraction": [1, 0.5, 0.5],
+        "part": "torch",
+        "solid": "head"
+      },
+      "glow": "head",
+      "handling": {
+        "fraction": [0.29999999999999999, 0.5, 0.5],
+        "hold": "upright",
+        "part": "torch",
+        "roll": 0,
+        "solid": "shaft",
+        "turn": [0, 0, 0]
+      },
+      "id": "torch",
+      "parts": [
+        {
+          "family": "torch",
+          "finish": {
+            "head": "cloth-charred",
+            "shaft": "wood-birch"
+          },
+          "id": "torch",
+          "massKg": 0.34999999999999998,
+          "params": {
+            "headLength": "0.10000000000000001",
+            "headRadius": "0.029999999999999999",
+            "length": "0.41999999999999998",
+            "shaftRadius": "0.014"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "flame": {
+        "fraction": [1, 0.5, 0.5],
+        "part": "candle",
+        "solid": "wick"
+      },
+      "handling": {
+        "fraction": [0.40000000000000002, 0.5, 0.5],
+        "hold": "upright",
+        "part": "candle",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, 0]
+      },
+      "id": "candle",
+      "parts": [
+        {
+          "family": "candle",
+          "finish": {
+            "body": "wax-ivory",
+            "wick": "cloth-charred"
+          },
+          "id": "candle",
+          "massKg": 0.14999999999999999,
+          "params": {
+            "height": "0.10000000000000001",
+            "radius": "0.023",
+            "wickHeight": "0.012",
+            "wickRadius": "0.0011999999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
       "connections": [
         {
           "from": "base.arm",

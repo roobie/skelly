@@ -1464,6 +1464,7 @@ export class HeldItems {
     const model = look && this.models?.heldLook(look);
     if (model) {
       applyItemEmissive(model.root, item, def, this.inventory.registry.models.get(def.model!));
+      this.addModelFlame(item, def, model.root);
       const [top] = this.inventory.registry.models.get(def.model!)?.gun?.rounds ?? [];
       if (top) {
         const seat = new Object3D();
@@ -1494,6 +1495,31 @@ export class HeldItems {
     }
   }
 
+  private flameMaterial(color: string): MeshBasicMaterial {
+    const material = this.flameMaterials.get(color) ?? new MeshBasicMaterial({ color, toneMapped: false });
+    this.flameMaterials.set(color, material);
+    return material;
+  }
+
+  /** A lit flame standing upright on the model's `flame` anchor, sized by the light's `flame`. */
+  private addModelFlame(item: Item, def: ReturnType<typeof defOf>, root: Object3D): void {
+    const anchor = def.model === undefined ? undefined : this.inventory.registry.models.get(def.model)?.anchors?.flame;
+    const size = def.light?.flame;
+    if (!(item.on && def.light?.burning?.ignition === 'firestarter' && anchor && size)) {
+      return;
+    }
+    // The root carries the hold pose, so the flame is placed in the root's parent frame, where up is the hand's up.
+    root.updateMatrixWorld(true);
+    const at = heldModelFrame(root).localToWorld(new Vector3(...anchor));
+    at.y += size.heightMetres / 2;
+    const flame = new Mesh(this.flameGeometry, this.flameMaterial(def.light.color));
+    flame.name = 'held-light-flame';
+    flame.scale.set(size.radiusMetres, size.heightMetres, size.radiusMetres);
+    flame.position.copy(root.worldToLocal(at));
+    flame.quaternion.copy(root.getWorldQuaternion(new Quaternion()).invert());
+    root.add(flame);
+  }
+
   private fallbackShape(item: Item, def: ReturnType<typeof defOf>): Object3D {
     // Long side forward, short side across, and flatter than it is wide.
     const long = Math.max(...def.size) * CELL;
@@ -1517,14 +1543,7 @@ export class HeldItems {
     lens.position.z = -long + short / 2;
     const shape = new Group().add(box, lens);
     if (item.on && def.light?.burning?.ignition === 'firestarter') {
-      const flameMaterial =
-        this.flameMaterials.get(def.light.color) ??
-        new MeshBasicMaterial({
-          color: def.light.color,
-          toneMapped: false,
-        });
-      this.flameMaterials.set(def.light.color, flameMaterial);
-      const flame = new Mesh(this.flameGeometry, flameMaterial);
+      const flame = new Mesh(this.flameGeometry, this.flameMaterial(def.light.color));
       flame.name = 'held-light-flame';
       flame.scale.set(short * 0.5, short * 1.5, short * 0.5);
       flame.position.set(0, short * 1.05, lens.position.z);

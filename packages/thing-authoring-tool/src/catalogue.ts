@@ -7,6 +7,7 @@ import { MATERIALS } from '@skelly/thing-core/materials';
 import { ModelPointSchema, type NeutralModel, NeutralModelSchema } from '@skelly/thing-core/schema';
 import { singlePart } from '@skelly/thing-core/single-part';
 import type { Palette } from '@skelly/thing-export/exportTypes.ts';
+import { hex } from '@skelly/thing-export/glb.ts';
 import {
   array,
   boolean,
@@ -32,6 +33,7 @@ import { fuse } from './families/fuse.ts';
 import { grenade } from './families/grenade.ts';
 import { handOpener } from './families/handOpener.ts';
 import { arm, base, shade } from './families/lamp.ts';
+import { candle, torch } from './families/lights.ts';
 import { openTin } from './families/openTin.ts';
 import { carton, vessel } from './families/package.ts';
 import { ring } from './families/ring.ts';
@@ -60,6 +62,14 @@ const PartSchema = strictObject({
   finish: record(name, material),
   ports: array(PortSchema),
 });
+const DatumEntries = {
+  part: name,
+  solid: name,
+  fraction: pipe(
+    ModelPointSchema,
+    check((point) => point.every((value) => value >= 0 && value <= 1), 'datum fraction outside solid'),
+  ),
+};
 const ItemSchema = strictObject({
   id: name,
   exportMass: picklist(['parts', 'inventory-atom']),
@@ -71,17 +81,16 @@ const ItemSchema = strictObject({
   connections: array(strictObject({ from: name, to: name })),
   handling: optional(
     strictObject({
-      part: name,
-      solid: name,
-      fraction: pipe(
-        ModelPointSchema,
-        check((point) => point.every((value) => value >= 0 && value <= 1), 'grip fraction outside solid'),
-      ),
+      ...DatumEntries,
       turn: ModelPointSchema,
       hold: NeutralModelSchema.entries.hold,
       roll: NeutralModelSchema.entries.roll,
     }),
   ),
+  /** Where a lit flame stands: deadvox draws its flame and light there. */
+  flame: optional(strictObject(DatumEntries)),
+  /** The finish slot that glows while lit; its material must be the only one that slot's finish names in the item. */
+  glow: optional(name),
 });
 const CatalogueSchema = strictObject({
   units: strictObject({ metresPerUnit: positive, grid: positive, bevel: pipe(number(), finite(), minValue(0)) }),
@@ -111,6 +120,8 @@ const builders = {
   foodPortion,
   stemmedFruit,
   woundRoll,
+  torch,
+  candle,
 } satisfies Record<string, (params: Readonly<Record<string, string>>) => readonly Solid[]>;
 const buildPart = (part: ToolPart, params = part.params): PartDef => {
   if (!Object.hasOwn(builders, part.family)) {
@@ -140,6 +151,20 @@ export const palette: Palette = {
   materials: MATERIALS,
   fallbackColor: MATERIALS[catalogue.defaultMaterial]!.colour,
   fallbackFinish: MATERIALS[catalogue.defaultMaterial]!.finish,
+};
+
+/** The glTF material name of the item's glow slot; the writer merges same-material slots, so the glow's must be its own. */
+const glowMaterial = (item: ToolItem, slot: string): string => {
+  const finishes = item.parts.flatMap(({ finish }) => Object.entries(finish));
+  const glowing = new Set(finishes.filter(([key]) => key === slot).map(([, finish]) => finish));
+  const [id] = glowing;
+  if (!(id && glowing.size === 1)) {
+    throw new Error(`${item.id}: glow slot ${slot} needs one material`);
+  }
+  if (finishes.some(([key, other]) => key !== slot && other === id)) {
+    throw new Error(`${item.id}: glow material ${id} is shared with another slot`);
+  }
+  return hex(MATERIALS[id]!.colour);
 };
 
 export const buildItem = (item: ToolItem) => {
@@ -187,21 +212,25 @@ export const buildItem = (item: ToolItem) => {
   if (report.issues.length > 0) {
     throw new Error(`${item.id}: ${JSON.stringify(report.issues)}`);
   }
-  let handling: Pick<NeutralModel, 'grip' | 'hold' | 'roll'> = {};
-  if (item.handling) {
-    const datum = item.handling;
+  const datumPoint = (role: string, datum: { part: string; solid: string; fraction: readonly number[] }): Vec3 => {
     const solid = report.resolved.defs.get(datum.part)?.solids.find(({ id }) => id === datum.solid);
     const placed = report.resolved.placed.get(datum.part);
     if (!(solid && placed)) {
-      throw new Error(`${item.id}: missing handling geometry ${datum.part}/${datum.solid}`);
+      throw new Error(`${item.id}: missing ${role} geometry ${datum.part}/${datum.solid}`);
     }
     const [min, max] = localSolidBounds(solid);
     const point = min.map((value, axis) => value + datum.fraction[axis]! * (max[axis]! - value)) as unknown as Vec3;
-    handling = {
-      grip: { at: scale(applyPoint(placed, point), catalogue.units.metresPerUnit), turn: datum.turn },
-      hold: datum.hold,
-      roll: datum.roll,
-    };
-  }
-  return { report, masses, handling };
+    return scale(applyPoint(placed, point), catalogue.units.metresPerUnit);
+  };
+  const handling: Pick<NeutralModel, 'grip' | 'hold' | 'roll'> = item.handling
+    ? {
+        grip: { at: datumPoint('handling', item.handling), turn: item.handling.turn },
+        hold: item.handling.hold,
+        roll: item.handling.roll,
+      }
+    : {};
+  const anchors: Pick<NeutralModel, 'anchors'> = item.flame
+    ? { anchors: { flame: datumPoint('flame', item.flame) } }
+    : {};
+  return { report, masses, handling, anchors, glow: item.glow && glowMaterial(item, item.glow) };
 };

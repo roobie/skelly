@@ -410,6 +410,33 @@
       "roll": 0
     },
     {
+      "anchors": {
+        "flame": [0.41999999999999993, 0, 0]
+      },
+      "emissiveMaterial": "#2b241c",
+      "file": "assets/models/torch.glb",
+      "grip": {
+        "at": [0.11099999999999997, 0, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "torch",
+      "roll": 0
+    },
+    {
+      "anchors": {
+        "flame": [0.112, 0, 0]
+      },
+      "file": "assets/models/candle.glb",
+      "grip": {
+        "at": [0.040000000000000008, 0, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "candle",
+      "roll": 0
+    },
+    {
       "file": "assets/models/hand_saw.glb",
       "grip": {
         "at": [-0.13, 0.034000000000000002, 0]

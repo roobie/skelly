@@ -121,8 +121,9 @@ export const prepareModel = (def: ModelDef, scene: Object3D): Prepared => {
   // Lying: centred on x and z over the origin, resting on y = 0.
   const ground = around(scene, new Vector3(centre.x, box.min.y, centre.z));
   // Held: the grip at the origin, turned and rolled as the entry says, then oriented by its hold pose.
-  // The lens is the `lens` anchor, or else the middle of the model's front end.
-  const lens = def.anchors?.lens ? new Vector3(...def.anchors.lens) : new Vector3(box.max.x, centre.y, centre.z);
+  // The lens is the `lens` anchor, else the `flame` anchor, else the middle of the model's front end.
+  const anchor = def.anchors?.lens ?? def.anchors?.flame;
+  const lens = anchor ? new Vector3(...anchor) : new Vector3(box.max.x, centre.y, centre.z);
   const turned = around(scene, def.grip ? new Vector3(...def.grip.at) : centre, lens);
   const [tx, ty, tz] = def.grip?.turn ?? [0, 0, 0];
   turned.rotation.set(MathUtils.degToRad(tx), MathUtils.degToRad(ty), MathUtils.degToRad(tz), 'XYZ');

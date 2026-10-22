@@ -79,6 +79,8 @@
         "assets/models/codeine.glb",
         "assets/models/morphine.glb",
         "assets/models/frag_grenade.glb",
+        "assets/models/torch.glb",
+        "assets/models/candle.glb",
         "assets/models/dead_desk_lamp.glb"
       ],
       "licence": "CC0-1.0",

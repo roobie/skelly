@@ -264,6 +264,22 @@
     "source": "frag_grenade"
   },
   {
+    "id": "torch",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "torch"
+  },
+  {
+    "id": "candle",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "candle"
+  },
+  {
     "id": "dead_desk_lamp",
     "kind": "item",
     "options": {

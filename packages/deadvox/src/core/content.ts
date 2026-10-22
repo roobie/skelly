@@ -416,6 +416,9 @@ const checkItemLightModel = (item: ItemDef, registry: Registry, report: Report) 
   ) {
     report('items', item.id, '.model', 'an emissive light model needs an emissive material');
   }
+  if (item.light?.flame && item.model !== undefined && !registry.models.get(item.model)?.anchors?.flame) {
+    report('items', item.id, '.model', 'a flame light model needs a flame anchor');
+  }
   if (item.light?.wornSwitch === true && !item.wearable) {
     report('items', item.id, '.light.wornSwitch', 'a worn-switch light needs a wearable component');
   }
