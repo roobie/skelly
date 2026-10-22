@@ -29,6 +29,7 @@ import { BLOCK_SIZE } from '../core/scale.ts';
 import { skyAt } from '../core/sky.ts';
 import { FIGURE_BOXES } from '../core/zombieRegions.ts';
 import { buildBundledContent } from '../game/bundledContent.ts';
+import { ModelLibrary } from '../render/models.ts';
 import { PlayerMeshes } from '../render/playerFigure.ts';
 import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
 import { applySky } from '../render/sky.ts';
@@ -105,6 +106,8 @@ interface BuildSpec {
   readonly viewScale?: number;
   /** A preset this vehicle frames differently, such as its own way into the cabin. */
   readonly views?: Partial<Record<ViewId, ViewOverride>>;
+  /** Draws this content vehicle blueprint from its exported part models instead of voxel fittings. */
+  readonly exported?: string;
 }
 type ViewOverride = Pick<ViewPreset, 'position' | 'target'> & { readonly label?: string };
 
@@ -172,6 +175,14 @@ const BUILDS = {
     blueprint: HATCHBACK,
     removed: ['hatch-door-near'],
     addOns: HATCHBACK_ADD_ONS,
+  },
+  exported: {
+    label: 'Content hatchback · exported part models',
+    button: 'Hatchback (exported parts)',
+    blueprint: { id: 'exported', label: 'Exported parts', lattice: [36, 15, 16], paint: HATCHBACK.paint, fittings: [] },
+    removed: [],
+    viewScale: 0.7,
+    exported: 'hatchback',
   },
   apc: {
     label: 'Wheeled APC',
@@ -501,6 +512,56 @@ const floorItems = (spec: BuildSpec, vehicle: VehicleInstance): LooseItem[] => {
     .map((fitting, k) => ({ type: fitting.type, ...floor.place(k) }));
 };
 
+const bundled = buildBundledContent().registry;
+const modelLibrary = new ModelLibrary(bundled, (message) => {
+  errorText = message;
+});
+
+/** A content blueprint's fittings drawn from their exported part models, centred on x over the origin; true once all loaded. */
+const exportedGroup = (blueprintId: string): { readonly group: Group; readonly loaded: boolean } => {
+  const blueprint = bundled.vehicleBlueprints.get(blueprintId);
+  if (!blueprint) {
+    throw new Error(`No vehicle blueprint ${blueprintId}`);
+  }
+  const group = new Group();
+  const centreX = blueprint.fittings.reduce((sum, { at }) => sum + at[0], 0) / blueprint.fittings.length;
+  let loaded = true;
+  for (const fitting of blueprint.fittings) {
+    const model = bundled.items.get(fitting.part)?.model;
+    const object = model === undefined ? undefined : modelLibrary.part(model);
+    if (!object) {
+      loaded = false;
+      continue;
+    }
+    object.traverse((child) => {
+      child.castShadow = true;
+      child.receiveShadow = true;
+    });
+    const holder = new Group();
+    holder.add(object);
+    holder.position.set(fitting.at[0] - centreX, fitting.at[1], fitting.at[2]);
+    holder.scale.z = fitting.mirror ? -1 : 1;
+    group.add(holder);
+  }
+  return { group, loaded };
+};
+
+/** Models load asynchronously: redraw until the exported build has all of its parts. */
+let exportedLoaded = false;
+let drawnVersion = -1;
+const redrawWhenLoaded = (): void => {
+  const spec: BuildSpec = BUILDS[activeBuild];
+  if (spec.exported === undefined || exportedLoaded) {
+    return;
+  }
+  requestAnimationFrame(() => {
+    if (modelLibrary.version !== drawnVersion) {
+      renderVehicle();
+    }
+    redrawWhenLoaded();
+  });
+};
+
 const renderVehicle = (): void => {
   const started = performance.now();
   const spec: BuildSpec = BUILDS[activeBuild];
@@ -515,6 +576,13 @@ const renderVehicle = (): void => {
   doorPivots = [];
   for (const fitting of vehicle.fittings) {
     vehicleGroup.add(placeFitting(spec, vehicle, fitting));
+  }
+  if (spec.exported !== undefined) {
+    const { group, loaded } = exportedGroup(spec.exported);
+    vehicleGroup.add(group);
+    exportedLoaded = loaded;
+    drawnVersion = modelLibrary.version;
+    redrawWhenLoaded();
   }
   if (spec.lift) {
     liftGroup = buildLift(spec.blueprint);
@@ -533,7 +601,10 @@ const renderVehicle = (): void => {
   const [lx, , lz] = latticeVoxels(spec.blueprint);
   const signed = (value: number): string => `${value >= 0 ? '+' : ''}${value.toFixed(2)}`;
   const noise = noiseRadius(CATALOGUE, vehicle.fittings);
-  statsText = `${vehicle.fittings.length} fittings · ${Math.round(massKg).toLocaleString('en')} kg · centre of mass ${signed((centre[0] - lx / 2) * VOXEL)} m forward, ${(centre[1] * VOXEL).toFixed(2)} m up, ${signed((centre[2] - lz / 2) * VOXEL)} m toward the near side · engine noise heard to ${Math.round(noise)} m at idle`;
+  statsText =
+    spec.exported === undefined
+      ? `${vehicle.fittings.length} fittings · ${Math.round(massKg).toLocaleString('en')} kg · centre of mass ${signed((centre[0] - lx / 2) * VOXEL)} m forward, ${(centre[1] * VOXEL).toFixed(2)} m up, ${signed((centre[2] - lz / 2) * VOXEL)} m toward the near side · engine noise heard to ${Math.round(noise)} m at idle`
+      : `${bundled.vehicleBlueprints.get(spec.exported)?.fittings.length ?? 0} content fittings, drawn from their exported models`;
   renderPanel();
   drawSchematic();
   renderScene();

@@ -4,6 +4,7 @@ read_if:
   - you add an authoring tool that exports neutral models
   - you change physical inputs or interpret exported mass and centres of mass
   - you share export recipes or file writing between authoring tools
+  - you change or judge voxelized export
 ---
 
 # thing-export
@@ -32,6 +33,15 @@ A caller asks for the index only where a consumer reads it, so no unread generat
 tracked; see `tools/refresh-deadvox.mjs`, `jobs`.
 Consumer-authored projections can still select gameplay-specific physical boundaries; see
 `packages/deadvox/src/content/base/models-items.jsonnet`, `authored`.
+
+## Voxelized export (evaluation)
+
+A recipe row may opt into `voxelGrain`, which replaces its smooth meshes with a greedy
+voxel mesh sampled at that grain. The step is an evaluation, not a decision: it exists so
+the look, the thin-part behaviour and the cost of voxelizing at export can be judged
+before choosing where content parts are voxelized. Rows without the option export as
+before. The sampler lives here because this package may not import deadvox's mesher; see
+`src/voxelize.ts`, `voxelize`, and `src/glb.ts`, `voxelPrimitivesFor`.
 
 ## Physical model
 

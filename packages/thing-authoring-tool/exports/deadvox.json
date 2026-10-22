@@ -35,7 +35,8 @@
     "id": "soda_can",
     "kind": "item",
     "options": {
-      "mass": "parts"
+      "mass": "parts",
+      "voxelGrain": 0.0040000000000000001
     },
     "source": "soda_can"
   },
@@ -147,7 +148,8 @@
     "id": "can_opener",
     "kind": "item",
     "options": {
-      "mass": "parts"
+      "mass": "parts",
+      "voxelGrain": 0.01
     },
     "source": "can_opener"
   },
@@ -380,7 +382,8 @@
     "kind": "item",
     "options": {
       "collision": true,
-      "mass": "parts"
+      "mass": "parts",
+      "voxelGrain": 0.03125
     },
     "source": "car_battery"
   },
@@ -389,7 +392,8 @@
     "kind": "item",
     "options": {
       "collision": true,
-      "mass": "parts"
+      "mass": "parts",
+      "voxelGrain": 0.03125
     },
     "source": "car_headlamp"
   },
@@ -398,7 +402,8 @@
     "kind": "item",
     "options": {
       "collision": true,
-      "mass": "parts"
+      "mass": "parts",
+      "voxelGrain": 0.03125
     },
     "source": "hatchback_battery_tray"
   },
@@ -439,7 +444,8 @@
     "id": "fuse",
     "kind": "item",
     "options": {
-      "mass": "parts"
+      "mass": "parts",
+      "voxelGrain": 0.0040000000000000001
     },
     "source": "fuse"
   },
