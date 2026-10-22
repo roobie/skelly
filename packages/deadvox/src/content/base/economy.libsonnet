@@ -16,7 +16,6 @@ local notSpawnable = [
   'beans', 'soup', 'opened_beans', 'opened_soup', 'empty_can',
   'shambler_torso', 'shambler_head', 'shambler_left_arm', 'shambler_right_arm',
   'shambler_left_leg', 'shambler_right_leg',
-  'car_battery', 'car_headlamp', 'hatchback_battery_tray', 'pickup_battery_tray',
 ];
 local commonItems = [
   'rifle_hunting', 'cartridge_308_h_winchester', 'cartridge_box_308_h_winchester', 'optic_hunting_3_9x',
@@ -76,11 +75,13 @@ local authorTemplate(template) = template + {
     for char in std.objectFields(template.palette)
   },
 };
+// Vehicle parts arrive fitted to vehicles, so none spawns as loose loot.
+local spawnsLoose(item) = !(std.objectHas(item, 'vehicle') || std.member(notSpawnable, item.id));
 local authorItem(item) =
-  assert std.member(commonItems + militaryItems + medicalItems + policeItems + huntingItems + notSpawnable, item.id) : 'author economy metadata for ' + item.id;
+  assert !spawnsLoose(item) || std.member(commonItems + militaryItems + medicalItems + policeItems + huntingItems, item.id) : 'author economy metadata for ' + item.id;
   item + {
     economy:
-      if std.member(notSpawnable, item.id) then { usage: [], tiers: [] }
+      if !spawnsLoose(item) then { usage: [], tiers: [] }
       else if std.member(militaryItems, item.id) then { usage: ['Military'], tiers: ['Tier2', 'Tier3'] }
       else if std.member(medicalItems, item.id) then { usage: ['Medical'], tiers: tiers }
       else if std.member(policeItems, item.id) then { usage: ['Police'], tiers: tiers }

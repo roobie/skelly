@@ -21,7 +21,7 @@ Gathering uses ordinary handling costs; work time follows recipe content, statio
 
 A craft requires both hands free; stowing is the player's decision. The work item escrows inputs so nothing else can consume them mid-craft. Losing a tool or station stops work without losing progress; the same work can resume when requirements return. Finishing consumes escrow once and creates the result. Cancellation returns exact input identities.
 
-Disassembly snapshots yield when work starts, so stopping, skill changes or tool changes cannot alter its promised output. Repair recipes improve an existing target and are not disassembly results. Craft completion awards practice; take-apart does not. Recipe knowledge is explicit, and books add knowledge without changing item ownership. Books teach recipes only; practice may come from any activity. See `src/core/disassembly.ts`, `planDisassembly`, and `src/core/character.ts`, `Character.awardPractice`.
+Disassembly snapshots yield when work starts, so stopping, skill changes or tool changes cannot alter its promised output. Repair recipes improve an existing target and are not disassembly results. Craft completion awards practice; take-apart does not. Recipe knowledge is explicit, and books add knowledge without changing item ownership. Books teach recipes; practice may come from any activity. See `src/core/disassembly.ts`, `planDisassembly`, and `src/core/character.ts`, `Character.awardPractice`.
 
 Reading a recipe book progresses only while its page is open. Closing the page pauses work and preserves progress; movement closes it and passes through. Readable-only notes and signs do not create a timed job. See `src/core/bookReading.ts`, `bookReadingHooks`, and `src/game/play.ts`, `stopReadingOnClose`.
 

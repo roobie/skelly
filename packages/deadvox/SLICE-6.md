@@ -26,7 +26,9 @@ The hatchback and pickup are the first transport hosts, with genuinely shared
 service parts and a freely placed capability-matched add-on. Two hosts expose
 accidental blueprint-specific restrictions; the add-on exposes a disguised fixed
 socket system. The motorbike follows after the four-wheel loop, rather than putting
-balance and lean on the first playtest's critical path.
+balance and lean on the first playtest's critical path. Each host is authored as
+content parts and a content blueprint, the hatchback remade from a real car, so no
+vehicle is authored twice; see `docs/vehicle-spike.md`, "The hatchback from content".
 
 Building starts from factory structures with compatible parts and add-ons, not raw
 rails and plates. Factory welded structure is one player-facing assembly while

@@ -1,0 +1,17 @@
+{
+  "id": "hatchback_rear_seat",
+  "file": "assets/models/hatchback_rear_seat.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 20,
+      "centreOfMass": [-0.8806769055745164, 0.5961945392491466, 7.739291422859342e-17],
+      "collision": [
+        { "min": [-0.95, 0.3, -0.68], "max": [-0.55, 0.44, 0.68] },
+        { "min": [-1, 0.43999999999999995, -0.68], "max": [-0.52, 0.55, 0.68] },
+        { "min": [-1.22, 0.53, -0.68], "max": [-0.95, 1.2, 0.68] }
+      ]
+    }
+  },
+  "anchors": {}
+}

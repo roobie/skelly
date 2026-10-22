@@ -17,6 +17,7 @@ import {
   attachmentInstanceForId,
   attachmentMetadata,
   attachmentMountSlot,
+  railSpanFitsNotch,
 } from './attachments.ts';
 import { gunDomain } from './domain.ts';
 import { mountCanAccept } from './mounts.ts';
@@ -142,12 +143,20 @@ const passesFitRules = ({
   if (mount !== slot.mount) {
     return false;
   }
+  const hostPort = base.defs.get(host)?.ports.find(({ id }) => id === port);
   const optic = candidate.family === 'sight' ? getOptic(candidate.params.type) : undefined;
-  if (optic) {
-    const hostPort = base.defs.get(host)?.ports.find(({ id }) => id === port);
-    if (!(hostPort && mountCanAccept(hostPort, optic.mount, slot.notchIndex ?? 0))) {
-      return false;
-    }
+  if (optic && !(hostPort && mountCanAccept(hostPort, optic.mount, slot.notchIndex ?? 0))) {
+    return false;
+  }
+  // The exported span is what the runtime fitter requires on the rail, so certify only what it will accept.
+  const span = attachmentMetadata(
+    candidate.family,
+    candidate.params,
+    base.domain.units.metresPerUnit,
+    candidate.definition,
+  )?.properties.railSpanNotches;
+  if (hostPort && slot.notchIndex !== undefined && !railSpanFitsNotch(span, slot.notchIndex, hostPort)) {
+    return false;
   }
   const partId = `candidate-${candidate.id}`;
   const connection = {

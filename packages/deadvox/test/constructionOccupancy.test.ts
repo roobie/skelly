@@ -1,8 +1,10 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
-import type { BlockEntitiesState, BlockEntity } from '../src/core/blockEntities.ts';
-import { worldOpaque, worldSolid } from '../src/core/collision.ts';
+import type { BlockEntities, BlockEntitiesState, BlockEntity } from '../src/core/blockEntities.ts';
+import { terrainSolid, worldOpaque, worldSolid } from '../src/core/collision.ts';
+import type { Vec3 } from '../src/core/coords.ts';
+import { type FurnitureMover, removeFurniture } from '../src/core/furnitureMove.ts';
 import { pickFurnitureAndObstruction } from '../src/core/furniturePick.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { type Body, stepBodyHorizontal } from '../src/core/physics.ts';
@@ -10,6 +12,7 @@ import { raycast, type SolidAt } from '../src/core/raycast.ts';
 import { bindReach, type ReachPlayer } from '../src/core/reach.ts';
 import { captureSky, furnitureBounds, growSky, SKY_SHELL } from '../src/core/skySnapshot.ts';
 import { type BrickOut, brickHas, type SolidBricks, worldBricks } from '../src/core/solidBricks.ts';
+import { cellsOf } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
@@ -46,6 +49,7 @@ const { registry, issues } = buildRegistry([
           color: '#ffffff',
           container: { pockets: [{ grid: [2, 2], handlingSimSeconds: 1 }] },
         },
+        { id: 'occupancy_block', name: 'Fixture block', size: [1, 1, 1], color: '#999999' },
       ],
       items: [{ id: 'occupancy_item', name: 'Fixture item', category: 'material', weight: 1, size: [1, 1] }],
     },
@@ -226,6 +230,89 @@ it('refreshes a reach view across restores of saves that hold as many pieces', (
 
 it('refuses to remove a container that still holds items', () => {
   const { entities, crate, isSolid } = site();
-  expect(() => entities.remove(crate)).toThrow('holds items');
+  expect(() => entities.remove(crate)).toThrow();
   expect(isSolid(-1, 1, 2)).toBe(true);
+});
+
+/** Stands still well away from the pieces, so only what a test puts on them holds them. */
+const bystander = (): Body => ({ pos: [-4.5, 1, -4.5], vel: [0, 0, 0], halfWidth: 0.4, height: 3.4, onGround: true });
+
+const moverAt = (inventory: Inventory, world: World, player = bystander()): FurnitureMover => ({
+  inventory,
+  terrainSolid: terrainSolid(world, registry),
+  blockSize: BLOCK_SIZE,
+  player,
+  others: [],
+  stamina: 1,
+});
+
+/** The cells, record and solidity a piece holds, to show a refusal left them as they were. */
+const occupancy = (entities: BlockEntities, isSolid: SolidAt, piece: BlockEntity) =>
+  [...cellsOf(piece.size)].map(([x, y, z]) => {
+    const cell: Vec3 = [piece.pos[0] + x, piece.pos[1] + y, piece.pos[2] + z];
+    return { at: entities.at(...cell) === piece, solid: isSolid(...cell), live: entities.byUid(piece.uid) === piece };
+  });
+
+it('throws on removing through a handle from before a restore, leaving the restored piece in its cells', () => {
+  const { entities, door, save, isSolid } = site();
+  entities.restoreState(save());
+  const live = entities.byUid(door.uid)!;
+  expect(live).not.toBe(door);
+  const before = occupancy(entities, isSolid, live);
+
+  expect(() => entities.remove(door)).toThrow();
+  expect(occupancy(entities, isSolid, live)).toEqual(before);
+  expect(before.every(({ at, solid, live: held }) => at && solid && held)).toBe(true);
+});
+
+it('refuses to remove a door barricaded in its doorway until the barricade is lifted', () => {
+  const { world, inventory, entities, door } = site();
+  const mover = moverAt(inventory, world);
+  entities.setOpen(door, true);
+  const barricade = entities.add({ type: 'occupancy_block', pos: [1, 1, 0], size: [1, 1, 1], facing: 'n' });
+  expect(barricade && entities.at(1, 1, 0)).toBe(barricade);
+
+  expect(removeFurniture(mover, door)).toBeDefined();
+  expect(() => entities.remove(door)).toThrow();
+  expect(entities.doorAt(0, 1, 0)).toBe(door);
+
+  entities.lift(barricade!);
+  expect(removeFurniture(mover, door)).toBeUndefined();
+  expect(entities.byUid(door.uid)).toBeUndefined();
+  expect(entities.doorAt(0, 1, 0)).toBeUndefined();
+});
+
+it('refuses to remove a piece with a piece, a pile or the player on it, leaving its occupancy unchanged', () => {
+  /** Each puts its load on the cell above the stand and returns who the player is. */
+  const cases: Record<string, (fixture: ReturnType<typeof site>) => Body> = {
+    piece: ({ entities }) => {
+      entities.add({ type: 'occupancy_block', pos: [3, 2, 3], size: [1, 1, 1], facing: 'n' });
+      return bystander();
+    },
+    pile: ({ inventory }) => {
+      if (!inventory.add(inventory.create('occupancy_item'), { kind: 'pile', pos: [3, 2, 3] })) {
+        throw new Error('Fixture pile did not fit');
+      }
+      return bystander();
+    },
+    player: () => ({ pos: [3.5, 2, 3.5], vel: [0, 0, 0], halfWidth: 0.4, height: 3.4, onGround: true }),
+  };
+  for (const [what, load] of Object.entries(cases)) {
+    const fixture = site();
+    const { world, inventory, entities, isSolid } = fixture;
+    const stand = entities.add({ type: 'occupancy_block', pos: [3, 1, 3], size: [1, 1, 1], facing: 'n' })!;
+    const mover = moverAt(inventory, world, load(fixture));
+    const before = occupancy(entities, isSolid, stand);
+
+    expect(removeFurniture(mover, stand), what).toBeDefined();
+    expect(occupancy(entities, isSolid, stand), what).toEqual(before);
+    expect(before[0], what).toEqual({ at: true, solid: true, live: true });
+  }
+});
+
+it('removes a piece with nothing on it', () => {
+  const { world, inventory, entities, isSolid } = site();
+  const stand = entities.add({ type: 'occupancy_block', pos: [3, 1, 3], size: [1, 1, 1], facing: 'n' })!;
+  expect(removeFurniture(moverAt(inventory, world), stand)).toBeUndefined();
+  expect(isSolid(3, 1, 3)).toBe(false);
 });

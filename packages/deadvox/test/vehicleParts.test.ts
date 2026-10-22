@@ -3,6 +3,7 @@ import { sizeFits } from '../src/core/items.ts';
 import { PLAYER } from '../src/game/player.ts';
 import { APC } from '../src/vehicles/apc.ts';
 import { pairAcross } from '../src/vehicles/authoring.ts';
+import { BOX_VAN } from '../src/vehicles/boxVan.ts';
 import { CATALOGUE } from '../src/vehicles/catalogue.ts';
 import { HOIST } from '../src/vehicles/hoist.ts';
 import {
@@ -57,6 +58,7 @@ const library = new PartLibrary(CATALOGUE);
 const BLUEPRINTS: readonly { readonly blueprint: Blueprint; readonly builds: readonly (readonly string[])[] }[] = [
   { blueprint: RANGE_ROVER, builds: [[], STRIPPED_REMOVED] },
   { blueprint: PICKUP, builds: [[]] },
+  { blueprint: BOX_VAN, builds: [[]] },
   { blueprint: HOIST, builds: [[]] },
   { blueprint: SEDAN, builds: [[]] },
   { blueprint: MOTORBIKE, builds: [[]] },

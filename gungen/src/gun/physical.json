@@ -201,6 +201,14 @@
     },
     {
       "family": "lower",
+      "id": "lower-trigger",
+      "massKg": 0.20000000000000001,
+      "match": {
+        "layout": "trigger"
+      }
+    },
+    {
+      "family": "lower",
       "id": "lower-sporter",
       "massKg": 0.17999999999999999,
       "match": {
@@ -473,10 +481,10 @@
     },
     {
       "family": "ak-muzzle-device",
-      "id": "muzzle-ak-brake",
+      "id": "muzzle-ak74",
       "massKg": 0.12,
       "match": {
-        "style": "brake"
+        "style": "ak74"
       }
     },
     {
@@ -677,6 +685,33 @@
       "match": {
         "length": "L",
         "style": "tapered"
+      }
+    },
+    {
+      "family": "stock",
+      "id": "stock-tapered-sawed-short",
+      "massKg": 0.29999999999999999,
+      "match": {
+        "length": "S",
+        "style": "tapered-sawed"
+      }
+    },
+    {
+      "family": "stock",
+      "id": "stock-tapered-sawed-medium",
+      "massKg": 0.40000000000000002,
+      "match": {
+        "length": "M",
+        "style": "tapered-sawed"
+      }
+    },
+    {
+      "family": "stock",
+      "id": "stock-tapered-sawed-long",
+      "massKg": 0.5,
+      "match": {
+        "length": "L",
+        "style": "tapered-sawed"
       }
     },
     {

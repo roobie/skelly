@@ -1037,16 +1037,22 @@ describe('procedural bolt carrier', () => {
         name: `handle-sweep-${entry.pattern}-${entry.section}-${entry.bore}`,
         root: 'receiver',
         parts: {
-          receiver: {
-            family: 'receiver',
-            params: {
-              action: entry.action,
-              feed: entry.feed,
-              bore: entry.bore,
-              section: entry.section,
-              carrierPattern: entry.pattern,
-            },
-          },
+          receiver:
+            entry.section === 'ak'
+              ? {
+                  family: 'ak-receiver',
+                  params: { action: entry.action, feed: entry.feed, bore: entry.bore, section: entry.section },
+                }
+              : {
+                  family: 'receiver',
+                  params: {
+                    action: entry.action,
+                    feed: entry.feed,
+                    bore: entry.bore,
+                    section: entry.section,
+                    carrierPattern: entry.pattern,
+                  },
+                },
           carrier: { family: 'bolt-carrier', params: { pattern: entry.pattern, handleStyle: entry.handleStyle } },
         },
         connections: [{ from: 'receiver.bolt-carrier', to: 'carrier.mount' }],

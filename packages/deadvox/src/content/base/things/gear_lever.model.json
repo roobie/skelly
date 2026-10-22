@@ -1,0 +1,17 @@
+{
+  "id": "gear_lever",
+  "file": "assets/models/gear_lever.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 1,
+      "centreOfMass": [0, 0.062368146240974774, 0],
+      "collision": [
+        { "min": [-0.05, 0, -0.05], "max": [0.05, 0.03, 0.05] },
+        { "min": [-0.008, 0, -0.008], "max": [0.008, 0.22, 0.008] },
+        { "min": [-0.025, 0.2, -0.025], "max": [0.025, 0.255, 0.025] }
+      ]
+    }
+  },
+  "anchors": {}
+}

@@ -59,6 +59,7 @@ export class FurnitureMeshes {
     markerEdges(),
     withHeightFog(new MeshLambertMaterial({ color: '#ffe36e', depthTest: true }), 'furniture'),
   );
+  private entities: BlockEntities | undefined;
   private markedUid: string | undefined;
   private markedOpen: boolean | undefined;
   private drawn = -1;
@@ -132,12 +133,13 @@ export class FurnitureMeshes {
     if (entities.standing === this.drawn && revealVersion === this.drawnReveal) {
       return;
     }
+    this.entities = entities;
     this.drawn = entities.standing;
     this.drawnReveal = revealVersion;
     const pieces = new Map<BlockEntity, { pose: string; mesh: Group | Mesh }>();
     this.group.clear();
     for (const entity of entities.all) {
-      const pose = poseKey(entity);
+      const pose = poseKey(entity, entities.wearOf(entity));
       const kept = this.pieces.get(entity);
       const piece =
         kept?.pose === pose ? kept : { pose, mesh: castsAndReceives(this.meshFor(entity, entities.defOf(entity))) };
@@ -254,12 +256,28 @@ export class FurnitureMeshes {
     return piece;
   }
 
+  /**
+   * `plain` moved toward its door material's broken tint once the leaf is broken, or toward the damage look it has
+   * reached before that; no look authored leaves it.
+   */
+  private doorLook(entity: BlockEntity, plain: MeshLambertMaterial, body: FurnitureDef): MeshLambertMaterial {
+    const material = this.entities?.registry.doorMaterials.get(body.door!.material);
+    const wear = this.entities?.wearOf(entity) ?? 0;
+    const worn = wear > 0 ? material?.damaged?.[wear - 1] : undefined;
+    const look = entity.broken ? material?.broken : worn;
+    if (!look) {
+      return plain;
+    }
+    return this.material(`#${plain.color.clone().lerp(new Color(look.tint), look.strength).getHexString()}`);
+  }
+
   /** A panel across the doorway, hinged at its low end along the wall, or a hatch's panel. */
-  private door(entity: BlockEntity, material: MeshLambertMaterial, body: FurnitureDef): Group {
+  private door(entity: BlockEntity, plain: MeshLambertMaterial, body: FurnitureDef): Group {
     const box = panelFor(entity, body, this.blockSize);
     const bodyDoor = isBodyDoor(body);
+    const material = this.doorLook(entity, plain, body);
     const panelMaterial = bodyDoor
-      ? this.material(`#${new Color(body.color).multiplyScalar(BODY_DOOR_SHADE).getHexString()}`)
+      ? this.material(`#${new Color(material.color).multiplyScalar(BODY_DOOR_SHADE).getHexString()}`)
       : material;
     const pivot = new Group();
     const panel = new Mesh(this.geometry, panelMaterial);

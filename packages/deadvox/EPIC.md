@@ -231,6 +231,8 @@ The scope, open decision gates and reviewable build order are in [SLICE-5.md](SL
 The settled scope, implementation gates and build order are in [SLICE-6.md](SLICE-6.md).
 The hatchback and pickup establish the transport loop; the heavy-part-hoist uses the
 same vehicle systems for field salvage. The motorbike follows the four-wheel loop.
+Every new vehicle starts on the content path; see
+`docs/vehicle-spike.md`, "The hatchback from content".
 
 - Vehicles as grids of parts: building from wrecks, installing and removing
   parts, and repair.
@@ -303,8 +305,7 @@ Q and E remain reserved for later actions and have no world bindings.
 
 - Items carried in clothing can be damaged when that clothing is hit.
 - Condition can affect an item's performance before it is ruined.
-- Books teach recipes only, for now; they may also speed up skill practice in a
-  later reading design.
+- Books teach recipes and may teach skill too.
 - Learning from books will become gradual: reading lets the player use the book
   as a reference while doing the work, until the recipe is learned fully.
 - Condition may lower salvage yield.

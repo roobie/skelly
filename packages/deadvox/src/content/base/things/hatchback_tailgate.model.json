@@ -1,0 +1,17 @@
+{
+  "id": "hatchback_tailgate",
+  "file": "assets/models/hatchback_tailgate.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 16,
+      "centreOfMass": [-1.8999108079748184, 1.0061017838405026, -1.2135176467134047e-16],
+      "collision": [
+        { "min": [-2.02, 0.6199999999999999, -0.62], "max": [-1.98, 0.97, 0.62] },
+        { "min": [-1.99, 0.97, -0.6], "max": [-1.64, 1.4, 0.6] },
+        { "min": [-2.03, 0.75, -0.12], "max": [-2.02, 0.8, 0.12] }
+      ]
+    }
+  },
+  "anchors": { "hinge_a": [-1.64, 1.4, 0.6], "hinge_b": [-1.64, 1.4, -0.6] }
+}

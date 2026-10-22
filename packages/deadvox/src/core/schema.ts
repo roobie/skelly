@@ -242,9 +242,15 @@ const VEHICLE_CAPABILITIES = [
   'electricity',
   'storage',
   'seat',
+  /** A door or hatch a player gets in through. */
+  'entry',
   'light',
   'glazing',
   'protection',
+  /** Frame, tray or mount that other fittings rest on. */
+  'structure',
+  /** A road wheel, the part a vehicle rolls on. */
+  'wheel',
 ] as const;
 export type VehicleCapability = (typeof VEHICLE_CAPABILITIES)[number];
 
@@ -326,13 +332,21 @@ const UiTuningSchema = strictObject({
   restLabels: strictObject({ rest: Name, sleep: Name }),
   /** Why a door will not close: the player, or something else, is standing in its way. */
   doorCloseBlockedMessages: strictObject({ player: Name, other: Name }),
-  /** Why a piece of furniture can't be lifted, turned or put down, and what the player says on dropping it worn out. */
+  /**
+   * Why a piece of furniture can't be lifted, turned, put down or removed, and what the player says on dropping it
+   * worn out.
+   */
   furnitureMoveMessages: strictObject({
     tooBig: Name,
     fastened: Name,
     handsFull: Name,
     tired: Name,
     standingOn: Name,
+    someoneOnIt: Name,
+    holdsUp: Name,
+    holdsItems: Name,
+    barricaded: Name,
+    reserved: Name,
     fallsOnPlayer: Name,
     fallsOnOther: Name,
     nowhereToLand: Name,
@@ -1347,10 +1361,23 @@ export const ModelSchema = pipe(
 
 // ---- furniture ----
 
-const DoorMaterialSchema = strictObject({
-  id: Id,
-  methods: array(Id),
-});
+const DoorMaterialSchema = pipe(
+  strictObject({
+    id: Id,
+    methods: array(Id),
+    /** How a broken leaf of this material is painted: its colour moves `strength` of the way to `tint`. */
+    broken: optional(strictObject({ tint: Color, strength: Fraction })),
+    /**
+     * How a leaf is painted as its damage grows toward breaking, so the player sees how close it is to giving way.
+     * Each step applies once the damage reaches `from`, a fraction of the leaf's toughness; the last step reached wins.
+     */
+    damaged: optional(array(strictObject({ from: Fraction, tint: Color, strength: Fraction }))),
+  }),
+  check(
+    ({ damaged }) => (damaged ?? []).every((step, at) => at === 0 || step.from > damaged![at - 1]!.from),
+    'damage looks need strictly rising thresholds',
+  ),
+);
 
 const DoorForcingSchema = pipe(
   strictObject({
@@ -2189,7 +2216,12 @@ const ScenarioSchema = strictObject({
       storeys: pipe(array(strictObject({ id: Id, standing: CellPosition })), minLength(1), maxLength(16)),
       seals: optional(
         array(
-          strictObject({ doors: pipe(array(CellPosition), nonEmpty()), key: CellPosition, standing: CellPosition }),
+          strictObject({
+            doors: pipe(array(CellPosition), nonEmpty()),
+            key: CellPosition,
+            held: optional(literal(true)),
+            standing: CellPosition,
+          }),
         ),
         [],
       ),

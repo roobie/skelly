@@ -71,6 +71,21 @@ it('preserves authored attachment exclusions through design loading and editor s
   expect(saved.design.excludedAttachments).toEqual(excludedAttachments);
 });
 
+it('refuses a design naming an unknown template instead of loading it under another', () => {
+  const result = expectFatal(loadGunDesign(JSON.stringify({ ...makeDesign(), template: 'no-such-template' })));
+  expect(result.error).toMatchObject({ code: 'invalid-shape', path: 'template' });
+  expect(result.error.message).toContain('no-such-template');
+});
+
+it('keeps the declared status readable when the template is unknown', () => {
+  const text = JSON.stringify({ ...makeDesign({ status: 'draft' }), template: 'no-such-template' });
+  expect(expectFatal(loadGunDesign(text)).declaredStatus).toBe('draft');
+});
+
+it('reports unparseable text as invalid JSON', () => {
+  expect(expectFatal(loadGunDesign('{')).error.code).toBe('invalid-json');
+});
+
 it.each([{ excludedAttachments: 'not-an-array' }, { excludedAttachments: ['unknown-fixture-attachment'] }])(
   'rejects malformed or unknown attachment exclusions: $excludedAttachments',
   ({ excludedAttachments }) => {

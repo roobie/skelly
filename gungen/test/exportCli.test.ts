@@ -175,6 +175,14 @@ describe('export CLI core', () => {
     }
   });
 
+  it('refuses a bare assembly with no appearance profile instead of exporting it unstyled', () => {
+    const unprofiled = JSON.stringify({ ...JSON.parse(read('fixtures', 'archetype-ak')), name: 'no-such-fixture' });
+    expect(exportFileText(unprofiled, ASSET)).toMatchObject({
+      ok: false,
+      message: expect.stringContaining('no-such-fixture'),
+    });
+  });
+
   it('reports malformed input and a bad asset path as messages', () => {
     expect(exportFileText('{nope', ASSET)).toMatchObject({ ok: false });
     const bad = exportFileText(read('designs', 'archetype-ar'), { id: 'x', file: 'assets/models/X.glb' });
