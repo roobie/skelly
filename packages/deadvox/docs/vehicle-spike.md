@@ -1,6 +1,7 @@
 ---
 read_if:
   - you change the vehicle part model, build page or vehicle exports
+  - you add a vehicle part, capability or vehicle blueprint to content
   - you start vehicle content, in-game vehicles or saved vehicle state
   - you derive vehicle behavior from its parts
   - you distinguish the visual spike from the settled vehicle slice design
@@ -48,3 +49,13 @@ The settled scope and dependency order are in `SLICE-6.md`, "Reviewable build or
 VAT assembles thing-tool-authored parts and exports baked geometry. That boundary lets the game load validated content without evaluating authoring shapes. Shared exported per-part mass and centre of mass replace a parallel vehicle physical authority; see `things/WORK.md`, "Decisions". Cargo remains items within fitted storage rather than becoming fittings itself.
 
 The first loop builds from factory structures, uses welded assemblies as player-facing units, and shares unhanded parts across compatible hosts. Independent appearance and event-driven condition keep salvage history without scheduled maintenance. The shared item condition vocabulary avoids a meaning change when a part comes off. Heavy recovery uses a drivable hoist vehicle, so it exercises the same build and ownership rules rather than a separate equipment model.
+
+## Export contract
+
+A vehicle part is an item whose exported model carries per-part mass, centre of mass, baked collision and named datums, so salvage, inventory and fitting share one identity and the game never evaluates authoring shapes. A blueprint is content that names parts by item id and places each fitting in the vehicle frame, so a mod adds a compatible part or host with data alone. See `src/core/schema.ts`, `VehicleBlueprintSchema`, and `src/content/base/vehicles.jsonnet`.
+
+Capabilities are a closed vocabulary because each one needs game code to mean anything; content naming another is refused rather than ignored. See `src/core/schema.ts`, `VEHICLE_CAPABILITIES`.
+
+Validation refuses a part whose export lacks part masses or baked collision, a fitting that names no vehicle part, and supports that are absent or cyclic, so the content file that authors them is dropped whole like any other broken content. See `src/core/vehicleBlueprint.ts`, `vehicleContentIssues`. Loading takes mass and centre only from the export; a mirrored fitting reflects its centre, collision and datums across z about its position, so a far-side twin needs no second export. See `src/core/vehicleBlueprint.ts`, `placeFitting`.
+
+Until VAT ships in #323, blueprints are authored as content rather than exported by a tool, so the contract does not wait on an editor; whether content stays the blueprint authority once VAT exists awaits BR's ruling, due with #323.

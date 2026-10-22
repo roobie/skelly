@@ -420,6 +420,62 @@
     "roll": 0
   },
   {
+    "id": "car_battery",
+    "file": "assets/models/car_battery.glb",
+    "parts": {
+      "body": {
+        "node": "body:carton",
+        "massKg": 14,
+        "centreOfMass": [0, 0.09258197655858076, 0],
+        "collision": [
+          { "min": [-0.12, 0, -0.0875], "max": [0.12, 0.17, 0.0875] },
+          { "min": [-0.12, 0.17, -0.0875], "max": [0.12, 0.19000000000000003, 0.0875] },
+          { "min": [-0.1205, 0.05500000000000001, -0.088], "max": [0.1205, 0.115, 0.088] }
+        ]
+      }
+    },
+    "anchors": { "base": [0, 0, 0], "terminal_positive": [0.07200000000000001, 0.19000000000000003, -0.0525] }
+  },
+  {
+    "id": "car_headlamp",
+    "file": "assets/models/car_headlamp.glb",
+    "parts": {
+      "body": {
+        "node": "body:block",
+        "massKg": 1.2,
+        "centreOfMass": [0, 0.08, 0],
+        "collision": [{ "min": [-0.04, 0, -0.11], "max": [0.04, 0.16, 0.11] }]
+      }
+    },
+    "anchors": { "beam": [0.04, 0.08, 0], "mount": [-0.04, 0.08, -0.077] }
+  },
+  {
+    "id": "hatchback_battery_tray",
+    "file": "assets/models/hatchback_battery_tray.glb",
+    "parts": {
+      "body": {
+        "node": "body:block",
+        "massKg": 1.5,
+        "centreOfMass": [0, 0.010000000000000002, 0],
+        "collision": [{ "min": [-0.14, 0, -0.105], "max": [0.14, 0.02, 0.105] }]
+      }
+    },
+    "anchors": { "seat": [0, 0.02, 0] }
+  },
+  {
+    "id": "pickup_battery_tray",
+    "file": "assets/models/pickup_battery_tray.glb",
+    "parts": {
+      "body": {
+        "node": "body:block",
+        "massKg": 2.2,
+        "centreOfMass": [0, 0.015, 0],
+        "collision": [{ "min": [-0.16, 0, -0.12], "max": [0.16, 0.03, 0.12] }]
+      }
+    },
+    "anchors": { "seat": [0, 0.03, 0] }
+  },
+  {
     "id": "tape_roll",
     "file": "assets/models/tape_roll.glb",
     "parts": {

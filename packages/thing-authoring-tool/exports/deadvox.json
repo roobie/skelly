@@ -344,6 +344,42 @@
     "source": "shambler_right_leg"
   },
   {
+    "id": "car_battery",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "car_battery"
+  },
+  {
+    "id": "car_headlamp",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "car_headlamp"
+  },
+  {
+    "id": "hatchback_battery_tray",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "hatchback_battery_tray"
+  },
+  {
+    "id": "pickup_battery_tray",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "pickup_battery_tray"
+  },
+  {
     "id": "tape_roll",
     "kind": "item",
     "options": {
