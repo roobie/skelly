@@ -1995,6 +1995,13 @@ while the lantern zombie uses the same principle against the player. Most
 portable lights occupy a hand; a headlamp frees both at the cost of a weaker
 beam. Fuel, batteries, and powered fixed lights keep illumination consequential.
 
+A road flare spends a light to buy a lure. It is snap-lit, cannot be doused and
+stays lit where it lands, so the player gives up a light they could have kept, and
+is seen while holding it, to move shamblers off a route or a doorway. It draws from
+farther than a glowstick because its `seenFrom` is larger; the draw is content, read
+by the same light sense as every other lit light, and a flare adds no damage. See
+`src/core/lights.ts`, `lightSenseSourceFor`.
+
 Night-vision goggles are a worn light, because power, battery swaps, the worn-light
 hold and how far others notice a source already belong to the light component. Their
 light stands in for the infrared lamp: dim, green and seen only from close up. While

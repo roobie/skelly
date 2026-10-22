@@ -572,6 +572,35 @@
     },
     {
       "category": "light",
+      "description": "A road flare. It burns red and bright until it is spent.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+      },
+      "id": "road_flare",
+      "light": {
+        "burnTimeGameHours": 1,
+        "burning": {
+          "douse": false,
+          "drop": "stay",
+          "ignition": "snap",
+          "relight": false,
+          "sprint": "stay",
+          "stow": "stay"
+        },
+        "color": "#ff3b24",
+        "emissive": 1,
+        "intensity": 3,
+        "radius": 4,
+        "seenFrom": 40
+      },
+      "model": "road_flare",
+      "name": "Road flare",
+      "size": [1, 2],
+      "weight": 200
+    },
+    {
+      "category": "light",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
@@ -663,6 +692,11 @@
       "emissiveMaterial": "chemical-light tube",
       "file": "assets/models/glowstick.glb",
       "id": "glowstick"
+    },
+    {
+      "emissiveMaterial": "chemical-light tube",
+      "file": "assets/models/glowstick.glb",
+      "id": "road_flare"
     }
   ]
 }
