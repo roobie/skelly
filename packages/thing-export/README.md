@@ -38,13 +38,12 @@ Consumer-authored projections can still select gameplay-specific physical bounda
 
 A recipe row may opt into `voxelGrain`, which replaces its smooth meshes with a greedy
 voxel mesh sampled at that grain. Rows without the option export as before, so only the
-rows whose look is being judged change. The sampler lives here because this package may
-not import deadvox's mesher; see `src/voxelize.ts`, `voxelize`, and `src/glb.ts`,
-`voxelPrimitivesFor`. Which rows opt in is still being judged on screen, so the
-selection stays an explicit list in each recipe.
+rows that opt in change, and the selection is an explicit list in each recipe. The sampler
+lives here because this package may not import deadvox's mesher; see `src/voxelize.ts`,
+`voxelize`, and `src/glb.ts`, `voxelPrimitivesFor`.
 
 Two grains, both content values: a coarse one for vehicles, furniture and the parts made
-to attach to them, and 1 cm for every other item or component. A vehicle part must match
+to attach to them, and a finer one for every other item or component. A vehicle part must match
 the grain of the vehicle it sits on, while a tool, a can or a rifle drawn at that grain
 collapses to a few voxels. A row picks its class, never a number, so one tuning moves a
 whole class. See `tools/jsonnet/lib/voxel-grains.libsonnet`, and the recipes
@@ -65,8 +64,12 @@ A voxelized model replaces the smooth one in place rather than shipping beside i
 files per model would need a selector and a second registration for no consumer that
 wants the smooth one.
 
-Per-voxel wear on these meshes is open: a greedy-merged mesh no longer has the grid that
-wear edits.
+Wear on a voxelized part recolours or removes faces at runtime, and the export gives it one
+quad per exposed voxel face to act on, because a greedy-merged mesh no longer has the grid
+that wear edits. Wear then works at any export grain without extra data, and nothing about
+wear is left open. The price is heavier files and more triangles, which grows with each
+voxelized item. The exporter's second meshing mode and deadvox's face-to-voxel wear belong
+to g89; until g89 lands, voxelized parts show no wear.
 
 ## Physical model
 
