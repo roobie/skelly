@@ -351,7 +351,7 @@ export interface Zombie {
    * `acidSpitWindupProgress`. */
   spitWindup: number;
   /** Seconds that the last heavy enough hit still holds it from moving and starting an attack; 0 = none. */
-  staggerTime: number;
+  staggerSimSeconds: number;
   /** Seconds until the next spit may start; counts down whatever the zombie is doing. */
   spitWait: number;
   /** Seeded stream for the spit's aim, apart from behaviorRng so a spit never shifts movement draws. */
@@ -432,7 +432,7 @@ const validSpitTimers = (zombie: ZombieState): boolean =>
   Number.isFinite(zombie.spitWait) &&
   zombie.spitWait >= 0;
 const validStaggerTime = (zombie: ZombieState): boolean =>
-  Number.isFinite(zombie.staggerTime) && zombie.staggerTime >= 0;
+  Number.isFinite(zombie.staggerSimSeconds) && zombie.staggerSimSeconds >= 0;
 const validObstacleWanderState = (zombie: ZombieState): boolean =>
   Number.isFinite(zombie.obstacleWanderRemaining) &&
   zombie.obstacleWanderRemaining >= 0 &&
@@ -1418,7 +1418,7 @@ const zombieSnapshotFields = [
   'attackWait',
   'attackWindup',
   'spitWindup',
-  'staggerTime',
+  'staggerSimSeconds',
   'spitWait',
   'gaitPhase',
   'footstepClock',
@@ -1524,7 +1524,7 @@ const zombieSnapshotProjectors = {
   attackWait: (zombie) => zombie.attackWait,
   attackWindup: (zombie) => zombie.attackWindup,
   spitWindup: (zombie) => zombie.spitWindup,
-  staggerTime: (zombie) => zombie.staggerTime,
+  staggerSimSeconds: (zombie) => zombie.staggerSimSeconds,
   spitWait: (zombie) => zombie.spitWait,
   gaitPhase: (zombie) => zombie.gaitPhase,
   footstepClock: (zombie) => ({ ...zombie.footstepClock }),
@@ -2194,7 +2194,7 @@ export class ZombieSystem {
       attackWait: 0,
       attackWindup: 0,
       spitWindup: 0,
-      staggerTime: 0,
+      staggerSimSeconds: 0,
       spitWait: 0,
       gaitPhase: 0,
       footstepClock: initialShamblerFootstepClock(type.stepLength),
@@ -2437,7 +2437,7 @@ export class ZombieSystem {
         direction = movementDirection;
         speed = desiredSpeed;
       }
-      if (zombie.staggerTime > 0) {
+      if (zombie.staggerSimSeconds > 0) {
         speed = 0;
       }
       zombie.horizontalSpeed = speed;
@@ -2481,7 +2481,7 @@ export class ZombieSystem {
     }
     zombie.attackWait = Math.max(0, zombie.attackWait - dt);
     zombie.spitWait = Math.max(0, zombie.spitWait - dt);
-    zombie.staggerTime = Math.max(0, zombie.staggerTime - dt);
+    zombie.staggerSimSeconds = Math.max(0, zombie.staggerSimSeconds - dt);
   }
 
   private updatePerception(): void {
@@ -2798,7 +2798,7 @@ export class ZombieSystem {
   private updateMovementSpeed(): void {
     const scratch = this.tickScratch;
     const { zombie, type, dt } = scratch;
-    if ((zombie.regions.leftLeg! <= 0 && zombie.regions.rightLeg! <= 0) || zombie.staggerTime > 0) {
+    if ((zombie.regions.leftLeg! <= 0 && zombie.regions.rightLeg! <= 0) || zombie.staggerSimSeconds > 0) {
       scratch.desiredSpeed = 0;
       scratch.direction = [0, 0, 0];
       scratch.aimDirection = undefined;
@@ -3052,7 +3052,7 @@ export class ZombieSystem {
       }
     } else if (
       zombie.mode === 'chase' &&
-      zombie.staggerTime <= 0 &&
+      zombie.staggerSimSeconds <= 0 &&
       zombie.attackWait <= 0 &&
       zombie.spitWindup <= 0 &&
       (type.model === 'amalgam' ? activeAmalgamMembers(zombie).length > 0 : canStillAttack(zombie.severed)) &&
@@ -3114,7 +3114,7 @@ export class ZombieSystem {
     if (
       zombie.mode === 'chase' &&
       scratch.sees &&
-      zombie.staggerTime <= 0 &&
+      zombie.staggerSimSeconds <= 0 &&
       zombie.spitWait <= 0 &&
       zombie.attackWindup <= 0 &&
       metres >= spit.rangeBand.nearMetres &&
@@ -3790,7 +3790,7 @@ export class ZombieSystem {
     if (!stagger || impulse < stagger.impulseThreshold) {
       return;
     }
-    zombie.staggerTime = Math.max(zombie.staggerTime, stagger.durationSimSeconds);
+    zombie.staggerSimSeconds = Math.max(zombie.staggerSimSeconds, stagger.durationSimSeconds);
     zombie.attackWindup = 0;
     this.cancelAcidSpit(zombie);
   }

@@ -3553,20 +3553,20 @@ describe('stagger', () => {
     expect(staggered.zombie.attackWindup).toBeGreaterThan(0);
     const ray = regionRay(staggered.zombie, 'torso');
     expect(staggered.system.swing(ray.origin, ray.direction, heavy)).toBe(staggered.id);
-    expect(staggered.zombie.staggerTime).toBe(stagger.durationSimSeconds);
+    expect(staggered.zombie.staggerSimSeconds).toBe(stagger.durationSimSeconds);
     expect(staggered.zombie.attackWindup).toBe(0);
     run(staggered.system, stagger.durationSimSeconds - 2 / 60);
-    expect(staggered.zombie.staggerTime).toBeGreaterThan(0);
+    expect(staggered.zombie.staggerSimSeconds).toBeGreaterThan(0);
     expect(staggered.zombie.attackWindup).toBe(0);
     expect(staggered.damage()).toBe(0);
     run(staggered.system, 3 / 60);
-    expect(staggered.zombie.staggerTime).toBe(0);
+    expect(staggered.zombie.staggerSimSeconds).toBe(0);
 
     const unstaggered = windingUp();
     expect(unstaggered.zombie.attackWindup).toBeGreaterThan(0);
     const lightRay = regionRay(unstaggered.zombie, 'torso');
     expect(unstaggered.system.swing(lightRay.origin, lightRay.direction, light)).toBe(unstaggered.id);
-    expect(unstaggered.zombie.staggerTime).toBe(0);
+    expect(unstaggered.zombie.staggerSimSeconds).toBe(0);
     expect(unstaggered.zombie.attackWindup).toBeGreaterThan(0);
   });
 
@@ -3599,11 +3599,11 @@ describe('stagger', () => {
     const ray = regionRay(zombie, 'torso');
     system.swing(ray.origin, ray.direction, heavy);
     run(system, stagger.durationSimSeconds / 2);
-    const remaining = zombie.staggerTime;
+    const remaining = zombie.staggerSimSeconds;
     expect(remaining).toBeGreaterThan(0);
     const restored = new ZombieSystem(senses(() => player([0, 2, 0]), FLOOR));
     restored.restoreState(system.snapshotState(), () => staggering);
-    expect(restored.store.get(id)!.staggerTime).toBe(remaining);
+    expect(restored.store.get(id)!.staggerSimSeconds).toBe(remaining);
   });
 });
 
