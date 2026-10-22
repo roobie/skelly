@@ -942,6 +942,11 @@ const checkFurniture = (registry: Registry, report: Report) => {
     checkSearchNoise(registry, furniture, report);
     checkMaterial(registry, furniture, report);
     checkDoorForcing(registry, furniture, report);
+    furniture.ruin?.debris.forEach(({ item }, index) => {
+      if (!registry.items.has(item)) {
+        report('furniture', furniture.id, `.ruin.debris[${index}].item`, `no item "${item}"`);
+      }
+    });
   }
 };
 

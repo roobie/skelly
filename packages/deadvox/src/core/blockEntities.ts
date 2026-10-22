@@ -67,8 +67,11 @@ export interface BlockEntityState {
 
 export type DoorOperation = 'open' | 'close' | 'lock' | 'unlock';
 
-/** What one blow did to a closed door: nothing below its minimum strength, else damage that may break it. */
-export type BashOutcome = 'resisted' | 'damaged' | 'broken';
+/**
+ * What one blow did: nothing below the piece's minimum strength, else damage that may break a door leaf or ruin any
+ * other piece, which its caller then destroys (`src/core/furnitureMove.ts`, `ruinFurniture`).
+ */
+export type BashOutcome = 'resisted' | 'damaged' | 'broken' | 'ruined';
 
 export interface BlockEntitiesState {
   nextUid: number;
@@ -622,6 +625,22 @@ export class BlockEntities {
     if (refusal) {
       throw new Error(refusal);
     }
+    this.unlink(entity);
+  }
+
+  /**
+   * Takes a ruined piece out of the world for good, and its pockets with it; the caller lays what they held on
+   * piles (`src/core/furnitureMove.ts`, `ruinFurniture`): a blow can't be refused, so the removal refusals don't apply
+   * (`DESIGN.md`, "Edits persist").
+   */
+  destroy(entity: BlockEntity): void {
+    if (this.byOrigin.get(key(...entity.origin)) !== entity || entity.carried) {
+      throw new Error('Only a live standing block entity can be destroyed');
+    }
+    this.unlink(entity);
+  }
+
+  private unlink(entity: BlockEntity): void {
     this.occupy(entity, false);
     this.byOrigin.delete(key(...entity.origin));
     this.uids.delete(entity.uid);
@@ -870,13 +889,16 @@ export class BlockEntities {
   }
 
   /**
-   * One blow against a closed leaf, a zombie's bash or a player's strike alike. A blow below the leaf's minimum
-   * strength leaves no mark, so waiting never lets a weak attacker through; stronger blows add their strength until
-   * it reaches the durability. A broken leaf stands open and its lock is gone, so the breach is one-way, as forcing is.
+   * One blow against a standing piece, a zombie's bash or a player's strike alike; an open leaf is a gap, not a
+   * target. A blow below the piece's minimum strength leaves no mark, so waiting never lets a weak attacker through;
+   * stronger blows add their strength until it reaches the durability. A broken leaf stands open and its lock is
+   * gone, so the breach is one-way, as forcing is. Any other piece is ruined, its damage left as it was, and the
+   * caller destroys it at once (`src/core/furnitureMove.ts`, `ruinFurniture`).
    */
   bash(entity: BlockEntity, strength: number): BashOutcome | undefined {
     const { breach } = this.defOf(entity);
-    if (!this.breachable(entity) || entity.open || entity.carried) {
+    const leaf = this.breachable(entity);
+    if (entity.carried || (leaf && entity.open)) {
       return undefined;
     }
     if (strength < breach.minimumStrength) {
@@ -891,6 +913,9 @@ export class BlockEntities {
         this.standing += 1;
       }
       return 'damaged';
+    }
+    if (!leaf) {
+      return 'ruined';
     }
     entity.damage = undefined;
     entity.broken = true;
