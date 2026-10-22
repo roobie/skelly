@@ -162,9 +162,9 @@ describe('live craft commands', () => {
     r.inventory.entities.add({ type: 'workbench', pos: [0, 0, 0], size: [3, 2, 2], facing: 'n' });
     const recipe = r.inventory.registry.recipes.get('door_bar')!;
     const [component] = recipe.components[0]!;
-    expect(r.inventory.add(r.inventory.create(component!.item, component!.count - 1), { kind: 'pile', pos: [0, 0, 0] })).toBe(
-      true,
-    );
+    expect(
+      r.inventory.add(r.inventory.create(component!.item, component!.count - 1), { kind: 'pile', pos: [0, 0, 0] }),
+    ).toBe(true);
 
     expect(r.commands.start(recipe.id)).toBeTruthy();
     expect(r.sim.actions.job).toBeUndefined();

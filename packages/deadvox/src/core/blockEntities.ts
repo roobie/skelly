@@ -803,8 +803,7 @@ export class BlockEntities {
       case 'close':
         return this.closeRefusal(entity);
       case 'bar':
-        return this.barRefusal(entity) ??
-          (entity.open ? 'Close the door first' : entity.bar && "It's already barred");
+        return this.barRefusal(entity) ?? (entity.open ? 'Close the door first' : entity.bar && "It's already barred");
       case 'unbar':
         return this.unbarRefusal(entity, from);
       default:

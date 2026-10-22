@@ -15,8 +15,8 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import {
   type BlockEntities,
   type BlockEntity,
-  doorBarBox,
   type DoorPanelBox,
+  doorBarBox,
   isBodyDoor,
   panelFor,
   poseKey,
@@ -397,5 +397,4 @@ function leafAxes(entity: BlockEntity, hatch: boolean): [Vector3, Vector3] {
   }
   // A hatch's hinge edge is on its facing side; open, it stands up on that edge.
   return [entity.open ? new Vector3(0, 1, 0) : new Vector3(...HATCH_FROM_HINGE[entity.facing]), across];
-
 }
