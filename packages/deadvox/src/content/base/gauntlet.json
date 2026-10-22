@@ -2398,11 +2398,69 @@
           "weight": 2
         },
         {
+          "condition": [0.5, 0.90000000000000002],
+          "item": "magazine_stanag_30",
+          "weight": 2
+        },
+        {
+          "condition": [0.5, 0.90000000000000002],
+          "item": "magazine_stanag_20",
+          "weight": 1
+        },
+        {
+          "condition": [0.5, 0.90000000000000002],
+          "item": "magazine_akm_30",
+          "weight": 2
+        },
+        {
           "nothing": true,
           "weight": 2
         }
       ],
       "id": "armoury_ammunition",
+      "rolls": [1, 2]
+    },
+    {
+      "entries": [
+        {
+          "count": [8, 20],
+          "item": "cartridge_5_d_56x45",
+          "weight": 2
+        },
+        {
+          "count": [8, 20],
+          "item": "cartridge_7_d_62x39",
+          "weight": 2
+        },
+        {
+          "item": "cartridge_box_5_d_56x45",
+          "weight": 1
+        },
+        {
+          "item": "cartridge_box_7_d_62x39",
+          "weight": 1
+        },
+        {
+          "condition": [0.5, 0.90000000000000002],
+          "item": "magazine_stanag_30",
+          "weight": 2
+        },
+        {
+          "condition": [0.5, 0.90000000000000002],
+          "item": "magazine_stanag_20",
+          "weight": 1
+        },
+        {
+          "condition": [0.5, 0.90000000000000002],
+          "item": "magazine_akm_30",
+          "weight": 2
+        },
+        {
+          "nothing": true,
+          "weight": 3
+        }
+      ],
+      "id": "hq_field_supplies",
       "rolls": [1, 2]
     },
     {
@@ -4748,7 +4806,7 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 6
+              "weight": 2
             },
             {
               "ref": {
@@ -4770,7 +4828,7 @@
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 6
+              "weight": 2
             },
             {
               "ref": {
@@ -4785,14 +4843,14 @@
           "turn": 0
         },
         {
-          "at": [48, 1, 56],
+          "at": [50, 1, 56],
           "choices": [
             {
               "ref": {
                 "id": "gauntlet_lab_marker_none",
                 "kind": "piece"
               },
-              "weight": 6
+              "weight": 2
             },
             {
               "ref": {
@@ -4803,6 +4861,248 @@
             }
           ],
           "id": "entry_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [40, 1, 30],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "entry_threat_3",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [28, 1, 32],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "entry_threat_4",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [56, 1, 36],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "entry_threat_5",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [40, 1, 44],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "entry_threat_6",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [12, 1, 34],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "entry_threat_7",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [18, 1, 40],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "entry_threat_8",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [6, 1, 24],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "entry_threat_9",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [30, 1, 24],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "entry_threat_10",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [44, 1, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "entry_threat_11",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [58, 1, 16],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "entry_threat_12",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [42, 1, 8],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_60",
+                "kind": "piece"
+              },
+              "weight": 3
+            }
+          ],
+          "id": "entry_threat_13",
           "size": [1, 1, 1],
           "turn": 0
         }
@@ -28171,15 +28471,15 @@
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRSSRR.RRRRRRRRRRRRRRRRRSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRRRRRRRRRRRRRRR....RRRRSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRRRRRRR.RRRRRRR....RRRRSSSSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRRRRRRRRRRRRRRR....RRRRSSSSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRSSSSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRRRSSRRRRRRRRRRRR....RRRRSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR.RSSSSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRR....RRRRRRRRRRRRSSSSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRR....RRRRRRRRRRRRSSSSSSSSSSSS",
@@ -28187,27 +28487,27 @@
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRSSSSSSSSSSRRRR....RRRRRRRRRRRRSSSSSSSSSSSS",
             "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSS",
             "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSS",
+            "SSRRRR.RRRRRRR........RRRRRRRR.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSS",
             "SSRRRRRRRRRRRR........RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSS",
             "SSSSSSSSRRSSSSSSSSSSSSSSSSSSSSSSSSRRSSSSSSSSSSSSRRRSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSRRSSSSSSSSSSSSSSSSSSSSSSSSRRSSSSSSSSSSSSRRRSSSSSSSSSSSSSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSS",
+            "SSRRRR....RRRR....RRRRSSRRRRRRRRRRRRRRRR.RRRRRRR....RRRR....RRSSSSSSSSSS",
             "SSRRRR....RRRR....RRRRSSRRRRRRRRRRRRRRRRRRRRRRRR....RRRR....RRSSSSSSSSSS",
-            "SSRRRR....RRRR....RRRRSSRRRRRRRRRRRRRRRRRRRRRRRR....RRRR....RRSSSSSSSSSS",
+            "SSRRRR....RRRR....RRRRSSRRRR.RRRRR....RRRRRRRRRR....RRRR....RRSSSSSSSSSS",
             "SSRRRR....RRRR....RRRRSSRRRRRRRRRR....RRRRRRRRRR....RRRR....RRSSSSSSSSSS",
-            "SSRRRR....RRRR....RRRRSSRRRRRRRRRR....RRRRRRRRRR....RRRR....RRSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRR.RRRRRSSRRRRRRRRRR....RRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSS",
+            "SSRRRRRRRRRR.RRR.RRRRRSSRRRRRRRRRR....RRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRR....RRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSS",
-            "SSRR....RRRRRRRRRRRRRRRRRRRRRRRR.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSS",
+            "SSRR....RRRRRRRRRRRRRRRRRRRRRRRR.RRRRRRRRRRRRRRRRRRRRRRR.RRRRRSSSSSSSSSS",
             "SSRR....RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSS",
             "SSRR....RRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRAARRRRRRRR....SSSSSSSSSS",
             "SSRR....RRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRR...RRRAARRRRRRRR....SSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSRRRR....RRRRRRRRRR...RRRRRRRRRRRRR....SSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRR.RRRSSRRRR....RRRRRRRRRR...RRRRRRRRRRRRR....SSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRRRR....RRRRRRRRRRRRRRRRRRRRRRRRRR....SSSSSSSSSS",
             "SSSSSSSSSSSSSSSSRRSSSSSSRRRR....RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSRRSSSSSSRRRR....RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSRRSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSRRSSSSSSSSSSRRRRRRRRRRRR.RRRRRRRRRRRRRRRRRRRRRSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSRRSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRR....RRSSSSSSSSSSSSSSRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRR....RRSSSSSSSSSSSSSSRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
@@ -28219,7 +28519,7 @@
             "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRR.....RRRRRRRRRRRRRRRSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRR....RR.RRRRRRRRRRRRRSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRR....RRRRRRRRRRRRRRRRSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRR....RRRRRRRR....RRRRSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRR....RRRRRRRR....RRRRSSSSSSSS",
@@ -29252,7 +29552,8 @@
         },
         "F": {
           "furniture": "hq_weapon_cabinet",
-          "loot": "gauntlet_lab_entry_margin"
+          "loot": "gauntlet_lab_entry_margin",
+          "lootUsage": ["Military"]
         },
         "L": {
           "furniture": "gauntlet_lab_fixture"
@@ -29728,11 +30029,13 @@
         },
         "A": {
           "furniture": "police_file_cabinet",
-          "loot": "d41_empty"
+          "loot": "hq_field_supplies",
+          "lootUsage": ["Military"]
         },
         "B": {
           "furniture": "police_file_cabinet",
-          "loot": "d41_empty"
+          "loot": "hq_field_supplies",
+          "lootUsage": ["Military"]
         },
         "L": {
           "furniture": "gauntlet_lab_fixture"
@@ -34361,28 +34664,28 @@
         [
           "################################",
           "#.............#WWW..WWW#....ff.#",
-          "#.............#WWW..WWW#.......#",
-          "#.............#........#.......#",
-          "#.............#........#...WWW.#",
+          "#.Z.........Z.#WWW..WWW#.Z.....#",
+          "#.............#........#......Z#",
+          "#.............#......z.#.L.WWW.#",
           "#...TTTTTT....#........#...WWW.#",
           "#...TTTTTT....#........#.......#",
-          "#...TTTTTT....#........#.......#",
-          "#.............#........#.......#",
-          "#.............#........#.......#",
+          "#...TTTTTT....#........#....Z..#",
+          "#.Z.........Z.#.Z....Z.#.....z.#",
+          "#...Z.........#........#.......#",
           "#..pp.........####DD########DD##",
           "###########DD##................#",
-          "#ff......#.....................#",
-          "#........#.............#SS..ff.#",
-          "#..WWW...O.............#.......#",
+          "#ff......#......L...L...Z...Z..#",
+          "#........#..Z......Z...#SS..ff.#",
+          "#..WWW...O..........z..#.......#",
           "#..WWW...O....##DD##DD##.......#",
-          "#........#....#...#....#.......#",
-          "#........#....#...#....O.......#",
+          "#......Z.#....#...#....#.......#",
+          "#....Z...#....#...#....O.......#",
           "##########....#uu.#uu..O.......#",
           "#........#bb..#uu.#uu..#.......#",
           "#.ssss...#bb..###########DD#####",
           "#.ssss...O....#WWW.....#....BB.#",
           "#........O....#WWW.....#....BB.#",
-          "#........#....O........O....BB.#",
+          "#..z...Z.#....O........O....BB.#",
           "#........#....O........O..MMBB.#",
           "###########VV#####DD############"
         ],
@@ -34650,7 +34953,7 @@
             "SRRRRRRRRRRRRRSSSSRRSSSSRRRRSSRS",
             "SRRRRRRRRRRRRRSSSSRRSSSSRRRRRRRS",
             "SRRR..R..R..RRSRRRRRRRRSRRRRRRRS",
-            "SRRR..R..R..RRSRR..RRRRSRRRSSSRS",
+            "SRRR..R..R..RRSRR..RRRRSRARSSSRS",
             "SRRRSSSSSSRRRRSRR..RRRRSRRRSSSRS",
             "SRRRSSSSSSRRRRSRRRRRRRRSRRRRRRRS",
             "SRRRSSSSSSRRRRSRRRRRRRRSR..RRRRS",
@@ -34658,7 +34961,7 @@
             "SRRRRRRRR..RRRSRRRRRRRRSRRRRRRRS",
             "SRRSSRRRR..RRRSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRS",
-            "SSSRRRRRRSRRRRRRRRRRRRRRRRRRRRRS",
+            "SSSRRRRRRSRRRRRRARRRARRRRRRRRRRS",
             "SRRRRRRRRSRRRRRRRRRRRRRSSSRRSSRS",
             "SRRSSSRRRSRRRRRRRRRRRRRSRRRRRRRS",
             "SRRSSSRRRSRRRRSSSSSSSSSSRRRRRRRS",
@@ -34918,6 +35221,12 @@
         "D": {
           "furniture": "wood_door"
         },
+        "L": {
+          "groundLoot": {
+            "kind": "table",
+            "table": "hq_field_supplies"
+          }
+        },
         "M": {
           "facing": "n",
           "furniture": "shelf",
@@ -34935,7 +35244,7 @@
         "S": {
           "facing": "s",
           "furniture": "shelf",
-          "loot": "equipment_locker"
+          "loot": "hq_field_supplies"
         },
         "T": {
           "furniture": "hq_meeting_table"
@@ -34947,6 +35256,9 @@
           "facing": "s",
           "furniture": "desk",
           "loot": "desk"
+        },
+        "Z": {
+          "spawn": "military_shambler"
         },
         "b": {
           "facing": "n",
@@ -34976,6 +35288,10 @@
         "u": {
           "facing": "s",
           "furniture": "station_toilet"
+        },
+        "z": {
+          "chance": 0.69999999999999996,
+          "spawn": "shambler"
         }
       },
       "ports": [],

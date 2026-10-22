@@ -36,6 +36,11 @@ local plan = [
   '####################Gggggggg99ggG###',
   '####################GGGG===GGGGGG###',
 ];
+// Plan cells whose first sub-cell holds a threat marker; each stands on open floor and outside every dressing bay.
+local markerCells = [
+  [8, 17], [16, 18], [25, 28],
+  [20, 15], [14, 16], [28, 18], [20, 22], [6, 17], [9, 20], [3, 12], [15, 12], [22, 6], [29, 8], [21, 4],
+];
 local context = { usage: ['Industrial'], tier: 'Tier1' };
 // Finishes, heights, opening widths and furnishing choices belong together so a room can be retuned as a whole.
 local rooms = {
@@ -74,7 +79,7 @@ local rooms = {
     finish: { floor: 'floor', wall: 'concrete', base: 'metal' }, ceilingDrop: 1, floorRise: 0,
     openings: [{ token: 'q', at: [13, 24], axis: 'z', width: 2 }, { token: 'u', at: [13, 26], axis: 'z', width: 2 }],
     dressing: [
-      { id: 'equipment_stock', at: [10, 23], kit: 'locker', fixture: null, loot: 'gauntlet_lab_entry_margin' },
+      { id: 'equipment_stock', at: [10, 23], kit: 'locker', fixture: null, loot: 'gauntlet_lab_entry_margin', lootUsage: ['Military'] },
       { id: 'equipment_cabinets_west', at: [3, 24], kit: 'cabinets', fixture: 'working' },
       { id: 'equipment_cabinets_east', at: [7, 24], kit: 'cabinets', fixture: null },
     ],
@@ -85,7 +90,7 @@ local rooms = {
     openings: [{ token: 'h', at: [19, 12], axis: 'z', width: 2 }, { token: 'j', at: [24, 13], axis: 'x', width: 3 }],
     dressing: [
       { id: 'technical_pump', at: [26, 6], kit: 'pump', fixture: 'broken' },
-      { id: 'technical_spares', at: [22, 9], kit: 'cabinets', fixture: null },
+      { id: 'technical_spares', at: [22, 9], kit: 'cabinets', fixture: null, loot: 'hq_field_supplies', lootUsage: ['Military'] },
     ],
   },
   freight_lift: {
@@ -163,7 +168,7 @@ local claims = function(y) expand(function(c, dx, dz, x, z)
   if y == 0 then (if glyph == '.' then '.' else 'S')
   else if glyph != '.' && glyph != 'K' then 'S'
   else if c == 'K' then 'A'
-  else if (c == 'E' && hatchCell(dx, dz, x, z)) || std.length(bayAt(c, x, z)) > 0 || (std.member(['m', 'n', 'o'], c) && y == 1 && dx == 0 && dz == 0) then '.'
+  else if (c == 'E' && hatchCell(dx, dz, x, z)) || std.length(bayAt(c, x, z)) > 0 || (std.member(markerCells, [x, z]) && y == 1 && dx == 0 && dz == 0) then '.'
   else 'R');
 local palette = { '.': { role: 'opening', material: 'air' }, '#': { role: 'shell', material: 'rock' }, '|': { role: 'shell', material: 'wire' },
   D: { furniture: 'gauntlet_lab_bulkhead', facing: 's', lock: { id: 'gauntlet_lab_entry_seal', locked: true } },
@@ -207,13 +212,14 @@ local bay = function(d)
       L: { furniture: if d.fixture == 'broken' then 'gauntlet_lab_fixture_broken' else 'gauntlet_lab_fixture' },
     } + { [glyph]: { furniture: if std.type(kit.furniture[glyph]) == 'object' then kit.furniture[glyph].id else kit.furniture[glyph],
                  loot: std.get(d, 'loot', 'd41_empty') }
+                 + (if std.objectHas(d, 'lootUsage') then { lootUsage: d.lootUsage } else {})
                  + (if std.type(kit.furniture[glyph]) == 'object' then { tip: kit.furniture[glyph].tip } else {}) for glyph in std.objectFields(kit.furniture) },
     layers: layers,
     ownership: { layers: [[std.join('', [if c == '.' then 'A' else 'S' for c in std.stringChars(row)]) for row in layer] for layer in layers] },
     anchors: {}, ports: [],
   };
 local slot = function(id, kind, ref, at, extent) { id: id, at: at, size: extent, turn: 0, choices: [{ ref: { kind: kind, id: ref }, weight: 1 }] };
-local markers = [[8 * scale, 1, 17 * scale], [16 * scale, 1, 18 * scale], [24 * scale, 1, 28 * scale]];
+local markers = [[c[0] * scale, 1, c[1] * scale] for c in markerCells];
 assert std.all([std.length(row) == std.length(plan[0]) for row in plan]) : 'entry plan rows must have equal width: ' + std.toString([[z, std.length(plan[z])] for z in std.range(0, std.length(plan) - 1) if std.length(plan[z]) != std.length(plan[0])]);
 {
   scale: scale, rooms: rooms, plan: plan, size: size,

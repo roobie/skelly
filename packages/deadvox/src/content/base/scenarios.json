@@ -1138,6 +1138,10 @@
                     "key": true
                   },
                   {
+                    "condition": 0.69999999999999996,
+                    "item": "magazine_akm_30"
+                  },
+                  {
                     "item": "cartridge_box_7_d_62x39"
                   }
                 ]

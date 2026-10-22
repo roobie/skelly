@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { GauntletSite } from '../src/core/gauntlet.ts';
 import { lootPointStream, lootPointsByColumn, rollLootParts } from '../src/core/loot.ts';
 import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
+import { magazineFits } from '../src/core/magazine.ts';
 import { lootSourcesOf } from '../src/core/site.ts';
 import { firearmModelForType } from '../src/game/firearmHandling.ts';
 import { startupContent } from './baseRegistry.ts';
@@ -48,6 +49,10 @@ describe('gauntlet loot reachability', () => {
           const calibre = firearmModelForType(rifle, registry)?.gun?.calibre;
           expect(calibre, `${rifle} has a calibre`).toBeDefined();
           expect(ammoCalibres.has(calibre), `${scenario.id} places ${calibre} ammunition for ${rifle}`).toBe(true);
+          expect(
+            placed.some((type) => magazineFits(registry, rifle, type)),
+            `${scenario.id} places a magazine for ${rifle}`,
+          ).toBe(true);
         }
         expect(placed, `${scenario.id} places a stab vest`).toContain('stab_vest');
       }
