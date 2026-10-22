@@ -5,7 +5,7 @@ const mmToU = (millimetres: number): number => millimetres / (METRES_PER_UNIT * 
 const snap = (value: number): number => Math.round(value / GRID) * GRID;
 
 const barrelTipThreadedU = 16;
-const barrelTipPlainU = 14;
+const barrelTipPlainU = 15;
 const receiverRearX = -20;
 
 /** The stock's reach behind the receiver's rear face, for an overall length from the threaded muzzle tip. */
@@ -27,6 +27,13 @@ export const COMPACT_SMG_PROPORTIONS = {
   },
   // Lengths run from the barrel's seat at the receiver's front face to the muzzle tip.
   barrel: { tipU: { threaded: barrelTipThreadedU, plain: barrelTipPlainU } },
+  // Both sights share one horizontal sight line above the bore. The drum's apertures sit on a rim of
+  // `rimU` about its axis; the first `apertureCount` of top, left, right and bottom are open.
+  sights: {
+    sightLineU: 7,
+    front: { behindTipU: 1, ringInnerRadiusU: 1, ringThicknessU: 0.5 },
+    rear: { xU: -15, drumRadiusU: 2.5, drumThicknessU: 1.5, rimU: 1.5, apertureHalfU: 0.5, apertureCount: 4 },
+  },
   handguard: { lengthU: 12.5 },
   grip: { lengthU: 8.5 },
   magazine: { lengthU: 14 },

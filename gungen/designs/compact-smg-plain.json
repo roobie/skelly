@@ -26,6 +26,10 @@
         "to": "barrel.clamp"
       },
       {
+        "from": "barrel.front-sight",
+        "to": "front-sight.base"
+      },
+      {
         "from": "lower.grip",
         "to": "grip.top"
       },
@@ -38,9 +42,8 @@
         "to": "stock.front"
       },
       {
-        "from": "receiver.rail",
-        "slot": 3,
-        "to": "sight.base"
+        "from": "receiver.rear-sight",
+        "to": "rear-sight.base"
       }
     ],
     "description": "Compact submachine gun with a plain, unthreaded muzzle stub.",
@@ -57,6 +60,12 @@
         "family": "bolt-carrier",
         "params": {
           "pattern": "smg"
+        }
+      },
+      "front-sight": {
+        "family": "front-sight",
+        "params": {
+          "style": "ringed"
         }
       },
       "grip": {
@@ -84,19 +93,17 @@
           "profile": "smg"
         }
       },
+      "rear-sight": {
+        "family": "drum-rear-sight"
+      },
       "receiver": {
         "family": "receiver",
         "params": {
           "action": "auto",
           "bore": "S",
           "feed": "box",
+          "rail": "none",
           "section": "compact-smg"
-        }
-      },
-      "sight": {
-        "family": "sight",
-        "params": {
-          "type": "tube-dot"
         }
       },
       "smg-handle": {
