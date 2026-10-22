@@ -31,9 +31,11 @@ import content from '../items.json' with { type: 'json' };
 import { bearTrap } from './families/bearTrap.ts';
 import { block } from './families/block.ts';
 import { head, limb, torso } from './families/body.ts';
+import { bag, boots, cap } from './families/carried.ts';
 import { coil } from './families/coil.ts';
 import { foodPortion, stemmedFruit, woundRoll } from './families/food-medical.ts';
 import { fuse } from './families/fuse.ts';
+import { foldedGarment } from './families/garment.ts';
 import { grenade } from './families/grenade.ts';
 import { handOpener } from './families/handOpener.ts';
 import { arm, base, shade } from './families/lamp.ts';
@@ -122,6 +124,10 @@ const builders = {
   shade,
   carton,
   vessel,
+  'folded-garment': foldedGarment,
+  bag,
+  boots,
+  cap,
   limb,
   torso,
   head,
