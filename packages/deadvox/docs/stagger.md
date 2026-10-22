@@ -22,7 +22,7 @@ Slice 5 defence needs hits that interrupt an approaching threat (`SLICE-5.md`, "
 
 **It persists in saves.** Saving and loading must not free a staggered zombie or grant a new stagger, so the remaining time is part of the zombie's snapshot.
 
-**Only melee staggers.** Thrown and projectile hits keep their own effects until BR rules on them (#276).
+**Only melee staggers.** Stagger rewards a committed strike, so thrown, projectile and blast hits keep their own effects. Whether they should stagger too is open: see `docs/charged-attacks.md`, "Open questions".
 
 **It is not the hit flinch.** The flinch is presentation and runs on every damaging hit; stagger is simulation and changes what the zombie may do. See `src/core/zombiePose.ts`, `HIT_FLINCH_DURATION`.
 

@@ -57,7 +57,7 @@ The eleven milestones are:
 ### Out
 
 - Zombie bashing of doors or blocks: deferred by BR (#273).
-- Heavy melee attacks, stagger and knockdown: deferred by BR (#276).
+- Heavy melee attacks, stagger and knockdown: deferred by BR to Slice 5 (`SLICE-5.md`, "Related issues and admission").
 - Fractures: deferred by BR (#277).
 - A smell trail: deferred by BR (#278).
 - Screamer and bloater types: deferred by BR (#280). The runner and crawler are the first new types.
@@ -233,7 +233,7 @@ The "=12" was on the skill scale before d83 (#274). BR's later ruling, "dispersi
 >
 > also, wrt stamina, when reaching 0, it should wait a couple of seconds before starting to regenerate - say 5 seconds
 
-**In:** Blunt, edged and stabbing weapons behave differently. At zero stamina the player cannot swing; after stamina reaches zero, regeneration waits about five seconds. Infection consequences for melee wounds depend on 3.4. Heavy attacks and stagger/knockdown remain out of this milestone (#276).
+**In:** Blunt, edged and stabbing weapons behave differently. At zero stamina the player cannot swing; after stamina reaches zero, regeneration waits about five seconds. Infection consequences for melee wounds depend on 3.4. Heavy attacks and stagger/knockdown are out of this milestone; Slice 5 admits them (`SLICE-5.md`, "Related issues and admission").
 **Saves:** Save the stamina-regeneration delay when it affects the post-load recovery schedule. Any already-supported active swing continues to use its existing saved action owner; add no second swing representation.
 **Tests:** each weapon behavior class produces its distinct contact behavior; a player at zero stamina cannot start a swing; stamina does not regenerate until the simulation-time delay expires, including after save/load; wound infection follows 3.4's owner and is not duplicated here.
 **Done when:** weapon types have distinct melee behavior, zero stamina prevents swings, and the recovery delay is deterministic and survives saves.

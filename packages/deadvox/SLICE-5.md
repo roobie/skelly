@@ -75,7 +75,9 @@ not silently turn an inside-openable leaf into an immovable wall. See
 - **#276, heavy attacks and stagger:** charged player attacks are admitted to give
   deliberate attack commitment a place in defence; hit-induced shambler stagger is
   admitted so hits can interrupt an approaching threat. Neither is inferred from
-  door strength or changes settled tier-2 brute knockback.
+  door strength or changes settled tier-2 brute knockback. The rules and the open
+  #276 questions are in [charged attacks](docs/charged-attacks.md) and
+  [stagger](docs/stagger.md).
 - **#313, scripted dynamic events:** data-driven trigger/condition/effect rules
   are admitted and author the required scenario wave. Reusable rules let authors
   express orchestration without a new code path for every scenario. This does not
