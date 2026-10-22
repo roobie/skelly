@@ -1186,7 +1186,7 @@
     "kind": "item",
     "options": {
       "mass": "parts",
-      "voxelGrain": 0.01
+      "voxelGrain": 0.0040000000000000001
     },
     "source": "crowbar"
   },
@@ -1195,7 +1195,7 @@
     "kind": "item",
     "options": {
       "mass": "parts",
-      "voxelGrain": 0.01
+      "voxelGrain": 0.0040000000000000001
     },
     "source": "hammer"
   },
@@ -1204,7 +1204,7 @@
     "kind": "item",
     "options": {
       "mass": "parts",
-      "voxelGrain": 0.01
+      "voxelGrain": 0.0040000000000000001
     },
     "source": "baseball_bat"
   },

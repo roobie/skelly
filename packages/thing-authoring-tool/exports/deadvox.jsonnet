@@ -6,7 +6,12 @@ local vehicleParts = std.set([part.id for part in import '../vehicle-parts.libso
 // vehicle grain and every other row the item grain; both are content values.
 local grains = import 'tools/jsonnet/lib/voxel-grains.libsonnet';
 local voxelized = std.set(['car_battery', 'car_headlamp', 'hatchback_battery_tray', 'can_opener', 'soda_can', 'fuse', 'crowbar', 'hammer', 'baseball_bat']);
-local voxelGrainOf(id) = if std.setMember(id, vehicleParts) then grains.vehicle else grains.item;
+// Melee tools take the gun grain, the finest class, so a long thin shape keeps its taper and hook.
+local gunGrained = std.set(['crowbar', 'hammer', 'baseball_bat']);
+local voxelGrainOf(id) =
+  if std.setMember(id, vehicleParts) then grains.vehicle
+  else if std.setMember(id, gunGrained) then grains.gun
+  else grains.item;
 [
   {
     id: std.get(renamed, row.id, row.id),
