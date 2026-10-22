@@ -412,6 +412,78 @@
     "source": "pickup_battery_tray"
   },
   {
+    "id": "cargo_space",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "cargo_space"
+  },
+  {
+    "id": "pickup_bed_floor",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "pickup_bed_floor"
+  },
+  {
+    "id": "pickup_bed_side",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "pickup_bed_side"
+  },
+  {
+    "id": "pickup_bed_front",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "pickup_bed_front"
+  },
+  {
+    "id": "box_van_floor",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "box_van_floor"
+  },
+  {
+    "id": "box_van_side",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "box_van_side"
+  },
+  {
+    "id": "box_van_front",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "box_van_front"
+  },
+  {
+    "id": "box_van_roof",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "box_van_roof"
+  },
+  {
     "id": "wheel_205_55r16",
     "kind": "item",
     "options": {
