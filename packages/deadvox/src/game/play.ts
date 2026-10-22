@@ -1097,7 +1097,7 @@ export const startPlay = (
     return Boolean(definition?.book?.recipes.every((recipe) => session.character.knownRecipes.has(recipe)));
   };
   const hud = $('hud');
-  const screenText = registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText;
+  const { screenText } = registry.ui.get(CORE_CONTENT_IDS.coreUi)!;
   const hudOptions = readHudOptions();
   const drawHudOptions = () =>
     renderHudOptions($('hud-options'), screenText.hudOptionLabels, hudOptions, (key, value) => {

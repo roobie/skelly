@@ -52,7 +52,7 @@ const browserSelection = showMods ? await chooseMods(modsScreen) : undefined;
 const content = browserSelection?.content ?? bundled.content;
 startupScreen.hidden = false;
 applyUiTokens(content.registry, document.documentElement);
-const screenText = content.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText;
+const { screenText } = content.registry.ui.get(CORE_CONTENT_IDS.coreUi)!;
 inputBindings.setPointerLabels(screenText.pointerButtonLabels);
 const saveStatus = document.getElementById('save-status')!;
 const saveStatusHome = saveStatus.parentElement!;
