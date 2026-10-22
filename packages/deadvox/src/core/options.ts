@@ -1,4 +1,5 @@
 // Item action availability. Views display these plans; commands revalidate at completion.
+// The to-hands and quickbar commands also enqueue their handling jobs here, so a refusal reaches the caller as text.
 
 import type { BlockEntity, DoorOperation } from './blockEntities.ts';
 import { dominantSide, offSide } from './character.ts';
