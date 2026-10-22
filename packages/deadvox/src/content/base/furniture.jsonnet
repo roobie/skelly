@@ -61,6 +61,7 @@ breach.breaking(shape.colliding({
       "name": "Kitchen cupboard",
       "size": [2, 2, 1],
       "color": "#8a6a48",
+      "wear": { "from": 0, "to": 0.5 },
       "appearance": { "kind": "cabinet", "surface": "wood" },
       "container": {
         "pockets": [
@@ -107,6 +108,7 @@ breach.breaking(shape.colliding({
       "name": "Wardrobe",
       "size": [2, 4, 1],
       "color": "#6e5037",
+      "wear": { "from": 0, "to": 0.4 },
       "appearance": { "kind": "cabinet", "surface": "wood" },
       "container": {
         "pockets": [
@@ -228,6 +230,7 @@ breach.breaking(shape.colliding({
       "name": "Crate",
       "size": [2, 2, 2],
       "color": "#9a7b4f",
+      "wear": { "from": 0.1, "to": 0.6 },
       "shape": [
         { "position": [0.1, 0.05, 0.1], "size": [1.8, 1.79, 1.8] },
         { "position": [0, 0, 0], "size": [0.2, 1.84, 0.2] },
@@ -285,6 +288,7 @@ breach.breaking(shape.colliding({
       "name": "Chair",
       "size": [1, 2, 1],
       "color": "#8b7355",
+      "wear": { "from": 0, "to": 0.7 },
       "shape": [
         { "position": [0.12, 0, 0.12], "size": [0.16, 0.92, 0.16] },
         { "position": [0.72, 0, 0.12], "size": [0.16, 0.92, 0.16] },
@@ -302,6 +306,7 @@ breach.breaking(shape.colliding({
       "name": "Sofa",
       "size": [4, 2, 2],
       "color": "#66776d",
+      "wear": { "from": 0.1, "to": 0.7 },
       "shape": [
         { "position": [0.45, 0, 0], "size": [3.1, 0.3, 2] },
         { "position": [0.45, 0.3, 0], "size": [1.52, 0.6, 1.5] },

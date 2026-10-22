@@ -864,6 +864,22 @@ export class BlockEntities {
     return steps.filter((step) => step.from <= fraction).length;
   }
 
+  /**
+   * Worldgen's way to place a piece already worn: sets its damage to a share of its durability. The share stays below
+   * 1 because a ruined piece is gone, and worldgen never places one; every other change to damage is a blow (`bash`).
+   */
+  wear(entity: BlockEntity, share: number): void {
+    if (!(Number.isFinite(share) && share >= 0 && share < 1)) {
+      throw new Error('Worn share must be at least 0 and below 1');
+    }
+    const worn = this.wearOf(entity);
+    entity.damage = share === 0 ? undefined : share * this.defOf(entity).breach.durability;
+    this.version += 1;
+    if (this.wearOf(entity) !== worn) {
+      this.standing += 1;
+    }
+  }
+
   /** The share of its durability a piece has left, from 1 intact to 0 broken; derived from damage, never stored. */
   conditionOf(entity: BlockEntity): number {
     return entity.broken ? 0 : Math.max(0, 1 - (entity.damage ?? 0) / this.defOf(entity).breach.durability);
