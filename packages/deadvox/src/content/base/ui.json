@@ -9,7 +9,7 @@
       },
       "coreActionLabels": {
         "batteryIn": "Put a battery in the {item}",
-        "cartridgeIn": "Put a gas cartridge in the {item}",
+        "cartridgeIn": "Put {fuel} in the {item}",
         "close": "Close",
         "continueWork": "Continue: {item}",
         "disarm": "Disarm",
@@ -121,7 +121,7 @@
         "otherCraft": "I'm working on something else",
         "otherNeedsBothHands": "The {item} needs both hands",
         "outOfFuel": "It's out of fuel",
-        "outOfFuelNoSpare": "It's out of fuel, and you have no spare",
+        "outOfFuelNoSpare": "It's out of fuel, and I have no spare",
         "outOfReach": "It's out of reach",
         "partCount": "I can't move {count} of {total}",
         "pocketsFull": "My pockets are full",

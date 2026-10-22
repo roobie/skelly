@@ -270,7 +270,10 @@ const canisterOption = (canister: Item, inv: Inventory): UseOption => {
   return tool
     ? {
         kind: 'use',
-        label: coreLabel(inv.registry, 'cartridgeIn', { item: inv.name(tool).toLowerCase() }),
+        label: coreLabel(inv.registry, 'cartridgeIn', {
+          fuel: inv.name(canister).toLowerCase(),
+          item: inv.name(tool).toLowerCase(),
+        }),
         operation: 'canister',
         tool,
         canister,

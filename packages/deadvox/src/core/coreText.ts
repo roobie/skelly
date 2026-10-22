@@ -129,7 +129,7 @@ export const CORE_LABEL_SLOTS = {
   quickMove: [],
   use: [],
   batteryIn: ['item'],
-  cartridgeIn: ['item'],
+  cartridgeIn: ['fuel', 'item'],
   switchOn: [],
   switchOff: [],
   disarm: [],
