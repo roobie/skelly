@@ -339,25 +339,29 @@ const INPUT_REPLAY_COLUMN_OVERFLOW_STOP_REASON =
   'a streamed-column batch exceeded the recording window; the recent replay was discarded';
 const inputReplayStoppedStatus = (reason: string): string => `Recording stopped: ${reason}`;
 
-// The frame exists only while the map is open: an idle iframe keeps Chromium from restoring the page from bfcache.
-const createReviewMapFrame = (): HTMLIFrameElement => {
+const createReviewMapFrame = (debug: boolean): HTMLIFrameElement | undefined => {
+  if (!debug) {
+    return;
+  }
   const frame = document.createElement('iframe');
   frame.title = 'Current-world review map';
   frame.style.cssText =
     'position:fixed;inset:0;width:100vw;height:100vh;border:0;z-index:var(--ui-layer-review-map);background:#d7ddd4';
+  frame.hidden = true;
   document.body.append(frame);
   return frame;
 };
 
 const installReviewMapMessageListener = (
-  currentFrame: () => HTMLIFrameElement | undefined,
+  frame: HTMLIFrameElement | undefined,
   onKey: (message: Record<string, unknown>) => void,
   onClose: () => void,
 ): void => {
+  if (!frame) {
+    return;
+  }
   globalThis.addEventListener('message', (event: MessageEvent<unknown>) => {
-    const frame = currentFrame();
     if (
-      !frame ||
       event.origin !== globalThis.location.origin ||
       event.source !== frame.contentWindow ||
       typeof event.data !== 'object' ||
@@ -1407,14 +1411,14 @@ export const startPlay = (
     handBack(async () => replayFile(await inputReplayHooks.export(), new Date()));
   $('playtest-export').hidden = false;
   let reviewMapOpen = false;
-  let reviewMapFrame: HTMLIFrameElement | undefined;
+  const reviewMapFrame = createReviewMapFrame(config.debug);
   const toggleReviewMap = (open = !reviewMapOpen): void => {
-    if (open === reviewMapOpen || !config.debug) {
+    if (open === reviewMapOpen || !reviewMapFrame) {
       return;
     }
     reviewMapOpen = open;
+    reviewMapFrame.hidden = !open;
     if (open) {
-      reviewMapFrame = createReviewMapFrame();
       debugTools?.closeMenus();
       const mapUrl = new URL('map.html', globalThis.location.href);
       mapUrl.searchParams.set('overlay', '1');
@@ -1436,8 +1440,7 @@ export const startPlay = (
       input.unlock();
       input.cancel();
     } else {
-      reviewMapFrame?.remove();
-      reviewMapFrame = undefined;
+      reviewMapFrame.src = 'about:blank';
     }
     syncMenuState();
     if (!open && started && !input.locked) {
@@ -1464,11 +1467,7 @@ export const startPlay = (
       keyboardInput.releaseForwarded(keyEvent);
     }
   };
-  installReviewMapMessageListener(
-    () => reviewMapFrame,
-    routeReviewMapKey,
-    () => toggleReviewMap(false),
-  );
+  installReviewMapMessageListener(reviewMapFrame, routeReviewMapKey, () => toggleReviewMap(false));
   const thirdPerson = {
     enabled: () => thirdPersonViewEnabled,
     toggle: () => {
