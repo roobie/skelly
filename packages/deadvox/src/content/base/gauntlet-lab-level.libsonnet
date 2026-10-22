@@ -48,7 +48,9 @@ local stair = {
     local dressing = std.flattenArrays([[
       d + { room: room, rise: room.floorRise + std.get(d, 'rise', 0) } for d in room.dressing
     ] for room in roomList]);
-    local bayAt = function(c, x, z) if !std.member(std.stringChars('0123456789'), c) then [] else [d for d in dressing if x >= d.at[0] && x < d.at[0] + 2 && z >= d.at[1] && z < d.at[1] + 2];
+    // Digits mark bays; a room past the tenth names its own `bay` token.
+    local bayTokens = std.stringChars('0123456789') + [room.bay for room in roomList if std.objectHas(room, 'bay')];
+    local bayAt = function(c, x, z) if !std.member(bayTokens, c) then [] else [d for d in dressing if x >= d.at[0] && x < d.at[0] + 2 && z >= d.at[1] && z < d.at[1] + 2];
     local expand = function(cell) std.flattenArrays([
       [std.join('', [cell(plan[z][x], dx, dz, x, z) for x in std.range(0, std.length(plan[z]) - 1) for dx in std.range(0, scale - 1)]) for dz in std.range(0, scale - 1)]
       for z in std.range(0, std.length(plan) - 1)

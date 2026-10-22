@@ -1,6 +1,6 @@
 local level = import 'gauntlet-lab-level.libsonnet';
 local scale = level.scale;
-// Same glyph rules as level one: lowercase interiors, capital walls, digits delegate dressing bays.
+// Same glyph rules as level one: lowercase interiors, capital walls, digits (or a room's `bay` token) delegate dressing bays.
 // The stair hall and the shaft room sit where level one's stair and shaft land; the ways down leave from the
 // centre (stair) and the north-east (kept grid shaft), each behind a bulkhead.
 local plan = [
@@ -9,12 +9,12 @@ local plan = [
   'AAAAAAAAAAAAFFFFFFFFoooooooVvvvvV###',
   'Aaaaaaaaaaabff22f22Fo33ooooVvvvvV###',
   'Aaaaaaaaaaabff22f22Fo33ooooVvvvvV###',
-  'AaaaaaaaaaaAf22ff22Foooo33oVvvvvV###',
-  'AaaaaaaaaaaAf22ff22Foooo33oVvvvvV###',
-  'AaaaaaaaaaaAfffffffFoooooooVvvvvV###',
-  'AAiiAAAAAAAAFFFFlFFFOOOOOOtVVDDVV###',
-  'HhhhhhhhhhhhhHqqqq|44q44qQccccccC###',
-  'Hhhhh11hhhhhhjqqqq|44q44quccccccC###',
+  'AaaaaaaaaaaAf22ff22Foooo33oVvvvvVBBB',
+  'AaaaaaaaaaaAf22ff22Foooo33oVvvvvV??B',
+  'AaaaaaaaaaaAfffffffFoooooooVvvvvV??B',
+  'AAiiAAAAAAAAFFFFlFFFOOOOOOtVVDDVVzzB',
+  'HhhhhhhhhhhhhHqqqq|44q44qQccccccBzzB',
+  'Hhhhh11hhhhhhjqqqq|44q44quccccccSzzB',
   'Hhhhh11hhhhhhHqqqqqqqqqqqQccRRRRRRRR',
   'HhhhhhhhhhhhhHQQQQQQDDQQQQccRr88r88R',
   'HhhhhhhhhhhhhHEeeeeeeeeeeEccRr88r88R',
@@ -155,6 +155,14 @@ local rooms = {
     finish: { floor: 'floor', wall: 'metal', base: 'concrete' }, ceilingDrop: 2, floorRise: 0, lootUsage: ['Industrial'],
     openings: [{ token: 'T', at: [28, 28], axis: 'z', width: 2 }],
     dressing: [{ id: 'store_south_shelves', at: [31, 28], kit: 'shelves', fixture: 'working', loot: 'gauntlet_lab_administration_store' }],
+  },
+  // The breaker's place until d509 wires it: a dead panel in a hazard-marked room off the corridor's blind end, found
+  // by exploring rather than passed on the route.
+  plant: {
+    tokens: ['z', 'B', '?', 'S'], wall: 'B', floor: 'z', band: '}', bay: '?',
+    finish: { floor: 'hazard', wall: 'metal', base: 'hazard_wall' }, ceilingDrop: 2, floorRise: 0,
+    openings: [{ token: 'S', at: [32, 10], axis: 'z', width: 2 }],
+    dressing: [{ id: 'plant_panel', at: [33, 6], kit: 'console', fixture: null }],
   },
   shaft_arrival: {
     tokens: ['s', 'U', 'P'], wall: 'U', floor: 's', band: ']',
