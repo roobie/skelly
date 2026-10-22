@@ -62,6 +62,7 @@ describe('melee while debug-frozen', () => {
           movement: 'still',
           lit: false,
           lightSeenFrom: 40,
+          eyeHeightMetres: 1.3,
         }),
         isSolid: FLOOR,
         isOpaque: FLOOR,

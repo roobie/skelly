@@ -273,6 +273,10 @@
       "output": "packages/deadvox/src/content/base/senses.json"
     },
     {
+      "source": "packages/deadvox/src/content/base/site-generation.jsonnet",
+      "output": "packages/deadvox/src/content/base/site-generation.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/sounds-block.jsonnet",
       "output": "packages/deadvox/src/content/base/sounds-block.json"
     },

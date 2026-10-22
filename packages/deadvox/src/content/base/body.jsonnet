@@ -11,6 +11,7 @@ local normalSleep = 100 / normalSleepGameHours;
     knockoutSimSeconds: 20,
     staminaRegenDelaySimSeconds: 5,
     proneEyeHeightMetres: 0.3,
+    fragmentRegionHeights: { head: 0.85, torso: 0.45 },
     shockPerDamage: { blunt: 2, cut: 0, pierce: 0, acid: 1 },
     // Acid eats the outermost worn layer, so clothing is a consumable (`packages/deadvox/docs/acid-zombie.md`).
     outerWearMultiplier: { blunt: 1, cut: 1, pierce: 1, acid: 4 },

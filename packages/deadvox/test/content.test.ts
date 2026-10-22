@@ -2274,7 +2274,7 @@ describe('content references', () => {
             strength: 1,
             sounds: zombieSounds,
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
-            speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5 },
+            speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5, backgroundStepMetres: 1 },
             stepLength: 0.6,
             wander: {
               obstacleWanderChance: 0.25,
@@ -2295,6 +2295,9 @@ describe('content references', () => {
             nightSight: 10,
             stimulusMemorySimSeconds: 1,
             sightCone: 60,
+            eyeHeightMetres: 1.3,
+            earHeightMetres: 1.3,
+            hordeSpacing: { innerMetres: 0.35, stepMetres: 0.38 },
             hearing: 1,
             hearingRange: { walk: 3, jog: 8, sprint: 15 },
             hearingModel: {
@@ -2318,6 +2321,7 @@ describe('content references', () => {
             },
             attack: {
               reach: 1,
+              grabBandMetres: 1.7,
               cooldownSimSeconds: 1.5,
               windupSimSeconds: 0.3,
               moves: [

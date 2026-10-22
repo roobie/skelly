@@ -320,7 +320,14 @@ const incapacitate = (zombie: Zombie) => {
     physics: physicsFor(makeScale(blockSize)),
     jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
-    player: () => ({ pos: [1000, 0, 1000], facing: [0, 0, -1], movement: 'still', lit: false, lightSeenFrom: 0 }),
+    player: () => ({
+      pos: [1000, 0, 1000],
+      facing: [0, 0, -1],
+      movement: 'still',
+      lit: false,
+      lightSeenFrom: 0,
+      eyeHeightMetres: 1.3,
+    }),
     dayPhase: () => dayStateAtHour(12),
     hurtPlayer: () => undefined,
   });
