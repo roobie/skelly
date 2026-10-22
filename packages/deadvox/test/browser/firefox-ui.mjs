@@ -347,6 +347,26 @@ try {
     await page.keyboard.up('w');
   }
   assert.deepEqual(await page.evaluate(() => [...globalThis.firefoxUiTest.session.body.pos]), bodyBeforeSpectator);
+  const drawnAvatar = () =>
+    page.evaluate(
+      () =>
+        new Promise((resolve) =>
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() =>
+              resolve(
+                globalThis.firefoxUiTest.view.playerMeshes.group.children.map((mesh) => [
+                  ...mesh.instanceMatrix.array.slice(0, 16),
+                ]),
+              ),
+            ),
+          ),
+        ),
+    );
+  const avatarBeforeLook = await drawnAvatar();
+  await page.evaluate(() => {
+    globalThis.firefoxUiTest.input.yaw += 1;
+  });
+  assert.deepEqual(await drawnAvatar(), avatarBeforeLook, 'look input while detached must not turn the drawn avatar');
   await pressAction(page, 'debug.perception-labels-toggle');
   await page.waitForFunction(
     () => [...document.querySelectorAll('.zombie-perception-label')].some((label) => label.style.display !== 'none'),

@@ -36,6 +36,11 @@ export class SpectatorCamera {
     this.view = { yaw, pitch };
   }
 
+  /** The avatar's facing: the live look while attached, the look it had at detach while the camera flies. */
+  avatarYaw(liveYaw: number): number {
+    return this.view?.yaw ?? liveYaw;
+  }
+
   allowsCommand(action: string): boolean {
     return !this.flight || DETACHED_COMMAND_PREFIXES.some((prefix) => action.startsWith(prefix));
   }
@@ -76,7 +81,7 @@ export class SpectatorCamera {
       readyHeld: () => !detached() && (controls.readyHeld?.() ?? false),
       blocking: () => !detached() && (controls.blocking?.() ?? false),
       automaticFireHeld: () => !detached() && (controls.automaticFireHeld?.() ?? false),
-      yaw: () => this.view?.yaw ?? controls.yaw(),
+      yaw: () => this.avatarYaw(controls.yaw()),
       pitch: () => this.view?.pitch ?? controls.pitch(),
       descending: () => !detached() && controls.descending(),
     };

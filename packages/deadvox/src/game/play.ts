@@ -3165,7 +3165,7 @@ export const startPlay = (
         body,
         paused: sim.paused,
         noclip: debugTools?.noclip ?? false,
-        yaw: input.yaw,
+        yaw: spectator.avatarYaw(input.yaw),
         pitch: input.pitch,
         stridePhase: session.playerStridePhase,
         eye: eye(),
@@ -3561,7 +3561,7 @@ export const startPlay = (
       listener: body.pos,
       player: {
         pos: body.pos,
-        yaw: input.yaw,
+        yaw: spectator.avatarYaw(input.yaw),
         drip: playerDrip,
         thirdPerson: isPlayerFigureWhole(thirdPersonViewEnabled, spectator.enabled),
       },
