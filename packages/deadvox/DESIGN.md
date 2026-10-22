@@ -27,6 +27,7 @@ read_if:
   - you're changing the derived day phases that drive the sky, zombie sight, hordes or spawn words
   - you change shambler attention, movement, obstacle response or floor-transition behavior
   - you're changing loaded-distance simulation or the horde representation
+  - you're authoring scenario event rules or changing when they fire or what they release
   - you're restructuring the per-tick zombie simulation
   - you're authoring decals or scenario outbreak age
   - you're changing worn layers, armour protection or item wear
@@ -50,6 +51,7 @@ read_if:
   - you're designing or building holding breath to steady aim
   - you're changing firearm attachments, nested item slots or their save behavior
   - you change which item or model mass is authoritative
+  - you author item models or decide how medicine quantities should look
   - you're changing military progression, loot economy admission or loot unit planning, ground supply or roll-once persistence, including debug overlays
   - you're changing firearm case ejection, landing, or save presentation
   - you're diagnosing or changing inventory stalls from firearm attachment candidate discovery
@@ -1088,8 +1090,17 @@ and leaves the empty can where eating occurred. See `src/core/schema.ts`,
 Can vessels are inventory atoms because opening and eating retain one vessel,
 not a disassemblable set of parts. Sharing filled-package geometry must not impose
 its mass on an empty vessel; shell and food tuning must remain independent. See `src/content/base/models-items.jsonnet`, `models`,
-`src/content/base/items-food.libsonnet`, `canShellGrams`, and
+`src/content/base/items-food.libsonnet`, `canShellGrams`,
+`packages/thing-authoring-tool/cans.libsonnet`, `shellMassKg`, and
 `src/core/items.ts`, `typeWeightGrams` and `weightOf`.
+
+An opened vessel must read as opened even after its food is gone, so the lid
+stays attached and raised rather than relying on a food surface or an item name.
+The dedicated opener needs the silhouette of a hand tool rather than a storage
+bundle. These are visual distinctions, not extra inventory parts or mass sources.
+See `packages/thing-authoring-tool/cans.libsonnet`, `items`, and
+`packages/thing-authoring-tool/src/families/openTin.ts`, `openTin`, and
+`packages/thing-authoring-tool/src/families/handOpener.ts`, `handOpener`.
 
 Crafting, repair, disassembly, and reading gather required items from reachable
 hands, worn storage, piles, and furniture when the action starts. Gathering is
@@ -1158,19 +1169,29 @@ quickbar use.
 
 ### Piles and item models
 
-Ground items form piles. A modeled item keeps its own look in the pile; an item
-without a model is shown as a generic bundle. Portable papers use flat paper models,
-not standing furniture, so their appearance agrees with ordinary pickup and carrying.
-Author item models at rest in metres, with the long side along x. See
-`src/content/base/models-items.jsonnet` and `docs/readables.md`.
-Spent cases read as loose debris,
-not stacked material. See `PILE_DISPLAY_KIND` in `src/core/schema.ts`.
+Ground presentation preserves an item's identity rather than making distinct
+objects read as the same bundle. Portable papers use flat paper models, not
+standing furniture, so their appearance agrees with ordinary pickup and carrying.
+Spent cases read as loose debris, not stacked material. See
+`src/render/piles.ts`, `PileMeshes`, `src/core/schema.ts`, `PILE_DISPLAY_KIND`,
+and `docs/readables.md`.
 
 Pile meshes and presentation endpoints use the same current display projection.
 It accounts for active arc hides and gives scatter items their displayed pose, so
 an endpoint remains joined to the visible pile when another throw overlaps or
 scatter is involved. See `src/core/pileDisplay.ts`, `effectivePileDisplay` and
 `effectivePileItemPosition`.
+
+Pill medicines show a blister strip or bottle regardless of stack size, including
+when one item is one pill. A pack is easier to see and reads as medicine; the
+visual pack does not change dose counts or carried mass. See
+`packages/thing-authoring-tool/food-medical.libsonnet`, `bottle`, and
+`src/content/base/items-other.libsonnet`, `pillPack`.
+
+Food portions depict food rather than a second vessel, so a serving does not
+duplicate the can that owns it. See
+`packages/thing-authoring-tool/food-medical.libsonnet`, `atom`, and
+`src/content/base/items-food.libsonnet`, `beansGrams` and `soupGrams`.
 
 Use one item look derived from that instance's own state in every view. A
 firearm with its magazine removed must not appear loaded in a hand or pile; a
@@ -1924,9 +1945,37 @@ clock window is open; live play and replay therefore agree at the window edge.
 Bounded windows recur daily so leaving the area cannot permanently lose a
 threat. An open-ended window is eligible from the first occurrence of its
 boundary. A saved spawn ledger prevents a marker from returning after it has
-spawned. Windowless markers retain chunk-load behavior. Dynamic events such as
-a computer opening a door are separate work in #313. See `ZombieSpawner` in
-`src/core/zombieSpawns.ts`.
+spawned. Windowless markers retain chunk-load behavior. Scenario beats that do
+not belong to a marker are event rules, under "Scenario events". See
+`ZombieSpawner` in `src/core/zombieSpawns.ts`.
+
+### Scenario events
+
+A scenario composes its events from content rules (#313): a trigger, optional
+conditions and effects, so a new beat needs no scenario-specific engine branch.
+No script language is admitted. Triggers are elapsed scenario time only; position
+triggers wait on BR's gate in `SLICE-5.md`, "Remaining event gate — issue #313",
+so the schema admits none. A day-phase condition holds a due rule until its phase
+comes round, letting an author aim a beat at night without fixing a clock hour.
+
+A rule fires once. The first zombie tick at or after its time where every
+condition holds records the firing in the saved scenario run and applies the
+effects in the same tick, so no save can fall between them: loading can neither
+repeat nor skip a firing. Only the calendar and that record decide firing, never
+column loading or rendering, following `docs/decisions/0008-deterministic-world.md`,
+"Decision". Rules stop once the run is won, because a run's timestamps end at its
+completion. Rule ids key the record, so validation rejects duplicates.
+See `src/core/eventRules.ts`, `advanceEventRules`, and `src/core/schema.ts`,
+`EventRuleSchema`.
+
+The first effect releases a horde from an authored world point toward where the
+player stood when it fired. It reuses the horde spawn path, so arrival placement
+is content, not a new placement rule. A released horde keeps its target until it
+arrives, unlike a heard noise it may forget, so a wave sent from beyond the
+stimulus memory still comes; that point then becomes its home. Released into
+unloaded terrain, it waits like any unloaded actor until the abstract tier of
+`EPIC.md`, "4b. The region", moves it. See `src/core/zombies.ts`,
+`ZombieSystem.releaseHorde`.
 
 ### Amalgam body and damage (#308)
 

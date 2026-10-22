@@ -1697,7 +1697,7 @@ describe('content references', () => {
   const referenceDependencies = {
     source: 'reference-dependencies.json',
     data: {
-      items: baseContent('items-other.json').items!.filter(({ id }) => id === 'bandage'),
+      items: [{ id: 'fixture_non_battery', name: 'Not a battery', category: 'medical', weight: 1, size: [1, 1] }],
       skills: baseContent('recipes.json').skills!.map(({ startingRecipes: _, ...skill }) => skill),
       sounds: baseContent('sounds.json').sounds!.filter(({ id }) => Object.values(zombieSounds).includes(id)),
     },
@@ -2247,7 +2247,7 @@ describe('content references', () => {
               seenFrom: 30,
               color: '#ffffff',
               intensity: 1,
-              power: { battery: 'bandage', chargePerGameHour: 1, swapSimSeconds: 1 },
+              power: { battery: 'fixture_non_battery', chargePerGameHour: 1, swapSimSeconds: 1 },
             },
           },
         ],

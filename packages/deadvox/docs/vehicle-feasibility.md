@@ -2,6 +2,7 @@
 read_if:
   - you're implementing or reviewing the Slice 6 feasibility candidates or their shared harness
   - you're deciding Rapier numeric eligibility or promoting feasibility code into simulation identity
+  - you're building or evaluating the project-owned double-precision Rapier bindings
 ---
 
 # Vehicle feasibility admission
@@ -10,9 +11,13 @@ The experiment is not a production solver selection. Keep candidate-specific ini
 
 ## Numeric eligibility
 
-Rapier's npm build computes in f32, so it remains diagnostic and production-ineligible under `docs/decisions/0008-deterministic-world.md`, "Decision". Dependency age exemption does not imply numeric exemption.
+Build project-owned double-precision WASM from the official Rapier bindings and the double-precision Rust crate. The world must compute in doubles under `docs/decisions/0008-deterministic-world.md`, "Decision", and upstream publishes no double-precision WASM package; its npm build computes in f32, which is production-ineligible. A single-precision production exception is not the selected path. Rapier remains diagnostic until complete cross-engine, save and replay evidence admits the candidate; double arithmetic alone does not establish agreement or road safety. Dependency age exemption does not imply numeric exemption.
 
-The package artifact is pinned by `package-lock.json`, `packages`. Its upstream build provenance and precision evidence belong in the admission report; cross-engine agreement of that artifact remains a candidate-round gate. Do not infer agreement from the library name or a simulation source hash.
+The reproducible build owner is `tools/rapier-f64/build.py`, `main`. Its precision transformation widens physical scalars and buffers while retaining integer handles, indices and byte snapshots; debug colors remain upstream presentation floats. Keeping the upstream solver unchanged avoids owning a solver fork. The comparison build isolates precision from upstream-version changes rather than treating a different npm kernel as a precision control.
+
+Commit the f64 WASM and its generated bindings and load them from the repository. This is the simplest supply path without CI-build or package infrastructure to own; a later shipping card may replace it. `tools/rapier-f64/build.py`, `main`, owns regeneration, provenance recording and local rebuild verification; `test/rapierBuild.test.ts` checks the committed supply without requiring Rust in CI.
+
+`tools/rapier-f64/local.mjs`, `runLocal`, exercises the committed module and optionally a locally built single-precision control; `tools/rapier-f64/candidate.ts`, `rapierCandidate`, deliberately preserves its collision-free fixture and marks hidden solver work unmeasured. Zero wrapper counters are not evidence of bounded internal work. Do not infer agreement from the library name or a simulation source hash.
 
 ## Harness boundaries
 

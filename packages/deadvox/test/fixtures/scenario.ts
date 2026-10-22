@@ -15,6 +15,7 @@ export const fixtureScenario = (): ScenarioDef => ({
   compression: 'fixture_compression',
   serviceTemplate: 'fixture_service',
   portal: { hatch: [3, 6, 3], ladder: [4, 1, 3], upper: [6.5, 7, 4], lower: [3, 1, 4] },
+  eventRules: [],
   population: {
     settlementPressure: true,
     authoredMarkers: true,
