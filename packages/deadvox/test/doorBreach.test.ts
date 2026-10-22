@@ -13,7 +13,7 @@ import { World } from '../src/core/world.ts';
 import { type PlayerSense, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
-import { buildFixtureRegistry } from './economyFixtures.ts';
+import { buildFixtureRegistry, FIXTURE_BLOW_SOUND, fixtureSounds } from './economyFixtures.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
@@ -43,7 +43,7 @@ const { registry, issues } = buildFixtureRegistry([
   {
     source: 'breach-fixture',
     data: {
-      furnitureMaterials: [{ id: 'breach_fixture', methods: [] }],
+      furnitureMaterials: [{ id: 'breach_fixture', blowSound: FIXTURE_BLOW_SOUND, methods: [] }],
       furniture: [fixtureDoor('breach_door'), fixtureDoor('breach_boarded', 'front')],
     },
   },
@@ -98,7 +98,7 @@ const chaseThroughDoor = (strength: number, seconds: number) => {
     tuning: TEST_SENSE_TUNING,
     hurtPlayer: () => undefined,
     bashObstacle: (ahead, bash) => {
-      const leaf = entities.closedLeafTouching(ahead);
+      const leaf = entities.pieceTouching(ahead);
       return leaf !== undefined && entities.bash(leaf, bash) !== undefined;
     },
   });
@@ -161,7 +161,11 @@ it('builds the breach fixture without issues and rejects any piece, door or not,
     buildRegistry([
       {
         source: 'breach-rejected',
-        data: { furnitureMaterials: [{ id: 'breach_fixture', methods: [] }], furniture: [piece] },
+        data: {
+          furnitureMaterials: [{ id: 'breach_fixture', blowSound: FIXTURE_BLOW_SOUND, methods: [] }],
+          sounds: fixtureSounds(),
+          furniture: [piece],
+        },
       },
     ]).issues.map(({ path }) => path);
   expect(rejected({ ...leaf, breach })).toEqual([]);
@@ -239,7 +243,7 @@ it("meets a player's strike with the same minimum-strength gate as a zombie's ba
   expect(below.door.damage).toBeUndefined();
   const at = strikeDoor(MINIMUM);
   expect(at.door.damage).toBe(MINIMUM);
-  expect(at.played.find((sound) => sound.event === 'door_bash')?.emittedAsNoise).toBe(true);
+  expect(at.played.find((sound) => sound.event === FIXTURE_BLOW_SOUND)?.emittedAsNoise).toBe(true);
 });
 
 it('keeps a damaged boarded leaf openable only from its unboarded side', () => {

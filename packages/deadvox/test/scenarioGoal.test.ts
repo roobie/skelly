@@ -11,7 +11,7 @@ import { emptyDiscovery } from '../src/core/scenarioDiscovery.ts';
 import { ScenarioRun } from '../src/core/scenarioRun.ts';
 import { World } from '../src/core/world.ts';
 import { startupContent } from './baseRegistry.ts';
-import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials } from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
@@ -23,6 +23,7 @@ const own = buildRegistry([
     source: 'goal-fixture',
     data: {
       furnitureMaterials: fixtureMaterials(),
+      sounds: fixtureSounds(),
       items: [
         {
           id: 'fixture_paper',

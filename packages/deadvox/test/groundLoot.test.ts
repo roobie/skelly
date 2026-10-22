@@ -14,7 +14,7 @@ import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials } from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 
 const base = baseRegistry();
 const seed = 7;
@@ -22,6 +22,7 @@ const PIECES_PATH = /^.*\.pieces/;
 const floor = { id: 'fixture_floor', name: 'Fixture floor', solid: true, color: '#808080' };
 const fixtureData = (): ContentFile => ({
   furnitureMaterials: fixtureMaterials(),
+  sounds: fixtureSounds(),
   blocks: [floor],
   inventory: [...base.inventory.values()],
   items: [

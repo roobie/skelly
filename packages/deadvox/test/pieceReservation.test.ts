@@ -6,7 +6,7 @@ import { decodeSave } from '../src/core/saveFormat.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { buildFixtureRegistry, FIXTURE_MATERIAL } from './economyFixtures.ts';
+import { buildFixtureRegistry, FIXTURE_BLOW_SOUND, FIXTURE_MATERIAL } from './economyFixtures.ts';
 import { capture, createRuntime, encodeFixture, formatVersion, type Runtime } from './snapshotTestSupport.ts';
 
 const base = readdirSync('src/content/base')
@@ -43,7 +43,7 @@ const { registry, issues } = buildFixtureRegistry([
   {
     source: 'reservation-fixture',
     data: {
-      furnitureMaterials: [{ id: FIXTURE_MATERIAL, methods: [methodId] }],
+      furnitureMaterials: [{ id: FIXTURE_MATERIAL, blowSound: FIXTURE_BLOW_SOUND, methods: [methodId] }],
       furniture: [
         door('fixture_door'),
         {

@@ -4,7 +4,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import { compileMapSite } from '../src/core/mapKit.ts';
 import type { ContentFile } from '../src/core/schema.ts';
 import { compileAssembly } from '../src/core/templates.ts';
-import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials } from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 
 const FIXTURE = JSON.parse(
   compileJsonnetFile('packages/deadvox/test/fixtures/jsonnet/map-kits.jsonnet'),
@@ -126,6 +126,7 @@ it('rejects individually admissible alternatives with moved anchors', () => {
 it('rejects individually admissible alternatives changing furniture support under reserved circulation', () => {
   const data = fixture();
   data.furnitureMaterials = fixtureMaterials();
+  data.sounds = fixtureSounds();
   data.furniture = [
     {
       id: 'passable',

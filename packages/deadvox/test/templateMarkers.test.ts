@@ -1,7 +1,13 @@
 import { expect, it } from 'vitest';
 import { buildRegistry, type TemplateDef } from '../src/core/content.ts';
 import { compileTemplate, findPieces } from '../src/core/templates.ts';
-import { FIXTURE_MATERIAL, fixtureBreach, fixtureLootContext, fixtureMaterials } from './economyFixtures.ts';
+import {
+  FIXTURE_MATERIAL,
+  fixtureBreach,
+  fixtureLootContext,
+  fixtureMaterials,
+  fixtureSounds,
+} from './economyFixtures.ts';
 
 it.each(['P', '🧪'])('indexes furniture and blocks by code point for marker %s', (marker) => {
   const template: TemplateDef = {
@@ -16,6 +22,7 @@ it.each(['P', '🧪'])('indexes furniture and blocks by code point for marker %s
       source: 'markers.json',
       data: {
         furnitureMaterials: fixtureMaterials(),
+        sounds: fixtureSounds(),
         blocks: [{ id: 'fixture_solid', name: 'Fixture solid', solid: true, color: '#808080' }],
         furniture: [
           {

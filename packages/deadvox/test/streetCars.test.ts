@@ -11,7 +11,7 @@ import { footprint } from '../src/core/templates.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
 import { BLUEPRINTS } from '../src/vehicles/catalogue.ts';
 import { startupContent } from './baseRegistry.ts';
-import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials } from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 
 const { registry, issues } = startupContent();
 
@@ -31,6 +31,7 @@ const fixtureCar = { blueprint: 'rover', body: '#112233', dirt: 0.5, removed: []
 const checkCar = (override: Partial<typeof fixtureCar>, size: [number, number, number] = [4, 4, 9]) => {
   const data: ContentFile = {
     furnitureMaterials: fixtureMaterials(),
+    sounds: fixtureSounds(),
     furniture: [
       {
         id: 'fixture_car',
@@ -126,6 +127,7 @@ const checkShaped = (solidFill: number, height = 0.5) => {
   const shape = [{ position: [0, 0, 0] as [number, number, number], size: [1, height, 1] as [number, number, number] }];
   const data: ContentFile = {
     furnitureMaterials: fixtureMaterials(),
+    sounds: fixtureSounds(),
     furniture: [
       {
         id: 'fixture_bench',

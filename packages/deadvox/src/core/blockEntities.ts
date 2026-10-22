@@ -427,8 +427,9 @@ export class BlockEntities {
     if (damage !== undefined && !(Number.isFinite(damage) && damage > 0)) {
       throw new Error('Invalid furniture damage');
     }
-    if (damage !== undefined && damage >= this.defOf(entity).breach.durability) {
-      throw new Error("A standing piece's damage must stay below its durability");
+    const { durability } = this.defOf(entity).breach;
+    if (damage !== undefined && (this.breachable(entity) ? damage >= durability : damage > durability)) {
+      throw new Error("A standing piece's damage must stay within its durability, and a door's below it");
     }
     if (!broken) {
       entity.damage = damage;
@@ -846,16 +847,15 @@ export class BlockEntities {
     return undefined;
   }
 
-  /** A closed leaf a body's box overlaps, such as the door a zombie presses against. */
-  closedLeafTouching(body: Body): BlockEntity | undefined {
+  /** A piece that stops movement and a body's box overlaps, such as the door or crate a zombie presses against. */
+  pieceTouching(body: Body): BlockEntity | undefined {
     const halfDepth = body.halfDepth ?? body.halfWidth;
     const [px, py, pz] = body.pos;
     for (let x = Math.floor(px - body.halfWidth); x <= Math.floor(px + body.halfWidth); x++) {
       for (let y = Math.floor(py); y <= Math.floor(py + body.height); y++) {
         for (let z = Math.floor(pz - halfDepth); z <= Math.floor(pz + halfDepth); z++) {
-          const door = this.doorAt(x, y, z);
-          if (door && !door.open && this.breachable(door) && bodyOverlapsBlock(body, [x, y, z])) {
-            return door;
+          if (this.isSolid(x, y, z) && bodyOverlapsBlock(body, [x, y, z])) {
+            return this.at(x, y, z);
           }
         }
       }
@@ -908,8 +908,9 @@ export class BlockEntities {
    * One blow against a standing piece, a zombie's bash or a player's strike alike; an open leaf is a gap, not a
    * target. A blow below the piece's minimum strength leaves no mark, so waiting never lets a weak attacker through;
    * stronger blows add their strength until it reaches the durability. A broken leaf stands open and its lock is
-   * gone, so the breach is one-way, as forcing is. Any other piece is ruined, its damage left as it was, and the
-   * caller destroys it at once (`src/core/furnitureMove.ts`, `ruinFurniture`).
+   * gone, so the breach is one-way, as forcing is. Any other piece is ruined, its damage set to its durability, and
+   * the caller destroys it at once (`src/core/furnitureMove.ts`, `ruinFurniture`). Where that finds no room the piece
+   * stands at full damage, and the next blow that lands ruins it again.
    */
   bash(entity: BlockEntity, strength: number): BashOutcome | undefined {
     const { breach } = this.defOf(entity);
@@ -922,16 +923,13 @@ export class BlockEntities {
     }
     const damage = (entity.damage ?? 0) + strength;
     this.version += 1;
-    if (damage < breach.durability) {
+    if (damage < breach.durability || !leaf) {
       const worn = this.wearOf(entity);
-      entity.damage = damage;
+      entity.damage = Math.min(damage, breach.durability);
       if (this.wearOf(entity) !== worn) {
         this.standing += 1;
       }
-      return 'damaged';
-    }
-    if (!leaf) {
-      return 'ruined';
+      return damage < breach.durability ? 'damaged' : 'ruined';
     }
     entity.damage = undefined;
     entity.broken = true;
