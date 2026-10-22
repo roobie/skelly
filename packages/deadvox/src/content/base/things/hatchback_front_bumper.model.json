@@ -1,0 +1,17 @@
+{
+  "id": "hatchback_front_bumper",
+  "file": "assets/models/hatchback_front_bumper.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 6,
+      "centreOfMass": [2.0125668779825143, 0.4306747013131769, 0],
+      "collision": [
+        { "min": [1.9500000000000002, 0.25, -0.8375], "max": [2.075, 0.55, 0.8375] },
+        { "min": [1.98, 0.5799999999999998, -0.4], "max": [2.03, 0.78, 0.4] },
+        { "min": [2.075, 0.3, -0.4], "max": [2.085, 0.42, 0.4] }
+      ]
+    }
+  },
+  "anchors": {}
+}

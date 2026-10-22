@@ -118,16 +118,21 @@ const placeFitting = (registry: Registry, fitting: VehicleFittingDef): PlacedFit
   };
 };
 
+/** A vehicle of these placed fittings, such as a blueprint with some of its fittings taken off. */
+export const assembledVehicle = (id: string, fittings: readonly PlacedFitting[]): LoadedVehicle => ({
+  id,
+  fittings,
+  massKg: fittings.reduce((sum, { massKg }) => sum + massKg, 0),
+  centreOfMass: massCentre(fittings),
+});
+
 export const loadVehicleBlueprint = (registry: Registry, id: string): LoadedVehicle => {
   const blueprint = registry.vehicleBlueprints.get(id);
   if (!blueprint) {
     throw new Error(`No vehicle blueprint ${id}`);
   }
-  const fittings = blueprint.fittings.map((fitting) => placeFitting(registry, fitting));
-  return {
+  return assembledVehicle(
     id,
-    fittings,
-    massKg: fittings.reduce((sum, { massKg }) => sum + massKg, 0),
-    centreOfMass: massCentre(fittings),
-  };
+    blueprint.fittings.map((fitting) => placeFitting(registry, fitting)),
+  );
 };

@@ -1,0 +1,16 @@
+{
+  "id": "wheel_205_55r16",
+  "file": "assets/models/wheel_205_55r16.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 18,
+      "centreOfMass": [0, 0, -1.543147953583114e-18],
+      "collision": [
+        { "min": [-0.316, -0.316, -0.1025], "max": [0.316, 0.316, 0.1025] },
+        { "min": [-0.203, -0.203, -0.07], "max": [0.203, 0.203, 0.07] }
+      ]
+    }
+  },
+  "anchors": { "hub": [0, 0, 0] }
+}

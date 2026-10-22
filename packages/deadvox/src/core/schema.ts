@@ -242,9 +242,15 @@ const VEHICLE_CAPABILITIES = [
   'electricity',
   'storage',
   'seat',
+  /** A door or hatch a player gets in through. */
+  'entry',
   'light',
   'glazing',
   'protection',
+  /** Frame, tray or mount that other fittings rest on. */
+  'structure',
+  /** A road wheel, the part a vehicle rolls on. */
+  'wheel',
 ] as const;
 export type VehicleCapability = (typeof VEHICLE_CAPABILITIES)[number];
 
@@ -2210,7 +2216,12 @@ const ScenarioSchema = strictObject({
       storeys: pipe(array(strictObject({ id: Id, standing: CellPosition })), minLength(1), maxLength(16)),
       seals: optional(
         array(
-          strictObject({ doors: pipe(array(CellPosition), nonEmpty()), key: CellPosition, standing: CellPosition }),
+          strictObject({
+            doors: pipe(array(CellPosition), nonEmpty()),
+            key: CellPosition,
+            held: optional(literal(true)),
+            standing: CellPosition,
+          }),
         ),
         [],
       ),
