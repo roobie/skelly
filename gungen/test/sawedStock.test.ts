@@ -28,9 +28,10 @@ const stockProfile = (length: 'M' | 'L', style: 'tapered' | 'tapered-sawed') =>
 // A pump build with chosen barrel and stock params, so no test depends on which seed happens to roll them.
 const pumpWith = (params: { barrel: Record<string, string>; stock: Record<string, string> }) => {
   const base = generate(pumpShotgun, gunDomain, 0);
+  const overrides: Record<string, Record<string, string>> = { barrel: params.barrel, stock: params.stock };
   const parts = Object.fromEntries(
     Object.entries(base.parts).map(([id, part]) => {
-      const override = part.family === 'barrel' ? params.barrel : part.family === 'stock' ? params.stock : undefined;
+      const override = overrides[part.family];
       return [id, override ? { ...part, params: { ...part.params, ...override } } : part];
     }),
   );

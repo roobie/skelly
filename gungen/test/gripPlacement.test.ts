@@ -80,7 +80,7 @@ const templatesWithSeparateGrip = TEMPLATES.filter(
     template.slots.some((slot) => slot.id === 'grip' && slot.family === 'grip'),
 );
 
-const expectGripUnderLower = (assembly: Assembly, label: string, lower: string, grip: string): void => {
+const gripFitViolation = (assembly: Assembly, label: string, lower: string, grip: string): string | undefined => {
   const resolved = resolve(assembly, gunDomain);
   const lowerDef = resolved.defs.get(lower)!;
   const lowerTransform = resolved.placed.get(lower)!;
@@ -90,8 +90,7 @@ const expectGripUnderLower = (assembly: Assembly, label: string, lower: string, 
   const faceRearX = Math.min(...faceX);
   const faceFrontX = Math.max(...faceX);
   const context = `${label}; layout=${resolved.params.get(lower)?.layout?.value}; grip-face=[${faceRearX.toFixed(6)}, ${faceFrontX.toFixed(6)}]; lower-body=[${bodyRearX.toFixed(6)}, ${bodyFrontX.toFixed(6)}]`;
-  expect(faceRearX, context).toBeGreaterThanOrEqual(bodyRearX);
-  expect(faceFrontX, context).toBeLessThanOrEqual(bodyFrontX);
+  return faceRearX >= bodyRearX && faceFrontX <= bodyFrontX ? undefined : context;
 };
 
 describe('separate grips fit under lower bodies', () => {
@@ -110,7 +109,7 @@ describe('separate grips fit under lower bodies', () => {
   it.each(authored.map((sample) => [sample.label, sample] as const))(
     '%s: keeps the grip mount face within the lower body and not behind its rearmost solid',
     (_label, { assembly, label, lower, grip }) => {
-      expectGripUnderLower(assembly, label, lower, grip);
+      expect(gripFitViolation(assembly, label, lower, grip)).toBeUndefined();
     },
   );
 
@@ -121,7 +120,9 @@ describe('separate grips fit under lower bodies', () => {
         const assembly = generate(template, gunDomain, seed);
         const grip = separateGrip(assembly);
         if (grip) {
-          expectGripUnderLower(assembly, `${template.name} template seed ${seed}`, grip.lower, grip.grip);
+          expect(
+            gripFitViolation(assembly, `${template.name} template seed ${seed}`, grip.lower, grip.grip),
+          ).toBeUndefined();
           return;
         }
       }
