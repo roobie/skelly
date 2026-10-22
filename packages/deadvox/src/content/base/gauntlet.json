@@ -4848,6 +4848,441 @@
           "id": "shell",
           "size": [72, 8, 64],
           "turn": 0
+        },
+        {
+          "at": [60, 1, 24],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_archive_row_north_west",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "archive_row_north_west",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [66, 1, 24],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_archive_row_north_east",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "archive_row_north_east",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [60, 1, 30],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_archive_row_south_west",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "archive_row_south_west",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [66, 1, 30],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_archive_row_south_east",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "archive_row_south_east",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [10, 1, 20],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_briefing_lectern",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "briefing_lectern",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [6, 1, 28],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_briefing_rows_front_west",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "briefing_rows_front_west",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [14, 1, 28],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_briefing_rows_front_east",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "briefing_rows_front_east",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [6, 1, 34],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_briefing_rows_back_west",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "briefing_rows_back_west",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [14, 1, 34],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_briefing_rows_back_east",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "briefing_rows_back_east",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [28, 1, 46],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_canteen_fridge",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "canteen_fridge",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [28, 1, 50],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_canteen_cupboards",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "canteen_cupboards",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [36, 1, 50],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_canteen_table_west",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "canteen_table_west",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [42, 1, 50],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_canteen_table_east",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "canteen_table_east",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [36, 1, 54],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_canteen_bench",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "canteen_bench",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [38, 1, 18],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_checkpoint_console",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "checkpoint_console",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [44, 1, 18],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_checkpoint_desk",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "checkpoint_desk",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [42, 1, 6],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_director_desk",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "director_desk",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [48, 1, 10],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_director_cabinets",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "director_cabinets",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [30, 1, 36],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_meeting_table",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "meeting_table",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [30, 1, 40],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_meeting_benches",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "meeting_benches",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [28, 1, 6],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_staff_desk_north",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "staff_desk_north",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [26, 1, 10],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_staff_desk_south",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "staff_desk_south",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [34, 1, 6],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_staff_cabinets_north",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "staff_cabinets_north",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [34, 1, 10],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_staff_cabinets_south",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "staff_cabinets_south",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [62, 1, 38],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_store_east_shelves_west",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "store_east_shelves_west",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [66, 1, 38],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_store_east_shelves_east",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "store_east_shelves_east",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [62, 1, 56],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_store_south_shelves",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "store_south_shelves",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [42, 1, 36],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_wc_west",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "wc_west",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [46, 1, 36],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_administration_bay_wc_east",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "wc_east",
+          "size": [4, 7, 4],
+          "turn": 0
         }
       ]
     },
@@ -29169,14 +29604,14 @@
           "^^........................^^%%%%%%..%%%%%%~~~~..~~~~....>>>>>>>>>>>>>>>>",
           "^^........................^^......................++..............]]####",
           "^^........................^^......................++..............]]####",
-          "^^........................^^......................................]]####",
-          "^^........................^^......................................]]####",
-          "^^........................^^......................................]]####",
-          "^^........................^^......................................]]####",
-          "^^........................^^......................++....]]........]]####",
-          "^^........................^^......................++....]]........]]####",
-          "^^........................^^......................++....]]]]]]]]]]]]####",
-          "^^........................^^......................++....]]]]]]]]]]]]####",
+          "^^........................^^......................++..............]]####",
+          "^^........................^^......................++..............]]####",
+          "^^........................^^......................++..............]]####",
+          "^^........................^^......................++..............]]####",
+          "^^........................^^............................]]........]]####",
+          "^^........................^^............................]]........]]####",
+          "^^........................^^............................]]]]]]]]]]]]####",
+          "^^........................^^............................]]]]]]]]]]]]####",
           "^^^^^^^^^^^^^^^^^^^^^^^^^^^^......................++..............[[####",
           "^^^^^^^^^^^^^^^^^^^^^^^^^^^^......................++..............[[####",
           "##########################++++++++++++++++++++++++++))))[[........[[####",
@@ -29235,14 +29670,14 @@
           "HH........................HHMMMMMM..MMMMMMWWWW..WWWW....GGGGGGGGGGGGGGGG",
           "HH........................HH......................NN..............UU####",
           "HH........................HH......................NN..............UU####",
-          "HH........................HH......................................UU####",
-          "HH........................HH......................................UU####",
-          "HH........................HH......................................UU####",
-          "HH........................HH......................................UU####",
-          "HH........................HH......................NN....UU........UU####",
-          "HH........................HH......................NN....UU........UU####",
-          "HH........................HH......................NN....UUUUUUUUUUUU####",
-          "HH........................HH......................NN....UUUUUUUUUUUU####",
+          "HH........................HH......................NN..............UU####",
+          "HH........................HH......................NN..............UU####",
+          "HH........................HH......................NN..............UU####",
+          "HH........................HH......................NN..............UU####",
+          "HH........................HH............................UU........UU####",
+          "HH........................HH............................UU........UU####",
+          "HH........................HH............................UUUUUUUUUUUU####",
+          "HH........................HH............................UUUUUUUUUUUU####",
           "HHHHHHHHHHHHHHHHHHHHHHHHHHHH......................NN..............XX####",
           "HHHHHHHHHHHHHHHHHHHHHHHHHHHH......................NN..............XX####",
           "##########################NNNNNNNNNNNNNNNNNNNNNNNNNNCCCCXX........XX####",
@@ -29301,14 +29736,14 @@
           "HH........................HHMMMMMM..MMMMMMWWWW..WWWW....GGGGGGGGGGGGGGGG",
           "HH........................HH......................NN..............UU####",
           "HH........................HH......................NN..............UU####",
-          "HH........................HH......................................UU####",
-          "HH........................HH......................................UU####",
-          "HH........................HH......................................UU####",
-          "HH........................HH......................................UU####",
-          "HH........................HH......................NN....UU........UU####",
-          "HH........................HH......................NN....UU........UU####",
-          "HH........................HH......................NN....UUUUUUUUUUUU####",
-          "HH........................HH......................NN....UUUUUUUUUUUU####",
+          "HH........................HH......................NN..............UU####",
+          "HH........................HH......................NN..............UU####",
+          "HH........................HH......................NN..............UU####",
+          "HH........................HH......................NN..............UU####",
+          "HH........................HH............................UU........UU####",
+          "HH........................HH............................UU........UU####",
+          "HH........................HH............................UUUUUUUUUUUU####",
+          "HH........................HH............................UUUUUUUUUUUU####",
           "HHHHHHHHHHHHHHHHHHHHHHHHHHHH......................NN..............XX####",
           "HHHHHHHHHHHHHHHHHHHHHHHHHHHH......................NN..............XX####",
           "##########################NNNNNNNNNNNNNNNNNNNNNNNNNNCCCCXX........XX####",
@@ -29367,14 +29802,14 @@
           "HH........................HHMMMMMM..MMMMMMWWWW..WWWW....GGGGGGGGGGGGGGGG",
           "HH........................HH......................NN..............UU####",
           "HH........................HH......................NN..............UU####",
-          "HH........................HH......................................UU####",
-          "HH........................HH......................................UU####",
-          "HH........................HH......................................UU####",
-          "HH........................HH......................................UU####",
-          "HH........................HH......................NN....UU........UU####",
-          "HH........................HH......................NN....UU........UU####",
-          "HH........................HH......................NN....UUUUUUUUUUUU####",
-          "HH........................HH......................NN....UUUUUUUUUUUU####",
+          "HH........................HH......................NN..............UU####",
+          "HH........................HH......................NN..............UU####",
+          "HH........................HH......................NN..............UU####",
+          "HH........................HH......................NN..............UU####",
+          "HH........................HH............................UU........UU####",
+          "HH........................HH............................UU........UU####",
+          "HH........................HH............................UUUUUUUUUUUU####",
+          "HH........................HH............................UUUUUUUUUUUU####",
           "HHHHHHHHHHHHHHHHHHHHHHHHHHHH......................NN..............XX####",
           "HHHHHHHHHHHHHHHHHHHHHHHHHHHH......................NN..............XX####",
           "##########################NNNNNNNNNNNNNNNNNNNNNNNNNNCCCCXX........XX####",
@@ -29487,12 +29922,12 @@
           "HH........................HHEE....................EECCCCRR............RR",
           "HH........................HHEEEEEEEEEEEEEEEEEEEEEEEECCCCRR............RR",
           "HH........................HHEEEEEEEEEEEEEEEEEEEEEEEECCCCRR............RR",
-          "HH........................HH............MMWWWWWWWWWWCCCCRRRRRRRRRRRRRRRR",
-          "HH........................HH............MMWWWWWWWWWWCCCCRRRRRRRRRRRRRRRR",
-          "HH........................HH............MMWWWWWWWWWWCCCCGGGGGGGGGGGGGGGG",
-          "HH........................HH............MMWWWWWWWWWWCCCCGGGGGGGGGGGGGGGG",
-          "HH........................HH............MMWWWWWWWWWWCCCCGGGGGGGGGGGGGGGG",
-          "HH........................HH............MMWWWWWWWWWWCCCCGGGGGGGGGGGGGGGG",
+          "HH........................HH............MM........WWCCCCRRRRRRRRRRRRRRRR",
+          "HH........................HH............MM........WWCCCCRRRRRRRRRRRRRRRR",
+          "HH........................HH............MM........WWCCCCGGGGGG........GG",
+          "HH........................HH............MM........WWCCCCGGGGGG........GG",
+          "HH........................HH............MMWWWWWWWWWWCCCCGGGGGG........GG",
+          "HH........................HH............MMWWWWWWWWWWCCCCGGGGGG........GG",
           "HH........................HH............MMWWWWWWWWWWCCCCGGGGGGGGGGGGGGGG",
           "HH........................HH............MMWWWWWWWWWWCCCCGGGGGGGGGGGGGGGG",
           "HH........................HHMMMMMMMMMMMMMMWWWWWWWWWWCCCCGGGGGGGGGGGGGGGG",
@@ -29507,10 +29942,10 @@
           "HH........................HH......................NNCCCCUU........UU####",
           "HH........................HH......................NNCCCCUUUUUUUUUUUU####",
           "HH........................HH......................NNCCCCUUUUUUUUUUUU####",
-          "HHHHHHHHHHHHHHHHHHHHHHHHHHHH......................NNCCCCXXXXXXXXXXXX####",
-          "HHHHHHHHHHHHHHHHHHHHHHHHHHHH......................NNCCCCXXXXXXXXXXXX####",
-          "##########################NNNNNNNNNNNNNNNNNNNNNNNNNNCCCCXXXXXXXXXXXX####",
-          "##########################NNNNNNNNNNNNNNNNNNNNNNNNNNCCCCXXXXXXXXXXXX####",
+          "HHHHHHHHHHHHHHHHHHHHHHHHHHHH......................NNCCCCXXXXXX....XX####",
+          "HHHHHHHHHHHHHHHHHHHHHHHHHHHH......................NNCCCCXXXXXX....XX####",
+          "##########################NNNNNNNNNNNNNNNNNNNNNNNNNNCCCCXXXXXX....XX####",
+          "##########################NNNNNNNNNNNNNNNNNNNNNNNNNNCCCCXXXXXX....XX####",
           "########################################################XXXXXXXXXXXX####",
           "########################################################XXXXXXXXXXXX####",
           "########################################################################",
@@ -29523,60 +29958,60 @@
           "######################################OOOOOOOOOOOOOOOOVVVVVVVVVVVV######",
           "AAAAAAAAAAAAAAAAAAAAAAAAFFFFFFFFFFFFFFFFOOOOOOOOOOOOOOVV........VV######",
           "AAAAAAAAAAAAAAAAAAAAAAAAFFFFFFFFFFFFFFFFOOOOOOOOOOOOOOVV........VV######",
-          "AA....................AAFFFFFFFFFFFFFFFFOOOOOOOOOOOOOOVV........VV######",
-          "AA....................AAFFFFFFFFFFFFFFFFOOOOOOOOOOOOOOVV........VV######",
-          "AA....................AAFFFFFFFFFFFFFFFFOOOOOOOOOOOOOOVV........VV######",
-          "AA....................AAFFFFFFFFFFFFFFFFOOOOOOOOOOOOOOVV........VV######",
-          "AA....................AAFFFFFFFFFFFFFFFFOOOOOOOOOOOOOOVV........VV######",
-          "AA....................AAFFFFFFFFFFFFFFFFOOOOOOOOOOOOOOVV........VV######",
-          "AA....................AAFFFFFFFFFFFFFFFFOOOOOOOOOOOOOOVV........VV######",
-          "AA....................AAFFFFFFFFFFFFFFFFOOOOOOOOOOOOOOVV........VV######",
+          "AA....................AAFFFF....FF....FFOO....OOOOOOOOVV........VV######",
+          "AA....................AAFFFF....FF....FFOO....OOOOOOOOVV........VV######",
+          "AA....................AAFFFF....FF....FFOO....OOOOOOOOVV........VV######",
+          "AA....................AAFFFF....FF....FFOO....OOOOOOOOVV........VV######",
+          "AA....................AAFF....FFFF....FFOOOOOOOO....OOVV........VV######",
+          "AA....................AAFF....FFFF....FFOOOOOOOO....OOVV........VV######",
+          "AA....................AAFF....FFFF....FFOOOOOOOO....OOVV........VV######",
+          "AA....................AAFF....FFFF....FFOOOOOOOO....OOVV........VV######",
           "AA....................AAFFFFFFFFFFFFFFFFOOOOOOOOOOOOOOVV........VV######",
           "AA....................AAFFFFFFFFFFFFFFFFOOOOOOOOOOOOOOVV........VV######",
           "AAAAAAAAAAAAAAAAAAAAAAAAFFFFFFFFFFFFFFFFOOOOOOOOOOOOOOVVVVZZZZVVVV######",
           "AAAAAAAAAAAAAAAAAAAAAAAAFFFFFFFFFFFFFFFFOOOOOOOOOOOOOOVVVVZZZZVVVV######",
-          "HH........................HHQQQQQQQQQQQQQQQQQQQQQQQQCCCCCCCCCCCCCC######",
-          "HH........................HHQQQQQQQQQQQQQQQQQQQQQQQQCCCCCCCCCCCCCC######",
-          "HH........................HHQQQQQQQQQQQQQQQQQQQQQQQQCCCCCCCCCCCCCC######",
-          "HH........................HHQQQQQQQQQQQQQQQQQQQQQQQQCCCCCCCCCCCCCC######",
+          "HH........................HHQQQQQQQQQQ....QQ....QQQQCCCCCCCCCCCCCC######",
+          "HH........................HHQQQQQQQQQQ....QQ....QQQQCCCCCCCCCCCCCC######",
+          "HH........................HHQQQQQQQQQQ....QQ....QQQQCCCCCCCCCCCCCC######",
+          "HH........................HHQQQQQQQQQQ....QQ....QQQQCCCCCCCCCCCCCC######",
           "HH........................HHQQQQQQQQQQQQQQQQQQQQQQQQCCCCRRRRRRRRRRRRRRRR",
           "HH........................HHQQQQQQQQQQQQQQQQQQQQQQQQCCCCRRRRRRRRRRRRRRRR",
-          "HH........................HHQQQQQQQQQQQQZZZZQQQQQQQQCCCCRRRRRRRRRRRRRRRR",
-          "HH........................HHQQQQQQQQQQQQZZZZQQQQQQQQCCCCRRRRRRRRRRRRRRRR",
+          "HH........................HHQQQQQQQQQQQQZZZZQQQQQQQQCCCCRRRR....RR....RR",
+          "HH........................HHQQQQQQQQQQQQZZZZQQQQQQQQCCCCRRRR....RR....RR",
+          "HH........................HHEE....................EECCCCRRRR....RR....RR",
+          "HH........................HHEE....................EECCCCRRRR....RR....RR",
           "HH........................HHEE....................EECCCCRRRRRRRRRRRRRRRR",
           "HH........................HHEE....................EECCCCRRRRRRRRRRRRRRRR",
-          "HH........................HHEE....................EECCCCRRRRRRRRRRRRRRRR",
-          "HH........................HHEE....................EECCCCRRRRRRRRRRRRRRRR",
-          "HH........................HHEE....................EECCCCRRRRRRRRRRRRRRRR",
-          "HH........................HHEE....................EECCCCRRRRRRRRRRRRRRRR",
-          "HH........................HHEE....................EECCCCRRRRRRRRRRRRRRRR",
-          "HH........................HHEE....................EECCCCRRRRRRRRRRRRRRRR",
+          "HH........................HHEE....................EECCCCRRRR....RR....RR",
+          "HH........................HHEE....................EECCCCRRRR....RR....RR",
+          "HH........................HHEE....................EECCCCRRRR....RR....RR",
+          "HH........................HHEE....................EECCCCRRRR....RR....RR",
           "HH........................HHEEEEEEEEEEEEEEEEEEEEEEEECCCCRRRRRRRRRRRRRRRR",
           "HH........................HHEEEEEEEEEEEEEEEEEEEEEEEECCCCRRRRRRRRRRRRRRRR",
-          "HH........................HHMMMMMMMMMMMMMMWWWWWWWWWWCCCCRRRRRRRRRRRRRRRR",
-          "HH........................HHMMMMMMMMMMMMMMWWWWWWWWWWCCCCRRRRRRRRRRRRRRRR",
+          "HH........................HHMM....MMMMMMMM........WWCCCCRRRRRRRRRRRRRRRR",
+          "HH........................HHMM....MMMMMMMM........WWCCCCRRRRRRRRRRRRRRRR",
+          "HH........................HHMM....MMMMMMMM........WWCCCCGGGGGG........GG",
+          "HH........................HHMM....MMMMMMMM........WWCCCCGGGGGG........GG",
+          "HH........................HHMM....MMMMMMMMWWWWWWWWWWCCCCGGGGGG........GG",
+          "HH........................HHMM....MMMMMMMMWWWWWWWWWWCCCCGGGGGG........GG",
+          "HH........................HHMM....MMMMMMMMWWWWWWWWWWCCCCGGGGGGGGGGGGGGGG",
+          "HH........................HHMM....MMMMMMMMWWWWWWWWWWCCCCGGGGGGGGGGGGGGGG",
           "HH........................HHMMMMMMMMMMMMMMWWWWWWWWWWCCCCGGGGGGGGGGGGGGGG",
           "HH........................HHMMMMMMMMMMMMMMWWWWWWWWWWCCCCGGGGGGGGGGGGGGGG",
-          "HH........................HHMMMMMMMMMMMMMMWWWWWWWWWWCCCCGGGGGGGGGGGGGGGG",
-          "HH........................HHMMMMMMMMMMMMMMWWWWWWWWWWCCCCGGGGGGGGGGGGGGGG",
-          "HH........................HHMMMMMMMMMMMMMMWWWWWWWWWWCCCCGGGGGGGGGGGGGGGG",
-          "HH........................HHMMMMMMMMMMMMMMWWWWWWWWWWCCCCGGGGGGGGGGGGGGGG",
-          "HH........................HHMMMMMMMMMMMMMMWWWWWWWWWWCCCCGGGGGGGGGGGGGGGG",
-          "HH........................HHMMMMMMMMMMMMMMWWWWWWWWWWCCCCGGGGGGGGGGGGGGGG",
-          "HH........................HHNNNNNNNNNNNNNNNNNNNNNNNNCCCCUU........UU####",
-          "HH........................HHNNNNNNNNNNNNNNNNNNNNNNNNCCCCUU........UU####",
-          "HH........................HHNNNNNNNNNNNNNNNNNNNNNNNNCCCCUU........UU####",
-          "HH........................HHNNNNNNNNNNNNNNNNNNNNNNNNCCCCUU........UU####",
-          "HH........................HHNNNNNNNNNNNNNNNNNNNNNNNNCCCCUU........UU####",
-          "HH........................HHNNNNNNNNNNNNNNNNNNNNNNNNCCCCUU........UU####",
-          "HH........................HHNNNNNNNNNNNNNNNNNNNNNNNNCCCCUU........UU####",
-          "HH........................HHNNNNNNNNNNNNNNNNNNNNNNNNCCCCUU........UU####",
-          "HH........................HHNNNNNNNNNNNNNNNNNNNNNNNNCCCCUUUUUUUUUUUU####",
-          "HH........................HHNNNNNNNNNNNNNNNNNNNNNNNNCCCCUUUUUUUUUUUU####",
-          "HHHHHHHHHHHHHHHHHHHHHHHHHHHHNNNNNNNNNNNNNNNNNNNNNNNNCCCCXXXXXXXXXXXX####",
-          "HHHHHHHHHHHHHHHHHHHHHHHHHHHHNNNNNNNNNNNNNNNNNNNNNNNNCCCCXXXXXXXXXXXX####",
-          "##########################NNNNNNNNNNNNNNNNNNNNNNNNNNCCCCXXXXXXXXXXXX####",
-          "##########################NNNNNNNNNNNNNNNNNNNNNNNNNNCCCCXXXXXXXXXXXX####",
+          "HH........................HH....NNNNNNNNNNNNNNNNNNNNCCCCUU........UU####",
+          "HH........................HH....NNNNNNNNNNNNNNNNNNNNCCCCUU........UU####",
+          "HH........................HH....NNNNNNNNNNNNNNNNNNNNCCCCUU........UU####",
+          "HH........................HH....NNNNNNNNNNNNNNNNNNNNCCCCUU........UU####",
+          "HH........................HH....NNNN....NN....NNNNNNCCCCUU........UU####",
+          "HH........................HH....NNNN....NN....NNNNNNCCCCUU........UU####",
+          "HH........................HH....NNNN....NN....NNNNNNCCCCUU........UU####",
+          "HH........................HH....NNNN....NN....NNNNNNCCCCUU........UU####",
+          "HH........................HHNNNNNNNN....NNNNNNNNNNNNCCCCUUUUUUUUUUUU####",
+          "HH........................HHNNNNNNNN....NNNNNNNNNNNNCCCCUUUUUUUUUUUU####",
+          "HHHHHHHHHHHHHHHHHHHHHHHHHHHHNNNNNNNN....NNNNNNNNNNNNCCCCXXXXXX....XX####",
+          "HHHHHHHHHHHHHHHHHHHHHHHHHHHHNNNNNNNN....NNNNNNNNNNNNCCCCXXXXXX....XX####",
+          "##########################NNNNNNNNNNNNNNNNNNNNNNNNNNCCCCXXXXXX....XX####",
+          "##########################NNNNNNNNNNNNNNNNNNNNNNNNNNCCCCXXXXXX....XX####",
           "########################################################XXXXXXXXXXXX####",
           "########################################################XXXXXXXXXXXX####",
           "########################################################################",
@@ -29662,60 +30097,60 @@
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRR............RRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRR............RRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRAARRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRAARRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRR....RR....SSRR....RRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRR....RR....SSRR....RRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRR....RR....SSRR....RRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRR....RR....SSRR....RRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRR............RRSSRR....RRRR....SSRRRRRRRR....RRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRR............RRSSRR....RRRR....SSRRRRRRRR....RRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRR....SSRRRRAARR....RRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRR....SSRRRRAARR....RRSSRRRRRRRRSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
             "SSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSRRSSSSSSSSSSSSSSSSSSRRSSSSSSSSSSSSSSSSSS",
             "SSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSRRSSSSSSSSSSSSSSSSSSRRSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSS....RR....RRSSRRRRRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSS....RR....RRSSRRRRRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRRRRRRRRRRRSS....RR....RRRRRRRRRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRRRRRRRRRRRSS....RR....RRRRRRRRRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
+            "SSRRRR....RRRR....RRRRRRRRSSRR....RRRRRRSS........SSRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRR....RRRR....RRRRRRRRSSRR....RRRRRRSS........SSRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRR....RRRRRRSS........SSRRRRSSRRRR........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRR....RRRRRRSS........SSRRRRSSRRRR........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRRRRRRR........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRRRRRRR........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRSSSSSSSSSSRRSSSSRRRRSSSSSSSSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRSSSSSSSSSSRRSSSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR...RRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR...RRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSRRRRRR...RRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSRRRRRR...RRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRSSRRRRRRRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRSSRRRRRRRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRRRRRRRSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRRRRRRRSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRR....RRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRR....RRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRR....RRRRRRRRRRSSRRRRRRRRRR....SSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRR....RRRRRRRRRRSSRRRRRRRRRR....SSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR....SSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR....SSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
@@ -29728,60 +30163,60 @@
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRR............RRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRR............RRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRAARRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRAARRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRR....RR....SSRR....RRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRR....RR....SSRR....RRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRR....RR....SSRR....RRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRR....RR....SSRR....RRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRR............RRSSRR....RRRR....SSRRRRRRRR....RRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRR............RRSSRR....RRRR....SSRRRRRRRR....RRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRR....SSRRRRAARR....RRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRR....SSRRRRAARR....RRSSRRRRRRRRSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
             "SSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSRRSSSSSSSSSSSSSSSSSSRRSSSSSSSSSSSSSSSSSS",
             "SSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSRRSSSSSSSSSSSSSSSSSSRRSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSS....RR....RRSSRRRRRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSS....RR....RRSSRRRRRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRRRRRRRRRRRSS....RR....RRRRRRRRRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRRRRRRRRRRRSS....RR....RRRRRRRRRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
+            "SSRRRR....RRRR....RRRRRRRRSSRR....RRRRRRSS........SSRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRR....RRRR....RRRRRRRRSSRR....RRRRRRSS........SSRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRR....RRRRRRSS........SSRRRRSSRRRR........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRR....RRRRRRSS........SSRRRRSSRRRR........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRRRRRRR........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRRRRRRR........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRSSSSSSSSSSRRSSSSRRRRSSSSSSSSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRSSSSSSSSSSRRSSSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR...RRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR...RRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSRRRRRR...RRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSRRRRRR...RRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRSSRRRRRRRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRSSRRRRRRRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRRRRRRRSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRRRRRRRSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRR....RRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRR....RRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRR....RRRRRRRRRRSSRRRRRRRRRR....SSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRR....RRRRRRRRRRSSRRRRRRRRRR....SSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR....SSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR....SSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
@@ -29794,60 +30229,60 @@
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRR............RRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRR............RRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRAARRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRAARRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRR....RR....SSRR....RRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRR....RR....SSRR....RRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRR....RR....SSRR....RRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRR....RR....SSRR....RRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRR............RRSSRR....RRRR....SSRRRRRRRR....RRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRR............RRSSRR....RRRR....SSRRRRRRRR....RRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRR....SSRRRRAARR....RRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRR....SSRRRRAARR....RRSSRRRRRRRRSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
             "SSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSRRSSSSSSSSSSSSSSSSSSRRSSSSSSSSSSSSSSSSSS",
             "SSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSRRSSSSSSSSSSSSSSSSSSRRSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSS....RR....RRSSRRRRRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSS....RR....RRSSRRRRRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRRRRRRRRRRRSS....RR....RRRRRRRRRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRRRRRRRRRRRSS....RR....RRRRRRRRRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
+            "SSRRRR....RRRR....RRRRRRRRSSRR....RRRRRRSS........SSRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRR....RRRR....RRRRRRRRSSRR....RRRRRRSS........SSRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRR....RRRRRRSS........SSRRRRSSRRRR........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRR....RRRRRRSS........SSRRRRSSRRRR........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRRRRRRR........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRRRRRRR........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRSSSSSSSSSSRRSSSSRRRRSSSSSSSSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRSSSSSSSSSSRRSSSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR...RRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR...RRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSRRRRRR...RRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSRRRRRR...RRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRSSRRRRRRRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRSSRRRRRRRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRRRRRRRSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRRRRRRRSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRR....RRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRR....RRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRR....RRRRRRRRRRSSRRRRRRRRRR....SSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRR....RRRRRRRRRRSSRRRRRRRRRR....SSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR....SSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR....SSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
@@ -29860,60 +30295,60 @@
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRR............RRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRR............RRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRAARRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRAARRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRR....RR....SSRR....RRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRR....RR....SSRR....RRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRR....RR....SSRR....RRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRR....RR....SSRR....RRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRR............RRSSRR....RRRR....SSRRRRRRRR....RRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRR............RRSSRR....RRRR....SSRRRRRRRR....RRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRR....SSRRRRAARR....RRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRR....SSRRRRAARR....RRSSRRRRRRRRSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
             "SSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSRRSSSSSSSSSSSSSSSSSSRRSSSSSSSSSSSSSSSSSS",
             "SSSSRRRRSSSSSSSSSSSSSSSSSSSSSSSSRRSSSSSSSSSSSSSSSSSSRRSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSS....RR....RRSSRRRRRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSS....RR....RRSSRRRRRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRRRRRRRRRRRSS....RR....RRRRRRRRRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRRRRRRRRRRRSS....RR....RRRRRRRRRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRSS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
+            "SSRRRR....RRRR....RRRRRRRRSSRR....RRRRRRSS........SSRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRR....RRRR....RRRRRRRRSSRR....RRRRRRSS........SSRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRR....RRRRRRSS........SSRRRRSSRRRR........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRRRRR....RRRRRRSS........SSRRRRSSRRRR........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRRRRRRR........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRRRRRRR........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRSSSSSSSSSSRRSSSSRRRRSSSSSSSSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRSSSSSSSSSSRRSSSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR...RRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR...RRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSRRRRRR...RRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSRRRRRR...RRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRSSRRRRRRRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRSSRRRRRRRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRRRRRRRSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRRRRRRRSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRR....RRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRR....RRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRR....RRRRRRRRRRSSRRRRRRRRRR....SSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRR....RRRRRRRRRRSSRRRRRRRRRR....SSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR....SSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR....SSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
@@ -29926,60 +30361,60 @@
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRR............RRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRR............RRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRAARRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRAARRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRR....RR....SSRR....RRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRR....RR....SSRR....RRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRR....RR....SSRR....RRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRR....RR....SSRR....RRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRR............RRSSRR....RRRR....SSRRRRRRRR....RRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRR............RRSSRR....RRRR....SSRRRRRRRR....RRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRR....SSRRRRAARR....RRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRR....SSRRRRAARR....RRSSRRRRRRRRSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSS....RR....RRSSRRRRRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSS....RR....RRSSRRRRRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRSSRRRRRRRRSS....RR....RRSSRRRRRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRSSRRRRRRRRSS....RR....RRSSRRRRRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRSSRR....RR....SS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSRRRRRRRRRRRRSS",
+            "SSRRRR....RRRR....RRRRRRRRSSRR....RRRRRRSS........SSRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRR....RRRR....RRRRRRRRSSRR....RRRRRRSS........SSRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSS........SSRRRRSSRRRR........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSS........SSRRRRSSRRRR........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRSSRRRR........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRSSRRRR........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSRRRRRRRRSSRRRRSSRRRRRRRRRRRRSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSS...RRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSS...RRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSRRRRSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSRRRRSS...RRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSRRRRSS...RRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRSSRRRRSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRSSRRRRSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRSSRRRRSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRSSRRRRSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRR....RRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRR....RRRRRRRRRRSSRRRRSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRR....RRRRRRRRRRSSRRRRSSRRRR....SSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRR....RRRRRRRRRRSSRRRRSSRRRR....SSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR....SSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR....SSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
@@ -29992,60 +30427,60 @@
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRR............RRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRR............RRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRAARRRRRRRRSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRAARRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRR....RR....SSRR....RRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRR....RR....SSRR....RRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRR....RR....SSRR....RRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRRRR....RR....SSRR....RRRRRRRRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRR............RRSSRR....RRRR....SSRRRRRRRR....RRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRR............RRSSRR....RRRR....SSRRRRRRRR....RRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRR....SSRRRRAARR....RRSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSRR....RRRR....SSRRRRAARR....RRSSRRRRRRRRSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRSSRRRRRRRRSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSS....RR....RRSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRSS....RR....RRSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRSSRRRRRRRRSS....RR....RRSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRSSRRRRRRRRSS....RR....RRSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSRR....RR....SS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRRRRRRRRRRRSS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRRRRRRRRRRRSS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSRR....RR....SS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSRR....RR....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSRR....RR....SS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRSS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRSS",
+            "SSRRRR....RRRR....RRRRRRRRSSRR....RRRRRRSS........SSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRR....RRRR....RRRRRRRRSSRR....RRRRRRSS........SSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSS........SSSSSSSSSSSS........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSS........SSSSSSSSSSSS........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSSSSSSSSSSSSSSSSSSSSS........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSSSSSSSSSSSSSSSSSSSSS........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRR....RRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSSSSSSS...RRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSSSSSSS...RRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSSSSSSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSSSSSSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSSSSSSS...RRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRSSSSSSSS...RRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRSSSSSSSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRSSSSSSSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRSSSSSSSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....RRRR....RR....RRRRSSSSSSSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRR....RRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRR....RRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRR....RRRRRRRRRRSSSSSSSSSSSS....SSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRR....RRRRRRRRRRSSSSSSSSSSSS....SSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....SSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....SSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
@@ -30058,60 +30493,60 @@
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRR............RRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRR............RRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSSSSS....SS....SSSS....SSSSSSSSSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSSSSS....SS....SSSS....SSSSSSSSSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSSSSS....SS....SSSS....SSSSSSSSSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSSSSS....SS....SSSS....SSSSSSSSSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRR............RRSSSS....SSSS....SSSSSSSSSS....SSSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRR............RRSSSS....SSSS....SSSSSSSSSS....SSSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSSS....SSSS....SSSSSSSSSS....SSSSRRRRRRRRSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRSSSS....SSSS....SSSSSSSSSS....SSSSRRRRRRRRSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSS....SS....SSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSS....SS....SSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRSSSSSSSSSSSS....SS....SSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRSSSSSSSSSSSS....SS....SSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRR....RRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....SS....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....SS....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSS....SS....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSS....SS....SS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSS....SS....SS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSS....SS....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSS....SS....SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSS....SS....SS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRR....RRRR....RRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRR....RRRR....RRRRRRRRSSSS....SSSSSSSS........SSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRR....RRRR....RRRRRRRRSSSS....SSSSSSSS........SSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSS....SSSSSSSS........SSSSSSSSSSSS........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSS....SSSSSSSS........SSSSSSSSSSSS........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSS....SSSSSSSSSSSSSSSSSSSSSSSSSSSS........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSS....SSSSSSSSSSSSSSSSSSSSSSSSSSSS........SS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSS....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSS....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...RRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...RRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....SSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....SSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....SSSSSSSSSSSSSSSSSSSSSSSSSS...RRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....SSSSSSSSSSSSSSSSSSSSSSSSSS...RRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....SSSS....SS....SSSSSSSSSSSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....SSSS....SS....SSSSSSSSSSSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....SSSS....SS....SSSSSSSSSSSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSS....SSSS....SS....SSSSSSSSSSSSRRRRRRRRSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSS....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSRRRRRRRRRRRRRRRRRRRRRRRRSSSSSSSSSS....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....SSSSSSSSSSSSSSSSSSSSSS....SSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....SSSSSSSSSSSSSSSSSSSSSS....SSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....SSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....SSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
@@ -30345,6 +30780,1551 @@
       },
       "ports": [],
       "size": [72, 8, 64],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_archive_row_north_west",
+      "layers": [
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["LL..", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_archive",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_archive_row_north_east",
+      "layers": [
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_archive",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_archive_row_south_west",
+      "layers": [
+        ["FF..", "FF..", "FF..", "FF.."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSAA", "SSAA", "SSAA", "SSAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "shelf",
+          "loot": "d41_empty",
+          "tip": "back"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_archive_row_south_east",
+      "layers": [
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["LL..", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_archive",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture_broken"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_briefing_lectern",
+      "layers": [
+        ["pppp", "pppp", "pppp", "pppp"],
+        ["FFF.", "FFF.", "....", "...."],
+        ["FFF.", "FFF.", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "SSSS", "SSSS"],
+          ["SSSA", "SSSA", "AAAA", "AAAA"],
+          ["SSSA", "SSSA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "dressed",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "desk",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "carpet",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_briefing_rows_front_west",
+      "layers": [
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "dressed",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_bench",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture_broken"
+        },
+        "p": {
+          "material": "carpet",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_briefing_rows_front_east",
+      "layers": [
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "dressed",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_bench",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "carpet",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_briefing_rows_back_west",
+      "layers": [
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "dressed",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_bench",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "carpet",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_briefing_rows_back_east",
+      "layers": [
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "dressed",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_bench",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "carpet",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_canteen_fridge",
+      "layers": [
+        ["FF..", "FF..", "....", "...."],
+        ["FF..", "FF..", "....", "...."],
+        ["FF..", "FF..", "....", "...."],
+        ["FF..", "FF..", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSAA", "SSAA", "AAAA", "AAAA"],
+          ["SSAA", "SSAA", "AAAA", "AAAA"],
+          ["SSAA", "SSAA", "AAAA", "AAAA"],
+          ["SSAA", "SSAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "fridge",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture_broken"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_canteen_cupboards",
+      "layers": [
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "A": {
+          "furniture": "kitchen_cupboard",
+          "loot": "d41_empty"
+        },
+        "B": {
+          "furniture": "station_kitchen_sink",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_canteen_table_west",
+      "layers": [
+        ["FFF.", "FFF.", "....", "...."],
+        ["FFF.", "FFF.", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSA", "SSSA", "AAAA", "AAAA"],
+          ["SSSA", "SSSA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "desk",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_canteen_table_east",
+      "layers": [
+        ["FFF.", "FFF.", "....", "...."],
+        ["FFF.", "FFF.", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSA", "SSSA", "AAAA", "AAAA"],
+          ["SSSA", "SSSA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "desk",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_canteen_bench",
+      "layers": [
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_bench",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_checkpoint_console",
+      "layers": [
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_console",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture_broken"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_checkpoint_desk",
+      "layers": [
+        ["FFF.", "FFF.", "....", "...."],
+        ["FFF.", "FFF.", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSA", "SSSA", "AAAA", "AAAA"],
+          ["SSSA", "SSSA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "desk",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_director_desk",
+      "layers": [
+        ["FFF.", "FFF.", "....", "...."],
+        ["FFF.", "FFF.", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSA", "SSSA", "AAAA", "AAAA"],
+          ["SSSA", "SSSA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "dressed",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "desk",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "planks",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_director_cabinets",
+      "layers": [
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "dressed",
+          "role": "shell"
+        },
+        "A": {
+          "furniture": "police_file_cabinet",
+          "loot": "d41_empty"
+        },
+        "B": {
+          "furniture": "police_file_cabinet",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "planks",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_meeting_table",
+      "layers": [
+        ["FFF.", "FFF.", "....", "...."],
+        ["FFF.", "FFF.", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSA", "SSSA", "AAAA", "AAAA"],
+          ["SSSA", "SSSA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "desk",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture_broken"
+        },
+        "p": {
+          "material": "carpet",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_meeting_benches",
+      "layers": [
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_bench",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "carpet",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_staff_desk_north",
+      "layers": [
+        ["FFF.", "FFF.", "....", "...."],
+        ["FFF.", "FFF.", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSA", "SSSA", "AAAA", "AAAA"],
+          ["SSSA", "SSSA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "desk",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "carpet",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_staff_desk_south",
+      "layers": [
+        ["FFF.", "FFF.", "....", "...."],
+        ["FFF.", "FFF.", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSA", "SSSA", "AAAA", "AAAA"],
+          ["SSSA", "SSSA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "desk",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "carpet",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_staff_cabinets_north",
+      "layers": [
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "A": {
+          "furniture": "police_file_cabinet",
+          "loot": "d41_empty"
+        },
+        "B": {
+          "furniture": "police_file_cabinet",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "carpet",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_staff_cabinets_south",
+      "layers": [
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "A": {
+          "furniture": "police_file_cabinet",
+          "loot": "d41_empty"
+        },
+        "B": {
+          "furniture": "police_file_cabinet",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture_broken"
+        },
+        "p": {
+          "material": "carpet",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_store_east_shelves_west",
+      "layers": [
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["====", "====", "====", "===="],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "metal",
+          "role": "shell"
+        },
+        "A": {
+          "furniture": "shelf",
+          "loot": "d41_empty"
+        },
+        "B": {
+          "furniture": "shelf",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_store_east_shelves_east",
+      "layers": [
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["LL..", "....", "....", "...."],
+        ["====", "====", "====", "===="],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "metal",
+          "role": "shell"
+        },
+        "A": {
+          "furniture": "shelf",
+          "loot": "d41_empty"
+        },
+        "B": {
+          "furniture": "shelf",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture_broken"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_store_south_shelves",
+      "layers": [
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["LL..", "....", "....", "...."],
+        ["====", "====", "====", "===="],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "metal",
+          "role": "shell"
+        },
+        "A": {
+          "furniture": "shelf",
+          "loot": "d41_empty"
+        },
+        "B": {
+          "furniture": "shelf",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_wc_west",
+      "layers": [
+        ["AABB", "AA..", "....", "...."],
+        ["AABB", "AA..", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."],
+        ["====", "====", "====", "===="],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSAA", "AAAA", "AAAA"],
+          ["SSSS", "SSAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        "A": {
+          "furniture": "station_toilet",
+          "loot": "d41_empty"
+        },
+        "B": {
+          "furniture": "station_washbasin",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture_broken"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_administration_bay_wc_east",
+      "layers": [
+        ["AABB", "AA..", "....", "...."],
+        ["AABB", "AA..", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["====", "====", "====", "===="],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSAA", "AAAA", "AAAA"],
+          ["SSSS", "SSAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        "A": {
+          "furniture": "station_toilet",
+          "loot": "d41_empty"
+        },
+        "B": {
+          "furniture": "station_washbasin",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
       "style": "concrete_lab"
     },
     {

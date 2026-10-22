@@ -28,10 +28,10 @@ local plan = [
   'HhhhhhhhhhhhhHm55mmmMwwwwWccGggggggG',
   'HhhhhhhhhhhhhHMMMkMMMWWYWWccGGGGGGGG',
   'HhhhhhhhhhhhhH77nnnnnnnnnNccPssssU##',
-  'HhhhhhhhhhhhhH77nnnnnnnnnIccPssssU##',
-  'HhhhhhhhhhhhhH77nn77n77nnIccPssssU##',
-  'HhhhhhhhhhhhhH77nn77n77nnNccUssssU##',
-  'HhhhhhhhhhhhhHnnnn77nnnnnNccUUUUUU##',
+  'HhhhhhhhhhhhhH77nnnnnnnnnNccPssssU##',
+  'HhhhhhhhhhhhhH77nn77n77nnNccPssssU##',
+  'HhhhhhhhhhhhhH77nn77n77nnIccUssssU##',
+  'HhhhhhhhhhhhhHnnnn77nnnnnIccUUUUUU##',
   'HHHHHHHHHHHHHHnnnn77nnnnnNccTxx00X##',
   '#############NNNNNNNNNNNNNCCXxx00X##',
   '############################XXXXXX##',
@@ -50,13 +50,21 @@ local rooms = {
     tokens: ['f', 'F', '2', 'l'], wall: 'F', floor: 'f', band: '@',
     finish: { floor: 'carpet', wall: 'plaster', base: 'plaster' }, ceilingDrop: 1, floorRise: 0,
     openings: [{ token: 'l', at: [16, 8], axis: 'x', width: 2 }],
-    dressing: [],
+    dressing: [
+      { id: 'staff_desk_north', at: [14, 3], kit: 'desk', fixture: 'working' },
+      { id: 'staff_desk_south', at: [13, 5], kit: 'desk', fixture: null },
+      { id: 'staff_cabinets_north', at: [17, 3], kit: 'cabinets', fixture: null },
+      { id: 'staff_cabinets_south', at: [17, 5], kit: 'cabinets', fixture: 'broken' },
+    ],
   },
   director: {
     tokens: ['o', 'O', '3', 't'], wall: 'O', floor: 'o', band: '$',
     finish: { floor: 'planks', wall: 'dressed', base: 'dressed' }, ceilingDrop: 1, floorRise: 0,
     openings: [{ token: 't', at: [26, 8], axis: 'x', width: 2 }],
-    dressing: [],
+    dressing: [
+      { id: 'director_desk', at: [21, 3], kit: 'desk', fixture: 'working' },
+      { id: 'director_cabinets', at: [24, 5], kit: 'cabinets', fixture: null },
+    ],
   },
   shaft_down: {
     tokens: ['v', 'V'], wall: 'V', floor: 'v', band: '*',
@@ -66,7 +74,10 @@ local rooms = {
     tokens: ['q', 'Q', '4', 'u', '|'], wall: 'Q', floor: 'q', band: '&',
     finish: { floor: 'tiles', wall: 'plaster', base: 'hazard_wall' }, ceilingDrop: 1, floorRise: 0,
     openings: [{ token: 'u', at: [25, 10], axis: 'z', width: 2 }],
-    dressing: [],
+    dressing: [
+      { id: 'checkpoint_console', at: [19, 9], kit: 'console', fixture: 'broken' },
+      { id: 'checkpoint_desk', at: [22, 9], kit: 'desk', fixture: 'working' },
+    ],
   },
   stair_down: {
     tokens: ['e', 'E'], wall: 'E', floor: 'e', band: '(',
@@ -76,25 +87,44 @@ local rooms = {
     tokens: ['h', 'H', '1', 'j', 'y'], wall: 'H', floor: 'h', band: '^',
     finish: { floor: 'carpet', wall: 'dressed', base: 'plaster' }, ceilingDrop: 0, floorRise: 0,
     openings: [{ token: 'j', at: [13, 10], axis: 'z', width: 2 }, { token: 'y', at: [13, 19], axis: 'z', width: 2 }],
-    dressing: [],
+    dressing: [
+      { id: 'briefing_lectern', at: [5, 10], kit: 'desk', rise: 1, fixture: 'working' },
+      { id: 'briefing_rows_front_west', at: [3, 14], kit: 'bench', fixture: 'broken' },
+      { id: 'briefing_rows_front_east', at: [7, 14], kit: 'bench', fixture: null },
+      { id: 'briefing_rows_back_west', at: [3, 17], kit: 'bench', fixture: null },
+      { id: 'briefing_rows_back_east', at: [7, 17], kit: 'bench', fixture: 'working' },
+    ],
   },
   meeting: {
     tokens: ['m', 'M', '5', 'k'], wall: 'M', floor: 'm', band: '%',
     finish: { floor: 'carpet', wall: 'plaster', base: 'dressed' }, ceilingDrop: 1, floorRise: 0,
     openings: [{ token: 'k', at: [17, 22], axis: 'x', width: 2 }],
-    dressing: [],
+    dressing: [
+      { id: 'meeting_table', at: [15, 18], kit: 'desk', fixture: 'broken' },
+      { id: 'meeting_benches', at: [15, 20], kit: 'bench', fixture: null },
+    ],
   },
   wc: {
     tokens: ['w', 'W', '6', 'Y'], wall: 'W', floor: 'w', band: '~',
     finish: { floor: 'tiles', wall: 'concrete', base: 'metal' }, ceilingDrop: 2, floorRise: 0,
     openings: [{ token: 'Y', at: [23, 22], axis: 'x', width: 2 }],
-    dressing: [],
+    dressing: [
+      { id: 'wc_west', at: [21, 18], kit: 'wc', fixture: 'broken' },
+      { id: 'wc_east', at: [23, 18], kit: 'wc', fixture: null },
+    ],
   },
   canteen: {
     tokens: ['n', 'N', '7', 'I'], wall: 'N', floor: 'n', band: '+',
     finish: { floor: 'tiles', wall: 'plaster', base: 'dressed' }, ceilingDrop: 1, floorRise: 0,
-    openings: [{ token: 'I', at: [25, 24], axis: 'z', width: 4 }],
-    dressing: [],
+    // The door sits south of the shaft room's opening so the two don't face across the corridor.
+    openings: [{ token: 'I', at: [25, 26], axis: 'z', width: 4 }],
+    dressing: [
+      { id: 'canteen_fridge', at: [14, 23], kit: 'fridge', fixture: 'broken' },
+      { id: 'canteen_cupboards', at: [14, 25], kit: 'kitchen', fixture: null },
+      { id: 'canteen_table_west', at: [18, 25], kit: 'desk', fixture: 'working' },
+      { id: 'canteen_table_east', at: [21, 25], kit: 'desk', fixture: null },
+      { id: 'canteen_bench', at: [18, 27], kit: 'bench', fixture: null },
+    ],
   },
   corridor: {
     tokens: ['c', 'C'], wall: 'C', floor: 'c', band: ')',
@@ -104,19 +134,27 @@ local rooms = {
     tokens: ['r', 'R', '8', 'J'], wall: 'R', floor: 'r', band: '<',
     finish: { floor: 'floor', wall: 'concrete', base: 'metal' }, ceilingDrop: 1, floorRise: 0,
     openings: [{ token: 'J', at: [28, 14], axis: 'z', width: 2 }],
-    dressing: [],
+    dressing: [
+      { id: 'archive_row_north_west', at: [30, 12], kit: 'archive', fixture: 'working' },
+      { id: 'archive_row_north_east', at: [33, 12], kit: 'archive', fixture: null },
+      { id: 'archive_row_south_west', at: [30, 15], kit: 'fallen_shelf', fixture: null },
+      { id: 'archive_row_south_east', at: [33, 15], kit: 'archive', fixture: 'broken' },
+    ],
   },
   store_east: {
     tokens: ['g', 'G', '9', 'L'], wall: 'G', floor: 'g', band: '>',
     finish: { floor: 'floor', wall: 'metal', base: 'concrete' }, ceilingDrop: 2, floorRise: 0,
     openings: [{ token: 'L', at: [28, 20], axis: 'z', width: 2 }],
-    dressing: [],
+    dressing: [
+      { id: 'store_east_shelves_west', at: [31, 19], kit: 'shelves', fixture: null },
+      { id: 'store_east_shelves_east', at: [33, 19], kit: 'shelves', fixture: 'broken' },
+    ],
   },
   store_south: {
     tokens: ['x', 'X', '0', 'T'], wall: 'X', floor: 'x', band: '[',
     finish: { floor: 'floor', wall: 'metal', base: 'concrete' }, ceilingDrop: 2, floorRise: 0,
     openings: [{ token: 'T', at: [28, 28], axis: 'z', width: 2 }],
-    dressing: [],
+    dressing: [{ id: 'store_south_shelves', at: [31, 28], kit: 'shelves', fixture: 'working' }],
   },
   shaft_arrival: {
     tokens: ['s', 'U', 'P'], wall: 'U', floor: 's', band: ']',
@@ -146,6 +184,7 @@ local built = level.build({
 });
 {
   rooms: rooms, plan: plan, size: built.size,
+  loop: { from: [5, 25, 13], through: [5, 25, 19], to: [31, 25, 21], cut: { min: [4, 25, 16], size: [4, 5, 2] } },
   standing: [6 * scale, base + 1, 24 * scale],
   stairAt: stairAt,
   stair: { upper: [stairAt[0] + 11, base + 1, stairAt[2] + 1], lower: [stairAt[0] + 1, stairAt[1], stairAt[2] + 1] },

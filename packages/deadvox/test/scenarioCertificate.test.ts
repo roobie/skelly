@@ -50,7 +50,7 @@ const compiled = compileAssembly(registry, registry.mapAssemblies.get(profile.se
 const witness = JSON.parse(compileJsonnetFile('packages/deadvox/test/fixtures/jsonnet/lab-witness.jsonnet')) as {
   mapAssemblies: string[];
   mapPieces: string[];
-  loop: { from: Vec3; through: Vec3; to: Vec3; cut: { min: Vec3; size: Vec3 } };
+  loops: { from: Vec3; through: Vec3; to: Vec3; cut: { min: Vec3; size: Vec3 } }[];
 };
 const labDefinition = <T>(definitions: ReadonlyMap<string, T>, id: string): T => {
   const definition = definitions.get(id);
@@ -63,7 +63,6 @@ const lab = {
   mapAssemblies: witness.mapAssemblies.map((id) => labDefinition(registry.mapAssemblies, id)),
   mapPieces: witness.mapPieces.map((id) => labDefinition(registry.mapPieces, id)),
 };
-const { loop } = witness;
 const roomPools = new Map<string, MapAssemblyDef[]>();
 for (const room of lab.mapAssemblies) {
   const shell = room.slots.find((slot) => slot.id === 'shell');
@@ -265,7 +264,7 @@ describe('final composed body-route certificate', () => {
     GAUNTLET_SITE_MS,
   );
 
-  it('keeps an interior loop when a public room doorway is blocked with the bulkheads closed', () => {
+  it.each(witness.loops)('keeps storey %# an interior loop when a public room doorway is blocked with the bulkheads closed', (loop) => {
     const site = siteOf();
     const point = (at: Vec3) => placedPoint(site.plan.service!, at);
     const from = point(loop.from);
