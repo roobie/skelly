@@ -96,7 +96,7 @@ const displayOf = (look: VehicleLook): Display => {
     );
     const { lattice } = BLUEPRINTS[look.blueprint]!;
     const materialAt = (cell: readonly [number, number, number]) => grid.get(voxelKey(...cell));
-    const openings = [...grid].filter(([, voxel]) => voxel === GLASS).map(([key]) => keyVoxel(key));
+    const openings = [...grid].filter(([, voxel]) => voxel === GLASS).map(([voxelAt]) => keyVoxel(voxelAt));
     display = {
       solidBaseY: baseY * VOXEL,
       solidGeometry: geometryOf(solid, lattice, materialAt, openings),
