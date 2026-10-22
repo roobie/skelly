@@ -182,6 +182,15 @@ prone's own content fields, because how lying down should affect noticing is
 still open (#550). The camera and the spit's chest target follow the eye height,
 so each stance moves them without stance-specific code.
 
+The drawn body follows the stance, so third person shows the stance the player is
+in (#582): crouched it sinks and leans forward, and prone it lies along the facing.
+Each stance pose stays inside that stance's body height, so the drawn head never
+pokes through a ceiling the body fits under. The body blends into a new stance
+over a short real-time span instead of snapping, which hides the change of shape;
+the eye snaps, because sight and collision use the new height at once. Poses and
+the blend time are figure content. See `src/content/base/figures-player.jsonnet`,
+`stancePoses`, and `src/render/playerFigure.ts`, `PlayerMeshes`.
+
 The FOB's east-wall passage is sized so a crouched player fits but a standing
 player does not. It is a separate low route from the guarded north entrance and
 southern breach, with its floor level to the approach; it must not expose any

@@ -25,6 +25,7 @@ import { meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/co
 import { opticViewSettings } from '../src/core/opticView.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { FIGURE_BOXES } from '../src/core/zombieRegions.ts';
+import type { PlayerStance } from '../src/core/zombies.ts';
 import { createPlayerBody, PLAYER } from '../src/game/player.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { renderMeleePose } from '../src/render/meleePose.ts';
@@ -39,7 +40,9 @@ import { FISTS_MELEE } from './fixtures/unarmed.ts';
 
 const registry = baseRegistry();
 const scale = makeScale(0.5);
-const { palette } = registry.figures.get('player')!;
+const playerFigure = registry.figures.get('player')!;
+const { palette } = playerFigure;
+const STANDING = { stance: 'standing', dt: 0 } as const;
 
 const hasVisibleFootCorner = (feet: InstancedMesh[], torso: InstancedMesh, eye: Vector3, frustum: Frustum): boolean =>
   feet.some((foot) => {
@@ -224,7 +227,7 @@ describe('optic lens presentation', () => {
 describe('player figure', () => {
   it('keeps the world body outside a level/upward view, with torso 5–10 cm behind the eye', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
-    const meshes = new PlayerMeshes(scale.blockSize, palette);
+    const meshes = new PlayerMeshes(scale.blockSize, playerFigure);
     const parts = meshes.group.children as import('three').InstancedMesh[];
     const corners = (mesh: import('three').InstancedMesh) => {
       const instance = new Matrix4();
@@ -235,7 +238,7 @@ describe('player figure', () => {
       );
     };
     const visibleByPart = (pitch: number) => {
-      meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false });
+      meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING });
       meshes.group.updateMatrixWorld(true);
       const camera = new PerspectiveCamera(75, 16 / 9, 0.05, 128);
       camera.rotation.order = 'YXZ';
@@ -261,7 +264,7 @@ describe('player figure', () => {
 
   it('keeps a foot front-top corner visible past the torso at -60 and -80 degrees', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
-    const meshes = new PlayerMeshes(scale.blockSize, palette);
+    const meshes = new PlayerMeshes(scale.blockSize, playerFigure);
     const parts = meshes.group.children as import('three').InstancedMesh[];
     const eye = new Vector3(
       body.pos[0] * scale.blockSize,
@@ -269,7 +272,7 @@ describe('player figure', () => {
       body.pos[2] * scale.blockSize,
     );
     for (const pitch of [-Math.PI / 3, (-80 * Math.PI) / 180]) {
-      meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false });
+      meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING });
       meshes.group.updateMatrixWorld(true);
       const camera = new PerspectiveCamera(75, 16 / 9, 0.05, 128);
       camera.rotation.order = 'YXZ';
@@ -287,7 +290,7 @@ describe('player figure', () => {
   });
 
   it('uses the content palette, hides the head in first person, and applies the figure offset', () => {
-    const meshes = new PlayerMeshes(scale.blockSize, palette);
+    const meshes = new PlayerMeshes(scale.blockSize, playerFigure);
     const parts = meshes.group.children as import('three').InstancedMesh[];
     expect(PLAYER_ARM_PARTS).toContain('head');
     expect(parts).toHaveLength(PLAYER_ARM_PARTS.length);
@@ -310,7 +313,7 @@ describe('player figure', () => {
 
     const body = createPlayerBody(scale, 4, 1, 4);
     body.onGround = true;
-    meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false });
+    meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING });
     const bodyMatrix = new Matrix4();
     parts[0]!.getMatrixAt(0, bodyMatrix);
     const center = new Vector3().setFromMatrixPosition(bodyMatrix);
@@ -322,11 +325,11 @@ describe('player figure', () => {
 
   it('shows the head at its figure-box position in third person', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
-    const meshes = new PlayerMeshes(scale.blockSize, palette);
+    const meshes = new PlayerMeshes(scale.blockSize, playerFigure);
     const parts = meshes.group.children as import('three').InstancedMesh[];
     const headIndex = PLAYER_ARM_PARTS.indexOf('head');
 
-    meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, thirdPerson: true });
+    meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING, thirdPerson: true });
     const bodyMatrix = new Matrix4();
     const headMatrix = new Matrix4();
     parts[0]!.getMatrixAt(0, bodyMatrix);
@@ -338,19 +341,66 @@ describe('player figure', () => {
     );
   });
 
+  it('poses the drawn body for the stance it is given, inside that stance’s height, blending between stances', () => {
+    const body = createPlayerBody(scale, 4, 1, 4);
+    const meshes = new PlayerMeshes(scale.blockSize, playerFigure);
+    const parts = meshes.group.children as InstancedMesh[];
+    const headIndex = PLAYER_ARM_PARTS.indexOf('head');
+    const senses = registry.senses.get('player')!;
+    const heightOf: Record<PlayerStance, number> = {
+      standing: PLAYER.height,
+      crouching: senses.crouch.bodyHeightMetres,
+      prone: senses.prone.bodyHeightMetres,
+    };
+    const { blendRealSeconds } = playerFigure.stancePoses;
+    const baseY = body.pos[1] * scale.blockSize;
+    const pose = (stance: PlayerStance, dt: number) => {
+      meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, thirdPerson: true, stance, dt });
+      const matrix = new Matrix4();
+      parts[headIndex]!.getMatrixAt(0, matrix);
+      const top = Math.max(
+        ...parts.flatMap((mesh) => {
+          const instance = new Matrix4();
+          mesh.getMatrixAt(0, instance);
+          return [-0.5, 0.5].flatMap((x) =>
+            [-0.5, 0.5].flatMap((y) => [-0.5, 0.5].map((z) => new Vector3(x, y, z).applyMatrix4(instance).y)),
+          );
+        }),
+      );
+      return { head: new Vector3().setFromMatrixPosition(matrix), top: top - baseY };
+    };
+
+    const settled = Object.fromEntries(
+      (['standing', 'crouching', 'prone'] as const).map((stance) => {
+        const shown = pose(stance, blendRealSeconds);
+        expect(shown.top, `${stance} drawn top`).toBeLessThanOrEqual(heightOf[stance]);
+        return [stance, shown.head];
+      }),
+    ) as Record<PlayerStance, Vector3>;
+    expect(settled.crouching.y).toBeLessThan(settled.standing.y);
+    expect(settled.prone.y).toBeLessThan(settled.crouching.y);
+    // Yaw 0 faces -z: lying prone puts the head further ahead of the body than above it.
+    expect(body.pos[2] * scale.blockSize - settled.prone.z).toBeGreaterThan(settled.prone.y - baseY);
+
+    const halfway = pose('standing', blendRealSeconds / 2).head;
+    expect(halfway.y).toBeGreaterThan(settled.prone.y);
+    expect(halfway.y).toBeLessThan(settled.standing.y);
+    expect(pose('standing', blendRealSeconds / 2).head.y).toBeCloseTo(settled.standing.y);
+  });
+
   it('hides held arms from the world body, including both arms for a two-handed item', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
     const inventory = new Inventory(registry);
     const knife = inventory.create('kitchen_knife');
     inventory.add(knife, { kind: 'hand', side: 'right' });
-    const meshes = new PlayerMeshes(scale.blockSize, palette);
+    const meshes = new PlayerMeshes(scale.blockSize, playerFigure);
     const parts = meshes.group.children as import('three').InstancedMesh[];
     const indexes = Object.fromEntries(PLAYER_ARM_PARTS.map((part, index) => [part, index])) as Record<
       (typeof PLAYER_ARM_PARTS)[number],
       number
     >;
 
-    meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, inventory });
+    meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING, inventory });
     expect(parts[indexes.rightUpperArm]!.count).toBe(0);
     expect(parts[indexes.rightForearm]!.count).toBe(0);
     expect(parts[indexes.rightHand]!.count).toBe(0);
@@ -359,7 +409,7 @@ describe('player figure', () => {
     const batInventory = new Inventory(registry);
     const bat = batInventory.create('baseball_bat');
     batInventory.add(bat, { kind: 'hand', side: 'left' });
-    meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, inventory: batInventory });
+    meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING, inventory: batInventory });
     expect(parts[indexes.leftForearm]!.count).toBe(0);
     expect(parts[indexes.rightForearm]!.count).toBe(0);
     expect(parts[indexes.leftHand]!.count).toBe(0);
@@ -371,6 +421,7 @@ describe('player figure', () => {
       stepOffset: 0,
       gaitPhase: 0,
       moving: false,
+      ...STANDING,
       inventory: batInventory,
       thirdPerson: true,
     });

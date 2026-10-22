@@ -19,6 +19,7 @@ import { defOf } from '../core/items.ts';
 import type { Body } from '../core/physics.ts';
 import type { WearSlot } from '../core/schema.ts';
 import { FIGURE_BOXES, type FigureBox } from '../core/zombieRegions.ts';
+import type { PlayerStance } from '../core/zombies.ts';
 import { PLAYER_ARM_BOXES } from './figure.ts';
 import { withHeightFog } from './heightFog.ts';
 import type { ModelLibrary } from './models.ts';
@@ -203,9 +204,16 @@ export interface PlayerFigurePose {
   stepOffset: number;
   gaitPhase: number;
   moving: boolean;
+  stance: PlayerStance;
+  /** Real seconds since the last sync; the stance pose blends over it. */
+  dt: number;
   thirdPerson?: boolean;
   inventory?: Inventory;
 }
+
+type StancePose = FigureDef['stancePoses']['prone'];
+const STANDING_POSE: StancePose = { hipDropMetres: 0, torsoForwardDegrees: 0, legsForwardDegrees: 0 };
+const STANCE_POSE_KEYS = Object.keys(STANDING_POSE) as (keyof StancePose)[];
 
 /** A coloured world figure whose head is visible only in third person. */
 export class PlayerMeshes {
@@ -217,8 +225,16 @@ export class PlayerMeshes {
   private readonly dummy = new Object3D();
   private readonly placement: PlayerFigurePlacement;
   private readonly localPosition: Vec3 = [0, 0, 0];
+  private readonly stancePoses: FigureDef['stancePoses'];
+  private stance: PlayerStance = 'standing';
+  /** The drawn pose blends from `blendFrom` to the stance's pose as `blendProgress` runs from 0 to 1. */
+  private readonly blendFrom: StancePose = { ...STANDING_POSE };
+  private blendProgress = 1;
+  private readonly shownPose: StancePose = { ...STANDING_POSE };
 
-  constructor(blockSize: number, palette: FigureDef['palette'], models?: ModelLibrary) {
+  constructor(blockSize: number, figure: FigureDef, models?: ModelLibrary) {
+    const { palette } = figure;
+    this.stancePoses = figure.stancePoses;
     this.models = models;
     this.placement = { bodyPosition: [0, 0, 0], yaw: 0, blockSize, thirdPerson: false };
     for (const part of PLAYER_ARM_PARTS) {
@@ -238,6 +254,7 @@ export class PlayerMeshes {
   sync(pose: PlayerFigurePose): void {
     const { inventory, thirdPerson = false } = pose;
     this.syncWorn(inventory);
+    this.blendStance(pose.stance, pose.dt);
     this.placement.bodyPosition = pose.body.pos;
     this.placement.yaw = pose.yaw;
     this.placement.thirdPerson = thirdPerson;
@@ -259,6 +276,19 @@ export class PlayerMeshes {
           attachment.quaternion.copy(this.dummy.quaternion);
         }
       }
+    }
+  }
+
+  private blendStance(stance: PlayerStance, dt: number): void {
+    if (stance !== this.stance) {
+      this.stance = stance;
+      Object.assign(this.blendFrom, this.shownPose);
+      this.blendProgress = 0;
+    }
+    this.blendProgress = Math.min(1, this.blendProgress + dt / this.stancePoses.blendRealSeconds);
+    const target = stance === 'standing' ? STANDING_POSE : this.stancePoses[stance];
+    for (const key of STANCE_POSE_KEYS) {
+      this.shownPose[key] = this.blendFrom[key] + (target[key] - this.blendFrom[key]) * this.blendProgress;
     }
   }
 
@@ -306,12 +336,17 @@ export class PlayerMeshes {
     const localZ = isFoot
       ? (box.at[1] - BODY_HIP_HEIGHT) * Math.sin(footStride) + box.at[2] * Math.cos(footStride)
       : box.at[2];
+    // The stance swings the legs and the upper body about the hip, then lowers the hip.
+    const { hipDropMetres, torsoForwardDegrees, legsForwardDegrees } = this.shownPose;
+    const swing = ((isLeg || isFoot ? legsForwardDegrees : -torsoForwardDegrees) * Math.PI) / 180;
+    const aboveHip = localY - BODY_HIP_HEIGHT;
     this.localPosition[0] = box.at[0];
-    this.localPosition[1] = stepOffset + localY;
-    this.localPosition[2] = localZ;
+    this.localPosition[1] =
+      stepOffset + BODY_HIP_HEIGHT - hipDropMetres + aboveHip * Math.cos(swing) - localZ * Math.sin(swing);
+    this.localPosition[2] = aboveHip * Math.sin(swing) + localZ * Math.cos(swing);
     setPlayerFigurePosition(this.dummy.position, this.placement, this.localPosition);
     this.dummy.rotation.order = 'YXZ';
-    this.dummy.rotation.set(footStride, yaw, 0);
+    this.dummy.rotation.set(footStride + swing, yaw, 0);
     if (isLeg && moving) {
       this.dummy.rotateX(stride);
     }

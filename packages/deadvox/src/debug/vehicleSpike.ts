@@ -1180,7 +1180,7 @@ const addPlayer = (): void => {
   if (!player) {
     throw new Error('The bundled player figure is missing');
   }
-  const person = new PlayerMeshes(BLOCK_SIZE, player.palette);
+  const person = new PlayerMeshes(BLOCK_SIZE, player);
   const [px, , pz] = PLAYER_AT;
   person.sync({
     body: {
@@ -1194,6 +1194,8 @@ const addPlayer = (): void => {
     stepOffset: 0,
     gaitPhase: 0,
     moving: false,
+    stance: 'standing',
+    dt: 0,
   });
   const headBox = FIGURE_BOXES.head;
   const head = new Mesh(new BoxGeometry(...headBox.size), new MeshLambertMaterial({ color: player.palette.skin }));

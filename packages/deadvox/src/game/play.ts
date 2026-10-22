@@ -3172,6 +3172,7 @@ export const startPlay = (
         yaw: spectator.avatarYaw(input.yaw),
         pitch: input.pitch,
         stridePhase: session.playerStridePhase,
+        stance: session.stance,
         eye: eye(),
         ...(spectator.body
           ? { spectator: { position: [...spectator.body.pos], yaw: input.yaw, pitch: input.pitch } }

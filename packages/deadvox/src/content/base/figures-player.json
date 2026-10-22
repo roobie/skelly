@@ -3,9 +3,22 @@
     {
       "id": "player",
       "palette": {
-        "skin": "#c58f70",
         "shirt": "#52677d",
+        "skin": "#c58f70",
         "trousers": "#4a4b55"
+      },
+      "stancePoses": {
+        "blendRealSeconds": 0.20000000000000001,
+        "crouching": {
+          "hipDropMetres": 0.45000000000000001,
+          "legsForwardDegrees": 70,
+          "torsoForwardDegrees": 35
+        },
+        "prone": {
+          "hipDropMetres": 0.47999999999999998,
+          "legsForwardDegrees": -90,
+          "torsoForwardDegrees": 90
+        }
       }
     }
   ]
