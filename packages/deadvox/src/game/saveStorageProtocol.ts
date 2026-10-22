@@ -54,6 +54,7 @@ export async function inspectSaveSlots(namespace: string, slots: SaveSlotPair): 
       try {
         return { slot, record: await openSaveSlot(new Uint8Array(raw), namespace), corrupt: false };
       } catch {
+        // Any unreadable record is corrupt; callers report the slot and keep the raw bytes.
         return { slot, corrupt: true };
       }
     }),

@@ -716,6 +716,7 @@ export function pendingInputReplay(): Uint8Array | undefined {
   try {
     encoded = sessionStorage.getItem(PENDING_REPLAY_KEY);
   } catch {
+    // Blocked session storage means nothing was staged, the same as an empty key.
     return;
   }
   return encoded === null ? undefined : decodeBase64(encoded);
