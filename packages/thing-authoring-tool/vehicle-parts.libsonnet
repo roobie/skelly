@@ -460,8 +460,8 @@ local hoistWinch = hpart('hoist_winch', 45, [
   hdisc('flange_near', 'crane', 'z', [128, 44, 0], 4.5, [37, 38]),
 ]);
 local hoistHookBlock = hpart('hoist_hook_block', 15, [
-  hbox('block', 'amber', [12, 36, 30], [18, 41, 34]),
-  hbox('hook', 'chrome', [14, 33, 31], [16, 36, 33]),
+  hbox('block', 'amber', [12, 37, 30], [18, 42, 34]),
+  hbox('hook', 'chrome', [14, 34, 31], [16, 37, 33]),
 ]);
 local hoistBoomRest = hpart('hoist_boom_rest', 8, [hbox('rest', 'crane', [22, 30, 29], [26, 42, 35])]);
 

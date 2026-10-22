@@ -828,7 +828,7 @@
       "size": [4, 8],
       "vehicle": {
         "capabilities": ["lift"],
-        "ratedLoadKg": 2900
+        "ratedLoadKg": 850
       }
     },
     {
@@ -2919,15 +2919,15 @@
       "id": "hoist_hook_block",
       "parts": {
         "body": {
-          "centreOfMass": [-2.53125, 1.1917613636363638, 0],
+          "centreOfMass": [-2.53125, 1.2230113636363638, 0],
           "collision": [
             {
-              "max": [-2.4375, 1.28125, 0.0625],
-              "min": [-2.625, 1.125, -0.0625]
+              "max": [-2.4375, 1.3125, 0.0625],
+              "min": [-2.625, 1.15625, -0.0625]
             },
             {
-              "max": [-2.5, 1.125, 0.03125],
-              "min": [-2.5625, 1.03125, -0.03125]
+              "max": [-2.5, 1.15625, 0.03125],
+              "min": [-2.5625, 1.0625, -0.03125]
             }
           ],
           "massKg": 15,
@@ -3655,13 +3655,13 @@
           "at": [0, 0, 0],
           "id": "boom",
           "part": "hoist_boom",
-          "supportedBy": ["crane_column", "boom_rest"]
+          "supportedBy": ["crane_column"]
         },
         {
           "at": [0, 0, 0],
           "id": "boom_extension",
           "part": "hoist_boom_extension",
-          "supportedBy": ["boom"]
+          "supportedBy": ["boom", "boom_rest"]
         },
         {
           "at": [0, 0, 0],
@@ -3799,13 +3799,13 @@
           "supportedBy": ["front_panel"]
         },
         {
-          "at": [0.96875, 0.25, 0.25],
+          "at": [1.3125, 0.40625, 0.6825],
           "id": "battery_tray",
           "part": "pickup_battery_tray",
           "supportedBy": ["frame_rail_near"]
         },
         {
-          "at": [0.96875, 0.28000000000000003, 0.25],
+          "at": [1.3125, 0.43625000000000003, 0.6825],
           "id": "battery",
           "part": "car_battery",
           "supportedBy": ["battery_tray"]

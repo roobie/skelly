@@ -91,8 +91,8 @@ local hoist = pair('frame_rail', 'hoist_frame_rail', origin, on()) + [
   fitting('crane_base', 'hoist_crane_base', origin, rails),
   fitting('crane_column', 'hoist_crane_column', origin, ['crane_base']),
   fitting('boom_rest', 'hoist_boom_rest', origin, ['deck_floor']),
-  fitting('boom', 'hoist_boom', origin, ['crane_column', 'boom_rest']),
-  fitting('boom_extension', 'hoist_boom_extension', origin, ['boom']),
+  fitting('boom', 'hoist_boom', origin, ['crane_column']),
+  fitting('boom_extension', 'hoist_boom_extension', origin, ['boom', 'boom_rest']),
   fitting('luff_ram', 'hoist_luff_ram', origin, ['crane_column']),
   fitting('winch', 'hoist_winch', origin, ['crane_column']),
   fitting('hook_block', 'hoist_hook_block', origin, ['boom_extension']),
@@ -105,7 +105,7 @@ local hoist = pair('frame_rail', 'hoist_frame_rail', origin, on()) + [
   + pair('tail_lamp', 'hoist_tail_lamp', origin, on(['rear_underrun']))
   + pair('stabiliser', 'hoist_stabiliser', origin, on(['crane_base']))
   + headlamps(2.88, 1.125, 0.64, ['front_panel'])
-  + batteryBay('pickup_battery_tray', [0.96875, 0.25, 0.25], ['frame_rail_near']);
+  + batteryBay('pickup_battery_tray', [1.3125, 0.40625, 0.6825], ['frame_rail_near']);
 // The bed's factory cargo space runs between the wheel tubs; the strips beside them stay free floor.
 local pickup = batteryBay('pickup_battery_tray', [1.9, 0.8, 0.35]) + headlamps(2.35, 0.85, 0.65) + [
   fitting('bed_floor', 'pickup_bed_floor', origin),
@@ -255,8 +255,8 @@ local boxVan = [
     part('hoist_tail_lamp', 'Truck tail lamp', [3, 2], ['light']),
     part('hoist_crane_base', 'Crane base', [8, 6], ['structure']),
     part('hoist_stabiliser', 'Crane stabiliser leg', [4, 8], ['stabiliser']),
-    // One rating rather than a chart over reach; the reason is in `docs/vehicle-spike.md`.
-    part('hoist_crane_column', 'Crane column', [4, 8], ['lift']) + { vehicle+: { ratedLoadKg: 2900 } },
+    // One rating rather than a chart over reach; the reason is in `docs/vehicle-spike.md`, "The crane truck from content".
+    part('hoist_crane_column', 'Crane column', [4, 8], ['lift']) + { vehicle+: { ratedLoadKg: 850 } },
     part('hoist_boom', 'Crane boom', [12, 2], ['structure']),
     part('hoist_boom_extension', 'Crane boom extension', [12, 2], ['structure']),
     part('hoist_luff_ram', 'Crane luffing ram', [6, 2], []),

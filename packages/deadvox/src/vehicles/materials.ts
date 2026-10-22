@@ -40,5 +40,4 @@ export const MATERIALS: Readonly<Record<string, string>> = {
   doorCardTan: '#7b6b56',
   doorCardBrown: '#5b5249',
   doorCardGrey: '#4d5154',
-  crane: '#d6a32b',
 };

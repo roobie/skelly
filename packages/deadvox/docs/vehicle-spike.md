@@ -71,6 +71,8 @@ The boom is telescopic, with its extension a separate part, even though that car
 
 The crane has one fixed rated load, carried by its lifting part, because a fixed rating carries the least debt; a chart over reach can replace it when lifting needs one. See `src/core/schema.ts`, `ratedLoadKg`.
 
+The rating is the heaviest load the crane lifts with the hook at the boom's working reach, not a lifting moment, because a moment read as a load would let a light truck lift more than it weighs.
+
 A vehicle that lifts must have a stabiliser fitted, because the stabilisers are a precondition for lifting, not a factor on the rating. A reduced rating with stabilisers stowed stays open.
 
 The rear wheels are single, which adds no debt; a twinned wheel part can come when a heavier truck needs one. The load bed is a flat deck, so the crane sets a part down from either side or the rear without dropping sides in the way.
