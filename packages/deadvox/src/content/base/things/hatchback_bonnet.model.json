@@ -1,0 +1,13 @@
+{
+  "id": "hatchback_bonnet",
+  "file": "assets/models/hatchback_bonnet.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 12,
+      "centreOfMass": [1.399999999999999, 0.8670000000000001, -1.5454636230604773e-16],
+      "collision": [{ "min": [0.8, 0.7939999999999999, -0.76], "max": [2, 0.94, 0.76] }]
+    }
+  },
+  "anchors": {}
+}
