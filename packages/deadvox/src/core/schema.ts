@@ -1493,6 +1493,12 @@ const FurnitureSchema = pipe(
      * add up to `durability`, which ruins the piece.
      */
     breach: strictObject({ minimumStrength: Positive, durability: Positive }),
+    /** What a ruined piece leaves besides its contents (`DESIGN.md`, "Damage, destruction and dismemberment"). */
+    ruin: optional(
+      strictObject({
+        debris: array(strictObject({ item: Id, count: pipe(Count, minValue(1, 'must be at least 1')) })),
+      }),
+    ),
     /** The player climbs it; its facing is the side the climber stands on (`DESIGN.md`, "Ladders and hatches"). */
     climbable: optional(strictObject({ speedMetresPerSimSecond: Positive })),
     appearance: optional(
@@ -1576,6 +1582,11 @@ const FurnitureSchema = pipe(
     'appearance needs a plain container without a shape, door or readable',
   ),
   check(({ door, shape }) => !(door?.hatch && shape), 'a hatch is its own panel and cannot have a shape'),
+  // The same reading as `src/core/blockEntities.ts`, `isBodyDoor`: any other door breaks instead of being ruined.
+  check(
+    ({ ruin, door, shape, container }) => !(ruin && door) || (shape !== undefined && container !== undefined),
+    'a door leaf breaks rather than being ruined, so it leaves no debris',
+  ),
   check(({ climbable, solid }) => !climbable || solid === false, 'a climbable piece must not be solid'),
   check(
     ({ cover, solid, size, door, climbable, mount }) =>

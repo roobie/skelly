@@ -539,6 +539,16 @@ export class Inventory {
     }
   }
 
+  /** Lays items that are in no place, such as a destroyed piece's contents and debris, on piles at the given spots. */
+  landLoose(drops: readonly { placed: Placed; to: Vec3; at: Spot }[]): void {
+    for (const { placed, to, at } of drops) {
+      this.put(placed.item, { kind: 'pile', pos: to }, at);
+    }
+    if (drops.length > 0) {
+      this.version += 1;
+    }
+  }
+
   /** The grid of a pocket, from the owner's type. */
   pocketGrid(owner: Item, pocket: number): GridSize {
     const spec = defOf(this.registry, owner.type).container?.pockets[pocket];
