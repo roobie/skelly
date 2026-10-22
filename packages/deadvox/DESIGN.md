@@ -2730,8 +2730,10 @@ decoration.
   `shambler_idle` provides an occasional groan while idling or strolling. Each
   shambler's vocals and body-made sounds shift lower with its realized body
   height, so larger figures sound heavier and the runner/brute templates inherit
-  the same law. `shamblerVoiceLaw` in `src/game/shamblerAudio.ts` calibrates it
-  on the authored figure seeds. Body-size pitch tuning affects playback only, never
+  the same law. It is calibrated on the whole authored figure pool and also
+  pitches figures without seeds of their own, so its anchors and clamp are one
+  sense tuning rather than a zombie type's; see `src/game/shamblerAudio.ts`,
+  `shamblerVoiceLaw`. Body-size pitch tuning affects playback only, never
   hearing or simulation; the `voice_size` comparison site exposes its endpoints.
 - **Shambler movement is audible:** surface-specific, heavy, dragging footsteps
   follow actual ground travel; a chase is faster than a stroll. Only the nearest
@@ -2745,10 +2747,16 @@ decoration.
 - **Heartbeat:** The heartbeat becomes audible as stamina falls and grows faster
   and louder toward exhaustion. It is a presentation cue, not a noise event, so
   shamblers do not hear it and it does not alter simulation or save identity.
-  Fear/danger and low-health responses remain open questions for BR. See
-  `heartbeatForStamina` in
-  `src/game/audioPresentation.ts` and `GameAudio.updateHeartbeat` in
-  `src/game/audio.ts`.
+  Fear/danger and low-health responses remain open questions for BR. Its curve
+  belongs to the body it reports on, so it is body tuning, and its two
+  recordings are sound events so validation checks their files. See
+  `src/game/audioPresentation.ts`, `heartbeatForStamina`, and
+  `src/game/audio.ts`, `GameAudio.updateHeartbeat`.
+- **Audio tuning is content** (`PILLARS.md`, "Content forward compatibility"):
+  the voice law, the heartbeat and the audio options' starting volumes are
+  required content fields with no code fallback, so retuning them never needs a
+  code change. The starting volumes are UI tuning because they are what the
+  options sliders show before the player saves any.
 - **Ambience by time and place:** wind, rain, a building settling. The
   distant sounds (a gunshot, a scream, a helicopter over the cordon, a
   generator) come from things happening in the simulation, not from a random

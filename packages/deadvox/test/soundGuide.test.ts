@@ -5,20 +5,37 @@ import { render } from 'lit-html';
 import { describe, expect, it, vi } from 'vitest';
 import type { Manifest } from '../src/core/assets.ts';
 import type { SoundDef } from '../src/core/content.ts';
+import type { SoundId } from '../src/core/soundEvents.ts';
 import { soundVariantKey } from '../src/core/soundSynth.ts';
-import { HEARTBEAT_FILES } from '../src/game/audioPresentation.ts';
+import type { HeartbeatTuning } from '../src/game/audioPresentation.ts';
 import {
   buildHeartbeatSoundGuide,
   buildSoundGuide,
-  HEARTBEAT_PREVIEW_LEVELS,
   renderHeartbeatSoundGuide,
   SOUND_TRIGGER_GUIDE,
 } from '../src/ui/soundGuide.ts';
+import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 
+// The heartbeat's sound events have their own card, so the trigger guide leaves them out.
+const bodyHeartbeats = new Set(
+  (JSON.parse(readFileSync('src/content/base/body.json', 'utf8')).body as { heartbeat: HeartbeatTuning }[]).flatMap(
+    ({ heartbeat }) => Object.values(heartbeat.sounds),
+  ),
+);
 const sounds = readdirSync('src/content/base')
   .filter((file) => file.startsWith('sounds') && file.endsWith('.json'))
-  .flatMap((file) => JSON.parse(readFileSync(join('src/content/base', file), 'utf8')).sounds as SoundDef[]);
+  .flatMap((file) => JSON.parse(readFileSync(join('src/content/base', file), 'utf8')).sounds as SoundDef[])
+  .filter(({ id }) => !bodyHeartbeats.has(id));
 const manifest = JSON.parse(readFileSync('src/content/base/assets/manifest.json', 'utf8')) as Manifest;
+
+const heartbeatTuning = BODY_TUNING_FIXTURE.heartbeat;
+const HEARTBEAT_FILES = { slow: 'fixture-heartbeat-slow.ogg', fast: 'fixture-heartbeat-fast.ogg' };
+const heartbeatSounds = new Map<SoundId, SoundDef>(
+  (['slow', 'fast'] as const).map((pace) => [
+    heartbeatTuning.sounds[pace],
+    { id: heartbeatTuning.sounds[pace], category: 'body', variants: [HEARTBEAT_FILES[pace]] } as unknown as SoundDef,
+  ]),
+);
 
 const heartbeatFixtureManifest = {
   sources: [
@@ -103,22 +120,24 @@ describe('audio listening guide', () => {
     });
   });
 
-  it('renders two preview controls per heartbeat recording and sends its file and tuned gain', () => {
-    const heartbeat = buildHeartbeatSoundGuide(heartbeatFixtureManifest);
+  it('renders a preview control per heartbeat recording and level and sends its event and tuned gain', () => {
+    const heartbeat = buildHeartbeatSoundGuide(heartbeatTuning, heartbeatSounds, heartbeatFixtureManifest);
+    expect(heartbeat.variants.map(({ event }) => event)).toEqual(Object.values(heartbeatTuning.sounds));
+    expect(heartbeat.variants.every(({ author }) => author === 'Fixture author')).toBe(true);
     const preview = vi.fn();
     const root = document.createElement('div');
     render(renderHeartbeatSoundGuide(heartbeat, preview), root);
 
     const rows = [...root.querySelectorAll('.sound-variants li')];
     expect(rows).toHaveLength(heartbeat.variants.length);
-    expect(root.querySelectorAll('button')).toHaveLength(heartbeat.variants.length * HEARTBEAT_PREVIEW_LEVELS.length);
+    expect(root.querySelectorAll('button')).toHaveLength(heartbeat.variants.length * heartbeat.levels.length);
     for (const [variantIndex, variant] of heartbeat.variants.entries()) {
       const buttons = [...rows[variantIndex]!.querySelectorAll('button')];
-      for (const [levelIndex, { gain }] of HEARTBEAT_PREVIEW_LEVELS.entries()) {
+      for (const [levelIndex, { gain }] of heartbeat.levels.entries()) {
         buttons[levelIndex]!.click();
         expect(preview).toHaveBeenNthCalledWith(
-          variantIndex * HEARTBEAT_PREVIEW_LEVELS.length + levelIndex + 1,
-          variant.file,
+          variantIndex * heartbeat.levels.length + levelIndex + 1,
+          variant.event,
           gain,
         );
       }

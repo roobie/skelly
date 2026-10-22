@@ -1518,6 +1518,20 @@ const checkSkillAndUiReferences = (registry: Registry, report: Report): void => 
   }
 };
 
+// A heartbeat plays one recording per beat, so each of its sounds has exactly one variant.
+const checkHeartbeatSounds = (registry: Registry, report: Report): void => {
+  for (const tuning of registry.body.values()) {
+    for (const [pace, event] of Object.entries(tuning.heartbeat.sounds)) {
+      const sound = registry.sounds.get(event);
+      if (!sound) {
+        report('body', tuning.id, `.heartbeat.sounds.${pace}`, `no sound event "${event}"`);
+      } else if (sound.variants.length !== 1) {
+        report('body', tuning.id, `.heartbeat.sounds.${pace}`, `heartbeat sound "${event}" needs exactly one variant`);
+      }
+    }
+  }
+};
+
 const referenceIssues = (registry: Registry, origins: Map<string, Origin>): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   const report: Report = (section, id, path, message) => {
@@ -1551,6 +1565,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkZombies(registry, report);
   checkRecipes(registry, report);
   checkSkillAndUiReferences(registry, report);
+  checkHeartbeatSounds(registry, report);
   for (const layout of registry.layouts.values()) {
     checkLayoutReferences(layout, registry, report);
   }
