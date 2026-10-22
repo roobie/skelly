@@ -9,7 +9,13 @@ import { exportGunGlb } from '../gungen/src/gun/exportGlb.ts';
 import { buildRegistry } from '../packages/deadvox/src/core/content.ts';
 import { ModelSchema } from '../packages/deadvox/src/core/schema.ts';
 import { namedNodes } from '../packages/deadvox/src/render/firearmModel.ts';
-import { assertExportSynced, assertRecipeCredits, exportDifference, glbJson } from './model-export-sync.mjs';
+import {
+  assertExportSynced,
+  assertRecipeCredits,
+  assertVoxelized,
+  exportDifference,
+  glbJson,
+} from './model-export-sync.mjs';
 
 const deadvoxRequire = createRequire(new URL('../packages/deadvox/package.json', import.meta.url));
 const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders/GLTFLoader.js'));
@@ -18,7 +24,7 @@ const ROOT = new URL('../', import.meta.url).pathname;
 const DESIGNS = join(ROOT, 'gungen/designs');
 const DEADVOX_BASE = join(ROOT, 'packages/deadvox/src/content/base');
 const RECIPE = loadExportRecipe();
-const EXPORTED = RECIPE.map((row) => ({ id: row.id, source: row.source, ...row.generate() }));
+const EXPORTED = RECIPE.map((row) => ({ id: row.id, source: row.source, voxel: row.voxel, ...row.generate() }));
 const loadExports = () =>
   readdirSync(DESIGNS)
     .filter((file) => file.endsWith('.json') && !file.startsWith('look-'))
@@ -118,6 +124,10 @@ describe('gungen exports satisfy deadvox model validation', () => {
         }
       }),
     );
+  });
+
+  it('voxelizes every recipe model on its row class', () => {
+    EXPORTED.forEach(assertVoxelized);
   });
 
   it('credits every recipe export in the asset manifest', () => {

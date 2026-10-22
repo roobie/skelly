@@ -2912,20 +2912,22 @@
           "weight": 1
         },
         {
-          "count": [10, 30],
+          "count": [60, 150],
           "item": "cartridge_5_d_56x45",
           "weight": 3
         },
         {
+          "count": [3, 6],
           "item": "cartridge_box_5_d_56x45",
           "weight": 2
         },
         {
-          "count": [10, 30],
+          "count": [60, 150],
           "item": "cartridge_7_d_62x39",
           "weight": 3
         },
         {
+          "count": [3, 6],
           "item": "cartridge_box_7_d_62x39",
           "weight": 2
         },
@@ -2955,20 +2957,22 @@
     {
       "entries": [
         {
-          "count": [8, 20],
+          "count": [40, 100],
           "item": "cartridge_5_d_56x45",
           "weight": 2
         },
         {
-          "count": [8, 20],
+          "count": [40, 100],
           "item": "cartridge_7_d_62x39",
           "weight": 2
         },
         {
+          "count": [2, 4],
           "item": "cartridge_box_5_d_56x45",
           "weight": 1
         },
         {
+          "count": [2, 4],
           "item": "cartridge_box_7_d_62x39",
           "weight": 1
         },

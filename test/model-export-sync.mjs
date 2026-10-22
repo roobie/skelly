@@ -71,6 +71,14 @@ export const assertExportSynced = ({ id, source, modelEntry, glb }, base, direct
   assert.equal(exportDifference(glbJson(bytes), glbJson(exported)), null, modelEntry.file);
   assert.ok(glbBinary(bytes).equals(glbBinary(exported)), `${modelEntry.file}: geometry differs from ${source}`);
 };
+export const assertVoxelized = ({ id, glb, voxel }) => {
+  const grains = [voxel.voxelGrain, voxel.voxelDetailGrain].filter((grain) => grain !== undefined);
+  const primitives = glbJson(Buffer.from(glb)).meshes.flatMap((mesh) => mesh.primitives);
+  assert.ok(primitives.length > 0, `${id}: no meshes`);
+  for (const { extras } of primitives) {
+    assert.ok(grains.includes(extras?.voxelGrain), `${id}: a mesh is not voxelized on the row's class`);
+  }
+};
 export const assertRecipeCredits = (recipe, manifest) => {
   const credited = new Set(manifest.sources.flatMap(({ files }) => files));
   for (const { id } of recipe) {
