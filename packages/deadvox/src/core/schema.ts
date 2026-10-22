@@ -57,6 +57,7 @@ import { GraphicsOptionsSchema } from './graphics.ts';
 import { ItemEconomySchema, LootContextSchema, UsageSchema } from './loot.ts';
 import { MELEE_MOTIONS } from './meleeMotion.ts';
 import { MAX_EXPOSURE, MIN_EXPOSURE, TONE_KEYS } from './mood.ts';
+import { PowerDeviceSchema, PowerTuningSchema } from './powerContent.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SCENARIO_KINDS } from './scenarioKinds.ts';
 import { shapeBlocks } from './shapeSolid.ts';
@@ -713,6 +714,19 @@ const ExplosiveSchema = strictObject({
   sound: picklist(SOUND_EVENT_IDS),
 });
 
+/** A trap set on the floor that springs on whatever enters its cell (`SLICE-5.md`, "Settled bear-trap rules — issue #107"). */
+const TrapSchema = strictObject({
+  setSimSeconds: PositiveSimSeconds,
+  /** One uninterrupted bare-hands attempt; an interrupted attempt starts again from nothing. */
+  disarmSimSeconds: PositiveSimSeconds,
+  /** How long its jaws hold a caught leg before the victim pulls free. */
+  holdSimSeconds: PositiveSimSeconds,
+  /** The player's wound when it springs on them. */
+  playerInjury: strictObject({ region: picklist(BODY_REGIONS), damage: Positive, kind: picklist(DAMAGE_KINDS) }),
+  /** Health taken from a caught zombie's legs, shared between those not yet destroyed. */
+  zombieLegDamage: NonNegative,
+});
+
 const FirearmAttachmentEffectsSchema = strictObject({
   /** Fraction of the firearm's committed recoil kick removed at full condition. */
   recoilReduction: optional(Fraction),
@@ -869,6 +883,7 @@ const ItemSchema = strictObject({
   light: optional(LightSchema),
   igniter: optional(IgniterSchema),
   explosive: optional(ExplosiveSchema),
+  trap: optional(TrapSchema),
   readable: optional(ReadableSchema),
   /** Display capability shown in first person; later devices can share this rendering seam. */
   heldDisplay: optional(picklist(HELD_DISPLAY_KINDS)),
@@ -3115,6 +3130,8 @@ const SECTION_DESCRIPTOR = {
   mapSites: { schema: optional(array(MapSiteSchema)), label: 'map site recipes', order: 26 },
   mapPools: { schema: optional(array(MapPoolSchema)), label: 'map pools', order: 27 },
   look: { schema: optional(array(LookDefaultsSchema)), label: 'default look', order: 28 },
+  powerDevices: { schema: optional(array(PowerDeviceSchema)), label: 'power devices', order: 32 },
+  powerTuning: { schema: optional(array(PowerTuningSchema)), label: 'power tuning', order: 33 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };

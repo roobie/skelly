@@ -1,37 +1,5 @@
 [
   {
-    "id": "tape_roll",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "electrical_tape"
-  },
-  {
-    "id": "thread_spool",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "sewing_thread"
-  },
-  {
-    "id": "cord_coil",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "nylon_cord"
-  },
-  {
-    "id": "fuse",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "fuse"
-  },
-  {
     "id": "canned_beans",
     "kind": "item",
     "options": {
@@ -184,6 +152,78 @@
     "source": "can_opener"
   },
   {
+    "id": "aa_battery",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "aa_battery"
+  },
+  {
+    "id": "rag",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "rag"
+  },
+  {
+    "id": "duct_tape",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "duct_tape"
+  },
+  {
+    "id": "nails",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "nails"
+  },
+  {
+    "id": "scrap_metal",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "scrap_metal"
+  },
+  {
+    "id": "stick",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "stick"
+  },
+  {
+    "id": "wax",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "wax"
+  },
+  {
+    "id": "wooden_plank",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "wooden_plank"
+  },
+  {
+    "id": "field_patch",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "field_patch"
+  },
+  {
     "id": "beans",
     "kind": "item",
     "options": {
@@ -334,5 +374,45 @@
       "mass": "parts"
     },
     "source": "shambler_right_leg"
+  },
+  {
+    "id": "tape_roll",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "electrical_tape"
+  },
+  {
+    "id": "thread_spool",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "sewing_thread"
+  },
+  {
+    "id": "cord_coil",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "nylon_cord"
+  },
+  {
+    "id": "fuse",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "fuse"
+  },
+  {
+    "id": "bear_trap",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "bear_trap"
   }
 ]

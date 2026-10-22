@@ -205,6 +205,10 @@
       "output": "packages/deadvox/src/content/base/models-melee.json"
     },
     {
+      "source": "packages/deadvox/src/content/base/power.jsonnet",
+      "output": "packages/deadvox/src/content/base/power.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/range.jsonnet",
       "output": "packages/deadvox/src/content/base/range.json"
     },

@@ -33,7 +33,15 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
       assert.ok(parsed.success, `${out.id}: ${JSON.stringify(parsed.issues)}`);
       assertExportSynced(out, base, 'things');
     }
-    for (const file of readdirSync(join(base, 'things'))) {
+    assert.equal(
+      exportDifference(
+        JSON.parse(readFileSync(join(base, 'things/index.json'), 'utf8')),
+        exported.map(({ modelEntry }) => modelEntry),
+      ),
+      null,
+      'the registration index derives from the recipe',
+    );
+    for (const file of readdirSync(join(base, 'things')).filter((entry) => entry !== 'index.json')) {
       assert.ok(
         file.endsWith('.model.json') && ids.has(file.slice(0, -'.model.json'.length)),
         `${file}: orphaned thing export`,

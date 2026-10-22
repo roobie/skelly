@@ -13,6 +13,7 @@ read_if:
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry and put down, or how stacks settle
   - you're changing the rules for time, survival, light or zombies
+  - you're implementing electricity networks, energy balance or appliance power history
   - you're implementing the authored gauntlet arrangement, scenario admission, composed route certificates, shared city planning, portal proofs, underground lab depth, the sewer route or its visual approval gate
   - you author lab equipment bays, curated storeys or supported descent lids
   - you change sleep onset, its tuning or cancellation
@@ -2135,15 +2136,12 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
   doors, barricades, furniture, workbenches, machines. Deconstruction is
   disassembly.
 - **Doors and locks.** A matching key is the quiet route. The noisy fallback needs the door's forcing tool, not always a crowbar, so finding that tool is part of the trade. How a door yields follows from its material and its own resistance; flimsy and burglary-safe leaves need not yield alike. Forced entry destroys the lock so the breach is one-way. Every door will be bashable given enough strength, but bashing waits because neither actor strength nor door strength is modelled. Cutting a wooden door will start a fire, so wood offers no cut method until a fire model exists. Cutting steel is a flame-cutting quality apart from a knife's `cutting`, and a finished cut spends gas from the torch's swappable cartridge, so one torch does not settle every cut door; a cut without enough gas won't start. Refilling a cartridge is direction only, with no source yet. See `src/core/prying.ts`, `pryPlan`, `src/core/torch.ts`, `spendFuel`, `src/core/longAction.ts`, `LongActions.beginForcing`, and `src/core/schema.ts`, `DoorMaterialSchema` and `DoorForcingSchema`.
-- **Electricity** is a graph:
-  - **Nodes:** generators (burn fuel), solar panels (depend on the time of
-    day), batteries (store energy), and consumers (lights, fridges, radios,
-    workbench tools).
-  - **Edges:** wires.
-  - Connected components are recomputed only when wiring changes. Each power
-    tick balances supply, storage and demand for each network.
-  - When a base catches up after being unloaded, the calculation is closed
-    form: when the fuel ran out, then when the batteries emptied.
+- **Electricity** keeps topology separate from energy balance so rate changes
+  do not rebuild networks. Resource settlement and timestamped power transitions
+  preserve appliance history across absences and wiring changes. The dispatch,
+  storage, solar and link rules and their reasons are in
+  `docs/electricity.md`, "Electricity"; see `src/core/power.ts`, `PowerNetwork`,
+  and `src/core/powerGraph.ts`, `PowerGraph`.
 - **Fire** is a world system: burn rate per material, spread to neighbouring
   flammable blocks, smoke and light. Hot zombies and molotovs use the same
   system.
