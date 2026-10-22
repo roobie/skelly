@@ -9,6 +9,7 @@ import type {
   SrgbColor,
 } from '../src/exportTypes.ts';
 
+// Type-level only: the assertions are checked by the typecheck, so the runtime test cannot fail.
 it('owns the geometry writer and caller-supplied export identity contracts', () => {
   const palette: Palette = {
     familyColors: {},
