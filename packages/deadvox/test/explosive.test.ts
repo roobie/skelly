@@ -21,6 +21,7 @@ import type { Detonation } from '../src/core/zombies.ts';
 import type { MoveIntent } from '../src/game/player.ts';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { itemLook } from '../src/render/itemLook.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();
@@ -57,8 +58,13 @@ const runtime = (
   content = registry,
   {
     onDetonation,
+    onFuseLit,
     intent,
-  }: { onDetonation?: (position: Vec3, radiusMetres: number) => void; intent?: () => MoveIntent } = {},
+  }: {
+    onDetonation?: (position: Vec3, radiusMetres: number) => void;
+    onFuseLit?: (item: Item) => void;
+    intent?: () => MoveIntent;
+  } = {},
 ) =>
   createSession({
     registry: content,
@@ -82,6 +88,7 @@ const runtime = (
     notice: () => undefined,
     onRead: () => undefined,
     ...(onDetonation ? { onDetonation } : {}),
+    ...(onFuseLit ? { onFuseLit } : {}),
     ...(restore ? { restore } : {}),
   });
 type Runtime = ReturnType<typeof runtime>;
@@ -177,6 +184,25 @@ describe('hand grenade', () => {
     expect(session.inventory.move(stowed, { kind: 'pocket', owner: fannyPack, pocket: 0 }).ok).toBe(true);
     session.sim.scheduler.advance(FUSE + 0.5);
     expect(session.inventory.itemByUid(stowed.uid)).toBeUndefined();
+  });
+
+  it('sheds its lever once, when release lights its fuse, and is drawn without it from then on', () => {
+    const lit: Item[] = [];
+    const session = runtime(OPEN, undefined, registry, { onFuseLit: (item) => lit.push(item) });
+    const { mergeGroup } = registry.models.get(registry.items.get(GRENADE)!.model!)!.lever!;
+    const shed = (item: Item) => itemLook(registry, item)?.hidden.includes(mergeGroup);
+    const grenade = liveInHand(session);
+    session.sim.scheduler.advance(FUSE / 4);
+    expect([lit, shed(grenade)]).toEqual([[], false]);
+
+    const version = session.inventory.version;
+    expect(session.inventory.move(grenade, { kind: 'pile', pos: [1, 0, 0] }).ok).toBe(true);
+    session.sim.scheduler.advance(FUSE / 4);
+    expect(lit).toEqual([grenade]);
+    expect(shed(grenade)).toBe(true);
+    expect(session.inventory.version).toBeGreaterThan(version);
+    session.sim.scheduler.advance(FUSE / 4);
+    expect(lit).toEqual([grenade]);
   });
 
   it('goes off in the hand of whoever picks it up while its fuse burns', () => {
