@@ -2,6 +2,10 @@
   "id": "tape_roll",
   "file": "assets/models/tape_roll.glb",
   "parts": {
-    "electrical_tape": { "node": "electrical_tape:ring", "massKg": 0.03, "centreOfMass": [0, 0.010499999999999999, 0] }
+    "electrical_tape": {
+      "node": "electrical_tape:ring",
+      "massKg": 0.03,
+      "centreOfMass": [0.000576923076923077, 0.010000000000000002, 0.000576923076923077]
+    }
   }
 }

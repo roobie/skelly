@@ -3,6 +3,8 @@ local measure(value, locator, verbatim) = { value: value, cite: cite('printed p.
 local unknown = { value: null, cite: null, note: 'Not specified by the governing cartridge drawing; no supplemental source has been established.' };
 {
   format: 1,
+  // A case under 10 mm across needs the fine grain to keep its rim and bullet; the item grain draws an L of blocks.
+  voxelGrain: 0.002,
   kind: 'metallic',
   id: '357-magnum',
   designation: '.357 Magnum',

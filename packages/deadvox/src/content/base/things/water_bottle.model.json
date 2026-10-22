@@ -1,7 +1,13 @@
 {
   "id": "water_bottle",
   "file": "assets/models/water_bottle.glb",
-  "parts": { "package": { "node": "package:vessel", "massKg": 1.05, "centreOfMass": [0, 0.10473515077838855, 0] } },
+  "parts": {
+    "package": {
+      "node": "package:vessel",
+      "massKg": 1.05,
+      "centreOfMass": [-0.00038275193798449587, 0.10025193798449612, -0.0009593023255813948]
+    }
+  },
   "grip": { "at": [0, 0.12, 0], "turn": [0, 0, -90] },
   "hold": "upright",
   "roll": 0

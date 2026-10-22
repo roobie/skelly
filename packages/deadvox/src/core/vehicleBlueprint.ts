@@ -3,7 +3,7 @@
  * part's mass, centre of mass, baked collision and datums. Loading places those in the vehicle frame.
  */
 import { modelMassKg } from '@skelly/thing-core/mass';
-import type { ModelBox } from '@skelly/thing-core/schema';
+import type { ModelBox, ModelParts } from '@skelly/thing-core/schema';
 import { supportProblems } from '../vehicles/model.ts';
 import { type CargoCells, cargoGrid, fitIssue } from './cargoSpace.ts';
 import type { Registry } from './content.ts';
@@ -140,6 +140,8 @@ export interface PlacedFitting {
   readonly centreOfMass: Vec3;
   readonly collision: readonly ModelBox[];
   readonly datums: Readonly<Record<string, Vec3>>;
+  /** The voxel lattice its drawn collision lies on: planes `grain` metres apart through `origin`. */
+  readonly lattice?: { readonly grain: number; readonly origin: Vec3 };
   /** A cargo space's size, its pocket and the clearance it assumes where nothing is above. */
   readonly cargo?: {
     readonly cells: CargoCells;
@@ -176,10 +178,49 @@ const massCentre = (masses: readonly { readonly massKg: number; readonly centreO
   return [moment(0), moment(1), moment(2)];
 };
 
+/** The one grain every part of a model is drawn at, if they share one. */
+const sharedGrain = (parts: readonly { readonly voxelGrain?: number | undefined }[]): number | undefined => {
+  const [first, ...rest] = parts.map(({ voxelGrain }) => voxelGrain);
+  return rest.every((grain) => grain === first) ? first : undefined;
+};
+
+type Body = Pick<PlacedFitting, 'centreOfMass' | 'collision' | 'lattice'>;
+type ModelPart = ModelParts[string];
+
+/** A part's exported body, placed: its parts' collision, mass centre and the lattice they are drawn on. */
+const partBody = (fitting: VehicleFittingDef, parts: readonly ModelPart[]): Body => {
+  const grain = sharedGrain(parts);
+  return {
+    centreOfMass:
+      parts.length > 0
+        ? massCentre(parts.map((part) => ({ ...part, centreOfMass: place(fitting, part.centreOfMass) })))
+        : place(fitting, [0, 0, 0]),
+    collision: parts.flatMap((part) => (part.collision ?? []).map((box) => placeBox(fitting, box))),
+    ...(grain === undefined ? {} : { lattice: { grain, origin: fitting.at } }),
+  };
+};
+
 /**
- * Places a fitting of validated content; mass and centre come only from the part's export. A cargo space's
- * one-cell model is scaled to its size, so its block is its own shape.
+ * A cargo space's body is its cells, standing on `at` and centred over it, so the voxels its one-cell model is
+ * drawn in leave its size whole; `cargoSpace.ts` snaps that block onto its load floor's lattice.
  */
+const cargoBody = (registry: Registry, fitting: VehicleFittingDef, [x, y, z]: CargoCells): Body => {
+  const cell = registry.inventory.get(CORE_CONTENT_IDS.player)?.cellMetres;
+  if (cell === undefined) {
+    throw new Error(`Fitting ${fitting.id} is a cargo space, which needs the inventory cell size`);
+  }
+  return {
+    centreOfMass: place(fitting, [0, (y * cell) / 2, 0]),
+    collision: [
+      placeBox(fitting, {
+        min: [(-x * cell) / 2, 0, (-z * cell) / 2],
+        max: [(x * cell) / 2, y * cell, (z * cell) / 2],
+      }),
+    ],
+  };
+};
+
+/** Places a fitting of validated content; mass and centre come only from the part's export. */
 export const placeFitting = (registry: Registry, fitting: VehicleFittingDef): PlacedFitting => {
   const item = registry.items.get(fitting.part);
   const model = item?.model === undefined ? undefined : registry.models.get(item.model);
@@ -189,20 +230,13 @@ export const placeFitting = (registry: Registry, fitting: VehicleFittingDef): Pl
   const space = item.vehicle.cargoSpace;
   const cells = space && fitting.cargo;
   const grow = ([x, y, z]: Vec3): Vec3 => (cells ? [x * cells[0], y * cells[1], z * cells[2]] : [x, y, z]);
-  const parts = Object.values(model.parts).map((part) => ({
-    ...part,
-    centreOfMass: place(fitting, grow(part.centreOfMass)),
-  }));
   return {
     id: fitting.id,
     part: fitting.part,
     capabilities: item.vehicle.capabilities,
     supportedBy: fitting.supportedBy,
     massKg: modelMassKg({ parts: model.parts }),
-    centreOfMass: parts.length > 0 ? massCentre(parts) : place(fitting, [0, 0, 0]),
-    collision: Object.values(model.parts).flatMap((part) =>
-      (part.collision ?? []).map(({ min, max }) => placeBox(fitting, { min: grow(min), max: grow(max) })),
-    ),
+    ...(cells ? cargoBody(registry, fitting, cells) : partBody(fitting, Object.values(model.parts))),
     datums: Object.fromEntries(
       Object.entries(model.anchors ?? {}).map(([id, point]) => [id, place(fitting, grow(point))]),
     ),
