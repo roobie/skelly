@@ -354,6 +354,22 @@
       ]
     },
     {
+      "id": "inventory.cycle-target",
+      "keys": [
+        {
+          "code": "KeyC"
+        }
+      ]
+    },
+    {
+      "id": "inventory.put-target",
+      "keys": [
+        {
+          "code": "KeyP"
+        }
+      ]
+    },
+    {
       "id": "inventory.find",
       "keys": [
         {
