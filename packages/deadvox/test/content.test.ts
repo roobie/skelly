@@ -799,7 +799,13 @@ describe('content', () => {
           weight: 1,
           size: [1, 2],
           model: 'fixture_suppressor',
-          firearmAttachmentEffects: { kind: 'suppressor', recoilReduction: 0.1, wearPerShot: 0.01 },
+          firearmAttachmentEffects: {
+            kind: 'suppressor',
+            recoilReduction: 0.1,
+            wearPerShot: 0.01,
+            fitSkillLevel: 4,
+            fitRefusal: "I can't fit this suppressor yet",
+          },
         },
       ],
       models: [
