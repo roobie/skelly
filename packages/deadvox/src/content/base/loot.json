@@ -371,6 +371,10 @@
           "weight": 1
         },
         {
+          "item": "whetstone",
+          "weight": 1
+        },
+        {
           "item": "steel_pipe",
           "weight": 2
         },
@@ -576,6 +580,10 @@
         {
           "condition": [0.40000000000000002, 1],
           "item": "wire_strippers",
+          "weight": 1
+        },
+        {
+          "item": "whetstone",
           "weight": 1
         },
         {

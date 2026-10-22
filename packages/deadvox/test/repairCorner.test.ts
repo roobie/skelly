@@ -38,7 +38,9 @@ const scenarioRegistry: Registry = {
   recipes: new Map([...baseRegistry.recipes, [repairFixture.id, repairFixture]]),
 };
 
-const repairRecipes = [...scenarioRegistry.recipes.values()].filter((recipe) => recipe.kind === 'repair');
+const repairRecipes = [...scenarioRegistry.recipes.values()].filter(
+  (recipe) => recipe.kind === 'repair' && !recipe.workstation,
+);
 
 const addRepairCorner = (inventory: Inventory, site: string): void => {
   populateTestHouseRepairCorner({

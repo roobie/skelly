@@ -324,6 +324,18 @@
     }
   },
   {
+    "id": "whetstone",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "whetstone",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
     "id": "field_patch",
     "kind": "item",
     "options": {

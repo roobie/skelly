@@ -1,9 +1,32 @@
+// Every wearing blade gets one repair per sharpening method: the wheel restores more in less time, so keeping an edge
+// is a choice between a trip to the wheel and a stone carried in the field.
+local sharpening = [
+  { prefix: 'grind_', qualities: {}, workstation: 'grinding_wheel', amount: 0.5, timeGameMinutes: 10 },
+  { prefix: 'hone_', qualities: { sharpening: 1 }, workstation: null, amount: 0.2, timeGameMinutes: 20 },
+];
+local blades = [
+  item.id
+  for item in (import 'items-tools.libsonnet').items
+  if std.objectHas(item, 'weapon') && item.weapon.melee.type == 'cut' && std.objectHas(item.weapon.melee, 'wearPerHit')
+];
+local sharpen(blade, method) = {
+  id: method.prefix + blade,
+  kind: 'repair',
+  result: { item: blade, count: 1 },
+  repair: { skill: 'crafting', amount: method.amount, perSkill: 0.05 },
+  timeGameMinutes: method.timeGameMinutes,
+  skills: { crafting: 0 },
+  qualities: method.qualities,
+  components: [],
+  workstation: method.workstation,
+};
+local sharpenRecipes = [sharpen(blade, method) for blade in blades for method in sharpening];
 {
   "skills": [
     {
       "id": "crafting",
       "name": "Crafting",
-      "startingRecipes": ["torch", "candle", "repair_kit", "repair_crowbar", "sawn_plank"],
+      "startingRecipes": ["torch", "candle", "repair_kit", "repair_crowbar", "sawn_plank"] + [recipe.id for recipe in sharpenRecipes],
       "training": { "craftingTierOffset": 1 },
     },
     { "id": "mechanics", "name": "Mechanics" },
@@ -216,5 +239,5 @@
       "components": [[{ "item": "stick", "count": 2 }]],
       "workstation": "workbench"
     }
-  ]
+  ] + sharpenRecipes
 }
