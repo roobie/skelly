@@ -1,6 +1,6 @@
 {
-  "id": "player_bust_item",
-  "file": "assets/models/player_bust_item.glb",
+  "id": "player_bust",
+  "file": "assets/models/player_bust.glb",
   "parts": {
     "bust": {
       "node": "bust:bust",

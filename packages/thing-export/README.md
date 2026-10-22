@@ -42,8 +42,8 @@ rows that opt in change, and the selection is an explicit list in each recipe. T
 lives here because this package may not import deadvox's mesher; see `src/voxelize.ts`,
 `voxelize`, and `src/glb.ts`, `voxelPrimitivesFor`.
 
-Five grains, all content values: a coarse one for vehicles, furniture and the parts made
-to attach to them; one for the player's body parts, fine enough to hold a face; a fine one for firearms and their magazines; a middle one for every
+Four grains, all content values: a coarse one for vehicles, furniture and the parts made
+to attach to them; a fine one for firearms and their magazines; a middle one for every
 other item or component; and a finest one for fine-detail parts. A vehicle part must match
 the grain of the vehicle it sits on, while a tool or a can drawn at that grain collapses to
 a few voxels. A gun needs its own because its small controls are detail at a few

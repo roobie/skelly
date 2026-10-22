@@ -194,13 +194,12 @@
         "assets/models/shed_key.glb",
         "assets/models/gauntlet_police_armoury_key.glb",
         "assets/models/gauntlet_lab_entry_card.glb",
+        "assets/models/player_bust.glb",
         "assets/models/tape_roll.glb",
         "assets/models/thread_spool.glb",
         "assets/models/cord_coil.glb",
         "assets/models/fuse.glb",
-        "assets/models/bear_trap.glb",
-        "assets/models/player_bust_character.glb",
-        "assets/models/player_bust_item.glb"
+        "assets/models/bear_trap.glb"
       ],
       "licence": "CC0-1.0",
       "title": "Thing tool authored models",

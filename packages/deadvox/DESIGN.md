@@ -2287,9 +2287,10 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 
 The player figure is a cleaner low-poly human, distinct from the zombies. A
 designer agent shapes its parts in the authoring tool and exports them like
-items through a voxel class grain; BR reviews renders and in-game views. The
-look needs a grain fine enough to hold a face, so it has its own class rather
-than borrowing the vehicle grain, which loses the face.
+items; BR reviews renders and in-game views. The figure is voxelized on the item
+grain: the face reads crisper there than on the vehicle grain, which loses it,
+and no extra class is left to maintain. Retuning the item grain moves the figure
+with the tools, which is accepted.
 
 Each part model names its joints as anchors (neck, head, shoulders, hips), and
 code poses the parts about those pivots. The figure is a content row. Many
