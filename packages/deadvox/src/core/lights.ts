@@ -8,6 +8,7 @@ import type { BlockEntity } from './blockEntities.ts';
 import { offSide } from './character.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
+import { coreMessage } from './coreText.ts';
 import type { DayCycle } from './dayPhase.ts';
 import type { Inventory, Location, Pile, Target } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
@@ -225,11 +226,11 @@ export const toggleLight = (registry: Registry, light: Item, calendar = 0): stri
   const def = defOf(registry, light.type);
   const spec = def.light;
   if (spec === undefined) {
-    return "It isn't a light";
+    return coreMessage(registry, 'notLight');
   }
   if (light.on) {
     if (spec.burning && !spec.burning.douse) {
-      return "It can't be doused";
+      return coreMessage(registry, 'cantDouse');
     }
     light.on = false;
     light.litAtGameTimestamp = undefined;
@@ -237,16 +238,16 @@ export const toggleLight = (registry: Registry, light: Item, calendar = 0): stri
   }
   if (spec.burnTimeGameHours !== undefined) {
     if (light.burnRemainingGameSeconds !== undefined && !spec.burning?.relight) {
-      return "It can't be lit again";
+      return coreMessage(registry, 'cantRelight');
     }
     const remaining = light.burnRemainingGameSeconds ?? spec.burnTimeGameHours;
     if (remaining <= 0) {
-      return 'It has burned out';
+      return coreMessage(registry, 'burnedOut');
     }
     light.burnRemainingGameSeconds = remaining;
     light.litAtGameTimestamp = calendar;
   } else if (chargeOf(registry, light) === 0) {
-    return def.igniter ? "It's out of fuel" : 'The battery is dead';
+    return coreMessage(registry, def.igniter ? 'outOfFuel' : 'batteryDead');
   }
   light.on = true;
   return undefined;
@@ -320,7 +321,7 @@ export const swapBattery = (
 ): string | undefined => {
   const { registry } = inventory;
   if (!fitsLight(registry, light, battery)) {
-    return "It doesn't take that battery";
+    return coreMessage(registry, 'wrongBattery');
   }
   const oldBattery = light.slots?.battery;
   const old = oldBattery ? (chargeOf(registry, oldBattery) ?? 0) : 0;
@@ -340,7 +341,7 @@ export const swapBattery = (
     replacement.charges = battery.charges;
   }
   if (!inventory.consume(battery)) {
-    return 'The battery is gone';
+    return coreMessage(registry, 'batteryGone');
   }
   inventory.fitSlot(light, 'battery', replacement);
   if (kept && target) {

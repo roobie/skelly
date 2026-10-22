@@ -157,7 +157,7 @@ export class Body implements ModifierActor {
   }
 
   get actionRefusal(): string | undefined {
-    return this.unconscious ? 'You are unconscious' : undefined;
+    return this.unconscious ? this.tuning.knockoutRefusal : undefined;
   }
 
   /** Bleeding at or above content's loss rate refuses time compression (`DESIGN.md`, "Bleeding"). */

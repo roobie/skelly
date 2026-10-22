@@ -9,6 +9,7 @@ local normalSleep = 100 / normalSleepGameHours;
     antisepticWindowGameHours: 12,
     infectionChance: 0.5,
     knockoutSimSeconds: 20,
+    knockoutRefusal: "I'm out cold",
     staminaRegenDelaySimSeconds: 5,
     proneEyeHeightMetres: 0.3,
     shockPerDamage: { blunt: 2, cut: 0, pierce: 0, acid: 1 },

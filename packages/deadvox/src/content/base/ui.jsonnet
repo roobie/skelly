@@ -44,5 +44,5 @@
       feet: 'Feet',
       shoulder: 'Shoulder',
     },
-  }],
+  } + import 'ui-core-text.libsonnet'],
 }

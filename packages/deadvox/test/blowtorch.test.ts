@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { Inventory, type Target } from '../src/core/inventory.ts';
-import { NO_GROUND_ROOM_REFUSAL, NO_LANDING_REFUSAL } from '../src/core/itemThrow.ts';
+import { coreMessage } from '../src/core/coreText.ts';
 import { chargeOf } from '../src/core/lights.ts';
 import { freshDropTarget } from '../src/core/options.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
@@ -153,7 +153,7 @@ const fittedTorch = () => {
 
 it('a cartridge swap with no ground for the old one to land on refuses and keeps it fitted', () => {
   const { inventory, torch, old, fresh } = fittedTorch();
-  expect(swapCanister(inventory, torch, fresh, () => undefined)).toBe(NO_LANDING_REFUSAL);
+  expect(swapCanister(inventory, torch, fresh, () => undefined)).toBe(coreMessage(inventory.registry, 'noLanding'));
   expect(torch.slots!.canister).toBe(old);
   expect(inventory.locate(fresh)?.kind).toBe('hand');
 });
@@ -161,7 +161,7 @@ it('a cartridge swap with no ground for the old one to land on refuses and keeps
 it('a refused cartridge swap leaves the fitted cartridge exactly as it was', () => {
   const { inventory, torch, old, fresh } = fittedTorch();
   const before = { ...old };
-  expect(swapCanister(inventory, torch, fresh, () => undefined)).toBe(NO_LANDING_REFUSAL);
+  expect(swapCanister(inventory, torch, fresh, () => undefined)).toBe(coreMessage(inventory.registry, 'noLanding'));
   expect(old).toEqual(before);
 });
 
@@ -191,7 +191,7 @@ it('a cartridge swap into full piles refuses rather than losing the old one', ()
   while (inventory.add(inventory.create('blowtorch'), pile)) {
     // Fill the pile until it refuses.
   }
-  expect(swapCanister(inventory, torch, fresh, () => pile)).toBe(NO_GROUND_ROOM_REFUSAL);
+  expect(swapCanister(inventory, torch, fresh, () => pile)).toBe(coreMessage(inventory.registry, 'noGroundRoom'));
   expect(torch.slots!.canister).toBe(old);
   expect(inventory.locate(fresh)?.kind).toBe('hand');
 });

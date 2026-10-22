@@ -6,7 +6,7 @@ import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { freshnessWord, isRotten, spoilage } from '../src/core/food.ts';
 import { Inventory, type Target } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
-import { NO_GROUND_ROOM_REFUSAL, NO_LANDING_REFUSAL } from '../src/core/itemThrow.ts';
+import { coreMessage } from '../src/core/coreText.ts';
 import { chargeOf, drainLight, swapBattery, toggleLight } from '../src/core/lights.ts';
 import { canSprint, consume, type Needs, stepNeeds, stepStamina } from '../src/core/needs.ts';
 import { freshDropTarget } from '../src/core/options.ts';
@@ -241,7 +241,7 @@ describe('flashlight', () => {
     const { inventory, light, old, batteries } = halfSpent();
     inventory.landing = () => undefined;
     const spent = (item: Item) => freshDropTarget(inventory, item, [0, 0, 0]);
-    expect(swapBattery(inventory, light, batteries, spent)).toBe(NO_LANDING_REFUSAL);
+    expect(swapBattery(inventory, light, batteries, spent)).toBe(coreMessage(inventory.registry, 'noLanding'));
     expect(light.slots!.battery).toBe(old);
     expect(batteries.count).toBe(3);
   });
@@ -274,7 +274,7 @@ describe('flashlight', () => {
     while (inventory.add(inventory.create('flashlight'), pile)) {
       // Fill the pile until it refuses.
     }
-    expect(swapBattery(inventory, light, batteries, () => pile)).toBe(NO_GROUND_ROOM_REFUSAL);
+    expect(swapBattery(inventory, light, batteries, () => pile)).toBe(coreMessage(inventory.registry, 'noGroundRoom'));
     expect(light.slots!.battery).toBe(old);
     expect(batteries.count).toBe(3);
   });

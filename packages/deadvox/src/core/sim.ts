@@ -4,7 +4,9 @@
 import { Body, type BodyImpact, type BodyRegion, type BodyState, type DamageKind, type Touch } from './body.ts';
 import { type ClockSettings, calendarAt, simToGameHours } from './clock.ts';
 import { Compression, type CompressionLimits, type CompressionOwner, longActionLimits } from './compression.ts';
+import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
+import { coreMessage } from './coreText.ts';
 import {
   type DamageExposure,
   type DamageExposureState,
@@ -51,6 +53,8 @@ export interface SimulationState {
 
 export interface SimOptions {
   seed: number;
+  /** Where the simulation's refusals and notices are worded. */
+  registry: Pick<Registry, 'ui'>;
   bodyTuning: BodyTuningDef;
   /** The painkillers content defines, by item type; without it nothing can be taken. */
   analgesics?: AnalgesicLookup;
@@ -69,6 +73,7 @@ const NEEDS_MAX_STEP = 30;
 
 export class Simulation {
   readonly seed: number;
+  readonly registry: Pick<Registry, 'ui'>;
   readonly clock: ClockSettings;
   readonly scheduler = new Scheduler();
   readonly events = new EventQueue<Timed<SimEvent>>();
@@ -92,6 +97,7 @@ export class Simulation {
 
   constructor(options: SimOptions) {
     this.seed = options.seed;
+    this.registry = options.registry;
     this.clock = options.clock;
     this.body = new Body(options.bodyTuning, undefined, undefined, options.analgesics);
     this.onImpact = options.onImpact;
@@ -416,7 +422,7 @@ export class Simulation {
     if (this.body.health <= 0) {
       this.die(cause);
     } else if (interrupt) {
-      this.emit({ kind: 'interrupt', reason: "You're hurt" });
+      this.emit({ kind: 'interrupt', reason: coreMessage(this.registry, 'hurt') });
     }
   }
 
@@ -437,7 +443,7 @@ export class Simulation {
    */
   compress(limits?: CompressionLimits): { ok: true } | { ok: false; reason: string } {
     if (this.actions.job?.jobType === 'forceDoor' && !this.actions.job.stopped) {
-      return { ok: false, reason: 'Stop forcing the door first' };
+      return { ok: false, reason: coreMessage(this.registry, 'busyForcing') };
     }
     return this.compression.start(undefined, 'debug', limits);
   }

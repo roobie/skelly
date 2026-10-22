@@ -1,5 +1,6 @@
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
+import { coreMessage } from './coreText.ts';
 import type { Inventory, Target } from './inventory.ts';
 import { type Item, weightOf } from './items.ts';
 import { raycast, type SolidAt } from './raycast.ts';
@@ -49,19 +50,16 @@ export const settleOnWorld = (position: Vec3, blockSize: number, minY: number, i
   return [Math.floor(origin[0]), hit.block[1] + 1, Math.floor(origin[2])];
 };
 
-export const NO_LANDING_REFUSAL = "Can't find a place for it to land";
-export const NO_GROUND_ROOM_REFUSAL = 'No room on the ground nearby';
-
 /** Why a new item, or a part leaving its slot, can't be put down at `target`, which is undefined with no ground nearby. */
 export const putDownRefusal = (
-  inventory: Pick<Inventory, 'planAdd'>,
+  inventory: Pick<Inventory, 'planAdd' | 'registry'>,
   item: Item,
   target: Target | undefined,
 ): string | undefined => {
   if (!target) {
-    return NO_LANDING_REFUSAL;
+    return coreMessage(inventory.registry, 'noLanding');
   }
-  return inventory.planAdd(item, target).ok ? undefined : NO_GROUND_ROOM_REFUSAL;
+  return inventory.planAdd(item, target).ok ? undefined : coreMessage(inventory.registry, 'noGroundRoom');
 };
 
 /** Where a pile put down in a block cell comes to rest; a solid cell has no room to put it in. */
