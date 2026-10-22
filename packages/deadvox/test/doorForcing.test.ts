@@ -4,13 +4,13 @@ import { expect, it } from 'vitest';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { buildFixtureRegistry } from './economyFixtures.ts';
+import { buildFixtureRegistry, FIXTURE_MATERIAL } from './economyFixtures.ts';
 import { capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 
 const methodId = 'fixture_method';
 const qualityId = 'fixture_quality';
 const fixture = (admitted: string[]) => ({
-  doorMaterials: [{ id: 'fixture_material', methods: admitted }],
+  furnitureMaterials: [{ id: FIXTURE_MATERIAL, methods: admitted }],
   furniture: [
     {
       id: 'fixture_door',
@@ -18,7 +18,6 @@ const fixture = (admitted: string[]) => ({
       size: [2, 4, 1],
       color: '#777777',
       door: {
-        material: 'fixture_material',
         handlingSimSeconds: 0.5,
         methods: {
           [methodId]: {

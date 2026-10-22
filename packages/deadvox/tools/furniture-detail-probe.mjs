@@ -53,18 +53,39 @@ try {
     if (definitions.length === 0) {
       throw new Error('no appearance fixtures to inspect');
     }
-    const { registry, issues } = buildRegistry([{ source: 'look.json', data: { furniture: definitions } }]);
+    const { registry, issues } = buildRegistry([
+      { source: 'look.json', data: { furnitureMaterials: data.furnitureMaterials, furniture: definitions } },
+    ]);
     if (issues.length > 0) {
       throw new Error(JSON.stringify(issues));
     }
+    // Each fixture stands intact at the left of its row, then once at the start of each of its material's damage steps;
+    // the camera looks along +z, so a row runs toward -x to read left to right.
     const entities = new BlockEntities(registry);
-    let x = 0;
+    const damage = new Map();
+    let z = 0;
     for (const definition of definitions) {
-      if (!entities.add({ type: definition.id, size: definition.size, pos: [x, 0, 0], facing: 'n' })) {
-        throw new Error(`could not place ${definition.id}`);
+      const steps = registry.furnitureMaterials.get(definition.material)?.damaged ?? [];
+      let x = 0;
+      for (const fraction of [0, ...steps.map((step) => step.from)]) {
+        const piece = entities.add({ type: definition.id, size: definition.size, pos: [x, 0, z], facing: 'n' });
+        if (!piece) {
+          throw new Error(`could not place ${definition.id}`);
+        }
+        if (fraction > 0) {
+          damage.set(piece.uid, fraction * definition.breach.durability);
+        }
+        x -= definition.size[0] + 1;
       }
-      x += definition.size[0] + 1;
+      z += definition.size[2] + 3;
     }
+    const state = entities.snapshotState();
+    entities.restoreState({
+      ...state,
+      entities: state.entities.map((saved) =>
+        damage.has(saved.uid) ? { ...saved, damage: damage.get(saved.uid) } : saved,
+      ),
+    });
     const furniture = new FurnitureMeshes(0.5);
     furniture.sync(entities);
     const scene = new Three.Scene();
@@ -78,7 +99,7 @@ try {
     const size = bounds.getSize(new Three.Vector3());
     const distance = Math.max(size.x / 2, size.y) / Math.tan(Three.MathUtils.degToRad(38 / 2)) + size.z;
     const camera = new Three.PerspectiveCamera(38, 2, 0.1, distance * 4);
-    camera.position.copy(center).add(new Three.Vector3(distance * 0.1, distance * 0.25, -distance));
+    camera.position.copy(center).add(new Three.Vector3(distance * 0.1, distance * 0.6, -distance));
     camera.lookAt(center);
     const renderer = new Three.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     renderer.setSize(1200, 600);

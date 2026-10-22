@@ -373,6 +373,11 @@ deconstruction reserves its piece against use until the job is cancelled or fini
 paused work keeps its piece; under lockstep the reservation is ordinary simulation state,
 resolved in tick order. See `src/core/blockEntities.ts`, `BlockEntities.remove`.
 
+Destruction is not removal: a blow cannot be refused, so the removal refusals don't
+apply, and everything the piece held or carried drops or falls instead. Destruction
+still cancels the jobs that name the piece. See `src/core/blockEntities.ts`,
+`BlockEntities.destroy`.
+
 Because every explored piece stays in memory, a lookup must not cost more as the explored
 area grows, so lookups find pieces through an index by column. See
 `src/core/blockEntities.ts`, `BlockEntities.near`.
@@ -399,6 +404,20 @@ strength and durability. Worldgen may place a piece already worn, within a range
 content authors, so an abandoned place reads as used; it never places a piece ruined,
 because a ruined piece is gone. See `src/core/schema.ts`, `FurnitureSchema`, and
 `src/core/blockEntities.ts`, `BlockEntities.conditionOf` and `BlockEntities.wear`.
+
+A damaged piece shows its damage in steps its material authors and names its band in the
+hint, so the player can judge what will hold before relying on it. Every piece names a
+material from one furniture material table, so a mod retunes how a kind of furniture
+wears without touching each piece. The hint's word comes from the condition band table
+items read, and it shows no number, following `INTERFACE.md`, "Text". A view redraws a
+piece only when its damage crosses into a different step, not on every blow. See
+`src/core/schema.ts`, `FurnitureMaterialSchema`, `src/core/blockEntities.ts`,
+`BlockEntities.wearOf`, `src/render/furniture.ts`, `FurnitureMeshes.damageLook`, and
+`src/core/items.ts`, `damageWord`.
+
+Ruin is final: a destroyed piece or a broken door is never repaired, only replaced,
+because a ruined thing is mostly fragments; mending partial damage belongs to
+construction.
 
 ### Ladders and hatches
 
@@ -1798,6 +1817,13 @@ application rather than weapon-class special cases. See `ZombieSchema` in
   with `World.setBlock`. Saves already store changed cells as an overlay on the
   regenerated base chunks (`src/core/saveState.ts`, `SaveSnapshot`), so destruction
   persists without new save machinery; saves grow with the damage done.
+- **Ruined furniture.** A piece of furniture whose damage reaches its durability is
+  destroyed: what it held, and any debris its content names, falls as piles and
+  whatever rested on it falls, so destruction loses and floats nothing; a door
+  instead breaks and stays as an open leaf. Like a destroyed block, a ruined piece
+  is gone for good; unlike blocks, which do not collapse (next bullet), furniture
+  left unsupported settles, and a piece that cannot come down clear is destroyed in
+  turn. See `src/core/furnitureMove.ts`, `ruinFurniture`.
 - **No structural collapse in the first version.** Blocks left unsupported
   stay where they are. Collapse is a later, separate system.
 - **Shamblers have body regions and die only when the head is destroyed.**
@@ -2236,9 +2262,9 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 - **Construction is crafting that places blocks and block entities:** walls,
   doors, barricades, furniture, workbenches, machines. Deconstruction is
   disassembly.
-- **Doors and locks.** A matching key is the quiet route. The noisy fallback needs the door's forcing tool, not always a crowbar, so finding that tool is part of the trade. How a door yields follows from its material and its own resistance; flimsy and burglary-safe leaves need not yield alike. Forced entry destroys the lock so the breach is one-way. A leaf shows its state, because the player has to see which doors no longer hold, and how close the rest are to giving way, before trusting one: damage repaints it in steps as it grows toward breaking, and a broken leaf has its own look. The door material authors both, so a mod retunes them, and a view redraws a leaf only when its damage crosses into a different step, not on every blow. See `src/core/schema.ts`, `DoorMaterialSchema`, `src/core/blockEntities.ts`, `BlockEntities.wearOf`, and `src/render/furniture.ts`, `FurnitureMeshes.doorLook`.
-- **Breach by strength.** A door leaf yields to blows by its piece's breach, so flimsy and burglary-safe leaves yield differently. A blow below the minimum strength does nothing, so a weak attacker cannot grind through by waiting; stronger blows add up until they reach the durability. Zombie strength and a melee weapon's impulse share one scale, so a zombie's bash and a player's strike meet the same gate; a swing that meets no zombie strikes the closed leaf in its reach. Every blow makes a noise zombies hear. A broken leaf stands open with its lock gone and cannot be shut, so the breach is one-way, as forcing is, and movement, sight and sound treat it as an open doorway. Damage short of breaking leaves a boarded leaf's opening sides as they were. A container's front is its body, so it has no breach of its own; on a piece that is no door leaf, the breach sets the durability its condition is measured against. See `src/core/blockEntities.ts`, `BlockEntities.bash`, `src/game/session.ts`, `bashLeaf` and `strikeLeaf`, and `src/core/schema.ts`, `FurnitureSchema`.
-- **Cutting.** Cutting a wooden door will start a fire, so wood offers no cut method until a fire model exists. Cutting steel is a flame-cutting quality apart from a knife's `cutting`, and a finished cut spends gas from the torch's swappable cartridge, so one torch does not settle every cut door; a cut without enough gas won't start. Refilling a cartridge is direction only, with no source yet. See `src/core/prying.ts`, `pryPlan`, `src/core/torch.ts`, `spendFuel`, `src/core/longAction.ts`, `LongActions.beginForcing`, and `src/core/schema.ts`, `DoorMaterialSchema` and `DoorForcingSchema`.
+- **Doors and locks.** A matching key is the quiet route. The noisy fallback needs the door's forcing tool, not always a crowbar, so finding that tool is part of the trade. How a door yields follows from its material and its own resistance; flimsy and burglary-safe leaves need not yield alike. Forced entry destroys the lock so the breach is one-way. A leaf shows its state, because the player has to see which doors no longer hold, and how close the rest are to giving way, before trusting one: damage repaints it in steps as it grows toward breaking, and a broken leaf has its own look. The leaf's material in the shared furniture material table authors both, so a mod retunes them; the steps and redraws work as for any piece (`DESIGN.md`, "Block entities").
+- **Breach by strength.** A door leaf yields to blows by its piece's breach, so flimsy and burglary-safe leaves yield differently. A blow below the minimum strength does nothing, so a weak attacker cannot grind through by waiting; stronger blows add up until they reach the durability. Zombie strength and a melee weapon's impulse share one scale, so a zombie's bash and a player's strike meet the same gate; a swing that meets no zombie strikes the closed leaf in its reach. Every blow makes a noise zombies hear. A broken leaf stands open with its lock gone and cannot be shut, so the breach is one-way, as forcing is, and movement, sight and sound treat it as an open doorway. Damage short of breaking leaves a boarded leaf's opening sides as they were. A container's front is its body, so a blow on it damages the whole piece; on a piece that is no door leaf, the breach sets the durability its condition is measured against, and reaching it ruins the piece (`DESIGN.md`, "Damage, destruction and dismemberment"). See `src/core/blockEntities.ts`, `BlockEntities.bash`, `src/game/session.ts`, `bashLeaf` and `strikeLeaf`, and `src/core/schema.ts`, `FurnitureSchema`.
+- **Cutting.** Cutting a wooden door will start a fire, so wood offers no cut method until a fire model exists. Cutting steel is a flame-cutting quality apart from a knife's `cutting`, and a finished cut spends gas from the torch's swappable cartridge, so one torch does not settle every cut door; a cut without enough gas won't start. Refilling a cartridge is direction only, with no source yet. See `src/core/prying.ts`, `pryPlan`, `src/core/torch.ts`, `spendFuel`, `src/core/longAction.ts`, `LongActions.beginForcing`, and `src/core/schema.ts`, `FurnitureMaterialSchema` and `DoorForcingSchema`.
 - **Electricity** keeps topology separate from energy balance so rate changes
   do not rebuild networks. Resource settlement and timestamped power transitions
   preserve appliance history across absences and wiring changes. The dispatch,

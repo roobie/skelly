@@ -1,11 +1,10 @@
 import { Box3, Color, Mesh, type MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import type { FurnitureDef } from '../src/core/schema.ts';
 import type { Facing } from '../src/core/templates.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
-import { fixtureBreach } from './economyFixtures.ts';
+import { buildFixtureRegistry as buildRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 
 const definitions = [
   { kind: 'cabinet', surface: 'wood', size: [3, 4, 1] },
@@ -19,6 +18,7 @@ const definitions = [
   appearance: { kind, surface },
   container: { pockets: [{ grid: [2, 2], handlingSimSeconds: 1 }] },
   breach: fixtureBreach(),
+  material: FIXTURE_MATERIAL,
 }));
 
 function fixture() {
@@ -108,6 +108,7 @@ describe('furniture detail', () => {
               ],
               solidFill: 0.01,
               breach: fixtureBreach(),
+              material: FIXTURE_MATERIAL,
             },
           ],
         },
@@ -137,7 +138,7 @@ describe('furniture detail', () => {
     const definition = definitions[0]!;
     for (const extra of [
       { shape: [{ position: [0, 0, 0], size: [1, 1, 1] }] },
-      { door: { material: 'wood', methods: {}, handlingSimSeconds: 1 } },
+      { door: { methods: {}, handlingSimSeconds: 1 } },
       { container: undefined },
     ]) {
       const { issues } = buildRegistry([

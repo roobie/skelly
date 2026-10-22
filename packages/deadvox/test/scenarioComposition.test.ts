@@ -15,7 +15,7 @@ import { startupContent } from './baseRegistry.ts';
 const BUNDLED_CONTENT = startupContent();
 const PROMISED_STOCK_ERROR = /Promised stock/;
 
-import { fixtureBreach, fixtureLootContext } from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureLootContext } from './economyFixtures.ts';
 import { fixtureScenario, fixtureScenarioSources, fixtureService, fixtureStart } from './fixtures/scenario.ts';
 
 const fixture = () => {
@@ -63,6 +63,7 @@ const fixture = () => {
           solid: false,
           readable: { title: 'Fixture lead', text: 'An independent fixture lead.' },
           breach: fixtureBreach(),
+          material: FIXTURE_MATERIAL,
         },
       ],
       templates: ['fixture_note_a', 'fixture_note_b', 'fixture_landmark_a', 'fixture_landmark_b'].map((id) => ({

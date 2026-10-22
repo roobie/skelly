@@ -26,9 +26,9 @@ const fixtureDoor = (id: string, barredFrom?: 'front' | 'back') => ({
   name: 'Fixture door',
   size: [2, 4, 1],
   color: '#777777',
+  material: 'breach_fixture',
   breach: { minimumStrength: MINIMUM, durability: DURABILITY },
   door: {
-    material: 'breach_fixture',
     methods: {},
     handlingSimSeconds: 0.5,
     ...(barredFrom ? { barredFrom } : {}),
@@ -43,7 +43,7 @@ const { registry, issues } = buildFixtureRegistry([
   {
     source: 'breach-fixture',
     data: {
-      doorMaterials: [{ id: 'breach_fixture', methods: [] }],
+      furnitureMaterials: [{ id: 'breach_fixture', methods: [] }],
       furniture: [fixtureDoor('breach_door'), fixtureDoor('breach_boarded', 'front')],
     },
   },
@@ -161,7 +161,7 @@ it('builds the breach fixture without issues and rejects any piece, door or not,
     buildRegistry([
       {
         source: 'breach-rejected',
-        data: { doorMaterials: [{ id: 'breach_fixture', methods: [] }], furniture: [piece] },
+        data: { furnitureMaterials: [{ id: 'breach_fixture', methods: [] }], furniture: [piece] },
       },
     ]).issues.map(({ path }) => path);
   expect(rejected({ ...leaf, breach })).toEqual([]);

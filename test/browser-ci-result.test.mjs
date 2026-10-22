@@ -10,6 +10,7 @@ const earlierRun101Failed = /Run 101, attempt 1 concluded failure/;
 const earlierRun102Cancelled = /Run 102, attempt 1 concluded cancelled/;
 const success = (layout) => ({
   fast: { result: layout === 'control' ? 'skipped' : 'success' },
+  unit: { result: layout === 'control' ? 'skipped' : 'success' },
   browser: { result: layout === 'control' ? 'skipped' : 'success' },
   'control-check': { result: layout === 'sharded' ? 'skipped' : 'success' },
   'control-stages': { result: layout === 'sharded' ? 'skipped' : 'success' },

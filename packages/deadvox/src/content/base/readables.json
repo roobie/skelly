@@ -7,6 +7,7 @@
       },
       "color": "#99794c",
       "id": "sample_sign",
+      "material": "wood",
       "name": "Placeholder sign",
       "readable": {
         "text": "PLACEHOLDER SIGN — NOT A ROUTE TO A REAL LOCATION\n\nThis is a sample of readable furniture. The hamlet signs and actual directions will be authored later.",

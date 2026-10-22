@@ -36,7 +36,6 @@ const { registry, issues } = buildRegistry([
           size: [2, 4, 1],
           color: '#666666',
           door: {
-            material: 'wood',
             methods: {},
             handlingSimSeconds: 0.3,
           },

@@ -55,7 +55,7 @@ const workflowIncludesPath = (workflow, event, file) => {
 test('Pages project checks run in their PR workflows', () => {
   const projects = [
     { name: 'Gungen', pageStep: 'Check and build gungen', workflow: gungen, job: 'check' },
-    { name: 'Deadvox', pageStep: 'Check and build deadvox', workflow: deadvox, job: 'fast' },
+    { name: 'Deadvox', pageStep: 'Check and build deadvox', workflow: deadvox, job: ['fast', 'unit'] },
     { name: 'Mobgen', pageStep: 'Check and build mobgen', workflow: mobgen, job: 'check' },
     {
       name: 'Thing authoring',
@@ -69,7 +69,7 @@ test('Pages project checks run in their PR workflows', () => {
     const step = pages.jobs.build.steps.find(({ name: stepName }) => stepName === pageStep);
     assert.ok(step, `Pages workflow has a ${name} build step`);
     const pagesCommands = commandLinesIn([step]);
-    const prCommands = commandLinesIn(workflow.jobs[job].steps);
+    const prCommands = [job].flat().flatMap((jobName) => commandLinesIn(workflow.jobs[jobName].steps));
     assert.ok(pagesCommands.length > 0, `Pages ${name} step has commands`);
 
     for (const command of pagesCommands) {

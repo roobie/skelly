@@ -11,7 +11,7 @@ import type { Zombie } from '../src/core/zombies.ts';
 import { downedBodyPlan } from '../src/game/downedBody.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
-import { buildFixtureRegistry as buildRegistry, fixtureBreach } from './economyFixtures.ts';
+import { buildFixtureRegistry as buildRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
 
 const registry = baseRegistry();
@@ -246,6 +246,7 @@ it('lists workstation components only when their furniture box is within two met
     color: '#ffffff',
     workstation: { id: 'fixture_station', qualities: { sawing: 1 }, workFactorBonus: 0.2 },
     breach: fixtureBreach(),
+    material: FIXTURE_MATERIAL,
   });
   const fixtureRegistry = { ...registry, furniture: fixtureFurniture };
   const inventory = new Inventory(fixtureRegistry);

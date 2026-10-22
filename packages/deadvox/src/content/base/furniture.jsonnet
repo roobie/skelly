@@ -5,9 +5,9 @@ local woodDoor = {
   name: 'Burglary-safe wooden door',
   size: [2, 4, 1],
   color: '#7a5534',
+  material: 'wood',
   breach: { minimumStrength: 4.5, durability: 150 },
   door: {
-    material: 'wood',
     handlingSimSeconds: 0.6,
     methods: {
       pry: {
@@ -19,7 +19,7 @@ local woodDoor = {
   },
 };
 breach.breaking(shape.colliding({
-  doorMaterials: [
+  furnitureMaterials: [
     {
       id: 'wood', methods: ['pry'], broken: { tint: '#d8c9a6', strength: 0.6 },
       damaged: [
@@ -34,6 +34,14 @@ breach.breaking(shape.colliding({
         { from: 0.01, tint: '#2a2a2e', strength: 0.2 },
         { from: 0.4, tint: '#2a2a2e', strength: 0.4 },
         { from: 0.75, tint: '#9a4a28', strength: 0.35 },
+      ],
+    },
+    {
+      id: 'plastic',
+      damaged: [
+        { from: 0.01, tint: '#4a4a44', strength: 0.15 },
+        { from: 0.4, tint: '#4a4a44', strength: 0.35 },
+        { from: 0.75, tint: '#e8e4d0', strength: 0.4 },
       ],
     },
   ],
@@ -333,10 +341,9 @@ breach.breaking(shape.colliding({
       },
     },
     woodDoor + {
-      id: 'steel_armoury_door', name: 'Steel armoury door', color: '#626a70',
+      id: 'steel_armoury_door', name: 'Steel armoury door', color: '#626a70', material: 'steel',
       breach: { minimumStrength: 9, durability: 300 },
       door: woodDoor.door + {
-        material: 'steel',
         methods: {
           cut: {
             quality: 'flame_cutting', level: 1, skill: 'mechanics',

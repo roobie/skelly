@@ -6,7 +6,7 @@ import { decodeSave } from '../src/core/saveFormat.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { buildFixtureRegistry } from './economyFixtures.ts';
+import { buildFixtureRegistry, FIXTURE_MATERIAL } from './economyFixtures.ts';
 import { capture, createRuntime, encodeFixture, formatVersion, type Runtime } from './snapshotTestSupport.ts';
 
 const base = readdirSync('src/content/base')
@@ -24,7 +24,6 @@ const door = (id: string) => ({
   size: [2, 4, 1],
   color: '#777777',
   door: {
-    material: 'fixture_material',
     handlingSimSeconds: 0.5,
     methods: {
       [methodId]: {
@@ -44,7 +43,7 @@ const { registry, issues } = buildFixtureRegistry([
   {
     source: 'reservation-fixture',
     data: {
-      doorMaterials: [{ id: 'fixture_material', methods: [methodId] }],
+      furnitureMaterials: [{ id: FIXTURE_MATERIAL, methods: [methodId] }],
       furniture: [
         door('fixture_door'),
         {

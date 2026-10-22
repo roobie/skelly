@@ -14,13 +14,14 @@ import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { fixtureBreach } from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials } from './economyFixtures.ts';
 
 const base = baseRegistry();
 const seed = 7;
 const PIECES_PATH = /^.*\.pieces/;
 const floor = { id: 'fixture_floor', name: 'Fixture floor', solid: true, color: '#808080' };
 const fixtureData = (): ContentFile => ({
+  furnitureMaterials: fixtureMaterials(),
   blocks: [floor],
   inventory: [...base.inventory.values()],
   items: [
@@ -68,6 +69,7 @@ const fixtureData = (): ContentFile => ({
       color: '#808080',
       container: { pockets: [{ grid: [2, 2], handlingSimSeconds: simSeconds(0) }] },
       breach: fixtureBreach(),
+      material: FIXTURE_MATERIAL,
     },
   ],
   templates: [
@@ -224,6 +226,23 @@ describe('ground loot', () => {
     expect(restored.inventory.hands.right?.uid).toBe(item.uid);
   });
 
+  it('wears the furniture a column spawn carries a wear share for, and leaves an unworn spawn intact', () => {
+    const { registry, site, session } = fixture();
+    const spawns = site.furnitureIn(0, 0);
+    expect(spawns.length).toBeGreaterThan(0);
+    const worn = { ...spawns[0]!, wear: 0.5 };
+    const runtime = session();
+    runtime.onColumn(0, 0, { ...site, furnitureIn: () => [worn] });
+    const [piece] = [...runtime.inventory.entities.records];
+    expect(piece).toBeDefined();
+    expect(piece!.damage).toBeGreaterThan(0);
+    expect(piece!.damage).toBeLessThan(registry.furniture.get(piece!.type)!.breach.durability);
+
+    const intact = session();
+    intact.onColumn(0, 0, { ...site, furnitureIn: () => [spawns[0]!] });
+    expect([...intact.inventory.entities.records][0]!.damage).toBeUndefined();
+  });
+
   it('marks empty columns and skips both furniture and loot enumeration on return', () => {
     const { site, session } = fixture(false);
     const runtime = session();
@@ -280,6 +299,7 @@ describe('ground loot', () => {
         size: [1, 1, 1],
         color: '#808080',
         breach: fixtureBreach(),
+        material: FIXTURE_MATERIAL,
       });
       data.templates![0]!.palette.C = { furniture, items: [{ item }] };
       return data;

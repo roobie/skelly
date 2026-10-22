@@ -1405,15 +1405,16 @@ export const ModelSchema = pipe(
 
 // ---- furniture ----
 
-const DoorMaterialSchema = pipe(
+const FurnitureMaterialSchema = pipe(
   strictObject({
     id: Id,
-    methods: array(Id),
+    /** Forcing methods a door of this material admits; a door's material must list them. */
+    methods: optional(array(Id)),
     /** How a broken leaf of this material is painted: its colour moves `strength` of the way to `tint`. */
     broken: optional(strictObject({ tint: Color, strength: Fraction })),
     /**
-     * How a leaf is painted as its damage grows toward breaking, so the player sees how close it is to giving way.
-     * Each step applies once the damage reaches `from`, a fraction of the leaf's durability; the last step reached wins.
+     * How a piece is painted as its damage grows toward ruin, so the player sees how close it is to giving way.
+     * Each step applies once the damage reaches `from`, a fraction of the piece's durability; the last step reached wins.
      */
     damaged: optional(array(strictObject({ from: Fraction, tint: Color, strength: Fraction }))),
   }),
@@ -1461,6 +1462,8 @@ const FurnitureSchema = pipe(
     /** Cells, in blocks: [x, y, z]. It's anchored at its lowest corner. */
     size: Size,
     color: Color,
+    /** The furniture material whose damage looks the piece shows (`DESIGN.md`, "Block entities"). */
+    material: Id,
     solid: optional(vBoolean()),
     /** A flat piece that may lie on a shut hatch (`DESIGN.md`, "Moving furniture"); it must be non-solid and one block high. */
     cover: optional(literal(true)),
@@ -1478,7 +1481,6 @@ const FurnitureSchema = pipe(
     door: optional(
       strictObject({
         handlingSimSeconds: SimSeconds,
-        material: Id,
         methods: record(Id, DoorForcingSchema),
         openNoise: optional(strictObject({ sound: picklist([...SOUND_EVENT_IDS]) })),
         /** It lies flat in a floor or roof and swings up on its hinge edge, which is on its facing side. */
@@ -1505,6 +1507,12 @@ const FurnitureSchema = pipe(
         }),
         check(({ from, to }) => from <= to, 'wear must run from the lower share to the higher'),
       ),
+    ),
+    /** What a ruined piece leaves besides its contents (`DESIGN.md`, "Damage, destruction and dismemberment"). */
+    ruin: optional(
+      strictObject({
+        debris: array(strictObject({ item: Id, count: pipe(Count, minValue(1, 'must be at least 1')) })),
+      }),
     ),
     /** The player climbs it; its facing is the side the climber stands on (`DESIGN.md`, "Ladders and hatches"). */
     climbable: optional(strictObject({ speedMetresPerSimSecond: Positive })),
@@ -1589,6 +1597,11 @@ const FurnitureSchema = pipe(
     'appearance needs a plain container without a shape, door or readable',
   ),
   check(({ door, shape }) => !(door?.hatch && shape), 'a hatch is its own panel and cannot have a shape'),
+  // The same reading as `src/core/blockEntities.ts`, `isBodyDoor`: any other door breaks instead of being ruined.
+  check(
+    ({ ruin, door, shape, container }) => !(ruin && door) || (shape !== undefined && container !== undefined),
+    'a door leaf breaks rather than being ruined, so it leaves no debris',
+  ),
   check(({ climbable, solid }) => !climbable || solid === false, 'a climbable piece must not be solid'),
   check(
     ({ cover, solid, size, door, climbable, mount }) =>
@@ -3217,7 +3230,7 @@ const LookDefaultsSchema = strictObject({
 const SECTION_DESCRIPTOR = {
   blocks: { schema: optional(array(BlockSchema)), label: 'blocks', order: 0 },
   items: { schema: optional(array(ItemSchema)), label: 'items', order: 1 },
-  doorMaterials: { schema: optional(array(DoorMaterialSchema)), label: 'door materials', order: 32 },
+  furnitureMaterials: { schema: optional(array(FurnitureMaterialSchema)), label: 'furniture materials', order: 32 },
   vehicleBlueprints: { schema: optional(array(VehicleBlueprintSchema)), label: 'vehicle blueprints', order: 33 },
   furniture: { schema: optional(array(FurnitureSchema)), label: 'furniture', order: 2 },
   loot: { schema: optional(array(LootTableSchema)), label: 'loot tables', order: 4 },

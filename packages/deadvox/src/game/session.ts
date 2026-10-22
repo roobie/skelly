@@ -44,6 +44,7 @@ import {
   placement,
   removalRefusal,
   removeFurniture,
+  ruinFurniture,
   tipCarried,
   turnCarried,
 } from '../core/furnitureMove.ts';
@@ -1102,12 +1103,21 @@ export const createSession = (options: SessionOptions) => {
       (item) => item && registry.items.get(item.type)?.firearm,
     );
   const meleeBlocker = worldMeleeBlocker(world, registry, inventory.entities, isSolid);
-  /** One blow on a closed leaf, a zombie's bash or the player's strike; every blow is heard, whatever it does. */
+  /**
+   * One blow on a piece, a zombie's bash or the player's strike; every blow is heard, whatever it does. A blow that
+   * ruins a piece destroys it, and whatever came down with it, with the work that names them.
+   */
   const bashLeaf = (leaf: BlockEntity | undefined, strength: number): boolean => {
-    if (!(leaf && entities.bash(leaf, strength))) {
+    const outcome = leaf && entities.bash(leaf, strength);
+    if (!(leaf && outcome)) {
       return false;
     }
     playNoisyWorldSound('door_bash', boxCentre(leaf.pos, leaf.size));
+    if (outcome === 'ruined') {
+      for (const piece of ruinFurniture(furnitureMover(), leaf)) {
+        forgetPiece(piece);
+      }
+    }
     return true;
   };
   /** A swing that meets no zombie strikes the closed leaf in its reach with the weapon's impulse. */
@@ -1745,6 +1755,13 @@ export const createSession = (options: SessionOptions) => {
   /** Containers with a search queued, so pressing again doesn't queue another. */
   const searching = new Set<BlockEntity>();
   const nameOf = (entity: BlockEntity) => entities.defOf(entity).name.toLowerCase();
+  /** Cancels the work that names a piece leaving the world, so a save never names a missing piece. */
+  const forgetPiece = (entity: BlockEntity): void => {
+    sim.actions.cancelNaming(entity.uid);
+    queue.cancelNaming(entity.uid);
+    searching.delete(entity);
+    ladderHold.releasePiece(entity);
+  };
   /**
    * The construction action's removal: it cancels the work that names the piece, then takes the piece out of the
    * world, so a save never names a missing piece; a refusal cancels nothing (`DESIGN.md`, "Edits persist").
@@ -1758,10 +1775,7 @@ export const createSession = (options: SessionOptions) => {
     if (refusal) {
       return refusal;
     }
-    sim.actions.cancelNaming(entity.uid);
-    queue.cancelNaming(entity.uid);
-    searching.delete(entity);
-    ladderHold.releasePiece(entity);
+    forgetPiece(entity);
     return removeFurniture(mover, entity);
   };
   queue.registerAction('furniture.search', (params) => {
@@ -2090,6 +2104,8 @@ export const createSession = (options: SessionOptions) => {
     liftFurniture: liftPiece,
     placeFurniture: placePiece,
     removeFurniture: removePiece,
+    /** One blow on a piece, landed as a zombie's bash or the player's strike lands it. */
+    bashFurniture: bashLeaf,
     turnFurniture: () => turnCarried(inventory),
     tipFurniture: () => tipCarried(inventory),
     /** Where the carried piece would stand if put down at an aimed cell, or why it can't be. */

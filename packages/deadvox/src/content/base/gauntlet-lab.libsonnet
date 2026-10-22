@@ -57,9 +57,9 @@ local cabinetShape = [
   loot: entry.loot + administration.loot,
   items: entry.items + administration.items,
   furniture: [
-    { id: 'gauntlet_lab_bulkhead', name: 'Steel bulkhead door', size: [4, 5, 2], color: '#68767b',
+    { id: 'gauntlet_lab_bulkhead', name: 'Steel bulkhead door', size: [4, 5, 2], color: '#68767b', material: 'steel',
       breach: { minimumStrength: 9, durability: 300 },
-      door: { material: 'steel', methods: {}, handlingSimSeconds: 1.2 },
+      door: { methods: {}, handlingSimSeconds: 1.2 },
       shape: [
         { position: [0, 0, 0.6], size: [4, 5, 0.8] },
         { position: [0.2, 0.2, 0.4], size: [3.6, 0.3, 1.2] },

@@ -206,6 +206,8 @@ export interface InteractionHint {
   readonly searched: boolean;
   readonly name: string;
   readonly fullName: string;
+  /** The condition band word of a damaged piece (`damageWord`); none for one in the top band. */
+  readonly damage?: string | undefined;
 }
 
 const doorInteractionText = ({
@@ -235,9 +237,11 @@ export const playInteractionText = ({
   climbable,
   restAction,
   searched,
-  name,
+  name: plainName,
   fullName,
+  damage,
 }: InteractionHint): HintText => {
+  const name = damage ? `${damage} ${plainName}` : plainName;
   if (door) {
     return doorInteractionText({ open, doorReason, lock, prying, name });
   }
@@ -253,5 +257,5 @@ export const playInteractionText = ({
   if (container) {
     return html`${keyCap('world.interact')}: ${searched ? 'look in' : 'search'} the ${name}`;
   }
-  return fullName;
+  return damage ? `${name.charAt(0).toUpperCase()}${name.slice(1)}` : fullName;
 };

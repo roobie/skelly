@@ -4,7 +4,7 @@ import { buildRegistry, type TemplateDef } from '../src/core/content.ts';
 import { rotationOf } from '../src/core/orientation.ts';
 import { furnitureOf } from '../src/core/site.ts';
 import { compileTemplate } from '../src/core/templates.ts';
-import { fixtureBreach, fixtureLootContext } from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureLootContext, fixtureMaterials } from './economyFixtures.ts';
 
 describe('posed furniture', () => {
   it('keeps an authored fallen cabinet pose through rotated placement and spawn', () => {
@@ -19,6 +19,7 @@ describe('posed furniture', () => {
       {
         source: 'posed-cabinet-fixture',
         data: {
+          furnitureMaterials: fixtureMaterials(),
           furniture: [
             {
               id: 'posed_cabinet',
@@ -28,6 +29,7 @@ describe('posed furniture', () => {
               appearance: { kind: 'cabinet', surface: 'wood' },
               container: { pockets: [{ grid: [1, 1], handlingSimSeconds: 1 }] },
               breach: fixtureBreach(),
+              material: FIXTURE_MATERIAL,
             },
           ],
           templates: [template],

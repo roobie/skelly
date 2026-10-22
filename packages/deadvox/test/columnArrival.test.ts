@@ -11,7 +11,7 @@ import { createWorldSetup, type WorldSetup } from '../src/game/worldSetup.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { startupContent } from './baseRegistry.ts';
-import { fixtureBreach } from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 
 vi.mock('../src/game/testHouse.ts', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../src/game/testHouse.ts')>()),
@@ -29,6 +29,7 @@ registry.furniture.set(crate.type, {
   size: crate.size,
   color: '#808080',
   breach: fixtureBreach(),
+  material: FIXTURE_MATERIAL,
 });
 const floor = registry.blocks.length;
 registry.blocks.push({ id: 'fixture_floor', name: 'Fixture floor', solid: true, color: '#808080' });
