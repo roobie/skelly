@@ -36,6 +36,7 @@ import {
   type ItemDef,
   type ModelDef,
   type RecipeDef,
+  type ScenarioDef,
   type SiteLayoutDef,
   type TemplateDef,
 } from './schema.ts';
@@ -1385,6 +1386,27 @@ const checkCamoBlocks = (registry: Registry, report: Report): void => {
   }
 };
 
+// The saved firing record is keyed by rule id, so a duplicate id would let one rule's firing silence another.
+const checkEventRules = (registry: Registry, scenario: ScenarioDef, report: Report): void => {
+  const ids = new Set<string>();
+  scenario.eventRules.forEach((rule, index) => {
+    if (ids.has(rule.id)) {
+      report('scenarios', scenario.id, `.eventRules[${index}].id`, `duplicate event rule "${rule.id}"`);
+    }
+    ids.add(rule.id);
+    rule.effects.forEach((effect, effectIndex) => {
+      if (!registry.zombies.has(effect.zombie)) {
+        report(
+          'scenarios',
+          scenario.id,
+          `.eventRules[${index}].effects[${effectIndex}].zombie`,
+          `no zombie type "${effect.zombie}"`,
+        );
+      }
+    });
+  });
+};
+
 const checkScenarios = (registry: Registry, report: Report): void => {
   for (const scenario of registry.scenarios.values()) {
     for (const [path, message] of scenarioPlanIssues(registry, scenario)) {
@@ -1396,6 +1418,7 @@ const checkScenarios = (registry: Registry, report: Report): void => {
     if (!registry.compression.has(scenario.compression)) {
       report('scenarios', scenario.id, '.compression', `no compression tuning "${scenario.compression}"`);
     }
+    checkEventRules(registry, scenario, report);
     if (
       registry.layouts.has(scenario.id) ||
       ['hamlet', 'city', 'forest', 'testHouse', 'weatheringTest'].includes(scenario.id)
