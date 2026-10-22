@@ -194,8 +194,9 @@ if (uPatterns > 0.5 && patId == PAT_CAMO) {
     ? patternShade(patId, patUV, max(patFw.x, patFw.y), patFw, patSeed)
     : 0.94 + 0.12 * cellHash(floor(vCell + 1e-3));
 }
-// Keep the zero-strength comparison on the pre-weathering colour path exactly.
-if (uWeathering > 0.0 && (uWeatheringSplitEnabled < 0.5 || vWorld.x >= uWeatheringSplit)) {
+// Keep the zero-strength comparison on the pre-weathering colour path exactly. A quad that cannot
+// weather (vWeatherable is 0 over all of it) skips the block: its mix would come out exactly 0.
+if (uWeathering > 0.0 && vWeatherable > 0.5 && (uWeatheringSplitEnabled < 0.5 || vWorld.x >= uWeatheringSplit)) {
   float verticalFace = 1.0 - abs(vFaceN.y);
   float weatherable = vWeatherable;
   float grain = vnoise(patUV * 1.7 + vec2(patSeed));
