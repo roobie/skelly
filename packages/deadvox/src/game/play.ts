@@ -3883,7 +3883,7 @@ export const startPlay = (
     );
   }
   // Shaders compile while the world streams in behind the main menu: started now, not awaited, so
-  // nothing waits for it. Models that load later (glTF materials) compile when first drawn.
+  // nothing waits for it.
   view.warmUp().catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));
   startRealFrames(frame);
   return {
