@@ -23,6 +23,8 @@ export interface ItemLookSlot {
 export interface ItemLook {
   readonly model: string;
   readonly slots: readonly ItemLookSlot[];
+  /** Exported merge groups the item has shed, such as a lit grenade's lever. */
+  readonly hidden: readonly string[];
   /** Equal exactly when two items draw the same. */
   readonly key: string;
 }
@@ -65,5 +67,15 @@ export const itemLook = (registry: Registry, item: Item): ItemLook | undefined =
       });
     }
   }
-  return { model, slots, key: [model, ...slots.map((entry) => `${entry.slot}=${entry.model ?? ''}`)].join('+') };
+  const hidden = modelDef?.lever && item.fuseRemainingSimSeconds !== undefined ? [modelDef.lever.mergeGroup] : [];
+  return {
+    model,
+    slots,
+    hidden,
+    key: [
+      model,
+      ...slots.map((entry) => `${entry.slot}=${entry.model ?? ''}`),
+      ...hidden.map((group) => `-${group}`),
+    ].join('+'),
+  };
 };

@@ -113,6 +113,18 @@ const visibleBounds = (object: Object3D): Box3 => {
   return box;
 };
 
+/** Hides the exported merge groups an item has shed; the glb keeps each group's name in its primitive's extras. */
+const hideShed = (root: Object3D, hidden: ItemLook['hidden']): void => {
+  if (hidden.length === 0) {
+    return;
+  }
+  root.traverse((child) => {
+    if (child instanceof Mesh && hidden.includes(child.geometry.userData.mergeGroup)) {
+      child.visible = false;
+    }
+  });
+};
+
 /** Both forms of a loaded model. */
 export const prepareModel = (def: ModelDef, scene: Object3D): Prepared => {
   applyModelMaterials(scene, MATERIALS);
@@ -227,6 +239,7 @@ export class ModelLibrary {
       return undefined;
     }
     const held = cloneHeldModel(prepared.held, prepared.actionParts);
+    hideShed(held.root, look.hidden);
     return { ...held, slots: this.attachParts(modelFrame(held.root, 'held'), look) };
   }
 
@@ -241,6 +254,7 @@ export class ModelLibrary {
       return undefined;
     }
     const root = prepared.ground.clone();
+    hideShed(root, look.hidden);
     const frame = modelFrame(root, 'ground');
     const slots = Object.values(this.attachParts(frame, look));
     if (slots.some((slot) => slot?.model)) {

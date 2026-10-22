@@ -1275,8 +1275,19 @@ const GunModelSchema = pipe(
   ),
 );
 
+/**
+ * The safety lever a fused throwable sheds when its fuse lights: the exported display mesh that leaves the model and
+ * how it flies off (`DESIGN.md`, "Hand grenade"). Hand-authored: the export does not carry it.
+ */
+const LeverModelSchema = strictObject({
+  mergeGroup: pipe(string(), nonEmpty()),
+  launchMetresPerSecond: Positive,
+  spinDegreesPerSecond: NonNegative,
+  lifetimeRealSeconds: PositiveRealSeconds,
+});
+
 export const ModelSchema = pipe(
-  modelSchema({ gun: optional(GunModelSchema) }),
+  modelSchema({ gun: optional(GunModelSchema), lever: optional(LeverModelSchema) }),
   check(
     ({ gun, anchors }) => gun?.internalMagazine === undefined || anchors?.loading_port !== undefined,
     'internal magazine metadata needs a loading_port anchor',
