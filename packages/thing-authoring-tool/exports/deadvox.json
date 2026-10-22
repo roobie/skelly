@@ -1661,7 +1661,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "compass"
+    "source": "compass",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "lighter",
@@ -1669,7 +1673,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "lighter"
+    "source": "lighter",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "matches",
@@ -1677,7 +1685,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "matches"
+    "source": "matches",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "dad_cabin_key",
@@ -1685,7 +1697,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "dad_cabin_key"
+    "source": "dad_cabin_key",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "pharmacy_key",
@@ -1693,7 +1709,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "pharmacy_key"
+    "source": "pharmacy_key",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "camp_armoury_key",
@@ -1701,7 +1721,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "camp_armoury_key"
+    "source": "camp_armoury_key",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "camp_hq_safe_key",
@@ -1709,7 +1733,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "camp_hq_safe_key"
+    "source": "camp_hq_safe_key",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "shed_key",
@@ -1717,7 +1745,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "shed_key"
+    "source": "shed_key",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "gauntlet_police_armoury_key",
@@ -1725,7 +1757,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "gauntlet_police_armoury_key"
+    "source": "gauntlet_police_armoury_key",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "gauntlet_lab_entry_card",
@@ -1733,7 +1769,11 @@
     "options": {
       "mass": "parts"
     },
-    "source": "gauntlet_lab_entry_card"
+    "source": "gauntlet_lab_entry_card",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
   },
   {
     "id": "tape_roll",
