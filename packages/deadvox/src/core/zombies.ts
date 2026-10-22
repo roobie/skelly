@@ -66,7 +66,6 @@ export const ACTIVE_ZOMBIE_RADIUS_METRES = 40;
 export const BACKGROUND_ZOMBIE_RATE = 2;
 export const BACKGROUND_ZOMBIE_SLICE_COUNT = 30;
 export const BACKGROUND_ZOMBIE_SLICE_RATE = BACKGROUND_ZOMBIE_RATE * BACKGROUND_ZOMBIE_SLICE_COUNT;
-const BACKGROUND_STEP_CAP_METRES = 1;
 export type ZombieMode = 'idle' | 'stroll' | 'search' | 'chase' | 'investigate' | 'return';
 export const zombieBodyDimensions = measureZombieBody;
 
@@ -75,6 +74,13 @@ const requiredFigureSeeds = (type: ZombieDef): readonly number[] => {
     throw new Error(`Zombie type ${type.id} is missing its authored figureSeeds`);
   }
   return type.figureSeeds;
+};
+
+const requiredGrabBand = (type: ZombieDef): number => {
+  if (type.attack.grabBandMetres === undefined) {
+    throw new Error(`Zombie type ${type.id} is missing its authored attack.grabBandMetres`);
+  }
+  return type.attack.grabBandMetres;
 };
 
 export const zombieAttackReachForType = (type: ZombieDef, figureSeed = AMALGAM_FIGURE_SEED): number =>
@@ -531,8 +537,8 @@ export interface PlayerSense {
   crouching?: boolean | undefined;
   lit: boolean;
   lightSeenFrom: number;
-  eyeHeightMetres?: number | undefined;
-  lightHeightMetres?: number | undefined;
+  /** Also the height of the light the player carries. */
+  eyeHeightMetres: number;
   /** Direct sunlight at the player's position; omitted by isolated perception fixtures. */
   sunlit?: boolean | undefined;
   lightSources?: readonly ZombieLightSource[] | undefined;
@@ -542,7 +548,7 @@ export interface PlayerSense {
 interface ZombieLightSource {
   pos: Vec3;
   seenFrom: number;
-  heightMetres?: number | undefined;
+  heightMetres: number;
   /** Direct sunlight at the source; omitted by isolated perception fixtures. */
   sunlit?: boolean | undefined;
   /** Player-carried light uses the darkness gate; independent sources use lure tuning. */
@@ -805,14 +811,14 @@ interface AttackReachProbe {
   isSolid: SolidAt;
 }
 
-/** A grab reaches horizontally from the body, within a vertical band matching a standing player, chest to chest. */
+/** A grab reaches horizontally from the body, within its type's vertical band, chest to chest. */
 const grabOrigin = (
-  { zombiePos, playerPos, blockSize }: AttackReachProbe,
+  { zombie, zombiePos, playerPos, blockSize }: AttackReachProbe,
   reachMetres: number,
   chestOffset: number,
 ): Vec3 | undefined =>
   horizontalDistance(playerPos, zombiePos) * blockSize > reachMetres ||
-  Math.abs(playerPos[1] - zombiePos[1]) * blockSize >= 1.7
+  Math.abs(playerPos[1] - zombiePos[1]) * blockSize >= requiredGrabBand(zombie.type)
     ? undefined
     : [zombiePos[0], zombiePos[1] + chestOffset, zombiePos[2]];
 
@@ -865,8 +871,7 @@ const spitOrigin = (zombiePos: Vec3, blockSize: number): Vec3 => [
 
 /** The chest follows the stance through the eye height, so crouching behind low cover lowers the spit's target. */
 const spitChest = (player: PlayerSense, tuning: SenseDef, blockSize: number): Vec3 => {
-  const metres =
-    player.eyeHeightMetres === undefined ? PLAYER_CHEST_METRES : player.eyeHeightMetres * tuning.chestEyeFraction;
+  const metres = player.eyeHeightMetres * tuning.chestEyeFraction;
   return [player.pos[0], player.pos[1] + metres / blockSize, player.pos[2]];
 };
 
@@ -1160,7 +1165,7 @@ const hearingTier = ({
   if (distance > range * zombie.hearingModel.farMultiplier) {
     return undefined;
   }
-  const earOffset = 1.3 / blockSize;
+  const earOffset = zombie.earHeightMetres / blockSize;
   const origin: Vec3 = [from[0], from[1] + earOffset, from[2]];
   const source: Vec3 = [player.pos[0], player.pos[1] + earOffset, player.pos[2]];
   const wallScale = soundOcclusion({ listener: origin, source, isSolid, globalWall: tuning.wall }).occluded
@@ -1237,7 +1242,7 @@ export const hearVocalNoise = ({
   if (distance > noise.radiusMetres * zombie.hearing * zombie.hearingModel.farMultiplier) {
     return undefined;
   }
-  const earOffset = 1.3 / blockSize;
+  const earOffset = zombie.earHeightMetres / blockSize;
   const origin: Vec3 = [from[0], from[1] + earOffset, from[2]];
   const source: Vec3 = [noise.pos[0], noise.pos[1] + earOffset, noise.pos[2]];
   const wallScale = soundOcclusion({ listener: origin, source, isSolid, globalWall: tuning.wall }).occluded
@@ -1285,17 +1290,11 @@ const seesPlayer = ({
   if (metres > maximumRange) {
     return false;
   }
-  const rayOrigin: Vec3 = [from[0], from[1] + 1.3 / blockSize, from[2]];
-  const eyeHeight = player.eyeHeightMetres ?? 1.3;
-  const lightHeight = player.lightHeightMetres ?? eyeHeight;
-  const clearAtHeight = (heightMetres: number): boolean => {
-    const rayTarget: Vec3 = [player.pos[0], player.pos[1] + heightMetres / blockSize, player.pos[2]];
-    const toTarget = sub(rayTarget, rayOrigin);
-    return raycast(rayOrigin, unit(toTarget), Math.hypot(...toTarget), isSolid) === undefined;
-  };
-  const clear = clearAtHeight(eyeHeight);
-  const lightClear = !player.lit || clearAtHeight(lightHeight);
-  if (player.lit && lightClear && playerLightScale > 0) {
+  const rayOrigin: Vec3 = [from[0], from[1] + zombie.eyeHeightMetres / blockSize, from[2]];
+  const rayTarget: Vec3 = [player.pos[0], player.pos[1] + player.eyeHeightMetres / blockSize, player.pos[2]];
+  const toTarget = sub(rayTarget, rayOrigin);
+  const clear = raycast(rayOrigin, unit(toTarget), Math.hypot(...toTarget), isSolid) === undefined;
+  if (player.lit && clear && playerLightScale > 0) {
     sightRange = Math.max(sightRange, player.lightSeenFrom * playerLightScale * lightSpotScale);
   } else if (player.crouching) {
     sightRange *= tuning.crouch.sightRangeScale;
@@ -1339,9 +1338,8 @@ const canSeeLight = ({
   if (dot < Math.cos((zombie.sightCone * Math.PI) / 180)) {
     return undefined;
   }
-  const origin: Vec3 = [from[0], from[1] + 1.3 / blockSize, from[2]];
-  const height = source.heightMetres ?? 0.15;
-  const target: Vec3 = [source.pos[0], source.pos[1] + height / blockSize, source.pos[2]];
+  const origin: Vec3 = [from[0], from[1] + zombie.eyeHeightMetres / blockSize, from[2]];
+  const target: Vec3 = [source.pos[0], source.pos[1] + source.heightMetres / blockSize, source.pos[2]];
   const ray = sub(target, origin);
   return raycast(origin, unit(ray), Math.hypot(...ray), isOpaque) === undefined ? distance : undefined;
 };
@@ -2242,9 +2240,10 @@ export class ZombieSystem {
     };
     const rng = Rng.stream(this.options.seed ?? 0, `horde:${id}`);
     this.hordes.set(id, { state, rng });
+    const { innerMetres, stepMetres } = type.hordeSpacing;
     for (let index = 0; index < count; index++) {
       const angle = index * Math.PI * (3 - Math.sqrt(5));
-      const radiusMetres = 0.35 + 0.38 * Math.sqrt(index);
+      const radiusMetres = innerMetres + stepMetres * Math.sqrt(index);
       const offset: Vec3 = [
         (Math.cos(angle) * radiusMetres) / this.options.blockSize,
         0,
@@ -2439,7 +2438,11 @@ export class ZombieSystem {
         direction = distance > 0.5 ? unit([offset[0], 0, offset[2]]) : [0, 0, 0];
         speed =
           distance > 0.5
-            ? Math.min(zombie.type.speed.chaseMetresPerSimSecond, BACKGROUND_STEP_CAP_METRES / dt, distance / dt)
+            ? Math.min(
+                zombie.type.speed.chaseMetresPerSimSecond,
+                zombie.type.speed.backgroundStepMetres / dt,
+                distance / dt,
+              )
             : 0;
         if (direction[0] !== 0 || direction[2] !== 0) {
           zombie.facing = copy(direction);

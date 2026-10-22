@@ -45,6 +45,7 @@ const senseTuning = {
     renderedBeamLimit: 3,
     throwArmSpeedMetresPerRealSecond: 6,
     throwArmEnergyJoules: 20,
+    groundLight: { senseHeightMetres: 0.075, renderLiftMetres: 0.4 },
   },
 } as const;
 

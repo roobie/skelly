@@ -1,7 +1,8 @@
 import { Group, type PerspectiveCamera, PointLight, type Scene, Vector3 } from 'three';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Inventory, Location } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
-import { lightExposureFor, WORLD_LIGHT_HEIGHT_METRES } from '../core/lights.ts';
+import { lightExposureFor } from '../core/lights.ts';
 import type { HeldItems } from './hands.ts';
 import type { PileMeshes } from './piles.ts';
 
@@ -29,9 +30,9 @@ function handPriority(location: Location): number {
 }
 
 function sourcePosition(
-  item: Item,
-  location: Location,
+  { item, location }: { item: Item; location: Location },
   { held, piles, camera, blockSize }: LightPoolContext,
+  groundLiftMetres: number,
   out: Vector3,
 ): void {
   if (location.kind === 'hand') {
@@ -41,7 +42,7 @@ function sourcePosition(
   } else if (location.kind === 'pile') {
     if (!piles?.lightPositionOf(item, out)) {
       const [x, y, z] = location.pile.pos;
-      out.set((x + 0.5) * blockSize, y * blockSize + WORLD_LIGHT_HEIGHT_METRES, (z + 0.5) * blockSize);
+      out.set((x + 0.5) * blockSize, y * blockSize + groundLiftMetres, (z + 0.5) * blockSize);
     }
   } else {
     out.copy(camera.position);
@@ -88,6 +89,7 @@ export class LightPool {
 
   update(inventory: Inventory, context: LightPoolContext): void {
     const { camera, blockSize, daylightScale } = context;
+    const groundLiftMetres = inventory.registry.senses.get(CORE_CONTENT_IDS.player)!.light.groundLight.renderLiftMetres;
     const entries = [...inventory.items()]
       .map((entry, order) => ({
         ...entry,
@@ -128,7 +130,7 @@ export class LightPool {
       }
       const spec = inventory.registry.items.get(entry.item.type)!.light!;
       const position = this.positions[index]!;
-      sourcePosition(entry.item, entry.location, context, position);
+      sourcePosition(entry, context, groundLiftMetres, position);
       light.position.copy(position);
       light.color.set(spec.color);
       light.distance = spec.radius;

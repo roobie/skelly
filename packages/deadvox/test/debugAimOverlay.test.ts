@@ -25,6 +25,7 @@ const standing = (position: Vec3, facing: Vec3) => {
       movement: 'still',
       lit: false,
       lightSeenFrom: 40,
+      eyeHeightMetres: 1.3,
     }),
     isSolid: FLOOR,
     isOpaque: FLOOR,
