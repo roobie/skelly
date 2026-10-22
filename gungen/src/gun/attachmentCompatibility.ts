@@ -202,7 +202,8 @@ const passesFitRules = ({
     return false;
   }
   const hostPort = base.defs.get(host)?.ports.find(({ id }) => id === port);
-  const optic = candidate.family === 'sight' ? getOptic(candidate.params.type, candidate.params.mountSection) : undefined;
+  const optic =
+    candidate.family === 'sight' ? getOptic(candidate.params.type, candidate.params.mountSection) : undefined;
   if (optic && !(hostPort && mountCanAccept(hostPort, optic.mount, slot.notchIndex ?? 0))) {
     return false;
   }
