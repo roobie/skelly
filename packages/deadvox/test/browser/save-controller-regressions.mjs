@@ -64,6 +64,34 @@ const url = browserStageUrl(
   'save-controller-regressions',
   `http://127.0.0.1:${address.port}/?seed=73&radius=32&site=testHouse&actors=boxes&post=0&sunshadow=0&torchshadow=0&save-test=1&save-backend=indexeddb`,
 );
+// A practice exit that stalls reports the page state a click needs (#705), since the cause of an earlier stall was never seen.
+async function clickLeavesPractice(page, button) {
+  try {
+    await Promise.all([
+      page.waitForURL((target) => !target.searchParams.has('tutorial'), { waitUntil: 'commit' }),
+      button.click(),
+    ]);
+  } catch (error) {
+    const state = await page
+      .evaluate(() => {
+        const node =
+          document.querySelector('#death button') ??
+          [...document.querySelectorAll('button')].find((b) => b.textContent === 'Exit practice');
+        const box = node?.getBoundingClientRect();
+        const hit = box && document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+        return {
+          url: location.href,
+          pointerLock: document.pointerLockElement?.id ?? null,
+          button: box && { x: box.x, y: box.y, width: box.width, height: box.height, disabled: node.disabled },
+          hitIsButton: hit === node,
+          hit: hit && `${hit.tagName}#${hit.id}`,
+          active: document.activeElement && `${document.activeElement.tagName}#${document.activeElement.id}`,
+        };
+      })
+      .catch((reason) => ({ unreadable: String(reason) }));
+    throw new Error(`Practice exit click did not leave practice: ${JSON.stringify(state)}`, { cause: error });
+  }
+}
 const QUOTA_ERROR = /quota regression/i;
 const BEST_EFFORT = /best.effort/i;
 const PERSISTENCE_GRANTED = /Persistent storage granted/;
@@ -308,11 +336,7 @@ try {
         await page.evaluate((namespace) => sessionStorage.getItem(`deadvox.dead-world:${namespace}`), saved.namespace),
         null,
       );
-      // Native pointer activation of the practice exits is quarantined in #705; its root cause is unresolved.
-      await Promise.all([
-        page.waitForURL((target) => !target.searchParams.has('tutorial'), { waitUntil: 'commit' }),
-        page.locator('#death button').press('Enter'),
-      ]);
+      await clickLeavesPractice(page, page.locator('#death button'));
       await page.waitForFunction(
         () => document.querySelector('#tutorial-start') && document.querySelector('#startup-screen').hidden,
       );
@@ -320,10 +344,7 @@ try {
       assert.equal(await page.locator('#continue').isEnabled(), true);
       await page.click('#tutorial-start');
       await page.waitForFunction(() => globalThis.tutorialSession !== undefined);
-      await Promise.all([
-        page.waitForURL((target) => !target.searchParams.has('tutorial'), { waitUntil: 'commit' }),
-        page.getByRole('button', { name: 'Exit practice', exact: true }).press('Enter'),
-      ]);
+      await clickLeavesPractice(page, page.getByRole('button', { name: 'Exit practice', exact: true }));
       await page.waitForFunction(() => document.querySelector('#startup-screen').hidden);
       assert.equal(await page.locator('#continue').isEnabled(), true);
     } finally {
