@@ -9,10 +9,11 @@ local part(id, name, size, capabilities, description=null) = {
   vehicle: { capabilities: capabilities },
 } + (if description == null then {} else { description: description });
 local fitting(id, part, at, supportedBy=[]) = { id: id, part: part, at: at, supportedBy: supportedBy };
-// A near-side fitting and its far-side twin, reflected across the centre plane.
+// A near-side fitting and its far-side twin, reflected across the centre plane. `0 - z` rather than `-z`
+// keeps a centred twin at 0: -0 doesn't survive a JSON round trip, so the admitted registry would differ.
 local pair(id, part, at, supportedBy) = [
   fitting(id + '_near', part, at, [support + '_near' for support in supportedBy.paired] + supportedBy.shared),
-  fitting(id + '_far', part, [at[0], at[1], -at[2]], [support + '_far' for support in supportedBy.paired] + supportedBy.shared) + { mirror: true },
+  fitting(id + '_far', part, [at[0], at[1], 0 - at[2]], [support + '_far' for support in supportedBy.paired] + supportedBy.shared) + { mirror: true },
 ];
 local on(shared=[], paired=[]) = { shared: shared, paired: paired };
 local batteryBay(tray, at, supportedBy=[]) = [

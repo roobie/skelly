@@ -1342,7 +1342,7 @@
           "supportedBy": ["shell"]
         },
         {
-          "at": [0, 0, -0],
+          "at": [0, 0, 0],
           "id": "front_door_far",
           "mirror": true,
           "part": "hatchback_front_door",
@@ -1355,7 +1355,7 @@
           "supportedBy": ["shell"]
         },
         {
-          "at": [0, 0, -0],
+          "at": [0, 0, 0],
           "id": "rear_door_far",
           "mirror": true,
           "part": "hatchback_rear_door",
@@ -1368,7 +1368,7 @@
           "supportedBy": ["shell"]
         },
         {
-          "at": [0, 0, -0],
+          "at": [0, 0, 0],
           "id": "front_wing_far",
           "mirror": true,
           "part": "hatchback_front_wing",
@@ -1381,7 +1381,7 @@
           "supportedBy": ["shell"]
         },
         {
-          "at": [0, 0, -0],
+          "at": [0, 0, 0],
           "id": "tail_lamp_far",
           "mirror": true,
           "part": "hatchback_tail_lamp",
@@ -1394,7 +1394,7 @@
           "supportedBy": ["shell"]
         },
         {
-          "at": [0, 0, -0],
+          "at": [0, 0, 0],
           "id": "front_strut_far",
           "mirror": true,
           "part": "hatchback_front_strut",
