@@ -670,6 +670,7 @@ local content = {
 };
 content + {
   zombies: [zombie + {
+    hearingModel+: { loudNoiseRadiusMetres: 30 },
     attack+: {
       moves: [move + { motion: meleeMotions[move.id] } for move in zombie.attack.moves],
     },

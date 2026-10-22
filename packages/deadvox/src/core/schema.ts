@@ -2607,6 +2607,7 @@ const ZombieSchema = strictObject({
       farMultiplier: pipe(Positive, minValue(1, 'must be at least 1')),
       bearingErrorRadians: pipe(Positive, maxValue(Math.PI, 'must be at most pi')),
       investigationDistanceMetres: Positive,
+      loudNoiseRadiusMetres: Positive,
       searchSimSeconds: SimDurationRange,
       searchRadiusMetres: Positive,
       searchStrollSimSeconds: SimDurationRange,
