@@ -57,7 +57,7 @@ export const firearmShotSound = (
   registry: Registry,
   item: Item,
   perspective: 'player' | 'actor' = 'player',
-): { event: SoundId; sourceLabel: string; listenerRelative: boolean } => {
+): { event: SoundId; bodyEvent?: SoundId; sourceLabel: string; listenerRelative: boolean } => {
   const profile = defOf(registry, item.type).firearm;
   if (!profile) {
     throw new Error(`item "${item.type}" is not a firearm`);
@@ -68,6 +68,7 @@ export const firearmShotSound = (
   }
   return {
     event: suppressed ? profile.suppressedShotSound! : profile.shotSound,
+    ...(!suppressed && profile.shotBodySound !== undefined ? { bodyEvent: profile.shotBodySound } : {}),
     sourceLabel: item.type,
     listenerRelative: perspective === 'player',
   };

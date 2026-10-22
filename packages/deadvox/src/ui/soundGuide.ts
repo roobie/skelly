@@ -248,6 +248,13 @@ const TRIGGER_ENTRIES = [
     },
   ],
   [
+    'shotgun_boom',
+    {
+      trigger: 'Fire a chambered pump shotgun with LMB; this deep layer sounds with the blast.',
+      note: 'The bolt rifle’s CC0 report slowed under the blast for body.',
+    },
+  ],
+  [
     'shotgun_rack_back',
     {
       trigger: 'Double-press R or Use Rack on the held pump to start its backward hand stroke.',
