@@ -346,6 +346,43 @@ describe('furniture', () => {
     expect(colours()).not.toEqual(intact);
   });
 
+  it('repaints a door leaf damaged short of breaking, on the view that already drew it intact', () => {
+    const entities = new BlockEntities(registry);
+    const door = entities.add({ type: 'wood_door', pos: [4, 1, 0], size: [2, 4, 1], facing: 'n' })!;
+    const furniture = new FurnitureMeshes(BLOCK_SIZE);
+    const colours = (): string[] => {
+      const found: string[] = [];
+      furniture.group.traverse((child) => {
+        if ((child as Mesh).isMesh) {
+          found.push(((child as Mesh).material as MeshLambertMaterial).color.getHexString());
+        }
+      });
+      return found.sort();
+    };
+    furniture.sync(entities);
+    const intact = colours();
+    const { toughness } = entities.defOf(door).door!.breach!;
+    expect(entities.bash(door, toughness * 0.8)).toBe('damaged');
+    furniture.sync(entities);
+    expect(door.broken).toBeUndefined();
+    expect(colours()).not.toEqual(intact);
+  });
+
+  it('keeps a drawn door leaf when a blow leaves its look unchanged', () => {
+    const entities = new BlockEntities(registry);
+    const door = entities.add({ type: 'wood_door', pos: [4, 1, 0], size: [2, 4, 1], facing: 'n' })!;
+    const { toughness, minimumStrength } = entities.defOf(door).door!.breach!;
+    const furniture = new FurnitureMeshes(BLOCK_SIZE);
+    entities.bash(door, toughness * 0.8);
+    furniture.sync(entities);
+    const [drawn] = furniture.group.children;
+    const { standing } = entities;
+    expect(entities.bash(door, minimumStrength)).toBe('damaged');
+    expect(entities.standing).toBe(standing);
+    furniture.sync(entities);
+    expect(furniture.group.children[0]).toBe(drawn);
+  });
+
   it('picks the closed HQ safe only through its visible door', () => {
     const definition = registry.furniture.get('camp_hq_safe')!;
     const entities = new BlockEntities(registry);

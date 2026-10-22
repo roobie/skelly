@@ -354,7 +354,6 @@ const CURVED_MAGAZINE_PROFILES: Readonly<Record<'ak74' | 'akm' | 'stanag30', Cur
 };
 const AK_MAGAZINE_CURVE_VARIANTS = ['ak74', 'akm'] as const;
 const AK_MAGAZINE_ROCK_IN_SWEEP = 4;
-const DROPPED_STOCK_WRIST_TOP_Y = -1.5;
 const MAGAZINE_HOUSING_FRONT_LENGTH = 1.5;
 const MAGAZINE_HOUSING_REAR_LENGTH = 2;
 const MAGAZINE_HOUSING_REAR_WALL = 0.5;
@@ -374,7 +373,6 @@ const MAGAZINE_ORIENTATIONS = ['straight', 'tilt', 'slant-5', 'slant-8', 'slant-
 const MAGAZINE_ORIENTATION_PATTERN = /^(slant)-(5|8|10)$/;
 export const LOWER_LAYOUTS = {
   conventional: { tiltedMagazineProfiles: ['standard'] },
-  bullpup: { tiltedMagazineProfiles: [] },
   trigger: { tiltedMagazineProfiles: [] },
   pump: { tiltedMagazineProfiles: [], triggerAssembly: COMPACT_TRIGGER_PLATE },
   ak: { tiltedMagazineProfiles: [] },
@@ -383,7 +381,6 @@ export const LOWER_LAYOUTS = {
 } as const;
 const LOWER_TRIGGER_X = {
   conventional: -10.75,
-  bullpup: 5,
   trigger: -11.5,
   pump: -13,
   ak: AK_PROPORTIONS.lower.triggerX,
@@ -392,7 +389,6 @@ const LOWER_TRIGGER_X = {
 } as const;
 const LOWER_GRIP_X = {
   conventional: -13,
-  bullpup: 3,
   trigger: -14,
   ak: AK_PROPORTIONS.lower.gripX,
   ar: -13,
@@ -1664,9 +1660,9 @@ const receiver: PartFamily = {
     actionFrame: choice(AR_ACTION_LAYOUT.frameId),
     /** box: magazine through the lower. top: loaded from above. tube: tube magazine. */
     feed: choice('box', 'top', 'tube'),
-    section: choice('standard', 'ar', 'pump', 'ak', 'sporter'),
+    section: choice('standard', 'ar', 'pump', 'sporter'),
     stockStyle: {
-      ...choice('straight', 'sporting', 'thumbhole', 'dropped', 'm4', 'tapered', 'tapered-sawed', 'ak-buttstock'),
+      ...choice('straight', 'sporting', 'thumbhole', 'm4', 'tapered', 'tapered-sawed', 'ak-buttstock'),
       from: [{ port: 'stock', param: 'style' }],
     },
     carrierPattern: {
@@ -2384,7 +2380,6 @@ const boltCarrier: PartFamily = {
  * receiver's X (0 at the receiver's front face); y = 0 is the receiver's
  * underside.
  *   conventional  magazine ahead of the grip
- *   bullpup       grip ahead of the magazine, with the butt built in
  *   trigger       trigger and grip anchor for tube-fed, top-fed, and revolver designs
  */
 const lower: PartFamily = {
@@ -2556,7 +2551,6 @@ const lower: PartFamily = {
     const integralRearExtension = params.integral === 'yes' ? (wellDepth - MAGAZINE_WELL_DEPTH) / 2 : 0;
     const conventionalGripX = (recessedConventional ? -12.75 : LOWER_GRIP_X.conventional) - integralRearExtension;
     const conventionalTriggerX = (recessedConventional ? -10.5 : LOWER_TRIGGER_X.conventional) - integralRearExtension;
-    const bullpupWell = well(-3.5 - MAGAZINE_DEPTH / 2);
     const magazineHousing = (prefix: string, centerX: number, angle: number, frontPanelThickness: number): Solid[] => {
       const halfDepth = MAGAZINE_WELL_DEPTH / 2;
       const z0 = MAGAZINE_WELL_WIDTH / 2;
@@ -2658,18 +2652,6 @@ const lower: PartFamily = {
           axes: [],
         };
       }
-      case 'bullpup':
-        return {
-          family: 'lower',
-          solids: [
-            ...magazineWellFrame(-16, 9, bullpupWell.port.pos[0]),
-            solid('butt', [-18, -7, -1.75], [-16, 5, 1.75]),
-            ...triggerGuards,
-          ],
-          ports: [top, grip(LOWER_GRIP_X.bullpup), bullpupWell.port],
-          keepOuts: [triggerFinger, bullpupWell.path],
-          axes: [],
-        };
       case 'ak': {
         // The receiver's lower half: the frame runs its full length and width, down to its bottom.
         const akWell = well(AK_PROPORTIONS.lower.magazineX);
@@ -3549,7 +3531,7 @@ const handguard: PartFamily = {
                 id: 'rail-bottom',
                 mount: 'rail-bottom',
                 gender: 'female' as const,
-                pos: [2, snapGrid(-outerY), 0] as Vec3,
+                pos: [2, akLayout ? AK_PROPORTIONS.handguard.lowerBottomU : snapGrid(-outerY), 0] as Vec3,
                 normal: NEG_Y,
                 up: X,
                 slots: { count: (len - 4) / 2 + 1, pitch: 2 },
@@ -4493,7 +4475,7 @@ const stock: PartFamily = {
   name: 'stock',
   params: {
     length: size,
-    style: choice('straight', 'sporting', 'dropped', 'ak-buttstock', 'm4', 'tapered', 'tapered-sawed', 'thumbhole'),
+    style: choice('straight', 'sporting', 'ak-buttstock', 'm4', 'tapered', 'tapered-sawed', 'thumbhole'),
     combDegrees: choice(...sportingStockParams.combDegrees),
     section: { ...choice('standard', 'ar', 'pump', 'ak', 'sporter'), from: [{ port: 'front', param: 'section' }] },
   },
@@ -4600,19 +4582,6 @@ const stock: PartFamily = {
           },
         ],
         tags: [FIRING_GRIP],
-      };
-    }
-    if (params.style === 'dropped') {
-      return {
-        family: 'stock',
-        solids: [
-          solid('comb', [-len, -3, -1.5], [-6, -1.5, 1.5]),
-          solid('wrist', [-6, -4, -1.5], [0, DROPPED_STOCK_WRIST_TOP_Y, 1.5]),
-          solid('butt', [-len - 1, -8, -1.75], [-len, 0, 1.75]),
-        ],
-        ports: [port],
-        keepOuts: [],
-        axes: [cheekDatum],
       };
     }
     return {

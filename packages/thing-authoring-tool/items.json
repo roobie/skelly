@@ -1938,6 +1938,353 @@
     {
       "connections": [],
       "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "jeans",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "jeans",
+      "parts": [
+        {
+          "family": "folded-garment",
+          "finish": {
+            "body": "plastic-blue",
+            "trim": "paint-charcoal"
+          },
+          "id": "jeans",
+          "massKg": 0.69999999999999996,
+          "params": {
+            "cargoDepth": "0",
+            "depth": "0.44",
+            "height": "0.044999999999999998",
+            "hoodDepth": "0",
+            "legGap": "0.025000000000000001",
+            "pocketDepth": "0",
+            "sleeveLength": "0",
+            "style": "pants",
+            "width": "0.38"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "rubber_boots",
+        "roll": 0,
+        "solid": "shaft--1",
+        "turn": [0, 0, -90]
+      },
+      "id": "rubber_boots",
+      "parts": [
+        {
+          "family": "boots",
+          "finish": {
+            "body": "paint-charcoal",
+            "trim": "steel-grey"
+          },
+          "id": "rubber_boots",
+          "massKg": 1.8,
+          "params": {
+            "depth": "0.34000000000000002",
+            "gap": "0.025000000000000001",
+            "height": "0.22",
+            "width": "0.28000000000000003"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "cargo_pants",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "cargo_pants",
+      "parts": [
+        {
+          "family": "folded-garment",
+          "finish": {
+            "body": "cord-olive",
+            "trim": "paint-charcoal"
+          },
+          "id": "cargo_pants",
+          "massKg": 0.80000000000000004,
+          "params": {
+            "cargoDepth": "0.035000000000000003",
+            "depth": "0.46000000000000002",
+            "height": "0.050000000000000003",
+            "hoodDepth": "0",
+            "legGap": "0.025000000000000001",
+            "pocketDepth": "0",
+            "sleeveLength": "0",
+            "style": "pants",
+            "width": "0.40000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "hoodie",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "hoodie",
+      "parts": [
+        {
+          "family": "folded-garment",
+          "finish": {
+            "body": "plastic-red",
+            "trim": "paint-charcoal"
+          },
+          "id": "hoodie",
+          "massKg": 0.59999999999999998,
+          "params": {
+            "cargoDepth": "0",
+            "depth": "0.34000000000000002",
+            "height": "0.059999999999999998",
+            "hoodDepth": "0.13",
+            "legGap": "0",
+            "pocketDepth": "0.025000000000000001",
+            "sleeveLength": "0.16",
+            "style": "top",
+            "width": "0.41999999999999998"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "jacket",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "jacket",
+      "parts": [
+        {
+          "family": "folded-garment",
+          "finish": {
+            "body": "paperboard-brown",
+            "trim": "paint-charcoal"
+          },
+          "id": "jacket",
+          "massKg": 1.2,
+          "params": {
+            "cargoDepth": "0",
+            "depth": "0.35999999999999999",
+            "height": "0.070000000000000007",
+            "hoodDepth": "0",
+            "legGap": "0",
+            "pocketDepth": "0.029999999999999999",
+            "sleeveLength": "0.17000000000000001",
+            "style": "top",
+            "width": "0.44"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "utility_vest",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "utility_vest",
+      "parts": [
+        {
+          "family": "folded-garment",
+          "finish": {
+            "body": "polymer-od-green",
+            "trim": "paint-charcoal"
+          },
+          "id": "utility_vest",
+          "massKg": 0.90000000000000002,
+          "params": {
+            "cargoDepth": "0",
+            "depth": "0.29999999999999999",
+            "height": "0.059999999999999998",
+            "hoodDepth": "0",
+            "legGap": "0",
+            "pocketDepth": "0.035000000000000003",
+            "sleeveLength": "0",
+            "style": "vest",
+            "width": "0.38"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "fanny_pack",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "fanny_pack",
+      "parts": [
+        {
+          "family": "bag",
+          "finish": {
+            "body": "plastic-blue",
+            "trim": "paint-charcoal"
+          },
+          "id": "fanny_pack",
+          "massKg": 0.20000000000000001,
+          "params": {
+            "depth": "0.10000000000000001",
+            "flapHeight": "0",
+            "handleHeight": "0",
+            "height": "0.14000000000000001",
+            "pocketDepth": "0.025000000000000001",
+            "pocketHeight": "0.074999999999999997",
+            "strapWidth": "0.017999999999999999",
+            "width": "0.32000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "school_backpack",
+        "roll": 0,
+        "solid": "handle",
+        "turn": [0, 0, -90]
+      },
+      "id": "school_backpack",
+      "parts": [
+        {
+          "family": "bag",
+          "finish": {
+            "body": "plastic-red",
+            "trim": "paint-charcoal"
+          },
+          "id": "school_backpack",
+          "massKg": 0.59999999999999998,
+          "params": {
+            "depth": "0.17000000000000001",
+            "flapHeight": "0",
+            "handleHeight": "0.040000000000000001",
+            "height": "0.46000000000000002",
+            "pocketDepth": "0.035000000000000003",
+            "pocketHeight": "0.14999999999999999",
+            "strapWidth": "0.025000000000000001",
+            "width": "0.34000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "hiking_backpack",
+        "roll": 0,
+        "solid": "handle",
+        "turn": [0, 0, -90]
+      },
+      "id": "hiking_backpack",
+      "parts": [
+        {
+          "family": "bag",
+          "finish": {
+            "body": "cord-olive",
+            "trim": "paint-charcoal"
+          },
+          "id": "hiking_backpack",
+          "massKg": 1.3999999999999999,
+          "params": {
+            "depth": "0.23999999999999999",
+            "flapHeight": "0.12",
+            "handleHeight": "0.050000000000000003",
+            "height": "0.57999999999999996",
+            "pocketDepth": "0.050000000000000003",
+            "pocketHeight": "0.17999999999999999",
+            "strapWidth": "0.029999999999999999",
+            "width": "0.40000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "baseball_cap",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "baseball_cap",
+      "parts": [
+        {
+          "family": "cap",
+          "finish": {
+            "body": "plastic-blue",
+            "trim": "paint-charcoal"
+          },
+          "id": "baseball_cap",
+          "massKg": 0.080000000000000002,
+          "params": {
+            "brimDepth": "0.089999999999999997",
+            "brimWidth": "0.19",
+            "height": "0.080000000000000002",
+            "radius": "0.10000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
       "id": "electrical_tape",
       "parts": [
         {

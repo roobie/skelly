@@ -259,13 +259,56 @@ const pilesOver = (inventory: Inventory, boxes: readonly { pos: Vec3; size: Vec3
 };
 
 /**
+ * Why a piece must stay for what is on it: a body standing on it always holds it, and with `settles` false, so does
+ * a piece or pile resting on it. Lifting lets those settle; removal refuses them, so it never floats or strands
+ * anything (`DESIGN.md`, "Edits persist").
+ */
+const supportRefusal = (mover: FurnitureMover, entity: BlockEntity, settles: boolean): string | undefined => {
+  const { inventory } = mover;
+  const messages = messagesOf(inventory);
+  const top = topLayer(entity.pos, entity.size);
+  const topSize: Vec3 = [entity.size[0], 1, entity.size[2]];
+  if (boxIntersectsBody(top[0]!, topSize, mover.player)) {
+    return messages.standingOn;
+  }
+  if (anyBodyIn(top[0]!, topSize, mover.others)) {
+    return messages.someoneOnIt;
+  }
+  if (settles) {
+    return undefined;
+  }
+  const pieceOn = top.some((cell) => {
+    const piece = inventory.entities.filling(cell[0], cell[1], cell[2]);
+    return piece !== undefined && piece !== entity;
+  });
+  return pieceOn || pilesOver(inventory, [entity]).length > 0 ? messages.holdsUp : undefined;
+};
+
+/** Why a standing piece can't be taken out of the world now: what is on it, in it or in its doorway. */
+export const removalRefusal = (mover: FurnitureMover, entity: BlockEntity): string | undefined =>
+  supportRefusal(mover, entity, false) ?? mover.inventory.entities.removalRefusal(entity);
+
+/**
+ * Takes a standing piece out of the world; returns why not, leaving everything as it was. The caller cancels the
+ * work that names it first.
+ */
+export const removeFurniture = (mover: FurnitureMover, entity: BlockEntity): string | undefined => {
+  const refusal = removalRefusal(mover, entity);
+  if (refusal) {
+    return refusal;
+  }
+  mover.inventory.entities.remove(entity);
+  return undefined;
+};
+
+/**
  * Lifts a piece into both hands, letting what stood on it settle; returns why not,
  * leaving everything as it was. The caller charges the stamina.
  */
 export const liftFurniture = (mover: FurnitureMover, entity: BlockEntity): string | undefined => {
-  const { inventory, player } = mover;
+  const { inventory } = mover;
   const messages = messagesOf(inventory);
-  const refusal = movableRefusal(inventory, entity, mover.blockSize);
+  const refusal = inventory.entities.useRefusal(entity) ?? movableRefusal(inventory, entity, mover.blockSize);
   if (refusal) {
     return refusal;
   }
@@ -279,8 +322,9 @@ export const liftFurniture = (mover: FurnitureMover, entity: BlockEntity): strin
   if (mover.stamina < reachTuning(inventory.registry).furnitureMove.liftStamina) {
     return messages.tired;
   }
-  if (boxIntersectsBody(topLayer(entity.pos, entity.size)[0]!, [entity.size[0], 1, entity.size[2]], player)) {
-    return messages.standingOn;
+  const supported = supportRefusal(mover, entity, true);
+  if (supported) {
+    return supported;
   }
   const shadow = new Shadow(mover.terrainSolid, inventory.entities);
   const falls = settle(mover, shadow, entity);

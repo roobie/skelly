@@ -3,7 +3,7 @@ import type { ParamReference, Template } from '@skelly/engine/assembly/template.
 import { validate } from '@skelly/engine/assembly/validate.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
-import { SUSPENDED_TEMPLATE_NAMES, SUSPENDED_TEMPLATES, TEMPLATES } from '../src/gun/templates.ts';
+import { TEMPLATES } from '../src/gun/templates.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const SEEDS = 300;
@@ -85,12 +85,6 @@ describe('generate', () => {
 });
 
 describe('templates', () => {
-  it('keeps bullpup suspended and out of the active generator registry', () => {
-    expect(SUSPENDED_TEMPLATE_NAMES.has('bullpup')).toBe(true);
-    expect(SUSPENDED_TEMPLATES.map(({ name }) => name)).toContain('bullpup');
-    expect(TEMPLATES.map(({ name }) => name)).not.toContain('bullpup');
-  });
-
   for (const t of TEMPLATES) {
     describe(t.name, () => {
       // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed

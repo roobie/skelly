@@ -192,6 +192,19 @@ export class HandlingQueue {
     }
   }
 
+  /** Withdraws every job aimed at a piece of furniture: an action naming it, or a move into its pockets. */
+  cancelNaming(entityUid: number): void {
+    for (const job of [...this.jobs]) {
+      const names =
+        job.kind === 'action'
+          ? job.params.entityUid === entityUid
+          : job.target.kind === 'furniture' && job.target.entityUid === entityUid;
+      if (names) {
+        this.cancelJob(job);
+      }
+    }
+  }
+
   /** Spends `dt` seconds on the queue, finishing jobs in order. */
   tick(dt: number): TickResult {
     const result: TickResult = { done: [], failed: [], completedMoves: [] };

@@ -1,0 +1,14 @@
+{
+  "id": "utility_vest",
+  "file": "assets/models/utility_vest.glb",
+  "parts": {
+    "utility_vest": {
+      "node": "utility_vest:folded-garment",
+      "massKg": 0.9,
+      "centreOfMass": [0, 0.030021072944808942, -0.005268236202238517]
+    }
+  },
+  "grip": { "at": [0, 0.03, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

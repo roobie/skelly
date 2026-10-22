@@ -109,10 +109,14 @@ const readFixtureAssembly = (text: string, raw: unknown): ReadAssemblyResult => 
   if (calibre !== undefined && (typeof calibre !== 'string' || calibre.trim() === '')) {
     return { message: 'calibre: expected a non-empty cartridge id' };
   }
+  const appearance = metadata.context ?? FIXTURE_APPEARANCE[parsed.assembly.name];
+  if (!appearance) {
+    return { message: `no appearance profile for fixture ${JSON.stringify(parsed.assembly.name)}` };
+  }
   return {
     assembly: parsed.assembly,
     warnings: [],
-    appearance: metadata.context ?? FIXTURE_APPEARANCE[parsed.assembly.name] ?? {},
+    appearance,
     ...(calibre === undefined ? {} : { calibre }),
   };
 };
