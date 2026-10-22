@@ -14,7 +14,6 @@ import { type DisplayItem, displayItems } from '@skelly/engine/shapes/display.ts
 import { boundsOfPoints } from '@skelly/engine/shapes/geometry.ts';
 import { displayBevel, meshForSolid, meshForSolidGroup } from '@skelly/engine/shapes/mesh.ts';
 import { invalidPaletteFinish, resolveAppearance } from './appearance.ts';
-import { voxelize } from './voxelize.ts';
 import type {
   ExportGlb,
   ExportPortMetadata,
@@ -24,6 +23,7 @@ import type {
   PartPortId,
   SrgbColor,
 } from './exportTypes.ts';
+import { voxelize } from './voxelize.ts';
 
 const ASSET_FILE = /^assets\/models\/[a-z0-9_-]+\.glb$/;
 /** glTF node name of a part: its id and registry key (`PartInstance.family`), e.g. `part-1:family-a`. */

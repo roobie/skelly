@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { type VoxelBuffers, voxelize } from '../src/voxelize.ts';
 
+const POSITIVE = /positive/;
+
 /** A closed axis-aligned box as twelve outward-facing triangles. */
 const box = (min: readonly number[], max: readonly number[], group = 0) => {
   const corners = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => [
@@ -27,7 +29,9 @@ const box = (min: readonly number[], max: readonly number[], group = 0) => {
 const enclosedVolume = ({ positions, indices }: VoxelBuffers): number => {
   let sum = 0;
   for (let t = 0; t < indices.length; t += 3) {
-    const [a, b, c] = [0, 1, 2].map((k) => Array.from(positions.subarray(indices[t + k]! * 3, indices[t + k]! * 3 + 3)));
+    const [a, b, c] = [0, 1, 2].map((k) =>
+      Array.from(positions.subarray(indices[t + k]! * 3, indices[t + k]! * 3 + 3)),
+    );
     sum +=
       (a![0]! * (b![1]! * c![2]! - b![2]! * c![1]!) +
         a![1]! * (b![2]! * c![0]! - b![0]! * c![2]!) +
@@ -75,7 +79,7 @@ describe('voxelize', () => {
   });
 
   it('refuses a grain that is not a positive number', () => {
-    expect(() => voxelize([box([0, 0, 0], [1, 1, 1])], 0)).toThrow(/positive/);
-    expect(() => voxelize([box([0, 0, 0], [1, 1, 1])], Number.NaN)).toThrow(/positive/);
+    expect(() => voxelize([box([0, 0, 0], [1, 1, 1])], 0)).toThrow(POSITIVE);
+    expect(() => voxelize([box([0, 0, 0], [1, 1, 1])], Number.NaN)).toThrow(POSITIVE);
   });
 });

@@ -28,8 +28,8 @@ export interface Voxelized {
 
 const HALF_RANGE = 1024;
 const RANGE = 2 * HALF_RANGE;
-const NUDGE_X = 0.013_7;
-const NUDGE_Y = 0.029_1;
+const NUDGE_X = 0.0137;
+const NUDGE_Y = 0.0291;
 
 const keyOf = (x: number, y: number, z: number): number =>
   ((x + HALF_RANGE) * RANGE + (y + HALF_RANGE)) * RANGE + (z + HALF_RANGE);
@@ -55,45 +55,52 @@ interface Axes {
   readonly ray: number;
 }
 
-/** The ray-axis coordinate of every triangle crossing, per column of the sample lattice. */
-const crossings = (source: VoxelSource, grain: number, axes: Axes): Map<number, number[]> => {
-  const { positions, indices } = source;
+type Columns = Map<number, number[]>;
+
+/** Adds the crossing of one triangle with each column of the sample lattice it covers. */
+const addTriangle = (
+  columns: Columns,
+  at: (vertex: number, axis: number) => number,
+  triangle: readonly [number, number, number],
+  sampling: { readonly axes: Axes; readonly grain: number },
+): void => {
+  const [a, b, c] = triangle;
+  const { grain, axes } = sampling;
   const [ax, ay] = axes.across;
-  const columns = new Map<number, number[]>();
+  const area = (at(b, ax) - at(a, ax)) * (at(c, ay) - at(a, ay)) - (at(c, ax) - at(a, ax)) * (at(b, ay) - at(a, ay));
+  if (Math.abs(area) < 1e-18) {
+    return;
+  }
+  const columnsOf = (axis: number, nudge: number): [number, number] => [
+    Math.ceil(Math.min(at(a, axis), at(b, axis), at(c, axis)) / grain - 0.5 - nudge),
+    Math.floor(Math.max(at(a, axis), at(b, axis), at(c, axis)) / grain - 0.5 - nudge),
+  ];
+  const [x0, x1] = columnsOf(ax, NUDGE_X);
+  const [y0, y1] = columnsOf(ay, NUDGE_Y);
+  for (let ix = x0; ix <= x1; ix += 1) {
+    for (let iy = y0; iy <= y1; iy += 1) {
+      const px = (ix + 0.5 + NUDGE_X) * grain;
+      const py = (iy + 0.5 + NUDGE_Y) * grain;
+      const wa = ((at(b, ax) - px) * (at(c, ay) - py) - (at(c, ax) - px) * (at(b, ay) - py)) / area;
+      const wb = ((at(c, ax) - px) * (at(a, ay) - py) - (at(a, ax) - px) * (at(c, ay) - py)) / area;
+      const wc = 1 - wa - wb;
+      if (wa < 0 || wb < 0 || wc < 0) {
+        continue;
+      }
+      const key = (checkedIndex(px, grain) + HALF_RANGE) * RANGE + (checkedIndex(py, grain) + HALF_RANGE);
+      const depth = wa * at(a, axes.ray) + wb * at(b, axes.ray) + wc * at(c, axes.ray);
+      columns.set(key, [...(columns.get(key) ?? []), depth]);
+    }
+  }
+};
+
+/** The ray-axis coordinate of every triangle crossing, per column of the sample lattice. */
+const crossings = (source: VoxelSource, grain: number, axes: Axes): Columns => {
+  const { positions, indices } = source;
+  const columns: Columns = new Map();
   const at = (vertex: number, axis: number): number => positions[vertex * 3 + axis]!;
   for (let t = 0; t + 2 < indices.length; t += 3) {
-    const [a, b, c] = [indices[t]!, indices[t + 1]!, indices[t + 2]!];
-    const area = (at(b, ax) - at(a, ax)) * (at(c, ay) - at(a, ay)) - (at(c, ax) - at(a, ax)) * (at(b, ay) - at(a, ay));
-    if (Math.abs(area) < 1e-18) {
-      continue;
-    }
-    const lo = (axis: number): number => Math.min(at(a, axis), at(b, axis), at(c, axis));
-    const hi = (axis: number): number => Math.max(at(a, axis), at(b, axis), at(c, axis));
-    const columnsOf = (axis: number, nudge: number): [number, number] => [
-      Math.ceil(lo(axis) / grain - 0.5 - nudge),
-      Math.floor(hi(axis) / grain - 0.5 - nudge),
-    ];
-    const [x0, x1] = columnsOf(ax, NUDGE_X);
-    const [y0, y1] = columnsOf(ay, NUDGE_Y);
-    for (let ix = x0; ix <= x1; ix += 1) {
-      for (let iy = y0; iy <= y1; iy += 1) {
-        const px = (ix + 0.5 + NUDGE_X) * grain;
-        const py = (iy + 0.5 + NUDGE_Y) * grain;
-        const wa = ((at(b, ax) - px) * (at(c, ay) - py) - (at(c, ax) - px) * (at(b, ay) - py)) / area;
-        const wb = ((at(c, ax) - px) * (at(a, ay) - py) - (at(a, ax) - px) * (at(c, ay) - py)) / area;
-        const wc = 1 - wa - wb;
-        if (wa >= 0 && wb >= 0 && wc >= 0) {
-          const key = (checkedIndex(px, grain) + HALF_RANGE) * RANGE + (checkedIndex(py, grain) + HALF_RANGE);
-          const depth = wa * at(a, axes.ray) + wb * at(b, axes.ray) + wc * at(c, axes.ray);
-          const list = columns.get(key);
-          if (list) {
-            list.push(depth);
-          } else {
-            columns.set(key, [depth]);
-          }
-        }
-      }
-    }
+    addTriangle(columns, at, [indices[t]!, indices[t + 1]!, indices[t + 2]!], { axes, grain });
   }
   return columns;
 };
@@ -102,7 +109,12 @@ const crossings = (source: VoxelSource, grain: number, axes: Axes): Map<number, 
  * Fills the voxels whose centres lie inside the solid along one axis. With `rescue`, a span that holds no centre still
  * fills the voxel at its middle, so a thin solid keeps one voxel of thickness.
  */
-const fillAlong = (grid: Grid, source: VoxelSource, grain: number, axes: Axes, rescue: boolean): void => {
+const fillAlong = (
+  target: { readonly grid: Grid; readonly source: VoxelSource; readonly grain: number },
+  axes: Axes,
+  rescue: boolean,
+): void => {
+  const { grid, source, grain } = target;
   for (const [column, depths] of crossings(source, grain, axes)) {
     const lattice = [Math.floor(column / RANGE) - HALF_RANGE, (column % RANGE) - HALF_RANGE];
     depths.sort((p, q) => p - q);
@@ -140,7 +152,7 @@ const fillSource = (grid: Grid, source: VoxelSource, grain: number): void => {
   });
   const thin = Math.min(...extent) < grain;
   for (const axes of thin ? THIN_AXES : THIN_AXES.slice(0, 1)) {
-    fillAlong(grid, source, grain, axes, thin);
+    fillAlong({ grid, source, grain }, axes, thin);
   }
 };
 
@@ -195,34 +207,47 @@ const emitQuad = (
   out.indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
 };
 
-/** Merges equal neighbours of one slice into rectangles: widest run first, then as many rows as match. */
-const greedy = (mask: Int32Array, [du, dv]: readonly [number, number], emit: (rect: number[], group: number) => void) => {
+/** The widest run from `start`, then as many rows below as match it, as [width, height]. */
+const rectFrom = (
+  mask: Int32Array,
+  [du, dv]: readonly [number, number],
+  at: readonly [number, number],
+): [number, number] => {
+  const [i, j] = at;
+  const start = i + j * du;
+  const group = mask[start]!;
+  let width = 1;
+  while (i + width < du && mask[start + width] === group) {
+    width += 1;
+  }
+  const rowMatches = (row: number): boolean => {
+    for (let k = 0; k < width; k += 1) {
+      if (mask[start + row * du + k] !== group) {
+        return false;
+      }
+    }
+    return true;
+  };
+  let height = 1;
+  while (j + height < dv && rowMatches(height)) {
+    height += 1;
+  }
+  return [width, height];
+};
+
+/** Merges equal neighbours of one slice into rectangles. */
+const greedy = (mask: Int32Array, size: readonly [number, number], emit: (rect: number[], group: number) => void) => {
+  const [du, dv] = size;
   for (let j = 0; j < dv; j += 1) {
     for (let i = 0; i < du; ) {
-      const start = i + j * du;
-      const group = mask[start]!;
+      const group = mask[i + j * du]!;
       if (group < 0) {
         i += 1;
         continue;
       }
-      let width = 1;
-      while (i + width < du && mask[start + width] === group) {
-        width += 1;
-      }
-      let height = 1;
-      const rowMatches = (row: number): boolean => {
-        for (let k = 0; k < width; k += 1) {
-          if (mask[start + row * du + k] !== group) {
-            return false;
-          }
-        }
-        return true;
-      };
-      while (j + height < dv && rowMatches(height)) {
-        height += 1;
-      }
+      const [width, height] = rectFrom(mask, size, [i, j]);
       for (let row = 0; row < height; row += 1) {
-        mask.fill(-1, start + row * du, start + row * du + width);
+        mask.fill(-1, i + (j + row) * du, i + (j + row) * du + width);
       }
       emit([i, j, width, height], group);
       i += width;
@@ -230,8 +255,35 @@ const greedy = (mask: Int32Array, [du, dv]: readonly [number, number], emit: (re
   }
 };
 
+/** The faces of the voxels that have no neighbour in the sweep's direction, bucketed by slice. */
+const exposedFaces = (grid: Grid, sweep: Sweep): { readonly slices: Map<number, Face[]>; readonly count: number } => {
+  const { d, sign } = sweep;
+  const slices = new Map<number, Face[]>();
+  let count = 0;
+  for (const [key, group] of grid) {
+    const at = voxelOf(key);
+    const next: [number, number, number] = [at[0], at[1], at[2]];
+    next[d] = at[d]! + sign;
+    if (grid.has(keyOf(...next))) {
+      continue;
+    }
+    const slice = slices.get(at[d]!) ?? [];
+    slice.push({ u: at[sweep.u]!, v: at[sweep.v]!, group });
+    slices.set(at[d]!, slice);
+    count += 1;
+  }
+  return { slices, count };
+};
+
+const boundsOf = (grid: Grid): Bounds => {
+  const voxels = [...grid.keys()].map(voxelOf);
+  return [
+    [0, 1, 2].map((axis) => Math.min(...voxels.map((at) => at[axis]!))),
+    [0, 1, 2].map((axis) => Math.max(...voxels.map((at) => at[axis]!))),
+  ];
+};
+
 const meshGrid = (grid: Grid, grain: number): Voxelized => {
-  const voxels = [...grid].map(([key, group]) => ({ at: voxelOf(key), group }));
   const builders = new Map<number, Builder>();
   const builderOf = (group: number): Builder => {
     let builder = builders.get(group);
@@ -241,25 +293,15 @@ const meshGrid = (grid: Grid, grain: number): Voxelized => {
     }
     return builder;
   };
-  const min = [0, 1, 2].map((axis) => Math.min(...voxels.map(({ at }) => at[axis]!)));
-  const max = [0, 1, 2].map((axis) => Math.max(...voxels.map(({ at }) => at[axis]!)));
-  const bounds: Bounds = [min, max];
+  const bounds = boundsOf(grid);
   let faces = 0;
   let quads = 0;
   for (let d = 0; d < 3; d += 1) {
     for (const sign of [1, -1] as const) {
       const sweep: Sweep = { d, u: (d + 1) % 3, v: (d + 2) % 3, sign };
-      const slices = new Map<number, Face[]>();
-      for (const { at, group } of voxels) {
-        const next: [number, number, number] = [at[0], at[1], at[2]];
-        next[d] = at[d]! + sign;
-        if (!grid.has(keyOf(...next))) {
-          const slice = slices.get(at[d]!) ?? [];
-          slice.push({ u: at[sweep.u]!, v: at[sweep.v]!, group });
-          slices.set(at[d]!, slice);
-          faces += 1;
-        }
-      }
+      const exposed = exposedFaces(grid, sweep);
+      const { slices } = exposed;
+      faces += exposed.count;
       const du = bounds[1][sweep.u]! - bounds[0][sweep.u]! + 1;
       const dv = bounds[1][sweep.v]! - bounds[0][sweep.v]! + 1;
       for (const [w, slice] of [...slices].sort(([p], [q]) => p - q)) {
