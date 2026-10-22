@@ -1,0 +1,184 @@
+// Core's refusals, notices and action labels are content, read by key, so rewording one can't change behaviour.
+// See `src/content/base/ui-core-text.libsonnet` and `PILLARS.md`, "Content forward compatibility".
+
+import type { Registry } from './content.ts';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
+
+/** Each core message key, with the named slots its template fills. */
+export const CORE_MESSAGE_SLOTS = {
+  tooFar: [],
+  gone: [],
+  noRoomOnMe: [],
+  pocketsFull: [],
+  handsFull: [],
+  handsBusy: [],
+  cantStow: ['item'],
+  cantFreeHands: [],
+  notSearched: [],
+  trapSet: [],
+  trapShut: [],
+  noLightToFit: [],
+  noToolToFit: [],
+  outOfFuel: [],
+  outOfFuelNoSpare: [],
+  batteryDead: [],
+  batteryDeadNoSpare: [],
+  headlampOnHead: [],
+  notInHands: ['item'],
+  batteryGone: [],
+  cartridgeGone: [],
+  cantUse: ['item'],
+  notDoor: [],
+  alreadyOpen: [],
+  alreadyClosed: [],
+  boardedUp: [],
+  locked: [],
+  broken: [],
+  noLock: [],
+  doorOpen: [],
+  noKey: [],
+  wrongKey: [],
+  alreadyLocked: [],
+  alreadyUnlocked: [],
+  noPadlock: [],
+  cantForce: [],
+  nothingToForce: [],
+  notEnoughGas: [],
+  noCartridge: [],
+  noLanding: [],
+  noGroundRoom: [],
+  notLight: [],
+  cantDouse: [],
+  cantRelight: [],
+  burnedOut: [],
+  wrongBattery: [],
+  inWork: [],
+  fitted: [],
+  leftHand: [],
+  partCount: ['count', 'total'],
+  stillLit: [],
+  needsSling: [],
+  cantWear: [],
+  alreadyWearing: [],
+  wearingOther: ['item'],
+  insideItself: [],
+  cantReach: [],
+  workHand: [],
+  alreadyInHand: [],
+  rightHandHolding: ['item'],
+  leftHandHolding: ['item'],
+  otherNeedsBothHands: ['item'],
+  needsBothHands: [],
+  softBagNested: [],
+  loadedInHardCase: [],
+  tooBig: [],
+  noRoomThere: [],
+  noRoom: [],
+  hurt: [],
+  busy: [],
+  busyCrafting: [],
+  busyReading: [],
+  busyForcing: [],
+  busyTreating: [],
+  notTired: [],
+  rested: [],
+  cantFallAsleep: ['reason'],
+  wokenBy: ['reason'],
+  otherCraft: [],
+  alreadyWorking: [],
+  materialsChanged: [],
+  noRepairTarget: [],
+  outOfReach: [],
+  cantTakeApart: [],
+  alreadyQueued: [],
+  alreadyThere: [],
+  repairTargetGone: [],
+  repairTargetOutOfReach: [],
+  yieldChanged: [],
+  craftInputsChanged: [],
+  workNeedsBothHands: [],
+  recipeUnknown: [],
+  skillTooLow: [],
+  toolNotInReach: ['quality'],
+  workstationNotInReach: [],
+  componentsShort: ['count', 'item', 'found'],
+  componentsCompete: [],
+  preferredCompete: [],
+  bookGone: [],
+  bookNotHeld: [],
+  wrongCartridge: [],
+  rightHandOnLadder: [],
+  leftHandOnLadder: [],
+  causeInjuries: [],
+  causeBloodLoss: [],
+  causeThirst: [],
+  causeHunger: [],
+  causeThirstAndHunger: [],
+} as const satisfies Record<string, readonly string[]>;
+
+/** Each core action label key, with the named slots its template fills. */
+export const CORE_LABEL_SLOTS = {
+  open: [],
+  close: [],
+  lock: [],
+  unlock: [],
+  eatFrom: ['item'],
+  takeOne: ['item'],
+  eat: ['item'],
+  drink: ['item'],
+  quickMove: [],
+  use: [],
+  batteryIn: ['item'],
+  cartridgeIn: ['fuel', 'item'],
+  switchOn: [],
+  switchOff: [],
+  disarm: [],
+  setTrap: [],
+  read: [],
+  rightHand: [],
+  leftHand: [],
+  sling: [],
+  wear: [],
+  dropHere: [],
+  continueWork: ['item'],
+  takeApart: [],
+  pocket: ['container', 'pocket'],
+  toRightHand: [],
+  toLeftHand: [],
+  toWorn: [],
+  toFloor: [],
+  moveJob: ['item', 'target'],
+  moveJobCount: ['item', 'count', 'target'],
+} as const satisfies Record<string, readonly string[]>;
+
+export type CoreMessageKey = keyof typeof CORE_MESSAGE_SLOTS;
+export type CoreLabelKey = keyof typeof CORE_LABEL_SLOTS;
+
+type SlotValues<S extends readonly string[]> = S extends readonly [] ? [] : [Readonly<Record<S[number], string>>];
+
+/** Matches a `{slot}` in a template. */
+export const SLOT_PATTERN = /\{(\w+)\}/g;
+
+const fill = (template: string, values: Readonly<Record<string, string>> = {}): string =>
+  template.replace(SLOT_PATTERN, (_, slot: string) => values[slot]!);
+
+const coreUi = (registry: Pick<Registry, 'ui'>) => registry.ui.get(CORE_CONTENT_IDS.coreUi)!;
+
+export const coreMessage = <K extends CoreMessageKey>(
+  registry: Pick<Registry, 'ui'>,
+  key: K,
+  ...values: SlotValues<(typeof CORE_MESSAGE_SLOTS)[K]>
+): string => fill(coreUi(registry).coreMessages[key], values[0]);
+
+/** A refusal worded by core text that carries its key, so a rule reacting to it compares the key, never wording. */
+export const coreRefusal = <K extends CoreMessageKey>(
+  registry: Pick<Registry, 'ui'>,
+  key: K,
+  ...values: SlotValues<(typeof CORE_MESSAGE_SLOTS)[K]>
+): { ok: false; reason: string; key: K } => ({ ok: false, reason: coreMessage(registry, key, ...values), key });
+
+export const coreLabel = <K extends CoreLabelKey>(
+  registry: Pick<Registry, 'ui'>,
+  key: K,
+  ...values: SlotValues<(typeof CORE_LABEL_SLOTS)[K]>
+): string => fill(coreUi(registry).coreActionLabels[key], values[0]);
