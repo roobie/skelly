@@ -56,7 +56,7 @@ Parts alike across hosts are authored once and placed by each blueprint, so salv
 
 The body shell carries the mass of wiring, trim and sound deadening that no part models, so the fitted car weighs what the reference does at the kerb. Keeping that mass in the shell needs no extra parts or fittings to author; the cost, accepted, is that handling may feel less nose-heavy than the front-engined reference.
 
-A body panel is larger than a floor pile, so panels stay capped at the pile's whole size; see `src/content/base/vehicles.jsonnet`, `pileSize`. The cap costs nothing now, and a carry class for oversized parts is left to a later carrying design.
+A body panel is larger than a floor pile, so panels stay capped at the pile's whole size; see `src/content/base/vehicles.jsonnet`, `pileSize`. The cap costs nothing until a carrying design gives oversized parts their own carry class.
 
 Real dimensions stay, and the only seated check is entry: every vehicle with a seat has a door or hatch at least as wide as the player. Whether the player figure fits a seat waits until a seated pose exists, because without the pose any fit test would measure the standing figure. See `test/vehicleExport.test.ts`.
 
@@ -81,7 +81,8 @@ Capabilities are a closed vocabulary because each one needs game code to mean an
 Driven and steered belong to the part type, not the fitting. Converting a vehicle's drive then means swapping a part, which is also a gameplay hook: finding a driven axle.
 
 A frame, tray or mount that other fittings rest on names the `structure` capability. Marking structure explicitly lets code tell it apart from a part whose capabilities were forgotten, so an empty list can later be refused as an authoring mistake. A door or hatch a player gets in through names `entry`; its hinge is the axis through its `hinge_a` and `hinge_b` datums. A road wheel, the part a vehicle rolls on, names `wheel`.
-Left and right parts are one item, mirrored by the slot, so one inventory item fits either side; a handed part therefore cannot refuse the wrong side. Part collision is one axis-aligned box per solid for now, moving to a convex hull per solid when the physics solver needs it, because the schema slot is already per part. Attachment points get an optional direction and fittings a rotation the first time a fitting must align; the change only adds fields.
+
+Left and right parts are one item, mirrored by the slot, so one inventory item fits either side; a handed part therefore cannot refuse the wrong side. Part collision is one axis-aligned box per solid until the physics solver needs a convex hull per solid; the move is cheap because the schema slot is already per part. Attachment points get an optional direction and fittings a rotation the first time a fitting must align; the change only adds fields.
 
 Validation refuses a part whose export lacks part masses or baked collision, a fitting that names no vehicle part, and supports that are absent or cyclic, so the content file that authors them is dropped whole like any other broken content. See `src/core/vehicleBlueprint.ts`, `vehicleContentIssues`. Loading takes mass and centre only from the export; a mirrored fitting reflects its centre, collision and datums across z about its position, so a far-side twin needs no second export. See `src/core/vehicleBlueprint.ts`, `placeFitting`.
 
