@@ -27,7 +27,7 @@ export const observationPlugin = {
     const marker = '  const onForwardPress = (e: MouseEvent) => {';
     const throwQueueMarker = `      pendingPlayerTickActions.enqueue(() => {
         applyToHeldItem(inventory.hands, hand, uid, (heldItem) => {
-          throwHeldItem(heldItem, hand, distance, chargeProgress);
+          throwHeldItem(heldItem, hand, distance);
           syncThrowingStance();
         });
       });`;
@@ -131,7 +131,10 @@ export const observationPlugin = {
       const item = inventory.itemByUid(itemUid);
       if (!item) return undefined;
       const distance = throwDistanceForItem(item, registry, itemThrowTuning, heldSimSeconds);
-      const target = itemLandingTarget(distance);
+      const location = inventory.locate(item);
+      const hand = location?.kind === 'hand' ? location.side : session.throwCharge.throwHand();
+      const flight = itemThrowFlight(item, hand, distance);
+      const target = flight.landing ? { kind: 'pile', pos: flight.landing } : undefined;
       const landingDistance = target
         ? Math.hypot(target.pos[0] + 0.5 - body.pos[0], target.pos[2] + 0.5 - body.pos[2]) * s
         : undefined;

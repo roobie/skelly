@@ -66,7 +66,7 @@ read_if:
   - you author the police armoury's roof key or its view from the start
   - you change what vehicles are for, how their parts fit, come off and behave, or what a parked vehicle blocks
   - you're changing where a dropped, crafted, unpacked or swapped-out item lands, whether a drop checks reach, or what happens with no ground nearby
-  - you're changing held-item throwing or its range tuning
+  - you're changing held-item throwing, its dragged path and duration, range tuning or replay strength
   - you're changing thrown explosives (fuse, blast, fragments, their noise) or where the playtest horde stands
   - you're choosing or changing the building-weathering look and its dilapidation direction
   - you're authoring dilapidated structures or breached perimeters
@@ -2093,27 +2093,23 @@ See `src/core/inventory.ts`, `Inventory.landing` and `Inventory.dropLanding`;
 
 ## Held-item throws
 
-A released item joins its target pile immediately, keeping inventory as its
-sole owner and preserving ordinary fuse and save behavior. The flight is
-presentation only: the pile renderer hides the item while its arc plays, and the
-arc follows the pile's visible pose so the landing does not jump. No second owner
-exists while an item is in flight, so saves and fuses see only the pile; behavior
-during flight is new work on a new issue. A throw adds no hit damage or landing
-lure; explosive effects belong to the grenade.
-See `src/game/throwCharge.ts`, `ThrowCharge.place`;
+Inventory remains the sole owner during flight so saves and fuses do not need a
+second ownership model. The arc ends at the pile's visible pose to avoid a landing
+jump. A throw adds no hit damage or landing lure; explosive effects belong to the
+grenade. See `src/game/throwCharge.ts`, `ThrowCharge.place`;
 `src/render/itemThrows.ts`, `ItemThrows.update`; and `src/render/piles.ts`,
 `PileMeshes.sync`.
 
-Mass and air both limit range. Mass caps the speed the arm can give; drag then
-takes a share of that range by how much air the item pushes for its mass, so a
-flimsy glowstick falls shorter than a dense grenade thrown with the same effort.
-Drag derives from the item's footprint and mass, so no item needs its own row.
-The footprint is a cell-rounded outline, not the face that meets the air, so one
-coefficient against it stands in for shape and tumbling. The range comes from
-stepping a level 45-degree flight with drag at a fixed step, so the same throw
-always lands at the same place, and a replay records that range. The arc's
-height and flight time do not depend on drag. See `src/core/itemThrow.ts`,
-`throwDistanceForItem` and `dragRangeShare`, and
+Landing, presentation and duration share a stepped flight so drag cannot shorten
+the range while leaving a light item floating through an undragged arc. The launch
+follows the player's pitch, rather than borrowing the range of a different angle.
+Replay records launch strength rather than a drag-adjusted distance so it can
+reproduce the same flight with the recorded aim. See `src/core/itemThrow.ts`,
+`throwDistanceForItem`, `flightForItem` and `steppedItemFlight`.
+
+Drag derives from footprint and mass so items need no individual drag rows. The
+footprint is a cell-rounded outline, not the face that meets the air, so one
+coefficient stands in for shape and tumbling. See
 `src/content/base/inventory.jsonnet`, `throwDrag`.
 
 ## Hand grenade

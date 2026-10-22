@@ -1777,8 +1777,6 @@ try {
       offHandUid: offHandItem.uid,
       start: [...r.session.body.pos],
       blockSize: r.scale.blockSize,
-      // The glowstick's own full-charge range: drag keeps a light, broad item short of the tuned maximum.
-      distance: r.getItemThrowLanding(glowstick.uid, throwChargeSimSeconds).distance,
       chargeSimSeconds: throwChargeSimSeconds,
       minimumHoldSimSeconds: throwMinimumHoldSimSeconds,
     };
@@ -2116,21 +2114,15 @@ try {
     ({ uid, seconds }) => globalThis.primaryActionTest.getItemThrowLanding(uid, seconds),
     { uid: throwFixture.uid, seconds: throwFixture.chargeSimSeconds },
   );
-  for (
-    let turn = 1;
-    !(landing?.fits && Math.abs(landing.landingDistance - throwFixture.distance) <= landingTolerance) && turn <= 16;
-    turn += 1
-  ) {
+  for (let turn = 1; !landing?.fits && turn <= 16; turn += 1) {
     await page.mouse.move(760 + turn * 16, 410);
     landing = await page.evaluate(
       ({ uid, seconds }) => globalThis.primaryActionTest.getItemThrowLanding(uid, seconds),
       { uid: throwFixture.uid, seconds: throwFixture.chargeSimSeconds },
     );
   }
-  assert(
-    landing?.fits && Math.abs(landing.landingDistance - throwFixture.distance) <= landingTolerance,
-    `full-charge throw has room near the item's own range: ${JSON.stringify(landing)}`,
-  );
+  assert(landing?.fits, `full-charge throw has room at its dragged landing: ${JSON.stringify(landing)}`);
+  throwFixture.distance = landing.landingDistance;
   const releaseThrow = await mouseCharge(page);
   await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
   const chargeStartedAt = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
