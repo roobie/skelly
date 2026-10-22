@@ -373,6 +373,12 @@ deconstruction reserves its piece against use until the job is cancelled or fini
 paused work keeps its piece; under lockstep the reservation is ordinary simulation state,
 resolved in tick order. See `src/core/blockEntities.ts`, `BlockEntities.remove`.
 
+Save size and save time are held to a budget measured against explored area. One record
+holding every explored piece makes save work grow with exploration, so crossing the
+budget reopens whether explored furniture stays in memory and saved and whether the save
+stays one record; the budget is not raised to make room. See
+`test/exploredSaveBudget.test.ts` (its budget constants).
+
 ### Block entities
 
 Stateful blocks keep their changing state separate from static block identity.
