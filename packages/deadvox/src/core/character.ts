@@ -40,20 +40,18 @@ export const skillSaturation = (
 };
 
 /** Practice required for the next level grows with the level already reached. */
-export const practiceForNextLevel = (registry: Registry | number, level?: number): number => {
-  const currentLevel = typeof registry === 'number' ? registry : level!;
-  if (currentLevel === SKILL_LEVEL_LEGENDARY) {
+export const practiceForNextLevel = (registry: Registry, level: number): number => {
+  if (level === SKILL_LEVEL_LEGENDARY) {
     return Number.POSITIVE_INFINITY;
   }
-  if (currentLevel === SKILL_LEVEL_MAX) {
+  if (level === SKILL_LEVEL_MAX) {
     return LEGENDARY_LEVEL_PRACTICE;
   }
-  const progression = typeof registry === 'number' ? undefined : registry.skillProgression.get('core');
-  if (typeof registry !== 'number' && progression === undefined) {
+  const progression = registry.skillProgression.get('core');
+  if (progression === undefined) {
     throw new Error('Missing skill progression content');
   }
-  const practicePerLevel = typeof registry === 'number' ? 10 : progression!.practicePerLevel;
-  return practicePerLevel * (currentLevel + 1);
+  return progression.practicePerLevel * (level + 1);
 };
 
 const validSkillPractice = (registry: Registry, level: number, practice: number | undefined): practice is number =>

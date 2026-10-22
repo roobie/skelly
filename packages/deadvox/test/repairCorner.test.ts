@@ -79,7 +79,11 @@ const repairCharacter = (): Character => {
   for (const recipe of repairRecipes) {
     for (const [skill, required] of Object.entries(recipe.skills)) {
       while ((character.skills[skill] ?? 0) < required) {
-        character.awardPractice(skill, practiceForNextLevel(character.skills[skill] ?? 0), SKILL_LEVEL_LEGENDARY);
+        character.awardPractice(
+          skill,
+          practiceForNextLevel(scenarioRegistry, character.skills[skill] ?? 0),
+          SKILL_LEVEL_LEGENDARY,
+        );
       }
     }
   }

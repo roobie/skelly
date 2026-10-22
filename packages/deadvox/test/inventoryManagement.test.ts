@@ -162,7 +162,7 @@ describe('Inventory Management skill', () => {
 
     const actor = new Character(registry);
     while (actor.skills.inventory_management! < SKILL_LEVEL_MAX) {
-      actor.awardPractice('inventory_management', practiceForNextLevel(actor.skills.inventory_management!));
+      actor.awardPractice('inventory_management', practiceForNextLevel(registry, actor.skills.inventory_management!));
     }
     expect(actor.skills.inventory_management).toBe(SKILL_LEVEL_MAX);
   });
@@ -290,7 +290,7 @@ describe('Inventory Management skill', () => {
   it('keeps skill level and practice across a save round trip', () => {
     const runtime = createRuntime();
     const level = runtime.session.character.skills.inventory_management!;
-    runtime.session.character.awardPractice('inventory_management', practiceForNextLevel(level));
+    runtime.session.character.awardPractice('inventory_management', practiceForNextLevel(registry, level));
     const saved = capture(runtime);
     const restored = createRuntime(saved);
     expect(restored.session.character.skills.inventory_management).toBe(

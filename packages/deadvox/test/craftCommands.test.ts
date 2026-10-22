@@ -96,7 +96,7 @@ describe('live craft commands', () => {
 
   it('starts repair in the shared craft owner using the target and live skill-scaled effect', () => {
     const r = make();
-    r.character.awardPractice('crafting', practiceForNextLevel(0), SKILL_LEVEL_LEGENDARY);
+    r.character.awardPractice('crafting', practiceForNextLevel(registry, 0), SKILL_LEVEL_LEGENDARY);
     const target = stockRepair(r);
     expect(r.commands.start(REPAIR)).toBeUndefined();
     const work = workOf(r);
@@ -321,7 +321,11 @@ describe('live craft commands', () => {
     const work = r.inventory.hands.right!;
     r.sim.actions.stop();
     for (let level = 0; level < topSkill; level += 1) {
-      r.character.awardPractice(definition.disassembly!.skill, practiceForNextLevel(level), SKILL_LEVEL_LEGENDARY);
+      r.character.awardPractice(
+        definition.disassembly!.skill,
+        practiceForNextLevel(registry, level),
+        SKILL_LEVEL_LEGENDARY,
+      );
     }
     expect(r.character.skills[definition.disassembly!.skill]).toBe(topSkill);
     expect(r.commands.act(work.uid, 'continue')).toBeUndefined();
