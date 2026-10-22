@@ -504,7 +504,7 @@ describe('attachment parts and export metadata', () => {
     // Builds and exports the AR design with default attachment compatibility metadata.
     beforeAll(() => {
       defaultModsModel = exported(design('archetype-ar'), 'ar_default_mods');
-    }, 10_000);
+    });
 
     it('exports fitted default mods as node-backed metadata linked to mount slots', () => {
       const model = defaultModsModel;
