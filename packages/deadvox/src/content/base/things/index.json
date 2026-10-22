@@ -526,6 +526,121 @@
     "anchors": { "seat": [0, 0.03, 0] }
   },
   {
+    "id": "cargo_space",
+    "file": "assets/models/cargo_space.glb",
+    "parts": {
+      "body": {
+        "node": "body:block",
+        "massKg": 0.2,
+        "centreOfMass": [0, 0.05, 0],
+        "collision": [{ "min": [-0.05, 0, -0.05], "max": [0.05, 0.1, 0.05] }]
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "pickup_bed_floor",
+    "file": "assets/models/pickup_bed_floor.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 45,
+        "centreOfMass": [-1.1500000000000001, 0.7143442622950821, 0],
+        "collision": [
+          { "min": [-2.2, 0.7999999999999999, -0.8], "max": [-0.10000000000000009, 0.85, 0.8] },
+          { "min": [-2.2, 0.55, -0.45], "max": [-0.10000000000000009, 0.8, 0.45] }
+        ]
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "pickup_bed_side",
+    "file": "assets/models/pickup_bed_side.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 24,
+        "centreOfMass": [-1.1757069408740362, 0.8325964010282777, 0.7631619537275066],
+        "collision": [
+          { "min": [-2.2, 0.6199999999999999, 0.8], "max": [-0.10000000000000009, 1.22, 0.8600000000000001] },
+          { "min": [-1.7, 0.55, 0.5999999999999999], "max": [-0.7, 0.95, 0.8] }
+        ]
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "pickup_bed_front",
+    "file": "assets/models/pickup_bed_front.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 10,
+        "centreOfMass": [-0.06999999999999999, 1.01, 0],
+        "collision": [
+          { "min": [-0.1, 0.8, -0.8600000000000001], "max": [-0.04000000000000001, 1.22, 0.8600000000000001] }
+        ]
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "box_van_floor",
+    "file": "assets/models/box_van_floor.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 180,
+        "centreOfMass": [-0.8999999999999999, 0.8744736842105264, 0],
+        "collision": [
+          { "min": [-3, 0.97, -1], "max": [1.2000000000000002, 1, 1] },
+          { "min": [-3, 0.72, -0.45], "max": [1.2000000000000002, 0.97, 0.45] }
+        ]
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "box_van_side",
+    "file": "assets/models/box_van_side.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 70,
+        "centreOfMass": [-0.9, 1.9499999999999997, 1.03],
+        "collision": [{ "min": [-3, 0.8999999999999999, 1], "max": [1.2000000000000002, 3, 1.06] }]
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "box_van_front",
+    "file": "assets/models/box_van_front.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 45,
+        "centreOfMass": [1.23, 2, 0],
+        "collision": [{ "min": [1.2, 1, -1.06], "max": [1.26, 3, 1.06] }]
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "box_van_roof",
+    "file": "assets/models/box_van_roof.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 40,
+        "centreOfMass": [-0.87, 3.03, 0],
+        "collision": [{ "min": [-3, 3, -1.06], "max": [1.2599999999999998, 3.0600000000000005, 1.06] }]
+      }
+    },
+    "anchors": {}
+  },
+  {
     "id": "wheel_205_55r16",
     "file": "assets/models/wheel_205_55r16.glb",
     "parts": {
