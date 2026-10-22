@@ -13,6 +13,7 @@
       "id": "baseball_cap",
       "name": "Baseball cap",
       "category": "clothing",
+      "model": "baseball_cap",
       "size": [2, 1],
       "wearable": { "slot": "head", "encumbrance": 0 }
     },

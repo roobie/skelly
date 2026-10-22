@@ -22,6 +22,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "baseball_cap",
+      "model": "baseball_cap",
       "name": "Baseball cap",
       "size": [2, 1],
       "wearable": {

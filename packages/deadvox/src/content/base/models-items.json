@@ -942,6 +942,176 @@
           "node": "body:block"
         }
       }
+    },
+    {
+      "file": "assets/models/jeans.glb",
+      "grip": {
+        "at": [0, 0.022499999999999999, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "jeans",
+      "parts": {
+        "jeans": {
+          "centreOfMass": [0, 0.022499999999999999, 0],
+          "massKg": 0.69999999999999996,
+          "node": "jeans:folded-garment"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/rubber_boots.glb",
+      "grip": {
+        "at": [-0.076249999999999998, 0.1144, 0.088400000000000006],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "rubber_boots",
+      "parts": {
+        "rubber_boots": {
+          "centreOfMass": [-2.2858766166511495e-18, 0.077950149276779734, 0.023642574767076749],
+          "massKg": 1.8,
+          "node": "rubber_boots:boots"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/cargo_pants.glb",
+      "grip": {
+        "at": [0, 0.025000000000000001, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "cargo_pants",
+      "parts": {
+        "cargo_pants": {
+          "centreOfMass": [0, 0.024977008519786608, 0],
+          "massKg": 0.80000000000000004,
+          "node": "cargo_pants:folded-garment"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/hoodie.glb",
+      "grip": {
+        "at": [0, 0.029999999999999999, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "hoodie",
+      "parts": {
+        "hoodie": {
+          "centreOfMass": [0, 0.032171332212486685, 0.0023561655165552551],
+          "massKg": 0.59999999999999998,
+          "node": "hoodie:folded-garment"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/jacket.glb",
+      "grip": {
+        "at": [0, 0.035000000000000003, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "jacket",
+      "parts": {
+        "jacket": {
+          "centreOfMass": [0, 0.034981540563067244, -0.0018420077792183737],
+          "massKg": 1.2,
+          "node": "jacket:folded-garment"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/utility_vest.glb",
+      "grip": {
+        "at": [0, 0.029999999999999999, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "utility_vest",
+      "parts": {
+        "utility_vest": {
+          "centreOfMass": [0, 0.030021072944808942, -0.0052682362022385167],
+          "massKg": 0.90000000000000002,
+          "node": "utility_vest:folded-garment"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/fanny_pack.glb",
+      "grip": {
+        "at": [0, 0.070000000000000007, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "fanny_pack",
+      "parts": {
+        "fanny_pack": {
+          "centreOfMass": [0, 0.06710683747827785, -0.0050654624938793929],
+          "massKg": 0.20000000000000001,
+          "node": "fanny_pack:bag"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/school_backpack.glb",
+      "grip": {
+        "at": [0, 0.47999999999999998, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "school_backpack",
+      "parts": {
+        "school_backpack": {
+          "centreOfMass": [0, 0.22388789538589104, -0.0036833821106219719],
+          "massKg": 0.59999999999999998,
+          "node": "school_backpack:bag"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/hiking_backpack.glb",
+      "grip": {
+        "at": [0, 0.60499999999999998, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "hiking_backpack",
+      "parts": {
+        "hiking_backpack": {
+          "centreOfMass": [0, 0.28700701378194504, -0.010220862005107311],
+          "massKg": 1.3999999999999999,
+          "node": "hiking_backpack:bag"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/baseball_cap.glb",
+      "grip": {
+        "at": [0, 0.040000000000000001, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "baseball_cap",
+      "parts": {
+        "baseball_cap": {
+          "centreOfMass": [0, 0.038430401717786285, -0.0061312432898972978],
+          "massKg": 0.080000000000000002,
+          "node": "baseball_cap:cap"
+        }
+      },
+      "roll": 0
     }
   ]
 }

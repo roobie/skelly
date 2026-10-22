@@ -31,6 +31,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "jeans",
+      "model": "jeans",
       "name": "Jeans",
       "size": [3, 3],
       "wearable": {
@@ -47,6 +48,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "rubber_boots",
+      "model": "rubber_boots",
       "name": "Rubber boots",
       "size": [2, 3],
       "wearable": {
@@ -88,6 +90,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "cargo_pants",
+      "model": "cargo_pants",
       "name": "Cargo pants",
       "size": [3, 3],
       "wearable": {
@@ -113,6 +116,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "hoodie",
+      "model": "hoodie",
       "name": "Hoodie",
       "size": [3, 3],
       "wearable": {
@@ -148,6 +152,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "jacket",
+      "model": "jacket",
       "name": "Jacket",
       "size": [3, 3],
       "wearable": {
@@ -188,6 +193,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "utility_vest",
+      "model": "utility_vest",
       "name": "Utility vest",
       "size": [3, 3],
       "wearable": {
@@ -270,6 +276,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "fanny_pack",
+      "model": "fanny_pack",
       "name": "Fanny pack",
       "size": [2, 2],
       "wearable": {
@@ -298,6 +305,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "school_backpack",
+      "model": "school_backpack",
       "name": "School backpack",
       "size": [4, 4],
       "wearable": {
@@ -326,6 +334,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "hiking_backpack",
+      "model": "hiking_backpack",
       "name": "Hiking backpack",
       "size": [4, 5],
       "wearable": {
