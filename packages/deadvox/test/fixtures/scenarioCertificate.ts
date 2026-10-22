@@ -30,7 +30,12 @@ export const cyclicSite = (registry: Registry, base: CityPlan, scale: Scale): Ci
             name: 'Cycle door',
             size: [1, 1, 1],
             color: '#aaaaaa',
-            door: { material: 'wood', methods: {}, handlingSimSeconds: 1 },
+            door: {
+              material: 'wood',
+              methods: {},
+              handlingSimSeconds: 1,
+              breach: { minimumStrength: 1, toughness: 1 },
+            },
           },
         ],
         items: ['a', 'b'].map((id) => ({

@@ -2,6 +2,7 @@
 read_if:
   - you're changing persistent simulation state, save identity or restore guarantees
   - you're changing the save envelope or deciding whether its schema number changes
+  - you're changing how a save record is compressed or which size its caps bound
   - you're changing when the game autosaves
   - you're deciding what happens to a save whose mod state no longer matches its mod
 tags: [deadvox, adr, saves, persistence, determinism]
@@ -15,13 +16,15 @@ tags: [deadvox, adr, saves, persistence, determinism]
 
 ## Decision
 
-A save is an exact snapshot of one world and its bound character. Compare simulation fingerprint, save envelope schema, deterministic generator versions and content identity before resolving saved references through content. Content identity covers the evaluated content, not its pack sources; see [ADR 0008](0008-deterministic-world.md). The snapshot is the save's truth; a replay log beside it stays bounded. A Git revision is diagnostic, not identity. Exactness lets a restored scheduler, random stream and action continue as if save and load had not changed the simulation. Generator identity also protects saved chunk edits from being applied over different terrain.
+A save is an exact snapshot of one world and its bound character. Compare simulation fingerprint, save envelope schema, deterministic generator versions and content identity before resolving saved references through content. Content identity covers the evaluated content, not its pack sources; see [ADR 0008](0008-deterministic-world.md). The snapshot is the save's truth; a replay log beside it stays bounded. A Git revision is diagnostic, not identity. Exactness lets a restored scheduler, random stream and action continue as if save and load had not changed the simulation. A changed column is saved whole and installed instead of generated, so no saved edit is applied over regenerated terrain; generator identity protects the untouched terrain that regenerates and its seams against saved columns.
 
 Bump `SAVE_SCHEMA_VERSION` only when the save envelope changes: a field of `src/core/saveFormat.ts`, `Envelope`, other than its payload. `decodeSave` parses those fields before it can read the saved identity, so the number is what lets a build refuse, and name, a record whose header it cannot parse. A payload change never bumps it. `src/core/saveFormat.ts` is a simulation entry (`tools/simulationFingerprint.ts`, `SIMULATION_ENTRIES`), so any change to the payload's shape or its validation already changes the simulation fingerprint; a bump would refuse the same saves twice and add a hand-kept number that merging PRs must race for (`docs/PROCESS.md`, "Save envelope version"). Simulation rules and content need no bump either, since the fingerprint and content identity cover them.
 
+The save is one compressed record. Players place, and take apart for resources, a great many blocks and pieces, so saved state grows with play; compression keeps that cheap to store and write, and one record keeps each commit atomic. The checksum, the canonical check and the payload cap apply to the uncompressed envelope, so save identity never depends on a browser's compressor output. The payload cap bounds the decompressed size, and a bound derived from it is enforced while inflating, so a small record cannot expand without limit; the storage cap bounds the compressed record. See `src/core/saveFormat.ts`, `encodeSave` and `decodeSave`, and `src/game/saveStorageRecord.ts`, `SAVE_RECORD_MAX_BYTES`.
+
 Bump `INPUT_REPLAY_SCHEMA_VERSION` only when a field of `src/game/inputReplay.ts`, `ReplayWire`, other than `startSave` changes, because those fields are parsed before the starting save's identity is checked. That starting save's ordinary checks then refuse a replay whose simulation or content differs, so a simulation change needs no replay bump.
 
-Change a generator's id in `defaultVersion` when its output for the same seed and options changes. The fingerprint refuses that change too, but the id is the part of identity that says saved chunk edits now belong to other terrain, and a refusal names it.
+Change a generator's id in `defaultVersion` when its output for the same seed and options changes. The fingerprint refuses that change too, but the id is the part of identity that says saved columns now border other terrain, and a refusal names it.
 
 Persist every future-affecting owner state with the change that introduces it. Entity projections are explicit and exhaustive so each new field gets a save decision and unset optional runtime fields cannot leak into canonical saves; see `src/core/zombies.ts`, `projectSnapshot`. Keep input, rendering and external playback out of the snapshot. Debug toggles are not saved, while world changes made with them are. Presentation changes preserve save identity only when their modules remain outside the simulation dependency graph; gameplay rules remain fingerprinted.
 

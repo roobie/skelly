@@ -190,6 +190,7 @@
       },
       "stepLength": 0.59999999999999998,
       "stimulusMemorySimSeconds": 180,
+      "strength": 5,
       "wander": {
         "bodyLookArcDegrees": 150,
         "bodyTurnDegreesPerSimSecond": 90,

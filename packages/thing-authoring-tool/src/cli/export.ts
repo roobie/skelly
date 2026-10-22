@@ -6,5 +6,5 @@ writeRecipeExports(
   loadThingRecipe(),
   resolve(import.meta.dirname, '../../../../packages/deadvox/src/content/base'),
   'things',
-  { modelIndex: true },
+  { index: true },
 );

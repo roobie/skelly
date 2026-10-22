@@ -25,7 +25,19 @@ const stockProfile = (length: 'M' | 'L', style: 'tapered' | 'tapered-sawed') =>
     (solid): solid is ExtrudedPolygonSolid => solid.kind === 'extruded-polygon',
   );
 
-// Asserts the properties a sawed-off stock build must keep: short-barrel gripless pump lower,
+// A pump build with chosen barrel and stock params, so no test depends on which seed happens to roll them.
+const pumpWith = (params: { barrel: Record<string, string>; stock: Record<string, string> }) => {
+  const base = generate(pumpShotgun, gunDomain, 0);
+  const overrides: Record<string, Record<string, string>> = { barrel: params.barrel, stock: params.stock };
+  const parts = Object.fromEntries(
+    Object.entries(base.parts).map(([id, part]) => {
+      const override = overrides[part.family];
+      return [id, override ? { ...part, params: { ...part.params, ...override } } : part];
+    }),
+  );
+  return { ...base, parts };
+};
+
 // Asserts the properties a sawed-off stock build must keep: short-barrel gripless pump lower,
 // a valid assembly, an unambiguous firing-grip anchor inside the grip section, and a matching hold.
 const check = (condition: unknown, message: string): void => {
@@ -115,25 +127,13 @@ describe('sawed-off tapered stock', () => {
     expect(new Set(sawed.map((s) => s.display?.role))).toEqual(new Set([...handRoles, 'cut-stub']));
   });
 
-  // Generates and validates stock variants across the selected seed set.
-  it('generates a valid sawed stock on a short-barrel build and a valid plain stock otherwise', () => {
-    let sawedSeen = false;
-    let plainValidSeen = false;
-    for (let seed = 0; seed < 60 && !(sawedSeen && plainValidSeen); seed++) {
-      const assembly = generate(pumpShotgun, gunDomain, seed);
-      const stockEntry = Object.entries(assembly.parts).find(([, part]) => part.family === 'stock');
-      expect(stockEntry, `seed ${seed}: one stock part`).toBeDefined();
-      if (stockEntry?.[1].params?.style === 'tapered-sawed') {
-        if (!sawedSeen) {
-          sawedSeen = true;
-          expectSawedStockBuild(assembly, seed);
-        }
-      } else if (validate(assembly, gunDomain).ok) {
-        plainValidSeen = true;
-      }
-    }
-    expect(sawedSeen).toBe(true);
-    expect(plainValidSeen).toBe(true);
+  it('builds a valid sawed stock on a short-barrel pump', () => {
+    expectSawedStockBuild(pumpWith({ barrel: { length: 'S' }, stock: { style: 'tapered-sawed' } }), 0);
+  });
+
+  it('builds a valid plain stock on a long-barrel pump', () => {
+    const assembly = pumpWith({ barrel: { length: 'L' }, stock: { style: 'tapered' } });
+    expect(validate(assembly, gunDomain).issues).toEqual([]);
   });
 });
 

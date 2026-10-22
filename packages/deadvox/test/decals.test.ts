@@ -50,7 +50,12 @@ const fixture = () => {
             name: 'Door',
             color: '#808080',
             size: [2, 4, 1],
-            door: { material: 'wood', methods: {}, handlingSimSeconds: 1 },
+            door: {
+              material: 'wood',
+              methods: {},
+              handlingSimSeconds: 1,
+              breach: { minimumStrength: 1, toughness: 1 },
+            },
           },
         ],
       },

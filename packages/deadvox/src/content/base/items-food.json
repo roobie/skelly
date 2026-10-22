@@ -7,7 +7,7 @@
         "usage": []
       },
       "id": "opened_beans",
-      "model": "canned_beans",
+      "model": "opened_beans",
       "name": "Opened can of beans",
       "serving": {
         "empty": "empty_can",
@@ -23,7 +23,7 @@
         "usage": []
       },
       "id": "opened_soup",
-      "model": "canned_soup",
+      "model": "opened_soup",
       "name": "Opened can of soup",
       "serving": {
         "empty": "empty_can",
@@ -39,7 +39,7 @@
         "usage": []
       },
       "id": "empty_can",
-      "model": "canned_beans",
+      "model": "empty_can",
       "name": "Empty can",
       "size": [1, 2],
       "weight": 100
@@ -78,6 +78,7 @@
         "water": 100
       },
       "id": "beans",
+      "model": "beans",
       "name": "Beans",
       "size": [1, 2],
       "weight": 350
@@ -115,6 +116,7 @@
         "water": 250
       },
       "id": "soup",
+      "model": "soup",
       "name": "Soup",
       "size": [1, 2],
       "weight": 330
@@ -150,9 +152,9 @@
         "water": 150
       },
       "id": "apple",
+      "model": "apple",
       "name": "Apple",
-      "size": [1, 1],
-      "weight": 180
+      "size": [1, 1]
     },
     {
       "category": "food",

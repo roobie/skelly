@@ -1,9 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { LanguageVariant, SyntaxKind } from 'typescript/unstable/ast';
-import { createScanner } from 'typescript/unstable/ast/scanner';
-import { expect, expectTypeOf, it } from 'vitest';
+import { expectTypeOf, it } from 'vitest';
 import type { AnchorFrame } from '../src/assembly/anchors.ts';
 import type {
   Design,
@@ -18,56 +13,8 @@ import type {
 import type { Domain, PartInstance } from '../src/assembly/schema.ts';
 import type { Template } from '../src/assembly/template.ts';
 
-const typeScriptFiles = (directory: string): string[] =>
-  readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(directory, entry.name);
-    if (entry.isDirectory()) {
-      return typeScriptFiles(path);
-    }
-    return entry.name.endsWith('.ts') ? [path] : [];
-  });
-
-const FORBIDDEN_CORE_IDENTIFIERS = new Set([
-  'grip',
-  'clamp',
-  'magazine',
-  'bore',
-  'muzzle',
-  'receiver',
-  'barrel',
-  'stock',
-  'sight',
-  'hold',
-  'rearmost',
-  'deadvox',
-]);
-
-const findForbiddenIdentifier = (source: string): string | undefined => {
-  const scanner = createScanner(true, LanguageVariant.Standard, source);
-  for (let token = scanner.scan(); token !== SyntaxKind.EndOfFile; token = scanner.scan()) {
-    if (scanner.isIdentifier()) {
-      const identifier = scanner.getTokenValue();
-      if (FORBIDDEN_CORE_IDENTIFIERS.has(identifier.toLowerCase())) {
-        return identifier;
-      }
-    }
-  }
-  return undefined;
-};
-
-const findForbiddenCoreIdentifier = (
-  files: readonly string[],
-  readSource: (file: string) => string = (file) => readFileSync(file, 'utf8'),
-): string | undefined => {
-  for (const file of files) {
-    const identifier = findForbiddenIdentifier(readSource(file));
-    if (identifier) {
-      return `${file}: ${identifier}`;
-    }
-  }
-  return undefined;
-};
-
+// Type-level only: the typecheck enforces these contracts. The domain-neutral source scan lives in
+// engineImportBoundary.test.ts.
 it("pins the engine's 3.0a contracts and chosen-value storage", () => {
   const partWithoutInheritedLength = {
     family: 'handguard',
@@ -108,8 +55,6 @@ it("pins the engine's 3.0a contracts and chosen-value storage", () => {
   expectTypeOf(invalidStatus).toMatchTypeOf<Design>();
   expectTypeOf(incompleteFrame).toMatchTypeOf<AnchorFrame>();
   expectTypeOf(publishedWithIssues).toMatchTypeOf<DesignLoadResult>();
-
-  expect(partWithoutInheritedLength.params).not.toHaveProperty('length');
 
   const cleanLoad: DesignLoadResult = {
     ok: true,
@@ -156,34 +101,4 @@ it("pins the engine's 3.0a contracts and chosen-value storage", () => {
   expectTypeOf(failedLoad).toMatchTypeOf<DesignLoadResult>();
   expectTypeOf(effectiveLocks).toMatchTypeOf<EffectiveSuggestionLocks>();
   expectTypeOf<(typeof suggestions.variants)[number]['status']>().toEqualTypeOf<'draft'>();
-
-  const coreRoot = fileURLToPath(new URL('../src/', import.meta.url));
-  const coreFiles = typeScriptFiles(coreRoot);
-  expect(findForbiddenCoreIdentifier(coreFiles)).toBeUndefined();
-  expect(findForbiddenIdentifier('// grip\nconst label = "deadvox"; /* clamp */')).toBeUndefined();
-  expect(findForbiddenIdentifier('const label = `receiver`;')).toBeUndefined();
-  expect(findForbiddenIdentifier('const grip = 1;')).toBe('grip');
-  let boundaryCanaryRead = false;
-  const templateCanary = [
-    'export const boundaryCanary = () => `',
-    '$',
-    '{(() => { const receiver = 1; return receiver; })()}',
-    '`;',
-  ].join('');
-  const nestedTemplateCanary = [
-    'const nested = `outer ',
-    '$',
-    '{ /* receiver in comment */ `inner ',
-    '$',
-    '{(() => { const receiver = 1; return receiver; })()}',
-    '` }`;',
-  ].join('');
-  expect(findForbiddenIdentifier(templateCanary)).toBe('receiver');
-  expect(findForbiddenIdentifier(nestedTemplateCanary)).toBe('receiver');
-  const canaryViolation = findForbiddenCoreIdentifier([join(coreRoot, 'foundation', 'math.ts')], (file) => {
-    boundaryCanaryRead = true;
-    return `${readFileSync(file, 'utf8')}\n${templateCanary}`;
-  });
-  expect(boundaryCanaryRead).toBe(true);
-  expect(canaryViolation).toContain('receiver');
 });

@@ -22,14 +22,22 @@ import {
   picklist,
   pipe,
   record,
+  regex,
   strictObject,
   string,
 } from 'valibot';
 import content from '../items.json' with { type: 'json' };
+import { bearTrap } from './families/bearTrap.ts';
+import { block } from './families/block.ts';
+import { head, limb, torso } from './families/body.ts';
 import { coil } from './families/coil.ts';
+import { foodPortion, stemmedFruit, woundRoll } from './families/food-medical.ts';
 import { fuse } from './families/fuse.ts';
 import { compass, keycard, key as keyFamily, lighter, matchbox } from './families/handheld.ts';
+import { handOpener } from './families/handOpener.ts';
 import { arm, base, shade } from './families/lamp.ts';
+import { cutStock, foldedSheet, turnedStock } from './families/materials.ts';
+import { openTin } from './families/openTin.ts';
 import { carton, vessel } from './families/package.ts';
 import { ring } from './families/ring.ts';
 import { spool } from './families/spool.ts';
@@ -49,6 +57,14 @@ const PortSchema = strictObject({
   up: ModelPointSchema,
   required: boolean(),
 });
+const SolidPointSchema = {
+  part: name,
+  solid: name,
+  fraction: pipe(
+    ModelPointSchema,
+    check((point) => point.every((value) => value >= 0 && value <= 1), 'datum fraction outside solid'),
+  ),
+};
 const PartSchema = strictObject({
   id: name,
   family: name,
@@ -59,6 +75,7 @@ const PartSchema = strictObject({
 });
 const ItemSchema = strictObject({
   id: name,
+  exportMass: picklist(['parts', 'inventory-atom']),
   parts: pipe(
     array(PartSchema),
     nonEmpty(),
@@ -67,17 +84,14 @@ const ItemSchema = strictObject({
   connections: array(strictObject({ from: name, to: name })),
   handling: optional(
     strictObject({
-      part: name,
-      solid: name,
-      fraction: pipe(
-        ModelPointSchema,
-        check((point) => point.every((value) => value >= 0 && value <= 1), 'grip fraction outside solid'),
-      ),
+      ...SolidPointSchema,
       turn: ModelPointSchema,
       hold: NeutralModelSchema.entries.hold,
       roll: NeutralModelSchema.entries.roll,
     }),
   ),
+  /** Named datums on solids, exported as the model's anchors. */
+  anchors: optional(record(pipe(string(), regex(/^[a-z0-9_]+$/)), strictObject(SolidPointSchema))),
 });
 const CatalogueSchema = strictObject({
   units: strictObject({ metresPerUnit: positive, grid: positive, bevel: pipe(number(), finite(), minValue(0)) }),
@@ -91,7 +105,9 @@ const CatalogueSchema = strictObject({
 });
 export type ToolItem = InferOutput<typeof ItemSchema>;
 type ToolPart = ToolItem['parts'][number];
+type ToolDatum = NonNullable<ToolItem['handling']>;
 const builders = {
+  block,
   ring,
   spool,
   coil,
@@ -106,6 +122,18 @@ const builders = {
   shade,
   carton,
   vessel,
+  limb,
+  torso,
+  head,
+  openTin,
+  handOpener,
+  bearTrap,
+  cutStock,
+  foldedSheet,
+  turnedStock,
+  foodPortion,
+  stemmedFruit,
+  woundRoll,
 } satisfies Record<string, (params: Readonly<Record<string, string>>) => readonly Solid[]>;
 const buildPart = (part: ToolPart, params = part.params): PartDef => {
   if (!Object.hasOwn(builders, part.family)) {
@@ -182,20 +210,25 @@ export const buildItem = (item: ToolItem) => {
   if (report.issues.length > 0) {
     throw new Error(`${item.id}: ${JSON.stringify(report.issues)}`);
   }
-  let handling: Pick<NeutralModel, 'grip' | 'hold' | 'roll'> = {};
-  if (item.handling) {
-    const datum = item.handling;
+  const datumAt = (datum: Pick<ToolDatum, 'part' | 'solid' | 'fraction'>): Vec3 => {
     const solid = report.resolved.defs.get(datum.part)?.solids.find(({ id }) => id === datum.solid);
     const placed = report.resolved.placed.get(datum.part);
     if (!(solid && placed)) {
-      throw new Error(`${item.id}: missing handling geometry ${datum.part}/${datum.solid}`);
+      throw new Error(`${item.id}: missing datum geometry ${datum.part}/${datum.solid}`);
     }
     const [min, max] = localSolidBounds(solid);
     const point = min.map((value, axis) => value + datum.fraction[axis]! * (max[axis]! - value)) as unknown as Vec3;
+    return scale(applyPoint(placed, point), catalogue.units.metresPerUnit);
+  };
+  let handling: Pick<NeutralModel, 'grip' | 'hold' | 'roll' | 'anchors'> = {};
+  if (item.handling) {
+    const datum = item.handling;
+    handling = { grip: { at: datumAt(datum), turn: datum.turn }, hold: datum.hold, roll: datum.roll };
+  }
+  if (item.anchors) {
     handling = {
-      grip: { at: scale(applyPoint(placed, point), catalogue.units.metresPerUnit), turn: datum.turn },
-      hold: datum.hold,
-      roll: datum.roll,
+      ...handling,
+      anchors: Object.fromEntries(Object.entries(item.anchors).map(([id, datum]) => [id, datumAt(datum)])),
     };
   }
   return { report, masses, handling };

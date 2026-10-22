@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { webcrypto } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
 import { afterEach, expect, it, vi } from 'vitest';
 import { Character } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
@@ -138,7 +139,7 @@ it('preserves an older simulation save without appending decoder diagnostics', a
     ...running,
     components: { ...running.components, simulationHash: 'a'.repeat(64) },
   });
-  const saved = JSON.parse(new TextDecoder().decode(record.payload)).versionIdentity;
+  const saved = JSON.parse(gunzipSync(record.payload).toString('utf8')).versionIdentity;
   stubLiveRecord(controller, record);
   vi.spyOn(controller.storage, 'listNamespaces').mockResolvedValue([saved.digest]);
   vi.spyOn(controller.storage, 'load').mockImplementation((namespace) =>

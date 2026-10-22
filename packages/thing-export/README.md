@@ -26,7 +26,12 @@ The row contract, dispatch validation and output identity are shared to keep uns
 selections from becoming silent omissions; see `src/recipe.ts`, `loadRecipe`. Node-only
 file writing is separate from browser-safe geometry and preview code; see `src/files.ts`,
 `writeRecipeExports`. Credits derive their file set from the same recipes through
-`tools/jsonnet/lib/export-files.libsonnet`.
+`tools/jsonnet/lib/export-files.libsonnet`. The recipe-derived registration index avoids a
+second list of models when content adds an export; see `src/files.ts`, `writeRecipeExports`.
+A caller asks for the index only where a consumer reads it, so no unread generated file is
+tracked; see `tools/refresh-deadvox.mjs`, `jobs`.
+Consumer-authored projections can still select gameplay-specific physical boundaries; see
+`packages/deadvox/src/content/base/models-items.jsonnet`, `authored`.
 
 ## Physical model
 
@@ -41,6 +46,12 @@ the part origin as its reference point. Assembly centres weight the placed part 
 by authored mass, so a light part cannot pull the centre as much as a heavy one. See
 `src/physical.ts`, `assemblyProperties`. Exported centres use the model-file frame in
 metres; authored masses use kilograms.
+
+Baked collision is one placed bounding box per solid, opted into per recipe row. Boxes
+are conservative, so a consumer may collide early but never passes through a solid, and
+they stay cheap for a solver to test. Only an export with part masses can carry them,
+because collision belongs to the parts whose mass it moves. See `src/physical.ts`,
+`collisionBoxes` and `modelParts`.
 
 Replaceable geometry belongs to the child item rather than the body's mass table. Its
 item weight stays authoritative, so neither a host-specific mount envelope nor a shared

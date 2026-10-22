@@ -1,0 +1,42 @@
+{
+  "powerDevices": [
+    {
+      "burnLitresPerGameHour": 1,
+      "id": "fuel_generator",
+      "kind": "generator",
+      "outputWatts": 1000,
+      "priority": 0
+    },
+    {
+      "id": "solar_panel",
+      "kind": "solar",
+      "outputWatts": {
+        "dawn": 50,
+        "day": 250,
+        "dusk": 50,
+        "night": 0
+      },
+      "priority": 0
+    },
+    {
+      "capacityWh": 1000,
+      "chargeEfficiency": 0.90000000000000002,
+      "dischargeEfficiency": 0.90000000000000002,
+      "id": "storage_battery",
+      "kind": "battery",
+      "priority": 0
+    },
+    {
+      "demandWatts": 100,
+      "id": "electrical_load",
+      "kind": "consumer",
+      "priority": 0
+    }
+  ],
+  "powerTuning": [
+    {
+      "id": "base",
+      "tickSimSeconds": 1
+    }
+  ]
+}

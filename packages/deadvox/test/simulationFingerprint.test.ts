@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { ADMISSION_ENTRIES } from '../tools/bundleStampPlugin.ts';
 import {
   collectSimulationSourceGraph,
+  FEASIBILITY_ENTRIES,
   fingerprintAfterHotChange,
   fingerprintSimulationSourceMap,
   fingerprintSimulationSources,
@@ -58,6 +59,8 @@ const DECLARATION_FILE_PATTERN = /\.d\.[cm]?ts$/;
 const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
   'src/core/buildRevision.ts': 'Test/build-only diagnostic helper; no game runtime imports it.',
   'src/core/reachability.ts': 'CLI/test-only static content acceptance; no game runtime imports it.',
+  'src/core/powerGraph.ts': 'Test-only electricity topology; no game runtime imports it.',
+  'src/core/power.ts': 'Test-only electricity integration; no game runtime imports it.',
   'src/core/scenarioCertificate.ts': 'Test-only route proof; no game runtime imports it.',
   'src/core/scenarioRoute.ts':
     'Test-only route-proof support; cityLots.ts imports only its types, and its value user scenarioCertificate.ts is test-only.',
@@ -323,6 +326,30 @@ describe('simulation source fingerprint', () => {
     expect(graph.sources.has('src/core/authoredTerrain.d.mts')).toBe(false);
     // A vehicle piece's solid blocks come from its fitted parts, so that geometry decides collision.
     expect(graph.sources.has('src/vehicles/solid.ts')).toBe(true);
+  });
+
+  it('classifies the isolated feasibility graph separately from production and rejects WASM until explicitly owned', async () => {
+    const host = await actualSimulationHost();
+    const graph = await collectSimulationSourceGraph(FEASIBILITY_ENTRIES, projectRoot, host);
+    const modules = await sourceFilesUnder('src/vehicles/feasibility');
+    const erasedContracts = 'src/vehicles/feasibility/contract.ts';
+    expect(modules.filter((path) => !graph.sources.has(path) && path !== erasedContracts)).toEqual([]);
+    expect(graph.sources.has('src/config/vehicleFeasibility.json')).toBe(true);
+    expect(graph.sources.has('src/vehicles/feasibility/movingBody.ts')).toBe(true);
+    const entry = `${root}/src/core/sim.ts`;
+    const wasm = `${root}/src/core/candidate.wasm`;
+    await expect(
+      collectSimulationSourceGraph(
+        entries,
+        root,
+        hostFor(
+          new Map([
+            [entry, "import './candidate.wasm';"],
+            [wasm, 'fixture bytes'],
+          ]),
+        ),
+      ),
+    ).rejects.toThrow(UNSUPPORTED_RUNTIME_DEPENDENCY_ERROR);
   });
 
   it('fingerprints pure mobgen modules imported by the simulation', async () => {

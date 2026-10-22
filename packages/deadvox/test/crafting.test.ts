@@ -19,6 +19,8 @@ const inputs = readdirSync('src/content/base')
     data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
   }));
 const registry = baseRegistry();
+// biome-ignore lint/style/noProcessEnv: timings print only under the bench script.
+const benchmarking = process.env.DEADVOX_BENCH === '1';
 
 interface BenchmarkEntry {
   type: string;
@@ -465,6 +467,10 @@ describe('pure craft planner', () => {
       expect('plan' in result).toBe(true);
       return { recipe: definition.id, elapsedMs };
     });
-    process.stdout.write(`CRAFT_PLANNER_200 ${JSON.stringify({ items: snapshot.entries.length, indexMs, timings })}\n`);
+    if (benchmarking) {
+      process.stdout.write(
+        `CRAFT_PLANNER_200 ${JSON.stringify({ items: snapshot.entries.length, indexMs, timings })}\n`,
+      );
+    }
   });
 });

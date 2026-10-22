@@ -55,7 +55,7 @@ describe('visible action details', () => {
   });
 
   // Resolves published designs to verify their action-part boundary.
-  it('uses a separate procedural bolt-carrier part in AR, AK and pump designs', { timeout: 10_000 }, () => {
+  it('uses a separate procedural bolt-carrier part in AR, AK and pump designs', () => {
     const wanted = [
       'design archetype-ar.json',
       'design archetype-ar-free-float.json',

@@ -32,6 +32,7 @@ import { buildBundledContent } from '../game/bundledContent.ts';
 import { PlayerMeshes } from '../render/playerFigure.ts';
 import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
 import { applySky } from '../render/sky.ts';
+import { APC } from '../vehicles/apc.ts';
 import { CATALOGUE } from '../vehicles/catalogue.ts';
 import { HATCHBACK, HATCHBACK_ADD_ONS } from '../vehicles/hatchback.ts';
 import { MATERIALS } from '../vehicles/materials.ts';
@@ -60,6 +61,7 @@ import {
 import { MOTORBIKE } from '../vehicles/motorbike.ts';
 import { PICKUP } from '../vehicles/pickup.ts';
 import { RANGE_ROVER, STRIPPED_REMOVED, wheel } from '../vehicles/rangeRover.ts';
+import { SEDAN } from '../vehicles/sedan.ts';
 import { gridBounds, type MeshBuffers, meshGrid, type Rgb, type VoxelGrid } from '../vehicles/voxels.ts';
 import { fittingWear, type WearSite, wearGrid, wearKey, wearPalette } from '../vehicles/wear.ts';
 import { type PanelActions, type PanelModel, panelTemplate } from './vehicleSpikePanel.ts';
@@ -149,6 +151,13 @@ const BUILDS = {
     viewScale: 1.06,
     views: { interior: { position: [0.45, 1.7, 1.9], target: [0.85, 0.95, -0.35] } },
   },
+  sedan: {
+    label: 'Family sedan',
+    button: 'Sedan',
+    blueprint: SEDAN,
+    removed: [],
+    views: { interior: { position: [0.2, 1.55, 1.7], target: [0.6, 0.65, -0.3] } },
+  },
   motorbike: {
     label: 'CG125-type motorbike',
     button: 'Motorbike',
@@ -163,6 +172,14 @@ const BUILDS = {
     blueprint: HATCHBACK,
     removed: ['hatch-door-near'],
     addOns: HATCHBACK_ADD_ONS,
+  },
+  apc: {
+    label: 'Wheeled APC',
+    button: 'APC',
+    blueprint: APC,
+    removed: [],
+    viewScale: 1.6,
+    views: { interior: { label: 'Troop compartment', position: [-2.7, 1.75, 0], target: [1.5, 1.2, 0] } },
   },
 } as const satisfies Record<string, BuildSpec>;
 type BuildId = keyof typeof BUILDS;

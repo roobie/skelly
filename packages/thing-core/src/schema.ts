@@ -1,4 +1,5 @@
 import {
+  array,
   check,
   finite,
   type InferOutput,
@@ -20,10 +21,16 @@ import {
 export const ModelPointSchema = tuple([pipe(number(), finite()), pipe(number(), finite()), pipe(number(), finite())]);
 const Id = pipe(string(), regex(/^[a-z0-9_]+$/, 'must be lowercase letters, digits and _'));
 
+export const ModelBoxSchema = pipe(
+  strictObject({ min: ModelPointSchema, max: ModelPointSchema }),
+  check(({ min, max }) => min.every((value, axis) => value <= max[axis]!), 'box min must not exceed max'),
+);
+
 export const ModelPartSchema = strictObject({
   massKg: pipe(number(), finite(), minValue(0)),
   centreOfMass: ModelPointSchema,
   node: optional(pipe(string(), nonEmpty())),
+  collision: optional(pipe(array(ModelBoxSchema), nonEmpty('baked collision needs a box'))),
 });
 
 export const NeutralModelSchema = strictObject({
@@ -54,3 +61,4 @@ export const modelSchema = <const Packs extends ObjectEntries>(packs: Packs) => 
 type DeepReadonly<T> = T extends object ? { readonly [K in keyof T]: DeepReadonly<T[K]> } : T;
 export type NeutralModel = DeepReadonly<InferOutput<typeof NeutralModelSchema>>;
 export type ModelParts = NonNullable<NeutralModel['parts']>;
+export type ModelBox = DeepReadonly<InferOutput<typeof ModelBoxSchema>>;

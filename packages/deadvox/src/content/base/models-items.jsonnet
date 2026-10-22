@@ -1,10 +1,33 @@
-local things = import 'things/models.json';
-local visibleThings = [
-  if std.member(['canned_beans', 'canned_soup'], model.id) then std.objectRemoveKey(model, 'parts') else model
-  for model in things
-];
-{
-  "models": visibleThings + [
+local authored = [
+    std.objectRemoveKey(import 'things/canned_beans.model.json', 'parts'),
+    std.objectRemoveKey(import 'things/canned_soup.model.json', 'parts'),
+    import 'things/opened_beans.model.json',
+    import 'things/opened_soup.model.json',
+    import 'things/empty_can.model.json',
+    import 'things/can_opener.model.json',
+    import 'things/beans.model.json',
+    import 'things/soup.model.json',
+    import 'things/apple.model.json',
+    import 'things/bandage.model.json',
+    import 'things/antiseptic.model.json',
+    import 'things/antibiotics.model.json',
+    import 'things/painkillers.model.json',
+    import 'things/codeine.model.json',
+    import 'things/morphine.model.json',
+    import 'things/crackers.model.json',
+    import 'things/chocolate_bar.model.json',
+    import 'things/soda_can.model.json',
+    import 'things/water_bottle.model.json',
+    import 'things/juice_carton.model.json',
+    import 'things/cartridge_box_308_h_winchester.model.json',
+    import 'things/cartridge_box_5_d_56x45.model.json',
+    import 'things/cartridge_box_7_d_62x39.model.json',
+    import 'things/cartridge_box_357_h_magnum.model.json',
+    import 'things/shotshell_box.model.json',
+    import 'things/ammo_can.model.json',
+    import 'things/jerry_can.model.json',
+    import 'things/gas_canister.model.json',
+    import 'things/bear_trap.model.json',
     {
       "id": "hand_saw",
       "file": "assets/models/hand_saw.glb",
@@ -49,6 +72,14 @@ local visibleThings = [
     { "id": "glass_bulb", "file": "assets/models/glass_bulb.glb" },
     { "id": "paper_sheet", "file": "assets/models/paper_sheet.glb" },
     { "id": "folded_note", "file": "assets/models/folded_note.glb" },
-    { "id": "notebook", "file": "assets/models/notebook.glb" }
-  ]
+    { "id": "notebook", "file": "assets/models/notebook.glb" },
+    import 'things/shambler_torso.model.json',
+    import 'things/shambler_head.model.json',
+    import 'things/shambler_left_arm.model.json',
+    import 'things/shambler_right_arm.model.json',
+    import 'things/shambler_left_leg.model.json',
+    import 'things/shambler_right_leg.model.json'
+];
+{
+  models: authored + [model for model in import 'things/index.json' if !std.member([entry.id for entry in authored], model.id)],
 }

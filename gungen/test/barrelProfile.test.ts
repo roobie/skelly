@@ -73,14 +73,17 @@ describe('octagonal barrel and gas-system geometry', () => {
   });
 
   // Rebuilds and validates the published designs and passing fixtures.
-  it('keeps every curated design and passing fixture valid', { timeout: 25_000 }, () => {
-    const corpus = loadCorpus();
+  const corpus = loadCorpus();
+  it('has a curated corpus to validate', () => {
     expect(corpus.length).toBeGreaterThan(0);
-    for (const { label, assembly } of corpus) {
-      const report = validate(assembly, gunDomain);
-      expect(report.issues, label).toEqual([]);
-    }
   });
+
+  it.each(corpus.map(({ label, assembly }) => [label, assembly] as const))(
+    'keeps curated entry %s valid',
+    (_label, assembly) => {
+      expect(validate(assembly, gunDomain).issues).toEqual([]);
+    },
+  );
 
   it('keeps free-float clearance and clamped contact valid around the octagonal barrel', () => {
     const freeFloat = validate(loadFixture('archetype-ar-free-float'), gunDomain);

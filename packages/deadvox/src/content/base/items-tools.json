@@ -223,14 +223,37 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "can_opener",
+      "model": "can_opener",
       "name": "Can opener",
       "size": [1, 1],
       "tool": {
         "qualities": {
           "opening": 5
         }
+      }
+    },
+    {
+      "category": "tool",
+      "description": "Steel jaws on a spring. It shuts on whatever steps in it.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Hunting"]
       },
-      "weight": 100
+      "id": "bear_trap",
+      "model": "bear_trap",
+      "name": "Bear trap",
+      "size": [5, 5],
+      "trap": {
+        "disarmSimSeconds": 6,
+        "holdSimSeconds": 20,
+        "playerInjury": {
+          "damage": 25,
+          "kind": "pierce",
+          "region": "leftLeg"
+        },
+        "setSimSeconds": 4,
+        "zombieLegDamage": 60
+      }
     },
     {
       "category": "weapon",

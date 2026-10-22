@@ -38,13 +38,6 @@ export const blockId = (id: string): number => {
   }
   return found;
 };
-export const blockName = (id: number): string => {
-  const found = registry.blocks[id]?.id;
-  if (!found) {
-    throw new Error(`Missing block id ${id}`);
-  }
-  return found;
-};
 
 export const fixtureHamlet = new Hamlet(seed, registry, scale);
 export const fixtureColumns: [number, number][] = [];
@@ -104,13 +97,20 @@ const cloneFixtureChunk = (source: Chunk): Chunk => {
 
 export type Runtime = ReturnType<typeof createRuntime>;
 
+// These stand in for the streamer (`src/game/streamer.ts`, `Streamer`), so a touched column's
+// resident chunks are neither regenerated nor dropped.
 export const addFixtureColumn = (runtime: Runtime, cx: number, cz: number): void => {
   for (const chunk of fixtureChunksFor([[cx, cz]])) {
-    runtime.world.addChunk(cloneFixtureChunk(chunk));
+    if (!(runtime.world.isTouched(cx, cz) && runtime.world.getChunk(chunk.cx, chunk.cy, chunk.cz))) {
+      runtime.world.addChunk(cloneFixtureChunk(chunk));
+    }
   }
 };
 
 export const removeFixtureColumn = (runtime: Runtime, cx: number, cz: number): void => {
+  if (runtime.world.isTouched(cx, cz)) {
+    return;
+  }
   for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
     runtime.world.removeChunk(cx, cy, cz);
   }
@@ -348,12 +348,12 @@ export const inspect = (runtime: Runtime): unknown => {
     runtime.sim.scheduler as unknown as { entries: { spec: { id: string }; done: number; ticks: number }[] }
   ).entries;
   const spawns = (runtime.spawner as unknown as { spawned: Set<string> }).spawned;
-  const { deltas } = runtime.world as unknown as { deltas: Map<string, unknown> };
+  const { touched } = runtime.world as unknown as { touched: Set<string> };
   return {
     chunks: [...runtime.world.chunks.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, chunk]) => [key, chunk.toArray(), chunk.edited]),
-    deltas: [...deltas.entries()].sort(([a], [b]) => a.localeCompare(b)),
+      .map(([key, chunk]) => [key, chunk.toArray()]),
+    touched: [...touched].sort(),
     simulation: {
       seed: runtime.sim.seed,
       clock: runtime.sim.clock,

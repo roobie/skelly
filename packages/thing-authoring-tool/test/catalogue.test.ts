@@ -1,6 +1,6 @@
 import { MATERIALS } from '@skelly/thing-core/materials';
 import { expect, it } from 'vitest';
-import { buildItem, loadCatalogue } from '../src/catalogue.ts';
+import { buildItem, catalogue, loadCatalogue } from '../src/catalogue.ts';
 import { exportItem, loadThingRecipe } from '../src/exports.ts';
 
 const material = Object.keys(MATERIALS)[0]!;
@@ -20,6 +20,7 @@ const fixture = () => ({
   items: [
     {
       id: 'fixture',
+      exportMass: 'parts',
       parts: [
         {
           id: 'lower',
@@ -80,7 +81,61 @@ it('exports a grip following the held solid through resizing and assembly placem
   const after = exportFixture();
   expect(after.grip?.at[1]).toBeCloseTo(0.08);
   datum.solid = 'missing';
-  expect(exportFixture).toThrow('missing handling geometry');
+  expect(exportFixture).toThrow('missing datum geometry');
+});
+it('exports datums and baked collision that follow the resized solid', () => {
+  const input = fixture();
+  const exportFixture = () =>
+    exportItem(
+      loadCatalogue({
+        ...input,
+        items: [{ ...input.items[0], anchors: { top: { part: 'upper', solid: 'body', fraction: [0.5, 1, 0.5] } } }],
+      }).items[0]!,
+      { id: 'fixture', file: 'assets/models/fixture.glb' },
+      { collision: true },
+    ).modelEntry;
+  const topOf = (entry: ReturnType<typeof exportFixture>) => ({
+    datum: entry.anchors?.top?.[1],
+    box: entry.parts?.upper?.collision?.[0]?.max[1],
+  });
+  const before = topOf(exportFixture());
+  expect(before.box).toBeCloseTo(before.datum!);
+  input.items[0]!.parts[1]!.params.height = '0.08';
+  const after = topOf(exportFixture());
+  expect(after.datum).toBeGreaterThan(before.datum!);
+  expect(after.box).toBeCloseTo(after.datum!);
+});
+it('refuses baked collision on an inventory atom, whose export carries no parts', () => {
+  const input = fixture();
+  input.items[0]!.exportMass = 'inventory-atom';
+  const item = loadCatalogue(input).items[0]!;
+  expect(() => exportItem(item, { id: 'fixture', file: 'assets/models/fixture.glb' }, { collision: true })).toThrow(
+    'baked collision travels with exported parts',
+  );
+});
+it('omits runtime part masses only when inventory-atom export is authored', () => {
+  const input = fixture();
+  const asset = { id: 'fixture', file: 'assets/models/fixture.glb' } as const;
+  const assembly = exportItem(loadCatalogue(input).items[0]!, asset);
+  input.items[0]!.exportMass = 'inventory-atom';
+  const atom = exportItem(loadCatalogue(input).items[0]!, asset);
+  expect(assembly.modelEntry.parts).toBeDefined();
+  expect(atom.modelEntry).not.toHaveProperty('parts');
+  expect(atom.glb).toEqual(assembly.glb);
+  expect(atom.physical).toEqual(assembly.physical);
+});
+it('refuses recipe mass ownership that differs from the authored item', () => {
+  const item = catalogue.items[0]!;
+  expect(() =>
+    loadThingRecipe([
+      {
+        id: 'fixture',
+        kind: 'item',
+        source: item.id,
+        options: { mass: item.exportMass === 'parts' ? 'inventory-atom' : 'parts' },
+      },
+    ]),
+  ).toThrow('Recipe mass ownership differs');
 });
 it('refuses unknown geometry families during catalogue loading', () => {
   const input = fixture();
@@ -88,7 +143,7 @@ it('refuses unknown geometry families during catalogue loading', () => {
   expect(() => loadCatalogue(input)).toThrow('Unknown thing family');
 });
 it('refuses recipe references outside the authored item set', () => {
-  expect(() => loadThingRecipe([{ id: 'fixture', kind: 'item', source: 'fixture-unknown' }])).toThrow(
-    'Unknown tool item',
-  );
+  expect(() =>
+    loadThingRecipe([{ id: 'fixture', kind: 'item', source: 'fixture-unknown', options: { mass: 'parts' } }]),
+  ).toThrow('Unknown tool item');
 });

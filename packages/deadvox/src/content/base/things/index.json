@@ -1,0 +1,670 @@
+[
+  {
+    "id": "canned_beans",
+    "file": "assets/models/canned_beans.glb",
+    "parts": { "package": { "node": "package:vessel", "massKg": 0.45, "centreOfMass": [0, 0.055928062313458364, 0] } },
+    "grip": { "at": [0, 0.0565, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "canned_soup",
+    "file": "assets/models/canned_soup.glb",
+    "parts": { "package": { "node": "package:vessel", "massKg": 0.43, "centreOfMass": [0, 0.06092612064541375, 0] } },
+    "grip": { "at": [0, 0.0615, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "crackers",
+    "file": "assets/models/crackers.glb",
+    "parts": { "package": { "node": "package:carton", "massKg": 0.25, "centreOfMass": [0, 0.10068854621041944, 0] } },
+    "grip": { "at": [0, 0.1, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "chocolate_bar",
+    "file": "assets/models/chocolate_bar.glb",
+    "parts": { "package": { "node": "package:carton", "massKg": 0.1, "centreOfMass": [0, 0.006173919616905213, 0] } },
+    "grip": { "at": [0, 0.006, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "soda_can",
+    "file": "assets/models/soda_can.glb",
+    "parts": { "package": { "node": "package:vessel", "massKg": 0.36, "centreOfMass": [0, 0.05905505673421534, 0] } },
+    "grip": { "at": [0, 0.060500000000000005, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "water_bottle",
+    "file": "assets/models/water_bottle.glb",
+    "parts": { "package": { "node": "package:vessel", "massKg": 1.05, "centreOfMass": [0, 0.10473515077838855, 0] } },
+    "grip": { "at": [0, 0.12, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "juice_carton",
+    "file": "assets/models/juice_carton.glb",
+    "parts": { "package": { "node": "package:carton", "massKg": 1.05, "centreOfMass": [0, 0.10026769352988682, 0] } },
+    "grip": { "at": [0, 0.095, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "cartridge_box_308_h_winchester",
+    "file": "assets/models/cartridge_box_308_h_winchester.glb",
+    "parts": { "package": { "node": "package:carton", "massKg": 0.52, "centreOfMass": [0, 0.04069044717496923, 0] } },
+    "grip": { "at": [0, 0.04, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "cartridge_box_5_d_56x45",
+    "file": "assets/models/cartridge_box_5_d_56x45.glb",
+    "parts": { "package": { "node": "package:carton", "massKg": 0.28, "centreOfMass": [0, 0.033191603922942604, 0] } },
+    "grip": { "at": [0, 0.0325, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "cartridge_box_7_d_62x39",
+    "file": "assets/models/cartridge_box_7_d_62x39.glb",
+    "parts": { "package": { "node": "package:carton", "massKg": 0.36, "centreOfMass": [0, 0.03319213680004027, 0] } },
+    "grip": { "at": [0, 0.0325, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "cartridge_box_357_h_magnum",
+    "file": "assets/models/cartridge_box_357_h_magnum.glb",
+    "parts": { "package": { "node": "package:carton", "massKg": 0.825, "centreOfMass": [0, 0.02819500823978696, 0] } },
+    "grip": { "at": [0, 0.0275, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "shotshell_box",
+    "file": "assets/models/shotshell_box.glb",
+    "parts": { "package": { "node": "package:carton", "massKg": 0.84, "centreOfMass": [0, 0.0381928636699563, 0] } },
+    "grip": { "at": [0, 0.0375, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "ammo_can",
+    "file": "assets/models/ammo_can.glb",
+    "parts": { "package": { "node": "package:carton", "massKg": 1.6, "centreOfMass": [0, 0.09033956247777805, 0] } },
+    "grip": { "at": [0, 0.21100000000000002, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "jerry_can",
+    "file": "assets/models/jerry_can.glb",
+    "parts": { "package": { "node": "package:carton", "massKg": 2.5, "centreOfMass": [0, 0.21240192709700098, 0] } },
+    "grip": { "at": [0, 0.47600000000000003, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "gas_canister",
+    "file": "assets/models/gas_canister.glb",
+    "parts": { "package": { "node": "package:vessel", "massKg": 0.35, "centreOfMass": [0, 0.06225437102012218, 0] } },
+    "grip": { "at": [0, 0.07150000000000001, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "opened_beans",
+    "file": "assets/models/opened_beans.glb",
+    "grip": { "at": [0, 0.055, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "opened_soup",
+    "file": "assets/models/opened_soup.glb",
+    "grip": { "at": [0, 0.06, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "empty_can",
+    "file": "assets/models/empty_can.glb",
+    "grip": { "at": [0, 0.055, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "can_opener",
+    "file": "assets/models/can_opener.glb",
+    "parts": {
+      "body": {
+        "node": "body:handOpener",
+        "massKg": 0.1,
+        "centreOfMass": [-0.058518256502378914, 0.008871417720597692, 0.00038065804559504746]
+      }
+    },
+    "grip": { "at": [-0.08000275558820616, 0.007, -0.0166711916682587], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 90
+  },
+  {
+    "id": "aa_battery",
+    "file": "assets/models/aa_battery.glb",
+    "parts": {
+      "material": { "node": "material:vessel", "massKg": 0.023, "centreOfMass": [0, 0.022958377252101727, 0] }
+    },
+    "grip": { "at": [0, 0.02375, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "rag",
+    "file": "assets/models/rag.glb",
+    "parts": {
+      "material": {
+        "node": "material:foldedSheet",
+        "massKg": 0.05,
+        "centreOfMass": [0.002032137568242561, 0.015259421346948698, -0.00017493534911478442]
+      }
+    },
+    "grip": { "at": [-0.0525, 0.0175, 0.042499999999999996], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "duct_tape",
+    "file": "assets/models/duct_tape.glb",
+    "parts": { "material": { "node": "material:ring", "massKg": 0.15, "centreOfMass": [0, 0.024, 0] } },
+    "grip": { "at": [0.037000000000000005, 0.024, 0], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "nails",
+    "file": "assets/models/nails.glb",
+    "parts": {
+      "material": { "node": "material:turnedStock", "massKg": 0.005, "centreOfMass": [0.0435473313047115, 0, 0] }
+    },
+    "grip": { "at": [0.035, 0, 0], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "scrap_metal",
+    "file": "assets/models/scrap_metal.glb",
+    "parts": {
+      "material": {
+        "node": "material:foldedSheet",
+        "massKg": 0.5,
+        "centreOfMass": [-0.0010397965290245296, 0.011299371633752246, 0.00112956313584681]
+      }
+    },
+    "grip": { "at": [-0.0625, 0.007500000000000001, -0.0375], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "stick",
+    "file": "assets/models/stick.glb",
+    "parts": {
+      "material": { "node": "material:turnedStock", "massKg": 0.2, "centreOfMass": [0.1638533875934888, 0, 0] }
+    },
+    "grip": { "at": [0.2, 0, 0], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "wax",
+    "file": "assets/models/wax.glb",
+    "parts": {
+      "material": { "node": "material:turnedStock", "massKg": 0.05, "centreOfMass": [0, 0.013361871616395973, 0] }
+    },
+    "grip": { "at": [0, 0.0155, 0], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "wooden_plank",
+    "file": "assets/models/wooden_plank.glb",
+    "parts": {
+      "material": {
+        "node": "material:cutStock",
+        "massKg": 0.5,
+        "centreOfMass": [-0.0037619047619047675, 0.011000000000000001, 0.0011464510332434854]
+      }
+    },
+    "grip": { "at": [0, 0.011, 0], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "field_patch",
+    "file": "assets/models/field_patch.glb",
+    "parts": {
+      "material": {
+        "node": "material:foldedSheet",
+        "massKg": 0.12,
+        "centreOfMass": [-0.0011212558065032932, 0.004018220406855679, 0]
+      }
+    },
+    "grip": { "at": [3.469446951953614e-18, 0.00575, -1.3877787807814457e-17], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "beans",
+    "file": "assets/models/beans.glb",
+    "grip": { "at": [0, 0.002, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "soup",
+    "file": "assets/models/soup.glb",
+    "grip": { "at": [0, 0.0045, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "apple",
+    "file": "assets/models/apple.glb",
+    "parts": {
+      "body": {
+        "node": "body:stemmedFruit",
+        "massKg": 0.18,
+        "centreOfMass": [0.0000037527945636891458, 0.03719666728199075, 1.3331610776034511e-21]
+      }
+    },
+    "grip": { "at": [0, 0.0355, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "bandage",
+    "file": "assets/models/bandage.glb",
+    "parts": {
+      "body": {
+        "node": "body:woundRoll",
+        "massKg": 0.02,
+        "centreOfMass": [0.0003110423131491174, 0.022421080525116755, 0]
+      }
+    },
+    "grip": { "at": [0, 0.0225, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "antiseptic",
+    "file": "assets/models/antiseptic.glb",
+    "grip": { "at": [0, 0.045, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "antibiotics",
+    "file": "assets/models/antibiotics.glb",
+    "grip": { "at": [0, 0.032, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "painkillers",
+    "file": "assets/models/painkillers.glb",
+    "grip": { "at": [0, 0.026999999999999996, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "codeine",
+    "file": "assets/models/codeine.glb",
+    "grip": { "at": [0, 0.032, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "morphine",
+    "file": "assets/models/morphine.glb",
+    "grip": { "at": [0, 0.036, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "shambler_torso",
+    "file": "assets/models/shambler_torso.glb",
+    "parts": {
+      "part": {
+        "node": "part:torso",
+        "massKg": 12,
+        "centreOfMass": [3.527543114954702e-19, 0.285211969192045, 0.0004477764849046182]
+      }
+    },
+    "grip": { "at": [0, 0.37, 0], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "shambler_head",
+    "file": "assets/models/shambler_head.glb",
+    "parts": {
+      "part": {
+        "node": "part:head",
+        "massKg": 5,
+        "centreOfMass": [-3.662628507396982e-19, 0.14363995452417178, -0.01089267669210752]
+      }
+    },
+    "grip": { "at": [0, 0.15000000000000002, 0], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "shambler_left_arm",
+    "file": "assets/models/shambler_left_arm.glb",
+    "parts": {
+      "part": {
+        "node": "part:limb",
+        "massKg": 2.5,
+        "centreOfMass": [-1.1462369968187862e-18, 0.41046539178806196, 1.3020175282656349e-18]
+      }
+    },
+    "grip": { "at": [0, 0.085, 0], "turn": [0, 0, 0] },
+    "hold": "forward",
+    "roll": 0
+  },
+  {
+    "id": "shambler_right_arm",
+    "file": "assets/models/shambler_right_arm.glb",
+    "parts": {
+      "part": {
+        "node": "part:limb",
+        "massKg": 2.5,
+        "centreOfMass": [-1.1462369968187862e-18, 0.41046539178806196, 1.3020175282656349e-18]
+      }
+    },
+    "grip": { "at": [0, 0.085, 0], "turn": [0, 0, 0] },
+    "hold": "forward",
+    "roll": 0
+  },
+  {
+    "id": "shambler_left_leg",
+    "file": "assets/models/shambler_left_leg.glb",
+    "parts": {
+      "part": {
+        "node": "part:limb",
+        "massKg": 4,
+        "centreOfMass": [-4.733804250381149e-19, 0.4636483664802185, 0.006677478950373384]
+      }
+    },
+    "grip": { "at": [0, 0.15, 0], "turn": [0, 0, 0] },
+    "hold": "forward",
+    "roll": 0
+  },
+  {
+    "id": "shambler_right_leg",
+    "file": "assets/models/shambler_right_leg.glb",
+    "parts": {
+      "part": {
+        "node": "part:limb",
+        "massKg": 4,
+        "centreOfMass": [-4.733804250381149e-19, 0.4636483664802185, 0.006677478950373384]
+      }
+    },
+    "grip": { "at": [0, 0.15, 0], "turn": [0, 0, 0] },
+    "hold": "forward",
+    "roll": 0
+  },
+  {
+    "id": "car_battery",
+    "file": "assets/models/car_battery.glb",
+    "parts": {
+      "body": {
+        "node": "body:carton",
+        "massKg": 14,
+        "centreOfMass": [0, 0.09258197655858076, 0],
+        "collision": [
+          { "min": [-0.12, 0, -0.0875], "max": [0.12, 0.17, 0.0875] },
+          { "min": [-0.12, 0.17, -0.0875], "max": [0.12, 0.19000000000000003, 0.0875] },
+          { "min": [-0.1205, 0.05500000000000001, -0.088], "max": [0.1205, 0.115, 0.088] }
+        ]
+      }
+    },
+    "anchors": { "base": [0, 0, 0], "terminal_positive": [0.07200000000000001, 0.19000000000000003, -0.0525] }
+  },
+  {
+    "id": "car_headlamp",
+    "file": "assets/models/car_headlamp.glb",
+    "parts": {
+      "body": {
+        "node": "body:block",
+        "massKg": 1.2,
+        "centreOfMass": [0, 0.08, 0],
+        "collision": [{ "min": [-0.04, 0, -0.11], "max": [0.04, 0.16, 0.11] }]
+      }
+    },
+    "anchors": { "beam": [0.04, 0.08, 0], "mount": [-0.04, 0.08, -0.077] }
+  },
+  {
+    "id": "hatchback_battery_tray",
+    "file": "assets/models/hatchback_battery_tray.glb",
+    "parts": {
+      "body": {
+        "node": "body:block",
+        "massKg": 1.5,
+        "centreOfMass": [0, 0.010000000000000002, 0],
+        "collision": [{ "min": [-0.14, 0, -0.105], "max": [0.14, 0.02, 0.105] }]
+      }
+    },
+    "anchors": { "seat": [0, 0.02, 0] }
+  },
+  {
+    "id": "pickup_battery_tray",
+    "file": "assets/models/pickup_battery_tray.glb",
+    "parts": {
+      "body": {
+        "node": "body:block",
+        "massKg": 2.2,
+        "centreOfMass": [0, 0.015, 0],
+        "collision": [{ "min": [-0.16, 0, -0.12], "max": [0.16, 0.03, 0.12] }]
+      }
+    },
+    "anchors": { "seat": [0, 0.03, 0] }
+  },
+  {
+    "id": "compass",
+    "file": "assets/models/compass.glb",
+    "parts": { "compass": { "node": "compass:compass", "massKg": 0.12, "centreOfMass": [0, 0.005916140928369013, 0] } },
+    "grip": { "at": [0, 0.0045, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "lighter",
+    "file": "assets/models/lighter.glb",
+    "parts": {
+      "lighter": {
+        "node": "lighter:lighter",
+        "massKg": 0.02,
+        "centreOfMass": [0, 0.030088002775954543, -0.000014791489859822659]
+      }
+    },
+    "grip": { "at": [0, 0.0275, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "matches",
+    "file": "assets/models/matches.glb",
+    "parts": {
+      "matches": {
+        "node": "matches:matchbox",
+        "massKg": 0.02,
+        "centreOfMass": [0, 0.009603741618467523, 0.00019996058760300968]
+      }
+    },
+    "grip": { "at": [0, 0.0075, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "dad_cabin_key",
+    "file": "assets/models/dad_cabin_key.glb",
+    "parts": {
+      "dad_cabin_key": {
+        "node": "dad_cabin_key:key",
+        "massKg": 0.01,
+        "centreOfMass": [0.01858019090239605, 0.0021287794087121647, 0.0007393638027988529]
+      }
+    },
+    "grip": { "at": [0.031000000000000003, 0.0015, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "pharmacy_key",
+    "file": "assets/models/pharmacy_key.glb",
+    "parts": {
+      "pharmacy_key": {
+        "node": "pharmacy_key:key",
+        "massKg": 0.01,
+        "centreOfMass": [0.01981019164282712, 0.002057135902894956, 0.0008001642653183991]
+      }
+    },
+    "grip": { "at": [0.030500000000000003, 0.0015, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "camp_armoury_key",
+    "file": "assets/models/camp_armoury_key.glb",
+    "parts": {
+      "camp_armoury_key": {
+        "node": "camp_armoury_key:key",
+        "massKg": 0.01,
+        "centreOfMass": [0.01960271210069491, 0.002197052981961932, 0.000681423243021683]
+      }
+    },
+    "grip": { "at": [0.0355, 0.0015, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "camp_hq_safe_key",
+    "file": "assets/models/camp_hq_safe_key.glb",
+    "parts": {
+      "camp_hq_safe_key": {
+        "node": "camp_hq_safe_key:key",
+        "massKg": 0.01,
+        "centreOfMass": [0.021029245289178437, 0.001983833674424799, 0.0008623724074781385]
+      }
+    },
+    "grip": { "at": [0.030000000000000002, 0.0015, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "shed_key",
+    "file": "assets/models/shed_key.glb",
+    "parts": {
+      "shed_key": {
+        "node": "shed_key:key",
+        "massKg": 0.01,
+        "centreOfMass": [0.01858019090239605, 0.0021287794087121647, 0.0007393638027988529]
+      }
+    },
+    "grip": { "at": [0.031000000000000003, 0.0015, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "gauntlet_police_armoury_key",
+    "file": "assets/models/gauntlet_police_armoury_key.glb",
+    "parts": {
+      "gauntlet_police_armoury_key": {
+        "node": "gauntlet_police_armoury_key:key",
+        "massKg": 0.01,
+        "centreOfMass": [0.01960271210069491, 0.002197052981961932, 0.000681423243021683]
+      }
+    },
+    "grip": { "at": [0.0355, 0.0015, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "gauntlet_lab_entry_card",
+    "file": "assets/models/gauntlet_lab_entry_card.glb",
+    "parts": {
+      "gauntlet_lab_entry_card": {
+        "node": "gauntlet_lab_entry_card:keycard",
+        "massKg": 0.005,
+        "centreOfMass": [0, 0.0005071964895173086, 0]
+      }
+    },
+    "grip": { "at": [0, 0.0005, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "tape_roll",
+    "file": "assets/models/tape_roll.glb",
+    "parts": {
+      "electrical_tape": {
+        "node": "electrical_tape:ring",
+        "massKg": 0.03,
+        "centreOfMass": [0, 0.010499999999999999, 0]
+      }
+    }
+  },
+  {
+    "id": "thread_spool",
+    "file": "assets/models/thread_spool.glb",
+    "parts": {
+      "sewing_thread": { "node": "sewing_thread:spool", "massKg": 0.015, "centreOfMass": [0, 0.025000000000000005, 0] }
+    }
+  },
+  {
+    "id": "cord_coil",
+    "file": "assets/models/cord_coil.glb",
+    "parts": {
+      "nylon_cord": { "node": "nylon_cord:coil", "massKg": 0.06, "centreOfMass": [0, 0.012500000000000004, 0] }
+    }
+  },
+  {
+    "id": "fuse",
+    "file": "assets/models/fuse.glb",
+    "parts": { "fuse": { "node": "fuse:fuse", "massKg": 0.01, "centreOfMass": [0, 0.010999999999999998, 0] } }
+  },
+  {
+    "id": "bear_trap",
+    "file": "assets/models/bear_trap.glb",
+    "parts": {
+      "bear_trap": {
+        "node": "bear_trap:bearTrap",
+        "massKg": 4.5,
+        "centreOfMass": [-0.007978212127787243, 0.009364679069232785, 4.736746180037985e-18]
+      }
+    }
+  },
+  {
+    "id": "desk_lamp",
+    "file": "assets/models/desk_lamp.glb",
+    "parts": {
+      "base": { "node": "base:base", "massKg": 0.5, "centreOfMass": [0, 0.006, 0] },
+      "arm": {
+        "node": "arm:arm",
+        "massKg": 0.25,
+        "centreOfMass": [0.006492253707648635, 0.08977132831420462, -9.547963039385005e-18]
+      },
+      "shade": {
+        "node": "shade:shade",
+        "massKg": 0.15,
+        "centreOfMass": [0.07, 0.1596851851851852, -2.0252029474788637e-17]
+      }
+    }
+  }
+]
