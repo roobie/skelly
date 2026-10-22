@@ -48,6 +48,7 @@ import {
   boltStrokeUnits,
   boltWellProfile,
 } from './boltCartridge.ts';
+import { COMPACT_SMG_PROPORTIONS } from './compactSmgProportions.ts';
 import { EJECTION_PORT_MARGIN_U as SHARED_EJECTION_PORT_MARGIN_U } from './ejectionPort.ts';
 import { METRES_PER_UNIT } from './exportFrame.ts';
 import type { MuzzleBore } from './mounts.ts';
@@ -689,6 +690,9 @@ const carrierPatternFor = (params: Readonly<Record<string, string>>): BoltCarrie
   if (params.section === 'pump' || params.action === 'pump') {
     return 'pump';
   }
+  if (params.section === 'compact-smg') {
+    return 'smg';
+  }
   if (
     params.carrierPattern &&
     params.carrierPattern !== 'auto' &&
@@ -837,6 +841,31 @@ export const RECEIVER_SECTION = {
       bottom: AK_RECEIVER.shellBottomU,
     } as const,
   },
+  'compact-smg': (() => {
+    const { halfHeightU, halfWidthU, chamferU, topFlatHalfWidthU, rearX, frontX } = COMPACT_SMG_PROPORTIONS.receiver;
+    const flatY = halfHeightU - chamferU;
+    const flatZ = halfWidthU - chamferU;
+    return {
+      outline: [
+        [halfHeightU, flatZ],
+        [flatY, halfWidthU],
+        [-flatY, halfWidthU],
+        [-halfHeightU, flatZ],
+        [-halfHeightU, -flatZ],
+        [-flatY, -halfWidthU],
+        [flatY, -halfWidthU],
+        [halfHeightU, -flatZ],
+      ] as readonly Vec2[],
+      faces: {
+        top: { y: halfHeightU, halfWidth: topFlatHalfWidthU },
+        portSide: halfWidthU,
+        handleSides: [-halfWidthU, halfWidthU],
+        front: frontX,
+        rear: rearX,
+        bottom: -halfHeightU,
+      },
+    };
+  })(),
   pump: {
     clip: PUMP_REAR_SLOPE.clip,
     portCornerU: COMPACT_TRIGGER_PLATE.cornerU,
@@ -859,8 +888,8 @@ export const RECEIVER_SECTION = {
   },
 } as const;
 
-const isSectionedReceiver = (section: string): section is 'ar' | 'pump' | 'ak' | 'sporter' =>
-  section === 'ar' || section === 'pump' || section === 'ak' || section === 'sporter';
+const isSectionedReceiver = (section: string): section is keyof typeof RECEIVER_SECTION =>
+  Object.hasOwn(RECEIVER_SECTION, section);
 
 const receiverShellSolids = ({
   section,
@@ -919,9 +948,13 @@ const receiverShellSolids = ({
           }))
         : undefined;
     // End the pump and AK cavities in the full-height section; their rear walls carry the entire slope.
-    const rearSlopeRun = { pump: PUMP_REAR_SLOPE.run, ak: AK_REAR_BEVEL.run, ar: undefined, sporter: undefined }[
-      section
-    ];
+    const rearSlopeRun = {
+      pump: PUMP_REAR_SLOPE.run,
+      ak: AK_REAR_BEVEL.run,
+      ar: undefined,
+      sporter: undefined,
+      'compact-smg': undefined,
+    }[section];
     const spec: ReceiverSectionSpec = {
       id: `receiver-${section}`,
       outline: data.outline.map(([y, z]) => [y - receiverDrop, z] as const),
@@ -1661,7 +1694,7 @@ const receiver: PartFamily = {
     actionFrame: choice(AR_ACTION_LAYOUT.frameId),
     /** box: magazine through the lower. top: loaded from above. tube: tube magazine. */
     feed: choice('box', 'top', 'tube'),
-    section: choice('standard', 'ar', 'pump', 'sporter'),
+    section: choice('standard', 'ar', 'pump', 'sporter', 'compact-smg'),
     stockStyle: {
       ...choice('straight', 'sporting', 'thumbhole', 'm4', 'tapered', 'tapered-sawed', 'ak-buttstock'),
       from: [{ port: 'stock', param: 'style' }],
@@ -2013,7 +2046,10 @@ const boltHandleParams = {
   bore: { ...size, from: [{ port: 'base', param: 'bore' }] },
   feed: { ...choice('box', 'top', 'tube'), from: [{ port: 'base', param: 'feed' }] },
   handleProfile: { ...choice('standard', 'awm', 'sporter'), from: [{ port: 'base', param: 'handleProfile' }] },
-  section: { ...choice('standard', 'ar', 'pump', 'ak', 'sporter'), from: [{ port: 'base', param: 'section' }] },
+  section: {
+    ...choice('standard', 'ar', 'pump', 'ak', 'sporter', 'compact-smg'),
+    from: [{ port: 'base', param: 'section' }],
+  },
 };
 
 const boltHandleArm: PartFamily = {
@@ -2238,7 +2274,10 @@ const boltCarrier: PartFamily = {
     pattern: choice('ar', 'ak', 'pump', 'smg', 'barrett', 'bolt'),
     handleStyle: choice('auto', ...Object.keys(CARRIER_HANDLE_STYLES)),
     handleProfile: choice('standard', 'awm', 'sporter'),
-    section: { ...choice('standard', 'ar', 'pump', 'ak', 'sporter'), from: [{ port: 'mount', param: 'section' }] },
+    section: {
+      ...choice('standard', 'ar', 'pump', 'ak', 'sporter', 'compact-smg'),
+      from: [{ port: 'mount', param: 'section' }],
+    },
     feed: { ...choice('box', 'top', 'tube'), from: [{ port: 'mount', param: 'feed' }] },
   },
   build(params): PartDef {
@@ -2387,7 +2426,10 @@ const lower: PartFamily = {
   name: 'lower',
   params: {
     boltCalibre: { ...boltCalibreParam, from: [{ port: 'top', param: 'boltCalibre' }] },
-    section: { ...choice('standard', 'ar', 'pump', 'ak', 'sporter'), from: [{ port: 'top', param: 'section' }] },
+    section: {
+      ...choice('standard', 'ar', 'pump', 'ak', 'sporter', 'compact-smg'),
+      from: [{ port: 'top', param: 'section' }],
+    },
     layout: { values: Object.keys(LOWER_LAYOUTS), default: 'conventional' },
     triggerGuard: { values: ['present', 'missing'], default: 'present', fault: ['missing'] },
     magazineWell: choice('standard', 'recessed'),
@@ -2765,6 +2807,9 @@ const barrelLength = (params: Readonly<Record<string, string>>): number => {
   if (params.section === 'sporter') {
     return SPORTER_PROPORTIONS.barrel.lengthU[sizeClass];
   }
+  if (params.section === 'compact-smg') {
+    return COMPACT_SMG_PROPORTIONS.barrel.tipU[params.muzzle === 'plain' ? 'plain' : 'threaded'];
+  }
   return params.section === 'ak' ? akBarrelLength(sizeClass) : { S: 26, M: 36, L: 46 }[sizeClass];
 };
 
@@ -2857,6 +2902,9 @@ const standardHandguardLength = (length: SizeClass, section: string | undefined)
   if (section === 'sporter') {
     return SPORTER_PROPORTIONS.foreEnd.lengthU[length];
   }
+  if (section === 'compact-smg') {
+    return COMPACT_SMG_PROPORTIONS.handguard.lengthU;
+  }
   const reach = snapAkGrid(barrelLength({ length, section: section ?? 'standard' }) * HANDGUARD_REACH.barrelFraction);
   return section === 'ak' ? Math.min(reach, akGasStationX(length) + AK_PROPORTIONS.gasBlock.rearX) : reach;
 };
@@ -2930,8 +2978,13 @@ const barrel: PartFamily = {
   params: {
     bore: { ...size, from: [{ port: 'rear', param: 'bore' }] },
     length: size,
-    section: { ...choice('standard', 'ar', 'pump', 'ak', 'sporter'), from: [{ port: 'rear', param: 'section' }] },
+    section: {
+      ...choice('standard', 'ar', 'pump', 'ak', 'sporter', 'compact-smg'),
+      from: [{ port: 'rear', param: 'section' }],
+    },
     profile: choice('standard', 'heavy', 'pistol'),
+    // A plain muzzle is cut with no thread, so no muzzle device mounts on it.
+    muzzle: choice('threaded', 'plain'),
     handguardLayout: {
       values: ['standard', 'ak', 'ar'],
       default: 'standard',
@@ -2960,7 +3013,7 @@ const barrel: PartFamily = {
       fore = akHandguardLength(handguardLengthClass);
     } else if (params.handguardLayout === 'ar') {
       fore = arHandguardLength(handguardLengthClass);
-    } else if (params.section === 'ak' || params.section === 'sporter') {
+    } else if (params.section === 'ak' || params.section === 'sporter' || params.section === 'compact-smg') {
       fore = standardHandguardLength(lengthClass, params.section);
     } else {
       fore = snapAkGrid(len * HANDGUARD_REACH.barrelFraction);
@@ -3070,7 +3123,15 @@ const barrel: PartFamily = {
               },
             ]
           : []),
-        { id: 'muzzle', mount: 'muzzle', standard: muzzleBore, gender: 'female', pos: [len, 0, 0], normal: X, up: Y },
+        {
+          id: 'muzzle',
+          mount: params.muzzle === 'plain' ? 'plain-muzzle' : 'muzzle',
+          standard: muzzleBore,
+          gender: 'female',
+          pos: [len, 0, 0],
+          normal: X,
+          up: Y,
+        },
       ],
       keepOuts: [keepOut('muzzle', [len, -1.5, -1.5], [len + 30, 1.5, 1.5], 'muzzle')],
       axes: [{ kind: 'bore', origin: [0, 0, 0], dir: X }],
@@ -3099,7 +3160,10 @@ const frontSight: PartFamily = {
   name: 'front-sight',
   params: {
     bore: { ...size, from: [{ port: 'base', param: 'bore' }] },
-    section: { ...choice('standard', 'ar', 'pump', 'ak', 'sporter'), from: [{ port: 'base', param: 'section' }] },
+    section: {
+      ...choice('standard', 'ar', 'pump', 'ak', 'sporter', 'compact-smg'),
+      from: [{ port: 'base', param: 'section' }],
+    },
     style: choice('ar', 'ak', 'sporting'),
     muzzleInsetRatio: choice(...sportingFrontSightParams.muzzleInsetRatios),
   },
@@ -3195,7 +3259,10 @@ const sportingRearSight: PartFamily = {
   name: 'sporting-rear-sight',
   params: {
     bore: { ...size, from: [{ port: 'base', param: 'bore' }] },
-    section: { ...choice('standard', 'ar', 'pump', 'ak', 'sporter'), from: [{ port: 'base', param: 'section' }] },
+    section: {
+      ...choice('standard', 'ar', 'pump', 'ak', 'sporter', 'compact-smg'),
+      from: [{ port: 'base', param: 'section' }],
+    },
   },
   build(params) {
     const sporter = params.section === 'sporter';
@@ -3400,7 +3467,10 @@ const handguard: PartFamily = {
   name: 'handguard',
   params: {
     length: { ...size, from: [{ port: 'front', param: 'length' }] },
-    section: { ...choice('standard', 'ar', 'pump', 'ak', 'sporter'), from: [{ port: 'rear', param: 'section' }] },
+    section: {
+      ...choice('standard', 'ar', 'pump', 'ak', 'sporter', 'compact-smg'),
+      from: [{ port: 'rear', param: 'section' }],
+    },
     boltCalibre: { ...boltCalibreParam, from: [{ port: 'rear', param: 'boltCalibre' }] },
     boltHandleProfile: {
       ...choice('standard', 'awm', 'sporter'),
@@ -3775,9 +3845,19 @@ const forend: PartFamily = {
 // Hand-derived S/M/L lengths: about four fingers through a hand-and-a-bit; lean stays at 18°.
 const grip: PartFamily = {
   name: 'grip',
-  params: { length: size, well: choice('none', 'magazine') },
+  params: {
+    length: size,
+    well: choice('none', 'magazine'),
+    section: {
+      ...choice('standard', 'ar', 'pump', 'ak', 'sporter', 'compact-smg'),
+      from: [{ port: 'top', param: 'section' }],
+    },
+  },
   build(params): PartDef {
-    const len = GRIP_BANDS.lengthU[cls(params, 'length')];
+    const len =
+      params.section === 'compact-smg'
+        ? COMPACT_SMG_PROPORTIONS.grip.lengthU
+        : GRIP_BANDS.lengthU[cls(params, 'length')];
     const a = (GRIP_BANDS.leanDegrees * Math.PI) / 180;
     const magazineWell = params.well === 'magazine';
     const profile = magazineWell
@@ -4282,6 +4362,10 @@ export const magazine: PartFamily = {
     wellBody: { values: Object.keys(BOLT_WELL_PROFILES), default: 'standard' },
     orientation: choice(...MAGAZINE_ORIENTATIONS),
     variant: choice(...AK_MAGAZINE_CURVE_VARIANTS),
+    section: {
+      ...choice('standard', 'ar', 'pump', 'ak', 'sporter', 'compact-smg'),
+      from: [{ port: 'top', param: 'section' }],
+    },
   },
   validateParams: (params) =>
     params.profile === 'stanag-straight' && (params.length ?? 'M') !== 'M' ? STRAIGHT_STANAG_LENGTH_REFUSAL : undefined,
@@ -4290,7 +4374,10 @@ export const magazine: PartFamily = {
     if (profile === 'stanag-straight' && (params.length ?? 'M') !== 'M') {
       throw new Error(STRAIGHT_STANAG_LENGTH_REFUSAL);
     }
-    const magazineLength = magazineLengthData(params.length, profile, params.variant);
+    const tabledLength = params.section === 'compact-smg' && profile === 'smg';
+    const magazineLength = tabledLength
+      ? { size: 'L' as const, length: COMPACT_SMG_PROPORTIONS.magazine.lengthU }
+      : magazineLengthData(params.length, profile, params.variant);
     const isCompactBoltMagazine = params.length === '5-round' || params.length === '10-round';
     const wellProfile = boltWellProfile(params.wellBody ?? 'standard');
     const len = wellProfile.bodyLengthU ?? magazineLength.length;
@@ -4483,7 +4570,10 @@ const stock: PartFamily = {
     length: size,
     style: choice('straight', 'sporting', 'ak-buttstock', 'm4', 'tapered', 'tapered-sawed', 'thumbhole'),
     combDegrees: choice(...sportingStockParams.combDegrees),
-    section: { ...choice('standard', 'ar', 'pump', 'ak', 'sporter'), from: [{ port: 'front', param: 'section' }] },
+    section: {
+      ...choice('standard', 'ar', 'pump', 'ak', 'sporter', 'compact-smg'),
+      from: [{ port: 'front', param: 'section' }],
+    },
   },
   build(params): PartDef {
     const tapered = params.style === 'tapered' || params.style === 'tapered-sawed';
@@ -4605,7 +4695,7 @@ const sight: PartFamily = {
   params: {
     type: { values: OPTIC_TYPE_IDS, default: 'mini-reflex' },
     mountSection: {
-      values: ['standard', 'ar', 'pump', 'ak', 'sporter'],
+      values: ['standard', 'ar', 'pump', 'ak', 'sporter', 'compact-smg'],
       default: 'standard',
       from: [{ port: 'base', param: 'section' }],
     },

@@ -17,6 +17,14 @@
       "output": "gungen/designs/archetype-revolver.json"
     },
     {
+      "source": "gungen/designs/compact-smg-plain.jsonnet",
+      "output": "gungen/designs/compact-smg-plain.json"
+    },
+    {
+      "source": "gungen/designs/compact-smg.jsonnet",
+      "output": "gungen/designs/compact-smg.json"
+    },
+    {
       "source": "gungen/designs/hunting-rifle.jsonnet",
       "output": "gungen/designs/hunting-rifle.json"
     },

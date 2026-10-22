@@ -406,6 +406,17 @@ const huntingRifle: Template = {
   ],
 };
 
+const compactSmg: Template = {
+  ...smg,
+  name: 'compact-smg',
+  description: 'Compact submachine gun traced from a dimensioned schematic, on the proportions table.',
+  // The front sight is a later build round's part: the gas-station sight does not fit this barrel.
+  slots: smg.slots
+    .filter((slot) => slot.id !== 'front-sight')
+    .map((slot) => (slot.id === 'receiver' ? { ...slot, params: { ...slot.params, section: 'compact-smg' } } : slot)),
+  connections: smg.connections.filter((connection) => connection.to !== 'front-sight.base'),
+};
+
 export const boltRifleBox: Template = {
   name: 'bolt-rifle-box',
   description:
@@ -623,6 +634,7 @@ export const TEMPLATES: readonly Template[] = [
   smg,
   boltRifle,
   huntingRifle,
+  compactSmg,
   boltRifleBox,
   boltRifleThumbhole,
   pumpShotgun,
