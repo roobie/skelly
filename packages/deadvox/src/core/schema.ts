@@ -50,12 +50,14 @@ import {
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { SPAWN_TIME_NAMES } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
+import { DAY_PHASES } from './dayPhase.ts';
 import { DECAL_KINDS, type DecalKind } from './decalKinds.ts';
 import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
 import { GraphicsOptionsSchema } from './graphics.ts';
 import { ItemEconomySchema, LootContextSchema, UsageSchema } from './loot.ts';
 import { MELEE_MOTIONS } from './meleeMotion.ts';
 import { MAX_EXPOSURE, MIN_EXPOSURE, TONE_KEYS } from './mood.ts';
+import { PowerDeviceSchema, PowerTuningSchema } from './powerContent.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SCENARIO_KINDS } from './scenarioKinds.ts';
 import { shapeBlocks } from './shapeSolid.ts';
@@ -725,6 +727,19 @@ const ExplosiveSchema = strictObject({
   sound: picklist(SOUND_EVENT_IDS),
 });
 
+/** A trap set on the floor that springs on whatever enters its cell (`SLICE-5.md`, "Settled bear-trap rules — issue #107"). */
+const TrapSchema = strictObject({
+  setSimSeconds: PositiveSimSeconds,
+  /** One uninterrupted bare-hands attempt; an interrupted attempt starts again from nothing. */
+  disarmSimSeconds: PositiveSimSeconds,
+  /** How long its jaws hold a caught leg before the victim pulls free. */
+  holdSimSeconds: PositiveSimSeconds,
+  /** The player's wound when it springs on them. */
+  playerInjury: strictObject({ region: picklist(BODY_REGIONS), damage: Positive, kind: picklist(DAMAGE_KINDS) }),
+  /** Health taken from a caught zombie's legs, shared between those not yet destroyed. */
+  zombieLegDamage: NonNegative,
+});
+
 const FirearmAttachmentEffectsSchema = strictObject({
   /** Fraction of the firearm's committed recoil kick removed at full condition. */
   recoilReduction: optional(Fraction),
@@ -881,6 +896,7 @@ const ItemSchema = strictObject({
   light: optional(LightSchema),
   igniter: optional(IgniterSchema),
   explosive: optional(ExplosiveSchema),
+  trap: optional(TrapSchema),
   readable: optional(ReadableSchema),
   /** Display capability shown in first person; later devices can share this rendering seam. */
   heldDisplay: optional(picklist(HELD_DISPLAY_KINDS)),
@@ -2053,6 +2069,30 @@ const ControlSchema = strictObject({
     }),
   ),
 });
+/** A scenario event: once its trigger has passed and every condition holds, its effects apply once. See `SLICE-5.md`, "Settled event and playtest rules". */
+const EventRuleSchema = strictObject({
+  id: Id,
+  trigger: union([strictObject({ kind: literal('elapsed'), afterGameHours: PositiveGameHours })]),
+  conditions: optional(
+    array(union([strictObject({ kind: literal('dayPhase'), phases: pipe(array(picklist(DAY_PHASES)), nonEmpty()) })])),
+    [],
+  ),
+  effects: pipe(
+    array(
+      union([
+        /** A horde of one zombie type appears at `at`, in world cells, and heads for where the player stood. */
+        strictObject({
+          kind: literal('releaseHorde'),
+          zombie: Id,
+          count: pipe(Count, minValue(1), maxValue(64)),
+          at: CellPosition,
+        }),
+      ]),
+    ),
+    nonEmpty('needs an effect'),
+  ),
+});
+export type EventRuleDef = InferOutput<typeof EventRuleSchema>;
 const ScenarioSchema = strictObject({
   id: Id,
   kind: picklist(SCENARIO_KINDS),
@@ -2158,6 +2198,7 @@ const ScenarioSchema = strictObject({
     upper: CellPosition,
     lower: CellPosition,
   }),
+  eventRules: optional(array(EventRuleSchema), []),
   /** The ordinary buildings' street pressure; authored markers are separate from it. */
   population: strictObject({
     settlementPressure: vBoolean(),
@@ -3135,6 +3176,8 @@ const SECTION_DESCRIPTOR = {
   mapSites: { schema: optional(array(MapSiteSchema)), label: 'map site recipes', order: 26 },
   mapPools: { schema: optional(array(MapPoolSchema)), label: 'map pools', order: 27 },
   look: { schema: optional(array(LookDefaultsSchema)), label: 'default look', order: 28 },
+  powerDevices: { schema: optional(array(PowerDeviceSchema)), label: 'power devices', order: 32 },
+  powerTuning: { schema: optional(array(PowerTuningSchema)), label: 'power tuning', order: 33 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };

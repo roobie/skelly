@@ -293,7 +293,8 @@ export class BlockEntities {
       this.doorways.set(cell, entity);
     }
     this.nextUid = restored.nextUid;
-    this.version = restored.version;
+    // A restored count could repeat one a view cached for another state, and the view would keep the stale state.
+    this.version = Math.max(this.version, restored.version) + 1;
     this.standing += 1;
   }
 
@@ -476,6 +477,23 @@ export class BlockEntities {
     this.occupy(entity, false);
     entity.pos = [entity.pos[0], y, entity.pos[2]];
     this.occupy(entity, true);
+    this.version += 1;
+    this.standing += 1;
+  }
+
+  /**
+   * Takes a standing piece out of the world for good. A container must be empty first, so removal cannot lose
+   * what it holds (`SLICE-5.md`, "Removal contents").
+   */
+  remove(entity: BlockEntity): void {
+    if (entity.carried) {
+      throw new Error('Cannot remove a carried block entity');
+    }
+    if (entity.pockets?.some((grid) => grid.length > 0)) {
+      throw new Error('Cannot remove a container that holds items');
+    }
+    this.occupy(entity, false);
+    this.byOrigin.delete(key(...entity.origin));
     this.version += 1;
     this.standing += 1;
   }

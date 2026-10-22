@@ -43,10 +43,10 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "aa_battery",
+      "model": "aa_battery",
       "name": "AA battery",
       "size": [1, 1],
-      "stack": 10,
-      "weight": 23
+      "stack": 10
     },
     {
       "category": "medical",
@@ -181,13 +181,13 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "rag",
+      "model": "rag",
       "name": "Rag",
       "size": [1, 1],
       "stack": 6,
       "treatment": {
         "bleeding": 2
-      },
-      "weight": 50
+      }
     },
     {
       "category": "material",
@@ -196,9 +196,9 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "duct_tape",
+      "model": "duct_tape",
       "name": "Duct tape",
-      "size": [1, 1],
-      "weight": 150
+      "size": [1, 1]
     },
     {
       "category": "material",
@@ -207,10 +207,10 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "nails",
+      "model": "nails",
       "name": "Nails",
       "size": [1, 1],
-      "stack": 100,
-      "weight": 5
+      "stack": 100
     },
     {
       "category": "material",
@@ -219,10 +219,10 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "scrap_metal",
+      "model": "scrap_metal",
       "name": "Scrap metal",
       "size": [1, 2],
-      "stack": 5,
-      "weight": 500
+      "stack": 5
     },
     {
       "book": {
@@ -490,9 +490,9 @@
         "usage": []
       },
       "id": "shambler_torso",
+      "model": "shambler_torso",
       "name": "Severed shambler torso",
-      "size": [4, 6],
-      "weight": 12000
+      "size": [4, 6]
     },
     {
       "category": "misc",
@@ -501,9 +501,9 @@
         "usage": []
       },
       "id": "shambler_head",
+      "model": "shambler_head",
       "name": "Severed shambler head",
-      "size": [2, 3],
-      "weight": 5000
+      "size": [2, 3]
     },
     {
       "category": "misc",
@@ -512,9 +512,9 @@
         "usage": []
       },
       "id": "shambler_left_arm",
+      "model": "shambler_left_arm",
       "name": "Severed shambler left arm",
-      "size": [1, 7],
-      "weight": 2500
+      "size": [1, 7]
     },
     {
       "category": "misc",
@@ -523,9 +523,9 @@
         "usage": []
       },
       "id": "shambler_right_arm",
+      "model": "shambler_right_arm",
       "name": "Severed shambler right arm",
-      "size": [1, 7],
-      "weight": 2500
+      "size": [1, 7]
     },
     {
       "category": "misc",
@@ -534,9 +534,9 @@
         "usage": []
       },
       "id": "shambler_left_leg",
+      "model": "shambler_left_leg",
       "name": "Severed shambler left leg",
-      "size": [2, 9],
-      "weight": 4000
+      "size": [2, 9]
     },
     {
       "category": "misc",
@@ -545,9 +545,9 @@
         "usage": []
       },
       "id": "shambler_right_leg",
+      "model": "shambler_right_leg",
       "name": "Severed shambler right leg",
-      "size": [2, 9],
-      "weight": 4000
+      "size": [2, 9]
     }
   ]
 }

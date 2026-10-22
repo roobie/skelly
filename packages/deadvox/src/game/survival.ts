@@ -19,6 +19,7 @@ import type { Readable } from '../core/readable.ts';
 import type { Simulation } from '../core/sim.ts';
 import { simSeconds, simToGameSeconds } from '../core/time.ts';
 import { swapCanister } from '../core/torch.ts';
+import { queueTrapAction } from './bearTrapActions.ts';
 import { type ItemAction, ItemActionSelection, itemActionsFor } from './itemActions.ts';
 
 const numberParam = (params: JobParams, key: string): number => {
@@ -259,6 +260,9 @@ export class Survival {
         return this.switchLight(item);
       case 'read':
         return this.readItem(item, option.readable);
+      case 'trap':
+        queueTrapAction(this.queue, item, option.label, option.plan.time);
+        return undefined;
       default:
         throw new Error('Invalid usable core option');
     }

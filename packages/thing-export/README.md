@@ -26,7 +26,12 @@ The row contract, dispatch validation and output identity are shared to keep uns
 selections from becoming silent omissions; see `src/recipe.ts`, `loadRecipe`. Node-only
 file writing is separate from browser-safe geometry and preview code; see `src/files.ts`,
 `writeRecipeExports`. Credits derive their file set from the same recipes through
-`tools/jsonnet/lib/export-files.libsonnet`.
+`tools/jsonnet/lib/export-files.libsonnet`. The recipe-derived registration index avoids a
+second list of models when content adds an export; see `src/files.ts`, `writeRecipeExports`.
+A caller asks for the index only where a consumer reads it, so no unread generated file is
+tracked; see `tools/refresh-deadvox.mjs`, `jobs`.
+Consumer-authored projections can still select gameplay-specific physical boundaries; see
+`packages/deadvox/src/content/base/models-items.jsonnet`, `authored`.
 
 ## Physical model
 

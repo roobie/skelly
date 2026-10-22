@@ -19,6 +19,7 @@ import type { PlayerCombatState } from './playerCombat.ts';
 import type { SaveSnapshot } from './saveState.ts';
 import { assertScenarioRun } from './scenarioRun.ts';
 import { freezeSnapshot } from './snapshotData.ts';
+import { regionIndex, WORLD_REGION_METRES } from './worldRegion.ts';
 import type { HordeState, ZombieState, ZombieSystemState } from './zombies.ts';
 
 /** Disk-format API. The implementation is data-only and safe to use in Node, workers, and browsers. */
@@ -156,7 +157,6 @@ interface Envelope {
 
 const MAGIC = 'DEADVOX_SAVE';
 export const SAVE_SCHEMA_VERSION = 54;
-const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -361,6 +361,12 @@ itemSchema = obj({
   litAtGameTimestamp: opt(nonNegative),
   pinPulled: opt(bool),
   fuseRemainingSimSeconds: opt(nonNegative),
+  trap: opt(
+    union(
+      obj({ state: enumeration(['armed']) }),
+      obj({ state: enumeration(['holding']), zombie: opt(positiveInt), remainingSimSeconds: positive }),
+    ),
+  ),
   madeAtGameTimestamp: opt(nonNegative),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
   cartridges: opt(arr(str({ id: true }))),
@@ -568,7 +574,7 @@ const horde = obj({
   type: str({ id: true }),
   home: vec3,
   target: vec3,
-  mode: enumeration(['home', 'roam', 'noise']),
+  mode: enumeration(['home', 'roam', 'noise', 'release']),
   roamTimer: nonNegative,
   stimulusAt: opt(nonNegative),
   lastNoiseId: nonNegativeInt,
@@ -739,6 +745,7 @@ const scenarioRun = nullable(
       entranceTravel: nullable(finite),
       sewerTravel: nullable(finite),
     }),
+    eventsFiredAtGameTimestamp: record(finite),
   }),
 );
 
@@ -1050,10 +1057,6 @@ export async function currentSaveVersionIdentity(
     components,
     buildRevision: getBuildRevision(),
   };
-}
-
-function regionIndex(blockCoordinate: number, blockSize: number): number {
-  return Math.floor((blockCoordinate * blockSize) / WORLD_REGION_METRES);
 }
 
 function parseRegionKey(key: string): [number, number] {

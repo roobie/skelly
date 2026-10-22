@@ -477,7 +477,8 @@ export interface HordeState {
   type: string;
   home: Vec3;
   target: Vec3;
-  mode: 'home' | 'roam' | 'noise';
+  /** `release` heads for `target` without forgetting it, so an event's horde reaches where it was sent. */
+  mode: 'home' | 'roam' | 'noise' | 'release';
   roamTimer: number;
   stimulusAt?: number | undefined;
   lastNoiseId: number;
@@ -496,7 +497,7 @@ const validHordeSnapshotState = (
   resolveType(horde.type) !== undefined &&
   validVec3State(horde.home) &&
   validVec3State(horde.target) &&
-  ['home', 'roam', 'noise'].includes(horde.mode) &&
+  ['home', 'roam', 'noise', 'release'].includes(horde.mode) &&
   Number.isFinite(horde.roamTimer) &&
   horde.roamTimer >= 0 &&
   Number.isSafeInteger(horde.lastNoiseId) &&
@@ -563,6 +564,8 @@ export interface ZombieSystemOptions {
   solidBricks?: SolidBricks | undefined;
   /** True only while terrain at the actor's position is loaded; unloaded actors wait for Slice 4b catch-up. */
   isLoaded?: ((x: number, z: number) => boolean) | undefined;
+  /** Held where it stands, by a trap shut on its leg (core/bearTrap.ts); it can still turn and attack. */
+  restrained?: ((id: EntityId) => boolean) | undefined;
   /** Visibility alone uses sight opacity. */
   isOpaque: SolidAt;
   blockSize: number;
@@ -2236,6 +2239,15 @@ export class ZombieSystem {
     }
   }
 
+  /** A horde sent from `center` to `target`, which also becomes its home once it arrives. */
+  releaseHorde(id: string, type: ZombieDef, { center, count, target }: { center: Vec3; count: number; target: Vec3 }) {
+    this.addHorde(id, type, center, count);
+    const horde = this.hordes.get(id)!.state;
+    horde.home = copy(target);
+    horde.target = copy(target);
+    horde.mode = 'release';
+  }
+
   private tickFrozen(dt: number, entries: readonly (readonly [EntityId, Zombie])[] = [...this.store.entries()]): void {
     for (const [, zombie] of entries) {
       this.captureRenderPrevious(zombie);
@@ -2333,16 +2345,17 @@ export class ZombieSystem {
         horde.stimulusAt = undefined;
         horde.roamTimer = 0;
       }
-      if (horde.mode === 'noise' && arrived) {
+      if ((horde.mode === 'noise' || horde.mode === 'release') && arrived) {
         horde.mode = night ? 'roam' : 'home';
         horde.stimulusAt = undefined;
         horde.roamTimer = 0;
       }
-      if (!night && horde.mode !== 'noise') {
+      const driven = horde.mode === 'noise' || horde.mode === 'release';
+      if (!(night || driven)) {
         horde.mode = 'home';
         horde.target = copy(horde.home);
         horde.roamTimer = 0;
-      } else if (night && horde.mode !== 'noise') {
+      } else if (night && !driven) {
         horde.roamTimer -= dt;
         if (horde.mode !== 'roam' || horde.roamTimer <= 0 || arrived) {
           const angle = rng.range(-Math.PI, Math.PI);
@@ -2416,6 +2429,9 @@ export class ZombieSystem {
         const { direction: movementDirection, desiredSpeed } = scratch;
         direction = movementDirection;
         speed = desiredSpeed;
+      }
+      if (this.options.restrained?.(id) === true) {
+        speed = 0;
       }
       zombie.horizontalSpeed = speed;
       zombie.body.vel[0] = (direction[0] * speed) / blockSize;
@@ -2774,7 +2790,10 @@ export class ZombieSystem {
   private updateMovementSpeed(): void {
     const scratch = this.tickScratch;
     const { zombie, type, dt } = scratch;
-    if (zombie.regions.leftLeg! <= 0 && zombie.regions.rightLeg! <= 0) {
+    if (
+      (zombie.regions.leftLeg! <= 0 && zombie.regions.rightLeg! <= 0) ||
+      this.options.restrained?.(scratch.id) === true
+    ) {
       scratch.desiredSpeed = 0;
       scratch.direction = [0, 0, 0];
       scratch.aimDirection = undefined;
@@ -3781,6 +3800,22 @@ export class ZombieSystem {
       this.options.onSevered?.(zombie, region as ZombieRegion);
     }
     return incapacitated;
+  }
+
+  /** Takes health from a zombie's legs not yet destroyed, shared between them, as a hit there would. */
+  injureLegs(id: EntityId, damage: number): void {
+    const zombie = this.store.get(id);
+    if (!zombie || damage <= 0) {
+      return;
+    }
+    const legs = (Object.keys(zombie.regions) as ZombieHitRegion[]).filter(
+      (region) => ['leftLeg', 'rightLeg'].includes(zombieRegionClass(region)) && zombie.regions[region]! > 0,
+    );
+    for (const region of legs) {
+      if (this.store.get(id) === zombie) {
+        this.resolveRegionDamage(id, zombie, region, this.damageRegion(zombie, region, damage / legs.length));
+      }
+    }
   }
 
   private damageRegion(zombie: Zombie, region: ZombieHitRegion, damage: number): number {

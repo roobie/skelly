@@ -9,6 +9,7 @@ local militaryItems = [
 ];
 local medicalItems = ['codeine', 'morphine'];
 local policeItems = ['stab_vest', 'riot_helmet'];
+local huntingItems = ['bear_trap'];
 local notSpawnable = [
   'work_in_progress', 'debug_shotgun_pump', 'spent_case_308_h_winchester', 'spent_case_357_h_magnum',
   'spent_case_5_d_56x45', 'spent_case_7_d_62x39', 'spent_case_12_h_gauge_h_00_h_buck',
@@ -76,13 +77,14 @@ local authorTemplate(template) = template + {
   },
 };
 local authorItem(item) =
-  assert std.member(commonItems + militaryItems + medicalItems + policeItems + notSpawnable, item.id) : 'author economy metadata for ' + item.id;
+  assert std.member(commonItems + militaryItems + medicalItems + policeItems + huntingItems + notSpawnable, item.id) : 'author economy metadata for ' + item.id;
   item + {
     economy:
       if std.member(notSpawnable, item.id) then { usage: [], tiers: [] }
       else if std.member(militaryItems, item.id) then { usage: ['Military'], tiers: ['Tier2', 'Tier3'] }
       else if std.member(medicalItems, item.id) then { usage: ['Medical'], tiers: tiers }
       else if std.member(policeItems, item.id) then { usage: ['Police'], tiers: tiers }
+      else if std.member(huntingItems, item.id) then { usage: ['Hunting'], tiers: tiers }
       else { usage: usages, tiers: tiers },
   };
 {
