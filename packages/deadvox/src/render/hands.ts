@@ -82,6 +82,7 @@ import {
   stepMagazineRaise,
 } from './magazineLoadPose.ts';
 import { ModelFlames } from './modelFlame.ts';
+import { modelMaterialWarmUp } from './modelMaterials.ts';
 import { type ComposedSlot, heldModelFrame, LENS, type ModelLibrary } from './models.ts';
 import {
   createFirstPersonArm,
@@ -257,11 +258,12 @@ export class HeldItems {
     this.opticWindow.renderOrder = 100;
     this.view.add(this.torso, this.opticWindow);
     this.scene.add(this.view, this.light, this.ambient, this.camera);
-    // Hidden: gives `renderer.compile` the hand material before anything is held. `sync` only clears `view`.
+    // Hidden: gives `renderer.compile` the hand and held-model materials before anything is held. `sync`
+    // only clears `view`.
     const warmUp = new Mesh(this.geometry, this.material);
     warmUp.receiveShadow = true;
     warmUp.visible = false;
-    this.scene.add(warmUp);
+    this.scene.add(warmUp, modelMaterialWarmUp(false));
   }
 
   /** Draws `object` in the hands' view, in view metres, for something held that this owner doesn't build. */

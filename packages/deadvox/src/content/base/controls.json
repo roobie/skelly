@@ -362,6 +362,14 @@
       ]
     },
     {
+      "id": "inventory.find",
+      "keys": [
+        {
+          "code": "KeyF"
+        }
+      ]
+    },
+    {
       "id": "inventory.hands",
       "keys": [
         {

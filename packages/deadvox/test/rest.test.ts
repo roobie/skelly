@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { Body } from '../src/core/body.ts';
 import { hourOfDay, SECONDS_PER_HOUR, simSecondsPerHour, simToGameHours } from '../src/core/clock.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { awakeRates, type Needs, type RecoveryState, stepNeeds } from '../src/core/needs.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { BodyTuningDef } from '../src/core/schema.ts';
@@ -13,7 +12,7 @@ import { World } from '../src/core/world.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { RestController, type RestHooks, restKindForFurniture } from '../src/game/rest.ts';
 import { createSession, HANDLING_RATE, IDLE } from '../src/game/session.ts';
-import { baseRegistry } from './baseRegistry.ts';
+import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
@@ -344,14 +343,12 @@ describe('waking with an alarm', () => {
     // A working copy of the broken clock: the same item, with the alarm capability.
     const items = BASE_SOURCES.flatMap(({ data }) => (data as { items?: { id: string }[] }).items ?? []);
     const brokenClock = items.find((item) => item.id === 'broken_clock')!;
-    const { registry: fixtureRegistry, issues } = buildRegistry([
-      ...BASE_SOURCES,
+    const fixtureRegistry = baseRegistryWith([
       {
         source: 'alarm-fixture.json',
         data: { items: [{ ...brokenClock, id: 'alarm_fixture', name: 'Fixture alarm', alarm: true }] },
       },
     ]);
-    expect(issues).toEqual([]);
     const entities = new BlockEntities(fixtureRegistry);
     const session = createSession({
       registry: fixtureRegistry,

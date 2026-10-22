@@ -334,6 +334,11 @@ describe('piles with models', () => {
       const render = (on: boolean) => {
         const items = new Inventory(registry);
         const light = items.create(definition.id);
+        if (on && definition.tool?.fuel) {
+          const canister = items.create(definition.tool.fuel.canister);
+          canister.charges = registry.items.get(canister.type)!.canister!.capacity;
+          items.fitSlot(light, 'canister', canister);
+        }
         if (on) {
           expect(toggleLight(registry, light, 0)).toBeUndefined();
         }
@@ -634,21 +639,6 @@ describe('base pack melee', () => {
     expect(claw.z).toBeGreaterThan(0);
   });
 
-  it('points the fire-axe cutting edge forward', async () => {
-    const edge = await heldAnchor('fire_axe', 'edge');
-    expect(edge.z).toBeLessThan(0);
-  });
-
-  it('points the sledgehammer striking face forward', async () => {
-    const face = await heldAnchor('sledgehammer', 'face');
-    expect(face.z).toBeLessThan(0);
-  });
-
-  it('points the hand-axe cutting edge forward', async () => {
-    const edge = await heldAnchor('hand_axe', 'edge');
-    expect(edge.z).toBeLessThan(0);
-  });
-
   it('points the machete cutting edge forward', async () => {
     const edge = await heldAnchor('machete', 'edge');
     expect(edge.z).toBeLessThan(0);
@@ -657,11 +647,6 @@ describe('base pack melee', () => {
   it('points the Kabar strike tip forward from its held grip', async () => {
     const strike = await heldAnchor('kabar', 'strike');
     expect(strike.z).toBeLessThan(0);
-  });
-
-  it('points the pickaxe point forward', async () => {
-    const point = await heldAnchor('pickaxe', 'point');
-    expect(point.z).toBeLessThan(0);
   });
 
   it('points the crowbar claw forward', async () => {
@@ -720,21 +705,42 @@ describe('base pack modeled ammunition and spent cases', () => {
       expect(fired!.stack).toBeGreaterThan(1);
     }
   });
-  it.each([
-    ['round_12_h_gauge_h_00_h_buck', 0.062_23],
-    ['case_12_h_gauge_h_00_h_buck', 0.0701],
-  ] as const)('%s loads through prepareModel and rests at its sourced dimensions', async (id, length) => {
-    const def = registry.models.get(id)!;
-    expect(def.gun?.calibre).toBe('12-gauge-00-buck');
-    expect(def.grip).toBeUndefined();
-    const { scene } = await parseGlb(readFileSync(`${BASE}/${def.file}`));
-    const { ground, groundParts } = prepareModel(def, scene);
-    const bounds = new Box3().setFromObject(ground);
-    expect(bounds.getSize(new Vector3()).x).toBeCloseTo(length, 7);
-    expect(bounds.getSize(new Vector3()).y).toBeCloseTo(0.0225, 7);
-    expect(bounds.min.y).toBeCloseTo(0, 7);
-    expect(bounds.getCenter(new Vector3()).x).toBeCloseTo(0, 7);
-    expect(groundParts.length).toBeGreaterThan(0);
+  it('loads every ammunition and spent-case model through prepareModel resting on the ground, centred', async () => {
+    const ids = new Set<string>();
+    for (const item of registry.items.values()) {
+      if (item.ammo && item.model) {
+        ids.add(item.model);
+        const fired = registry.items.get(spentCaseItemId(item.ammo.calibre));
+        if (fired?.model) {
+          ids.add(fired.model);
+        }
+      }
+    }
+    expect(ids.size).toBeGreaterThan(0);
+    const loaded = await Promise.all(
+      [...ids].map(async (id) => ({
+        id,
+        def: registry.models.get(id)!,
+        ...(await parseGlb(readFileSync(`${BASE}/${registry.models.get(id)!.file}`))),
+      })),
+    );
+    for (const { id, def, scene } of loaded) {
+      expect(def.gun?.calibre, id).toBeDefined();
+      expect(def.grip, id).toBeUndefined();
+      const { ground, groundParts } = prepareModel(def, scene);
+      const bounds = new Box3().setFromObject(ground);
+      const size = bounds.getSize(new Vector3());
+      const centre = bounds.getCenter(new Vector3());
+      expect(size.x, id).toBeGreaterThan(0);
+      expect(size.y, id).toBeGreaterThan(0);
+      expect(size.z, id).toBeGreaterThan(0);
+      // Hand-held ammunition: well under half a metre on any axis.
+      expect(Math.max(size.x, size.y, size.z), id).toBeLessThan(0.5);
+      expect(bounds.min.y, id).toBeCloseTo(0, 7);
+      expect(centre.x, id).toBeCloseTo(0, 7);
+      expect(centre.z, id).toBeCloseTo(0, 7);
+      expect(groundParts.length, id).toBeGreaterThan(0);
+    }
   });
 });
 

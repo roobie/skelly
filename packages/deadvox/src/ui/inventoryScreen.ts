@@ -5,6 +5,7 @@
 // running. Furniture shows its contents once it has been searched.
 
 import { html, nothing, render, type TemplateResult } from 'lit-html';
+import { live } from 'lit-html/directives/live.js';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { BODY_REGIONS, type Body, type BodyRegion, bodyRegionLabel } from '../core/body.ts';
 import { practiceForNextLevel } from '../core/character.ts';
@@ -20,10 +21,11 @@ import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed,
 import { bestPocket, dropTarget, type Option, options, quickMove } from '../core/options.ts';
 import { type ReachSnapshot, reachTuning } from '../core/reach.ts';
 import type { WearSlot } from '../core/schema.ts';
-import { inputBindings, keyboardInput } from '../game/inputBindings.ts';
+import { clearsFindField, inputBindings, keyboardInput } from '../game/inputBindings.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
 import { craftTime, workName } from './craftReadout.ts';
 import { factDetail } from './factDetail.ts';
+import { matchesFind, queryWords } from './inventoryFind.ts';
 import { type InventoryTab, InventoryTabState } from './inventoryTabs.ts';
 import { keyCap } from './keyCap.ts';
 
@@ -411,12 +413,14 @@ const inventoryTemplate = (
   { tab, splitRatio }: { tab: InventoryTab; splitRatio: number },
   selectTab: (tab: InventoryTab) => void,
   {
+    find,
     queue,
     search,
     attachmentAction,
     wait,
     stepWake,
   }: {
+    find: { query: string; change: (query: string) => void; key: (e: Event) => void };
     queue: (item: Item, target?: Target, operation?: WorkOperation) => void;
     search: (uid: number) => void;
     attachmentAction: (payload: ReplayActionPayload) => void;
@@ -435,10 +439,21 @@ const inventoryTemplate = (
       `,
       )}
     </nav>
+    <input
+      class="inv-find"
+      type="search"
+      data-inventory-find
+      placeholder="Find"
+      aria-label="Find items"
+      autocomplete="off"
+      .value=${live(find.query)}
+      @input=${(e: Event) => find.change((e.target as HTMLInputElement).value)}
+      @keydown=${find.key}
+    />
     <div class="inv-needs" aria-label="Needs">${vm.needs}</div>
     <details class="inv-help">
       <summary>Controls</summary>
-      <span>${['inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.search', 'inventory.cycle-target', 'inventory.put-target', 'handling.stop', 'ui.inventory-toggle'].map((id) => html`${keyCap(id)}: ${inputBindings.binding(id)!.description}`).flatMap((line, i) => (i === 0 ? [line] : [' · ', line]))} · ${Array.from({ length: 5 }, (_, i) => keyCap(`quickbar.assign.${i + 1}`)).flatMap((cap, i) => (i === 0 ? [cap] : [' / ', cap]))}: assign quickbar</span>
+      <span>${['inventory.find', 'inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.search', 'inventory.cycle-target', 'inventory.put-target', 'handling.stop', 'ui.inventory-toggle'].map((id) => html`${keyCap(id)}: ${inputBindings.binding(id)!.description}`).flatMap((line, i) => (i === 0 ? [line] : [' · ', line]))} · ${Array.from({ length: 5 }, (_, i) => keyCap(`quickbar.assign.${i + 1}`)).flatMap((cap, i) => (i === 0 ? [cap] : [' / ', cap]))}: assign quickbar</span>
     </details>
   </header>
   <div
@@ -695,6 +710,8 @@ export class InventoryScreen {
   private splitRatio = 0.5;
   private splitDrag: { startX: number; startRatio: number; bounds: SplitBounds } | undefined;
   private drag: Drag | undefined;
+  /** What the player typed into the find field; items it doesn't match are dimmed, not hidden. */
+  private findQuery = '';
 
   constructor(
     root: HTMLElement,
@@ -750,6 +767,7 @@ export class InventoryScreen {
   close(): void {
     this.tabs.close();
     this.revealedSelectionUid = undefined;
+    this.findQuery = '';
     this.root.hidden = true;
     document.body.classList.remove('inventory-open', 'inventory-tab-crafting');
     this.splitDrag = undefined;
@@ -793,7 +811,7 @@ export class InventoryScreen {
     const characterKey = JSON.stringify(this.hooks.character());
     const needsKey = this.hooks.needs();
     const wakeKey = JSON.stringify(this.hooks.wakeGameHour?.() ?? null);
-    const key = `${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${this.targetUid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}|${wakeKey}`;
+    const key = `${this.findQuery}|${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${this.targetUid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}|${wakeKey}`;
     if (key !== this.drawn) {
       this.drawn = key;
       this.render();
@@ -806,7 +824,9 @@ export class InventoryScreen {
     if (
       !(
         refusal &&
-        (action.startsWith('inventory.') || action.startsWith('quickbar.assign.') || action === 'handling.stop')
+        ((action.startsWith('inventory.') && action !== 'inventory.find') ||
+          action.startsWith('quickbar.assign.') ||
+          action === 'handling.stop')
       )
     ) {
       return false;
@@ -843,6 +863,10 @@ export class InventoryScreen {
     }
     if (action === 'inventory.previous' || action === 'inventory.next') {
       this.step(action === 'inventory.next' ? 1 : -1);
+      return true;
+    }
+    if (action === 'inventory.find') {
+      this.root.querySelector<HTMLInputElement>('[data-inventory-find]')?.focus();
       return true;
     }
     if (action === 'inventory.search') {
@@ -1006,6 +1030,13 @@ export class InventoryScreen {
     }
   }
 
+  private clearFind(): void {
+    this.findQuery = '';
+    this.drawn = '';
+    this.update();
+    this.root.querySelector<HTMLInputElement>('[data-inventory-find]')?.blur();
+  }
+
   private step(dir: number): void {
     if (this.order.length === 0) {
       return;
@@ -1023,6 +1054,21 @@ export class InventoryScreen {
     const vm = this.viewModel();
     render(
       inventoryTemplate(vm, { tab: this.tabs.active, splitRatio: this.splitRatio }, (tab) => this.selectTab(tab), {
+        find: {
+          query: this.findQuery,
+          change: (query) => {
+            this.findQuery = query;
+            this.drawn = '';
+            this.update();
+          },
+          key: (e) => {
+            if (clearsFindField(e)) {
+              this.clearFind();
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          },
+        },
         queue: (item, target, operation) => {
           const refusal = this.hooks.actionRefusal?.();
           if (refusal) {
@@ -1270,10 +1316,12 @@ export class InventoryScreen {
     const itemStyle = style ?? {};
     this.byUid.set(item.uid, item);
     this.order.push(item);
+    const words = queryWords(this.findQuery);
+    const unmatched = !matchesFind(words, [workName(this.inv.registry, item), def.name, ...(def.keywords ?? [])]);
     return {
       item,
       uid: String(item.uid),
-      className: `${className} cat-${def.category}${item === this.selected ? ' selected' : ''}`,
+      className: `${className} cat-${def.category}${item === this.selected ? ' selected' : ''}${unmatched ? ' inv-item-unmatched' : ''}`,
       title: `${def.name}${item.count > 1 ? ` ×${item.count}` : ''}, ${conditionWord(this.inv.registry, item.condition)}`,
       name: workName(this.inv.registry, item),
       count: item.count > 1 ? `×${item.count}` : undefined,

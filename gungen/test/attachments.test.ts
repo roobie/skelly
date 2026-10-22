@@ -254,6 +254,69 @@ const singleObstructionFixture = (obstructionKind: 'solid' | 'keep-out') => {
   return { rail, blockedIndex, clearIndex, slots, compatibility };
 };
 
+/**
+ * A rail host whose bore and clearance shorten the rail front sight's post, beneath an obstruction
+ * that only the post built with the host's inherited values clears.
+ */
+const inheritedHostParamFixture = () => {
+  const sightFamily = FAMILIES['rail-front-sight'];
+  if (!sightFamily) {
+    throw new Error('Rail front sight family is missing');
+  }
+  const postTop = (value: string) => {
+    const post = sightFamily.build({ bore: value, clearance: value }).solids.find(({ id }) => id === 'post');
+    if (!post) {
+      throw new Error('Rail front sight has no post');
+    }
+    return localSolidBounds(post)[1][1];
+  };
+  const { values, default: defaultValue } = sightFamily.params.bore!;
+  const hostValue = [...values].sort((a, b) => postTop(a) - postTop(b))[0]!;
+  const inheritedTop = postTop(hostValue);
+  const defaultTop = postTop(defaultValue);
+  const host: PartFamily = {
+    name: 'fixture-inheriting-host',
+    params: {
+      barrelBore: { values, default: defaultValue },
+      clearance: { values, default: defaultValue },
+    },
+    build: () => ({
+      family: 'fixture-inheriting-host',
+      ports: [
+        {
+          id: 'rail',
+          mount: 'rail-top',
+          gender: 'female',
+          pos: [0, 0, 0],
+          normal: [0, 1, 0],
+          up: [1, 0, 0],
+          slots: { count: 5, pitch: 2 },
+        },
+      ],
+      solids: [{ id: 'fixture-host-body', kind: 'box', box: { center: [4, -2, 0], half: [8, 2, 3] } }],
+      // A keep-out, not a solid: overlap between connected solids is allowed an interface depth the
+      // gap between the two post tops does not exceed.
+      keepOuts: [
+        {
+          id: 'fixture-post-obstruction',
+          kind: 'fixture obstruction',
+          box: { center: [4, (inheritedTop + 3 * defaultTop) / 4, 0], half: [8, (defaultTop - inheritedTop) / 4, 3] },
+        },
+      ],
+      axes: [],
+    }),
+  };
+  const domain: Domain = { ...gunDomain, families: { ...gunDomain.families, [host.name]: host } };
+  const assembly: Assembly = {
+    name: 'inherited-host-param-fixture',
+    root: 'host',
+    parts: { host: { family: host.name, params: { barrelBore: hostValue, clearance: hostValue } } },
+    connections: [],
+  };
+  const slots = attachmentSlots(resolve(assembly, domain));
+  return { inheritedTop, defaultTop, slots, compatibility: attachmentCompatibility(assembly, slots, domain) };
+};
+
 const compareText = (a: string, b: string): number => {
   if (a < b) {
     return -1;
@@ -334,15 +397,7 @@ const attachmentMetadataProblems = (id: string, attachment: AttachmentMetadata |
   return problems;
 };
 
-const attachmentFamily = (id: string): string => {
-  if (id.startsWith('optic-')) {
-    return 'sight';
-  }
-  if (id === 'real-suppressor' || id === 'improvised-suppressor') {
-    return 'suppressor';
-  }
-  return id;
-};
+const attachmentFamily = (id: string): string => attachmentInstanceForId(id).family;
 
 const fittedMountPose = ({
   label,
@@ -386,12 +441,27 @@ const attachmentBuild = (id: string) => {
   const defaults = Object.fromEntries(
     Object.entries(family.params).flatMap(([name, spec]) => (spec.default === undefined ? [] : [[name, spec.default]])),
   );
-  const params = {
-    ...defaults,
-    ...(familyName === 'sight' ? { type: id.slice('optic-'.length) } : {}),
-    ...(familyName === 'suppressor' ? { type: id } : {}),
-  };
+  const params = { ...defaults, ...attachmentInstanceForId(id).params };
   return { familyName, params, part: family.build(params) };
+};
+
+const muzzleBase = (id: string): PortDef | undefined =>
+  attachmentBuild(id).part.ports.find(({ id: port, mount }) => port === 'base' && mount === 'muzzle');
+
+/** The attachments certified on a bare barrel's muzzle, by barrel section. */
+const muzzleAllowlist = (section: string): readonly string[] => {
+  const assembly: Assembly = {
+    name: `bare-${section}-barrel`,
+    root: 'barrel',
+    parts: { barrel: { family: 'barrel', params: { section } } },
+    connections: [],
+  };
+  const slots = attachmentSlots(resolve(assembly, gunDomain)).filter(({ mount }) => mount === 'muzzle');
+  const allowlist = attachmentCompatibility(assembly, slots)['barrel.muzzle.0'];
+  if (!allowlist) {
+    throw new Error(`The ${section} barrel exports no muzzle slot`);
+  }
+  return allowlist;
 };
 
 const railExtent = (part: PartDef, port: PortDef, pitch: number, solids = part.solids) => {
@@ -504,7 +574,7 @@ describe('attachment parts and export metadata', () => {
     // Builds and exports the AR design with default attachment compatibility metadata.
     beforeAll(() => {
       defaultModsModel = exported(design('archetype-ar'), 'ar_default_mods');
-    }, 10_000);
+    });
 
     it('exports fitted default mods as node-backed metadata linked to mount slots', () => {
       const model = defaultModsModel;
@@ -903,6 +973,13 @@ describe('attachment parts and export metadata', () => {
     }
   });
 
+  it('certifies an attachment as built with the params it inherits from its host', () => {
+    const { inheritedTop, defaultTop, slots, compatibility } = inheritedHostParamFixture();
+    // The obstruction sits between the two post tops, so only the inherited build clears it.
+    expect(inheritedTop).toBeLessThan(defaultTop);
+    expect(slots.some(({ id }) => compatibility[id]?.includes('rail-front-sight'))).toBe(true);
+  });
+
   it('fits a foregrip to the AK handguard bottom rail that validation accepts', () => {
     const firearm = design('archetype-ak');
     const slots = attachmentSlots(resolve(firearm, gunDomain)).filter(({ mount }) => mount === 'rail-bottom');
@@ -945,32 +1022,29 @@ describe('attachment parts and export metadata', () => {
     expect(slots.some((_, index) => has(index))).toBe(true);
   });
 
-  it("certifies rifle muzzle devices on a rifled barrel but not on a shotgun's smoothbore barrel", () => {
-    const rifleDevices = ATTACHMENT_IDS.filter((id) =>
-      attachmentBuild(id).part.ports.some(
-        ({ id: port, mount, standard }) => port === 'base' && mount === 'muzzle' && standard === 'rifled',
-      ),
-    );
+  it("certifies unthreaded rifle muzzle devices on a rifled barrel but not on a shotgun's smoothbore barrel", () => {
+    const rifleDevices = ATTACHMENT_IDS.filter((id) => {
+      const base = muzzleBase(id);
+      return base?.standard === 'rifled' && base.size === undefined;
+    });
     expect(rifleDevices).not.toEqual([]);
-    const muzzleAllowlist = (section: 'standard' | 'pump') => {
-      const assembly: Assembly = {
-        name: `bare-${section}-barrel`,
-        root: 'barrel',
-        parts: { barrel: { family: 'barrel', params: { section } } },
-        connections: [],
-      };
-      const slots = attachmentSlots(resolve(assembly, gunDomain)).filter(({ mount }) => mount === 'muzzle');
-      const allowlist = attachmentCompatibility(assembly, slots)['barrel.muzzle.0'];
-      if (!allowlist) {
-        throw new Error(`The ${section} barrel exports no muzzle slot`);
-      }
-      return allowlist;
-    };
     const rifle = muzzleAllowlist('standard');
     const shotgun = muzzleAllowlist('pump');
     for (const id of rifleDevices) {
       expect(rifle, id).toContain(id);
       expect(shotgun, id).not.toContain(id);
+    }
+  });
+
+  it('certifies a threaded muzzle device only on the barrel section its thread names', () => {
+    const threaded = ATTACHMENT_IDS.flatMap((id) => {
+      const size = muzzleBase(id)?.size;
+      return size === undefined ? [] : [{ id, size }];
+    });
+    expect(threaded).not.toEqual([]);
+    for (const { id, size } of threaded) {
+      expect(muzzleAllowlist(size), id).toContain(id);
+      expect(muzzleAllowlist('standard'), id).not.toContain(id);
     }
   });
 

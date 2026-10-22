@@ -29,7 +29,10 @@ local atom(id, family, exportMass, massKg, dimensions, finish, solid='body', fra
   atom('duct_tape', 'ring', 'parts', 0.150, { outerRadius: 0.05, innerRadius: 0.018, coreRadius: 0.020, height: 0.048 }, { body: 'tape-grey', core: 'paperboard-tan' }, fraction=[0.87, 0.5, 0.5]),
   atom('nails', 'turnedStock', 'parts', 0.005, {
     axis: 'x', profile: [[0, 0], [0.008, 0.0017], [0.067, 0.0017], [0.067, 0.0042], [0.070, 0.0042], [0.070, 0], [0, 0]],
-  }, { body: 'steel-grey' }),
+  }, { body: 'steel-grey' }) + {
+    // A shank a few millimetres thick needs a fine grain to read as a nail; the item grain draws one square bar.
+    voxelGrain: 0.002,
+  },
   atom('scrap_metal', 'foldedSheet', 'parts', 0.500, {
     thickness: 0.003,
     vertices: [
@@ -56,6 +59,10 @@ local atom(id, family, exportMass, massKg, dimensions, finish, solid='body', fra
     axis: 'y', start: 0, end: 0.022,
     profile: [[-0.045, -0.40], [0.045, -0.395], [0.045, 0.395], [-0.04, 0.40]],
   }, { body: 'wood-birch' }),
+  atom('whetstone', 'cutStock', 'parts', 0.250, {
+    axis: 'y', start: 0, end: 0.025,
+    profile: [[-0.075, -0.024], [0.075, -0.024], [0.075, 0.024], [-0.075, 0.024]],
+  }, { body: 'stone-whet' }),
   atom('field_patch', 'foldedSheet', 'parts', 0.120, {
     thickness: 0.0015,
     vertices: [

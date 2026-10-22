@@ -56,6 +56,19 @@ breach.breaking(shape.colliding({
       shape: [{ position: [0.05, 0, 0.05], size: [3.9, 0.06, 1.9] }],
     },
     {
+      id: 'bedroll',
+      name: 'Bedroll',
+      size: [1, 1, 2],
+      color: '#5b5f3c',
+      solid: false,
+      cover: true,
+      rest: { quality: 0.3, sleep: true },
+      shape: [
+        { position: [0.05, 0, 0.05], size: [0.9, 0.08, 1.9] },
+        { position: [0.15, 0.08, 0.1], size: [0.7, 0.08, 0.35], color: '#c9c3a8' },
+      ],
+    },
+    {
       id: 'tarp',
       name: 'Tarp',
       size: [3, 1, 2],
@@ -178,6 +191,7 @@ breach.breaking(shape.colliding({
       "name": "Gun rack",
       "size": [2, 4, 1],
       "color": "#494b4e",
+      "appearance": { "kind": "rack", "surface": "wood" },
       "container": {
         "pockets": [
           {
@@ -232,6 +246,25 @@ breach.breaking(shape.colliding({
         "qualities": { "hammering": 1, "sawing": 1 },
         "workFactorBonus": 0.2
       }
+    },
+    {
+      id: 'grinding_wheel',
+      name: 'Grinding wheel',
+      size: [2, 2, 2],
+      color: '#4d5a4a',
+      material: 'steel',
+      shape: [
+        { position: [0.4, 0, 0.4], size: [1.2, 0.1, 1.2], color: '#2f3331' },
+        { position: [0.85, 0.1, 0.85], size: [0.3, 1.3, 0.3], color: '#2f3331' },
+        { position: [0.6, 1.4, 0.75], size: [0.8, 0.4, 0.5] },
+        { position: [0.45, 1.3, 0.65], size: [0.15, 0.7, 0.7], color: '#8a857c' },
+        { position: [1.4, 1.3, 0.65], size: [0.15, 0.7, 0.7], color: '#8a857c' },
+      ],
+      workstation: {
+        id: 'grinding_wheel',
+        qualities: { sharpening: 1 },
+        workFactorBonus: 0.2,
+      },
     },
     {
       "id": "crate",

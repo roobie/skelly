@@ -227,7 +227,8 @@
           "title": "C.I.P. TDCC Tab. I, 308 Win.: cartridge maximum dimensions",
           "url": "https://bobp.cip-bobp.org/uploads/tdcc/tab-i/tabical-en-page125.pdf"
         }
-      }
+      },
+      "voxelGrain": 0.002
     },
     {
       "aliases": [
@@ -608,7 +609,8 @@
           "title": "ANSI/SAAMI Z299.3-2022, Centerfire Pistol and Revolver: 357 Magnum cartridge and chamber drawing",
           "url": "https://saami.org/wp-content/uploads/2025/05/SAAMI-Z299.3-2022-Centerfire-Pistol-Revolver-Approved-12-13-2022.pdf"
         }
-      }
+      },
+      "voxelGrain": 0.002
     },
     {
       "aliases": [
@@ -934,7 +936,8 @@
           "title": "AOP-4172, Technical Performance Specification Providing for the Interchangeability of 5.56 mm x 45 Ammunition, Edition A Version 1",
           "url": "https://www.jedi-sec.us/downloads/MISC_PDF/AOP-4172%20EDA%20V1%20E.pdf"
         }
-      }
+      },
+      "voxelGrain": 0.002
     },
     {
       "aliases": [
@@ -1536,7 +1539,8 @@
           "title": "Steel Cased Ammo – Wolf Performance Ammunition",
           "url": "http://www.wolfammo.com/steel-casing.html"
         }
-      }
+      },
+      "voxelGrain": 0.002
     },
     {
       "aliases": [

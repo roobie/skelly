@@ -992,6 +992,21 @@ body.unconscious::after {
 .inv-item.selected {
   border: 2px solid var(--accent);
 }
+.inv-find {
+  min-width: 9rem;
+  padding: calc(var(--ui-spacing) * 0.375rem) calc(var(--ui-spacing) * 0.5rem);
+  border: 1px solid var(--line);
+  border-radius: 0.375rem;
+  background: #22262c;
+  color: var(--text);
+  font: inherit;
+}
+.inv-find:focus {
+  border-color: var(--accent);
+}
+.inv-item.inv-item-unmatched {
+  opacity: 0.3;
+}
 .inv-item-name {
   display: block;
   overflow: hidden;

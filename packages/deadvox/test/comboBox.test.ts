@@ -87,7 +87,7 @@ it('opens on Down at the chosen option and closes on Escape without choosing', (
   expect(box.active()).toBe('Duct tape');
   box.type('zz');
   expect(box.shown()).toEqual([]);
-  expect(box.list.textContent).toContain('No matches');
+  expect(box.list.querySelector('.combo-box-empty')).not.toBeNull();
   box.key('Escape');
 
   expect(box.list.hidden).toBe(true);

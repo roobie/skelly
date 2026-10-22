@@ -1,11 +1,9 @@
-import { readdirSync, readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
-import { buildRegistry } from '../src/core/content.ts';
 import type { ContentFile } from '../src/core/schema.ts';
 import { templateStandingRoute } from '../src/core/templateSpatial.ts';
 import { compileAssembly, compileMapPiece, kitSlotChoices } from '../src/core/templates.ts';
-import { startupContent } from './baseRegistry.ts';
+import { overlayContent, startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
@@ -44,15 +42,7 @@ it('a fixture mod can replace a role style by id without changing curated geomet
   const mod = JSON.parse(
     compileJsonnetFile('packages/deadvox/test/fixtures/jsonnet/concrete-style-mod.jsonnet'),
   ) as ContentFile;
-  const sources = readdirSync('src/content/base')
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({
-      source: file,
-      data: JSON.parse(readFileSync(`src/content/base/${file}`, 'utf8')) as unknown,
-    }));
-  const { registry, issues } = buildRegistry([...sources, { source: 'fixture-style-mod.json', data: mod }]);
-  expect(issues).toEqual([]);
+  const registry = overlayContent(startupContent().registry, [{ source: 'fixture-style-mod.json', data: mod }]);
   const style = mod.mapStyles![0]!;
   const piece = [...registry.mapPieces.values()].find(
     (candidate) =>

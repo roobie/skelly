@@ -5,34 +5,34 @@ import { makeScale } from '../src/core/scale.ts';
 import type { SoundEmission } from '../src/core/soundPicker.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
-import {
-  createRefusalPresenter,
-  firearmShotSound,
-  HEARTBEAT_TUNING,
-  heartbeatForStamina,
-} from '../src/game/audioPresentation.ts';
+import { createRefusalPresenter, firearmShotSound, heartbeatForStamina } from '../src/game/audioPresentation.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 import { chargedRifle } from './rifleFixture.ts';
+import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 
 describe('heartbeat audio presentation', () => {
+  const tuning = BODY_TUNING_FIXTURE.heartbeat;
+  const heartbeat = (stamina: number) => heartbeatForStamina(tuning, stamina);
+
   it('uses the tuning anchors at the start stamina and exhaustion', () => {
-    const { startStamina, normalGain, veryHighGain } = HEARTBEAT_TUNING;
-    expect(heartbeatForStamina(startStamina).gain).toBe(normalGain);
-    expect(heartbeatForStamina(0).gain).toBe(veryHighGain);
+    const { startStamina, startGain, exhaustedGain } = tuning;
+    expect(heartbeat(startStamina).gain).toBe(startGain);
+    expect(heartbeat(0).gain).toBe(exhaustedGain);
   });
 
-  it('is silent above the ruled start and meets the ruled rate endpoints', () => {
-    expect(heartbeatForStamina(100).gain).toBe(0);
-    expect(heartbeatForStamina(86).gain).toBe(0);
-    expect(heartbeatForStamina(85).bpm).toBe(60);
-    expect(heartbeatForStamina(0).bpm).toBe(180);
-    expect(heartbeatForStamina(85).gain).toBeGreaterThan(0);
+  it('is silent above the start stamina and meets the tuned rate endpoints', () => {
+    const { startStamina, startHz, exhaustedHz } = tuning;
+    expect(heartbeat(100).gain).toBe(0);
+    expect(heartbeat(startStamina + 1).gain).toBe(0);
+    expect(heartbeat(startStamina).bpm).toBeCloseTo(startHz * 60);
+    expect(heartbeat(0).bpm).toBeCloseTo(exhaustedHz * 60);
+    expect(heartbeat(startStamina).gain).toBeGreaterThan(0);
   });
 
   it('raises rate and loudness monotonically from the start to exhaustion', () => {
-    const samples = [85, 60, 30, 0].map(heartbeatForStamina);
+    const samples = [1, 0.7, 0.35, 0].map((share) => heartbeat(tuning.startStamina * share));
     for (let index = 1; index < samples.length; index++) {
       expect(samples[index]!.bpm).toBeGreaterThanOrEqual(samples[index - 1]!.bpm);
       expect(samples[index]!.gain).toBeGreaterThanOrEqual(samples[index - 1]!.gain);
@@ -41,10 +41,10 @@ describe('heartbeat audio presentation', () => {
   });
 
   it('interpolates rate and loudness linearly halfway to exhaustion', () => {
-    const { startStamina, startHz, exhaustedHz, normalGain, veryHighGain } = HEARTBEAT_TUNING;
-    const halfway = heartbeatForStamina(startStamina / 2);
+    const { startStamina, startHz, exhaustedHz, startGain, exhaustedGain } = tuning;
+    const halfway = heartbeat(startStamina / 2);
     expect(halfway.bpm).toBeCloseTo(((startHz + exhaustedHz) / 2) * 60);
-    expect(halfway.gain).toBeCloseTo((normalGain + veryHighGain) / 2);
+    expect(halfway.gain).toBeCloseTo((startGain + exhaustedGain) / 2);
   });
 });
 
@@ -121,6 +121,20 @@ describe('firearm audio presentation', () => {
       listenerRelative: true,
     });
     expect(firearmShotSound(registry, suppressed, 'actor').listenerRelative).toBe(false);
+  });
+
+  it('adds a gun’s body layer to the shot, and drops it under a suppressor', () => {
+    const registry = fixture(true);
+    const carbine = registry.items.get('fixture_carbine')!;
+    registry.items.set('fixture_carbine', {
+      ...carbine,
+      firearm: { ...carbine.firearm!, shotBodySound: 'fixture_report' },
+    });
+    expect(firearmShotSound(registry, firearm('fixture_carbine')).bodyEvent).toBe('fixture_report');
+    const suppressed = firearm('fixture_carbine', {
+      adapter: firearm('fixture_carbine', { muzzle: firearm('fixture_suppressor') }),
+    });
+    expect(firearmShotSound(registry, suppressed).bodyEvent).toBeUndefined();
   });
 
   it.each([false, true])('routes a committed session shot to its fixture profile (suppressed=%s)', (suppressed) => {

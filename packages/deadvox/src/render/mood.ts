@@ -432,12 +432,13 @@ export class Mood {
   }
 
   /**
-   * Starts compiling the shaders the first frames would otherwise stall on, in the state they will
-   * draw in: the passes' own, and every material already in `scenes` (each with its own lights,
-   * fog and camera), compiled for the post chain's linear target (three.js picks the output colour
-   * space and tone mapping per program from the render target, so a screen compile would be a
-   * different, useless program). With KHR_parallel_shader_compile the driver builds them off the
-   * main thread. Resolves when they are ready to draw.
+   * Starts compiling the shaders the first frames would otherwise stall on: the passes' own, and
+   * every material already in `scenes` (each with its own lights, fog and camera), once for each way
+   * `draw` can reach the screen. three.js picks the output colour space and tone mapping per program
+   * from the render target, so the screen and the post chain's linear target need separate programs,
+   * and play switches between them without a load (the post setting, goggles, an optic). With
+   * KHR_parallel_shader_compile the driver builds them off the main thread. Resolves when they are
+   * ready to draw.
    */
   warmUp(scenes: readonly { scene: Scene; camera: Camera }[]): Promise<unknown> {
     const { renderer } = this;
@@ -451,18 +452,15 @@ export class Mood {
         renderer.setRenderTarget(previous);
       }
     };
-    if (!this.chain) {
-      // Compile for the curve `draw` will actually use under `auto`, not the custom one.
-      const chosen = renderer.toneMapping;
-      renderer.toneMapping = screenToneMapping(chosen);
-      try {
-        for (const { scene, camera } of scenes) {
-          compile(null, scene, camera);
-        }
-      } finally {
-        renderer.toneMapping = chosen;
+    // Compile for the curve `draw` will actually use under `auto`, not the custom one.
+    const chosen = renderer.toneMapping;
+    renderer.toneMapping = screenToneMapping(chosen);
+    try {
+      for (const { scene, camera } of scenes) {
+        compile(null, scene, camera);
       }
-      return Promise.all(compiling);
+    } finally {
+      renderer.toneMapping = chosen;
     }
     const composer = this.ensureComposer();
     const target = composer.readBuffer;

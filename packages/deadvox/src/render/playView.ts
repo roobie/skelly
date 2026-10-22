@@ -18,6 +18,7 @@ import type { Body } from '../core/physics.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
 import { reachTuning } from '../core/reach.ts';
 import type { BodyTuningDef, NightVision } from '../core/schema.ts';
+import { firearmsCombatTuning } from '../core/skillTraining.ts';
 import { skyAt, sunShadowStrength } from '../core/sky.ts';
 import { skyInWeather, type Weather } from '../core/weather.ts';
 import { amalgamTypeOf, figureSeedPool } from '../core/zombieFigure.ts';
@@ -43,6 +44,7 @@ import { ItemThrows } from './itemThrows.ts';
 import { LightPool } from './lightPool.ts';
 import { applyLook } from './look.ts';
 import { MobActorMeshes, type ZombieRenderer } from './mobActors.ts';
+import { modelMaterialWarmUp } from './modelMaterials.ts';
 import { ModelLibrary } from './models.ts';
 import { createNightVisionFlareUpdate } from './nightVisionFlare.ts';
 import { PileMeshes } from './piles.ts';
@@ -204,7 +206,12 @@ export const createPlayView = (
         return entity !== undefined && engine.registry.furniture.get(entity.type)?.shotTarget === true;
       }
     : undefined;
-  const impactEffects = new ImpactEffects(s, engine.isSolid, targetCell);
+  const impactEffects = new ImpactEffects(
+    s,
+    firearmsCombatTuning(registry).shotTraceRangeBlocks,
+    engine.isSolid,
+    targetCell,
+  );
   const blastFlashes = new BlastFlashes();
   const acidEffects = new AcidEffects(s);
   const held = new HeldItems(inventory, models, playerPalette, engine.sky.light);
@@ -238,7 +245,7 @@ export const createPlayView = (
   let cameraDaylightScale = 1;
   const lightPool = new LightPool(scene, held.warmUpTarget.scene);
   engine.shadows?.attachTorches(flashlight.lights);
-  scene.add(piles.group, furniture.group, playerMeshes.group);
+  scene.add(piles.group, furniture.group, playerMeshes.group, modelMaterialWarmUp(true));
   const avatarStudy = createAvatarStudy(scene, config.debug, s, models);
   // Both actors implement the same presentation contract. Gameplay keeps synchronous
   // death/sever callbacks so an actor is removed before a subsequent sync/prune.

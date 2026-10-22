@@ -89,7 +89,16 @@ export const muzzleBrake: PartFamily = {
           required: true,
         },
         // The gun's muzzle moves to the brake's nose.
-        { id: 'muzzle', mount: 'muzzle', standard: 'rifled', gender: 'female', pos: [nose, 0, 0], normal: X, up: Y },
+        {
+          id: 'muzzle',
+          mount: 'muzzle',
+          standard: 'rifled',
+          size: 'anti-materiel',
+          gender: 'female',
+          pos: [nose, 0, 0],
+          normal: X,
+          up: Y,
+        },
       ],
       keepOuts: [],
       axes: [{ kind: 'bore', origin: [0, 0, 0], dir: X }],

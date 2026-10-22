@@ -181,7 +181,8 @@ try {
         ) {
           throw new Error('Can fixture must fit');
         }
-        const lootTutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, () => undefined);
+        const lightKit = gauntletWitness.engine.site.lightPractice;
+        const lootTutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, lightKit);
         lootTutorial.observe({
           position: [8, 0, 0],
           yaw: 1,
@@ -193,7 +194,7 @@ try {
           lightOn: false,
           paused: false,
         });
-        const tutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, () => undefined);
+        const tutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, lightKit);
         tutorial.observe({
           position: [8, 0, 0],
           yaw: 1,
@@ -310,7 +311,7 @@ try {
       );
       // Native pointer activation of the practice exits is quarantined in #705; its root cause is unresolved.
       await Promise.all([
-        page.waitForURL((target) => !target.searchParams.has('tutorial'), { waitUntil: 'commit' }),
+        page.waitForURL((target) => !target.searchParams.has('tutorial')),
         page.locator('#death button').press('Enter'),
       ]);
       await page.waitForFunction(
@@ -321,7 +322,7 @@ try {
       await page.click('#tutorial-start');
       await page.waitForFunction(() => globalThis.tutorialSession !== undefined);
       await Promise.all([
-        page.waitForURL((target) => !target.searchParams.has('tutorial'), { waitUntil: 'commit' }),
+        page.waitForURL((target) => !target.searchParams.has('tutorial')),
         page.getByRole('button', { name: 'Exit practice', exact: true }).press('Enter'),
       ]);
       await page.waitForFunction(() => document.querySelector('#startup-screen').hidden);
@@ -682,11 +683,14 @@ try {
     assert.equal(schedule.measuredDurations.length, 4);
     assert.ok(schedule.measuredDurations.every((duration) => Number.isFinite(duration) && duration >= 0));
 
-    await page.evaluate(async () => {
+    await page.evaluate(() => {
       const { controller } = deadvoxSaveTest;
       controller.storage.save = () => Promise.reject(new DOMException('quota regression', 'QuotaExceededError'));
       controller.beforeSleep();
-      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    // The rejection settles within a few event-loop turns; a missing recovery UI fails here, not later.
+    await page.waitForFunction(() => document.querySelector('#save-recovery')?.checkVisibility(), undefined, {
+      timeout: 1000,
     });
     const failure = await page.evaluate(() => ({
       text: document.querySelector('#save-recovery-message').textContent,

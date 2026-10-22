@@ -1,8 +1,8 @@
 {
   "id": "canned_soup",
   "file": "assets/models/canned_soup.glb",
-  "parts": { "package": { "node": "package:vessel", "massKg": 0.43, "centreOfMass": [0, 0.06092612064541375, 0] } },
-  "grip": { "at": [0, 0.0615, 0], "turn": [0, 0, -90] },
+  "parts": { "package": { "node": "package:vessel", "massKg": 0.43, "centreOfMass": [0, 0.06045454545454545, 0] } },
+  "grip": { "at": [0, 0.06, 0], "turn": [0, 0, -90] },
   "hold": "upright",
   "roll": 0
 }

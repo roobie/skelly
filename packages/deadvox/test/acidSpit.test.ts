@@ -28,6 +28,7 @@ const sensed = (pos: Vec3, movement: PlayerSense['movement'] = 'still'): PlayerS
   movement,
   lit: false,
   lightSeenFrom: 40,
+  eyeHeightMetres: 1.3,
   crouching: false,
 });
 

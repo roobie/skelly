@@ -164,7 +164,7 @@ Glazing blocks bodies while transmitting sight and light; sound attenuation is
 explicit content. This keeps the driver's view, external observers and interior
 lighting consistent rather than hiding an opaque cabin behind a transparent mesh.
 Bullet interaction uses the combat material rules, not an inference from movement
-blocking. Gas sealing is a separate question. #1016 gates interior visibility.
+blocking. Gas sealing is a separate question.
 
 Fitted parts and their poses own both appearance and obstruction. Keep parked
 world collision and picking derived, not hand-authored per wreck. See
@@ -250,7 +250,7 @@ leaving saves to an integration finale.
    controls and engine noise. Prove blocked entry/exit and swing refusal, moving-to-
    parked handoff, braking, lost propulsion and save/load in motion. Include safe
    placement when exiting a moving vehicle without arresting the vehicle. BR checks
-   interior visibility for #1016. Compare mass-placement variants while holding
+   interior visibility. Compare mass-placement variants while holding
    total mass, power and silhouette fixed; do not pin tuned trajectories.
 5. **Heavy-part-hoist vehicle and heavy salvage.** Build the hoist through the same
    authoring, instance and driving path, then add its lifting operation. Prove field

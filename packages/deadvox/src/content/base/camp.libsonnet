@@ -232,6 +232,7 @@ local campWallRunCrouchHole = campWallRun + {
       "name": "Ammunition can",
       "size": [1, 1, 1],
       "color": "#5b6142",
+      "appearance": { "kind": "lid", "surface": "painted-metal" },
       "container": {
         "pockets": [
           {
@@ -1005,6 +1006,9 @@ local campWallRunCrouchHole = campWallRun + {
         "B": {
           "furniture": "bed"
         },
+        "L": {
+          "furniture": "bedroll"
+        },
         "R": {
           "furniture": "wardrobe",
           "loot": "wardrobe"
@@ -1057,8 +1061,8 @@ local campWallRunCrouchHole = campWallRun + {
           "#..............#",
           "#..............#",
           "#..............#",
-          "#..............#",
-          "#..............#",
+          "#..L...........#",
+          "#..L...........#",
           "#..............#",
           "################"
         ],

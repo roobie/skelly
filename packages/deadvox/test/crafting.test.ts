@@ -1,24 +1,15 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
-import { buildRegistry, type RecipeDef, type Registry } from '../src/core/content.ts';
+import type { RecipeDef, Registry } from '../src/core/content.ts';
 import { admissionRefusal, indexCraftReach, planCraft, requirementStatus } from '../src/core/crafting.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach, type ReachSnapshot } from '../src/core/reach.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
-import { baseRegistry } from './baseRegistry.ts';
+import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 
-const inputs = readdirSync('src/content/base')
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({
-    source: file,
-    data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
-  }));
 const registry = baseRegistry();
 // biome-ignore lint/style/noProcessEnv: timings print only under the bench script.
 const benchmarking = process.env.DEADVOX_BENCH === '1';
@@ -86,8 +77,7 @@ const fixtureWorkstationRegistry = () => {
   if (workstationRegistry) {
     return workstationRegistry;
   }
-  const built = buildRegistry([
-    ...inputs,
+  workstationRegistry = baseRegistryWith([
     {
       source: 'fixture-workstation.json',
       data: {
@@ -107,10 +97,6 @@ const fixtureWorkstationRegistry = () => {
       },
     },
   ]);
-  if (built.issues.length > 0) {
-    throw new Error(`Invalid fixture workstation: ${JSON.stringify(built.issues)}`);
-  }
-  workstationRegistry = built.registry;
   return workstationRegistry;
 };
 
@@ -204,8 +190,7 @@ describe('pure craft planner', () => {
       ...recipe(['crowbar', 'kitchen_knife', 'can_opener'].map((item) => [{ item, count: 1 }])),
       qualities: { hammering: 1, prying: 1, cutting: 1, opening: 1 },
     };
-    const built = buildRegistry([
-      ...inputs,
+    const stressRegistry = baseRegistryWith([
       {
         source: 'multi-quality.json',
         data: {
@@ -223,8 +208,7 @@ describe('pure craft planner', () => {
         },
       },
     ]);
-    expect(built.issues).toEqual([]);
-    const inventory = new Inventory(built.registry);
+    const inventory = new Inventory(stressRegistry);
     const bag = inventory.create('school_backpack');
     expect(inventory.add(bag, { kind: 'worn' })).toBe(true);
     const types = ['crowbar', 'kitchen_knife', 'can_opener'];
@@ -292,7 +276,7 @@ describe('pure craft planner', () => {
         { type: 'crowbar', time: 0.9 },
         { type: 'crowbar', count: 4, time: 1 },
       ],
-      built.registry,
+      stressRegistry,
     );
     const cheapest = planCraft(
       recipe([[{ item: 'crowbar', count: 2 }]], { hammering: 1, prying: 1 }),
@@ -450,7 +434,13 @@ describe('pure craft planner', () => {
         }),
       ).toBe(true);
     });
-    inventory.entities.add({ type: 'workbench', pos: [0, 0, 0], size: [3, 2, 2], facing: 'n' });
+    let stationZ = 0;
+    for (const station of [...registry.furniture.values()].filter((def) => def.workstation)) {
+      stationZ -= station.size[2];
+      expect(
+        inventory.entities.add({ type: station.id, pos: [0, 0, stationZ], size: station.size, facing: 'n' }),
+      ).toBeDefined();
+    }
     const snapshot = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK })();
     expect(snapshot.entries).toHaveLength(200);
     const actor = new Character(benchmarkRegistry);
@@ -469,7 +459,7 @@ describe('pure craft planner', () => {
       const began = performance.now();
       const result = planCraft(definition, snapshot, actor);
       const elapsedMs = performance.now() - began;
-      expect('plan' in result).toBe(true);
+      expect('plan' in result ? '' : result.missing.reason, definition.id).toBe('');
       return { recipe: definition.id, elapsedMs };
     });
     if (benchmarking) {

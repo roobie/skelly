@@ -25,6 +25,14 @@ const fixedItemIssue = (registry: Registry, fixed: FixedLootItemDef, context: Lo
       return issue;
     }
   }
+  if (fixed.charge !== undefined) {
+    const item = new ItemFactory().create(registry, fixed.item);
+    const fittedTypes = Object.values(item.slots ?? {}).map(({ type }) => type);
+    const types = [fixed.item, ...fittedTypes, ...Object.values(fixed.fitted ?? {})];
+    if (!types.some((type) => registry.items.get(type)?.battery)) {
+      return `"${fixed.item}" has no battery to charge`;
+    }
+  }
   return lootTypeIssue(registry, fixed.item, context, fixed.fitted);
 };
 

@@ -10,7 +10,7 @@ import { namedNodes } from '../packages/deadvox/src/render/firearmModel.ts';
 import { catalogue } from '../packages/thing-authoring-tool/src/catalogue.ts';
 import { loadThingRecipe } from '../packages/thing-authoring-tool/src/exports.ts';
 import { modelMassKg } from '../packages/thing-core/src/mass.ts';
-import { assertExportSynced, assertRecipeCredits, exportDifference } from './model-export-sync.mjs';
+import { assertExportSynced, assertRecipeCredits, assertVoxelized, exportDifference } from './model-export-sync.mjs';
 
 const deadvoxRequire = createRequire(new URL('../packages/deadvox/package.json', import.meta.url));
 const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders/GLTFLoader.js'));
@@ -19,7 +19,7 @@ const { safeParse } = deadvoxRequire('valibot');
 const base = new URL('../packages/deadvox/src/content/base/', import.meta.url).pathname;
 const AVATAR_SOURCE = 'player_bust';
 const recipe = loadThingRecipe();
-const exported = recipe.map((row) => ({ id: row.id, source: row.source, ...row.generate() }));
+const exported = recipe.map((row) => ({ id: row.id, source: row.source, voxel: row.voxel, ...row.generate() }));
 const { registry, issues } = buildRegistry(
   readdirSync(base)
     .filter((file) => file.endsWith('.json'))
@@ -48,6 +48,9 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
         `${file}: orphaned thing export`,
       );
     }
+  });
+  it('voxelizes every recipe model on its row class', () => {
+    exported.forEach(assertVoxelized);
   });
   it('credits every consumed thing export', () => {
     assertRecipeCredits(recipe, JSON.parse(readFileSync(join(base, 'assets/manifest.json'), 'utf8')));
@@ -124,6 +127,7 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
           assert.ok(names.has(modelEntry.emissiveMaterial), `${modelEntry.id}: missing glow material`);
         }
         if (modelEntry.anchors?.flame) {
+          // A datum lies on the drawn voxels, so the flame stands within what the file draws.
           const bounds = new Box3().setFromObject(loaded.scene).expandByScalar(1e-6);
           assert.ok(
             bounds.containsPoint(new Vector3(...modelEntry.anchors.flame)),

@@ -163,7 +163,6 @@ export const GUN_ANCHORS: GunAnchorDeclarations = {
     },
   },
   barrel: { anchors: muzzlePortAnchor },
-  'ak-muzzle-device': { anchors: muzzlePortAnchor },
   'muzzle-brake': { anchors: muzzlePortAnchor },
   receiver: {
     anchors: (params, part) => {

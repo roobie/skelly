@@ -3,7 +3,7 @@ read_if:
   - you're planning or implementing a Slice 3 milestone
   - "you change skill effects or training rules in Slice 3"
   - you're checking Slice 3 scope, saves, tests or BR approval gates
-  - "you're tracking #308's playtest 1 apex enemy scope and design questions"
+  - you're changing the apex enemy's scope or its finale encounter
   - you're interpreting BR's camera-directed gaze ruling for zombie models
   - you're changing crawler gait, hit response or generation validation
   - you're preparing the end-of-slice playtest or its authored map
@@ -18,11 +18,13 @@ read_if:
 
 # Slice 3 — Flesh and noise
 
-**Status:** draft, proposed by the lead (2026-10-05) from BR's milestone-by-milestone rulings. BR's process ruling was: “slice-3 : let's deal with each milestone / one per turn”.
+**Status: milestones 3.1–3.10, loose-item pickup and the inventory management skill are
+built; 3.11 and the slice exit stay open.** The exit waits on the playtest 1 testers'
+reports and the deep docs pass, both tracked in #293.
 
 ## Goal
 
-Put combat, bodily consequences, stealth and zombie attention in place for the first authored playtest at the end of this slice. Combat must feel visceral: “we should aim for a very visceral experience in dealing with enemies like shamblers. Bullets, casings and body parts flying all over the place. The player should feel satisfied when they deem it worth to spend their hard earned ammo” (BR, 2026-10-05 21:04).
+Put combat, bodily consequences, stealth and zombie attention in place for the first authored playtest at the end of this slice. Combat must feel visceral: bullets, casings and body parts fly, so that spending hard-earned ammunition feels worth it.
 
 The player should have to choose when to ready a weapon, spend ammunition, make noise, hide, use light, treat wounds and hold ground. The playtest asks whether those choices are readable, tense and satisfying, and whether listening changes how players move.
 
@@ -61,10 +63,10 @@ The eleven milestones are:
 - Fractures: deferred by BR (#277).
 - A smell trail: deferred by BR (#278).
 - Screamer and bloater types: deferred by BR (#280). The runner and crawler are the first new types.
-- Shared flow fields: dropped by BR in the 3.9 ruling. Background zombies use the beeline in big, cheap steps instead; d84 (#279) is the carried-in attention brain. The remaining route follow-up in #244 is obsolete under that direction.
-- Legendary effects beyond vanity. BR's direction is “mostly vanity thing, but we might come up with something along the way” (2026-10-05 21:29).
+- Shared flow fields: dropped by BR in the 3.9 ruling. Background zombies use the beeline in big, cheap steps instead; the beeline attention brain (#279) is carried in. The remaining route follow-up in #244 is obsolete under that direction.
+- Legendary effects beyond vanity: effects are mostly a vanity thing unless something comes up along the way.
 
-Beat details in #181 are settled one turn at a time before their dependent map rounds. The approved schematic v2 is the basis for the medical-site pass. BR ruled on pharmacy access for d122-6, “to keep it simple, we'll go for 1:(b) , 2:front counter” (2026-10-07 11:13): use #309's existing key-or-crowbar door lock and put the pharmacy key in the front counter. The military site follows its own map round.
+Beat details in #181 are settled before their dependent map rounds. The approved schematic v2 is the basis for the medical-site pass. Pharmacy access uses #309's key-or-crowbar door lock, with the pharmacy key in the front counter. The military site follows its own map round.
 
 ## How this slice runs
 
@@ -85,7 +87,7 @@ Paperwork; no game code.
 - Open a checklist issue linking each milestone, dependency, first-look gate, test proof and final playtest evidence.
 - Check the default Deadvox suite against the applicable test-run budget. Record any overrun and its coverage-based cause before code work; keep host-specific timings out of this plan.
 - Map each open question to the milestone it gates. Get BR's decision before its dependent map round; beats 5–6 remain assigned to 3.11, not blockers for earlier work.
-- Confirm the carried-in work: d84's beeline attention brain (#279); d83's 0–10 skill scale and legendary level plus #275's training tiers; and d80's recoil and d78's impact tracing for 3.2.
+- Confirm the carried-in work: the beeline attention brain (#279); the 0–10 skill scale and legendary level (#274) plus #275's training tiers; and recoil (#271) and impact tracing (#268) for 3.2.
 
 **Saves:** none.
 **Tests:** none beyond the budget check and the checklist's links to milestone proofs.
@@ -190,34 +192,10 @@ At 13:33, answering whether the ADS toggle should be rebindable now or fixed to 
 
 ### 3.2 Firearms for real
 
-**BR, 2026-10-05, d62-4 (#262), verbatim:**
+Aim variance comes from movement, swing and recoil and shows as weapon sway. Skill mitigates that variance and quickens reload and rack time; dispersion is not a skill issue, control is (`DESIGN.md`, "Firearms"). Shooting proficiency splits by firearm archetype later.
 
-> we should add a aiming variance based on movement, swing and recoil (this should show in game via a sway on the weapon)
-> will: 1) mitigate the aim variance 2) quicken reload time 3) quicken rack time (shotgun)
-> which we will expand to separate firearm archetypes later, like skill:smgs, skill:shotguns etc
-> as for gun skill / i tried it at =12 / and equipped the assault rifle - too much dispersion/sway at full auto
-
-The "=12" was on the skill scale before d83 (#274). BR's later ruling, "dispersion is not a skill issue, but control is", is in `DESIGN.md`, "Firearms".
-
-**BR, 2026-10-05 21:04:**
-
-> 1. magazines are real, you load them one by one, like in dayz
-> 2. AR and AK are only found in military loot sources
-> 3. yes
-> 4. ideally, yes
->
-> we should aim for a very visceral experience in dealing with enemies like shamblers. Bullets, casings and body parts flying all over the place. The player should feel satisfied when they deem it worth to spend their hard earned ammo
-
-**BR, 2026-10-05 21:06:**
-
-> the designed playtest map ends in a miltiary area - we just haven't gotten that far
-
-**BR, 2026-10-05 22:17, on spent casings:**
-
-> they should be saved
-
-**In:** Real magazines loaded round by round, ammunition and rifle damage by body region/calibre. AR and AK are loot only at the military site placed by 3.11. The existing firearms-combat skill's aim-variance, reload and rack effects carry forward; later, shooting proficiency splits by firearm archetype. A firearm shot's recoil is carried in from d80; d78's impact trace owns visible world impacts. Body marks are desired where practical. Spent casings and body-part consequences should make firing feel consequential, without making cosmetic impact marks authoritative damage.
-**Saves:** Magazine contents and any new chamber/action state that determines the next shot are saved with their owning items. Spent casings are world state: save where they fall and preserve them through save/load (BR, 2026-10-05 22:17: “they should be saved”). Body damage is owned and saved by 3.4. BR ruled that impact marks and dust are presentation, not simulation damage or save state (see `DESIGN.md`, "Shot impacts").
+**In:** Real magazines loaded round by round, ammunition and rifle damage by body region/calibre. AR and AK are loot only at the military site placed by 3.11. The firearms-combat skill's aim-variance, reload and rack effects carry forward. Recoil is firearm-owned; the shot trace owns visible world impacts. Body marks are desired where practical. Spent casings and body-part consequences should make firing feel consequential, without making cosmetic impact marks authoritative damage.
+**Saves:** Magazine contents and any new chamber/action state that determines the next shot are saved with their owning items. Spent casings are world state: save where they fall and preserve them through save/load. Body damage is owned and saved by 3.4. BR ruled that impact marks and dust are presentation, not simulation damage or save state (see `DESIGN.md`, "Shot impacts").
 **Tests:** loading and firing conserve rounds across magazine, chamber and weapon; a round resolves against the body region it actually intersects and uses firearm/calibre data; save/load preserves the next shot, ammunition and spent-casing positions; changing impact presentation does not change damage. The impact presentation builds on `src/game/firearmHandling.ts`, `FirearmMechanics.fire`, and `src/render/shotTrace.ts`, `traceShot`. Test military loot reachability through the authored site rather than pinning a loot count.
 **Done when:** magazines can be loaded one round at a time, rifle ammunition and weapons come from the map's military source, shots damage the appropriate region, and save round trips preserve ammunition and spent casings.
 **First look / BR approval:** firearm impacts, hit feedback, spent casings and body-mark treatment.
@@ -262,41 +240,19 @@ The "=12" was on the skill scale before d83 (#274). BR's later ruling, "dispersi
 > 2. keep it real simple
 > 3. defer
 
-**In (d98):** C toggles crouch, which is slower, quieter and harder to see. Sight worsens at night and while the player crouches. BR (2026-10-06 11:28) ruled: “3. somewhat yes - if a half-wall blocks the light at that altitude, then yes, it occludes, but otherwise no - same reach”. A crouched player's lowered eye and held-light height let a half-wall block sight and light, while crouching alone does not shorten light reach in the open. BR (2026-10-06 12:25) approved sighting standing players from eye height (“good”); a wall a little over chest height can hide a crouched player without hiding a standing one. Noise and positional sound are muffled by walls under the approved rule below. Smell remains deferred (#278).
+**In:** C toggles crouch, which is slower, quieter and harder to see. Sight worsens at night and while the player crouches. A crouched player's lowered eye and held-light height let a half-wall block sight and light, while crouching alone does not shorten light reach in the open. Standing players are sighted from eye height, so a wall a little over chest height can hide a crouched player without hiding a standing one. Noise and positional sound are muffled by walls under the rule below. Smell remains deferred (#278).
 
-**Decision (d98, BR, 2026-10-06 10:12):** “wall muffling: Approve it as written”. Use the direct ray test shared with zombie sight (`src/core/zombies.ts`, `seesPlayer`): a closed door counts, while a doorway or window gap does not. Any solid on the ray applies one coarse hearing attenuation, not a penalty per intervening block. Keep positional sound at its source and muffle it with gain and a low-pass filter rather than making it seem farther away. Starting values belong to the base content pack's `senses` entry and `packages/deadvox/src/core/schema.ts`, `SenseSchema`.
+**Wall muffling:** Use the direct ray test shared with zombie sight (`src/core/zombies.ts`, `seesPlayer`): a closed door counts, while a doorway or window gap does not. Any solid on the ray applies one coarse hearing attenuation, not a penalty per intervening block. Keep positional sound at its source and muffle it with gain and a low-pass filter rather than making it seem farther away. Starting values belong to the base content pack's `senses` entry and `packages/deadvox/src/core/schema.ts`, `SenseSchema`.
 
-**Per-sound tuning (d98-2; BR, 2026-10-06 11:10–11:11):** BR asked, “3.5 sounds pretty  good but some sounds are harder to judge than others. How much effort is it to tune each event?” and chose option A: “ok. Let's go for option A for now”. An optional `wall` setting on `src/core/schema.ts`, `SoundSchema.wall`, lets each sound tune positional-audio gain and cutoff when occluded; otherwise the global wall step applies. Zombie hearing keeps its global attenuation. Shipped sounds have no overrides until BR chooses which events need them.
+**Per-sound tuning:** An optional `wall` setting on `src/core/schema.ts`, `SoundSchema.wall`, lets each sound tune positional-audio gain and cutoff when occluded; otherwise the global wall step applies. Zombie hearing keeps its global attenuation. Shipped sounds have no overrides until BR chooses which events need them.
 
-**Saves:** BR ruled “let's make crouch a toggle” (2026-10-06), so crouch belongs in the player snapshot and simulation fingerprint; it persists through menus and long actions. Noise pulses remain transient. Persistent zombie attention/investigation stays in the zombie snapshot; do not add a second owner.
+**Saves:** Crouch is a toggle, so it belongs in the player snapshot and simulation fingerprint; it persists through menus and long actions. Noise pulses remain transient. Persistent zombie attention/investigation stays in the zombie snapshot; do not add a second owner.
 **Tests:** crouching changes movement, hearing and sight in the ruled directions; its toggle survives an inactive long action and save/restore, and replay with the toggle is deterministic. A wall muffles hearing and positional audio consistently under the approved rule, with sound still attached to its source. `packages/deadvox/test/zombies.test.ts`, "does not replay a live far vocal pulse after a searching zombie is restored", proves the saved vocal-noise ID prevents a still-live far pulse from replaying with a new bearing; the restored search then matches uninterrupted simulation. The crouched-light tests in `packages/deadvox/test/zombies.test.ts` distinguish open-ground lit visibility from half-wall occlusion for crouched players while preserving sight of standing players over that wall. Extend the existing noise and sight owners (`src/core/zombies.ts`, `hearingTier`, `hearVocalNoise`, `seesPlayer`) rather than creating parallel sensory state. Tuning belongs in `packages/deadvox/src/content/base/senses.jsonnet`, validated by `packages/deadvox/src/core/schema.ts`, `SenseSchema`.
 **Done when:** crouch and night visibility affect detection, the crouch toggle survives save/restore, walls apply the approved simple muffling rule to noise and positional sound, and cover blocks light at crouched height.
 
 ### 3.6 Light as a sense
 
-**BR, 2026-10-05 21:16:**
-
-> 1. yes, beeline.
-> 2. yes, but only when light conditions make it plausible - i.e. dark conditions + lit up = easier to spot
-> 3. yes, at least glowstick - but it must not work _too_ well
-> 4. yes
-
-**BR, d100-2 first look (2026-10-06 14:21):**
-
-> the glow stick is too weak in illuminating - let's try 100% more
-> also dropping an active glow stick on the ground seems to make it not illuminate anything
-
-**BR, d100-2 answers (2026-10-06 14:24):**
-
-> 1. no - it should be completely overtaken by the sun's light
-> 2. yes
-> 3. press-and-hold T -> the longer held -> the longer the throw. Cancel by right-clicking mouse
-
-**BR, 2026-10-07 14:27:**
-
-> "T only throws a lit glowstick :D / it should of course throw whatever it is is wielded in primary hand. It requires to be held 1 second before throwing"
-
-BR approved weight-limited range at 14:35; atmospheric drag follows its separate issue, #368. With no handling job active, charge begins on press; a throw pressed during a rack or magazine job starts charging when that job finishes. The minimum remains a release gate. See `src/game/inputBindings.ts`, `player.throw`, and `src/game/play.ts`, `finishItemThrow`.
+A visible light becomes a beeline target only when conditions make it plausible: dark surroundings and a lit player are easier to spot. The glowstick is a lure that must not work too well. A dropped active glowstick keeps illuminating. Press-and-hold T throws the primary-hand item after a minimum hold; the longer the hold, the longer the throw, and right-click cancels. Range is weight-limited; atmospheric drag follows its separate issue, #368. With no handling job active, charge begins on press; a throw pressed during a rack or magazine job starts charging when that job finishes. The minimum remains a release gate. See `src/game/inputBindings.ts`, `player.throw`, and `src/game/play.ts`, `finishItemThrow`.
 
 Daylight overwhelms portable light wherever the sky is open, including outdoor shade; a roof or cellar leaves light mattering at noon. Brighter glowsticks keep their existing sensing reach. A lure gets one investigation so it creates risk without holding a shambler indefinitely; a nearby sound takes priority. Charging makes throw distance a deliberate choice, and cancellation prevents a mistaken release.
 
@@ -324,51 +280,19 @@ Daylight overwhelms portable light wherever the sky is open, including outdoor s
 
 ### 3.8 New zombie types
 
-**BR, 2026-10-05 21:29, inline answers to the lead's questions:**
+The first set is the runner and the crawler, plus an apex enemy so the playtest ends with something new: an amalgamation of several shamblers the size of a car. When the screamer arrives, its scream is an attention source every zombie in range beelines to; the bloater's cloud effect is deferred with it (#280).
 
-> 1. Scope: all four in Slice 3, or a first set? For example, runner and crawler first, since screamer and bloater lean on hordes (3.9) and the body model (3.4).
-> first set only
-> 2. Runner: a sprinting beeline, and rarer than shamblers?
-> yes
-> 3. Screamer: does its scream become an attention source that every zombie within some radius beelines to?
-> yes
-> 4. Bloater's cloud: what does it do to you? Damage over time, wound infection (from 3.4), blurred vision, or something else?
-> defer
-
-**BR, 2026-10-06, verbatim (#308):**
-
-> “maybe we should consider adding a 'boss' mob - maybe an amalgamation of several shamblers - an enemy the size of a car”
-> “yes, I think it's worth it, and it makes it end with something new and exciting”
-
-**In:** Add the runner (sprinting beeline, rarer than shamblers), crawler and apex enemy, building on the existing type-data model and d84's beeline. Each zombie type gets distinct sounds. The crawler uses the approved type design; the apex enemy's design questions are tracked in #308. Infection consequences depend on 3.4. Screamer and bloater are deferred (#280).
+**In:** Add the runner (sprinting beeline, rarer than shamblers), crawler and apex enemy, building on the existing type-data model and the beeline brain. Each zombie type gets distinct sounds. The crawler uses the approved type design. The apex enemy is the amalgam; see `src/content/base/zombies.jsonnet`, `amalgam`, and `src/core/amalgamFigure.ts`, `amalgamFigureForType`. Infection consequences depend on 3.4. Screamer and bloater are deferred (#280).
 **Saves:** Type identity and actor movement/body state use the existing zombie snapshot. Save/fingerprint any persistent type-specific ability state introduced by implementation; do not save a second copy of shared attention state.
 **Tests:** a runner pursues by sprinting beeline; a crawler is distinguishable and interacts with body-region damage; each type has a distinct sound; type identity and state survive save/load; spawn rarity is validated as a property of the authored source, not a pinned generated count.
 **Done when:** runner, crawler and apex enemy are distinct playable threats and their persistent state round-trips.
 **First look / BR approval:** runner and crawler silhouettes, movement and hit response (the crawler's static prone pose first, then its drag gait and in-game hit response); the apex enemy's size, silhouette and encounter read.
 
-**Work split:** d106-1 implements the runner and crawler; #308 tracks playtest 1's apex enemy as a separate work item within 3.8.
+**Crawler form and pose:** the crawler is a prone ground-crawler that drags itself on its arms, with thigh stumps rather than full legs, and it must rest on the ground rather than hover. A low all-fours humanoid and a short hunched humanoid are future mobs, not crawler variants.
 
-**Crawler form and pose (BR, 2026-10-06–07):** the question was whether the crawler should be (a) a prone ground-crawler dragging itself on its arms with trailing legs, (b) a low, hunched humanoid on all fours, or (c) a short, hunched humanoid variant.
+The grounded prone form and perception-directed gaze make the crawler's shape and attention readable. Gaze stays presentation-only, while the drag gait and runner/crawler flinches affect hit geometry so attacks follow the visible pose; they add no saved state but change replay compatibility. Gameplay stagger, slowdown and knockdown remain open for BR. Generated support validation protects the grounded form. See `packages/mobgen/src/mob/crawler.ts`, `crawlerGaitPose`, `src/core/zombiePose.ts`, `posedShambler`, and `packages/mobgen/src/core/generate.ts`, `resolveSupportBones`.
 
-BR (2026-10-06 21:46):
-
-> “okay, yeah runners, I see when I spawn them now; but crawlers I'm not sure - aren't they supposed to be crawling?”
-
-BR (2026-10-06 21:49):
-
-> “crawler: (A)” / “the other variants you mention are other mobs, not yet defined, but each having their place in the roster at some point”
-
-The two alternatives are future mobs, not crawler variants. BR's follow-up asked whether the crawler should keep full legs or have stumps, and noted hovering. BR (2026-10-07 00:18):
-
-> “1. i'm thinking it shouldn't have full legs / and it looks to be hovering a bit over the ground, so that might be an issue”
-
-After seeing the stumps, BR's question was whether they read correctly despite the remaining hover. BR (2026-10-07 00:37):
-
-> “thigh stumps look good / but still hovering: Screenshot_2026-10-07_00-37-27.png”
-
-BR's grounded prone form and perception-directed gaze make the crawler's shape and attention readable. Gaze stays presentation-only, while the drag gait and runner/crawler flinches affect hit geometry so attacks follow the visible pose; they add no saved state but change replay compatibility. Gameplay stagger, slowdown and knockdown remain open for BR. Generated support validation protects the grounded form. See `packages/mobgen/src/mob/crawler.ts`, `crawlerGaitPose`, `src/core/zombiePose.ts`, `posedShambler`, and `packages/mobgen/src/core/generate.ts`, `resolveSupportBones`.
-
-**Legendary direction (BR, 2026-10-05 21:29):** “sounds about right” on the proposed cost; effects are “mostly vanity thing, but we might come up with something along the way”. The 3.1 skill work carries d83's scale/legendary contract; effects beyond vanity are out of this slice.
+**Legendary direction:** legendary effects are mostly vanity. The 3.1 skill work carries the scale and legendary contract (#274); effects beyond vanity are out of this slice.
 
 ### 3.9 Hordes and the background tier
 
@@ -391,22 +315,11 @@ BR's grounded prone form and perception-directed gaze make the crawler's shape a
 
 ### 3.10 Input recording and replay
 
-**BR, 2026-10-05 21:35:**
-
-> 1. depending on (perf) cost: prefer always on
-> 2. i think downloaded file makes most sense - depending on size it could be an attachment to the github issue?
-> 3. i'd say in general until we've hit v1 RC
-
-The scope question was whether replay should include inventory and crafting screen use. BR asked on 2026-10-06:
-
-> "how much effort is it to scope it to inventory and crafting too?"
-> "yes, do inventory and crafting in the validation too"
-
 **In:** Keep a rolling recent input window, if its measured performance cost allows; export a replay file containing the starting save and recorded inputs, small enough for a GitHub issue attachment where possible. Make it available in all builds until v1 RC. The replay is an artifact, not a second game-save format.
 **Saves:** No new world-save state. The replay file carries the start save and input sequence with enough build/simulation identity to reject an incompatible replay; the recording buffer is transient and the export is explicit.
 **Tests:** Replaying a captured input sequence from its start save reproduces the same simulation result, including inventory and crafting screen commands; export/import preserves command parameters and item identity, and fails clearly when the build/simulation identity is incompatible; measure always-on buffer cost before accepting it.
 **Done when:** a bug can be reported with a downloadable replay that reproduces the same state after look, movement, inventory and crafting use, and always-on capture fits the measured budget or is kept only when cost permits.
-At d101-4, replay samples also preserve whether the source world was ready under the player. Source movement can be skipped while streamed terrain is missing; playback waits when a recorded move needs terrain and keeps source-side skips when it did not. Replay captures the source simulation's end time so verification is independent of how render frames grouped the fixed player ticks. See `src/game/session.ts`, `createSession`; `src/game/inputReplay.ts`, `encodeInputReplay`; and `src/game/play.ts`, `stepSimulation`.
+Replay samples also preserve whether the source world was ready under the player. Source movement can be skipped while streamed terrain is missing; playback waits when a recorded move needs terrain and keeps source-side skips when it did not. Replay captures the source simulation's end time so verification is independent of how render frames grouped the fixed player ticks. See `src/game/session.ts`, `createSession`; `src/game/inputReplay.ts`, `encodeInputReplay`; and `src/game/play.ts`, `stepSimulation`.
 
 Implementation is in `src/game/inputReplay.ts`, `InputReplayRecorder`; inventory and crafting commands converge on `applyReplayActionPayload` in `src/game/replayCommands.ts`, wired by `startPlay` in `src/game/play.ts`. The player-facing rationale is in [CONTROLS.md](CONTROLS.md).
 
@@ -445,7 +358,7 @@ Loose-item pickup belongs in the first Slice 3 playtest because looting is centr
 
 #### Inventory management skill
 
-Inventory Management covers actions that handle inventory, including another container's inventory, so furniture searches count. An action another skill owns gets no second factor. Its one handling factor scales ordinary inventory transfers, box unpacking and furniture searches; the factor is 1 at level 0. Each completed action awards the same fixed, untiered practice; refused, cancelled or failed actions award none. Inventory Management handling practice targets about 220 completed ordinary actions to level 10. #527's playtest-1 finding sets the target so long-run progression and future sources of Inventory Management practice remain available. Firearms Combat owns firearm readiness, reload, rack, magazine insert/remove and firearm-attachment fitting/removal. Inventory Management does not speed firearm-specific actions. Attachment fitting and removal are gun work, so until Gunsmithing, their planned owner, exists, Firearms Combat's attachment factor scales them and each completed fit or removal trains Firearms Combat at tier 1. That factor uses Inventory Management's curve, 1 at level 0, with its own floor and half-life in the skill's content. One name picks the governing skill for both, so Gunsmithing can take over without touching the callers; see `src/game/firearmAttachmentHandling.ts`, `ATTACHMENT_WORK_SKILL`. d208 will require Firearms Combat 4 or higher to fit a suppressor; until it lands, any level may. Moving a magazine between inventory locations is an ordinary transfer.
+Inventory Management covers actions that handle inventory, including another container's inventory, so furniture searches count. An action another skill owns gets no second factor. Its one handling factor scales ordinary inventory transfers, box unpacking and furniture searches; the factor is 1 at level 0. Each completed action awards the same fixed, untiered practice; refused, cancelled or failed actions award none. The practice target per completed action is set so that long-run progression and future sources of Inventory Management practice remain available; see `src/content/base/recipes.libsonnet`, `inventory_management`. Firearms Combat owns firearm readiness, reload, rack, magazine insert/remove and firearm-attachment fitting/removal. Inventory Management does not speed firearm-specific actions. Attachment fitting and removal are gun work, so until Gunsmithing, their planned owner, exists, Firearms Combat's attachment factor scales them and each completed fit or removal trains Firearms Combat at tier 1. That factor uses Inventory Management's curve, 1 at level 0, with its own floor and half-life in the skill's content. One name picks the governing skill for both, so Gunsmithing can take over without touching the callers; see `src/game/firearmAttachmentHandling.ts`, `ATTACHMENT_WORK_SKILL`. Fitting a suppressor is meant to need Firearms Combat 4 or higher; that gate is not built, so any level may fit one (`src/game/firearmAttachmentHandling.ts`, `ATTACHMENT_WORK_SKILL`). Moving a magazine between inventory locations is an ordinary transfer.
 
 **In:** Add the skill to content; scale ordinary transfers, box unpacking and furniture searches through one shared handling factor, with level 0 unchanged and legendary matching level 10; award untiered practice only when each action completes successfully. Preserve progression through save/load and replay; allow fresh debug games to set the skill level.
 
@@ -462,17 +375,10 @@ Inventory Management covers actions that handle inventory, including another con
 
 ## Carried in
 
-- **d84, shamblers beeline (#279):** the beeline movement brain every zombie milestone uses; attention selection is unchanged. It replaces the proposed flow-field dependency; #244's route follow-up is obsolete under this direction.
-- **d83, skills and legendary:** the 0–10 skill scale and legendary level feed 3.1; #275 rules activity tiers, crafting practice, reading and dropped excess.
-- **d80 recoil and d78 impacts:** their firearm-owned recoil, aim control and shared shot-trace work feed 3.2.
+- **Shamblers beeline (#279):** the beeline movement brain every zombie milestone uses; attention selection is unchanged. It replaces the proposed flow-field dependency; #244's route follow-up is obsolete under this direction.
+- **Skills and legendary (#274):** the 0–10 skill scale and legendary level feed 3.1; #275 rules activity tiers, crafting practice, reading and dropped excess.
+- **Recoil (#271) and impacts (#268):** their firearm-owned recoil, aim control and shared shot-trace work feed 3.2.
 - **Authored sites:** the Tiled site / ASCII interior pipeline from #196 feeds 3.11.
-
-## Open questions for BR
-
-Only questions BR left open; don't infer answers from implementation or old proposals.
-
-- **3.5 wall muffling — proposal above:** approve or replace the single coarse attenuation step when a wall lies between source and listener.
-- **#308 — playtest 1 apex enemy:** the design questions remain open; see 3.8.
 
 ## Definition of done
 

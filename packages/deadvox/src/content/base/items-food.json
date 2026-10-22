@@ -52,6 +52,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "canned_beans",
+      "keywords": ["tin", "legumes"],
       "model": "canned_beans",
       "name": "Can of beans",
       "size": [1, 2],

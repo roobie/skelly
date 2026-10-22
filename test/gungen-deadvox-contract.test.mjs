@@ -9,7 +9,13 @@ import { exportGunGlb } from '../gungen/src/gun/exportGlb.ts';
 import { buildRegistry } from '../packages/deadvox/src/core/content.ts';
 import { ModelSchema } from '../packages/deadvox/src/core/schema.ts';
 import { namedNodes } from '../packages/deadvox/src/render/firearmModel.ts';
-import { assertExportSynced, assertRecipeCredits, exportDifference, glbJson } from './model-export-sync.mjs';
+import {
+  assertExportSynced,
+  assertRecipeCredits,
+  assertVoxelized,
+  exportDifference,
+  glbJson,
+} from './model-export-sync.mjs';
 
 const deadvoxRequire = createRequire(new URL('../packages/deadvox/package.json', import.meta.url));
 const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders/GLTFLoader.js'));
@@ -18,7 +24,7 @@ const ROOT = new URL('../', import.meta.url).pathname;
 const DESIGNS = join(ROOT, 'gungen/designs');
 const DEADVOX_BASE = join(ROOT, 'packages/deadvox/src/content/base');
 const RECIPE = loadExportRecipe();
-const EXPORTED = RECIPE.map((row) => ({ id: row.id, source: row.source, ...row.generate() }));
+const EXPORTED = RECIPE.map((row) => ({ id: row.id, source: row.source, voxel: row.voxel, ...row.generate() }));
 const loadExports = () =>
   readdirSync(DESIGNS)
     .filter((file) => file.endsWith('.json') && !file.startsWith('look-'))
@@ -120,6 +126,10 @@ describe('gungen exports satisfy deadvox model validation', () => {
     );
   });
 
+  it('voxelizes every recipe model on its row class', () => {
+    EXPORTED.forEach(assertVoxelized);
+  });
+
   it('credits every recipe export in the asset manifest', () => {
     assertRecipeCredits(RECIPE, JSON.parse(readFileSync(join(DEADVOX_BASE, 'assets/manifest.json'), 'utf8')));
   });
@@ -128,6 +138,22 @@ describe('gungen exports satisfy deadvox model validation', () => {
     const ids = new Set(RECIPE.map(({ id }) => id));
     for (const file of readdirSync(join(DEADVOX_BASE, 'gungen')).filter((entry) => entry.endsWith('.model.json'))) {
       assert.ok(ids.has(file.slice(0, -'.model.json'.length)), `${file}: orphaned export`);
+    }
+  });
+
+  // A fitted muzzle attachment is an item the player can remove and refit, so its host must certify it.
+  it('certifies every fitted muzzle attachment on the host it is mounted at', () => {
+    const fitted = EXPORTED.flatMap(({ modelEntry }) =>
+      (modelEntry.gun?.attachments ?? [])
+        .filter(({ mount }) => mount === 'muzzle')
+        .map((attachment) => ({ model: modelEntry, attachment })),
+    );
+    assert.ok(fitted.length > 0);
+    for (const { model, attachment } of fitted) {
+      assert.ok(
+        model.gun.compatibility?.[attachment.mountedAt]?.includes(attachment.id),
+        `${model.id}: ${attachment.id} is not certified on ${attachment.mountedAt}`,
+      );
     }
   });
 

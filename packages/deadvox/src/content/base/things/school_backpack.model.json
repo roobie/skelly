@@ -5,7 +5,7 @@
     "school_backpack": {
       "node": "school_backpack:bag",
       "massKg": 0.6,
-      "centreOfMass": [0, 0.22388789538589104, -0.003683382110621972]
+      "centreOfMass": [0, 0.2249778538353131, -0.003026978055164083]
     }
   },
   "grip": { "at": [0, 0.48, 0], "turn": [0, 0, -90] },

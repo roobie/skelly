@@ -1,12 +1,44 @@
 import { describe, expect, it } from 'vitest';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
-import { HANDLING, Inventory } from '../src/core/inventory.ts';
+import { handlingWeights, Inventory } from '../src/core/inventory.ts';
 import { PILE_GRID } from '../src/core/inventoryScale.ts';
 import { conditionWord, fitsAt, weightOf } from '../src/core/items.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();
+const HANDLING = handlingWeights(registry);
+
+/**
+ * The base registry with the footprints the slot expectations below follow from declared here, so retuning base
+ * content sizes cannot move them.
+ */
+const declared = (() => {
+  const withGrid = (id: string, grids: readonly [number, number][]) => {
+    const container = registry.items.get(id)!.container!;
+    return {
+      container: {
+        ...container,
+        pockets: container.pockets.map((pocket, index) => (grids[index] ? { ...pocket, grid: grids[index] } : pocket)),
+      },
+    };
+  };
+  const overrides = new Map<string, object>([
+    ['rag', { size: [1, 1], stack: 6 }],
+    ['canned_beans', { size: [1, 2] }],
+    ['canned_soup', { size: [1, 2] }],
+    ['kabar', { size: [1, 3] }],
+    ['hoodie', withGrid('hoodie', [[3, 2]])],
+    ['jeans', withGrid('jeans', [[1, 2]])],
+    ['school_backpack', withGrid('school_backpack', [[5, 6]])],
+    ['water_bottle', { size: [1, 3] }],
+    ['machete', { size: [1, 6] }],
+  ]);
+  return {
+    ...registry,
+    items: new Map([...registry.items].map(([id, def]) => [id, { ...def, ...overrides.get(id) }])),
+  } as typeof registry;
+})();
 
 /** A player in jeans, a hoodie and a school backpack, standing by an empty floor. */
 const dressed = (content = registry) => {
@@ -38,7 +70,7 @@ const onFloor = (inv: Inventory, type: string, count = 1, condition = 1) => {
 
 describe('grid placement', () => {
   it('places in free spots, swaps equal footprints, and refuses placements beyond grid bounds', () => {
-    const { inv, hoodie } = dressed();
+    const { inv, hoodie } = dressed(declared);
     const beans = onFloor(inv, 'canned_beans');
     const pocket = { kind: 'pocket', owner: hoodie, pocket: 0 } as const;
     expect(inv.move(beans, pocket)).toMatchObject({ ok: true, at: { x: 0, y: 0, rotated: false } });
@@ -55,7 +87,7 @@ describe('grid placement', () => {
   });
 
   it('rotates an item to fit, and refuses one too big either way', () => {
-    const { inv, hoodie, jeans } = dressed();
+    const { inv, hoodie, jeans } = dressed(declared);
     const knife = onFloor(inv, 'kabar');
     expect(inv.plan(knife, { kind: 'pocket', owner: jeans, pocket: 0 })).toEqual({
       ok: false,
@@ -68,14 +100,14 @@ describe('grid placement', () => {
   });
 
   it('checks cells against every item in the grid', () => {
-    const { inv, backpack } = dressed();
+    const { inv, backpack } = dressed(declared);
     const water = onFloor(inv, 'water_bottle');
     inv.move(water, { kind: 'pocket', owner: backpack, pocket: 0, at: { x: 1, y: 1, rotated: false } });
     const grid = { size: inv.pocketGrid(backpack, 0), placed: backpack.pockets![0]! };
     const bat = inv.create('machete');
-    expect(fitsAt(registry, grid, bat, { x: 1, y: 0, rotated: false })).toBe(false);
-    expect(fitsAt(registry, grid, bat, { x: 0, y: 0, rotated: false })).toBe(true);
-    expect(fitsAt(registry, grid, bat, { x: 0, y: 0, rotated: true })).toBe(false);
+    expect(fitsAt(declared, grid, bat, { x: 1, y: 0, rotated: false })).toBe(false);
+    expect(fitsAt(declared, grid, bat, { x: 0, y: 0, rotated: false })).toBe(true);
+    expect(fitsAt(declared, grid, bat, { x: 0, y: 0, rotated: true })).toBe(false);
   });
 
   it('lets an item move within its own grid', () => {
@@ -244,7 +276,7 @@ describe('stacking', () => {
   });
 
   it("doesn't stack items that differ", () => {
-    const { inv, hoodie } = dressed();
+    const { inv, hoodie } = dressed(declared);
     const pocket = { kind: 'pocket', owner: hoodie, pocket: 0 } as const;
     const fresh = onFloor(inv, 'rag', 1, 1);
     const dirty = onFloor(inv, 'rag', 1, 0.4);

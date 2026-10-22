@@ -43,6 +43,7 @@ local digits(prefix, count) = [one(prefix + '.' + i, 'Digit' + i) for i in std.r
     one('inventory.search', 'KeyS'),
     one('inventory.cycle-target', 'KeyC'),
     one('inventory.put-target', 'KeyP'),
+    one('inventory.find', 'KeyF'),
     one('inventory.hands', 'KeyW'),
     one('inventory.wear', 'KeyY'),
     one('inventory.drop', 'KeyD'),

@@ -1,6 +1,12 @@
 {
   "ui": [
     {
+      "audioVolumes": {
+        "body": 0.80000000000000004,
+        "master": 0.80000000000000004,
+        "ui": 0.80000000000000004,
+        "world": 0.80000000000000004
+      },
       "doorCloseBlockedMessages": {
         "other": "Something's in the way",
         "player": "You're in the way"
