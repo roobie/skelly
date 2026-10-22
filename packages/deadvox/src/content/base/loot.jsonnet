@@ -181,6 +181,7 @@ local pills(weight, least, parts, of) =
         item('screwdriver', 1),
         item('duct_tape', 1),
         item('matches', 1),
+        item('road_flare', 1),
       ],
     },
     {
@@ -201,6 +202,7 @@ local pills(weight, least, parts, of) =
         table('building_materials', 3),
         table('building_parts', 4),
         table('junk', 2),
+        item('road_flare', 1, count=[1, 2]),
         nothing(2),
       ],
     },
