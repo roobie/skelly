@@ -136,6 +136,8 @@ const INPUT_ACTIONS: readonly Action[] = [
   row('inventory.previous', 'Select previous item', ['inventory'], 'press', { repeat: true }),
   row('inventory.next', 'Select next item', ['inventory'], 'press', { repeat: true }),
   row('inventory.search', 'Search next container', ['inventory']),
+  row('inventory.cycle-target', 'Choose the next container to put into', ['inventory']),
+  row('inventory.put-target', 'Put selected item into the chosen container', ['inventory']),
   row('inventory.find', 'Find items by name or keyword', ['inventory']),
   row('inventory.hands', 'Wield selected item', ['inventory']),
   row('inventory.wear', 'Wear or remove', ['inventory']),
