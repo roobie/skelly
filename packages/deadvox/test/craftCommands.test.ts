@@ -28,8 +28,12 @@ const stockFor = (recipeId: string): [string, number][] => {
     alternatives[0]!.item,
     alternatives[0]!.count,
   ]);
+  const required = Object.entries(recipe.qualities);
+  if (required.length === 0) {
+    throw new Error('the recipe demands no tool quality, so no tool can be derived');
+  }
   const toolType = [...registry.items.values()].find(({ tool }) =>
-    Object.entries(recipe.qualities).every(([quality, level]) => (tool?.qualities[quality] ?? 0) >= level),
+    required.every(([quality, level]) => (tool?.qualities[quality] ?? 0) >= level),
   );
   if (toolType === undefined) {
     throw new Error('no authored tool provides the recipe qualities');
@@ -37,7 +41,8 @@ const stockFor = (recipeId: string): [string, number][] => {
   return [...stock, [toolType.id, 1]];
 };
 // The recipe's three component types in order, then the tool type that provides its qualities.
-const [OTHER, LAST, TOOL] = ((stock) => [stock[0]![0], stock[2]![0], stock[3]![0]] as const)(stockFor(CRAFT));
+const [OTHER, LAST, TOOL] = ((stock) => [stock[0]![0], stock.at(-2)![0], stock.at(-1)![0]] as const)(stockFor(CRAFT));
+const REPAIR = 'repair_crowbar';
 const make = (handedness?: HandSide) => {
   const character = new Character(registry, handedness ? { handedness } : {});
   const inventory = new Inventory(registry, undefined, undefined, character);
@@ -55,6 +60,16 @@ const make = (handedness?: HandSide) => {
   return { inventory, character, queue, sim, commands, position, reach };
 };
 const workOf = (r: ReturnType<typeof make>) => r.inventory.hands.right!.work!;
+// The repair target is the recipe's own result, damaged, beside the pile stocked for the repair.
+const stockRepair = (r: ReturnType<typeof make>) => {
+  const target = r.inventory.create(registry.recipes.get(REPAIR)!.result.item, 1, 0.5);
+  for (const item of [target, ...stockFor(REPAIR).map(([type, count]) => r.inventory.create(type, count))]) {
+    if (!r.inventory.add(item, { kind: 'pile', pos: [0, 0, 0] })) {
+      throw new Error('repair fixture item did not fit');
+    }
+  }
+  return target;
+};
 
 describe('live craft commands', () => {
   it('awards the authored recipe minutes as crafting practice', () => {
@@ -82,20 +97,10 @@ describe('live craft commands', () => {
   it('starts repair in the shared craft owner using the target and live skill-scaled effect', () => {
     const r = make();
     r.character.awardPractice('crafting', practiceForNextLevel(0), SKILL_LEVEL_LEGENDARY);
-    const target = r.inventory.create('crowbar', 1, 0.5);
-    for (const item of [
-      target,
-      r.inventory.create('scrap_metal'),
-      r.inventory.create('duct_tape'),
-      r.inventory.create('repair_kit'),
-    ]) {
-      if (!r.inventory.add(item, { kind: 'pile', pos: [0, 0, 0] })) {
-        throw new Error('repair fixture item did not fit');
-      }
-    }
-    expect(r.commands.start('repair_crowbar')).toBeUndefined();
+    const target = stockRepair(r);
+    expect(r.commands.start(REPAIR)).toBeUndefined();
     const work = workOf(r);
-    const effect = registry.recipes.get('repair_crowbar')!.repair!;
+    const effect = registry.recipes.get(REPAIR)!.repair!;
     expect(work.repairTargetUid).toBe(target.uid);
     expect(work.repairAmount).toBe(effect.amount + effect.perSkill * r.character.skills[effect.skill]!);
     expect(r.sim.actions.job?.jobType).toBe('craft');
@@ -103,18 +108,8 @@ describe('live craft commands', () => {
 
   it('a finished repair puts nothing down, so it completes with no ground nearby', () => {
     const r = make();
-    const target = r.inventory.create('crowbar', 1, 0.5);
-    for (const item of [
-      target,
-      r.inventory.create('scrap_metal'),
-      r.inventory.create('duct_tape'),
-      r.inventory.create('repair_kit'),
-    ]) {
-      if (!r.inventory.add(item, { kind: 'pile', pos: [0, 0, 0] })) {
-        throw new Error('repair fixture item did not fit');
-      }
-    }
-    expect(r.commands.start('repair_crowbar')).toBeUndefined();
+    const target = stockRepair(r);
+    expect(r.commands.start(REPAIR)).toBeUndefined();
     const work = r.inventory.hands.right!;
     r.inventory.landing = () => undefined;
     // The long action calls the owner's finish when its time is up; waiting out the repair adds no coverage.
@@ -359,14 +354,14 @@ describe('live craft commands', () => {
     const r = make();
     const radio = r.inventory.create('portable_radio');
     expect(r.inventory.add(radio, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    const before = [...r.inventory.items()].map(({ item }) => item.type);
     expect(r.commands.act(radio.uid, 'disassemble')).toBeUndefined();
     const work = r.inventory.hands.right!;
     r.sim.actions.stop();
     expect(r.commands.act(work.uid, 'apart')).toBeUndefined();
     expect(r.inventory.itemByUid(radio.uid)).toBe(radio);
     expect(radio.work).toBeUndefined();
-    expect([...r.inventory.items()].map(({ item }) => item.type)).not.toContain('scrap_metal');
-    expect([...r.inventory.items()].map(({ item }) => item.type)).not.toContain('aa_battery');
+    expect([...r.inventory.items()].map(({ item }) => item.type)).toEqual(before);
   });
   it('Take apart refuses a work UID outside reach and retains its owned input tree', () => {
     const r = make();
