@@ -7,6 +7,7 @@
       },
       "color": "#d8d2bd",
       "id": "medical_folding_screen",
+      "material": "wood",
       "name": "Folding screen",
       "shape": [
         {
@@ -28,6 +29,7 @@
       },
       "color": "#71828a",
       "id": "medical_examination_couch",
+      "material": "wood",
       "name": "Examination couch",
       "shape": [
         {
@@ -61,6 +63,7 @@
       },
       "color": "#7f8987",
       "id": "medical_steam_sterilizer",
+      "material": "wood",
       "name": "Steam sterilizer",
       "shape": [
         {
@@ -94,6 +97,7 @@
         ]
       },
       "id": "medical_card_file",
+      "material": "steel",
       "name": "Card-file cabinet",
       "size": [1, 2, 1]
     },
@@ -104,6 +108,7 @@
       },
       "color": "#66706c",
       "id": "medical_bike_rack",
+      "material": "wood",
       "name": "Bike rack",
       "shape": [
         {
@@ -133,6 +138,7 @@
       },
       "color": "#657069",
       "id": "medical_bin_enclosure",
+      "material": "wood",
       "name": "Bin enclosure",
       "shape": [
         {

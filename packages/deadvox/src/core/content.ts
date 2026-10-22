@@ -866,18 +866,24 @@ const checkMilitaryLoot = (registry: Registry, report: Report) => {
   }
 };
 
+const checkMaterial = (registry: Registry, furniture: FurnitureDef, report: Report) => {
+  const material = registry.furnitureMaterials.get(furniture.material);
+  if (!material) {
+    report('furniture', furniture.id, '.material', `no furniture material "${furniture.material}"`);
+  } else if (furniture.door && !material.methods) {
+    report('furniture', furniture.id, '.material', `door material "${material.id}" must list its forcing methods`);
+  }
+};
+
 const checkDoorForcing = (registry: Registry, furniture: FurnitureDef, report: Report) => {
   const { door } = furniture;
   if (!door) {
     return;
   }
-  const material = registry.doorMaterials.get(door.material);
-  if (!material) {
-    report('furniture', furniture.id, '.door.material', `no door material "${door.material}"`);
-  }
+  const material = registry.furnitureMaterials.get(furniture.material);
   for (const [id, method] of Object.entries(door.methods)) {
     const path = `.door.methods.${id}`;
-    if (material && !material.methods.includes(id)) {
+    if (material?.methods && !material.methods.includes(id)) {
       report('furniture', furniture.id, path, `material "${material.id}" does not admit method "${id}"`);
     }
     if (!registry.skills.has(method.skill)) {
@@ -934,6 +940,7 @@ const checkFurniture = (registry: Registry, report: Report) => {
     });
     checkDoorOpenNoise(registry, furniture, report);
     checkSearchNoise(registry, furniture, report);
+    checkMaterial(registry, furniture, report);
     checkDoorForcing(registry, furniture, report);
   }
 };

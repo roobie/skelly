@@ -21,7 +21,7 @@ import {
 import { DOOR_ACTION, registerDoorAction } from '../src/game/doorAction.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { fixtureBreach } from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterialSource } from './economyFixtures.ts';
 
 const registry = baseRegistry();
 
@@ -269,6 +269,7 @@ describe('furniture', () => {
       size: [1, 2, 1] as [number, number, number],
       color: '#123456',
       breach: fixtureBreach(),
+      material: FIXTURE_MATERIAL,
       shape: [
         { position: [0.1, 0, 0.1], size: [0.3, 0.5, 0.3] },
         { position: [0.6, 0.5, 0.1], size: [0.3, 0.5, 0.3] },
@@ -276,6 +277,7 @@ describe('furniture', () => {
       solidFill: 0.01,
     };
     const { registry: fixtureRegistry, issues } = buildRegistry([
+      fixtureMaterialSource(),
       { source: 'furniture-render-fixture.json', data: { furniture: [fixture] } },
     ]);
     expect(issues).toEqual([]);
@@ -300,11 +302,13 @@ describe('furniture', () => {
       size: [1, 1, 1],
       color: '#99794c',
       breach: fixtureBreach(),
+      material: FIXTURE_MATERIAL,
       mount: 'wall',
       solid: false,
       shape: [{ position: [0, 0, 0.875], size: [1, 1, 0.125] }],
     };
     const { registry: fixtureRegistry, issues } = buildRegistry([
+      fixtureMaterialSource(),
       { source: 'plaque-render-fixture.json', data: { furniture: [fixture] } },
     ]);
     expect(issues).toEqual([]);
@@ -478,11 +482,13 @@ describe('furniture', () => {
       size: [4, 2, 2],
       color: '#554f43',
       breach: fixtureBreach(),
+      material: FIXTURE_MATERIAL,
       solid: false,
       container: { pockets: [{ grid: [6, 4], handlingSimSeconds: 1.2 }] },
       shape: [{ position: [0, 0, 0], size: [4, 0.5, 2] }],
     };
     const { registry: fixtureRegistry, issues } = buildRegistry([
+      fixtureMaterialSource(),
       { source: 'body-fixture.json', data: { furniture: [fixture] } },
     ]);
     expect(issues).toEqual([]);

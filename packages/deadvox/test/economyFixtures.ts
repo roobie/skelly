@@ -8,6 +8,15 @@ export const fixtureEconomy = (): ItemEconomy => ({
 export const fixtureLootContext = (): LootContext => ({ usage: ['Residential'], tier: 'Tier1' });
 /** A breach for fixture furniture whose strength no test reads; content needs one on every piece. */
 export const fixtureBreach = () => ({ minimumStrength: 1, durability: 1 });
+/** A material for fixture furniture whose damage look no test reads; content needs one on every piece. */
+export const FIXTURE_MATERIAL = 'fixture_material';
+/** The material table entry `FIXTURE_MATERIAL` names, for a fixture registry built without base content. */
+export const fixtureMaterials = () => [{ id: FIXTURE_MATERIAL, methods: [] }];
+/** A content file holding only `fixtureMaterials`, to go first so a fixture that authors its own overrides it. */
+export const fixtureMaterialSource = (): ContentSource => ({
+  source: 'fixture-materials.json',
+  data: { furnitureMaterials: fixtureMaterials() },
+});
 
 export const fixtureLootPoint = (
   supply: LootSpawnPoint['supply'],
@@ -36,7 +45,7 @@ const fixtureEntry = (entry: unknown, section: string): unknown => {
     return { lootContext: fixtureLootContext(), ...entry };
   }
   if (section === 'furniture') {
-    return { breach: fixtureBreach(), ...entry };
+    return { breach: fixtureBreach(), material: FIXTURE_MATERIAL, ...entry };
   }
   const { buildings } = entry;
   return {
@@ -54,8 +63,9 @@ const fixtureEntry = (entry: unknown, section: string): unknown => {
 
 /** Admission tests bypass this builder so missing metadata cannot be concealed. */
 export const buildFixtureRegistry = (sources: readonly ContentSource[]) =>
-  buildRegistry(
-    sources.map((source) => {
+  buildRegistry([
+    fixtureMaterialSource(),
+    ...sources.map((source) => {
       if (!object(source.data)) {
         return source;
       }
@@ -68,4 +78,4 @@ export const buildFixtureRegistry = (sources: readonly ContentSource[]) =>
       }
       return { ...source, data };
     }),
-  );
+  ]);

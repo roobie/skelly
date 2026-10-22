@@ -45,12 +45,14 @@ const content = [
     source: 'inventory-scroll-fixture',
     data: {
       inventory: [{ ...baseInventoryRow, containerMaxWidthCells: 5 }],
+      furnitureMaterials: [{ id: 'scroll_material' }],
       furniture: [
         {
           id: 'scroll_rack',
           name: 'Scroll rack',
           size: [1, 2, 1],
           color: '#494b4e',
+          material: 'scroll_material',
           breach: { minimumStrength: 1, durability: 1 },
           container: { pockets: [{ name: 'Rack', grid: RACK_GRID, handlingSimSeconds: 0.1 }] },
         },
@@ -59,6 +61,7 @@ const content = [
           name: '_',
           size: [1, 1, 1],
           color: '#494b4e',
+          material: 'scroll_material',
           breach: { minimumStrength: 1, durability: 1 },
           container: { pockets: [{ grid: [1, 1], handlingSimSeconds: 0.1 }] },
         },

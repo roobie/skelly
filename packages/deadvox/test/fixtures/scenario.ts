@@ -3,7 +3,13 @@ import type { ContentSource } from '../../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../../src/core/contentIds.ts';
 import type { MapPoolDef, ScenarioDef, TemplateDef } from '../../src/core/schema.ts';
 import { gameHours } from '../../src/core/time.ts';
-import { fixtureBreach, fixtureEconomy, fixtureLootContext } from '../economyFixtures.ts';
+import {
+  FIXTURE_MATERIAL,
+  fixtureBreach,
+  fixtureEconomy,
+  fixtureLootContext,
+  fixtureMaterials,
+} from '../economyFixtures.ts';
 import { playerInventorySource } from './playerInventory.ts';
 
 export const fixtureScenario = (): ScenarioDef => ({
@@ -115,7 +121,7 @@ export const fixtureScenarioSources = (
     {
       source: 'scenario-fixture.json',
       data: {
-        doorMaterials: [{ id: 'wood', methods: [] }],
+        furnitureMaterials: fixtureMaterials(),
         blocks: [
           { id: 'fixture_solid', name: 'Fixture solid', solid: true, color: '#808080' },
           { id: 'asphalt', name: 'Fixture asphalt', solid: true, color: '#404040' },
@@ -158,6 +164,7 @@ export const fixtureScenarioSources = (
             solid: false,
             climbable: { speedMetresPerSimSecond: 1.5 },
             breach: fixtureBreach(),
+            material: FIXTURE_MATERIAL,
           },
           {
             id: 'fixture_hatch',
@@ -165,8 +172,8 @@ export const fixtureScenarioSources = (
             size: [2, 1, 3],
             color: '#808080',
             breach: fixtureBreach(),
+            material: FIXTURE_MATERIAL,
             door: {
-              material: 'wood',
               methods: {},
               handlingSimSeconds: 0.2,
               hatch: true,
@@ -179,6 +186,7 @@ export const fixtureScenarioSources = (
             size: [1, 1, 1],
             color: '#808080',
             breach: fixtureBreach(),
+            material: FIXTURE_MATERIAL,
             container: { pockets: [{ grid: [2, 2], handlingSimSeconds: 1 }] },
           },
         ],

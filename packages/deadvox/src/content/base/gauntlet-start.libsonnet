@@ -151,9 +151,9 @@ local stairs = std.filter(function(p) p.id == 'gauntlet_city_stairs_east', kits.
     fixedLoot: [{ at: [35, 17, 6], items: [{ item: 'revolver_357', condition: 0.7, key: true }] }],
   },
   furniture: [{
-    id: 'gauntlet_start_hatch', name: 'Roof hatch', size: [6, 1, 2], color: '#8d969a',
+    id: 'gauntlet_start_hatch', name: 'Roof hatch', size: [6, 1, 2], color: '#8d969a', material: 'steel',
     breach: { minimumStrength: 9, durability: 300 },
-    door: { material: 'steel', methods: {}, handlingSimSeconds: 0.8, hatch: true },
+    door: { methods: {}, handlingSimSeconds: 0.8, hatch: true },
   }],
   mapPieces: [
     piece('gauntlet_start_ground', [41, 1, 26], [ground], [structuralClaims(ground)]),

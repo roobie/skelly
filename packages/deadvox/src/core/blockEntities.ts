@@ -852,11 +852,11 @@ export class BlockEntities {
 
   /**
    * How many of its material's damage looks a piece has reached, 0 when none; a view redraws a piece when this
-   * changes, not on every blow (`FurnitureMeshes.doorLook`). Only door materials author steps.
+   * changes, not on every blow (`FurnitureMeshes.damageLook`).
    */
   wearOf(entity: BlockEntity): number {
-    const { door, breach } = this.defOf(entity);
-    const steps = door && this.registry.doorMaterials.get(door.material)?.damaged;
+    const { material, breach } = this.defOf(entity);
+    const steps = this.registry.furnitureMaterials.get(material)?.damaged;
     if (!(steps && entity.damage)) {
       return 0;
     }
