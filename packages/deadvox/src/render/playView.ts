@@ -1,6 +1,5 @@
 // Owned play presentation resources and read-only frame projections. Gameplay chooses
 // actions/effects and samples input before calling this renderer; nothing here advances a session.
-import { MATERIALS } from '@skelly/thing-core/materials';
 import type { AcidGlobState } from '../core/acidGlob.ts';
 import type { AcidPuddleState } from '../core/acidPuddle.ts';
 import type { BlockEntities } from '../core/blockEntities.ts';
@@ -240,7 +239,7 @@ export const createPlayView = (
   let cameraDaylightScale = 1;
   const lightPool = new LightPool(scene, held.warmUpTarget.scene);
   engine.shadows?.attachTorches(flashlight.lights);
-  scene.add(piles.group, furniture.group, playerMeshes.group, modelMaterialWarmUp(true, MATERIALS));
+  scene.add(piles.group, furniture.group, playerMeshes.group, modelMaterialWarmUp(true));
   const avatarStudy = createAvatarStudy(scene, config.debug, s, models);
   // Both actors implement the same presentation contract. Gameplay keeps synchronous
   // death/sever callbacks so an actor is removed before a subsequent sync/prune.

@@ -6,7 +6,6 @@
 // models need their own flame or self-lit material. An item
 // without a model (or whose model hasn't loaded) is a plain box sized from its cells.
 
-import { MATERIALS } from '@skelly/thing-core/materials';
 import {
   Box3,
   BoxGeometry,
@@ -264,7 +263,7 @@ export class HeldItems {
     const warmUp = new Mesh(this.geometry, this.material);
     warmUp.receiveShadow = true;
     warmUp.visible = false;
-    this.scene.add(warmUp, modelMaterialWarmUp(false, MATERIALS));
+    this.scene.add(warmUp, modelMaterialWarmUp(false));
   }
 
   /** Draws `object` in the hands' view, in view metres, for something held that this owner doesn't build. */
