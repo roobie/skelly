@@ -490,9 +490,9 @@
         "usage": []
       },
       "id": "shambler_torso",
+      "model": "shambler_torso",
       "name": "Severed shambler torso",
-      "size": [4, 6],
-      "weight": 12000
+      "size": [4, 6]
     },
     {
       "category": "misc",
@@ -501,9 +501,9 @@
         "usage": []
       },
       "id": "shambler_head",
+      "model": "shambler_head",
       "name": "Severed shambler head",
-      "size": [2, 3],
-      "weight": 5000
+      "size": [2, 3]
     },
     {
       "category": "misc",
@@ -512,9 +512,9 @@
         "usage": []
       },
       "id": "shambler_left_arm",
+      "model": "shambler_left_arm",
       "name": "Severed shambler left arm",
-      "size": [1, 7],
-      "weight": 2500
+      "size": [1, 7]
     },
     {
       "category": "misc",
@@ -523,9 +523,9 @@
         "usage": []
       },
       "id": "shambler_right_arm",
+      "model": "shambler_right_arm",
       "name": "Severed shambler right arm",
-      "size": [1, 7],
-      "weight": 2500
+      "size": [1, 7]
     },
     {
       "category": "misc",
@@ -534,9 +534,9 @@
         "usage": []
       },
       "id": "shambler_left_leg",
+      "model": "shambler_left_leg",
       "name": "Severed shambler left leg",
-      "size": [2, 9],
-      "weight": 4000
+      "size": [2, 9]
     },
     {
       "category": "misc",
@@ -545,9 +545,9 @@
         "usage": []
       },
       "id": "shambler_right_leg",
+      "model": "shambler_right_leg",
       "name": "Severed shambler right leg",
-      "size": [2, 9],
-      "weight": 4000
+      "size": [2, 9]
     }
   ]
 }

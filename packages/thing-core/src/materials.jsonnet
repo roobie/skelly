@@ -28,4 +28,12 @@ local hex(n) = [std.floor(n / 65536) / 255, (std.floor(n / 256) % 256) / 255, (n
   'glass-grey': material([0.608, 0.682, 0.698]) + { finish: { metallic: 0, roughness: 0.15 } },
   'steel-grey': material([0.541, 0.573, 0.592]) + { finish: { metallic: 0.55, roughness: 0.65 } },
   'paint-charcoal': material([0.216, 0.239, 0.255]),
+  'body-bone': material([0.85, 0.82, 0.72]),
+  'body-eye': material([0.06, 0.06, 0.06]),
+  'body-gore': material([0.32, 0.09, 0.06]),
+  'body-hair': material([0.11, 0.09, 0.08]),
+  'body-mouth': material([0.24, 0.05, 0.06]),
+  'body-skin-sickly': material([0.48, 0.54, 0.36]),
+  'cloth-pants-grey': material([0.24, 0.26, 0.3]),
+  'cloth-shirt-faded': material([0.4, 0.3, 0.28]),
 }

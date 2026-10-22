@@ -78,7 +78,13 @@
         "assets/models/antibiotics.glb",
         "assets/models/painkillers.glb",
         "assets/models/codeine.glb",
-        "assets/models/morphine.glb"
+        "assets/models/morphine.glb",
+        "assets/models/shambler_torso.glb",
+        "assets/models/shambler_head.glb",
+        "assets/models/shambler_left_arm.glb",
+        "assets/models/shambler_right_arm.glb",
+        "assets/models/shambler_left_leg.glb",
+        "assets/models/shambler_right_leg.glb"
       ],
       "licence": "CC0-1.0",
       "title": "Thing tool authored models",
