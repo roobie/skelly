@@ -1,7 +1,8 @@
 local shape = import 'furniture-shape.libsonnet';
+local breach = import 'furniture-breach.libsonnet';
 local lab = import 'gauntlet-lab.libsonnet';
 local metal = '#707b7e';
-shape.colliding({
+breach.breaking(shape.colliding({
   furniture: lab.furniture + [
     {
       id: 'gauntlet_look_exhaust',
@@ -89,4 +90,4 @@ shape.colliding({
     },
   ],
 
-})
+}))

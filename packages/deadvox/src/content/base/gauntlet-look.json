@@ -1,12 +1,12 @@
 {
   "furniture": [
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#68767b",
       "door": {
-        "breach": {
-          "minimumStrength": 9,
-          "toughness": 300
-        },
         "handlingSimSeconds": 1.2,
         "material": "steel",
         "methods": {}
@@ -42,6 +42,10 @@
       "size": [4, 5, 2]
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#62696c",
       "id": "gauntlet_lab_dead_lift",
       "name": "Freight lift",
@@ -71,6 +75,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#a5b8ba",
       "id": "gauntlet_lab_fixture",
       "name": "Strip light",
@@ -84,6 +92,10 @@
       "solid": false
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#555c61",
       "id": "gauntlet_lab_fixture_broken",
       "name": "Broken strip light",
@@ -101,6 +113,10 @@
       "solid": false
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#a0a6a0",
       "id": "gauntlet_look_archive",
       "name": "Prototype archive shelves",
@@ -130,6 +146,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#90b0b5",
       "id": "gauntlet_look_cold_store",
       "name": "Prototype cold specimen bank",
@@ -143,6 +163,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#c7cfc7",
       "id": "gauntlet_look_exam",
       "name": "Prototype examination slab",
@@ -160,6 +184,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#738981",
       "id": "gauntlet_look_pump",
       "name": "Prototype pressure plant",
@@ -181,6 +209,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#91a978",
       "id": "gauntlet_look_culture",
       "name": "Prototype culture apparatus",
@@ -206,6 +238,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#707b7e",
       "id": "gauntlet_look_exhaust",
       "name": "Service exhaust",
@@ -227,6 +263,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#707b7e",
       "id": "gauntlet_look_bollard",
       "name": "Utility bollard",
@@ -244,6 +284,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#707b7e",
       "id": "gauntlet_look_cabinet",
       "name": "Utility cabinet",
@@ -261,6 +305,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#707b7e",
       "id": "gauntlet_look_riser",
       "name": "Service duct riser",
@@ -282,6 +330,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#acb4b1",
       "id": "gauntlet_look_bench",
       "name": "Prototype workbench",
@@ -303,6 +355,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#7c868c",
       "id": "gauntlet_look_console",
       "name": "Prototype objective console",
@@ -324,6 +380,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#b29a61",
       "id": "gauntlet_look_containment_bay",
       "name": "Prototype containment bay",
@@ -353,6 +413,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#9b5550",
       "id": "gauntlet_look_breached_bay",
       "name": "Prototype breached containment bay",
@@ -382,6 +446,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#742e30",
       "id": "gauntlet_look_spill",
       "name": "Prototype spill mark — no active hazard",
@@ -399,6 +467,10 @@
       "solid": false
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#c94b3d",
       "id": "gauntlet_look_button",
       "name": "Prototype nuclear objective button",

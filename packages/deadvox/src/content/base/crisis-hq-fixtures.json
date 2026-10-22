@@ -1,6 +1,10 @@
 {
   "furniture": [
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#657063",
       "container": {
         "pockets": [
@@ -183,6 +187,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#77664c",
       "id": "hq_meeting_table",
       "name": "Meeting table",
@@ -212,6 +220,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#59634e",
       "id": "hq_generator",
       "name": "Generator",

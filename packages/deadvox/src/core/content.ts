@@ -881,15 +881,6 @@ const checkMilitaryLoot = (registry: Registry, report: Report) => {
   }
 };
 
-/** Every leaf yields to enough strength (`DESIGN.md`, "Base building and electricity"); a container's front is its body. */
-const checkDoorBreach = (furniture: FurnitureDef, report: Report) => {
-  const leaf = !(furniture.shape && furniture.container);
-  if (leaf !== (furniture.door?.breach !== undefined)) {
-    const message = leaf ? 'a door leaf needs a breach' : "a container's front has no breach";
-    report('furniture', furniture.id, '.door.breach', message);
-  }
-};
-
 const checkDoorForcing = (registry: Registry, furniture: FurnitureDef, report: Report) => {
   const { door } = furniture;
   if (!door) {
@@ -899,7 +890,6 @@ const checkDoorForcing = (registry: Registry, furniture: FurnitureDef, report: R
   if (!material) {
     report('furniture', furniture.id, '.door.material', `no door material "${door.material}"`);
   }
-  checkDoorBreach(furniture, report);
   for (const [id, method] of Object.entries(door.methods)) {
     const path = `.door.methods.${id}`;
     if (material && !material.methods.includes(id)) {

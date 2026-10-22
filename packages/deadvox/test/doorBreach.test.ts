@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
 import { BlockEntities, type BlockEntity } from '../src/core/blockEntities.ts';
-import { requireDayCycle } from '../src/core/content.ts';
+import { buildRegistry, requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
@@ -19,17 +19,18 @@ import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 
 const MINIMUM = 5;
-const TOUGHNESS = 20;
+/** A whole number of minimum blows, so the last of them brings the damage exactly to it. */
+const DURABILITY = 4 * MINIMUM;
 const fixtureDoor = (id: string, barredFrom?: 'front' | 'back') => ({
   id,
   name: 'Fixture door',
   size: [2, 4, 1],
   color: '#777777',
+  breach: { minimumStrength: MINIMUM, durability: DURABILITY },
   door: {
     material: 'breach_fixture',
     methods: {},
     handlingSimSeconds: 0.5,
-    breach: { minimumStrength: MINIMUM, toughness: TOUGHNESS },
     ...(barredFrom ? { barredFrom } : {}),
   },
 });
@@ -151,20 +152,23 @@ const strikeDoor = (strength: number) => {
   return { door, played };
 };
 
-it('builds the breach fixture without issues and rejects a leaf without a positive breach', () => {
+it('builds the breach fixture without issues and rejects any piece, door or not, without a positive breach', () => {
   expect(issues).toEqual([]);
-  const leaf = fixtureDoor('breach_rejected');
-  const rejected = (door: Record<string, unknown>) =>
-    buildFixtureRegistry([
+  const { breach, ...leaf } = fixtureDoor('breach_rejected');
+  const { door: _door, ...plain } = leaf;
+  // The fixture builder fills a missing breach, so this goes straight to content validation.
+  const rejected = (piece: Record<string, unknown>) =>
+    buildRegistry([
       {
         source: 'breach-rejected',
-        data: { doorMaterials: [{ id: 'breach_fixture', methods: [] }], furniture: [{ ...leaf, door }] },
+        data: { doorMaterials: [{ id: 'breach_fixture', methods: [] }], furniture: [piece] },
       },
     ]).issues.map(({ path }) => path);
-  const { breach: _breach, ...withoutBreach } = leaf.door;
-  expect(rejected(withoutBreach)).toEqual(['furniture[0].door.breach']);
-  expect(rejected({ ...leaf.door, breach: { minimumStrength: 0, toughness: TOUGHNESS } })).toEqual([
-    'furniture[0].door.breach.minimumStrength',
+  expect(rejected({ ...leaf, breach })).toEqual([]);
+  expect(rejected(leaf)).toEqual(['furniture[0].breach']);
+  expect(rejected(plain)).toEqual(['furniture[0].breach']);
+  expect(rejected({ ...plain, breach: { ...breach, minimumStrength: 0 } })).toEqual([
+    'furniture[0].breach.minimumStrength',
   ]);
 });
 
@@ -178,14 +182,16 @@ it('never damages a leaf with blows below its minimum strength, however many lan
   expect(solid(4, 1, 0)).toBe(true);
 });
 
-it('adds up blows at or above the minimum until the leaf breaks open with its lock gone', () => {
+it('breaks the leaf open with its lock gone on the blow that brings its damage to the durability, not one before', () => {
   const { entities, door } = doorway();
-  expect(entities.bash(door, MINIMUM)).toBe('damaged');
-  expect(door.damage).toBe(MINIMUM);
-  expect(blowsToBreak(entities, door, MINIMUM)).toBe(Math.ceil(TOUGHNESS / MINIMUM) - 1);
-  expect(door.broken).toBe(true);
-  expect(door.open).toBe(true);
-  expect(door.lock).toBeUndefined();
+  for (let blow = 1; blow < DURABILITY / MINIMUM; blow++) {
+    expect(entities.bash(door, MINIMUM)).toBe('damaged');
+  }
+  expect(door.damage).toBe(DURABILITY - MINIMUM);
+  expect(entities.conditionOf(door)).toBeGreaterThan(0);
+  expect(entities.bash(door, MINIMUM)).toBe('broken');
+  expect(door).toMatchObject({ broken: true, open: true, damage: undefined, lock: undefined });
+  expect(entities.conditionOf(door)).toBe(0);
   expect(entities.doorRefusal(door, 'close', [])).toBe("It's broken");
   expect(entities.bash(door, MINIMUM)).toBeUndefined();
 });

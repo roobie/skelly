@@ -1,7 +1,8 @@
 local shape = import 'furniture-shape.libsonnet';
+local breach = import 'furniture-breach.libsonnet';
 local box(position, size, color=null) = { position: position, size: size } + (if color == null then {} else { color: color });
 local lamp(x, color) = box([x, 3, 0], [0.15, 0.15, 0.06], color);
-shape.colliding({
+breach.breaking(shape.colliding({
   furniture: [
     {
       id: 'substation_switchgear', name: 'Switchgear cabinet', size: [2, 4, 2], color: '#7f8d89',
@@ -66,4 +67,4 @@ shape.colliding({
       ],
     },
   ],
-})
+}))

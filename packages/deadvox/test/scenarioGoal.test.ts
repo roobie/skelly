@@ -11,6 +11,7 @@ import { emptyDiscovery } from '../src/core/scenarioDiscovery.ts';
 import { ScenarioRun } from '../src/core/scenarioRun.ts';
 import { World } from '../src/core/world.ts';
 import { startupContent } from './baseRegistry.ts';
+import { fixtureBreach } from './economyFixtures.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
@@ -41,6 +42,7 @@ const own = buildRegistry([
           color: '#aaaaaa',
           scenarioGoal: true,
           readable: { title: 'Fixture lead', text: 'Fixture destination' },
+          breach: fixtureBreach(),
         },
       ],
     },

@@ -1,12 +1,12 @@
 {
   "furniture": [
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#8d969a",
       "door": {
-        "breach": {
-          "minimumStrength": 9,
-          "toughness": 300
-        },
         "handlingSimSeconds": 0.80000000000000004,
         "hatch": true,
         "material": "steel",

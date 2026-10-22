@@ -5,7 +5,7 @@ import type { SiteLayoutDef } from '../src/core/schema.ts';
 import type { SpawnMarker } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { fixtureEconomy, fixtureLootContext } from './economyFixtures.ts';
+import { fixtureBreach, fixtureEconomy, fixtureLootContext } from './economyFixtures.ts';
 
 const baseline = baseRegistry();
 const mutableSections = ['items', 'furniture', 'loot', 'zombies', 'templates', 'recipes', 'layouts'] as const;
@@ -257,6 +257,7 @@ describe('static reachability', () => {
       solid: false,
       container: { pockets: [{ grid: [1, 1], handlingSimSeconds: simSeconds(1) }] },
       workstation: { id: 'placed_bench', qualities: { sawing: 1 }, workFactorBonus: 0.2 },
+      breach: fixtureBreach(),
     });
     const shambler = registry.zombies.get('shambler')!;
     registry.zombies.set('shambler', { ...shambler, loot: 'wanderer' });

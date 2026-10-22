@@ -1,4 +1,5 @@
 local shape = import 'furniture-shape.libsonnet';
+local breach = import 'furniture-breach.libsonnet';
 local box(position, size) = { position: position, size: size };
 local pocket = { pockets: [{ grid: [6, 6], handlingSimSeconds: 1.2 }] };
 local basin = [
@@ -22,7 +23,7 @@ local toilet = [
   box([0.3, 0.5, 1.6], [1.4, 1.35, 0.35]),
   box([0.2, 1.85, 1.55], [1.6, 0.15, 0.45]),
 ];
-shape.colliding({
+breach.breaking(shape.colliding({
   furniture: [
     {
       id: 'police_desk_radio', name: 'Desk radio', size: [2, 1, 1], color: '#4c5950',
@@ -85,7 +86,8 @@ shape.colliding({
     },
     {
       id: 'station_coal_hatch', name: 'Coal delivery hatch', size: [2, 2, 1], color: '#596562',
-      door: { material: 'steel', methods: {}, handlingSimSeconds: 0.6, breach: { minimumStrength: 9, toughness: 300 } },
+      breach: { minimumStrength: 9, durability: 300 },
+      door: { material: 'steel', methods: {}, handlingSimSeconds: 0.6 },
     },
     {
       id: 'station_cooker', name: 'Cooker', size: [2, 2, 1], color: '#b7b9ae',
@@ -105,7 +107,8 @@ shape.colliding({
     },
     {
       id: 'station_emergency_door', name: 'Emergency exit door', size: [2, 4, 1], color: '#8c9b91',
-      door: { material: 'steel', methods: {}, handlingSimSeconds: 0.6, breach: { minimumStrength: 9, toughness: 300 } },
+      breach: { minimumStrength: 9, durability: 300 },
+      door: { material: 'steel', methods: {}, handlingSimSeconds: 0.6 },
     },
   ],
-})
+}))

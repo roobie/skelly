@@ -18,6 +18,7 @@ import {
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { startupContent } from './baseRegistry.ts';
+import { fixtureBreach } from './economyFixtures.ts';
 
 const content = startupContent();
 const authoredAssemblies = (registry: Registry): MapAssemblyDef[] =>
@@ -207,6 +208,7 @@ it('keeps police weapons and ammunition behind the armoury lock', () => {
       name: 'Sealed door',
       size: [2, 4, 1],
       color: '#444444',
+      breach: fixtureBreach(),
     }),
   };
   const sealed = {

@@ -12,6 +12,7 @@ import { simSeconds } from '../src/core/time.ts';
 import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
+import { fixtureBreach } from './economyFixtures.ts';
 
 type Pair = NonNullable<GunModelDef['compatibilityPairs']>[number];
 type Choice = Pair[number];
@@ -65,6 +66,7 @@ const makeCandidateFixture = (attachmentCount: number, includeOutOfReach = false
         pockets: [{ grid: [attachmentCount * 4 + 8, 4], handlingSimSeconds: simSeconds(0) }],
         wideReason: 'Test-owned grid for candidate discovery',
       },
+      breach: fixtureBreach(),
     };
     registry.furniture.set(cabinet.id, cabinet);
   });
