@@ -1,21 +1,18 @@
-local grains = import 'tools/jsonnet/lib/voxel-grains.libsonnet';
-local design(id, source) = { id: id, kind: 'design', source: 'gungen/designs/' + source + '.json' };
-// A gun is not a vehicle or furniture part and needs finer detail than an item, so it takes the gun grain; the parts
-// its design tags as fine detail, such as sights, take the detail grain.
-local voxelDesign(id, source) = design(id, source) { options: { voxelGrain: grains.gun, voxelDetailGrain: grains.detail } };
+// A gun and its magazine take the gun class, so a seated magazine matches the receiver's voxels; cartridges and
+// attachments are items.
+local voxel = import 'tools/jsonnet/lib/voxel-grains.libsonnet';
+local design(id, source) = { id: id, kind: 'design', source: 'gungen/designs/' + source + '.json', voxel: voxel.gun };
 local cartridge(id, source, component) = {
-  id: id, kind: 'cartridge', source: 'gungen/cartridges/' + source + '.json', options: { component: component },
+  id: id, kind: 'cartridge', source: 'gungen/cartridges/' + source + '.json', voxel: voxel.item, options: { component: component },
 };
-local attachment(source) = { id: std.strReplace(source, '-', '_'), kind: 'attachment', source: source };
+local attachment(source) = { id: std.strReplace(source, '-', '_'), kind: 'attachment', source: source, voxel: voxel.item };
 local magazine(id, source, calibre, appearanceProfile) = {
-  id: id, kind: 'magazine', source: source,
+  id: id, kind: 'magazine', source: source, voxel: voxel.gun,
   options: { cartridge: 'gungen/cartridges/' + calibre + '.json', appearanceProfile: appearanceProfile },
 };
-local voxelMagazine(id, source, calibre, appearanceProfile) =
-  magazine(id, source, calibre, appearanceProfile) { options+: { voxelGrain: grains.gun } };
 [
   design('rifle_assault', 'archetype-ar'),
-  voxelDesign('rifle_ak', 'archetype-ak-akm'),
+  design('rifle_ak', 'archetype-ak-akm'),
   design('shotgun_pump', 'archetype-pump-shotgun'),
   design('rifle_hunting', 'hunting-rifle'),
   design('revolver', 'archetype-revolver'),
@@ -44,5 +41,5 @@ local voxelMagazine(id, source, calibre, appearanceProfile) =
   attachment('tactical-flashlight-mount'),
   magazine('magazine_stanag_20', 'stanag-20', '5.56x45', 'ar'),
   magazine('magazine_stanag_30', 'stanag-30', '5.56x45', 'ar'),
-  voxelMagazine('magazine_akm_30', 'akm-30', '7.62x39', 'ak'),
+  magazine('magazine_akm_30', 'akm-30', '7.62x39', 'ak'),
 ]

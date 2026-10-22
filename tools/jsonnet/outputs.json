@@ -29,6 +29,10 @@
       "output": "gungen/src/gun/appearance.json"
     },
     {
+      "source": "gungen/src/gun/gunVoxel.jsonnet",
+      "output": "gungen/src/gun/gunVoxel.json"
+    },
+    {
       "source": "gungen/src/gun/physical.jsonnet",
       "output": "gungen/src/gun/physical.json"
     },

@@ -5,6 +5,7 @@ import type {
   GlbAssetIdentity,
   GlbExportError,
   GlbExportResult,
+  VoxelGrains,
 } from '@skelly/thing-export/exportTypes.ts';
 import { calibreSlug } from '../ammo/calibreSlug.ts';
 import type { MetallicCartridge } from '../ammo/cartridge.ts';
@@ -19,7 +20,7 @@ export interface MagazineExportInput {
   readonly params: Readonly<Record<string, string>>;
   readonly cartridge: MetallicCartridge;
   readonly appearance?: AppearanceContext;
-  readonly voxelGrain?: number;
+  readonly voxel?: VoxelGrains;
 }
 
 export type MagazineExportResult =
@@ -42,7 +43,7 @@ export const exportMagazineGlb = (input: MagazineExportInput): MagazineExportRes
     palette: GUN_PALETTE,
     ...(input.appearance ? { appearance: input.appearance } : {}),
     asset: input.asset,
-    ...(input.voxelGrain === undefined ? {} : { voxelGrain: input.voxelGrain }),
+    ...input.voxel,
   });
   if (!output.ok) {
     return output;
