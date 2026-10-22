@@ -364,6 +364,15 @@ it is never rebuilt from the seed; unchanged columns regenerate. The save is one
 compressed record. See `src/game/session.ts`, `rolledColumns`; `src/core/world.ts`,
 `World`; and `src/core/saveFormat.ts`, `encodeSave`.
 
+A piece cannot be removed while anything rests or stands on it, while a barricade stands
+in its doorway, or while it holds items, so removal never strands, floats or loses
+anything. Removing through a piece handle taken before a load throws, so the mistake
+shows at once instead of corrupting occupancy. The action that removes a piece first
+cancels the jobs that name it, so a save never refers to a missing piece. Pending
+deconstruction reserves its piece against use until the job is cancelled or finished, so
+paused work keeps its piece; under lockstep the reservation is ordinary simulation state,
+resolved in tick order. See `src/core/blockEntities.ts`, `BlockEntities.remove`.
+
 ### Block entities
 
 Stateful blocks keep their changing state separate from static block identity.
@@ -444,6 +453,12 @@ separate actions that come later. See `src/core/furnitureMove.ts`,
   their own tidying would punish an action the game wants them to take, and
   crushing shamblers with a stack would be a cheaper weapon than any the game
   balances.
+- **Nothing lifts from under a body.** Any body standing on a piece, the
+  player's or a shambler's, stops the player lifting it, as it stops removal.
+  Lifting and removal share one support query, so no second rule exists to
+  drift. A way to clear a body off a piece, such as a shove or the piece
+  tipping, is left to a later feature of its own. See
+  `src/core/furnitureMove.ts`, `supportRefusal`.
 - **What lies on top.** Loose items on a moved or falling piece go with it or
   beside it, and a container's pockets go with it, because moving a container
   is not searching it. When the items have nowhere to go the move is refused,

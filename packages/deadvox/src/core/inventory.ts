@@ -638,8 +638,9 @@ export class Inventory {
     if (!(this.reachable(source) && (this.reachable(destination) || this.dropLanding(target)))) {
       return refuse('Too far away');
     }
-    if (!(this.searched(source) && this.searched(destination))) {
-      return refuse('Search it first');
+    const access = this.accessRefusal(source, destination);
+    if (access) {
+      return refuse(access);
     }
     const placement = this.placement(item, target, count, from);
     const successfulPlacement = placement.ok ? placement : this.planSwap(item, target, count, from);
@@ -1068,6 +1069,16 @@ export class Inventory {
     return place?.kind !== 'furniture' || place.entity.searched;
   }
 
+  /** Why a move can't reach into the furniture at either end: it is unsearched, or reserved. */
+  private accessRefusal(source: Place | undefined, destination: Place | undefined): string | undefined {
+    if (!(this.searched(source) && this.searched(destination))) {
+      return 'Search it first';
+    }
+    const reserved = (place: Place | undefined) =>
+      place?.kind === 'furniture' ? this.entities.useRefusal(place.entity) : undefined;
+    return reserved(source) ?? reserved(destination);
+  }
+
   /** The shoulder carries a long gun only by its sling. */
   private shoulderRefusal(slot: WearSlot, item: Item): string | undefined {
     return slot === 'shoulder' && !slingFitted(item) ? 'It needs a sling to go on your shoulder' : undefined;
@@ -1186,7 +1197,7 @@ export class Inventory {
     if (!(this.reachable(sourcePlace) && this.reachable(destinationPlace))) {
       return false;
     }
-    if (!(this.searched(sourcePlace) && this.searched(destinationPlace))) {
+    if (this.accessRefusal(sourcePlace, destinationPlace)) {
       return false;
     }
     const { light } = defOf(this.registry, item.type);
