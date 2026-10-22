@@ -1,10 +1,11 @@
 // Samples closed triangle meshes onto a voxel grid and greedy-meshes the result. It knows nothing of assemblies or
 // glTF: `glb.ts` feeds it one part's solids (metres, part-local) and writes what comes back.
 //
-// A solid is sampled by casting a ray along z through each column of voxel centres, nudged off the centres by a fixed
-// fraction of a voxel so a ray never runs along a mesh edge. The spans between paired crossings are filled. No solid
-// vanishes: one too thin or small to hold a voxel centre keeps at least one voxel (see `fillSource`); solids that hold
-// one are not thickened. Open meshes (an odd crossing count) drop the unpaired crossing.
+// A solid is sampled by casting rays along each axis through the columns of voxel centres, nudged off the centres by a
+// fixed fraction of a voxel so a ray never runs along a mesh edge. The spans between paired crossings are filled, and a
+// span too short to hold a centre keeps the voxel at its middle (see `fillSource`). Open meshes (an odd crossing count)
+// drop the unpaired crossing. What the sources connect stays connected: bodies left apart are joined through the cells
+// the sources meet, to each other and to neighbouring parts (see `bridge`).
 
 export interface VoxelSource {
   /** Part-local metres, three numbers per vertex. */
@@ -147,23 +148,194 @@ const THIN_AXES: readonly Axes[] = [
 ];
 
 /**
- * A solid with a side shorter than the grain is thin: it is sampled along every axis so it keeps a voxel's thickness. A
- * solid wider than the grain can still hold no voxel centre, such as a cylinder whose chords fall between them, so one
- * that fills nothing is sampled as thin; one that no sample line crosses at all takes the voxel holding its centre.
+ * A solid is sampled along every axis, so any stretch of it thinner than the grain, such as a guard's bar or a tube's
+ * wall, keeps a voxel's thickness wherever a sample line crosses it; a solid's size says nothing about how thin its
+ * stretches are. One that no sample line crosses at all, a speck or an open sheet, takes the cells its surface meets,
+ * so it stays where it touches its neighbours.
  */
-const fillSource = (grid: Grid, source: VoxelSource, grain: number): void => {
-  const bounds = [0, 1, 2].map((axis) => {
-    const values = Array.from({ length: source.positions.length / 3 }, (_, v) => source.positions[v * 3 + axis]!);
-    return [Math.min(...values), Math.max(...values)] as const;
-  });
+const fillSource = (grid: Grid, source: VoxelSource, grain: number, surface: () => Grid): void => {
   const target = { grid, source, grain };
-  if (Math.min(...bounds.map(([min, max]) => max - min)) >= grain && fillAlong(target, THIN_AXES[0]!, false)) {
-    return;
-  }
   const crossed = THIN_AXES.map((axes) => fillAlong(target, axes, true));
   if (!crossed.includes(true)) {
-    const [x, y, z] = bounds.map(([min, max]) => checkedIndex((min + max) / 2, grain));
-    grid.set(keyOf(x!, y!, z!), source.group);
+    for (const [key, group] of surface()) {
+      grid.set(key, group);
+    }
+  }
+};
+
+type Vec = readonly [number, number, number];
+
+const cross = (a: Vec, b: Vec): Vec => [
+  a[1] * b[2] - a[2] * b[1],
+  a[2] * b[0] - a[0] * b[2],
+  a[0] * b[1] - a[1] * b[0],
+];
+
+const UNITS: readonly Vec[] = [
+  [1, 0, 0],
+  [0, 1, 0],
+  [0, 0, 1],
+];
+
+interface SeparatingAxis {
+  readonly axis: Vec;
+  /** The triangle's extent along the axis. */
+  readonly low: number;
+  readonly high: number;
+  /** A cell's half-extent along the axis. */
+  readonly reach: number;
+}
+
+/** The axes that can separate a triangle from a closed cell of half-width `half`: the units, its normal, unit × edge. */
+const separatingAxes = (triangle: readonly Vec[], half: number): SeparatingAxis[] => {
+  const edges = [0, 1, 2].map((i) => {
+    const [p, q] = [triangle[i]!, triangle[(i + 1) % 3]!];
+    return [q[0] - p[0], q[1] - p[1], q[2] - p[2]] as const;
+  });
+  const axes = [
+    ...UNITS,
+    cross(edges[0]!, edges[1]!),
+    ...UNITS.flatMap((unit) => edges.map((edge) => cross(unit, edge))),
+  ];
+  return axes.map((axis) => {
+    const projected = triangle.map((p) => p[0] * axis[0] + p[1] * axis[1] + p[2] * axis[2]);
+    return {
+      axis,
+      low: Math.min(...projected),
+      high: Math.max(...projected),
+      reach: half * (Math.abs(axis[0]) + Math.abs(axis[1]) + Math.abs(axis[2])) * (1 + 1e-9),
+    };
+  });
+};
+
+/** Whether the triangle whose separating axes these are meets the cell centred at `centre`. */
+const meetsCell = (axes: readonly SeparatingAxis[], centre: Vec): boolean => {
+  for (const { axis, low, high, reach } of axes) {
+    const at = centre[0] * axis[0] + centre[1] * axis[1] + centre[2] * axis[2];
+    if (low - at > reach || high - at < -reach) {
+      return false;
+    }
+  }
+  return true;
+};
+
+/** Every cell the source's surface meets, with the source's group. */
+const surfaceCells = (source: VoxelSource, grain: number): Grid => {
+  const reach: Grid = new Map();
+  const { positions, indices } = source;
+  const point = (vertex: number): Vec => [
+    positions[vertex * 3]!,
+    positions[vertex * 3 + 1]!,
+    positions[vertex * 3 + 2]!,
+  ];
+  for (let t = 0; t + 2 < indices.length; t += 3) {
+    const triangle = [point(indices[t]!), point(indices[t + 1]!), point(indices[t + 2]!)];
+    const axes = separatingAxes(triangle, grain / 2);
+    const [low, high] = [Math.min, Math.max].map((pick) =>
+      [0, 1, 2].map((axis) => checkedIndex(pick(...triangle.map((p) => p[axis]!)) / grain, 1)),
+    );
+    for (let x = low![0]! - 1; x <= high![0]! + 1; x += 1) {
+      for (let y = low![1]! - 1; y <= high![1]! + 1; y += 1) {
+        for (let z = low![2]! - 1; z <= high![2]! + 1; z += 1) {
+          if (meetsCell(axes, [(x + 0.5) * grain, (y + 0.5) * grain, (z + 0.5) * grain])) {
+            reach.set(keyOf(x, y, z), source.group);
+          }
+        }
+      }
+    }
+  }
+  return reach;
+};
+
+const NEIGHBOURS = [1, -1, RANGE, -RANGE, RANGE * RANGE, -RANGE * RANGE];
+
+/** The 6-connected bodies of the grid, largest first, as sets of keys. */
+const bodiesOf = (grid: Grid): Set<number>[] => {
+  const seen = new Set<number>();
+  const bodies: Set<number>[] = [];
+  for (const start of grid.keys()) {
+    if (seen.has(start)) {
+      continue;
+    }
+    const body = new Set([start]);
+    seen.add(start);
+    const stack = [start];
+    while (stack.length > 0) {
+      const key = stack.pop()!;
+      for (const step of NEIGHBOURS) {
+        const next = key + step;
+        if (grid.has(next) && !seen.has(next)) {
+          seen.add(next);
+          body.add(next);
+          stack.push(next);
+        }
+      }
+    }
+    bodies.push(body);
+  }
+  return bodies.sort((a, b) => b.size - a.size);
+};
+
+/**
+ * The shortest walk from the joined cells, through cells the sources meet, to a grid cell outside them: each cell's
+ * step back towards the joined cells, and the cell it ends on. Undefined when no walk reaches one.
+ */
+const walkOut = (
+  grid: Grid,
+  reach: Grid,
+  joined: ReadonlySet<number>,
+): { readonly from: ReadonlyMap<number, number>; readonly end: number } | undefined => {
+  const from = new Map<number, number>([...joined].map((key) => [key, key]));
+  const open = (cell: number): boolean => !from.has(cell) && (reach.has(cell) || grid.has(cell));
+  let frontier = [...joined];
+  while (frontier.length > 0) {
+    const next: number[] = [];
+    for (const key of frontier) {
+      for (const cell of NEIGHBOURS.map((step) => key + step).filter(open)) {
+        from.set(cell, key);
+        if (grid.has(cell)) {
+          return { from, end: cell };
+        }
+        next.push(cell);
+      }
+    }
+    frontier = next;
+  }
+  return undefined;
+};
+
+/**
+ * Joins the grid's bodies that the sources connect, to each other and to the neighbours' voxels in `anchor`: each pass
+ * walks out from what is joined through cells the sources meet, and the shortest walk that reaches another body is
+ * filled. When no walk reaches one, the largest body left starts a new joined set. Sources that do not meet stay apart.
+ */
+const bridge = (grid: Grid, reach: Grid, anchor: Grid): void => {
+  const bodies = bodiesOf(grid);
+  const bodyOf = new Map<number, number>();
+  bodies.forEach((body, index) => {
+    for (const key of body) {
+      bodyOf.set(key, index);
+    }
+  });
+  const joined = new Set(anchor.keys());
+  const merged = new Set<number>();
+  const join = (index: number): void => {
+    merged.add(index);
+    for (const key of bodies[index]!) {
+      joined.add(key);
+    }
+  };
+  while (merged.size < bodies.length) {
+    const walk = walkOut(grid, reach, joined);
+    if (walk === undefined) {
+      join(bodies.findIndex((_, index) => !merged.has(index)));
+      continue;
+    }
+    for (let cell = walk.from.get(walk.end)!; !joined.has(cell); cell = walk.from.get(cell)!) {
+      grid.set(cell, reach.get(cell)!);
+      joined.add(cell);
+    }
+    join(bodyOf.get(walk.end)!);
   }
 };
 
@@ -353,21 +525,40 @@ const shifted = (values: ArrayLike<number>, by: readonly number[], sign: 1 | -1)
 
 /**
  * Voxelizes the sources at `grain` metres, on a lattice anchored at `origin` (part-local metres, the part origin by
- * default) so a caller can put the voxels of parts placed at fractions of a voxel on one shared lattice. Empty input
+ * default) so a caller can put the voxels of parts placed at fractions of a voxel on one shared lattice. `neighbours`
+ * are the solids of other parts that may touch these (part-local metres): they are not drawn, but a piece of these
+ * sources that meets one is joined to its voxels, so a part that holds on through its neighbour stays on. Empty input
  * gives no groups.
  */
 export const voxelize = (
   sources: readonly VoxelSource[],
   grain: number,
   origin: readonly number[] = [0, 0, 0],
+  neighbours: readonly VoxelSource[] = [],
 ): Voxelized => {
   if (!(Number.isFinite(grain) && grain > 0)) {
     throw new Error(`Voxel grain must be a positive number of metres, got ${grain}`);
   }
+  const sample = (solids: readonly VoxelSource[], filled: Grid, met?: Grid): void => {
+    for (const source of solids) {
+      const local = { ...source, positions: shifted(source.positions, origin, -1) };
+      let surface: Grid | undefined;
+      const surfaceOf = (): Grid => {
+        surface ??= surfaceCells(local, grain);
+        return surface;
+      };
+      fillSource(filled, local, grain, surfaceOf);
+      for (const [key, group] of met ? surfaceOf() : []) {
+        met!.set(key, group);
+      }
+    }
+  };
   const grid: Grid = new Map();
-  for (const source of sources) {
-    fillSource(grid, { ...source, positions: shifted(source.positions, origin, -1) }, grain);
-  }
+  const reach: Grid = new Map();
+  sample(sources, grid, reach);
+  const anchor: Grid = new Map();
+  sample(neighbours, anchor);
+  bridge(grid, reach, anchor);
   if (grid.size === 0) {
     return { groups: new Map(), stats: { voxels: 0, faces: 0, quads: 0 } };
   }

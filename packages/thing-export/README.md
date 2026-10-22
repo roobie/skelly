@@ -82,10 +82,20 @@ solids. They feed simulation rather than the eye, and a box snapped outward to t
 lattice no longer fits the cargo spaces it was authored to fill, so a drawn surface may
 stand up to one voxel off them.
 
-No solid vanishes. One thinner than the grain keeps one voxel of thickness, and one that
-holds no voxel centre keeps the voxel at its middle, because glass, blades, sheet parts
-and small rounds are thin or small by design and losing them breaks the item; the cost is
-that they draw thicker or blockier than authored. See `src/voxelize.ts`, `fillSource`.
+No solid or stretch of a solid vanishes. Any stretch thinner than the grain, such as a
+whole sheet, a guard's bar or a tube's wall, keeps one voxel of thickness, and a solid that
+no sample line crosses keeps the cells its surface meets, because glass, blades, sheet
+parts and small rounds are thin or small by design and losing them breaks the item; the
+cost is that they draw thicker or blockier than authored. A solid's size says nothing about
+how thin its stretches are, so every solid is sampled along all three axes. See
+`src/voxelize.ts`, `fillSource`.
+
+A voxelized model keeps every part that connects to another part connected, because a
+model whose joining parts drop out reads as floating pieces, not as one object. Voxels
+touch only face to face, so pieces whose solids meet can still come out touching only at an
+edge or a corner, or a cell apart. Those pieces are joined through the cells their surfaces
+meet, inside a part and across to the parts beside it; solids that do not meet stay apart.
+See `src/voxelize.ts`, `bridge`, and `src/glb.ts`, `neighboursOf`.
 
 A voxelized model replaces the smooth one in place rather than shipping beside it: two
 files per model would need a selector and a second registration for no consumer that
