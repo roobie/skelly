@@ -299,7 +299,7 @@ breach.breaking(shape.colliding({
   }],
   items: [{
     id: 'gauntlet_police_armoury_key', name: 'Police armoury key', category: 'tool',
-    weight: 10, size: [1, 1], key: { lock: 'gauntlet_police_armoury' },
+    size: [1, 1], key: { lock: 'gauntlet_police_armoury' }, model: 'gauntlet_police_armoury_key',
     description: 'A small key stamped ARMOURY.',
     economy: { usage: ['Police'], tiers: ['Tier1'] },
   }],

@@ -1,8 +1,9 @@
 // What you hold, in first person (`DESIGN.md`, "Hands: what you see is what's there"):
 // the right hand, the left hand, or both for a two-handed item. Held items are drawn
 // after the world, in their own scene with the depth buffer cleared, so they never
-// clip into walls. The scene receives the world's sun shadow and local point lights;
-// burning fallback models still need their own flame or self-lit material. An item
+// clip into walls. The scene receives only the world's sun, its shadow and the sky's
+// ambient light, so no nearby lamp or fire lights a held item, and burning fallback
+// models need their own flame or self-lit material. An item
 // without a model (or whose model hasn't loaded) is a plain box sized from its cells.
 
 import {
@@ -68,6 +69,7 @@ import {
 import { sightedFirearmModel } from './firearmSight.ts';
 import { grabPose } from './grabPose.ts';
 import { handlingRotation } from './handlingTurn.ts';
+import { presentHeldDisplay } from './heldDisplay.ts';
 import { applyItemEmissive, disposeItemEmissiveMaterials } from './itemEmissive.ts';
 import { itemLook } from './itemLook.ts';
 import {
@@ -81,7 +83,12 @@ import {
 } from './magazineLoadPose.ts';
 import { ModelFlames } from './modelFlame.ts';
 import { type ComposedSlot, heldModelFrame, LENS, type ModelLibrary } from './models.ts';
-import { createFirstPersonArm, FIRST_PERSON_SHOULDER, placeFirstPersonSegment } from './playerFigure.ts';
+import {
+  createFirstPersonArm,
+  FIRST_PERSON_PALM,
+  FIRST_PERSON_SHOULDER,
+  placeFirstPersonSegment,
+} from './playerFigure.ts';
 import { rummageFrame, rummageGrip } from './rummagePose.ts';
 import { shellLoadPose } from './shellLoadPose.ts';
 import type { SkyTargets } from './sky.ts';
@@ -202,6 +209,8 @@ export class HeldItems {
   private readonly armLengths = new Map<Group, readonly [number, number]>();
   private readonly handBases = new Map<HandSide, Vec3>();
   private readonly heldByHand = new Map<HandSide, Object3D>();
+  /** The frame each hand's palm takes behind a held screen. */
+  private readonly displayPalms = new Map<HandSide, Object3D>();
   private readonly relativeCamera = new Quaternion();
   private opticWindowShape = '';
   private opticViewFrame: OpticLensFrame | undefined;
@@ -320,7 +329,9 @@ export class HeldItems {
       compass.update(main.rotation.y);
     }
     for (const [side, arm] of this.arms) {
-      this.updateArmChain(side, arm, this.revolverGripFrame(side, firearmPoses));
+      const revolver = this.revolverGripFrame(side, firearmPoses);
+      const displayPalm = revolver ? undefined : this.displayPalms.get(side);
+      this.updateArmChain(side, arm, revolver ?? displayPalm, displayPalm !== undefined);
     }
     this.view.updateMatrixWorld(true);
   }
@@ -1246,6 +1257,7 @@ export class HeldItems {
     this.armLengths.clear();
     this.handBases.clear();
     this.heldByHand.clear();
+    this.displayPalms.clear();
     const { hands } = this.inventory;
     this.syncHand('right', hands.right);
     this.syncHand('left', hands.left);
@@ -1342,7 +1354,7 @@ export class HeldItems {
     this.arms.clear();
   }
 
-  private updateArmChain(side: HandSide, arm: Group, gripFrame: Object3D | undefined): void {
+  private updateArmChain(side: HandSide, arm: Group, gripFrame: Object3D | undefined, behindScreen = false): void {
     const sleeve = arm.children[0] as Mesh;
     const forearm = arm.children[1] as Mesh;
     const palm = arm.children[2] as Mesh;
@@ -1350,7 +1362,14 @@ export class HeldItems {
     if (!(sleeve && forearm && palm && anchor)) {
       return;
     }
-    const wristWorld = anchor.getWorldPosition(new Vector3());
+    const palmWorld = anchor.getWorldPosition(new Vector3());
+    const wristWorld = palmWorld.clone();
+    if (gripFrame && behindScreen) {
+      // A palm on a screen's back takes the forearm at its own back face, so the forearm's
+      // end cannot reach past the palm into the screen.
+      const back = new Vector3(0, 0, -1).applyQuaternion(gripFrame.getWorldQuaternion(new Quaternion()));
+      wristWorld.addScaledVector(back, FIRST_PERSON_PALM[2] / 2);
+    }
     const baseShoulder = new Vector3(...FIRST_PERSON_SHOULDER[side]);
     const shoulderView =
       arm.parent === this.torso
@@ -1378,7 +1397,7 @@ export class HeldItems {
     const elbow = shoulder.clone().addScaledVector(axis, along).addScaledVector(bend, bendHeight);
     placeFirstPersonSegment(sleeve, shoulder, elbow, { width: sleeve.scale.x, depth: sleeve.scale.z });
     placeFirstPersonSegment(forearm, elbow, wrist, { width: forearm.scale.x, depth: forearm.scale.z });
-    palm.position.copy(wrist);
+    palm.position.copy(arm.worldToLocal(palmWorld));
     if (gripFrame) {
       palm.quaternion.copy(
         arm.getWorldQuaternion(new Quaternion()).invert().multiply(gripFrame.getWorldQuaternion(new Quaternion())),
@@ -1424,6 +1443,12 @@ export class HeldItems {
     const held = new Group();
     held.position.set(...heldAt);
     held.add(this.shape(item));
+    const model = def.heldDisplay === undefined ? undefined : this.inventory.registry.models.get(def.model!);
+    if (model?.display && this.models?.has(model.id)) {
+      const palm = presentHeldDisplay(held.children[0]!, model.display, heldAt);
+      held.add(palm);
+      this.displayPalms.set(side, palm);
+    }
     addShadowReceiver(this.view, held);
     this.shown.set(item.uid, held);
     this.heldByHand.set(side, held);
@@ -1450,13 +1475,23 @@ export class HeldItems {
 
   private shape(item: Item): Object3D {
     const def = defOf(this.inventory.registry, item.type);
-    if (def.heldDisplay === HELD_DISPLAY_KIND.compass) {
-      const compass = createCompass();
+    const look = itemLook(this.inventory.registry, item);
+    const model = look && this.models?.heldLook(look);
+    // Until its model loads, a held display shows the placeholder any item does.
+    if (def.heldDisplay === HELD_DISPLAY_KIND.compass && model) {
+      const definition = this.inventory.registry.models.get(def.model!);
+      if (!(definition?.display && definition.anchors?.needle_mount && definition.dial)) {
+        throw new Error(`Held compass ${item.type} needs a model with a display, a needle_mount anchor and a dial`);
+      }
+      const compass = createCompass({
+        root: model.root,
+        display: definition.display,
+        needleMount: definition.anchors.needle_mount,
+        dial: definition.dial,
+      });
       this.compasses.set(item.uid, compass);
       return compass.group;
     }
-    const look = itemLook(this.inventory.registry, item);
-    const model = look && this.models?.heldLook(look);
     if (model) {
       applyItemEmissive(model.root, item, def, this.inventory.registry.models.get(def.model!));
       this.flames.onModel(this.inventory.registry, item, model.root, heldModelFrame);

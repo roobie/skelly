@@ -2,16 +2,16 @@
   "items": [
     {
       "category": "tool",
-      "description": "An electronic compass with an illuminated heading display.",
+      "description": "A magnetic compass with a turning card.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "heldDisplay": "compass",
       "id": "compass",
+      "model": "compass",
       "name": "Compass",
-      "size": [1, 2],
-      "weight": 120
+      "size": [1, 2]
     },
     {
       "category": "tool",
@@ -588,9 +588,9 @@
         "radius": 2,
         "seenFrom": 10
       },
+      "model": "lighter",
       "name": "Lighter",
-      "size": [1, 1],
-      "weight": 20
+      "size": [1, 1]
     },
     {
       "category": "light",
@@ -603,9 +603,9 @@
         "capacity": 10,
         "perIgnition": 1
       },
+      "model": "matches",
       "name": "Box of matches",
-      "size": [1, 1],
-      "weight": 20
+      "size": [1, 1]
     }
   ],
   "meleeClasses": [

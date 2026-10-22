@@ -238,9 +238,9 @@
       "key": {
         "lock": "gauntlet_police_armoury"
       },
+      "model": "gauntlet_police_armoury_key",
       "name": "Police armoury key",
-      "size": [1, 1],
-      "weight": 10
+      "size": [1, 1]
     }
   ],
   "layouts": [

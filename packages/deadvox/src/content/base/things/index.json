@@ -1999,6 +1999,148 @@
     "roll": 0
   },
   {
+    "id": "compass",
+    "file": "assets/models/compass.glb",
+    "parts": {
+      "compass": {
+        "node": "compass:compass",
+        "massKg": 0.12,
+        "centreOfMass": [0, 0.005848954933302406, -0.000024035047361379754]
+      }
+    },
+    "grip": { "at": [0, 0.0045, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0,
+    "anchors": { "needle_mount": [0, 0.009999999999999998, 0] },
+    "display": { "at": [0, 0.009999999999999998, 0], "normal": [0, 1, 0], "up": [0, 0, -1], "size": [0.0456, 0.0456] }
+  },
+  {
+    "id": "lighter",
+    "file": "assets/models/lighter.glb",
+    "parts": {
+      "lighter": {
+        "node": "lighter:lighter",
+        "massKg": 0.02,
+        "centreOfMass": [0, 0.030088002775954543, -0.000014791489859822659]
+      }
+    },
+    "grip": { "at": [0, 0.0275, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "matches",
+    "file": "assets/models/matches.glb",
+    "parts": {
+      "matches": {
+        "node": "matches:matchbox",
+        "massKg": 0.02,
+        "centreOfMass": [0, 0.009603741618467523, 0.00019996058760300968]
+      }
+    },
+    "grip": { "at": [0, 0.0075, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "dad_cabin_key",
+    "file": "assets/models/dad_cabin_key.glb",
+    "parts": {
+      "dad_cabin_key": {
+        "node": "dad_cabin_key:key",
+        "massKg": 0.01,
+        "centreOfMass": [0.01858019090239605, 0.0021287794087121647, 0.0007393638027988529]
+      }
+    },
+    "grip": { "at": [0.031000000000000003, 0.0015, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "pharmacy_key",
+    "file": "assets/models/pharmacy_key.glb",
+    "parts": {
+      "pharmacy_key": {
+        "node": "pharmacy_key:key",
+        "massKg": 0.01,
+        "centreOfMass": [0.01981019164282712, 0.002057135902894956, 0.0008001642653183991]
+      }
+    },
+    "grip": { "at": [0.030500000000000003, 0.0015, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "camp_armoury_key",
+    "file": "assets/models/camp_armoury_key.glb",
+    "parts": {
+      "camp_armoury_key": {
+        "node": "camp_armoury_key:key",
+        "massKg": 0.01,
+        "centreOfMass": [0.01960271210069491, 0.002197052981961932, 0.000681423243021683]
+      }
+    },
+    "grip": { "at": [0.0355, 0.0015, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "camp_hq_safe_key",
+    "file": "assets/models/camp_hq_safe_key.glb",
+    "parts": {
+      "camp_hq_safe_key": {
+        "node": "camp_hq_safe_key:key",
+        "massKg": 0.01,
+        "centreOfMass": [0.021029245289178437, 0.001983833674424799, 0.0008623724074781385]
+      }
+    },
+    "grip": { "at": [0.030000000000000002, 0.0015, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "shed_key",
+    "file": "assets/models/shed_key.glb",
+    "parts": {
+      "shed_key": {
+        "node": "shed_key:key",
+        "massKg": 0.01,
+        "centreOfMass": [0.01858019090239605, 0.0021287794087121647, 0.0007393638027988529]
+      }
+    },
+    "grip": { "at": [0.031000000000000003, 0.0015, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "gauntlet_police_armoury_key",
+    "file": "assets/models/gauntlet_police_armoury_key.glb",
+    "parts": {
+      "gauntlet_police_armoury_key": {
+        "node": "gauntlet_police_armoury_key:key",
+        "massKg": 0.01,
+        "centreOfMass": [0.01960271210069491, 0.002197052981961932, 0.000681423243021683]
+      }
+    },
+    "grip": { "at": [0.0355, 0.0015, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "gauntlet_lab_entry_card",
+    "file": "assets/models/gauntlet_lab_entry_card.glb",
+    "parts": {
+      "gauntlet_lab_entry_card": {
+        "node": "gauntlet_lab_entry_card:keycard",
+        "massKg": 0.005,
+        "centreOfMass": [0, 0.0005071964895173086, 0]
+      }
+    },
+    "grip": { "at": [0, 0.0005, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
     "id": "tape_roll",
     "file": "assets/models/tape_roll.glb",
     "parts": {

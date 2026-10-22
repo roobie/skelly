@@ -348,7 +348,10 @@ async function resolveTrackableModule(
   if (PRESENTATION_ASSET_EXTENSIONS.has(extension)) {
     return;
   }
-  if (extension === '.json' && (relativePath.startsWith('src/config/') || relativePath.startsWith('mobgen/'))) {
+  if (
+    extension === '.json' &&
+    ['src/config/', 'mobgen/', 'thing-core/'].some((prefix) => relativePath.startsWith(prefix))
+  ) {
     return { file, relativePath };
   }
   if (!SOURCE_EXTENSIONS.has(extension)) {

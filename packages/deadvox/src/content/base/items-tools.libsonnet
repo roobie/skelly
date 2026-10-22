@@ -63,10 +63,10 @@ local items = [
     id: 'compass',
     name: 'Compass',
     category: 'tool',
-    weight: 120,
     size: [1, 2],
-    description: 'An electronic compass with an illuminated heading display.',
+    description: 'A magnetic compass with a turning card.',
     heldDisplay: 'compass',
+    model: 'compass',
   },
   {
     id: 'crowbar',
@@ -303,18 +303,18 @@ local items = [
     id: 'lighter',
     name: 'Lighter',
     category: 'light',
-    weight: 20,
     size: [1, 1],
     light: { radius: 2, seenFrom: 10, color: '#ffd28a', intensity: 0.7, fuelPerGameHour: 10 },
     igniter: { capacity: 100, perIgnition: 1 },
+    model: 'lighter',
   },
   {
     id: 'matches',
     name: 'Box of matches',
     category: 'light',
-    weight: 20,
     size: [1, 1],
     igniter: { capacity: 10, perIgnition: 1 },
+    model: 'matches',
   },
 ];
 

@@ -143,6 +143,7 @@ export const observationPlugin = {
       hand: session.throwCharge.hand,
     }),
     selectPrimaryAction,
+    nextTimeOfDay,
     ignitionTargetForHand,
     interactionTargetAt,
     useTarget,

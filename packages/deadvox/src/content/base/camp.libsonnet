@@ -38,11 +38,11 @@ local campWallRunCrouchHole = campWallRun + {
       "id": "camp_armoury_key",
       "name": "Military armoury key",
       "category": "tool",
-      "weight": 10,
       "size": [1, 1],
       "key": {
         "lock": "camp_armoury"
       },
+      "model": "camp_armoury_key",
       "description": "A key for the locked armoury container."
     },
     {
@@ -61,9 +61,9 @@ local campWallRunCrouchHole = campWallRun + {
       "id": "camp_hq_safe_key",
       "name": "HQ reserve key",
       "category": "tool",
-      "weight": 10,
       "size": [1, 1],
       "key": { "lock": "camp_hq_safe" },
+      "model": "camp_hq_safe_key",
       "description": "A key for the reserve safe in the officers' quarters."
     },
     {
