@@ -2,6 +2,8 @@ local cip = import '7.62x51.json';
 cip + {
   id: '308-winchester',
   designation: '.308 Winchester',
+  // A case about 12 mm across needs the fine grain to keep its shoulder, neck and bullet; the item grain draws blocks.
+  voxelGrain: 0.002,
   aliases: [{ name: '308 Win.', cite: { source: 'cip308', locator: 'Tab. I, sheet title' } }],
   relatedTo: [],
   overallLength: cip.overallLength + {

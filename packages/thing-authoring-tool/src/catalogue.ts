@@ -101,6 +101,8 @@ const ItemSchema = strictObject({
   anchors: optional(record(pipe(string(), regex(/^[a-z0-9_]+$/)), strictObject(SolidPointSchema))),
   /** The finish slot that glows while lit; its material must be the only one that slot's finish names in the item. */
   glow: optional(name),
+  /** The item's own voxel grain in metres, in place of its class grain; the export recipe resolves it. */
+  voxelGrain: optional(positive),
 });
 const CatalogueSchema = strictObject({
   units: strictObject({ metresPerUnit: positive, grid: positive, bevel: pipe(number(), finite(), minValue(0)) }),

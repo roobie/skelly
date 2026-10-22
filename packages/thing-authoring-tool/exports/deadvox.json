@@ -272,7 +272,7 @@
     "source": "nails",
     "voxel": {
       "detailGrain": 0.002,
-      "grain": 0.01
+      "grain": 0.002
     }
   },
   {
@@ -476,7 +476,7 @@
     "source": "candle",
     "voxel": {
       "detailGrain": 0.002,
-      "grain": 0.01
+      "grain": 0.002
     }
   },
   {

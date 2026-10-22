@@ -53,7 +53,7 @@
     "source": "gungen/cartridges/5.56x45.json",
     "voxel": {
       "detailGrain": 0.002,
-      "grain": 0.01
+      "grain": 0.002
     }
   },
   {
@@ -65,7 +65,7 @@
     "source": "gungen/cartridges/5.56x45.json",
     "voxel": {
       "detailGrain": 0.002,
-      "grain": 0.01
+      "grain": 0.002
     }
   },
   {
@@ -77,7 +77,7 @@
     "source": "gungen/cartridges/7.62x39.json",
     "voxel": {
       "detailGrain": 0.002,
-      "grain": 0.01
+      "grain": 0.002
     }
   },
   {
@@ -89,7 +89,7 @@
     "source": "gungen/cartridges/7.62x39.json",
     "voxel": {
       "detailGrain": 0.002,
-      "grain": 0.01
+      "grain": 0.002
     }
   },
   {
@@ -101,7 +101,7 @@
     "source": "gungen/cartridges/12-gauge-00-buck.json",
     "voxel": {
       "detailGrain": 0.002,
-      "grain": 0.01
+      "grain": 0.002
     }
   },
   {
@@ -113,7 +113,7 @@
     "source": "gungen/cartridges/12-gauge-00-buck.json",
     "voxel": {
       "detailGrain": 0.002,
-      "grain": 0.01
+      "grain": 0.002
     }
   },
   {
@@ -125,7 +125,7 @@
     "source": "gungen/cartridges/308-winchester.json",
     "voxel": {
       "detailGrain": 0.002,
-      "grain": 0.01
+      "grain": 0.002
     }
   },
   {
@@ -137,7 +137,7 @@
     "source": "gungen/cartridges/308-winchester.json",
     "voxel": {
       "detailGrain": 0.002,
-      "grain": 0.01
+      "grain": 0.002
     }
   },
   {
@@ -149,7 +149,7 @@
     "source": "gungen/cartridges/357-magnum.json",
     "voxel": {
       "detailGrain": 0.002,
-      "grain": 0.01
+      "grain": 0.002
     }
   },
   {
@@ -161,7 +161,7 @@
     "source": "gungen/cartridges/357-magnum.json",
     "voxel": {
       "detailGrain": 0.002,
-      "grain": 0.01
+      "grain": 0.002
     }
   },
   {
@@ -179,7 +179,7 @@
     "source": "improvised-suppressor",
     "voxel": {
       "detailGrain": 0.002,
-      "grain": 0.01
+      "grain": 0.0040000000000000001
     }
   },
   {
@@ -269,7 +269,7 @@
     "source": "real-suppressor",
     "voxel": {
       "detailGrain": 0.002,
-      "grain": 0.01
+      "grain": 0.0040000000000000001
     }
   },
   {
@@ -278,7 +278,7 @@
     "source": "tactical-flashlight-mount",
     "voxel": {
       "detailGrain": 0.002,
-      "grain": 0.01
+      "grain": 0.002
     }
   },
   {

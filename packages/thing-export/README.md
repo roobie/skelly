@@ -5,6 +5,7 @@ read_if:
   - you change physical inputs or interpret exported mass and centres of mass
   - you share export recipes or file writing between authoring tools
   - you change or judge voxelized export
+  - you give an item, attachment or round its own voxel grain
 ---
 
 # thing-export
@@ -50,15 +51,21 @@ a few voxels. A gun needs its own because its small controls are detail at a few
 millimetres that the item grain cannot hold, and a magazine shares its gun's grain so a
 seated magazine matches the receiver's voxels. A sight notch or post is only a few
 millimetres wide, so the gun grain fills a notch and a post hides behind its neighbours;
-the finest grain gives those parts voxels small enough to keep them. A row picks its
-class, never a number, so one tuning moves a whole class. See
-`tools/jsonnet/lib/voxel-grains.libsonnet`, and the recipes
-`packages/thing-authoring-tool/exports/deadvox.jsonnet` and `gungen/exports/deadvox.jsonnet`.
+the finest grain gives those parts voxels small enough to keep them.
+
+Each class gives the default grain, and an item may name a finer or coarser one. One grain
+per class cannot fit every item: an attachment mounts beside a finer receiver, and a round
+is smaller than a few item voxels. The item's own definition names it, beside a one-line
+reason, because that definition is where the item's look is authored; a recipe holds no
+list of exceptions. The recipe compiles the resolved grain into each row, so the exporter
+and the contract tests read one explicit value. See `tools/jsonnet/lib/voxel-grains.libsonnet`,
+`of`, and the recipes `packages/thing-authoring-tool/exports/deadvox.jsonnet` and
+`gungen/exports/deadvox.jsonnet`.
 
 A part asks for the finest grain by carrying a tag in its definition, so the choice sits
 with the part's content and the exporter holds no list of part names. See `src/glb.ts`,
-`VOXEL_DETAIL`, and `gungen/src/gun/parts.ts`, where the sight parts carry it. The coarse
-grain must be a whole multiple of the finest, because every lattice is anchored at the
+`VOXEL_DETAIL`, and `gungen/src/gun/parts.ts`, where the sight parts carry it. Every
+grain, an item's own included, must be a whole multiple of the finest, because every lattice is anchored at the
 same world origin and the grains then nest: each coarse voxel face lies on a fine voxel
 face, so a sight still meets the receiver and the gas tube without steps or gaps. The
 exporter refuses grains that do not nest; see `src/glb.ts`, `checkNesting`.
