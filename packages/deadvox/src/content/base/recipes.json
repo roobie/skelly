@@ -346,6 +346,29 @@
       "workstation": "workbench"
     },
     {
+      "components": [
+        [
+          {
+            "count": 2,
+            "item": "wooden_plank"
+          }
+        ]
+      ],
+      "id": "door_bar",
+      "qualities": {
+        "sawing": 1
+      },
+      "result": {
+        "count": 1,
+        "item": "door_bar"
+      },
+      "skills": {
+        "crafting": 0
+      },
+      "timeGameMinutes": 10,
+      "workstation": "workbench"
+    },
+    {
       "components": [],
       "id": "grind_kitchen_knife",
       "kind": "repair",
@@ -482,6 +505,7 @@
         "repair_kit",
         "repair_crowbar",
         "sawn_plank",
+        "door_bar",
         "grind_kitchen_knife",
         "hone_kitchen_knife",
         "grind_kabar",

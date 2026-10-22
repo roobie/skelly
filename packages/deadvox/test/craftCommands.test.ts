@@ -157,6 +157,27 @@ describe('live craft commands', () => {
       expect(r.commands.act(item.uid, 'continue')).toBeUndefined();
     },
   );
+  it('refuses an understocked door bar before starting, then completes it at a workbench', () => {
+    const r = make();
+    r.inventory.entities.add({ type: 'workbench', pos: [0, 0, 0], size: [3, 2, 2], facing: 'n' });
+    const recipe = r.inventory.registry.recipes.get('door_bar')!;
+    const [component] = recipe.components[0]!;
+    expect(r.inventory.add(r.inventory.create(component!.item, component!.count - 1), { kind: 'pile', pos: [0, 0, 0] })).toBe(
+      true,
+    );
+
+    expect(r.commands.start(recipe.id)).toBeTruthy();
+    expect(r.sim.actions.job).toBeUndefined();
+
+    expect(r.inventory.add(r.inventory.create(component!.item), { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    expect(r.commands.start(recipe.id)).toBeUndefined();
+    const work = workOf(r);
+    r.sim.scheduler.advance(Math.ceil(work.duration / r.sim.clock.ratio) + 1);
+
+    expect(r.sim.actions.job).toBeUndefined();
+    expect(r.inventory.hands.right?.type).toBe(recipe.result.item);
+  });
+
   it('native begin rechecks knowledge after planning before any escrow or compression', () => {
     const r = make();
     const result = r.commands.preview(CRAFT)!;
