@@ -78,7 +78,12 @@ export function skyWorldFixture(boxes: SkyBounds[] = [fixtureBox]) {
             name: 'Fixture door',
             size: [1, 1, 1],
             color: '#888888',
-            door: { material: 'wood', methods: {}, handlingSimSeconds: 1 },
+            door: {
+              material: 'wood',
+              methods: {},
+              handlingSimSeconds: 1,
+              breach: { minimumStrength: 1, toughness: 1 },
+            },
           },
         ],
       },

@@ -478,8 +478,8 @@ const WeaponSchema = strictObject({
     contactFraction: Fraction,
     /** The longest wind-up before contact, in sim seconds. */
     windupCapSimSeconds: PositiveSimSeconds,
-    /** Impulse delivered by a melee hit, in N·s. */
-    impulse: optional(NonNegative),
+    /** Impulse delivered by a melee hit, in N·s; it is also the strike's strength against a door. */
+    impulse: NonNegative,
     /** Condition lost when this weapon lands a melee hit. */
     wearPerHit: optional(Fraction),
     /** Overrides the weapon class's per-hit damage spread. */
@@ -1412,6 +1412,12 @@ const FurnitureSchema = pipe(
         hatch: optional(literal(true)),
         /** Barricaded from this side, the facing side (`front`) or its opposite (`back`): it opens only from the other. */
         barredFrom: optional(picklist(['front', 'back'])),
+        /**
+         * How the leaf yields to blows (`DESIGN.md`, "Base building and electricity"); every leaf has it, and the front
+         * of a shaped container has none. Strength is in the N·s of a melee weapon's `impulse`: a blow below
+         * `minimumStrength` does nothing, and the strengths of blows at or above it add up to `toughness`, which breaks it.
+         */
+        breach: optional(strictObject({ minimumStrength: Positive, toughness: Positive })),
       }),
     ),
     /** The player climbs it; its facing is the side the climber stands on (`DESIGN.md`, "Ladders and hatches"). */
@@ -2371,6 +2377,11 @@ const ZombieSchema = strictObject({
   footstepSound: optional(picklist(['shambler'])),
   /** Whether this type tries to jump low obstacles when grounded. */
   canJumpObstacles: vBoolean(),
+  /**
+   * Force of a bash against a closed door it is pressed against, in the N·s of a melee weapon's `impulse`, so a
+   * player's strike and a bash meet the same door gate. It bashes once per attack cooldown; 0 never damages a door.
+   */
+  strength: NonNegative,
   /**
    * How it moves relative to its facing: `forward` walks only along its facing, so it turns before it heads
    * somewhere new; `omnidirectional` moves straight toward its goal whatever its facing, which still turns to

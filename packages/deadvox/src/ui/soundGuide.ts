@@ -58,6 +58,13 @@ const TRIGGER_ENTRIES = [
       note: 'Temporary stand-in: shares the door-blocked recording, pitched down.',
     },
   ],
+  [
+    'door_bash',
+    {
+      trigger: 'Strike a closed door in melee, or let a zombie chasing you reach one.',
+      note: 'Temporary stand-in: shares the door-blocked recording, pitched further down.',
+    },
+  ],
   ['player_strain', { trigger: 'Press Space while grounded to jump.' }],
   [
     'player_landing_hard',

@@ -56,7 +56,7 @@ The eleven milestones are:
 
 ### Out
 
-- Zombie bashing of doors or blocks: deferred by BR (#273).
+- Zombie bashing of doors or blocks: deferred by BR to Slice 5 (#273).
 - Heavy melee attacks, stagger and knockdown: deferred by BR (#276).
 - Fractures: deferred by BR (#277).
 - A smell trail: deferred by BR (#278).

@@ -10,7 +10,12 @@ it('matches keys to actual kit-piece doors and rejects a missing key or an unuse
         name: 'Kit door',
         size: [1, 1, 1],
         color: '#666666',
-        door: { material: 'fixture_material', methods: {}, handlingSimSeconds: 0.3 },
+        door: {
+          material: 'fixture_material',
+          methods: {},
+          handlingSimSeconds: 0.3,
+          breach: { minimumStrength: 1, toughness: 1 },
+        },
       },
     ],
     items: [
