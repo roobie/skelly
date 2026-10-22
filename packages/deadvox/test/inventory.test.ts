@@ -411,13 +411,20 @@ describe('registry-aware item tree restoration', () => {
 });
 
 describe('condition', () => {
-  it('reads as a word', () => {
-    expect([1, 0.7, 0.4, 0.15, 0.05].map(conditionWord)).toEqual([
-      'pristine',
-      'worn',
-      'damaged',
-      'badly damaged',
-      'ruined',
-    ]);
+  it('reads every value in [0, 1] as exactly one band of the content table', () => {
+    const bands = registry.inventory.get('player')!.conditionBands;
+    const edges = bands.map((band) => band.from);
+    const samples = [
+      ...Array.from({ length: 101 }, (_, i) => i / 100),
+      ...edges,
+      ...edges.map((edge) => edge - 1e-9),
+    ].filter((value) => value >= 0 && value <= 1);
+    for (const value of samples) {
+      const containing = bands.filter(
+        (band, i) => band.from <= value && (bands[i + 1]?.from ?? Number.POSITIVE_INFINITY) > value,
+      );
+      expect(containing, `condition ${value}`).toHaveLength(1);
+      expect(conditionWord(registry, value)).toBe(containing[0]!.word);
+    }
   });
 });

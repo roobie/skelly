@@ -280,8 +280,28 @@ const ContainerSchema = strictObject({
   wideReason: optional(pipe(string(), nonEmpty('must not be empty'))),
 });
 
+/** Ordered lower bounds with a word each; the first starts at 0 and each rises, so every value in [0, 1] reads as one band. */
+const ConditionBandsSchema = pipe(
+  array(strictObject({ from: Fraction, word: Name })),
+  nonEmpty('needs at least one band'),
+  rawCheck(({ dataset, addIssue }) => {
+    if (!dataset.typed) {
+      return;
+    }
+    dataset.value.forEach(({ from }, index) => {
+      if (index === 0 && from !== 0) {
+        addIssue({ message: `bands[${index}].from must be 0 so no value is left without a word` });
+      } else if (index > 0 && !(from > dataset.value[index - 1]!.from)) {
+        addIssue({ message: `bands[${index}].from must be above the band before it, or bands overlap` });
+      }
+    });
+  }),
+);
+
 const InventoryTuningSchema = strictObject({
   id: Id,
+  /** What a condition reads as (`DESIGN.md`, "The item model"); furniture reads the same table. */
+  conditionBands: ConditionBandsSchema,
   /** The real side of one inventory cell; footprints and pockets are real sizes rounded up to it (`DESIGN.md`, "The item model"). */
   cellMetres: Positive,
   /** Maximum width, in cells, for a container pocket without a content-owned exception. */
