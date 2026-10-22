@@ -484,6 +484,10 @@
         {
           "item": "matches",
           "weight": 1
+        },
+        {
+          "item": "road_flare",
+          "weight": 1
         }
       ],
       "id": "soldier_kit",
@@ -528,6 +532,11 @@
         {
           "table": "junk",
           "weight": 2
+        },
+        {
+          "count": [1, 2],
+          "item": "road_flare",
+          "weight": 1
         },
         {
           "nothing": true,
