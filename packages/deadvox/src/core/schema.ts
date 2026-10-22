@@ -327,6 +327,12 @@ const InventoryTuningSchema = strictObject({
   throwFlightSimSeconds: Positive,
   /** Metres a thrown item rises above the straight line from hand to landing, at mid-flight. */
   throwArcHeightMetres: NonNegative,
+  /** Air resistance on a thrown item (`DESIGN.md`, "Held-item throws"). */
+  throwDrag: strictObject({
+    airDensityKgPerCubicMetre: NonNegative,
+    /** Drag coefficient against the item's footprint area; it folds in the shape and how much of the footprint faces the air. */
+    footprintDragCoefficient: NonNegative,
+  }),
   /** Carrying furniture in both hands (`DESIGN.md`, "Moving furniture"). */
   furnitureMove: strictObject({
     /** The largest piece the player can lift, along each side. */

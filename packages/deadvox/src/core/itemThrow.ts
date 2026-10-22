@@ -1,11 +1,47 @@
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { Inventory, Target } from './inventory.ts';
-import { type Item, weightOf } from './items.ts';
+import { defOf, type Item, weightOf } from './items.ts';
 import { raycast, type SolidAt } from './raycast.ts';
+import { reachTuning } from './reach.ts';
 
 export const hasMetThrowMinimumHold = (heldSimSeconds: number, minimumHoldSimSeconds: number): boolean =>
   heldSimSeconds >= minimumHoldSimSeconds;
+
+const DRAG_FLIGHT_STEPS = 1024;
+
+/**
+ * The share of its drag-free range that a 45-degree throw keeps against quadratic drag, back at release height.
+ * Scaled so launch speed, gravity and the drag-free range are all 1, the flight depends only on the drag per metre
+ * of drag-free range, `dragPerMetre * dragFreeRangeMetres`, so no gravity constant is needed.
+ */
+export const dragRangeShare = (drag: number): number => {
+  const dt = Math.SQRT2 / DRAG_FLIGHT_STEPS;
+  let [x, y] = [0, 0];
+  let [vx, vy] = [Math.SQRT1_2, Math.SQRT1_2];
+  for (;;) {
+    const speed = Math.hypot(vx, vy);
+    const ax = -drag * speed * vx;
+    const ay = -1 - drag * speed * vy;
+    const nextX = x + vx * dt + 0.5 * ax * dt * dt;
+    const nextY = y + vy * dt + 0.5 * ay * dt * dt;
+    if (nextY <= 0 && vy < 0) {
+      return x + ((nextX - x) * y) / (y - nextY);
+    }
+    [x, y] = [nextX, nextY];
+    [vx, vy] = [vx + ax * dt, vy + ay * dt];
+  }
+};
+
+/** Drag deceleration per squared speed, from the footprint area pushing against the air for the item's mass. */
+const dragPerMetre = (item: Item, registry: Registry, massKg: number): number => {
+  const { cellMetres, throwDrag } = reachTuning(registry);
+  const [w, h] = defOf(registry, item.type).size;
+  const areaSquareMetres = w * h * cellMetres ** 2;
+  return massKg > 0
+    ? (throwDrag.airDensityKgPerCubicMetre * throwDrag.footprintDragCoefficient * areaSquareMetres) / (2 * massKg)
+    : 0;
+};
 
 export const throwDistanceForItem = (
   item: Item,
@@ -28,7 +64,8 @@ export const throwDistanceForItem = (
   const energyLimitedSpeedSquared = massKg > 0 ? (2 * armEnergyJoules) / massKg : armSpeedSquared;
   const rangeFactor = Math.min(1, energyLimitedSpeedSquared / armSpeedSquared);
   const chargeFraction = Math.max(0, Math.min(1, heldSimSeconds / chargeSimSeconds));
-  return maximumDistanceMetres * rangeFactor * chargeFraction;
+  const dragFreeMetres = maximumDistanceMetres * rangeFactor * chargeFraction;
+  return dragFreeMetres * dragRangeShare(dragPerMetre(item, registry, massKg) * dragFreeMetres);
 };
 
 export const itemFlightPoint = (from: Vec3, to: Vec3, progress: number, arcHeightMetres: number): Vec3 => {
