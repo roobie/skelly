@@ -339,6 +339,16 @@ describe('final composed body-route certificate', () => {
     expect(scenarioCertificate(site).issues.map(([path]) => path)).toContain('.composition.seals[0]');
   });
 
+  it('rejects a keycard container out of reach of where its taker stands', () => {
+    // The desk's taker is sent to level one's card spot, which the way in reaches but which is far from the desk.
+    const composition = base.composition!;
+    const held = composition.seals.findIndex((seal) => seal.held);
+    const { standing } = composition.seals[held - 1]!;
+    const seals = composition.seals.map((seal, index) => (index === held ? { ...seal, standing } : seal));
+    const site = siteOf({ ...base, composition: { ...composition, seals } });
+    expect(scenarioCertificate(site).issues.map(([path]) => path)).toContain(`.composition.seals[${held}]`);
+  });
+
   it(
     "keeps each level's ways down behind its bulkheads until its card, reached through the seals above, is admitted",
     () => {
