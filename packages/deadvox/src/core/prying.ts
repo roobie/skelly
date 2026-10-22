@@ -1,6 +1,7 @@
 import type { BlockEntity } from './blockEntities.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN, skillEffectLevel, skillSaturation } from './character.ts';
-import type { FurnitureDef } from './content.ts';
+import type { FurnitureDef, Registry } from './content.ts';
+import { coreMessage } from './coreText.ts';
 import type { Inventory } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { chargeOf } from './lights.ts';
@@ -54,18 +55,19 @@ export const pryPlan = (
     .filter((definition) => methods.some(([, method]) => meets(definition.id, method)))
     .map((definition) => definition.name)
     .sort((a, b) => a.localeCompare(b));
+  const { registry } = inventory;
   const refuse = (reason: string): PryPlan => ({ ok: false, reason, toolNames });
   if (!(furniture.door && entity.lock?.locked)) {
-    return refuse("There's no locked padlock to force");
+    return refuse(coreMessage(registry, 'noPadlock'));
   }
   if (entity.open) {
-    return refuse('Close the door first');
+    return refuse(coreMessage(registry, 'doorOpen'));
   }
   if (!inventory.canReachEntity(entity)) {
-    return refuse('Too far away');
+    return refuse(coreMessage(registry, 'tooFar'));
   }
   if (methods.length === 0) {
-    return refuse("There's no way to force this lock");
+    return refuse(coreMessage(registry, 'cantForce'));
   }
   const carried = [...inventory.items()]
     .filter(({ path }) => path.startsWith('inventory.hands.') || path.startsWith('inventory.worn.'))
@@ -79,18 +81,16 @@ export const pryPlan = (
     if (tool) {
       return planFor({ inventory, method, tuning, tool, character });
     }
-    fuelRefusal = capable.length > 0 ? dryRefusal(capable) : fuelRefusal;
+    fuelRefusal = capable.length > 0 ? dryRefusal(registry, capable) : fuelRefusal;
   }
-  return refuse(fuelRefusal ?? 'I have nothing that will force it');
+  return refuse(fuelRefusal ?? coreMessage(registry, 'nothingToForce'));
 };
 
 type Tuning = NonNullable<FurnitureDef['door']>['methods'][string];
 
 /** Why tools that meet the method can't start it: they hold too little gas. */
-const dryRefusal = (capable: Item[]): string =>
-  capable.some((item) => item.slots?.canister)
-    ? "There isn't enough gas left for that"
-    : "There's no gas cartridge in it";
+const dryRefusal = (registry: Registry, capable: Item[]): string =>
+  coreMessage(registry, capable.some((item) => item.slots?.canister) ? 'notEnoughGas' : 'noCartridge');
 
 const planFor = ({
   inventory,

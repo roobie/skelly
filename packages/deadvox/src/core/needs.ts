@@ -2,6 +2,8 @@
 // `stepNeeds` advances exactly across need thresholds so catch-up and compressed
 // time land where ticking every second would. Health belongs to Body.
 
+import type { CoreMessageKey } from './coreText.ts';
+
 export interface Needs {
   /** 100 is full. */
   calories: number;
@@ -106,10 +108,17 @@ const healthRate = (needs: Needs, health: number, recovery: Recovery, loss: Heal
   return health < 100 ? healthRegenRate(needs, recovery) : 0;
 };
 
-/** What's draining health right now, for the death screen. */
-export const causeOf = (needs: Needs): string | undefined => {
-  const causes = [needs.hydration <= 0 ? 'thirst' : '', needs.calories <= 0 ? 'hunger' : ''].filter(Boolean);
-  return causes.length > 0 ? causes.join(' and ') : undefined;
+/** What's draining health right now, for the death screen, as the core message that words it. */
+export const causeOf = (needs: Needs): CoreMessageKey | undefined => {
+  const thirst = needs.hydration <= 0;
+  const hunger = needs.calories <= 0;
+  if (thirst && hunger) {
+    return 'causeThirstAndHunger';
+  }
+  if (thirst) {
+    return 'causeThirst';
+  }
+  return hunger ? 'causeHunger' : undefined;
 };
 
 /** Hours until a value moving at `rate` per hour reaches `level`, if it's heading there. */

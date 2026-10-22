@@ -151,6 +151,7 @@ interface FurnitureViewModel {
   readonly uid: number;
   readonly label: string;
   readonly searching: boolean;
+  readonly targeted: boolean;
   readonly searchLabel?: string | undefined;
   readonly grids: readonly { readonly label?: string | undefined; readonly grid: GridViewModel }[];
 }
@@ -452,7 +453,7 @@ const inventoryTemplate = (
     <div class="inv-needs" aria-label="Needs">${vm.needs}</div>
     <details class="inv-help">
       <summary>Controls</summary>
-      <span>${['inventory.find', 'inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.search', 'handling.stop', 'ui.inventory-toggle'].map((id) => html`${keyCap(id)}: ${inputBindings.binding(id)!.description}`).flatMap((line, i) => (i === 0 ? [line] : [' · ', line]))} · ${Array.from({ length: 5 }, (_, i) => keyCap(`quickbar.assign.${i + 1}`)).flatMap((cap, i) => (i === 0 ? [cap] : [' / ', cap]))}: assign quickbar</span>
+      <span>${['inventory.find', 'inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.search', 'inventory.cycle-target', 'inventory.put-target', 'handling.stop', 'ui.inventory-toggle'].map((id) => html`${keyCap(id)}: ${inputBindings.binding(id)!.description}`).flatMap((line, i) => (i === 0 ? [line] : [' · ', line]))} · ${Array.from({ length: 5 }, (_, i) => keyCap(`quickbar.assign.${i + 1}`)).flatMap((cap, i) => (i === 0 ? [cap] : [' / ', cap]))}: assign quickbar</span>
     </details>
   </header>
   <div
@@ -531,8 +532,8 @@ const inventoryTemplate = (
         }
         ${vm.furniture.map(
           (furniture) => html`
-          <div class="inv-around-section inv-around-container inv-pile" data-around-section="container" data-entity-uid=${furniture.uid}>
-            <div class="inv-pile-label">${furniture.label}</div>
+          <div class="inv-around-section inv-around-container inv-pile${furniture.targeted ? ' inv-target' : ''}" data-around-section="container" data-entity-uid=${furniture.uid} data-target=${furniture.targeted ? 'true' : 'false'}>
+            <div class="inv-pile-label">${furniture.targeted ? '▸ ' : ''}${furniture.label}</div>
             ${furnitureBodyTemplate(furniture, search)}
           </div>
         `,
@@ -676,6 +677,8 @@ const scrollbarWidth = (root: HTMLElement): number | undefined => {
 
 export class InventoryScreen {
   selected: Item | undefined;
+  /** The container keyboard puts go to; not kept across a reload of the screen. */
+  private targetUid: number | undefined;
   private readonly root: HTMLElement;
   private readonly dragRoot: HTMLElement;
   private readonly inv: Pick<
@@ -808,7 +811,7 @@ export class InventoryScreen {
     const characterKey = JSON.stringify(this.hooks.character());
     const needsKey = this.hooks.needs();
     const wakeKey = JSON.stringify(this.hooks.wakeGameHour?.() ?? null);
-    const key = `${this.findQuery}|${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}|${wakeKey}`;
+    const key = `${this.findQuery}|${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${this.targetUid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}|${wakeKey}`;
     if (key !== this.drawn) {
       this.drawn = key;
       this.render();
@@ -873,6 +876,10 @@ export class InventoryScreen {
       );
       return true;
     }
+    if (action === 'inventory.cycle-target') {
+      this.cycleTarget();
+      return true;
+    }
     if (!item) {
       return action.startsWith('inventory.') || digit !== undefined;
     }
@@ -904,6 +911,9 @@ export class InventoryScreen {
         this.report(best ? this.tryQueue(item, best.target) : 'No room on you');
         return true;
       }
+      case 'inventory.put-target':
+        this.putInTarget(item);
+        return true;
       case 'inventory.take-all-like':
         this.takeAllLike(item);
         return true;
@@ -952,6 +962,43 @@ export class InventoryScreen {
     if (target) {
       this.report(this.tryQueue(item, target));
     }
+  }
+
+  /** The chosen container if it is still within reach, else the nearest one. */
+  private targetEntity(): BlockEntity | undefined {
+    const containers = this.hooks.containers();
+    return containers.find((c) => c.uid === this.targetUid) ?? containers[0];
+  }
+
+  private cycleTarget(): void {
+    const containers = this.hooks.containers();
+    if (containers.length === 0) {
+      this.refuse('No container in reach');
+      return;
+    }
+    const at = containers.findIndex((c) => c.uid === this.targetEntity()?.uid);
+    this.targetUid = containers[(at + 1) % containers.length]!.uid;
+  }
+
+  /** The mouse path's move into a container pocket, with the whole stack going to the first pocket that takes it. */
+  private putInTarget(item: Item): void {
+    const entity = this.targetEntity();
+    if (!entity) {
+      this.refuse('No container in reach');
+      return;
+    }
+    const pockets = this.inv.entities.defOf(entity).container?.pockets ?? [];
+    let refusal: string | undefined;
+    for (let pocket = 0; pocket < pockets.length; pocket += 1) {
+      const target: Target = { kind: 'furniture', entity, pocket };
+      const plan = this.inv.plan(item, target);
+      if (plan.ok) {
+        this.report(this.tryQueue(item, target));
+        return;
+      }
+      refusal ??= plan.reason;
+    }
+    this.refuse(refusal ?? 'No room there');
   }
 
   /** Takes every item of the same category from the piles within reach. */
@@ -1190,6 +1237,7 @@ export class InventoryScreen {
         uid: entity.uid,
         label: `${def.name} · ${this.hooks.entityDistance(entity).toFixed(1)} m`,
         searching: !entity.searched && this.hooks.searching(entity),
+        targeted: entity.uid === this.targetEntity()?.uid,
         searchLabel:
           entity.searched || this.hooks.searching(entity)
             ? undefined
