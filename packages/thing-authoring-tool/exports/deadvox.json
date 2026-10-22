@@ -1668,6 +1668,114 @@
     }
   },
   {
+    "id": "crowbar",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "crowbar",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "hammer",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "hammer",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "baseball_bat",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "baseball_bat",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "kabar",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "kabar",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "kitchen_knife",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "kitchen_knife",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "machete",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "machete",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "wrench",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "wrench",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "steel_pipe",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "steel_pipe",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "flashlight",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "flashlight",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "compass",
     "kind": "item",
     "options": {
