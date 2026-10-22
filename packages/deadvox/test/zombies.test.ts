@@ -62,6 +62,7 @@ const SHAMBLER_MOVE_DAMAGES = SHAMBLER.attack.moves.map(({ damage }) => damage);
 const RUNNER = registry.zombies.get('runner')!;
 const CRAWLER = registry.zombies.get('crawler')!;
 const speedRates = (wander: number, chase: number) => ({
+  ...SHAMBLER.speed,
   wanderMetresPerSimSecond: simRate(wander),
   chaseMetresPerSimSecond: simRate(chase),
 });
@@ -77,7 +78,7 @@ const player = (
   movement: PlayerSense['movement'] = 'still',
   lit = false,
   crouching = false,
-): PlayerSense => ({ pos, facing, movement, lit, lightSeenFrom: 40, crouching });
+): PlayerSense => ({ pos, facing, movement, lit, lightSeenFrom: 40, eyeHeightMetres: 1.3, crouching });
 const senses = (
   playerFn: () => PlayerSense,
   isSolid: SolidAt = FLOOR,
@@ -624,7 +625,7 @@ describe('shambler perception', () => {
     const lureAt = (hour: number, sunlit: boolean) => {
       const sensed = (): PlayerSense => ({
         ...player([100, 1, 100]),
-        lightSources: [{ pos: target, seenFrom: 20, carried: false }],
+        lightSources: [{ pos: target, seenFrom: 20, carried: false, heightMetres: 0.15 }],
       });
       const system = new ZombieSystem(sensesWithLocalSun(sensed, hour, () => sunlit));
       const id = system.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
@@ -634,7 +635,7 @@ describe('shambler perception', () => {
     const carriedAt = (hour: number, sunlit: boolean) => {
       const sensed = (): PlayerSense => ({
         ...player([100, 1, 100]),
-        lightSources: [{ pos: target, seenFrom: 20, carried: true }],
+        lightSources: [{ pos: target, seenFrom: 20, carried: true, heightMetres: 0.15 }],
       });
       const system = new ZombieSystem(sensesWithLocalSun(sensed, hour, () => sunlit));
       const id = system.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
@@ -677,7 +678,7 @@ describe('shambler perception', () => {
 
     const shadowLurePlayer = (): PlayerSense => ({
       ...player([100, 1, 100]),
-      lightSources: [{ pos: target, seenFrom: 20, carried: false }],
+      lightSources: [{ pos: target, seenFrom: 20, carried: false, heightMetres: 0.15 }],
     });
     const shadowLure = new ZombieSystem(sensesWithLocalSun(shadowLurePlayer, 12, daylightSky));
     const shadowLureId = shadowLure.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
@@ -691,7 +692,8 @@ describe('shambler perception', () => {
     const distanceMetres = (crouchSightRange + lightSeenFrom) / 2;
     const distanceBlocks = distanceMetres / BLOCK_SIZE;
     const crouchedEye = PLAYER.eye - SENSE_TUNING.crouch.eyeDropMetres;
-    const wallFraction = (1.3 - 0.9) / (1.3 - crouchedEye);
+    const zombieEye = SHAMBLER.eyeHeightMetres;
+    const wallFraction = (zombieEye - 0.9) / (zombieEye - crouchedEye);
     const wallX = Math.floor(distanceBlocks * wallFraction);
     const isSolid: SolidAt = (x, y) => x === wallX && y >= 0 && y < 2;
     const visible = (crouching: boolean, blocked: boolean) => {
@@ -703,7 +705,6 @@ describe('shambler perception', () => {
         player: {
           ...player([distanceBlocks, 0, 0], [-1, 0, 0], 'still', true, crouching),
           eyeHeightMetres,
-          lightHeightMetres: eyeHeightMetres,
         },
         dayPhase: dayStateAtHour(0).phase,
         sightBlend: dayStateAtHour(0).sightBlend,
@@ -729,7 +730,7 @@ describe('shambler scenarios', () => {
     const target: Vec3 = [targetDistanceMetres / BLOCK_SIZE, 1, 0];
     const sensedPlayer = (): PlayerSense => ({
       ...player([100, 1, 100]),
-      lightSources: [{ pos: target, seenFrom: sourceRange, carried: false }],
+      lightSources: [{ pos: target, seenFrom: sourceRange, carried: false, heightMetres: 0.15 }],
     });
     const open = new ZombieSystem(senses(sensedPlayer, FLOOR, () => 0));
     const id = open.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
@@ -784,7 +785,7 @@ describe('shambler scenarios', () => {
     const target: Vec3 = [distanceMetres / BLOCK_SIZE, 1, 0];
     const sensed = (): PlayerSense => ({
       ...player([100, 1, 100]),
-      lightSources: [{ pos: target, seenFrom: sourceRange, carried: false }],
+      lightSources: [{ pos: target, seenFrom: sourceRange, carried: false, heightMetres: 0.15 }],
     });
     const alerts: string[] = [];
     const system = new ZombieSystem({
@@ -868,7 +869,7 @@ describe('shambler scenarios', () => {
     const sensed = (): PlayerSense => ({
       ...player([100, 1, 100]),
       vocalNoise: { id: 1, pos: noiseTarget, radiusMetres: 10, expiresAt: 1 },
-      lightSources: [{ pos: lightTarget, seenFrom: 20, carried: false }],
+      lightSources: [{ pos: lightTarget, seenFrom: 20, carried: false, heightMetres: 0.15 }],
     });
     const system = new ZombieSystem(senses(sensed, FLOOR, () => 0));
     const id = system.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
@@ -3122,7 +3123,7 @@ describe('background zombie tier', () => {
     const lightTarget: Vec3 = [75, 1, 0];
     const target: PlayerSense = {
       ...player([0, 1, 0]),
-      lightSources: [{ pos: lightTarget, seenFrom: 100, carried: false }],
+      lightSources: [{ pos: lightTarget, seenFrom: 100, carried: false, heightMetres: 0.15 }],
     };
     const system = new ZombieSystem({
       ...senses(

@@ -1090,7 +1090,6 @@ export const createSession = (options: SessionOptions) => {
       lit: carriedLight !== undefined,
       lightSeenFrom: carriedLight?.seenFrom ?? 40,
       eyeHeightMetres,
-      lightHeightMetres: eyeHeightMetres,
       sunlit: isSunExposedAt(playerLightHeight, hour),
       lightSources,
     };
@@ -1335,7 +1334,14 @@ export const createSession = (options: SessionOptions) => {
     if (blast > 0 && inSight(at, centre, isSolid)) {
       sim.hit(blast, 'a grenade', 'torso', { kind: 'blunt' });
     }
-    for (const region of fragmentHitsOnBody({ origin: at, directions, rangeBlocks: rangeMetres / s, body, isSolid })) {
+    for (const region of fragmentHitsOnBody({
+      origin: at,
+      directions,
+      rangeBlocks: rangeMetres / s,
+      body,
+      isSolid,
+      regionHeights: bodyTuning.fragmentRegionHeights,
+    })) {
       sim.hit(damage, 'a grenade', region, { kind: 'pierce' });
     }
     options.onDetonation?.([at[0] * s, at[1] * s, at[2] * s], spec.blast.radiusMetres);

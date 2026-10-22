@@ -1,55 +1,103 @@
 {
   "siteGeneration": [
     {
-      "id": "authored",
-      "topography": {
-        "amplitudeMetres": 0.65,
-        "wavelengthMetres": 28,
-        "buildingMarginMetres": 5,
-        "roadShoulderMetres": 4,
-        "spawnMarginMetres": 8
-      },
-      "terrain": {
-        "minHeightMetres": 8,
-        "maxHeightMetres": 56,
-        "beachBelowMetres": 14,
-        "dirtDepthMetres": 2,
-        "featureSizeMetres": 96,
-        "octaves": 4
-      },
-      "vegetation": {
-        "woodlandEdgeWavelengthMetres": 20,
-        "woodlandEdgeVariation": 0.3,
-        "openDensity": 0.035,
-        "obstacleMarginMetres": 1,
-        "treeMix": ["broadleaf", "broadleaf", "conifer", "young"],
-        "treeCellMetres": 8,
-        "hamletDensity": 0.5,
-        "forestHalfExtentMetres": 384,
-        "forestDensityField": {
-          "wavelengthMetres": 128,
-          "seedSalt": 137,
-          "floor": 0.2,
-          "gain": 1,
-          "ceiling": 0.75
-        }
-      },
-      "palette": {
-        "terrain": { "grass": "grass", "dirt": "dirt", "rock": "rock", "sand": "sand" },
-        "paving": "asphalt",
-        "trees": { "trunk": "tree_trunk", "branch": "tree_branch", "leaves": "leaves" },
-        "leafLitter": "leaf_litter"
-      },
       "hamlet": {
         "hedge": "hedge",
         "northSide": ["small_house", "bungalow", "corner_store", "hardware_store"],
         "southSide": ["gas_station", "shed", "garage"]
       },
+      "id": "authored",
+      "palette": {
+        "leafLitter": "leaf_litter",
+        "paving": "asphalt",
+        "terrain": {
+          "dirt": "dirt",
+          "grass": "grass",
+          "rock": "rock",
+          "sand": "sand"
+        },
+        "trees": {
+          "branch": "tree_branch",
+          "leaves": "leaves",
+          "trunk": "tree_trunk"
+        }
+      },
       "placement": {
         "gridStepMetres": 32,
+        "lowestMetres": 15,
         "reachMetres": 160,
-        "sampleMetres": 4,
-        "lowestMetres": 15
+        "sampleMetres": 4
+      },
+      "terrain": {
+        "beachBelowMetres": 14,
+        "dirtDepthMetres": 2,
+        "featureSizeMetres": 96,
+        "maxHeightMetres": 56,
+        "minHeightMetres": 8,
+        "octaves": 4
+      },
+      "topography": {
+        "amplitudeMetres": 0.65000000000000002,
+        "buildingMarginMetres": 5,
+        "roadShoulderMetres": 4,
+        "spawnMarginMetres": 8,
+        "wavelengthMetres": 28
+      },
+      "vegetation": {
+        "forestDensityField": {
+          "ceiling": 0.75,
+          "floor": 0.20000000000000001,
+          "gain": 1,
+          "seedSalt": 137,
+          "wavelengthMetres": 128
+        },
+        "forestHalfExtentMetres": 384,
+        "hamletDensity": 0.5,
+        "obstacleMarginMetres": 1,
+        "openDensity": 0.035000000000000003,
+        "treeCellMetres": 8,
+        "treeJitterMetres": 1.5,
+        "treeMix": ["broadleaf", "broadleaf", "conifer", "young"],
+        "trees": {
+          "branchLayer": {
+            "thicknessMetres": 0.5,
+            "topDropMetres": 1
+          },
+          "shapes": {
+            "broadleaf": {
+              "branchReachMetres": 2,
+              "crown": {
+                "centreMetres": 5.5,
+                "kind": "ellipsoid",
+                "radiiMetres": [3, 2, 2.5]
+              },
+              "heightMetres": 5
+            },
+            "conifer": {
+              "branchReachMetres": 1,
+              "crown": {
+                "baseMetres": 2,
+                "kind": "cone",
+                "minHalfWidthMetres": 0.25,
+                "taper": 0.38,
+                "topMetres": 8.5
+              },
+              "heightMetres": 8.5
+            },
+            "young": {
+              "branchReachMetres": 1,
+              "crown": {
+                "centreMetres": 3.25,
+                "kind": "ellipsoid",
+                "radiiMetres": [1.5, 1.5, 1.5]
+              },
+              "heightMetres": 3.25
+            }
+          },
+          "trunkHalfWidthMetres": 0.25
+        },
+        "woodlandEdgeVariation": 0.29999999999999999,
+        "woodlandEdgeWavelengthMetres": 20
       }
     }
   ]

@@ -107,6 +107,10 @@
       },
       "exposureRefusal": "You're burning",
       "fatigueRisePerGameHour": 4,
+      "fragmentRegionHeights": {
+        "head": 0.84999999999999998,
+        "torso": 0.45000000000000001
+      },
       "healthRecoveryFatigueCeiling": {
         "awake": 80
       },

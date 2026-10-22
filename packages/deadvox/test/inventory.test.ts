@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { coreMessage } from '../src/core/coreText.ts';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
-import { HANDLING, Inventory } from '../src/core/inventory.ts';
+import { handlingWeights, Inventory } from '../src/core/inventory.ts';
 import { PILE_GRID } from '../src/core/inventoryScale.ts';
 import { conditionWord, fitsAt, weightOf } from '../src/core/items.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();
+const HANDLING = handlingWeights(registry);
 
 /**
  * The base registry with the footprints the slot expectations below follow from declared here, so retuning base
