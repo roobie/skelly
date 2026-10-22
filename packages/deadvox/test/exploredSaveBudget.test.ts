@@ -111,6 +111,7 @@ const sample = async (side: number) => {
   const decodeMs = performance.now() - decodeStarted;
   return {
     columns: side * side,
+    pieces: snapshot.character.inventory.entities.entities.length,
     snapshot,
     decoded: decoded.snapshot,
     inflatedBytes: gunzipSync(bytes).byteLength,
@@ -124,6 +125,9 @@ const sample = async (side: number) => {
 it('keeps decompressed save growth per explored column inside the target-area size budget', async () => {
   const [small, large] = await Promise.all(SAMPLED_SIDES.map(sample));
   expect(large!.snapshot.world.rolledColumns.length).toBe(large!.columns);
+  // Without furnished columns in the samples the bound below would pass vacuously.
+  expect(large!.pieces).toBeGreaterThan(small!.pieces);
+  expect(small!.pieces).toBeGreaterThan(0);
   const perColumn = (large!.inflatedBytes - small!.inflatedBytes) / (large!.columns - small!.columns);
   expect(perColumn * TARGET_EXPLORED_COLUMNS).toBeLessThan(EXPLORED_SAVE_BUDGET_BYTES);
 });
