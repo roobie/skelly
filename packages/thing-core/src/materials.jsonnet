@@ -46,6 +46,9 @@ local hex(n) = [std.floor(n / 65536) / 255, (std.floor(n / 256) % 256) / 255, (n
   'body-hair': material([0.11, 0.09, 0.08]),
   'body-mouth': material([0.24, 0.05, 0.06]),
   'body-skin-sickly': material([0.48, 0.54, 0.36]),
+  'body-skin-player': material(hex(12947312)),
+  'cloth-shirt-player': material(hex(5400445)),
+  'cloth-pants-player': material(hex(4868949)),
   'cloth-pants-grey': material([0.24, 0.26, 0.3]),
   'cloth-shirt-faded': material([0.4, 0.3, 0.28]),
 }

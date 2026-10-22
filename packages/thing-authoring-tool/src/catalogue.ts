@@ -31,6 +31,7 @@ import content from '../items.json' with { type: 'json' };
 import { bearTrap } from './families/bearTrap.ts';
 import { block } from './families/block.ts';
 import { head, limb, torso } from './families/body.ts';
+import { bust } from './families/bust.ts';
 import { bag, boots, cap } from './families/carried.ts';
 import { coil } from './families/coil.ts';
 import { compound } from './families/compound.ts';
@@ -142,6 +143,7 @@ const builders = {
   limb,
   torso,
   head,
+  bust,
   openTin,
   handOpener,
   grenade,

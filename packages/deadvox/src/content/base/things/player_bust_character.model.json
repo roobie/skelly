@@ -1,0 +1,19 @@
+{
+  "id": "player_bust_character",
+  "file": "assets/models/player_bust_character.glb",
+  "parts": {
+    "bust": {
+      "node": "bust:bust",
+      "massKg": 38,
+      "centreOfMass": [2.936894510910512e-18, 0.4436661632205247, -0.0014799959054536964]
+    }
+  },
+  "anchors": {
+    "head": [0, 0.7, 0],
+    "hip_left": [0.08249999999999999, 0.0204, 0],
+    "hip_right": [-0.0825, 0.0204, 0],
+    "neck": [0, 0.61, 0],
+    "shoulder_left": [0.23299999999999998, 0.54, 0],
+    "shoulder_right": [-0.23299999999999998, 0.54, 0]
+  }
+}

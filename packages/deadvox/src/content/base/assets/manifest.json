@@ -198,7 +198,9 @@
         "assets/models/thread_spool.glb",
         "assets/models/cord_coil.glb",
         "assets/models/fuse.glb",
-        "assets/models/bear_trap.glb"
+        "assets/models/bear_trap.glb",
+        "assets/models/player_bust_character.glb",
+        "assets/models/player_bust_item.glb"
       ],
       "licence": "CC0-1.0",
       "title": "Thing tool authored models",

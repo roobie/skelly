@@ -1301,5 +1301,23 @@
       "mass": "parts"
     },
     "source": "bear_trap"
+  },
+  {
+    "id": "player_bust_character",
+    "kind": "item",
+    "options": {
+      "mass": "parts",
+      "voxelGrain": 0.02
+    },
+    "source": "player_bust"
+  },
+  {
+    "id": "player_bust_item",
+    "kind": "item",
+    "options": {
+      "mass": "parts",
+      "voxelGrain": 0.01
+    },
+    "source": "player_bust"
   }
 ]

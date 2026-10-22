@@ -7,6 +7,11 @@ local vehicleParts = std.set([part.id for part in import '../vehicle-parts.libso
 local grains = import 'tools/jsonnet/lib/voxel-grains.libsonnet';
 local voxelized = std.set(['car_battery', 'car_headlamp', 'hatchback_battery_tray', 'can_opener', 'soda_can', 'fuse']);
 local voxelGrainOf(id) = if std.setMember(id, vehicleParts) then grains.vehicle else grains.item;
+// The avatar's bust exports only voxelized, once per candidate grain class, so the look can be judged at each.
+local avatarStudy = [
+  { id: 'player_bust_' + class, kind: 'item', source: 'player_bust', options: { mass: 'parts', voxelGrain: grains[class] } }
+  for class in ['character', 'item']
+];
 [
   {
     id: std.get(renamed, row.id, row.id),
@@ -17,4 +22,5 @@ local voxelGrainOf(id) = if std.setMember(id, vehicleParts) then grains.vehicle 
              + (if std.setMember(row.id, voxelized) then { voxelGrain: voxelGrainOf(row.id) } else {}),
   }
   for row in (import '../items.jsonnet').items
-]
+  if row.id != 'player_bust'
+] + avatarStudy
