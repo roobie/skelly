@@ -1,0 +1,14 @@
+{
+  "id": "hiking_backpack",
+  "file": "assets/models/hiking_backpack.glb",
+  "parts": {
+    "hiking_backpack": {
+      "node": "hiking_backpack:bag",
+      "massKg": 1.4,
+      "centreOfMass": [0, 0.28700701378194504, -0.010220862005107311]
+    }
+  },
+  "grip": { "at": [0, 0.605, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

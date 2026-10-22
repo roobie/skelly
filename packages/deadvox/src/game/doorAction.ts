@@ -63,6 +63,10 @@ export const registerDoorAction = ({
     if (!entity) {
       return 'The door is no longer there';
     }
+    const reserved = entities.useRefusal(entity);
+    if (reserved) {
+      return reserved;
+    }
     const operation = doorOperation(params);
     const plan = doorPlan(inventory, entity, operation);
     if (!plan.ok) {

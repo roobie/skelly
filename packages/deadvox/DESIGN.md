@@ -364,6 +364,15 @@ it is never rebuilt from the seed; unchanged columns regenerate. The save is one
 compressed record. See `src/game/session.ts`, `rolledColumns`; `src/core/world.ts`,
 `World`; and `src/core/saveFormat.ts`, `encodeSave`.
 
+A piece cannot be removed while anything rests or stands on it, while a barricade stands
+in its doorway, or while it holds items, so removal never strands, floats or loses
+anything. Removing through a piece handle taken before a load throws, so the mistake
+shows at once instead of corrupting occupancy. The action that removes a piece first
+cancels the jobs that name it, so a save never refers to a missing piece. Pending
+deconstruction reserves its piece against use until the job is cancelled or finished, so
+paused work keeps its piece; under lockstep the reservation is ordinary simulation state,
+resolved in tick order. See `src/core/blockEntities.ts`, `BlockEntities.remove`.
+
 ### Block entities
 
 Stateful blocks keep their changing state separate from static block identity.
@@ -444,6 +453,12 @@ separate actions that come later. See `src/core/furnitureMove.ts`,
   their own tidying would punish an action the game wants them to take, and
   crushing shamblers with a stack would be a cheaper weapon than any the game
   balances.
+- **Nothing lifts from under a body.** Any body standing on a piece, the
+  player's or a shambler's, stops the player lifting it, as it stops removal.
+  Lifting and removal share one support query, so no second rule exists to
+  drift. A way to clear a body off a piece, such as a shove or the piece
+  tipping, is left to a later feature of its own. See
+  `src/core/furnitureMove.ts`, `supportRefusal`.
 - **What lies on top.** Loose items on a moved or falling piece go with it or
   beside it, and a container's pockets go with it, because moving a container
   is not searching it. When the items have nowhere to go the move is refused,
@@ -2234,7 +2249,16 @@ their state.
    Factory structures plus compatible parts and capability-matched add-ons come
    before scratch-building, without reducing mounting to fixed sockets. Keep the grain
    at named swappable parts, not individual bolts, wire runs or plumbing, so repair
-   does not become assembly bookkeeping.
+   does not become assembly bookkeeping. A body fitted to a chassis cab, such as a box
+   van's cargo box, is its own factory structure resting on the frame, not part of the
+   cab's, so the chassis cab stays a complete drivable unit without it and the box can
+   move to another frame. A body's storage and its contents belong to a cargo space: a
+   separate part resting on the load floor whose own shape is the hold, so storage
+   travels with the part, losing a wall does not lose the load, and a player can build
+   one for any body with a load floor. The game reads the pocket grid from that shape
+   rather than from authored numbers. A part's capabilities are names; its sizes live
+   in its own data, so each size has one source. The cargo space arrives with #1124.
+   See `src/vehicles/boxVan.ts`, `BOX_VAN`.
 9. **Cheap at scale.** A parked street must not pay continuous driving-physics cost.
    Part-level changes should not require rebuilding unrelated vehicles.
 10. **Obstruction follows the build.** Render, collision and picking derive from the

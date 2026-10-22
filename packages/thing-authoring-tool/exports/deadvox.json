@@ -412,6 +412,86 @@
     "source": "pickup_battery_tray"
   },
   {
+    "id": "jeans",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "jeans"
+  },
+  {
+    "id": "rubber_boots",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "rubber_boots"
+  },
+  {
+    "id": "cargo_pants",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "cargo_pants"
+  },
+  {
+    "id": "hoodie",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "hoodie"
+  },
+  {
+    "id": "jacket",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "jacket"
+  },
+  {
+    "id": "utility_vest",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "utility_vest"
+  },
+  {
+    "id": "fanny_pack",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "fanny_pack"
+  },
+  {
+    "id": "school_backpack",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "school_backpack"
+  },
+  {
+    "id": "hiking_backpack",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "hiking_backpack"
+  },
+  {
+    "id": "baseball_cap",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "baseball_cap"
+  },
+  {
     "id": "compass",
     "kind": "item",
     "options": {

@@ -112,7 +112,7 @@ describe('GLB accessor contract', () => {
   });
 
   it.each(cases)('$key emits no primitive with missing or empty accessors', ({ key, id, assembly }) => {
-    // Invalid and suspended designs still probe geometry; they need no authored item mass rows.
+    // Invalid designs still probe geometry; they need no authored item mass rows.
     const result = exportGunGeometry({
       resolved: resolve(assembly, gunDomain),
       palette: GUN_PALETTE,

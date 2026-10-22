@@ -990,175 +990,171 @@
       }
     },
     {
-      "anchors": {
-        "display_mount": [0, 0.013399999999999999, 0],
-        "needle_mount": [0, 0.013399999999999999, 0]
-      },
-      "file": "assets/models/compass.glb",
+      "file": "assets/models/jeans.glb",
       "grip": {
-        "at": [0, 0.0044999999999999997, 0],
-        "turn": [90, 0, -90]
+        "at": [0, 0.022499999999999999, 0],
+        "turn": [0, 0, -90]
       },
       "hold": "upright",
-      "id": "compass",
+      "id": "jeans",
       "parts": {
-        "compass": {
-          "centreOfMass": [0, 0.005916140928369013, 0],
-          "massKg": 0.12,
-          "node": "compass:compass"
+        "jeans": {
+          "centreOfMass": [0, 0.022499999999999999, 0],
+          "massKg": 0.69999999999999996,
+          "node": "jeans:folded-garment"
         }
       },
       "roll": 0
     },
     {
-      "file": "assets/models/lighter.glb",
+      "file": "assets/models/rubber_boots.glb",
       "grip": {
-        "at": [0, 0.0275, 0],
+        "at": [-0.076249999999999998, 0.1144, 0.088400000000000006],
         "turn": [0, 0, -90]
       },
       "hold": "upright",
-      "id": "lighter",
+      "id": "rubber_boots",
       "parts": {
-        "lighter": {
-          "centreOfMass": [0, 0.030088002775954543, -1.4791489859822659e-5],
-          "massKg": 0.02,
-          "node": "lighter:lighter"
+        "rubber_boots": {
+          "centreOfMass": [-2.2858766166511495e-18, 0.077950149276779734, 0.023642574767076749],
+          "massKg": 1.8,
+          "node": "rubber_boots:boots"
         }
       },
       "roll": 0
     },
     {
-      "file": "assets/models/matches.glb",
+      "file": "assets/models/cargo_pants.glb",
       "grip": {
-        "at": [0, 0.0074999999999999997, 0],
+        "at": [0, 0.025000000000000001, 0],
         "turn": [0, 0, -90]
       },
       "hold": "upright",
-      "id": "matches",
+      "id": "cargo_pants",
       "parts": {
-        "matches": {
-          "centreOfMass": [0, 0.0096037416184675227, 0.00019996058760300968],
-          "massKg": 0.02,
-          "node": "matches:matchbox"
+        "cargo_pants": {
+          "centreOfMass": [0, 0.024977008519786608, 0],
+          "massKg": 0.80000000000000004,
+          "node": "cargo_pants:folded-garment"
         }
       },
       "roll": 0
     },
     {
-      "file": "assets/models/dad_cabin_key.glb",
+      "file": "assets/models/hoodie.glb",
       "grip": {
-        "at": [0.031000000000000003, 0.0015, 0],
+        "at": [0, 0.029999999999999999, 0],
         "turn": [0, 0, -90]
       },
       "hold": "upright",
-      "id": "dad_cabin_key",
+      "id": "hoodie",
       "parts": {
-        "dad_cabin_key": {
-          "centreOfMass": [0.01858019090239605, 0.0021287794087121647, 0.00073936380279885294],
-          "massKg": 0.01,
-          "node": "dad_cabin_key:key"
+        "hoodie": {
+          "centreOfMass": [0, 0.032171332212486685, 0.0023561655165552551],
+          "massKg": 0.59999999999999998,
+          "node": "hoodie:folded-garment"
         }
       },
       "roll": 0
     },
     {
-      "file": "assets/models/pharmacy_key.glb",
+      "file": "assets/models/jacket.glb",
       "grip": {
-        "at": [0.030500000000000003, 0.0015, 0],
+        "at": [0, 0.035000000000000003, 0],
         "turn": [0, 0, -90]
       },
       "hold": "upright",
-      "id": "pharmacy_key",
+      "id": "jacket",
       "parts": {
-        "pharmacy_key": {
-          "centreOfMass": [0.019810191642827119, 0.0020571359028949561, 0.00080016426531839911],
-          "massKg": 0.01,
-          "node": "pharmacy_key:key"
+        "jacket": {
+          "centreOfMass": [0, 0.034981540563067244, -0.0018420077792183737],
+          "massKg": 1.2,
+          "node": "jacket:folded-garment"
         }
       },
       "roll": 0
     },
     {
-      "file": "assets/models/camp_armoury_key.glb",
+      "file": "assets/models/utility_vest.glb",
       "grip": {
-        "at": [0.035499999999999997, 0.0015, 0],
+        "at": [0, 0.029999999999999999, 0],
         "turn": [0, 0, -90]
       },
       "hold": "upright",
-      "id": "camp_armoury_key",
+      "id": "utility_vest",
       "parts": {
-        "camp_armoury_key": {
-          "centreOfMass": [0.019602712100694909, 0.002197052981961932, 0.00068142324302168298],
-          "massKg": 0.01,
-          "node": "camp_armoury_key:key"
+        "utility_vest": {
+          "centreOfMass": [0, 0.030021072944808942, -0.0052682362022385167],
+          "massKg": 0.90000000000000002,
+          "node": "utility_vest:folded-garment"
         }
       },
       "roll": 0
     },
     {
-      "file": "assets/models/camp_hq_safe_key.glb",
+      "file": "assets/models/fanny_pack.glb",
       "grip": {
-        "at": [0.030000000000000002, 0.0015, 0],
+        "at": [0, 0.070000000000000007, 0],
         "turn": [0, 0, -90]
       },
       "hold": "upright",
-      "id": "camp_hq_safe_key",
+      "id": "fanny_pack",
       "parts": {
-        "camp_hq_safe_key": {
-          "centreOfMass": [0.021029245289178437, 0.0019838336744247989, 0.0008623724074781385],
-          "massKg": 0.01,
-          "node": "camp_hq_safe_key:key"
+        "fanny_pack": {
+          "centreOfMass": [0, 0.06710683747827785, -0.0050654624938793929],
+          "massKg": 0.20000000000000001,
+          "node": "fanny_pack:bag"
         }
       },
       "roll": 0
     },
     {
-      "file": "assets/models/shed_key.glb",
+      "file": "assets/models/school_backpack.glb",
       "grip": {
-        "at": [0.031000000000000003, 0.0015, 0],
+        "at": [0, 0.47999999999999998, 0],
         "turn": [0, 0, -90]
       },
       "hold": "upright",
-      "id": "shed_key",
+      "id": "school_backpack",
       "parts": {
-        "shed_key": {
-          "centreOfMass": [0.01858019090239605, 0.0021287794087121647, 0.00073936380279885294],
-          "massKg": 0.01,
-          "node": "shed_key:key"
+        "school_backpack": {
+          "centreOfMass": [0, 0.22388789538589104, -0.0036833821106219719],
+          "massKg": 0.59999999999999998,
+          "node": "school_backpack:bag"
         }
       },
       "roll": 0
     },
     {
-      "file": "assets/models/gauntlet_police_armoury_key.glb",
+      "file": "assets/models/hiking_backpack.glb",
       "grip": {
-        "at": [0.035499999999999997, 0.0015, 0],
+        "at": [0, 0.60499999999999998, 0],
         "turn": [0, 0, -90]
       },
       "hold": "upright",
-      "id": "gauntlet_police_armoury_key",
+      "id": "hiking_backpack",
       "parts": {
-        "gauntlet_police_armoury_key": {
-          "centreOfMass": [0.019602712100694909, 0.002197052981961932, 0.00068142324302168298],
-          "massKg": 0.01,
-          "node": "gauntlet_police_armoury_key:key"
+        "hiking_backpack": {
+          "centreOfMass": [0, 0.28700701378194504, -0.010220862005107311],
+          "massKg": 1.3999999999999999,
+          "node": "hiking_backpack:bag"
         }
       },
       "roll": 0
     },
     {
-      "file": "assets/models/gauntlet_lab_entry_card.glb",
+      "file": "assets/models/baseball_cap.glb",
       "grip": {
-        "at": [0, 0.00050000000000000001, 0],
+        "at": [0, 0.040000000000000001, 0],
         "turn": [0, 0, -90]
       },
       "hold": "upright",
-      "id": "gauntlet_lab_entry_card",
+      "id": "baseball_cap",
       "parts": {
-        "gauntlet_lab_entry_card": {
-          "centreOfMass": [0, 0.00050719648951730865, 0],
-          "massKg": 0.0050000000000000001,
-          "node": "gauntlet_lab_entry_card:keycard"
+        "baseball_cap": {
+          "centreOfMass": [0, 0.038430401717786285, -0.0061312432898972978],
+          "massKg": 0.080000000000000002,
+          "node": "baseball_cap:cap"
         }
       },
       "roll": 0

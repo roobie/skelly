@@ -1,0 +1,14 @@
+{
+  "id": "fanny_pack",
+  "file": "assets/models/fanny_pack.glb",
+  "parts": {
+    "fanny_pack": {
+      "node": "fanny_pack:bag",
+      "massKg": 0.2,
+      "centreOfMass": [0, 0.06710683747827785, -0.005065462493879393]
+    }
+  },
+  "grip": { "at": [0, 0.07, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

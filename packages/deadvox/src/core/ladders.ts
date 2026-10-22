@@ -165,8 +165,20 @@ export class LadderHold implements HandHold {
     if (this.options.entities.carrying()) {
       return inventory.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.handsFull;
     }
+    const reserved = this.options.entities.useRefusal(entity);
+    if (reserved) {
+      return reserved;
+    }
     this.hold = this.reached() ? { on: true } : { on: false, grabbed: entity };
     return undefined;
+  }
+
+  /** Lets go of a ladder that is being removed, so the hold never names a missing piece. */
+  releasePiece(entity: BlockEntity): void {
+    const held = this.hold?.on ? this.reached() : this.hold?.grabbed;
+    if (held?.uid === entity.uid) {
+      this.hold = undefined;
+    }
   }
 
   /**

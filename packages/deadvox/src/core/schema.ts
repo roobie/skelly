@@ -326,13 +326,21 @@ const UiTuningSchema = strictObject({
   restLabels: strictObject({ rest: Name, sleep: Name }),
   /** Why a door will not close: the player, or something else, is standing in its way. */
   doorCloseBlockedMessages: strictObject({ player: Name, other: Name }),
-  /** Why a piece of furniture can't be lifted, turned or put down, and what the player says on dropping it worn out. */
+  /**
+   * Why a piece of furniture can't be lifted, turned, put down or removed, and what the player says on dropping it
+   * worn out.
+   */
   furnitureMoveMessages: strictObject({
     tooBig: Name,
     fastened: Name,
     handsFull: Name,
     tired: Name,
     standingOn: Name,
+    someoneOnIt: Name,
+    holdsUp: Name,
+    holdsItems: Name,
+    barricaded: Name,
+    reserved: Name,
     fallsOnPlayer: Name,
     fallsOnOther: Name,
     nowhereToLand: Name,
