@@ -950,7 +950,7 @@ export const startPlay = (
       const model = registry.items.get(item.type)?.model;
       const lever = model ? registry.models.get(model)?.lever : undefined;
       if (lever) {
-        view.leverProps.spawn(view.itemThrows.drawn(item.uid) ?? view.piles.drawnModel(item.uid), lever);
+        view.leverProps.lit(item.uid, lever);
       }
     },
     onBlock: (jolt) => view.block(jolt),

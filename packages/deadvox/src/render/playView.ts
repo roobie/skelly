@@ -399,6 +399,7 @@ export const createPlayView = (
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour, dayCycle), weather, dayCycle.weather);
       piles.sync(inventory, itemThrows.hiddenItemUids);
+      leverProps.launchLit((uid) => itemThrows.drawn(uid) ?? piles.drawnModel(uid));
       furniture.sync(entities);
       decals?.sync(entities);
       const alpha = Math.max(0, Math.min(1, (time - lastZombieStep) * 20));

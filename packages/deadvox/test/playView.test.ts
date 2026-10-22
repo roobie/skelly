@@ -2,6 +2,7 @@ import { runInNewContext } from 'node:vm';
 import {
   BoxGeometry,
   DirectionalLight,
+  Group,
   HemisphereLight,
   Mesh,
   MeshLambertMaterial,
@@ -11,7 +12,9 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
+import { BlockEntities } from '../src/core/blockEntities.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import { MapEntityStore } from '../src/core/entities.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { inventoryLightSources, toggleLight } from '../src/core/lights.ts';
 import type { Body } from '../src/core/physics.ts';
@@ -20,6 +23,7 @@ import { skyAt } from '../src/core/sky.ts';
 import type { SkyBounds } from '../src/core/skylight.ts';
 import type { SkySnapshot } from '../src/core/skySnapshot.ts';
 import { buildSkyResult, type SkyResult } from '../src/core/skyTransport.ts';
+import type { Zombie } from '../src/core/zombies.ts';
 import type { Engine } from '../src/game/engine.ts';
 import { ThirdPersonOrbit } from '../src/game/thirdPersonOrbit.ts';
 import { flashlightDaylightScale } from '../src/render/flashlight.ts';
@@ -651,6 +655,40 @@ describe('play presentation ownership', () => {
     expect(mood.setNightVision).toHaveBeenLastCalledWith(nightVision);
     view.updateCamera({ ...frame, spectator: { position: [2, 4, 6], yaw: 0, pitch: 0 } }, damage);
     expect(mood.setNightVision).toHaveBeenLastCalledWith(undefined);
+    view.dispose();
+  });
+
+  it('launches the lever of a fuse lit before its pile has drawn the throwable', () => {
+    const { inventory, view } = fixture();
+    const lever = registry.models.get(registry.items.get('frag_grenade')!.model!)!.lever!;
+    const uid = 7;
+    const drawn = new Group();
+    const leverMesh = new Mesh(new BoxGeometry(0.01, 0.08, 0.02), new MeshLambertMaterial());
+    leverMesh.geometry.userData.mergeGroup = lever.mergeGroup;
+    drawn.add(leverMesh);
+    // A drop lights the fuse before the next frame's pile sync draws the grenade.
+    let pileDrawn = false;
+    vi.spyOn(view.piles, 'sync').mockImplementation(() => {
+      pileDrawn = true;
+    });
+    vi.spyOn(view.piles, 'drawnModel').mockImplementation((id) => (pileDrawn && id === uid ? drawn : undefined));
+    view.leverProps.lit(uid, lever);
+    view.syncWorld({
+      calendar: 0,
+      time: 0,
+      playerEye: [0, 0, 0],
+      playerChest: [0, 0, 0],
+      lastZombieStep: 0,
+      lastBackgroundStep: 0,
+      dt: 0,
+      entities: new BlockEntities(inventory.registry),
+      zombies: new MapEntityStore<Zombie>(),
+      acidGlobs: [],
+      acidPuddles: [],
+      frozen: false,
+      perceptionLabels: false,
+    });
+    expect(view.leverProps.group.children.filter((holder) => holder.visible)).toHaveLength(1);
     view.dispose();
   });
 });

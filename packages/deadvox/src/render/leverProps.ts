@@ -23,6 +23,7 @@ export class LeverProps {
   readonly group = new Group();
   private readonly props: readonly Prop[];
   private next = 0;
+  private readonly pending: { readonly uid: number; readonly lever: Lever }[] = [];
   private readonly blockSize: number;
   private readonly isSolid: (x: number, y: number, z: number) => boolean;
   private readonly centre = new Vector3();
@@ -46,6 +47,19 @@ export class LeverProps {
         resting: true,
       };
     });
+  }
+
+  /** Holds a lit fuse's lever for `launchLit`: a fuse lit by a drop burns before the pile has drawn its throwable. */
+  lit(uid: number, lever: Lever): void {
+    this.pending.push({ uid, lever });
+  }
+
+  /** Launches each lever lit since the last call from its throwable as drawn now. */
+  launchLit(drawn: (uid: number) => Object3D | undefined): void {
+    for (const { uid, lever } of this.pending) {
+      this.spawn(drawn(uid), lever);
+    }
+    this.pending.length = 0;
   }
 
   /** Launches a copy of `source`'s lever mesh from where it is drawn, reusing the oldest when all are flying. */
