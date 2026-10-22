@@ -5,11 +5,14 @@ import { dirname, join, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { AMALGAM_FIGURE_SEED, amalgamCollisionEnvelope, amalgamFigureForType } from '../core/amalgamFigure.ts';
+import { BlockEntities } from '../core/blockEntities.ts';
+import { worldSolid } from '../core/collision.ts';
 import { buildRegistry, requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
 import { makeScale } from '../core/scale.ts';
-import { testedBricks } from '../core/solidBricks.ts';
+import { worldBricks } from '../core/solidBricks.ts';
+import { World } from '../core/world.ts';
 import { amalgamTypeOf } from '../core/zombieFigure.ts';
 import { PLAYER, physicsFor } from '../game/player.ts';
 
@@ -56,26 +59,31 @@ const warmups = 5;
 const runs = 25;
 const percentile = (samples, p) => [...samples].sort((a, b) => a - b)[Math.ceil(samples.length * p) - 1];
 
-// Cache masks, not query answers, just as worldBricks does on unchanged terrain. The bench has no streaming
-// or block edits; measuring chunk construction would conflate collision cost with terrain admission.
-const cachedBricks = (solid) => {
-  const source = testedBricks(solid);
-  const cache = new Map();
-  return {
-    version: 0,
-    brick: (x, y, z, out) => {
-      const key = `${x},${y},${z}`;
-      let mask = cache.get(key);
-      if (!mask) {
-        mask = { lo: 0, hi: 0 };
-        source.brick(x, y, z, mask);
-        cache.set(key, mask);
+// The terrain is a real World read through worldBricks, as the game reads it, so the shape pays what a brick
+// read costs there. The bench has no streaming or block edits; measuring chunk construction would conflate
+// collision cost with terrain admission, so the bricks are read once before timing.
+const solidBlock = registry.blocks.findIndex((block, id) => id > 0 && block?.solid === true);
+const arena = (solid) => {
+  const world = new World();
+  for (let x = -24; x < 40; x++) {
+    for (let z = -24; z < 40; z++) {
+      for (let y = 0; y < 12; y++) {
+        if (solid(x, y, z)) {
+          world.setBlock(x, y, z, solidBlock);
+        }
       }
-      out.lo = mask.lo;
-      out.hi = mask.hi;
-      return out.lo !== 0 || out.hi !== 0;
-    },
-  };
+    }
+  }
+  const entities = new BlockEntities(registry);
+  const bricks = worldBricks(world, registry, entities);
+  for (let bx = -6; bx < 10; bx++) {
+    for (let bz = -6; bz < 10; bz++) {
+      for (let by = 0; by < 3; by++) {
+        bricks.brick(bx, by, bz, { lo: 0, hi: 0 });
+      }
+    }
+  }
+  return { bricks, isSolid: worldSolid(world, registry, entities) };
 };
 
 const scenarios = [
@@ -102,12 +110,12 @@ console.log(
 for (const { name, corridor } of scenarios) {
   const right = Math.ceil(envelope.halfWidth * 2 + 1);
   const solid = (x, y, z) => y === 0 || (y > 0 && (corridor ? x < 0 || x >= right : z < 0));
-  const terrain = cachedBricks(solid);
+  const { bricks: terrain, isSolid } = arena(solid);
   const sense = { pos: [0, 1, 0], facing: [0, 0, -1], movement: 'jogging', lit: false, lightSeenFrom: 40 };
   const createSystem = () =>
     new ZombieSystem({
       player: () => sense,
-      isSolid: solid,
+      isSolid,
       solidBricks: terrain,
       isOpaque: () => false,
       dayPhase: () => dayPhaseAt(requireDayCycle(registry), 12 * 3600),
