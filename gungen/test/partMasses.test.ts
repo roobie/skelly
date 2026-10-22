@@ -8,7 +8,7 @@ import { gunModelParts, type PartMassRow } from '../src/gun/physical.ts';
 
 const MASS_CONTEXT = /mass-fixture.*body.*fixture.*plain.*matched/;
 const AMBIGUOUS_ROWS = /plain-body, second-body/;
-// Body choices with no mass row, waiting on BR's ruling (br-1231, br-1232): masses, removal, or a deferred-assertions row.
+// Body choices with no mass row, waiting on a ruling: masses, removal, or a deferred-assertions row.
 // The test also fails when an entry gains a row, so a stale entry cannot linger; delete this set when the last one goes.
 const AWAITING_BR = new Set([
   'receiver.section=ak',
