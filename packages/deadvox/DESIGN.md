@@ -400,8 +400,10 @@ durability on the same scale; its condition is the share left, and storing summe
 strength keeps the blow that breaks a piece exact. Every piece yields to enough
 strength, so no code or flag names a kind that cannot be ruined; content keeps a piece
 that matters, such as a scenario goal or a needed ladder, by authoring a high minimum
-strength and durability. See `src/core/schema.ts`, `FurnitureSchema`, and
-`src/core/blockEntities.ts`, `BlockEntities.conditionOf`.
+strength and durability. Worldgen may place a piece already worn, within a range its
+content authors, so an abandoned place reads as used; it never places a piece ruined,
+because a ruined piece is gone. See `src/core/schema.ts`, `FurnitureSchema`, and
+`src/core/blockEntities.ts`, `BlockEntities.conditionOf` and `BlockEntities.wear`.
 
 A damaged piece shows its damage in steps its material authors and names its band in the
 hint, so the player can judge what will hold before relying on it. Every piece names a

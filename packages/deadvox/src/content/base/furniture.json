@@ -59,7 +59,11 @@
       "id": "kitchen_cupboard",
       "material": "wood",
       "name": "Kitchen cupboard",
-      "size": [2, 2, 1]
+      "size": [2, 2, 1],
+      "wear": {
+        "from": 0,
+        "to": 0.5
+      }
     },
     {
       "appearance": {
@@ -129,7 +133,11 @@
       "id": "wardrobe",
       "material": "wood",
       "name": "Wardrobe",
-      "size": [2, 4, 1]
+      "size": [2, 4, 1],
+      "wear": {
+        "from": 0,
+        "to": 0.40000000000000002
+      }
     },
     {
       "breach": {
@@ -469,7 +477,11 @@
         }
       ],
       "size": [2, 2, 2],
-      "solidFill": 0.01
+      "solidFill": 0.01,
+      "wear": {
+        "from": 0.10000000000000001,
+        "to": 0.59999999999999998
+      }
     },
     {
       "breach": {
@@ -583,7 +595,11 @@
         }
       ],
       "size": [1, 2, 1],
-      "solidFill": 0.01
+      "solidFill": 0.01,
+      "wear": {
+        "from": 0,
+        "to": 0.69999999999999996
+      }
     },
     {
       "breach": {
@@ -625,7 +641,11 @@
         }
       ],
       "size": [4, 2, 2],
-      "solidFill": 0.01
+      "solidFill": 0.01,
+      "wear": {
+        "from": 0.10000000000000001,
+        "to": 0.69999999999999996
+      }
     },
     {
       "breach": {

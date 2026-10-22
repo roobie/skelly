@@ -1495,6 +1495,19 @@ const FurnitureSchema = pipe(
      * add up to `durability`, which ruins the piece.
      */
     breach: strictObject({ minimumStrength: Positive, durability: Positive }),
+    /**
+     * Worldgen may place the piece already worn, by a share of its durability drawn from this range (`DESIGN.md`,
+     * "Block entities"). Both ends stay below 1, so a placed piece is never ruined; no range places it intact.
+     */
+    wear: optional(
+      pipe(
+        strictObject({
+          from: pipe(number(), minValue(0, 'must be 0 or more'), maxValue(1 - Number.EPSILON, 'must be below 1')),
+          to: pipe(number(), minValue(0, 'must be 0 or more'), maxValue(1 - Number.EPSILON, 'must be below 1')),
+        }),
+        check(({ from, to }) => from <= to, 'wear must run from the lower share to the higher'),
+      ),
+    ),
     /** What a ruined piece leaves besides its contents (`DESIGN.md`, "Damage, destruction and dismemberment"). */
     ruin: optional(
       strictObject({
