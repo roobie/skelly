@@ -45,8 +45,7 @@
           "wearPerHit": 0.014999999999999999,
           "windupCapSimSeconds": 0.25
         }
-      },
-      "weight": 1500
+      }
     },
     {
       "category": "tool",
@@ -114,8 +113,7 @@
           "wearPerHit": 0.012,
           "windupCapSimSeconds": 0.25
         }
-      },
-      "weight": 700
+      }
     },
     {
       "category": "tool",
@@ -182,8 +180,7 @@
           "wearPerHit": 0.025000000000000001,
           "windupCapSimSeconds": 0.25
         }
-      },
-      "weight": 150
+      }
     },
     {
       "category": "tool",
@@ -215,8 +212,7 @@
           "wearPerHit": 0.025000000000000001,
           "windupCapSimSeconds": 0.25
         }
-      },
-      "weight": 300
+      }
     },
     {
       "category": "tool",
@@ -248,8 +244,7 @@
           "wearPerHit": 0.02,
           "windupCapSimSeconds": 0.25
         }
-      },
-      "weight": 550
+      }
     },
     {
       "category": "tool",
@@ -315,8 +310,7 @@
           "wearPerHit": 0.01,
           "windupCapSimSeconds": 0.25
         }
-      },
-      "weight": 900
+      }
     },
     {
       "category": "weapon",
@@ -343,8 +337,7 @@
           "wearPerHit": 0.014999999999999999,
           "windupCapSimSeconds": 0.25
         }
-      },
-      "weight": 1800
+      }
     },
     {
       "category": "light",
@@ -377,8 +370,7 @@
       },
       "model": "flashlight",
       "name": "Flashlight",
-      "size": [1, 2],
-      "weight": 250
+      "size": [1, 2]
     },
     {
       "category": "light",
@@ -684,16 +676,6 @@
     }
   ],
   "models": [
-    {
-      "anchors": {
-        "lens": [0.19900000000000001, 0, 0]
-      },
-      "file": "assets/models/flashlight.glb",
-      "grip": {
-        "at": [0.085000000000000006, 0, 0]
-      },
-      "id": "flashlight"
-    },
     {
       "emissiveMaterial": "chemical-light tube",
       "file": "assets/models/glowstick.glb",

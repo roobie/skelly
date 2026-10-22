@@ -1,0 +1,11 @@
+{
+  "id": "machete",
+  "file": "assets/models/machete.glb",
+  "parts": {
+    "machete": {
+      "node": "machete:knife",
+      "massKg": 0.55,
+      "centreOfMass": [-0.05444100932030008, -0.010371902705160264, -0.00003409865878608778]
+    }
+  }
+}

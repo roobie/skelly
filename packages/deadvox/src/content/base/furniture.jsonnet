@@ -61,6 +61,19 @@ breach.breaking(shape.colliding({
       shape: [{ position: [0.05, 0, 0.05], size: [3.9, 0.06, 1.9] }],
     },
     {
+      id: 'bedroll',
+      name: 'Bedroll',
+      size: [1, 1, 2],
+      color: '#5b5f3c',
+      solid: false,
+      cover: true,
+      rest: { quality: 0.3, sleep: true },
+      shape: [
+        { position: [0.05, 0, 0.05], size: [0.9, 0.08, 1.9] },
+        { position: [0.15, 0.08, 0.1], size: [0.7, 0.08, 0.35], color: '#c9c3a8' },
+      ],
+    },
+    {
       id: 'tarp',
       name: 'Tarp',
       size: [3, 1, 2],

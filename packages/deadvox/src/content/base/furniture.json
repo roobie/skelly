@@ -24,6 +24,34 @@
         "durability": 60,
         "minimumStrength": 3.5
       },
+      "color": "#5b5f3c",
+      "cover": true,
+      "id": "bedroll",
+      "material": "wood",
+      "name": "Bedroll",
+      "rest": {
+        "quality": 0.29999999999999999,
+        "sleep": true
+      },
+      "shape": [
+        {
+          "position": [0.050000000000000003, 0, 0.050000000000000003],
+          "size": [0.90000000000000002, 0.080000000000000002, 1.8999999999999999]
+        },
+        {
+          "color": "#c9c3a8",
+          "position": [0.14999999999999999, 0.080000000000000002, 0.10000000000000001],
+          "size": [0.69999999999999996, 0.080000000000000002, 0.34999999999999998]
+        }
+      ],
+      "size": [1, 1, 2],
+      "solid": false
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#3d5a6c",
       "cover": true,
       "id": "tarp",

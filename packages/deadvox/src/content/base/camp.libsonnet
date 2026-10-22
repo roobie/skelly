@@ -1006,6 +1006,9 @@ local campWallRunCrouchHole = campWallRun + {
         "B": {
           "furniture": "bed"
         },
+        "L": {
+          "furniture": "bedroll"
+        },
         "R": {
           "furniture": "wardrobe",
           "loot": "wardrobe"
@@ -1058,8 +1061,8 @@ local campWallRunCrouchHole = campWallRun + {
           "#..............#",
           "#..............#",
           "#..............#",
-          "#..............#",
-          "#..............#",
+          "#..L...........#",
+          "#..L...........#",
           "#..............#",
           "################"
         ],
