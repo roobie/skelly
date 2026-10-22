@@ -10,11 +10,10 @@ read_if:
 
 # Compact SMG export
 
-The compact SMG is traced from a dimensioned HK schematic with simple shapes and then built in the Gungen engine, as the hunting rifle was. Four features make the silhouette recognisable: the charging handle at the front, the telescoping buttstock, the rear aperture sight with its drum and the ringed front sight. The build must produce each one as real geometry and not as a decal or substitute part. This doc states intent before implementation; build rounds trim it to reasons and code cues (`PILLARS.md`, "Zero drift").
-
+The compact SMG is traced from a dimensioned HK schematic with simple shapes and then built in the Gungen engine, as the hunting rifle was. Four features make the silhouette recognisable: the charging handle at the front, the telescoping buttstock, the rear aperture sight with its drum and the ringed front sight. The build must produce each one as real geometry and not as a decal or substitute part.
 ## Reference registration
 
-The reference is HK's dimensioned [SP5 schematic](https://www.americanrifleman.org/media/vp5o0jbz/hksp1.jpg), kept outside the repository, together with the MP5A3's published specification and the fixed-stock length in the [Swedish Wikipedia MP5 article](https://sv.wikipedia.org/wiki/Heckler_%26_Koch_MP5). The silhouette round lands the derived proportions table together with its first consumer, as the sporter and AK tables did; until then the trace data stays outside the tracked tree.
+The reference is HK's dimensioned [SP5 schematic](https://www.americanrifleman.org/media/vp5o0jbz/hksp1.jpg), kept outside the repository, together with the MP5A3's published specification and the fixed-stock length in the [Swedish Wikipedia MP5 article](https://sv.wikipedia.org/wiki/Heckler_%26_Koch_MP5). The derived proportions table is `src/gun/compactSmgProportions.ts`, `COMPACT_SMG_PROPORTIONS`. It is derived from the dimensions cited here because the trace data stays outside the tracked tree, so a retrace changes the table and nothing else.
 
 Side-view photos are not references for this gun. Two photos scaled differently along and across the bore cannot share one receiver, while one dimensioned drawing plus published numbers gives the shared parts a single consistent source.
 
@@ -30,14 +29,13 @@ The bore line runs through the muzzle axis and is horizontal in the schematic, s
 
 The design sits on the existing `smg` template; see `src/gun/templates.ts`, `smg`. The trace adds or changes these parts:
 
-- **Upper receiver and end cap.** The receiver ends at the origin and the end cap holds the stock. The ejection port is on the right side of the receiver, ahead of the grip.
-- **Cocking tube.** It runs from the receiver's front face along the top of the handguard and ends in a cap at the front sight base. The existing `smg-cocking-tube` from the handguard's `handleStyle: smg` already places the tube there, so the build tunes it; see `src/gun/parts.ts`, `smgSlidingHandle`. The slot in the tube has a notch at its rear end.
-- **Handguard.** It hangs below the cocking tube, deeper at the rear than the front, and leaves the magazine well clear.
+- **Upper receiver and end cap.** The receiver's own section keeps its outline and cavity tied to the table; see `src/gun/parts.ts`, `RECEIVER_SECTION`. The section forces the `smg` carrier pattern in `carrierPatternFor`, because the other patterns' carriers do not fit its cavity. The end cap holds the stock.
+- **Cocking tube.** The handguard's `handleStyle: smg` places it from the receiver's front face to the front sight base; see `src/gun/parts.ts`, `smgSlidingHandle`. The slot in the tube has a notch at its rear end.
+- **Handguard.** It hangs below the cocking tube and leaves the magazine well clear; see `src/gun/parts.ts`, `standardHandguardLength`.
 - **Front sight.** A base at the muzzle end carries a closed ring around a post. No front-sight style has a ring, so this needs a new style; see `src/gun/parts.ts`, `frontSight`.
 - **Rear sight.** A static drum on a base on top of the receiver, with apertures around its rim. The existing rear-sight families have no drum, so this needs a new family; see `src/gun/parts.ts`, `sportingRearSight` and `akRearSight`.
-- **Muzzle.** A threaded, suppressor-ready muzzle on the existing thread mount (see `src/gun/mounts.ts`, `muzzle`), as the schematic draws it, and a plain stub whose length is the model's own design.
-- **Lower.** The trigger housing hangs below the receiver and carries the pistol grip, trigger guard, selector, magazine release and a rear sling tab.
-- **Magazine.** It is curved and forward-raked, entering a magwell just behind the origin; the existing `smg` magazine profile is the starting point. It holds the new 9x19 cartridge.
+- **Muzzle.** A threaded, suppressor-ready muzzle on the existing thread mount (see `src/gun/mounts.ts`, `muzzle`), as the schematic draws it, and a plain stub whose length is the model's own design. The barrel's `muzzle` param picks the variant, and the port id stays `muzzle` so the anchor sits at the tip of either.
+- **Lower.** The trigger housing hangs below the receiver and carries the pistol grip and trigger guard.- **Magazine.** It is curved and forward-raked, entering a magwell just behind the origin, on the existing `smg` magazine profile. It holds the new 9x19 cartridge once round 5 adds it.
 - **Stock.** Two variants on the same end cap. The telescoping stock has two struts that slide in the end cap and carry a butt plate; no stock style telescopes, so this needs a new style. The fixed stock is a solid buttstock; see `src/gun/parts.ts`, `stock`. Both profiles are designed, not traced.
 
 Joins keep the shared receiver frame so struts, tube and lower cannot drift from the receiver when it is retuned. The struts and their butt plate are one moving group, so the plate cannot be left behind at full extension.
@@ -78,9 +76,9 @@ that boundary explicit; see `src/cli/exportFile.ts`, `FIXTURE_APPEARANCE`.
 
 ## Build split
 
-The registration round comes first and lands no code. The build rounds after it run in order. Every build round must pass these checks: validate reports no geometry issues for each design variant, every mover passes its swept-clearance check, and the export loads in Deadvox validation and model preparation. A round only adds checks of its own.
+The build rounds run in order. Every build round must pass these checks: validate reports no geometry issues for each design variant, every mover passes its swept-clearance check, and the export loads in Deadvox validation and model preparation. A round only adds checks of its own.
 
-1. **Silhouette.** Add the compact-smg Jsonnet design on the archetype, adding the proportions table with this first consumer. The table takes the shared parts from the schematic's registration the telescoping stock's lengths from the specification and the fixed stock's from the Wikipedia article, and the design uses it for the receiver, handguard, cocking tube, lower, grip and magazine. Add the threaded and plain muzzle variants. Its own checks: the bore and receiver datum match the registration, and the muzzle anchor sits at the tip of each muzzle variant.
+1. **Silhouette.** `designs/compact-smg.jsonnet` and `designs/compact-smg-plain.jsonnet` on the `compactSmg` template; their datum and muzzle checks are `test/compactSmgReference.test.ts`. The template omits the front sight, which round 2's ringed style brings back.
 2. **Sights.** Add the ringed front-sight style and the static drum rear-sight family. Its own check: the eye line passes through the aperture and ring.
 3. **Charging handle.** Tune the existing sliding handle to the traced slot, add the notch at the slot's rear end and the held-back state. Add the `smg` action description in `src/gun/actionDescription.ts` and pair the handle in `coupledParts`. Its own checks: the handle clears the front sight base and handguard over its full travel and into the notch, the held-back state stays in the notch, and `resolveGunAction` resolves an action for the `smg` pattern.
 4. **Stocks.** Add the telescoping stock style with collapsed and extended states, and the fixed stock, as design variants. Its own checks: the struts clear the end cap and lower at both ends, and the grip datum moves with neither the telescoping stock nor the choice of variant.
