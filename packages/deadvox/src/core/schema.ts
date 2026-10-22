@@ -38,6 +38,7 @@ import {
 } from 'valibot';
 import { BLUEPRINTS } from '../vehicles/catalogue.ts';
 import { solidBlocks } from '../vehicles/solid.ts';
+import { ActionTextSchema } from './actionText.ts';
 import { hasSegment } from './authoredTerrain.mjs';
 import {
   BODY_REGIONS,
@@ -388,8 +389,7 @@ const UiTuningSchema = strictObject({
     emptyHands: Name,
     staysUpright: Name,
   }),
-  /** What the item action list calls an action whose wording does not depend on the item or wound. */
-  itemActionLabels: strictObject({ stripRound: Name }),
+  actionText: ActionTextSchema,
   /** What the inventory screen calls each wear slot. */
   wearSlotLabels: strictObject({
     head: Name,

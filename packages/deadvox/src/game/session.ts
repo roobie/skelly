@@ -5,6 +5,7 @@
 // callbacks; nothing here draws or listens.
 
 import type { Body as MobBody } from '@mobgen/core/body.ts';
+import { actionText } from '../core/actionText.ts';
 import { AimController, type AimWobbleNoiseTuning, aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import { BearTraps } from '../core/bearTrap.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
@@ -496,24 +497,26 @@ const playerTreatmentHooks = (
   sim: Simulation,
 ): NonNullable<Simulation['actions']['treatment']> => ({
   validate: (region, itemUid, itemType) => {
+    const text = actionText(inventory.registry).treatment;
     const item = inventory.itemByUid(itemUid);
     const treatment = item?.type === itemType ? defOf(inventory.registry, itemType).treatment : undefined;
     if (!treatment) {
-      return 'Treatment item is unavailable';
+      return text.gone;
     }
-    return sim.body.canTreat(region, treatment) ? undefined : 'That treatment does not apply';
+    return sim.body.canTreat(region, treatment) ? undefined : text.doesNotApply;
   },
   finish: (region, itemUid, itemType) => {
+    const text = actionText(inventory.registry).treatment;
     const item = inventory.itemByUid(itemUid);
     const treatment = item?.type === itemType ? defOf(inventory.registry, itemType).treatment : undefined;
     if (!(item && treatment)) {
-      return 'Treatment item is no longer available';
+      return text.gone;
     }
     if (!sim.body.canTreat(region, treatment)) {
-      return 'That treatment no longer applies';
+      return text.doesNotApply;
     }
     if (!inventory.consume(item)) {
-      return 'Treatment item is no longer available';
+      return text.gone;
     }
     const roll = sim.rng(`treatment:${region}:${itemUid}:${sim.time}`);
     if (!sim.body.treat(region, treatment, () => roll.next())) {
@@ -604,6 +607,7 @@ const observeScenarioMovement = (
 
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
+  const text = actionText(registry);
   const dayCycle = requireDayCycle(registry);
   const shamblerVoice = shamblerVoiceLaw(figureSeedPool(registry.zombies));
   const s = scale.blockSize;
@@ -969,6 +973,7 @@ export const createSession = (options: SessionOptions) => {
     },
     notice: options.notice,
     hasAlarm: () => [...inventory.carriedTree()].some(({ item }) => registry.items.get(item.type)?.alarm === true),
+    text,
   });
 
   const {
@@ -1414,7 +1419,7 @@ export const createSession = (options: SessionOptions) => {
   const liftPiece = (uid: number): string | undefined => {
     const entity = entities.byUid(uid);
     if (!entity) {
-      return 'It is no longer there';
+      return text.common.gone;
     }
     const centre = boxCentre(entity.pos, entity.size);
     const reason = liftFurniture(furnitureMover(), entity);
@@ -1428,7 +1433,7 @@ export const createSession = (options: SessionOptions) => {
   const placePiece = (aimed: Readonly<Vec3>): string | undefined => {
     const carried = entities.carrying();
     if (!carried) {
-      return 'Nothing to set down';
+      return registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.emptyHands;
     }
     const reason = placeFurniture(furnitureMover(), aimed);
     if (!reason) {
@@ -1772,7 +1777,7 @@ export const createSession = (options: SessionOptions) => {
    */
   const removePiece = (entity: BlockEntity): string | undefined => {
     if (entities.byUid(entity.uid) !== entity) {
-      return 'It is no longer there';
+      return text.common.gone;
     }
     const mover = furnitureMover();
     const refusal = removalRefusal(mover, entity);
@@ -1789,7 +1794,7 @@ export const createSession = (options: SessionOptions) => {
     }
     const entity = entities.byUid(uid);
     if (!entity) {
-      return 'It is no longer there';
+      return text.common.gone;
     }
     searching.delete(entity);
     const reserved = entities.useRefusal(entity);
@@ -1800,7 +1805,7 @@ export const createSession = (options: SessionOptions) => {
     if (reached) {
       entities.markSearched(entity);
     }
-    return reached ? undefined : 'Too far away';
+    return reached ? undefined : text.common.tooFar;
   });
   registerDoorAction({
     queue,
@@ -1825,7 +1830,7 @@ export const createSession = (options: SessionOptions) => {
     validate: (entityUid, toolUid, method) => {
       const entity = entities.byUid(entityUid);
       if (!entity) {
-        return 'The door is no longer there';
+        return text.common.gone;
       }
       const reserved = entities.useRefusal(entity);
       if (reserved) {
@@ -1846,7 +1851,7 @@ export const createSession = (options: SessionOptions) => {
     finish: (entityUid, toolUid, method) => {
       const entity = entities.byUid(entityUid);
       if (!entity) {
-        return 'The door is no longer there';
+        return text.common.gone;
       }
       const plan = pryPlan(inventory, entity, { toolUid, method }, character);
       if (!plan.ok) {
@@ -1886,7 +1891,7 @@ export const createSession = (options: SessionOptions) => {
   scenarioRun = restoreScenarioRun(options, sim);
   /** Why a held piece can't be used: it is no longer the live piece, or its deconstruction holds it. */
   const pieceRefusal = (entity: BlockEntity): string | undefined =>
-    entities.byUid(entity.uid) === entity ? entities.useRefusal(entity) : 'It is no longer there';
+    entities.byUid(entity.uid) === entity ? entities.useRefusal(entity) : text.common.gone;
   const isObjective = (entity: BlockEntity): boolean =>
     Boolean(
       options.objective &&
@@ -1904,14 +1909,14 @@ export const createSession = (options: SessionOptions) => {
     isObjective,
     activateGoal: (entity: BlockEntity): string | undefined => {
       if (sim.dead) {
-        return 'This survivor died';
+        return text.objective.survivorDied;
       }
       const unusable = pieceRefusal(entity);
       if (unusable) {
         return unusable;
       }
       if (!(scenarioRun && isObjective(entity))) {
-        return 'Not the designated objective';
+        return text.objective.notObjective;
       }
       if (scenarioRun.won) {
         return undefined;
@@ -1920,7 +1925,7 @@ export const createSession = (options: SessionOptions) => {
         return sim.body.actionRefusal;
       }
       if (!inventory.canReachEntity(entity)) {
-        return 'Too far away';
+        return text.common.tooFar;
       }
       const yaw = controls.yaw();
       const pitch = controls.pitch();
@@ -1933,7 +1938,7 @@ export const createSession = (options: SessionOptions) => {
         isSolid: options.isOpaque,
       });
       if (selected !== entity) {
-        return 'Face the unobstructed objective';
+        return text.objective.blocked;
       }
       scenarioRun.complete(sim.calendar);
       sim.paused = true;
@@ -2090,11 +2095,11 @@ export const createSession = (options: SessionOptions) => {
         return unusable;
       }
       if (!inventory.canReachEntity(entity)) {
-        return 'Too far away';
+        return text.common.tooFar;
       }
       const { readable } = entities.defOf(entity);
       if (!readable) {
-        return 'Nothing to read';
+        return text.objective.nothingToRead;
       }
       scenarioRun?.read(sim.calendar);
       if (options.discovery?.clues.some((at) => at.every((value, axis) => value === entity.pos[axis]))) {

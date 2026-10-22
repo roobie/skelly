@@ -1,6 +1,6 @@
+import { actionText } from '../core/actionText.ts';
 import type { Body } from '../core/body.ts';
 import { BODY_REGIONS, type BodyRegion, bodyRegionLabel } from '../core/body.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { defOf } from '../core/items.ts';
@@ -32,18 +32,19 @@ export const itemActionsFor = (item: Item, inventory: Inventory, body: Body): re
   if (at?.kind !== 'hand' || !defOf(inventory.registry, item.type).tool?.qualities.opening) {
     return base;
   }
+  const labels = actionText(inventory.registry).itemActions;
   const target = openingTargetForHand(inventory, at.side);
   const own = selectPrimaryAction(inventory, at.side);
   let actions = base;
   if (base.length === 0 && own.kind !== 'open-can' && own.kind !== 'none') {
-    actions = [{ id: 'own', label: own.kind === 'melee' ? 'Swing' : 'Use' }];
+    actions = [{ id: 'own', label: own.kind === 'melee' ? labels.swing : labels.use }];
   }
-  return target ? [...actions, { id: 'open-can', label: 'Open can', opening: true }] : actions;
+  return target ? [...actions, { id: 'open-can', label: labels.openCan, opening: true }] : actions;
 };
 
 const ordinaryItemActions = (item: Item, inventory: Inventory, body: Body): readonly ItemAction[] => {
   if (magazineSpec(inventory.registry, item.type)) {
-    const label = inventory.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.itemActionLabels.stripRound;
+    const label = actionText(inventory.registry).itemActions.stripRound;
     return (item.cartridges?.length ?? 0) > 0 ? [{ id: 'magazine:strip', label, magazine: 'strip' }] : [];
   }
   const { treatment } = defOf(inventory.registry, item.type);
@@ -85,10 +86,15 @@ export const defaultItemAction = (actions: readonly ItemAction[]): ItemAction | 
 
 export class ItemActionSelection {
   private readonly selected = new Map<number, string>();
+  private readonly openCanLabel: string;
+
+  constructor(openCanLabel: string) {
+    this.openCanLabel = openCanLabel;
+  }
 
   forItem(item: Pick<Item, 'uid'>, actions: readonly ItemAction[]): ItemAction | undefined {
     if (this.selected.get(item.uid) === 'open-can' && !actions.some((action) => action.opening)) {
-      return { id: 'open-can', label: 'Open can', opening: true };
+      return { id: 'open-can', label: this.openCanLabel, opening: true };
     }
     if (actions.length === 0) {
       this.selected.delete(item.uid);

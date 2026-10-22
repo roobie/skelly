@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import type { ItemEconomy, LootContext, LootSpawnPoint } from '../src/core/loot.ts';
 import { simSeconds } from '../src/core/time.ts';
@@ -27,11 +28,27 @@ export const fixtureSounds = () => [
     noise: { enabled: true, radiusMetres: 10 },
   },
 ];
-/** A content file holding only `fixtureMaterials`, to go first so a fixture that authors its own overrides it. */
-export const fixtureMaterialSource = (): ContentSource => ({
-  source: 'fixture-materials.json',
-  data: { furnitureMaterials: fixtureMaterials(), sounds: fixtureSounds() },
-});
+const baseContent = <T>(file: string): T => JSON.parse(readFileSync(`src/content/base/${file}`, 'utf8')) as T;
+/**
+ * Base content's core UI entry and the refusal sound it names: the game reads its action text from there, and
+ * copying the lines into a fixture would only drift.
+ */
+const BASE_UI = (() => {
+  const [ui] = baseContent<{ ui: [{ refusalSound: string }] }>('ui.json').ui;
+  const sound = baseContent<{ sounds: { id: string }[] }>('sounds.json').sounds.find(
+    ({ id }) => id === ui.refusalSound,
+  )!;
+  return { ui: [ui], sound };
+})();
+const fixtureUi = () => structuredClone(BASE_UI);
+/** `fixtureMaterials` and the core UI entry, to go first so a fixture that authors its own overrides them. */
+export const fixtureMaterialSource = (): ContentSource => {
+  const { ui, sound } = fixtureUi();
+  return {
+    source: 'fixture-materials.json',
+    data: { furnitureMaterials: fixtureMaterials(), sounds: [...fixtureSounds(), sound], ui },
+  };
+};
 
 export const fixtureLootPoint = (
   supply: LootSpawnPoint['supply'],

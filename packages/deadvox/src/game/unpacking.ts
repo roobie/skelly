@@ -1,3 +1,4 @@
+import { actionText, fillText } from '../core/actionText.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import type { Inventory, Target } from '../core/inventory.ts';
@@ -25,25 +26,26 @@ export class Unpacking {
   }
 
   activate(item: Item): string | undefined {
+    const text = actionText(this.inventory.registry);
     const { unpack } = defOf(this.inventory.registry, item.type);
     if (!unpack) {
-      return 'This item cannot be unpacked';
+      return text.unpacking.cannot;
     }
     const tool = unpackingTool(this.inventory, item);
     if (Object.keys(unpack.qualities ?? {}).length > 0 && !tool) {
-      return 'I need a tool in my other hand';
+      return text.unpacking.needTool;
     }
     const rate =
       unpack.qualities?.opening && tool ? defOf(this.inventory.registry, tool.type).tool!.qualities.opening! : 1;
     if (this.inventory.locate(item)?.kind !== 'hand') {
-      return 'Wield the package to unpack it';
+      return text.unpacking.notInHands;
     }
     if (this.queue.busy) {
-      return 'Already handling something';
+      return text.common.busy;
     }
     this.queue.enqueueAction(
       UNPACK_ACTION,
-      `Unpack ${this.inventory.name(item)}`,
+      fillText(text.unpacking.unpack, { item: this.inventory.name(item) }),
       this.inventory.scaleHandlingTime(unpack.simSeconds / rate),
       {
         uid: item.uid,
@@ -54,16 +56,17 @@ export class Unpacking {
   }
 
   private complete(uid: unknown, toolUid: unknown): string | undefined {
+    const text = actionText(this.inventory.registry);
     const box = typeof uid === 'number' ? this.inventory.itemByUid(uid) : undefined;
     if (!box || this.inventory.locate(box)?.kind !== 'hand') {
-      return 'Package is no longer held';
+      return text.common.notHeld;
     }
     const payload = defOf(this.inventory.registry, box.type).unpack;
     if (!payload) {
-      return 'Package no longer has unpacking data';
+      return text.unpacking.cannot;
     }
     if (Object.keys(payload.qualities ?? {}).length > 0 && unpackingTool(this.inventory, box)?.uid !== toolUid) {
-      return 'The opening tool is no longer in my other hand';
+      return text.unpacking.toolGone;
     }
     if (payload.inPlace) {
       const { type } = box;
@@ -82,7 +85,7 @@ export class Unpacking {
       return refusal;
     }
     if (!this.inventory.consume(box, 1)) {
-      return 'Package is no longer held';
+      return text.common.notHeld;
     }
     this.deliver(shell, { pocket, spill });
     return undefined;

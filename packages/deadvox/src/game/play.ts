@@ -2,6 +2,7 @@
 // The simulation core runs the clock, the player's physics, needs and the handling
 // queue; Esc pauses it. When health runs out, the death screen offers a new world.
 
+import { actionText, fillText } from '../core/actionText.ts';
 import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import type { BodyRegion } from '../core/body.ts';
@@ -495,16 +496,17 @@ const isTimedLongJob = (job: Readonly<LongJob>): job is TimedLongJob =>
   job.jobType === 'reading' || job.jobType === 'forceDoor' || job.jobType === 'treatment';
 
 const timedActionLabel = (job: TimedLongJob, inventory: Inventory): string => {
+  const labels = actionText(inventory.registry).timedActions;
   switch (job.jobType) {
     case 'reading': {
       const book = inventory.itemByUid(job.bookUid);
-      return book ? `Reading ${inventory.name(book)}` : 'Reading';
+      return book ? fillText(labels.reading, { item: inventory.name(book) }) : labels.readingUnnamed;
     }
     case 'forceDoor':
-      return 'Forcing padlock';
+      return labels.forcingPadlock;
     case 'treatment': {
       const item = inventory.itemByUid(job.itemUid);
-      return item ? `Treating ${inventory.name(item)}` : 'Treating wound';
+      return item ? fillText(labels.treating, { item: inventory.name(item) }) : labels.treatingUnnamed;
     }
     default: {
       const unhandled: never = job;
@@ -657,6 +659,7 @@ export const startPlay = (
 ): { enter: () => void } => {
   assertPracticeIsolation(options);
   const { config, registry, streamer, renderer, camera, meshes } = engine;
+  const lines = actionText(registry);
   const autosave = autosaveTuning(registry);
   const inputTarget = renderer?.domElement ?? $('view');
   const { owner: worldLoading, draw: drawWorldLoading } = playLoadingFor(engine, options);
@@ -1766,7 +1769,7 @@ export const startPlay = (
     search: (uid) => {
       const entity = entities.byUid(uid);
       if (!entity) {
-        return 'The container is no longer available';
+        return lines.common.gone;
       }
       playtestObserver?.beginSearch(entity, nameOf(entity));
       return search(entity);
@@ -1777,7 +1780,7 @@ export const startPlay = (
     removeAttachment: (firearmUid, slotId) => session.firearmAttachments.remove(firearmUid, slotId),
     toHands: (uid, feetPosition) => {
       const item = inventory.itemByUid(uid);
-      return item ? toHands(inventory, queue, item, feetPosition) : 'The item is no longer available';
+      return item ? toHands(inventory, queue, item, feetPosition) : lines.common.gone;
     },
     pickup: pickupGroundItem,
     interact: interactFurniture,
@@ -2492,7 +2495,7 @@ export const startPlay = (
   function pickupGroundItem(uid: number, mode: 'pocket' | 'wield', feetPosition: Vec3): string | undefined {
     const item = inventory.itemByUid(uid);
     if (!item) {
-      return 'The item is no longer available';
+      return lines.common.gone;
     }
     return mode === 'wield' ? toHands(inventory, queue, item, feetPosition) : pocketGroundItem(inventory, queue, item);
   }
@@ -2500,7 +2503,7 @@ export const startPlay = (
   function interactFurniture(uid: number): string | undefined {
     const entity = entities.byUid(uid);
     if (!entity) {
-      return 'The target is no longer available';
+      return lines.common.gone;
     }
     if (session.isObjective(entity)) {
       return session.activateGoal(entity);
@@ -2828,7 +2831,7 @@ export const startPlay = (
       sim.body.tuning.staminaRegenDelaySimSeconds,
     );
     if (result === 'too-tired') {
-      showRefusal('You are too tired to swing', sim.time);
+      showRefusal(lines.melee.tooTired, sim.time);
     }
   };
 
@@ -2929,7 +2932,7 @@ export const startPlay = (
     switch (action.kind) {
       case 'open-can': {
         const target = openingTargetForHand(inventory, hand);
-        refusalReason(target ? unpacking.activate(target) : 'I have no can to open');
+        refusalReason(target ? unpacking.activate(target) : lines.unpacking.noCan);
         return;
       }
       case 'unpack':
@@ -3573,7 +3576,7 @@ export const startPlay = (
     if (job?.jobType !== 'wait' || (job.stopped && compression.interruption === undefined)) {
       return undefined;
     }
-    return { label: 'Waiting' };
+    return { label: lines.timedActions.waiting };
   };
   const renderRestAndWait = (messagesVisible: boolean): void => {
     const waitAction = waitViewAction();

@@ -1,3 +1,4 @@
+import { actionText, fillText } from '../core/actionText.ts';
 import type { EntityId } from '../core/entities.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import type { Inventory } from '../core/inventory.ts';
@@ -26,26 +27,31 @@ const carriedTool = (inventory: Inventory, quality: string, level: number): Item
 
 /** Whether the player can clear this downed body that way now, how long it takes, and its label. */
 export const downedBodyPlan = (player: ReachPlayer, zombie: Zombie | undefined, way: DownedBodyWay): DownedBodyPlan => {
+  const text = actionText(player.inventory.registry);
   const downed = zombie?.incapacitated ? zombie.type.downed : undefined;
   if (!(zombie && downed)) {
-    return { ok: false, reason: "It isn't lying there any more" };
+    return { ok: false, reason: text.downedBody.gone };
   }
   if (!bodyInReach(player, zombie.body)) {
-    return { ok: false, reason: 'Too far away' };
+    return { ok: false, reason: text.common.tooFar };
   }
   const name = zombie.type.name.toLowerCase();
   if (way === 'finish-off') {
-    return { ok: true, simSeconds: downed.finishOff.simSeconds, label: `Finish off the ${name}` };
+    return {
+      ok: true,
+      simSeconds: downed.finishOff.simSeconds,
+      label: fillText(text.downedBody.finishOff, { zombie: name }),
+    };
   }
   const { quality, level, simSeconds } = downed.dismember;
   const tool = carriedTool(player.inventory, quality, level);
   if (!tool) {
-    return { ok: false, reason: `Need a tool with ${quality} quality ${level}` };
+    return { ok: false, reason: fillText(text.downedBody.noTool, { quality }) };
   }
   return {
     ok: true,
     simSeconds,
-    label: `Dismember the ${name} with the ${player.inventory.name(tool).toLowerCase()}`,
+    label: fillText(text.downedBody.dismember, { zombie: name, tool: player.inventory.name(tool).toLowerCase() }),
   };
 };
 

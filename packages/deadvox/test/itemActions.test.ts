@@ -20,7 +20,7 @@ describe('selected item actions', () => {
   });
 
   it('cycles and wraps without changing the default policy', () => {
-    const selection = new ItemActionSelection();
+    const selection = new ItemActionSelection('fixture open can');
     expect(selection.forItem(item, actions)?.id).toBe('worse-bleeding');
     expect(selection.step(item, actions, 1)).toBe(true);
     const afterStep = selection.forItem(item, actions);

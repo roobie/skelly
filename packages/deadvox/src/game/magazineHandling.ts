@@ -1,5 +1,6 @@
 // Each round is one handling job, so releasing the input loses no ammunition.
 // See `SLICE-3.md`, "Firearms for real".
+import { type ActionText, actionText, fillText } from '../core/actionText.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import type { Inventory } from '../core/inventory.ts';
@@ -19,6 +20,7 @@ export class MagazineHandling {
   private readonly reloadFactor: () => number;
   private readonly onSound: (event: SoundEventId, time: number) => void;
   private heldStripUid: number | undefined;
+  private readonly text: ActionText;
 
   constructor(
     inventory: Inventory,
@@ -38,6 +40,7 @@ export class MagazineHandling {
     this.feet = feet;
     this.reloadFactor = reloadFactor;
     this.onSound = onSound;
+    this.text = actionText(inventory.registry);
     queue.registerAction(MAGAZINE_LOAD_ACTION, (params) => this.completeLoad(params.uid, params.ammoUid));
     queue.registerAction(MAGAZINE_STRIP_ACTION, (params) => this.completeStrip(params.uid));
   }
@@ -50,16 +53,17 @@ export class MagazineHandling {
 
   /** Loose carried cartridges only; ascending UID makes the source order save-stable. */
   loadNext(uid: number, time: number): string | undefined {
+    const { loading } = this.text;
     const magazine = this.heldMagazine(uid);
     if (!magazine) {
-      return 'Magazine is no longer held';
+      return this.text.common.notHeld;
     }
     const [round] = [...this.inventory.items()]
       .map(({ item }) => item)
       .filter((item) => item !== magazine && this.carried(item) && this.fits(magazine, item))
       .sort((a, b) => a.uid - b.uid);
     if (!round) {
-      return this.isFull(magazine) ? 'Magazine is full' : 'No loose matching cartridges are carried';
+      return this.isFull(magazine) ? loading.full : loading.noRounds;
     }
     const reason = this.loadReason(magazine, round);
     if (reason) {
@@ -68,7 +72,7 @@ export class MagazineHandling {
     const spec = magazineSpec(this.inventory.registry, magazine.type)!;
     this.queue.enqueueAction(
       MAGAZINE_LOAD_ACTION,
-      `Load round ${magazine.cartridges!.length + 1}/${spec.capacity}`,
+      fillText(loading.loadRound, { count: magazine.cartridges!.length + 1, capacity: spec.capacity }),
       defOf(this.inventory.registry, round.type).ammo!.loadSimSeconds * this.reloadFactor(),
       { uid: magazine.uid, ammoUid: round.uid },
     );
@@ -81,19 +85,22 @@ export class MagazineHandling {
     const magazine = this.heldMagazine(uid);
     if (!magazine) {
       this.heldStripUid = undefined;
-      return 'Magazine is no longer held';
+      return this.text.common.notHeld;
     }
     if (this.queue.busy) {
-      return 'Already handling something';
+      return this.text.common.busy;
     }
     if (magazine.cartridges!.length === 0) {
       this.heldStripUid = undefined;
-      return 'Magazine is empty';
+      return this.text.magazine.empty;
     }
     const { stripSimSeconds } = defOf(this.inventory.registry, magazine.cartridges![0]!).ammo!;
-    this.queue.enqueueAction(MAGAZINE_STRIP_ACTION, 'Strip a round', stripSimSeconds * this.reloadFactor(), {
-      uid: magazine.uid,
-    });
+    this.queue.enqueueAction(
+      MAGAZINE_STRIP_ACTION,
+      this.text.itemActions.stripRound,
+      stripSimSeconds * this.reloadFactor(),
+      { uid: magazine.uid },
+    );
     this.heldStripUid = held ? uid : undefined;
     this.onSound('magazine_round_strip', time);
     return undefined;
@@ -131,27 +138,32 @@ export class MagazineHandling {
 
   describe(item: Item): string[] {
     const spec = magazineSpec(this.inventory.registry, item.type);
-    return spec ? [`Cartridges: ${item.cartridges!.length}/${spec.capacity}`] : [];
+    return spec
+      ? [fillText(this.text.magazine.cartridgesDetail, { count: item.cartridges!.length, capacity: spec.capacity })]
+      : [];
   }
 
   private loadReason(magazine: Item, round: Item, completing = false): string | undefined {
     if (!completing && this.queue.busy) {
-      return 'Already handling something';
+      return this.text.common.busy;
     }
     if (!(this.inventory.itemByUid(round.uid) === round && this.carried(round))) {
-      return 'Carry the cartridges first';
+      return this.text.loading.roundsNotCarried;
     }
     if (!this.fits(magazine, round)) {
-      return 'Wrong ammunition';
+      return this.text.loading.wrongRounds;
     }
-    return this.isFull(magazine) ? 'Magazine is full' : undefined;
+    return this.isFull(magazine) ? this.text.loading.full : undefined;
   }
 
   private completeLoad(uid: unknown, ammoUid: unknown): string | undefined {
     const magazine = typeof uid === 'number' ? this.heldMagazine(uid) : undefined;
     const round = typeof ammoUid === 'number' ? this.inventory.itemByUid(ammoUid) : undefined;
-    if (!(magazine && round)) {
-      return 'Magazine or cartridge is no longer held/carried';
+    if (!magazine) {
+      return this.text.common.notHeld;
+    }
+    if (!round) {
+      return this.text.loading.roundsNotCarried;
     }
     const reason = this.loadReason(magazine, round, true);
     if (reason) {
@@ -159,7 +171,7 @@ export class MagazineHandling {
     }
     const { type } = round;
     if (!this.inventory.consume(round, 1)) {
-      return 'Cartridge is no longer carried';
+      return this.text.loading.roundsNotCarried;
     }
     magazine.cartridges!.unshift(type);
     return undefined;
@@ -169,18 +181,18 @@ export class MagazineHandling {
     const magazine = typeof uid === 'number' ? this.heldMagazine(uid) : undefined;
     if (!magazine) {
       this.heldStripUid = undefined;
-      return 'Magazine is no longer held';
+      return this.text.common.notHeld;
     }
     const [type] = magazine.cartridges!;
     if (type === undefined) {
       this.heldStripUid = undefined;
-      return 'Magazine is empty';
+      return this.text.magazine.empty;
     }
     const round = this.inventory.create(type);
     const target = stowTarget(this.inventory, round, this.feet());
     if (!(target && this.inventory.add(round, target))) {
       this.heldStripUid = undefined;
-      return 'No room for the round nearby';
+      return this.text.loading.noRoomForRound;
     }
     magazine.cartridges!.shift();
     return undefined;

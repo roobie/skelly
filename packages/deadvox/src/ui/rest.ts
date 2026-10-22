@@ -6,7 +6,7 @@ import { activityProgress } from './activityProgress.ts';
 import { type HintText, keyCap } from './keyCap.ts';
 
 export interface WaitViewAction {
-  readonly label: 'Waiting';
+  readonly label: string;
 }
 
 export interface RestViewModel {

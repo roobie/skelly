@@ -31,7 +31,7 @@
       emptyHands: "I'm not carrying anything",
       staysUpright: 'It has to stay upright',
     },
-    itemActionLabels: { stripRound: 'Strip a round' },
+    actionText: import 'action-text.libsonnet',
     wearSlotLabels: {
       head: 'Head',
       eyes: 'Eyes',

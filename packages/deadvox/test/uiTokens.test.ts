@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import { buildRegistry, requiredContentIssues, validateContent } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
@@ -20,6 +21,14 @@ const wearSlotLabels = Object.fromEntries(
     `fixture ${slot}`,
   ]),
 );
+interface TextTable {
+  [key: string]: string | TextTable;
+}
+const PLACEHOLDER = /\{\w+\}/;
+/** Base content's action text: its placeholders are what validation checks, so a fixture copy would only drift. */
+const baseActionText = (
+  JSON.parse(readFileSync('src/content/base/ui.json', 'utf8')) as { ui: [{ actionText: TextTable }] }
+).ui[0].actionText;
 const tuning = {
   id: CORE_CONTENT_IDS.coreUi,
   spacing: 1,
@@ -27,7 +36,7 @@ const tuning = {
   refusalSound: refusalSound.id,
   restLabels: { rest: 'fixture rest', sleep: 'fixture sleep' },
   doorCloseBlockedMessages: { player: 'fixture player blocks', other: 'fixture other blocks' },
-  itemActionLabels: { stripRound: 'fixture strip' },
+  actionText: baseActionText,
   wearSlotLabels,
   furnitureMoveMessages: Object.fromEntries(
     [
@@ -95,7 +104,7 @@ it('rejects UI tuning missing any player-facing text field, with no code default
   const {
     restLabels: _r,
     doorCloseBlockedMessages: _d,
-    itemActionLabels: _i,
+    actionText: _a,
     wearSlotLabels: _w,
     furnitureMoveMessages: _f,
     ...bare
@@ -105,7 +114,7 @@ it('rejects UI tuning missing any player-facing text field, with no code default
     'ui[0].restLabels',
     'ui[0].doorCloseBlockedMessages',
     'ui[0].furnitureMoveMessages',
-    'ui[0].itemActionLabels',
+    'ui[0].actionText',
     'ui[0].wearSlotLabels',
   ]);
   const { head: _h, ...partialSlots } = wearSlotLabels;
@@ -114,6 +123,49 @@ it('rejects UI tuning missing any player-facing text field, with no code default
     data: { ui: [{ ...tuning, wearSlotLabels: partialSlots }] },
   });
   expect(partial.map(({ path }) => path)).toEqual(['ui[0].wearSlotLabels.head']);
+});
+
+const leafPaths = (table: TextTable, prefix: string[] = []): string[][] =>
+  Object.entries(table).flatMap(([key, value]) =>
+    typeof value === 'string' ? [[...prefix, key]] : leafPaths(value, [...prefix, key]),
+  );
+const without = (table: TextTable, [head, ...rest]: string[]): TextTable => {
+  const { [head!]: value, ...others } = table;
+  return rest.length === 0 ? others : { ...others, [head!]: without(value as TextTable, rest) };
+};
+const replaced = (table: TextTable, [head, ...rest]: string[], text: string): TextTable => ({
+  ...table,
+  [head!]: rest.length === 0 ? text : replaced(table[head!] as TextTable, rest, text),
+});
+
+it('reports every action text line the game asks for as missing at validation, not in play', () => {
+  const paths = leafPaths(baseActionText);
+  expect(paths.length).toBeGreaterThan(0);
+  for (const path of paths) {
+    const issues = validateContent({
+      source: 'missing-action-text.json',
+      data: { ui: [{ ...tuning, actionText: without(baseActionText, path) }] },
+    });
+    expect(issues.map((issue) => issue.path)).toEqual([`ui[0].actionText.${path.join('.')}`]);
+  }
+});
+
+it('rejects action text whose placeholders differ from the ones the game fills', () => {
+  const lineAt = (path: string[]): string =>
+    path.reduce<TextTable | string>((table, key) => (table as TextTable)[key]!, baseActionText) as string;
+  const hasPlaceholder = (path: string[]): boolean => PLACEHOLDER.test(lineAt(path));
+  const line = leafPaths(baseActionText).find((path) => !hasPlaceholder(path));
+  const template = leafPaths(baseActionText).find(hasPlaceholder);
+  const issuesFor = (path: string[], text: string) =>
+    validateContent({
+      source: 'bad-placeholder.json',
+      data: { ui: [{ ...tuning, actionText: replaced(baseActionText, path, text) }] },
+    }).map((issue) => issue.path);
+  const expected = (path: string[]) => [`ui[0].actionText.${path.join('.')}`];
+  expect(issuesFor(line!, 'fixture {stray}')).toEqual(expected(line!));
+  expect(issuesFor(template!, 'fixture without placeholders')).toEqual(expected(template!));
+  expect(issuesFor(template!, 'fixture {stray}')).toEqual(expected(template!));
+  expect(issuesFor(template!, `${lineAt(template!)} {stray}`)).toEqual(expected(template!));
 });
 
 it('reports content without the core UI tuning at validation, not at startup', () => {
