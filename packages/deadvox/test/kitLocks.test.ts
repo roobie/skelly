@@ -3,7 +3,6 @@ import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
 it('matches keys to actual kit-piece doors and rejects a missing key or an unused lock declaration', () => {
   const data = {
-    doorMaterials: [{ id: 'fixture_material', methods: [] }],
     furniture: [
       {
         id: 'kit_door',
@@ -11,7 +10,6 @@ it('matches keys to actual kit-piece doors and rejects a missing key or an unuse
         size: [1, 1, 1],
         color: '#666666',
         door: {
-          material: 'fixture_material',
           methods: {},
           handlingSimSeconds: 0.3,
         },

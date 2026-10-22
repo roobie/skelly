@@ -33,7 +33,7 @@ import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_RANGES } from '../src/core/we
 import { INPUT_BINDINGS, inputBindings, POINTER_ACTIONS } from '../src/game/inputBindings.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { camoShaderConfig } from '../src/render/surfacePatterns.ts';
-import { buildFixtureRegistry as buildRegistry, fixtureBreach } from './economyFixtures.ts';
+import { buildFixtureRegistry as buildRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 
 const BASE = 'src/content/base';
 const CONTEXTUAL_KEY_LABEL = /^(?:[A-Za-z]+|[0-9]|[^\p{L}\p{N}\s]+)$/u;
@@ -205,7 +205,6 @@ describe('content', () => {
               size: [2, 4, 1],
               color: '#7a5534',
               door: {
-                material: 'wood',
                 methods: {},
                 handlingSimSeconds: 0.5,
               },
@@ -782,6 +781,7 @@ describe('content', () => {
           color: '#123456',
           rest: { quality: 0.5 },
           breach: fixtureBreach(),
+          material: FIXTURE_MATERIAL,
         },
         {
           id: 'fixture_sofa',
@@ -790,6 +790,7 @@ describe('content', () => {
           color: '#654321',
           rest: { quality: 0.5, sleep: true },
           breach: fixtureBreach(),
+          material: FIXTURE_MATERIAL,
         },
       ],
     };
@@ -815,6 +816,7 @@ describe('content', () => {
         shape: [{ position: [0.5, 0.5, 0.25], size: [0.75, 0.5, 0.5] }],
         solidFill: 0.01,
         breach: fixtureBreach(),
+        material: FIXTURE_MATERIAL,
       },
       {
         id: 'fixture_furniture_y',
@@ -824,6 +826,7 @@ describe('content', () => {
         shape: [{ position: [0.25, 1.5, 0.25], size: [0.5, 0.75, 0.5] }],
         solidFill: 0.01,
         breach: fixtureBreach(),
+        material: FIXTURE_MATERIAL,
       },
       {
         id: 'fixture_furniture_z',
@@ -833,6 +836,7 @@ describe('content', () => {
         shape: [{ position: [0.25, 0.5, 0.5], size: [0.5, 0.5, 0.75] }],
         solidFill: 0.01,
         breach: fixtureBreach(),
+        material: FIXTURE_MATERIAL,
       },
     ];
     const issues = validateContent({ source: 'outside-furniture-shape.json', data: { furniture } });
@@ -1904,7 +1908,6 @@ describe('content references', () => {
             size: [1, 1, 1],
             color: '#333333',
             door: {
-              material: 'wood',
               methods: {},
               handlingSimSeconds: 0.4,
               openNoise: { sound: 'door_open' },
@@ -2173,6 +2176,7 @@ describe('content references', () => {
     const furniture = {
       ...structuredClone(baseRegistry.furniture.get('crate')!),
       id: 'fixture_crate',
+      material: FIXTURE_MATERIAL,
     };
     const [width, height, depth] = furniture.size;
     const template = {
@@ -2242,9 +2246,9 @@ describe('content references', () => {
             name: 'Pry door',
             size: [1, 1, 1],
             color: '#333333',
+            material: 'missing_material',
             door: {
               handlingSimSeconds: 0.4,
-              material: 'wood',
               methods: {
                 pry: {
                   quality: 'prying',
@@ -2353,9 +2357,9 @@ describe('content references', () => {
       },
     };
     expect(paths(buildRegistry([referenceDependencies, mod]).issues).sort()).toEqual([
-      'furniture[1].door.material',
       'furniture[1].door.methods.pry.skill',
       'furniture[1].door.methods.pry.strikeSound',
+      'furniture[1].material',
       'items[0].light.power.battery',
       'zombies[0].downed.dismember.quality',
       'zombies[0].loot',
@@ -2518,7 +2522,6 @@ describe('templates', () => {
             size: [1, 1, 1],
             color: '#7a5534',
             door: {
-              material: 'wood',
               methods: {},
               handlingSimSeconds: 0.5,
             },

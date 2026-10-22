@@ -4,7 +4,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import { compileMapSite } from '../src/core/mapKit.ts';
 import type { ContentFile } from '../src/core/schema.ts';
 import { compileAssembly } from '../src/core/templates.ts';
-import { fixtureBreach } from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials } from './economyFixtures.ts';
 
 const FIXTURE = JSON.parse(
   compileJsonnetFile('packages/deadvox/test/fixtures/jsonnet/map-kits.jsonnet'),
@@ -125,6 +125,7 @@ it('rejects individually admissible alternatives with moved anchors', () => {
 
 it('rejects individually admissible alternatives changing furniture support under reserved circulation', () => {
   const data = fixture();
+  data.furnitureMaterials = fixtureMaterials();
   data.furniture = [
     {
       id: 'passable',
@@ -133,6 +134,7 @@ it('rejects individually admissible alternatives changing furniture support unde
       color: '#808080',
       solid: false,
       breach: fixtureBreach(),
+      material: FIXTURE_MATERIAL,
     },
     {
       id: 'blocking',
@@ -141,6 +143,7 @@ it('rejects individually admissible alternatives changing furniture support unde
       color: '#808080',
       solid: true,
       breach: fixtureBreach(),
+      material: FIXTURE_MATERIAL,
     },
   ];
   const first = data.mapPieces![0]!;
@@ -233,6 +236,7 @@ it('rejects individually admissible alternatives with different climb geometry',
     color: '#808080',
     solid: false,
     breach: fixtureBreach(),
+    material: FIXTURE_MATERIAL,
   });
   data.mapPieces!.push(alternative);
   data.mapAssemblies![0]!.slots[0]!.choices!.push({ ref: { kind: 'piece', id: alternative.id }, weight: 1 });

@@ -9,10 +9,10 @@
       "door": {
         "handlingSimSeconds": 0.80000000000000004,
         "hatch": true,
-        "material": "steel",
         "methods": {}
       },
       "id": "gauntlet_start_hatch",
+      "material": "steel",
       "name": "Roof hatch",
       "size": [6, 1, 2]
     }

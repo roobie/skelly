@@ -30,7 +30,6 @@ export function skyWorldFixture(boxes: SkyBounds[] = [fixtureBox]) {
     {
       source: 'sky-fixture.json',
       data: {
-        doorMaterials: [{ id: 'wood', methods: [] }],
         blocks: [
           { id: 'fixture_wall', name: 'Fixture wall', color: '#888888', solid: true },
           { id: 'fixture_leaves', name: 'Fixture leaves', color: '#228844', solid: false, opaque: true },
@@ -79,7 +78,6 @@ export function skyWorldFixture(boxes: SkyBounds[] = [fixtureBox]) {
             size: [1, 1, 1],
             color: '#888888',
             door: {
-              material: 'wood',
               methods: {},
               handlingSimSeconds: 1,
             },

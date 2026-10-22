@@ -15,6 +15,7 @@
         ]
       },
       "id": "dead_officer_body",
+      "material": "wood",
       "name": "Dead officer",
       "shape": [
         {
@@ -52,6 +53,7 @@
         ]
       },
       "id": "police_weapon_cabinet",
+      "material": "wood",
       "name": "Weapon cabinet",
       "shape": [
         {

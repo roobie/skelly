@@ -537,6 +537,12 @@ export const conditionWord = (registry: Registry, condition: number): string => 
   return (bands.findLast((band) => band.from <= condition) ?? bands[0]!).word;
 };
 
+/** The band word for a condition below the top band; a thing in the top band reads by its plain name. */
+export const damageWord = (registry: Registry, condition: number): string | undefined => {
+  const bands = registry.inventory.get(CORE_CONTENT_IDS.player)!.conditionBands;
+  return condition < bands.at(-1)!.from ? conditionWord(registry, condition) : undefined;
+};
+
 /** How many of `item` could join the `onto` stack. */
 export const stackRoom = (registry: Registry, onto: Item, item: Item): number => {
   const def = defOf(registry, onto.type);

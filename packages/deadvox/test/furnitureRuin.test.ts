@@ -8,7 +8,7 @@ import { type FurnitureMover, ruinFurniture } from '../src/core/furnitureMove.ts
 import { Inventory } from '../src/core/inventory.ts';
 import type { Body } from '../src/core/physics.ts';
 import { ContentFileSchema } from '../src/core/schema.ts';
-import { buildFixtureRegistry } from './economyFixtures.ts';
+import { buildFixtureRegistry, FIXTURE_MATERIAL } from './economyFixtures.ts';
 import { createRuntime } from './snapshotTestSupport.ts';
 
 const base = readdirSync('src/content/base')
@@ -33,15 +33,15 @@ const DOOR_LEAF = {
   name: 'Fixture door',
   size: [2, 4, 1],
   color: '#777777',
+  material: FIXTURE_MATERIAL,
   breach: BREACH,
-  door: { material: 'ruin_fixture_material', handlingSimSeconds: 0.5, methods: {} },
+  door: { handlingSimSeconds: 0.5, methods: {} },
 };
 const { registry, issues } = buildFixtureRegistry([
   ...base,
   {
     source: 'ruin-fixture',
     data: {
-      doorMaterials: [{ id: 'ruin_fixture_material', methods: [] }],
       furniture: [
         box('ruin_fixture_box', [1, 1, 1]),
         box('ruin_fixture_plank', [2, 1, 1]),

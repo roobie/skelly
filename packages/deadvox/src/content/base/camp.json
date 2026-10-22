@@ -8,7 +8,6 @@
       "color": "#718087",
       "door": {
         "handlingSimSeconds": 0.59999999999999998,
-        "material": "steel",
         "methods": {
           "pry": {
             "fastestTimeSimSeconds": 7.5,
@@ -22,6 +21,7 @@
         }
       },
       "id": "container_door",
+      "material": "steel",
       "name": "Steel container door",
       "size": [2, 4, 1]
     },
@@ -46,6 +46,7 @@
         ]
       },
       "id": "rifle_rack",
+      "material": "wood",
       "name": "Rifle rack",
       "shape": [
         {
@@ -128,6 +129,7 @@
         ]
       },
       "id": "ammo_crate",
+      "material": "wood",
       "name": "Ammunition crate",
       "shape": [
         {
@@ -213,6 +215,7 @@
         ]
       },
       "id": "ammo_can",
+      "material": "wood",
       "name": "Ammunition can",
       "size": [1, 1, 1]
     },
@@ -231,6 +234,7 @@
         ]
       },
       "id": "footlocker",
+      "material": "wood",
       "name": "Footlocker",
       "shape": [
         {
@@ -318,6 +322,7 @@
       },
       "color": "#677a82",
       "id": "camp_cot",
+      "material": "wood",
       "name": "Folding cot",
       "rest": {
         "quality": 0.59999999999999998,
@@ -394,10 +399,10 @@
       },
       "door": {
         "handlingSimSeconds": 0.59999999999999998,
-        "material": "steel",
         "methods": {}
       },
       "id": "camp_hq_safe",
+      "material": "steel",
       "name": "Steel reserve safe",
       "shape": [
         {
@@ -422,6 +427,7 @@
         ]
       },
       "id": "field_desk",
+      "material": "wood",
       "name": "Field desk",
       "shape": [
         {
@@ -482,6 +488,7 @@
       },
       "color": "#a6936f",
       "id": "camp_orders",
+      "material": "wood",
       "name": "Camp orders board",
       "readable": {
         "text": "Hold the road and keep the clinic supplied. The medical site is under the camp's protection. Keep the armoury locked; its key stays with the officer.",
@@ -511,6 +518,7 @@
       },
       "color": "#9b8d6a",
       "id": "camp_sandbag_barricade",
+      "material": "wood",
       "name": "Sandbag barricade",
       "size": [2, 2, 2],
       "solid": true
@@ -523,10 +531,10 @@
       "color": "#666c70",
       "door": {
         "handlingSimSeconds": 1.2,
-        "material": "steel",
         "methods": {}
       },
       "id": "camp_gate_leaf",
+      "material": "steel",
       "name": "Camp fence-gate leaf",
       "size": [6, 5, 1]
     }

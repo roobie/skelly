@@ -16,6 +16,7 @@
         ]
       },
       "id": "key_box",
+      "material": "wood",
       "name": "Key box",
       "size": [1, 1, 1]
     }

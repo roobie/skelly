@@ -645,9 +645,14 @@ export const createSession = (options: SessionOptions) => {
   const inventory = restored
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities, character)
     : new Inventory(registry, undefined, options.entities, character);
+  const wearPlaced = (piece: BlockEntity | undefined, wear: number | undefined): void => {
+    if (piece && wear !== undefined) {
+      inventory.entities.wear(piece, wear);
+    }
+  };
   const generateColumnSupply = (cx: number, cz: number, source: ColumnSource): void => {
-    for (const { spec, loot, surfaceLoot, fixedCount } of source.furnitureIn(cx, cz)) {
-      inventory.furnish(spec, loot, surfaceLoot, fixedCount);
+    for (const { spec, loot, surfaceLoot, fixedCount, wear } of source.furnitureIn(cx, cz)) {
+      wearPlaced(inventory.furnish(spec, loot, surfaceLoot, fixedCount), wear);
     }
     for (const point of source.lootPointsIn(cx, cz)) {
       if (point.channel !== 'ground') {

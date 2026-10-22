@@ -22,7 +22,6 @@ export const cyclicSite = (registry: Registry, base: CityPlan, scale: Scale): Ci
     {
       source: 'owned-cycle.json',
       data: {
-        doorMaterials: [{ id: 'wood', methods: [] }],
         furniture: [
           { id: 'cycle_stock', name: 'Cycle stock', size: [1, 1, 1], color: '#aaaaaa', solid: false },
           {
@@ -31,7 +30,6 @@ export const cyclicSite = (registry: Registry, base: CityPlan, scale: Scale): Ci
             size: [1, 1, 1],
             color: '#aaaaaa',
             door: {
-              material: 'wood',
               methods: {},
               handlingSimSeconds: 1,
             },

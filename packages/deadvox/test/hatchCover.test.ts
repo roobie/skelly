@@ -12,7 +12,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { cellsOf, footprint, pieceSize } from '../src/core/templates.ts';
-import { fixtureBreach } from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials } from './economyFixtures.ts';
 import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
 import {
   capture,
@@ -262,6 +262,7 @@ describe('the content check for covers', () => {
     solid: false,
     cover: true,
     breach: fixtureBreach(),
+    material: FIXTURE_MATERIAL,
   };
   const issuesFor = (furniture: object) =>
     validateContent({ source: 'cover-test.json', data: { furniture: [furniture] } }).map(({ path }) => path);
@@ -277,6 +278,7 @@ describe('the content check for covers', () => {
 
   it('refuses a cover placed as fitted', () => {
     const data = {
+      furnitureMaterials: fixtureMaterials(),
       furniture: [cover],
       templates: [
         {

@@ -158,10 +158,10 @@ local campWallRunCrouchHole = campWallRun + {
       "name": "Steel container door",
       "size": [2, 4, 1],
       "color": "#718087",
+      material: 'steel',
       breach: { minimumStrength: 9, durability: 300 },
       "door": {
         "handlingSimSeconds": 0.6,
-        material: 'steel',
         "methods": { pry: {
           "quality": 'prying', level: 3, strikeSound: 'lock_pry',
           "skill": "mechanics",
@@ -303,7 +303,8 @@ local campWallRunCrouchHole = campWallRun + {
       "container": {
         "pockets": [{ "grid": [4, 4], "handlingSimSeconds": 1.2 }]
       },
-      "door": { material: 'steel', methods: {}, "handlingSimSeconds": 0.6 }
+      material: 'steel',
+      "door": { methods: {}, "handlingSimSeconds": 0.6 }
     },
     {
       "id": "field_desk",
@@ -348,9 +349,10 @@ local campWallRunCrouchHole = campWallRun + {
       "name": "Camp fence-gate leaf",
       "size": [6, 5, 1],
       "color": "#666c70",
+      material: 'steel',
       breach: { minimumStrength: 9, durability: 300 },
       "door": {
-        material: 'steel', methods: {},
+        methods: {},
         "handlingSimSeconds": 1.2
       }
     }

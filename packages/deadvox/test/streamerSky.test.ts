@@ -12,7 +12,7 @@ import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { PileMeshes } from '../src/render/piles.ts';
 import type { ToMesher } from '../src/worker/protocol.ts';
 import { baseRegistry, baseTerrainShape } from './baseRegistry.ts';
-import { fixtureBreach } from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 import { skyFixture } from './fixtures/sky.ts';
 
 class OwnedWorker {
@@ -122,6 +122,7 @@ it.each([0, 1])('blocks sight past an incomplete column (height %i), even after 
     size: [1, 1, 1],
     color: '#888888',
     breach: fixtureBreach(),
+    material: FIXTURE_MATERIAL,
   });
   registry.items.set('reveal_item', {
     id: 'reveal_item',
