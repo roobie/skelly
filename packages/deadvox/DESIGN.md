@@ -776,14 +776,17 @@ Until d508, threat stays on its own level. See
 `src/content/base/gauntlet-lab-equipment.libsonnet`, `mapPieces`.
 
 The hatch-side entrance is open. Each rebuilt level's ways down need that level's own
-keycard, from one authored spot on its open side. Acquisition cannot depend on the seal
+keycard, from one authored spot on its open side. A card may be stock in a container
+instead of lying in the open, so that finding it is a search rather than a sighting.
+Acquisition cannot depend on the seal
 it opens. The seals are vault or bulkhead doors, which a crowbar cannot force: only
-the card opens them. The certificate checks seals top-down: each level's matching placed
+the card opens them. The certificate checks seals top-down: each level's matching
 card must be present, reachable from the hatch landing with only the seals above it
-open, and within visible pickup reach before its locks are admitted to the descent
+open, and within pickup reach, in the open or in its container, before its locks are admitted to the descent
 proof. Checking in that order means no card can depend on its own seal or a deeper one,
 which would make the run a dead end. See
 `src/content/base/gauntlet-lab-administration.libsonnet`, `seal`;
+`src/content/base/gauntlet-lab-level.libsonnet`, `cardStock`;
 `src/core/scenarioCertificate.ts`, `seals`; and `src/core/prying.ts`, `pryPlan`.
 
 Each level is fully rebuilt and judged in play before the next one, so the first
@@ -796,9 +799,22 @@ height, finish and furnishing so each reads as its own space under a carried lig
 Loops run between rooms instead of along a one-sided excavation corridor that serves
 nothing; unused excavation stays solid rather than making the rooms larger and emptier.
 Delegated equipment bays prevent furnishings from borrowing thresholds or circulation.
-Those cues are not a danger or balance proof. See
-`src/content/base/gauntlet-lab-entry.libsonnet`, `rooms` and `plan`, and
+Those cues are not a danger or balance proof. A room stocks from a loot context that
+fits its use, so what a search turns up says what the room was for; few rolls and
+heavy nothing weights keep the lab scarce. Rebuilt levels carry no readables until the
+destination round, because what the lab's papers tell depends on the destination. See
+`src/content/base/gauntlet-lab-entry.libsonnet`, `rooms` and `plan`;
+`src/content/base/gauntlet-lab-administration.libsonnet`, `rooms`; and
 `src/content/base/gauntlet-lab-equipment.libsonnet`, `furnished`.
+
+Level two's briefing hall is double height: it sinks into the grid storey below, as the
+holding room rises into the storey above it, so a level gains one tall space without
+a storey of its own. That touched a second level in a one-level round, an exception to
+one level per round that BR accepted with this choice. The well keeps its
+walls whole so the grid's threat cannot reach the hall, and its floor steps up so a
+player can climb back out. Level three's rebuild must leave the well its slot. See
+`src/content/base/gauntlet-lab-administration.libsonnet`, `well`, and
+`src/content/base/gauntlet-lab.libsonnet`, `join`.
 
 The underground campus extends beyond the small service facade because a surface
 disguise must not dictate the lab's capacity. One compiled assembly owns their common
@@ -851,10 +867,12 @@ and `src/game/session.ts`, `activateGoal`.
 Darkness uses world-derived sky transport and an ordinary carried light. The lab's
 fixtures are intended to light only after power is restored, so light is earned,
 not given. Rebuilt levels' working and broken fixtures are inert set dressing. Entry's breaker
-belongs in the security post; d509 builds that interaction and its saved per-level
-power state. Later levels' switch positions are decided at their own reviews. The
+belongs in the security post. Level two's is in a plant room off its circulation, so
+power is found by exploring. Until d509 builds that interaction and its saved per-level
+power state, the room and its marking are enough. Deeper levels' switch positions are decided at their own reviews. The
 lab has no lighting category until its light round. See
-`src/content/base/gauntlet-lab-entry.libsonnet`, `rooms`. Finished site placements
+`src/content/base/gauntlet-lab-entry.libsonnet`, `rooms`, and
+`src/content/base/gauntlet-lab-administration.libsonnet`, `rooms`. Finished site placements
 expose the same sky eligibility contract across authored layouts, hamlets and
 scenario composition. Benchmark city plans do not opt into scenario
 sky work, preserving their stress policy. Demo stock stays outside ordinary
