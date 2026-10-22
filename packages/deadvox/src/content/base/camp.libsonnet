@@ -168,7 +168,8 @@ local campWallRunCrouchHole = campWallRun + {
           "timeSimSeconds": 15,
           "fastestTimeSimSeconds": 7.5,
           "strikeIntervalSimSeconds": 0.5
-        } }
+        } },
+        detail: (import 'door-detail.libsonnet').ribbed,
       }
     },
     {
@@ -354,7 +355,13 @@ local campWallRunCrouchHole = campWallRun + {
       breach: { minimumStrength: 9, durability: 300 },
       "door": {
         methods: {},
-        "handlingSimSeconds": 1.2
+        "handlingSimSeconds": 1.2,
+        // A fence gate: upright bars in a frame, hung on heavy straps.
+        detail: (import 'door-detail.libsonnet').ribbed + {
+          fields: [8, 1],
+          hinges: { count: 2, length: 0.3, width: 0.08 },
+          handle: { kind: 'pull', fromFreeEdge: 0.15, along: 0.45, length: 0.3, thickness: 0.03 },
+        },
       }
     }
   ],

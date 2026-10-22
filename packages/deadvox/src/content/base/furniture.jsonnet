@@ -1,5 +1,6 @@
 local shape = import 'furniture-shape.libsonnet';
 local breach = import 'furniture-breach.libsonnet';
+local detail = import 'door-detail.libsonnet';
 local woodDoor = {
   id: 'wood_door',
   name: 'Burglary-safe wooden door',
@@ -16,6 +17,7 @@ local woodDoor = {
         strikeIntervalSimSeconds: 0.5, strikeSound: 'lock_pry',
       },
     },
+    detail: detail.panelled,
   },
 };
 breach.breaking(shape.colliding({
@@ -339,6 +341,10 @@ breach.breaking(shape.colliding({
             level: 1, timeSimSeconds: 6, fastestTimeSimSeconds: 3,
           },
         },
+        // An interior door turns on a knob rather than a lever.
+        detail: detail.panelled + {
+          handle: { kind: 'knob', fromFreeEdge: 0.08, along: 0.48, length: 0.06, thickness: 0.02 },
+        },
       },
     },
     woodDoor + {
@@ -352,6 +358,7 @@ breach.breaking(shape.colliding({
             strikeIntervalSimSeconds: 1, strikeSound: 'lock_pry', fuel: 1,
           },
         },
+        detail: detail.flush,
       },
     }
   ]
