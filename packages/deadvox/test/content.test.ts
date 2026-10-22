@@ -444,7 +444,11 @@ describe('content', () => {
   it('rejects a heartbeat sound that is missing or has more than one variant', () => {
     const body = baseRegistry.body.get('player')!;
     const [onlyVariant] = [...baseRegistry.sounds.values()][0]!.variants;
-    const single = { ...[...baseRegistry.sounds.values()][0]!, id: 'heartbeat_fixture_single' };
+    const single = {
+      ...[...baseRegistry.sounds.values()][0]!,
+      id: 'heartbeat_fixture_single',
+      variants: [onlyVariant],
+    };
     const pair = { ...single, id: 'heartbeat_fixture_pair', variants: [onlyVariant, onlyVariant] };
     const events = [single.id, pair.id, 'heartbeat_fixture_absent'];
     const { issues } = buildRegistry([
