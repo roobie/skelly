@@ -373,6 +373,10 @@ deconstruction reserves its piece against use until the job is cancelled or fini
 paused work keeps its piece; under lockstep the reservation is ordinary simulation state,
 resolved in tick order. See `src/core/blockEntities.ts`, `BlockEntities.remove`.
 
+Because every explored piece stays in memory, a lookup must not cost more as the explored
+area grows, so lookups find pieces through an index by column. See
+`src/core/blockEntities.ts`, `BlockEntities.near`.
+
 ### Block entities
 
 Stateful blocks keep their changing state separate from static block identity.
