@@ -101,9 +101,8 @@ unbuilt. Unanswered gates block only their dependent work.
   depends on a structure rather than forgetting support after placement. Prove
   destructive cascades; physical stress simulation is not required.
 - **Removal contents:** see `DESIGN.md`, "Edits persist".
-- **Interrupted deconstruction:** reserve the structure against use while work is
-  pending, including pauses, so resumed work retains exclusive ownership. Keep
-  resumable work and snapshotted yields under `INTERACTIONS.md`, "Crafting";
+- **Interrupted deconstruction:** the reservation is in `DESIGN.md`, "Edits persist".
+  Keep resumable work and snapshotted yields under `INTERACTIONS.md`, "Crafting";
   cancellation releases ownership without producing the completion yield. Partial
   salvage is not implied.
 

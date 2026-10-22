@@ -73,6 +73,8 @@ export type BashOutcome = 'resisted' | 'damaged' | 'broken';
 export interface BlockEntitiesState {
   nextUid: number;
   entities: BlockEntityState[];
+  /** Pieces pending deconstruction, held against use; absent when none are. */
+  reserved?: number[];
 }
 
 export interface EntitySpec {
@@ -230,6 +232,7 @@ export class BlockEntities {
   private readonly doorways = new Map<string, BlockEntity>();
   private readonly masks = new WeakMap<FurnitureDef, ReadonlySet<string>>();
   private readonly boxes = new WeakMap<BlockEntity, { pose: string; boxes: readonly BlockingBox[] }>();
+  private readonly reservedUids = new Set<number>();
   private nextUid = 1;
   /** Goes up on every change, so views know when to redraw. */
   version = 0;
@@ -286,6 +289,7 @@ export class BlockEntities {
         ...(entity.broken ? { broken: true as const } : {}),
         ...(entity.pockets === undefined ? {} : { pockets: entity.pockets.map((grid) => grid.map(snapshotPlaced)) }),
       })),
+      ...(this.reservedUids.size === 0 ? {} : { reserved: [...this.reservedUids].sort((a, b) => a - b) }),
     });
   }
 
@@ -294,6 +298,10 @@ export class BlockEntities {
     this.byOrigin.clear();
     this.cells.clear();
     this.doorways.clear();
+    this.reservedUids.clear();
+    for (const uid of restored.reservedUids) {
+      this.reservedUids.add(uid);
+    }
     for (const [origin, entity] of restored.byOrigin) {
       this.byOrigin.set(origin, entity);
     }
@@ -327,6 +335,12 @@ export class BlockEntities {
       throw new Error('Invalid next block entity id');
     }
     entities.nextUid = state.nextUid;
+    for (const uid of state.reserved ?? []) {
+      if (!ids.has(uid) || entities.reservedUids.has(uid)) {
+        throw new Error(`Reserved block entity ${uid} is missing or repeated`);
+      }
+      entities.reservedUids.add(uid);
+    }
     return entities;
   }
 
@@ -546,6 +560,7 @@ export class BlockEntities {
     }
     this.occupy(entity, false);
     this.byOrigin.delete(key(...entity.origin));
+    this.reservedUids.delete(entity.uid);
     this.version += 1;
     this.standing += 1;
   }
@@ -794,6 +809,31 @@ export class BlockEntities {
     entity.open = true;
     this.standing += 1;
     return 'broken';
+  }
+
+  /**
+   * Holds a standing piece against use while its deconstruction is pending, paused or not, until `release` or its
+   * removal (`DESIGN.md`, "Edits persist").
+   */
+  reserve(entity: BlockEntity): void {
+    if (this.byUid(entity.uid) !== entity || entity.carried) {
+      throw new Error('Only a live standing block entity can be reserved');
+    }
+    this.reservedUids.add(entity.uid);
+    this.version += 1;
+  }
+
+  release(entity: BlockEntity): void {
+    if (this.reservedUids.delete(entity.uid)) {
+      this.version += 1;
+    }
+  }
+
+  /** Why a piece can't be used now: its deconstruction holds it. Every use path that refuses a missing piece asks. */
+  useRefusal(entity: BlockEntity): string | undefined {
+    return this.reservedUids.has(entity.uid)
+      ? this.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.reserved
+      : undefined;
   }
 
   markSearched(entity: BlockEntity): void {

@@ -42,6 +42,8 @@ import {
   liftFurniture,
   placeFurniture,
   placement,
+  removalRefusal,
+  removeFurniture,
   tipCarried,
   turnCarried,
 } from '../core/furnitureMove.ts';
@@ -952,7 +954,7 @@ export const createSession = (options: SessionOptions) => {
   const rest = new RestController(sim, {
     furniture: (uid) => {
       const entity = entities.byUid(uid);
-      const restDef = entity && entities.defOf(entity).rest;
+      const restDef = entity && !entities.useRefusal(entity) && entities.defOf(entity).rest;
       return restDef ? { quality: restDef.quality, sleepable: restDef.sleep === true } : undefined;
     },
     withinReach: (uid) => {
@@ -1738,6 +1740,24 @@ export const createSession = (options: SessionOptions) => {
   /** Containers with a search queued, so pressing again doesn't queue another. */
   const searching = new Set<BlockEntity>();
   const nameOf = (entity: BlockEntity) => entities.defOf(entity).name.toLowerCase();
+  /**
+   * The construction action's removal: it cancels the work that names the piece, then takes the piece out of the
+   * world, so a save never names a missing piece; a refusal cancels nothing (`DESIGN.md`, "Edits persist").
+   */
+  const removePiece = (entity: BlockEntity): string | undefined => {
+    if (entities.byUid(entity.uid) !== entity) {
+      return 'It is no longer there';
+    }
+    const mover = furnitureMover();
+    const refusal = removalRefusal(mover, entity);
+    if (refusal) {
+      return refusal;
+    }
+    sim.actions.cancelNaming(entity.uid);
+    queue.cancelNaming(entity.uid);
+    searching.delete(entity);
+    return removeFurniture(mover, entity);
+  };
   queue.registerAction('furniture.search', (params) => {
     const uid = params.entityUid;
     if (typeof uid !== 'number' || !Number.isSafeInteger(uid)) {
@@ -1748,6 +1768,10 @@ export const createSession = (options: SessionOptions) => {
       return 'It is no longer there';
     }
     searching.delete(entity);
+    const reserved = entities.useRefusal(entity);
+    if (reserved) {
+      return reserved;
+    }
     const reached = inventory.canReachEntity(entity);
     if (reached) {
       entities.markSearched(entity);
@@ -1778,6 +1802,10 @@ export const createSession = (options: SessionOptions) => {
       const entity = entities.byUid(entityUid);
       if (!entity) {
         return 'The door is no longer there';
+      }
+      const reserved = entities.useRefusal(entity);
+      if (reserved) {
+        return reserved;
       }
       const plan = pryPlan(inventory, entity, { toolUid, method }, character);
       return plan.ok ? undefined : plan.reason;
@@ -1832,6 +1860,9 @@ export const createSession = (options: SessionOptions) => {
   }
 
   scenarioRun = restoreScenarioRun(options, sim);
+  /** Why a held piece can't be used: it is no longer the live piece, or its deconstruction holds it. */
+  const pieceRefusal = (entity: BlockEntity): string | undefined =>
+    entities.byUid(entity.uid) === entity ? entities.useRefusal(entity) : 'It is no longer there';
   const isObjective = (entity: BlockEntity): boolean =>
     Boolean(
       options.objective &&
@@ -1851,8 +1882,9 @@ export const createSession = (options: SessionOptions) => {
       if (sim.dead) {
         return 'This survivor died';
       }
-      if (entities.byUid(entity.uid) !== entity) {
-        return 'It is no longer there';
+      const unusable = pieceRefusal(entity);
+      if (unusable) {
+        return unusable;
       }
       if (!(scenarioRun && isObjective(entity))) {
         return 'Not the designated objective';
@@ -2008,6 +2040,10 @@ export const createSession = (options: SessionOptions) => {
       if (entity.searched || searching.has(entity)) {
         return undefined;
       }
+      const reserved = entities.useRefusal(entity);
+      if (reserved) {
+        return reserved;
+      }
       searching.add(entity);
       const { searchNoise } = entities.defOf(entity);
       if (searchNoise) {
@@ -2025,8 +2061,9 @@ export const createSession = (options: SessionOptions) => {
     },
     /** F's gaze/occlusion selection is in play; admission shares Search's live furniture reach. */
     readFurniture: (entity: BlockEntity): string | undefined => {
-      if (entities.byUid(entity.uid) !== entity) {
-        return 'It is no longer there';
+      const unusable = pieceRefusal(entity);
+      if (unusable) {
+        return unusable;
       }
       if (!inventory.canReachEntity(entity)) {
         return 'Too far away';
@@ -2046,6 +2083,7 @@ export const createSession = (options: SessionOptions) => {
     nameOf,
     liftFurniture: liftPiece,
     placeFurniture: placePiece,
+    removeFurniture: removePiece,
     turnFurniture: () => turnCarried(inventory),
     tipFurniture: () => tipCarried(inventory),
     /** Where the carried piece would stand if put down at an aimed cell, or why it can't be. */

@@ -308,7 +308,7 @@ export const removeFurniture = (mover: FurnitureMover, entity: BlockEntity): str
 export const liftFurniture = (mover: FurnitureMover, entity: BlockEntity): string | undefined => {
   const { inventory } = mover;
   const messages = messagesOf(inventory);
-  const refusal = movableRefusal(inventory, entity, mover.blockSize);
+  const refusal = inventory.entities.useRefusal(entity) ?? movableRefusal(inventory, entity, mover.blockSize);
   if (refusal) {
     return refusal;
   }

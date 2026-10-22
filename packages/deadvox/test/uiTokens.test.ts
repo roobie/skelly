@@ -40,6 +40,7 @@ const tuning = {
       'holdsUp',
       'holdsItems',
       'barricaded',
+      'reserved',
       'fallsOnPlayer',
       'fallsOnOther',
       'nowhereToLand',

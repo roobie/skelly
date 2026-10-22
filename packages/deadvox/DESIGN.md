@@ -363,8 +363,11 @@ session, so a removed piece has nothing to return from. See `src/game/session.ts
 A piece cannot be removed while anything rests or stands on it, while a barricade stands
 in its doorway, or while it holds items, so removal never strands, floats or loses
 anything. Removing through a piece handle taken before a load throws, so the mistake
-shows at once instead of corrupting occupancy. See `src/core/blockEntities.ts`,
-`BlockEntities.remove`.
+shows at once instead of corrupting occupancy. The action that removes a piece first
+cancels the jobs that name it, so a save never refers to a missing piece. Pending
+deconstruction reserves its piece against use until the job is cancelled or finished, so
+paused work keeps its piece; under lockstep the reservation is ordinary simulation state,
+resolved in tick order. See `src/core/blockEntities.ts`, `BlockEntities.remove`.
 
 ### Block entities
 

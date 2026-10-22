@@ -340,6 +340,7 @@ const UiTuningSchema = strictObject({
     holdsUp: Name,
     holdsItems: Name,
     barricaded: Name,
+    reserved: Name,
     fallsOnPlayer: Name,
     fallsOnOther: Name,
     nowhereToLand: Name,

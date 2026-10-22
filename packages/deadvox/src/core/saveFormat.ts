@@ -125,6 +125,7 @@ interface WirePayload {
       acidPuddles: ZombieSystemState['acidPuddles'];
     };
     blockEntitiesNextUid: number;
+    blockEntitiesReserved?: number[];
     spawned: string[];
     rolledColumns: string[];
   };
@@ -156,7 +157,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 54;
+export const SAVE_SCHEMA_VERSION = 55;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -503,7 +504,7 @@ const blockEntitySchema = obj({
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
 });
 const pileSchema = obj({ pos: tuple(safeInt, safeInt, safeInt), items: placedGrid });
-const entitiesState = obj({ nextUid: positiveInt, entities: arr(blockEntitySchema) });
+const entitiesState = obj({ nextUid: positiveInt, entities: arr(blockEntitySchema), reserved: opt(arr(positiveInt)) });
 const inventory = obj({
   ...inventoryCore.fields,
   piles: arr(pileSchema),
@@ -780,6 +781,7 @@ const wirePayloadSchema = obj({
       acidPuddles: arr(acidPuddle),
     }),
     blockEntitiesNextUid: positiveInt,
+    blockEntitiesReserved: opt(arr(positiveInt)),
     spawned: arr(str({ nonEmpty: true })),
     rolledColumns: arr(str({ nonEmpty: true })),
   }),
@@ -1144,6 +1146,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
         acidPuddles: [...snapshot.world.zombies.acidPuddles],
       },
       blockEntitiesNextUid: savedInventory.entities.nextUid,
+      ...(savedInventory.entities.reserved ? { blockEntitiesReserved: [...savedInventory.entities.reserved] } : {}),
       spawned: [...snapshot.world.spawned],
       rolledColumns: [...snapshot.world.rolledColumns],
     },
@@ -1222,6 +1225,7 @@ function restoreWirePayload(wire: WirePayload): SaveSnapshot {
           entities: ordered(Object.values(wire.world.regions).flatMap((region) => region.entities)).map(
             ({ entity }) => entity,
           ),
+          ...(wire.world.blockEntitiesReserved ? { reserved: [...wire.world.blockEntitiesReserved] } : {}),
         },
       },
     },
@@ -1507,6 +1511,10 @@ function validateActionReferences(snapshot: SaveSnapshot): void {
     !snapshot.character.inventory.entities.entities.some(({ uid }) => uid === job.entityUid)
   ) {
     throw new Error('Missing forcing target');
+  }
+  const { entities } = snapshot.character.inventory;
+  if (entities.reserved?.some((uid) => !entities.entities.some((entity) => entity.uid === uid))) {
+    throw new Error('Missing reserved block entity');
   }
   if (snapshot.character.player.ladder?.on === false && !grabbedLadder(snapshot)) {
     throw new Error('Missing grabbed ladder');

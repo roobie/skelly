@@ -165,6 +165,10 @@ export class LadderHold implements HandHold {
     if (this.options.entities.carrying()) {
       return inventory.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.handsFull;
     }
+    const reserved = this.options.entities.useRefusal(entity);
+    if (reserved) {
+      return reserved;
+    }
     this.hold = this.reached() ? { on: true } : { on: false, grabbed: entity };
     return undefined;
   }

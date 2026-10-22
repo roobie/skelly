@@ -16,6 +16,7 @@
       holdsUp: "Something's resting on it",
       holdsItems: "There's still something in it",
       barricaded: "Something's in the doorway",
+      reserved: "I'm taking it apart",
       fallsOnPlayer: "What's on top would fall on me",
       fallsOnOther: "What's on top would fall on someone",
       nowhereToLand: "There's nowhere for what's on it to land",
