@@ -25,7 +25,7 @@
     "frame": {
       "node": "frame:revolver-frame",
       "massKg": 0.4,
-      "centreOfMass": [-0.059157894736842055, -0.032, -0.00000986842105263157]
+      "centreOfMass": [-0.059157894736842055, -0.032, -0.000009868421052631572]
     },
     "grip": {
       "node": "grip:revolver-grip",
