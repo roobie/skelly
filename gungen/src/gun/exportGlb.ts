@@ -473,12 +473,10 @@ const leafSpan = (resolved: Resolved, sight: { readonly id: string }): readonly 
 };
 
 /**
- * How far apart the drawn faces are that bound a sight's line on each side, read in the top voxel row at the eye, or 0
+ * How far apart the drawn faces are that bound a sight's line on each side, read in the voxel row centred at `row`, or 0
  * when the line runs through drawn material or has a face on one side only.
  */
-const drawnNotchWidth = (file: VoxelFile, part: { readonly id: string; readonly grain: number }, eye: Vec3): number => {
-  const partId = part.id;
-  const row = eye[1] - part.grain / 2;
+const drawnWidthAtRow = (file: VoxelFile, partId: string, eye: Vec3, row: number): number => {
   let left = Number.NEGATIVE_INFINITY;
   let right = Number.POSITIVE_INFINITY;
   for (const [a, b, c] of drawnTriangles(file.glb, partId)) {
@@ -498,17 +496,54 @@ const drawnNotchWidth = (file: VoxelFile, part: { readonly id: string; readonly 
 };
 
 /**
- * A rear sight is aimed through its notch, so the voxels must leave it open: at least one voxel of the gun grain wide.
- * A notch one voxel wide or narrower of its own grain can fill, and the player would line up the top of a solid block.
+ * The vertical span of the closed hole that the sight line runs through in the drawn part: the highest ceiling face with
+ * material above it and a floor face below it over the line. An open notch has no ceiling, so it gives none.
  */
-const openNotchOrThrow = (file: VoxelFile, resolved: Resolved, partId: string, eye: Vec3): void => {
-  const grain = partVoxelGrain(resolved.defs.get(partId)!, file.grains);
-  const width = drawnNotchWidth(file, { id: partId, grain }, eye);
-  if (width < file.grains.voxelGrain - 1e-6) {
-    throw new Error(
-      `Sight part ${partId} draws its notch ${round6(width)} m wide on the sight line, under the ${file.grains.voxelGrain} m gun grain`,
-    );
+const drawnApertureSpan = (file: VoxelFile, partId: string, eye: Vec3): readonly [number, number] | undefined => {
+  const ceilings: number[] = [];
+  const floors: number[] = [];
+  for (const [a, b, c] of drawnTriangles(file.glb, partId)) {
+    const over = (axis: 0 | 2, at: number) =>
+      Math.min(a[axis], b[axis], c[axis]) < at && Math.max(a[axis], b[axis], c[axis]) > at;
+    if (!(a[1] === b[1] && b[1] === c[1] && over(0, eye[0]) && over(2, eye[2]))) {
+      continue;
+    }
+    const towardsPlusY = (b[2] - a[2]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[2] - a[2]) > 0;
+    (towardsPlusY ? floors : ceilings).push(a[1]);
   }
+  const ceiling = Math.max(...ceilings.filter((y) => floors.some((above) => above > y) && floors.some((f) => f < y)));
+  if (!Number.isFinite(ceiling)) {
+    return undefined;
+  }
+  return [Math.max(...floors.filter((y) => y < ceiling)), ceiling];
+};
+
+/**
+ * A rear sight is aimed through its notch or its closed aperture, so the voxels must leave it open: at least one voxel
+ * of the gun grain wide. A gap one voxel wide or narrower of its own grain can fill, and the player would line up the
+ * top of a solid block. An open notch is read at the drawn top; where the top row is solid across the line, the eye
+ * drops to the centre of the closed aperture on the line and the width is read across the hole. Returns the eye.
+ */
+const openSightGapOrThrow = (file: VoxelFile, resolved: Resolved, partId: string, topEye: Vec3): Vec3 => {
+  const grain = partVoxelGrain(resolved.defs.get(partId)!, file.grains);
+  const notch = drawnWidthAtRow(file, partId, topEye, topEye[1] - grain / 2);
+  const wide = (width: number) => width >= file.grains.voxelGrain - 1e-6;
+  if (wide(notch)) {
+    return topEye;
+  }
+  const span = drawnApertureSpan(file, partId, topEye);
+  if (span !== undefined) {
+    const centre = round6((span[0] + span[1]) / 2);
+    const eye: Vec3 = [topEye[0], centre, topEye[2]];
+    // A quarter grain below the centre lies inside a voxel row whether the centre is mid-row or on a row boundary.
+    const aperture = drawnWidthAtRow(file, partId, eye, centre - grain / 4);
+    if (wide(aperture) && wide(span[1] - span[0])) {
+      return eye;
+    }
+  }
+  throw new Error(
+    `Sight part ${partId} draws its notch ${round6(notch)} m wide on the sight line, under the ${file.grains.voxelGrain} m gun grain`,
+  );
 };
 
 /**
@@ -530,9 +565,8 @@ const drawnIronSightLine = (
     const front = frontSightPost(resolved);
     const tip = modelPoint(front.tip, metresPerUnit);
     const band = 2 * front.postHalfWidthMetres;
-    const eye: Vec3 = [x, drawnTopOrThrow(file, sight.id), z];
+    const eye = openSightGapOrThrow(file, resolved, sight.id, [x, drawnTopOrThrow(file, sight.id), z]);
     const frontTop = drawnTopOrThrow(file, front.id, { 2: [tip[2] - band, tip[2] + band] });
-    openNotchOrThrow(file, resolved, sight.id, eye);
     return { eye, direction: normalize([tip[0] - eye[0], frontTop - eye[1], tip[2] - eye[2]]) };
   }
   if (family === 'front-sight-bead') {
@@ -540,9 +574,7 @@ const drawnIronSightLine = (
   }
   const half = partVoxelGrain(resolved.defs.get(sight.id)!, file.grains) / 2;
   const top = drawnTopOrThrow(file, sight.id, { 0: [x - half, x + half], 2: leafSpan(resolved, sight) });
-  const eye: Vec3 = [x, top, z];
-  openNotchOrThrow(file, resolved, sight.id, eye);
-  return { eye, direction: sight.direction };
+  return { eye: openSightGapOrThrow(file, resolved, sight.id, [x, top, z]), direction: sight.direction };
 };
 
 // Wider than any bore, so the muzzle's front ring lies over it, and narrower than the gap to the sights above it.

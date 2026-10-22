@@ -189,6 +189,7 @@ describe('made-light point pool', () => {
         movement: 'still',
         lit: false,
         lightSeenFrom: 40,
+        eyeHeightMetres: 1.3,
         lightSources: source ? [source] : [],
       }),
       isSolid: floor,

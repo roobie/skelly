@@ -49,6 +49,7 @@ local crouch = {
         renderedBeamLimit: 2,
         throwArmSpeedMetresPerRealSecond: 9,
         throwArmEnergyJoules: 60,
+        groundLight: { senseHeightMetres: 0.075, renderLiftMetres: 0.4 },
       },
     },
   ],

@@ -85,6 +85,7 @@ const chaseThroughDoor = (strength: number, seconds: number) => {
     movement: 'sprinting',
     lit: false,
     lightSeenFrom: 40,
+    eyeHeightMetres: 1.3,
     stance: 'standing',
   });
   const system = new ZombieSystem({

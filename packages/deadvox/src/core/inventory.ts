@@ -55,15 +55,18 @@ import type { WearSlot } from './schema.ts';
 import { inventoryManagementTuning } from './skillTraining.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
-/** Handling tunables in seconds (`DESIGN.md`, "Handling time"). */
-export const HANDLING = {
-  /** Added per cell of the item's size, taking it out and putting it in. */
-  perCell: 0.05,
-  /** Taking from or putting on the ground. */
-  ground: 1.0,
-  /** Putting on or taking off a worn item. */
-  wear: 2.0,
-} as const;
+/** Handling tunables in seconds, authored in content beside the skill that scales them. */
+export const handlingWeights = (registry: Registry) => {
+  const tuning = inventoryManagementTuning(registry);
+  return {
+    /** Added per cell of the item's size, taking it out and putting it in. */
+    perCell: tuning.handlingPerCellSimSeconds,
+    /** Taking from or putting on the ground. */
+    ground: tuning.handlingGroundSimSeconds,
+    /** Putting on or taking off a worn item. */
+    wear: tuning.handlingWearSimSeconds,
+  };
+};
 
 const inventoryHandlingFactor = (registry: Registry, character: HandedCharacter): number => {
   const tuning = inventoryManagementTuning(registry);
@@ -996,19 +999,20 @@ export class Inventory {
   /** Seconds to take an item out of where it is and put it where it's going. */
   handlingTime(item: Item, from: Location, target: Target): number {
     const cells = cellCount(defOf(this.registry, item.type));
-    const perCell = HANDLING.perCell * cells;
+    const weights = handlingWeights(this.registry);
+    const perCell = weights.perCell * cells;
     const out = (() => {
       switch (from.kind) {
         case 'hand':
           return 0;
         case 'worn':
-          return HANDLING.wear;
+          return weights.wear;
         case 'pocket':
           return this.pocketHandling(from.owner, from.pocket) + perCell;
         case 'furniture':
           return this.furnitureHandling(from.entity, from.pocket) + perCell;
         default:
-          return HANDLING.ground + perCell;
+          return weights.ground + perCell;
       }
     })();
     const into = (() => {
@@ -1016,13 +1020,13 @@ export class Inventory {
         case 'hand':
           return 0;
         case 'worn':
-          return HANDLING.wear;
+          return weights.wear;
         case 'pocket':
           return this.pocketHandling(target.owner, target.pocket) + perCell;
         case 'furniture':
           return this.furnitureHandling(target.entity, target.pocket) + perCell;
         default:
-          return HANDLING.ground + perCell;
+          return weights.ground + perCell;
       }
     })();
     return this.scaleHandlingTime(out + into);
