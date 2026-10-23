@@ -85,8 +85,10 @@ Sharing the likeness avoids a second art obligation for new items and mods, whil
 runtime composition avoids baking every fitted combination. Stills avoid
 continuous rendering competition with the moving world, at the cost of cold
 picture generation and cache upkeep. Readiness and appearance changes must not
-leave stale pictures. See `src/render/itemLook.ts`, `itemLook`, and
-`src/render/models.ts`, `ModelLibrary`.
+leave stale pictures. Wait for fitted geometry before caching a still: a partial
+likeness would claim the item lacks equipment it owns. See
+`src/render/itemPictures.ts`, `ItemPictures`, `src/render/itemLook.ts`, `itemLook`,
+and `src/render/models.ts`, `ModelLibrary`.
 
 Use neutral reference lighting so recognition remains stable in darkness and
 pictures can be reused without following world-light changes. The picture is an

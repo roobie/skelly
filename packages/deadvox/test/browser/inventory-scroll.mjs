@@ -1278,6 +1278,31 @@ try {
       { timeout: 10_000 },
     );
     await clickThroughMenuCursor(`#inventory [data-uid="${rifleUid}"]`);
+    const tilePicture = page.locator(`#inventory [data-uid="${rifleUid}"] .inv-item-picture`);
+    await tilePicture.waitFor({ state: 'visible' });
+    const picturePixels = await tilePicture.evaluate(async (image) => {
+      await image.decode();
+      const canvas = document.createElement('canvas');
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext('2d');
+      context.drawImage(image, 0, 0);
+      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+      let opaque = 0;
+      const colors = new Set();
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (pixels[i + 3] > 0) {
+          opaque += 1;
+          colors.add(`${pixels[i]},${pixels[i + 1]},${pixels[i + 2]}`);
+        }
+      }
+      return { opaque, colors: colors.size, total: canvas.width * canvas.height };
+    });
+    assert.ok(
+      picturePixels.opaque > 0 && picturePixels.opaque < picturePixels.total,
+      'tile still contains model pixels on transparency',
+    );
+    assert.ok(picturePixels.colors > 1, 'reference-lit model has surface detail rather than a flat placeholder');
     const fitButtons = page.locator('#inventory .inv-details button.inv-option').filter({ hasText: /Fit .*foregrip/i });
     assert.ok((await fitButtons.count()) > 0, 'held AR offers the pocketed foregrip as a fit action');
     const fitButton = fitButtons.first();
