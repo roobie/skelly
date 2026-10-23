@@ -476,6 +476,20 @@ describe('using what you hold', () => {
     queue.tick(2.1);
     expect(light.slots?.battery).toBe(battery);
   });
+
+  it('a hand load refuses once an earlier queued move has put the light down', () => {
+    const t = setup();
+    const light = t.hold('flashlight');
+    const battery = t.hold('aa_battery', 'left');
+    const original = batteryOf(light);
+    expect(t.queue.enqueue(light, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    expect(t.survival.use(battery)).toBeUndefined();
+    const result = t.queue.tick(t.queue.jobs.reduce((sum, job) => sum + job.duration, 0) + 1);
+    expect(t.inventory.locate(light)?.kind).toBe('pile');
+    expect(result.failed.length).toBeGreaterThan(0);
+    expect(light.slots?.battery).toBe(original);
+    expect(t.inventory.locate(battery)?.kind).toBe('hand');
+  });
 });
 
 describe('taking the battery out of a held light', () => {

@@ -23,7 +23,7 @@ import {
   unloadBattery,
 } from '../core/lights.ts';
 import { consume } from '../core/needs.ts';
-import { batterySlotOption, batterySlotRefusal, consumption, stowTarget, useOption } from '../core/options.ts';
+import { batteryHandRefusal, batterySlotOption, batterySlotRefusal, consumption, stowTarget, useOption } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { Readable, ReadRequest } from '../core/readable.ts';
 import type { Simulation } from '../core/sim.ts';
@@ -137,8 +137,14 @@ export class Survival {
       if (!(light && battery)) {
         return coreMessage(this.inventory.registry, 'batteryGone');
       }
+      const route = params.route;
+      if (route !== 'hands' && route !== 'slot') {
+        throw new Error('Invalid action parameter route');
+      }
       const reason =
-        batterySlotRefusal(this.hooks.reach(), light, battery) ??
+        (route === 'hands'
+          ? batteryHandRefusal(this.inventory, light, battery)
+          : batterySlotRefusal(this.hooks.reach(), light, battery)) ??
         swapBattery(this.inventory, light, battery, this.hooks.feet);
       if (reason === undefined) {
         this.hooks.batterySwapped?.(light.type);
@@ -281,6 +287,7 @@ export class Survival {
     this.queue.enqueueAction('survival.battery', option.label, option.plan.time, {
       lightUid: option.light!.uid,
       batteryUid: option.battery!.uid,
+      route: option.route!,
     });
     return undefined;
   }
