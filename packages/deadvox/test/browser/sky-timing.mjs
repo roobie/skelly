@@ -125,6 +125,10 @@ globalThis.skyTiming?.record('admission',{bounds:input.bounds,mesh:[...this.inFl
             "    const meshApplyStartAbsoluteRealMs=performance.timeOrigin+performance.now();\nthis.receiveMesh(msg);\nglobalThis.skyTiming?.record('mesh-apply',{key:msg.key,startAbsoluteRealMs:meshApplyStartAbsoluteRealMs,realMs:performance.timeOrigin+performance.now()-meshApplyStartAbsoluteRealMs});",
           )
           .replace(
+            '      for (const chunk of arrived) {',
+            "      for (const chunk of arrived) {\nglobalThis.skyTiming?.record('chunk',{origin:[chunk.cx*CHUNK,chunk.cy*CHUNK,chunk.cz*CHUNK],size:CHUNK,present:true});",
+          )
+          .replace(
             '    this.firstMeshDelivered ||= msg.mesh.indices.length > 0;',
             "    if(!this.firstMeshDelivered && msg.mesh.indices.length>0) globalThis.skyTiming?.record('first-mesh',{key:msg.key});\n    this.firstMeshDelivered ||= msg.mesh.indices.length > 0;",
           );
@@ -145,39 +149,38 @@ if(msg.__skyTiming) reply.__skyTiming={...msg.__skyTiming,workerStartAbsoluteRea
 postMessage(reply,`,
           );
       }
+      if (path.endsWith('/src/core/skyField.ts')) {
+        return code.replace(
+          '    entry.request ??= { captured: this.capture(entry), submitted: false };',
+          `
+if(!entry.request) {
+  const timingRevision=this.owner.world.version;
+  globalThis.skyTiming?.record('selected',{field:index,revision:timingRevision,bounds:entry.bounds});
+  entry.request={captured:this.capture(entry),submitted:false};
+  globalThis.skyTiming?.record('captured',{field:index,revision:timingRevision,bounds:entry.bounds});
+}`,
+        );
+      }
       if (path.endsWith('/src/render/skylight.ts')) {
         return code
           .replace(
-            '  private prepare(nearby: Field[], position: Vec3, deadline: number): void {',
+            '    if (index === undefined) {\n      return;\n    }\n    const start = this.clock();',
             `
-  private prepare(nearby: Field[], position: Vec3, deadline: number): void {
-const rangeForTiming=PREFETCH_M/this.blockSize;
-for(const candidate of nearby) {
-  if(!candidate.attempted && position.every((v,a)=>v>=candidate.bounds.min[a]-rangeForTiming&&v<candidate.bounds.max[a]+rangeForTiming))
-    globalThis.skyTiming?.once('candidate',candidate.index+':'+candidate.revision,{field:candidate.index,revision:candidate.revision,bounds:candidate.bounds,dependency:candidate.dependency,lightingBusy:this.inFlight,priorLighting:globalThis.skyTiming.lastSky});
-}`,
+    if (index !== undefined) {
+      const timingRevision=this.sky.owner.world.version;
+      const timingField=this.fields[index];
+      globalThis.skyTiming?.once('candidate',index+':'+timingRevision,{field:index,revision:timingRevision,bounds:timingField.bounds,dependency:timingField.dependency,lightingBusy:this.inFlight,priorLighting:globalThis.skyTiming.lastSky});
+    }
+    if (index === undefined) {
+      return;
+    }
+    const start = this.clock();`,
           )
           .replace(
-            '      this.preparation = {',
+            '      this.shown[index] = result;',
             `
-globalThis.skyTiming?.record('selected',{field:field.index,revision:field.revision,bounds:field.bounds});
-      this.preparation = {`,
-          )
-          .replace(
-            '        preparation.captured = next.value;',
-            `
-preparation.captured=next.value;
-globalThis.skyTiming?.record('captured',{field:preparation.field.index,revision:preparation.revision,bounds:preparation.field.bounds});`,
-          )
-          .replace(
-            '    preparation.field.result = result;',
-            `
-globalThis.skyTiming?.record('published',{field:preparation.field.index,revision:preparation.revision,bounds:preparation.field.bounds,job:globalThis.skyTiming.lastSky});
-    preparation.field.result = result;`,
-          )
-          .replace(
-            '  chunkChanged(origin: Vec3): void {',
-            "  chunkChanged(origin: Vec3): void {\nglobalThis.skyTiming?.record('chunk',{origin,size:CHUNK,present:Boolean(this.context.world.getChunk(...origin.map(v=>v/CHUNK)))});",
+if(result) globalThis.skyTiming?.record('published',{field:index,bounds:this.fields[index].bounds,job:globalThis.skyTiming.lastSky});
+      this.shown[index] = result;`,
           )
           .replace(
             '  private upload(): void {',

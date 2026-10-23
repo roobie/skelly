@@ -1,42 +1,56 @@
 import { BoxGeometry, Mesh, MeshLambertMaterial } from 'three';
 import { expect, it, vi } from 'vitest';
 import type { Vec3 } from '../src/core/coords.ts';
-import { growSky, SKY_HALO } from '../src/core/skySnapshot.ts';
-import { sampleSky } from '../src/core/skyTransport.ts';
 import { skyFixture } from './fixtures/sky.ts';
-import { buildSkylight } from './fixtures/skyOracle.ts';
 import { fixtureBox } from './fixtures/skyWorld.ts';
 
-it('dims an uncertified eligible column without blackout but preserves the old noncandidate estimate', () => {
+const inside: Vec3 = [8.5, 4.5, 8.5];
+
+/** The bytes the view uploaded for its resident volumes. */
+const uploaded = (fixture: ReturnType<typeof skyFixture>) =>
+  fixture.shader().uniforms.uSkyVolume!.value.image.data as Uint8Array;
+
+it('draws the simulation field for a box: the same result object and its volume bytes', () => {
   const fixture = skyFixture();
-  for (let z = 6; z <= 8; z++) {
-    for (let x = 24; x <= 26; x++) {
-      fixture.world.setBlock(x, 9, z, fixture.wall);
-    }
-  }
-  const canopy: Vec3 = [25.5, 7.5, 7.5];
-  const oracle = buildSkylight(growSky(fixtureBox, SKY_HALO * 2), 31, fixture.knownOpaque);
-  expect(sampleSky(oracle, canopy)).toBeGreaterThan(0);
-  expect(sampleSky(oracle, canopy)).toBeLessThan(1);
+  fixture.update();
+  fixture.complete();
+  fixture.update();
+  const result = fixture.fields.current(0);
+  expect(result?.volume).toBeDefined();
+  expect(fixture.sky.inspect()[0]!.current).toBe(true);
+  expect(uploaded(fixture)).toEqual(result!.volume!.light);
+  expect(fixture.sky.at(inside)).toBe(fixture.fields.visibilityAt(inside));
+  expect(fixture.fields.current(0)).toBe(result);
+});
+
+it('draws a field the simulation built first without asking for another build', () => {
+  const fixture = skyFixture();
+  const answer = fixture.fields.visibilityAt(inside);
+  fixture.update();
+  expect(fixture.pending).toHaveLength(0);
+  expect(fixture.sky.stats.requested).toBe(0);
+  expect(uploaded(fixture)).toEqual(fixture.fields.current(0)!.volume!.light);
+  expect(fixture.sky.at(inside)).toBe(answer);
+});
+
+it('draws dimmed sky, at or below the cap, for a field the cache has not built, then the built result', () => {
+  const fixture = skyFixture();
   fixture.update();
   expect(fixture.pending.length).toBeGreaterThan(0);
-  expect(fixture.sky.at([8.5, 4.5, 8.5])).toBeGreaterThan(0);
-  expect(fixture.sky.at([8.5, 4.5, 8.5])).toBeLessThan(1);
-  expect(fixture.sky.at(canopy)).toBe(1);
+  expect(fixture.sky.at(inside)).toBeGreaterThan(0);
+  expect(fixture.sky.at(inside)).toBeLessThanOrEqual(fixture.unbuiltSkyCap);
   const { uniforms } = fixture.shader();
   const { data } = uniforms.uSkyRegions!.value.image;
   expect(data[3]).toBe(0);
-  expect(uniforms.uSkyGrid!.value.image.data.some((value: number) => value > 0)).toBe(true);
   fixture.complete();
   fixture.update();
   expect(fixture.sky.stats.accepted).toBeGreaterThan(0);
-  expect(fixture.sky.at([8.5, 4.5, 8.5])).toBe(0);
+  expect(fixture.sky.at(inside)).toBe(0);
   expect(fixture.sky.at([8.5, 10.5, 8.5])).toBe(1);
-  expect(fixture.sky.at(canopy)).toBe(1);
   expect(data[3]).toBe(1);
 });
 
-it('certifies only current, published proximity lighting while leaving distant fields to the existing fallback', () => {
+it('certifies only current, published proximity lighting while leaving distant fields unbuilt', () => {
   const fixture = skyFixture([fixtureBox, { min: [80, 1, 4], max: [88, 9, 12] }]);
   const position: Vec3 = [8, 4, 8];
   expect(fixture.sky.loadingReadiness(position).ready).toBe(false);
@@ -48,9 +62,9 @@ it('certifies only current, published proximity lighting while leaving distant f
   expect(fixture.sky.loadingReadiness(position).ready).toBe(true);
   expect(fixture.sky.inspect()[0]!.resident).toBe(true);
   expect(fixture.sky.inspect()[1]!.complete).toBe(false);
-  fixture.sky.chunkChanged([0, 0, 0]);
-  fixture.update(position);
+  fixture.world.setBlock(4, 5, 8, 0);
   expect(fixture.sky.loadingReadiness(position).ready).toBe(false);
+  fixture.update(position);
   fixture.complete();
   fixture.update(position);
   expect(fixture.sky.loadingReadiness(position).ready).toBe(true);
@@ -82,28 +96,6 @@ it('patches a late lit mesh without a geometry or entity revision', () => {
   expect(shader.uniforms.uSkyRegions!.value).toBe(fixture.shader().uniforms.uSkyRegions!.value);
 });
 
-it('checks preparation admission after each chunk copy using an injected work clock', () => {
-  let spent = 0;
-  const fixture = skyFixture(undefined, () => spent);
-  const copies = [...fixture.world.chunks.values()].map((chunk) => {
-    const raw = chunk.raw.bind(chunk);
-    return vi.spyOn(chunk, 'raw').mockImplementation(() => {
-      spent += 1000;
-      return raw();
-    });
-  });
-  fixture.update();
-  expect(copies.reduce((sum, spy) => sum + spy.mock.calls.length, 0)).toBe(1);
-  expect(fixture.pending).toHaveLength(0);
-  for (let step = 0; step < fixture.world.chunks.size + 2 && fixture.pending.length === 0; step++) {
-    fixture.update();
-  }
-  expect(fixture.pending.length).toBeGreaterThan(0);
-  for (const spy of copies) {
-    spy.mockRestore();
-  }
-});
-
 it('discards a worker completion after a roof edit instead of publishing stale full sky', () => {
   const fixture = skyFixture();
   for (let z = 4; z < 13; z++) {
@@ -118,8 +110,7 @@ it('discards a worker completion after a roof edit instead of publishing stale f
   fixture.update();
   expect(fixture.sky.stats.accepted).toBe(0);
   expect(fixture.sky.stats.discarded).toBeGreaterThan(0);
-  expect(fixture.sky.at([8.5, 8.5, 8.5])).toBeGreaterThan(0);
-  expect(fixture.sky.at([8.5, 8.5, 8.5])).toBeLessThan(1);
+  expect(fixture.fields.latest(0)).toBeUndefined();
   fixture.complete();
   fixture.update();
   expect(fixture.sky.stats.accepted).toBeGreaterThan(0);
@@ -134,6 +125,8 @@ it('prepares the next independent snapshot while the first worker request is out
   const firstSource = new Set(
     fixture.pending[0]!.input.chunks.map((chunk) => [chunk.cx, chunk.cy, chunk.cz].join(',')),
   );
+  fixture.update([24, 4, 8]);
+  expect(fixture.pending).toHaveLength(1);
   expect(chunks.mock.calls.some((coords) => !firstSource.has(coords.join(',')))).toBe(true);
   chunks.mockRestore();
 });
@@ -147,7 +140,6 @@ it('keeps a resident room dark during an opening edit and swaps only the accepte
   const before = fixture.sky.at(point);
   expect(before).toBe(0);
   fixture.world.setBlock(4, 5, 8, 0);
-  fixture.sky.chunkChanged([0, 0, 0]);
   fixture.update();
   expect(fixture.pending.length).toBeGreaterThan(0);
   expect(fixture.sky.at(point)).toBe(before);
@@ -173,26 +165,26 @@ it('retains CPU results across GPU eviction and reentry without a bright fallbac
   }
   expect(fixture.sky.stats.accepted).toBe(boxes.length);
   const { requested } = fixture.sky.stats;
-  expect(fixture.sky.at([8.5, 4.5, 8.5])).toBe(0);
+  expect(fixture.sky.at(inside)).toBe(0);
   fixture.update([8, 4, 8]);
   expect(fixture.sky.stats.requested).toBe(requested);
-  expect(fixture.sky.at([8.5, 4.5, 8.5])).toBe(0);
+  expect(fixture.sky.at(inside)).toBe(0);
 });
 
-it('shares one furniture bounds scan across fields and readiness polls until standing geometry changes', () => {
+it('shares one furniture bounds scan across fields until standing geometry changes', () => {
   const fixture = skyFixture([fixtureBox, { min: [40, 1, 4], max: [48, 9, 12] }]);
   const door = fixture.entities.add({ type: 'fixture_door', pos: [8, 20, 8], size: [1, 1, 1], facing: 'n' })!;
   const boxes = vi.spyOn(fixture.entities, 'blockingBoxes');
   try {
-    fixture.sky.loadingReadiness([8, 4, 8]);
+    fixture.fields.visibilityAt(inside);
+    fixture.fields.visibilityAt([44.5, 4.5, 8.5]);
     expect(boxes.mock.calls).toEqual([[door]]);
-    fixture.sky.loadingReadiness([44, 4, 8]);
     fixture.entities.markSearched(door);
-    fixture.sky.loadingReadiness([8, 4, 8]);
+    fixture.fields.visibilityAt(inside);
     expect(boxes.mock.calls).toEqual([[door]]);
 
     fixture.entities.setOpen(door, true);
-    fixture.sky.loadingReadiness([8, 4, 8]);
+    fixture.fields.visibilityAt(inside);
     expect(boxes.mock.calls).toEqual([[door], [door]]);
   } finally {
     boxes.mockRestore();

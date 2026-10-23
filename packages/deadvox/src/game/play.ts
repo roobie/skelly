@@ -822,7 +822,7 @@ export const startPlay = (
     start: config.start,
     spawn: playerStart.position,
     entities: engine.entities,
-    skyBoxes: engine.skyBoxes,
+    skyFields: engine.skyFields,
     registerVehicles: (owner) => {
       registerLayoutVehicles(owner, registry, config.site, s);
     },
@@ -1876,6 +1876,7 @@ export const startPlay = (
     fitAttachment: (firearmUid, slotId, attachmentUid) =>
       session.firearmAttachments.fit(firearmUid, slotId, attachmentUid),
     removeAttachment: (firearmUid, slotId) => session.firearmAttachments.remove(firearmUid, slotId),
+    loadBattery: (lightUid, batteryUid) => survival.loadBattery(lightUid, batteryUid),
     toHands: (uid, feetPosition) => {
       const item = inventory.itemByUid(uid);
       return item ? toHands(inventory, queue, item, feetPosition) : 'The item is no longer available';

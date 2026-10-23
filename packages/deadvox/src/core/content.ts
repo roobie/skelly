@@ -33,6 +33,8 @@ import {
   ContentFileSchema,
   type ContentSection,
   type DayCycleDef,
+  FIGURE_BOX_LIMBS,
+  type FigureDef,
   type FurnitureDef,
   HELD_DISPLAY_KIND,
   type ItemDef,
@@ -1713,6 +1715,50 @@ const checkHeartbeatSounds = (registry: Registry, report: Report): void => {
   }
 };
 
+const checkFigurePart = (
+  part: NonNullable<FigureDef['parts']>[number],
+  path: string,
+  registry: Registry,
+  { report, claim }: { report: (path: string, message: string) => void; claim: (path: string, name: string) => void },
+): void => {
+  const model = registry.models.get(part.model);
+  if (!model) {
+    report(`${path}.model`, `no model "${part.model}"`);
+  }
+  for (const [joint, anchor] of Object.entries(part.joints)) {
+    if (model && anchor !== undefined && model.anchors?.[anchor] === undefined) {
+      report(`${path}.joints.${joint}`, `model "${part.model}" has no anchor "${anchor}"`);
+    }
+    if (anchor !== undefined && !joint.endsWith('Hip')) {
+      claim(`${path}.joints.${joint}`, joint);
+    }
+  }
+  for (const box of part.draws) {
+    claim(`${path}.draws`, box);
+  }
+  const limbs = new Set(part.draws.map((box) => FIGURE_BOX_LIMBS[box]));
+  if (limbs.size > 1) {
+    report(`${path}.draws`, `draws parts of several limbs (${[...limbs].join(', ')}); a part moves as one limb`);
+  }
+};
+
+/** Every part stands on the hips, so only the other joints, and each box part, may belong to one part alone. */
+const checkFigures = (registry: Registry, report: Report): void => {
+  for (const figure of registry.figures.values()) {
+    const claimed = new Set<string>();
+    const reportFigure = (path: string, message: string) => report('figures', figure.id, path, message);
+    const claim = (path: string, name: string) => {
+      if (claimed.has(name)) {
+        reportFigure(path, `another part already holds "${name}"`);
+      }
+      claimed.add(name);
+    };
+    (figure.parts ?? []).forEach((part, index) => {
+      checkFigurePart(part, `.parts[${index}]`, registry, { report: reportFigure, claim });
+    });
+  }
+};
+
 const referenceIssues = (registry: Registry, origins: Map<string, Origin>): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   const report: Report = (section, id, path, message) => {
@@ -1732,6 +1778,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
     }
   }
   checkItems(registry, report);
+  checkFigures(registry, report);
   checkLoot(registry, report);
   checkMilitaryLoot(registry, report);
   checkFurniture(registry, report);

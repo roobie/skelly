@@ -1,10 +1,12 @@
 import { Scene } from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import graphicsFile from '../src/content/base/graphics.json' with { type: 'json' };
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import type { Chunk } from '../src/core/chunk.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { SkyFields } from '../src/core/skyField.ts';
 import type { SkySnapshot } from '../src/core/skySnapshot.ts';
 import { buildSkyResult, type SkyResult } from '../src/core/skyTransport.ts';
 import { World } from '../src/core/world.ts';
@@ -25,7 +27,7 @@ class QuietWorker {
 
 afterEach(() => vi.unstubAllGlobals());
 
-it('reports real all-air arrivals and unloads so a padded top at 32 cannot retain missing-column darkness', () => {
+it('builds a field over arriving all-air chunks and stops certifying it once its column unloads', () => {
   vi.stubGlobal('Worker', QuietWorker);
   const world = new World();
   const scale = makeScale(0.5);
@@ -41,14 +43,13 @@ it('reports real all-air arrivals and unloads so a padded top at 32 cannot retai
   const scene = new Scene();
   let admit = false;
   const jobs: { input: SkySnapshot; receive: (result: SkyResult, ms: number) => void }[] = [];
+  const fields = new SkyFields({ world, entities, registry }, { bottom: scale.minCy * CHUNK, top: 96 }, [
+    { min: [0, 20, 0], max: [8, 30, 8] },
+  ]);
   const sky = new Skylight(
-    [{ min: [0, 20, 0], max: [8, 30, 8] }],
-    { blockSize: 0.5, top: 96, viewRadiusM: 32 },
+    fields,
+    { blockSize: 0.5, viewRadiusM: 32, unbuiltCap: graphicsFile.graphics[0]!.unbuiltSkyCap },
     {
-      world,
-      entities,
-      registry,
-      bottom: scale.minCy * CHUNK,
       clock: () => 0,
       submit: (input, receive) => {
         if (!admit) {
@@ -61,8 +62,7 @@ it('reports real all-air arrivals and unloads so a padded top at 32 cannot retai
   );
   const update = () => sky.update(scene, [4, 29, 4]);
   update();
-  expect(sky.at([2, 14.5, 2])).toBeGreaterThan(0);
-  expect(sky.at([2, 14.5, 2])).toBeLessThan(1);
+  expect(fields.loaded(0)).toBe(false);
   const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
   const streamer = new Streamer({
     world,
@@ -78,15 +78,10 @@ it('reports real all-air arrivals and unloads so a padded top at 32 cannot retai
     radius: 0,
     surface: { height: () => 20, top: () => undefined },
   });
-  const events: number[][] = [];
   const loaded: string[] = [];
   const unloaded: string[] = [];
   streamer.onColumn = (cx, cz) => loaded.push(`${cx},${cz}`);
   streamer.onColumnUnload = (cx, cz) => unloaded.push(`${cx},${cz}`);
-  streamer.onDataChange = (origin) => {
-    events.push(origin);
-    sky.chunkChanged(origin);
-  };
   for (let attempt = 0; attempt < 32 && !streamer.isReady(0, 0); attempt += 1) {
     streamer.update(0, 0);
   }
@@ -100,12 +95,10 @@ it('reports real all-air arrivals and unloads so a padded top at 32 cannot retai
   job.receive(buildSkyResult(job.input), 0);
   update();
   expect(sky.at([2, 14.5, 2])).toBe(1);
-  expect(events).toContainEqual([0, 32, 0]);
-  events.length = 0;
+  expect(sky.inspect()[0]!.current).toBe(true);
   streamer.update(20 * CHUNK, 20 * CHUNK);
   expect(unloaded).toContain('0,0');
   expect(world.getChunk(0, 1, 0)).toBeUndefined();
-  expect(events).toContainEqual([0, 32, 0]);
   update();
   expect(sky.at([2, 14.5, 2])).toBe(1);
   expect(sky.inspect()[0]!.current).toBe(false);
