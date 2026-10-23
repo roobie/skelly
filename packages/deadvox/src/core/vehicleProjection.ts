@@ -3,7 +3,7 @@ import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { Item } from './items.ts';
 import { type PlacedFitting, placeFitting } from './vehicleBlueprint.ts';
-import type { VehicleInstance } from './vehicleInstances.ts';
+import type { VehicleInstance, VehicleInstances } from './vehicleInstances.ts';
 
 interface VehicleFittingTransform {
   /** The fitting model's origin in world metres. */
@@ -111,3 +111,59 @@ export const projectVehicleParts = (
       boxes: placed.collision.map((box) => transformBox(frame, box)),
     };
   });
+
+const cellsOfBox = function* ({ min, max }: ModelBox, blockSize: number): IterableIterator<Vec3> {
+  for (let y = Math.floor(min[1] / blockSize); y < Math.ceil(max[1] / blockSize); y += 1) {
+    for (let z = Math.floor(min[2] / blockSize); z < Math.ceil(max[2] / blockSize); z += 1) {
+      for (let x = Math.floor(min[0] / blockSize); x < Math.ceil(max[0] / blockSize); x += 1) {
+        yield [x, y, z];
+      }
+    }
+  }
+};
+
+/** Physical cells derived from the same occupied fitting boxes as rendering and picking. */
+export function* vehicleCells(
+  registry: Registry,
+  vehicles: VehicleInstances,
+  blockSize: number,
+): IterableIterator<Vec3> {
+  for (const [vehicleId, vehicle] of vehicles.records) {
+    for (const { boxes } of projectVehicleParts(registry, vehicleId, vehicle, blockSize)) {
+      for (const box of boxes) {
+        yield* cellsOfBox(box, blockSize);
+      }
+    }
+  }
+}
+
+/** Derived physical cells from the same occupied fitting boxes as rendering and picking. */
+export class VehicleOccupancy {
+  private readonly cells = new Set<string>();
+  private seenVersion = -1;
+  private readonly registry: Registry;
+  private readonly vehicles: VehicleInstances;
+  private readonly blockSize: number;
+
+  constructor(registry: Registry, vehicles: VehicleInstances, blockSize: number) {
+    this.registry = registry;
+    this.vehicles = vehicles;
+    this.blockSize = blockSize;
+  }
+
+  isSolid(x: number, y: number, z: number): boolean {
+    this.rebuild();
+    return this.cells.has(`${x},${y},${z}`);
+  }
+
+  private rebuild(): void {
+    if (this.seenVersion === this.vehicles.version) {
+      return;
+    }
+    this.cells.clear();
+    for (const [x, y, z] of vehicleCells(this.registry, this.vehicles, this.blockSize)) {
+      this.cells.add(`${x},${y},${z}`);
+    }
+    this.seenVersion = this.vehicles.version;
+  }
+}

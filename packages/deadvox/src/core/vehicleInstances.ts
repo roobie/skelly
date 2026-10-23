@@ -114,6 +114,8 @@ const validateBuild = (registry: Registry, vehicle: VehicleInstance): void => {
 
 export class VehicleInstances {
   private readonly store = new MapEntityStore<VehicleInstance>();
+  /** Changes with a build or pose replacement, so derived physical projections rebuild. */
+  version = 0;
 
   get records(): IterableIterator<[number, VehicleInstance]> {
     return this.store.entries();
@@ -138,7 +140,9 @@ export class VehicleInstances {
     }
     validateBuild(registry, vehicle);
     assertVehicleState({ nextId: 2, instances: [{ id: 1, vehicle }] });
-    return this.store.add(vehicle);
+    const id = this.store.add(vehicle);
+    this.version += 1;
+    return id;
   }
 
   /** Replaces one validated build without disturbing other instance identities or projections. */
@@ -155,6 +159,7 @@ export class VehicleInstances {
     if (!this.store.replace(id, vehicle)) {
       throw new Error(`Unknown vehicle ${id}`);
     }
+    this.version += 1;
   }
 
   snapshotState(): Readonly<VehicleInstancesState> {
@@ -193,5 +198,6 @@ export class VehicleInstances {
       return [id, build];
     });
     this.store.restore(entries, state.nextId);
+    this.version += 1;
   }
 }

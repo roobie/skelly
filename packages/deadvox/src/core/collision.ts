@@ -2,6 +2,8 @@ import type { BlockEntities } from './blockEntities.ts';
 import type { Registry } from './content.ts';
 import type { MeleeMotion } from './meleeMotion.ts';
 import type { SolidAt } from './raycast.ts';
+import type { VehicleInstances } from './vehicleInstances.ts';
+import { VehicleOccupancy } from './vehicleProjection.ts';
 import type { World } from './world.ts';
 
 /** Solid terrain blocks alone, for checks that track furniture themselves. */
@@ -12,10 +14,21 @@ export const terrainSolid =
     return block !== 0 && registry.blocks[block]!.solid;
   };
 
-/** Physical blockers, including closed doors/furniture. */
-export const worldSolid = (world: World, registry: Registry, entities: BlockEntities): SolidAt => {
+interface VehicleCollisionOptions {
+  readonly vehicles?: VehicleInstances;
+  readonly blockSize?: number;
+}
+
+/** Physical blockers, including closed doors/furniture and occupied parked-vehicle cells. */
+export const worldSolid = (
+  world: World,
+  registry: Registry,
+  entities: BlockEntities,
+  { vehicles, blockSize = 1 }: VehicleCollisionOptions = {},
+): SolidAt => {
   const terrain = terrainSolid(world, registry);
-  return (x, y, z) => terrain(x, y, z) || entities.isSolid(x, y, z);
+  const occupancy = vehicles ? new VehicleOccupancy(registry, vehicles, blockSize) : undefined;
+  return (x, y, z) => terrain(x, y, z) || entities.isSolid(x, y, z) || occupancy?.isSolid(x, y, z) === true;
 };
 
 /** Sight blockers. Foliage can hide actors without stopping their bodies or sounds. */
