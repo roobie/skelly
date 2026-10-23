@@ -3071,6 +3071,25 @@ describe('content', () => {
     }
   });
 
+  it('reports a figure part whose model or joint anchor is missing, or that draws parts of two limbs', () => {
+    const figuresFile = base.find(({ source }) => source === 'figures-player.json')!;
+    const player = (figuresFile.data as { figures: Record<string, unknown>[] }).figures[0]!;
+    const [part] = player.parts as { model: string; joints: Record<string, string> }[];
+    // One build for all three fixture figures; each expected message names only its own fixture's fault.
+    const figures = [
+      { ...part, model: 'fixture_missing_model' },
+      { ...part, joints: { ...part!.joints, leftHip: 'fixture_missing_anchor' } },
+      { ...part, draws: ['body', 'leftLeg'] },
+    ].map((figurePart, index) => ({ ...player, id: `fixture_figure_${index}`, parts: [figurePart] }));
+    const messages = buildRegistry([
+      ...base.filter((source) => source !== figuresFile),
+      { source: figuresFile.source, data: { figures: [player, ...figures] } },
+    ]).issues.map(({ message }) => message);
+    expect(messages).toContain('no model "fixture_missing_model"');
+    expect(messages).toContain(`model "${part!.model}" has no anchor "fixture_missing_anchor"`);
+    expect(messages).toContain('draws parts of several limbs (torso, leftLeg); a part moves as one limb');
+  });
+
   it('maps each authored pattern to its own pattern id, and none for a block that authors none', () => {
     const plain = baseRegistry.blocks.find(({ pattern }) => pattern === undefined)!;
     const { pattern: _pattern, patternPalette: _palette, patternWashout: _washout, ...template } = plain;

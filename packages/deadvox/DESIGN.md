@@ -1491,12 +1491,15 @@ Worn items carry their own part model that covers or replaces the body part
 under it, so gear shows on the body without the body knowing about gear.
 
 The first-person arms are rebuilt from the same authored hand and sleeve parts
-as the body, so both views share one look.
+as the body, so both views share one look. In first person the view draws both
+arms, gripping or as fists, so the body's own arms hide there; otherwise an
+empty hand would show two arms.
 
-Third person remains a debug inspection aid, not a player-facing camera. The
-box figure is `PlayerMeshes` in `src/render/playerFigure.ts`; the authored body
-is the `player_bust` item in `packages/thing-authoring-tool/avatar.libsonnet`,
-shown beside the boxes by the debug query in `src/render/avatarStudy.ts`.
+Third person remains a debug inspection aid, not a player-facing camera.
+`PlayerMeshes` in `src/render/playerFigure.ts` draws the body from the `player`
+figure row (`DESIGN.md`, "Models"); the authored parts are thing tool rows in
+`packages/thing-authoring-tool/avatar.libsonnet`. The debug query in
+`src/render/avatarStudy.ts` stands a model beside the body for comparison.
 
 Needs are calories, hydration, fatigue, stamina, and body temperature; rates use
 game time. Body temperature is not simulated; #366 is the trigger for deciding
@@ -2497,9 +2500,23 @@ grain: the face reads crisper there than on the vehicle grain, which loses it,
 and no extra class is left to maintain. Retuning the item grain moves the figure
 with the tools, which is accepted.
 
-Each part model names its joints as anchors (neck, head, shoulders, hips), and
-code poses the parts about those pivots. The figure is a content row. Many
-animations are expected over time, so a pose is data that names a joint and an
+The figure is a content row, so a mod or a second character ships its own row
+and part models without a code change. Each authored part names its model, the
+box parts it draws in place of, and the model anchor each of its joints sits at;
+the row sets the hip height the parts stand at. A box part that no authored part
+names still draws, so the body is authored a part at a time and stays whole
+throughout; the boxes go when the last part lands. Box limbs hang from the
+authored joints, so they meet the authored parts. Code poses every part about
+those joints. Each box part belongs to one limb (the torso with the head, an
+arm, a leg with its foot), and an authored part draws parts of one limb only,
+because a rigid model moves as one piece. It then strides, leans and hides as
+that limb's boxes do, so a new limb model with an accepted part selection needs
+no renderer change. See `src/core/schema.ts`, `FIGURE_BOX_LIMBS`. Hit regions keep the box layout, because the body simulation, not
+the drawn shape, decides where a hit lands, so gore stays put while parts change.
+See `src/core/schema.ts`, `FigureSchema`, and `src/render/playerFigure.ts`,
+`playerFigureLayout`.
+
+Many animations are expected over time, so a pose is data that names a joint and an
 angle, and code-posed motion such as arm swing and idle breath is one clip among
 many. A pose is never a formula buried in the renderer: a formula in code
 cannot be authored, blended or added to without a code change per animation.
