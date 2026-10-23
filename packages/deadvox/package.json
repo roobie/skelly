@@ -17,7 +17,7 @@
     "pretest": "npm --prefix ../.. run content:compile",
     "test": "vitest run",
     "test:sweeps": "DEADVOX_SWEEPS=1 vitest run test/gauntletRoutes.test.ts",
-    "bench:save-budget": "DEADVOX_BENCH=1 vitest run test/snapshot-format.test.ts -t 'ten-hour hamlet save'",
+    "bench:save-budget": "DEADVOX_BENCH=1 vitest run test/snapshot-format.test.ts -t 'ten-hour fixture save'",
     "bench:craft-planner": "DEADVOX_BENCH=1 vitest run test/crafting.test.ts -t 'indexed 200-item reach snapshot'",
     "bench:edit-cost": "DEADVOX_BENCH=1 vitest run test/pieceIndex.test.ts -t 'piece edit cost benchmark'",
     "bench:shambler-budget": "DEADVOX_BENCH=1 vitest run test/zombies.test.ts -t 'shambler CPU benchmark'",

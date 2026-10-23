@@ -2,10 +2,10 @@ import { buildCityPlan, type CityGrid, cityGridOf } from './cityPlan.ts';
 import { CitySite } from './citySite.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
-import { hamletHordeSpawn, hamletZombieSpawns, ordinaryHamletSpawnWeights } from './hamlet.ts';
 import { hash3, Rng } from './random.ts';
 import type { Scale } from './scale.ts';
 import type { ScenarioDef } from './schema.ts';
+import { ordinarySpawnWeights, settlementHordeSpawn, settlementZombieSpawns } from './settlementSpawns.ts';
 import { type HordeSpawn, rectDistance, type ZombieSpawn } from './site.ts';
 import { terrainShapeOf } from './sitePalette.ts';
 import { footprint, type Placement, placedSpawns } from './templates.ts';
@@ -104,7 +104,7 @@ const authoredHordeSpawns = (
   return population.hordeAreas
     .slice(0, population.hordes)
     .map((area, index) =>
-      hamletHordeSpawn(site.seed, area, () => site.floor, `scenario:${scenarioId}:horde:area:${index}`),
+      settlementHordeSpawn(site.seed, area, () => site.floor, `scenario:${scenarioId}:horde:area:${index}`),
     );
 };
 const hordeGroupStarts = (seed: number, starts: number[], population: ScenarioDef['population']): Set<number> => {
@@ -123,7 +123,7 @@ export const gauntletPopulation = (site: CitySite, { id: scenarioId, population 
   const hordes = new Map<string, HordeSpawn[]>();
   const { grid, floor } = site.plan;
   const ordinary = ordinaryBuildings(site);
-  const weights = ordinaryHamletSpawnWeights(site.registry);
+  const weights = ordinarySpawnWeights(site.registry);
   const append = <T extends { pos: Vec3 }>(columns: Map<string, T[]>, spawn: T) => {
     const key = `${toChunk(spawn.pos[0])},${toChunk(spawn.pos[2])}`;
     const column = columns.get(key) ?? [];
@@ -138,7 +138,7 @@ export const gauntletPopulation = (site: CitySite, { id: scenarioId, population 
     const group = ordinary.slice(start, start + groupSize);
     const road = groupRoad(group, grid);
     const seed = Math.floor(hash3(site.seed, start, 0, 601) * 0x7f_ff_ff_ff);
-    for (const spawn of hamletZombieSpawns(seed, road, group.flatMap(placedSpawns), {
+    for (const spawn of settlementZombieSpawns(seed, road, group.flatMap(placedSpawns), {
       roadHeightAt: () => floor,
       spawnWeights: weights,
       roadsideOffset,
@@ -149,7 +149,7 @@ export const gauntletPopulation = (site: CitySite, { id: scenarioId, population 
     if (hordeStarts.has(start)) {
       append(
         hordes,
-        hamletHordeSpawn(seed, road, () => floor, `scenario:${scenarioId}:horde:${start}`),
+        settlementHordeSpawn(seed, road, () => floor, `scenario:${scenarioId}:horde:${start}`),
       );
     }
   }

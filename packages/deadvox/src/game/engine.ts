@@ -1,7 +1,7 @@
 // Builds the renderer and scene shared by play and benchmark modes. World and
 // content setup lives in worldSetup.ts. The voxel grid and physics are in blocks; the scene is in
 // metres, so chunk meshes are scaled by the block size. The game's world has the
-// hamlet near spawn; the benchmark's has milestone 1.0's test house. Either can have
+// selected scenario; the benchmark's has the test house. Either can have
 // the stress-test city instead (`?site=city`).
 
 import { DirectionalLight, Group, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';

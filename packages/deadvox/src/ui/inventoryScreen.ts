@@ -1270,7 +1270,7 @@ export class InventoryScreen {
     const skills = [...this.inv.registry.skills.values()].map((definition): SkillViewModel => {
       const level = character.skills[definition.id] ?? 0;
       const practice = character.practice[definition.id] ?? 0;
-      const nextLevelPractice = practiceForNextLevel(level);
+      const nextLevelPractice = practiceForNextLevel(this.inv.registry, level);
       return {
         id: definition.id,
         name: definition.name,

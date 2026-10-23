@@ -22,9 +22,9 @@ import type { Engine } from '../src/game/engine.ts';
 import { firearmHandlingFor } from '../src/game/firearmHandling.ts';
 import { startPlayerMelee } from '../src/game/melee.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
-import { MobActorMeshes } from '../src/render/mobActors.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
+import { MobActorMeshes } from './mobActorsFixture.ts';
 import type { MoveIntent } from './playerFixture.ts';
 
 const registry = baseRegistry();

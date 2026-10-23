@@ -142,7 +142,7 @@ it('saves and restores fitted attachment identity and a nested light battery', a
   const bytes = await encodeSave(original.snapshot({ worldId: 'world', characterId: 'character' }), {
     generation: 1,
     version,
-    worldOptions: { blockSize: 0.5, site: 'hamlet', storeys: 1, density: null },
+    worldOptions: { blockSize: 0.5, site: 'gauntlet', storeys: 1, density: null },
   });
   const decoded = await decodeSave(bytes, { version, contentLookup });
   const restored = session([], decoded.snapshot);
@@ -238,7 +238,7 @@ it('a codec save restores the immediate aim frame, recoil and next pellet rays',
   const bytes = await encodeSave(snapshot, {
     generation: 1,
     version,
-    worldOptions: { blockSize: 0.5, site: 'hamlet', storeys: 1, density: null },
+    worldOptions: { blockSize: 0.5, site: 'gauntlet', storeys: 1, density: null },
   });
   const decoded = await decodeSave(bytes, { version, contentLookup });
   const resumed = session([], decoded.snapshot);
@@ -254,7 +254,7 @@ it('a codec save restores the immediate aim frame, recoil and next pellet rays',
     encodeSave(withoutWobbleState, {
       generation: 1,
       version,
-      worldOptions: { blockSize: 0.5, site: 'hamlet', storeys: 1, density: null },
+      worldOptions: { blockSize: 0.5, site: 'gauntlet', storeys: 1, density: null },
     }),
   ).rejects.toThrow();
   const resumedWithoutWobbleState = session([], withoutWobbleState);
@@ -372,7 +372,7 @@ it('keeps a ready pump shotgun ready through racking and loading, then fires wit
   const rackBytes = await encodeSave(rackSnapshot, {
     generation: 1,
     version,
-    worldOptions: { blockSize: 0.5, site: 'hamlet', storeys: 1, density: null },
+    worldOptions: { blockSize: 0.5, site: 'gauntlet', storeys: 1, density: null },
   });
   const rackDecoded = await decodeSave(rackBytes, { version, contentLookup });
   const resumed = session([], rackDecoded.snapshot, undefined, { readyHeld: true, active: true });
@@ -492,7 +492,7 @@ it('a codec save resumes firearm ready progress', async () => {
   const bytes = await encodeSave(original.snapshot({ worldId: 'world', characterId: 'character' }), {
     generation: 1,
     version,
-    worldOptions: { blockSize: 0.5, site: 'hamlet', storeys: 1, density: null },
+    worldOptions: { blockSize: 0.5, site: 'gauntlet', storeys: 1, density: null },
   });
   const decoded = await decodeSave(bytes, { version, contentLookup });
   const resumed = session([], decoded.snapshot, undefined, { readyHeld: true });

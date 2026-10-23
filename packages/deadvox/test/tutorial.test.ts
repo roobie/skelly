@@ -200,7 +200,7 @@ describe('practice objectives', () => {
   it('also isolates direct authored-site links and clears continuation and debug parameters on exit', () => {
     expect(tutorialRequested(new URLSearchParams('site=tutorial'))).toBe(true);
     expect(tutorialRequested(new URLSearchParams('tutorial=1'))).toBe(true);
-    expect(tutorialRequested(new URLSearchParams('site=hamlet'))).toBe(false);
+    expect(tutorialRequested(new URLSearchParams('site=gauntlet'))).toBe(false);
     const start = new URL(
       tutorialUrl('https://example.org/deadvox/?tutorial=1&debug=1&save-backend=indexeddb#continue', false),
     );

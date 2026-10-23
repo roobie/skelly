@@ -34,7 +34,7 @@ const page = (state) => html`  <main>
             </label>
             <label id="deadvox-site-field" ?hidden=${!visible('deadvox-site-field', state)}>Site
               <select name="site" data-url-param="site" id="deadvox-site" data-state-key="site" .value=${state.deadvox.site} .disabled=${!enabled('deadvox', 'site', state)}>
-                <option id="deadvox-default-site" value="">${state.deadvox.bench === '1' ? 'Test house (benchmark default)' : 'Hamlet (default)'}</option>
+                <option id="deadvox-default-site" value="">${state.deadvox.bench === '1' ? 'Test house (benchmark default)' : 'Gauntlet (default)'}</option>
                 <option value="city">Stress-test city</option>
                 <option value="forest">Forest (tree first look)</option>
                 ${siteOffered(state.deadvox, 'gauntlet') ? html`<option value="gauntlet">Gauntlet</option>` : ''}

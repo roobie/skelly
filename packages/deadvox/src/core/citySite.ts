@@ -3,10 +3,10 @@ import type { Chunk } from './chunk.ts';
 import { type CityPlan, cityRowStart } from './cityPlan.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, toChunk, type Vec3 } from './coords.ts';
-import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
 import { type LootSpawnPoint, lootPointsByColumn } from './loot.ts';
 import type { Scale } from './scale.ts';
 import { cityRowDepth } from './settlementPools.ts';
+import { TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
 import { type FurnitureSpawn, furnitureOf, lootSourcesOf, rectDistance, type Site, type ZombieSpawn } from './site.ts';
 import { sitePalette } from './sitePalette.ts';
 import { stampChunk } from './structure.ts';
@@ -25,8 +25,8 @@ export class CitySite implements Site {
   private readonly lootColumns: ReadonlyMap<string, readonly LootSpawnPoint[]>;
 
   constructor(seed: number, registry: Registry, scale: Scale, plan: CityPlan) {
-    if (scale.blockSize !== HAMLET_BLOCK_SIZE) {
-      throw new Error(`the city's templates need ${HAMLET_BLOCK_SIZE} m blocks`);
+    if (scale.blockSize !== TEMPLATE_BLOCK_SIZE) {
+      throw new Error(`the city's templates need ${TEMPLATE_BLOCK_SIZE} m blocks`);
     }
     this.seed = seed;
     this.registry = registry;

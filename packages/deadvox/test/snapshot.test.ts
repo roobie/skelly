@@ -252,14 +252,14 @@ describe('snapshot state components', () => {
     if (removedRecipe === undefined) {
       throw new Error('starter character has no known recipe');
     }
-    const firstThreshold = practiceForNextLevel(actor.skills.crafting!);
-    const award = firstThreshold + practiceForNextLevel(actor.skills.crafting! + 1) / 2;
+    const firstThreshold = practiceForNextLevel(registry, actor.skills.crafting!);
+    const award = firstThreshold + practiceForNextLevel(registry, actor.skills.crafting! + 1) / 2;
     actor.awardPractice('crafting', award, SKILL_LEVEL_LEGENDARY);
     const savedLevel = actor.skills.crafting!;
     const savedPractice = actor.practice.crafting;
     actor.knownRecipes.delete(removedRecipe);
     const snapshot = capture(runtime);
-    actor.awardPractice('crafting', practiceForNextLevel(savedLevel), SKILL_LEVEL_LEGENDARY);
+    actor.awardPractice('crafting', practiceForNextLevel(registry, savedLevel), SKILL_LEVEL_LEGENDARY);
     const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
     const loadedRuntime = createRuntime(decoded.snapshot);
     const loaded = loadedRuntime.session.character;
@@ -272,7 +272,7 @@ describe('snapshot state components', () => {
 
   it('advances a skill only when its accumulated practice reaches the next-level threshold', () => {
     const actor = new Character(registry);
-    const threshold = practiceForNextLevel(actor.skills.crafting!);
+    const threshold = practiceForNextLevel(registry, actor.skills.crafting!);
     actor.awardPractice('crafting', threshold / 2, SKILL_LEVEL_LEGENDARY);
     expect(actor.skills.crafting).toBe(0);
     expect(actor.practice.crafting).toBe(threshold / 2);
@@ -895,14 +895,14 @@ describe('restored session world state', () => {
 
     const countsBefore = [...loaded.entities.all].map((entity) => [entity.uid, entity.pockets?.map((p) => p.length)]);
     for (const [cx, cz] of loaded.columns) {
-      loaded.session.onColumn(cx, cz, loaded.hamlet);
+      loaded.session.onColumn(cx, cz, loaded.site);
     }
     expect([...loaded.entities.all].map((entity) => [entity.uid, entity.pockets?.map((p) => p.length)])).toEqual(
       countsBefore,
     );
     expect(loaded.zombies.store.size).toBe(snapshot.world.zombies.zombies.length);
 
-    const fresh = loaded.hamlet.furnitureIn(...loaded.columns[0]!)[0]!;
+    const fresh = loaded.site.furnitureIn(...loaded.columns[0]!)[0]!;
     const freshSpec = {
       ...fresh.spec,
       pos: [fresh.spec.pos[0] + CHUNK * 100, ...fresh.spec.pos.slice(1)] as [number, number, number],

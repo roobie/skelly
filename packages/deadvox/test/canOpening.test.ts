@@ -98,6 +98,20 @@ describe('held can opening', () => {
     expect(f.opened).toHaveBeenCalledExactlyOnceWith('test_sealed');
   });
 
+  it('a sealed can with no tool quality opens bare-handed and cannot be consumed before', () => {
+    const f = fixture();
+    const sealed = f.registry.items.get('test_sealed')!;
+    f.registry.items.set('test_sealed', { ...sealed, unpack: { ...sealed.unpack!, qualities: undefined } });
+    expect(f.inventory.move(f.tool, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    expect(f.survival.use(f.can)).toBeDefined();
+    expect(f.queue.busy).toBe(false);
+    expect(selectPrimaryAction(f.inventory, 'right').kind).toBe('unpack');
+    expect(f.unpacking.activate(f.can)).toBeUndefined();
+    expect(f.queue.tick(f.queue.remaining).failed).toEqual([]);
+    expect(f.can.type).toBe('test_opened');
+    expect(f.survival.use(f.can)).toBeUndefined();
+  });
+
   it('a lower opening quality takes longer and a changed tool cannot complete the admitted work', () => {
     const fast = fixture('right', 4);
     const slow = fixture('right', 1);

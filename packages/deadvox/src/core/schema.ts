@@ -2860,7 +2860,7 @@ const ScenarioSchema = strictObject({
     hordeAreas: optional(array(LayoutRect)),
     /** Metres each side of a street's centreline where stragglers stand. */
     roadsideOffset: pipe(Count, minValue(1), maxValue(32)),
-    /** Stragglers added to each group on top of its hamlet-sized count. */
+    /** Stragglers added to each group on top of its baseline settlement count. */
     extraStragglers: pipe(Count, maxValue(16)),
   }),
   city: strictObject({
@@ -3001,9 +3001,9 @@ const ZombieSchema = strictObject({
   regions: record(pipe(string(), nonEmpty('must not be empty')), Positive),
   /** Explicitly null when this region leaves no item. */
   severedItems: record(pipe(string(), nonEmpty('must not be empty')), nullable(Id)),
-  /** Relative chance that an ordinary hamlet spawn chooses this type; 1 is the common baseline. */
+  /** Relative chance that an ordinary settlement spawn chooses this type; 1 is the common baseline. */
   spawnWeight: pipe(Positive, maxValue(1, 'must be at most 1')),
-  /** Excludes this kind from ordinary hamlet selection while keeping authored/debug spawns available. */
+  /** Excludes this kind from ordinary settlement selection while keeping authored/debug spawns available. */
   authoredOnly: optional(vBoolean()),
   sounds: strictObject({
     idle: picklist(SOUND_EVENT_IDS),
@@ -3211,10 +3211,20 @@ const FigureSchema = strictObject({
 
 // ---- skills and recipes ----
 
+const SkillCurveSchema = strictObject({
+  saturationFloor: Fraction,
+  saturationHalfLifeLevels: Positive,
+});
+const SkillProgressionSchema = strictObject({
+  id: Id,
+  practicePerLevel: Positive,
+});
+
 const SkillSchema = pipe(
   strictObject({
     id: Id,
     name: Name,
+    curve: optional(SkillCurveSchema),
     /** Recipes a new character knows from the start. */
     startingRecipes: optional(array(Id)),
     training: optional(
@@ -3281,6 +3291,8 @@ const SkillSchema = pipe(
               landingLiftMetres: NonNegative,
             }),
             shotTraceRangeBlocks: Positive,
+            /** The owning skill's curve is attached by the registry, not authored here. */
+            curve: optional(SkillCurveSchema),
           }),
         ),
         melee: optional(
@@ -3403,7 +3415,6 @@ const SiteGenerationSchema = strictObject({
     /** How far a tree may stray from its cell's centre on each axis. */
     treeJitterMetres: NonNegative,
     trees: TreesSchema,
-    hamletDensity: Fraction,
     forestHalfExtentMetres: PositiveMetres,
     forestDensityField: strictObject({
       wavelengthMetres: PositiveMetres,
@@ -3420,25 +3431,6 @@ const SiteGenerationSchema = strictObject({
     trees: strictObject({ trunk: Id, branch: Id, leaves: Id }),
     leafLitter: Id,
   }),
-  hamlet: strictObject({
-    hedge: Id,
-    northSide: pipe(array(Id), minLength(1)),
-    southSide: pipe(array(Id), minLength(1)),
-  }),
-  // Where the hamlet may stand: a square grid of candidate sites around the world origin, scored on flatness.
-  placement: pipe(
-    strictObject({
-      gridStepMetres: PositiveMetres,
-      reachMetres: NonNegative,
-      sampleMetres: PositiveMetres,
-      lowestMetres: NonNegative,
-    }),
-    // The search walks whole grid steps out to the reach, so a fractional count would silently shrink it.
-    check(
-      ({ gridStepMetres, reachMetres }) => Number.isInteger(reachMetres / gridStepMetres),
-      'reach must be a whole number of grid steps',
-    ),
-  ),
 });
 
 const BlockCount = pipe(number(), integer('must be a whole number'), minValue(1, 'must be at least 1'));
@@ -3906,6 +3898,13 @@ const RecipeSchema = strictObject({
 const GraphicsTuningSchema = strictObject({
   id: Id,
   readyRadiusM: pipe(number(), finite(), minValue(0)),
+  mobActors: strictObject({ maxCorpses: Count }),
+  gore: strictObject({
+    dropletCap: Count,
+    splatCap: Count,
+    dropletSpawnsPerFrame: Count,
+    dripSourceCap: Count,
+  }),
   ...GraphicsOptionsSchema.entries,
 });
 
@@ -3926,6 +3925,31 @@ const LookDefaultsSchema = strictObject({
   bloom: vBoolean(),
   film: vBoolean(),
   grade: Fraction,
+  heightFog: strictObject({ baseMetres: NonNegative, scaleMetres: Positive }),
+  painCue: strictObject({
+    pulseRiseRealSeconds: PositiveRealSeconds,
+    pulseFallRealSeconds: PositiveRealSeconds,
+    settleStretch: NonNegative,
+  }),
+  damageFeedback: strictObject({
+    vignetteMax: Fraction,
+    damageForFullStrength: Positive,
+    vignetteFadeRealSeconds: PositiveRealSeconds,
+    rollPeakDegrees: Positive,
+    rollRiseRealSeconds: PositiveRealSeconds,
+    rollSettleRealSeconds: PositiveRealSeconds,
+  }),
+  mobActors: strictObject({
+    corpseLieSimSeconds: PositiveSimSeconds,
+    corpseSinkSimSeconds: PositiveSimSeconds,
+    corpseSinkDepthMetres: Positive,
+    launchSpinRadiansPerSimSecond: Positive,
+    hearingGazeJitter: strictObject({
+      yawDegrees: NonNegative,
+      pitchDegrees: NonNegative,
+      cyclesPerSimSecond: NonNegative,
+    }),
+  }),
 });
 
 // ---- files ----
@@ -3978,6 +4002,7 @@ const SECTION_DESCRIPTOR = {
   models: { schema: optional(array(ModelSchema)), label: 'models', order: 7 },
   sounds: { schema: optional(array(SoundSchema)), label: 'sound events', order: 8 },
   skills: { schema: optional(array(SkillSchema)), label: 'skills', order: 9 },
+  skillProgression: { schema: optional(array(SkillProgressionSchema)), label: 'skill progression', order: 9 },
   recipes: { schema: optional(array(RecipeSchema)), label: 'recipes', order: 10 },
   layouts: { schema: optional(array(SiteLayoutSchema)), label: 'site layouts', order: 11 },
   body: { schema: optional(array(BodyTuningSchema)), label: 'body tuning', order: 12 },
@@ -4052,6 +4077,8 @@ export type HandlingRangeDef = InferOutput<typeof HandlingRangeSchema>;
 export type WeatheringDef = InferOutput<typeof WeatheringSchema>;
 export type SenseDef = InferOutput<typeof SenseSchema>;
 export type PlayerDef = InferOutput<typeof PlayerSchema>;
+export type GraphicsTuningDef = InferOutput<typeof GraphicsTuningSchema>;
+export type LookDefaultsDef = InferOutput<typeof LookDefaultsSchema>;
 export type TreeConeCrown = Extract<InferOutput<typeof TreeCrownSchema>, { kind: 'cone' }>;
 export type DayCycleDef = InferOutput<typeof DayCycleSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;

@@ -76,6 +76,8 @@ export const SIMULATION_EXCLUSIONS = [
   'src/core/mood.ts',
   // The default look is rendered presentation read by the view and debug panel; it changes neither simulation nor saves.
   'src/core/lookDefaults.ts',
+  // Render budgets select presentation work, not simulation or saved state.
+  'src/core/graphicsTuning.ts',
   // Optic lens projection is rendered presentation; it changes neither simulation nor save state.
   'src/core/opticView.ts',
   // Render-only until weather affects the simulation; then remove this entry and save its state (ADR 0002).

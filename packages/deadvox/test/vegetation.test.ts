@@ -5,11 +5,10 @@ import { worldOpaque, worldSolid } from '../src/core/collision.ts';
 import { foliageRustle, initialRustleClock } from '../src/core/foliageRustle.ts';
 import { footstepEventForBlock, shamblerFootstepEventForBlock } from '../src/core/footsteps.ts';
 import { Forest } from '../src/core/forest.ts';
-import { HAMLET, Hamlet } from '../src/core/hamlet.ts';
 import { PlayerCombat } from '../src/core/playerCombat.ts';
 import { raycast } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { grow, rectsOverlap } from '../src/core/site.ts';
+import { rectsOverlap } from '../src/core/site.ts';
 import { siteGenerationOf } from '../src/core/sitePalette.ts';
 import { soundOcclusion } from '../src/core/soundOcclusion.ts';
 import { simSeconds } from '../src/core/time.ts';
@@ -131,9 +130,9 @@ describe('passable but opaque vegetation', () => {
         tuning: senseTuning,
       });
     expect(sense()).toBe(true);
-    for (const name of ['tree_trunk', 'tree_branch', 'leaves', 'hedge', 'leaf_litter']) {
+    for (const name of ['tree_trunk', 'tree_branch', 'leaves', 'leaf_litter']) {
       const id = registry.blockIds.get(name)!;
-      const blocksMovement = name !== 'leaves' && name !== 'hedge';
+      const blocksMovement = name !== 'leaves';
       expect(registry.blocks[id]!.solid, name).toBe(blocksMovement);
       expect(registry.blocks[id]!.opaque, name).toBe(true);
       for (let y = 0; y < 8; y++) {
@@ -224,7 +223,7 @@ describe('passable but opaque vegetation', () => {
   it('rustles on entry and cooldown only while moving, with faster content cadence', () => {
     const world = new World();
     world.setBlock(2, 2, 2, registry.blockIds.get('leaves')!);
-    world.setBlock(3, 2, 2, registry.blockIds.get('hedge')!);
+    world.setBlock(3, 2, 2, registry.blockIds.get('leaves')!);
     const body = {
       pos: [2.5, 2, 2.5] as [number, number, number],
       vel: [0, 0, 0] as [number, number, number],
@@ -346,39 +345,11 @@ describe('passable but opaque vegetation', () => {
       expect(footstepEventForBlock(block)).toBe(playerWood);
       expect(shamblerFootstepEventForBlock(block)).toBe(shamblerWood);
     }
-    for (const name of ['leaves', 'hedge', 'leaf_litter']) {
+    for (const name of ['leaves', 'leaf_litter']) {
       const block = registry.blocks[registry.blockIds.get(name)!]!;
       expect(footstepEventForBlock(block)).toBe(playerFoliage);
       expect(shamblerFootstepEventForBlock(block)).toBe(shamblerFoliage);
     }
-  });
-
-  it('keeps entire hamlet canopies and hedges off lots, road frontage/entrances, spawn and range', () => {
-    const hamlet = new Hamlet(1, registry, scale);
-    expect(new Set(hamlet.trees.map((tree) => tree.shape))).toEqual(
-      new Set(siteGenerationOf(registry).vegetation.treeMix),
-    );
-    expect(hamlet.hedges.length).toBeGreaterThan(0);
-    const required = [
-      grow(hamlet.road, HAMLET.gap),
-      grow(hamlet.range.rect, 4),
-      ...hamlet.lots.map((lot) => grow(lot.rect, 2)),
-    ];
-    for (const tree of hamlet.trees) {
-      expect(
-        required.some((rect) => rectsOverlap(rect, tree.bounds)),
-        `${tree.shape} at ${tree.origin}`,
-      ).toBe(false);
-    }
-    for (const box of hamlet.hedges) {
-      const footprint = { x0: box.min[0], z0: box.min[2], x1: box.max[0], z1: box.max[2] };
-      expect(required.some((rect) => rectsOverlap(rect, footprint))).toBe(false);
-      expect(hamlet.trees.some((tree) => rectsOverlap(tree.bounds, footprint))).toBe(false);
-    }
-    const broadleaf = hamlet.trees.find((tree) => tree.shape === 'broadleaf')!;
-    expect(hamlet.surface.top!(broadleaf.origin[0], broadleaf.origin[2])).toBe(registry.blockIds.get('leaf_litter'));
-    const [x, , z] = hamlet.spawn.pos;
-    expect(hamlet.surface.top!(Math.floor(x / 0.5), Math.floor(z / 0.5))).toBe(registry.blockIds.get('asphalt'));
   });
 
   it('keeps the seeded forest-density field smooth and seed-dependent', () => {
