@@ -141,6 +141,7 @@ import { createReplayPlayStateBinding, routeDominantUse, toggleWalking } from '.
 import { InputReplayDriver, type InputReplayDriverPorts, nextReplayInputSample } from './inputReplayDriver.ts';
 import { applyReplayLook, InputReplayPlayer } from './inputReplayPlayer.ts';
 import type { ItemAction } from './itemActions.ts';
+import { registerLayoutVehicles } from './layoutVehicles.ts';
 import { startingLoadout } from './loadout.ts';
 import {
   meleeWeaponFromContent,
@@ -178,8 +179,7 @@ import { createScreenCommandDispatcher } from './screenCommandDispatcher.ts';
 import { createSession, type PlayerInputSample } from './session.ts';
 import { Sharpening } from './sharpening.ts';
 import { SpectatorCamera } from './spectatorCamera.ts';
-import { populateTestHouseRepairCorner } from './testHouse.ts';
-import { registerTestHouseVehicles } from './testHouseVehicles.ts';
+import { populateTestHouseRepairCorner } from './testHouseRepair.ts';
 import {
   isOrbitResetMovementAction,
   isPlayerFigureWhole,
@@ -841,7 +841,7 @@ export const startPlay = (
     entities: engine.entities,
     skyBoxes: engine.skyBoxes,
     registerVehicles: (owner) => {
-      registerTestHouseVehicles(owner, config.site, engine.spawn.pos[1], s);
+      registerLayoutVehicles(owner, registry, config.site, s);
     },
     terrainFloor: (x, z) => engine.groundAt(x * s, z * s) / s,
     ...(options.restore ? { restore: options.restore } : {}),
@@ -1090,7 +1090,7 @@ export const startPlay = (
       inventory,
       registry,
       site: config.site,
-      spawn: engine.spawn.pos,
+      debug: config.debug,
       blockSize: s,
     });
   }

@@ -1,9 +1,8 @@
 import { AuthoredSite } from '../core/authoredSite.ts';
 import { BlockEntities, type EntitySpec } from '../core/blockEntities.ts';
 import { StressCity } from '../core/city.ts';
-import { CitySite } from '../core/citySite.ts';
 import { worldOpaque, worldSolid, worldSoundBlocking } from '../core/collision.ts';
-import { blockColors, blockId, type Registry } from '../core/content.ts';
+import { blockColors, type Registry } from '../core/content.ts';
 import { toChunk, type Vec3 } from '../core/coords.ts';
 import { Forest } from '../core/forest.ts';
 import { GauntletSite } from '../core/gauntlet.ts';
@@ -14,168 +13,59 @@ import type { Scale } from '../core/scale.ts';
 import type { ScenarioKind } from '../core/scenarioKinds.ts';
 import type { ScenarioDef } from '../core/schema.ts';
 import { TEMPLATE_BLOCK_SIZE } from '../core/settlementSpawns.ts';
-import { type ColumnSource, type FurnitureSpawn, fillFurnitureLoot, type Rect, type Site } from '../core/site.ts';
+import { type ColumnSource, type FurnitureSpawn, fillFurnitureLoot, type Site } from '../core/site.ts';
 import { sitePalette, terrainShapeOf } from '../core/sitePalette.ts';
 import { type PlacedPowerDevice, placedPowerDevices } from '../core/sitePower.ts';
-import { type BlockBox, rasterize, stampChunk } from '../core/structure.ts';
 import { World } from '../core/world.ts';
-import { type Surface, terrainHeightMetres, worldGroundAt } from '../core/worldgen.ts';
+import { type Surface, worldGroundAt } from '../core/worldgen.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
 import type { DebugStart, GameConfig } from './config.ts';
 import { Streamer, type StreamerStats } from './streamer.ts';
-import { HOUSE_OFFSET, LOT_CENTRE, SPAWN_OFFSET, SPAWN_YAW, testHouse, testHouseFurniture } from './testHouse.ts';
 import { testHouseRangeSupply } from './testHouseRange.ts';
 import { buildDebugWeatheringTestSite } from './weatheringTestSite.ts';
 
 export interface WorldSetup extends ColumnSource {
   config: GameConfig;
   registry: Registry;
-  /** Content problems, one per line; empty when all content loaded. */
   contentErrors: string;
   scenario: ScenarioDef | undefined;
   powerDevices: readonly PlacedPowerDevice[];
   world: World;
-  /** Furniture and doors. The game adds them as their columns generate. */
   entities: BlockEntities;
-  /** The generated site, including a debug-only test-house range when enabled. */
   site: Site | undefined;
-  /** The top of the ground in metres at a point in metres, the site's flattening included. */
   groundAt: (xm: number, zm: number) => number;
-  /** Blocks and block entities that stop movement. */
   isSolid: (x: number, y: number, z: number) => boolean;
   isOpaque: (x: number, y: number, z: number) => boolean;
   isSoundBlocking: (x: number, y: number, z: number) => boolean;
   streamer: Streamer;
-  /** Player start in metres (feet), and the yaw facing into the selected world. */
   spawn: { pos: Vec3; yaw: number };
 }
 
-const fixtureLootSource = (
-  spec: EntitySpec,
-  supply: LootPointSource['supply'],
-  { building, anchor }: Pick<LootPointSource, 'building' | 'anchor'>,
-): LootPointSource => ({
-  site: 'test-house',
-  building,
-  anchor,
-  channel: 'container',
-  position: spec.pos,
-  destination: spec.pos,
-  context: { usage: ['Residential'], tier: 'Tier1' },
-  supply,
-  required: false,
-  fixture: true,
-});
-
-/** The test house, rasterized, and a spawn point facing its front door. */
-export const testHouseScene = (config: GameConfig, registry: Registry) => {
-  const { seed, scale } = config;
-  const id = (name: string) => blockId(registry, name);
-  // The test house sits on a level lot at a whole-metre height, so it lines up with any block size.
-  const floor = Math.round(
-    terrainHeightMetres(
-      seed,
-      terrainShapeOf(registry),
-      HOUSE_OFFSET[0] + LOT_CENTRE[0],
-      HOUSE_OFFSET[1] + LOT_CENTRE[1],
-    ),
-  );
-  const house = testHouse(
-    [HOUSE_OFFSET[0], floor, HOUSE_OFFSET[1]],
-    {
-      brick: id('brick'),
-      plaster: id('plaster'),
-      planks: id('planks'),
-      tiles: id('tiles'),
-      fabric: id('fabric'),
-      roof: id('roof'),
-      dirt: id('dirt'),
-      grass: id('grass'),
-      stone: id('stone'),
-      sidingRed: id('siding_red'),
-      sidingBlue: id('siding_blue'),
-      galvanized: id('galvanized'),
-      cobblestone: id('cobblestone_mossy'),
-      dressedStone: id('dressed_stone'),
-      hazard: id('hazard_yellow'),
-    },
-    scale.blockSize,
-  );
-  const spawn: Vec3 = [HOUSE_OFFSET[0] + SPAWN_OFFSET[0], floor, HOUSE_OFFSET[1] + SPAWN_OFFSET[2]];
-  // Furniture is authored for half-metre blocks; at others the house stays bare.
-  const furniture =
-    scale.blockSize === TEMPLATE_BLOCK_SIZE
-      ? testHouseFurniture([HOUSE_OFFSET[0], floor, HOUSE_OFFSET[1]], scale.blockSize, (type) => {
-          const def = registry.furniture.get(type);
-          if (!def) {
-            throw new Error(`content does not define furniture "${type}"`);
-          }
-          return def.size;
-        })
-      : [];
-  const lootSources = furniture.flatMap(({ loot, ...spec }): LootPointSource[] => {
-    if (!registry.furniture.get(spec.type)?.container) {
-      return [];
-    }
-    const anchor: Vec3 = [
-      spec.pos[0] - HOUSE_OFFSET[0] / scale.blockSize,
-      spec.pos[1] - floor / scale.blockSize,
-      spec.pos[2] - HOUSE_OFFSET[1] / scale.blockSize,
-    ];
-    return [
-      fixtureLootSource(spec, loot === undefined ? { kind: 'empty' } : { kind: 'table', table: loot }, {
-        building: 'house',
-        anchor,
-      }),
-    ];
-  });
-  return {
-    lootSources,
-    structures: rasterize(house, scale.blockSize),
-    spawn: { pos: spawn, yaw: SPAWN_YAW },
-    furniture: fillFurnitureLoot(
-      registry,
-      seed,
-      furniture.map(({ loot: _loot, ...spec }) => ({ spec, loot: [] })),
-      [...lootPointsByColumn(lootSources).values()].flat(),
-    ),
-  };
-};
-
-const boundsOf = (boxes: readonly BlockBox[]): Rect => {
-  if (boxes.length === 0) {
-    throw new Error('the test house has no structure bounds');
-  }
-  return {
-    x0: Math.min(...boxes.map(({ min }) => min[0])),
-    z0: Math.min(...boxes.map(({ min }) => min[2])),
-    x1: Math.max(...boxes.map(({ max }) => max[0])),
-    z1: Math.max(...boxes.map(({ max }) => max[2])),
-  };
-};
-
-/** Debug-only site wrapper: the test house remains the structure owner; the shared range owns the lane. */
+/** The authored site owns the house; this wrapper adds only the debug range. */
 export class DebugTestHouseSite implements Site {
   readonly range: HandlingRange;
   readonly surface: Surface;
   readonly spawn: Site['spawn'];
-  private readonly structures: BlockBox[];
+  readonly house: AuthoredSite;
   private readonly rack: EntitySpec;
   private readonly registry: Registry;
   private readonly seed: number;
   private readonly target: EntitySpec;
   private readonly lootPoints: ReadonlyMap<string, readonly LootSpawnPoint[]>;
 
-  constructor(config: GameConfig, registry: Registry, house: ReturnType<typeof testHouseScene>) {
-    this.structures = house.structures;
+  constructor(config: GameConfig, registry: Registry, house: AuthoredSite) {
+    this.house = house;
     this.spawn = house.spawn;
+    const layout = registry.layouts.get(config.site)!;
+    const { bounds } = layout;
+    const s = config.scale.blockSize;
     this.range = new HandlingRange(config.seed, registry, config.scale, {
-      beside: boundsOf(this.structures),
-      floor: house.spawn.pos[1] / config.scale.blockSize - 1,
+      beside: { x0: bounds.x0 / s, x1: bounds.x1 / s, z0: bounds.z0 / s, z1: bounds.z1 / s },
+      floor: house.spawn.pos[1] / s - 1,
     });
     this.surface = {
-      height: (x, z, natural) => this.range.approachHeight(x, z, natural),
-      top: (x, z) => this.range.top(x, z),
+      height: (x, z, natural) => this.range.approachHeight(x, z, house.surface.height(x, z, natural)),
+      top: (x, z) => this.range.top(x, z) ?? house.surface.top?.(x, z),
     };
     const rackType = 'range_rack';
     const rackSize = registry.furniture.get(rackType)?.size;
@@ -191,17 +81,19 @@ export class DebugTestHouseSite implements Site {
     };
     this.registry = registry;
     this.seed = config.seed;
-    this.lootPoints = lootPointsByColumn([
-      ...house.lootSources,
-      fixtureLootSource(
-        this.rack,
-        { kind: 'fixed', items: testHouseRangeSupply(registry) },
-        {
-          building: 'range-rack',
-          anchor: [0, 0, 0],
-        },
-      ),
-    ]);
+    const source: LootPointSource = {
+      site: layout.id,
+      building: 'range-rack',
+      anchor: [0, 0, 0],
+      channel: 'container',
+      position: this.rack.pos,
+      destination: this.rack.pos,
+      context: layout.lootContext,
+      supply: { kind: 'fixed', items: testHouseRangeSupply(registry) },
+      required: false,
+      fixture: true,
+    };
+    this.lootPoints = lootPointsByColumn([source]);
     const targetType = 'range_target';
     const targetSize = registry.furniture.get(targetType)?.size;
     if (!targetSize) {
@@ -215,17 +107,21 @@ export class DebugTestHouseSite implements Site {
     };
   }
 
+  get authoredPlacements() {
+    return this.house.placements;
+  }
+
   stamp(chunk: Parameters<Site['stamp']>[0]): void {
-    stampChunk(chunk, this.structures);
+    this.house.stamp(chunk);
     this.range.stamp(chunk);
   }
 
   lootPointsIn(cx: number, cz: number) {
-    return this.lootPoints.get(`${cx},${cz}`) ?? [];
+    return [...this.house.lootPointsIn(cx, cz), ...(this.lootPoints.get(`${cx},${cz}`) ?? [])];
   }
 
   furnitureIn(cx: number, cz: number): FurnitureSpawn[] {
-    const spawns = this.range.furnitureIn(cx, cz);
+    const spawns = [...this.house.furnitureIn(cx, cz), ...this.range.furnitureIn(cx, cz)];
     if (toChunk(this.rack.pos[0]) === cx && toChunk(this.rack.pos[2]) === cz) {
       spawns.push(
         ...fillFurnitureLoot(this.registry, this.seed, [{ spec: this.rack, loot: [] }], this.lootPointsIn(cx, cz)),
@@ -245,18 +141,16 @@ export class DebugTestHouseSite implements Site {
 export const buildDebugTestHouseSite = (
   config: GameConfig,
   registry: Registry,
-  house: ReturnType<typeof testHouseScene> | undefined,
+  house: Site | undefined,
 ): DebugTestHouseSite | undefined =>
-  config.site === 'testHouse' && config.debug && house ? new DebugTestHouseSite(config, registry, house) : undefined;
+  config.site === 'testHouse' && config.debug && house instanceof AuthoredSite
+    ? new DebugTestHouseSite(config, registry, house)
+    : undefined;
 
-/** One site factory per scenario kind; the `Record` type makes a new kind fail to compile until it has one. */
 const SCENARIO_SITES: Record<ScenarioKind, (options: ConstructorParameters<typeof GauntletSite>[0]) => Site> = {
   gauntlet: (options) => new GauntletSite(options),
 };
 
-/**
- * Select a content-defined world or a built-in debug world.
- */
 const buildSite = (config: GameConfig, registry: Registry): Site | undefined => {
   const scenario = registry.scenarios.get(config.site);
   if (scenario) {
@@ -266,41 +160,31 @@ const buildSite = (config: GameConfig, registry: Registry): Site | undefined => 
   if (layout) {
     return new AuthoredSite(config.seed, registry, config.scale, layout);
   }
-  if (!['city', 'forest', 'testHouse'].includes(config.site)) {
+  if (!['city', 'forest'].includes(config.site)) {
     throw new Error(`Content does not define site "${config.site}"`);
   }
   if (config.site === 'forest') {
     return new Forest(config.seed, registry, config.scale, config.density);
   }
-  if (config.scale.blockSize !== TEMPLATE_BLOCK_SIZE || config.site === 'testHouse') {
+  if (config.scale.blockSize !== TEMPLATE_BLOCK_SIZE) {
     return undefined;
   }
   return new StressCity(config.seed, registry, config.scale, config.storeys);
 };
 
-export const siteForReviewMap = (
-  config: GameConfig,
-  registry = config.content.registry,
-  house = config.site === 'testHouse' ? testHouseScene(config, registry) : undefined,
-): Site | undefined => buildDebugTestHouseSite(config, registry, house) ?? buildSite(config, registry);
+export const siteForReviewMap = (config: GameConfig, registry = config.content.registry): Site | undefined => {
+  const site = buildSite(config, registry);
+  return buildDebugTestHouseSite(config, registry, site) ?? site;
+};
 
 export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?: StreamerStats): WorldSetup {
   const { registry, issues } = config.content;
   const contentErrors = issues.map((i) => `${i.source} ${i.path}: ${i.message}`).join('\n');
   const { seed, scale } = config;
-
-  const house = config.site === 'testHouse' ? testHouseScene(config, registry) : undefined;
-  const built: Site | undefined =
-    buildDebugWeatheringTestSite(config, registry) ?? siteForReviewMap(config, registry, house);
-  const site: { structures: BlockBox[]; spawn: WorldSetup['spawn']; furniture: FurnitureSpawn[] } = built
-    ? { structures: [], spawn: built.spawn, furniture: house?.furniture ?? [] }
-    : (house ?? testHouseScene(config, registry));
+  const built: Site | undefined = buildDebugWeatheringTestSite(config, registry) ?? siteForReviewMap(config, registry);
   const shape = terrainShapeOf(registry);
-  // Without a site the ground is the shared formula, so benchmark runs of the same seed stay comparable.
   const groundAt = (xm: number, zm: number): number =>
     worldGroundAt({ seed, shape, scale, surface: built?.surface, xm, zm });
-  const houseLootPoints = lootPointsByColumn(house?.lootSources ?? []);
-
   const world = new World();
   const entities = new BlockEntities(registry);
   const isSolid = worldSolid(world, registry, entities);
@@ -316,19 +200,18 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     patterns: blockPatterns(registry),
     weatherable: blockWeatherability(registry),
     scale,
-    structures: site.structures,
+    structures: [],
     surface: built?.surface,
     stamp: built ? (chunk) => built.stamp(chunk) : undefined,
     radius: config.radiusChunks,
     ...(stats ? { stats } : {}),
   });
-
   return {
     config,
     registry,
     contentErrors,
     scenario: registry.scenarios.get(config.site),
-    powerDevices: built instanceof CitySite ? placedPowerDevices(registry, built.placements) : [],
+    powerDevices: placedPowerDevices(registry, built?.authoredPlacements ?? []),
     world,
     entities,
     site: built,
@@ -337,12 +220,9 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     isOpaque: worldOpaque(world, registry, entities),
     isSoundBlocking: worldSoundBlocking(world, registry, { entities }),
     streamer,
-    spawn: site.spawn,
-    lootPointsIn: (cx, cz) => built?.lootPointsIn(cx, cz) ?? houseLootPoints.get(`${cx},${cz}`) ?? [],
-    furnitureIn: (cx, cz) => [
-      ...(built?.furnitureIn(cx, cz) ?? []),
-      ...site.furniture.filter(({ spec }) => toChunk(spec.pos[0]) === cx && toChunk(spec.pos[2]) === cz),
-    ],
+    spawn: built?.spawn ?? { pos: [0, groundAt(0, 0), 0], yaw: 0 },
+    lootPointsIn: (cx, cz) => built?.lootPointsIn(cx, cz) ?? [],
+    furnitureIn: (cx, cz) => built?.furnitureIn(cx, cz) ?? [],
     zombiesIn: (cx, cz) => built?.zombiesIn(cx, cz) ?? [],
     hordesIn: (cx, cz) => built?.hordesIn?.(cx, cz) ?? [],
   };

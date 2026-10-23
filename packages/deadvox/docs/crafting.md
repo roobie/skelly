@@ -2,7 +2,7 @@
 read_if:
   - you change recipe authoring, workstation, disassembly or salvage rules
   - you change craft ownership, progression, reading or save behavior
-  - you change reachability validation or the repair-corner scenario
+  - you change reachability validation or the repair-corner scenario and its authored stock destinations
 ---
 
 # Crafting ownership and planning
@@ -39,4 +39,4 @@ Cooking uses a lit station for recipes that require heat. Losing it stops the pl
 
 ## Reachability and tests
 
-Validation checks recipe references and reachability from known recipes, components, tools and authored sources. The repair corner demonstrates reachable plans rather than pinning a particular stock catalogue; it is piles only, so it covers the repairs that need no workstation. See `src/core/reachability.ts`, `checkReachability`, and `src/game/testHouse.ts`, `populateTestHouseRepairCorner`.
+The repair corner demonstrates reachable plans rather than pinning a stock catalogue. Keep derivation separate from authored destinations so recipe changes do not require maintaining a second stock list. See `src/core/reachability.ts`, `checkReachability`, `src/game/testHouseRepair.ts`, `populateTestHouseRepairCorner`, and `src/content/base/layouts-test-house.jsonnet`, `fixturePiles`.

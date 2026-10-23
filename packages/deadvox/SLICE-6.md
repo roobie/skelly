@@ -2,7 +2,7 @@
 read_if:
   - you're planning vehicle implementation, authoring or the Wheels playtest
   - you're applying the settled vehicle scope and deferred directions from issue 322
-  - you're integrating vehicle state with items, saves, collision or region simulation
+  - you're integrating vehicle state with items, saves, collision, authored placement or region simulation
   - you're building the heavy-part-hoist vehicle or impact detachment
 ---
 
@@ -221,7 +221,7 @@ that truth, never restored as independent editable totals. The parked owner cros
 the durable boundary through `src/core/saveFormat.ts`, `makeWirePayload` and
 `restoreWirePayload`, rather than relying on a snapshot-only copy. Scenario
 registration must preserve saved builds instead of regenerating missing parts;
-see `src/game/testHouseVehicles.ts`, `registerTestHouseVehicles`.
+see `src/game/layoutVehicles.ts`, `registerLayoutVehicles`.
 
 Saving in motion, during work or across detachment must be equivalent to continuing
 without a load; parking is not permission to erase momentum at save time. Settled

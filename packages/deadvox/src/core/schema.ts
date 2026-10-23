@@ -2646,7 +2646,8 @@ const LayoutRect = pipe(
 );
 
 const SiteLayoutSchema = strictObject({
-  id: Id,
+  /** Layout keys are URL scene names, including camel-case names. */
+  id: pipe(string(), regex(/^[a-zA-Z][a-zA-Z0-9_]*$/, 'must be a URL scene name')),
   lootContext: LootContextSchema,
   /** Fixture and showcase layouts are not world sources; unmarked authored layouts contribute building containers and fixed loot. */
   demo: optional(vBoolean()),
@@ -2659,6 +2660,18 @@ const SiteLayoutSchema = strictObject({
   startTimeGameTimeOfDay: optional(GameTimeOfDay),
   terrain: array(TerrainPrimitive),
   buildings: array(LayoutBuilding),
+  vehicles: optional(
+    array(
+      strictObject({
+        blueprint: Id,
+        placementKey: pipe(string(), nonEmpty()),
+        position: MetrePosition,
+        facing: picklist(['n', 'e', 's', 'w']),
+      }),
+    ),
+  ),
+  /** Repair fixture destinations, in metres; stock derivation remains game logic. */
+  fixturePiles: optional(array(tuple([HalfMetres, HalfMetres, HalfMetres]))),
   player: strictObject({
     position: MetrePosition,
     /** Clockwise degrees from WORLD_NORTH; converted to camera yaw only at startup. */
