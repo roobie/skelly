@@ -26,6 +26,7 @@ import { opticViewSettings } from '../src/core/opticView.ts';
 import type { PlayerStance } from '../src/core/playerStance.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { FIGURE_BOXES } from '../src/core/zombieRegions.ts';
+import { createPlayerBody as createBody } from '../src/game/player.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { renderMeleePose } from '../src/render/meleePose.ts';
 import {
@@ -225,40 +226,54 @@ describe('optic lens presentation', () => {
 });
 
 describe('player figure', () => {
-  it('keeps the world body outside a level/upward view, with torso 5–10 cm behind the eye', () => {
-    const body = createPlayerBody(scale, 4, 1, 4);
-    const meshes = new PlayerMeshes(scale.blockSize, playerFigure);
-    const parts = meshes.group.children as import('three').InstancedMesh[];
-    const corners = (mesh: import('three').InstancedMesh) => {
-      const instance = new Matrix4();
-      mesh.getMatrixAt(0, instance);
-      const worldMatrix = new Matrix4().multiplyMatrices(mesh.matrixWorld, instance);
-      return [-0.5, 0.5].flatMap((x) =>
-        [-0.5, 0.5].flatMap((y) => [-0.5, 0.5].map((z) => new Vector3(x, y, z).applyMatrix4(worldMatrix))),
-      );
+  it('keeps the world body out of a level or upward first-person view in every stance', () => {
+    const senses = registry.player.get('player')!;
+    const body = createBody(scale, [4, 1, 4], senses);
+    const eyeDrop: Record<PlayerStance, number> = {
+      standing: 0,
+      crouching: senses.crouch.eyeDropMetres,
+      prone: senses.prone.eyeDropMetres,
     };
-    const visibleByPart = (pitch: number) => {
-      meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING });
+    for (const stance of ['standing', 'crouching', 'prone'] as const) {
+      const meshes = new PlayerMeshes(scale.blockSize, playerFigure);
+      const parts = meshes.group.children as InstancedMesh[];
+      meshes.sync({
+        body,
+        yaw: 0,
+        stepOffset: 0,
+        gaitPhase: 0,
+        moving: false,
+        stance,
+        dt: playerFigure.stancePoses.blendRealSeconds,
+      });
       meshes.group.updateMatrixWorld(true);
-      const camera = new PerspectiveCamera(75, 16 / 9, 0.05, 128);
-      camera.rotation.order = 'YXZ';
-      camera.position.set(
-        body.pos[0] * scale.blockSize,
-        body.pos[1] * scale.blockSize + PLAYER.eye,
-        body.pos[2] * scale.blockSize,
-      );
-      camera.rotation.set(pitch, 0, 0);
-      camera.updateMatrixWorld(true);
-      const frustum = new Frustum().setFromProjectionMatrix(
-        new Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse),
-      );
-      return parts.map((mesh) =>
-        mesh.count === 0 ? [] : corners(mesh).filter((point) => frustum.containsPoint(point)),
-      );
-    };
-
-    for (const pitch of [0, 0.25, 0.5, Math.PI / 3]) {
-      expect(visibleByPart(pitch).flat()).toHaveLength(0);
+      for (const pitch of [0, 0.25, 0.5, Math.PI / 3]) {
+        const camera = new PerspectiveCamera(75, 16 / 9, 0.05, 128);
+        camera.rotation.order = 'YXZ';
+        camera.position.set(
+          body.pos[0] * scale.blockSize,
+          body.pos[1] * scale.blockSize + senses.eye - eyeDrop[stance],
+          body.pos[2] * scale.blockSize,
+        );
+        camera.rotation.set(pitch, 0, 0);
+        camera.updateMatrixWorld(true);
+        const frustum = new Frustum().setFromProjectionMatrix(
+          new Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse),
+        );
+        const visible = parts.flatMap((mesh, index) => {
+          if (mesh.count === 0) {
+            return [];
+          }
+          const instance = new Matrix4();
+          mesh.getMatrixAt(0, instance);
+          const worldMatrix = new Matrix4().multiplyMatrices(mesh.matrixWorld, instance);
+          const inView = [-0.5, 0.5]
+            .flatMap((x) => [-0.5, 0.5].flatMap((y) => [-0.5, 0.5].map((z) => new Vector3(x, y, z))))
+            .some((corner) => frustum.containsPoint(corner.applyMatrix4(worldMatrix)));
+          return inView ? [PLAYER_ARM_PARTS[index]] : [];
+        });
+        expect(visible, `${stance} at pitch ${pitch}`).toEqual([]);
+      }
     }
   });
 

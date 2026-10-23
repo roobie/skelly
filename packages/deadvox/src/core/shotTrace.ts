@@ -1,5 +1,5 @@
-import type { Vec3 } from '../core/coords.ts';
-import { type RayHit, raycast, type SolidAt } from '../core/raycast.ts';
+import type { Vec3 } from './coords.ts';
+import { type RayHit, raycast, type SolidAt } from './raycast.ts';
 
 export interface ShotTrace {
   readonly origin: Vec3;

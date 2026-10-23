@@ -21,7 +21,6 @@ import { raycast, type SolidAt } from '../core/raycast.ts';
 import { reachTuning } from '../core/reach.ts';
 import type { BodyTuningDef, NightVision } from '../core/schema.ts';
 import type { PoweredLight } from '../core/sitePower.ts';
-import { firearmsCombatTuning } from '../core/skillTraining.ts';
 import { skyAt, sunShadowStrength } from '../core/sky.ts';
 import { skyInWeather, type Weather } from '../core/weather.ts';
 import { amalgamTypeOf, figureSeedPool } from '../core/zombieFigure.ts';
@@ -229,12 +228,7 @@ export const createPlayView = (
         return entity !== undefined && engine.registry.furniture.get(entity.type)?.shotTarget === true;
       }
     : undefined;
-  const impactEffects = new ImpactEffects(
-    s,
-    firearmsCombatTuning(registry).shotTraceRangeBlocks,
-    engine.isSolid,
-    targetCell,
-  );
+  const impactEffects = new ImpactEffects(s, targetCell);
   const blastFlashes = new BlastFlashes();
   const acidEffects = new AcidEffects(s);
   const held = new HeldItems(inventory, models, playerPalette, engine.sky.light);
