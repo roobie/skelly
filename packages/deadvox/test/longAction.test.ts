@@ -425,7 +425,7 @@ describe('core long actions', () => {
     runtime.sim.scheduler.advance(10 / runtime.sim.clock.ratio);
     runtime.light.dark = true;
     runtime.sim.scheduler.advance(10 / runtime.sim.clock.ratio);
-    const job = runtime.sim.actions.job;
+    const { job } = runtime.sim.actions;
     expect(job).toMatchObject({ jobType: 'reading', stopped: true, bookUid: book.uid });
     if (job?.jobType !== 'reading') {
       throw new Error('The darkened read was lost');

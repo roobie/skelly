@@ -165,7 +165,9 @@ describe('authored readable text', () => {
 
   const signSession = (hour: number) => {
     const { registry, issues } = admit(readable);
-    expect(issues).toEqual([]);
+    if (issues.length > 0) {
+      throw new Error(`The sign fixture was not admitted: ${JSON.stringify(issues)}`);
+    }
     const shown: ReadRequest[] = [];
     const session = createSession({
       registry: {
