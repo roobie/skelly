@@ -1,6 +1,8 @@
 import type { KeepOut } from '@skelly/engine/assembly/schema.ts';
 import type { Vec3 } from '@skelly/engine/foundation/math.ts';
-import type { Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
+import type { Solid, SolidFinish, Vec2 } from '@skelly/engine/shapes/solid.ts';
+import { MATERIALS } from '@skelly/thing-core/materials';
+import appearance from './appearance.json' with { type: 'json' };
 import type { MountRequirement } from './mounts.ts';
 
 export const opticRailContactSolids = (solids: readonly Solid[]): readonly Solid[] =>
@@ -43,7 +45,7 @@ export interface OpticCatalogEntry {
 
 const grid = (value: number): number => Math.round(value / 0.25) * 0.25;
 
-const box = (id: string, min: Vec3, max: Vec3): Solid => {
+const box = (id: string, min: Vec3, max: Vec3, finish: SolidFinish = { slot: 'metal' }): Solid => {
   const low = min.map(grid);
   const high = max.map(grid);
   return {
@@ -53,8 +55,22 @@ const box = (id: string, min: Vec3, max: Vec3): Solid => {
       center: low.map((value, axis) => (value + high[axis]!) / 2) as unknown as Vec3,
       half: low.map((value, axis) => (high[axis]! - value) / 2) as unknown as Vec3,
     },
-    slot: 'metal',
+    ...finish,
   };
+};
+
+const LENS_MATERIALS: Readonly<Record<string, string>> = appearance.opticLenses;
+
+/** Lens glass is no gun finish slot, so a gun's finish never repaints it. */
+export const LENS_SLOT = 'lens';
+
+/** An optic's lens glass is content, so a missing or unknown choice fails here instead of drawing the body finish. */
+const lensGlass = (optic: OpticTypeId): SolidFinish => {
+  const material = Object.hasOwn(LENS_MATERIALS, optic) ? LENS_MATERIALS[optic] : undefined;
+  if (material === undefined || !Object.hasOwn(MATERIALS, material)) {
+    throw new Error(`Optic ${optic} needs a known lens material in appearance content opticLenses`);
+  }
+  return { material, slot: LENS_SLOT };
 };
 
 const prism = (id: string, profile: readonly Vec2[], widthU: number): Solid => {
@@ -92,7 +108,9 @@ const cylinder = (
   ]);
 
 /** One hollow turned body: ocular flare, main tube and objective flare share their axis. */
-const scopeBody = (id: string, centerY: number, outside: readonly Vec2[], wall = 0.125): Solid =>
+const SCOPE_WALL_U = 0.125;
+
+const scopeBody = (id: string, centerY: number, outside: readonly Vec2[], wall = SCOPE_WALL_U): Solid =>
   turned(
     id,
     'x',
@@ -111,6 +129,42 @@ const ringBand = (id: string, centerX: number, centerY: number, radius: number):
     0.25,
   );
 
+/** Thick enough to keep a voxel layer at the sight's detail grain, so the glass survives voxelization. */
+const LENS_THICKNESS_U = 0.25;
+
+/**
+ * Glass seated flush in a hollow body's open ocular and objective ends, each given as its (axial, outside
+ * radius) point. Listed before the body, so the wall voxels the rim shares paint over the glass.
+ */
+const scopeLenses = (optic: OpticTypeId, centerY: number, ocular: Vec2, objective: Vec2): Solid[] =>
+  [
+    { id: 'ocular-lens', from: ocular[0], to: ocular[0] + LENS_THICKNESS_U, radius: ocular[1] - SCOPE_WALL_U },
+    {
+      id: 'objective-lens',
+      from: objective[0] - LENS_THICKNESS_U,
+      to: objective[0],
+      radius: objective[1] - SCOPE_WALL_U,
+    },
+  ].map(({ id, from, to, radius }) => ({
+    id,
+    kind: 'revolved',
+    axis: 'x',
+    origin: [0, centerY, 0],
+    profile: [
+      [from, 0],
+      [from, radius],
+      [to, radius],
+      [to, 0],
+    ],
+    ...lensGlass(optic),
+  }));
+
+/** A single-bodied scope with its lenses at both ends of the body's outside profile. */
+const lensedScope = (optic: OpticTypeId, id: string, centerY: number, outside: readonly Vec2[]): Solid[] => [
+  ...scopeLenses(optic, centerY, outside[0]!, outside.at(-1)!),
+  scopeBody(id, centerY, outside),
+];
+
 /** Two receiver-seated bases straddle a top-loading port; the optic can bridge above it. */
 const pairedFeet = (height: number): readonly Solid[] => [
   box('rear-ring-foot', [-6, 0, -0.875], [-5, height, 0.875]),
@@ -126,6 +180,8 @@ const sightline = (startX: number, axisY: number, ironCoWitness: boolean, length
     center: [grid(startX) + grid(lengthU) / 2, grid(axisY), 0],
     half: [grid(lengthU) / 2, 0.25, 0.25],
   },
+  // The eye sees through another optic's glass, so only its body can block the line.
+  allowSlots: [LENS_SLOT],
   ...(ironCoWitness ? { allowFamilies: ['front-sight', 'rail-front-sight'] } : {}),
 });
 
@@ -162,7 +218,7 @@ const railMount = ({
 
 const MICRO_HOUSING_DISPLAY = { bevel: false, outline: false, mergeGroup: 'micro-housing' } as const;
 
-/** Manufacturer-class visual envelopes; no glass, zoom, reticle, NV or thermal behavior is simulated. */
+/** Manufacturer-class visual envelopes; lens glass is a look only, and no zoom, reticle, NV or thermal behavior is simulated. */
 export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
   'mini-reflex': makeEntry({
     id: 'mini-reflex',
@@ -187,6 +243,9 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     ironCoWitness: true,
     sightlineStartX: 2.25,
     solids: [
+      // The tunnel's two windows, between the floor, walls and hood listed after them.
+      box('ocular-lens', [-2.25, 1, -0.75], [-2, 2.25, 0.75], lensGlass('mini-reflex')),
+      box('objective-lens', [2, 1, -0.75], [2.25, 2.25, 0.75], lensGlass('mini-reflex')),
       box('mount-foot', [-1.75, 0, -0.75], [1.75, 0.5, 0.75]),
       { ...box('housing-floor', [-2.25, 0.5, -1.25], [2.25, 1, 1.25]), display: MICRO_HOUSING_DISPLAY },
       // The side walls and roof form a single closed-emitter silhouette, with a tunnel, not a filled prism.
@@ -260,7 +319,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     sightlineStartX: 3,
     solids: [
       box('mount-foot', [-2, 0, -0.8], [2, 0.75, 0.8]),
-      scopeBody('tube-body', 2, [
+      ...lensedScope('tube-dot', 'tube-body', 2, [
         [-3, 1.5],
         [3, 1.5],
       ]),
@@ -288,6 +347,9 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     ironCoWitness: true,
     sightlineStartX: 4,
     solids: [
+      // The window's rear and front panes, between the side walls and roof listed after them.
+      box('ocular-lens', [-3.75, 1.5, -1.5], [-3.5, 4.25, 1.5], lensGlass('holographic')),
+      box('objective-lens', [0, 1.5, -1.5], [0.25, 4.25, 1.5], lensGlass('holographic')),
       box('mount-foot', [-2.75, 0, -0.75], [2.75, 0.5, 0.75]),
       box('lower-battery-section', [-3.75, 0.5, -2.25], [4, 1.5, 2.25]),
       box('forward-battery-cap', [0.25, 1.5, -2.25], [4, 2, 2.25]),
@@ -351,6 +413,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
         ],
         slot: 'metal',
       },
+      ...scopeLenses('fixed-prism-4x', 2.25, [-6.5, 1], [6.5, 1.25]),
       scopeBody('objective-bell', 2.25, [
         [2, 0.875],
         [3, 1.125],
@@ -404,7 +467,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     sightlineStartX: 11.25,
     solids: [
       ...pairedFeet(1),
-      scopeBody('tube-with-flared-bells', 2, [
+      ...lensedScope('lpvo-1-6x', 'tube-with-flared-bells', 2, [
         [-10, 1.5],
         [-7.5, 1.5],
         [-6.75, 1.25],
@@ -444,6 +507,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     sightlineStartX: 13.25,
     solids: [
       ...pairedFeet(1.25),
+      ...scopeLenses('hunting-3-9x', 2.25, [-13, 1.75], [13.25, 2.25]),
       // Separate convex proxies preserve the narrow tube clearance instead of bridging the two bells.
       scopeBody('hunting-ocular', 2.25, [
         [-13, 1.75],
@@ -491,7 +555,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     sightlineStartX: 15.75,
     solids: [
       ...pairedFeet(1.75),
-      scopeBody('tube-with-flared-bells', 3, [
+      ...lensedScope('high-mag-5-25x', 'tube-with-flared-bells', 3, [
         [-15.75, 1.75],
         [-11.5, 1.75],
         [-10.75, 1.5],
@@ -531,7 +595,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     sightlineStartX: 15,
     solids: [
       ...pairedFeet(3),
-      scopeBody('sensor-tube-with-flared-bells', 4.25, [
+      ...lensedScope('digital-thermal', 'sensor-tube-with-flared-bells', 4.25, [
         [-15, 2],
         [-10, 2],
         [-8, 1.5],

@@ -56,6 +56,12 @@ local familyHex = {
     // A 20 mm mount is two item voxels across; the fine grain keeps its clamp and lamp apart.
     'tactical-flashlight-mount': { voxelGrain: 0.002 },
   },
+  // Each optic's lens glass, by optic type; its coating tint is the material's sheen.
+  opticLenses: {
+    'mini-reflex': 'glass-lens-amber', 'tube-dot': 'glass-lens-amber', holographic: 'glass-lens-amber',
+    'fixed-prism-4x': 'glass-lens-green', 'lpvo-1-6x': 'glass-lens-green', 'hunting-3-9x': 'glass-lens-green',
+    'high-mag-5-25x': 'glass-lens-amber', 'digital-thermal': 'glass-lens-amber',
+  },
   gun: {
     familyColors: { [role]: rgb(familyHex[role]) for role in std.objectFields(familyHex) },
     specialColors: { [role]: rgb(specialHex[role]) for role in std.objectFields(specialHex) },

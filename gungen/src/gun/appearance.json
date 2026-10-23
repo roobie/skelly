@@ -351,6 +351,16 @@
     "white": "plastic-white",
     "yellow": "plastic-yellow"
   },
+  "opticLenses": {
+    "digital-thermal": "glass-lens-amber",
+    "fixed-prism-4x": "glass-lens-green",
+    "high-mag-5-25x": "glass-lens-amber",
+    "holographic": "glass-lens-amber",
+    "hunting-3-9x": "glass-lens-green",
+    "lpvo-1-6x": "glass-lens-green",
+    "mini-reflex": "glass-lens-amber",
+    "tube-dot": "glass-lens-amber"
+  },
   "slotMaterials": {
     "accent": "rubber-black",
     "furniture": "polymer-black",

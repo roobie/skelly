@@ -2,11 +2,18 @@
 read_if:
   - you're changing optic envelopes, geometry or receiver mounting constraints
   - you're authoring or resizing an iron rear sight's notch or aperture
+  - you're changing how an optic's lens glass looks or which coating tint it shows
 ---
 
 # Optic reference envelopes
 
-Optics are static, persisted attachment choices. Their catalog shapes are visual classes based on cited products, not manufacturer CAD; glass, reticles, zoom, night vision and thermal behavior are outside this model. The catalog owns source dimensions and mount requirements in `src/gun/optics.ts`, `OPTIC_CATALOG`.
+Optics are static, persisted attachment choices. Their catalog shapes are visual classes based on cited products, not manufacturer CAD; reticles, zoom, night vision and thermal behavior are outside this model. The catalog owns source dimensions and mount requirements in `src/gun/optics.ts`, `OPTIC_CATALOG`.
+
+## Lens glass
+
+Every optic's ocular and objective faces are glass, with the tinted sheen a coated lens shows at grazing angles, so a player reads a scope or a sight window as glass and not as painted metal. The glass is a look only: it carries no optical behavior. Which coating each optic wears is content, in `src/gun/appearance.jsonnet`, `opticLenses`; the glass and its sheen are shared materials in `packages/thing-core/src/materials.jsonnet`, so a new coating is a new material and not a code change. See `src/gun/optics.ts`, `lensGlass`.
+
+Lens glass takes its own finish slot, so a gun's finish never repaints it. Glass is see-through, so it may sit in another optic's sightline keep-out while that optic's body may not; see `src/gun/optics.ts`, `LENS_SLOT`, and `packages/engine/src/assembly/rules.ts`, `keepOutIssue`. Deadvox draws a material with a sheen as a physical material, because only that material reflects a tint; see `packages/deadvox/src/render/modelMaterials.ts`, `applyModelMaterials`.
 
 Mount support is based on actual foot geometry rather than the nominal envelope, because an optic body can overhang a rail without a valid unsupported mount. Body collisions and loading clearance remain separate checks; see `src/gun/rules.ts`, `opticMountFitForPart`, and `src/gun/optics.ts`, `pairedFeet`.
 

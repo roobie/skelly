@@ -17,7 +17,7 @@ import { describe, expect, it } from 'vitest';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { MOUNT_KINDS, MOUNT_STANDARDS, mountCanAccept } from '../src/gun/mounts.ts';
-import { getOptic, OPTIC_CATALOG, OPTIC_TYPE_IDS } from '../src/gun/optics.ts';
+import { getOptic, LENS_SLOT, OPTIC_CATALOG, OPTIC_TYPE_IDS } from '../src/gun/optics.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
 import {
   antiMateriel,
@@ -94,7 +94,8 @@ describe('optic catalog', () => {
       kind: 'box',
       box: { center: [0, optic.opticalAxisY, 0], half: [2.5, 0.25, 0.25] },
     });
-    for (const solid of optic.solids) {
+    // Its windows close the tunnel's ends with glass; no body solid may cross the sight line between them.
+    for (const solid of optic.solids.filter(({ slot }) => slot !== LENS_SLOT)) {
       expect(penetrationWorld(probe, worldSolid(IDENTITY, solid)), solid.id).toBeLessThanOrEqual(0);
     }
   });

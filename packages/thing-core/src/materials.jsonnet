@@ -27,6 +27,8 @@ local hex(n) = [std.floor(n / 65536) / 255, (std.floor(n / 256) % 256) / 255, (n
   'cord-olive': material([0.467, 0.443, 0.306]),
   'glass-grey': material([0.608, 0.682, 0.698]) + { finish: { metallic: 0, roughness: 0.15 } },
   'glass-clear': material([0.62, 0.7, 0.72]) + { finish: { metallic: 0, roughness: 0.1, opacity: 0.35 } },
+  'glass-lens-amber': material([0.2, 0.24, 0.27]) + { finish: { metallic: 0, roughness: 0.05, opacity: 0.4, sheen: { colour: [1, 0.55, 0.12], roughness: 0.3 } } },
+  'glass-lens-green': self['glass-lens-amber'] + { finish+: { sheen: { colour: [0.3, 1, 0.35], roughness: 0.3 } } },
   'paint-oxblood': material(hex(8011576)) + { finish: { metallic: 0.2, roughness: 0.55 } },
   'paint-crane-yellow': self['paint-oxblood'] + { colour: hex(14066475) },
   'paint-cream': self['paint-oxblood'] + { colour: hex(14276300) },
