@@ -15,7 +15,7 @@ read_if:
   - you change player movement, load or aim tuning, saved aim admission, or what crouching or lying prone lets the player fit through
   - you're changing world block shapes, wire fences or their supports, sight opacity, reach through obstacles, sound blocking or slab geometry
   - you're changing ladders, roof hatches or where the player can climb above a fight
-  - you're changing which furniture the player can lift, carry and put down, or how stacks settle
+  - you're changing which furniture the player can lift, carry, push or drag, or how stacks settle
   - you're changing the rules for time, survival, light or zombies
   - you're implementing electricity networks, portable charging, energy balance or appliance power history
   - you're implementing the authored gauntlet arrangement, scenario admission, composed route certificates, shared city planning, portal proofs, underground lab depth, the sewer route or its visual approval gate
@@ -485,10 +485,29 @@ intentional opportunities to fight from above.
 
 The player can move what blocks a way through, so a room the generator jammed
 is fixable in play rather than a dead end. Size stands in for weight and
-strength until those are modelled; smashing and taking apart with tools are
-separate actions that come later. See `src/core/furnitureMove.ts`,
-`liftFurniture` and `placeFurniture`.
+strength without adding another actor stat. Destructive clearing stays separate
+because rearranging a room should not require destroying its contents. See `src/core/furnitureMove.ts`,
+`liftFurniture`, `placeFurniture` and `slideFurniture`.
 
+- **Oversized pieces.** A piece too large to carry need not make a room a dead
+  end. Floor steps trade time, exertion and a louder scrape for moving it without
+  a second person or a strength stat. They do not claim carry slots: the piece
+  remains an obstacle, not a held item. Each completed step is an ordinary saved
+  position, so stopping between steps needs no persistent drag mode. See
+  `src/core/furnitureMove.ts`, `slideFurniture`, and `src/game/session.ts`,
+  `slidePiece`.
+- **Movement choices.** Movement must not hide a container's search or a bed's
+  rest or a freestanding sign's reading. Readability does not fasten a board;
+  its ordinary use remains a choice alongside movement. The selector belongs
+  to movable kinds: building parts keep direct use
+  because offering impossible moves would obstruct their ordinary interaction.
+  A fitted placement of a movable kind still offers the choice and explains why
+  it cannot move, so fitting does not silently change that kind's controls.
+  An open choice is a single confirmation, not a persistent interaction mode:
+  returning from a pause or another target must not unexpectedly act instead of
+  offering choices. See `src/core/furnitureMove.ts`, `slidableFurniture`,
+  `src/game/play.ts`, `furnitureActions`, and `src/game/furnitureActions.ts`,
+  `FurnitureActionSelection`.
 - **What lifts.** Pieces that are part of the building stay put. Fitted is a
   mark on a placement, not a definition, because the same cupboard is fixed in
   a kitchen and loose in a shed. A moved piece keeps its origin, so generation
@@ -514,27 +533,24 @@ separate actions that come later. See `src/core/furnitureMove.ts`,
   is a separate item-to-furniture conversion that waits for its own decision.
 - **Noise.** Moving scrapes, and shamblers hear it like any other world sound,
   so barricading under pressure has a price.
-- **Stacks settle once.** What loses its support falls, lowest first, so each
-  piece lands on what fell beneath it. Settling runs only when a piece is
-  lifted or put down, not every tick, because nothing else moves furniture. A
-  partly supported piece stays put, as a crate overhanging a table does. A fall
-  that finds no floor within a bounded drop is refused, because a chunk that
-  isn't loaded reads as air.
-- **Nothing falls on a body.** A lift that would drop a piece onto the player
-  or anyone else is refused, with the reason said. Hurting the player with
-  their own tidying would punish an action the game wants them to take, and
-  crushing shamblers with a stack would be a cheaper weapon than any the game
-  balances.
-- **Nothing lifts from under a body.** Any body standing on a piece, the
-  player's or a shambler's, stops the player lifting it, as it stops removal.
-  Lifting and removal share one support query, so no second rule exists to
-  drift. A way to clear a body off a piece, such as a shove or the piece
-  tipping, is left to a later feature of its own. See
+- **Stacks settle once.** Settling belongs to the move rather than every tick,
+  so a stack pays no ongoing simulation cost. Floor steps use the same support
+  rule as lifting: what remains supported stays, and what loses support settles
+  instead of riding the piece. A fall with no loaded floor is refused, because
+  an unloaded chunk reads as air. See `src/core/furnitureMove.ts`, `settle`.
+- **Nothing falls on a body.** Hurting the player with their own tidying would
+  punish an action the game wants them to take, and crushing shamblers with a
+  stack would be a cheaper weapon than any the game balances. Lifting and floor
+  steps therefore share the fall refusal; see `src/core/furnitureMove.ts`,
+  `fallRefusal`.
+- **Nothing moves from under a body.** Movement and removal share one support
+  query so no parallel rule can drift. Clearing a body off a piece needs a
+  separate decision rather than making furniture movement a weapon. See
   `src/core/furnitureMove.ts`, `supportRefusal`.
-- **What lies on top.** Loose items on a moved or falling piece go with it or
-  beside it, and a container's pockets go with it, because moving a container
-  is not searching it. When the items have nowhere to go the move is refused,
-  so nothing is lost or buried in a block.
+- **What lies on top.** Moving a container is not searching it. Pockets stay
+  intact, while loose items settle with the stack rather than being lost or
+  buried. A move with nowhere for them to land is refused for the same reason.
+  See `src/core/furnitureMove.ts`, `resettlePiles`.
 - **Where it can stand.** A piece may not cover a hatch or fill the space a
   climber stands in front of a ladder, since either would wall off a floor. A
   flat cover may lie on a shut hatch, because it walls nothing off and hiding

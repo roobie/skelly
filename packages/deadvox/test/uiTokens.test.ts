@@ -47,6 +47,9 @@ const tuning = {
   furnitureMoveMessages: Object.fromEntries(
     [
       'tooBig',
+      'carryInstead',
+      'floorOnly',
+      'slideTired',
       'fastened',
       'handsFull',
       'tired',

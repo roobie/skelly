@@ -11,6 +11,8 @@ export type ReplayActionPayload =
   | { kind: 'item.pickup'; itemUid: number; mode: 'pocket' | 'wield'; feet: [number, number, number] }
   | { kind: 'furniture.interact'; entityUid: number }
   | { kind: 'furniture.lift'; entityUid: number }
+  | { kind: 'furniture.use'; entityUid: number }
+  | { kind: 'furniture.slide'; entityUid: number; way: 'push' | 'drag' }
   | { kind: 'furniture.place'; pos: [number, number, number] }
   | { kind: 'charger.start'; entityUid: number }
   | { kind: 'charger.stop'; entityUid: number }
@@ -81,6 +83,9 @@ const isAttachmentPayload = (payload: Record<string, unknown>): boolean =>
   typeof payload.slotId === 'string' &&
   (payload.kind !== 'firearm.attachment.fit' || isUid(payload.attachmentUid));
 
+const isSlidePayload = (payload: Record<string, unknown>): boolean =>
+  isUid(payload.entityUid) && (payload.way === 'push' || payload.way === 'drag');
+
 /** An hour of the day, or null to sleep until rested. */
 const isWakeGameHour = (value: unknown): boolean =>
   value === null || (Number.isSafeInteger(value) && (value as number) >= 0 && (value as number) < 24);
@@ -105,7 +110,10 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
     case 'inventory.search':
     case 'furniture.interact':
     case 'furniture.lift':
+    case 'furniture.use':
       return isUid(payload.entityUid);
+    case 'furniture.slide':
+      return isSlidePayload(payload);
     case 'furniture.place':
       return isTriple(payload.pos, Number.isSafeInteger);
     case 'zombie.downed':
@@ -173,6 +181,8 @@ export interface ReplayCommandOwners {
   pickup: (itemUid: number, mode: 'pocket' | 'wield', feet: [number, number, number]) => string | undefined;
   interact: (entityUid: number) => string | undefined;
   lift: (entityUid: number) => string | undefined;
+  useFurniture: (entityUid: number) => string | undefined;
+  slide: (entityUid: number, way: 'push' | 'drag') => string | undefined;
   /** Sets the carried piece down at the aimed cell. */
   place: (pos: [number, number, number]) => string | undefined;
   /** Turns the carried piece a quarter, seen from above. */
@@ -212,6 +222,10 @@ export const applyReplayActionPayload = (
       return owners.interact(payload.entityUid);
     case 'furniture.lift':
       return owners.lift(payload.entityUid);
+    case 'furniture.use':
+      return owners.useFurniture(payload.entityUid);
+    case 'furniture.slide':
+      return owners.slide(payload.entityUid, payload.way);
     case 'furniture.place':
       return owners.place(payload.pos);
     case 'furniture.turn':

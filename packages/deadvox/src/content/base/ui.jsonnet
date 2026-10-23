@@ -9,6 +9,9 @@
     doorCloseBlockedMessages: { player: "You're in the way", other: "Something's in the way" },
     furnitureMoveMessages: {
       tooBig: "It's too big for me to lift",
+      carryInstead: 'I can carry it instead',
+      floorOnly: "I need a level floor under it",
+      slideTired: "I'm too tired to move it",
       fastened: "It's fixed in place",
       handsFull: 'My hands are full',
       tired: "I'm too tired to lift it",

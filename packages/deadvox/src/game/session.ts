@@ -40,12 +40,15 @@ import {
 } from '../core/footsteps.ts';
 import {
   type FurnitureMover,
+  type FurnitureSlideWay,
   liftFurniture,
   placeFurniture,
   placement,
   removalRefusal,
   removeFurniture,
   ruinFurniture,
+  slideDestination,
+  slideFurniture,
   tipCarried,
   turnCarried,
 } from '../core/furnitureMove.ts';
@@ -1496,6 +1499,50 @@ export const createSession = (options: SessionOptions) => {
     playNoisyWorldSound('furniture_scrape', centre);
     return undefined;
   };
+  queue.registerAction('furniture.slide', (params) => {
+    const entity = typeof params.entityUid === 'number' ? entities.byUid(params.entityUid) : undefined;
+    if (!entity) {
+      return coreMessage(registry, 'gone');
+    }
+    if (
+      (params.way !== 'push' && params.way !== 'drag') ||
+      !Array.isArray(params.destination) ||
+      params.destination.length !== 3 ||
+      !params.destination.every(Number.isSafeInteger)
+    ) {
+      throw new Error('Invalid furniture slide');
+    }
+    const reason = slideFurniture(furnitureMover(), entity, params.way, { destination: params.destination as Vec3 });
+    if (!reason) {
+      spendStamina(
+        sim.needs,
+        reachTuning(registry).furnitureMove.slide.stamina,
+        bodyTuning.staminaRegenDelaySimSeconds,
+      );
+      playNoisyWorldSound('furniture_drag', boxCentre(entity.pos, entity.size));
+    }
+    return reason;
+  });
+  const slidePiece = (uid: number, way: FurnitureSlideWay): string | undefined => {
+    const entity = entities.byUid(uid);
+    if (!entity) {
+      return coreMessage(registry, 'gone');
+    }
+    if (queue.busy) {
+      return coreMessage(registry, 'handsBusy');
+    }
+    const reason = slideFurniture(furnitureMover(), entity, way, { commit: false });
+    if (reason) {
+      return reason;
+    }
+    queue.enqueueAction(
+      'furniture.slide',
+      way === 'push' ? 'Pushing' : 'Dragging',
+      reachTuning(registry).furnitureMove.slide.stepSimSeconds,
+      { entityUid: uid, way, destination: slideDestination(body, entity, way) },
+    );
+    return undefined;
+  };
   const placePiece = (aimed: Readonly<Vec3>): string | undefined => {
     const carried = entities.carrying();
     if (!carried) {
@@ -2204,6 +2251,7 @@ export const createSession = (options: SessionOptions) => {
     searching: (entity: BlockEntity): boolean => searching.has(entity),
     nameOf,
     liftFurniture: liftPiece,
+    slideFurniture: slidePiece,
     placeFurniture: placePiece,
     removeFurniture: removePiece,
     /** One blow on a piece, landed as a zombie's bash or the player's strike lands it. */

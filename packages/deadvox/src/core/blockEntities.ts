@@ -650,6 +650,15 @@ export class BlockEntities {
     this.standing += 1;
   }
 
+  /** Reindexes a standing floor step without ever claiming the player's hands. */
+  slide(entity: BlockEntity, pos: Readonly<Vec3>): void {
+    this.occupy(entity, false);
+    entity.pos = [...pos];
+    this.occupy(entity, true);
+    this.version += 1;
+    this.standing += 1;
+  }
+
   /** Moves a standing piece straight down, for a piece whose support was taken. */
   drop(entity: BlockEntity, y: number): void {
     this.occupy(entity, false);
