@@ -17,6 +17,7 @@ describe('screen command routing', () => {
     const readOnlyInventoryCallbacks = new Set([
       'charger',
       'chargerRevision',
+      'openedVehicle',
       'reach',
       'feet',
       'nearby',

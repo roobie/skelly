@@ -91,6 +91,7 @@ import { mountReading } from '../ui/reading.ts';
 import { renderRest, type WaitViewAction } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
 import { mountTutorial } from '../ui/tutorial.ts';
+import { vehicleInspectionViewModel } from '../ui/vehicleInspection.ts';
 import { showWin } from '../ui/win.ts';
 import { mountWorldLoading } from '../ui/worldLoading.ts';
 import { GameAudio } from './audio.ts';
@@ -493,10 +494,13 @@ const syncReadingProgress = (
   setProgress(bookIsComplete(bookUid) ? { value: 1, max: 1 } : undefined);
 };
 
-type TimedLongJob = Extract<LongJob, { jobType: 'reading' | 'forceDoor' | 'treatment' }>;
+type TimedLongJob = Extract<LongJob, { jobType: 'reading' | 'forceDoor' | 'treatment' | 'vehicleWork' }>;
 
 const isTimedLongJob = (job: Readonly<LongJob>): job is TimedLongJob =>
-  job.jobType === 'reading' || job.jobType === 'forceDoor' || job.jobType === 'treatment';
+  job.jobType === 'reading' ||
+  job.jobType === 'forceDoor' ||
+  job.jobType === 'treatment' ||
+  job.jobType === 'vehicleWork';
 
 const timedActionLabel = (job: TimedLongJob, inventory: Inventory): string => {
   switch (job.jobType) {
@@ -509,6 +513,12 @@ const timedActionLabel = (job: TimedLongJob, inventory: Inventory): string => {
     case 'treatment': {
       const item = inventory.itemByUid(job.itemUid);
       return item ? `Treating ${inventory.name(item)}` : 'Treating wound';
+    }
+    case 'vehicleWork': {
+      const text = screenTextOf(inventory.registry).vehicle;
+      const item = inventory.itemByUid(job.itemUid);
+      const part = item ? inventory.name(item) : '';
+      return fillText(job.kind === 'remove' ? text.removing : text.installing, { part });
     }
     default: {
       const unhandled: never = job;
@@ -710,6 +720,8 @@ export const startPlay = (
   let throwingStance = false;
   const pendingPlayerTickActions = new PlayerTickActions();
   let interactionPressTarget: InteractionTarget | undefined;
+  /** The vehicle opened by interacting with it; presentation only, so it is neither saved nor replayed. */
+  let openedVehicleId: number | undefined;
   const furnitureActionSelection = new FurnitureActionSelection();
   const furnitureActions = (): ItemAction[] => [
     { id: 'push', label: 'Push' },
@@ -1122,7 +1134,7 @@ export const startPlay = (
       const box = $('errors');
       box.textContent = [box.textContent, message].filter(Boolean).join('\n');
     },
-    { poweredLights: () => session.power?.lights() ?? [] },
+    { poweredLights: () => session.power?.lights() ?? [], physicalSolid: session.physicalSolid },
   );
   input.setMouseLookOverride((movementX, movementY) =>
     thirdPersonOrbit.rotate(movementX, movementY, isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled)),
@@ -1292,6 +1304,7 @@ export const startPlay = (
   const hooks: ScreenHooks = {
     charger: (entity) => chargerPanel(entity, session.power, session.reach()),
     chargerRevision: () => Math.floor(sim.time),
+    openedVehicle,
     pictures: view.pictures,
     itemView: view.pictures,
     feet,
@@ -1389,6 +1402,7 @@ export const startPlay = (
     screen.open();
   };
   const closeInventoryScreen = (): void => {
+    openedVehicleId = undefined;
     screen.close();
   };
   const replayPlayState = createReplayPlayStateBinding({
@@ -1846,7 +1860,8 @@ export const startPlay = (
       sim.actions.job?.jobType === 'wait' ||
       sim.actions.job?.jobType === 'reading' ||
       sim.actions.job?.jobType === 'forceDoor' ||
-      sim.actions.job?.jobType === 'treatment'
+      sim.actions.job?.jobType === 'treatment' ||
+      sim.actions.job?.jobType === 'vehicleWork'
     ) {
       sim.actions.stop();
     } else if (rest.action) {
@@ -1872,6 +1887,7 @@ export const startPlay = (
       return search(entity);
     },
     work: actOnWork,
+    vehicleWork: session.beginVehicleWork,
     fitAttachment: (firearmUid, slotId, attachmentUid) =>
       session.firearmAttachments.fit(firearmUid, slotId, attachmentUid),
     removeAttachment: (firearmUid, slotId) => session.firearmAttachments.remove(firearmUid, slotId),
@@ -1918,7 +1934,7 @@ export const startPlay = (
     if (reason) {
       return reason;
     }
-    if (payload.kind === 'craft.start' || payload.kind === 'action.wait') {
+    if (payload.kind === 'craft.start' || payload.kind === 'action.wait' || payload.kind === 'vehicle.work') {
       closeInventoryScreen();
       syncMenuState();
     }
@@ -2478,7 +2494,10 @@ export const startPlay = (
     aimDirection(replaySample?.yaw ?? input.yaw, replaySample?.pitch ?? input.pitch, NEUTRAL_AIM);
   const eye = (): Vec3 => [body.pos[0], body.pos[1] + session.playerEyeHeightMetres / s, body.pos[2]];
 
-  /** The nearest visible furniture panel or cell in the crosshair. */
+  /** Part boxes for picking: the same projection vehicle reach measures to. */
+  const currentVehicleParts = () => session.vehicleParts.all();
+
+  /** The nearest visible furniture panel, cell or vehicle part in the crosshair. */
   const interactionTargetAt = (): InteractionTarget | undefined =>
     pickInteractionTarget({
       inventory,
@@ -2488,8 +2507,10 @@ export const startPlay = (
       maxDistance: reachTuning(registry).useReachMetres / s,
       blockSize: s,
       worldSeed: config.seed,
-      isSolid: session.physicalSolid,
-      isOpaque: session.isOpaque,
+      // Vehicles take part through their part boxes, so the cell queries leave them out.
+      isSolid: engine.isSolid,
+      isOpaque: engine.isOpaque,
+      vehicleParts: currentVehicleParts(),
       throughLadders: session.ladderHold.on,
       hasModel: (id) => view.models.has(id),
       downedBodies: [...session.zombieStore.entries()]
@@ -2616,7 +2637,10 @@ export const startPlay = (
    * A tap pockets an item or finishes off a downed body; a hold wields the item, dismembers
    * the body or lifts a piece small enough to carry.
    */
-  function interactionPayload(target: InteractionTarget, mode: 'pocket' | 'wield'): ReplayActionPayload {
+  function interactionPayload(
+    target: Exclude<InteractionTarget, { kind: 'vehicle' }>,
+    mode: 'pocket' | 'wield',
+  ): ReplayActionPayload {
     switch (target.kind) {
       case 'item':
         return { kind: 'item.pickup', itemUid: target.item.uid, mode, feet: feet() };
@@ -2629,13 +2653,41 @@ export const startPlay = (
     }
   }
 
+  /** Opening a vehicle shows its parts and service work with the rest of what is in reach. */
+  function openVehicle(vehicleId: number): void {
+    if (sim.body.actionRefusal) {
+      showRefusal(sim.body.actionRefusal, sim.time);
+      return;
+    }
+    openInventory('items');
+    openedVehicleId = vehicleId;
+  }
+
+  /** The opened vehicle's section; walking out of reach closes it. */
+  function openedVehicle(): ReturnType<NonNullable<ScreenHooks['openedVehicle']>> {
+    if (openedVehicleId === undefined || !inventory.canReachVehicle(openedVehicleId)) {
+      openedVehicleId = undefined;
+      return undefined;
+    }
+    const inspection = vehicleInspectionViewModel(
+      { inventory, reach: session.reach(), refusal: session.vehicleWorkRefusal },
+      openedVehicleId,
+    );
+    return inspection && { view: inspection, distanceMetres: session.vehicleDistance(openedVehicleId) };
+  }
+
   /** While a piece is carried, either press sets it down wherever the crosshair points. */
   function completeWorldInteraction(mode: 'pocket' | 'wield'): void {
     const target = interactionPressTarget;
     interactionPressTarget = undefined;
-    const payload: ReplayActionPayload | undefined = entities.carrying()
-      ? { kind: 'furniture.place', pos: aimedCell() }
-      : target && interactionPayload(target, mode);
+    let payload: ReplayActionPayload | undefined;
+    if (entities.carrying()) {
+      payload = { kind: 'furniture.place', pos: aimedCell() };
+    } else if (target?.kind === 'vehicle') {
+      openVehicle(target.vehicleId);
+    } else if (target) {
+      payload = interactionPayload(target, mode);
+    }
     if (!payload) {
       return;
     }
@@ -3323,6 +3375,11 @@ export const startPlay = (
         return powerControlHint(target.entity) ?? furnitureInteractionHint(target.entity);
       case 'body':
         return downedBodyHint(target.id);
+      case 'vehicle': {
+        const vehicle = session.vehicles.get(target.vehicleId);
+        const name = vehicle && registry.vehicleBlueprints.get(vehicle.blueprint)?.name;
+        return name ? fillHint(screenText.vehicle.inspect, { key, vehicle: name }) : undefined;
+      }
       default:
         return undefined;
     }
@@ -3785,7 +3842,7 @@ export const startPlay = (
   const playerDrip = (region: BodyRegion) => sim.body.bleedingTier(region)?.drip;
   // Blood holds still while the game is paused.
   const updateGore = (dt: RealSeconds): void => {
-    view.gore.update(sim.paused ? 0 : dt, engine.isSolid, {
+    view.gore.update(sim.paused ? 0 : dt, session.physicalSolid, {
       zombies: zombieStore,
       listener: body.pos,
       player: {
@@ -3872,6 +3929,8 @@ export const startPlay = (
     piles: view.piles,
     definition: (entity: BlockEntity) => entities.defOf(entity),
     body: (id: EntityId) => zombieStore.get(id)?.body,
+    vehiclePart: (vehicleId: number, fittingId: string) =>
+      currentVehicleParts().find((part) => part.vehicleId === vehicleId && part.fittingId === fittingId)?.boxes,
     blockSize: s,
   };
 

@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
+import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { logPhase, observationPlugin, timePhase } from './primary-action-observation.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageMode, browserStageUrl } from './stage-mode.mjs';
@@ -28,6 +29,7 @@ const magazineModule = '/src/core/magazine.ts';
 const optionsModule = '/src/core/options.ts';
 const itemLookModule = '/src/render/itemLook.ts';
 const pileLayoutModule = '/src/core/pileLayout.ts';
+const vehicleProjectionModule = '/src/core/vehicleProjection.ts';
 const progressingSample = ({ start }) => {
   const { session } = globalThis.primaryActionTest;
   return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= 0.35 };
@@ -243,7 +245,11 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
   }
 };
 
-const verifyContainerSearchTab = async (browserInstance, port, renderOverride) => {
+/**
+ * Boots one testHouse world under synthetic pointer lock and runs the cases that share it, so the stage
+ * pays for one boot instead of one per case.
+ */
+const withTestHouse = async (browserInstance, port, renderOverride, run) => {
   const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
   try {
     const page = await context.newPage();
@@ -282,79 +288,83 @@ const verifyContainerSearchTab = async (browserInstance, port, renderOverride) =
         document.querySelector('#world-loading')?.dataset.state === 'ready' &&
         document.querySelector('#world-loading').hidden,
     );
-    for (const screenWasOpen of [true, false]) {
-      await pressAction(page, 'ui.inventory-tab-skills');
-      if (!screenWasOpen) {
-        await pressAction(page, 'ui.inventory-toggle');
-      }
-      const uid = await page.evaluate(() => {
-        const r = globalThis.primaryActionTest;
-        const definition = [...r.inventory.registry.furniture.values()].find((value) => value.container);
-        if (!definition) {
-          throw new Error('The container search tab fixture needs searchable furniture');
-        }
-        const [x, y, z] = r.feet().map(Math.floor);
-        const offsets = [
-          [1, 0],
-          [0, 1],
-          [-1, 0],
-          [0, -1],
-          [2, 0],
-          [0, 2],
-          [-2, 0],
-          [0, -2],
-        ];
-        let container;
-        for (const [dx, dz] of offsets) {
-          container = r.inventory.furnish({
-            type: definition.id,
-            pos: [x + dx, y, z + dz],
-            size: definition.size,
-            facing: 'n',
-          });
-          if (container) {
-            break;
-          }
-        }
-        if (!container) {
-          throw new Error('Could not place a nearby container for the tab regression');
-        }
-        r.useTarget(container);
-        return container.uid;
-      });
-      await waitForSimulation(
-        page,
-        searchedContainerSample,
-        { uid },
-        {
-          seconds: 5,
-          label: `container search opens Items from ${screenWasOpen ? 'open' : 'remembered'} Skills tab`,
-          record: (line) => process.stderr.write(`${line}\n`),
-        },
-      );
-      const view = await page.evaluate((containerUid) => {
-        const r = globalThis.primaryActionTest;
-        r.screen.update();
-        const items = document.querySelector('#inventory [data-tab-panel="items"]');
-        const pane = items?.querySelector(`[data-entity-uid="${containerUid}"]`);
-        return {
-          activeTab: r.screen.activeTab,
-          itemsVisible: items?.hidden === false,
-          containerPane: pane !== null && pane !== undefined,
-          pocketGrid: Boolean(pane?.querySelector(`[data-target="furniture:${containerUid}:0"]`)),
-        };
-      }, uid);
-      assert.deepEqual(view, {
-        activeTab: 'items',
-        itemsVisible: true,
-        containerPane: true,
-        pocketGrid: true,
-      });
-      await pressAction(page, 'ui.inventory-toggle');
-    }
+    await run(page);
     assert.deepEqual(pageErrors, []);
   } finally {
     await context.close();
+  }
+};
+
+const verifyContainerSearchTab = async (page) => {
+  for (const screenWasOpen of [true, false]) {
+    await pressAction(page, 'ui.inventory-tab-skills');
+    if (!screenWasOpen) {
+      await pressAction(page, 'ui.inventory-toggle');
+    }
+    const uid = await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      const definition = [...r.inventory.registry.furniture.values()].find((value) => value.container);
+      if (!definition) {
+        throw new Error('The container search tab fixture needs searchable furniture');
+      }
+      const [x, y, z] = r.feet().map(Math.floor);
+      const offsets = [
+        [1, 0],
+        [0, 1],
+        [-1, 0],
+        [0, -1],
+        [2, 0],
+        [0, 2],
+        [-2, 0],
+        [0, -2],
+      ];
+      let container;
+      for (const [dx, dz] of offsets) {
+        container = r.inventory.furnish({
+          type: definition.id,
+          pos: [x + dx, y, z + dz],
+          size: definition.size,
+          facing: 'n',
+        });
+        if (container) {
+          break;
+        }
+      }
+      if (!container) {
+        throw new Error('Could not place a nearby container for the tab regression');
+      }
+      r.useTarget(container);
+      return container.uid;
+    });
+    await waitForSimulation(
+      page,
+      searchedContainerSample,
+      { uid },
+      {
+        seconds: 5,
+        label: `container search opens Items from ${screenWasOpen ? 'open' : 'remembered'} Skills tab`,
+        record: (line) => process.stderr.write(`${line}\n`),
+      },
+    );
+    const view = await page.evaluate((containerUid) => {
+      const r = globalThis.primaryActionTest;
+      r.screen.update();
+      const items = document.querySelector('#inventory [data-tab-panel="items"]');
+      const pane = items?.querySelector(`[data-entity-uid="${containerUid}"]`);
+      return {
+        activeTab: r.screen.activeTab,
+        itemsVisible: items?.hidden === false,
+        containerPane: pane !== null && pane !== undefined,
+        pocketGrid: Boolean(pane?.querySelector(`[data-target="furniture:${containerUid}:0"]`)),
+      };
+    }, uid);
+    assert.deepEqual(view, {
+      activeTab: 'items',
+      itemsVisible: true,
+      containerPane: true,
+      pocketGrid: true,
+    });
+    await pressAction(page, 'ui.inventory-toggle');
   }
 };
 
@@ -1242,6 +1252,146 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
   } finally {
     await context.close();
   }
+};
+
+const vehicleServiceSample = ({ uid, owner }) => {
+  const { inventory, session } = globalThis.primaryActionTest;
+  const item = inventory.itemByUid(uid);
+  return {
+    time: session.sim.time,
+    paused: session.sim.paused,
+    job: session.sim.actions.job?.jobType ?? null,
+    // Compression winding down after the work still holds world input, so F waits for it too.
+    reached: item !== undefined && inventory.locate(item)?.kind === owner && !session.sim.compression.locksInput,
+  };
+};
+
+/** Opens the testHouse hatchback with F, then removes and refits one wheel through its inspection surface. */
+const verifyVehicleService = async (page) => {
+  // The fixture stands the player beside a serviceable part nothing rests on and hands them its tool.
+  const fixture = await page.evaluate(async (moduleUrl) => {
+    const r = globalThis.primaryActionTest;
+    const { projectVehicleParts } = await import(moduleUrl);
+    const s = r.scale.blockSize;
+    const [vehicleId, vehicle] = [...r.session.vehicles.records][0];
+    const site = vehicle.sites.find(
+      (candidate) => candidate.service && !vehicle.sites.some((other) => other.supportedBy.includes(candidate.id)),
+    );
+    const parts = projectVehicleParts(r.inventory.registry, vehicleId, vehicle, s);
+    const part = parts.find(({ fittingId }) => fittingId === site.id);
+    const { min, max } = part.boxes[0];
+    const centre = [0, 1, 2].map((axis) => (min[axis] + max[axis]) / 2);
+    // Out from the car's side by the part's half width plus a body's clearance.
+    const side = [Math.sin(part.transform.yaw), Math.cos(part.transform.yaw)];
+    const outward = Math.sign(
+      (centre[0] - vehicle.origin[0] * s) * side[0] + (centre[2] - vehicle.origin[2] * s) * side[1],
+    );
+    const reachOut = Math.abs((max[0] - min[0]) * side[0] + (max[2] - min[2]) * side[1]) / 2 + 0.4;
+    r.session.body.pos = [
+      (centre[0] + outward * side[0] * reachOut) / s,
+      vehicle.origin[1],
+      (centre[2] + outward * side[1] * reachOut) / s,
+    ];
+    r.session.body.vel = [0, 0, 0];
+    if (!r.inventory.canReachVehicle(vehicleId)) {
+      throw new Error('The vehicle service fixture stands out of the vehicle’s reach');
+    }
+    const [tool] = Object.keys(site.service.qualities);
+    const toolDef = [...r.inventory.registry.items.values()].find(
+      (def) => (def.tool?.qualities[tool] ?? 0) >= site.service.qualities[tool] && !def.twoHanded,
+    );
+    r.setHand(r.dominant, r.inventory.create(toolDef.id));
+    const aim = (target) => {
+      const eye = [
+        r.session.body.pos[0],
+        r.session.body.pos[1] + r.session.playerEyeHeightMetres / s,
+        r.session.body.pos[2],
+      ];
+      const [dx, dy, dz] = [0, 1, 2].map((axis) => target[axis] / s - eye[axis]);
+      r.input.yaw = Math.atan2(-dx, -dz);
+      r.input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+    };
+    aim(centre);
+    const fitted = vehicle.fittings.find(({ id }) => id === site.id).item;
+    // With the part off, aiming at the part it rests on reopens the car.
+    const supportBox = parts.find(({ fittingId }) => fittingId === site.supportedBy[0])?.boxes[0] ?? part.boxes[0];
+    r.aimAtSupport = () => aim([0, 1, 2].map((axis) => (supportBox.min[axis] + supportBox.max[axis]) / 2));
+    return { vehicleId, siteId: site.id, uid: fitted.uid, condition: fitted.condition };
+  }, vehicleProjectionModule);
+
+  // Under pointer lock the player clicks with the drawn menu cursor, which the game moves and presses for them.
+  const clickThroughMenuCursor = async (selector) => {
+    const target = page.locator(selector);
+    await target.waitFor({ state: 'visible', timeout: 5000 });
+    await target.scrollIntoViewIfNeeded();
+    const bounds = await target.boundingBox();
+    const point = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+    const { x, y, canvasSelector } = await page.evaluate(() => ({
+      x: globalThis.primaryActionTest.input.cursorX,
+      y: globalThis.primaryActionTest.input.cursorY,
+      canvasSelector: document.querySelector('#view canvas') ? '#view canvas' : '#view',
+    }));
+    await page.evaluate(dispatchMenuPointerMove, {
+      canvasSelector,
+      movementX: point.x - x,
+      movementY: point.y - y,
+    });
+    await page.evaluate(dispatchMenuPointerClick, { canvasSelector });
+  };
+  const openVehicle = async () => {
+    await pressAction(page, 'world.interact');
+    await page
+      .locator(`#inventory [data-around-section="vehicle"][data-vehicle-id="${fixture.vehicleId}"]`)
+      .waitFor({ state: 'visible', timeout: 5000 });
+  };
+  const work = async (kind, owner) => {
+    await clickThroughMenuCursor(
+      `#inventory [data-vehicle-site="${fixture.siteId}"] button[data-vehicle-work="${kind}"][data-item-uid="${fixture.uid}"]`,
+    );
+    await waitForSimulation(
+      page,
+      vehicleServiceSample,
+      { uid: fixture.uid, owner },
+      {
+        seconds: 120,
+        label: `vehicle ${kind} reaches its ${owner} owner`,
+        record: (line) => process.stdout.write(`${line}\n`),
+      },
+    );
+  };
+
+  await openVehicle();
+  await work('remove', 'pile');
+  await page.evaluate(() => globalThis.primaryActionTest.aimAtSupport());
+  await openVehicle();
+  await work('install', 'vehicle');
+
+  // A read-only witness: the same UID, at the same site, in exactly one saved owner.
+  // Placed entities number their UIDs apart from items, so a saved copy must match the item's type too.
+  const witness = await page.evaluate(({ uid }) => {
+    const r = globalThis.primaryActionTest;
+    const item = r.inventory.itemByUid(uid);
+    const saved = JSON.parse(
+      JSON.stringify(r.session.snapshot({ worldId: 'vehicle-world', characterId: 'vehicle-actor' })),
+    );
+    const countCopies = (value) => {
+      if (value === null || typeof value !== 'object') {
+        return 0;
+      }
+      const own = value.uid === uid && value.type === item.type ? 1 : 0;
+      return own + Object.values(value).reduce((sum, child) => sum + countCopies(child), 0);
+    };
+    return {
+      location: r.inventory.locate(item),
+      condition: item.condition,
+      savedCopies: countCopies(saved),
+    };
+  }, fixture);
+  assert.equal(witness.location.kind, 'vehicle', 'the part is refitted to the car');
+  assert.equal(witness.location.vehicleId, fixture.vehicleId);
+  assert.equal(witness.location.fittingId, fixture.siteId, 'the part returns to the selected site');
+  assert.equal(witness.condition, fixture.condition, 'service keeps the part’s condition');
+  assert.equal(witness.savedCopies, 1, 'the part has exactly one saved owner');
 };
 
 const vite = await createServer({
@@ -3472,7 +3622,10 @@ try {
     assert.deepEqual(pageErrors, []);
     await page.close();
   } else {
-    await timePhase('container-search-tab-case', () => verifyContainerSearchTab(browser, address.port, renderOverride));
+    await withTestHouse(browser, address.port, renderOverride, async (testHousePage) => {
+      await timePhase('container-search-tab-case', () => verifyContainerSearchTab(testHousePage));
+      await timePhase('vehicle-service-case', () => verifyVehicleService(testHousePage));
+    });
     await timePhase('clean-look-replay-case', () => verifyCleanLookReplay(browser, address.port, renderOverride));
     await timePhase('stance-throw-replay-case', () => verifyStanceThrowReplay(browser, address.port, renderOverride));
     await timePhase('ads-fire-replay-case', () => verifyAdsFireReplay(browser, address.port, renderOverride));

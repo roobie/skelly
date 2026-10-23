@@ -1,6 +1,7 @@
 // Inventory proximity with a physical line to furniture, not gaze, bed quality or
 // debug case collection. Units are explicit: positions are blocks; the admission limit is metres.
 
+import type { ModelBox } from '@skelly/thing-core/schema';
 import type { BlockEntity } from './blockEntities.ts';
 import { dominantSide } from './character.ts';
 import type { ClockSettings } from './clock.ts';
@@ -31,6 +32,8 @@ export interface ReachPlayer {
 interface ReachObstacles {
   /** Cells holding furniture defer to it: only a closed door blocks, so a table never hides the shelf behind it. */
   readonly isSolid: SolidAt;
+  /** The same cells without one vehicle's own rasterized body, so a car's parts never hide themselves but another car still blocks; absent, `isSolid`. */
+  readonly isSolidExceptVehicle?: (vehicleId: number, x: number, y: number, z: number) => boolean;
   /** Changes on every block edit, so a cached snapshot follows broken and built walls. */
   readonly version: number;
 }
@@ -160,15 +163,59 @@ export const pileInReach = (player: ReachGeometry, position: Vec3): boolean =>
   pileDistance(player.position, position, player.blockSize) <= reachTuning(player.inventory.registry).reachMetres &&
   lineInReach(player, [position, position.map((value) => value + 1) as Vec3]);
 
+/**
+ * Chest to the nearest point of a vehicle's occupied part boxes (world metres), as furniture is measured: a car is
+ * reached at the part beside the player, never at its origin, so whatever F can pick on it is also in reach.
+ * Distance only; `vehicleInReach` adds the line.
+ */
+export const vehicleDistance = (player: ReachGeometry, boxes: readonly ModelBox[]): number =>
+  Math.min(...boxes.map((box) => boxDistanceMetres(player, box)));
+
+const boxDistanceMetres = (player: ReachGeometry, { min, max }: ModelBox): number => {
+  const chest = chestOf(player).map((value) => value * player.blockSize);
+  return Math.hypot(...chest.map((value, axis) => value - Math.min(Math.max(value, min[axis]!), max[axis]!)));
+};
+
+/**
+ * Some one part box is both within the limit and along a clear line, as furniture is, so a wall can't be worked
+ * through and a near part behind it can't borrow a far visible one. The line ignores this vehicle's own cells (its
+ * rasterized body would hide every part it is reached at) but not another vehicle's.
+ */
+export const vehicleInReach = (player: ReachGeometry, vehicleId: number, boxes: readonly ModelBox[]): boolean => {
+  const { obstacles } = player;
+  const limit = reachTuning(player.inventory.registry).reachMetres;
+  const blind = obstacles && {
+    ...obstacles,
+    isSolid: (x: number, y: number, z: number) =>
+      obstacles.isSolidExceptVehicle?.(vehicleId, x, y, z) ?? obstacles.isSolid(x, y, z),
+  };
+  return boxes.some(
+    (box) =>
+      boxDistanceMetres(player, box) <= limit &&
+      (blind === undefined ||
+        clearLine(player, blind, [
+          box.min.map((value) => value / player.blockSize) as Vec3,
+          box.max.map((value) => value / player.blockSize) as Vec3,
+        ])),
+  );
+};
+
 /** A downed body is reached as furniture is: within the limit, along a clear line to its box. */
 export const bodyInReach = (player: ReachPlayer, body: BodyBox): boolean =>
   bodyDistance(player, body) <= reachTuning(player.inventory.registry).reachMetres &&
   lineInReach(player, bodyBox(body));
 
 /** Wire the existing move validator to this same live core policy. */
-export const bindReach = (player: ReachPlayer): (() => ReachSnapshot) => {
+export const bindReach = (
+  player: ReachPlayer,
+  vehicleParts?: { readonly boxesOf: (vehicleId: number) => readonly ModelBox[] },
+): (() => ReachSnapshot) => {
   player.inventory.canReach = (position) => pileInReach(player, position);
   player.inventory.canReachEntity = (entity) => furnitureInReach(player, entity);
+  if (vehicleParts) {
+    player.inventory.canReachVehicle = (vehicleId) =>
+      vehicleInReach(player, vehicleId, vehicleParts.boxesOf(vehicleId));
+  }
   player.inventory.actorPosition = () => player.position;
   return () => reach(player);
 };
