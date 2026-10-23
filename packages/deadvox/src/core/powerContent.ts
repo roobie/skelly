@@ -70,6 +70,7 @@ export const PowerDeviceSchema = variant('kind', [
     dischargeEfficiency: Efficiency,
   }),
   strictObject({ ...common, kind: literal('consumer'), demandWatts: Watts }),
+  strictObject({ ...common, kind: literal('switch') }),
 ]);
 
 export const PowerTuningSchema = strictObject({ id: Identity, tickSimSeconds: Positive });

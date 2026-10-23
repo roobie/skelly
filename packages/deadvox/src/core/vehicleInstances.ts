@@ -187,7 +187,7 @@ export class VehicleInstances {
     this.version += 1;
   }
 
-  snapshotState(): Readonly<VehicleInstancesState> {
+  snapshotState(foodAt?: number): Readonly<VehicleInstancesState> {
     return freezeSnapshot({
       nextId: this.store.nextId,
       instances: [...this.records].map(([id, vehicle]) => ({
@@ -200,7 +200,7 @@ export class VehicleInstances {
           sites: vehicle.sites.map(copyVehiclePlacement),
           fittings: vehicle.fittings.map((fitting) => ({
             ...copyVehiclePlacement(fitting),
-            item: snapshotItem(fitting.item),
+            item: snapshotItem(fitting.item, foodAt),
           })),
         },
       })),

@@ -1065,7 +1065,7 @@ export const createSession = (options: SessionOptions) => {
       return Boolean(book?.recipes.every((recipe) => character.knownRecipes.has(recipe)));
     },
   });
-  sim.actions.craft = craftActionHooks(inventory, character, reach, feet);
+  sim.actions.craft = craftActionHooks(inventory, character, reach, { feet, calendar: () => sim.calendar });
   sim.actions.reading = bookReadingHooks(inventory, character);
   sim.actions.treatment = playerTreatmentHooks(inventory, sim);
   sim.actions.vehicleWork = vehicleWorkHooks(inventory, {
@@ -2085,6 +2085,19 @@ export const createSession = (options: SessionOptions) => {
     },
     power,
     skyFields,
+    powerControl: (uid: number, enabled: boolean): string | undefined => {
+      const entity = entities.byUid(uid);
+      const control = entity && power?.control(entity);
+      if (!(entity && control && power && inventory.canReachEntity(entity))) {
+        return coreMessage(registry, 'tooFar');
+      }
+      const refusal = entities.useRefusal(entity) ?? sim.body.actionRefusal;
+      if (refusal) {
+        return refusal;
+      }
+      power.network.setEnabled(simTimestamp(sim.time), control.id, enabled);
+      return undefined;
+    },
     chargerControl: (uid: number, operation: 'start' | 'stop'): string | undefined => {
       const entity = entities.byUid(uid);
       const id = entity && power?.chargerId(entity);
