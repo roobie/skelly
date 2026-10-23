@@ -3,7 +3,7 @@ import type { Inventory } from '../src/core/inventory.ts';
 import { savedItemTree } from '../src/core/itemTree.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
-import { registerTestHouseVehicles, testHouseVehiclePlacement } from '../src/game/testHouseVehicles.ts';
+import { layoutVehiclePlacements, registerLayoutVehicles } from '../src/game/layoutVehicles.ts';
 import {
   capture,
   contentLookup,
@@ -171,18 +171,21 @@ describe('production vehicle ownership', () => {
 
   it('repeated testHouse registration after restore preserves saved missing parts and placement identity', async () => {
     const runtime = createRuntime();
-    const { fittings } = registry.vehicleBlueprints.get('hatchback')!;
+    const placement = layoutVehiclePlacements(registry, 'testHouse', 0.5)[0]!;
+    expect(placement).toBeDefined();
+    const { fittings } = registry.vehicleBlueprints.get(placement.blueprint)!;
     const absent = fittings.find((fitting) => !fittings.some((other) => other.supportedBy.includes(fitting.id)))!.id;
-    const id = runtime.inventory.registerVehicle(testHouseVehiclePlacement(3, 0.5), [absent]);
+    const id = runtime.inventory.registerVehicle(placement, [absent]);
     const initial = capture(runtime);
     const decoded = await decodeSave(await encodeFixture(initial), { version: formatVersion, contentLookup });
     const restored = createRuntime(decoded.snapshot);
     const before = capture(restored);
-    expect(registerTestHouseVehicles(restored.inventory, 'testHouse', 900, 0.5)).toBe(id);
-    expect(registerTestHouseVehicles(restored.inventory, 'testHouse', 3, 0.5)).toBe(id);
+    registerLayoutVehicles(restored.inventory, registry, 'testHouse', 0.5);
+    registerLayoutVehicles(restored.inventory, registry, 'testHouse', 0.5);
+    expect(restored.inventory.vehicles.idForPlacementKey(placement.placementKey)).toBe(id);
     expect(capture(restored)).toEqual(before);
     const equivalent = createRuntime();
-    equivalent.inventory.registerVehicle(testHouseVehiclePlacement(3, 0.5), [absent]);
+    equivalent.inventory.registerVehicle(placement, [absent]);
     expect(equivalent.inventory.vehicles.snapshotState()).toEqual(initial.world.vehicles);
   });
 });

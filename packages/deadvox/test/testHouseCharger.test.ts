@@ -4,7 +4,7 @@ import { toChunk } from '../src/core/coords.ts';
 import { sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
 import { generateColumn } from '../src/core/worldgen.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
-import { createWorldSetup, playerStartFromWorld, testHouseScene } from '../src/game/worldSetup.ts';
+import { createWorldSetup, playerStartFromWorld } from '../src/game/worldSetup.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { configFromUrl } from './fixtures/startupContent.ts';
 
@@ -51,7 +51,6 @@ it('lets a player charge a nearby rechargeable cell from the test-house spawn', 
     `${toChunk(start.position[0])},${toChunk(start.position[2])}`,
     ...source.powerDevices.map(({ pos }) => `${toChunk(pos[0])},${toChunk(pos[2])}`),
   ]);
-  const house = testHouseScene(config, registry);
   for (const column of columns) {
     const [cx, cz] = column.split(',').map(Number) as [number, number];
     for (const chunk of generateColumn(
@@ -65,7 +64,7 @@ it('lets a player charge a nearby rechargeable cell from the test-house spawn', 
       },
       cx,
       cz,
-      source.site ? [] : house.structures,
+      [],
     )) {
       source.world.addChunk(chunk);
     }
