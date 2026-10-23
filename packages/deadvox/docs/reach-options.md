@@ -21,8 +21,8 @@ Quick move queues the ordinary whole-stack handling move; it does not transfer i
 A wielded item is one the player wants to keep. Wielding means "this in my main hand", so the new item always goes to the dominant hand, and what that hand held makes way in this order: the player's own carrying, a sling or a pocket; then the empty off hand, when the new item needs only one hand and the held item fits in one; then a free spot in the container the new item came from; then the ground at the player's feet. The player chose to hold that item, so it stays on them, carried first and then in their free hand, before it leaves them for a container or the floor, where it is lost once they walk away. The ground is the last resort that still lets the wield happen. See `src/core/options.ts`, `stowRoom`, `plannedStowTarget` and `toHands`.
 
 Dominant/off-hand preferences resolve through the actual character without
-changing physical slots. A failed action preserves ownership. Dead lights choose
-the fullest compatible charged spare from carried items, nearby ground containers
-and searched furniture, then switch on only through a separate use. A refusal
-consumes no battery. See `src/core/character.ts`, `dominantSide` and `offSide`,
-and `src/game/survival.ts`, `Survival.useFromQuickbar`.
+changing physical slots. A failed action preserves ownership. A light never picks
+its own battery from reach; the player chooses it (`DESIGN.md`, "Light"). A loaded
+light switches on only through a separate use, and a refusal consumes no battery.
+See `src/core/character.ts`, `dominantSide` and `offSide`, and
+`src/game/survival.ts`, `Survival.useFromQuickbar`.

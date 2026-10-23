@@ -52,8 +52,9 @@ export const referencePainter = (
     const bounds = visibleBounds(model);
     const centre = bounds.getCenter(new Vector3());
     const radius = Math.max(bounds.getSize(new Vector3()).length() / 2, 0.001);
-    const extent = radius * pose.framing;
     const aspect = width / height;
+    // The framing holds along the shorter side, so a tall, narrow view still shows the whole model.
+    const extent = (radius * pose.framing) / Math.min(aspect, 1);
     const camera = new OrthographicCamera(
       -extent * aspect,
       extent * aspect,
