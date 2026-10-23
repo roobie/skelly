@@ -367,6 +367,51 @@ describe('certified firearm fitting', () => {
     expect(durations(0, 10)).toEqual(untrained);
   });
 
+  it('requires Firearms Combat 4 to fit a suppressor but not to remove one', () => {
+    const character = new Character(baseRegistry);
+    character.skills.firearms_combat = 3;
+    const fixture = makeFixture(character);
+    const suppressorType = [...fixture.registry.items.values()].find((item) => {
+      const model = item.model === undefined ? undefined : fixture.registry.models.get(item.model);
+      return model?.gun?.attachment?.kind === 'suppressor';
+    })?.id;
+    if (!suppressorType) {
+      throw new Error('Fixture registry needs a suppressor');
+    }
+    const suppressor = fixture.inventory.create(suppressorType);
+    const suppressorId = fixture.registry.models.get(defOf(fixture.registry, suppressor.type).model!)!.gun!.attachment!
+      .id;
+    const slot = fixture.model.attachmentSlots?.find(
+      ({ id }) => fixture.model.compatibility?.[id]?.includes(suppressorId) && !fixture.firearm.slots?.[id],
+    )?.id;
+    if (!slot) {
+      throw new Error('Fixture rifle needs a free suppressor mount');
+    }
+    const queue = new HandlingQueue(fixture.inventory);
+    const handling = new FirearmAttachmentHandling(fixture.inventory, queue, () => [0, 0, 0]);
+    if (
+      !(
+        fixture.inventory.add(fixture.firearm, { kind: 'hand', side: 'right' }) &&
+        fixture.inventory.add(suppressor, { kind: 'pile', pos: [0, 0, 0] })
+      )
+    ) {
+      throw new Error('Fixture suppressor could not be placed');
+    }
+
+    expect(handling.fit(fixture.firearm.uid, slot, suppressor.uid)).toBe("I can't fit this suppressor yet");
+    expect(queue.jobs).toHaveLength(0);
+
+    character.skills.firearms_combat = 4;
+    expect(handling.fit(fixture.firearm.uid, slot, suppressor.uid)).toBeUndefined();
+    queue.tick(10);
+    expect(fixture.firearm.slots?.[slot]).toBe(suppressor);
+
+    character.skills.firearms_combat = 0;
+    expect(handling.remove(fixture.firearm.uid, slot)).toBeUndefined();
+    queue.tick(10);
+    expect(fixture.firearm.slots?.[slot]).toBeUndefined();
+  });
+
   it('keeps an unconfigured variable-power optic out of fitting', () => {
     const fixture = makeFixture();
     const optic = [...fixture.registry.items.values()].find((item) => {

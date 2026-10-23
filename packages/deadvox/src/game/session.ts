@@ -75,6 +75,7 @@ import { assertScenarioRun, ScenarioRun } from '../core/scenarioRun.ts';
 import type { EventRuleDef } from '../core/schema.ts';
 import { Simulation } from '../core/sim.ts';
 import type { ColumnSource } from '../core/site.ts';
+import { siteGenerationOf } from '../core/sitePalette.ts';
 import { skillActivityPractice, skillActivityPracticeRate } from '../core/skillTraining.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
 import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
@@ -84,7 +85,6 @@ import { spendFuel } from '../core/torch.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
 import { figureSeedPool, zombieFigure } from '../core/zombieFigure.ts';
-import { SEVERED_ITEM } from '../core/zombieRegionNames.ts';
 import { ZombieSpawner } from '../core/zombieSpawns.ts';
 import {
   type AcidGroundImpact,
@@ -1143,6 +1143,7 @@ export const createSession = (options: SessionOptions) => {
   };
   const traps = new BearTraps(inventory);
   const zombieSystem = new ZombieSystem({
+    activeZombieRadiusMetres: siteGenerationOf(registry).activeZombieRadiusMetres,
     store: zombieStore,
     restrained: (id) => traps.holds(id),
     seed: sim.seed,
@@ -1225,9 +1226,9 @@ export const createSession = (options: SessionOptions) => {
         Math.floor(zombie.body.pos[1]),
         Math.floor(zombie.body.pos[2]),
       ];
-      const item = SEVERED_ITEM[region as keyof typeof SEVERED_ITEM];
-      if (item) {
-        inventory.add(inventory.create(item), { kind: 'pile', pos });
+      const item = zombie.type.severedItems[region];
+      if (item !== null) {
+        inventory.add(inventory.create(item!), { kind: 'pile', pos });
       }
     },
     onWound: (id, zombie, hit, damage) => options.zombieEffects?.onWound?.(id, zombie, hit, damage),

@@ -172,6 +172,7 @@ import { applyReplayActionPayload, type ReplayActionPayload, type ReplayCommandO
 import { restKindForFurniture } from './rest.ts';
 import { createScreenCommandDispatcher } from './screenCommandDispatcher.ts';
 import { createSession, type PlayerInputSample } from './session.ts';
+import { Sharpening } from './sharpening.ts';
 import { SpectatorCamera } from './spectatorCamera.ts';
 import { populateTestHouseRepairCorner } from './testHouse.ts';
 import {
@@ -1024,6 +1025,11 @@ export const startPlay = (
   const unpacking = new Unpacking(inventory, queue, feet, {
     opened: (type) => tutorial?.opened(type),
     unpacked: (type) => tutorial?.weapons.unpackedAmmo(type),
+  });
+  const sharpening = new Sharpening(inventory, queue, {
+    character: session.character,
+    reach: () => session.reach(),
+    clockRatio: sim.clock.ratio,
   });
   if (session.restoredLook) {
     input.yaw = session.restoredLook.yaw;
@@ -2939,6 +2945,19 @@ export const startPlay = (
       showRefusal('The fuse is already burning', sim.time);
     }
   };
+  const openHeldCan = (hand: HandSide): void => {
+    const target = openingTargetForHand(inventory, hand);
+    refusalReason(target ? unpacking.activate(target) : 'I have no can to open');
+  };
+  const sharpenAtWheel = (hand: HandSide): boolean => {
+    const held = inventory.hands[hand];
+    const station = lookedAt();
+    if (!(held && sharpening.wheelMethod(held, station))) {
+      return false;
+    }
+    refusalReason(sharpening.activate(hand, station));
+    return true;
+  };
   performHandUse = (hand: 'right' | 'left') => {
     if (sim.body.actionRefusal) {
       showRefusal(sim.body.actionRefusal, sim.time);
@@ -2947,14 +2966,18 @@ export const startPlay = (
     if (refusePrimaryUseWhileHandling()) {
       return;
     }
+    if (sharpenAtWheel(hand)) {
+      return;
+    }
     const held = inventory.hands[hand];
     const action = selectPrimaryAction(inventory, hand, held && survival.selectedItemAction(held)?.id);
     switch (action.kind) {
-      case 'open-can': {
-        const target = openingTargetForHand(inventory, hand);
-        refusalReason(target ? unpacking.activate(target) : 'I have no can to open');
+      case 'sharpen':
+        refusalReason(sharpening.activate(hand));
         return;
-      }
+      case 'open-can':
+        openHeldCan(hand);
+        return;
       case 'unpack':
         refusalReason(unpacking.activate(action.item));
         return;

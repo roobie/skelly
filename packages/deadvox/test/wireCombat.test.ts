@@ -10,12 +10,13 @@ import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
-import { type MeleeWeapon, PLAYER_CHEST_METRES, ZombieSystem, zombieAttackReachMetres } from '../src/core/zombies.ts';
+import { type MeleeWeapon, PLAYER_CHEST_METRES, zombieAttackReachMetres } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const fixture = (reachMetres = 2.1, moves?: ZombieDef['attack']['moves']) => {
   const registry = baseRegistry();

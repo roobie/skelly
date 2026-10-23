@@ -17,6 +17,8 @@ const fixture = () => {
     weight: 3,
     size: [1, 1],
     economy: { usage: [], tiers: [] },
+    workInProgress: false,
+    notLoot: false,
   };
   for (const [id, size, grid, rigid] of [
     ['fixture_bag', [2, 2], [4, 4], false],

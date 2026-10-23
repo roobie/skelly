@@ -53,6 +53,8 @@ const source = (shape: object) => ({
         name: 'Fixture beam',
         category: 'light',
         economy: { usage: [], tiers: [] },
+        workInProgress: false,
+        notLoot: false,
         weight: 10,
         size: [1, 1],
         wearable: { slot: 'head', encumbrance: 0 },
