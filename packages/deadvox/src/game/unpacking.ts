@@ -103,7 +103,7 @@ export class Unpacking {
   private createOutput(type: string, count: number, source: Item): Item {
     const output = this.inventory.create(type, count, 1, this.calendar());
     if (source.foodExposure && output.foodExposure) {
-      output.foodExposure = { ...source.foodExposure };
+      output.foodExposure = this.inventory.currentFood(source);
       output.madeAtGameTimestamp = source.madeAtGameTimestamp;
     }
     return output;

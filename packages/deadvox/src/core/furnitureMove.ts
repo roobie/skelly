@@ -27,6 +27,14 @@ export interface FurnitureMover {
   readonly beforeRelocate?: (entity: BlockEntity) => void;
 }
 
+/** Old appliance service, then old food environment, are settled before a piece moves, falls or is destroyed. */
+const beforeRelocating = (mover: FurnitureMover, pieces: readonly BlockEntity[]): void => {
+  for (const piece of pieces) {
+    mover.beforeRelocate?.(piece);
+    mover.inventory.settleFurnitureFood(piece);
+  }
+};
+
 interface PileMove {
   placed: Placed;
   to: Vec3;
@@ -389,7 +397,7 @@ export const removeFurniture = (mover: FurnitureMover, entity: BlockEntity): str
   if (refusal) {
     return refusal;
   }
-  mover.beforeRelocate?.(entity);
+  beforeRelocating(mover, [entity]);
   mover.inventory.entities.remove(entity);
   return undefined;
 };
@@ -449,9 +457,7 @@ export const ruinFurniture = (mover: FurnitureMover, entity: BlockEntity): Block
   for (const placed of standIns) {
     placed.item = inventory.create(placed.item.type, placed.item.count);
   }
-  for (const piece of [...destroyed, ...falls.map((fall) => fall.entity)]) {
-    mover.beforeRelocate?.(piece);
-  }
+  beforeRelocating(mover, [...destroyed, ...falls.map((fall) => fall.entity)]);
   for (const piece of destroyed) {
     inventory.entities.destroy(piece);
   }
@@ -508,9 +514,7 @@ export const liftFurniture = (mover: FurnitureMover, entity: BlockEntity, floorL
   if (!moves) {
     return messages.nowhereToLand;
   }
-  for (const piece of [entity, ...falls.map((fall) => fall.entity)]) {
-    mover.beforeRelocate?.(piece);
-  }
+  beforeRelocating(mover, [entity, ...falls.map((fall) => fall.entity)]);
   inventory.entities.lift(entity, floorLocked);
   for (const { entity: fallen, y } of falls) {
     inventory.entities.drop(fallen, y);
@@ -614,9 +618,7 @@ export const slideFurniture = (
     return messages.nowhereToLand;
   }
   if (commit) {
-    for (const piece of [entity, ...falls.map((fall) => fall.entity)]) {
-      mover.beforeRelocate?.(piece);
-    }
+    beforeRelocating(mover, [entity, ...falls.map((fall) => fall.entity)]);
     inventory.entities.slide(entity, pos);
     for (const { entity: fallen, y } of falls) {
       inventory.entities.drop(fallen, y);
@@ -722,6 +724,7 @@ export const placeFurniture = (mover: FurnitureMover, aimed: Readonly<Vec3>): st
   if (!moves) {
     return messagesOf(inventory).noRoom;
   }
+  inventory.settleFurnitureFood(entity);
   inventory.entities.place(entity, result.pos);
   inventory.shiftPiles(moves);
   return undefined;
