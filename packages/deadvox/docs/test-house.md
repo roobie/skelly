@@ -3,6 +3,7 @@ read_if:
   - you change the test house, its fixture stock or its debug gate
   - you add a feature demonstration near the test-house spawn
   - you benchmark the test house at a different block scale
+  - you change house supply, powered furnishings or player power controls
 ---
 
 # Test house
@@ -32,14 +33,26 @@ addition must explicitly decide whether it belongs in normal mode or only debug 
 and record its reason here. Re-evaluate this choice whenever the house gains something;
 there is no blanket permission based on where an earlier prop was placed.
 
-The ordinary furnishings, reading sample, parked vehicle and charging corner remain in
-normal mode: they demonstrate ordinary interactions without the derived supply catalogue.
-The charging corner offers a working power source and nearby portable equipment so a
-player can try charging without debug inventory edits or travel. Derived
-repair stock and the handling range are debug-only because their purpose is repeatable
-system evaluation. See `src/game/play.ts`, `populateTestHouseRepairCorner`, and
+Ordinary furnishings and charging stay in normal mode because they demonstrate
+ordinary interactions without a derived supply catalogue. Sharing the house supply
+makes charging respond to the same blackout as other appliances, while nearby portable
+equipment avoids debug inventory edits or travel. Derived repair stock and the handling
+range are debug-only because their purpose is repeatable system evaluation. See `src/game/play.ts`, `populateTestHouseRepairCorner`, and
 `src/game/worldSetup.ts`, `DebugTestHouseSite`. The range's owning rule remains in
 `DESIGN.md`, "Debug scenes".
+
+House power and its controls belong in normal mode: mixed generation and storage,
+lighting, refrigeration demand and charging demonstrate ordinary home systems rather
+than privileged test equipment. The generator switch saves fuel; the main breaker
+makes a blackout test possible without pretending solar and storage stop with the
+generator. See `src/content/base/templates-test-house.jsonnet`, `templates`, and
+`docs/electricity.md`, "Authored building wiring".
+
+Mixed supply lets the same home demonstrate both direct generation and stored energy;
+a generator-only fixture would hide their independence. Electrical values belong to
+content so balancing the haven does not change its mechanisms. See
+`src/content/base/furniture.jsonnet`, `furniture`, and
+`src/content/base/power.jsonnet`, `powerDevices`.
 
 ## Benchmark scale
 
