@@ -13,11 +13,6 @@ import { contentLookup } from '../src/ui/saveController.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 
-vi.mock('../src/game/testHouse.ts', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../src/game/testHouse.ts')>()),
-  testHouseFurniture: () => [crate],
-}));
-
 afterEach(() => vi.unstubAllGlobals());
 
 const content = startupContent();
@@ -53,7 +48,7 @@ const worldSetup = (): WorldSetup => {
     }
   }
   source.world.addChunk(chunk);
-  return source;
+  return { ...source, furnitureIn: () => [{ spec: crate, loot: [] }] };
 };
 
 const session = (source: WorldSetup, restore?: Readonly<SaveSnapshot>) =>
@@ -88,9 +83,8 @@ const version = {
   contentPacks: [{ id: 'fixture', version: '1', canonicalHash: 'b'.repeat(64) }],
 };
 
-it('keeps composed site-less overlay furnishing inside the saved arrival gate', async () => {
+it('keeps composed source furnishing inside the saved arrival gate', async () => {
   const source = worldSetup();
-  expect(source.site).toBeUndefined();
   const furnishing = vi.spyOn(source, 'furnitureIn');
   const runtime = session(source);
   const arrival = columnArrival(runtime, source);

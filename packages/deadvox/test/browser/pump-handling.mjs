@@ -7,7 +7,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { RELOAD_GESTURE_MS } from '../../src/game/reloadInput.ts';
-import { GARDEN_GATE, HOUSE_OFFSET } from '../../src/game/testHouse.ts';
+import { GARDEN_GATE, HOUSE_OFFSET } from '../testHouseRouteGeometry.ts';
 import { PLAYER } from '../playerFixture.ts';
 import { buildTestHouseRangeRoute, routeMovementInput } from '../testHouseRangeRoute.ts';
 import { launchChromium } from './chromium.mjs';

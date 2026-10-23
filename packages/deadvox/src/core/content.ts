@@ -1505,6 +1505,16 @@ const checkLayoutReferences = (layout: SiteLayoutDef, registry: Registry, report
   for (const [path, message] of authoredLayoutIssues(layout, registry)) {
     report('layouts', layout.id, path, message);
   }
+  const keys = new Set<string>();
+  for (const [index, vehicle] of (layout.vehicles ?? []).entries()) {
+    if (!registry.vehicleBlueprints.has(vehicle.blueprint)) {
+      report('layouts', layout.id, `.vehicles[${index}].blueprint`, `no vehicle blueprint "${vehicle.blueprint}"`);
+    }
+    if (keys.has(vehicle.placementKey)) {
+      report('layouts', layout.id, `.vehicles[${index}].placementKey`, 'duplicate vehicle placement key');
+    }
+    keys.add(vehicle.placementKey);
+  }
   const light = layout.practice?.light;
   if (light && registry.items.get(light.light)?.light?.power?.battery !== light.battery) {
     report('layouts', layout.id, '.practice.light', `"${light.light}" is not a light that takes "${light.battery}"`);
