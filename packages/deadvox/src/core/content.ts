@@ -500,11 +500,39 @@ const checkItemLight = (item: ItemDef, hasIgniter: boolean, registry: Registry, 
   if (light?.fuelPerGameHour !== undefined && light.burnTimeGameHours !== undefined) {
     report('items', item.id, '.light.fuelPerGameHour', 'self-fuelled lights cannot also have a burn time');
   }
-  if (light?.burning && light.burnTimeGameHours === undefined && light.fuelPerGameHour === undefined) {
+  checkLiquidFuel(item, registry, report);
+  if (
+    light?.burning &&
+    light.burnTimeGameHours === undefined &&
+    light.fuelPerGameHour === undefined &&
+    !light.liquidFuel
+  ) {
     report('items', item.id, '.light.burning', 'burning rules need a burn time or a fuel rate');
   }
   if (light?.burning?.ignition === 'firestarter' && !hasIgniter) {
     report('items', item.id, '.light.burning.ignition', 'needs at least one item with an igniter component');
+  }
+};
+
+const checkLiquidFuel = (item: ItemDef, registry: Registry, report: Report): void => {
+  const { light } = item;
+  if (!light?.liquidFuel) {
+    return;
+  }
+  if (
+    !item.vessel ||
+    light.power ||
+    item.igniter ||
+    item.tool?.fuel ||
+    light.burnTimeGameHours !== undefined ||
+    light.fuelPerGameHour !== undefined
+  ) {
+    report('items', item.id, '.light.liquidFuel', 'liquid fuel requires a vessel and no other light fuel mechanism');
+  }
+  for (const liquid of light.liquidFuel.accepts) {
+    if (!(registry.liquids.has(liquid) && item.vessel?.accepts.includes(liquid))) {
+      report('items', item.id, '.light.liquidFuel.accepts', 'fuel must be registered and accepted by the vessel');
+    }
   }
 };
 

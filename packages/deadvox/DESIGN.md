@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you're changing fixed-reservoir lamp fuel, burn accounting or service admission
   - you decide how realism should trade off against tedium
   - you change food exposure ownership or ambient catch-up
   - you change the test-house normal or debug-only boundary
@@ -1254,8 +1255,8 @@ surprise weapon use. See `src/game/canOpening.ts`, `openingTargetForHand`,
 `Unpacking`.
 
 An opened can retains a serving, not loose food. Its content-declared serving
-names the food and the vessel left after eating; this bounded full/empty model
-avoids a general pouring or refilling system. There are no spills. Keeping the
+names the food and the vessel left after eating. Food servings do not mix histories
+through liquid transfer. Keeping the
 same owned item through both transitions prevents food from escaping to storage
 and leaves the empty can where eating occurred. See `src/core/schema.ts`,
 `ItemSchema`, `src/game/unpacking.ts`, `Unpacking.complete`, and
@@ -2147,11 +2148,14 @@ light stands the same way. See `src/render/models.ts`, `prepareModel`, and
 An oil lamp gives lamp oil a use, and a lit lamp set down at night makes the base a
 beacon: the player trades light for being seen, either lighting the room and being
 noticed from far off, or sitting in the dark. A lamp carried lit keeps a hand busy;
-a doused one stows. The lamp is a fuelled light whose oil sits in its canister slot,
-and it is refilled by swapping the oil in, not pouring, because refilling a cartridge
-is direction only; pouring and partial refills stay open (#536). The lamp is content
-only: any light with a fuel rate and a swappable fuel canister behaves the same. See
-`src/core/lights.ts`, `drainLight`, and `src/core/torch.ts`, `swapCanister`.
+a doused one stows. Its fixed reservoir keeps the bottle an ordinary bottle rather
+than a fitted part. Fuel moves only between explicitly selected compatible vessels:
+emptying needs a receiver, not disposal or an automatic search for nearby stock.
+Service requires extinguishing, but no cooling wait: there is no heat consequence
+to model, and a lamp-only heat system would invent procedure without a meaningful
+choice. A real temperature system can add that consequence later. See
+`src/core/liquids.ts`, `planLiquidTransfer`, `src/core/inventory.ts`, `Inventory.transferLiquid`,
+and `src/core/lights.ts`, `drainLight`.
 
 A held light's battery can be taken out on its own, as an action chosen on the wheel
 and then activated, because a swap needs a spare: without one a player could not move

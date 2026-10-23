@@ -1,17 +1,21 @@
 local lights = import 'lights.libsonnet';
 
 {
+  liquids: [{ id: 'lamp_fuel', name: 'Lamp oil', densityGramsPerMillilitre: 0.8 }],
   "items": [
     {
       "id": "lamp_oil",
-      "name": "Lamp oil",
+      "name": "Oil bottle",
       "category": "material",
-      "weight": 500,
+      "weight": 100,
       "size": [1, 2],
-      "description": "A small sealed bottle of fuel for lamps and improvised lighting.",
+      "description": "A small bottle for lamp oil.",
       "model": "lamp_oil_bottle",
-      "stack": 2,
-      "canister": { "capacity": 8 }
+      vessel: {
+        capacityMicrolitres: 500000,
+        accepts: ['lamp_fuel'],
+        initialContents: { kind: 'filled', liquid: 'lamp_fuel', volumeMicrolitres: 500000 },
+      }
     },
     {
       "id": "glass_shards",

@@ -27,7 +27,7 @@ import { consumption, stowTarget, useOption } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { Readable, ReadRequest } from '../core/readable.ts';
 import type { Simulation } from '../core/sim.ts';
-import { simSeconds, simToGameSeconds } from '../core/time.ts';
+import { gameSeconds, simSeconds, simToGameSeconds } from '../core/time.ts';
 import { swapCanister } from '../core/torch.ts';
 import { queueTrapAction } from './bearTrapActions.ts';
 import { type ItemAction, ItemActionSelection, itemActionsFor } from './itemActions.ts';
@@ -544,6 +544,8 @@ export class Survival {
   private douseLight(item: Item, spec: LightSpec): void {
     if (spec.burnTimeGameHours !== undefined) {
       drainBurnLight(item, this.sim.calendar);
+    } else if (spec.liquidFuel) {
+      drainLight(this.inventory.registry, item, gameSeconds(0), this.sim.calendar);
     }
     item.on = false;
     item.litAtGameTimestamp = undefined;
@@ -573,11 +575,12 @@ export class Survival {
       return;
     }
     const beforeCharge = chargeOf(registry, item);
+    const beforeRemainder = item.liquidBurnRemainder;
     const expired =
       spec.burnTimeGameHours === undefined
-        ? drainLight(registry, item, simToGameSeconds(this.sim.clock, simSeconds(dt))) !== undefined
+        ? drainLight(registry, item, simToGameSeconds(this.sim.clock, simSeconds(dt)), this.sim.calendar) !== undefined
         : drainBurnLight(item, this.sim.calendar);
-    if (chargeOf(registry, item) !== beforeCharge || expired) {
+    if (chargeOf(registry, item) !== beforeCharge || item.liquidBurnRemainder !== beforeRemainder || expired) {
       this.inventory.version += 1;
     }
     if (!expired) {

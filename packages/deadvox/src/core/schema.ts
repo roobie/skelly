@@ -1195,6 +1195,12 @@ const LightSchema = strictObject({
   burnTimeGameHours: optional(PositiveGameHours),
   /** Fuel units consumed per Game hour, for self-fueled sources such as a lighter. */
   fuelPerGameHour: optional(GamePerHour),
+  liquidFuel: optional(
+    strictObject({
+      accepts: pipe(array(Id), minLength(1)),
+      microlitresPerGameSecond: pipe(Positive, integer(), maxValue(Number.MAX_SAFE_INTEGER)),
+    }),
+  ),
   /** A cone-shaped beam; absent means light all around. */
   beam: optional(
     strictObject({

@@ -51,6 +51,7 @@ export interface ItemFields<Node> {
   charges?: number | undefined;
   batteryMicrojoules?: number;
   liquidContents?: LiquidContents;
+  liquidBurnRemainder?: number;
   /** A light that's switched on. */
   on?: boolean;
   /** Remaining consumable-light burn in Game seconds; absent until first ignition. */
@@ -126,6 +127,9 @@ const foodExposureField = (
 const liquidContentsField = (contents: LiquidContents | undefined): { liquidContents?: LiquidContents } =>
   contents === undefined ? {} : { liquidContents: { ...contents } };
 
+const liquidBurnField = (remainder: number | undefined): { liquidBurnRemainder?: number } =>
+  remainder === undefined ? {} : { liquidBurnRemainder: remainder };
+
 const paperMapField = (paperMap: PaperMapCoverage | undefined): { paperMap?: PaperMapCoverage } =>
   paperMap === undefined ? {} : { paperMap: { ...paperMap } };
 
@@ -154,6 +158,7 @@ export const snapshotItem = (item: Item, foodAt?: number): Readonly<ItemState> =
     ...cargoField(item.cargo),
     ...paperMapField(item.paperMap),
     ...liquidContentsField(item.liquidContents),
+    ...liquidBurnField(item.liquidBurnRemainder),
     ...(item.slots === undefined
       ? {}
       : {
@@ -194,11 +199,16 @@ const assertSavedBurnState = (def: ItemDef, state: ItemState): void => {
       !Number.isFinite(state.burnRemainingGameSeconds));
   const missingActiveState =
     state.litAtGameTimestamp !== undefined &&
-    (burnTime === undefined || state.on !== true || state.burnRemainingGameSeconds === undefined);
+    (state.on !== true ||
+      (def.light?.liquidFuel
+        ? !Number.isSafeInteger(Math.round(state.litAtGameTimestamp * 1_000_000)) || state.litAtGameTimestamp < 0
+        : burnTime === undefined || state.burnRemainingGameSeconds === undefined));
   const litWithoutBurnState =
-    burnTime !== undefined &&
     state.on === true &&
-    (state.burnRemainingGameSeconds === undefined || state.litAtGameTimestamp === undefined);
+    (def.light?.liquidFuel
+      ? state.litAtGameTimestamp === undefined
+      : burnTime !== undefined &&
+        (state.burnRemainingGameSeconds === undefined || state.litAtGameTimestamp === undefined));
   if (invalidRemaining || missingActiveState || litWithoutBurnState) {
     throw new Error('Invalid saved light burn state');
   }
@@ -290,8 +300,32 @@ const restoreWork = (registry: Registry, work: NonNullable<ItemState['work']>): 
   components: work.components.map((component) => restoreItem(registry, component)),
 });
 
+const assertLiquidBurn = (registry: Registry, state: ItemState): void => {
+  const { light } = defOf(registry, state.type);
+  const remainder = state.liquidBurnRemainder;
+  if (light?.liquidFuel) {
+    assertSavedBurnState(defOf(registry, state.type), state);
+  }
+  if (
+    light?.liquidFuel
+      ? !(Number.isSafeInteger(remainder) && remainder! >= 0 && remainder! < 1_000_000)
+      : remainder !== undefined
+  ) {
+    throw new Error('Invalid saved liquid burn remainder');
+  }
+  const contents = state.liquidContents;
+  if (
+    light?.liquidFuel &&
+    state.on &&
+    !(contents?.kind === 'filled' && light.liquidFuel.accepts.includes(contents.liquid))
+  ) {
+    throw new Error('Invalid saved lit reservoir contents');
+  }
+};
+
 export const assertSavedLiquidContents = (registry: Registry, state: ItemState): void => {
-  const { vessel } = defOf(registry, state.type);
+  assertLiquidBurn(registry, state);
+  const { vessel, light } = defOf(registry, state.type);
   const contents = state.liquidContents;
   if (!vessel) {
     if (contents !== undefined) {
@@ -304,7 +338,7 @@ export const assertSavedLiquidContents = (registry: Registry, state: ItemState):
     state.charges === undefined &&
     state.batteryMicrojoules === undefined &&
     state.burnRemainingGameSeconds === undefined &&
-    state.litAtGameTimestamp === undefined &&
+    (light?.liquidFuel !== undefined || state.litAtGameTimestamp === undefined) &&
     contents !== undefined &&
     contents !== null &&
     ((contents.kind === 'empty' && Object.keys(contents).length === 1) ||
@@ -359,6 +393,7 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
     ...cargoField(state.cargo),
     ...paperMapField(state.paperMap),
     ...liquidContentsField(state.liquidContents),
+    ...liquidBurnField(state.liquidBurnRemainder),
     ...(state.slots === undefined
       ? {}
       : {
@@ -470,6 +505,7 @@ export class ItemFactory {
       count,
       condition,
       ...paperMapField(paperMap),
+      ...liquidBurnField(def.light?.liquidFuel ? 0 : undefined),
     };
     if (def.vessel) {
       item.liquidContents = { ...def.vessel.initialContents };
