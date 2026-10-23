@@ -20,3 +20,14 @@ export interface Readable {
   title: string;
   text: string;
 }
+
+/** A requested reading surface; generated paper stays distinct from authored prose. */
+export type ReadRequest =
+  | Readonly<{ kind: 'text'; readable: Readonly<Readable>; bookUid?: number; itemType?: string }>
+  | Readonly<{
+      kind: 'paperMap';
+      ownerUid: number;
+      coverage: Readonly<{ x: number; z: number }>;
+      title: string;
+      itemType: string;
+    }>;
