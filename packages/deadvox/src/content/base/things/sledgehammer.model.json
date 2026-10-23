@@ -1,0 +1,11 @@
+{
+  "id": "sledgehammer",
+  "file": "assets/models/sledgehammer.glb",
+  "parts": {
+    "sledgehammer": {
+      "node": "sledgehammer:sledgehammer",
+      "massKg": 4.5,
+      "centreOfMass": [-0.2129179552841525, -0.000028759972421944166, -0.00002304737516005115]
+    }
+  }
+}

@@ -14,7 +14,7 @@ import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { Zombie } from '../src/core/zombies.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
-import { type MoveIntent, PLAYER, physicsFor } from '../src/game/player.ts';
+import { type MoveIntent, PLAYER, physicsFor, type StanceToggle } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
@@ -37,7 +37,7 @@ const makeRuntime = ({
 } = {}) => {
   const scale = makeScale(0.5);
   let intent: MoveIntent = { ...IDLE };
-  let crouchToggle = false;
+  let stanceToggle: StanceToggle | undefined;
   let readyHeld = false;
   const footfalls: string[] = [];
   const refusals: string[] = [];
@@ -56,9 +56,9 @@ const makeRuntime = ({
       active: () => true,
       intent: () => intent,
       readyHeld: () => readyHeld,
-      consumeCrouchToggle: () => {
-        const pressed = crouchToggle;
-        crouchToggle = false;
+      consumeStanceToggle: () => {
+        const pressed = stanceToggle;
+        stanceToggle = undefined;
         return pressed;
       },
       yaw: () => yaw,
@@ -95,7 +95,10 @@ const makeRuntime = ({
       intent = next;
     },
     toggleCrouch: () => {
-      crouchToggle = true;
+      stanceToggle = 'crouch';
+    },
+    toggleProne: () => {
+      stanceToggle = 'prone';
     },
     setReadyHeld: (value: boolean) => {
       readyHeld = value;
@@ -373,7 +376,7 @@ describe('session movement consequences', () => {
     const { stamina } = needs;
     runtime.advance(60);
 
-    expect(session.crouching).toBe(true);
+    expect(session.stance).toBe('crouching');
     expect(session.sprinting).toBe(false);
     expect(needs.stamina).toBe(stamina);
   });
@@ -524,15 +527,105 @@ describe('crouching under a low ceiling', () => {
     runtime.advance(30);
     runtime.toggleCrouch();
     runtime.advance(1);
-    expect(session.crouching).toBe(true);
+    expect(session.stance).toBe('crouching');
     expect(runtime.refusals).toHaveLength(1);
 
     runtime.setIntent({ ...IDLE, forward: 1, walk: true });
     walkPast(runtime, SlabFar, 600);
     runtime.toggleCrouch();
     runtime.advance(1);
-    expect(session.crouching).toBe(false);
+    expect(session.stance).toBe('standing');
     expect(runtime.refusals).toHaveLength(1);
+  });
+});
+
+describe('lying prone', () => {
+  const { blockSize } = makeScale(0.5);
+  const senses = registry.senses.get('player')!;
+  const heightOf = {
+    standing: PLAYER.height / blockSize,
+    crouching: senses.crouch.bodyHeightMetres / blockSize,
+    prone: senses.prone.bodyHeightMetres / blockSize,
+  };
+
+  it('steps between stances by key, the body height following each stance', () => {
+    const runtime = makeRuntime();
+    const { session } = runtime;
+    runtime.advance(1);
+    const steps: [() => void, string][] = [
+      [runtime.toggleProne, 'prone'],
+      [runtime.toggleCrouch, 'crouching'],
+      [runtime.toggleProne, 'prone'],
+      [runtime.toggleProne, 'crouching'],
+      [runtime.toggleCrouch, 'standing'],
+      [runtime.toggleCrouch, 'crouching'],
+      [runtime.toggleCrouch, 'standing'],
+    ];
+    for (const [press, stance] of steps) {
+      press();
+      runtime.advance(1);
+      expect(session.stance).toBe(stance);
+      expect(session.body.height).toBe(heightOf[session.stance]);
+    }
+    expect(runtime.refusals).toEqual([]);
+  });
+
+  it('refuses a jump while prone, and the same jump lifts the body once it rises to a crouch', () => {
+    const runtime = makeRuntime();
+    const { session } = runtime;
+    runtime.toggleProne();
+    runtime.advance(60);
+    expect(session.body.onGround).toBe(true);
+    runtime.setIntent({ ...IDLE, jump: true });
+    for (let frame = 0; frame < 30; frame++) {
+      runtime.advance(1);
+      expect(session.body.onGround).toBe(true);
+    }
+    runtime.toggleCrouch();
+    runtime.advance(10);
+    expect(session.stance).toBe('crouching');
+    expect(session.body.onGround).toBe(false);
+  });
+
+  // A slab over z = -4..-2 leaves the lowest whole-block opening above the prone body; a crouched body can't fit.
+  const gapBlocks = Math.floor(heightOf.prone) + 1;
+  const SlabNear = -1;
+  const SlabFar = -4;
+  const crawlSpace = (_x: number, y: number, z: number): boolean =>
+    y === 0 || (y === 1 + gapBlocks && z >= SlabFar && z < SlabNear);
+  const crawlPast = (runtime: Runtime, z: number): void => {
+    const { body } = runtime.session;
+    for (let frame = 0; frame < 1200 && body.pos[2]! + body.halfWidth > z; frame++) {
+      runtime.advance(1);
+    }
+  };
+
+  it('crawls under an opening too low to crouch in, refuses to rise beneath it, and rises once clear', () => {
+    expect(gapBlocks).toBeLessThan(heightOf.crouching);
+    const runtime = makeRuntime({ isSolid: crawlSpace, spawn: [0, 1, 2] });
+    const { session } = runtime;
+    runtime.toggleProne();
+    runtime.advance(1);
+    runtime.setIntent({ ...IDLE, forward: 1 });
+    crawlPast(runtime, SlabNear);
+    runtime.setIntent({ ...IDLE });
+    runtime.advance(30);
+
+    runtime.toggleCrouch();
+    runtime.advance(1);
+    expect(session.stance).toBe('prone');
+    runtime.toggleProne();
+    runtime.advance(1);
+    expect(session.stance).toBe('prone');
+    expect(runtime.refusals).toHaveLength(2);
+
+    runtime.setIntent({ ...IDLE, forward: 1 });
+    crawlPast(runtime, SlabFar);
+    expect(session.body.pos[2]! + session.body.halfWidth).toBeLessThan(SlabFar);
+    runtime.toggleCrouch();
+    runtime.advance(1);
+    expect(session.stance).toBe('crouching');
+    expect(runtime.refusals).toHaveLength(2);
   });
 });
 

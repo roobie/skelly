@@ -60,6 +60,7 @@ const { registry: skillZeroRegistry } = buildRegistry([
           firearm: {
             recoilKickRadians: 0.01,
             dispersionRadians: 0,
+            pelletSpreadScale: 1,
             shotSound: 'gunshot',
             handling: {},
             skillZeroHandling: {
@@ -77,6 +78,7 @@ const { registry: skillZeroRegistry } = buildRegistry([
           firearm: {
             recoilKickRadians: 0.02,
             dispersionRadians: 0,
+            pelletSpreadScale: 1,
             shotSound: 'gunshot',
             handling: {},
             skillZeroHandling: {
@@ -91,7 +93,13 @@ const { registry: skillZeroRegistry } = buildRegistry([
           category: 'weapon',
           weight: 1,
           size: [1, 1],
-          firearm: { recoilKickRadians: 0.01, dispersionRadians: 0, shotSound: 'gunshot', handling: {} },
+          firearm: {
+            recoilKickRadians: 0.01,
+            dispersionRadians: 0,
+            pelletSpreadScale: 1,
+            shotSound: 'gunshot',
+            handling: {},
+          },
         },
       ],
     },
@@ -418,7 +426,9 @@ describe('rifle firearm handling', () => {
       distanceMetres: 2 * pose.blockSize,
       point: bore.origin.map((value, axis) => value + bore.direction[axis]! * 2) as [number, number, number],
     };
-    const point = crosshairAimPoint(bore.origin, bore.direction, nearSurface);
+    const point = crosshairAimPoint(bore.origin, bore.direction, tuning.shotTraceRangeBlocks, [
+      nearSurface?.distanceBlocks,
+    ]);
     const direction = firedTrajectory.directions[0]!;
     expect(direction.every((value, axis) => Math.abs(value - bore.direction[axis]!) < 1e-9)).toBe(true);
     const alongRay = point.reduce(
@@ -716,6 +726,7 @@ describe('rifle firearm handling', () => {
               firearm: {
                 recoilKickRadians: 0.012,
                 dispersionRadians: 0.01,
+                pelletSpreadScale: 1,
                 shotSound: 'gunshot',
                 handling: {},
               },

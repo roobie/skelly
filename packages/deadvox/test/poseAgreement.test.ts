@@ -30,7 +30,14 @@ const livePoseZombie = (type = SHAMBLER) => {
   const system = new ZombieSystem({
     tuning: TEST_SENSE_TUNING,
     isOpaque: FLOOR,
-    player: () => ({ pos: target, facing: [0, 0, 1], movement: 'still', lit: false, lightSeenFrom: 40 }),
+    player: () => ({
+      pos: target,
+      facing: [0, 0, 1],
+      movement: 'still',
+      lit: false,
+      lightSeenFrom: 40,
+      eyeHeightMetres: 1.3,
+    }),
     isSolid: FLOOR,
     dayPhase: () => dayStateAtHour(12),
     blockSize: BLOCK_SIZE,
@@ -218,7 +225,14 @@ describe('rendered and hit shambler poses', () => {
     const system = new ZombieSystem({
       tuning: TEST_SENSE_TUNING,
       isOpaque: FLOOR,
-      player: () => ({ pos: [100, 1, 100], facing: [0, 0, -1], movement: 'still', lit: false, lightSeenFrom: 40 }),
+      player: () => ({
+        pos: [100, 1, 100],
+        facing: [0, 0, -1],
+        movement: 'still',
+        lit: false,
+        lightSeenFrom: 40,
+        eyeHeightMetres: 1.3,
+      }),
       isSolid: FLOOR,
       dayPhase: () => dayStateAtHour(12),
       blockSize: BLOCK_SIZE,
@@ -248,7 +262,14 @@ describe('rendered and hit shambler poses', () => {
     const system = new ZombieSystem({
       tuning: TEST_SENSE_TUNING,
       isOpaque: FLOOR,
-      player: () => ({ pos: [100, 1, 100], facing: [0, 0, -1], movement: 'still', lit: false, lightSeenFrom: 40 }),
+      player: () => ({
+        pos: [100, 1, 100],
+        facing: [0, 0, -1],
+        movement: 'still',
+        lit: false,
+        lightSeenFrom: 40,
+        eyeHeightMetres: 1.3,
+      }),
       isSolid: FLOOR,
       dayPhase: () => dayStateAtHour(12),
       blockSize: BLOCK_SIZE,
@@ -272,7 +293,14 @@ describe('rendered and hit shambler poses', () => {
     const freshSystem = new ZombieSystem({
       tuning: TEST_SENSE_TUNING,
       isOpaque: FLOOR,
-      player: () => ({ pos: [2, 1, 1], facing: [0, 0, 1], movement: 'still', lit: false, lightSeenFrom: 40 }),
+      player: () => ({
+        pos: [2, 1, 1],
+        facing: [0, 0, 1],
+        movement: 'still',
+        lit: false,
+        lightSeenFrom: 40,
+        eyeHeightMetres: 1.3,
+      }),
       isSolid: FLOOR,
       dayPhase: () => dayStateAtHour(12),
       blockSize: BLOCK_SIZE,

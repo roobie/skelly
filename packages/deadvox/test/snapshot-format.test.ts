@@ -408,6 +408,28 @@ const assertNumbersObjectIs = (expected: unknown, actual: unknown, path = '$'): 
 };
 
 describe('canonical save format', () => {
+  it('round-trips a hesitating and refused zombie through the save envelope', async () => {
+    const source = capture(createRuntime());
+    const hesitation = structuredClone(source);
+    const hesitating = hesitation.world.zombies.zombies[0]!.zombie;
+    hesitating.mode = 'hesitate';
+    hesitating.hesitationFrom = 'idle';
+    const refused = structuredClone(source);
+    const refusing = refused.world.zombies.zombies[0]!.zombie;
+    refusing.refusedAt = 1;
+    refusing.leanTarget = [1, 2, 3];
+
+    const roundTrips = await Promise.all(
+      [hesitation, refused].map(async (snapshot) => ({
+        snapshot,
+        decoded: await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup }),
+      })),
+    );
+    for (const { snapshot, decoded } of roundTrips) {
+      expect(decoded.snapshot.world.zombies.zombies[0]!.zombie).toEqual(snapshot.world.zombies.zombies[0]!.zombie);
+    }
+  });
+
   it('yields a saved carried root before reading world-owned item roots', () => {
     const carried = { uid: 1, type: 'rag', count: 1, condition: 1 };
     const state = {

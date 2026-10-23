@@ -16,8 +16,8 @@ import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
+import { firearmsCombatTuning } from '../src/core/skillTraining.ts';
 import {
-  CASE_LANDING_LIFT,
   FirearmMechanics,
   type FirearmShotEffect,
   firearmHandlingFor,
@@ -29,6 +29,7 @@ import { CaseEffects, caseFlightPoint } from '../src/render/caseEffects.ts';
 import { chargedRifle } from './rifleFixture.ts';
 
 const { registry } = BUNDLED_CONTENT;
+const CASE_LANDING_LIFT = firearmsCombatTuning(registry).caseEjection.landingLiftMetres;
 const scale = makeScale(0.5);
 const pitch = (-20 * Math.PI) / 180;
 
@@ -247,10 +248,10 @@ const makeCaseSession = ({ world, spawn, intent: startingIntent, crouched = fals
       active: () => true,
       intent: () => intent,
       readyHeld: () => true,
-      consumeCrouchToggle: () => {
+      consumeStanceToggle: () => {
         const pressed = crouchToggle;
         crouchToggle = false;
-        return pressed;
+        return pressed ? 'crouch' : undefined;
       },
       yaw: () => yaw,
       pitch: () => pitch,
@@ -523,7 +524,7 @@ describe('firearm case wall contact', () => {
   it('keeps a crouched corner drop descending to its landing without entering the floor', () => {
     const runtime = makeCrouchedCornerRuntime();
     advanceFrames(runtime.session, 120);
-    expect(runtime.session.crouching).toBe(true);
+    expect(runtime.session.stance).toBe('crouching');
     expect(runtime.session.body.onGround).toBe(true);
     expect(bodyOverlapsTerrain(runtime.session.body, runtime.isSolid)).toBe(false);
     runtime.setIntent({ ...IDLE });

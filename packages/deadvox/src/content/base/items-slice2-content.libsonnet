@@ -9,7 +9,9 @@ local lights = import 'lights.libsonnet';
       "weight": 500,
       "size": [1, 2],
       "description": "A small sealed bottle of fuel for lamps and improvised lighting.",
-      "model": "lamp_oil_bottle"
+      "model": "lamp_oil_bottle",
+      "stack": 2,
+      "canister": { "capacity": 8 }
     },
     {
       "id": "glass_shards",
@@ -383,7 +385,7 @@ local lights = import 'lights.libsonnet';
         "skill": "mechanics",
         "yields": [{ "item": "scrap_metal", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }]
       },
-      "firearmAttachmentEffects": { "recoilReduction": 0.05, "wearPerShot": 0.02 }
+      "firearmAttachmentEffects": { "kind": "suppressor", "recoilReduction": 0.05, "wearPerShot": 0.02 }
     }
   ],
   "recipes": [

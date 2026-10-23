@@ -1771,14 +1771,16 @@ try {
     const offHandItem = r.inventory.create('glowstick');
     r.setHand(r.dominant, glowstick);
     r.setHand(r.off, offHandItem);
+    const { throwChargeSimSeconds, throwMinimumHoldSimSeconds } = r.inventory.registry.senses.get('player').light;
     return {
       uid: glowstick.uid,
       offHandUid: offHandItem.uid,
       start: [...r.session.body.pos],
       blockSize: r.scale.blockSize,
-      distance: r.inventory.registry.senses.get('player').light.throwMaxDistanceMetres,
-      chargeSimSeconds: r.inventory.registry.senses.get('player').light.throwChargeSimSeconds,
-      minimumHoldSimSeconds: r.inventory.registry.senses.get('player').light.throwMinimumHoldSimSeconds,
+      // The glowstick's own full-charge range: drag keeps a light, broad item short of the tuned maximum.
+      distance: r.getItemThrowLanding(glowstick.uid, throwChargeSimSeconds).distance,
+      chargeSimSeconds: throwChargeSimSeconds,
+      minimumHoldSimSeconds: throwMinimumHoldSimSeconds,
     };
   });
   await page.waitForFunction(() => {
@@ -2127,7 +2129,7 @@ try {
   }
   assert(
     landing?.fits && Math.abs(landing.landingDistance - throwFixture.distance) <= landingTolerance,
-    `full-charge throw has room near its tuned range: ${JSON.stringify(landing)}`,
+    `full-charge throw has room near the item's own range: ${JSON.stringify(landing)}`,
   );
   const releaseThrow = await mouseCharge(page);
   await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
@@ -2202,11 +2204,11 @@ try {
   }, throwFixture);
   assert.ok(
     thrown >= throwFixture.distance - landingTolerance,
-    `throw reaches its tuned landing range (distance ${thrown})`,
+    `throw reaches the item's own range (distance ${thrown} of ${throwFixture.distance})`,
   );
   assert.ok(
     thrown <= throwFixture.distance + landingTolerance,
-    `throw uses the tuned landing range (distance ${thrown})`,
+    `throw lands no further than the item's own range (distance ${thrown} of ${throwFixture.distance})`,
   );
   const loadedFirearm = await page.evaluate(() => {
     const r = globalThis.primaryActionTest;

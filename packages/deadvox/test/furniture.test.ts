@@ -1,11 +1,11 @@
-import { Box3, type Group, type Matrix4, type Mesh, type MeshLambertMaterial, Vector3 } from 'three';
+import { Box3, type Group, Matrix4, type Mesh, type MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities, doorPanel, panelFor, poseKey, searchTime } from '../src/core/blockEntities.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { buildRegistry, type TemplateDef } from '../src/core/content.ts';
 import { pickFurniture } from '../src/core/furniturePick.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
-import { HANDLING, Inventory } from '../src/core/inventory.ts';
+import { handlingWeights, Inventory } from '../src/core/inventory.ts';
 import { couldFit, ItemFactory } from '../src/core/items.ts';
 import type { Body } from '../src/core/physics.ts';
 import { reachTuning } from '../src/core/reach.ts';
@@ -106,7 +106,9 @@ describe('furniture', () => {
     const [w, h] = registry.items.get('canned_beans')!.size;
     const cells = w * h;
     const expected =
-      def.container!.pockets[0]!.handlingSimSeconds + inv.pocketHandling(hoodie, 0) + 2 * HANDLING.perCell * cells;
+      def.container!.pockets[0]!.handlingSimSeconds +
+      inv.pocketHandling(hoodie, 0) +
+      2 * handlingWeights(registry).perCell * cells;
     expect(plan.ok && plan.time).toBeCloseTo(expected);
   });
 
@@ -565,7 +567,11 @@ describe('furniture', () => {
         const box = doorPanel(door, 0.5);
         const group = furniture.group.children[index]!;
         const panel = group.children[0] as import('three').Mesh;
-        const error = maxCornerError(panelCorners(box), renderedCorners(panel.matrixWorld));
+        // A detailed leaf is built in its own hinge frame: its core slab spans the panel's length and height, and its
+        // depth is the panel's thin side.
+        const { max } = panel.geometry.boundingBox!;
+        const slab = new Matrix4().makeScale(2 * max.x, 2 * max.y, Math.min(...box.size));
+        const error = maxCornerError(panelCorners(box), renderedCorners(panel.matrixWorld.clone().multiply(slab)));
         expect(error, `${door.facing} door ${open ? 'open' : 'closed'}`).toBeLessThan(0.001);
       }
     }

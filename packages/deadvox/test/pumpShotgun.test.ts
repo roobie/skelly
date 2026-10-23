@@ -11,7 +11,7 @@ import { heldEjectionPose } from '../src/core/heldPose.ts';
 import { dropSpots, Inventory } from '../src/core/inventory.ts';
 import { PILE_GRID } from '../src/core/inventoryScale.ts';
 import { defOf, type Item, typeWeightGrams, weightOf } from '../src/core/items.ts';
-import { BUCK_HALF_ANGLE, type PelletShot } from '../src/core/pellets.ts';
+import { type PelletShot, pelletSpreadRadians } from '../src/core/pellets.ts';
 import { bodyOverlapsTerrain, stepBody } from '../src/core/physics.ts';
 import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveVersionComponents } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -805,7 +805,7 @@ describe('real pump ammunition', () => {
     expect(experiencedRack.gun.firearm!.cycle!.duration).toBe(experiencedRackFrame.duration);
   });
 
-  it('centres pump pellet spread on the firearm bore', () => {
+  it('centres ammo-base and firearm-scaled pellet spread on the bore', () => {
     const f = fixture();
     f.load(0);
     f.rack(1);
@@ -825,11 +825,17 @@ describe('real pump ammunition', () => {
       aimFrame,
       loweredPitchRadians: tuning.loweredPitchRadians,
     });
+    const ammo = registry.items.get(shellType)!.ammo!;
+    const firearm = registry.items.get(f.gun.type)!.firearm!;
+    const spread = pelletSpreadRadians(ammo, firearm);
+    expect(pelletSpreadRadians({ ...ammo, spreadDegrees: ammo.spreadDegrees * 2 }, firearm)).toBeCloseTo(spread * 2);
+    expect(pelletSpreadRadians(ammo, { ...firearm, pelletSpreadScale: firearm.pelletSpreadScale * 2 })).toBeCloseTo(
+      spread * 2,
+    );
     expect(
       f.shots[0]!.directions.every(
         (ray) =>
-          ray.reduce((sum, component, index) => sum + component * bore.direction[index]!, 0) >=
-          Math.cos(BUCK_HALF_ANGLE) - 1e-9,
+          ray.reduce((sum, component, index) => sum + component * bore.direction[index]!, 0) >= Math.cos(spread) - 1e-9,
       ),
     ).toBe(true);
   });
@@ -881,10 +887,11 @@ describe('real pump ammunition', () => {
     const events = s.sim.events.reader();
     expect(s.firearms.fire({ ...pose, item: gun, seed: 71, simTime: shotAt })).toBe(true);
     const emitted = events.read().filter((event) => event.kind === 'sound' || event.kind === 'noise');
-    const shotSound = defOf(registry, gun.type).firearm!.shotSound!;
+    const { shotSound, shotBodySound } = defOf(registry, gun.type).firearm!;
     expect(emitted.map((event) => [event.kind, event.event])).toEqual([
       ['sound', shotSound],
       ['noise', shotSound],
+      ['sound', shotBodySound],
     ]);
     expect(s.playerAudio.vocalNoise?.radiusMetres).toBe(registry.sounds.get(shotSound)!.noise.radiusMetres);
     expect(s.playerAudio.vocalNoise?.radiusMetres).toBeGreaterThan(0);

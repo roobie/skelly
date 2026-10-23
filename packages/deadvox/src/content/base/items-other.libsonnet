@@ -309,6 +309,7 @@ local spentCase(id, name, weight, description, model) = {
       ammo: {
         calibre: '12-gauge-00-buck',
         pellets: 9,
+        spreadDegrees: 2,
         diameterMm: 8.38,
         damage: 20,
         impulse: 0.35,

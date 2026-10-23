@@ -30,7 +30,7 @@ local ladderOnFooting = function(pieces, facing) {
       color: "#8d969a",
       material: 'steel',
       breach: { minimumStrength: 9, durability: 300 },
-      door: { methods: {}, handlingSimSeconds: 0.8, hatch: true },
+      door: { methods: {}, handlingSimSeconds: 0.8, hatch: true, detail: (import 'door-detail.libsonnet').hatch },
     },
   ],
   templates: [

@@ -12,6 +12,7 @@ import { blockColors, requiredContentIssues, validateContent } from '../src/core
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { ordinaryHamletSpawnWeights } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { corpseLootPoint, lootTypeIssue } from '../src/core/loot.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
 import { blockPatterns, blockWeatherability } from '../src/core/meshInput.ts';
 import { opticViewSettings } from '../src/core/opticView.ts';
@@ -54,6 +55,25 @@ const baseSounds = {
       .filter(({ source }) => source.startsWith('sounds'))
       .flatMap(({ data }) => (data as { sounds: unknown[] }).sounds),
   },
+};
+const reachableLootItems = (root: string | undefined): { table: string; item: string }[] => {
+  const found: { table: string; item: string }[] = [];
+  const seen = new Set<string>();
+  const pending = root === undefined ? [] : [root];
+  while (pending.length > 0) {
+    const table = baseRegistry.loot.get(pending.pop()!)!;
+    if (!seen.has(table.id)) {
+      seen.add(table.id);
+      for (const { item, table: nested } of table.entries) {
+        if (nested !== undefined) {
+          pending.push(nested);
+        } else if (item !== undefined) {
+          found.push({ table: table.id, item });
+        }
+      }
+    }
+  }
+  return found;
 };
 const invalidZombieRegionIssues = (zombieId: string, regionId: string, change: 'remove' | 'add') => {
   const zombieFile = base.find((file) => file.source === 'zombies.json')!;
@@ -288,6 +308,16 @@ describe('content', () => {
     expect(ordinaryHamletSpawnWeights(baseRegistry).has(soldier.id)).toBe(false);
   });
 
+  it('gives every zombie kind only kit items its corpse can drop', () => {
+    const dead = [...baseRegistry.zombies.values()].flatMap((kind) => {
+      const { context } = corpseLootPoint(kind.loot ?? '', 0, [0, 0, 0]);
+      return reachableLootItems(kind.loot)
+        .filter(({ item }) => lootTypeIssue(baseRegistry, item, context) !== undefined)
+        .map(({ table, item }) => `${kind.id} → ${table} → ${item}`);
+    });
+    expect(dead).toEqual([]);
+  });
+
   it('resolves spawn names against the day cycle of the last file that defines one', () => {
     const authored = rawBaseDayCycle.dayCycle;
     const modNoon = authored.noonGameTimeOfDay === '13:30' ? '14:30' : '13:30';
@@ -441,6 +471,36 @@ describe('content', () => {
     expect(validateContent({ source: 'body.json', data: { body: [withRegionFactor({ chest: 1 })] } })).not.toEqual([]);
   });
 
+  it('rejects a heartbeat sound that is missing or has more than one variant', () => {
+    const body = baseRegistry.body.get('player')!;
+    const [onlyVariant] = [...baseRegistry.sounds.values()][0]!.variants;
+    const single = {
+      ...[...baseRegistry.sounds.values()][0]!,
+      id: 'heartbeat_fixture_single',
+      variants: [onlyVariant],
+    };
+    const pair = { ...single, id: 'heartbeat_fixture_pair', variants: [onlyVariant, onlyVariant] };
+    const events = [single.id, pair.id, 'heartbeat_fixture_absent'];
+    const { issues } = buildRegistry([
+      {
+        source: 'heartbeat-fixture.json',
+        data: {
+          sounds: [single, pair],
+          body: events.map((event, index) => ({
+            ...body,
+            id: `heartbeat_fixture_${index}`,
+            heartbeat: { ...body.heartbeat, sounds: { slow: event, fast: single.id } },
+          })),
+        },
+      },
+    ]);
+
+    expect(issues.filter(({ source }) => source === 'heartbeat-fixture.json').map(({ path }) => path)).toEqual([
+      'body[1].heartbeat.sounds.slow',
+      'body[2].heartbeat.sounds.slow',
+    ]);
+  });
+
   it('accepts a touch slot covering some regions only, and rejects one covering none', () => {
     const body = baseRegistry.body.get('player')!;
     const handSlot = body.touchFirst.hand;
@@ -527,6 +587,80 @@ describe('content', () => {
       true,
     );
     expect(issues.some(({ path }) => path.endsWith('.combat.firearms.wobbleNoiseSmoothingSimSeconds'))).toBe(true);
+  });
+
+  it('rejects firearms tuning without case ejection or shot trace range', () => {
+    const source = base.find((file) => file.source === 'recipes.json')!;
+    const data = structuredClone(source.data) as {
+      skills: { id: string; combat?: { firearms?: Record<string, unknown> } }[];
+    };
+    const firearms = data.skills.find(({ id }) => id === 'firearms_combat')!.combat!.firearms!;
+    Reflect.deleteProperty(firearms, 'caseEjection');
+    Reflect.deleteProperty(firearms, 'shotTraceRangeBlocks');
+    const { issues } = buildRegistry([{ source: source.source, data }]);
+    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.caseEjection'))).toBe(true);
+    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.shotTraceRangeBlocks'))).toBe(true);
+  });
+
+  it('rejects ammunition spread or firearm choke scale that is not authored', () => {
+    const files = structuredClone(base) as {
+      source: string;
+      data: { items?: { ammo?: Record<string, unknown>; firearm?: Record<string, unknown> }[] };
+    }[];
+    const items = files.flatMap(({ data }) => data.items ?? []);
+    const ammunition = items.find((item) => item.ammo !== undefined)!;
+    const firearm = items.find((item) => item.firearm !== undefined)!;
+    Reflect.deleteProperty(ammunition.ammo!, 'spreadDegrees');
+    Reflect.deleteProperty(firearm.firearm!, 'pelletSpreadScale');
+    const { issues } = buildRegistry(files);
+    expect(issues.some(({ path }) => path.endsWith('.ammo.spreadDegrees'))).toBe(true);
+    expect(issues.some(({ path }) => path.endsWith('.firearm.pelletSpreadScale'))).toBe(true);
+  });
+
+  it('rejects firearm attachment effects without a per-shot wear', () => {
+    const files = (
+      structuredClone(base) as { source: string; data: { items?: { firearmAttachmentEffects?: object }[] } }[]
+    ).filter(({ data }) => data.items);
+    const attachment = files
+      .flatMap((file) => file.data.items ?? [])
+      .find((item) => item.firearmAttachmentEffects !== undefined);
+    expect(attachment).toBeDefined();
+    Reflect.deleteProperty(attachment!.firearmAttachmentEffects!, 'wearPerShot');
+    const { issues } = buildRegistry(files);
+    expect(issues.some(({ path }) => path.endsWith('.firearmAttachmentEffects.wearPerShot'))).toBe(true);
+  });
+
+  it('rejects an attachment whose model kind has effects but whose item authors none', () => {
+    const data = {
+      items: [
+        {
+          id: 'fixture_suppressor',
+          economy: { usage: [], tiers: [] },
+          name: 'Fixture suppressor',
+          category: 'misc',
+          weight: 1,
+          size: [1, 2],
+          model: 'fixture_suppressor',
+        },
+      ],
+      models: [
+        {
+          id: 'fixture_suppressor',
+          file: 'assets/models/fixture_suppressor.glb',
+          gun: {
+            attachment: {
+              id: 'fixture-suppressor',
+              kind: 'suppressor',
+              mount: 'muzzle',
+              mountFrame: { normal: [-1, 0, 0], up: [0, 1, 0] },
+              properties: { noiseFactor: 0.25 },
+            },
+          },
+        },
+      ],
+    };
+    const { issues } = buildRegistry([{ source: 'effects-fixture.json', data }]);
+    expect(issues.map(({ path }) => path)).toEqual(['items[0].firearmAttachmentEffects']);
   });
 
   it('rejects an item that lacks the handling time its kind needs', () => {
@@ -624,6 +758,7 @@ describe('content', () => {
         pump: true,
         recoilKickRadians: 0.01,
         dispersionRadians: 0.01,
+        pelletSpreadScale: 1,
         shotSound: 'gunshot',
         handling: {},
         roundLoadSimSeconds: 1,
@@ -647,7 +782,7 @@ describe('content', () => {
       category: 'weapon',
       weight: 1,
       size: [1, 1],
-      firearm: { recoilKickRadians: 0.01, shotSound: 'gunshot', handling: {} },
+      firearm: { recoilKickRadians: 0.01, pelletSpreadScale: 1, shotSound: 'gunshot', handling: {} },
     };
     const missing = validateContent({ source, data: { items: [item] } });
     expect(missing.map(({ path }) => path)).toContain('items[0].firearm.dispersionRadians');
@@ -670,7 +805,13 @@ describe('content', () => {
           weight: 1,
           size: [1, 1],
           model: 'fixture_gun',
-          firearm: { recoilKickRadians: 0.01, dispersionRadians: 0, shotSound: 'gunshot', handling: {} },
+          firearm: {
+            recoilKickRadians: 0.01,
+            dispersionRadians: 0,
+            pelletSpreadScale: 1,
+            shotSound: 'gunshot',
+            handling: {},
+          },
         },
         {
           id: 'fixture_suppressor',
@@ -680,6 +821,7 @@ describe('content', () => {
           weight: 1,
           size: [1, 2],
           model: 'fixture_suppressor',
+          firearmAttachmentEffects: { kind: 'suppressor', recoilReduction: 0.1, wearPerShot: 0.01 },
         },
       ],
       models: [
@@ -1703,6 +1845,38 @@ describe('content references', () => {
     ).toBe(true);
   });
 
+  it('rejects the Inventory Management skill without its handling tuning block', () => {
+    const recipes = structuredClone(recipeFile().data) as {
+      skills: { id: string; inventory?: unknown }[];
+    };
+    recipes.skills = recipes.skills.map(({ inventory, ...skill }) =>
+      skill.id === 'inventory_management' ? skill : { ...skill, ...(inventory === undefined ? {} : { inventory }) },
+    );
+    const { issues } = buildRegistry([{ source: 'recipes.json', data: recipes }]);
+    expect(
+      issues.some(
+        (issue) => issue.source === 'recipes.json' && issue.message.includes('missing required skill tuning'),
+      ),
+    ).toBe(true);
+  });
+
+  it('rejects a handling tuning block that leaves out a weight', () => {
+    const recipes = structuredClone(recipeFile().data) as {
+      skills: { id: string; inventory?: Record<string, number> }[];
+    };
+    const tuning = recipes.skills.find(({ id }) => id === 'inventory_management')!.inventory!;
+    for (const key of Object.keys(tuning).filter((name) => name !== 'handlingFactorFloor')) {
+      const partial = structuredClone(recipes);
+      const { [key]: _omitted, ...rest } = partial.skills.find(({ id }) => id === 'inventory_management')!.inventory!;
+      partial.skills.find(({ id }) => id === 'inventory_management')!.inventory = rest;
+      const { issues } = buildRegistry([{ source: 'recipes.json', data: partial }]);
+      expect(
+        issues.some((issue) => issue.source === 'recipes.json'),
+        key,
+      ).toBe(true);
+    }
+  });
+
   it('requires Inventory Management training to be untiered', () => {
     const baseActivity = baseRegistry.skills.get('inventory_management')?.training?.activities?.handling;
     expect(baseActivity?.practice).toBeDefined();
@@ -2285,7 +2459,7 @@ describe('content references', () => {
             strength: 1,
             sounds: zombieSounds,
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
-            speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5 },
+            speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5, backgroundStepMetres: 1 },
             stepLength: 0.6,
             wander: {
               obstacleWanderChance: 0.25,
@@ -2306,12 +2480,21 @@ describe('content references', () => {
             nightSight: 10,
             stimulusMemorySimSeconds: 1,
             sightCone: 60,
+            eyeHeightMetres: 1.3,
+            earHeightMetres: 1.3,
+            hordeSpacing: { innerMetres: 0.35, stepMetres: 0.38 },
             hearing: 1,
             hearingRange: { walk: 3, jog: 8, sprint: 15 },
             hearingModel: {
               farMultiplier: 2,
               bearingErrorRadians: 0.61,
               investigationDistanceMetres: 8,
+              loudNoiseRadiusMetres: 10,
+              hesitationSimSeconds: { min: 1, max: 1 },
+              refusalSuspicionSimSeconds: 2,
+              refusalLean: 0.75,
+              chainRadiusMetres: 4,
+              chainChance: 0.5,
               searchSimSeconds: { min: 40, max: 50 },
               searchRadiusMetres: 4,
               searchStrollSimSeconds: { min: 1, max: 3 },
@@ -2329,6 +2512,7 @@ describe('content references', () => {
             },
             attack: {
               reach: 1,
+              grabBandMetres: 1.7,
               cooldownSimSeconds: 1.5,
               windupSimSeconds: 0.3,
               moves: [

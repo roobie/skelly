@@ -126,6 +126,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
     playerBody = findShamblerBenchPlayer(engine);
     const simulation = new Simulation({
       seed: run.seed,
+      registry: engine.registry,
       bodyTuning: engine.registry.body.get(CORE_CONTENT_IDS.player)!,
       compressionCaps: engine.registry.compression.get(CORE_CONTENT_IDS.player)!.caps,
       clock: { ratio: dayCycle.clockRatio, start: startTime },
@@ -148,6 +149,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
         // A visible flashlight lets the entire 8–20 m ring remain aware at 23:30.
         lit: true,
         lightSeenFrom: 40,
+        eyeHeightMetres: PLAYER.eye,
       }),
       dayPhase: () => dayPhaseAt(dayCycle, startTime),
       hurtPlayer: (amount) => simulation.hurt(amount, 'a shambler'),

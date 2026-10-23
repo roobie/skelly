@@ -4,6 +4,10 @@ local opticZoom = { step: 1, rememberPerWeapon: true };
 {
   "items": [
     {
+      id: 'ak_slant_compensator', name: 'Slant compensator', category: 'misc',
+      weight: 80, size: [1, 1], model: 'ak_slant_compensator',
+    },
+    {
       id: 'optic_hunting_3_9x', name: '3–9× hunting scope', category: 'misc',
       weight: 400, size: [2, 2], model: 'optic_hunting_3_9x', opticMagnification: 6, opticZoom: opticZoom,
     },
@@ -82,7 +86,7 @@ local opticZoom = { step: 1, rememberPerWeapon: true };
       "weight": 300,
       "size": [1, 2],
       "model": "real_suppressor",
-      "firearmAttachmentEffects": { "recoilReduction": 0.15, "wearPerShot": 0.001 }
+      "firearmAttachmentEffects": { "kind": "suppressor", "recoilReduction": 0.15, "wearPerShot": 0.001 }
     },
     {
       "id": "tactical_flashlight_mount",
@@ -111,10 +115,12 @@ local opticZoom = { step: 1, rememberPerWeapon: true };
       "size": [1, 1],
       "model": "foregrip",
       "firearmAttachmentEffects": {
+        "kind": "foregrip",
         "swayScale": 0.85,
         "recoveryScale": 1.1,
         "raiseScale": 0.95,
-        "swingScale": 1.1
+        "swingScale": 1.1,
+        "wearPerShot": 0
       }
     }
   ]

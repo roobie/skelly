@@ -28,7 +28,8 @@ const sensed = (pos: Vec3, movement: PlayerSense['movement'] = 'still'): PlayerS
   movement,
   lit: false,
   lightSeenFrom: 40,
-  crouching: false,
+  eyeHeightMetres: 1.3,
+  stance: 'standing',
 });
 
 interface Harness {
@@ -160,7 +161,7 @@ describe('acid spit', () => {
     const lowCover: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === Math.floor(inBand / 2) && y === 2);
     const stance = (crouching: boolean) => () => ({
       ...sensed(level),
-      crouching,
+      stance: crouching ? ('crouching' as const) : ('standing' as const),
       eyeHeightMetres: PLAYER.eye - (crouching ? TEST_SENSE_TUNING.crouch.eyeDropMetres : 0),
     });
 

@@ -3,6 +3,18 @@
     {
       "category": "misc",
       "economy": {
+        "tiers": ["Tier2", "Tier3"],
+        "usage": ["Military"]
+      },
+      "id": "ak_slant_compensator",
+      "model": "ak_slant_compensator",
+      "name": "Slant compensator",
+      "size": [1, 1],
+      "weight": 80
+    },
+    {
+      "category": "misc",
+      "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
@@ -130,6 +142,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "firearmAttachmentEffects": {
+        "kind": "suppressor",
         "recoilReduction": 0.14999999999999999,
         "wearPerShot": 0.001
       },
@@ -193,10 +206,12 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "firearmAttachmentEffects": {
+        "kind": "foregrip",
         "raiseScale": 0.94999999999999996,
         "recoveryScale": 1.1000000000000001,
         "swayScale": 0.84999999999999998,
-        "swingScale": 1.1000000000000001
+        "swingScale": 1.1000000000000001,
+        "wearPerShot": 0
       },
       "id": "foregrip",
       "model": "foregrip",

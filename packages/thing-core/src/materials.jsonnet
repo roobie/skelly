@@ -40,6 +40,7 @@ local hex(n) = [std.floor(n / 65536) / 255, (std.floor(n / 256) % 256) / 255, (n
   'tape-grey': material([0.40, 0.42, 0.43]) + { finish: { metallic: 0.1, roughness: 0.65 } },
   'scrap-rusted': material([0.36, 0.25, 0.18]) + { finish: { metallic: 0.25, roughness: 0.9 } },
   'wax-cream': material([0.86, 0.78, 0.55]),
+  'stone-whet': material([0.42, 0.40, 0.37]) + { finish: { metallic: 0, roughness: 0.95 } },
   'body-bone': material([0.85, 0.82, 0.72]),
   'body-eye': material([0.06, 0.06, 0.06]),
   'body-gore': material([0.32, 0.09, 0.06]),
