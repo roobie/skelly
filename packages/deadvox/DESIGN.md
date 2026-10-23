@@ -2624,19 +2624,19 @@ play, not only decorate it.
   without care: gardens gone wild, weeds through cracked asphalt, and accumulated
   leaf litter in open doorways. Leaf litter is residue from earlier leaf fall, not
   a cue to the current season. What it does in play:
-  - **Cover:** leaves and hedges are passable but opaque to zombie sight,
-    player aim and LOS. Trunks/branches are solid and opaque.
-    Movement rules apply to player, zombies and physical bodies alike. A hedge
-    hides you without trapping you. Passive cover remains world geometry while
+  - **Cover:** passable opaque foliage conceals without trapping you; solid
+    trunks and branches also obstruct movement. Content properties govern
+    movement and visibility for player, zombies and physical bodies alike.
+    Passive cover remains world geometry while
     crouch is player state, so the stance does not change foliage opacity; this
     keeps visibility rules attached to the obstacle rather than making scenery
     appear or disappear with player input. `src/core/zombies.ts`, `seesPlayer`
     and `hearingTier`, own the stance's visibility and hearing effects.
   - **Low growth:** furniture hides someone only by being solid
     (`src/core/collision.ts`, `worldOpaque`), so only a block can be passable and
-    still hide you. Overgrowth that should hide you without stopping you is
-    therefore the hedge block; grass, weeds, creepers and shaped shrubs take
-    their rules from their own content properties.
+    still hide you. Author concealing overgrowth as passable opaque blocks;
+    vegetation takes its movement and visibility rules from content properties,
+    not its name or appearance.
   - **Placement:** authored sites default to light growth, weeds and a few
     shrubs, which keeps them legible and their paths clear; heavier growth is
     left for sites that should feel abandoned. Whether hiding growth stands near
@@ -2650,7 +2650,7 @@ play, not only decorate it.
   - **Materials:** branches and felled trees give sticks and wood, the same
     materials loot gives in Slice 2.
   - **Movement and landmarks:** solid trunks channel movement for you and the
-    dead; passable hedges conceal it. A lone big tree is a landmark.
+    dead; passable opaque foliage conceals it. A lone big tree is a landmark.
 - **Motion:** cosmetic wind moves foliage and loose debris, and rain falls
   (Slice 4a). It makes exposure and the weather readable, rather than leaving a
   world that reads as paused. Wind here is render and audio ambience, not
