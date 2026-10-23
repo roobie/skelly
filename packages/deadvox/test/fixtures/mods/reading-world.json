@@ -1,0 +1,28 @@
+{
+  "containers": [
+    {
+      "facing": "n",
+      "pos": [-6, 8, 6],
+      "type": "crate"
+    },
+    {
+      "facing": "n",
+      "pos": [6, 8, 6],
+      "type": "crate"
+    }
+  ],
+  "floor": 4,
+  "ground": "grass",
+  "spawn": {
+    "pos": [-3, 4, 2],
+    "yaw": -1.5707963267948966
+  },
+  "supply": {
+    "items": [
+      {
+        "item": "regional_map"
+      }
+    ],
+    "kind": "fixed"
+  }
+}

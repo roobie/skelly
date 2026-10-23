@@ -2287,6 +2287,10 @@ body.inventory-open.inventory-tab-crafting #crafting {
   margin: 0 0 calc(var(--ui-spacing) * 0.875rem);
   accent-color: #735e31;
 }
+.reading-map {
+  flex: 1;
+  min-height: 8rem;
+}
 .reading-text {
   min-height: 0;
   overflow-y: auto;
