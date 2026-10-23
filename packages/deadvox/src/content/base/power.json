@@ -1,6 +1,17 @@
 {
   "powerDevices": [
     {
+      "id": "main_breaker",
+      "kind": "switch",
+      "priority": 0
+    },
+    {
+      "demandWatts": 100,
+      "id": "house_fridge",
+      "kind": "consumer",
+      "priority": 1
+    },
+    {
       "burnLitresPerGameHour": 1,
       "id": "lab_generator",
       "kind": "generator",

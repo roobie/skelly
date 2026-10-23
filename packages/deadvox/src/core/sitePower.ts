@@ -39,6 +39,7 @@ export const placedPowerDevices = (registry: Registry, placements: readonly Plac
 
 /** Authored building wiring does not depend on which columns have streamed in. */
 export class SitePower {
+  private readonly registry: Registry;
   readonly network: PowerNetwork;
   readonly chargers: BatteryChargers | undefined;
   private readonly chargerIds = new Map<number, string>();
@@ -60,6 +61,7 @@ export class SitePower {
     saved?: PowerState;
     inventory?: Inventory;
   }) {
+    this.registry = registry;
     const states = devices.map((device) => {
       const spec = registry.furniture.get(device.type)!.power!;
       const id = identity(device);
@@ -76,13 +78,25 @@ export class SitePower {
         restartBlocked: false,
       };
     });
-    const [first] = states;
+    const kind = (device: (typeof states)[number]) => registry.powerDevices.get(device.type)!.kind;
+    const sources = states.filter((device) => !['consumer', 'switch'].includes(kind(device)));
+    const switches = states.filter((device) => kind(device) === 'switch');
+    const consumers = states.filter((device) => kind(device) === 'consumer');
+    const wires: [string, string][] = [];
+    const [source] = sources;
+    if (source) {
+      wires.push(...sources.slice(1).map((device): [string, string] => [source.id, device.id]));
+      let bus = source.id;
+      for (const control of switches) {
+        wires.push([bus, control.id]);
+        bus = control.id;
+      }
+      wires.push(...consumers.map((device): [string, string] => [bus, device.id]));
+    }
     const initial: PowerState = {
       atGameMilliseconds: 0,
       devices: states,
-      links: first
-        ? states.slice(1).map((device, index) => ({ from: first.id, to: device.id, itemUid: index + 1 }))
-        : [],
+      links: wires.map(([from, to], index) => ({ from, to, itemUid: index + 1 })),
     };
     const state = saved ?? initial;
     const endpoints = devices
@@ -125,6 +139,17 @@ export class SitePower {
     return [{ consumerId: id, entityUid: entity.uid }];
   }
 
+  control(entity: BlockEntity): { id: string; enabled: boolean } | undefined {
+    if (entity.carried) {
+      return undefined;
+    }
+    const id = identity({ type: entity.type, pos: entity.origin });
+    const power = this.registry.furniture.get(entity.type)?.power;
+    const kind = power && this.registry.powerDevices.get(power.device)!.kind;
+    const enabled = this.network.enabled(id);
+    return enabled !== undefined && (kind === 'generator' || kind === 'switch') ? { id, enabled } : undefined;
+  }
+
   chargerId(entity: BlockEntity): string | undefined {
     return this.chargerIds.get(entity.uid);
   }
@@ -134,6 +159,11 @@ export class SitePower {
     if (id !== undefined) {
       this.chargers!.beforeRemove(at, id);
       this.chargerIds.delete(entity.uid);
+      return;
+    }
+    const deviceId = identity({ type: entity.type, pos: entity.origin });
+    if (this.network.enabled(deviceId) !== undefined) {
+      this.network.setEnabled(at, deviceId, false);
     }
   }
 
