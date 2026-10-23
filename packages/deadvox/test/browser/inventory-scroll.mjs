@@ -36,6 +36,7 @@ const refusalSound = {
       blowSoundDefinition,
       {
         id: 'player_nope',
+        description: 'fixture refusal',
         variants: ['assets/audio/nope.ogg'],
         gain: 0.5,
         pitchJitter: [1, 1],

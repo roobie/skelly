@@ -73,7 +73,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
     },
     isSolid,
   } as unknown as Engine;
-  const view = createPlayView(engine, inventory, vi.fn(), page);
+  const view = createPlayView(engine, inventory, vi.fn(), { page });
   return {
     engine,
     inventory,
@@ -191,7 +191,7 @@ function litWorld(geometry: 'doorway' | 'near-wall') {
     },
     shadows: { torchOn: true, restore: vi.fn(), attachTorches: vi.fn() },
   } as unknown as Engine;
-  const view = createPlayView(engine, inventory, vi.fn(), new EventTarget());
+  const view = createPlayView(engine, inventory, vi.fn(), { page: new EventTarget() });
   const daylight = skyAt(12, BASE_DAY_CYCLE);
   const updateFrame = () => {
     view.updateHeld(0, restingHands, flashlight);
@@ -438,7 +438,7 @@ describe('play presentation ownership', () => {
       sky: {},
       isSolid: () => false,
     } as unknown as Engine;
-    const view = createPlayView(engine, inventory, vi.fn(), new EventTarget());
+    const view = createPlayView(engine, inventory, vi.fn(), { page: new EventTarget() });
 
     expect(view.pictures).toBeUndefined();
     expect(view.render()).toBeNull();

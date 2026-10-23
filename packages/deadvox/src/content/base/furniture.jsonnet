@@ -25,6 +25,10 @@ local woodDoor = {
     detail: detail.panelled,
   },
 };
+local flimsyPry = woodDoor.door.methods.pry + {
+  level: 1, timeSimSeconds: 6, fastestTimeSimSeconds: 3,
+};
+local flimsyToWoodPryRatio = flimsyPry.timeSimSeconds / woodDoor.door.methods.pry.timeSimSeconds;
 breach.breaking(shape.colliding({
   furnitureMaterials: [
     {
@@ -374,8 +378,10 @@ breach.breaking(shape.colliding({
       breach: { minimumStrength: 3.5, durability: 60 },
       door: woodDoor.door + {
         methods: woodDoor.door.methods + {
-          pry: woodDoor.door.methods.pry + {
-            level: 1, timeSimSeconds: 6, fastestTimeSimSeconds: 3,
+          pry: flimsyPry,
+          hammer: woodDoor.door.methods.hammer + {
+            timeSimSeconds: woodDoor.door.methods.hammer.timeSimSeconds * flimsyToWoodPryRatio,
+            fastestTimeSimSeconds: woodDoor.door.methods.hammer.fastestTimeSimSeconds * flimsyToWoodPryRatio,
           },
         },
         // An interior door turns on a knob rather than a lever.

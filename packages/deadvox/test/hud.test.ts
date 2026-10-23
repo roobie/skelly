@@ -12,9 +12,10 @@ import {
   type TimedActionPresentation,
   timedActionHandlingPresentation,
 } from '../src/ui/hud.ts';
-import { baseRegistry } from './baseRegistry.ts';
+import { baseRegistry, baseScreenText } from './baseRegistry.ts';
 
 const registry = baseRegistry();
+const handlingText = baseScreenText().handling;
 
 /** A cupboard next to a player in a hoodie, for testing furniture and pocket locations. */
 const kitchen = () => {
@@ -152,20 +153,20 @@ describe('handlingViewModel', () => {
   it('is invisible when the queue is empty', () => {
     const inv = new Inventory(registry);
     const queue = new HandlingQueue(inv);
-    expect(handlingViewModel(queue).visible).toBe(false);
+    expect(handlingViewModel(queue, handlingText).visible).toBe(false);
   });
 
   it('shows throw charge and the minimum-release point on the handling meter', () => {
     const chargeSimSeconds = 2;
     const minimumHoldSimSeconds = 1;
     for (const elapsedSimSeconds of [0, chargeSimSeconds / 2, chargeSimSeconds * 2]) {
-      const vm = handlingViewModel({
-        jobs: [],
-        throwCharge: { elapsedSimSeconds, chargeSimSeconds, minimumHoldSimSeconds },
-      });
+      const vm = handlingViewModel(
+        { jobs: [], throwCharge: { elapsedSimSeconds, chargeSimSeconds, minimumHoldSimSeconds } },
+        handlingText,
+      );
 
       expect(vm.visible).toBe(true);
-      expect(vm.label.trim()).not.toBe('');
+      expect(vm.label).toBe(handlingText.throwForce);
       expect(vm.percent).toBe(Math.round((Math.min(chargeSimSeconds, elapsedSimSeconds) / chargeSimSeconds) * 100));
       expect(vm.minimumPercent).toBe(Math.round((minimumHoldSimSeconds / chargeSimSeconds) * 100));
     }
@@ -177,7 +178,7 @@ describe('handlingViewModel', () => {
     const label = 'Search the cupboard';
     queue.enqueueAction('test.noop', label, 4);
     queue.tick(1);
-    const vm = handlingViewModel(queue);
+    const vm = handlingViewModel(queue, handlingText);
     const job = queue.jobs[0]!;
     expect(vm.visible).toBe(true);
     expect(vm.label).toBe(label);
@@ -190,7 +191,7 @@ describe('handlingViewModel', () => {
     const queue = queueForTest(inv);
     queue.enqueueAction('test.noop', 'Search the cupboard', 4);
     queue.enqueueAction('test.noop', 'Search the drawer', 2);
-    const { next } = handlingViewModel(queue);
+    const { next } = handlingViewModel(queue, handlingText);
     expect(next).toContain('Search the drawer');
   });
 
@@ -220,7 +221,7 @@ describe('handlingViewModel', () => {
     ];
 
     for (const job of jobs) {
-      const vm = handlingViewModel(timedActionHandlingPresentation(job));
+      const vm = handlingViewModel(timedActionHandlingPresentation(job, handlingText), handlingText);
       expect(vm.visible).toBe(true);
       expect(vm.percent).toBe(Math.round((job.elapsed / job.duration) * 100));
       const root = document.createElement('div');
@@ -228,12 +229,12 @@ describe('handlingViewModel', () => {
       expect(root.querySelector('.keycap')?.textContent).toBe(labelForAction('handling.stop'));
     }
     const stopped = { ...jobs[1]!, stopped: true };
-    expect(handlingViewModel(timedActionHandlingPresentation(stopped)).visible).toBe(false);
+    expect(handlingViewModel(timedActionHandlingPresentation(stopped, handlingText), handlingText).visible).toBe(false);
   });
   it('has no next-job text when nothing is queued after the current one', () => {
     const inv = new Inventory(registry);
     const queue = queueForTest(inv);
     queue.enqueueAction('test.noop', 'Search the cupboard', 4);
-    expect(handlingViewModel(queue).next).toBe('');
+    expect(handlingViewModel(queue, handlingText).next).toBe('');
   });
 });

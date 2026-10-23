@@ -1,23 +1,32 @@
 // The quickbar and handling progress shown while playing (`DESIGN.md`, "Inventory screen").
 
 import { html, render, type TemplateResult } from 'lit-html';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { handlingWeights, type Inventory, type Location } from '../core/inventory.ts';
 import { cellCount, defOf, type Item } from '../core/items.ts';
+import type { ScreenText } from '../core/schema.ts';
+import { fillText } from '../core/textTemplate.ts';
 import { inputBindings, labelForAction } from '../game/inputBindings.ts';
 import type { Quickbar } from '../game/quickbar.ts';
 import { activityProgress } from './activityProgress.ts';
-import { type HintText, keyCap } from './keyCap.ts';
+import { fillHint, type HintText, keyCap } from './keyCap.ts';
+
+type QuickbarText = ScreenText['quickbar'];
+type HandlingText = ScreenText['handling'];
 
 /** Where a quickbar item is on the person, and how long it takes to get it in hand. */
-const whereText = (inv: Inventory, item: Item, at: Location | undefined): string => {
+const whereText = (inv: Inventory, item: Item, at: Location | undefined, text: QuickbarText): string => {
   const cells = cellCount(defOf(inv.registry, item.type));
   switch (at?.kind) {
     case 'hand':
-      return `in ${at.side} hand`;
+      return at.side === 'right' ? text.inRightHand : text.inLeftHand;
     case 'worn':
-      return 'worn';
+      return text.worn;
     case 'pocket':
-      return `${inv.name(at.owner).toLowerCase()} · ${(inv.pocketHandling(at.owner, at.pocket) + handlingWeights(inv.registry).perCell * cells).toFixed(1)} s`;
+      return fillText(text.pocket, {
+        container: inv.name(at.owner).toLowerCase(),
+        secs: (inv.pocketHandling(at.owner, at.pocket) + handlingWeights(inv.registry).perCell * cells).toFixed(1),
+      });
     default:
       return '';
   }
@@ -34,21 +43,24 @@ export interface QuickbarViewModel {
   readonly slots: readonly QuickbarSlotViewModel[];
 }
 
-export const quickbarViewModel = (bar: Quickbar, inv: Inventory): QuickbarViewModel => ({
-  slots: bar.slots.map((_, i) => {
-    const item = bar.resolve(i, inv);
-    if (!item) {
-      return { key: labelForAction(`quickbar.use.${i + 1}`), filled: false, name: 'empty', where: '' };
-    }
-    const at = inv.locate(item);
-    return {
-      key: labelForAction(`quickbar.use.${i + 1}`),
-      filled: true,
-      name: `${inv.name(item)}${item.count > 1 ? ` ×${item.count}` : ''}`,
-      where: whereText(inv, item, at),
-    };
-  }),
-});
+export const quickbarViewModel = (bar: Quickbar, inv: Inventory): QuickbarViewModel => {
+  const text = inv.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.quickbar;
+  return {
+    slots: bar.slots.map((_, i) => {
+      const item = bar.resolve(i, inv);
+      if (!item) {
+        return { key: labelForAction(`quickbar.use.${i + 1}`), filled: false, name: text.empty, where: '' };
+      }
+      const at = inv.locate(item);
+      return {
+        key: labelForAction(`quickbar.use.${i + 1}`),
+        filled: true,
+        name: item.count > 1 ? fillText(text.count, { item: inv.name(item), count: item.count }) : inv.name(item),
+        where: whereText(inv, item, at, text),
+      };
+    }),
+  };
+};
 
 const quickbarTemplate = (vm: QuickbarViewModel): TemplateResult => html`
   ${vm.slots.map(
@@ -129,15 +141,21 @@ export type TimedActionPresentation = HandlingPresentationSource['jobs'][number]
   readonly stopped: boolean;
 };
 
-export const timedActionHandlingPresentation = (action: TimedActionPresentation): HandlingPresentationSource => ({
+export const timedActionHandlingPresentation = (
+  action: TimedActionPresentation,
+  text: HandlingText,
+): HandlingPresentationSource => ({
   jobs: [],
   ...(action.stopped ? {} : { longAction: action }),
-  cancelLabel: action.stopped ? '' : html`Pause (${keyCap('handling.stop')})`,
+  cancelLabel: action.stopped ? '' : fillHint(text.pause, { key: keyCap('handling.stop') }),
   movementLabel: '',
 });
 
+const progressLabel = (text: HandlingText, elapsed: number, total: number): string =>
+  fillText(text.progress, { done: elapsed.toFixed(1), total: total.toFixed(1) });
+
 /** The current move and the next one, while the inventory is closed. */
-export const handlingViewModel = (queue: HandlingPresentationSource): HandlingViewModel => {
+export const handlingViewModel = (queue: HandlingPresentationSource, text: HandlingText): HandlingViewModel => {
   const [job, next] = queue.jobs;
   if (queue.throwCharge) {
     const { elapsedSimSeconds, chargeSimSeconds, minimumHoldSimSeconds } = queue.throwCharge;
@@ -145,8 +163,12 @@ export const handlingViewModel = (queue: HandlingPresentationSource): HandlingVi
       Math.round((Math.max(0, Math.min(chargeSimSeconds, seconds)) / chargeSimSeconds) * 100);
     return {
       visible: true,
-      label: 'Throw force',
-      simSecondsLabel: `${Math.max(0, Math.min(chargeSimSeconds, elapsedSimSeconds)).toFixed(1)} / ${chargeSimSeconds.toFixed(1)} s`,
+      label: text.throwForce,
+      simSecondsLabel: progressLabel(
+        text,
+        Math.max(0, Math.min(chargeSimSeconds, elapsedSimSeconds)),
+        chargeSimSeconds,
+      ),
       percent: percent(elapsedSimSeconds),
       minimumPercent: percent(minimumHoldSimSeconds),
       next: '',
@@ -159,7 +181,7 @@ export const handlingViewModel = (queue: HandlingPresentationSource): HandlingVi
     return {
       visible: true,
       label,
-      simSecondsLabel: `${elapsed.toFixed(1)} / ${duration.toFixed(1)} s`,
+      simSecondsLabel: progressLabel(text, elapsed, duration),
       percent: Math.round((Math.max(0, Math.min(duration, elapsed)) / duration) * 100),
       next: '',
       cancelLabel: queue.cancelLabel ?? '',
@@ -172,30 +194,37 @@ export const handlingViewModel = (queue: HandlingPresentationSource): HandlingVi
   return {
     visible: true,
     label: job.label,
-    simSecondsLabel: `${job.elapsed.toFixed(1)} / ${job.duration.toFixed(1)} s`,
+    simSecondsLabel: progressLabel(text, job.elapsed, job.duration),
     percent: Math.round((job.elapsed / Math.max(job.duration, 1e-6)) * 100),
-    next: next ? `Then: ${next.label}` : '',
+    next: next ? fillText(text.next, { job: next.label }) : '',
     cancelLabel: queue.cancelLabel ?? '',
     movementLabel: queue.movementLabel ?? '',
   };
 };
 
-const handlingTemplate = (vm: HandlingViewModel): TemplateResult =>
+const handlingTemplate = (vm: HandlingViewModel, text: HandlingText): TemplateResult =>
   activityProgress({
     label: vm.label,
     percent: vm.percent,
     progressText: vm.simSecondsLabel,
-    ...(vm.minimumPercent === undefined ? {} : { minimumPercent: vm.minimumPercent }),
+    ...(vm.minimumPercent === undefined
+      ? {}
+      : {
+          minimum: {
+            percent: vm.minimumPercent,
+            label: fillText(text.minimumRelease, { percent: vm.minimumPercent }),
+          },
+        }),
     detail: html`${vm.next ? html`<span>${vm.next}</span>` : ''}
       ${vm.cancelLabel ? html`<span>${vm.cancelLabel}</span>` : ''}
       ${vm.movementLabel ? html`<span>${vm.movementLabel}</span>` : ''}`,
   });
 
-export const renderHandling = (root: HTMLElement, queue: HandlingPresentationSource): void => {
-  const vm = handlingViewModel(queue);
+export const renderHandling = (root: HTMLElement, queue: HandlingPresentationSource, text: HandlingText): void => {
+  const vm = handlingViewModel(queue, text);
   root.hidden = !vm.visible;
   if (!vm.visible) {
     return;
   }
-  render(handlingTemplate(vm), root);
+  render(handlingTemplate(vm, text), root);
 };

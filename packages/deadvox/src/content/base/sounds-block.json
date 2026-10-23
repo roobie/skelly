@@ -2,6 +2,7 @@
   "sounds": [
     {
       "category": "world",
+      "description": "Guard in en-garde with a melee weapon or fists, and fully block a zombie hit.",
       "gain": 0.90000000000000002,
       "gainJitter": [0.92000000000000004, 1.0800000000000001],
       "id": "player_block_full",
@@ -15,6 +16,7 @@
     },
     {
       "category": "world",
+      "description": "Guard in en-garde, and take a zombie hit the block only partly absorbs.",
       "gain": 0.80000000000000004,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "player_block_partial",

@@ -18,11 +18,11 @@ import {
 } from './snapshotTestSupport.ts';
 
 const doorDef = registry.furniture.get('wood_door')!;
-const makeDoor = (runtime: ReturnType<typeof createRuntime>) => {
+const makeDoor = (runtime: ReturnType<typeof createRuntime>, definition = doorDef) => {
   const door = runtime.inventory.furnish({
-    type: doorDef.id,
+    type: definition.id,
     pos: [0, 1, 1],
-    size: doorDef.size,
+    size: definition.size,
     facing: 'n',
     lock: { id: 'test_shed', locked: true },
   });
@@ -310,6 +310,29 @@ it('a sledgehammer forces a door by hammering and its blows reach the sound-hear
 
   expect(runtime.heardSounds.some(({ event }) => event === hammer.strikeSound)).toBe(true);
   expect(shambler.mode).toBe('investigate');
+});
+
+it('a sledgehammer breaks a flimsy wood door faster than a wood door', () => {
+  const flimsyDef = registry.furniture.get('flimsy_wood_door');
+  if (!flimsyDef) {
+    throw new Error('Missing flimsy wood door fixture');
+  }
+  const woodRuntime = makePryRuntime();
+  const flimsyRuntime = makePryRuntime();
+  const woodDoor = makeDoor(woodRuntime);
+  const flimsyDoor = makeDoor(flimsyRuntime, flimsyDef);
+  const woodSledgehammer = carryTool(woodRuntime, 'sledgehammer');
+  const flimsySledgehammer = carryTool(flimsyRuntime, 'sledgehammer');
+
+  expect(woodRuntime.session.forceDoor(woodDoor, woodSledgehammer.uid)).toBeUndefined();
+  expect(flimsyRuntime.session.forceDoor(flimsyDoor, flimsySledgehammer.uid)).toBeUndefined();
+
+  const woodJob = woodRuntime.sim.actions.job;
+  const flimsyJob = flimsyRuntime.sim.actions.job;
+  if (woodJob?.jobType !== 'forceDoor' || flimsyJob?.jobType !== 'forceDoor') {
+    throw new Error('The sledgehammer forcing jobs did not start');
+  }
+  expect(flimsyJob.duration).toBeLessThan(woodJob.duration);
 });
 
 it('saves a running pry just before a long-action tick and completes on the same frame after load', async () => {
