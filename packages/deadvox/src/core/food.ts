@@ -57,31 +57,48 @@ export const assertFoodExposure = (registry: Registry, item: Item | ItemState, a
   }
 };
 
-/** Pure projection: absence from the loaded world does not pause ambient aging. */
-export const projectFoodExposure = (state: FoodExposure, at: number): FoodExposure => {
+/**
+ * Pure projection over one span at one rate, in parts of `FOOD_EXPOSURE_DENOMINATOR` per elapsed millisecond; the
+ * whole denominator is ordinary ambient aging. Absence from the loaded world does not pause aging. The product is
+ * exact so partitioned spans sum to one span.
+ */
+export const projectFoodExposure = (
+  state: FoodExposure,
+  at: number,
+  rate = FOOD_EXPOSURE_DENOMINATOR,
+): FoodExposure => {
   if (!Number.isSafeInteger(at) || at < state.settledAtGameMilliseconds) {
     throw new Error('Food exposure cannot run backwards');
   }
-  const gameMilliseconds = state.gameMilliseconds + (at - state.settledAtGameMilliseconds);
+  if (!Number.isSafeInteger(rate) || rate < 0) {
+    throw new Error('Invalid food exposure rate');
+  }
+  const parts = BigInt(state.remainder) + BigInt(at - state.settledAtGameMilliseconds) * BigInt(rate);
+  const denominator = BigInt(FOOD_EXPOSURE_DENOMINATOR);
+  const gameMilliseconds = state.gameMilliseconds + Number(parts / denominator);
   if (!Number.isSafeInteger(gameMilliseconds)) {
     throw new Error('Food exposure overflow');
   }
-  return { gameMilliseconds, remainder: state.remainder, settledAtGameMilliseconds: at };
+  return { gameMilliseconds, remainder: Number(parts % denominator), settledAtGameMilliseconds: at };
 };
 
+export const sameFoodExposure = (a: FoodExposure | undefined, b: FoodExposure | undefined): boolean =>
+  a === undefined || b === undefined
+    ? a === b
+    : a.gameMilliseconds === b.gameMilliseconds && a.remainder === b.remainder;
+
+/** Compares at the later watermark, assuming ambient aging since the earlier one. */
 export const equalFoodExposure = (a: Item, b: Item): boolean => {
   if (!(a.foodExposure && b.foodExposure)) {
     return a.foodExposure === b.foodExposure;
   }
   const at = Math.max(a.foodExposure.settledAtGameMilliseconds, b.foodExposure.settledAtGameMilliseconds);
-  const left = projectFoodExposure(a.foodExposure, at);
-  const right = projectFoodExposure(b.foodExposure, at);
-  return left.gameMilliseconds === right.gameMilliseconds && left.remainder === right.remainder;
+  return sameFoodExposure(projectFoodExposure(a.foodExposure, at), projectFoodExposure(b.foodExposure, at));
 };
 
-export const settleFoodExposure = (item: Item, at: number): void => {
+export const settleFoodExposure = (item: Item, at: number, rate = FOOD_EXPOSURE_DENOMINATOR): void => {
   if (item.foodExposure) {
-    item.foodExposure = projectFoodExposure(item.foodExposure, at);
+    item.foodExposure = projectFoodExposure(item.foodExposure, at, rate);
   }
 };
 

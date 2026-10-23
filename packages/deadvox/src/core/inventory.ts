@@ -25,7 +25,14 @@ import {
   validDisassemblyToolLevels,
 } from './disassembly.ts';
 import { firearmSlotIds, isLongGun, slingFitted } from './firearmFitting.ts';
-import { initialFoodExposure } from './food.ts';
+import {
+  equalFoodExposure,
+  FOOD_EXPOSURE_DENOMINATOR,
+  type FoodExposure,
+  initialFoodExposure,
+  projectFoodExposure,
+  sameFoodExposure,
+} from './food.ts';
 import { furnitureSurfacePosition } from './furnitureSurface.ts';
 import { PILE_GRID } from './inventoryScale.ts';
 import {
@@ -51,7 +58,7 @@ import {
   stackRoom,
   weightOf,
 } from './items.ts';
-import { itemIds, itemRoots, savedItemTree, type TreeLocation, walkItemTree } from './itemTree.ts';
+import { itemIds, itemRoots, savedItemTree, subtreeItems, type TreeLocation, walkItemTree } from './itemTree.ts';
 import type { Rolled } from './loot.ts';
 import { magazineWellCalibre, slotsReason } from './magazine.ts';
 import type { WearSlot } from './schema.ts';
@@ -265,6 +272,14 @@ export class Inventory {
   actorPosition: () => Vec3 | undefined = () => undefined;
   /** What holds a hand from outside the inventory, such as a ladder; the game sets it. */
   handHold: HandHold = { moveRefusal: () => undefined, liftRefusal: () => undefined };
+  /** The command's absolute food-calendar milliseconds; the game sets it. Undefined leaves aging to lazy projection. */
+  foodClock: () => number | undefined = () => undefined;
+  /**
+   * Exposure rate, in parts of `FOOD_EXPOSURE_DENOMINATOR`, for food in the tree rooted at a location; the whole
+   * denominator is ambient. Every descendant shares its root's rate, so a bag inside a cold pocket is not a second
+   * environment.
+   */
+  foodRate: (root: Location, food: Item) => number = () => FOOD_EXPOSURE_DENOMINATOR;
 
   /** A deep plain-data copy of carried, worn, piled and furnished items and allocators. */
   snapshotState(foodAt?: number): Readonly<InventoryState> {
@@ -426,6 +441,7 @@ export class Inventory {
     if (!placement.ok) {
       return placement.reason;
     }
+    this.settleFood(item, this.locate(item));
     const refusal = this.replaceVehicle(
       vehicleId,
       this.vehicleBuild(
@@ -777,6 +793,63 @@ export class Inventory {
     return undefined;
   }
 
+  /** The top-level place a nested location belongs to; undefined when its owner is in no place. */
+  private rootOf(location: Location): Location | undefined {
+    let at: Location | undefined = location;
+    while (at && (at.kind === 'pocket' || at.kind === 'slot' || at.kind === 'work')) {
+      at = this.locate(at.owner);
+    }
+    return at;
+  }
+
+  /** Food in no place, as between leaving one owner and joining another, ages ambiently. */
+  private foodRateAt(root: Location | undefined, food: Item): number {
+    return root ? this.foodRate(root, food) : FOOD_EXPOSURE_DENOMINATOR;
+  }
+
+  /** Food's exposure at the command time where it now is, without settling it; a pure query. */
+  currentFood(item: Item): FoodExposure | undefined {
+    const at = this.foodClock();
+    if (!item.foodExposure || at === undefined) {
+      return item.foodExposure && { ...item.foodExposure };
+    }
+    const from = this.locate(item);
+    return projectFoodExposure(item.foodExposure, at, this.foodRateAt(from && this.rootOf(from), item));
+  }
+
+  private readonly sameFood = (a: Item, b: Item): boolean =>
+    this.foodClock() === undefined
+      ? equalFoodExposure(a, b)
+      : sameFoodExposure(this.currentFood(a), this.currentFood(b));
+
+  /**
+   * Delivers the old environment's aging to a subtree before its ownership changes, so the new environment affects
+   * only later aging. `from` is where the subtree is, or undefined while it is in no place.
+   */
+  private settleFood(item: Item, from: Location | undefined): void {
+    const at = this.foodClock();
+    if (at === undefined) {
+      return;
+    }
+    const food = [...subtreeItems(item)].filter((node) => node.foodExposure);
+    if (food.length === 0) {
+      return;
+    }
+    const root = from && this.rootOf(from);
+    for (const node of food) {
+      node.foodExposure = projectFoodExposure(node.foodExposure!, at, this.foodRateAt(root, node));
+    }
+  }
+
+  /** Settles a piece's pockets before it is relocated or destroyed; see `furnitureMove.ts`, `beforeRelocating`. */
+  settleFurnitureFood(entity: BlockEntity): void {
+    for (const [pocket, grid] of (entity.pockets ?? []).entries()) {
+      for (const placed of grid) {
+        this.settleFood(placed.item, { kind: 'furniture', entity, pocket, placed });
+      }
+    }
+  }
+
   /** Items held or worn, top level only. */
   carried(): Item[] {
     return [...SIDES.map((s) => this.hands[s]), ...Object.values(this.worn)].filter((i): i is Item => i !== undefined);
@@ -816,6 +889,7 @@ export class Inventory {
     if (!placement.ok) {
       return placement;
     }
+    this.settleFood(item, { kind: 'hand', side });
     delete this.hands[side];
     this.quickbarOrigins.delete(item.uid);
     this.version += 1;
@@ -886,7 +960,7 @@ export class Inventory {
       from.kind === 'hand' ? this.quickbarOrigins.get(item.uid) : this.targetState(this.targetForLocation(from));
     let moving = item;
     if (count < item.count) {
-      moving = this.factory.split(item, count);
+      moving = this.split(item, count, from);
     } else {
       this.remove(from);
     }
@@ -948,7 +1022,18 @@ export class Inventory {
     item.lootedCount = item.count;
   }
 
+  /** Settles before copying, so the parts share the history they had together. */
+  private split(item: Item, count: number, from: Location): Item {
+    this.settleFood(item, from);
+    return this.factory.split(item, count);
+  }
+
   private mergeStack(target: Item, source: Item): void {
+    this.settleFood(target, this.locate(target));
+    this.settleFood(source, this.locate(source));
+    if (!this.sameFood(target, source)) {
+      throw new Error('Only an equal food cohort can join a stack');
+    }
     target.count += source.count;
     const lootedCount = (target.lootedCount ?? 0) + (source.lootedCount ?? 0);
     if (lootedCount > 0) {
@@ -1042,7 +1127,7 @@ export class Inventory {
       if (from.kind === 'hand') {
         this.quickbarOrigins.delete(item.uid);
       }
-      const component = count < item.count ? this.factory.split(item, count) : item;
+      const component = count < item.count ? this.split(item, count, from) : item;
       if (component === item) {
         this.remove(from);
       }
@@ -1063,7 +1148,7 @@ export class Inventory {
 
   private escrowDisassembly(plan: Extract<WorkPlan, { kind: 'disassembly' }>, work: Item): void {
     const from = this.locate(plan.source)!;
-    const input = plan.source.count > 1 ? this.factory.split(plan.source, 1) : plan.source;
+    const input = plan.source.count > 1 ? this.split(plan.source, 1, from) : plan.source;
     if (input === plan.source) {
       this.remove(from);
     }
@@ -1700,7 +1785,8 @@ export class Inventory {
     if (!couldFit(this.registry, grid.size, item)) {
       return coreRefusal(this.registry, 'tooBig');
     }
-    const joins = (p: Placed | undefined) => p !== undefined && stackRoom(this.registry, p.item, item) >= count;
+    const joins = (p: Placed | undefined) =>
+      p !== undefined && stackRoom(this.registry, p.item, item, this.sameFood) >= count;
     // Moving a whole item within its grid frees its own cells; moving part of a stack doesn't.
     const ignore = count === item.count ? item : undefined;
     if (at) {
@@ -1771,7 +1857,22 @@ export class Inventory {
     return true;
   }
 
+  /** The item a place-level location holds; owned locations (work, slot, vehicle) never leave through `remove`. */
+  private occupant(from: Location): Item | undefined {
+    if ('placed' in from) {
+      return from.placed.item;
+    }
+    if (from.kind === 'hand') {
+      return this.hands[from.side];
+    }
+    return from.kind === 'worn' ? this.worn[from.slot] : undefined;
+  }
+
   private remove(from: Location): void {
+    const leaving = this.occupant(from);
+    if (leaving) {
+      this.settleFood(leaving, from);
+    }
     switch (from.kind) {
       case 'hand':
         delete this.hands[from.side];
@@ -1804,6 +1905,7 @@ export class Inventory {
   }
 
   private put(item: Item, target: Target, at?: Spot): void {
+    this.settleFood(item, undefined);
     const spot = at ?? { x: 0, y: 0, rotated: false };
     switch (target.kind) {
       case 'hand':
