@@ -27,4 +27,4 @@ Prototype samples remain explicitly marked as placeholders and separate from aut
 
 ## Darkness remains open
 
-No reading-darkness gate is implemented. A future gate must build and cache its core visibility volume on the simulation side, fingerprint its inputs and fail open outside authored fields; it may combine core sky visibility, sky intensity and charged held-light state, but cannot claim local photometric illumination or flashlight-beam occlusion. It must not depend on renderer camera residency. BR still decides the threshold and how crafted light should pay off in Beat 3.
+No reading-darkness gate is implemented. A future gate must read sky visibility from the simulation's cache (`src/core/skyField.ts`, `SkyFields`), which fails open outside authored fields; it may combine core sky visibility, sky intensity and charged held-light state, but cannot claim local photometric illumination or flashlight-beam occlusion. It must not depend on renderer camera residency. BR still decides the threshold and how crafted light should pay off in Beat 3.

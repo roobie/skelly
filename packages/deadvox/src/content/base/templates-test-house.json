@@ -1,6 +1,57 @@
 {
   "templates": [
     {
+      "id": "test_house_charging",
+      "layers": [
+        ["GGGGGGGGGG", "GGGGGGGGGG", "GGGGGGGGGG"],
+        ["......eeee", "LL....eeee", "LLJ...eeee"],
+        ["......eeee", "LL....eeee", "LL....eeee"],
+        ["......eeee", "......eeee", "......eeee"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["..........", "..........", ".........."],
+          ["RRRRRRSSSS", "SSRRRRSSSS", "SSSRRRSSSS"],
+          ["RRRRRRSSSS", "SSRRRRSSSS", "SSRRRRSSSS"],
+          ["RRRRRRSSSS", "RRRRRRSSSS", "RRRRRRSSSS"]
+        ]
+      },
+      "palette": {
+        ".": "air",
+        "G": {
+          "ground": true
+        },
+        "J": {
+          "furniture": "battery_charger"
+        },
+        "L": {
+          "furniture": "crate",
+          "items": [
+            {
+              "charge": 0.25,
+              "count": 1,
+              "item": "rechargeable_aa_battery",
+              "placement": "surface"
+            },
+            {
+              "charge": 0,
+              "count": 1,
+              "item": "flashlight",
+              "placement": "surface"
+            }
+          ]
+        },
+        "e": {
+          "furniture": "gauntlet_lab_generator"
+        }
+      },
+      "size": [10, 4, 3]
+    },
+    {
       "id": "test_house_home",
       "layers": [
         [
