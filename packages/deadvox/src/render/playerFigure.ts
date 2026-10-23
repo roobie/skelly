@@ -99,7 +99,7 @@ const LEGS: Readonly<Record<'leftHip' | 'rightHip', readonly FigureBoxPart[]>> =
  * faces -z, the boxes' way, so an anchor's x and z flip. Each part stands with its hip joints' midpoint at the
  * figure's hip height on the centre line.
  */
-export const playerFigureLayout = (
+const playerFigureLayout = (
   figure: FigureDef,
   models: ReadonlyMap<string, Pick<ModelDef, 'anchors'>>,
 ): PlayerFigureLayout => {

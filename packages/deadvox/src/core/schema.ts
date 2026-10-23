@@ -3323,7 +3323,7 @@ export const FIGURE_BOX_PARTS = [
 ] as const;
 export type FigureBoxPart = (typeof FIGURE_BOX_PARTS)[number];
 /** The pivots the rest of the figure hangs from and is posed about. */
-export const FIGURE_JOINTS = ['leftHip', 'rightHip', 'leftShoulder', 'rightShoulder'] as const;
+const FIGURE_JOINTS = ['leftHip', 'rightHip', 'leftShoulder', 'rightShoulder'] as const;
 export type FigureJoint = (typeof FIGURE_JOINTS)[number];
 
 /** An authored part of a figure: a model drawn in place of box parts; `DESIGN.md`, "Models". */
