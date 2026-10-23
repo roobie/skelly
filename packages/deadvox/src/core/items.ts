@@ -123,6 +123,9 @@ const foodExposureField = (
     ? {}
     : { foodExposure: foodAt === undefined ? { ...exposure } : projectFoodExposure(exposure, foodAt) };
 
+const liquidContentsField = (contents: LiquidContents | undefined): { liquidContents?: LiquidContents } =>
+  contents === undefined ? {} : { liquidContents: { ...contents } };
+
 const paperMapField = (paperMap: PaperMapCoverage | undefined): { paperMap?: PaperMapCoverage } =>
   paperMap === undefined ? {} : { paperMap: { ...paperMap } };
 
@@ -150,6 +153,7 @@ export const snapshotItem = (item: Item, foodAt?: number): Readonly<ItemState> =
     ...(item.cartridges === undefined ? {} : { cartridges: [...item.cartridges] }),
     ...cargoField(item.cargo),
     ...paperMapField(item.paperMap),
+    ...liquidContentsField(item.liquidContents),
     ...(item.slots === undefined
       ? {}
       : {
@@ -286,9 +290,40 @@ const restoreWork = (registry: Registry, work: NonNullable<ItemState['work']>): 
   components: work.components.map((component) => restoreItem(registry, component)),
 });
 
+export const assertSavedLiquidContents = (registry: Registry, state: ItemState): void => {
+  const { vessel } = defOf(registry, state.type);
+  const contents = state.liquidContents;
+  if (!vessel) {
+    if (contents !== undefined) {
+      throw new Error('Invalid saved liquid contents: item has no vessel');
+    }
+    return;
+  }
+  const valid =
+    state.count === 1 &&
+    state.charges === undefined &&
+    state.batteryMicrojoules === undefined &&
+    state.burnRemainingGameSeconds === undefined &&
+    state.litAtGameTimestamp === undefined &&
+    contents !== undefined &&
+    contents !== null &&
+    ((contents.kind === 'empty' && Object.keys(contents).length === 1) ||
+      (contents.kind === 'filled' &&
+        Object.keys(contents).length === 3 &&
+        registry.liquids.has(contents.liquid) &&
+        vessel.accepts.includes(contents.liquid) &&
+        Number.isSafeInteger(contents.volumeMicrolitres) &&
+        contents.volumeMicrolitres > 0 &&
+        contents.volumeMicrolitres <= vessel.capacityMicrolitres));
+  if (!valid) {
+    throw new Error('Invalid saved liquid contents');
+  }
+};
+
 export const restoreItem = (registry: Registry, state: ItemState): Item => {
   const def = defOf(registry, state.type);
   assertFoodExposure(registry, state);
+  assertSavedLiquidContents(registry, state);
   assertSavedBurnState(def, state);
   assertSavedFuse(def, state);
   assertSavedTrap(def, state);
@@ -323,6 +358,7 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
     ...(state.cartridges === undefined ? {} : { cartridges: [...state.cartridges] }),
     ...cargoField(state.cargo),
     ...paperMapField(state.paperMap),
+    ...liquidContentsField(state.liquidContents),
     ...(state.slots === undefined
       ? {}
       : {

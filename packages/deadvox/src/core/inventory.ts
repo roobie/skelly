@@ -36,6 +36,7 @@ import {
 import { furnitureSurfacePosition } from './furnitureSurface.ts';
 import { PILE_GRID } from './inventoryScale.ts';
 import {
+  assertSavedLiquidContents,
   cellCount,
   couldFit,
   craftComponentEligible,
@@ -1998,6 +1999,7 @@ const validateInventoryTree = (registry: Registry, state: InventoryState, vehicl
     }
   };
   for (const { item } of tree) {
+    assertSavedLiquidContents(registry, item);
     const def = defOf(registry, item.type);
     const container =
       item.cargo && def.vehicle?.cargoSpace ? cargoGrid(item.cargo, def.vehicle.cargoSpace) : def.container;
