@@ -1,6 +1,10 @@
 {
   "files": [
     {
+      "source": "gungen/cartridges/12-gauge-00-buck.jsonnet",
+      "output": "gungen/cartridges/12-gauge-00-buck.json"
+    },
+    {
       "source": "gungen/cartridges/308-winchester.jsonnet",
       "output": "gungen/cartridges/308-winchester.json"
     },
@@ -9,12 +13,28 @@
       "output": "gungen/cartridges/357-magnum.json"
     },
     {
+      "source": "gungen/cartridges/5.56x45.jsonnet",
+      "output": "gungen/cartridges/5.56x45.json"
+    },
+    {
+      "source": "gungen/cartridges/7.62x39.jsonnet",
+      "output": "gungen/cartridges/7.62x39.json"
+    },
+    {
       "source": "gungen/cartridges/catalogue/bolt.jsonnet",
       "output": "gungen/cartridges/catalogue/bolt.json"
     },
     {
       "source": "gungen/designs/archetype-revolver.jsonnet",
       "output": "gungen/designs/archetype-revolver.json"
+    },
+    {
+      "source": "gungen/designs/compact-smg-plain.jsonnet",
+      "output": "gungen/designs/compact-smg-plain.json"
+    },
+    {
+      "source": "gungen/designs/compact-smg.jsonnet",
+      "output": "gungen/designs/compact-smg.json"
     },
     {
       "source": "gungen/designs/hunting-rifle.jsonnet",
@@ -29,6 +49,10 @@
       "output": "gungen/src/gun/appearance.json"
     },
     {
+      "source": "gungen/src/gun/gunVoxel.jsonnet",
+      "output": "gungen/src/gun/gunVoxel.json"
+    },
+    {
       "source": "gungen/src/gun/physical.jsonnet",
       "output": "gungen/src/gun/physical.json"
     },
@@ -39,6 +63,10 @@
     {
       "source": "packages/deadvox/src/config/bundled-mods.jsonnet",
       "output": "packages/deadvox/src/config/bundled-mods.json"
+    },
+    {
+      "source": "packages/deadvox/src/config/bundled/beginner.jsonnet",
+      "output": "packages/deadvox/src/config/bundled/beginner.json"
     },
     {
       "source": "packages/deadvox/src/config/perf-baseline.jsonnet",
@@ -83,6 +111,10 @@
     {
       "source": "packages/deadvox/src/content/base/crisis-hq.jsonnet",
       "output": "packages/deadvox/src/content/base/crisis-hq.json"
+    },
+    {
+      "source": "packages/deadvox/src/content/base/figures-player.jsonnet",
+      "output": "packages/deadvox/src/content/base/figures-player.json"
     },
     {
       "source": "packages/deadvox/src/content/base/furniture-cabins.jsonnet",
@@ -205,6 +237,10 @@
       "output": "packages/deadvox/src/content/base/models-melee.json"
     },
     {
+      "source": "packages/deadvox/src/content/base/power.jsonnet",
+      "output": "packages/deadvox/src/content/base/power.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/range.jsonnet",
       "output": "packages/deadvox/src/content/base/range.json"
     },
@@ -251,6 +287,10 @@
     {
       "source": "packages/deadvox/src/content/base/senses.jsonnet",
       "output": "packages/deadvox/src/content/base/senses.json"
+    },
+    {
+      "source": "packages/deadvox/src/content/base/site-generation.jsonnet",
+      "output": "packages/deadvox/src/content/base/site-generation.json"
     },
     {
       "source": "packages/deadvox/src/content/base/sounds-block.jsonnet",
@@ -311,6 +351,10 @@
     {
       "source": "packages/deadvox/src/content/base/vegetation.jsonnet",
       "output": "packages/deadvox/src/content/base/vegetation.json"
+    },
+    {
+      "source": "packages/deadvox/src/content/base/vehicles.jsonnet",
+      "output": "packages/deadvox/src/content/base/vehicles.json"
     },
     {
       "source": "packages/deadvox/src/content/base/zombies.jsonnet",

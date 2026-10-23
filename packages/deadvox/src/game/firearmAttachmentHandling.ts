@@ -3,7 +3,7 @@ import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { attachmentIdFor, firearmSlotIds, SLING_SLOT } from '../core/firearmFitting.ts';
 import type { HandlingQueue, Job } from '../core/handling.ts';
-import { HANDLING, type Inventory, type Location, type Target } from '../core/inventory.ts';
+import { handlingWeights, type Inventory, type Location, type Target } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { slotsReason } from '../core/magazine.ts';
 import { opticViewSettings } from '../core/opticView.ts';
@@ -37,7 +37,10 @@ export const isAttachmentWorkAction = (job: Job): boolean => job.kind === 'actio
 const attachmentWorkSeconds = (inventory: Inventory): number => {
   const tuning = firearmsCombatTuning(inventory.registry);
   const level = skillEffectLevel(inventory.character.skills?.[ATTACHMENT_WORK_SKILL] ?? SKILL_LEVEL_MIN);
-  return HANDLING.ground * skillSaturation(level, tuning.attachmentFactorFloor, tuning.attachmentFactorHalfLifeLevels);
+  return (
+    handlingWeights(inventory.registry).ground *
+    skillSaturation(level, tuning.attachmentFactorFloor, tuning.attachmentFactorHalfLifeLevels)
+  );
 };
 
 /** Firearm attachment changes are serialized handling actions, with all fit rules rechecked at completion. */

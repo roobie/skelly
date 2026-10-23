@@ -24,6 +24,7 @@ import type { MetallicCartridge } from '../src/ammo/cartridge.ts';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import type { SelectedAnchors } from '../src/gun/anchors.ts';
 import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';
+import { withAttachmentInstanceAppearances } from '../src/gun/attachments.ts';
 import { ACTION_CYCLE_PROFILES } from '../src/gun/cycle.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
@@ -82,8 +83,9 @@ const actionExportFacts = (name: string) => {
         Math.hypot(...sub(partMotion.end, partMotion.start)) * out.resolved.domain.units.metresPerUnit,
     };
   });
+  // The adapter paints fitted attachments in their item finish; the bytes in question are the action metadata's.
   const core = exportGlb({
-    resolved: out.resolved,
+    resolved: withAttachmentInstanceAppearances(out.resolved),
     palette: GUN_PALETTE,
     appearance: { appearanceProfile: 'ar' },
     asset: ASSET,
@@ -777,22 +779,9 @@ describe('glb export: deadvox model entry', () => {
   });
 
   it('emits the fixed axis-mapping turn, not one derived from the grip', () => {
-    for (const name of ['archetype-ar', 'archetype-pistol', 'archetype-ak']) {
+    for (const name of ['archetype-ar', 'archetype-pistol', 'archetype-ak', 'archetype-bolt-rifle']) {
       expect(exported(design(name)).modelEntry.grip.turn).toEqual(gripTurn());
     }
-  });
-
-  it('gives the same turn for designs whose hold frames lean differently', () => {
-    const upright = exported(design('archetype-bolt-rifle'));
-    const raked = exported(design('archetype-ar'));
-    const tilt = (out: typeof upright) => {
-      const s = selectGunAnchors(out.resolved, GUN_ANCHORS, GUN_ANCHOR_POLICY) as SelectedAnchors;
-      return s.hold.up[1];
-    };
-    // The frames really differ in lean: one hold frame is raked, the other is not.
-    expect(Math.min(tilt(upright), tilt(raked))).toBeLessThan(0.99);
-    expect(Math.abs(tilt(upright) - tilt(raked))).toBeGreaterThan(0.01);
-    expect(raked.modelEntry.grip.turn).toEqual(upright.modelEntry.grip.turn);
   });
 
   it('gives the same turn for an arbitrary hold-frame lean in the gun model entry', () => {

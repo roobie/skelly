@@ -11,9 +11,9 @@
       "key": {
         "lock": "dad_cabin"
       },
+      "model": "dad_cabin_key",
       "name": "Dad's cabin key",
-      "size": [1, 1],
-      "weight": 10
+      "size": [1, 1]
     },
     {
       "category": "clothing",
@@ -22,13 +22,13 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "baseball_cap",
+      "model": "baseball_cap",
       "name": "Baseball cap",
       "size": [2, 1],
       "wearable": {
         "encumbrance": 0,
         "slot": "head"
-      },
-      "weight": 80
+      }
     },
     {
       "category": "note",
@@ -74,9 +74,9 @@
       "key": {
         "lock": "medical_pharmacy"
       },
+      "model": "pharmacy_key",
       "name": "Medical pharmacy key",
-      "size": [1, 1],
-      "weight": 10
+      "size": [1, 1]
     },
     {
       "category": "book",

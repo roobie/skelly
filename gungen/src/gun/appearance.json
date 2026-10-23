@@ -11,16 +11,25 @@
       "primer": [0.48999999999999999, 0.40000000000000002, 0.23000000000000001]
     }
   },
-  "attachmentAppearances": {
+  "attachments": {
     "improvised-suppressor": {
-      "finish": {
-        "metal": "alu-anodized-black"
-      }
+      "appearance": {
+        "finish": {
+          "metal": "alu-anodized-black"
+        }
+      },
+      "voxelGrain": 0.0040000000000000001
     },
     "real-suppressor": {
-      "finish": {
-        "metal": "alu-anodized-black"
-      }
+      "appearance": {
+        "finish": {
+          "metal": "alu-anodized-black"
+        }
+      },
+      "voxelGrain": 0.0040000000000000001
+    },
+    "tactical-flashlight-mount": {
+      "voxelGrain": 0.002
     }
   },
   "cartridgeFinish": {
@@ -32,13 +41,14 @@
   "finishSlots": ["metal", "furniture", "accent"],
   "fixtureProfiles": {
     "archetype-ak": "ak",
+    "archetype-ak-akm": "ak",
+    "archetype-anti-materiel": "anti-materiel",
     "archetype-ar": "ar",
     "archetype-ar-free-float": "ar-free-float",
     "archetype-awm": "awm",
     "archetype-battle-rifle": "battle-rifle",
     "archetype-bolt-rifle": "bolt-rifle",
     "archetype-bolt-rifle-box": "bolt-rifle-box",
-    "archetype-bullpup": "bullpup",
     "archetype-pistol": "pistol",
     "archetype-pump-shotgun": "pump-shotgun",
     "archetype-revolver": "revolver",
@@ -59,6 +69,7 @@
       "bolt-handle-knob": [0.42745098039215684, 0.45098039215686275, 0.48627450980392156],
       "carry-handle": [0.35294117647058826, 0.37647058823529411, 0.40784313725490196],
       "cylinder": [0.29019607843137257, 0.33333333333333331, 0.40000000000000002],
+      "drum-rear-sight": [0.21176470588235294, 0.23921568627450981, 0.27843137254901962],
       "foregrip": [0.14117647058823529, 0.16078431372549021, 0.16862745098039217],
       "forend": [0.54117647058823526, 0.41568627450980394, 0.32156862745098042],
       "frame": [0.29411764705882354, 0.29019607843137257, 0.27058823529411763],
@@ -117,11 +128,6 @@
         "furniture": "polymer-od-green",
         "metal": "steel-parkerized"
       },
-      "barrett": {
-        "accent": "steel-parkerized",
-        "furniture": "steel-parkerized",
-        "metal": "steel-parkerized"
-      },
       "battle-rifle": {
         "accent": "rubber-black",
         "furniture": "wood-walnut",
@@ -140,11 +146,6 @@
       "bolt-rifle-thumbhole": {
         "accent": "rubber-black",
         "furniture": "wood-walnut",
-        "metal": "steel-parkerized"
-      },
-      "bullpup": {
-        "accent": "rubber-black",
-        "furniture": "polymer-black",
         "metal": "steel-parkerized"
       },
       "pistol": {
@@ -182,6 +183,7 @@
       "bolt-handle-knob": "steel-parkerized",
       "carry-handle": "steel-parkerized",
       "cylinder": "steel-parkerized",
+      "drum-rear-sight": "steel-parkerized",
       "foregrip": "polymer-black",
       "forend": "polymer-black",
       "frame": "steel-parkerized",
@@ -236,6 +238,7 @@
       "bolt-handle-knob": [0.78000000000000003, 0.78000000000000003, 0.78000000000000003],
       "carry-handle": [0.75, 0.75, 0.75],
       "cylinder": [0.80000000000000004, 0.80000000000000004, 0.80000000000000004],
+      "drum-rear-sight": [0.62, 0.62, 0.62],
       "foregrip": [0.81999999999999995, 0.81999999999999995, 0.81999999999999995],
       "forend": [0.94999999999999996, 0.94999999999999996, 0.94999999999999996],
       "frame": [0.78000000000000003, 0.78000000000000003, 0.78000000000000003],
@@ -290,6 +293,7 @@
       "bolt-handle-knob": "metal",
       "carry-handle": "metal",
       "cylinder": "metal",
+      "drum-rear-sight": "metal",
       "foregrip": "furniture",
       "forend": "furniture",
       "frame": "metal",

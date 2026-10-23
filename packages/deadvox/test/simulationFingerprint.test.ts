@@ -59,6 +59,8 @@ const DECLARATION_FILE_PATTERN = /\.d\.[cm]?ts$/;
 const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
   'src/core/buildRevision.ts': 'Test/build-only diagnostic helper; no game runtime imports it.',
   'src/core/reachability.ts': 'CLI/test-only static content acceptance; no game runtime imports it.',
+  'src/core/powerGraph.ts': 'Test-only electricity topology; no game runtime imports it.',
+  'src/core/power.ts': 'Test-only electricity integration; no game runtime imports it.',
   'src/core/scenarioCertificate.ts': 'Test-only route proof; no game runtime imports it.',
   'src/core/scenarioRoute.ts':
     'Test-only route-proof support; cityLots.ts imports only its types, and its value user scenarioCertificate.ts is test-only.',
@@ -69,6 +71,8 @@ const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
     'Presentation-only development render selection; does not alter simulation or save identity.',
   'src/core/rigidBody.ts': 'Presentation-only debris physics, excluded with the renderer from save identity.',
   'src/core/soundOcclusion.ts': 'Presentation-only filtering, reached only through the excluded WebAudio adapter.',
+  'src/core/schedulerIds.ts':
+    'Reached only through the excluded save controller; test/saveSchedulerIds.test.ts keeps it equal to the fingerprinted registrations, so it cannot change without them.',
   'src/core/temporalFields.ts': 'Authored-field catalogue used by the time linter, not game runtime.',
 };
 
@@ -397,20 +401,21 @@ describe('simulation source fingerprint', () => {
     expect(await hash(runtimeChanged, ...entries)).not.toBe(original);
   });
 
-  it.each(['../config/intake.json', '../../../mobgen/src/mob/materials.json'])(
-    'fingerprints declarative JSON dependency %s without parsing it as a module',
-    async (specifier) => {
-      const entry = resolve(root, entries[0]!);
-      const dependency = resolve(entry, '..', specifier);
-      const sources = new Map([
-        [entry, `import config from '${specifier}'; export const cap = config.cap;`],
-        [dependency, '{"cap": 100}'],
-      ]);
-      const before = await hash(sources, ...entries);
-      sources.set(dependency, '{"cap": 200}');
-      expect(await hash(sources, ...entries)).not.toBe(before);
-    },
-  );
+  it.each([
+    '../config/intake.json',
+    '../../../mobgen/src/mob/materials.json',
+    '../../../thing-core/src/materials.json',
+  ])('fingerprints declarative JSON dependency %s without parsing it as a module', async (specifier) => {
+    const entry = resolve(root, entries[0]!);
+    const dependency = resolve(entry, '..', specifier);
+    const sources = new Map([
+      [entry, `import config from '${specifier}'; export const cap = config.cap;`],
+      [dependency, '{"cap": 100}'],
+    ]);
+    const before = await hash(sources, ...entries);
+    sources.set(dependency, '{"cap": 200}');
+    expect(await hash(sources, ...entries)).not.toBe(before);
+  });
 
   it('recomputes the identity for create, update, and delete hot changes', async () => {
     const results = await Promise.all(

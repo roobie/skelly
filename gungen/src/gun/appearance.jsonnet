@@ -11,7 +11,7 @@ local roles = {
   'tactical-flashlight-mount': ['metal', 0.65], foregrip: ['furniture', 0.82],
   frame: ['metal', 0.78], slide: ['metal', 1], cylinder: ['metal', 0.8],
   'front-sight': ['metal', 0.6], 'front-sight-bead': ['metal', 0.6], 'rail-front-sight': ['metal', 0.62],
-  'sporting-rear-sight': ['metal', 0.62], 'gas-block': ['metal', 0.55], 'gas-cylinder': ['metal', 0.7],
+  'sporting-rear-sight': ['metal', 0.62], 'drum-rear-sight': ['metal', 0.62], 'gas-block': ['metal', 0.55], 'gas-cylinder': ['metal', 0.7],
   'revolver-frame': ['metal', 1], 'revolver-cylinder': ['metal', 0.8], 'revolver-crane': ['metal', 0.8],
   'revolver-ejector': ['metal', 0.8], 'revolver-hammer': ['metal', 1], 'revolver-trigger': ['metal', 1],
   'revolver-barrel': ['metal', 0.67], 'revolver-grip': ['furniture', 0.82],
@@ -35,21 +35,26 @@ local familyHex = {
   slide: '868d97', cylinder: '4a5566', 'revolver-frame': '8d939c', 'revolver-cylinder': '4a5566',
   'revolver-crane': '4a5566', 'revolver-ejector': '4a5566', 'revolver-hammer': '8d939c', 'revolver-trigger': '8d939c',
   'revolver-barrel': '5d636b', 'revolver-grip': '7d604c', 'front-sight': '363d47', 'front-sight-bead': '363d47',
-  'rail-front-sight': '363d47', 'sporting-rear-sight': '363d47', 'gas-block': '2f3238', 'gas-cylinder': '545a63',
+  'rail-front-sight': '363d47', 'sporting-rear-sight': '363d47', 'drum-rear-sight': '363d47', 'gas-block': '2f3238', 'gas-cylinder': '545a63',
   'muzzle-brake': '3b4149', 'barrel-shroud': '7a8088', bipod: '4a4f55', 'carry-handle': '5a6068', monopod: '4a4f55',
 };
 {
   finishSlots: [slot[0] for slot in slots],
   fixtureProfiles: {
-    'archetype-ak': 'ak', 'archetype-ar': 'ar', 'archetype-ar-free-float': 'ar-free-float',
+    'archetype-ak': 'ak', 'archetype-ak-akm': 'ak', 'archetype-anti-materiel': 'anti-materiel', 'archetype-ar': 'ar', 'archetype-ar-free-float': 'ar-free-float',
     'archetype-awm': 'awm', 'archetype-battle-rifle': 'battle-rifle', 'archetype-bolt-rifle': 'bolt-rifle',
-    'archetype-bolt-rifle-box': 'bolt-rifle-box', 'archetype-bullpup': 'bullpup', 'archetype-pistol': 'pistol',
+    'archetype-bolt-rifle-box': 'bolt-rifle-box', 'archetype-pistol': 'pistol',
     'archetype-pump-shotgun': 'pump-shotgun', 'archetype-revolver': 'revolver', 'archetype-smg': 'smg',
   },
   slotMaterials: slotMaterials,
-  attachmentAppearances: {
-    'real-suppressor': { finish: { metal: 'alu-anodized-black' } },
-    'improvised-suppressor': { finish: { metal: 'alu-anodized-black' } },
+  // Each attachment's authored look: its default appearance and, where its item class grain does not fit it, the voxel
+  // grain its export takes.
+  attachments: {
+    // The gun grain, to match the receivers it mounts on; the item grain draws a plain square bar.
+    'real-suppressor': { appearance: { finish: { metal: 'alu-anodized-black' } }, voxelGrain: 0.004 },
+    'improvised-suppressor': { appearance: { finish: { metal: 'alu-anodized-black' } }, voxelGrain: 0.004 },
+    // A 20 mm mount is two item voxels across; the fine grain keeps its clamp and lamp apart.
+    'tactical-flashlight-mount': { voxelGrain: 0.002 },
   },
   gun: {
     familyColors: { [role]: rgb(familyHex[role]) for role in std.objectFields(familyHex) },
@@ -66,8 +71,6 @@ local familyHex = {
       pistol: finish('polymer-black', 'steel-blued'), revolver: finish('wood-walnut', 'steel-stainless'),
       'battle-rifle': finish('wood-walnut', 'steel-parkerized'), 'bolt-rifle': finish('wood-walnut', 'steel-parkerized'),
       'bolt-rifle-box': finish('wood-walnut', 'steel-parkerized'), 'bolt-rifle-thumbhole': finish('wood-walnut', 'steel-parkerized'),
-      bullpup: finish('polymer-black', 'steel-parkerized'),
-      barrett: finish('steel-parkerized', 'steel-parkerized', 'steel-parkerized'),
       'anti-materiel': finish('polymer-fde', 'steel-parkerized'),
     },
   },

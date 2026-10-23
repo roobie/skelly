@@ -53,7 +53,31 @@ export const mulMM = (a: Mat3, b: Mat3): Mat3 => {
 };
 
 const rad = (deg: number): number => (deg * Math.PI) / 180;
-const clamp = (x: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, x));
+
+export const clamp = (x: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, x));
+
+export const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
+
+/** Smooth 0->1 ease with zero slope at both ends (3x²-2x³). Not clamped: callers pass x in [0, 1]. */
+export const smoothstep = (x: number): number => x * x * (3 - 2 * x);
+
+/** A cubic Hermite endpoint: its value and its slope per unit of the curve's own parameter. */
+export interface Keyframe {
+  readonly value: number;
+  readonly slope: number;
+}
+
+/** Cubic Hermite basis: k0 at t=0, k1 at t=1. */
+export const hermite = (t: number, k0: Keyframe, k1: Keyframe): number => {
+  const t2 = t * t;
+  const t3 = t2 * t;
+  return (
+    (2 * t3 - 3 * t2 + 1) * k0.value +
+    (t3 - 2 * t2 + t) * k0.slope +
+    (-2 * t3 + 3 * t2) * k1.value +
+    (t3 - t2) * k1.slope
+  );
+};
 
 /** Rotation about the local X axis. A hanging (-Y) vector swinging by a small
  * positive angle moves toward -Z: see mob/gait.ts for why that matters. */

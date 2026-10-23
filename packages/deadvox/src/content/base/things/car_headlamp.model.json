@@ -1,0 +1,14 @@
+{
+  "id": "car_headlamp",
+  "file": "assets/models/car_headlamp.glb",
+  "parts": {
+    "body": {
+      "node": "body:block",
+      "massKg": 1.2,
+      "centreOfMass": [0, 0.078125, 0],
+      "collision": [{ "min": [-0.03125, 0, -0.125], "max": [0.03125, 0.15625, 0.125] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": { "beam": [0.03125, 0.078125, 0], "mount": [-0.03125, 0.078125, -0.0875] }
+}

@@ -26,7 +26,9 @@ The hatchback and pickup are the first transport hosts, with genuinely shared
 service parts and a freely placed capability-matched add-on. Two hosts expose
 accidental blueprint-specific restrictions; the add-on exposes a disguised fixed
 socket system. The motorbike follows after the four-wheel loop, rather than putting
-balance and lean on the first playtest's critical path.
+balance and lean on the first playtest's critical path. Each host is authored as
+content parts and a content blueprint, the hatchback remade from a real car, so no
+vehicle is authored twice; see `docs/vehicle-spike.md`, "The hatchback from content".
 
 Building starts from factory structures with compatible parts and add-ons, not raw
 rails and plates. Factory welded structure is one player-facing assembly while
@@ -36,7 +38,10 @@ fabrication or cutting.
 
 Heavy salvage uses a mobile heavy-part-hoist that is itself a vehicle, built and
 driven through the same vehicle systems. It is not a separate equipment kind or a
-workshop-only transfer exception. Field engine recovery therefore has a physical
+workshop-only transfer exception. Lifting is a capability of its fitted crane parts,
+not of a hoist vehicle kind: removing or breaking the crane removes the capability,
+and a salvaged crane stays an ordinary part, so no vehicle-wide flag can outlive the
+parts that justify it. Field engine recovery therefore has a physical
 workflow, with lifting, load ownership and clearance to prove. The hoist is required
 utility content alongside the two transport hosts, not a third transport host that
 reopens the roster choice.
@@ -159,7 +164,7 @@ Glazing blocks bodies while transmitting sight and light; sound attenuation is
 explicit content. This keeps the driver's view, external observers and interior
 lighting consistent rather than hiding an opaque cabin behind a transparent mesh.
 Bullet interaction uses the combat material rules, not an inference from movement
-blocking. Gas sealing is a separate question. #1016 gates interior visibility.
+blocking. Gas sealing is a separate question.
 
 Fitted parts and their poses own both appearance and obstruction. Keep parked
 world collision and picking derived, not hand-authored per wreck. See
@@ -231,11 +236,9 @@ leaving saves to an integration finale.
    feasibility envelope so neither becomes a late exception. BR judges handling,
    the constrained boundary and the mass-placement difference. Select neither a
    library nor its version without evidence and the dependency-age check.
-2. **Authoring-to-game contract.** A shared exported thing must validate and load on
-   two hosts; a mod-authored compatible part needs no code edit. Refuse broken
-   references, invalid supports and unsupported capabilities. Exercise reflected
-   datums and baked collision geometry. Keep VAT production deployment in #323
-   rather than making a full editor a prerequisite for reproducible exports.
+2. **Authoring-to-game contract.** Settled in
+   `docs/vehicle-spike.md`, "Export contract". VAT production deployment stays in
+   #323 rather than making a full editor a prerequisite for reproducible exports.
 3. **Persistent parked instances and light salvage.** Replace selected wreck
    placements with vehicle-owned state. Prove independent instances, saved removals
    and contents, deterministic placement and cache invalidation. Add install,
@@ -247,7 +250,7 @@ leaving saves to an integration finale.
    controls and engine noise. Prove blocked entry/exit and swing refusal, moving-to-
    parked handoff, braking, lost propulsion and save/load in motion. Include safe
    placement when exiting a moving vehicle without arresting the vehicle. BR checks
-   interior visibility for #1016. Compare mass-placement variants while holding
+   interior visibility. Compare mass-placement variants while holding
    total mass, power and silhouette fixed; do not pin tuned trajectories.
 5. **Heavy-part-hoist vehicle and heavy salvage.** Build the hoist through the same
    authoring, instance and driving path, then add its lifting operation. Prove field

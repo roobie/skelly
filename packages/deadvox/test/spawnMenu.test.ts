@@ -86,9 +86,10 @@ describe('spawnMenuViewModel', () => {
   });
 
   it('carries the filter and status through unchanged', () => {
-    const vm = spawnMenuViewModel(registry, 'rag', 'Rag is at your feet');
+    const status = 'a status the view model must not rewrite';
+    const vm = spawnMenuViewModel(registry, 'rag', status);
     expect(vm.filter).toBe('rag');
-    expect(vm.status).toBe('Rag is at your feet');
+    expect(vm.status).toBe(status);
   });
 
   it('leaves the search field empty when the G keydown opens the spawn menu', () => {
@@ -110,7 +111,7 @@ describe('spawnMenuViewModel', () => {
       sim,
       reviewMap: { isOpen: () => false, toggle: () => undefined },
       compress: () => undefined,
-      spectatorCamera: { enabled: () => false, toggle: () => undefined },
+      spectatorCamera: { enabled: () => false, toggle: () => undefined, teleport: () => undefined },
       thirdPerson: { enabled: () => false, toggle: () => undefined },
       perceptionLabels: { enabled: () => false, toggle: () => undefined },
       emitTestNoise: () => true,

@@ -6,6 +6,7 @@
 
 import type { Body as MobBody } from '@mobgen/core/body.ts';
 import { AimController, type AimWobbleNoiseTuning, aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
+import { BearTraps } from '../core/bearTrap.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import { Character, dominantSide, offSide, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
@@ -19,6 +20,7 @@ import { type CraftPreference, planCraft } from '../core/crafting.ts';
 import { craftActionHooks } from '../core/craftWork.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
 import { type EntityId, MapEntityStore } from '../core/entities.ts';
+import { advanceEventRules } from '../core/eventRules.ts';
 import { blastShare, bodyCentre, Fuses, fragmentDirections, fragmentHitsOnBody, inSight } from '../core/explosive.ts';
 import {
   type FirearmsCombatTuning,
@@ -40,6 +42,9 @@ import {
   liftFurniture,
   placeFurniture,
   placement,
+  removalRefusal,
+  removeFurniture,
+  ruinFurniture,
   tipCarried,
   turnCarried,
 } from '../core/furnitureMove.ts';
@@ -57,15 +62,17 @@ import { canSprint, spendStamina, stepStamina } from '../core/needs.ts';
 import { freshDropTarget } from '../core/options.ts';
 import { type Body, bodyOverlapsTerrain, CONTACT_SKIN, stepBody } from '../core/physics.ts';
 import { PlayerCombat } from '../core/playerCombat.ts';
+import type { PlayerStance } from '../core/playerStance.ts';
 import { pryPlan } from '../core/prying.ts';
 import { Rng } from '../core/random.ts';
-import type { SolidAt } from '../core/raycast.ts';
+import { raycast, type SolidAt } from '../core/raycast.ts';
 import { bindReach, pileDistance as distanceToPile, furnitureDistance, reachTuning } from '../core/reach.ts';
 import type { Readable } from '../core/readable.ts';
 import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../core/saveState.ts';
 import type { Scale } from '../core/scale.ts';
 import { nearDiscoveryBox, type ScenarioDiscovery } from '../core/scenarioDiscovery.ts';
 import { assertScenarioRun, ScenarioRun } from '../core/scenarioRun.ts';
+import type { EventRuleDef } from '../core/schema.ts';
 import { Simulation } from '../core/sim.ts';
 import type { ColumnSource } from '../core/site.ts';
 import { skillActivityPractice, skillActivityPracticeRate } from '../core/skillTraining.ts';
@@ -85,13 +92,17 @@ import {
   BACKGROUND_ZOMBIE_SLICE_COUNT,
   BACKGROUND_ZOMBIE_SLICE_RATE,
   type HitImpulse,
+  loweredStanceTuning,
   type MeleeResult,
+  type MeleeWeapon,
+  PLAYER_ARM_REACH_M,
   type PlayerMovement,
   type VocalNoise,
   type Zombie,
   ZombieSystem,
 } from '../core/zombies.ts';
 import { firearmShotSound } from './audioPresentation.ts';
+import { interruptDisarm, registerTrapActions } from './bearTrapActions.ts';
 import type { DebugNoclipStep } from './debugInterface.ts';
 import { registerDoorAction } from './doorAction.ts';
 import { type DownedBodyWay, downedBodyPlan, queueDownedBody, registerDownedBodyAction } from './downedBody.ts';
@@ -112,9 +123,11 @@ import {
   createPlayerBody,
   type MoveIntent,
   movementPace,
+  nextStance,
   PLAYER,
   physicsFor,
   restorePlayer,
+  type StanceToggle,
   snapshotPlayer,
   steer,
 } from './player.ts';
@@ -255,7 +268,7 @@ export interface PlayerInputSample {
   readonly worldReady: boolean;
 }
 
-interface SessionControls {
+export interface SessionControls {
   /** True when input reaches the world: the pointer is locked and no menu has it. */
   active: () => boolean;
   intent: () => MoveIntent;
@@ -264,7 +277,7 @@ interface SessionControls {
   /** Clears edge-triggered intents after the player tick samples them. */
   consumeDominantUse?: () => void;
   consumeOffUse?: () => void;
-  consumeCrouchToggle?: () => boolean;
+  consumeStanceToggle?: () => StanceToggle | undefined;
   /** Runs dominant use on the player-tick boundary, with that tick's aim/state. */
   useDominant?: () => void;
   /** Held-trigger sampling, including release/inactive ticks, for debug firearm cadence. */
@@ -305,7 +318,9 @@ interface SessionDebug {
 
 export interface SessionOptions {
   registry: Registry;
-  scenario?: Readonly<{ id: string; body: string; compression: string }> | undefined;
+  scenario?:
+    | Readonly<{ id: string; body: string; compression: string; eventRules?: readonly EventRuleDef[] }>
+    | undefined;
   objective?: Readonly<Vec3> | undefined;
   discovery?: Readonly<ScenarioDiscovery> | undefined;
   world: World;
@@ -341,6 +356,7 @@ export interface SessionOptions {
   onHandlingOutcome?: (item: Item, outcome: FirearmOutcome) => void;
   onDischarge?: (item: Item, sighted: boolean) => void;
   onCompletedSwing?: (isFist: boolean) => void;
+  onBatterySwapped?: ((lightType: string) => void) | undefined;
   /** Output only, called after the simulation has committed the case transition. */
   onFirearmEjection?: (effect: FirearmShotEffect) => void;
   /** Output only, after the simulation inserts an ejected item into its landing pile. */
@@ -399,52 +415,45 @@ interface RestoredLook {
 const firearmsSkillLevel = (character: Character): number =>
   skillEffectLevel(character.skills.firearms_combat ?? SKILL_LEVEL_MIN);
 
-const nextCrouchState = (togglePressed: boolean, noclip: boolean, crouching: boolean): boolean =>
-  togglePressed && !noclip ? !crouching : crouching;
-
 interface StanceBody {
   readonly body: Body;
-  readonly standingHeight: number;
-  readonly crouchedHeight: number;
+  readonly heights: Readonly<Record<PlayerStance, number>>;
   readonly isSolid: SolidAt;
 }
 
-const setStanceHeight = (stance: StanceBody, crouching: boolean): void => {
-  stance.body.height = crouching ? stance.crouchedHeight : stance.standingHeight;
+const setStanceHeight = (stance: StanceBody, current: PlayerStance): void => {
+  stance.body.height = stance.heights[current];
 };
 
-/** Crouching shrinks the collision body; standing up is refused, keeping the crouch, without room overhead. */
+/** A lower stance shrinks the collision body; rising is refused, keeping the stance, without room overhead. */
 const settleStance = (
   stance: StanceBody,
-  crouching: boolean,
-  wanted: boolean,
+  current: PlayerStance,
+  wanted: PlayerStance,
   refuse: (text: string) => void,
-): boolean => {
-  if (wanted === crouching) {
-    return crouching;
+): PlayerStance => {
+  if (wanted === current) {
+    return current;
   }
-  if (!wanted && bodyOverlapsTerrain({ ...stance.body, height: stance.standingHeight }, stance.isSolid)) {
-    refuse('No room to stand up');
-    return crouching;
+  const height = stance.heights[wanted];
+  if (height > stance.body.height && bodyOverlapsTerrain({ ...stance.body, height }, stance.isSolid)) {
+    refuse(wanted === 'standing' ? 'No room to stand up' : 'No room to crouch');
+    return current;
   }
   setStanceHeight(stance, wanted);
   return wanted;
 };
 
-const resolvePlayerEyeHeight = (
-  unconscious: boolean,
-  proneHeight: number,
-  crouching: boolean,
-  crouchDrop: number,
-): number => (unconscious ? proneHeight : PLAYER.eye - (crouching ? crouchDrop : 0));
+const resolvePlayerEyeHeight = (unconscious: boolean, proneHeight: number, eyeDrop: number | undefined): number =>
+  unconscious ? proneHeight : PLAYER.eye - (eyeDrop ?? 0);
 
 const movementIntent = (refusal: string | undefined, intent: MoveIntent): MoveIntent => (refusal ? IDLE : intent);
 
-const playerMovementForIntent = (moving: MoveIntent, crouching: boolean, sprinting: boolean): PlayerMovement => {
+const playerMovementForIntent = (moving: MoveIntent, stance: PlayerStance, sprinting: boolean): PlayerMovement => {
   if (moving.forward === 0 && moving.right === 0) {
     return 'still';
   }
-  if (crouching) {
+  if (stance !== 'standing') {
     return 'walking';
   }
   if (sprinting) {
@@ -598,7 +607,10 @@ const observeScenarioMovement = (
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
   const dayCycle = requireDayCycle(registry);
-  const shamblerVoice = shamblerVoiceLaw(figureSeedPool(registry.zombies));
+  const shamblerVoice = shamblerVoiceLaw(
+    figureSeedPool(registry.zombies),
+    registry.senses.get(CORE_CONTENT_IDS.player)!.shamblerVoice,
+  );
   const s = scale.blockSize;
   const skyTop = (scale.maxCy + 1) * CHUNK - 1;
   const physics = physicsFor(scale);
@@ -607,21 +619,26 @@ export const createSession = (options: SessionOptions) => {
 
   const restoredPlayer = restored ? restorePlayer(restored.character.player) : undefined;
   const senseTuning = playerSenseTuning(registry);
-  let crouching = restoredPlayer?.crouching ?? false;
+  let playerStance: PlayerStance = restoredPlayer?.stance ?? 'standing';
   const body: Body =
     restoredPlayer?.body ?? createPlayerBody(scale, options.spawn[0], options.spawn[1], options.spawn[2]);
-  // The stance sets the collision height, so a crouched save loads crouched and retuned content applies.
-  const stance: StanceBody = {
+  // The stance sets the collision height, so a lowered save loads lowered and retuned content applies.
+  const stanceBody: StanceBody = {
     body,
-    standingHeight: PLAYER.height / s,
-    crouchedHeight: senseTuning.crouch.bodyHeightMetres / s,
+    heights: {
+      standing: PLAYER.height / s,
+      crouching: senseTuning.crouch.bodyHeightMetres / s,
+      prone: senseTuning.prone.bodyHeightMetres / s,
+    },
     isSolid,
   };
-  setStanceHeight(stance, crouching);
+  setStanceHeight(stanceBody, playerStance);
   const updateStance = (): void => {
-    const wanted = nextCrouchState(controls.consumeCrouchToggle?.() ?? false, debug?.()?.noclip ?? false, crouching);
-    crouching = settleStance(stance, crouching, wanted, options.refusal ?? options.notice);
+    const toggle = controls.consumeStanceToggle?.();
+    const wanted = debug?.()?.noclip ? playerStance : nextStance(playerStance, toggle);
+    playerStance = settleStance(stanceBody, playerStance, wanted, options.refusal ?? options.notice);
   };
+  const loweredStance = () => loweredStanceTuning(senseTuning, playerStance);
   const restoredLook: RestoredLook | undefined = restoredPlayer && {
     yaw: restoredPlayer.yaw,
     pitch: restoredPlayer.pitch,
@@ -638,9 +655,14 @@ export const createSession = (options: SessionOptions) => {
   const inventory = restored
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities, character)
     : new Inventory(registry, undefined, options.entities, character);
+  const wearPlaced = (piece: BlockEntity | undefined, wear: number | undefined): void => {
+    if (piece && wear !== undefined) {
+      inventory.entities.wear(piece, wear);
+    }
+  };
   const generateColumnSupply = (cx: number, cz: number, source: ColumnSource): void => {
-    for (const { spec, loot, surfaceLoot, fixedCount } of source.furnitureIn(cx, cz)) {
-      inventory.furnish(spec, loot, surfaceLoot, fixedCount);
+    for (const { spec, loot, surfaceLoot, fixedCount, wear } of source.furnitureIn(cx, cz)) {
+      wearPlaced(inventory.furnish(spec, loot, surfaceLoot, fixedCount), wear);
     }
     for (const point of source.lootPointsIn(cx, cz)) {
       if (point.channel !== 'ground') {
@@ -717,6 +739,7 @@ export const createSession = (options: SessionOptions) => {
   const bodyTuning = playerBodyTuning(registry, options.scenario?.body);
   const sim = new Simulation({
     seed,
+    registry,
     bodyTuning,
     ...playerWearHooks(inventory, bodyTuning),
     analgesics: (item) => registry.items.get(item)?.analgesic,
@@ -726,6 +749,7 @@ export const createSession = (options: SessionOptions) => {
   const { compression } = sim;
   let scenarioRun: ScenarioRun | undefined;
   const audioEvents = sim.events.reader();
+  const trapInterrupts = sim.events.reader();
   const soundPicker = new SoundPicker(seed, registry.sounds);
 
   // The player's own noise, which shamblers can hear. Saved with the character.
@@ -916,6 +940,9 @@ export const createSession = (options: SessionOptions) => {
         sourceLabel: sound.sourceLabel,
         noiseRadiusScale: firearms.noiseFactorFor(firearm),
       });
+      if (sound.bodyEvent !== undefined) {
+        playPlayerSound(sound.bodyEvent, time, { sourceLabel: sound.sourceLabel });
+      }
     },
     onSound: (event, position, time) =>
       position ? playWorldSound(event, position, time) : playPlayerSound(event, time),
@@ -937,6 +964,7 @@ export const createSession = (options: SessionOptions) => {
     notice: options.notice,
     read: options.onRead,
     consumed: options.onConsumed,
+    batterySwapped: options.onBatterySwapped,
     bookRead: (bookUid) => {
       const item = inventory.itemByUid(bookUid);
       const book = item && registry.items.get(item.type)?.book;
@@ -949,7 +977,7 @@ export const createSession = (options: SessionOptions) => {
   const rest = new RestController(sim, {
     furniture: (uid) => {
       const entity = entities.byUid(uid);
-      const restDef = entity && entities.defOf(entity).rest;
+      const restDef = entity && !entities.useRefusal(entity) && entities.defOf(entity).rest;
       return restDef ? { quality: restDef.quality, sleepable: restDef.sleep === true } : undefined;
     },
     withinReach: (uid) => {
@@ -968,12 +996,7 @@ export const createSession = (options: SessionOptions) => {
   let sprinting = restoredSprinting;
   let firearmReadyWalking = restoredFirearmReadyWalking;
   const playerEyeHeightMetres = (): number =>
-    resolvePlayerEyeHeight(
-      sim.body.unconscious,
-      sim.body.tuning.proneEyeHeightMetres,
-      crouching,
-      senseTuning.crouch.eyeDropMetres,
-    );
+    resolvePlayerEyeHeight(sim.body.unconscious, sim.body.tuning.proneEyeHeightMetres, loweredStance()?.eyeDropMetres);
   let footstepClock = savedFootstepClock;
   let rustleClock = restoredRustleClock;
   let airbornePeakY = restoredAirbornePeakY;
@@ -999,9 +1022,8 @@ export const createSession = (options: SessionOptions) => {
     const input = sampledInput();
     return input.active && !input.inputLocked ? input.intent : IDLE;
   };
-  const playerCrouching = (): boolean => crouching;
   const playerMovement = (): PlayerMovement =>
-    playerMovementForIntent(movementIntent(sim.body.actionRefusal, currentIntent()), crouching, sprinting);
+    playerMovementForIntent(movementIntent(sim.body.actionRefusal, currentIntent()), playerStance, sprinting);
   const updateAim = (dt: number, firing: boolean): void => {
     advanceSessionAim({
       aim,
@@ -1072,13 +1094,12 @@ export const createSession = (options: SessionOptions) => {
       body: debug?.()?.noclip ? undefined : body,
       facing: [-Math.sin(yaw), 0, -Math.cos(yaw)] as Vec3,
       movement: playerMovement(),
-      crouching: playerCrouching(),
+      stance: playerStance,
       vocalNoise:
         playerAudio.vocalNoise && sim.time <= playerAudio.vocalNoise.expiresAt ? playerAudio.vocalNoise : undefined,
       lit: carriedLight !== undefined,
       lightSeenFrom: carriedLight?.seenFrom ?? 40,
       eyeHeightMetres,
-      lightHeightMetres: eyeHeightMetres,
       sunlit: isSunExposedAt(playerLightHeight, hour),
       lightSources,
     };
@@ -1091,8 +1112,39 @@ export const createSession = (options: SessionOptions) => {
     [inventory.hands[dominantSide(character)], inventory.hands[offSide(character)]].find(
       (item) => item && registry.items.get(item.type)?.firearm,
     );
+  const meleeBlocker = worldMeleeBlocker(world, registry, inventory.entities, isSolid);
+  /**
+   * One blow on a piece, a zombie's bash or the player's strike; every blow is heard, whatever it does, in the sound
+   * its material names. A blow that ruins a piece destroys it, and whatever came down with it, with the work that
+   * names them; where what it held has no room to fall, the piece stands until a blow finds room.
+   */
+  const bashPiece = (target: BlockEntity | undefined, strength: number): boolean => {
+    const outcome = target && entities.bash(target, strength);
+    if (!(target && outcome)) {
+      return false;
+    }
+    playNoisyWorldSound(
+      registry.furnitureMaterials.get(entities.defOf(target).material)!.blowSound,
+      boxCentre(target.pos, target.size),
+    );
+    if (outcome === 'ruined') {
+      for (const piece of ruinFurniture(furnitureMover(), target) ?? []) {
+        forgetPiece(piece);
+      }
+    }
+    return true;
+  };
+  /** A swing that meets no zombie strikes the piece in its reach with the weapon's impulse. */
+  const strikePiece = (origin: Vec3, direction: Vec3, weapon: MeleeWeapon): boolean => {
+    const reachBlocks = (PLAYER_ARM_REACH_M + weapon.reach) / s;
+    const hit = raycast(origin, direction, reachBlocks, meleeBlocker({ kind: 'player', motion: weapon.motion }));
+    const piece = hit && entities.at(...hit.block);
+    return bashPiece(piece && entities.isSolid(...hit.block) ? piece : undefined, weapon.impulse ?? 0);
+  };
+  const traps = new BearTraps(inventory);
   const zombieSystem = new ZombieSystem({
     store: zombieStore,
+    restrained: (id) => traps.holds(id),
     seed: sim.seed,
     isLoaded: zombieReadinessFor(options),
     terrainFloor: options.terrainFloor,
@@ -1100,7 +1152,8 @@ export const createSession = (options: SessionOptions) => {
     solidBricks: solidBricksFor(options),
     isOpaque: options.isOpaque,
     isSoundBlocking: worldSoundBlocking(world, registry, inventory.entities, isSolid),
-    meleeBlocker: worldMeleeBlocker(world, registry, inventory.entities, isSolid),
+    meleeBlocker,
+    bashObstacle: (ahead, strength) => bashPiece(entities.pieceTouching(ahead), strength),
     blockSize: s,
     physics,
     // Metres per second, as PLAYER.jump is: the system divides by blockSize itself.
@@ -1198,13 +1251,22 @@ export const createSession = (options: SessionOptions) => {
       options.zombieEffects?.onDeath?.(id, zombie);
     },
   });
-  const playerCombat = new PlayerCombat(zombieSystem, (uid) => wearMeleeWeaponOnHit(inventory, uid), character, {
-    onLandedHit: () => {
-      const training = skillActivityPractice(registry, CORE_CONTENT_IDS.meleeCombat, 'hit');
-      character.awardPractice(CORE_CONTENT_IDS.meleeCombat, training.practice, training.tier);
+  const playerCombat = new PlayerCombat(
+    {
+      playPlayerMeleeSwing: (origin, weapon) => zombieSystem.playPlayerMeleeSwing(origin, weapon),
+      resolvePlayerMelee: (origin, direction, weapon, isFist) =>
+        zombieSystem.resolvePlayerMelee(origin, direction, weapon, isFist) || strikePiece(origin, direction, weapon),
     },
-    onCompletedSwing: (isFist) => options.onCompletedSwing?.(isFist),
-  });
+    (uid) => wearMeleeWeaponOnHit(inventory, uid),
+    character,
+    {
+      onLandedHit: () => {
+        const training = skillActivityPractice(registry, CORE_CONTENT_IDS.meleeCombat, 'hit');
+        character.awardPractice(CORE_CONTENT_IDS.meleeCombat, training.practice, training.tier);
+      },
+      onCompletedSwing: (isFist) => options.onCompletedSwing?.(isFist),
+    },
+  );
   let lastZombieStep = 0;
   let lastBackgroundStep = 0;
   let backgroundSliceIndex = 0;
@@ -1285,7 +1347,14 @@ export const createSession = (options: SessionOptions) => {
     if (blast > 0 && inSight(at, centre, isSolid)) {
       sim.hit(blast, 'a grenade', 'torso', { kind: 'blunt' });
     }
-    for (const region of fragmentHitsOnBody({ origin: at, directions, rangeBlocks: rangeMetres / s, body, isSolid })) {
+    for (const region of fragmentHitsOnBody({
+      origin: at,
+      directions,
+      rangeBlocks: rangeMetres / s,
+      body,
+      isSolid,
+      regionHeights: bodyTuning.fragmentRegionHeights,
+    })) {
       sim.hit(damage, 'a grenade', region, { kind: 'pierce' });
     }
     options.onDetonation?.([at[0] * s, at[1] * s, at[2] * s], spec.blast.radiusMetres);
@@ -1300,7 +1369,26 @@ export const createSession = (options: SessionOptions) => {
         detonate(item);
       }
       spawner.advance({ calendar: sim.calendar, registry, zombies: zombieSystem });
+      if (scenarioRun) {
+        advanceEventRules({
+          rules: options.scenario?.eventRules ?? [],
+          run: scenarioRun,
+          calendar: sim.calendar,
+          dayPhase: dayPhaseAt(dayCycle, sim.calendar).phase,
+          player: body.pos,
+          registry,
+          zombies: zombieSystem,
+        });
+      }
       zombieSystem.tickActive(dt, time, heldItemUids());
+      traps.step(dt, {
+        player: body.pos,
+        zombies: [...zombieStore.entries()].map(([id, zombie]) => [id, zombie.body.pos] as const),
+        blockSize: s,
+        alive: (id) => zombieStore.get(id) !== undefined,
+        hurtPlayer: ({ region, damage, kind }) => sim.hit(damage, 'a bear trap', region, { kind }),
+        injureZombie: (id, damage) => zombieSystem.injureLegs(id, damage),
+      });
       lastZombieStep = time;
     },
   });
@@ -1400,7 +1488,7 @@ export const createSession = (options: SessionOptions) => {
     if (climbing && Math.hypot(...body.pos.map((value, axis) => value - before[axis]!)) > 2 * CONTACT_SKIN) {
       run.discover('entranceTravel', sim.calendar);
     }
-    for (const entity of entities.all) {
+    for (const entity of entities.near(discovery.entrance.min, discovery.entrance.max)) {
       if (
         entities.defOf(entity).door?.hatch &&
         nearDiscoveryBox(entity.pos, discovery.entrance, 0) &&
@@ -1437,11 +1525,11 @@ export const createSession = (options: SessionOptions) => {
     // A climber uses its free hand standing still: the ladder holds it while an item action runs.
     const acting = queue.busy || firearms.busy || playerCombat.activeMeleeAction !== undefined || throwCharge.active;
     const steered = ladderHold.on && acting ? { ...pacedIntent, forward: 0, right: 0 } : pacedIntent;
-    steer(body, scale, sampledInput().yaw, steered);
+    const ladder = ladderHold.piece(pacedIntent.jump || sim.body.actionRefusal !== undefined);
+    steer(body, scale, sampledInput().yaw, { ...steered, onLadder: ladder !== undefined });
     if (jumpStarted) {
       playPlayerSound('player_strain', time);
     }
-    const ladder = ladderHold.piece(pacedIntent.jump || sim.body.actionRefusal !== undefined);
     refuseThrowForLadder();
     const climbing =
       ladder !== undefined &&
@@ -1540,8 +1628,16 @@ export const createSession = (options: SessionOptions) => {
     const tick = playerTick;
     playerTick += 1;
     playerInput = controls.sampleAtPlayerTick?.(tick, live, time, sim.compression.c) ?? live;
-    const moving = playerInput.active && !playerInput.inputLocked && !sim.body.actionRefusal;
+    const moving = playerInput.active && !playerInput.inputLocked && !sim.body.actionRefusal && !traps.holds(undefined);
     const intent = moving ? playerInput.intent : IDLE;
+    if (
+      trapInterrupts.read().some((event) => event.kind === 'interrupt') ||
+      intent.forward !== 0 ||
+      intent.right !== 0 ||
+      intent.jump
+    ) {
+      interruptDisarm(queue);
+    }
     const handling = queue.busy || firearms.busy;
     const readyGait = advancePlayerReadiness(dt, intent, moving);
     controls.consumeDominantUse?.();
@@ -1559,7 +1655,7 @@ export const createSession = (options: SessionOptions) => {
   ): void => {
     const carrying = entities.carrying() !== undefined;
     sprinting =
-      !(crouching || ladderHold.on || carrying) &&
+      !(playerStance !== 'standing' || ladderHold.on || carrying) &&
       intent.sprint &&
       (intent.forward !== 0 || intent.right !== 0) &&
       !handling &&
@@ -1585,13 +1681,13 @@ export const createSession = (options: SessionOptions) => {
     const readyMovementFactor =
       readyGait && readyFirearm ? firearms.stanceEffectsFor(readyFirearm.uid).readyMovementFactor : 1;
     const pacedIntent = movementPace(
-      { ...intent, sprint: sprinting, crouch: crouching },
+      { ...intent, sprint: sprinting, jump: intent.jump && playerStance !== 'prone' },
       {
         grams: inventory.carriedWeight(),
         handling,
         readyMovementFactor,
         movementSpeed: sim.body.consequences.movementSpeed,
-        crouchSpeed: senseTuning.crouch.speedMetresPerSimSecond,
+        stanceSpeed: loweredStance()?.speedMetresPerSimSecond,
         directionalSpeed: {
           sideways: senseTuning.movement.sidewaysSpeedScale,
           backward: senseTuning.movement.backwardSpeedScale,
@@ -1683,6 +1779,29 @@ export const createSession = (options: SessionOptions) => {
   /** Containers with a search queued, so pressing again doesn't queue another. */
   const searching = new Set<BlockEntity>();
   const nameOf = (entity: BlockEntity) => entities.defOf(entity).name.toLowerCase();
+  /** Cancels the work that names a piece leaving the world, so a save never names a missing piece. */
+  const forgetPiece = (entity: BlockEntity): void => {
+    sim.actions.cancelNaming(entity.uid);
+    queue.cancelNaming(entity.uid);
+    searching.delete(entity);
+    ladderHold.releasePiece(entity);
+  };
+  /**
+   * The construction action's removal: it cancels the work that names the piece, then takes the piece out of the
+   * world, so a save never names a missing piece; a refusal cancels nothing (`DESIGN.md`, "Edits persist").
+   */
+  const removePiece = (entity: BlockEntity): string | undefined => {
+    if (entities.byUid(entity.uid) !== entity) {
+      return 'It is no longer there';
+    }
+    const mover = furnitureMover();
+    const refusal = removalRefusal(mover, entity);
+    if (refusal) {
+      return refusal;
+    }
+    forgetPiece(entity);
+    return removeFurniture(mover, entity);
+  };
   queue.registerAction('furniture.search', (params) => {
     const uid = params.entityUid;
     if (typeof uid !== 'number' || !Number.isSafeInteger(uid)) {
@@ -1693,6 +1812,10 @@ export const createSession = (options: SessionOptions) => {
       return 'It is no longer there';
     }
     searching.delete(entity);
+    const reserved = entities.useRefusal(entity);
+    if (reserved) {
+      return reserved;
+    }
     const reached = inventory.canReachEntity(entity);
     if (reached) {
       entities.markSearched(entity);
@@ -1708,11 +1831,25 @@ export const createSession = (options: SessionOptions) => {
     closeBlockedMessages: registry.ui.get(CORE_CONTENT_IDS.coreUi)!.doorCloseBlockedMessages,
   });
   registerDownedBodyAction({ queue, player: reachPlayer, zombies: zombieSystem });
+  registerTrapActions({
+    queue,
+    inventory,
+    reach: () => reach(),
+    setCell: () => {
+      const [fx, , fz] = [-Math.sin(controls.yaw()), 0, -Math.cos(controls.yaw())];
+      const [x, y, z] = feet();
+      return inventory.landing([x + Math.round(fx), y, z + Math.round(fz)]);
+    },
+  });
   sim.actions.forcing = {
     validate: (entityUid, toolUid, method) => {
       const entity = entities.byUid(entityUid);
       if (!entity) {
         return 'The door is no longer there';
+      }
+      const reserved = entities.useRefusal(entity);
+      if (reserved) {
+        return reserved;
       }
       const plan = pryPlan(inventory, entity, { toolUid, method }, character);
       return plan.ok ? undefined : plan.reason;
@@ -1744,7 +1881,7 @@ export const createSession = (options: SessionOptions) => {
   };
 
   if (restored) {
-    world.restoreDiffs(restored.world.diffs, (id) => {
+    world.restoreColumns(restored.world.columns, (id) => {
       const found = registry.blockIds.get(id);
       if (found === undefined) {
         throw new Error(`Unknown block ${id} in save`);
@@ -1767,6 +1904,9 @@ export const createSession = (options: SessionOptions) => {
   }
 
   scenarioRun = restoreScenarioRun(options, sim);
+  /** Why a held piece can't be used: it is no longer the live piece, or its deconstruction holds it. */
+  const pieceRefusal = (entity: BlockEntity): string | undefined =>
+    entities.byUid(entity.uid) === entity ? entities.useRefusal(entity) : 'It is no longer there';
   const isObjective = (entity: BlockEntity): boolean =>
     Boolean(
       options.objective &&
@@ -1786,8 +1926,9 @@ export const createSession = (options: SessionOptions) => {
       if (sim.dead) {
         return 'This survivor died';
       }
-      if (entities.byUid(entity.uid) !== entity) {
-        return 'It is no longer there';
+      const unusable = pieceRefusal(entity);
+      if (unusable) {
+        return unusable;
       }
       if (!(scenarioRun && isObjective(entity))) {
         return 'Not the designated objective';
@@ -1883,7 +2024,7 @@ export const createSession = (options: SessionOptions) => {
     restoredLook,
     /** The player's noise state; saved with the character. */
     playerAudio,
-    worldDiffs: () => world.snapshotDiffs((id) => registry.blocks[id]!.id),
+    worldColumns: () => world.snapshotColumns((id) => registry.blocks[id]!.id),
     audioState: () => soundPicker.snapshotState(),
     feet,
     chest,
@@ -1908,8 +2049,8 @@ export const createSession = (options: SessionOptions) => {
     get sprinting() {
       return sprinting;
     },
-    get crouching() {
-      return crouching;
+    get stance() {
+      return playerStance;
     },
     /** Whether the player climbs a ladder, so the pick reaches through it, and which hand is on it. */
     ladderHold,
@@ -1943,6 +2084,10 @@ export const createSession = (options: SessionOptions) => {
       if (entity.searched || searching.has(entity)) {
         return undefined;
       }
+      const reserved = entities.useRefusal(entity);
+      if (reserved) {
+        return reserved;
+      }
       searching.add(entity);
       const { searchNoise } = entities.defOf(entity);
       if (searchNoise) {
@@ -1960,8 +2105,9 @@ export const createSession = (options: SessionOptions) => {
     },
     /** F's gaze/occlusion selection is in play; admission shares Search's live furniture reach. */
     readFurniture: (entity: BlockEntity): string | undefined => {
-      if (entities.byUid(entity.uid) !== entity) {
-        return 'It is no longer there';
+      const unusable = pieceRefusal(entity);
+      if (unusable) {
+        return unusable;
       }
       if (!inventory.canReachEntity(entity)) {
         return 'Too far away';
@@ -1981,6 +2127,9 @@ export const createSession = (options: SessionOptions) => {
     nameOf,
     liftFurniture: liftPiece,
     placeFurniture: placePiece,
+    removeFurniture: removePiece,
+    /** One blow on a piece, landed as a zombie's bash or the player's strike lands it. */
+    bashFurniture: bashPiece,
     turnFurniture: () => turnCarried(inventory),
     tipFurniture: () => tipCarried(inventory),
     /** Where the carried piece would stand if put down at an aimed cell, or why it can't be. */
@@ -2027,7 +2176,7 @@ export const createSession = (options: SessionOptions) => {
           yaw: controls.yaw(),
           pitch: controls.pitch(),
           walk: controls.walking(),
-          crouching,
+          stance: playerStance,
           sprinting,
           firearmReadyWalking,
           handlingPausedForKnockout,

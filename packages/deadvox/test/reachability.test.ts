@@ -5,7 +5,7 @@ import type { SiteLayoutDef } from '../src/core/schema.ts';
 import type { SpawnMarker } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { fixtureEconomy, fixtureLootContext } from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureEconomy, fixtureLootContext } from './economyFixtures.ts';
 
 const baseline = baseRegistry();
 const mutableSections = ['items', 'furniture', 'loot', 'zombies', 'templates', 'recipes', 'layouts'] as const;
@@ -257,6 +257,8 @@ describe('static reachability', () => {
       solid: false,
       container: { pockets: [{ grid: [1, 1], handlingSimSeconds: simSeconds(1) }] },
       workstation: { id: 'placed_bench', qualities: { sawing: 1 }, workFactorBonus: 0.2 },
+      breach: fixtureBreach(),
+      material: FIXTURE_MATERIAL,
     });
     const shambler = registry.zombies.get('shambler')!;
     registry.zombies.set('shambler', { ...shambler, loot: 'wanderer' });
@@ -555,16 +557,17 @@ describe('static reachability', () => {
   it('requires the quality level, while allowing an independently found result to supply its own tool', () => {
     const registry = fresh();
     registry.recipes.clear();
+    registry.items.get('hammer')!.tool = { qualities: { fixturePounding: 2 } };
     registry.recipes.set('candle', {
       id: 'candle',
       result: { item: 'hammer', count: 1 },
       timeGameMinutes: gameMinutes(1),
       skills: {},
-      qualities: { hammering: 3 },
+      qualities: { fixturePounding: 3 },
       components: [[{ item: 'rag', count: 1 }]],
     });
-    expect(checkReachability(registry).issues.map((issue) => issue.path)).toEqual(['.qualities.hammering']);
-    registry.recipes.get('candle')!.qualities.hammering = 2;
+    expect(checkReachability(registry).issues.map((issue) => issue.path)).toEqual(['.qualities.fixturePounding']);
+    registry.recipes.get('candle')!.qualities.fixturePounding = 2;
     expect(checkReachability(registry).issues).toEqual([]);
   });
 

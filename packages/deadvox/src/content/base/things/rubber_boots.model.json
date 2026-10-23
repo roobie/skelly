@@ -1,0 +1,14 @@
+{
+  "id": "rubber_boots",
+  "file": "assets/models/rubber_boots.glb",
+  "parts": {
+    "rubber_boots": {
+      "node": "rubber_boots:boots",
+      "massKg": 1.8,
+      "centreOfMass": [2.3738880988034334e-18, 0.07619810825013136, 0.02349710982658959]
+    }
+  },
+  "grip": { "at": [-0.075, 0.11499999999999999, 0.09], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

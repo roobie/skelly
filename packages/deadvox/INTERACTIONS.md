@@ -3,6 +3,7 @@ read_if:
   - you change item, recipe, appliance or handling ownership
   - you change compressed long actions, interruption, reading or save behavior
   - you change work-item escrow, salvage or reachability
+  - you change how a trap is set, springs, holds or is disarmed
 ---
 
 # Deadvox interactions
@@ -35,7 +36,7 @@ Reading a recipe book is a long action only while its page is open. Closing it p
 
 Finishing a craft consumes escrow once and creates the result; cancellation returns the exact input identities. Disassembly snapshots its yield when work begins, so stopping and resuming cannot change the promised output after a skill or tool change. Repair recipes improve an existing target and are not disassembly results. See `src/core/disassembly.ts`, `planDisassembly`.
 
-Craft completion awards practice; take-apart work does not. Recipe knowledge is explicit, and books add knowledge without changing item ownership. Practice is source-agnostic. Any future activity-tier restriction is triggered by #275.
+Craft completion awards practice; take-apart work does not. Recipe knowledge is explicit, and books add knowledge without changing item ownership. Practice is source-agnostic. A tiered activity trains a skill only up to its tier, and practice at or above that tier is dropped, so repeating easy work cannot carry a skill upward; see `src/core/character.ts`, `Character.awardPractice`, and `src/content/base/recipes.libsonnet`, `training`.
 
 ## Long actions and interruptions
 
@@ -43,10 +44,20 @@ Movement and gameplay action input are ignored while resting, sleeping or crafti
 
 Wait stops on movement. Rest can be cancelled through its anchor or its cancel action; movement does not stop it. Sleep starts at sleepable furniture; movement and its cancel action do not stop it, but an emitted interruption wakes the player. Craft uses its cancel action and resumes after interruption. See `src/core/longAction.ts`, `LongActions.syncInterruption`, and `src/core/sim.ts`, `Simulation.checkInterruptions`.
 
+## Traps
+
+The bear-trap rules and their reasons are in `SLICE-5.md`, "Settled bear-trap rules — issue #107"; this section keeps their ownership.
+
+A set trap is an ordinary item lying in a ground pile, with its armed or holding state on the item. The pile already saves, splits by region and owns the item, so recovery is an ordinary pickup of that same item and no placed-object store is needed until construction places entities (`SLICE-5.md`, "Construction and persistent placement"). A set or holding trap refuses every move, so it cannot be picked up still armed or pulled off a caught leg. The holding state names its victim and how long its jaws still hold; the player's wound and the zombie's leg damage live in their own bodies. See `src/core/bearTrap.ts`, `BearTraps`, and `src/core/inventory.ts`, `Inventory.plan`.
+
+Setting and disarming are handling jobs. Handling jobs are never saved, which makes the disarm non-resumable across a save as the rule requires. A hit, a critical need or movement withdraws a pending disarm instead of pausing it, so the next attempt starts its full duration. Its completion clears the armed state and fires nothing. See `src/game/bearTrapActions.ts`, `interruptDisarm`.
+
+Only traps inside the block of nine regions around the player spring, and the test is positions only, never whether a column is loaded or drawn. See `src/core/worldRegion.ts`, `inPlayerBlock`. Unloaded zombies wait for Slice 4b catch-up without moving, so inside the block an unloaded zombie cannot newly enter a trap's cell; one already standing in it is still caught. See `src/core/zombies.ts`, `ZombieSystemOptions`.
+
 ## Appliances
 
 An appliance is a block entity whose behavior comes from components, not its id. Containers own pockets; controls issue commands; workstations provide recipe qualities; processes run without the player; power joins the electricity graph.
 
-A process runs while its chunk is loaded and catches up when it loads again. Settle its state at every rate change before applying the new rate; otherwise unloaded time can disagree with live ticking. Inside the block around the player, test catch-up against ordinary ticking, including a rate change; beyond it, test that the coarse result is deterministic. See [ADR 0008](docs/decisions/0008-deterministic-world.md). Appliance controls, processes and power are Slice 5 work.
+A process runs while its chunk is loaded and catches up when it loads again. Settle its state at every rate change before applying the new rate; otherwise unloaded time can disagree with live ticking. Inside the block around the player, test catch-up against ordinary ticking, including a rate change; beyond it, test that the coarse result is deterministic. See [ADR 0008](docs/decisions/0008-deterministic-world.md). The electricity graph is built (`src/core/power.ts`, `PowerNetwork`); appliance controls and unattended processes are still open, so these are their rules, not a description of code.
 
 Cooking uses a lit workstation when its recipe requires heat. A player craft stops if that requirement is lost; a process owned by an appliance does not occupy the player's hands or require compression.

@@ -7,7 +7,9 @@
       "weight": 500,
       "size": [1, 2],
       "description": "A small sealed bottle of fuel for lamps and improvised lighting.",
-      "model": "lamp_oil_bottle"
+      "model": "lamp_oil_bottle",
+      "stack": 2,
+      "canister": { "capacity": 8 }
     },
     {
       "id": "glass_shards",
@@ -135,9 +137,8 @@
       "id": "wire_strippers",
       "name": "Wire strippers",
       "category": "tool",
-      "weight": 180,
       "size": [1, 2],
-      "model": "pliers",
+      "model": "wire_strippers",
       "tool": { "qualities": { "cutting": 1, "screwing": 1 } },
       "disassembly": {
         "timeGameMinutes": 8,
@@ -152,9 +153,8 @@
       "id": "adjustable_pliers",
       "name": "Adjustable pliers",
       "category": "tool",
-      "weight": 300,
       "size": [1, 2],
-      "model": "pliers",
+      "model": "adjustable_pliers",
       "tool": { "qualities": { "wrenching": 1, "cutting": 1 } },
       "salvageTimeGameMinutes": 5,
       "salvage": [{ "item": "scrap_metal", "count": 1 }, { "item": "rubber_strip", "count": 1 }]
@@ -196,7 +196,7 @@
       "name": "Dead desk lamp",
       "category": "misc",
       "size": [2, 3],
-      "model": "desk_lamp",
+      "model": "dead_desk_lamp",
       "salvageTimeGameMinutes": 5,
       "salvage": [
         { "item": "glass_bulb", "count": 1 },
@@ -251,9 +251,8 @@
       "id": "sewing_repair_kit",
       "name": "Clothing repair kit",
       "category": "tool",
-      "weight": 420,
       "size": [2, 2],
-      "model": "sewing_kit",
+      "model": "sewing_repair_kit",
       "description": "Thread, patches and needles for mending clothing.",
       "tool": { "qualities": { "sewing": 1, "repairing": 1 } },
       "disassembly": {
@@ -363,7 +362,6 @@
       "id": "wrench",
       "name": "Adjustable wrench",
       "category": "tool",
-      "weight": 500,
       "size": [1, 3],
       "model": "wrench",
       "tool": { "qualities": { "wrenching": 1 } },
@@ -383,7 +381,7 @@
         "skill": "mechanics",
         "yields": [{ "item": "scrap_metal", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }]
       },
-      "firearmAttachmentEffects": { "recoilReduction": 0.05, "wearPerShot": 0.02 }
+      "firearmAttachmentEffects": { "kind": "suppressor", "recoilReduction": 0.05, "wearPerShot": 0.02 }
     }
   ],
   "recipes": [

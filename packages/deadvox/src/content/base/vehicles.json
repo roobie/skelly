@@ -1,0 +1,3891 @@
+{
+  "items": [
+    {
+      "category": "misc",
+      "description": "Twelve volts, if it still holds a charge.",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "car_battery",
+      "model": "car_battery",
+      "name": "Car battery",
+      "size": [3, 2],
+      "vehicle": {
+        "capabilities": ["electricity"]
+      }
+    },
+    {
+      "category": "misc",
+      "description": "A sealed lamp and its lens.",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "car_headlamp",
+      "model": "car_headlamp",
+      "name": "Headlamp unit",
+      "size": [2, 2],
+      "vehicle": {
+        "capabilities": ["light", "glazing"]
+      }
+    },
+    {
+      "category": "misc",
+      "description": "A pressed steel shelf for a battery.",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hatchback_battery_tray",
+      "model": "hatchback_battery_tray",
+      "name": "Hatchback battery tray",
+      "size": [3, 2],
+      "vehicle": {
+        "capabilities": ["structure"]
+      }
+    },
+    {
+      "category": "misc",
+      "description": "A heavy steel shelf for a battery.",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "pickup_battery_tray",
+      "model": "pickup_battery_tray",
+      "name": "Pickup battery tray",
+      "size": [4, 3],
+      "vehicle": {
+        "capabilities": ["structure"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "wheel_205_55r16",
+      "model": "wheel_205_55r16",
+      "name": "Wheel 205/55 R16",
+      "size": [6, 6],
+      "vehicle": {
+        "capabilities": ["wheel"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "front_seat",
+      "model": "front_seat",
+      "name": "Front seat",
+      "size": [5, 10],
+      "vehicle": {
+        "capabilities": ["seat"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "door_mirror",
+      "model": "door_mirror",
+      "name": "Door mirror",
+      "size": [2, 2],
+      "vehicle": {
+        "capabilities": []
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "steering_wheel",
+      "model": "steering_wheel",
+      "name": "Steering wheel",
+      "size": [4, 4],
+      "vehicle": {
+        "capabilities": ["steered"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "gear_lever",
+      "model": "gear_lever",
+      "name": "Gear lever",
+      "size": [1, 3],
+      "vehicle": {
+        "capabilities": []
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hatchback_shell",
+      "model": "hatchback_shell",
+      "name": "Hatchback body shell",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure", "protection", "storage"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hatchback_front_door",
+      "model": "hatchback_front_door",
+      "name": "Hatchback front door",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["entry", "glazing", "protection"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hatchback_rear_door",
+      "model": "hatchback_rear_door",
+      "name": "Hatchback rear door",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["entry", "glazing", "protection"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hatchback_tailgate",
+      "model": "hatchback_tailgate",
+      "name": "Hatchback tailgate",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["entry", "glazing"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hatchback_windscreen",
+      "model": "hatchback_windscreen",
+      "name": "Hatchback windscreen",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["glazing"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hatchback_bonnet",
+      "model": "hatchback_bonnet",
+      "name": "Hatchback bonnet",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["protection"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hatchback_front_wing",
+      "model": "hatchback_front_wing",
+      "name": "Hatchback front wing",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["protection"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hatchback_front_bumper",
+      "model": "hatchback_front_bumper",
+      "name": "Hatchback front bumper",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["protection"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hatchback_rear_bumper",
+      "model": "hatchback_rear_bumper",
+      "name": "Hatchback rear bumper",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["protection"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hatchback_tail_lamp",
+      "model": "hatchback_tail_lamp",
+      "name": "Hatchback tail lamp",
+      "size": [3, 2],
+      "vehicle": {
+        "capabilities": ["light"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hatchback_front_strut",
+      "model": "hatchback_front_strut",
+      "name": "Hatchback front strut",
+      "size": [4, 6],
+      "vehicle": {
+        "capabilities": ["structure"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hatchback_rear_axle",
+      "model": "hatchback_rear_axle",
+      "name": "Hatchback rear axle",
+      "size": [12, 4],
+      "vehicle": {
+        "capabilities": ["structure"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hatchback_engine",
+      "model": "hatchback_engine",
+      "name": "Hatchback engine",
+      "size": [6, 5],
+      "vehicle": {
+        "capabilities": ["power"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hatchback_gearbox",
+      "model": "hatchback_gearbox",
+      "name": "Hatchback gearbox",
+      "size": [3, 3],
+      "vehicle": {
+        "capabilities": ["driven"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hatchback_radiator",
+      "model": "hatchback_radiator",
+      "name": "Hatchback radiator",
+      "size": [10, 4],
+      "vehicle": {
+        "capabilities": []
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hatchback_fuel_tank",
+      "model": "hatchback_fuel_tank",
+      "name": "Hatchback fuel tank",
+      "size": [5, 4],
+      "vehicle": {
+        "capabilities": ["fuel"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hatchback_exhaust",
+      "model": "hatchback_exhaust",
+      "name": "Hatchback exhaust",
+      "size": [12, 2],
+      "vehicle": {
+        "capabilities": []
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hatchback_dashboard",
+      "model": "hatchback_dashboard",
+      "name": "Hatchback dashboard",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hatchback_rear_seat",
+      "model": "hatchback_rear_seat",
+      "name": "Hatchback rear seat",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["seat"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_frame_rail",
+      "model": "hoist_frame_rail",
+      "name": "Truck frame rail",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_crossmember",
+      "model": "hoist_crossmember",
+      "name": "Truck crossmember",
+      "size": [4, 2],
+      "vehicle": {
+        "capabilities": ["structure"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_wheel",
+      "model": "hoist_wheel",
+      "name": "Truck wheel",
+      "size": [6, 6],
+      "vehicle": {
+        "capabilities": ["wheel"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_front_axle",
+      "model": "hoist_front_axle",
+      "name": "Truck front axle",
+      "size": [12, 4],
+      "vehicle": {
+        "capabilities": ["steered", "structure"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_rear_axle",
+      "model": "hoist_rear_axle",
+      "name": "Truck rear axle",
+      "size": [12, 4],
+      "vehicle": {
+        "capabilities": ["driven", "structure"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_engine",
+      "model": "hoist_engine",
+      "name": "Truck diesel engine",
+      "size": [8, 6],
+      "vehicle": {
+        "capabilities": ["power"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_gearbox",
+      "model": "hoist_gearbox",
+      "name": "Truck gearbox",
+      "size": [4, 3],
+      "vehicle": {
+        "capabilities": ["driven"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_prop_shaft",
+      "model": "hoist_prop_shaft",
+      "name": "Truck prop shaft",
+      "size": [12, 1],
+      "vehicle": {
+        "capabilities": []
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_fuel_tank",
+      "model": "hoist_fuel_tank",
+      "name": "Truck fuel tank",
+      "size": [8, 4],
+      "vehicle": {
+        "capabilities": ["fuel"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_exhaust",
+      "model": "hoist_exhaust",
+      "name": "Truck exhaust",
+      "size": [8, 2],
+      "vehicle": {
+        "capabilities": []
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_radiator",
+      "model": "hoist_radiator",
+      "name": "Truck radiator",
+      "size": [6, 6],
+      "vehicle": {
+        "capabilities": []
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_cab_floor",
+      "model": "hoist_cab_floor",
+      "name": "Truck cab floor",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_cab_skirt",
+      "model": "hoist_cab_skirt",
+      "name": "Truck cab skirt",
+      "size": [8, 2],
+      "vehicle": {
+        "capabilities": ["protection"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_cab_back",
+      "model": "hoist_cab_back",
+      "name": "Truck cab back",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_front_panel",
+      "model": "hoist_front_panel",
+      "name": "Truck front panel",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_a_post",
+      "model": "hoist_a_post",
+      "name": "Truck A-post",
+      "size": [2, 6],
+      "vehicle": {
+        "capabilities": ["structure"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_windscreen",
+      "model": "hoist_windscreen",
+      "name": "Truck windscreen",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["glazing"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_roof",
+      "model": "hoist_roof",
+      "name": "Truck cab roof",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["protection"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_door",
+      "model": "hoist_door",
+      "name": "Truck cab door",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["entry", "glazing", "protection"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_front_bumper",
+      "model": "hoist_front_bumper",
+      "name": "Truck front bumper",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["protection"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_dashboard",
+      "model": "hoist_dashboard",
+      "name": "Truck dashboard",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_engine_cover",
+      "model": "hoist_engine_cover",
+      "name": "Truck engine cover",
+      "size": [6, 3],
+      "vehicle": {
+        "capabilities": []
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_bench",
+      "model": "hoist_bench",
+      "name": "Truck bench seat",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["seat"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_deck_floor",
+      "model": "hoist_deck_floor",
+      "name": "Truck flat deck",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_headboard",
+      "model": "hoist_headboard",
+      "name": "Truck headboard",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["protection"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_mudguard",
+      "model": "hoist_mudguard",
+      "name": "Truck mudguard",
+      "size": [4, 3],
+      "vehicle": {
+        "capabilities": ["protection"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_rear_underrun",
+      "model": "hoist_rear_underrun",
+      "name": "Truck rear underrun bar",
+      "size": [12, 2],
+      "vehicle": {
+        "capabilities": ["structure"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_tail_lamp",
+      "model": "hoist_tail_lamp",
+      "name": "Truck tail lamp",
+      "size": [3, 2],
+      "vehicle": {
+        "capabilities": ["light"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_crane_base",
+      "model": "hoist_crane_base",
+      "name": "Crane base",
+      "size": [8, 6],
+      "vehicle": {
+        "capabilities": ["structure"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_stabiliser",
+      "model": "hoist_stabiliser",
+      "name": "Crane stabiliser leg",
+      "size": [4, 8],
+      "vehicle": {
+        "capabilities": ["stabiliser"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_crane_column",
+      "model": "hoist_crane_column",
+      "name": "Crane column",
+      "size": [4, 8],
+      "vehicle": {
+        "capabilities": ["lift"],
+        "ratedLoadKg": 850
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_boom",
+      "model": "hoist_boom",
+      "name": "Crane boom",
+      "size": [12, 2],
+      "vehicle": {
+        "capabilities": ["structure"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_boom_extension",
+      "model": "hoist_boom_extension",
+      "name": "Crane boom extension",
+      "size": [12, 2],
+      "vehicle": {
+        "capabilities": ["structure"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_luff_ram",
+      "model": "hoist_luff_ram",
+      "name": "Crane luffing ram",
+      "size": [6, 2],
+      "vehicle": {
+        "capabilities": []
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_winch",
+      "model": "hoist_winch",
+      "name": "Crane winch",
+      "size": [4, 3],
+      "vehicle": {
+        "capabilities": []
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_hook_block",
+      "model": "hoist_hook_block",
+      "name": "Crane hook block",
+      "size": [2, 3],
+      "vehicle": {
+        "capabilities": []
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "hoist_boom_rest",
+      "model": "hoist_boom_rest",
+      "name": "Crane boom rest",
+      "size": [3, 4],
+      "vehicle": {
+        "capabilities": ["structure"]
+      }
+    },
+    {
+      "category": "misc",
+      "description": "Room marked out on a load floor for what the vehicle carries.",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "cargo_space",
+      "model": "cargo_space",
+      "name": "Cargo space",
+      "size": [1, 1],
+      "vehicle": {
+        "capabilities": ["storage"],
+        "cargoSpace": {
+          "handlingSimSeconds": 1.2,
+          "openClearanceCells": 20,
+          "wideReason": "A cargo space is as wide as the floor it covers, not a carried bag."
+        }
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "pickup_bed_floor",
+      "model": "pickup_bed_floor",
+      "name": "Pickup bed floor",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure", "load_floor"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "pickup_bed_side",
+      "model": "pickup_bed_side",
+      "name": "Pickup bed side",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["protection"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "pickup_bed_front",
+      "model": "pickup_bed_front",
+      "name": "Pickup headboard",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["protection"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "box_van_floor",
+      "model": "box_van_floor",
+      "name": "Box van floor",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure", "load_floor"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "box_van_side",
+      "model": "box_van_side",
+      "name": "Box van side wall",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["protection"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "box_van_front",
+      "model": "box_van_front",
+      "name": "Box van front wall",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["protection"]
+      }
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "box_van_roof",
+      "model": "box_van_roof",
+      "name": "Box van roof",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["protection"]
+      }
+    }
+  ],
+  "models": [
+    {
+      "anchors": {
+        "base": [0, 0, 0],
+        "terminal_positive": [0.075000000000000011, 0.1875, -0.056249999999999994]
+      },
+      "file": "assets/models/car_battery.glb",
+      "id": "car_battery",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0.09375, 0],
+          "collision": [
+            {
+              "max": [0.125, 0.15625, 0.09375],
+              "min": [-0.125, 0, -0.09375]
+            },
+            {
+              "max": [0.125, 0.1875, 0.09375],
+              "min": [-0.125, 0.15625, -0.09375]
+            },
+            {
+              "max": [0.125, 0.125, 0.09375],
+              "min": [-0.125, 0.0625, -0.09375]
+            }
+          ],
+          "massKg": 14,
+          "node": "body:carton",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {
+        "beam": [0.03125, 0.078125, 0],
+        "mount": [-0.03125, 0.078125, -0.087499999999999994]
+      },
+      "file": "assets/models/car_headlamp.glb",
+      "id": "car_headlamp",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0.078125, 0],
+          "collision": [
+            {
+              "max": [0.03125, 0.15625, 0.125],
+              "min": [-0.03125, 0, -0.125]
+            }
+          ],
+          "massKg": 1.2,
+          "node": "body:block",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {
+        "seat": [-0.015625, 0.03125, 0]
+      },
+      "file": "assets/models/hatchback_battery_tray.glb",
+      "id": "hatchback_battery_tray",
+      "parts": {
+        "body": {
+          "centreOfMass": [-0.015625, 0.015625, 0],
+          "collision": [
+            {
+              "max": [0.125, 0.03125, 0.09375],
+              "min": [-0.15625, 0, -0.09375]
+            }
+          ],
+          "massKg": 1.5,
+          "node": "body:block",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {
+        "seat": [0, 0.03125, 0]
+      },
+      "file": "assets/models/pickup_battery_tray.glb",
+      "id": "pickup_battery_tray",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0.015625, 0],
+          "collision": [
+            {
+              "max": [0.15625, 0.03125, 0.125],
+              "min": [-0.15625, 0, -0.125]
+            }
+          ],
+          "massKg": 2.2000000000000002,
+          "node": "body:block",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {
+        "hub": [-0.015625, -0.015625, 0]
+      },
+      "file": "assets/models/wheel_205_55r16.glb",
+      "id": "wheel_205_55r16",
+      "parts": {
+        "body": {
+          "centreOfMass": [-0.00092132972322502926, -0.0015230144404332125, 0],
+          "collision": [
+            {
+              "max": [0.3125, 0.3125, 0.09375],
+              "min": [-0.3125, -0.3125, -0.09375]
+            },
+            {
+              "max": [0.1875, 0.1875, 0.0625],
+              "min": [-0.21875, -0.21875, -0.0625]
+            }
+          ],
+          "massKg": 18,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {
+        "hips": [-0.049999999999999989, 0.25, 0]
+      },
+      "file": "assets/models/front_seat.glb",
+      "id": "front_seat",
+      "parts": {
+        "body": {
+          "centreOfMass": [-0.12729357798165139, 0.30239392201834864, 0],
+          "collision": [
+            {
+              "max": [0.25, 0.09375, 0.25],
+              "min": [-0.25, 0, -0.25]
+            },
+            {
+              "max": [0.25, 0.25, 0.25],
+              "min": [-0.25, 0.09375, -0.25]
+            },
+            {
+              "max": [-0.1875, 0.84375, 0.25],
+              "min": [-0.40625, 0.1875, -0.25]
+            },
+            {
+              "max": [-0.34375, 1.03125, 0.125],
+              "min": [-0.4375, 0.84375, -0.125]
+            }
+          ],
+          "massKg": 16,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {
+        "mount": [0, 0.046875, 0]
+      },
+      "file": "assets/models/door_mirror.glb",
+      "id": "door_mirror",
+      "parts": {
+        "body": {
+          "centreOfMass": [-0.014423076923076924, 0.061298076923076927, 0.11778846153846155],
+          "collision": [
+            {
+              "max": [0.03125, 0.0625, 0.0625],
+              "min": [-0.03125, 0.03125, 0]
+            },
+            {
+              "max": [0.03125, 0.125, 0.1875],
+              "min": [-0.03125, 0, 0.0625]
+            },
+            {
+              "max": [-0.03125, 0.125, 0.1875],
+              "min": [-0.0625, 0, 0.0625]
+            }
+          ],
+          "massKg": 1,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {
+        "column": [0.0625, 0, 0]
+      },
+      "file": "assets/models/steering_wheel.glb",
+      "id": "steering_wheel",
+      "parts": {
+        "body": {
+          "centreOfMass": [0.021306818181818184, -0.011837121212121212, 0],
+          "collision": [
+            {
+              "max": [0.03125, 0.1875, 0.1875],
+              "min": [0, -0.1875, -0.1875]
+            },
+            {
+              "max": [0.0625, 0.0625, 0.0625],
+              "min": [0, -0.0625, -0.0625]
+            },
+            {
+              "max": [0.03125, 0, 0.03125],
+              "min": [0, -0.15625, -0.03125]
+            }
+          ],
+          "massKg": 2,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/gear_lever.glb",
+      "id": "gear_lever",
+      "parts": {
+        "body": {
+          "centreOfMass": [-0.00026483050847457616, 0.097192796610169496, -0.00026483050847457616],
+          "collision": [
+            {
+              "max": [0.0625, 0.03125, 0.0625],
+              "min": [-0.0625, 0, -0.0625]
+            },
+            {
+              "max": [0.03125, 0.25, 0.03125],
+              "min": [-0.03125, -0.03125, -0.03125]
+            },
+            {
+              "max": [0.03125, 0.25, 0.03125],
+              "min": [-0.03125, 0.1875, -0.03125]
+            }
+          ],
+          "massKg": 1,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hatchback_shell.glb",
+      "id": "hatchback_shell",
+      "parts": {
+        "body": {
+          "centreOfMass": [-0.4474143693527568, 0.61026818642817626, 0],
+          "collision": [
+            {
+              "max": [0.6875, 0.3125, 0.8125],
+              "min": [-0.9375, 0.1875, -0.8125]
+            },
+            {
+              "max": [0.6875, 0.3125, 0.75],
+              "min": [-0.9375, 0.28125, -0.75]
+            },
+            {
+              "max": [0.6875, 0.4375, 0.125],
+              "min": [-0.59375, 0.3125, -0.125]
+            },
+            {
+              "max": [-0.9375, 0.46875, 0.8125],
+              "min": [-1.96875, 0.375, -0.8125]
+            },
+            {
+              "max": [0.8125, 0.9375, 0.78125],
+              "min": [0.6875, 0.3125, -0.78125]
+            },
+            {
+              "max": [2, 0.8125, 0.59375],
+              "min": [1.9375, 0.34375, -0.59375]
+            },
+            {
+              "max": [-1.96875, 0.625, 0.8125],
+              "min": [-2.0625, 0.4375, -0.8125]
+            },
+            {
+              "max": [0.125, 1.4375, 0.6875],
+              "min": [-1.65625, 1.40625, -0.6875]
+            },
+            {
+              "max": [0.09375, 1.40625, 0.6875],
+              "min": [-1.59375, 1.375, -0.6875]
+            },
+            {
+              "max": [0.8125, 0.3125, 0.875],
+              "min": [-0.90625, 0.15625, 0.78125]
+            },
+            {
+              "max": [1.9375, 0.40625, 0.625],
+              "min": [0.8125, 0.3125, 0.5625]
+            },
+            {
+              "max": [1.6875, 0.84375, 0.59375],
+              "min": [0.84375, 0.40625, 0.5625]
+            },
+            {
+              "max": [0.8125, 0.96875, 0.875],
+              "min": [0.6875, 0.3125, 0.78125]
+            },
+            {
+              "max": [0.8125, 1.40625, 0.8125],
+              "min": [0, 0.96875, 0.71875]
+            },
+            {
+              "max": [-0.25, 1.375, 0.84375],
+              "min": [-0.375, 0.3125, 0.78125]
+            },
+            {
+              "max": [0.125, 1.40625, 0.8125],
+              "min": [-1.65625, 1.34375, 0.65625]
+            },
+            {
+              "max": [-1.625, 0.96875, 0.875],
+              "min": [-1.96875, 0.3125, 0.8125]
+            },
+            {
+              "max": [-1.125, 0.96875, 0.875],
+              "min": [-1.625, 0.6875, 0.8125]
+            },
+            {
+              "max": [-1, 0.96875, 0.8125],
+              "min": [-1.96875, 0.46875, 0.6875]
+            },
+            {
+              "max": [-0.875, 1.40625, 0.8125],
+              "min": [-1.96875, 0.96875, 0.75]
+            },
+            {
+              "max": [-1.59375, 1.40625, 0.75],
+              "min": [-1.96875, 0.96875, 0.625]
+            },
+            {
+              "max": [0.8125, 0.3125, -0.78125],
+              "min": [-0.90625, 0.15625, -0.875]
+            },
+            {
+              "max": [1.9375, 0.40625, -0.5625],
+              "min": [0.8125, 0.3125, -0.625]
+            },
+            {
+              "max": [1.6875, 0.84375, -0.5625],
+              "min": [0.84375, 0.40625, -0.59375]
+            },
+            {
+              "max": [0.8125, 0.96875, -0.78125],
+              "min": [0.6875, 0.3125, -0.875]
+            },
+            {
+              "max": [0.8125, 1.40625, -0.71875],
+              "min": [0, 0.96875, -0.8125]
+            },
+            {
+              "max": [-0.25, 1.375, -0.78125],
+              "min": [-0.375, 0.3125, -0.84375]
+            },
+            {
+              "max": [0.125, 1.40625, -0.65625],
+              "min": [-1.65625, 1.34375, -0.8125]
+            },
+            {
+              "max": [-1.625, 0.96875, -0.8125],
+              "min": [-1.96875, 0.3125, -0.875]
+            },
+            {
+              "max": [-1.125, 0.96875, -0.8125],
+              "min": [-1.625, 0.6875, -0.875]
+            },
+            {
+              "max": [-1, 0.96875, -0.6875],
+              "min": [-1.96875, 0.46875, -0.8125]
+            },
+            {
+              "max": [-0.875, 1.40625, -0.75],
+              "min": [-1.96875, 0.96875, -0.8125]
+            },
+            {
+              "max": [-1.59375, 1.40625, -0.625],
+              "min": [-1.96875, 0.96875, -0.75]
+            }
+          ],
+          "massKg": 520,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {
+        "hinge_a": [0.6875, 0.44374999999999998, 0.875],
+        "hinge_b": [0.6875, 0.83750000000000002, 0.875]
+      },
+      "file": "assets/models/hatchback_front_door.glb",
+      "id": "hatchback_front_door",
+      "parts": {
+        "body": {
+          "centreOfMass": [0.20264061766087366, 0.69860409816815405, 0.82479303663691883],
+          "collision": [
+            {
+              "max": [0.6875, 0.96875, 0.875],
+              "min": [-0.25, 0.3125, 0.8125]
+            },
+            {
+              "max": [0.6875, 0.9375, 0.8125],
+              "min": [-0.25, 0.3125, 0.78125]
+            },
+            {
+              "max": [0.6875, 1.375, 0.8125],
+              "min": [-0.25, 0.96875, 0.78125]
+            },
+            {
+              "max": [-0.0625, 0.875, 0.90625],
+              "min": [-0.1875, 0.84375, 0.875]
+            }
+          ],
+          "massKg": 24,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {
+        "hinge_a": [-0.375, 0.44374999999999998, 0.875],
+        "hinge_b": [-0.375, 0.83750000000000002, 0.875]
+      },
+      "file": "assets/models/hatchback_rear_door.glb",
+      "id": "hatchback_rear_door",
+      "parts": {
+        "body": {
+          "centreOfMass": [-0.7129830441640379, 0.74003351735015777, 0.82248619873817042],
+          "collision": [
+            {
+              "max": [-0.375, 0.96875, 0.875],
+              "min": [-0.90625, 0.3125, 0.8125]
+            },
+            {
+              "max": [-0.90625, 0.96875, 0.875],
+              "min": [-1.15625, 0.6875, 0.8125]
+            },
+            {
+              "max": [-0.375, 0.9375, 0.8125],
+              "min": [-1.09375, 0.3125, 0.78125]
+            },
+            {
+              "max": [-0.375, 1.375, 0.8125],
+              "min": [-1.09375, 0.96875, 0.78125]
+            },
+            {
+              "max": [-0.90625, 0.875, 0.90625],
+              "min": [-1.03125, 0.84375, 0.875]
+            }
+          ],
+          "massKg": 20,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {
+        "hinge_a": [-1.65625, 1.40625, 0.59375],
+        "hinge_b": [-1.65625, 1.40625, -0.59375]
+      },
+      "file": "assets/models/hatchback_tailgate.glb",
+      "id": "hatchback_tailgate",
+      "parts": {
+        "body": {
+          "centreOfMass": [-1.9205230222496907, 0.96625849814585896, 0],
+          "collision": [
+            {
+              "max": [-1.96875, 0.96875, 0.625],
+              "min": [-2.03125, 0.625, -0.625]
+            },
+            {
+              "max": [-1.65625, 1.40625, 0.59375],
+              "min": [-2, 0.96875, -0.59375]
+            },
+            {
+              "max": [-2, 0.8125, 0.125],
+              "min": [-2.03125, 0.75, -0.125]
+            }
+          ],
+          "massKg": 16,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hatchback_windscreen.glb",
+      "id": "hatchback_windscreen",
+      "parts": {
+        "body": {
+          "centreOfMass": [0.38308189655172414, 1.1945043103448276, 0],
+          "collision": [
+            {
+              "max": [0.75, 1.40625, 0.71875],
+              "min": [0.03125, 0.96875, -0.71875]
+            }
+          ],
+          "massKg": 11,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hatchback_bonnet.glb",
+      "id": "hatchback_bonnet",
+      "parts": {
+        "body": {
+          "centreOfMass": [1.40625, 0.86595394736842102, 0],
+          "collision": [
+            {
+              "max": [2, 0.9375, 0.75],
+              "min": [0.8125, 0.78125, -0.75]
+            }
+          ],
+          "massKg": 12,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hatchback_front_wing.glb",
+      "id": "hatchback_front_wing",
+      "parts": {
+        "body": {
+          "centreOfMass": [1.4742994332493702, 0.67124527707808568, 0.84375],
+          "collision": [
+            {
+              "max": [0.875, 0.9375, 0.875],
+              "min": [0.8125, 0.3125, 0.8125]
+            },
+            {
+              "max": [1.59375, 0.9375, 0.875],
+              "min": [0.875, 0.6875, 0.8125]
+            },
+            {
+              "max": [2, 0.84375, 0.875],
+              "min": [1.59375, 0.34375, 0.8125]
+            }
+          ],
+          "massKg": 4,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hatchback_front_bumper.glb",
+      "id": "hatchback_front_bumper",
+      "parts": {
+        "body": {
+          "centreOfMass": [2.002389705882353, 0.43922794117647057, 0],
+          "collision": [
+            {
+              "max": [2.0625, 0.5625, 0.84375],
+              "min": [1.9375, 0.25, -0.84375]
+            },
+            {
+              "max": [2.03125, 0.78125, 0.40625],
+              "min": [1.96875, 0.59375, -0.40625]
+            },
+            {
+              "max": [2.09375, 0.40625, 0.40625],
+              "min": [2.0625, 0.3125, -0.40625]
+            }
+          ],
+          "massKg": 6,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hatchback_rear_bumper.glb",
+      "id": "hatchback_rear_bumper",
+      "parts": {
+        "body": {
+          "centreOfMass": [-2, 0.40625, 0],
+          "collision": [
+            {
+              "max": [-1.9375, 0.5625, 0.84375],
+              "min": [-2.0625, 0.25, -0.84375]
+            }
+          ],
+          "massKg": 5,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hatchback_tail_lamp.glb",
+      "id": "hatchback_tail_lamp",
+      "parts": {
+        "body": {
+          "centreOfMass": [-2, 0.75, 0.734375],
+          "collision": [
+            {
+              "max": [-1.96875, 0.875, 0.84375],
+              "min": [-2.03125, 0.625, 0.625]
+            }
+          ],
+          "massKg": 1,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {
+        "hub": [1.234375, 0.3125, 0.65625]
+      },
+      "file": "assets/models/hatchback_front_strut.glb",
+      "id": "hatchback_front_strut",
+      "parts": {
+        "body": {
+          "centreOfMass": [1.2484631147540983, 0.32402663934426229, 0.52254098360655743],
+          "collision": [
+            {
+              "max": [1.40625, 0.25, 0.59375],
+              "min": [1.09375, 0.1875, 0.34375]
+            },
+            {
+              "max": [1.28125, 0.375, 0.65625],
+              "min": [1.1875, 0.25, 0.59375]
+            },
+            {
+              "max": [1.28125, 0.84375, 0.65625],
+              "min": [1.21875, 0.375, 0.59375]
+            }
+          ],
+          "massKg": 14,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hatchback_rear_axle.glb",
+      "id": "hatchback_rear_axle",
+      "parts": {
+        "body": {
+          "centreOfMass": [-1.1019736842105263, 0.30448190789473684, 0],
+          "collision": [
+            {
+              "max": [-1.03125, 0.34375, 0.5625],
+              "min": [-1.09375, 0.25, -0.5625]
+            },
+            {
+              "max": [-0.96875, 0.34375, 0.59375],
+              "min": [-1.3125, 0.28125, 0.5625]
+            },
+            {
+              "max": [-1.21875, 0.375, 0.65625],
+              "min": [-1.3125, 0.28125, 0.59375]
+            },
+            {
+              "max": [-1.1875, 0.375, 0.53125],
+              "min": [-1.25, 0.34375, 0.46875]
+            },
+            {
+              "max": [-0.96875, 0.34375, -0.5625],
+              "min": [-1.3125, 0.28125, -0.59375]
+            },
+            {
+              "max": [-1.21875, 0.375, -0.59375],
+              "min": [-1.3125, 0.28125, -0.65625]
+            },
+            {
+              "max": [-1.1875, 0.375, -0.46875],
+              "min": [-1.25, 0.34375, -0.53125]
+            }
+          ],
+          "massKg": 30,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hatchback_engine.glb",
+      "id": "hatchback_engine",
+      "parts": {
+        "body": {
+          "centreOfMass": [1.4559157580477675, 0.57481503115264798, -0.030682113187954312],
+          "collision": [
+            {
+              "max": [1.59375, 0.375, 0.1875],
+              "min": [1.3125, 0.3125, -0.25]
+            },
+            {
+              "max": [1.625, 0.71875, 0.25],
+              "min": [1.3125, 0.375, -0.3125]
+            },
+            {
+              "max": [1.59375, 0.8125, 0.21875],
+              "min": [1.34375, 0.71875, -0.28125]
+            },
+            {
+              "max": [1.5625, 0.84375, 0.21875],
+              "min": [1.34375, 0.8125, -0.25]
+            },
+            {
+              "max": [1.3125, 0.75, 0.1875],
+              "min": [1.25, 0.5625, -0.25]
+            }
+          ],
+          "massKg": 140,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hatchback_gearbox.glb",
+      "id": "hatchback_gearbox",
+      "parts": {
+        "body": {
+          "centreOfMass": [1.359375, 0.484375, -0.421875],
+          "collision": [
+            {
+              "max": [1.5, 0.625, -0.3125],
+              "min": [1.21875, 0.34375, -0.53125]
+            }
+          ],
+          "massKg": 35,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hatchback_radiator.glb",
+      "id": "hatchback_radiator",
+      "parts": {
+        "body": {
+          "centreOfMass": [1.875, 0.578125, 0],
+          "collision": [
+            {
+              "max": [1.90625, 0.78125, 0.5],
+              "min": [1.84375, 0.375, -0.5]
+            }
+          ],
+          "massKg": 6,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hatchback_fuel_tank.glb",
+      "id": "hatchback_fuel_tank",
+      "parts": {
+        "body": {
+          "centreOfMass": [-0.703125, 0.15625, -0.40625],
+          "collision": [
+            {
+              "max": [-0.5, 0.1875, -0.15625],
+              "min": [-0.90625, 0.125, -0.65625]
+            }
+          ],
+          "massKg": 8,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hatchback_exhaust.glb",
+      "id": "hatchback_exhaust",
+      "parts": {
+        "body": {
+          "centreOfMass": [-1.3226474719101124, 0.21882022471910115, 0.022261235955056181],
+          "collision": [
+            {
+              "max": [1.3125, 0.1875, 0.125],
+              "min": [-1.40625, 0.125, 0.0625]
+            },
+            {
+              "max": [-1.40625, 0.3125, 0.3125],
+              "min": [-1.84375, 0.15625, -0.3125]
+            },
+            {
+              "max": [-1.84375, 0.25, 0.25],
+              "min": [-2.09375, 0.1875, 0.1875]
+            }
+          ],
+          "massKg": 12,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hatchback_dashboard.glb",
+      "id": "hatchback_dashboard",
+      "parts": {
+        "body": {
+          "centreOfMass": [0.54629062778272486, 0.67105409617097056, 0.0023374888691006235],
+          "collision": [
+            {
+              "max": [0.6875, 0.8125, 0.75],
+              "min": [0.5625, 0.4375, -0.75]
+            },
+            {
+              "max": [0.6875, 0.90625, 0.75],
+              "min": [0.375, 0.8125, -0.75]
+            },
+            {
+              "max": [0.5625, 0.5625, 0.09375],
+              "min": [0.09375, 0.3125, -0.09375]
+            },
+            {
+              "max": [0.5625, 0.8125, 0.40625],
+              "min": [0.34375, 0.75, 0.34375]
+            }
+          ],
+          "massKg": 14,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hatchback_rear_seat.glb",
+      "id": "hatchback_rear_seat",
+      "parts": {
+        "body": {
+          "centreOfMass": [-0.88585805084745761, 0.60531426553672318, 0],
+          "collision": [
+            {
+              "max": [-0.5625, 0.4375, 0.6875],
+              "min": [-0.9375, 0.3125, -0.6875]
+            },
+            {
+              "max": [-0.53125, 0.5625, 0.6875],
+              "min": [-1, 0.4375, -0.6875]
+            },
+            {
+              "max": [-0.9375, 1.1875, 0.6875],
+              "min": [-1.21875, 0.53125, -0.6875]
+            }
+          ],
+          "massKg": 20,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_frame_rail.glb",
+      "id": "hoist_frame_rail",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0.46875, 0.5],
+          "collision": [
+            {
+              "max": [2.875, 0.53125, 0.5625],
+              "min": [-2.875, 0.40625, 0.4375]
+            }
+          ],
+          "massKg": 110,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_crossmember.glb",
+      "id": "hoist_crossmember",
+      "parts": {
+        "body": {
+          "centreOfMass": [0.0625, 0.046875, 0.4375],
+          "collision": [
+            {
+              "max": [0.125, 0.09375, 0.875],
+              "min": [0, 0, 0]
+            }
+          ],
+          "massKg": 15,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {
+        "hub": [-0.015625, -0.015625, 0]
+      },
+      "file": "assets/models/hoist_wheel.glb",
+      "id": "hoist_wheel",
+      "parts": {
+        "body": {
+          "centreOfMass": [-0.0011666530811868267, -0.0011462748614281043, -0.01052025595044017],
+          "collision": [
+            {
+              "max": [0.375, 0.375, 0.125],
+              "min": [-0.375, -0.375, -0.125]
+            },
+            {
+              "max": [0.1875, 0.1875, 0.09375],
+              "min": [-0.21875, -0.21875, -0.09375]
+            }
+          ],
+          "massKg": 30,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_front_axle.glb",
+      "id": "hoist_front_axle",
+      "parts": {
+        "body": {
+          "centreOfMass": [1.9143391652613826, 0.32759801854974702, -0.03319983136593592],
+          "collision": [
+            {
+              "max": [1.96875, 0.40625, 0.5625],
+              "min": [1.84375, 0.3125, -0.5625]
+            },
+            {
+              "max": [2.0625, 0.40625, 0.09375],
+              "min": [1.78125, 0.1875, -0.21875]
+            },
+            {
+              "max": [2.03125, 0.5, 0.59375],
+              "min": [1.75, 0.21875, 0.5625]
+            },
+            {
+              "max": [2.03125, 0.5, -0.5625],
+              "min": [1.75, 0.21875, -0.59375]
+            }
+          ],
+          "massKg": 140,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_rear_axle.glb",
+      "id": "hoist_rear_axle",
+      "parts": {
+        "body": {
+          "centreOfMass": [-1.4919108347386172, 0.32759801854974702, -0.03319983136593592],
+          "collision": [
+            {
+              "max": [-1.4375, 0.40625, 0.5625],
+              "min": [-1.5625, 0.3125, -0.5625]
+            },
+            {
+              "max": [-1.34375, 0.40625, 0.09375],
+              "min": [-1.625, 0.1875, -0.21875]
+            },
+            {
+              "max": [-1.375, 0.5, 0.59375],
+              "min": [-1.65625, 0.21875, 0.5625]
+            },
+            {
+              "max": [-1.375, 0.5, -0.5625],
+              "min": [-1.65625, 0.21875, -0.59375]
+            }
+          ],
+          "massKg": 140,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_engine.glb",
+      "id": "hoist_engine",
+      "parts": {
+        "body": {
+          "centreOfMass": [1.8224394846434149, 0.69492614523685581, -4.0668922436231143e-5],
+          "collision": [
+            {
+              "max": [2.25, 0.8125, 0.3125],
+              "min": [1.375, 0.53125, -0.3125]
+            },
+            {
+              "max": [2.25, 0.90625, -0.25],
+              "min": [1.375, 0.8125, -0.3125]
+            },
+            {
+              "max": [2.25, 0.90625, 0.3125],
+              "min": [1.375, 0.8125, 0.25]
+            },
+            {
+              "max": [1.4375, 0.90625, 0.25],
+              "min": [1.375, 0.8125, -0.25]
+            },
+            {
+              "max": [2.25, 0.90625, 0.25],
+              "min": [2.1875, 0.8125, -0.25]
+            },
+            {
+              "max": [2.1875, 0.90625, 0.25],
+              "min": [1.4375, 0.8125, -0.25]
+            },
+            {
+              "max": [2.125, 0.53125, 0.1875],
+              "min": [1.5, 0.4375, -0.1875]
+            },
+            {
+              "max": [1.75, 0.53125, -0.3125],
+              "min": [1.625, 0.46875, -0.4375]
+            },
+            {
+              "max": [1.75, 0.53125, 0.4375],
+              "min": [1.625, 0.46875, 0.3125]
+            },
+            {
+              "max": [2.3125, 0.875, 0.15625],
+              "min": [2.25, 0.53125, -0.1875]
+            }
+          ],
+          "massKg": 280,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_gearbox.glb",
+      "id": "hoist_gearbox",
+      "parts": {
+        "body": {
+          "centreOfMass": [1.0428240740740742, 0.6186342592592593, 0],
+          "collision": [
+            {
+              "max": [1.375, 0.78125, 0.15625],
+              "min": [0.6875, 0.53125, -0.15625]
+            },
+            {
+              "max": [1.25, 0.53125, 0.125],
+              "min": [0.9375, 0.375, -0.125]
+            }
+          ],
+          "massKg": 70,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_prop_shaft.glb",
+      "id": "hoist_prop_shaft",
+      "parts": {
+        "body": {
+          "centreOfMass": [-0.33032349246231157, 0.48358982412060303, 0.015625],
+          "collision": [
+            {
+              "max": [0.6875, 0.65625, 0.0625],
+              "min": [-1.34375, 0.3125, -0.03125]
+            }
+          ],
+          "massKg": 18,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_fuel_tank.glb",
+      "id": "hoist_fuel_tank",
+      "parts": {
+        "body": {
+          "centreOfMass": [-0.34375, 0.390625, -0.71875],
+          "collision": [
+            {
+              "max": [0.125, 0.53125, -0.5625],
+              "min": [-0.8125, 0.25, -0.875]
+            }
+          ],
+          "massKg": 55,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_exhaust.glb",
+      "id": "hoist_exhaust",
+      "parts": {
+        "body": {
+          "centreOfMass": [0.014300847457627119, 0.40889830508474578, 0.67478813559322037],
+          "collision": [
+            {
+              "max": [1, 0.5, 0.6875],
+              "min": [0.25, 0.375, 0.5625]
+            },
+            {
+              "max": [0.25, 0.5, 0.8125],
+              "min": [-0.375, 0.3125, 0.5625]
+            },
+            {
+              "max": [-0.375, 0.4375, 0.75],
+              "min": [-0.8125, 0.3125, 0.625]
+            }
+          ],
+          "massKg": 18,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_radiator.glb",
+      "id": "hoist_radiator",
+      "parts": {
+        "body": {
+          "centreOfMass": [2.75, 0.703125, 0],
+          "collision": [
+            {
+              "max": [2.8125, 0.90625, 0.375],
+              "min": [2.6875, 0.5, -0.375]
+            }
+          ],
+          "massKg": 15,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_cab_floor.glb",
+      "id": "hoist_cab_floor",
+      "parts": {
+        "body": {
+          "centreOfMass": [1.9704269591141397, 0.95828896933560481, 0],
+          "collision": [
+            {
+              "max": [2.875, 1, 0.90625],
+              "min": [1.125, 0.9375, -0.90625]
+            },
+            {
+              "max": [2.5625, 1.03125, 0.75],
+              "min": [1.21875, 1, -0.75]
+            },
+            {
+              "max": [1.3125, 0.9375, -0.4375],
+              "min": [1.1875, 0.53125, -0.5625]
+            },
+            {
+              "max": [1.3125, 0.9375, 0.5625],
+              "min": [1.1875, 0.53125, 0.4375]
+            },
+            {
+              "max": [2.6875, 0.9375, -0.4375],
+              "min": [2.5625, 0.53125, -0.5625]
+            },
+            {
+              "max": [2.6875, 0.9375, 0.5625],
+              "min": [2.5625, 0.53125, 0.4375]
+            }
+          ],
+          "massKg": 80,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_cab_skirt.glb",
+      "id": "hoist_cab_skirt",
+      "parts": {
+        "body": {
+          "centreOfMass": [2.0198092749110321, 0.76832184163701067, 0.84690558274021344],
+          "collision": [
+            {
+              "max": [1.46875, 0.9375, 0.90625],
+              "min": [1.125, 0.5625, 0.78125]
+            },
+            {
+              "max": [2.875, 0.9375, 0.90625],
+              "min": [2.3125, 0.5625, 0.78125]
+            },
+            {
+              "max": [1.53125, 0.9375, 0.90625],
+              "min": [1.46875, 0.5625, 0.78125]
+            },
+            {
+              "max": [1.59375, 0.9375, 0.90625],
+              "min": [1.53125, 0.625, 0.78125]
+            },
+            {
+              "max": [1.625, 0.9375, 0.90625],
+              "min": [1.5625, 0.6875, 0.78125]
+            },
+            {
+              "max": [1.6875, 0.9375, 0.90625],
+              "min": [1.625, 0.71875, 0.78125]
+            },
+            {
+              "max": [1.71875, 0.9375, 0.90625],
+              "min": [1.65625, 0.75, 0.78125]
+            },
+            {
+              "max": [1.75, 0.9375, 0.90625],
+              "min": [1.71875, 0.78125, 0.78125]
+            },
+            {
+              "max": [1.8125, 0.9375, 0.90625],
+              "min": [1.75, 0.78125, 0.78125]
+            },
+            {
+              "max": [1.84375, 0.9375, 0.90625],
+              "min": [1.8125, 0.78125, 0.78125]
+            },
+            {
+              "max": [1.90625, 0.9375, 0.90625],
+              "min": [1.84375, 0.78125, 0.78125]
+            },
+            {
+              "max": [1.96875, 0.9375, 0.90625],
+              "min": [1.90625, 0.78125, 0.78125]
+            },
+            {
+              "max": [2, 0.9375, 0.90625],
+              "min": [1.9375, 0.78125, 0.78125]
+            },
+            {
+              "max": [2.03125, 0.9375, 0.90625],
+              "min": [2, 0.78125, 0.78125]
+            },
+            {
+              "max": [2.09375, 0.9375, 0.90625],
+              "min": [2.03125, 0.78125, 0.78125]
+            },
+            {
+              "max": [2.15625, 0.9375, 0.90625],
+              "min": [2.09375, 0.75, 0.78125]
+            },
+            {
+              "max": [2.1875, 0.9375, 0.90625],
+              "min": [2.125, 0.71875, 0.78125]
+            },
+            {
+              "max": [2.21875, 0.9375, 0.90625],
+              "min": [2.1875, 0.6875, 0.78125]
+            },
+            {
+              "max": [2.28125, 0.9375, 0.90625],
+              "min": [2.21875, 0.625, 0.78125]
+            },
+            {
+              "max": [2.34375, 0.9375, 0.90625],
+              "min": [2.28125, 0.5625, 0.78125]
+            },
+            {
+              "max": [2.375, 0.5625, 0.9375],
+              "min": [2.28125, 0.375, 0.90625]
+            },
+            {
+              "max": [2.34375, 0.71875, 0.9375],
+              "min": [2.21875, 0.53125, 0.90625]
+            },
+            {
+              "max": [2.25, 0.8125, 0.9375],
+              "min": [2.0625, 0.6875, 0.90625]
+            },
+            {
+              "max": [2.09375, 0.84375, 0.9375],
+              "min": [1.90625, 0.75, 0.90625]
+            },
+            {
+              "max": [1.90625, 0.84375, 0.9375],
+              "min": [1.71875, 0.75, 0.90625]
+            },
+            {
+              "max": [1.75, 0.8125, 0.9375],
+              "min": [1.5625, 0.6875, 0.90625]
+            },
+            {
+              "max": [1.59375, 0.71875, 0.9375],
+              "min": [1.46875, 0.53125, 0.90625]
+            },
+            {
+              "max": [1.5, 0.5625, 0.9375],
+              "min": [1.40625, 0.375, 0.90625]
+            }
+          ],
+          "massKg": 10,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_cab_back.glb",
+      "id": "hoist_cab_back",
+      "parts": {
+        "body": {
+          "centreOfMass": [1.1832386363636365, 1.546875, 0],
+          "collision": [
+            {
+              "max": [1.21875, 1.5, 0.90625],
+              "min": [1.125, 1, -0.90625]
+            },
+            {
+              "max": [1.21875, 2.09375, 0.90625],
+              "min": [1.125, 1.8125, -0.90625]
+            },
+            {
+              "max": [1.21875, 1.8125, -0.5625],
+              "min": [1.125, 1.5, -0.90625]
+            },
+            {
+              "max": [1.21875, 1.8125, 0.90625],
+              "min": [1.125, 1.5, 0.5625]
+            },
+            {
+              "max": [1.21875, 1.8125, 0.5625],
+              "min": [1.125, 1.5, -0.5625]
+            },
+            {
+              "max": [1.3125, 2.09375, 0.90625],
+              "min": [1.21875, 1, 0.78125]
+            },
+            {
+              "max": [1.3125, 2.09375, -0.78125],
+              "min": [1.21875, 1, -0.90625]
+            }
+          ],
+          "massKg": 35,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_front_panel.glb",
+      "id": "hoist_front_panel",
+      "parts": {
+        "body": {
+          "centreOfMass": [2.8272629310344826, 1.217198275862069, 0],
+          "collision": [
+            {
+              "max": [2.875, 1.4375, 0.78125],
+              "min": [2.78125, 1, -0.78125]
+            },
+            {
+              "max": [2.875, 1.4375, 0.90625],
+              "min": [2.71875, 1, 0.78125]
+            },
+            {
+              "max": [2.875, 1.4375, -0.78125],
+              "min": [2.71875, 1, -0.90625]
+            },
+            {
+              "max": [2.90625, 1.3125, 0.4375],
+              "min": [2.875, 1.0625, -0.4375]
+            },
+            {
+              "max": [2.90625, 1.40625, 0.125],
+              "min": [2.875, 1.34375, -0.125]
+            }
+          ],
+          "massKg": 20,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_a_post.glb",
+      "id": "hoist_a_post",
+      "parts": {
+        "body": {
+          "centreOfMass": [2.7968750000000004, 1.7656250000000002, 0.84375000000000011],
+          "collision": [
+            {
+              "max": [2.875, 2.09375, 0.90625],
+              "min": [2.71875, 1.4375, 0.78125]
+            }
+          ],
+          "massKg": 6,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_windscreen.glb",
+      "id": "hoist_windscreen",
+      "parts": {
+        "body": {
+          "centreOfMass": [2.828125, 1.765625, 0],
+          "collision": [
+            {
+              "max": [2.84375, 2.09375, 0.78125],
+              "min": [2.8125, 1.4375, -0.78125]
+            }
+          ],
+          "massKg": 14,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_roof.glb",
+      "id": "hoist_roof",
+      "parts": {
+        "body": {
+          "centreOfMass": [1.9732974357883992, 2.1279155681238304, 0],
+          "collision": [
+            {
+              "max": [2.875, 2.1875, 0.90625],
+              "min": [1.125, 2.09375, -0.90625]
+            },
+            {
+              "max": [2.71875, 2.09375, 0.75],
+              "min": [1.21875, 2.0625, -0.75]
+            }
+          ],
+          "massKg": 30,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {
+        "hinge_a": [2.71875, 1.0874999999999999, 0.90625],
+        "hinge_b": [2.71875, 1.3500000000000001, 0.90625]
+      },
+      "file": "assets/models/hoist_door.glb",
+      "id": "hoist_door",
+      "parts": {
+        "body": {
+          "centreOfMass": [2.015219448449892, 1.5168641852919973, 0.83670917447728921],
+          "collision": [
+            {
+              "max": [2.71875, 1.4375, 0.90625],
+              "min": [1.3125, 1, 0.78125]
+            },
+            {
+              "max": [2.71875, 1.4375, 0.78125],
+              "min": [1.3125, 1, 0.75]
+            },
+            {
+              "max": [2.71875, 1.46875, 0.90625],
+              "min": [1.3125, 1.4375, 0.78125]
+            },
+            {
+              "max": [2.71875, 2.09375, 0.90625],
+              "min": [1.3125, 2.03125, 0.78125]
+            },
+            {
+              "max": [1.375, 2.03125, 0.90625],
+              "min": [1.3125, 1.46875, 0.78125]
+            },
+            {
+              "max": [2.71875, 2.03125, 0.90625],
+              "min": [2.65625, 1.46875, 0.78125]
+            },
+            {
+              "max": [2.65625, 2.03125, 0.90625],
+              "min": [1.375, 1.46875, 0.78125]
+            },
+            {
+              "max": [1.53125, 1.28125, 0.9375],
+              "min": [1.375, 1.25, 0.90625]
+            }
+          ],
+          "massKg": 30,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_front_bumper.glb",
+      "id": "hoist_front_bumper",
+      "parts": {
+        "body": {
+          "centreOfMass": [2.9230263157894738, 0.67680921052631582, 0],
+          "collision": [
+            {
+              "max": [2.96875, 0.8125, 0.90625],
+              "min": [2.875, 0.5625, -0.90625]
+            },
+            {
+              "max": [2.9375, 0.5625, -0.4375],
+              "min": [2.875, 0.40625, -0.5625]
+            },
+            {
+              "max": [2.9375, 0.5625, 0.5625],
+              "min": [2.875, 0.40625, 0.4375]
+            },
+            {
+              "max": [3, 0.75, 0.1875],
+              "min": [2.96875, 0.625, -0.1875]
+            }
+          ],
+          "massKg": 20,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_dashboard.glb",
+      "id": "hoist_dashboard",
+      "parts": {
+        "body": {
+          "centreOfMass": [2.6688636141516811, 1.245339376465989, 0.041524139953088353],
+          "collision": [
+            {
+              "max": [2.78125, 1.4375, 0.75],
+              "min": [2.5625, 1, -0.75]
+            },
+            {
+              "max": [2.71875, 1.65625, 0.6875],
+              "min": [2.5625, 1.4375, 0.34375]
+            },
+            {
+              "max": [2.5625, 1.625, 0.65625],
+              "min": [2.53125, 1.53125, 0.375]
+            }
+          ],
+          "massKg": 18,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_engine_cover.glb",
+      "id": "hoist_engine_cover",
+      "parts": {
+        "body": {
+          "centreOfMass": [2.09375, 1.140625, 0],
+          "collision": [
+            {
+              "max": [2.5, 1.25, 0.25],
+              "min": [1.6875, 1.03125, -0.25]
+            }
+          ],
+          "massKg": 12,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {
+        "hips": [1.4624999999999999, 1.375, 0]
+      },
+      "file": "assets/models/hoist_bench.glb",
+      "id": "hoist_bench",
+      "parts": {
+        "body": {
+          "centreOfMass": [1.4319556451612905, 1.3346774193548387, 0],
+          "collision": [
+            {
+              "max": [1.6875, 1.375, 0.71875],
+              "min": [1.3125, 1.03125, -0.71875]
+            },
+            {
+              "max": [1.3125, 1.9375, 0.71875],
+              "min": [1.21875, 1.375, -0.71875]
+            }
+          ],
+          "massKg": 30,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_deck_floor.glb",
+      "id": "hoist_deck_floor",
+      "parts": {
+        "body": {
+          "centreOfMass": [-1.21875, 0.81862745098039214, 0],
+          "collision": [
+            {
+              "max": [0.4375, 0.9375, 0.90625],
+              "min": [-2.875, 0.875, -0.90625]
+            },
+            {
+              "max": [0.4375, 0.875, -0.4375],
+              "min": [-2.875, 0.53125, -0.5625]
+            },
+            {
+              "max": [0.4375, 0.875, 0.5625],
+              "min": [-2.875, 0.53125, 0.4375]
+            }
+          ],
+          "massKg": 120,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_headboard.glb",
+      "id": "hoist_headboard",
+      "parts": {
+        "body": {
+          "centreOfMass": [0.40625, 1.09375, 0],
+          "collision": [
+            {
+              "max": [0.4375, 1.25, 0.90625],
+              "min": [0.375, 0.9375, -0.90625]
+            }
+          ],
+          "massKg": 15,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_mudguard.glb",
+      "id": "hoist_mudguard",
+      "parts": {
+        "body": {
+          "centreOfMass": [-1.5021952479338843, 0.72352789256198347, 0.71875],
+          "collision": [
+            {
+              "max": [-1, 0.6875, 0.84375],
+              "min": [-1.15625, 0.5, 0.59375]
+            },
+            {
+              "max": [-1.09375, 0.78125, 0.84375],
+              "min": [-1.25, 0.625, 0.59375]
+            },
+            {
+              "max": [-1.1875, 0.875, 0.84375],
+              "min": [-1.375, 0.71875, 0.59375]
+            },
+            {
+              "max": [-1.34375, 0.875, 0.84375],
+              "min": [-1.5, 0.78125, 0.59375]
+            },
+            {
+              "max": [-1.5, 0.875, 0.84375],
+              "min": [-1.65625, 0.78125, 0.59375]
+            },
+            {
+              "max": [-1.625, 0.875, 0.84375],
+              "min": [-1.8125, 0.71875, 0.59375]
+            },
+            {
+              "max": [-1.75, 0.78125, 0.84375],
+              "min": [-1.90625, 0.625, 0.59375]
+            },
+            {
+              "max": [-1.84375, 0.6875, 0.84375],
+              "min": [-2, 0.5, 0.59375]
+            }
+          ],
+          "massKg": 4,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_rear_underrun.glb",
+      "id": "hoist_rear_underrun",
+      "parts": {
+        "body": {
+          "centreOfMass": [-2.9528409090909089, 0.35767045454545454, 0],
+          "collision": [
+            {
+              "max": [-2.875, 0.53125, -0.4375],
+              "min": [-3, 0.375, -0.5625]
+            },
+            {
+              "max": [-2.875, 0.53125, 0.5625],
+              "min": [-3, 0.375, 0.4375]
+            },
+            {
+              "max": [-2.90625, 0.375, 0.8125],
+              "min": [-3, 0.25, -0.8125]
+            },
+            {
+              "max": [-2.9375, 0.5625, -0.4375],
+              "min": [-3, 0.53125, -0.8125]
+            },
+            {
+              "max": [-2.9375, 0.5625, 0.8125],
+              "min": [-3, 0.53125, 0.4375]
+            },
+            {
+              "max": [-2.96875, 0.5, 0.1875],
+              "min": [-3, 0.375, -0.1875]
+            }
+          ],
+          "massKg": 20,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_tail_lamp.glb",
+      "id": "hoist_tail_lamp",
+      "parts": {
+        "body": {
+          "centreOfMass": [-2.96875, 0.640625, 0.6875],
+          "collision": [
+            {
+              "max": [-2.9375, 0.625, 0.8125],
+              "min": [-3, 0.5625, 0.5625]
+            },
+            {
+              "max": [-2.9375, 0.71875, 0.8125],
+              "min": [-3, 0.625, 0.5625]
+            }
+          ],
+          "massKg": 1,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_crane_base.glb",
+      "id": "hoist_crane_base",
+      "parts": {
+        "body": {
+          "centreOfMass": [0.78125000000000011, 0.80729166666666674, 0],
+          "collision": [
+            {
+              "max": [1.0625, 0.8125, -0.4375],
+              "min": [0.5, 0.53125, -0.5625]
+            },
+            {
+              "max": [1.0625, 0.8125, 0.5625],
+              "min": [0.5, 0.53125, 0.4375]
+            },
+            {
+              "max": [1.0625, 0.9375, 0.5625],
+              "min": [0.5, 0.8125, -0.5625]
+            }
+          ],
+          "massKg": 180,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_stabiliser.glb",
+      "id": "hoist_stabiliser",
+      "parts": {
+        "body": {
+          "centreOfMass": [0.78125, 0.61677631578947367, 0.76315789473684204],
+          "collision": [
+            {
+              "max": [0.9375, 0.8125, 0.875],
+              "min": [0.625, 0.6875, 0.5625]
+            },
+            {
+              "max": [0.875, 0.6875, 0.875],
+              "min": [0.6875, 0.375, 0.75]
+            },
+            {
+              "max": [0.9375, 0.375, 0.90625],
+              "min": [0.625, 0.3125, 0.71875]
+            }
+          ],
+          "massKg": 45,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_crane_column.glb",
+      "id": "hoist_crane_column",
+      "parts": {
+        "body": {
+          "centreOfMass": [0.78125, 1.4243515850144091, 0],
+          "collision": [
+            {
+              "max": [1, 1.0625, 0.21875],
+              "min": [0.5625, 0.9375, -0.21875]
+            },
+            {
+              "max": [0.90625, 1.75, 0.125],
+              "min": [0.65625, 1.0625, -0.125]
+            },
+            {
+              "max": [0.9375, 2, -0.125],
+              "min": [0.625, 1.625, -0.21875]
+            },
+            {
+              "max": [0.9375, 2, 0.21875],
+              "min": [0.625, 1.625, 0.125]
+            },
+            {
+              "max": [0.84375, 1.9375, -0.21875],
+              "min": [0.71875, 1.8125, -0.25]
+            },
+            {
+              "max": [0.84375, 1.9375, 0.25],
+              "min": [0.71875, 1.8125, 0.21875]
+            }
+          ],
+          "massKg": 140,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_boom.glb",
+      "id": "hoist_boom",
+      "parts": {
+        "body": {
+          "centreOfMass": [-0.031818181818181815, 1.7493371212121211, 0],
+          "collision": [
+            {
+              "max": [0.8125, 1.96875, 0.125],
+              "min": [-0.875, 1.53125, -0.125]
+            }
+          ],
+          "massKg": 90,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_boom_extension.glb",
+      "id": "hoist_boom_extension",
+      "parts": {
+        "body": {
+          "centreOfMass": [-1.6059027777777777, 1.515625, 0],
+          "collision": [
+            {
+              "max": [-0.65625, 1.71875, 0.09375],
+              "min": [-2.5625, 1.3125, -0.09375]
+            }
+          ],
+          "massKg": 70,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_luff_ram.glb",
+      "id": "hoist_luff_ram",
+      "parts": {
+        "body": {
+          "centreOfMass": [0.26181402439024398, 1.4142530487804879, 0],
+          "collision": [
+            {
+              "max": [0.65625, 1.625, 0.0625],
+              "min": [-0.15625, 1.21875, -0.0625]
+            }
+          ],
+          "massKg": 35,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_winch.glb",
+      "id": "hoist_winch",
+      "parts": {
+        "body": {
+          "centreOfMass": [0.99676724137931028, 1.3724407327586208, 0],
+          "collision": [
+            {
+              "max": [1.09375, 1.46875, 0.15625],
+              "min": [0.875, 1.25, -0.15625]
+            },
+            {
+              "max": [1.125, 1.5, -0.15625],
+              "min": [0.84375, 1.21875, -0.1875]
+            },
+            {
+              "max": [1.125, 1.5, 0.1875],
+              "min": [0.84375, 1.21875, 0.15625]
+            }
+          ],
+          "massKg": 45,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_hook_block.glb",
+      "id": "hoist_hook_block",
+      "parts": {
+        "body": {
+          "centreOfMass": [-2.53125, 1.2230113636363638, 0],
+          "collision": [
+            {
+              "max": [-2.4375, 1.3125, 0.0625],
+              "min": [-2.625, 1.15625, -0.0625]
+            },
+            {
+              "max": [-2.5, 1.15625, 0.03125],
+              "min": [-2.5625, 1.0625, -0.03125]
+            }
+          ],
+          "massKg": 15,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/hoist_boom_rest.glb",
+      "id": "hoist_boom_rest",
+      "parts": {
+        "body": {
+          "centreOfMass": [-2.25, 1.125, 0],
+          "collision": [
+            {
+              "max": [-2.1875, 1.3125, 0.09375],
+              "min": [-2.3125, 0.9375, -0.09375]
+            }
+          ],
+          "massKg": 8,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/cargo_space.glb",
+      "id": "cargo_space",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0.046875, 0],
+          "collision": [
+            {
+              "max": [0.0625, 0.09375, 0.0625],
+              "min": [-0.0625, 0, -0.0625]
+            }
+          ],
+          "massKg": 0.20000000000000001,
+          "node": "body:block",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/pickup_bed_floor.glb",
+      "id": "pickup_bed_floor",
+      "parts": {
+        "body": {
+          "centreOfMass": [-1.140625, 0.71399456521739135, 0],
+          "collision": [
+            {
+              "max": [-0.09375, 0.84375, 0.8125],
+              "min": [-2.1875, 0.8125, -0.8125]
+            },
+            {
+              "max": [-0.09375, 0.8125, 0.4375],
+              "min": [-2.1875, 0.5625, -0.4375]
+            }
+          ],
+          "massKg": 45,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/pickup_bed_side.glb",
+      "id": "pickup_bed_side",
+      "parts": {
+        "body": {
+          "centreOfMass": [-1.1646983664501338, 0.83360598968284294, 0.77152990064959881],
+          "collision": [
+            {
+              "max": [-0.09375, 1.21875, 0.875],
+              "min": [-2.1875, 0.625, 0.8125]
+            },
+            {
+              "max": [-0.6875, 0.9375, 0.8125],
+              "min": [-1.6875, 0.5625, 0.59375]
+            }
+          ],
+          "massKg": 24,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/pickup_bed_front.glb",
+      "id": "pickup_bed_front",
+      "parts": {
+        "body": {
+          "centreOfMass": [-0.0625, 1.015625, 0],
+          "collision": [
+            {
+              "max": [-0.03125, 1.21875, 0.875],
+              "min": [-0.09375, 0.8125, -0.875]
+            }
+          ],
+          "massKg": 10,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/box_van_floor.glb",
+      "id": "box_van_floor",
+      "parts": {
+        "body": {
+          "centreOfMass": [-0.90625, 0.875, 0],
+          "collision": [
+            {
+              "max": [1.1875, 1, 1],
+              "min": [-3, 0.96875, -1]
+            },
+            {
+              "max": [1.1875, 0.96875, 0.4375],
+              "min": [-3, 0.71875, -0.4375]
+            }
+          ],
+          "massKg": 180,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/box_van_side.glb",
+      "id": "box_van_side",
+      "parts": {
+        "body": {
+          "centreOfMass": [-0.90625, 1.953125, 1.03125],
+          "collision": [
+            {
+              "max": [1.1875, 3, 1.0625],
+              "min": [-3, 0.90625, 1]
+            }
+          ],
+          "massKg": 70,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/box_van_front.glb",
+      "id": "box_van_front",
+      "parts": {
+        "body": {
+          "centreOfMass": [1.21875, 2, 0],
+          "collision": [
+            {
+              "max": [1.25, 3, 1.0625],
+              "min": [1.1875, 1, -1.0625]
+            }
+          ],
+          "massKg": 45,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/box_van_roof.glb",
+      "id": "box_van_roof",
+      "parts": {
+        "body": {
+          "centreOfMass": [-0.875, 3.03125, 0],
+          "collision": [
+            {
+              "max": [1.25, 3.0625, 1.0625],
+              "min": [-3, 3, -1.0625]
+            }
+          ],
+          "massKg": 40,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    }
+  ],
+  "vehicleBlueprints": [
+    {
+      "fittings": [
+        {
+          "at": [0, 0, 0],
+          "id": "shell",
+          "part": "hatchback_shell",
+          "supportedBy": []
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "windscreen",
+          "part": "hatchback_windscreen",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "tailgate",
+          "part": "hatchback_tailgate",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "bonnet",
+          "part": "hatchback_bonnet",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "front_bumper",
+          "part": "hatchback_front_bumper",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "rear_bumper",
+          "part": "hatchback_rear_bumper",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "rear_axle",
+          "part": "hatchback_rear_axle",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "engine",
+          "part": "hatchback_engine",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "gearbox",
+          "part": "hatchback_gearbox",
+          "supportedBy": ["engine"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "radiator",
+          "part": "hatchback_radiator",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "fuel_tank",
+          "part": "hatchback_fuel_tank",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "exhaust",
+          "part": "hatchback_exhaust",
+          "supportedBy": ["engine", "shell"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "dashboard",
+          "part": "hatchback_dashboard",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [0.29999999999999999, 0.78000000000000003, 0.37],
+          "id": "steering_wheel",
+          "part": "steering_wheel",
+          "supportedBy": ["dashboard"]
+        },
+        {
+          "at": [0.29999999999999999, 0.55000000000000004, 0],
+          "id": "gear_lever",
+          "part": "gear_lever",
+          "supportedBy": ["dashboard"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "rear_seat",
+          "part": "hatchback_rear_seat",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "front_door_near",
+          "part": "hatchback_front_door",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "front_door_far",
+          "mirror": true,
+          "part": "hatchback_front_door",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "rear_door_near",
+          "part": "hatchback_rear_door",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "rear_door_far",
+          "mirror": true,
+          "part": "hatchback_rear_door",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "front_wing_near",
+          "part": "hatchback_front_wing",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "front_wing_far",
+          "mirror": true,
+          "part": "hatchback_front_wing",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "tail_lamp_near",
+          "part": "hatchback_tail_lamp",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "tail_lamp_far",
+          "mirror": true,
+          "part": "hatchback_tail_lamp",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "front_strut_near",
+          "part": "hatchback_front_strut",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "front_strut_far",
+          "mirror": true,
+          "part": "hatchback_front_strut",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [1.24, 0.316, 0.75],
+          "id": "front_wheel_near",
+          "part": "wheel_205_55r16",
+          "supportedBy": ["front_strut_near"]
+        },
+        {
+          "at": [1.24, 0.316, -0.75],
+          "id": "front_wheel_far",
+          "mirror": true,
+          "part": "wheel_205_55r16",
+          "supportedBy": ["front_strut_far"]
+        },
+        {
+          "at": [-1.27, 0.316, 0.75],
+          "id": "rear_wheel_near",
+          "part": "wheel_205_55r16",
+          "supportedBy": ["rear_axle"]
+        },
+        {
+          "at": [-1.27, 0.316, -0.75],
+          "id": "rear_wheel_far",
+          "mirror": true,
+          "part": "wheel_205_55r16",
+          "supportedBy": ["rear_axle"]
+        },
+        {
+          "at": [0, 0.29999999999999999, 0.37],
+          "id": "front_seat_near",
+          "part": "front_seat",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [0, 0.29999999999999999, -0.37],
+          "id": "front_seat_far",
+          "mirror": true,
+          "part": "front_seat",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [0.66000000000000003, 0.97999999999999998, 0.86750000000000005],
+          "id": "door_mirror_near",
+          "part": "door_mirror",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [0.66000000000000003, 0.97999999999999998, -0.86750000000000005],
+          "id": "door_mirror_far",
+          "mirror": true,
+          "part": "door_mirror",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [1.95, 0.64000000000000001, 0.56000000000000005],
+          "id": "headlamp_near",
+          "part": "car_headlamp",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [1.95, 0.64000000000000001, -0.56000000000000005],
+          "id": "headlamp_far",
+          "mirror": true,
+          "part": "car_headlamp",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [1.54, 0.55000000000000004, 0.41999999999999998],
+          "id": "battery_tray",
+          "part": "hatchback_battery_tray",
+          "supportedBy": ["shell"]
+        },
+        {
+          "at": [1.54, 0.58000000000000007, 0.41999999999999998],
+          "id": "battery",
+          "part": "car_battery",
+          "supportedBy": ["battery_tray"]
+        }
+      ],
+      "id": "hatchback",
+      "name": "Hatchback"
+    },
+    {
+      "fittings": [
+        {
+          "at": [1.8999999999999999, 0.80000000000000004, 0.34999999999999998],
+          "id": "battery_tray",
+          "part": "pickup_battery_tray",
+          "supportedBy": []
+        },
+        {
+          "at": [1.8999999999999999, 0.83000000000000007, 0.34999999999999998],
+          "id": "battery",
+          "part": "car_battery",
+          "supportedBy": ["battery_tray"]
+        },
+        {
+          "at": [2.3500000000000001, 0.84999999999999998, 0.65000000000000002],
+          "id": "headlamp_near",
+          "part": "car_headlamp",
+          "supportedBy": []
+        },
+        {
+          "at": [2.3500000000000001, 0.84999999999999998, -0.65000000000000002],
+          "id": "headlamp_far",
+          "mirror": true,
+          "part": "car_headlamp",
+          "supportedBy": []
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "bed_floor",
+          "part": "pickup_bed_floor",
+          "supportedBy": []
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "bed_front",
+          "part": "pickup_bed_front",
+          "supportedBy": ["bed_floor"]
+        },
+        {
+          "at": [-1.1499999999999999, 0.84999999999999998, 0],
+          "cargo": [21, 4, 12],
+          "id": "bed_cargo",
+          "part": "cargo_space",
+          "supportedBy": ["bed_floor"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "bed_side_near",
+          "part": "pickup_bed_side",
+          "supportedBy": ["bed_floor"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "bed_side_far",
+          "mirror": true,
+          "part": "pickup_bed_side",
+          "supportedBy": ["bed_floor"]
+        }
+      ],
+      "id": "pickup",
+      "name": "Pickup"
+    },
+    {
+      "fittings": [
+        {
+          "at": [0, 0, 0],
+          "id": "box_floor",
+          "part": "box_van_floor",
+          "supportedBy": []
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "box_front",
+          "part": "box_van_front",
+          "supportedBy": ["box_floor"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "box_roof",
+          "part": "box_van_roof",
+          "supportedBy": ["box_front", "box_side_near", "box_side_far"]
+        },
+        {
+          "at": [-0.90000000000000002, 1, 0],
+          "cargo": [42, 20, 20],
+          "id": "box_cargo",
+          "part": "cargo_space",
+          "supportedBy": ["box_floor"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "box_side_near",
+          "part": "box_van_side",
+          "supportedBy": ["box_floor"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "box_side_far",
+          "mirror": true,
+          "part": "box_van_side",
+          "supportedBy": ["box_floor"]
+        }
+      ],
+      "id": "box_van",
+      "name": "Box van"
+    },
+    {
+      "fittings": [
+        {
+          "at": [0, 0, 0],
+          "id": "frame_rail_near",
+          "part": "hoist_frame_rail",
+          "supportedBy": []
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "frame_rail_far",
+          "mirror": true,
+          "part": "hoist_frame_rail",
+          "supportedBy": []
+        },
+        {
+          "at": [-2.875, 0.40625, -0.4375],
+          "id": "crossmember_rear",
+          "part": "hoist_crossmember",
+          "supportedBy": ["frame_rail_near", "frame_rail_far"]
+        },
+        {
+          "at": [-2.125, 0.40625, -0.4375],
+          "id": "crossmember_mid",
+          "part": "hoist_crossmember",
+          "supportedBy": ["frame_rail_near", "frame_rail_far"]
+        },
+        {
+          "at": [0.8125, 0.40625, -0.4375],
+          "id": "crossmember_gearbox",
+          "part": "hoist_crossmember",
+          "supportedBy": ["frame_rail_near", "frame_rail_far"]
+        },
+        {
+          "at": [2.6875, 0.40625, -0.4375],
+          "id": "crossmember_front",
+          "part": "hoist_crossmember",
+          "supportedBy": ["frame_rail_near", "frame_rail_far"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "front_axle",
+          "part": "hoist_front_axle",
+          "supportedBy": ["frame_rail_near", "frame_rail_far"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "rear_axle",
+          "part": "hoist_rear_axle",
+          "supportedBy": ["frame_rail_near", "frame_rail_far"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "engine",
+          "part": "hoist_engine",
+          "supportedBy": ["frame_rail_near", "frame_rail_far"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "gearbox",
+          "part": "hoist_gearbox",
+          "supportedBy": ["engine", "crossmember_gearbox"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "prop_shaft",
+          "part": "hoist_prop_shaft",
+          "supportedBy": ["gearbox", "rear_axle"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "fuel_tank",
+          "part": "hoist_fuel_tank",
+          "supportedBy": ["frame_rail_far"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "exhaust",
+          "part": "hoist_exhaust",
+          "supportedBy": ["frame_rail_near"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "radiator",
+          "part": "hoist_radiator",
+          "supportedBy": ["crossmember_front"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "cab_floor",
+          "part": "hoist_cab_floor",
+          "supportedBy": ["frame_rail_near", "frame_rail_far"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "cab_back",
+          "part": "hoist_cab_back",
+          "supportedBy": ["cab_floor"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "front_panel",
+          "part": "hoist_front_panel",
+          "supportedBy": ["cab_floor"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "windscreen",
+          "part": "hoist_windscreen",
+          "supportedBy": ["a_post_near", "a_post_far", "front_panel"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "roof",
+          "part": "hoist_roof",
+          "supportedBy": ["a_post_near", "a_post_far", "cab_back"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "front_bumper",
+          "part": "hoist_front_bumper",
+          "supportedBy": ["frame_rail_near", "frame_rail_far"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "dashboard",
+          "part": "hoist_dashboard",
+          "supportedBy": ["front_panel"]
+        },
+        {
+          "at": [2.5099999999999998, 1.55, 0.4375],
+          "id": "steering_wheel",
+          "part": "steering_wheel",
+          "supportedBy": ["dashboard"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "engine_cover",
+          "part": "hoist_engine_cover",
+          "supportedBy": ["cab_floor"]
+        },
+        {
+          "at": [2.09375, 1.25, 0],
+          "id": "gear_lever",
+          "part": "gear_lever",
+          "supportedBy": ["engine_cover"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "bench",
+          "part": "hoist_bench",
+          "supportedBy": ["cab_floor"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "deck_floor",
+          "part": "hoist_deck_floor",
+          "supportedBy": ["frame_rail_near", "frame_rail_far"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "headboard",
+          "part": "hoist_headboard",
+          "supportedBy": ["deck_floor"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "rear_underrun",
+          "part": "hoist_rear_underrun",
+          "supportedBy": ["frame_rail_near", "frame_rail_far"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "crane_base",
+          "part": "hoist_crane_base",
+          "supportedBy": ["frame_rail_near", "frame_rail_far"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "crane_column",
+          "part": "hoist_crane_column",
+          "supportedBy": ["crane_base"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "boom_rest",
+          "part": "hoist_boom_rest",
+          "supportedBy": ["deck_floor"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "boom",
+          "part": "hoist_boom",
+          "supportedBy": ["crane_column"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "boom_extension",
+          "part": "hoist_boom_extension",
+          "supportedBy": ["boom", "boom_rest"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "luff_ram",
+          "part": "hoist_luff_ram",
+          "supportedBy": ["crane_column"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "winch",
+          "part": "hoist_winch",
+          "supportedBy": ["crane_column"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "hook_block",
+          "part": "hoist_hook_block",
+          "supportedBy": ["boom_extension"]
+        },
+        {
+          "at": [-1.5, 0.375, 0.703125],
+          "id": "rear_wheel_near",
+          "part": "hoist_wheel",
+          "supportedBy": ["rear_axle"]
+        },
+        {
+          "at": [-1.5, 0.375, -0.703125],
+          "id": "rear_wheel_far",
+          "mirror": true,
+          "part": "hoist_wheel",
+          "supportedBy": ["rear_axle"]
+        },
+        {
+          "at": [1.90625, 0.375, 0.703125],
+          "id": "front_wheel_near",
+          "part": "hoist_wheel",
+          "supportedBy": ["front_axle"]
+        },
+        {
+          "at": [1.90625, 0.375, -0.703125],
+          "id": "front_wheel_far",
+          "mirror": true,
+          "part": "hoist_wheel",
+          "supportedBy": ["front_axle"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "cab_skirt_near",
+          "part": "hoist_cab_skirt",
+          "supportedBy": ["cab_floor"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "cab_skirt_far",
+          "mirror": true,
+          "part": "hoist_cab_skirt",
+          "supportedBy": ["cab_floor"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "a_post_near",
+          "part": "hoist_a_post",
+          "supportedBy": ["front_panel"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "a_post_far",
+          "mirror": true,
+          "part": "hoist_a_post",
+          "supportedBy": ["front_panel"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "door_near",
+          "part": "hoist_door",
+          "supportedBy": ["a_post_near"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "door_far",
+          "mirror": true,
+          "part": "hoist_door",
+          "supportedBy": ["a_post_far"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "mudguard_near",
+          "part": "hoist_mudguard",
+          "supportedBy": ["deck_floor"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "mudguard_far",
+          "mirror": true,
+          "part": "hoist_mudguard",
+          "supportedBy": ["deck_floor"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "tail_lamp_near",
+          "part": "hoist_tail_lamp",
+          "supportedBy": ["rear_underrun"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "tail_lamp_far",
+          "mirror": true,
+          "part": "hoist_tail_lamp",
+          "supportedBy": ["rear_underrun"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "stabiliser_near",
+          "part": "hoist_stabiliser",
+          "supportedBy": ["crane_base"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "stabiliser_far",
+          "mirror": true,
+          "part": "hoist_stabiliser",
+          "supportedBy": ["crane_base"]
+        },
+        {
+          "at": [2.8799999999999999, 1.125, 0.64000000000000001],
+          "id": "headlamp_near",
+          "part": "car_headlamp",
+          "supportedBy": ["front_panel"]
+        },
+        {
+          "at": [2.8799999999999999, 1.125, -0.64000000000000001],
+          "id": "headlamp_far",
+          "mirror": true,
+          "part": "car_headlamp",
+          "supportedBy": ["front_panel"]
+        },
+        {
+          "at": [1.3125, 0.40625, 0.6825],
+          "id": "battery_tray",
+          "part": "pickup_battery_tray",
+          "supportedBy": ["frame_rail_near"]
+        },
+        {
+          "at": [1.3125, 0.43625000000000003, 0.6825],
+          "id": "battery",
+          "part": "car_battery",
+          "supportedBy": ["battery_tray"]
+        }
+      ],
+      "id": "hoist",
+      "name": "Crane truck"
+    }
+  ]
+}

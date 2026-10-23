@@ -1,0 +1,14 @@
+{
+  "id": "hoist_prop_shaft",
+  "file": "assets/models/hoist_prop_shaft.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 18,
+      "centreOfMass": [-0.3303234924623116, 0.48358982412060303, 0.015625],
+      "collision": [{ "min": [-1.34375, 0.3125, -0.03125], "max": [0.6875, 0.65625, 0.0625] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,10 +1,12 @@
 import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import type { Assembly, PartInstance } from '@skelly/engine/assembly/schema.ts';
+import { drawnGeometry } from '@skelly/thing-export/drawn.ts';
 import type {
   AppearanceContext,
   GlbAssetIdentity,
   GlbExportError,
   GlbExportResult,
+  VoxelGrains,
 } from '@skelly/thing-export/exportTypes.ts';
 import { calibreSlug } from '../ammo/calibreSlug.ts';
 import type { MetallicCartridge } from '../ammo/cartridge.ts';
@@ -19,6 +21,7 @@ export interface MagazineExportInput {
   readonly params: Readonly<Record<string, string>>;
   readonly cartridge: MetallicCartridge;
   readonly appearance?: AppearanceContext;
+  readonly voxel?: VoxelGrains;
 }
 
 export type MagazineExportResult =
@@ -41,6 +44,7 @@ export const exportMagazineGlb = (input: MagazineExportInput): MagazineExportRes
     palette: GUN_PALETTE,
     ...(input.appearance ? { appearance: input.appearance } : {}),
     asset: input.asset,
+    ...input.voxel,
   });
   if (!output.ok) {
     return output;
@@ -50,6 +54,7 @@ export const exportMagazineGlb = (input: MagazineExportInput): MagazineExportRes
     throw new Error('resolved magazine has no part definition');
   }
   const { column } = magazineRoundColumn(def.displaySolids ?? def.solids, input.cartridge, input.params, def.solids);
+  const drawn = drawnGeometry(resolved, input.voxel);
   return {
     ok: true,
     glb: output.glb,
@@ -59,7 +64,7 @@ export const exportMagazineGlb = (input: MagazineExportInput): MagazineExportRes
       gun: {
         calibre: input.cartridge.id,
         capacity: column.capacity,
-        rounds: magazineRoundPoses(column),
+        rounds: magazineRoundPoses(column, drawn.point),
       },
     },
   };

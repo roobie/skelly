@@ -1,5 +1,12 @@
 /** Helpers for authoring a vehicle's part types and fittings in vehicle voxels. */
-import { type Fitting, type PartLayer, type PartNoise, type PartType, VOXELS_PER_CELL } from './model.ts';
+import {
+  type Fitting,
+  type PartLayer,
+  type PartNoise,
+  type PartStorage,
+  type PartType,
+  VOXELS_PER_CELL,
+} from './model.ts';
 import { type Axis, opsMinimum, type ShapeOp, translateOp, type Vec3i } from './voxels.ts';
 
 export type Point = readonly [number, number];
@@ -69,6 +76,7 @@ export interface PartMeta {
   /** In vehicle voxels, like the shape. */
   readonly rider?: Vec3i;
   readonly noise?: PartNoise;
+  readonly storage?: PartStorage;
 }
 export const meta = (id: string, label: string, layer: PartLayer, massKg: number): PartMeta => ({
   id,

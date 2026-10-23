@@ -9,6 +9,7 @@ import { battleRifle } from '../src/gun/templates.ts';
 import { loadFixture } from './helpers.ts';
 import { sweepGroup } from './sweeps.ts';
 
+const SEED_SCAN_BOUND = 64;
 const rifle = loadFixture('archetype-battle-rifle');
 const oriented = (orientation: string) => ({
   ...rifle,
@@ -99,12 +100,15 @@ describe('battle-rifle magazine orientations', () => {
     },
   );
 
-  // Fixed seeds 0–5 exercise every generated style (slant-8, tilt, straight, slant-10, slant-5).
   // The direct geometry cases above cover each style; this sweep guards template selection and inheritance.
+  // It scans seeds until every orientation the template offers has been generated.
   sweepGroup('generates every magazine orientation and inherits it into the lower', () => {
     it('passes', () => {
+      const offered = battleRifle.slots.find(({ id }) => id === 'magazine')?.params?.orientation;
+      const wanted = new Set(Array.isArray(offered) ? offered : [offered]);
+      expect(wanted.size).toBeGreaterThan(1);
       const styles = new Set<string>();
-      for (const seed of [0, 1, 2, 3, 4, 5]) {
+      for (let seed = 0; seed < SEED_SCAN_BOUND && styles.size < wanted.size; seed++) {
         const assembly = generate(battleRifle, gunDomain, seed);
         const style = assembly.parts.magazine!.params!.orientation!;
         styles.add(style);
@@ -112,7 +116,7 @@ describe('battle-rifle magazine orientations', () => {
         expect(report.ok, `seed ${seed}`).toBe(true);
         expect(report.resolved.params.get('lower')?.magazineOrientation?.value).toBe(style);
       }
-      expect(styles).toEqual(new Set(['slant-8', 'tilt', 'straight', 'slant-10', 'slant-5']));
+      expect(styles).toEqual(wanted);
     });
   });
 

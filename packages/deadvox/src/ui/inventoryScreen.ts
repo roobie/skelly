@@ -5,6 +5,7 @@
 // running. Furniture shows its contents once it has been searched.
 
 import { html, nothing, render, type TemplateResult } from 'lit-html';
+import { live } from 'lit-html/directives/live.js';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { BODY_REGIONS, type Body, type BodyRegion, bodyRegionLabel } from '../core/body.ts';
 import { practiceForNextLevel } from '../core/character.ts';
@@ -20,10 +21,11 @@ import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed,
 import { bestPocket, dropTarget, type Option, options, quickMove } from '../core/options.ts';
 import { type ReachSnapshot, reachTuning } from '../core/reach.ts';
 import type { WearSlot } from '../core/schema.ts';
-import { inputBindings, keyboardInput } from '../game/inputBindings.ts';
+import { clearsFindField, inputBindings, keyboardInput } from '../game/inputBindings.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
 import { craftTime, workName } from './craftReadout.ts';
 import { factDetail } from './factDetail.ts';
+import { matchesFind, queryWords } from './inventoryFind.ts';
 import { type InventoryTab, InventoryTabState } from './inventoryTabs.ts';
 import { keyCap } from './keyCap.ts';
 
@@ -149,6 +151,7 @@ interface FurnitureViewModel {
   readonly uid: number;
   readonly label: string;
   readonly searching: boolean;
+  readonly targeted: boolean;
   readonly searchLabel?: string | undefined;
   readonly grids: readonly { readonly label?: string | undefined; readonly grid: GridViewModel }[];
 }
@@ -310,13 +313,6 @@ const pocketTemplate = (vm: PocketViewModel): TemplateResult => html`
   </div>
 `;
 
-const aroundPocketTemplate = (vm: PocketViewModel): TemplateResult => html`
-  <div class="inv-pocket">
-    <span class="inv-pocket-label">${vm.label}</span>
-    ${gridTemplate(vm.grid)}
-  </div>
-`;
-
 const optionTemplate = (
   option: OptionViewModel,
   item: Item,
@@ -417,12 +413,14 @@ const inventoryTemplate = (
   { tab, splitRatio }: { tab: InventoryTab; splitRatio: number },
   selectTab: (tab: InventoryTab) => void,
   {
+    find,
     queue,
     search,
     attachmentAction,
     wait,
     stepWake,
   }: {
+    find: { query: string; change: (query: string) => void; key: (e: Event) => void };
     queue: (item: Item, target?: Target, operation?: WorkOperation) => void;
     search: (uid: number) => void;
     attachmentAction: (payload: ReplayActionPayload) => void;
@@ -441,10 +439,21 @@ const inventoryTemplate = (
       `,
       )}
     </nav>
+    <input
+      class="inv-find"
+      type="search"
+      data-inventory-find
+      placeholder="Find"
+      aria-label="Find items"
+      autocomplete="off"
+      .value=${live(find.query)}
+      @input=${(e: Event) => find.change((e.target as HTMLInputElement).value)}
+      @keydown=${find.key}
+    />
     <div class="inv-needs" aria-label="Needs">${vm.needs}</div>
     <details class="inv-help">
       <summary>Controls</summary>
-      <span>${['inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.search', 'handling.stop', 'ui.inventory-toggle'].map((id) => html`${keyCap(id)}: ${inputBindings.binding(id)!.description}`).flatMap((line, i) => (i === 0 ? [line] : [' · ', line]))} · ${Array.from({ length: 5 }, (_, i) => keyCap(`quickbar.assign.${i + 1}`)).flatMap((cap, i) => (i === 0 ? [cap] : [' / ', cap]))}: assign quickbar</span>
+      <span>${['inventory.find', 'inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.search', 'inventory.cycle-target', 'inventory.put-target', 'handling.stop', 'ui.inventory-toggle'].map((id) => html`${keyCap(id)}: ${inputBindings.binding(id)!.description}`).flatMap((line, i) => (i === 0 ? [line] : [' · ', line]))} · ${Array.from({ length: 5 }, (_, i) => keyCap(`quickbar.assign.${i + 1}`)).flatMap((cap, i) => (i === 0 ? [cap] : [' / ', cap]))}: assign quickbar</span>
     </details>
   </header>
   <div
@@ -506,7 +515,7 @@ const inventoryTemplate = (
             (bag) => html`
             <div class="inv-around-section inv-around-container" data-around-section="container">
               <div class="inv-pile-label">${bag.name}, on the floor</div>
-              <div class="inv-pockets">${bag.pockets.map(aroundPocketTemplate)}</div>
+              <div class="inv-pockets">${bag.pockets.map(pocketTemplate)}</div>
             </div>
           `,
           )}
@@ -523,8 +532,8 @@ const inventoryTemplate = (
         }
         ${vm.furniture.map(
           (furniture) => html`
-          <div class="inv-around-section inv-around-container inv-pile" data-around-section="container" data-entity-uid=${furniture.uid}>
-            <div class="inv-pile-label">${furniture.label}</div>
+          <div class="inv-around-section inv-around-container inv-pile${furniture.targeted ? ' inv-target' : ''}" data-around-section="container" data-entity-uid=${furniture.uid} data-target=${furniture.targeted ? 'true' : 'false'}>
+            <div class="inv-pile-label">${furniture.targeted ? '▸ ' : ''}${furniture.label}</div>
             ${furnitureBodyTemplate(furniture, search)}
           </div>
         `,
@@ -668,6 +677,8 @@ const scrollbarWidth = (root: HTMLElement): number | undefined => {
 
 export class InventoryScreen {
   selected: Item | undefined;
+  /** The container keyboard puts go to; not kept across a reload of the screen. */
+  private targetUid: number | undefined;
   private readonly root: HTMLElement;
   private readonly dragRoot: HTMLElement;
   private readonly inv: Pick<
@@ -699,6 +710,8 @@ export class InventoryScreen {
   private splitRatio = 0.5;
   private splitDrag: { startX: number; startRatio: number; bounds: SplitBounds } | undefined;
   private drag: Drag | undefined;
+  /** What the player typed into the find field; items it doesn't match are dimmed, not hidden. */
+  private findQuery = '';
 
   constructor(
     root: HTMLElement,
@@ -754,6 +767,7 @@ export class InventoryScreen {
   close(): void {
     this.tabs.close();
     this.revealedSelectionUid = undefined;
+    this.findQuery = '';
     this.root.hidden = true;
     document.body.classList.remove('inventory-open', 'inventory-tab-crafting');
     this.splitDrag = undefined;
@@ -797,7 +811,7 @@ export class InventoryScreen {
     const characterKey = JSON.stringify(this.hooks.character());
     const needsKey = this.hooks.needs();
     const wakeKey = JSON.stringify(this.hooks.wakeGameHour?.() ?? null);
-    const key = `${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}|${wakeKey}`;
+    const key = `${this.findQuery}|${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${this.targetUid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}|${wakeKey}`;
     if (key !== this.drawn) {
       this.drawn = key;
       this.render();
@@ -810,7 +824,9 @@ export class InventoryScreen {
     if (
       !(
         refusal &&
-        (action.startsWith('inventory.') || action.startsWith('quickbar.assign.') || action === 'handling.stop')
+        ((action.startsWith('inventory.') && action !== 'inventory.find') ||
+          action.startsWith('quickbar.assign.') ||
+          action === 'handling.stop')
       )
     ) {
       return false;
@@ -849,11 +865,19 @@ export class InventoryScreen {
       this.step(action === 'inventory.next' ? 1 : -1);
       return true;
     }
+    if (action === 'inventory.find') {
+      this.root.querySelector<HTMLInputElement>('[data-inventory-find]')?.focus();
+      return true;
+    }
     if (action === 'inventory.search') {
       const next = this.hooks.containers().find((c) => !(c.searched || this.hooks.searching(c)));
       this.report(
         next ? this.hooks.dispatch({ kind: 'inventory.search', entityUid: next.uid }) : 'Nothing here to search',
       );
+      return true;
+    }
+    if (action === 'inventory.cycle-target') {
+      this.cycleTarget();
       return true;
     }
     if (!item) {
@@ -887,6 +911,9 @@ export class InventoryScreen {
         this.report(best ? this.tryQueue(item, best.target) : 'No room on you');
         return true;
       }
+      case 'inventory.put-target':
+        this.putInTarget(item);
+        return true;
       case 'inventory.take-all-like':
         this.takeAllLike(item);
         return true;
@@ -937,6 +964,43 @@ export class InventoryScreen {
     }
   }
 
+  /** The chosen container if it is still within reach, else the nearest one. */
+  private targetEntity(): BlockEntity | undefined {
+    const containers = this.hooks.containers();
+    return containers.find((c) => c.uid === this.targetUid) ?? containers[0];
+  }
+
+  private cycleTarget(): void {
+    const containers = this.hooks.containers();
+    if (containers.length === 0) {
+      this.refuse('No container in reach');
+      return;
+    }
+    const at = containers.findIndex((c) => c.uid === this.targetEntity()?.uid);
+    this.targetUid = containers[(at + 1) % containers.length]!.uid;
+  }
+
+  /** The mouse path's move into a container pocket, with the whole stack going to the first pocket that takes it. */
+  private putInTarget(item: Item): void {
+    const entity = this.targetEntity();
+    if (!entity) {
+      this.refuse('No container in reach');
+      return;
+    }
+    const pockets = this.inv.entities.defOf(entity).container?.pockets ?? [];
+    let refusal: string | undefined;
+    for (let pocket = 0; pocket < pockets.length; pocket += 1) {
+      const target: Target = { kind: 'furniture', entity, pocket };
+      const plan = this.inv.plan(item, target);
+      if (plan.ok) {
+        this.report(this.tryQueue(item, target));
+        return;
+      }
+      refusal ??= plan.reason;
+    }
+    this.refuse(refusal ?? 'No room there');
+  }
+
   /** Takes every item of the same category from the piles within reach. */
   private takeAllLike(item: Item): void {
     const { category } = defOf(this.inv.registry, item.type);
@@ -966,6 +1030,13 @@ export class InventoryScreen {
     }
   }
 
+  private clearFind(): void {
+    this.findQuery = '';
+    this.drawn = '';
+    this.update();
+    this.root.querySelector<HTMLInputElement>('[data-inventory-find]')?.blur();
+  }
+
   private step(dir: number): void {
     if (this.order.length === 0) {
       return;
@@ -983,6 +1054,21 @@ export class InventoryScreen {
     const vm = this.viewModel();
     render(
       inventoryTemplate(vm, { tab: this.tabs.active, splitRatio: this.splitRatio }, (tab) => this.selectTab(tab), {
+        find: {
+          query: this.findQuery,
+          change: (query) => {
+            this.findQuery = query;
+            this.drawn = '';
+            this.update();
+          },
+          key: (e) => {
+            if (clearsFindField(e)) {
+              this.clearFind();
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          },
+        },
         queue: (item, target, operation) => {
           const refusal = this.hooks.actionRefusal?.();
           if (refusal) {
@@ -1151,6 +1237,7 @@ export class InventoryScreen {
         uid: entity.uid,
         label: `${def.name} · ${this.hooks.entityDistance(entity).toFixed(1)} m`,
         searching: !entity.searched && this.hooks.searching(entity),
+        targeted: entity.uid === this.targetEntity()?.uid,
         searchLabel:
           entity.searched || this.hooks.searching(entity)
             ? undefined
@@ -1229,11 +1316,13 @@ export class InventoryScreen {
     const itemStyle = style ?? {};
     this.byUid.set(item.uid, item);
     this.order.push(item);
+    const words = queryWords(this.findQuery);
+    const unmatched = !matchesFind(words, [workName(this.inv.registry, item), def.name, ...(def.keywords ?? [])]);
     return {
       item,
       uid: String(item.uid),
-      className: `${className} cat-${def.category}${item === this.selected ? ' selected' : ''}`,
-      title: `${def.name}${item.count > 1 ? ` ×${item.count}` : ''}, ${conditionWord(item.condition)}`,
+      className: `${className} cat-${def.category}${item === this.selected ? ' selected' : ''}${unmatched ? ' inv-item-unmatched' : ''}`,
+      title: `${def.name}${item.count > 1 ? ` ×${item.count}` : ''}, ${conditionWord(this.inv.registry, item.condition)}`,
       name: workName(this.inv.registry, item),
       count: item.count > 1 ? `×${item.count}` : undefined,
       style:
@@ -1278,7 +1367,7 @@ export class InventoryScreen {
       empty: false,
       category: def.category,
       name: `${workName(this.inv.registry, item)}${item.count > 1 ? ` ×${item.count}` : ''}`,
-      condition: conditionWord(item.condition),
+      condition: conditionWord(this.inv.registry, item.condition),
       description: def.description,
       lines: this.inspect(item),
       ...(attachmentSlots.length > 0 ? { attachmentSlots } : {}),

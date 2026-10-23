@@ -226,7 +226,7 @@
         },
         "k": "concrete",
         "z": {
-          "spawn": "shambler"
+          "spawn": "medic_shambler"
         }
       },
       "size": [32, 6, 24]

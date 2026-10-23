@@ -9,6 +9,13 @@ base + {
   furniture: [{
     id: 'fixture_ladder', name: 'Ladder', color: '#808080', size: [2, 1, 1],
     solid: false, climbable: { speedMetresPerSimSecond: 1.5 },
+    breach: { minimumStrength: 1, durability: 1 }, material: 'fixture_material',
+  }],
+  furnitureMaterials: [{ id: 'fixture_material', blowSound: 'fixture_blow' }],
+  sounds: [{
+    id: 'fixture_blow', variants: ['assets/audio/fixture-blow.ogg'], gain: 1,
+    pitchJitter: [1, 1], gainJitter: [1, 1], minIntervalSimSeconds: 0, category: 'world',
+    noise: { enabled: true, radiusMetres: 10 },
   }],
   mapPieces: [{
     id: 'fixture_descent', size: [8, 11, 8], style: 'fixture_style',

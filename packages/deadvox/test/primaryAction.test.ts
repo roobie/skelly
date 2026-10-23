@@ -32,6 +32,7 @@ const capabilities = [
         reach: 1,
         cooldownSimSeconds: 1,
         stamina: 0,
+        impulse: 1,
         type: 'blunt',
         contactFraction: 0.4,
         windupCapSimSeconds: 0.25,
@@ -48,7 +49,13 @@ const capabilities = [
   {
     id: 'held_gun',
     kind: 'firearm',
-    firearm: { recoilKickRadians: 0.02, dispersionRadians: 0.01, shotSound: 'gunshot', handling: {} },
+    firearm: {
+      recoilKickRadians: 0.02,
+      dispersionRadians: 0.01,
+      pelletSpreadScale: 1,
+      shotSound: 'gunshot',
+      handling: {},
+    },
     twoHanded: true,
   },
   {
@@ -97,7 +104,6 @@ const { registry, issues } = buildRegistry([
   {
     source: 'hand-action-fixture',
     data: {
-      doorMaterials: [{ id: 'wood', methods: [] }],
       skills: [{ id: 'crafting', name: 'Crafting', training: { craftingTierOffset: 2 } }],
       furniture: [
         {
@@ -105,7 +111,7 @@ const { registry, issues } = buildRegistry([
           name: 'Fixture door',
           size: [1, 1, 1],
           color: '#666666',
-          door: { material: 'wood', methods: {}, handlingSimSeconds: 0 },
+          door: { methods: {}, handlingSimSeconds: 0 },
         },
       ],
       templates: [

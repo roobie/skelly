@@ -33,9 +33,11 @@ import {
   type ContentSection,
   type DayCycleDef,
   type FurnitureDef,
+  HELD_DISPLAY_KIND,
   type ItemDef,
   type ModelDef,
   type RecipeDef,
+  type ScenarioDef,
   type SiteLayoutDef,
   type TemplateDef,
 } from './schema.ts';
@@ -48,6 +50,7 @@ import {
   templateSpawnClearanceIssues,
 } from './templateSpatial.ts';
 import { compileTemplate, findPieces, pieceSize, templateLockIds, templateResolves } from './templates.ts';
+import { vehicleContentIssues } from './vehicleBlueprint.ts';
 
 export type {
   FigureDef,
@@ -416,8 +419,27 @@ const checkItemLightModel = (item: ItemDef, registry: Registry, report: Report) 
   ) {
     report('items', item.id, '.model', 'an emissive light model needs an emissive material');
   }
+  if (item.light?.flame && item.model !== undefined && !registry.models.get(item.model)?.anchors?.flame) {
+    report('items', item.id, '.model', 'a flame light model needs a flame anchor');
+  }
   if (item.light?.wornSwitch === true && !item.wearable) {
     report('items', item.id, '.light.wornSwitch', 'a worn-switch light needs a wearable component');
+  }
+};
+
+const checkItemHeldDisplay = (item: ItemDef, registry: Registry, report: Report) => {
+  if (item.heldDisplay === undefined) {
+    return;
+  }
+  const model = item.model === undefined ? undefined : registry.models.get(item.model);
+  if (!model?.display) {
+    report('items', item.id, '.model', 'a held display needs a model with a display');
+  }
+  if (item.heldDisplay === HELD_DISPLAY_KIND.compass && !model?.anchors?.needle_mount) {
+    report('items', item.id, '.model', 'a held compass needs a model with a needle_mount anchor');
+  }
+  if (item.heldDisplay === HELD_DISPLAY_KIND.compass && !model?.dial) {
+    report('items', item.id, '.model', 'a held compass needs a model with a dial');
   }
 };
 
@@ -433,14 +455,19 @@ const checkItemLight = (item: ItemDef, hasIgniter: boolean, registry: Registry, 
   if (light?.power && light.burnTimeGameHours !== undefined) {
     report('items', item.id, '.light.burnTimeGameHours', 'battery lights cannot also have a burn time');
   }
-  if (light?.fuelPerGameHour !== undefined && !igniter) {
-    report('items', item.id, '.light.fuelPerGameHour', 'self-fuelled lights need an igniter fuel component');
+  if (light?.fuelPerGameHour !== undefined && !igniter && !item.tool?.fuel) {
+    report(
+      'items',
+      item.id,
+      '.light.fuelPerGameHour',
+      'self-fuelled lights need an igniter or a swappable fuel canister',
+    );
   }
   if (light?.fuelPerGameHour !== undefined && light.burnTimeGameHours !== undefined) {
     report('items', item.id, '.light.fuelPerGameHour', 'self-fuelled lights cannot also have a burn time');
   }
-  if (light?.burning && light.burnTimeGameHours === undefined) {
-    report('items', item.id, '.light.burning', 'burning rules need a burn time');
+  if (light?.burning && light.burnTimeGameHours === undefined && light.fuelPerGameHour === undefined) {
+    report('items', item.id, '.light.burning', 'burning rules need a burn time or a fuel rate');
   }
   if (light?.burning?.ignition === 'firestarter' && !hasIgniter) {
     report('items', item.id, '.light.burning.ignition', 'needs at least one item with an igniter component');
@@ -461,7 +488,7 @@ const acceptsSuppressor = (registry: Registry, model: ModelDef | undefined): boo
 /** Authored shot selections must resolve, and a gun that can mount a suppressor must author the quiet event. */
 const checkFirearmSounds = (item: ItemDef, model: ModelDef | undefined, registry: Registry, report: Report): void => {
   const firearm = item.firearm!;
-  for (const field of ['shotSound', 'dryFireSound', 'boltOpenSound', 'boltCloseSound'] as const) {
+  for (const field of ['shotSound', 'shotBodySound', 'dryFireSound', 'boltOpenSound', 'boltCloseSound'] as const) {
     const sound = firearm[field];
     if (sound !== undefined && !registry.sounds.has(sound)) {
       report('items', item.id, `.firearm.${field}`, `no sound event "${sound}"`);
@@ -642,6 +669,18 @@ const checkItemOptic = (item: ItemDef, registry: Registry, obtainable: ReadonlyS
   checkOpticZoom(item, variable, obtainable.has(item.id), report);
 };
 
+const EFFECT_ATTACHMENT_KINDS: ReadonlySet<string> = new Set(['suppressor', 'foregrip']);
+
+const checkItemAttachmentEffects = (item: ItemDef, registry: Registry, report: Report): void => {
+  const kind = item.model === undefined ? undefined : registry.models.get(item.model)?.gun?.attachment?.kind;
+  const effects = item.firearmAttachmentEffects;
+  if (effects === undefined && kind !== undefined && EFFECT_ATTACHMENT_KINDS.has(kind)) {
+    report('items', item.id, '.firearmAttachmentEffects', `a ${kind} model needs ${kind} attachment effects`);
+  } else if (effects !== undefined && effects.kind !== kind) {
+    report('items', item.id, '.firearmAttachmentEffects.kind', `${effects.kind} effects need a ${effects.kind} model`);
+  }
+};
+
 const checkOpticZoom = (item: ItemDef, variable: boolean, obtainable: boolean, report: Report): void => {
   if (item.opticZoom !== undefined && !variable) {
     report('items', item.id, '.opticZoom', 'zoom tuning needs a variable-power optic model');
@@ -747,9 +786,11 @@ const checkItems = (registry: Registry, report: Report) => {
     checkItemMass(item, registry, report);
     checkItemLight(item, hasIgniter, registry, report);
     checkItemLightModel(item, registry, report);
+    checkItemHeldDisplay(item, registry, report);
     checkItemFirearm(item, registry, report);
     checkMeleeSounds(item, registry, report);
     checkItemOptic(item, registry, obtainable, report);
+    checkItemAttachmentEffects(item, registry, report);
     checkUnpacking(item, registry, qualities, report);
     checkDisassembly(item, registry, qualities, report);
     checkBook(item, registry, report);
@@ -861,18 +902,32 @@ const checkMilitaryLoot = (registry: Registry, report: Report) => {
   }
 };
 
+const checkMaterial = (registry: Registry, furniture: FurnitureDef, report: Report) => {
+  const material = registry.furnitureMaterials.get(furniture.material);
+  if (!material) {
+    report('furniture', furniture.id, '.material', `no furniture material "${furniture.material}"`);
+  } else if (furniture.door && !material.methods) {
+    report('furniture', furniture.id, '.material', `door material "${material.id}" must list its forcing methods`);
+  }
+};
+
+const checkMaterialSounds = (registry: Registry, report: Report) => {
+  for (const material of registry.furnitureMaterials.values()) {
+    if (!registry.sounds.get(material.blowSound)?.noise.enabled) {
+      report('furnitureMaterials', material.id, '.blowSound', 'blows need a sound that alerts hearing');
+    }
+  }
+};
+
 const checkDoorForcing = (registry: Registry, furniture: FurnitureDef, report: Report) => {
   const { door } = furniture;
   if (!door) {
     return;
   }
-  const material = registry.doorMaterials.get(door.material);
-  if (!material) {
-    report('furniture', furniture.id, '.door.material', `no door material "${door.material}"`);
-  }
+  const material = registry.furnitureMaterials.get(furniture.material);
   for (const [id, method] of Object.entries(door.methods)) {
     const path = `.door.methods.${id}`;
-    if (material && !material.methods.includes(id)) {
+    if (material?.methods && !material.methods.includes(id)) {
       report('furniture', furniture.id, path, `material "${material.id}" does not admit method "${id}"`);
     }
     if (!registry.skills.has(method.skill)) {
@@ -917,6 +972,7 @@ const checkToolFuel = (item: ItemDef, registry: Registry, report: Report) => {
 
 const checkFurniture = (registry: Registry, report: Report) => {
   const cellMetres = registry.inventory.get(CORE_CONTENT_IDS.player)?.cellMetres;
+  checkMaterialSounds(registry, report);
   for (const furniture of registry.furniture.values()) {
     if (furniture.container) {
       checkContainerWidth({ section: 'furniture', id: furniture.id, container: furniture.container, registry, report });
@@ -929,7 +985,13 @@ const checkFurniture = (registry: Registry, report: Report) => {
     });
     checkDoorOpenNoise(registry, furniture, report);
     checkSearchNoise(registry, furniture, report);
+    checkMaterial(registry, furniture, report);
     checkDoorForcing(registry, furniture, report);
+    furniture.ruin?.debris.forEach(({ item }, index) => {
+      if (!registry.items.has(item)) {
+        report('furniture', furniture.id, `.ruin.debris[${index}].item`, `no item "${item}"`);
+      }
+    });
   }
 };
 
@@ -1336,6 +1398,10 @@ const checkLayoutReferences = (layout: SiteLayoutDef, registry: Registry, report
   for (const [path, message] of authoredLayoutIssues(layout, registry)) {
     report('layouts', layout.id, path, message);
   }
+  const light = layout.practice?.light;
+  if (light && registry.items.get(light.light)?.light?.power?.battery !== light.battery) {
+    report('layouts', layout.id, '.practice.light', `"${light.light}" is not a light that takes "${light.battery}"`);
+  }
 };
 
 const reportMissingCamoSettings = (block: BlockDef, report: Report): void => {
@@ -1382,6 +1448,27 @@ const checkCamoBlocks = (registry: Registry, report: Report): void => {
   }
 };
 
+// The saved firing record is keyed by rule id, so a duplicate id would let one rule's firing silence another.
+const checkEventRules = (registry: Registry, scenario: ScenarioDef, report: Report): void => {
+  const ids = new Set<string>();
+  scenario.eventRules.forEach((rule, index) => {
+    if (ids.has(rule.id)) {
+      report('scenarios', scenario.id, `.eventRules[${index}].id`, `duplicate event rule "${rule.id}"`);
+    }
+    ids.add(rule.id);
+    rule.effects.forEach((effect, effectIndex) => {
+      if (!registry.zombies.has(effect.zombie)) {
+        report(
+          'scenarios',
+          scenario.id,
+          `.eventRules[${index}].effects[${effectIndex}].zombie`,
+          `no zombie type "${effect.zombie}"`,
+        );
+      }
+    });
+  });
+};
+
 const checkScenarios = (registry: Registry, report: Report): void => {
   for (const scenario of registry.scenarios.values()) {
     for (const [path, message] of scenarioPlanIssues(registry, scenario)) {
@@ -1393,6 +1480,7 @@ const checkScenarios = (registry: Registry, report: Report): void => {
     if (!registry.compression.has(scenario.compression)) {
       report('scenarios', scenario.id, '.compression', `no compression tuning "${scenario.compression}"`);
     }
+    checkEventRules(registry, scenario, report);
     if (
       registry.layouts.has(scenario.id) ||
       ['hamlet', 'city', 'forest', 'testHouse', 'weatheringTest'].includes(scenario.id)
@@ -1430,6 +1518,20 @@ const checkSkillAndUiReferences = (registry: Registry, report: Report): void => 
   }
 };
 
+// A heartbeat plays one recording per beat, so each of its sounds has exactly one variant.
+const checkHeartbeatSounds = (registry: Registry, report: Report): void => {
+  for (const tuning of registry.body.values()) {
+    for (const [pace, event] of Object.entries(tuning.heartbeat.sounds)) {
+      const sound = registry.sounds.get(event);
+      if (!sound) {
+        report('body', tuning.id, `.heartbeat.sounds.${pace}`, `no sound event "${event}"`);
+      } else if (sound.variants.length !== 1) {
+        report('body', tuning.id, `.heartbeat.sounds.${pace}`, `heartbeat sound "${event}" needs exactly one variant`);
+      }
+    }
+  }
+};
+
 const referenceIssues = (registry: Registry, origins: Map<string, Origin>): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   const report: Report = (section, id, path, message) => {
@@ -1463,11 +1565,15 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkZombies(registry, report);
   checkRecipes(registry, report);
   checkSkillAndUiReferences(registry, report);
+  checkHeartbeatSounds(registry, report);
   for (const layout of registry.layouts.values()) {
     checkLayoutReferences(layout, registry, report);
   }
   checkScenarios(registry, report);
   for (const { section, id, path, message } of settlementCollectionIssues(registry)) {
+    report(section, id, path, message);
+  }
+  for (const { section, id, path, message } of vehicleContentIssues(registry)) {
     report(section, id, path, message);
   }
   return issues;

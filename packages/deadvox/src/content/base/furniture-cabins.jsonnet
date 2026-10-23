@@ -1,14 +1,18 @@
 local shape = import 'furniture-shape.libsonnet';
+local breach = import 'furniture-breach.libsonnet';
 local cabinets = import 'cabinet-shapes.libsonnet';
+local detail = import 'door-detail.libsonnet';
 local wood = '#6e5037';
-shape.colliding({
+breach.breaking(shape.colliding({
   furniture: [
     {
       id: 'dad_front_door',
       name: "Dad's cabin front door",
       size: [2, 4, 1],
       color: '#7a5534',
-      door: { material: 'wood', methods: {}, handlingSimSeconds: 0.6 },
+      material: 'wood',
+      breach: { minimumStrength: 3.5, durability: 60 },
+      door: { methods: {}, handlingSimSeconds: 0.6, detail: detail.panelled },
     },
     {
       id: 'gun_cabinet',
@@ -22,4 +26,4 @@ shape.colliding({
       container: { pockets: [{ grid: [5, 14], handlingSimSeconds: 1.2 }] },
     },
   ],
-})
+}))

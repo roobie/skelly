@@ -25,7 +25,7 @@ Long actions must advance the world quickly without letting entities tunnel thro
 
 ## 4. Many zombies in a browser
 
-Hundreds of fully active agents would compete with rendering and player simulation. The v1 acceptance target is 60 active zombies and 300 in the background tier, with simulation under 4 ms per frame. Use activity tiers: only nearby threats need detailed behavior; background threats can move in cheaper steps, while distant hordes remain abstract. Keep active attention selection unchanged when simplifying background movement. Grow data-oriented storage or move systems to a worker only when counts require it. Slice 3 develops background movement; abstract hordes remain Slice 4b work. Benchmark simulation cost separately from the complete rendered scene. See `src/bench/shamblers.ts`, `startShamblerBench`, and `packages/mobgen/src/cli/bench.ts`.
+Hundreds of fully active agents would compete with rendering and player simulation. The v1 acceptance target is 60 active zombies and 300 in the background tier, with simulation under 4 ms per frame. Use activity tiers: only nearby threats need detailed behavior; background threats can move in cheaper steps, while distant hordes remain abstract. Keep active attention selection unchanged when simplifying background movement. Grow data-oriented storage or move systems to a worker only when counts require it. Abstract hordes are Slice 4b work. Benchmark simulation cost separately from the complete rendered scene. See `src/bench/shamblers.ts`, `startShamblerBench`, and `packages/mobgen/src/cli/bench.ts`.
 
 ## 5. Inventory speed in real time
 
@@ -45,7 +45,7 @@ Half-metre terrain steps exceed ordinary wheel clearance, and fast vehicles can 
 
 ## 9. Lighting
 
-World-derived diffuse sky visibility makes site interiors darker without a template flag, but transport must remain consistent with edits, streaming and furniture. Moving transport to workers does not make main-thread snapshot, submission or atlas work free, so frame rate on weak GPUs stays a risk (#680). Capped uncertainty avoids full-sky claims without blacking out open surfaces during cold discovery, and published lighting stays visible during edit revalidation so opening a dark room cannot expose the cap. Delayed darkening and replacement brightness steps remain visual risks. Limited GPU residency can over-darken a completed but nonresident room, so a permanently dark room is never evidence of speed. Vehicle interiors read too dark (#1016). Carried-light rendering and simulation exposure remain separate authorities. See `DESIGN.md`, "Light", and `src/render/skylight.ts`, `Skylight`.
+World-derived diffuse sky visibility makes site interiors darker without a template flag, but transport must remain consistent with edits, streaming and furniture. Moving transport to workers does not make main-thread snapshot, submission or atlas work free, so frame rate on weak GPUs stays a risk (#680). Capped uncertainty avoids full-sky claims without blacking out open surfaces during cold discovery, and published lighting stays visible during edit revalidation so opening a dark room cannot expose the cap. Delayed darkening and replacement brightness steps remain visual risks. Limited GPU residency can over-darken a completed but nonresident room, so a permanently dark room is never evidence of speed. Carried-light rendering and simulation exposure remain separate authorities. See `DESIGN.md`, "Light", and `src/render/skylight.ts`, `Skylight`.
 
 ## 10. World generation across chunks
 
@@ -53,7 +53,7 @@ Buildings and roads span independently generated chunks. If chunks consult one a
 
 ## 11. Catch-up simulation
 
-Unloaded areas use coarse or closed-form updates, while loaded areas tick normally. Divergence near the player makes time away behave differently from time present, and a player can compare a short absence with what they saw. Keep catch-up beside each system's tick and test that both paths agree within the system's stated tolerance while a region is in the block around the player; once it leaves the block the coarse model is canonical, and its tests check determinism, not agreement. The block's regions are simulated with the player's presence as an input. See [ADR 0008](docs/decisions/0008-deterministic-world.md). Needs and food begin in Slice 1; power and fire follow in Slice 5.
+Unloaded areas use coarse or closed-form updates, while loaded areas tick normally. Divergence near the player makes time away behave differently from time present, and a player can compare a short absence with what they saw. Keep catch-up beside each system's tick and test that both paths agree within the system's stated tolerance while a region is in the block around the player; once it leaves the block the coarse model is canonical, and its tests check determinism, not agreement. The block's regions are simulated with the player's presence as an input. See [ADR 0008](docs/decisions/0008-deterministic-world.md). Power and fire join this model in Slice 5.
 
 ## 12. Browser limits
 

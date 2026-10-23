@@ -11,7 +11,13 @@ import {
   type TemplateAssembly,
   type TemplateSlot,
 } from '../src/core/templates.ts';
-import { fixtureLootContext } from './economyFixtures.ts';
+import {
+  FIXTURE_MATERIAL,
+  fixtureBreach,
+  fixtureLootContext,
+  fixtureMaterials,
+  fixtureSounds,
+} from './economyFixtures.ts';
 
 const piece = (id: string, row: string, mask: string): MapPieceDef => ({
   id,
@@ -34,11 +40,22 @@ const registryOf = (...mapPieces: MapPieceDef[]) => {
     {
       source: 'fixture-kits.json',
       data: {
+        furnitureMaterials: fixtureMaterials(),
+        sounds: fixtureSounds(),
         blocks: [
           { id: 'fixture_shell', name: 'Shell', color: '#808080', solid: true },
           { id: 'fixture_floor', name: 'Floor', color: '#808080', solid: true },
         ],
-        furniture: [{ id: 'fixture_clutter', name: 'Clutter', size: [1, 1, 1], color: '#808080' }],
+        furniture: [
+          {
+            id: 'fixture_clutter',
+            name: 'Clutter',
+            size: [1, 1, 1],
+            color: '#808080',
+            breach: fixtureBreach(),
+            material: FIXTURE_MATERIAL,
+          },
+        ],
         mapStyles: [
           {
             id: 'fixture_style',

@@ -1,4 +1,5 @@
 import type { Vec3 } from '../core/coords.ts';
+import type { LightPracticeDef } from '../core/schema.ts';
 import type { Rect } from '../core/site.ts';
 import { TutorialWeapons } from './tutorialWeapons.ts';
 
@@ -11,41 +12,58 @@ export interface TutorialObservation {
   looted: boolean;
   wielded: boolean;
   lightOn: boolean;
+  /** The type of the light that is on, if any. */
+  litType: string | undefined;
   paused: boolean;
 }
+
+const LIGHT_STAGES = ['light-on', 'light-swap', 'light-relight'] as const;
+
+type EssentialsStage = 'move' | 'door' | 'loot' | 'hands' | 'open' | 'eat' | 'drink' | 'light' | 'escape' | 'pause';
 
 /** A presentation projection: ordinary action owners supply outcomes, never commands. */
 export class Tutorial {
   private readonly achieved = new Set<string>();
   private lightWasOn = false;
-  private completed = false;
+  private essentialsDone = false;
+  private lightStarted = false;
   private weaponsChosen = false;
-  private essentialsPaused = false;
   readonly weapons = new TutorialWeapons();
 
   chooseWeapons(): void {
-    if (this.stage === 'choice') {
+    if (this.stage === 'finish') {
       this.weaponsChosen = true;
-    }
-  }
-
-  finish(): void {
-    if (!this.completed && (this.stage === 'choice' || this.stage === 'complete')) {
-      this.completed = true;
-      this.onComplete();
     }
   }
 
   private readonly spawn: Vec3;
   private readonly startingYaw: number;
   private readonly exit: Rect;
-  private readonly onComplete: () => void;
+  readonly lightKit: LightPracticeDef;
 
-  constructor(spawn: Vec3, startingYaw: number, exit: Rect, onComplete: () => void) {
+  constructor(spawn: Vec3, startingYaw: number, exit: Rect, lightKit: LightPracticeDef) {
     this.spawn = spawn;
     this.startingYaw = startingYaw;
     this.exit = exit;
-    this.onComplete = onComplete;
+    this.lightKit = lightKit;
+  }
+
+  /** The essentials route is finished and the optional light module can be chosen. */
+  get canStartLight(): boolean {
+    return this.essentialsDone && !this.lightStarted && (this.stage === 'finish' || this.stage === 'complete');
+  }
+
+  startLight(): void {
+    if (this.canStartLight) {
+      this.lightStarted = true;
+    }
+  }
+
+  /** The battery owner finished a swap; swaps before the module starts teach nothing. */
+  batterySwapped(lightType: string): void {
+    if (this.lightStarted && lightType === this.lightKit.light) {
+      this.achieved.add('light-swap');
+    }
   }
 
   opened(type: string): void {
@@ -77,28 +95,41 @@ export class Tutorial {
         state.position[2] >= this.exit.z0 &&
         state.position[2] < this.exit.z1,
     );
+    if (this.lightStarted && state.litType === this.lightKit.light) {
+      this.achieved.add('light-on');
+      // Lit after a swap: on again, whether it stayed on through the swap or was switched back on.
+      remember('light-relight', this.achieved.has('light-swap'));
+    }
     if (this.stage === 'pause' && state.paused) {
-      this.essentialsPaused = true;
+      this.essentialsDone = true;
     }
   }
 
-  get stage():
-    | 'move'
-    | 'door'
-    | 'loot'
-    | 'hands'
-    | 'open'
-    | 'eat'
-    | 'drink'
-    | 'light'
-    | 'escape'
-    | 'pause'
-    | 'choice'
-    | 'revolver'
-    | 'pump'
-    | 'melee'
-    | 'complete' {
-    const outcomes: [Tutorial['stage'], boolean][] = [
+  get stage(): EssentialsStage | 'finish' | 'revolver' | 'pump' | 'melee' | 'complete' | (typeof LIGHT_STAGES)[number] {
+    const essentials = this.essentialsStage;
+    if (essentials !== 'pause' || !this.essentialsDone) {
+      return essentials;
+    }
+    if (this.lightStarted) {
+      const light = LIGHT_STAGES.find((id) => !this.achieved.has(id));
+      if (light) {
+        return light;
+      }
+    }
+    if (!this.weaponsChosen) {
+      return 'finish';
+    }
+    if (this.weapons.lesson('revolver')) {
+      return 'revolver';
+    }
+    if (this.weapons.lesson('pump')) {
+      return 'pump';
+    }
+    return this.weapons.melee ? 'complete' : 'melee';
+  }
+
+  private get essentialsStage(): EssentialsStage {
+    const outcomes: [EssentialsStage, boolean][] = [
       ['move', this.achieved.has('move') && this.achieved.has('look')],
       ['door', this.achieved.has('door')],
       ['loot', this.achieved.has('loot')],
@@ -109,22 +140,6 @@ export class Tutorial {
       ['light', this.achieved.has('light')],
       ['escape', this.achieved.has('escape') && this.achieved.has('crouch')],
     ];
-    const essentials = outcomes.find(([, achieved]) => !achieved)?.[0];
-    if (essentials) {
-      return essentials;
-    }
-    if (!this.essentialsPaused) {
-      return 'pause';
-    }
-    if (!this.weaponsChosen) {
-      return 'choice';
-    }
-    if (this.weapons.lesson('revolver')) {
-      return 'revolver';
-    }
-    if (this.weapons.lesson('pump')) {
-      return 'pump';
-    }
-    return this.weapons.melee ? 'complete' : 'melee';
+    return outcomes.find(([, achieved]) => !achieved)?.[0] ?? 'pause';
   }
 }

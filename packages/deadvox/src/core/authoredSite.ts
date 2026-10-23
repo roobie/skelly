@@ -20,7 +20,7 @@ import { type LootSpawnPoint, lootPointsByColumn } from './loot.ts';
 import { placementKeyLoot } from './placementLoot.ts';
 import { Rng, simplexNoise2 } from './random.ts';
 import type { Scale } from './scale.ts';
-import type { SiteLayoutDef } from './schema.ts';
+import type { LightPracticeDef, SiteLayoutDef } from './schema.ts';
 import {
   furnitureOf,
   grow,
@@ -56,6 +56,7 @@ export class AuthoredSite implements Site {
   private readonly treeIndex: TreeIndex;
   private readonly lootColumns: ReadonlyMap<string, readonly LootSpawnPoint[]>;
   readonly playtestMarks: PlaytestMarks;
+  readonly lightPractice?: LightPracticeDef;
   readonly seed: number;
   readonly registry: Registry;
 
@@ -92,6 +93,9 @@ export class AuthoredSite implements Site {
         })),
       ),
     };
+    if (layout.practice) {
+      this.lightPractice = layout.practice.light;
+    }
     this.spawn = { pos: [...layout.player.position], yaw: yawFromBearing(layout.player.bearing) };
     const spawnPoints: [number, number][] = [
       [layout.player.position[0], layout.player.position[2]],

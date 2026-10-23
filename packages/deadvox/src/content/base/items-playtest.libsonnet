@@ -4,16 +4,16 @@
       "id": "dad_cabin_key",
       "name": "Dad's cabin key",
       "category": "tool",
-      "weight": 10,
       "size": [1, 1],
       "key": { "lock": "dad_cabin" },
+      "model": "dad_cabin_key",
       "description": "A small key for Dad's cabin."
     },
     {
       "id": "baseball_cap",
       "name": "Baseball cap",
       "category": "clothing",
-      "weight": 80,
+      "model": "baseball_cap",
       "size": [2, 1],
       "wearable": { "slot": "head", "encumbrance": 0 }
     },
@@ -46,9 +46,9 @@
       "id": "pharmacy_key",
       "name": "Medical pharmacy key",
       "category": "tool",
-      "weight": 10,
       "size": [1, 1],
       "key": { "lock": "medical_pharmacy" },
+      "model": "pharmacy_key",
       "description": "A key for the medical hall pharmacy."
     },
     {

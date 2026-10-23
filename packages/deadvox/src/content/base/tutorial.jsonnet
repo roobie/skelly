@@ -1,4 +1,5 @@
 local shape = import 'furniture-shape.libsonnet';
+local breach = import 'furniture-breach.libsonnet';
 local rows = import 'tools/jsonnet/lib/rows.libsonnet';
 local cabinets = import 'cabinet-shapes.libsonnet';
 local supplyPaint = '#8d986d';
@@ -32,7 +33,7 @@ local supplyCabinet = {
     }),
     container: { pockets: [{ name: 'Supplies', grid: [8, 8], handlingSimSeconds: 0.2 }] },
   };
-shape.colliding({
+breach.breaking(shape.colliding({
   furniture: [supplyCabinet, supplyCabinet {
     id: 'tutorial_range_cabinet',
     name: 'Range supplies',
@@ -60,6 +61,21 @@ shape.colliding({
     },
     layers: [rows.repeat('############', 12)]
       + rows.repeat(targetWall, 3) + rows.repeat(rangeWall, 3),
+  }, {
+    // The optional light module's windowless store; its crate sits in the corner farthest from the door.
+    id: 'tutorial_store',
+    lootContext: lootContext,
+    size: [6, 7, 5],
+    palette: {
+      '.': 'air', '#': 'planks', W: 'siding_blue', R: 'roof',
+      D: { furniture: 'wood_door', facing: 's' },
+      C: { furniture: 'crate' },
+    },
+    layers: [rows.repeat('######', 5)]
+      + rows.repeat(['WWWWWW', 'WCC..W', 'WCC..W', 'W....W', 'WWDDWW'], 2)
+      + rows.repeat(['WWWWWW', 'W....W', 'W....W', 'W....W', 'WWDDWW'], 2)
+      + [['WWWWWW', 'W....W', 'W....W', 'W....W', 'WWWWWW']]
+      + [rows.repeat('RRRRRR', 5)],
   }],
   layouts: [{
     id: 'tutorial',
@@ -88,6 +104,13 @@ shape.colliding({
         { item: 'flashlight', fitted: { battery: 'aa_battery' } },
         { item: 'bandage', count: 2 },
       ] }],
+    }, {
+      // The charge lasts moments of light, so the light module's swap is needed rather than suggested.
+      template: 'tutorial_store', position: [5, 0, 10], rotation: 0,
+      fixedLoot: [{ at: [1, 1, 1], items: [
+        { item: 'flashlight', fitted: { battery: 'aa_battery' }, charge: 0.01 },
+        { item: 'aa_battery' },
+      ] }],
     }],
     player: { position: [0, 0.5, 8], bearing: 0 },
     shamblers: [{ type: 'shambler', position: [24, 0.5, 2] }],
@@ -100,5 +123,16 @@ shape.colliding({
       { id: 'tutorial_exit', area: { x0: -10, z0: -15, x1: -6, z1: -11 } },
       { id: 'tutorial_firing_line', area: { x0: -24, z0: -22, x1: -22, z1: -20 } },
     ],
+    practice: { light: {
+      light: 'flashlight',
+      battery: 'aa_battery',
+      labels: {
+        start: 'Light and power (optional)',
+        on: 'Switch on',
+        assign: 'Assign quickbar 1',
+        swap: 'Hold to put in the battery',
+        relight: 'Switch on',
+      },
+    } },
   }],
-})
+}))

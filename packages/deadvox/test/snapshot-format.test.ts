@@ -1,4 +1,5 @@
 import process from 'node:process';
+import { gunzipSync, gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import { NEGATIVE_ZERO_TAG } from '../src/core/canonicalJson.ts';
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from '../src/core/character.ts';
@@ -36,7 +37,10 @@ import {
   startRest,
 } from './snapshotTestSupport.ts';
 
-const TEN_HOUR_SAVE_BUDGET_BYTES = 5 * 1024 * 1024; // ~17× headroom over the current synthetic fixture; catches meaningful growth.
+// Bounds the decompressed envelope, which tracks saved-state growth; compression would hide it.
+const TEN_HOUR_SAVE_BUDGET_BYTES = 5 * 1024 * 1024;
+// biome-ignore lint/style/noProcessEnv: timings print only under the bench script.
+const benchmarking = process.env.DEADVOX_BENCH === '1';
 // biome-ignore lint/style/noProcessEnv: distinguish local measurements from the named CI runner.
 const measurementRunner = process.env.GITHUB_ACTIONS === 'true' ? 'ubuntu-latest' : 'local';
 
@@ -345,10 +349,10 @@ const sealEnvelope = async (envelope: Record<string, unknown>, preserveLength = 
   }
   const digest = await crypto.subtle.digest('SHA-256', payloadBytes.slice().buffer as ArrayBuffer);
   envelope.checksum = [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
-  return new TextEncoder().encode(jsonCanonical(envelope));
+  return gzipSync(jsonCanonical(envelope));
 };
 const parseEnvelope = (bytes: Uint8Array): Record<string, unknown> =>
-  JSON.parse(new TextDecoder().decode(bytes)) as Record<string, unknown>;
+  JSON.parse(gunzipSync(bytes).toString('utf8')) as Record<string, unknown>;
 const getObject = (value: unknown): Record<string, unknown> => value as Record<string, unknown>;
 const reverseObjectKeys = (value: unknown): unknown => {
   if (Array.isArray(value)) {
@@ -404,6 +408,28 @@ const assertNumbersObjectIs = (expected: unknown, actual: unknown, path = '$'): 
 };
 
 describe('canonical save format', () => {
+  it('round-trips a hesitating and refused zombie through the save envelope', async () => {
+    const source = capture(createRuntime());
+    const hesitation = structuredClone(source);
+    const hesitating = hesitation.world.zombies.zombies[0]!.zombie;
+    hesitating.mode = 'hesitate';
+    hesitating.hesitationFrom = 'idle';
+    const refused = structuredClone(source);
+    const refusing = refused.world.zombies.zombies[0]!.zombie;
+    refusing.refusedAt = 1;
+    refusing.leanTarget = [1, 2, 3];
+
+    const roundTrips = await Promise.all(
+      [hesitation, refused].map(async (snapshot) => ({
+        snapshot,
+        decoded: await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup }),
+      })),
+    );
+    for (const { snapshot, decoded } of roundTrips) {
+      expect(decoded.snapshot.world.zombies.zombies[0]!.zombie).toEqual(snapshot.world.zombies.zombies[0]!.zombie);
+    }
+  });
+
   it('yields a saved carried root before reading world-owned item roots', () => {
     const carried = { uid: 1, type: 'rag', count: 1, condition: 1 };
     const state = {
@@ -438,7 +464,6 @@ describe('canonical save format', () => {
       [0, 0, 1],
     );
     const zombie = source.zombies.store.get(id)!;
-    zombie.body.onGround = true;
     source.zombies.setFrozen(true);
     const posed = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, scale.blockSize));
     const { center } = posed.head.find((box) => box.bone === 'head')!;
@@ -565,11 +590,8 @@ describe('canonical save format', () => {
     source.zombies.add(registry.zombies.get('shambler')!, source.player.body.pos);
     source = prepareAudioContinuation(source);
     const snapshot = capture(source);
-    const started = performance.now();
     const bytes = await encodeFixture(snapshot);
-    const encodedAt = performance.now();
     const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
-    const decodedAt = performance.now();
     const wirePayload = getObject(parseEnvelope(bytes).payload);
     const wireWorld = getObject(wirePayload.world);
     expect(Object.keys(getObject(wireWorld.regions)).length).toBeGreaterThan(0);
@@ -598,8 +620,6 @@ describe('canonical save format', () => {
 
     const reversed = reverseObjectKeys(snapshot) as SaveSnapshot;
     expect(await encodeFixture(reversed)).toEqual(bytes);
-    expect(encodedAt - started).toBeGreaterThanOrEqual(0);
-    expect(decodedAt - encodedAt).toBeGreaterThanOrEqual(0);
   });
 
   it('checks a representative ten-hour hamlet save and records its size and timings', async () => {
@@ -619,7 +639,9 @@ describe('canonical save format', () => {
     // scheduler cursors without running the fixed-rate physics ticks.
     setBudgetClock(runtime);
     const snapshot = capture(runtime);
-    expect(snapshot.world.diffs.chunks.length).toBeGreaterThanOrEqual(worldStats.editedChunks);
+    expect(snapshot.world.columns.flatMap(({ chunks }) => chunks).length).toBeGreaterThanOrEqual(
+      worldStats.editedChunks,
+    );
     expect(snapshot.world.spawned.length).toBe(population.spawned);
     expect(snapshot.world.zombies.zombies.length).toBe(population.alive);
     expect(snapshot.character.inventory.piles.length).toBe(pileStats.pileCount + pileStats.baselinePileCount);
@@ -632,7 +654,8 @@ describe('canonical save format', () => {
     const encodeStarted = performance.now();
     const bytes = await encodeSave(snapshot, { generation: 1, worldOptions: formatWorldOptions });
     const encodeMs = performance.now() - encodeStarted;
-    expect(bytes.byteLength).toBeLessThan(TEN_HOUR_SAVE_BUDGET_BYTES);
+    const inflatedBytes = gunzipSync(bytes).byteLength;
+    expect(inflatedBytes).toBeLessThan(TEN_HOUR_SAVE_BUDGET_BYTES);
 
     const decodeStarted = performance.now();
     const decoded = await decodeSave(bytes, { contentLookup });
@@ -642,8 +665,11 @@ describe('canonical save format', () => {
     const restoreMs = performance.now() - loadStarted;
     const loadMs = decodeMs + restoreMs;
     expect(capture(loaded)).toEqual(decoded.snapshot);
+    if (!benchmarking) {
+      return;
+    }
     process.stdout.write(
-      `SAVE_BUDGET_TEN_HOUR runner=${measurementRunner} visited=${worldStats.visitedChunks} edited=${worldStats.editedChunks} edits=${worldStats.editedChunks * 8} syntheticPiles=${pileStats.pileCount} totalPiles=${snapshot.character.inventory.piles.length} items=${pileStats.pileCount * pileStats.pileCapacity + pileStats.baselinePileItems} touchedContainers=${population.touchedContainers} spawnedKeys=${population.spawned} alive=${population.alive} size=${bytes.byteLength} encodeMs=${encodeMs.toFixed(1)} decodeMs=${decodeMs.toFixed(1)} restoreMs=${restoreMs.toFixed(1)} loadMs=${loadMs.toFixed(1)}\n`,
+      `SAVE_BUDGET_TEN_HOUR runner=${measurementRunner} visited=${worldStats.visitedChunks} edited=${worldStats.editedChunks} edits=${worldStats.editedChunks * 8} syntheticPiles=${pileStats.pileCount} totalPiles=${snapshot.character.inventory.piles.length} items=${pileStats.pileCount * pileStats.pileCapacity + pileStats.baselinePileItems} touchedContainers=${population.touchedContainers} spawnedKeys=${population.spawned} alive=${population.alive} size=${inflatedBytes} compressedSize=${bytes.byteLength} encodeMs=${encodeMs.toFixed(1)} decodeMs=${decodeMs.toFixed(1)} restoreMs=${restoreMs.toFixed(1)} loadMs=${loadMs.toFixed(1)}\n`,
     );
   });
 
@@ -793,6 +819,16 @@ describe('canonical save format', () => {
     ).toThrow('Invalid saved explosive pin or fuse');
   });
 
+  it('refuses a record that inflates past the cap before inflating it fully', async () => {
+    const maxPayloadBytes = 16;
+    // Without its trailer the record only fails at the end of inflation, so reaching
+    // that error means the size bound was not applied while streaming.
+    const inflatesPastCap = gzipSync(new Uint8Array(4 * (maxPayloadBytes + 1024 * 1024))).subarray(0, -8);
+    await expect(
+      decodeSave(inflatesPastCap, { version: formatVersion, contentLookup, maxPayloadBytes }),
+    ).rejects.toThrow('Save envelope exceeds configured limit');
+  });
+
   it('rejects truncated, corrupted, non-canonical, over-limit, invalid-version, and malformed payloads', async () => {
     const valid = await encodeFixture(capture(createRuntime()));
     const malformed: {
@@ -802,10 +838,13 @@ describe('canonical save format', () => {
       message: string;
     }[] = [];
     malformed.push({ name: 'truncated', bytes: valid.slice(0, -1), message: 'truncated' });
+    const corrupted = valid.slice();
+    corrupted[corrupted.length >> 1]! ^= 0xff;
+    malformed.push({ name: 'corrupted', bytes: corrupted, message: 'Invalid or truncated compressed save' });
     malformed.push({ name: 'over limit', bytes: valid, options: { maxPayloadBytes: 16 }, message: 'configured limit' });
     malformed.push({
       name: 'noncanonical',
-      bytes: new TextEncoder().encode(` ${new TextDecoder().decode(valid)}`),
+      bytes: gzipSync(` ${gunzipSync(valid).toString('utf8')}`),
       message: 'Non-canonical',
     });
 
@@ -813,7 +852,7 @@ describe('canonical save format', () => {
     badChecksum.checksum = `${String(badChecksum.checksum)[0] === '0' ? '1' : '0'}${String(badChecksum.checksum).slice(1)}`;
     malformed.push({
       name: 'checksum',
-      bytes: new TextEncoder().encode(jsonCanonical(badChecksum)),
+      bytes: gzipSync(jsonCanonical(badChecksum)),
       message: 'checksum mismatch',
     });
     const badLength = parseEnvelope(valid);
@@ -838,26 +877,30 @@ describe('canonical save format', () => {
     const firstRun = (firstChunk.runs as Record<string, unknown>[])[0]!;
     firstRun.id = (firstChunk.palette as unknown[]).length;
     malformed.push({ name: 'RLE', bytes: sealEnvelope(badRle), message: 'Malformed RLE run' });
-    const adjacentSnapshot = structuredClone(capture(createRuntime())) as SaveSnapshot;
-    const changedChunk = adjacentSnapshot.world.diffs.chunks[0]!;
-    changedChunk.cells.push({ ...changedChunk.cells[0]!, index: changedChunk.cells[0]!.index + 1 });
-    const nonMaximalRle = parseEnvelope(await encodeFixture(adjacentSnapshot));
-    const nonMaximalPayload = getObject(nonMaximalRle.payload);
-    const nonMaximalWorld = getObject(nonMaximalPayload.world);
-    const nonMaximalRegion = Object.values(getObject(nonMaximalWorld.regions))[0] as Record<string, unknown>;
-    const nonMaximalChunk = (nonMaximalRegion.chunks as Record<string, unknown>[])[0]!;
-    const nonMaximalRuns = nonMaximalChunk.runs as Record<string, unknown>[];
-    const maximalRun = nonMaximalRuns[0]!;
+    const firstSavedChunk = (envelope: Record<string, unknown>) => {
+      const world = getObject(getObject(envelope.payload).world);
+      const region = Object.values(getObject(world.regions)).find(
+        (candidate) => (getObject(candidate).chunks as unknown[]).length > 0,
+      );
+      return (getObject(region).chunks as Record<string, unknown>[])[0]!;
+    };
+    const nonMaximalRle = parseEnvelope(valid);
+    const nonMaximalRuns = firstSavedChunk(nonMaximalRle).runs as Record<string, unknown>[];
+    const runIndex = nonMaximalRuns.findIndex(({ length }) => Number(length) > 1);
+    const maximalRun = nonMaximalRuns[runIndex]!;
     const runStart = Number(maximalRun.start);
     const runLength = Number(maximalRun.length);
-    expect(runLength).toBeGreaterThan(1);
     nonMaximalRuns.splice(
-      0,
+      runIndex,
       1,
       { ...maximalRun, length: 1 },
       { ...maximalRun, start: runStart + 1, length: runLength - 1 },
     );
     malformed.push({ name: 'non-maximal RLE', bytes: sealEnvelope(nonMaximalRle), message: 'Non-maximal RLE runs' });
+    const shortRle = parseEnvelope(valid);
+    const shortRuns = firstSavedChunk(shortRle).runs as Record<string, unknown>[];
+    getObject(shortRuns.at(-1)).length = Number(shortRuns.at(-1)!.length) - 1;
+    malformed.push({ name: 'short RLE', bytes: sealEnvelope(shortRle), message: 'do not cover the chunk' });
 
     const duplicate = parseEnvelope(valid);
     const duplicatePayload = getObject(duplicate.payload);

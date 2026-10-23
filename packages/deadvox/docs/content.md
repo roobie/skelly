@@ -4,6 +4,7 @@ read_if:
   - you change content schemas, validation, registry merging, browser-mod identity or content-loading test fixtures
   - you add or change a bundled mod such as beginner mode, or how `?mods=` selects one
   - you add code that reads a content row by a fixed id
+  - you add or change a refusal, notice or option label that core code shows the player
   - you change recipe, skill, workstation or book content, content references, static reachability or disassembly-output contracts
   - you change item economy metadata, source contexts, loot selection, loot-point descriptions or fixed loot
   - you're authoring or changing authored sites or gauntlet lots, template geometry, palettes, site-generation tuning, time-windowed spawns, curated map kits, role styles or connector contracts
@@ -70,10 +71,9 @@ The panel remains opt-in pending BR's decision about making it the default entry
 A bundled mod ships with the game but is applied only when asked, with `?mods=` and
 a comma-separated list of ids; `?mods=1` is the separate mods panel. Each one goes through
 the same intake as a player mod, so an unknown id is refused at startup with the usual
-diagnostics instead of being ignored. A bundled mod is derived from the base sources when
-it is selected, never written out as a second set of numbers, so it follows base tuning.
-That derivation is the seam player mods lack: they replace whole rows and cannot scale a
-base value. See `src/game/bundledMods.ts`, `selectBundledMods`.
+diagnostics instead of being ignored. A bundled mod's Jsonnet source derives its compiled
+rows from core content at build time, so its transformation remains beside its content.
+See `src/config/bundled/beginner.jsonnet` and `src/game/bundledMods.ts`, `selectBundledMods`.
 
 The game and the site launcher must offer the same mods, and the launcher is a static page
 that cannot import game modules, so the list is one schema-checked content file rather than
@@ -81,13 +81,13 @@ two copies. The launcher is a developer entry point, so a missing or invalid lis
 its control instead of breaking it. See `src/core/bundledModCatalogue.ts`,
 `bundledModCatalogue`, and `site/launcher.js`, `loadBundledMods`.
 
-Beginner mode (`?mods=beginner`) scales every hostile kind, not a list of ids. Damage, movement
-speed (wander and chase), detection and health each have one factor, `BEGINNER_FACTORS`.
-Detection covers sight, night sight, the hearing multiplier (footsteps and noise alike) and
-light spotting, the zombie stat `lightSightScale` that multiplies the range at which a carried
-or placed light is spotted. Light is included so a beginner carrying a torch or flashlight at
-night does not draw enemies from full range. The mode exists so a new player can learn the
-game against slower, weaker enemies that notice less.
+Beginner mode (`?mods=beginner`) scales every hostile kind, not a list of ids. Its Jsonnet source
+owns the damage, movement speed (wander and chase), detection and health factors. Detection
+covers sight, night sight, the hearing multiplier (footsteps and noise alike) and light spotting,
+the zombie stat `lightSightScale` that multiplies the range at which a carried or placed light is
+spotted. Light is included so a beginner carrying a torch or flashlight at night does not draw
+enemies from full range. The mode exists so a new player can learn the game against slower,
+weaker enemies that notice less.
 
 A save records each active bundled mod as a content pack in its version identity, so a
 beginner-mode world is stored apart from a normal one. The URL alone decides the mode, because
@@ -116,6 +116,36 @@ requires every field, so a pack that omits one fails validation instead of silen
 inheriting a code default. Readers take the values from the registry. See
 `src/core/schema.ts`, `InventoryTuningSchema` and `UiTuningSchema`, and `src/core/reach.ts`,
 `reachTuning`.
+
+## Core text
+
+What core says to the player, its refusals, notices and option labels, is mod content
+like any other text (#393, #456), so a mod can reword or translate it without a code
+change. It lives in the core ui row, in its own file so other text tables can grow beside
+it without touching the same lines. See `src/content/base/ui-core-text.libsonnet`.
+
+- **Read by key.** Code names each message by a stable key and never compares or matches
+  wording, so rewording a message cannot change what the game does. A rule that treats
+  some refusals specially, such as hiding the obvious ones from the item options, lists
+  keys, and a refusal another rule reacts to carries its key beside its text. See
+  `src/core/coreText.ts`, `coreMessage` and `coreRefusal`, and `src/core/options.ts`,
+  `OBVIOUS`.
+- **Required, with named slots.** One table of keys and slots drives both the schema and
+  the lookup's type, so a key code asks for and content lacks fails validation, not play.
+  A template names the values code fills in, such as `{item}`, and validation rejects one
+  that drops or invents a slot. See `src/core/coreText.ts`, `CORE_MESSAGE_SLOTS`, and
+  `src/core/schema.ts`, `slottedTable`.
+- **Owner rows.** The knockout refusal sits in the body row beside the bleeding refusal,
+  because the body that owns the state words its refusal and needs no registry. The
+  simulation takes the registry so its long actions can word theirs, and it words the
+  death cause that the body and needs report as a key. See `src/core/body.ts`,
+  `Body.actionRefusal` and `Body.advance`, and `src/core/sim.ts`, `SimOptions`.
+
+Internal invariant reasons that only a code defect can produce, such as a missing action
+owner, stay in code: no player meets them, and content would only hide the defect. So do
+the reasons that check saves, placed loot and fitted-item slots against content, since
+they report broken data to a developer, and play only offers fits that already pass them
+(`src/core/magazine.ts`, `slotsReason`).
 
 ## Handling range
 
@@ -294,7 +324,7 @@ Authored lots separate the arrangement from the building draw: a designed street
 
 Keep geometry, collection and consumer independently overridable so a prevalence edit need not restate a building or a scenario. See `src/content/base/scenarios.jsonnet`, `mapPools`, and `src/core/content.ts`, `buildRegistry`.
 
-Supply shops supplement the houses, while police and gun supplies remain scarce. A building rolls from its place theme, so tables are shared per theme and contexts tell themes apart: police stock comes from the Police usage, civilian weapons from hunting eligibility, and neither through military admission. Empty outcomes keep an equipment room's rolled stock from promising a weapon; the gauntlet's promised core stock belongs to the instance, not the room, because the lab must be winnable (see `DESIGN.md`, "Gauntlet"). The medical post provides treatment supplies rather than a guaranteed full kit, and only medical places hold the strong analgesics (see `DESIGN.md`, "Loot"). Source-context and nested-loot selection rules own admission, so the armed stops share role tables and a nested table's rejected rows drop out. See `src/content/base/gauntlet-city-building-types.libsonnet`, `armoury_cabinet`; `src/content/base/gauntlet-medical.libsonnet`, `loot`; and `src/core/loot.ts`, `lootTypeIssue`.
+Supply shops supplement the houses, while police and gun supplies remain scarce. A building rolls from its place theme, so tables are shared per theme and contexts tell themes apart: police stock comes from the Police usage, civilian weapons from hunting eligibility, and neither through military admission. Empty outcomes keep an equipment room's rolled stock from promising a weapon; the gauntlet's promised core stock belongs to the instance, not the room, because the lab must be winnable (see `DESIGN.md`, "Gauntlet"). The medical post provides treatment supplies rather than a guaranteed full kit, and only medical places hold the strong analgesics (see `DESIGN.md`, "Loot"). Source-context and nested-loot selection rules own admission, so the armed stops share role tables and a nested table's rejected rows drop out. Rifle ammunition is Military-only, so it can only roll in a Military source: the HQ vault's cabinets roll `armoury_cabinet`, and the rifles' authored fixed loot carries a box of their calibre and a magazine, so every run places ammunition and a fitting magazine for each rifle it places; a rifle without a magazine is a prop, since only a fitted magazine loads it. Rifle supplies also roll outside the armoury, from shelves and ground piles through the HQ, because a single cabinet makes the whole supply one find. Rifle supplies are Military items of the second and third tiers. Level one rolls only the lowest tier, so it never carries them. On deeper levels only containers that carry their own Military usage roll them, because the lab's Industrial and Medical context would drop the rows; rifle rows then roll only where authored, and the depth rule stays untouched. Each lab level rolls every tier up to its depth, so each level below the first adds a better tier while keeping the lower ones; that makes a deeper level worth its risk. The deepest tier exists for the last two levels, which share it, and it stays empty until its first item lands (#1128); an empty tier rolls nothing and breaks no table. A loot context declares such a range with `lowerTiers`, and an assembly that declares one hands it to the pieces inside it, innermost first, because a flattened building would otherwise give every storey the outer building's single tier. A table that names rifle rows under a Police or hunting context drops them silently, so `packages/deadvox/test/gauntletLoot.test.ts`, "gauntlet loot reachability", guards the reach. The HQ's loot piles are authored ground loot (a palette `groundLoot` entry), so they sit in open floor away from doors and circulation. The HQ is held by soldiers with a few ordinary shamblers among them, because a headquarters with no garrison reads as an empty set; its markers are authored in the building and `packages/deadvox/test/gauntletHqThreat.test.ts` guards that soldiers outnumber the rest. The lab's entry level carries more threat markers than its first cut, a provisional amount for BR to tune in play. Every run also places a stab vest, fixed in the police station's evidence locker, because the Police-only locker's rolls alone leave it to chance. The rifle ammunition counts are sized so a run offers each rifle calibre about as many rounds as it offers the revolver's, several magazines' worth, because a rifle with a single magazine of ammunition cannot fight a room; `packages/deadvox/test/gauntletLoot.test.ts`, "gauntlet loot reachability", guards that each rifle's calibre covers refilling its magazine. They stay provisional until BR tunes them in play. See `src/content/base/gauntlet-city-building-types.libsonnet`, `armoury_cabinet` and `hq_field_supplies`; `src/content/base/crisis-hq.jsonnet`, `markers`; `src/content/base/gauntlet-lab-entry.libsonnet`, `markerCells`; `src/content/base/gauntlet-lab.libsonnet`, `storey`; `src/content/base/gauntlet-medical.libsonnet`, `loot`; `src/content/base/scenarios.jsonnet`, `composition`; `src/core/loot.ts`, `LootContextSchema` and `economyEligible`; and `src/core/templates.ts`, `compileAssembly`. `packages/deadvox/test/gauntletLabTiers.test.ts`, "gauntlet lab loot tiers by depth", guards the tier-by-depth property.
 
 Every shop shows a street cue that no house carries, and no two shop types share one, so a player walking the street can tell a shop from a house, and one kind of shop from another, before entering. The cue is built from blocks that only shop fronts use, on the street face and in the yard in front of it. A cue prop must never narrow what a standing player or shambler can walk: the yard cells in front of a door keep full standing headroom, so a prop that hangs over the yard goes above the standing body, not at head height. The rule is data-only, with no code special cases per shop type. See `src/content/base/gauntlet-city-building-types.libsonnet`, `shell`, and `test/cityKitPlan.test.ts`, "gauntlet shop fronts".
 
@@ -414,7 +444,7 @@ Wall mounting is an explicit content contract because text alone cannot distingu
 
 A heap of mixed materials is one shape with a colour per box, not several pieces of furniture: it must stay a single container with one pick target, and the colours are content so a new heap needs no code. See `src/core/schema.ts`, `FurnitureShapeBoxSchema`, and `src/content/base/furniture-playtest.jsonnet`, `workshop_scrap_pile`.
 
-Container appearance belongs to its definition rather than an ID switch or a guess from dimensions: similarly sized furniture can serve different purposes. Keep procedural detail inside the cell envelope so handles do not promise reach outside the pickable fixture. Definition-owned appearance also keeps empty and unsearched containers visually indistinguishable. See `src/core/schema.ts`, `FurnitureSchema`; `src/render/furnitureDetail.ts`, `furnitureDetail`; and `src/render/furniture.ts`, `FurnitureMeshes`.
+Container appearance belongs to its definition rather than an ID switch or a guess from dimensions: similarly sized furniture can serve different purposes. Its kind names how the piece opens, and every piece that opens that way shares the kind, so a new container picks an existing kind and only a new way of opening adds one; a kind for one piece would be an ID switch moved into content. Keep procedural detail inside the cell envelope so handles do not promise reach outside the pickable fixture. Definition-owned appearance also keeps empty and unsearched containers visually indistinguishable. See `src/core/schema.ts`, `FurnitureSchema`; `src/render/furnitureDetail.ts`, `furnitureDetail`; and `src/render/furniture.ts`, `FurnitureMeshes`.
 
 A vehicle shown as furniture names its blueprint, body colour, dirt level and absent parts in the definition's `vehicle`, not in an ID switch; unknown values fail validation with no fallback. The gauntlet's street wrecks are procedural variants because identical cars made the streets read as one repeated prop. Colours, dirt levels and stripped-part sets are lists in one content source, crossed there into one definition and template per combination, and `streetProps` names a map pool of those templates so each placement draws from the world seed. Enumerating the product keeps a car's look in its definition, so the renderer and saves carry no per-placement state. A map pool has no size cap, so a new axis or value is a content edit; a kit slot pool compiles every choice, so cross axes into a street prop pool, not a slot pool. One strip set strips nothing, so some street cars are intact, because an intact car is kept as one variant of the street-car pool. See `src/core/schema.ts`, `FurnitureSchema` and `MapPoolSchema`; `src/content/base/gauntlet-city.libsonnet`; `src/core/cityPlan.ts`, `streetPropChoices`; `src/render/workshopVehicle.ts`, `vehicleModel`; and `test/streetCars.test.ts`, "street car procedural variants".
 
@@ -430,13 +460,19 @@ Survey the fixture's real-world construction and its authored role before choosi
 
 Choose the structural appearance in content through `src/core/schema.ts`, `FurnitureSchema`, rather than a renderer ID exception. Follow `../../../docs/jsonnet.md`, "Jsonnet authoring", for the source boundary. Derive procedural parts from the definition's dimensions in `src/render/furnitureDetail.ts`, `furnitureDetail`, so the same construction works for differently sized definitions. Keep front relief within the occupied envelope and check rotated facings: protruding decoration would advertise interaction space the picker cannot reach.
 
-Use `packages/deadvox/tools/furniture-detail-probe.mjs` to inspect the appearance-bearing definitions together in an isolated lit scene. The tool starts its own development server and takes a screenshot destination as its argument; its draw report separates geometry cost from the rest of the game. Compare the screenshot for recognition and the report for the single-draw-per-fixture budget, then inspect the actual game lighting before requesting look approval. An isolated screenshot cannot establish in-world readability or real-GPU performance.
+Use `packages/deadvox/tools/furniture-detail-probe.mjs` to inspect the definitions with appearance or door detail together in an isolated lit scene, each intact beside its look at every damage step its material authors, so a material's steps can be judged on the furniture that wears them; a door stands once more open, so its detail is seen to swing with it. The tool starts its own development server and takes a screenshot destination as its argument, then optionally the pieces to narrow to; its compare flag stands the plain block each piece drew before its detail at the head of its row, so a look review sees what the detail bought. Its draw report separates geometry cost from the rest of the game. Compare the screenshot for recognition and the report for the single-draw-per-fixture budget, then inspect the actual game lighting before requesting look approval. An isolated screenshot cannot establish in-world readability or real-GPU performance.
 
 Keep the cache, facing and envelope evidence in `test/furnitureDetail.test.ts`, and follow the tiered checks in `../../../AGENTS.md`, "Before pushing: tiered checks". Do not pin content counts, colours or triangle totals: those may change while the one-object and interaction-envelope contracts remain. The agent workflow is `docs/furniture-detail-skill.md`.
 
+### Door detail
+
+Doorway leaves and hatches show how they open through their own `door.detail`, not an `appearance` kind: an appearance kind draws a fixed body from the definition's size, while a door's panel is posed per placement, swinging on its hinge or standing up on a hatch's hinge edge. A detail names raised fields, strap hinges on the hinge edge and a handle by the free edge, so a player can tell a door, which side it hangs on and where to take hold of it. Looks are named by how a door is built in `src/content/base/door-detail.libsonnet`; a door picks one and overrides only what its size or build needs, so no renderer code knows a door id. Both faces carry the same detail, because either face of a leaf may be the one a player meets.
+
+The detail replaces the plain panel inside the hinge group, so it swings with the leaf, and a doorway stays one draw. Geometry is cached per definition and panel size, so opening, closing and further copies build nothing. A shut hatch sits down in its frame so its ring and hinges stay within its cells; an open leaf or hatch reaches past them anyway. A body door keeps the handle drawn on its body and takes no detail. A shaped leaf's shape is its look: the detail is optional there, and the lab bulkhead carries its hinges in its shape because its panel lies inside its slab. A decal attached to a detailed door sits on the raised field, not the panel under it. See `src/core/schema.ts`, `DoorDetailSchema`; `src/render/doorDetail.ts`, `doorDetail`; `src/render/furniture.ts`, `FurnitureMeshes`; and `test/doorDetail.test.ts`, "door detail".
+
 ## Furniture solidity
 
-A solid shaped piece blocks by its drawn shape, not its whole box: render and collision share one source, so a player can go where a piece looks open, between a loading frame's legs or under its roof, and is stopped where it looks solid. A block counts as solid when the shape fills enough of it; that fraction is content, set once in `src/content/base/furniture-shape.libsonnet`, `solidFill`, so a pack tunes it in one place. Movement, sky light and solid bricks read these collision blocks. Picking has its own mask from every shaped piece, including a non-solid container, so aiming at empty space cannot select it or hide items dropped in its cells; it does not change movement or light. Both masks are whole blocks: finer collision and picking are a separate cost with no trigger, held by #960. Placing, settling, covering and the "nothing falls on a body" check still take the whole box. A load check refuses a solid piece whose shape blocks nothing and names it. See `src/core/shapeSolid.ts`, `shapeBlocks`, and `src/core/blockEntities.ts`, `BlockEntities.hasPartAt`.
+A solid shaped piece blocks by its drawn shape, not its whole box: render and collision share one source, so a player can go where a piece looks open, between a loading frame's legs or under its roof, and is stopped where it looks solid. A block counts as solid when the shape fills enough of it; that fraction is content, set once in `src/content/base/furniture-shape.libsonnet`, `solidFill`, so a pack tunes it in one place. Movement, sky light and solid bricks read these collision blocks. Picking has its own mask from every shaped piece, including a non-solid container, so aiming at empty space cannot select it or hide items dropped in its cells; it does not change movement or light. Both masks are whole blocks: finer collision and picking start with #960, which is planned together with #221, so movement, sight and picking are reworked once, for one shared grain. Placing, settling, covering and the "nothing falls on a body" check still take the whole box. A load check refuses a solid piece whose shape blocks nothing and names it. See `src/core/shapeSolid.ts`, `shapeBlocks`, and `src/core/blockEntities.ts`, `BlockEntities.hasPartAt`.
 
 Pieces without a drawn shape keep the whole box: doors and hatches (an open door's blocks would have to follow its swing), procedural `appearance` pieces and plain boxes (the box is the look).
 

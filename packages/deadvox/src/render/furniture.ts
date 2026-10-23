@@ -12,10 +12,20 @@ import {
   Vector3,
 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { type BlockEntities, type BlockEntity, isBodyDoor, panelFor, poseKey } from '../core/blockEntities.ts';
+import {
+  type BlockEntities,
+  type BlockEntity,
+  type DoorPanelBox,
+  isBodyDoor,
+  panelFor,
+  poseKey,
+} from '../core/blockEntities.ts';
+import type { Vec3 } from '../core/coords.ts';
 import { rotationOf } from '../core/orientation.ts';
 import type { FurnitureDef } from '../core/schema.ts';
+import type { Facing } from '../core/templates.ts';
 import type { ColumnReveal } from './columnReveal.ts';
+import { doorDetail } from './doorDetail.ts';
 import { furnitureDetail } from './furnitureDetail.ts';
 import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
@@ -28,6 +38,7 @@ const BODY_DOOR_SHADE = 0.62;
 const BODY_DOOR_HANDLE_COLOR = '#c6b98e';
 const BODY_DOOR_HANDLE_SIZE_M = { alongWidth: 0.1, acrossWidth: 0.06, height: 0.22 } as const;
 const BODY_DOOR_HANDLE_EDGE_OFFSET_M = 0.14;
+const HATCH_FROM_HINGE: Record<Facing, Vec3> = { n: [0, 0, 1], s: [0, 0, -1], e: [-1, 0, 0], w: [1, 0, 0] };
 
 function markerEdges(): EdgesGeometry {
   const box = new BoxGeometry(1, 1, 1);
@@ -54,11 +65,13 @@ export class FurnitureMeshes {
   private readonly materials = new Map<string, MeshLambertMaterial>();
   private readonly anchoredMaterials = new Map<MeshLambertMaterial, MeshLambertMaterial>();
   private readonly shapeGeometries = new Map<string, BufferGeometry>();
+  private readonly doorGeometries = new Map<string, BufferGeometry>();
   private readonly blockSize: number;
   private readonly marker = new LineSegments(
     markerEdges(),
     withHeightFog(new MeshLambertMaterial({ color: '#ffe36e', depthTest: true }), 'furniture'),
   );
+  private entities: BlockEntities | undefined;
   private markedUid: string | undefined;
   private markedOpen: boolean | undefined;
   private drawn = -1;
@@ -132,12 +145,13 @@ export class FurnitureMeshes {
     if (entities.standing === this.drawn && revealVersion === this.drawnReveal) {
       return;
     }
+    this.entities = entities;
     this.drawn = entities.standing;
     this.drawnReveal = revealVersion;
     const pieces = new Map<BlockEntity, { pose: string; mesh: Group | Mesh }>();
     this.group.clear();
     for (const entity of entities.all) {
-      const pose = poseKey(entity);
+      const pose = poseKey(entity, entities.wearOf(entity));
       const kept = this.pieces.get(entity);
       const piece =
         kept?.pose === pose ? kept : { pose, mesh: castsAndReceives(this.meshFor(entity, entities.defOf(entity))) };
@@ -166,12 +180,12 @@ export class FurnitureMeshes {
       return this.door(entity, material, def);
     }
     if (def.appearance || def.shape?.some((box) => box.color)) {
-      return this.shaped(entity, def, this.material('#ffffff', true));
+      return this.shaped(entity, def, this.damageLook(entity, this.material('#ffffff', true), def));
     }
     if (def.shape) {
-      return this.shaped(entity, def, material);
+      return this.shaped(entity, def, this.damageLook(entity, material, def));
     }
-    return this.box(entity, material);
+    return this.box(entity, this.damageLook(entity, material, def));
   }
 
   private material(color: string, vertexColors = false): MeshLambertMaterial {
@@ -254,44 +268,54 @@ export class FurnitureMeshes {
     return piece;
   }
 
+  /**
+   * `plain` moved toward its material's broken tint once a leaf is broken, or toward the damage look the piece has
+   * reached before that; no look authored leaves it.
+   */
+  private damageLook(entity: BlockEntity, plain: MeshLambertMaterial, body: FurnitureDef): MeshLambertMaterial {
+    const material = this.entities?.registry.furnitureMaterials.get(body.material);
+    const wear = this.entities?.wearOf(entity) ?? 0;
+    const worn = wear > 0 ? material?.damaged?.[wear - 1] : undefined;
+    const look = entity.broken ? material?.broken : worn;
+    if (!look) {
+      return plain;
+    }
+    return this.material(
+      `#${plain.color.clone().lerp(new Color(look.tint), look.strength).getHexString()}`,
+      plain.vertexColors,
+    );
+  }
+
   /** A panel across the doorway, hinged at its low end along the wall, or a hatch's panel. */
-  private door(entity: BlockEntity, material: MeshLambertMaterial, body: FurnitureDef): Group {
+  private door(entity: BlockEntity, plain: MeshLambertMaterial, body: FurnitureDef): Group {
     const box = panelFor(entity, body, this.blockSize);
     const bodyDoor = isBodyDoor(body);
+    const material = this.damageLook(entity, plain, body);
     const panelMaterial = bodyDoor
-      ? this.material(`#${new Color(body.color).multiplyScalar(BODY_DOOR_SHADE).getHexString()}`)
+      ? this.material(`#${new Color(material.color).multiplyScalar(BODY_DOOR_SHADE).getHexString()}`)
       : material;
     const pivot = new Group();
-    const panel = new Mesh(this.geometry, panelMaterial);
     pivot.position.set(...box.pivot);
     pivot.rotation.y = box.rotationY;
-    panel.scale.set(...box.size);
-    panel.position.set(...box.center);
-    pivot.add(panel);
+    if (body.door?.detail) {
+      pivot.add(this.detailedLeaf(entity, body, box));
+    } else {
+      const panel = new Mesh(this.geometry, panelMaterial);
+      panel.scale.set(...box.size);
+      panel.position.set(...box.center);
+      pivot.add(panel);
+    }
     if (bodyDoor) {
-      const alongX = entity.facing === 'n' || entity.facing === 's';
-      const faceOutward = entity.facing === 'n' || entity.facing === 'w' ? -1 : 1;
-      const handle = new Mesh(this.geometry, this.material(BODY_DOOR_HANDLE_COLOR));
-      handle.scale.set(
-        alongX ? BODY_DOOR_HANDLE_SIZE_M.alongWidth : BODY_DOOR_HANDLE_SIZE_M.acrossWidth,
-        BODY_DOOR_HANDLE_SIZE_M.height,
-        alongX ? BODY_DOOR_HANDLE_SIZE_M.acrossWidth : BODY_DOOR_HANDLE_SIZE_M.alongWidth,
-      );
-      const position = [...box.center] as [number, number, number];
-      if (alongX) {
-        position[0] += box.size[0] / 2 - BODY_DOOR_HANDLE_EDGE_OFFSET_M;
-        position[2] += faceOutward * (box.size[2] / 2 + handle.scale.z / 2);
-      } else {
-        position[2] += box.size[2] / 2 - BODY_DOOR_HANDLE_EDGE_OFFSET_M;
-        position[0] += faceOutward * (box.size[0] / 2 + handle.scale.x / 2);
-      }
-      handle.position.set(...position);
-      pivot.add(handle);
+      pivot.add(this.bodyDoorHandle(entity, box));
     }
     if (!body.shape) {
       return pivot;
     }
-    const shaped = this.shaped(entity, body, material);
+    const shaped = this.shaped(
+      entity,
+      body,
+      body.shape.some((part) => part.color) ? this.damageLook(entity, this.material('#ffffff', true), body) : material,
+    );
     if (!bodyDoor) {
       // A doorway leaf's planks or bars hang on the hinge, so they swing open with it.
       shaped.position.sub(pivot.position);
@@ -303,4 +327,60 @@ export class FurnitureMeshes {
     assembly.add(pivot);
     return assembly;
   }
+
+  private bodyDoorHandle(entity: BlockEntity, box: DoorPanelBox): Mesh {
+    const alongX = entity.facing === 'n' || entity.facing === 's';
+    const faceOutward = entity.facing === 'n' || entity.facing === 'w' ? -1 : 1;
+    const handle = new Mesh(this.geometry, this.material(BODY_DOOR_HANDLE_COLOR));
+    handle.scale.set(
+      alongX ? BODY_DOOR_HANDLE_SIZE_M.alongWidth : BODY_DOOR_HANDLE_SIZE_M.acrossWidth,
+      BODY_DOOR_HANDLE_SIZE_M.height,
+      alongX ? BODY_DOOR_HANDLE_SIZE_M.acrossWidth : BODY_DOOR_HANDLE_SIZE_M.alongWidth,
+    );
+    const position = [...box.center] as [number, number, number];
+    if (alongX) {
+      position[0] += box.size[0] / 2 - BODY_DOOR_HANDLE_EDGE_OFFSET_M;
+      position[2] += faceOutward * (box.size[2] / 2 + handle.scale.z / 2);
+    } else {
+      position[2] += box.size[2] / 2 - BODY_DOOR_HANDLE_EDGE_OFFSET_M;
+      position[0] += faceOutward * (box.size[0] / 2 + handle.scale.x / 2);
+    }
+    handle.position.set(...position);
+    return handle;
+  }
+
+  /** A leaf or hatch drawn with its definition's detail in place of the plain panel, in the same one draw. */
+  private detailedLeaf(entity: BlockEntity, body: FurnitureDef, box: DoorPanelBox): Mesh {
+    const hatch = body.door?.hatch === true;
+    const [fromHinge, alongHinge] = leafAxes(entity, hatch);
+    const through = new Vector3().crossVectors(fromHinge, alongHinge);
+    const size = new Vector3(...box.size);
+    const extents = [fromHinge, alongHinge, through].map((axis) => Math.abs(size.dot(axis))) as Vec3;
+    const key = `${body.id}|${extents.map((extent) => extent.toFixed(4))}`;
+    let geometry = this.doorGeometries.get(key);
+    if (!geometry) {
+      geometry = doorDetail(body, extents);
+      this.doorGeometries.set(key, geometry);
+    }
+    const leaf = new Mesh(geometry, this.damageLook(entity, this.material('#ffffff', true), body));
+    leaf.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(fromHinge, alongHinge, through));
+    leaf.position.set(...box.center);
+    if (hatch && !entity.open) {
+      // A shut hatch sits down in its frame, so its ring and hinges stay inside its cells.
+      leaf.position.y -= geometry.boundingBox!.max.z - extents[2] / 2;
+    }
+    return leaf;
+  }
+}
+
+/** Unit axes of a leaf's panel: away from its hinge edge, and along that edge. */
+function leafAxes(entity: BlockEntity, hatch: boolean): [Vector3, Vector3] {
+  const northSouth = entity.facing === 'n' || entity.facing === 's';
+  const across = northSouth ? new Vector3(1, 0, 0) : new Vector3(0, 0, 1);
+  if (!hatch) {
+    // A doorway leaf hangs on its low end, so it reaches away from the hinge along the doorway.
+    return [across, new Vector3(0, 1, 0)];
+  }
+  // A hatch's hinge edge is on its facing side; open, it stands up on that edge.
+  return [entity.open ? new Vector3(0, 1, 0) : new Vector3(...HATCH_FROM_HINGE[entity.facing]), across];
 }

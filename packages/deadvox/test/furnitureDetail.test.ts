@@ -1,15 +1,18 @@
 import { Box3, Color, Mesh, type MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import type { FurnitureDef } from '../src/core/schema.ts';
 import type { Facing } from '../src/core/templates.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
+import { buildFixtureRegistry as buildRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 
 const definitions = [
   { kind: 'cabinet', surface: 'wood', size: [3, 4, 1] },
   { kind: 'drawers', surface: 'plastic', size: [2, 2, 1] },
   { kind: 'fridge', surface: 'painted-metal', size: [2, 4, 2] },
+  { kind: 'door', surface: 'painted-metal', size: [1, 1, 1] },
+  { kind: 'lid', surface: 'painted-metal', size: [1, 1, 1] },
+  { kind: 'rack', surface: 'wood', size: [2, 4, 1] },
 ].map(({ kind, surface, size }, index) => ({
   id: `detail_fixture_${index}`,
   name: 'Detail fixture',
@@ -17,6 +20,8 @@ const definitions = [
   color: '#8a7654',
   appearance: { kind, surface },
   container: { pockets: [{ grid: [2, 2], handlingSimSeconds: 1 }] },
+  breach: fixtureBreach(),
+  material: FIXTURE_MATERIAL,
 }));
 
 function fixture() {
@@ -39,7 +44,7 @@ describe('furniture detail', () => {
     };
     for (const [index, definition] of definitions.entries()) {
       const def = registry.furniture.get(definition.id)!;
-      const facing = facings[index]!;
+      const facing = facings[index % facings.length]!;
       const size: [number, number, number] =
         facing === 'e' || facing === 'w' ? [def.size[2], def.size[1], def.size[0]] : [...def.size];
       const entity = entities.add({ type: def.id, size, pos: [index * 8, 2, 3], facing })!;
@@ -105,6 +110,8 @@ describe('furniture detail', () => {
                 { position: [1, 0, 1], size: [1, 0.5, 1] },
               ],
               solidFill: 0.01,
+              breach: fixtureBreach(),
+              material: FIXTURE_MATERIAL,
             },
           ],
         },
@@ -134,7 +141,7 @@ describe('furniture detail', () => {
     const definition = definitions[0]!;
     for (const extra of [
       { shape: [{ position: [0, 0, 0], size: [1, 1, 1] }] },
-      { door: { material: 'wood', methods: {}, handlingSimSeconds: 1 } },
+      { door: { methods: {}, handlingSimSeconds: 1 } },
       { container: undefined },
     ]) {
       const { issues } = buildRegistry([

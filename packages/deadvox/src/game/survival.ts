@@ -19,6 +19,7 @@ import type { Readable } from '../core/readable.ts';
 import type { Simulation } from '../core/sim.ts';
 import { simSeconds, simToGameSeconds } from '../core/time.ts';
 import { swapCanister } from '../core/torch.ts';
+import { queueTrapAction } from './bearTrapActions.ts';
 import { type ItemAction, ItemActionSelection, itemActionsFor } from './itemActions.ts';
 
 const numberParam = (params: JobParams, key: string): number => {
@@ -54,6 +55,8 @@ export interface SurvivalHooks {
   /** Whether the book has already taught every recipe it owns. */
   bookRead?: (bookUid: number) => boolean;
   consumed?: ((type: string) => void) | undefined;
+  /** A battery went into a light of this type. */
+  batterySwapped?: ((lightType: string) => void) | undefined;
 }
 
 export class Survival {
@@ -131,7 +134,11 @@ export class Survival {
       if (!this.hooks.reach().entries.some((entry) => entry.item === battery)) {
         return 'The battery is no longer in reach';
       }
-      return swapBattery(this.inventory, light, battery, this.hooks.feet);
+      const reason = swapBattery(this.inventory, light, battery, this.hooks.feet);
+      if (reason === undefined) {
+        this.hooks.batterySwapped?.(light.type);
+      }
+      return reason;
     });
     this.queue.registerAction('survival.canister', (params) => {
       const tool = this.inventory.itemByUid(numberParam(params, 'toolUid'));
@@ -259,6 +266,9 @@ export class Survival {
         return this.switchLight(item);
       case 'read':
         return this.readItem(item, option.readable);
+      case 'trap':
+        queueTrapAction(this.queue, item, option.label, option.plan.time);
+        return undefined;
       default:
         throw new Error('Invalid usable core option');
     }

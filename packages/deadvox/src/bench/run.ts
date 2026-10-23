@@ -298,6 +298,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
       z = playerBody.pos[2] * s;
       const simulation = new Simulation({
         seed: config.seed,
+        registry: engine.registry,
         bodyTuning: engine.registry.body.get(CORE_CONTENT_IDS.player)!,
         compressionCaps: engine.registry.compression.get(CORE_CONTENT_IDS.player)!.caps,
         clock: { ratio: dayCycle.clockRatio, start: startTime },
@@ -319,6 +320,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
           movement,
           lit: true,
           lightSeenFrom,
+          eyeHeightMetres: PLAYER.eye,
         }),
         dayPhase: () => dayPhaseAt(dayCycle, startTime),
         hurtPlayer: (amount) => simulation.hurt(amount, 'a shambler'),

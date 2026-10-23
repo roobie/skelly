@@ -1,19 +1,14 @@
 {
-  "doorMaterials": [
-    {
-      "id": "wood",
-      "methods": ["pry"]
-    },
-    {
-      "id": "steel",
-      "methods": ["pry", "cut"]
-    }
-  ],
   "furniture": [
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#7a2f2f",
       "cover": true,
       "id": "rug",
+      "material": "wood",
       "name": "Rug",
       "shape": [
         {
@@ -25,9 +20,42 @@
       "solid": false
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#5b5f3c",
+      "cover": true,
+      "id": "bedroll",
+      "material": "wood",
+      "name": "Bedroll",
+      "rest": {
+        "quality": 0.29999999999999999,
+        "sleep": true
+      },
+      "shape": [
+        {
+          "position": [0.050000000000000003, 0, 0.050000000000000003],
+          "size": [0.90000000000000002, 0.080000000000000002, 1.8999999999999999]
+        },
+        {
+          "color": "#c9c3a8",
+          "position": [0.14999999999999999, 0.080000000000000002, 0.10000000000000001],
+          "size": [0.69999999999999996, 0.080000000000000002, 0.34999999999999998]
+        }
+      ],
+      "size": [1, 1, 2],
+      "solid": false
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#3d5a6c",
       "cover": true,
       "id": "tarp",
+      "material": "wood",
       "name": "Tarp",
       "shape": [
         {
@@ -43,6 +71,10 @@
         "kind": "cabinet",
         "surface": "wood"
       },
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#8a6a48",
       "container": {
         "pockets": [
@@ -53,13 +85,22 @@
         ]
       },
       "id": "kitchen_cupboard",
+      "material": "wood",
       "name": "Kitchen cupboard",
-      "size": [2, 2, 1]
+      "size": [2, 2, 1],
+      "wear": {
+        "from": 0,
+        "to": 0.5
+      }
     },
     {
       "appearance": {
         "kind": "drawers",
         "surface": "plastic"
+      },
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
       },
       "color": "#b8b2a6",
       "container": {
@@ -71,6 +112,7 @@
         ]
       },
       "id": "counter",
+      "material": "plastic",
       "name": "Kitchen counter",
       "size": [2, 2, 1]
     },
@@ -78,6 +120,10 @@
       "appearance": {
         "kind": "fridge",
         "surface": "painted-metal"
+      },
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
       },
       "color": "#d8dcd8",
       "container": {
@@ -89,6 +135,7 @@
         ]
       },
       "id": "fridge",
+      "material": "steel",
       "name": "Fridge",
       "size": [2, 4, 2],
       "upright": true
@@ -97,6 +144,10 @@
       "appearance": {
         "kind": "cabinet",
         "surface": "wood"
+      },
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
       },
       "color": "#6e5037",
       "container": {
@@ -108,10 +159,19 @@
         ]
       },
       "id": "wardrobe",
+      "material": "wood",
       "name": "Wardrobe",
-      "size": [2, 4, 1]
+      "size": [2, 4, 1],
+      "wear": {
+        "from": 0,
+        "to": 0.40000000000000002
+      }
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#7a5c3e",
       "container": {
         "pockets": [
@@ -122,6 +182,7 @@
         ]
       },
       "id": "desk",
+      "material": "wood",
       "name": "Desk",
       "shape": [
         {
@@ -176,8 +237,13 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#786b55",
       "id": "range_table",
+      "material": "wood",
       "name": "Simple wooden table",
       "shape": [
         {
@@ -205,13 +271,26 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#e9e3cf",
       "id": "range_target",
+      "material": "wood",
       "name": "Paper target",
       "shotTarget": true,
       "size": [1, 4, 5]
     },
     {
+      "appearance": {
+        "kind": "rack",
+        "surface": "wood"
+      },
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#494b4e",
       "container": {
         "pockets": [
@@ -222,10 +301,15 @@
         ]
       },
       "id": "range_rack",
+      "material": "wood",
       "name": "Gun rack",
       "size": [2, 4, 1]
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#8d7355",
       "container": {
         "pockets": [
@@ -236,6 +320,7 @@
         ]
       },
       "id": "shelf",
+      "material": "wood",
       "name": "Shelf",
       "shape": [
         {
@@ -275,8 +360,13 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#98734f",
       "id": "workbench",
+      "material": "wood",
       "name": "Workbench",
       "shape": [
         {
@@ -328,6 +418,55 @@
       }
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#4d5a4a",
+      "id": "grinding_wheel",
+      "material": "steel",
+      "name": "Grinding wheel",
+      "shape": [
+        {
+          "color": "#2f3331",
+          "position": [0.40000000000000002, 0, 0.40000000000000002],
+          "size": [1.2, 0.10000000000000001, 1.2]
+        },
+        {
+          "color": "#2f3331",
+          "position": [0.84999999999999998, 0.10000000000000001, 0.84999999999999998],
+          "size": [0.29999999999999999, 1.3, 0.29999999999999999]
+        },
+        {
+          "position": [0.59999999999999998, 1.3999999999999999, 0.75],
+          "size": [0.80000000000000004, 0.40000000000000002, 0.5]
+        },
+        {
+          "color": "#8a857c",
+          "position": [0.45000000000000001, 1.3, 0.65000000000000002],
+          "size": [0.14999999999999999, 0.69999999999999996, 0.69999999999999996]
+        },
+        {
+          "color": "#8a857c",
+          "position": [1.3999999999999999, 1.3, 0.65000000000000002],
+          "size": [0.14999999999999999, 0.69999999999999996, 0.69999999999999996]
+        }
+      ],
+      "size": [2, 2, 2],
+      "solidFill": 0.01,
+      "workstation": {
+        "id": "grinding_wheel",
+        "qualities": {
+          "sharpening": 1
+        },
+        "workFactorBonus": 0.20000000000000001
+      }
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#9a7b4f",
       "container": {
         "pockets": [
@@ -338,6 +477,7 @@
         ]
       },
       "id": "crate",
+      "material": "wood",
       "name": "Crate",
       "shape": [
         {
@@ -414,11 +554,20 @@
         }
       ],
       "size": [2, 2, 2],
-      "solidFill": 0.01
+      "solidFill": 0.01,
+      "wear": {
+        "from": 0.10000000000000001,
+        "to": 0.59999999999999998
+      }
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#6f7f95",
       "id": "bed",
+      "material": "wood",
       "name": "Bed",
       "rest": {
         "quality": 1,
@@ -485,8 +634,13 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#8b7355",
       "id": "chair",
+      "material": "wood",
       "name": "Chair",
       "rest": {
         "quality": 1
@@ -518,11 +672,20 @@
         }
       ],
       "size": [1, 2, 1],
-      "solidFill": 0.01
+      "solidFill": 0.01,
+      "wear": {
+        "from": 0,
+        "to": 0.69999999999999996
+      }
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#66776d",
       "id": "sofa",
+      "material": "wood",
       "name": "Sofa",
       "rest": {
         "quality": 0.5,
@@ -555,14 +718,49 @@
         }
       ],
       "size": [4, 2, 2],
-      "solidFill": 0.01
+      "solidFill": 0.01,
+      "wear": {
+        "from": 0.10000000000000001,
+        "to": 0.69999999999999996
+      }
     },
     {
+      "breach": {
+        "durability": 150,
+        "minimumStrength": 4.5
+      },
       "color": "#7a5534",
       "door": {
+        "detail": {
+          "fields": [1, 2],
+          "frame": 0.10000000000000001,
+          "handle": {
+            "along": 0.5,
+            "fromFreeEdge": 0.10000000000000001,
+            "kind": "lever",
+            "length": 0.12,
+            "thickness": 0.02
+          },
+          "hardware": "#c6b98e",
+          "hinges": {
+            "count": 3,
+            "length": 0.16,
+            "width": 0.050000000000000003
+          },
+          "relief": 0.012,
+          "seam": 0.12
+        },
         "handlingSimSeconds": 0.59999999999999998,
-        "material": "wood",
         "methods": {
+          "hammer": {
+            "fastestTimeSimSeconds": 2.5,
+            "level": 3,
+            "quality": "hammering",
+            "skill": "mechanics",
+            "strikeIntervalSimSeconds": 0.80000000000000004,
+            "strikeSound": "lock_hammer",
+            "timeSimSeconds": 4
+          },
           "pry": {
             "fastestTimeSimSeconds": 7.5,
             "level": 3,
@@ -575,15 +773,47 @@
         }
       },
       "id": "wood_door",
+      "material": "wood",
       "name": "Burglary-safe wooden door",
       "size": [2, 4, 1]
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#7a5534",
       "door": {
+        "detail": {
+          "fields": [1, 2],
+          "frame": 0.10000000000000001,
+          "handle": {
+            "along": 0.47999999999999998,
+            "fromFreeEdge": 0.080000000000000002,
+            "kind": "knob",
+            "length": 0.059999999999999998,
+            "thickness": 0.02
+          },
+          "hardware": "#c6b98e",
+          "hinges": {
+            "count": 3,
+            "length": 0.16,
+            "width": 0.050000000000000003
+          },
+          "relief": 0.012,
+          "seam": 0.12
+        },
         "handlingSimSeconds": 0.59999999999999998,
-        "material": "wood",
         "methods": {
+          "hammer": {
+            "fastestTimeSimSeconds": 2.5,
+            "level": 3,
+            "quality": "hammering",
+            "skill": "mechanics",
+            "strikeIntervalSimSeconds": 0.80000000000000004,
+            "strikeSound": "lock_hammer",
+            "timeSimSeconds": 4
+          },
           "pry": {
             "fastestTimeSimSeconds": 3,
             "level": 1,
@@ -596,14 +826,37 @@
         }
       },
       "id": "flimsy_wood_door",
+      "material": "wood",
       "name": "Flimsy wooden door",
       "size": [2, 4, 1]
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#626a70",
       "door": {
+        "detail": {
+          "fields": [1, 1],
+          "frame": 0.050000000000000003,
+          "handle": {
+            "along": 0.5,
+            "fromFreeEdge": 0.10000000000000001,
+            "kind": "lever",
+            "length": 0.14000000000000001,
+            "thickness": 0.025000000000000001
+          },
+          "hardware": "#a9adb0",
+          "hinges": {
+            "count": 3,
+            "length": 0.10000000000000001,
+            "width": 0.059999999999999998
+          },
+          "relief": 0.0080000000000000002,
+          "seam": 0.050000000000000003
+        },
         "handlingSimSeconds": 0.59999999999999998,
-        "material": "steel",
         "methods": {
           "cut": {
             "fastestTimeSimSeconds": 45,
@@ -614,12 +867,97 @@
             "strikeIntervalSimSeconds": 1,
             "strikeSound": "lock_pry",
             "timeSimSeconds": 90
+          },
+          "hammer": {
+            "fastestTimeSimSeconds": 7,
+            "level": 3,
+            "quality": "hammering",
+            "skill": "mechanics",
+            "strikeIntervalSimSeconds": 0.80000000000000004,
+            "strikeSound": "lock_hammer",
+            "timeSimSeconds": 12
           }
         }
       },
       "id": "steel_armoury_door",
+      "material": "steel",
       "name": "Steel armoury door",
       "size": [2, 4, 1]
+    }
+  ],
+  "furnitureMaterials": [
+    {
+      "blowSound": "door_bash",
+      "broken": {
+        "strength": 0.59999999999999998,
+        "tint": "#d8c9a6"
+      },
+      "damaged": [
+        {
+          "from": 0.01,
+          "strength": 0.20000000000000001,
+          "tint": "#3a2a1c"
+        },
+        {
+          "from": 0.40000000000000002,
+          "strength": 0.40000000000000002,
+          "tint": "#3a2a1c"
+        },
+        {
+          "from": 0.75,
+          "strength": 0.40000000000000002,
+          "tint": "#d8c9a6"
+        }
+      ],
+      "id": "wood",
+      "methods": ["pry", "hammer"]
+    },
+    {
+      "blowSound": "door_bash",
+      "broken": {
+        "strength": 0.55000000000000004,
+        "tint": "#9a4a28"
+      },
+      "damaged": [
+        {
+          "from": 0.01,
+          "strength": 0.20000000000000001,
+          "tint": "#2a2a2e"
+        },
+        {
+          "from": 0.40000000000000002,
+          "strength": 0.40000000000000002,
+          "tint": "#2a2a2e"
+        },
+        {
+          "from": 0.75,
+          "strength": 0.34999999999999998,
+          "tint": "#9a4a28"
+        }
+      ],
+      "id": "steel",
+      "methods": ["pry", "cut", "hammer"]
+    },
+    {
+      "blowSound": "door_bash",
+      "damaged": [
+        {
+          "from": 0.01,
+          "strength": 0.14999999999999999,
+          "tint": "#4a4a44"
+        },
+        {
+          "from": 0.40000000000000002,
+          "strength": 0.34999999999999998,
+          "tint": "#4a4a44"
+        },
+        {
+          "from": 0.75,
+          "strength": 0.40000000000000002,
+          "tint": "#e8e4d0"
+        }
+      ],
+      "id": "plastic"
     }
   ]
 }

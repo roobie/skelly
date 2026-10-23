@@ -26,6 +26,7 @@ import {
 } from '../src/core/templates.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { cyclicSite, traverseScenario } from './fixtures/scenarioCertificate.ts';
 import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
 
@@ -50,7 +51,7 @@ const compiled = compileAssembly(registry, registry.mapAssemblies.get(profile.se
 const witness = JSON.parse(compileJsonnetFile('packages/deadvox/test/fixtures/jsonnet/lab-witness.jsonnet')) as {
   mapAssemblies: string[];
   mapPieces: string[];
-  loop: { from: Vec3; through: Vec3; to: Vec3; cut: { min: Vec3; size: Vec3 } };
+  loops: { from: Vec3; through: Vec3; to: Vec3; cut: { min: Vec3; size: Vec3 } }[];
 };
 const labDefinition = <T>(definitions: ReadonlyMap<string, T>, id: string): T => {
   const definition = definitions.get(id);
@@ -63,7 +64,6 @@ const lab = {
   mapAssemblies: witness.mapAssemblies.map((id) => labDefinition(registry.mapAssemblies, id)),
   mapPieces: witness.mapPieces.map((id) => labDefinition(registry.mapPieces, id)),
 };
-const { loop } = witness;
 const roomPools = new Map<string, MapAssemblyDef[]>();
 for (const room of lab.mapAssemblies) {
   const shell = room.slots.find((slot) => slot.id === 'shell');
@@ -265,73 +265,122 @@ describe('final composed body-route certificate', () => {
     GAUNTLET_SITE_MS,
   );
 
-  it('keeps an interior loop when a public room doorway is blocked with the bulkheads closed', () => {
-    const site = siteOf();
-    const point = (at: Vec3) => placedPoint(site.plan.service!, at);
-    const from = point(loop.from);
-    const through = point(loop.through);
-    const to = point(loop.to);
-    const clear = new ScenarioRouteSpace(site);
-    expect(clear.sweep(from, through)).toBe(true);
-    expect(clear.path(through, to, { steps: true })).toBeDefined();
-    const original = site.stamp.bind(site);
-    const stamp = vi.spyOn(site, 'stamp').mockImplementation((chunk) => {
-      original(chunk);
-      for (let y = 0; y < loop.cut.size[1]; y++) {
-        for (let z = 0; z < loop.cut.size[2]; z++) {
-          for (let x = 0; x < loop.cut.size[0]; x++) {
-            obstruct(chunk, point([loop.cut.min[0] + x, loop.cut.min[1] + y, loop.cut.min[2] + z]));
+  it.each(witness.loops)(
+    'keeps storey %# an interior loop when a public room doorway is blocked with the bulkheads closed',
+    (loop) => {
+      const site = siteOf();
+      const point = (at: Vec3) => placedPoint(site.plan.service!, at);
+      const from = point(loop.from);
+      const through = point(loop.through);
+      const to = point(loop.to);
+      const clear = new ScenarioRouteSpace(site);
+      expect(clear.sweep(from, through)).toBe(true);
+      expect(clear.path(through, to, { steps: true })).toBeDefined();
+      const original = site.stamp.bind(site);
+      const stamp = vi.spyOn(site, 'stamp').mockImplementation((chunk) => {
+        original(chunk);
+        for (let y = 0; y < loop.cut.size[1]; y++) {
+          for (let z = 0; z < loop.cut.size[2]; z++) {
+            for (let x = 0; x < loop.cut.size[0]; x++) {
+              obstruct(chunk, point([loop.cut.min[0] + x, loop.cut.min[1] + y, loop.cut.min[2] + z]));
+            }
           }
         }
+      });
+      try {
+        const detour = new ScenarioRouteSpace(site);
+        expect(detour.sweep(from, through)).toBe(false);
+        expect(detour.path(from, to, { steps: true })).toBeDefined();
+      } finally {
+        stamp.mockRestore();
       }
-    });
-    try {
-      const detour = new ScenarioRouteSpace(site);
-      expect(detour.sweep(from, through)).toBe(false);
-      expect(detour.path(from, to, { steps: true })).toBeDefined();
-    } finally {
-      stamp.mockRestore();
-    }
-  });
+    },
+  );
 
-  it('rejects a missing seal keycard instead of admitting its bulkheads', () => {
-    const site = siteOf();
-    const [seal] = site.plan.composition!.seals;
-    expect(seal).toBeDefined();
-    const original = site.lootPointsIn.bind(site);
-    vi.spyOn(site, 'lootPointsIn').mockImplementation((cx, cz) =>
-      original(cx, cz).filter((point) => !point.destination.every((value, axis) => value === seal!.key[axis])),
+  it.each(base.composition!.seals.map((_, index) => index))(
+    'rejects missing seal %i keycard instead of admitting its bulkheads',
+    (index) => {
+      const site = siteOf();
+      const seal = site.plan.composition!.seals[index]!;
+      const atKey = (at: Readonly<Vec3>) => at.every((value, axis) => value === seal.key[axis]);
+      if (seal.held) {
+        const original = site.furnitureIn.bind(site);
+        vi.spyOn(site, 'furnitureIn').mockImplementation((cx, cz) =>
+          original(cx, cz).map((spawn) => (atKey(spawn.spec.pos) ? { ...spawn, loot: [], surfaceLoot: [] } : spawn)),
+        );
+      } else {
+        const original = site.lootPointsIn.bind(site);
+        vi.spyOn(site, 'lootPointsIn').mockImplementation((cx, cz) =>
+          original(cx, cz).filter((point) => !atKey(point.destination)),
+        );
+      }
+      expect(scenarioCertificate(site).issues.some(([path]) => path === `.composition.seals[${index}]`)).toBe(true);
+    },
+  );
+
+  it('rejects a keycard container that lies behind the seal it opens', () => {
+    // Level two's card desk, made to hold level one's card and to open level one's bulkheads, which stand between it and the way in.
+    const composition = base.composition!;
+    const held = composition.seals.findIndex((seal) => seal.held);
+    const desk = composition.seals[held]!;
+    const above = composition.seals[held - 1]!;
+    const site = siteOf({ ...base, composition: { ...composition, seals: [{ ...desk, doors: above.doors }] } });
+    const space = new ScenarioRouteSpace(site);
+    space.blocked(...above.doors[0]!);
+    const lock = space.entities.at(...above.doors[0]!)!.lock!.id;
+    const card = [...registry.items.values()].find((item) => item.key?.lock === lock)!;
+    const original = site.furnitureIn.bind(site);
+    vi.spyOn(site, 'furnitureIn').mockImplementation((cx, cz) =>
+      original(cx, cz).map((spawn) =>
+        spawn.spec.pos.every((value, axis) => value === desk.key[axis])
+          ? { ...spawn, loot: spawn.loot.map((item) => ({ ...item, type: card.id })) }
+          : spawn,
+      ),
     );
-    expect(scenarioCertificate(site).issues.some(([path]) => path === '.composition.seals[0]')).toBe(true);
+    expect(scenarioCertificate(site).issues.map(([path]) => path)).toContain('.composition.seals[0]');
   });
 
-  it('keeps both descents behind their bulkheads until the reachable card is admitted', () => {
-    const site = siteOf();
-    const closed = new ScenarioRouteSpace(site);
-    const entry = site.plan.portal!.lower;
-    const composition = site.plan.composition!;
-    expect(composition.seals.length).toBeGreaterThan(0);
-    for (const seal of composition.seals) {
-      expect(closed.path(entry, seal.standing)).toBeDefined();
-      for (const door of seal.doors) {
-        closed.blocked(...door);
-        const definition = closed.entities.defOf(closed.entities.at(...door)!);
-        expect(definition.door).toBeDefined();
-        expect(definition.door!.methods).toEqual({});
-      }
-    }
-    const [, upper] = entry;
-    const links = [...composition.descents, ...composition.stairs].filter((link) => link.upper[1] === upper);
-    expect(links.length).toBeGreaterThan(0);
-    for (const link of links) {
-      expect(closed.path(entry, link.upper)).toBeUndefined();
-    }
-    const admitted = scenarioCertificate(site);
-    expect(admitted.issues).toEqual([]);
-    for (const link of links) {
-      expect(admitted.space.path(entry, link.upper)).toBeDefined();
-    }
+  it('rejects a keycard container out of reach of where its taker stands', () => {
+    // The desk's taker is sent to level one's card spot, which the way in reaches but which is far from the desk.
+    const composition = base.composition!;
+    const held = composition.seals.findIndex((seal) => seal.held);
+    const { standing } = composition.seals[held - 1]!;
+    const seals = composition.seals.map((seal, index) => (index === held ? { ...seal, standing } : seal));
+    const site = siteOf({ ...base, composition: { ...composition, seals } });
+    expect(scenarioCertificate(site).issues.map(([path]) => path)).toContain(`.composition.seals[${held}]`);
   });
+
+  it(
+    "keeps each level's ways down behind its bulkheads until its card, reached through the seals above, is admitted",
+    () => {
+      const site = siteOf();
+      const space = new ScenarioRouteSpace(site);
+      const entry = site.plan.portal!.lower;
+      const composition = site.plan.composition!;
+      expect(composition.seals.length).toBeGreaterThan(0);
+      for (const seal of composition.seals) {
+        expect(space.path(entry, seal.standing, { steps: true })).toBeDefined();
+        for (const door of seal.doors) {
+          space.blocked(...door);
+          const definition = space.entities.defOf(space.entities.at(...door)!);
+          expect(definition.door).toBeDefined();
+          expect(definition.door!.methods).toEqual({});
+        }
+        const [, level] = seal.doors[0]!;
+        const links = [...composition.descents, ...composition.stairs].filter((link) => link.upper[1] === level);
+        expect(links.length).toBeGreaterThan(0);
+        for (const link of links) {
+          expect(space.path(entry, link.upper, { steps: true })).toBeUndefined();
+        }
+        space.admitLock(space.entities.at(...seal.doors[0]!)!.lock!.id);
+        for (const link of links) {
+          expect(space.path(entry, link.upper, { steps: true })).toBeDefined();
+        }
+      }
+      expect(scenarioCertificate(site).issues).toEqual([]);
+    },
+    profile.composition!.storeys.length * WALK_MS_PER_STOREY,
+  );
 
   it('rejects a keyed lot resource whose key route has lost its climb', () => {
     const index = base.composition!.resources.findIndex((resource) => resource.key?.climbs.length);
@@ -426,7 +475,18 @@ describe('final composed body-route certificate', () => {
       {
         source: 'owned-boundary.json',
         data: {
-          furniture: [{ id: 'boundary_box', name: 'Boundary box', size: [3, 4, 2], color: '#aaaaaa' }],
+          furnitureMaterials: fixtureMaterials(),
+          sounds: fixtureSounds(),
+          furniture: [
+            {
+              id: 'boundary_box',
+              name: 'Boundary box',
+              size: [3, 4, 2],
+              color: '#aaaaaa',
+              breach: fixtureBreach(),
+              material: FIXTURE_MATERIAL,
+            },
+          ],
           templates: [
             {
               id: 'boundary_box',

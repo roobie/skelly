@@ -1,7 +1,8 @@
 local shape = import 'furniture-shape.libsonnet';
+local breach = import 'furniture-breach.libsonnet';
 local box(position, size) = { position: position, size: size };
 local pocket = { pockets: [{ grid: [6, 5], handlingSimSeconds: 1.2 }] };
-shape.colliding({
+breach.breaking(shape.colliding({
   furniture: [
     {
       id: 'medical_folding_screen', name: 'Folding screen', size: [1, 2, 1], color: '#d8d2bd',
@@ -28,4 +29,4 @@ shape.colliding({
       shape: [box([0, 0, 0], [2, 1.6, 0.15]), box([0, 0, 0], [0.15, 1.6, 2]), box([1.85, 0, 0], [0.15, 1.6, 2])],
     },
   ],
-})
+}))

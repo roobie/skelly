@@ -17,8 +17,10 @@ import {
   lootPointsByColumn,
   type Rolled,
   rollLootParts,
+  withLootDepth,
 } from './loot.ts';
-import type { FixedLootItemDef, FixedLootOverrideDef } from './schema.ts';
+import { Rng } from './random.ts';
+import type { FixedLootItemDef, FixedLootOverrideDef, LightPracticeDef } from './schema.ts';
 import { type Placement, placedGroundLoot, placedPieces } from './templates.ts';
 import type { Surface } from './worldgen.ts';
 
@@ -30,6 +32,8 @@ export interface Rect {
   x1: number;
   z1: number;
 }
+
+export const rectsOverlap = (a: Rect, b: Rect): boolean => a.x0 < b.x1 && b.x0 < a.x1 && a.z0 < b.z1 && b.z0 < a.z1;
 
 /** Blocks from a column to a rectangle; 0 inside. */
 export const rectDistance = (r: Rect, x: number, z: number): number => cellDistance(r, x + 0.5, z + 0.5, 1);
@@ -44,7 +48,15 @@ export interface FurnitureSpawn {
   fixedCount?: number;
   /** Fixed items laid out as a visible pile on the furniture's top surface. */
   surfaceLoot?: Rolled[];
+  /** The share of its durability the piece is placed already worn by; absent places it intact. */
+  wear?: number;
 }
+
+/** The wear a piece is placed with, drawn from its content's range and the placement seed; undefined when intact. */
+const rollWear = (registry: Registry, seed: number, spec: EntitySpec): number | undefined => {
+  const range = registry.furniture.get(spec.type)?.wear;
+  return range && Rng.stream(seed, `wear:${spec.type}:${spec.pos.join(',')}`).range(range.from, range.to);
+};
 
 export type ZombieSpawn = {
   type: string;
@@ -69,6 +81,8 @@ export interface PlaytestMarks {
 }
 
 export interface Site {
+  /** An authored practice site's optional light module. */
+  readonly lightPractice?: LightPracticeDef;
   /** Finished authored footprints eligible for world-derived sky transport. */
   readonly authoredPlacements?: readonly Placement[];
   /** An authored site's playtest beats and key fixed loot. */
@@ -119,7 +133,7 @@ export const lootSourcesOf = (
       building,
       anchor: piece.pos,
       destination: world.pos,
-      context,
+      context: withLootDepth(context, world.lootDepth),
       ...(usage === undefined ? {} : { usage }),
     };
     const sources: LootPointSource[] = [];
@@ -151,7 +165,7 @@ export const lootSourcesOf = (
       channel: 'ground',
       position: point.pos,
       destination: point.pos,
-      context,
+      context: withLootDepth(context, point.lootDepth),
       ...(point.lootUsage === undefined ? {} : { usage: point.lootUsage }),
       supply: point.supply,
       required: point.supply.kind === 'fixed',
@@ -211,8 +225,10 @@ export const fillFurnitureLoot = (
         .map((point) => rollLootParts(registry, point, lootPointStream(seed, point)));
     const container = items('container');
     const fixed = container.flatMap((part) => part.fixed);
+    const wear = rollWear(registry, seed, spawn.spec);
     return {
       ...spawn,
+      ...(wear === undefined ? {} : { wear }),
       loot: [...fixed, ...container.flatMap((part) => part.rolled)],
       ...(fixed.length > 0 ? { fixedCount: fixed.length } : {}),
       surfaceLoot: items('surface').flatMap((part) => [...part.fixed, ...part.rolled]),

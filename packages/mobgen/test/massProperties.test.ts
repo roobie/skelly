@@ -21,7 +21,12 @@ interface AssignedPartProof {
   readonly density: ReturnType<typeof massProperties>;
   readonly assigned: ReturnType<typeof templatePartMassProperties>;
 }
+let cachedProofs: AssignedPartProof[] | undefined;
 const shamblerPartProofs = (): AssignedPartProof[] => {
+  cachedProofs ??= computeShamblerPartProofs();
+  return cachedProofs;
+};
+const computeShamblerPartProofs = (): AssignedPartProof[] => {
   const template = TEMPLATES.find((candidate) => candidate.name === 'shambler')!;
   const proofs: AssignedPartProof[] = [];
   for (let seed = 1; seed <= 5; seed++) {

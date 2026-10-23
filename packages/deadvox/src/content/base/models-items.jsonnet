@@ -1,7 +1,19 @@
-{
-  "models": [
+local authored = [
     std.objectRemoveKey(import 'things/canned_beans.model.json', 'parts'),
     std.objectRemoveKey(import 'things/canned_soup.model.json', 'parts'),
+    import 'things/opened_beans.model.json',
+    import 'things/opened_soup.model.json',
+    import 'things/empty_can.model.json',
+    import 'things/can_opener.model.json',
+    import 'things/beans.model.json',
+    import 'things/soup.model.json',
+    import 'things/apple.model.json',
+    import 'things/bandage.model.json',
+    import 'things/antiseptic.model.json',
+    import 'things/antibiotics.model.json',
+    import 'things/painkillers.model.json',
+    import 'things/codeine.model.json',
+    import 'things/morphine.model.json',
     import 'things/crackers.model.json',
     import 'things/chocolate_bar.model.json',
     import 'things/soda_can.model.json',
@@ -15,6 +27,23 @@
     import 'things/ammo_can.model.json',
     import 'things/jerry_can.model.json',
     import 'things/gas_canister.model.json',
+    import 'things/frag_grenade.model.json',
+    import 'things/torch.model.json',
+    (import 'things/flashlight.model.json') + { grip: { at: [0.085, 0, 0] }, anchors: { lens: [0.199, 0, 0] } },
+    import 'things/candle.model.json',
+    import 'things/bear_trap.model.json',
+    (import 'things/compass.model.json') + {
+      dial: {
+        face: 'paint-cream',
+        ink: 'plastic-black',
+        north: 'plastic-red',
+        south: 'plastic-black',
+        marks: ['N', 'E', 'S', 'W'],
+        markHeight: 0.3,
+        needleLength: 0.6,
+        needleWidth: 0.2,
+      },
+    },
     {
       "id": "hand_saw",
       "file": "assets/models/hand_saw.glb",
@@ -53,7 +82,8 @@
     { "id": "pliers", "file": "assets/models/pliers.glb" },
     { "id": "sewing_kit", "file": "assets/models/sewing_kit.glb" },
     { "id": "broken_toaster", "file": "assets/models/broken_toaster.glb" },
-    import 'things/desk_lamp.model.json',
+    import 'things/dead_desk_lamp.model.json',
+    (import 'things/dead_desk_lamp.model.json') + { id: 'oil_lamp', anchors: { flame: [0.069, 0.05, 0] } },
     { "id": "table_fan", "file": "assets/models/table_fan.glb" },
     { "id": "cracked_phone", "file": "assets/models/cracked_phone.glb" },
     { "id": "broken_clock", "file": "assets/models/broken_clock.glb" },
@@ -64,6 +94,19 @@
     { "id": "glass_bulb", "file": "assets/models/glass_bulb.glb" },
     { "id": "paper_sheet", "file": "assets/models/paper_sheet.glb" },
     { "id": "folded_note", "file": "assets/models/folded_note.glb" },
-    { "id": "notebook", "file": "assets/models/notebook.glb" }
-  ]
+    { "id": "notebook", "file": "assets/models/notebook.glb" },
+    import 'things/shambler_torso.model.json',
+    import 'things/shambler_head.model.json',
+    import 'things/shambler_left_arm.model.json',
+    import 'things/shambler_right_arm.model.json',
+    import 'things/shambler_left_leg.model.json',
+    import 'things/shambler_right_leg.model.json'
+];
+{
+  // A melee row imports its exported model and adds the grip and anchors, so the index must not list it again.
+  models: authored + [
+    model
+    for model in import 'things/index.json'
+    if !std.member([entry.id for entry in authored + (import 'models-melee.jsonnet').models], model.id)
+  ],
 }

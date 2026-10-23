@@ -4,6 +4,7 @@
     spacing: 1,
     hudScale: 1,
     refusalSound: 'player_nope',
+    audioVolumes: { master: 0.8, world: 0.8, body: 0.8, ui: 0.8 },
     restLabels: { rest: 'Resting', sleep: 'Sleeping' },
     doorCloseBlockedMessages: { player: "You're in the way", other: "Something's in the way" },
     furnitureMoveMessages: {
@@ -12,6 +13,11 @@
       handsFull: 'My hands are full',
       tired: "I'm too tired to lift it",
       standingOn: "I'm standing on it",
+      someoneOnIt: "Someone's standing on it",
+      holdsUp: "Something's resting on it",
+      holdsItems: "There's still something in it",
+      barricaded: "Something's in the doorway",
+      reserved: "I'm taking it apart",
       fallsOnPlayer: "What's on top would fall on me",
       fallsOnOther: "What's on top would fall on someone",
       nowhereToLand: "There's nowhere for what's on it to land",
@@ -39,5 +45,5 @@
       feet: 'Feet',
       shoulder: 'Shoulder',
     },
-  }],
+  } + import 'ui-core-text.libsonnet'],
 }

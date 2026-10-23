@@ -2,16 +2,16 @@
   "items": [
     {
       "category": "tool",
-      "description": "An electronic compass with an illuminated heading display.",
+      "description": "A magnetic compass with a turning card.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "heldDisplay": "compass",
       "id": "compass",
+      "model": "compass",
       "name": "Compass",
-      "size": [1, 2],
-      "weight": 120
+      "size": [1, 2]
     },
     {
       "category": "tool",
@@ -45,8 +45,7 @@
           "wearPerHit": 0.014999999999999999,
           "windupCapSimSeconds": 0.25
         }
-      },
-      "weight": 1500
+      }
     },
     {
       "category": "tool",
@@ -56,6 +55,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "blowtorch",
+      "model": "blowtorch",
       "name": "Blowtorch",
       "size": [2, 3],
       "tool": {
@@ -66,8 +66,7 @@
         "qualities": {
           "flame_cutting": 1
         }
-      },
-      "weight": 900
+      }
     },
     {
       "canister": {
@@ -114,8 +113,41 @@
           "wearPerHit": 0.012,
           "windupCapSimSeconds": 0.25
         }
+      }
+    },
+    {
+      "category": "tool",
+      "description": "Breaks a locked door open in a few loud blows. Also a heavy weapon.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
-      "weight": 700
+      "id": "sledgehammer",
+      "model": "sledgehammer",
+      "name": "Sledgehammer",
+      "size": [2, 7],
+      "tool": {
+        "qualities": {
+          "hammering": 3
+        }
+      },
+      "twoHanded": true,
+      "weapon": {
+        "melee": {
+          "contactFraction": 0.40000000000000002,
+          "cooldownSimSeconds": 1.6000000000000001,
+          "damage": 24,
+          "hitLayerSound": "melee_hit_metal",
+          "impulse": 14,
+          "motion": "swing",
+          "reach": 0.69999999999999996,
+          "stamina": 16,
+          "swingSound": "melee_swing_heavy",
+          "type": "blunt",
+          "wearPerHit": 0.01,
+          "windupCapSimSeconds": 0.25
+        }
+      }
     },
     {
       "category": "tool",
@@ -147,8 +179,7 @@
           "wearPerHit": 0.025000000000000001,
           "windupCapSimSeconds": 0.25
         }
-      },
-      "weight": 150
+      }
     },
     {
       "category": "tool",
@@ -180,8 +211,7 @@
           "wearPerHit": 0.025000000000000001,
           "windupCapSimSeconds": 0.25
         }
-      },
-      "weight": 300
+      }
     },
     {
       "category": "tool",
@@ -213,8 +243,7 @@
           "wearPerHit": 0.02,
           "windupCapSimSeconds": 0.25
         }
-      },
-      "weight": 550
+      }
     },
     {
       "category": "tool",
@@ -223,14 +252,54 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "can_opener",
+      "model": "can_opener",
       "name": "Can opener",
       "size": [1, 1],
       "tool": {
         "qualities": {
           "opening": 5
         }
+      }
+    },
+    {
+      "category": "tool",
+      "description": "A small stone for honing a blade by hand.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
-      "weight": 100
+      "id": "whetstone",
+      "model": "whetstone",
+      "name": "Whetstone",
+      "size": [1, 2],
+      "tool": {
+        "qualities": {
+          "sharpening": 1
+        }
+      }
+    },
+    {
+      "category": "tool",
+      "description": "Steel jaws on a spring. It shuts on whatever steps in it.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Hunting"]
+      },
+      "id": "bear_trap",
+      "model": "bear_trap",
+      "name": "Bear trap",
+      "size": [5, 5],
+      "trap": {
+        "disarmSimSeconds": 6,
+        "holdSimSeconds": 20,
+        "playerInjury": {
+          "damage": 25,
+          "kind": "pierce",
+          "region": "leftLeg"
+        },
+        "setSimSeconds": 4,
+        "zombieLegDamage": 60
+      }
     },
     {
       "category": "weapon",
@@ -257,8 +326,7 @@
           "wearPerHit": 0.01,
           "windupCapSimSeconds": 0.25
         }
-      },
-      "weight": 900
+      }
     },
     {
       "category": "weapon",
@@ -285,8 +353,7 @@
           "wearPerHit": 0.014999999999999999,
           "windupCapSimSeconds": 0.25
         }
-      },
-      "weight": 1800
+      }
     },
     {
       "category": "light",
@@ -319,8 +386,7 @@
       },
       "model": "flashlight",
       "name": "Flashlight",
-      "size": [1, 2],
-      "weight": 250
+      "size": [1, 2]
     },
     {
       "category": "light",
@@ -352,13 +418,13 @@
         "seenFrom": 30,
         "wornSwitch": true
       },
+      "model": "headlamp",
       "name": "Headlamp",
       "size": [1, 2],
       "wearable": {
         "encumbrance": 0,
         "slot": "head"
-      },
-      "weight": 180
+      }
     },
     {
       "category": "light",
@@ -447,17 +513,23 @@
         "burnTimeGameHours": 4,
         "burning": {
           "douse": true,
-          "drop": "douse",
+          "drop": "stay",
           "ignition": "firestarter",
           "relight": true,
           "sprint": "stay",
           "stow": "refuse"
         },
         "color": "#ffb36b",
+        "emissive": 0.59999999999999998,
+        "flame": {
+          "heightMetres": 0.14000000000000001,
+          "radiusMetres": 0.035000000000000003
+        },
         "intensity": 5,
         "radius": 6,
         "seenFrom": 60
       },
+      "model": "torch",
       "name": "Torch",
       "size": [1, 4],
       "weight": 350
@@ -492,20 +564,63 @@
         "burnTimeGameHours": 6,
         "burning": {
           "douse": true,
-          "drop": "douse",
+          "drop": "stay",
           "ignition": "firestarter",
           "relight": true,
           "sprint": "douse",
           "stow": "douse"
         },
         "color": "#ffd28a",
+        "flame": {
+          "heightMetres": 0.029999999999999999,
+          "radiusMetres": 0.0070000000000000001
+        },
         "intensity": 1,
         "radius": 3,
         "seenFrom": 15
       },
+      "model": "candle",
       "name": "Candle",
       "size": [1, 1],
       "weight": 150
+    },
+    {
+      "category": "light",
+      "description": "A table lamp that burns lamp oil. It keeps burning where it is set down.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+      },
+      "id": "oil_lamp",
+      "light": {
+        "burning": {
+          "douse": true,
+          "drop": "stay",
+          "ignition": "firestarter",
+          "relight": true,
+          "sprint": "douse",
+          "stow": "douse"
+        },
+        "color": "#ffc477",
+        "flame": {
+          "heightMetres": 0.050000000000000003,
+          "radiusMetres": 0.02
+        },
+        "fuelPerGameHour": 1,
+        "intensity": 3,
+        "radius": 8,
+        "seenFrom": 80
+      },
+      "model": "oil_lamp",
+      "name": "Oil lamp",
+      "size": [2, 3],
+      "tool": {
+        "fuel": {
+          "canister": "lamp_oil",
+          "swapSimSeconds": 3
+        },
+        "qualities": {}
+      }
     },
     {
       "category": "light",
@@ -538,6 +653,35 @@
     },
     {
       "category": "light",
+      "description": "A road flare. It burns red and bright until it is spent.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+      },
+      "id": "road_flare",
+      "light": {
+        "burnTimeGameHours": 1,
+        "burning": {
+          "douse": false,
+          "drop": "stay",
+          "ignition": "snap",
+          "relight": false,
+          "sprint": "stay",
+          "stow": "stay"
+        },
+        "color": "#ff3b24",
+        "emissive": 1,
+        "intensity": 3,
+        "radius": 4,
+        "seenFrom": 40
+      },
+      "model": "road_flare",
+      "name": "Road flare",
+      "size": [1, 2],
+      "weight": 200
+    },
+    {
+      "category": "light",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
@@ -554,9 +698,9 @@
         "radius": 2,
         "seenFrom": 10
       },
+      "model": "lighter",
       "name": "Lighter",
-      "size": [1, 1],
-      "weight": 20
+      "size": [1, 1]
     },
     {
       "category": "light",
@@ -569,9 +713,9 @@
         "capacity": 10,
         "perIgnition": 1
       },
+      "model": "matches",
       "name": "Box of matches",
-      "size": [1, 1],
-      "weight": 20
+      "size": [1, 1]
     }
   ],
   "meleeClasses": [
@@ -616,19 +760,14 @@
   ],
   "models": [
     {
-      "anchors": {
-        "lens": [0.19900000000000001, 0, 0]
-      },
-      "file": "assets/models/flashlight.glb",
-      "grip": {
-        "at": [0.085000000000000006, 0, 0]
-      },
-      "id": "flashlight"
+      "emissiveMaterial": "chemical-light tube",
+      "file": "assets/models/glowstick.glb",
+      "id": "glowstick"
     },
     {
       "emissiveMaterial": "chemical-light tube",
       "file": "assets/models/glowstick.glb",
-      "id": "glowstick"
+      "id": "road_flare"
     }
   ]
 }

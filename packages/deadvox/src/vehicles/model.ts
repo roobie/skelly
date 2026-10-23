@@ -45,6 +45,20 @@ export interface PartType {
   /** Where a rider's hips sit on this part, in its frame: the saddle of a bike with no cabin to sit in. */
   readonly rider?: readonly [x: number, y: number, z: number];
   readonly noise?: PartNoise;
+  /** Where the part holds items. Cargo is items in these pockets, never fittings. */
+  readonly storage?: PartStorage;
+}
+
+/** Pockets sized like a furniture container's (`packages/deadvox/src/core/schema.ts`, `ContainerSchema`): a grid in inventory cells. */
+export interface PartStorage {
+  readonly pockets: readonly PartPocket[];
+}
+
+interface PartPocket {
+  readonly name: string;
+  readonly grid: readonly [w: number, h: number];
+  /** Sim seconds to take an item out or put one in, before the per-cell part. */
+  readonly handlingSimSeconds: number;
 }
 
 /**
@@ -210,7 +224,9 @@ export class PartLibrary {
   }
 }
 
-export const fittingById = (fittings: readonly Fitting[]): ReadonlyMap<string, Fitting> =>
+type Supported = Pick<Fitting, 'id' | 'supportedBy'>;
+
+export const fittingById = <F extends Supported>(fittings: readonly F[]): ReadonlyMap<string, F> =>
   new Map(fittings.map((fitting) => [fitting.id, fitting]));
 
 /** Fittings that rest on `id`; while any remain, `id` can't come off. */
@@ -243,7 +259,7 @@ export const addFitting = (vehicle: VehicleInstance, fitting: Fitting): readonly
 };
 
 /** Fittings resting on something that isn't there, and support cycles. */
-export const supportProblems = (fittings: readonly Fitting[]): readonly string[] => {
+export const supportProblems = (fittings: readonly Supported[]): readonly string[] => {
   const byId = fittingById(fittings);
   const problems: string[] = [];
   for (const fitting of fittings) {

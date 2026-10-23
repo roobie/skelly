@@ -17,6 +17,8 @@ const playtest = JSON.parse(readFileSync('src/content/base/layouts-playtest.json
 };
 const camp = registry.layouts.get(playtest.layouts[0]!.id)!;
 const site = new AuthoredSite(1, registry, makeScale(0.5), camp);
+// A type the playtest camp places at fixed, always-spawning markers; plain shamblers are also placed by density.
+const MARKER_TYPE = 'amalgam';
 
 interface Spawned {
   type: string;
@@ -32,14 +34,14 @@ const zombieSystemFor = (spawned: Spawned[]): ZombieSystem =>
   }) as unknown as ZombieSystem;
 
 const campAmalgams = () => {
-  const markers = camp.shamblers.filter(({ type }) => type === 'amalgam');
+  const markers = camp.shamblers.filter(({ type }) => type === MARKER_TYPE);
   const { blockSize } = makeScale(0.5);
   const locations = markers.map(({ position }) => {
     const [x, y, z] = position;
     const cx = toChunk(x / blockSize);
     const cz = toChunk(z / blockSize);
-    const spawns = site.zombiesIn(cx, cz).filter(({ type }) => type === 'amalgam');
-    const markerSpawn = { type: 'amalgam', pos: [x / blockSize, y / blockSize, z / blockSize] as Vec3 };
+    const spawns = site.zombiesIn(cx, cz).filter(({ type }) => type === MARKER_TYPE);
+    const markerSpawn = { type: MARKER_TYPE, pos: [x / blockSize, y / blockSize, z / blockSize] as Vec3 };
     return { cx, cz, markerSpawn, spawns };
   });
   const everyMarkerHasSpawn =
@@ -75,10 +77,10 @@ describe('authored zombie spawn persistence', () => {
         const expected = [...new Set(order)].flatMap((column) =>
           site
             .zombiesIn(column, cz)
-            .filter(({ type }) => type === 'amalgam')
+            .filter(({ type }) => type === MARKER_TYPE)
             .map(({ type, pos }) => ({ type, pos })),
         );
-        expect(spawned.filter(({ type }) => type === 'amalgam')).toEqual(expected);
+        expect(spawned.filter(({ type }) => type === MARKER_TYPE)).toEqual(expected);
       }
     }
   });
@@ -129,12 +131,12 @@ describe('authored zombie spawn persistence', () => {
     for (const { cx, cz } of locations) {
       const expected = site
         .zombiesIn(cx, cz)
-        .filter(({ type }) => type === 'amalgam')
+        .filter(({ type }) => type === MARKER_TYPE)
         .map(({ type, pos }) => ({ type, pos }));
       const beforeSave = new ZombieSpawner();
       const savedZombies: Spawned[] = [];
       load(beforeSave, savedZombies, cx, cz);
-      expect(savedZombies.filter(({ type }) => type === 'amalgam')).toEqual(expected);
+      expect(savedZombies.filter(({ type }) => type === MARKER_TYPE)).toEqual(expected);
       const savedLedger = JSON.parse(JSON.stringify(beforeSave.snapshotState())) as readonly string[];
 
       const afterLoad = new ZombieSpawner();
@@ -143,7 +145,7 @@ describe('authored zombie spawn persistence', () => {
       load(afterLoad, restoredZombies, cx, cz);
 
       expect(afterLoad.snapshotState()).toEqual(savedLedger);
-      expect(restoredZombies.filter(({ type }) => type === 'amalgam')).toEqual(expected);
+      expect(restoredZombies.filter(({ type }) => type === MARKER_TYPE)).toEqual(expected);
     }
   });
 });

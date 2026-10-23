@@ -15,9 +15,11 @@ import type { BlockJolt } from '../core/meleeCombat.ts';
 import type { MeleePoseFrame } from '../core/meleePose.ts';
 import { DEFAULT_SHADOWS, lookOf, moodOf } from '../core/mood.ts';
 import type { Body } from '../core/physics.ts';
+import type { PlayerStance } from '../core/playerStance.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
 import { reachTuning } from '../core/reach.ts';
 import type { BodyTuningDef, NightVision } from '../core/schema.ts';
+import { firearmsCombatTuning } from '../core/skillTraining.ts';
 import { skyAt, sunShadowStrength } from '../core/sky.ts';
 import { skyInWeather, type Weather } from '../core/weather.ts';
 import { amalgamTypeOf, figureSeedPool } from '../core/zombieFigure.ts';
@@ -28,6 +30,7 @@ import { PainCue } from '../game/painCue.ts';
 import { PLAYER } from '../game/player.ts';
 import { THIRD_PERSON_CAMERA } from '../game/thirdPersonOrbit.ts';
 import { AcidEffects } from './acidEffects.ts';
+import { createAvatarStudy } from './avatarStudy.ts';
 import { BlastFlashes } from './blastFlashes.ts';
 import { CarriedPiece } from './carriedPiece.ts';
 import { CaseEffects } from './caseEffects.ts';
@@ -42,6 +45,7 @@ import { ItemThrows } from './itemThrows.ts';
 import { LightPool } from './lightPool.ts';
 import { applyLook } from './look.ts';
 import { MobActorMeshes, type ZombieRenderer } from './mobActors.ts';
+import { modelMaterialWarmUp } from './modelMaterials.ts';
 import { ModelLibrary } from './models.ts';
 import { createNightVisionFlareUpdate } from './nightVisionFlare.ts';
 import { PileMeshes } from './piles.ts';
@@ -58,6 +62,7 @@ export interface PlayCameraFrame {
   readonly yaw: number;
   readonly pitch: number;
   readonly stridePhase: number;
+  readonly stance: PlayerStance;
   readonly eye: Vec3;
   readonly spectator?: { readonly position: Vec3; readonly yaw: number; readonly pitch: number };
   readonly thirdPerson?: boolean;
@@ -70,6 +75,10 @@ export interface PlayCameraFrame {
   /** Felt pain's tier, for the pain cue; undefined below the first. */
   readonly painTier?: BodyTuningDef['pain']['tiers'][number] | undefined;
 }
+
+/** The hurt vignette and the sight-impairment dimming belong to the player's eyes, so a detached view has none. */
+const damageOpacity = (detached: boolean, vignette: number, sightImpaired: boolean): string =>
+  detached ? '0' : String(Math.max(vignette, sightImpaired ? 0.2 : 0));
 
 /** The drug vignette and night vision belong to the player's eyes, so a spectator gets neither. */
 const setViewEffects = (mood: Engine['mood'], frame: PlayCameraFrame): NightVision | undefined => {
@@ -176,7 +185,8 @@ export const createPlayView = (
   }
   const weather: Weather = { fogginess: dayCycle.weather.defaultFogginess };
   const models = new ModelLibrary(registry, report);
-  const playerPalette = registry.figures.get(CORE_CONTENT_IDS.player)!.palette;
+  const playerFigure = registry.figures.get(CORE_CONTENT_IDS.player)!;
+  const playerPalette = playerFigure.palette;
   const piles = new PileMeshes(s, models, config.seed, meshes);
   const caseEffects = new CaseEffects(s, models);
   const gore = new Gore(s, config.seed);
@@ -199,7 +209,12 @@ export const createPlayView = (
         return entity !== undefined && engine.registry.furniture.get(entity.type)?.shotTarget === true;
       }
     : undefined;
-  const impactEffects = new ImpactEffects(s, engine.isSolid, targetCell);
+  const impactEffects = new ImpactEffects(
+    s,
+    firearmsCombatTuning(registry).shotTraceRangeBlocks,
+    engine.isSolid,
+    targetCell,
+  );
   const blastFlashes = new BlastFlashes();
   const acidEffects = new AcidEffects(s);
   const held = new HeldItems(inventory, models, playerPalette, engine.sky.light);
@@ -224,7 +239,7 @@ export const createPlayView = (
     reachTuning(registry).furnitureMove.carriedView,
   );
   held.attach(carriedPiece.group);
-  const playerMeshes = new PlayerMeshes(s, playerPalette, models);
+  const playerMeshes = new PlayerMeshes(s, playerFigure, models);
   const flashlight = new Flashlight(
     scene,
     registry.senses.get(CORE_CONTENT_IDS.player)!.light.renderedBeamLimit,
@@ -233,7 +248,8 @@ export const createPlayView = (
   let cameraDaylightScale = 1;
   const lightPool = new LightPool(scene, held.warmUpTarget.scene);
   engine.shadows?.attachTorches(flashlight.lights);
-  scene.add(piles.group, furniture.group, playerMeshes.group);
+  scene.add(piles.group, furniture.group, playerMeshes.group, modelMaterialWarmUp(true));
+  const avatarStudy = createAvatarStudy(scene, config.debug, s, models);
   // Both actors implement the same presentation contract. Gameplay keeps synchronous
   // death/sever callbacks so an actor is removed before a subsequent sync/prune.
   const zombieMeshes: ZombieRenderer =
@@ -255,6 +271,8 @@ export const createPlayView = (
   const painCue = new PainCue();
   let cameraRoll = 0;
   let thirdPerson = false;
+  /** The spectator camera leaves the player's own view (arms, held item, vignettes) with the avatar. */
+  let detached = false;
   let meleeRecoilStrength = 0;
   let meleeRecoilTime = 0;
   let meleeRecoilDuration = 0;
@@ -412,7 +430,7 @@ export const createPlayView = (
       engine.shadows?.update(sunShadowStrength(sky.lightIntensity), camera.position);
     },
     updateCamera: (frame: PlayCameraFrame, damage: HTMLElement) => {
-      const { dt, body, paused, noclip, yaw, pitch, stridePhase, eye, spectator, sightImpaired } = frame;
+      const { dt, body, paused, noclip, yaw, pitch, stridePhase, stance, eye, spectator, sightImpaired } = frame;
       thirdPerson = frame.thirdPerson === true && spectator === undefined;
       const offset = cameraStepOffset.update(
         [body.pos[0] * s, body.pos[1] * s, body.pos[2] * s],
@@ -423,7 +441,19 @@ export const createPlayView = (
       const travel = Math.hypot(body.vel[0], body.vel[2]) * s * dt;
       const moving = travel > 0.001 && !paused;
       const gaitPhase = stridePhase * Math.PI * 2;
-      playerMeshes.sync({ body, yaw, stepOffset: offset, gaitPhase, moving, inventory, thirdPerson });
+      detached = spectator !== undefined;
+      playerMeshes.sync({
+        body,
+        yaw,
+        stepOffset: offset,
+        gaitPhase,
+        moving,
+        stance,
+        dt,
+        inventory,
+        thirdPerson: thirdPerson || detached,
+      });
+      avatarStudy.sync({ bodyPosition: body.pos, yaw, stepOffset: offset, visible: thirdPerson || detached });
       const [ex, ey, ez] = spectator?.position ?? eye;
       const feedback = stepBodyCues(dt, paused, spectator !== undefined, frame.painTier);
       cameraRoll = spectator || thirdPerson ? 0 : feedback.roll;
@@ -439,7 +469,7 @@ export const createPlayView = (
       } else {
         updateFirstPersonCamera({ target, stepOffset: offset, spectator, yaw, pitch });
       }
-      damage.style.opacity = String(Math.max(feedback.vignetteOpacity, sightImpaired ? 0.2 : 0));
+      damage.style.opacity = damageOpacity(detached, feedback.vignetteOpacity, sightImpaired);
       nightVision = setViewEffects(engine.mood, frame);
     },
     updateHeld: (
@@ -461,7 +491,7 @@ export const createPlayView = (
       carriedPiece.update(dt, camera.quaternion);
       held.update(camera, pose, recoil, { ...handling, lift });
       flashlight.update({ registry, lit: light, held, camera, inventory });
-      lightPool.update(inventory, { held, camera, blockSize: s, daylightScale: cameraDaylightScale });
+      lightPool.update(inventory, { held, piles, camera, blockSize: s, daylightScale: cameraDaylightScale });
       updateFlare(nightVision, dt);
     },
     render: (): number | null => {
@@ -472,15 +502,16 @@ export const createPlayView = (
         return null;
       }
       const start = performance.now();
+      const ownView = !(thirdPerson || detached);
       drawCounters?.begin();
       try {
         mood.render(
           () => {
-            if (!thirdPerson) {
+            if (ownView) {
               held.render(renderer, camera, engine.sky);
             }
           },
-          thirdPerson ? undefined : held.opticLensFrame,
+          ownView ? held.opticLensFrame : undefined,
         );
       } finally {
         drawCounters?.end();

@@ -2,71 +2,34 @@ import bundledModList from '../config/bundled-mods.json' with { type: 'json' };
 import { bundledModCatalogue } from '../core/bundledModCatalogue.ts';
 import type { ContentIssue } from '../core/content.ts';
 import { type BrowserMod, evaluateMods } from './browserMods.ts';
-import { baseSources, type StartupContent } from './bundledContent.ts';
-
-/** Each factor multiplies the base value of one stat for every hostile kind. */
-export const BEGINNER_FACTORS = { damage: 0.5, speed: 0.5, detection: 0.5, health: 0.5 } as const;
-
-interface Row {
-  id: string;
-  attack: { moves: { damage: number }[] };
-  speed: { wanderMetresPerSimSecond: number; chaseMetresPerSimSecond: number };
-  sight: number;
-  nightSight: number;
-  hearing: number;
-  lightSightScale?: number;
-  regions: Record<string, number>;
-}
-type Factors = Readonly<Record<keyof typeof BEGINNER_FACTORS, number>>;
-
-/** Builds a mod's data from the base sources, so base tuning changes carry through. */
-type Derive = (base: readonly { data: unknown }[]) => Record<string, unknown>;
+import type { StartupContent } from './bundledContent.ts';
 
 interface BundledMod {
   id: string;
-  derive: Derive;
+  data: Record<string, unknown>;
 }
 
-const baseRows = (base: readonly { data: unknown }[], section: string): Row[] => {
-  const rows = new Map<string, Row>();
-  for (const { data } of base) {
-    const list = (data as Record<string, unknown> | undefined)?.[section];
-    for (const row of Array.isArray(list) ? (list as Row[]) : []) {
-      rows.set(row.id, row);
+const bundledModFiles = import.meta.glob('../config/bundled/*.json', {
+  eager: true,
+  import: 'default',
+}) as Record<string, Record<string, unknown>>;
+
+const bundledModData = new Map(
+  Object.values(bundledModFiles).map((data) => {
+    if (typeof data.id !== 'string' || !data.id.trim()) {
+      throw new Error('Compiled bundled mod has no id');
     }
-  }
-  return [...rows.values()];
-};
-
-const scaleHostile = (row: Row, factors: Factors): Row => {
-  const out = structuredClone(row);
-  for (const move of out.attack.moves) {
-    move.damage *= factors.damage;
-  }
-  out.speed.wanderMetresPerSimSecond *= factors.speed;
-  out.speed.chaseMetresPerSimSecond *= factors.speed;
-  out.sight *= factors.detection;
-  out.nightSight *= factors.detection;
-  out.hearing *= factors.detection;
-  out.lightSightScale = (out.lightSightScale ?? 1) * factors.detection;
-  out.regions = Object.fromEntries(Object.entries(out.regions).map(([region, hp]) => [region, hp * factors.health]));
-  return out;
-};
-
-const DERIVATIONS: Readonly<Record<string, Derive>> = {
-  beginner: (base) => ({
-    id: 'beginner',
-    zombies: baseRows(base, 'zombies').map((row) => scaleHostile(row, BEGINNER_FACTORS)),
+    return [data.id, data];
   }),
-};
+);
 
-// The list is content so the site launcher reads the same file; an entry with no derivation is an error.
+// The list is content so the site launcher reads the same file; every listed mod needs compiled content.
 const BUNDLED_MODS: readonly BundledMod[] = bundledModCatalogue(bundledModList).map(({ id }) => {
-  const derive = Object.hasOwn(DERIVATIONS, id) ? DERIVATIONS[id] : undefined;
-  if (!derive) {
-    throw new Error(`Bundled mod "${id}" has no derivation`);
+  const data = bundledModData.get(id);
+  if (!data) {
+    throw new Error(`Bundled mod "${id}" has no compiled content`);
   }
-  return { id, derive };
+  return { id, data };
 });
 
 export const bundledModIdsFromUrl = (params: URLSearchParams): string[] => {
@@ -88,10 +51,7 @@ export interface BundledSelection {
 }
 
 /** Admits the named bundled mods through the same intake as player mods; unknown ids are issues. */
-export const selectBundledMods = (
-  ids: readonly string[],
-  base: readonly { data: unknown }[] = baseSources,
-): BundledSelection => {
+export const selectBundledMods = (ids: readonly string[]): BundledSelection => {
   const issues: ContentIssue[] = [];
   const mods: BrowserMod[] = [];
   const admitted: BundledSelection['admitted'] = [];
@@ -106,7 +66,7 @@ export const selectBundledMods = (
       });
       continue;
     }
-    const data = found.derive(base);
+    const { data } = found;
     admitted.push({ id, data });
     mods.push({ source, text: JSON.stringify(data), enabled: true });
   }

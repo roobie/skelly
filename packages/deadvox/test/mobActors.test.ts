@@ -320,7 +320,14 @@ const incapacitate = (zombie: Zombie) => {
     physics: physicsFor(makeScale(blockSize)),
     jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
-    player: () => ({ pos: [1000, 0, 1000], facing: [0, 0, -1], movement: 'still', lit: false, lightSeenFrom: 0 }),
+    player: () => ({
+      pos: [1000, 0, 1000],
+      facing: [0, 0, -1],
+      movement: 'still',
+      lit: false,
+      lightSeenFrom: 0,
+      eyeHeightMetres: 1.3,
+    }),
     dayPhase: () => dayStateAtHour(12),
     hurtPlayer: () => undefined,
   });
@@ -987,9 +994,10 @@ describe('MobActorMeshes', () => {
         const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
         expect(materials.length).toBeGreaterThan(0);
         expect(materials.every((material) => material.visible)).toBe(true);
-        const matrix = renderer.boneMatrix(id, type.model === 'amalgam' ? 'core' : 'pelvis');
+        const isAmalgam = type === amalgamTypeOf(registry.zombies);
+        const matrix = renderer.boneMatrix(id, isAmalgam ? 'core' : 'pelvis');
         expect(matrix, type.id).toHaveLength(12);
-        if (type.model === 'amalgam') {
+        if (isAmalgam) {
           expect(Math.hypot(matrix![0]!, matrix![4]!, matrix![8]!)).toBeCloseTo(type.bodyScale!);
         }
       }

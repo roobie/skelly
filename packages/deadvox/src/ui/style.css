@@ -944,6 +944,9 @@ body.unconscious::after {
 .inv-pile[data-entity-uid] {
   flex: 0 1 auto;
 }
+.inv-target > .inv-pile-label {
+  color: var(--text);
+}
 /* One grid cell is 3rem: `GRID_CELL_REM` in src/core/inventoryGridName.ts. */
 #inventory .inv-grid-packed {
   display: grid;
@@ -988,6 +991,21 @@ body.unconscious::after {
 }
 .inv-item.selected {
   border: 2px solid var(--accent);
+}
+.inv-find {
+  min-width: 9rem;
+  padding: calc(var(--ui-spacing) * 0.375rem) calc(var(--ui-spacing) * 0.5rem);
+  border: 1px solid var(--line);
+  border-radius: 0.375rem;
+  background: #22262c;
+  color: var(--text);
+  font: inherit;
+}
+.inv-find:focus {
+  border-color: var(--accent);
+}
+.inv-item.inv-item-unmatched {
+  opacity: 0.3;
 }
 .inv-item-name {
   display: block;

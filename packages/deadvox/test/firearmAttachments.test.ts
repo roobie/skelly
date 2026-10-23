@@ -48,6 +48,9 @@ const attachmentFixture = (itemType: string) => {
   if (slotsReason(fitted.registry, rifle.type, rifle.slots)) {
     throw new Error('Factory-created fitted attachment is not accepted by slotsReason');
   }
+  if (!inventory.add(rifle, { kind: 'hand', side: 'right' })) {
+    throw new Error('Could not hold the fixture rifle');
+  }
   return { ...fitted, inventory, rifle };
 };
 
@@ -108,6 +111,13 @@ describe('muzzle load', () => {
     expect(loadedStance.readyMovementFactor).toBeLessThan(lighterStance.readyMovementFactor);
   });
 
+  it('wears a suppressor through the inventory so its version moves', () => {
+    const { inventory, rifle } = attachmentFixture('real_suppressor');
+    const before = inventory.version;
+    wearFirearmAttachments(inventory, rifle);
+    expect(inventory.version).toBeGreaterThan(before);
+  });
+
   it('gives an improvised suppressor less recoil and noise reduction and faster wear', () => {
     const realFixture = attachmentFixture('real_suppressor');
     const real = realFixture.rifle.slots?.[realFixture.fitted.mountedAt];
@@ -115,7 +125,7 @@ describe('muzzle load', () => {
       throw new Error('Factory-created suppressor default is missing');
     }
     const realResponse = firearmAttachmentResponse(realFixture.registry, realFixture.rifle);
-    wearFirearmAttachments(realFixture.registry, realFixture.rifle);
+    wearFirearmAttachments(realFixture.inventory, realFixture.rifle);
     const realWear = 1 - real.condition;
     const wornRealResponse = firearmAttachmentResponse(realFixture.registry, realFixture.rifle);
 
@@ -125,7 +135,7 @@ describe('muzzle load', () => {
       throw new Error('Factory-created suppressor default is missing');
     }
     const improvisedResponse = firearmAttachmentResponse(improvisedFixture.registry, improvisedFixture.rifle);
-    wearFirearmAttachments(improvisedFixture.registry, improvisedFixture.rifle);
+    wearFirearmAttachments(improvisedFixture.inventory, improvisedFixture.rifle);
 
     expect(improvisedResponse.recoilScale).toBeGreaterThan(realResponse.recoilScale);
     expect(improvisedResponse.noiseFactor).toBeGreaterThan(realResponse.noiseFactor);

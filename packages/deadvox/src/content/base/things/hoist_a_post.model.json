@@ -1,0 +1,14 @@
+{
+  "id": "hoist_a_post",
+  "file": "assets/models/hoist_a_post.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 6,
+      "centreOfMass": [2.7968750000000004, 1.7656250000000002, 0.8437500000000001],
+      "collision": [{ "min": [2.71875, 1.4375, 0.78125], "max": [2.875, 2.09375, 0.90625] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

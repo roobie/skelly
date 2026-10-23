@@ -1,4 +1,5 @@
 import type { ModelDef, Registry } from './content.ts';
+import type { Inventory } from './inventory.ts';
 import { defOf, type Item, typeWeightGrams } from './items.ts';
 
 /** Sum of attachment mass times its mount distance from the grip, in kg·m. */
@@ -25,40 +26,36 @@ export const firearmAttachmentResponse = (registry: Registry, firearm: Item): Fi
   let raiseScale = 1;
   let swingScale = 1;
   for (const attachment of attachedItems(firearm)) {
-    const modelId = defOf(registry, attachment.type).model;
-    const model = modelId === undefined ? undefined : registry.models.get(modelId);
-    const metadata = model?.gun?.attachment;
-    if (!metadata) {
+    const def = defOf(registry, attachment.type);
+    const effects = def.firearmAttachmentEffects;
+    if (!effects) {
       continue;
     }
-    const effects = defOf(registry, attachment.type).firearmAttachmentEffects;
     const condition = Math.max(0, Math.min(1, attachment.condition));
-    if (metadata.kind === 'suppressor') {
-      const reduction = effects?.recoilReduction ?? 0;
-      recoilScale *= 1 - reduction * condition;
-      const fullNoiseFactor = metadata.properties.noiseFactor ?? 1;
+    if (effects.kind === 'suppressor') {
+      recoilScale *= 1 - effects.recoilReduction * condition;
+      const fullNoiseFactor = registry.models.get(def.model ?? '')?.gun?.attachment?.properties.noiseFactor;
+      if (fullNoiseFactor === undefined) {
+        throw new Error(`suppressor "${def.id}" has no model noise factor`);
+      }
       noiseFactor *= 1 - (1 - fullNoiseFactor) * condition;
-    }
-    if (metadata.kind === 'foregrip') {
-      swayScale *= 1 + ((effects?.swayScale ?? 1) - 1) * condition;
-      recoveryScale *= 1 + ((effects?.recoveryScale ?? 1) - 1) * condition;
-      raiseScale *= 1 + ((effects?.raiseScale ?? 1) - 1) * condition;
-      swingScale *= 1 + ((effects?.swingScale ?? 1) - 1) * condition;
+    } else {
+      swayScale *= 1 + (effects.swayScale - 1) * condition;
+      recoveryScale *= 1 + (effects.recoveryScale - 1) * condition;
+      raiseScale *= 1 + (effects.raiseScale - 1) * condition;
+      swingScale *= 1 + (effects.swingScale - 1) * condition;
     }
   }
   return { recoilScale, noiseFactor, swayScale, recoveryScale, raiseScale, swingScale };
 };
 
-/** Wear fitted suppressors once per committed shot; a broken suppressor gives no further benefit. */
-export const wearFirearmAttachments = (registry: Registry, firearm: Item): void => {
+/** Wear fitted attachments once per committed shot; a broken attachment gives no further benefit. */
+export const wearFirearmAttachments = (inventory: Inventory, firearm: Item): void => {
   for (const attachment of attachedItems(firearm)) {
-    const modelId = defOf(registry, attachment.type).model;
-    const metadata = modelId === undefined ? undefined : registry.models.get(modelId)?.gun?.attachment;
-    if (metadata?.kind !== 'suppressor') {
-      continue;
+    const effects = defOf(inventory.registry, attachment.type).firearmAttachmentEffects;
+    if (effects) {
+      inventory.changeCondition(attachment.uid, -effects.wearPerShot);
     }
-    const wear = defOf(registry, attachment.type).firearmAttachmentEffects?.wearPerShot ?? 0;
-    attachment.condition = Math.max(0, attachment.condition - wear);
   }
 };
 

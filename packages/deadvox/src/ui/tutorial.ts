@@ -21,7 +21,10 @@ const stageTopics: Record<Tutorial['stage'], string> = {
   light: 'hand',
   escape: 'crouch',
   pause: 'main menu',
-  choice: 'ready',
+  finish: 'main menu',
+  'light-on': 'hand',
+  'light-swap': 'quickbar',
+  'light-relight': 'hand',
   revolver: 'reload',
   pump: 'reload',
   melee: 'ready',
@@ -30,6 +33,7 @@ const stageTopics: Record<Tutorial['stage'], string> = {
 
 const stageHint = (tutorial: Tutorial, { inventory, inventoryOpen, lightOn }: TutorialPresentation) => {
   const { stage } = tutorial;
+  const kit = tutorial.lightKit;
   const action = (id: string, label: string) => html`<span data-tutorial-action=${id}>${label} ${keyCap(id)}</span>`;
   const inventoryAction = action('ui.inventory-toggle', inventoryOpen ? 'Close inventory' : 'Inventory');
   const quickAction = html`
@@ -43,6 +47,7 @@ const stageHint = (tutorial: Tutorial, { inventory, inventoryOpen, lightOn }: Tu
       ? html`${label}: ${action('inventory.hands', 'Wield selected item')}`
       : html`${label}: ${inventoryAction}`;
   const held = (type: string) => Object.values(inventory.hands).some((item) => item?.type === type);
+  const nameOf = (type: string) => inventory.registry.items.get(type)?.name ?? type;
   const use = (type: string, label: string) =>
     inventoryOpen
       ? inventoryAction
@@ -80,6 +85,10 @@ const stageHint = (tutorial: Tutorial, { inventory, inventoryOpen, lightOn }: Tu
     };
     return lesson ? lessons[lesson] : '';
   };
+  const swapHint = () =>
+    inventoryOpen
+      ? html`${nameOf(kit.battery)}: ${action('quickbar.assign.1', kit.labels.assign)}`
+      : html`${inventoryAction} · ${action('quickbar.use.1', kit.labels.swap)}`;
   const hints = {
     move: html`${action('movement.forward', 'Forward')} · ${action('movement.back', 'Back')} · ${action('movement.left', 'Left')} · ${action('movement.right', 'Right')} · ${action('pointer.look', 'Look')}`,
     door: action('world.interact', 'Open station door'),
@@ -102,13 +111,17 @@ const stageHint = (tutorial: Tutorial, { inventory, inventoryOpen, lightOn }: Tu
       : wield('Flashlight — On / off'),
     escape: html`${action('player.crouch-toggle', 'Crouch')} · Exit path`,
     pause: action('ui.main-menu-toggle', 'Main menu'),
-    choice: html`Essentials complete · Optional weapons practice`,
+
     revolver: gunHint('revolver'),
     pump: gunHint('pump'),
     melee: inventoryOpen
       ? html`Empty hands · ${action('inventory.drop', 'Put down selected item')} · ${action('inventory.best-pocket', 'Stow selected item')} · ${inventoryAction}`
       : html`Empty hands · ${inventoryAction} · ${action('stance.ready', 'En garde')} · ${action('hand.use-dominant', 'Punch')}`,
     complete: html`Weapons practice complete · ${action('ui.main-menu-toggle', 'Main menu')}`,
+    finish: action('ui.main-menu-toggle', 'Main menu'),
+    'light-on': held(kit.light) ? use(kit.light, kit.labels.on) : wield(nameOf(kit.light)),
+    'light-swap': held(kit.light) ? swapHint() : wield(nameOf(kit.light)),
+    'light-relight': held(kit.light) ? use(kit.light, kit.labels.relight) : wield(nameOf(kit.light)),
   };
   return hints[stage];
 };
@@ -134,8 +147,13 @@ export const mountTutorial = (tutorial: Tutorial, exit: () => void, restart: () 
     render(
       html`
       <div class="tutorial-action-buttons">
-        ${tutorial.stage === 'choice' ? html`<button type="button" data-tutorial-choice="weapons" @click=${() => tutorial.chooseWeapons()}>Weapons practice</button>` : ''}
-        ${tutorial.stage === 'choice' || tutorial.stage === 'complete' ? html`<button type="button" data-tutorial-choice="finish" @click=${() => tutorial.finish()}>Finish practice</button>` : ''}
+        ${tutorial.stage === 'finish' ? html`<button type="button" data-tutorial-choice="weapons" @click=${() => tutorial.chooseWeapons()}>Weapons practice</button>` : ''}
+        ${tutorial.stage === 'finish' || tutorial.stage === 'complete' ? html`<button type="button" data-tutorial-choice="finish" @click=${exit}>Finish practice</button>` : ''}
+        ${
+          tutorial.canStartLight
+            ? html`<button type="button" data-tutorial-light @click=${() => tutorial.startLight()}>${tutorial.lightKit.labels.start}</button>`
+            : ''
+        }
         <button type="button" @click=${openControls}>Practice controls</button>
         <button type="button" @click=${restart}>Restart practice</button>
         <button type="button" @click=${exit}>Exit practice</button>

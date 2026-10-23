@@ -1,7 +1,7 @@
 import { type AimFrame, aimBasis, NEUTRAL_AIM } from '../core/aim.ts';
 import type { ModelDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
-import { type CrosshairTarget, crosshairAimPoint, SHOT_TRACE_RANGE_BLOCKS } from '../core/crosshairTarget.ts';
+import { type CrosshairTarget, crosshairAimPoint } from '../core/crosshairTarget.ts';
 import { heldFirearmTransform } from '../core/heldPose.ts';
 import type { HandSide } from '../core/inventory.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
@@ -105,6 +105,7 @@ export const firearmBoreTarget = ({
   surface,
   zombies,
   blockSize,
+  rangeBlocks,
   weapon,
 }: {
   readonly eye: Vec3;
@@ -112,21 +113,22 @@ export const firearmBoreTarget = ({
   readonly surface: CrosshairTarget | undefined;
   readonly zombies: ZombieSystem;
   readonly blockSize: number;
+  readonly rangeBlocks: number;
   /** Only its reach decides the aim's `inReach`; the bore ray itself is not a melee swing. */
   readonly weapon: MeleeWeapon;
 }): FirearmBoreTarget => {
   const rayDirection = normalizeDirection(direction);
   const zombie = zombies.aimAt(eye, rayDirection, weapon);
   const zombieDistanceBlocks = zombie ? zombie.distanceMetres / blockSize : undefined;
-  const point = crosshairAimPoint(eye, rayDirection, surface, zombieDistanceBlocks);
+  const point = crosshairAimPoint(eye, rayDirection, rangeBlocks, [surface?.distanceBlocks, zombieDistanceBlocks]);
   const distanceBlocks = Math.min(
-    SHOT_TRACE_RANGE_BLOCKS,
-    surface?.distanceBlocks ?? SHOT_TRACE_RANGE_BLOCKS,
-    zombieDistanceBlocks ?? SHOT_TRACE_RANGE_BLOCKS,
+    rangeBlocks,
+    surface?.distanceBlocks ?? rangeBlocks,
+    zombieDistanceBlocks ?? rangeBlocks,
   );
   return {
     point,
-    ...(surface || (zombie && zombieDistanceBlocks! <= SHOT_TRACE_RANGE_BLOCKS)
+    ...(surface || (zombie && zombieDistanceBlocks! <= rangeBlocks)
       ? { distanceMetres: distanceBlocks * blockSize }
       : {}),
     ...(zombie ? { zombie } : {}),

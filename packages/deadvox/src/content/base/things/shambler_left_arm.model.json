@@ -1,0 +1,8 @@
+{
+  "id": "shambler_left_arm",
+  "file": "assets/models/shambler_left_arm.glb",
+  "parts": { "part": { "node": "part:limb", "massKg": 2.5, "centreOfMass": [0, 0.40269491525423723, 0] } },
+  "grip": { "at": [0, 0.085, 0], "turn": [0, 0, 0] },
+  "hold": "forward",
+  "roll": 0
+}

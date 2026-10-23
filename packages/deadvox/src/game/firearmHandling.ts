@@ -36,9 +36,6 @@ import { firearmBoreRay } from './firearmAim.ts';
 import { MAGAZINE_LOAD_ACTION } from './magazineHandling.ts';
 import { type RevolverFrame, RevolverHandling } from './revolverHandling.ts';
 
-/** Gameplay estimates for transient ballistics, not claimed as measured export data. */
-const CASE_SPEED = 3.5;
-const CASE_FLIGHT_SECONDS = 0.48;
 const COCK_ACTION = 'firearm.cock';
 const LOAD_ACTION = 'firearm.load';
 const MAGAZINE_ACTION = 'firearm.magazine';
@@ -507,6 +504,14 @@ export class FirearmMechanics {
     return { ...tuning, skillZeroHandling: this.firearmsSkillZeroHandling() };
   }
 
+  private caseEjection(): FirearmsCombatTuning['caseEjection'] {
+    const tuning = this.firearmsCombatTuning;
+    if (!tuning) {
+      throw new Error('Missing firearms-combat case ejection tuning');
+    }
+    return tuning.caseEjection;
+  }
+
   skillZeroHandlingSettingFor(uid: number): FirearmsSkillZeroHandling {
     const item = this.inventory.itemByUid(uid);
     if (!item) {
@@ -766,14 +771,21 @@ export class FirearmMechanics {
       state.hammerDown = true;
     }
     const pellets = this.isPump(item)
-      ? pelletShotFromBasis({ ammo, origin: shotOrigin, basis: shotBasis, seed: input.seed, key: shotKey })
+      ? pelletShotFromBasis({
+          ammo,
+          firearm: defOf(this.inventory.registry, item.type).firearm!,
+          origin: shotOrigin,
+          basis: shotBasis,
+          seed: input.seed,
+          key: shotKey,
+        })
       : projectileShot(ammo, shotOrigin, [
           coneDirection(shotBasis, data.dispersionRadians, Rng.stream(input.seed, `firearm-dispersion:${shotKey}`)),
         ]);
     this.onShot(pellets, input.simTime, item, Boolean(input.aimingDownSights));
     this.onTrajectory({ eye: input.eye, muzzle, origin: shotOrigin, directions: pellets.directions }, input.simTime);
     this.onCommittedShot(seed, data.recoilKickRadians, shotKind, item.uid);
-    wearFirearmAttachments(this.inventory.registry, item);
+    wearFirearmAttachments(this.inventory, item);
     this.previousShotAt.set(item.uid, input.simTime);
     return true;
   }
@@ -817,7 +829,7 @@ export class FirearmMechanics {
     this.onShot(projectileShot(ammo, shotOrigin, [direction]), input.simTime, item, Boolean(input.aimingDownSights));
     this.onTrajectory({ eye: input.eye, muzzle, origin: shotOrigin, directions: [direction] }, input.simTime);
     this.onCommittedShot(seed, data.recoilKickRadians, shotKind, item.uid);
-    wearFirearmAttachments(this.inventory.registry, item);
+    wearFirearmAttachments(this.inventory, item);
     this.previousShotAt.set(item.uid, input.simTime);
     return true;
   }
@@ -1602,9 +1614,10 @@ export class FirearmMechanics {
     const seed = Math.floor(Rng.stream(item.uid, `live-shell:${state.cycle!.startedAt}`).next() * 4_294_967_296) >>> 0;
     const modelId = defOf(this.inventory.registry, type).model;
     const startedAt = this.ejectionAt(state, data);
+    const landingAt = startedAt + this.caseEjection().flightSimSeconds;
     state.landings ??= [];
     state.landings.push({
-      at: startedAt + CASE_FLIGHT_SECONDS,
+      at: landingAt,
       position: [...landing.position],
       type,
       seed,
@@ -1617,15 +1630,16 @@ export class FirearmMechanics {
       seed,
       landingPosition: landing.position,
       startedAtSimSeconds: startedAt,
-      landingAt: startedAt + CASE_FLIGHT_SECONDS,
+      landingAt,
       ...(modelId ? { caseModelId: modelId } : {}),
     });
     return undefined;
   }
 
   private landing(emission: Omit<PendingCase, 'seed'>): CaseLanding | undefined {
+    const { speedMetresPerSimSecond, flightSimSeconds, landingLiftMetres } = this.caseEjection();
     const origin: Vec3 = emission.origin.map((axis) => axis / this.blockSize) as Vec3;
-    const distanceBlocks = (CASE_SPEED * CASE_FLIGHT_SECONDS) / this.blockSize;
+    const distanceBlocks = (speedMetresPerSimSecond * flightSimSeconds) / this.blockSize;
     const hit = raycast(origin, emission.direction, distanceBlocks, this.isSolid);
     const safeDistance = hit ? Math.max(0, hit.distance - 1e-6) : distanceBlocks;
     const endpoint: Vec3 = origin.map(
@@ -1637,8 +1651,8 @@ export class FirearmMechanics {
     if (!position) {
       return undefined;
     }
-    const dropHeight = emission.origin[1] - (position[1] * this.blockSize + 0.006);
-    const speed = hit ? Math.max(0, dropHeight / CASE_FLIGHT_SECONDS) : CASE_SPEED;
+    const dropHeight = emission.origin[1] - (position[1] * this.blockSize + landingLiftMetres);
+    const speed = hit ? Math.max(0, dropHeight / flightSimSeconds) : speedMetresPerSimSecond;
     return { position, direction: hit ? [0, -1, 0] : emission.direction, speed, verticalDrop: hit !== undefined };
   }
 
@@ -1673,8 +1687,9 @@ export class FirearmMechanics {
       return;
     }
     const seed = Math.floor(Rng.stream(item.uid, `cylinder:${time}:${chamber}`).next() * 4_294_967_296) >>> 0;
+    const landingAt = time + this.caseEjection().flightSimSeconds;
     item.firearm!.landings ??= [];
-    item.firearm!.landings.push({ at: time + CASE_FLIGHT_SECONDS, position: landing.position, type, seed });
+    item.firearm!.landings.push({ at: landingAt, position: landing.position, type, seed });
     this.active.add(item.uid);
     const modelId = defOf(this.inventory.registry, type).model ?? data.caseModelId;
     this.onEjection({
@@ -1685,7 +1700,7 @@ export class FirearmMechanics {
       seed,
       landingPosition: landing.position,
       startedAtSimSeconds: time,
-      landingAt: time + CASE_FLIGHT_SECONDS,
+      landingAt,
       ...(modelId ? { caseModelId: modelId } : {}),
     });
   }
@@ -1713,9 +1728,10 @@ export class FirearmMechanics {
     state.cycle!.ejected = true;
     if (landing) {
       const startedAt = this.ejectionAt(state, data);
+      const landingAt = startedAt + this.caseEjection().flightSimSeconds;
       state.landings ??= [];
       state.landings.push({
-        at: startedAt + CASE_FLIGHT_SECONDS,
+        at: landingAt,
         position: [...landing.position],
         type,
         seed: pending.seed,
@@ -1728,7 +1744,7 @@ export class FirearmMechanics {
         seed: pending.seed,
         landingPosition: landing.position,
         startedAtSimSeconds: startedAt,
-        landingAt: startedAt + CASE_FLIGHT_SECONDS,
+        landingAt,
         ...(data.caseModelId ? { caseModelId: data.caseModelId } : {}),
       });
     }

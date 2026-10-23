@@ -4,6 +4,7 @@
   "items": [
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -41,6 +42,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -78,6 +80,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -115,6 +118,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -152,6 +156,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -189,6 +194,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -226,6 +232,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -263,6 +270,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -300,6 +308,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -337,6 +346,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -374,6 +384,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -411,6 +422,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -448,6 +460,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -485,6 +498,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -522,6 +536,7 @@
     },
     {
       "connections": [],
+      "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -559,21 +574,277 @@
     },
     {
       "connections": [],
-      "id": "electrical_tape",
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "wall",
+        "turn": [0, 0, -90]
+      },
+      "id": "opened_beans",
+      "parts": [
+        {
+          "family": "openTin",
+          "finish": {
+            "body": "steel-grey",
+            "food": "paint-terracotta",
+            "label": "paint-terracotta",
+            "stripe": "paperboard-tan"
+          },
+          "id": "body",
+          "massKg": 0.10000000000000001,
+          "params": {
+            "beanCount": "6",
+            "beanRadius": "0.0060000000000000001",
+            "foodDepth": "0.0253",
+            "height": "0.11",
+            "hingeHeight": "0.0040000000000000001",
+            "hingeWidth": "0.012",
+            "labelHeight": "0.074800000000000005",
+            "labelThickness": "0.00029999999999999997",
+            "radius": "0.036999999999999998",
+            "rimWidth": "0.0014",
+            "serving": "beans",
+            "stripeHeight": "0.0030000000000000001",
+            "wall": "0.00080000000000000004"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "wall",
+        "turn": [0, 0, -90]
+      },
+      "id": "opened_soup",
+      "parts": [
+        {
+          "family": "openTin",
+          "finish": {
+            "body": "steel-grey",
+            "food": "paint-terracotta",
+            "label": "paperboard-tan",
+            "stripe": "paperboard-tan"
+          },
+          "id": "body",
+          "massKg": 0.10000000000000001,
+          "params": {
+            "beanCount": "6",
+            "beanRadius": "0.0060000000000000001",
+            "foodDepth": "0.0276",
+            "height": "0.12",
+            "hingeHeight": "0.0040000000000000001",
+            "hingeWidth": "0.012",
+            "labelHeight": "0.081600000000000006",
+            "labelThickness": "0.00029999999999999997",
+            "radius": "0.034000000000000002",
+            "rimWidth": "0.0014",
+            "serving": "soup",
+            "stripeHeight": "0.0030000000000000001",
+            "wall": "0.00080000000000000004"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "wall",
+        "turn": [0, 0, -90]
+      },
+      "id": "empty_can",
+      "parts": [
+        {
+          "family": "openTin",
+          "finish": {
+            "body": "steel-grey",
+            "food": "paint-terracotta",
+            "label": "paint-terracotta",
+            "stripe": "paperboard-tan"
+          },
+          "id": "body",
+          "massKg": 0.10000000000000001,
+          "params": {
+            "beanCount": "6",
+            "beanRadius": "0.0060000000000000001",
+            "foodDepth": "0.0253",
+            "height": "0.11",
+            "hingeHeight": "0.0040000000000000001",
+            "hingeWidth": "0.012",
+            "labelHeight": "0.074800000000000005",
+            "labelThickness": "0.00029999999999999997",
+            "radius": "0.036999999999999998",
+            "rimWidth": "0.0014",
+            "serving": "empty",
+            "stripeHeight": "0.0030000000000000001",
+            "wall": "0.00080000000000000004"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 90,
+        "solid": "grip-left",
+        "turn": [0, 0, 0]
+      },
+      "id": "can_opener",
+      "parts": [
+        {
+          "family": "handOpener",
+          "finish": {
+            "body": "steel-grey",
+            "grip": "plastic-red",
+            "key": "paint-charcoal",
+            "wheel": "steel-parkerized"
+          },
+          "id": "body",
+          "massKg": 0.10000000000000001,
+          "params": {
+            "cutterRadius": "0.0080000000000000002",
+            "cutterThickness": "0.002",
+            "feedRadius": "0.0089999999999999993",
+            "feedThickness": "0.0050000000000000001",
+            "gripDepth": "0.014",
+            "gripLength": "0.091999999999999998",
+            "gripWidth": "0.014",
+            "handleGap": "0.0080000000000000002",
+            "handleLength": "0.127",
+            "handleSplay": "9",
+            "jawGap": "0.01",
+            "jawLength": "0.036999999999999998",
+            "jawThickness": "0.0040000000000000001",
+            "jawWidth": "0.021000000000000001",
+            "keyLength": "0.042000000000000003",
+            "keyThickness": "0.0060000000000000001",
+            "keyWidth": "0.014",
+            "pivotRadius": "0.0040000000000000001",
+            "spindleHeight": "0.021999999999999999",
+            "spindleRadius": "0.0030000000000000001",
+            "tangDepth": "0.0060000000000000001",
+            "tangWidth": "0.0080000000000000002",
+            "toothCount": "12",
+            "toothDepth": "0.002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "aa_battery",
+      "parts": [
+        {
+          "family": "vessel",
+          "finish": {
+            "body": "steel-grey",
+            "cap": "steel-stainless",
+            "label": "paint-charcoal"
+          },
+          "id": "material",
+          "massKg": 0.023,
+          "params": {
+            "bandHeight": "0.034000000000000002",
+            "bandInset": "0.00014999999999999999",
+            "capHeight": "0.002",
+            "capRadius": "0.0030000000000000001",
+            "height": "0.045999999999999999",
+            "neckHeight": "0.001",
+            "neckRadius": "0.0030000000000000001",
+            "radius": "0.0070000000000000001",
+            "rimHeight": "0.001",
+            "shoulderHeight": "0.00050000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "fold-4",
+        "turn": [0, 0, 0]
+      },
+      "id": "rag",
+      "parts": [
+        {
+          "family": "foldedSheet",
+          "finish": {
+            "body": "cloth-rag",
+            "fold": "cloth-rag-shadow"
+          },
+          "id": "material",
+          "massKg": 0.050000000000000003,
+          "params": {
+            "faces": "[\n    {\n        \"indices\": [\n            0,\n            3,\n            4\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            0,\n            4,\n            1\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            1,\n            4,\n            2\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            2,\n            4,\n            5\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            3,\n            6,\n            4\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            6,\n            7,\n            4\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            4,\n            7,\n            8\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            4,\n            8,\n            5\n        ],\n        \"slot\": \"body\"\n    }\n]",
+            "thickness": "0.002",
+            "vertices": "[\n    [\n        -0.125,\n        0.003,\n        -0.07\n    ],\n    [\n        -0.018,\n        0.012,\n        -0.095\n    ],\n    [\n        0.1,\n        0.002,\n        -0.073\n    ],\n    [\n        -0.11,\n        0.018,\n        0.006\n    ],\n    [\n        0.005,\n        0.035,\n        -0.01\n    ],\n    [\n        0.125,\n        0.006,\n        0.018\n    ],\n    [\n        -0.083,\n        0.002,\n        0.095\n    ],\n    [\n        0.025,\n        0.009,\n        0.078\n    ],\n    [\n        0.105,\n        0.003,\n        0.095\n    ]\n]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.87, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, 0]
+      },
+      "id": "duct_tape",
       "parts": [
         {
           "family": "ring",
           "finish": {
-            "body": "paint-terracotta",
+            "body": "tape-grey",
             "core": "paperboard-tan"
           },
-          "id": "electrical_tape",
-          "massKg": 0.029999999999999999,
+          "id": "material",
+          "massKg": 0.14999999999999999,
           "params": {
-            "coreRadius": "0.016",
-            "height": "0.021000000000000001",
-            "innerRadius": "0.012",
-            "outerRadius": "0.040000000000000001"
+            "coreRadius": "0.02",
+            "height": "0.048000000000000001",
+            "innerRadius": "0.017999999999999999",
+            "outerRadius": "0.050000000000000003"
           },
           "ports": []
         }
@@ -581,46 +852,58 @@
     },
     {
       "connections": [],
-      "id": "sewing_thread",
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, 0]
+      },
+      "id": "nails",
       "parts": [
         {
-          "family": "spool",
+          "family": "turnedStock",
           "finish": {
-            "core": "paperboard-tan",
-            "winding": "paint-terracotta"
+            "body": "steel-grey"
           },
-          "id": "sewing_thread",
-          "massKg": 0.014999999999999999,
+          "id": "material",
+          "massKg": 0.0050000000000000001,
           "params": {
-            "coreRadius": "0.017999999999999999",
-            "flangeHeight": "0.0080000000000000002",
-            "flangeInset": "0.0040000000000000001",
-            "grooveDepth": "0.0015",
-            "height": "0.050000000000000003",
-            "outerRadius": "0.027",
-            "windingRadius": "0.025999999999999999",
-            "windings": "5"
+            "axis": "x",
+            "profile": "[\n    [\n        0,\n        0\n    ],\n    [\n        0.008,\n        0.0017\n    ],\n    [\n        0.067,\n        0.0017\n    ],\n    [\n        0.067,\n        0.0042\n    ],\n    [\n        0.07,\n        0.0042\n    ],\n    [\n        0.07,\n        0\n    ],\n    [\n        0,\n        0\n    ]\n]"
           },
           "ports": []
         }
-      ]
+      ],
+      "voxelGrain": 0.002
     },
     {
       "connections": [],
-      "id": "nylon_cord",
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "fold-0",
+        "turn": [0, 0, 0]
+      },
+      "id": "scrap_metal",
       "parts": [
         {
-          "family": "coil",
+          "family": "foldedSheet",
           "finish": {
-            "body": "cord-olive"
+            "body": "scrap-rusted",
+            "fold": "steel-grey"
           },
-          "id": "nylon_cord",
-          "massKg": 0.059999999999999998,
+          "id": "material",
+          "massKg": 0.5,
           "params": {
-            "pitch": "0.0060000000000000001",
-            "radius": "0.029000000000000001",
-            "tubeRadius": "0.0035000000000000001",
-            "turns": "4"
+            "faces": "[\n    {\n        \"indices\": [\n            0,\n            1,\n            2\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            0,\n            2,\n            3\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            0,\n            3,\n            4\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            0,\n            4,\n            5\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            0,\n            5,\n            6\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            0,\n            6,\n            7\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            0,\n            7,\n            8\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            0,\n            8,\n            9\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            0,\n            9,\n            10\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            0,\n            10,\n            1\n        ],\n        \"slot\": \"body\"\n    }\n]",
+            "thickness": "0.0030000000000000001",
+            "vertices": "[\n    [\n        0,\n        0.014,\n        0\n    ],\n    [\n        -0.125,\n        0.004,\n        -0.045\n    ],\n    [\n        -0.04,\n        0.008,\n        -0.075\n    ],\n    [\n        -0.02,\n        0.006,\n        -0.035\n    ],\n    [\n        0.015,\n        0.006,\n        -0.095\n    ],\n    [\n        0.105,\n        0.003,\n        -0.045\n    ],\n    [\n        0.075,\n        0.018,\n        0.015\n    ],\n    [\n        0.125,\n        0.036,\n        0.07\n    ],\n    [\n        0.025,\n        0.029,\n        0.095\n    ],\n    [\n        0.005,\n        0.014,\n        0.045\n    ],\n    [\n        -0.09,\n        0.004,\n        0.07\n    ]\n]"
           },
           "ports": []
         }
@@ -628,25 +911,591 @@
     },
     {
       "connections": [],
-      "id": "fuse",
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, 0]
+      },
+      "id": "stick",
       "parts": [
         {
-          "family": "fuse",
+          "family": "turnedStock",
+          "finish": {
+            "body": "wood-walnut"
+          },
+          "id": "material",
+          "massKg": 0.20000000000000001,
+          "params": {
+            "axis": "x",
+            "profile": "[\n    [\n        0,\n        0\n    ],\n    [\n        0,\n        0.009\n    ],\n    [\n        0.025,\n        0.013\n    ],\n    [\n        0.11,\n        0.01\n    ],\n    [\n        0.125,\n        0.016\n    ],\n    [\n        0.145,\n        0.011\n    ],\n    [\n        0.27,\n        0.009\n    ],\n    [\n        0.29,\n        0.012\n    ],\n    [\n        0.31,\n        0.008\n    ],\n    [\n        0.395,\n        0.006\n    ],\n    [\n        0.4,\n        0\n    ],\n    [\n        0,\n        0\n    ]\n]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, 0]
+      },
+      "id": "wax",
+      "parts": [
+        {
+          "family": "turnedStock",
+          "finish": {
+            "body": "wax-cream"
+          },
+          "id": "material",
+          "massKg": 0.050000000000000003,
+          "params": {
+            "axis": "y",
+            "profile": "[\n    [\n        0,\n        0\n    ],\n    [\n        0,\n        0.021\n    ],\n    [\n        0.007,\n        0.03\n    ],\n    [\n        0.02,\n        0.027\n    ],\n    [\n        0.029,\n        0.015\n    ],\n    [\n        0.031,\n        0\n    ],\n    [\n        0,\n        0\n    ]\n]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, 0]
+      },
+      "id": "wooden_plank",
+      "parts": [
+        {
+          "family": "cutStock",
+          "finish": {
+            "body": "wood-birch"
+          },
+          "id": "material",
+          "massKg": 0.5,
+          "params": {
+            "axis": "y",
+            "end": "0.021999999999999999",
+            "profile": "[\n    [\n        -0.045,\n        -0.4\n    ],\n    [\n        0.045,\n        -0.395\n    ],\n    [\n        0.045,\n        0.395\n    ],\n    [\n        -0.04,\n        0.4\n    ]\n]",
+            "start": "0"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, 0]
+      },
+      "id": "whetstone",
+      "parts": [
+        {
+          "family": "cutStock",
+          "finish": {
+            "body": "stone-whet"
+          },
+          "id": "material",
+          "massKg": 0.25,
+          "params": {
+            "axis": "y",
+            "end": "0.025000000000000001",
+            "profile": "[\n    [\n        -0.075,\n        -0.024\n    ],\n    [\n        0.075,\n        -0.024\n    ],\n    [\n        0.075,\n        0.024\n    ],\n    [\n        -0.075,\n        0.024\n    ]\n]",
+            "start": "0"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "material",
+        "roll": 0,
+        "solid": "fold-2",
+        "turn": [0, 0, 0]
+      },
+      "id": "field_patch",
+      "parts": [
+        {
+          "family": "foldedSheet",
+          "finish": {
+            "body": "steel-grey",
+            "fold": "paint-charcoal"
+          },
+          "id": "material",
+          "massKg": 0.12,
+          "params": {
+            "faces": "[\n    {\n        \"indices\": [\n            0,\n            1,\n            2\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            1,\n            3,\n            2\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            2,\n            3,\n            4\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            3,\n            5,\n            4\n        ],\n        \"slot\": \"fold\"\n    },\n    {\n        \"indices\": [\n            4,\n            5,\n            6\n        ],\n        \"slot\": \"body\"\n    },\n    {\n        \"indices\": [\n            5,\n            7,\n            6\n        ],\n        \"slot\": \"body\"\n    }\n]",
+            "thickness": "0.0015",
+            "vertices": "[\n    [\n        -0.09,\n        0.002,\n        -0.06\n    ],\n    [\n        -0.09,\n        0.002,\n        0.06\n    ],\n    [\n        -0.02,\n        0.009,\n        -0.058\n    ],\n    [\n        -0.02,\n        0.009,\n        0.058\n    ],\n    [\n        0.02,\n        0.004,\n        -0.058\n    ],\n    [\n        0.02,\n        0.004,\n        0.058\n    ],\n    [\n        0.09,\n        0.002,\n        -0.055\n    ],\n    [\n        0.09,\n        0.002,\n        0.055\n    ]\n]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "beans",
+      "parts": [
+        {
+          "family": "foodPortion",
+          "finish": {
+            "body": "paint-terracotta",
+            "chunks": "paperboard-tan"
+          },
+          "id": "body",
+          "massKg": 0.34999999999999998,
+          "params": {
+            "chunkLength": "0.010999999999999999",
+            "chunkRadius": "0.0030000000000000001",
+            "chunks": "27",
+            "height": "0.0040000000000000001",
+            "radius": "0.037499999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "soup",
+      "parts": [
+        {
+          "family": "foodPortion",
+          "finish": {
+            "body": "paint-terracotta",
+            "chunks": "plastic-green"
+          },
+          "id": "body",
+          "massKg": 0.33000000000000002,
+          "params": {
+            "chunkLength": "0.0060000000000000001",
+            "chunkRadius": "0.002",
+            "chunks": "7",
+            "height": "0.0089999999999999993",
+            "radius": "0.037499999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "apple",
+      "parts": [
+        {
+          "family": "stemmedFruit",
+          "finish": {
+            "body": "plastic-red",
+            "leaf": "plastic-green",
+            "stem": "wood-walnut"
+          },
+          "id": "body",
+          "massKg": 0.17999999999999999,
+          "params": {
+            "height": "0.070999999999999994",
+            "leafLength": "0.021000000000000001",
+            "leafThickness": "0.00080000000000000004",
+            "leafWidth": "0.010999999999999999",
+            "radius": "0.040000000000000001",
+            "stemHeight": "0.017000000000000001",
+            "stemRadius": "0.0016999999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "bandage",
+      "parts": [
+        {
+          "family": "woundRoll",
+          "finish": {
+            "body": "plastic-white",
+            "edge": "paperboard-tan"
+          },
+          "id": "body",
+          "massKg": 0.02,
+          "params": {
+            "boreRadius": "0.0089999999999999993",
+            "groove": "0.00069999999999999999",
+            "layers": "8",
+            "radius": "0.037499999999999999",
+            "tailLength": "0.035000000000000003",
+            "tailThickness": "0.00080000000000000004",
+            "width": "0.044999999999999998"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "antiseptic",
+      "parts": [
+        {
+          "family": "vessel",
+          "finish": {
+            "body": "paperboard-brown",
+            "cap": "plastic-red",
+            "label": "plastic-white"
+          },
+          "id": "body",
+          "massKg": 0.10000000000000001,
+          "params": {
+            "bandHeight": "0.044399999999999995",
+            "bandInset": "0.00029999999999999997",
+            "capHeight": "0.01",
+            "capRadius": "0.0184",
+            "height": "0.073999999999999996",
+            "neckHeight": "0.0080000000000000002",
+            "neckRadius": "0.01495",
+            "radius": "0.023",
+            "rimHeight": "0.001",
+            "shoulderHeight": "0.0080000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "antibiotics",
+      "parts": [
+        {
+          "family": "vessel",
+          "finish": {
+            "body": "plastic-white",
+            "cap": "plastic-white",
+            "label": "plastic-blue"
+          },
+          "id": "body",
+          "massKg": 0.050000000000000003,
+          "params": {
+            "bandHeight": "0.032399999999999998",
+            "bandInset": "0.00029999999999999997",
+            "capHeight": "0.016",
+            "capRadius": "0.019",
+            "height": "0.053999999999999999",
+            "neckHeight": "0.0050000000000000001",
+            "neckRadius": "0.0117",
+            "radius": "0.017999999999999999",
+            "rimHeight": "0.001",
+            "shoulderHeight": "0.0050000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "painkillers",
+      "parts": [
+        {
+          "family": "vessel",
+          "finish": {
+            "body": "plastic-white",
+            "cap": "plastic-white",
+            "label": "plastic-red"
+          },
+          "id": "body",
+          "massKg": 0.001,
+          "params": {
+            "bandHeight": "0.026399999999999996",
+            "bandInset": "0.00029999999999999997",
+            "capHeight": "0.016",
+            "capRadius": "0.019",
+            "height": "0.043999999999999997",
+            "neckHeight": "0.0050000000000000001",
+            "neckRadius": "0.0117",
+            "radius": "0.017999999999999999",
+            "rimHeight": "0.001",
+            "shoulderHeight": "0.0050000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "codeine",
+      "parts": [
+        {
+          "family": "vessel",
+          "finish": {
+            "body": "paperboard-brown",
+            "cap": "plastic-blue",
+            "label": "plastic-white"
+          },
+          "id": "body",
+          "massKg": 0.001,
+          "params": {
+            "bandHeight": "0.032399999999999998",
+            "bandInset": "0.00029999999999999997",
+            "capHeight": "0.016",
+            "capRadius": "0.019",
+            "height": "0.053999999999999999",
+            "neckHeight": "0.0050000000000000001",
+            "neckRadius": "0.0117",
+            "radius": "0.017999999999999999",
+            "rimHeight": "0.001",
+            "shoulderHeight": "0.0050000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "morphine",
+      "parts": [
+        {
+          "family": "vessel",
           "finish": {
             "body": "glass-grey",
-            "cap": "steel-grey"
+            "cap": "plastic-blue",
+            "label": "plastic-white"
           },
-          "id": "fuse",
-          "massKg": 0.01,
+          "id": "body",
+          "massKg": 0.02,
           "params": {
-            "capLength": "0.0080000000000000002",
-            "capRadius": "0.010999999999999999",
-            "length": "0.070000000000000007",
-            "radius": "0.0089999999999999993"
+            "bandHeight": "0.02",
+            "bandInset": "0.00029999999999999997",
+            "capHeight": "0.0080000000000000002",
+            "capRadius": "0.0050000000000000001",
+            "height": "0.050999999999999997",
+            "neckHeight": "0.0089999999999999993",
+            "neckRadius": "0.0040000000000000001",
+            "radius": "0.0089999999999999993",
+            "rimHeight": "0.001",
+            "shoulderHeight": "0.012"
           },
           "ports": []
         }
       ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "grenade",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "frag_grenade",
+      "parts": [
+        {
+          "family": "grenade",
+          "finish": {
+            "body": "polymer-od-green",
+            "metal": "steel-grey"
+          },
+          "id": "grenade",
+          "massKg": 0.40000000000000002,
+          "params": {
+            "headHeight": "0.012",
+            "headRadius": "0.012500000000000001",
+            "height": "0.068000000000000005",
+            "leverEndDegrees": "115",
+            "leverGap": "0.0015",
+            "leverThickness": "0.002",
+            "leverWidth": "0.014",
+            "neckHeight": "0.0080000000000000002",
+            "neckRadius": "0.01",
+            "radius": "0.032000000000000001",
+            "ringRadius": "0.010999999999999999",
+            "ringTube": "0.0012999999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "flame": {
+          "fraction": [1, 0.5, 0.5],
+          "part": "torch",
+          "solid": "head"
+        }
+      },
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "glow": "head",
+      "handling": {
+        "fraction": [0.29999999999999999, 0.5, 0.5],
+        "hold": "upright",
+        "part": "torch",
+        "rest": "upright",
+        "roll": 0,
+        "solid": "shaft",
+        "turn": [0, 0, 0]
+      },
+      "id": "torch",
+      "parts": [
+        {
+          "family": "torch",
+          "finish": {
+            "head": "cloth-charred",
+            "shaft": "wood-birch"
+          },
+          "id": "torch",
+          "massKg": 0.34999999999999998,
+          "params": {
+            "headLength": "0.10000000000000001",
+            "headRadius": "0.029999999999999999",
+            "length": "0.41999999999999998",
+            "shaftRadius": "0.014"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "flame": {
+          "fraction": [1, 0.5, 0.5],
+          "part": "candle",
+          "solid": "wick"
+        }
+      },
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.40000000000000002, 0.5, 0.5],
+        "hold": "upright",
+        "part": "candle",
+        "rest": "upright",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, 0]
+      },
+      "id": "candle",
+      "parts": [
+        {
+          "family": "candle",
+          "finish": {
+            "body": "wax-ivory",
+            "wick": "cloth-charred"
+          },
+          "id": "candle",
+          "massKg": 0.14999999999999999,
+          "params": {
+            "height": "0.10000000000000001",
+            "radius": "0.023",
+            "wickHeight": "0.012",
+            "wickRadius": "0.0011999999999999999"
+          },
+          "ports": []
+        }
+      ],
+      "voxelGrain": 0.002
     },
     {
       "connections": [
@@ -659,6 +1508,7 @@
           "to": "shade.arm"
         }
       ],
+      "exportMass": "parts",
       "id": "dead_desk_lamp",
       "parts": [
         {
@@ -693,10 +1543,10 @@
           "massKg": 0.25,
           "params": {
             "depth": "0.012",
-            "elbowX": "-0.025000000000000001",
-            "elbowY": "0.085000000000000006",
-            "endX": "0.070000000000000007",
-            "endY": "0.13",
+            "elbowX": "-0.02",
+            "elbowY": "0.10000000000000001",
+            "endX": "0.055",
+            "endY": "0.059999999999999998",
             "width": "0.01"
           },
           "ports": [
@@ -713,10 +1563,10 @@
               "gender": "female",
               "id": "shade",
               "mount": "assembly-joint",
-              "normal": [0, 1, 0],
-              "pos": [0.070000000000000007, 0.13, 0],
+              "normal": [0.80000000000000004, -0.59999999999999998, 0],
+              "pos": [0.055, 0.059999999999999998, 0],
               "required": true,
-              "up": [1, 0, 0]
+              "up": [-0.59999999999999998, -0.80000000000000004, 0]
             }
           ]
         },
@@ -744,6 +1594,4116 @@
               "up": [1, 0, 0]
             }
           ]
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "part",
+        "roll": 0,
+        "solid": "chest",
+        "turn": [0, 0, 0]
+      },
+      "id": "shambler_torso",
+      "parts": [
+        {
+          "family": "torso",
+          "finish": {
+            "bone": "body-bone",
+            "gore": "body-gore",
+            "pants": "cloth-pants-grey",
+            "shirt": "cloth-shirt-faded",
+            "skin": "body-skin-sickly"
+          },
+          "id": "part",
+          "massKg": 12,
+          "params": {
+            "chestDepth": "0.22",
+            "chestWidth": "0.40000000000000002",
+            "height": "0.59999999999999998",
+            "neckHeight": "0.059999999999999998",
+            "neckWidth": "0.10000000000000001",
+            "pelvisDepth": "0.20999999999999999",
+            "pelvisHeight": "0.20000000000000001",
+            "pelvisWidth": "0.34000000000000002",
+            "tear": "0.10000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "part",
+        "roll": 0,
+        "solid": "skull",
+        "turn": [0, 0, 0]
+      },
+      "id": "shambler_head",
+      "parts": [
+        {
+          "family": "head",
+          "finish": {
+            "bone": "body-bone",
+            "eye": "body-eye",
+            "gore": "body-gore",
+            "hair": "body-hair",
+            "mouth": "body-mouth",
+            "skin": "body-skin-sickly"
+          },
+          "id": "part",
+          "massKg": 5,
+          "params": {
+            "depth": "0.20000000000000001",
+            "hairCover": "0.059999999999999998",
+            "height": "0.23000000000000001",
+            "jawHeight": "0.070000000000000007",
+            "width": "0.17000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "forward",
+        "part": "part",
+        "roll": 0,
+        "solid": "end",
+        "turn": [0, 0, 0]
+      },
+      "id": "shambler_left_arm",
+      "parts": [
+        {
+          "family": "limb",
+          "finish": {
+            "bone": "body-bone",
+            "cloth": "cloth-shirt-faded",
+            "end": "body-skin-sickly",
+            "gore": "body-gore",
+            "skin": "body-skin-sickly"
+          },
+          "id": "part",
+          "massKg": 2.5,
+          "params": {
+            "endDepth": "0.035000000000000003",
+            "endLength": "0.17000000000000001",
+            "endReach": "0",
+            "endWidth": "0.085000000000000006",
+            "length": "0.65000000000000002",
+            "lowerDepth": "0.074999999999999997",
+            "lowerWidth": "0.074999999999999997",
+            "sleeve": "0.17999999999999999",
+            "upper": "0.29999999999999999",
+            "upperDepth": "0.095000000000000001",
+            "upperWidth": "0.095000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "forward",
+        "part": "part",
+        "roll": 0,
+        "solid": "end",
+        "turn": [0, 0, 0]
+      },
+      "id": "shambler_right_arm",
+      "parts": [
+        {
+          "family": "limb",
+          "finish": {
+            "bone": "body-bone",
+            "cloth": "cloth-shirt-faded",
+            "end": "body-skin-sickly",
+            "gore": "body-gore",
+            "skin": "body-skin-sickly"
+          },
+          "id": "part",
+          "massKg": 2.5,
+          "params": {
+            "endDepth": "0.035000000000000003",
+            "endLength": "0.17000000000000001",
+            "endReach": "0",
+            "endWidth": "0.085000000000000006",
+            "length": "0.65000000000000002",
+            "lowerDepth": "0.074999999999999997",
+            "lowerWidth": "0.074999999999999997",
+            "sleeve": "0.17999999999999999",
+            "upper": "0.29999999999999999",
+            "upperDepth": "0.095000000000000001",
+            "upperWidth": "0.095000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.20000000000000001, 0.5],
+        "hold": "forward",
+        "part": "part",
+        "roll": 0,
+        "solid": "lower-cloth",
+        "turn": [0, 0, 0]
+      },
+      "id": "shambler_left_leg",
+      "parts": [
+        {
+          "family": "limb",
+          "finish": {
+            "bone": "body-bone",
+            "cloth": "cloth-pants-grey",
+            "end": "rubber-black",
+            "gore": "body-gore",
+            "skin": "body-skin-sickly"
+          },
+          "id": "part",
+          "massKg": 4,
+          "params": {
+            "endDepth": "0.26000000000000001",
+            "endLength": "0.080000000000000002",
+            "endReach": "0.10000000000000001",
+            "endWidth": "0.10000000000000001",
+            "length": "0.84999999999999998",
+            "lowerDepth": "0.10000000000000001",
+            "lowerWidth": "0.10000000000000001",
+            "sleeve": "0.78000000000000003",
+            "upper": "0.41999999999999998",
+            "upperDepth": "0.14000000000000001",
+            "upperWidth": "0.14000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.20000000000000001, 0.5],
+        "hold": "forward",
+        "part": "part",
+        "roll": 0,
+        "solid": "lower-cloth",
+        "turn": [0, 0, 0]
+      },
+      "id": "shambler_right_leg",
+      "parts": [
+        {
+          "family": "limb",
+          "finish": {
+            "bone": "body-bone",
+            "cloth": "cloth-pants-grey",
+            "end": "rubber-black",
+            "gore": "body-gore",
+            "skin": "body-skin-sickly"
+          },
+          "id": "part",
+          "massKg": 4,
+          "params": {
+            "endDepth": "0.26000000000000001",
+            "endLength": "0.080000000000000002",
+            "endReach": "0.10000000000000001",
+            "endWidth": "0.10000000000000001",
+            "length": "0.84999999999999998",
+            "lowerDepth": "0.10000000000000001",
+            "lowerWidth": "0.10000000000000001",
+            "sleeve": "0.78000000000000003",
+            "upper": "0.41999999999999998",
+            "upperDepth": "0.14000000000000001",
+            "upperWidth": "0.14000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "base": {
+          "fraction": [0.5, 0, 0.5],
+          "part": "body",
+          "solid": "body"
+        },
+        "terminal_positive": {
+          "fraction": [0.80000000000000004, 1, 0.20000000000000001],
+          "part": "body",
+          "solid": "lid"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "car_battery",
+      "parts": [
+        {
+          "family": "carton",
+          "finish": {
+            "body": "plastic-black",
+            "cap": "plastic-black",
+            "label": "plastic-red"
+          },
+          "id": "body",
+          "massKg": 14,
+          "params": {
+            "bandHeight": "0.059999999999999998",
+            "bandInset": "0.00050000000000000001",
+            "depth": "0.17499999999999999",
+            "handleDepth": "0.040000000000000001",
+            "handleHeight": "0",
+            "handleWall": "0.0060000000000000001",
+            "handleWidth": "0.12",
+            "height": "0.17000000000000001",
+            "lidHeight": "0.02",
+            "width": "0.23999999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "beam": {
+          "fraction": [1, 0.5, 0.5],
+          "part": "body",
+          "solid": "body"
+        },
+        "mount": {
+          "fraction": [0, 0.5, 0.14999999999999999],
+          "part": "body",
+          "solid": "body"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "car_headlamp",
+      "parts": [
+        {
+          "family": "block",
+          "finish": {
+            "body": "glass-grey"
+          },
+          "id": "body",
+          "massKg": 1.2,
+          "params": {
+            "depth": "0.22",
+            "height": "0.16",
+            "width": "0.080000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "seat": {
+          "fraction": [0.5, 1, 0.5],
+          "part": "body",
+          "solid": "body"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hatchback_battery_tray",
+      "parts": [
+        {
+          "family": "block",
+          "finish": {
+            "body": "steel-grey"
+          },
+          "id": "body",
+          "massKg": 1.5,
+          "params": {
+            "depth": "0.20999999999999999",
+            "height": "0.02",
+            "width": "0.28000000000000003"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "seat": {
+          "fraction": [0.5, 1, 0.5],
+          "part": "body",
+          "solid": "body"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "pickup_battery_tray",
+      "parts": [
+        {
+          "family": "block",
+          "finish": {
+            "body": "steel-grey"
+          },
+          "id": "body",
+          "massKg": 2.2000000000000002,
+          "params": {
+            "depth": "0.23999999999999999",
+            "height": "0.029999999999999999",
+            "width": "0.32000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "cargo_space",
+      "parts": [
+        {
+          "family": "block",
+          "finish": {
+            "body": "plastic-green"
+          },
+          "id": "body",
+          "massKg": 0.20000000000000001,
+          "params": {
+            "depth": "0.10000000000000001",
+            "height": "0.10000000000000001",
+            "width": "0.10000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "pickup_bed_floor",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "deck": "paint-charcoal",
+            "steel": "steel-grey"
+          },
+          "id": "body",
+          "massKg": 45,
+          "params": {
+            "pieces": "[{\"id\": \"deck\", \"kind\": \"box\", \"max\": [-0.10000000000000001, 0.84999999999999998, 0.80000000000000004], \"min\": [-2.2000000000000002, 0.79999999999999993, -0.80000000000000004], \"slot\": \"deck\"}, {\"id\": \"bearers\", \"kind\": \"box\", \"max\": [-0.10000000000000001, 0.79999999999999993, 0.45000000000000001], \"min\": [-2.2000000000000002, 0.55000000000000004, -0.45000000000000001], \"slot\": \"steel\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "pickup_bed_side",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "paint": "paint-terracotta"
+          },
+          "id": "body",
+          "massKg": 24,
+          "params": {
+            "pieces": "[{\"id\": \"panel\", \"kind\": \"box\", \"max\": [-0.10000000000000001, 1.22, 0.8600000000000001], \"min\": [-2.2000000000000002, 0.62, 0.80000000000000004], \"slot\": \"paint\"}, {\"id\": \"wheel_tub\", \"kind\": \"box\", \"max\": [-0.69999999999999996, 0.94999999999999996, 0.80000000000000004], \"min\": [-1.7, 0.55000000000000004, 0.59999999999999998], \"slot\": \"paint\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "pickup_bed_front",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "paint": "paint-terracotta"
+          },
+          "id": "body",
+          "massKg": 10,
+          "params": {
+            "pieces": "[{\"id\": \"headboard\", \"kind\": \"box\", \"max\": [-0.040000000000000008, 1.22, 0.8600000000000001], \"min\": [-0.10000000000000001, 0.79999999999999993, -0.8600000000000001], \"slot\": \"paint\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "box_van_floor",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "deck": "paint-charcoal",
+            "steel": "steel-grey"
+          },
+          "id": "body",
+          "massKg": 180,
+          "params": {
+            "pieces": "[{\"id\": \"deck\", \"kind\": \"box\", \"max\": [1.2, 1, 1], \"min\": [-3, 0.96999999999999997, -1], \"slot\": \"deck\"}, {\"id\": \"subframe\", \"kind\": \"box\", \"max\": [1.2, 0.96999999999999997, 0.45000000000000001], \"min\": [-3, 0.71999999999999997, -0.45000000000000001], \"slot\": \"steel\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "box_van_side",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "paint": "plastic-white"
+          },
+          "id": "body",
+          "massKg": 70,
+          "params": {
+            "pieces": "[{\"id\": \"panel\", \"kind\": \"box\", \"max\": [1.2, 3, 1.0600000000000001], \"min\": [-3, 0.90000000000000002, 1], \"slot\": \"paint\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "box_van_front",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "paint": "plastic-white"
+          },
+          "id": "body",
+          "massKg": 45,
+          "params": {
+            "pieces": "[{\"id\": \"panel\", \"kind\": \"box\", \"max\": [1.26, 3, 1.0600000000000001], \"min\": [1.2, 1, -1.0600000000000001], \"slot\": \"paint\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "box_van_roof",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "paint": "plastic-white"
+          },
+          "id": "body",
+          "massKg": 40,
+          "params": {
+            "pieces": "[{\"id\": \"panel\", \"kind\": \"box\", \"max\": [1.26, 3.0600000000000001, 1.0600000000000001], \"min\": [-3, 3, -1.0600000000000001], \"slot\": \"paint\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "hub": {
+          "fraction": [0.5, 0.5, 0.5],
+          "part": "body",
+          "solid": "rim"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "wheel_205_55r16",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "rim": "steel-grey",
+            "tyre": "rubber-black"
+          },
+          "id": "body",
+          "massKg": 18,
+          "params": {
+            "pieces": "[{\"axis\": \"z\", \"id\": \"tyre\", \"kind\": \"turned\", \"origin\": [0, 0, 0], \"profile\": [[-0.10249999999999999, 0.20300000000000001], [-0.10249999999999999, 0.29499999999999998], [-0.085000000000000006, 0.316], [0.085000000000000006, 0.316], [0.10249999999999999, 0.29499999999999998], [0.10249999999999999, 0.20300000000000001], [-0.10249999999999999, 0.20300000000000001]], \"slot\": \"tyre\"}, {\"axis\": \"z\", \"id\": \"rim\", \"kind\": \"turned\", \"origin\": [0, 0, 0], \"profile\": [[-0.070000000000000007, 0], [-0.070000000000000007, 0.20300000000000001], [0.070000000000000007, 0.20300000000000001], [0.070000000000000007, 0], [-0.070000000000000007, 0]], \"slot\": \"rim\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "hips": {
+          "fraction": [0.40000000000000002, 1, 0.5],
+          "part": "body",
+          "solid": "cushion"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "front_seat",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "cloth": "cloth-seat",
+            "frame": "steel-grey"
+          },
+          "id": "body",
+          "massKg": 16,
+          "params": {
+            "pieces": "[{\"id\": \"base\", \"kind\": \"box\", \"max\": [0.25, 0.10000000000000001, 0.23999999999999999], \"min\": [-0.25, 0, -0.23999999999999999], \"slot\": \"frame\"}, {\"id\": \"cushion\", \"kind\": \"box\", \"max\": [0.23999999999999999, 0.23999999999999999, 0.25], \"min\": [-0.26000000000000001, 0.10000000000000001, -0.25], \"slot\": \"cloth\"}, {\"axis\": \"z\", \"end\": 0.25, \"id\": \"back\", \"kind\": \"prism\", \"profile\": [[-0.29999999999999999, 0.20000000000000001], [-0.17999999999999999, 0.20000000000000001], [-0.29999999999999999, 0.83999999999999997], [-0.41999999999999998, 0.83999999999999997]], \"slot\": \"cloth\", \"start\": -0.25}, {\"id\": \"headrest\", \"kind\": \"box\", \"max\": [-0.34999999999999998, 1.04, 0.13], \"min\": [-0.45000000000000001, 0.85999999999999999, -0.13], \"slot\": \"cloth\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "mount": {
+          "fraction": [0.5, 0.5, 0],
+          "part": "body",
+          "solid": "arm"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "door_mirror",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "glass": "glass-grey",
+            "housing": "polymer-black"
+          },
+          "id": "body",
+          "massKg": 1,
+          "params": {
+            "pieces": "[{\"id\": \"arm\", \"kind\": \"box\", \"max\": [0.029999999999999999, 0.059999999999999998, 0.059999999999999998], \"min\": [-0.029999999999999999, 0.02, 0], \"slot\": \"housing\"}, {\"id\": \"housing\", \"kind\": \"box\", \"max\": [0.040000000000000001, 0.12, 0.20000000000000001], \"min\": [-0.040000000000000001, 0, 0.059999999999999998], \"slot\": \"housing\"}, {\"id\": \"glass\", \"kind\": \"box\", \"max\": [-0.040000000000000001, 0.11, 0.19], \"min\": [-0.050000000000000003, 0.01, 0.070000000000000007], \"slot\": \"glass\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "column": {
+          "fraction": [1, 0.5, 0.5],
+          "part": "body",
+          "solid": "hub"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "steering_wheel",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "grip": "polymer-black",
+            "hub": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 2,
+          "params": {
+            "pieces": "[{\"axis\": \"x\", \"id\": \"rim\", \"kind\": \"turned\", \"origin\": [0, 0, 0], \"profile\": [[0, 0.17000000000000001], [0, 0.19], [0.029999999999999999, 0.19], [0.029999999999999999, 0.17000000000000001], [0, 0.17000000000000001]], \"slot\": \"grip\"}, {\"axis\": \"x\", \"id\": \"hub\", \"kind\": \"turned\", \"origin\": [0, 0, 0], \"profile\": [[0, 0], [0, 0.059999999999999998], [0.050000000000000003, 0.059999999999999998], [0.050000000000000003, 0], [0, 0]], \"slot\": \"hub\"}, {\"id\": \"spoke\", \"kind\": \"box\", \"max\": [0.029999999999999999, 0, 0.02], \"min\": [0.01, -0.17000000000000001, -0.02], \"slot\": \"hub\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "gear_lever",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "gaiter": "rubber-black",
+            "knob": "polymer-black",
+            "stick": "steel-grey"
+          },
+          "id": "body",
+          "massKg": 1,
+          "params": {
+            "pieces": "[{\"id\": \"gaiter\", \"kind\": \"box\", \"max\": [0.050000000000000003, 0.029999999999999999, 0.050000000000000003], \"min\": [-0.050000000000000003, 0, -0.050000000000000003], \"slot\": \"gaiter\"}, {\"axis\": \"y\", \"id\": \"stick\", \"kind\": \"turned\", \"origin\": [0, 0, 0], \"profile\": [[0, 0], [0, 0.0080000000000000002], [0.22, 0.0080000000000000002], [0.22, 0], [0, 0]], \"slot\": \"stick\"}, {\"axis\": \"y\", \"id\": \"knob\", \"kind\": \"turned\", \"origin\": [0, 0.20000000000000001, 0], \"profile\": [[0, 0], [0, 0.02], [0.029999999999999999, 0.025000000000000001], [0.050000000000000003, 0.014999999999999999], [0.055, 0], [0, 0]], \"slot\": \"knob\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hatchback_shell",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "carpet": "plastic-black",
+            "headliner": "cloth-rag",
+            "paint": "paint-oxblood",
+            "pan": "paint-charcoal",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 520,
+          "params": {
+            "pieces": "[{\"id\": \"floor_pan\", \"kind\": \"box\", \"max\": [0.69999999999999996, 0.29999999999999999, 0.80000000000000004], \"min\": [-0.94999999999999996, 0.20000000000000001, -0.80000000000000004], \"slot\": \"pan\"}, {\"id\": \"carpet\", \"kind\": \"box\", \"max\": [0.69999999999999996, 0.31, 0.76000000000000001], \"min\": [-0.94999999999999996, 0.29999999999999999, -0.76000000000000001], \"slot\": \"carpet\"}, {\"id\": \"tunnel\", \"kind\": \"box\", \"max\": [0.69999999999999996, 0.45000000000000001, 0.12], \"min\": [-0.59999999999999998, 0.29999999999999999, -0.12], \"slot\": \"carpet\"}, {\"id\": \"rear_floor\", \"kind\": \"box\", \"max\": [-0.94999999999999996, 0.47999999999999998, 0.80000000000000004], \"min\": [-1.98, 0.38, -0.80000000000000004], \"slot\": \"pan\"}, {\"id\": \"bulkhead\", \"kind\": \"box\", \"max\": [0.80000000000000004, 0.93000000000000005, 0.78000000000000003], \"min\": [0.69999999999999996, 0.29999999999999999, -0.78000000000000003], \"slot\": \"paint\"}, {\"id\": \"slam_panel\", \"kind\": \"box\", \"max\": [2, 0.80000000000000004, 0.59999999999999998], \"min\": [1.95, 0.34999999999999998, -0.59999999999999998], \"slot\": \"paint\"}, {\"id\": \"rear_panel\", \"kind\": \"box\", \"max\": [-1.98, 0.62, 0.80000000000000004], \"min\": [-2.0600000000000001, 0.45000000000000001, -0.80000000000000004], \"slot\": \"paint\"}, {\"id\": \"roof\", \"kind\": \"box\", \"max\": [0.14000000000000001, 1.4399999999999999, 0.69999999999999996], \"min\": [-1.6699999999999999, 1.3999999999999999, -0.69999999999999996], \"slot\": \"paint\"}, {\"id\": \"headliner\", \"kind\": \"box\", \"max\": [0.10000000000000001, 1.3999999999999999, 0.68000000000000005], \"min\": [-1.6000000000000001, 1.3799999999999999, -0.68000000000000005], \"slot\": \"headliner\"}, {\"id\": \"sill_near\", \"kind\": \"box\", \"max\": [0.80000000000000004, 0.29999999999999999, 0.86750000000000005], \"min\": [-0.91000000000000003, 0.17000000000000001, 0.78000000000000003], \"slot\": \"paint\"}, {\"id\": \"chassis_leg_near\", \"kind\": \"box\", \"max\": [1.95, 0.41999999999999998, 0.62], \"min\": [0.80000000000000004, 0.29999999999999999, 0.55000000000000004], \"slot\": \"pan\"}, {\"id\": \"strut_tower_near\", \"kind\": \"box\", \"max\": [1.7, 0.84999999999999998, 0.59999999999999998], \"min\": [0.84999999999999998, 0.41999999999999998, 0.55000000000000004], \"slot\": \"paint\"}, {\"id\": \"a_post_near\", \"kind\": \"box\", \"max\": [0.80000000000000004, 0.96999999999999997, 0.86750000000000005], \"min\": [0.69999999999999996, 0.29999999999999999, 0.78000000000000003], \"slot\": \"paint\"}, {\"axis\": \"z\", \"end\": 0.81999999999999995, \"id\": \"a_pillar_near\", \"kind\": \"prism\", \"profile\": [[0.66000000000000003, 0.96999999999999997], [0.80000000000000004, 0.96999999999999997], [0.14000000000000001, 1.3999999999999999], [0, 1.3999999999999999]], \"slot\": \"paint\", \"start\": 0.71999999999999997}, {\"id\": \"b_pillar_near\", \"kind\": \"box\", \"max\": [-0.26000000000000001, 1.3799999999999999, 0.83999999999999997], \"min\": [-0.35999999999999999, 0.29999999999999999, 0.78000000000000003], \"slot\": \"paint\"}, {\"id\": \"cant_rail_near\", \"kind\": \"box\", \"max\": [0.14000000000000001, 1.4199999999999999, 0.81999999999999995], \"min\": [-1.6699999999999999, 1.3599999999999999, 0.66000000000000003], \"slot\": \"paint\"}, {\"id\": \"quarter_rear_near\", \"kind\": \"box\", \"max\": [-1.6299999999999999, 0.96999999999999997, 0.86750000000000005], \"min\": [-1.96, 0.29999999999999999, 0.80000000000000004], \"slot\": \"paint\"}, {\"id\": \"quarter_arch_near\", \"kind\": \"box\", \"max\": [-1.1399999999999999, 0.96999999999999997, 0.86750000000000005], \"min\": [-1.6299999999999999, 0.68000000000000005, 0.80000000000000004], \"slot\": \"paint\"}, {\"id\": \"boot_side_near\", \"kind\": \"box\", \"max\": [-1, 0.96999999999999997, 0.80000000000000004], \"min\": [-1.98, 0.47999999999999998, 0.69999999999999996], \"slot\": \"trim\"}, {\"axis\": \"z\", \"end\": 0.81999999999999995, \"id\": \"c_pillar_near\", \"kind\": \"prism\", \"profile\": [[-1.98, 0.96999999999999997], [-1.1060000000000001, 0.96999999999999997], [-0.88600000000000012, 1.3999999999999999], [-1.6699999999999999, 1.3999999999999999]], \"slot\": \"paint\", \"start\": 0.73999999999999999}, {\"axis\": \"z\", \"end\": 0.73999999999999999, \"id\": \"d_pillar_near\", \"kind\": \"prism\", \"profile\": [[-1.98, 0.96999999999999997], [-1.8999999999999999, 0.96999999999999997], [-1.5899999999999999, 1.3999999999999999], [-1.6699999999999999, 1.3999999999999999]], \"slot\": \"paint\", \"start\": 0.62}, {\"id\": \"sill_far\", \"kind\": \"box\", \"max\": [0.80000000000000004, 0.29999999999999999, -0.78000000000000003], \"min\": [-0.91000000000000003, 0.17000000000000001, -0.86750000000000005], \"slot\": \"paint\"}, {\"id\": \"chassis_leg_far\", \"kind\": \"box\", \"max\": [1.95, 0.41999999999999998, -0.55000000000000004], \"min\": [0.80000000000000004, 0.29999999999999999, -0.62], \"slot\": \"pan\"}, {\"id\": \"strut_tower_far\", \"kind\": \"box\", \"max\": [1.7, 0.84999999999999998, -0.55000000000000004], \"min\": [0.84999999999999998, 0.41999999999999998, -0.59999999999999998], \"slot\": \"paint\"}, {\"id\": \"a_post_far\", \"kind\": \"box\", \"max\": [0.80000000000000004, 0.96999999999999997, -0.78000000000000003], \"min\": [0.69999999999999996, 0.29999999999999999, -0.86750000000000005], \"slot\": \"paint\"}, {\"axis\": \"z\", \"end\": -0.71999999999999997, \"id\": \"a_pillar_far\", \"kind\": \"prism\", \"profile\": [[0.66000000000000003, 0.96999999999999997], [0.80000000000000004, 0.96999999999999997], [0.14000000000000001, 1.3999999999999999], [0, 1.3999999999999999]], \"slot\": \"paint\", \"start\": -0.81999999999999995}, {\"id\": \"b_pillar_far\", \"kind\": \"box\", \"max\": [-0.26000000000000001, 1.3799999999999999, -0.78000000000000003], \"min\": [-0.35999999999999999, 0.29999999999999999, -0.83999999999999997], \"slot\": \"paint\"}, {\"id\": \"cant_rail_far\", \"kind\": \"box\", \"max\": [0.14000000000000001, 1.4199999999999999, -0.66000000000000003], \"min\": [-1.6699999999999999, 1.3599999999999999, -0.81999999999999995], \"slot\": \"paint\"}, {\"id\": \"quarter_rear_far\", \"kind\": \"box\", \"max\": [-1.6299999999999999, 0.96999999999999997, -0.80000000000000004], \"min\": [-1.96, 0.29999999999999999, -0.86750000000000005], \"slot\": \"paint\"}, {\"id\": \"quarter_arch_far\", \"kind\": \"box\", \"max\": [-1.1399999999999999, 0.96999999999999997, -0.80000000000000004], \"min\": [-1.6299999999999999, 0.68000000000000005, -0.86750000000000005], \"slot\": \"paint\"}, {\"id\": \"boot_side_far\", \"kind\": \"box\", \"max\": [-1, 0.96999999999999997, -0.69999999999999996], \"min\": [-1.98, 0.47999999999999998, -0.80000000000000004], \"slot\": \"trim\"}, {\"axis\": \"z\", \"end\": -0.73999999999999999, \"id\": \"c_pillar_far\", \"kind\": \"prism\", \"profile\": [[-1.98, 0.96999999999999997], [-1.1060000000000001, 0.96999999999999997], [-0.88600000000000012, 1.3999999999999999], [-1.6699999999999999, 1.3999999999999999]], \"slot\": \"paint\", \"start\": -0.81999999999999995}, {\"axis\": \"z\", \"end\": -0.62, \"id\": \"d_pillar_far\", \"kind\": \"prism\", \"profile\": [[-1.98, 0.96999999999999997], [-1.8999999999999999, 0.96999999999999997], [-1.5899999999999999, 1.3999999999999999], [-1.6699999999999999, 1.3999999999999999]], \"slot\": \"paint\", \"start\": -0.73999999999999999}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "hinge_a": {
+          "fraction": [1, 0.20000000000000001, 1],
+          "part": "body",
+          "solid": "skin"
+        },
+        "hinge_b": {
+          "fraction": [1, 0.80000000000000004, 1],
+          "part": "body",
+          "solid": "skin"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hatchback_front_door",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "glass": "glass-clear",
+            "paint": "paint-oxblood",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 24,
+          "params": {
+            "pieces": "[{\"id\": \"skin\", \"kind\": \"box\", \"max\": [0.69999999999999996, 0.96999999999999997, 0.86750000000000005], \"min\": [-0.26000000000000001, 0.29999999999999999, 0.80000000000000004], \"slot\": \"paint\"}, {\"id\": \"trim\", \"kind\": \"box\", \"max\": [0.67999999999999994, 0.94999999999999996, 0.80000000000000004], \"min\": [-0.24000000000000002, 0.32000000000000001, 0.77000000000000002], \"slot\": \"trim\"}, {\"axis\": \"z\", \"end\": 0.81000000000000005, \"id\": \"glass\", \"kind\": \"prism\", \"profile\": [[-0.26000000000000001, 0.96999999999999997], [0.69999999999999996, 0.96999999999999997], [0.086046511627906996, 1.3699999999999999], [-0.26000000000000001, 1.3699999999999999]], \"slot\": \"glass\", \"start\": 0.80000000000000004}, {\"id\": \"handle\", \"kind\": \"box\", \"max\": [-0.059999999999999998, 0.89000000000000001, 0.88250000000000006], \"min\": [-0.17999999999999999, 0.85999999999999999, 0.86750000000000005], \"slot\": \"trim\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "hinge_a": {
+          "fraction": [1, 0.20000000000000001, 1],
+          "part": "body",
+          "solid": "skin"
+        },
+        "hinge_b": {
+          "fraction": [1, 0.80000000000000004, 1],
+          "part": "body",
+          "solid": "skin"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hatchback_rear_door",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "glass": "glass-clear",
+            "paint": "paint-oxblood",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 20,
+          "params": {
+            "pieces": "[{\"id\": \"skin\", \"kind\": \"box\", \"max\": [-0.35999999999999999, 0.96999999999999997, 0.86750000000000005], \"min\": [-0.91000000000000003, 0.29999999999999999, 0.80000000000000004], \"slot\": \"paint\"}, {\"id\": \"skin_arch\", \"kind\": \"box\", \"max\": [-0.91000000000000003, 0.96999999999999997, 0.86750000000000005], \"min\": [-1.1399999999999999, 0.68000000000000005, 0.80000000000000004], \"slot\": \"paint\"}, {\"id\": \"trim\", \"kind\": \"box\", \"max\": [-0.38, 0.94999999999999996, 0.80000000000000004], \"min\": [-1.0860000000000001, 0.32000000000000001, 0.77000000000000002], \"slot\": \"trim\"}, {\"axis\": \"z\", \"end\": 0.81000000000000005, \"id\": \"glass\", \"kind\": \"prism\", \"profile\": [[-1.1060000000000001, 0.96999999999999997], [-0.35999999999999999, 0.96999999999999997], [-0.35999999999999999, 1.3699999999999999], [-0.90134883720930237, 1.3699999999999999]], \"slot\": \"glass\", \"start\": 0.80000000000000004}, {\"id\": \"handle\", \"kind\": \"box\", \"max\": [-0.90600000000000014, 0.89000000000000001, 0.88250000000000006], \"min\": [-1.026, 0.85999999999999999, 0.86750000000000005], \"slot\": \"trim\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "hinge_a": {
+          "fraction": [1, 1, 1],
+          "part": "body",
+          "solid": "glass"
+        },
+        "hinge_b": {
+          "fraction": [1, 1, 0],
+          "part": "body",
+          "solid": "glass"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hatchback_tailgate",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "glass": "glass-clear",
+            "paint": "paint-oxblood",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 16,
+          "params": {
+            "pieces": "[{\"id\": \"skin\", \"kind\": \"box\", \"max\": [-1.98, 0.96999999999999997, 0.62], \"min\": [-2.02, 0.62, -0.62], \"slot\": \"paint\"}, {\"axis\": \"z\", \"end\": 0.59999999999999998, \"id\": \"glass\", \"kind\": \"prism\", \"profile\": [[-1.99, 0.96999999999999997], [-1.95, 0.96999999999999997], [-1.6399999999999999, 1.3999999999999999], [-1.6799999999999999, 1.3999999999999999]], \"slot\": \"glass\", \"start\": -0.59999999999999998}, {\"id\": \"handle\", \"kind\": \"box\", \"max\": [-2.02, 0.80000000000000004, 0.12], \"min\": [-2.0299999999999998, 0.75, -0.12], \"slot\": \"trim\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hatchback_windscreen",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "glass": "glass-clear"
+          },
+          "id": "body",
+          "massKg": 11,
+          "params": {
+            "pieces": "[{\"axis\": \"z\", \"end\": 0.71999999999999997, \"id\": \"glass\", \"kind\": \"prism\", \"profile\": [[0.69999999999999996, 0.96999999999999997], [0.76000000000000001, 0.96999999999999997], [0.099999999999999978, 1.3999999999999999], [0.039999999999999925, 1.3999999999999999]], \"slot\": \"glass\", \"start\": -0.71999999999999997}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hatchback_bonnet",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "paint": "paint-oxblood"
+          },
+          "id": "body",
+          "massKg": 12,
+          "params": {
+            "pieces": "[{\"axis\": \"z\", \"end\": 0.76000000000000001, \"id\": \"skin\", \"kind\": \"prism\", \"profile\": [[0.80000000000000004, 0.91999999999999993], [2, 0.79399999999999993], [2, 0.81399999999999995], [0.80000000000000004, 0.93999999999999995]], \"slot\": \"paint\", \"start\": -0.76000000000000001}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hatchback_front_wing",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "paint": "paint-oxblood"
+          },
+          "id": "body",
+          "massKg": 4,
+          "params": {
+            "pieces": "[{\"id\": \"rear\", \"kind\": \"box\", \"max\": [0.88, 0.93159999999999998, 0.86750000000000005], \"min\": [0.80000000000000004, 0.29999999999999999, 0.80000000000000004], \"slot\": \"paint\"}, {\"axis\": \"z\", \"end\": 0.86750000000000005, \"id\": \"arch\", \"kind\": \"prism\", \"profile\": [[0.88, 0.68000000000000005], [1.6000000000000001, 0.68000000000000005], [1.6000000000000001, 0.85599999999999998], [0.88, 0.93159999999999998]], \"slot\": \"paint\", \"start\": 0.80000000000000004}, {\"axis\": \"z\", \"end\": 0.86750000000000005, \"id\": \"nose\", \"kind\": \"prism\", \"profile\": [[1.6000000000000001, 0.34999999999999998], [2, 0.34999999999999998], [2, 0.81399999999999995], [1.6000000000000001, 0.85599999999999998]], \"slot\": \"paint\", \"start\": 0.80000000000000004}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hatchback_front_bumper",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "glass": "glass-clear",
+            "paint": "paint-oxblood",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 6,
+          "params": {
+            "pieces": "[{\"id\": \"bar\", \"kind\": \"box\", \"max\": [2.0750000000000002, 0.55000000000000004, 0.83750000000000002], \"min\": [1.95, 0.25, -0.83750000000000002], \"slot\": \"paint\"}, {\"id\": \"grille\", \"kind\": \"box\", \"max\": [2.0299999999999998, 0.78000000000000003, 0.40000000000000002], \"min\": [1.98, 0.57999999999999996, -0.40000000000000002], \"slot\": \"trim\"}, {\"id\": \"intake\", \"kind\": \"box\", \"max\": [2.085, 0.41999999999999998, 0.40000000000000002], \"min\": [2.0750000000000002, 0.29999999999999999, -0.40000000000000002], \"slot\": \"trim\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hatchback_rear_bumper",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "glass": "glass-clear",
+            "paint": "paint-oxblood",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 5,
+          "params": {
+            "pieces": "[{\"id\": \"bar\", \"kind\": \"box\", \"max\": [-1.95, 0.55000000000000004, 0.83750000000000002], \"min\": [-2.0750000000000002, 0.25, -0.83750000000000002], \"slot\": \"paint\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hatchback_tail_lamp",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "lens": "plastic-red"
+          },
+          "id": "body",
+          "massKg": 1,
+          "params": {
+            "pieces": "[{\"id\": \"lens\", \"kind\": \"box\", \"max\": [-1.96, 0.88, 0.83999999999999997], \"min\": [-2.0299999999999998, 0.62, 0.62], \"slot\": \"lens\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "hub": {
+          "fraction": [0.5, 0.5, 1],
+          "part": "body",
+          "solid": "knuckle"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hatchback_front_strut",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "spring": "paint-charcoal",
+            "steel": "steel-grey"
+          },
+          "id": "body",
+          "massKg": 14,
+          "params": {
+            "pieces": "[{\"id\": \"lower_arm\", \"kind\": \"box\", \"max\": [1.3999999999999999, 0.26000000000000001, 0.59999999999999998], \"min\": [1.1000000000000001, 0.20000000000000001, 0.34999999999999998], \"slot\": \"steel\"}, {\"id\": \"knuckle\", \"kind\": \"box\", \"max\": [1.29, 0.38, 0.64500000000000002], \"min\": [1.1899999999999999, 0.26000000000000001, 0.59999999999999998], \"slot\": \"steel\"}, {\"axis\": \"y\", \"id\": \"damper\", \"kind\": \"turned\", \"origin\": [1.24, 0.38, 0.62], \"profile\": [[0, 0], [0, 0.035000000000000003], [0.46999999999999997, 0.035000000000000003], [0.46999999999999997, 0], [0, 0]], \"slot\": \"spring\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hatchback_rear_axle",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "spring": "paint-charcoal",
+            "steel": "steel-grey"
+          },
+          "id": "body",
+          "massKg": 30,
+          "params": {
+            "pieces": "[{\"id\": \"beam\", \"kind\": \"box\", \"max\": [-1.02, 0.33000000000000002, 0.56000000000000005], \"min\": [-1.1000000000000001, 0.25, -0.56000000000000005], \"slot\": \"steel\"}, {\"id\": \"trailing_arm_near\", \"kind\": \"box\", \"max\": [-0.95999999999999996, 0.34000000000000002, 0.59999999999999998], \"min\": [-1.3, 0.27000000000000002, 0.56000000000000005], \"slot\": \"steel\"}, {\"id\": \"stub_near\", \"kind\": \"box\", \"max\": [-1.23, 0.35999999999999999, 0.64500000000000002], \"min\": [-1.3100000000000001, 0.28000000000000003, 0.59999999999999998], \"slot\": \"steel\"}, {\"axis\": \"y\", \"id\": \"spring_seat_near\", \"kind\": \"turned\", \"origin\": [-1.22, 0.34000000000000002, 0.5], \"profile\": [[0, 0], [0, 0.044999999999999998], [0.040000000000000001, 0.044999999999999998], [0.040000000000000001, 0], [0, 0]], \"slot\": \"spring\"}, {\"id\": \"trailing_arm_far\", \"kind\": \"box\", \"max\": [-0.95999999999999996, 0.34000000000000002, -0.56000000000000005], \"min\": [-1.3, 0.27000000000000002, -0.59999999999999998], \"slot\": \"steel\"}, {\"id\": \"stub_far\", \"kind\": \"box\", \"max\": [-1.23, 0.35999999999999999, -0.59999999999999998], \"min\": [-1.3100000000000001, 0.28000000000000003, -0.64500000000000002], \"slot\": \"steel\"}, {\"axis\": \"y\", \"id\": \"spring_seat_far\", \"kind\": \"turned\", \"origin\": [-1.22, 0.34000000000000002, -0.5], \"profile\": [[0, 0], [0, 0.044999999999999998], [0.040000000000000001, 0.044999999999999998], [0.040000000000000001, 0], [0, 0]], \"slot\": \"spring\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hatchback_engine",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "casting": "steel-grey",
+            "cover": "paint-charcoal"
+          },
+          "id": "body",
+          "massKg": 140,
+          "params": {
+            "pieces": "[{\"id\": \"sump\", \"kind\": \"box\", \"max\": [1.5800000000000001, 0.38, 0.20000000000000001], \"min\": [1.3200000000000001, 0.29999999999999999, -0.25], \"slot\": \"casting\"}, {\"id\": \"block\", \"kind\": \"box\", \"max\": [1.6200000000000001, 0.71999999999999997, 0.25], \"min\": [1.3, 0.38, -0.29999999999999999], \"slot\": \"casting\"}, {\"id\": \"head\", \"kind\": \"box\", \"max\": [1.6000000000000001, 0.80000000000000004, 0.23000000000000001], \"min\": [1.3300000000000001, 0.71999999999999997, -0.28000000000000003], \"slot\": \"casting\"}, {\"id\": \"cam_cover\", \"kind\": \"box\", \"max\": [1.55, 0.82999999999999996, 0.20999999999999999], \"min\": [1.3500000000000001, 0.80000000000000004, -0.26000000000000001], \"slot\": \"cover\"}, {\"id\": \"intake\", \"kind\": \"box\", \"max\": [1.3, 0.75, 0.20000000000000001], \"min\": [1.24, 0.55000000000000004, -0.25], \"slot\": \"casting\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hatchback_gearbox",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "casting": "steel-grey"
+          },
+          "id": "body",
+          "massKg": 35,
+          "params": {
+            "pieces": "[{\"id\": \"case\", \"kind\": \"box\", \"max\": [1.5, 0.62, -0.29999999999999999], \"min\": [1.22, 0.33000000000000002, -0.52000000000000002], \"slot\": \"casting\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hatchback_radiator",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "core": "paint-charcoal"
+          },
+          "id": "body",
+          "massKg": 6,
+          "params": {
+            "pieces": "[{\"id\": \"core\", \"kind\": \"box\", \"max\": [1.9199999999999999, 0.78000000000000003, 0.5], \"min\": [1.8600000000000001, 0.38, -0.5], \"slot\": \"core\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hatchback_fuel_tank",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "tank": "polymer-black"
+          },
+          "id": "body",
+          "massKg": 8,
+          "params": {
+            "pieces": "[{\"id\": \"tank\", \"kind\": \"box\", \"max\": [-0.5, 0.20000000000000001, -0.14999999999999999], \"min\": [-0.92000000000000004, 0.12, -0.65000000000000002], \"slot\": \"tank\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hatchback_exhaust",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "steel": "scrap-rusted"
+          },
+          "id": "body",
+          "massKg": 12,
+          "params": {
+            "pieces": "[{\"id\": \"pipe\", \"kind\": \"box\", \"max\": [1.3, 0.17999999999999999, 0.11], \"min\": [-1.3999999999999999, 0.13, 0.050000000000000003], \"slot\": \"steel\"}, {\"id\": \"silencer\", \"kind\": \"box\", \"max\": [-1.3999999999999999, 0.32000000000000001, 0.29999999999999999], \"min\": [-1.8500000000000001, 0.16, -0.29999999999999999], \"slot\": \"steel\"}, {\"id\": \"tailpipe\", \"kind\": \"box\", \"max\": [-1.8500000000000001, 0.25, 0.26000000000000001], \"min\": [-2.1000000000000001, 0.20000000000000001, 0.20000000000000001], \"slot\": \"steel\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hatchback_dashboard",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 14,
+          "params": {
+            "pieces": "[{\"id\": \"lower\", \"kind\": \"box\", \"max\": [0.69999999999999996, 0.80000000000000004, 0.73999999999999999], \"min\": [0.55000000000000004, 0.45000000000000001, -0.73999999999999999], \"slot\": \"trim\"}, {\"id\": \"top\", \"kind\": \"box\", \"max\": [0.69999999999999996, 0.92000000000000004, 0.73999999999999999], \"min\": [0.38, 0.80000000000000004, -0.73999999999999999], \"slot\": \"trim\"}, {\"id\": \"console\", \"kind\": \"box\", \"max\": [0.55000000000000004, 0.55000000000000004, 0.10000000000000001], \"min\": [0.10000000000000001, 0.29999999999999999, -0.10000000000000001], \"slot\": \"trim\"}, {\"id\": \"column\", \"kind\": \"box\", \"max\": [0.55000000000000004, 0.81999999999999995, 0.40999999999999998], \"min\": [0.33000000000000002, 0.73999999999999999, 0.33000000000000002], \"slot\": \"trim\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hatchback_rear_seat",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "cloth": "cloth-seat",
+            "frame": "steel-grey"
+          },
+          "id": "body",
+          "massKg": 20,
+          "params": {
+            "pieces": "[{\"id\": \"base\", \"kind\": \"box\", \"max\": [-0.55000000000000004, 0.44, 0.68000000000000005], \"min\": [-0.94999999999999996, 0.29999999999999999, -0.68000000000000005], \"slot\": \"frame\"}, {\"id\": \"cushion\", \"kind\": \"box\", \"max\": [-0.52000000000000002, 0.55000000000000004, 0.68000000000000005], \"min\": [-1, 0.44, -0.68000000000000005], \"slot\": \"cloth\"}, {\"axis\": \"z\", \"end\": 0.68000000000000005, \"id\": \"back\", \"kind\": \"prism\", \"profile\": [[-1.05, 0.53000000000000003], [-0.94999999999999996, 0.53000000000000003], [-1.1200000000000001, 1.2], [-1.22, 1.2]], \"slot\": \"cloth\", \"start\": -0.68000000000000005}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_frame_rail",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 110,
+          "params": {
+            "pieces": "[{\"id\": \"rail\", \"kind\": \"box\", \"max\": [2.875, 0.53125, 0.5625], \"min\": [-2.875, 0.40625, 0.4375], \"slot\": \"chassis\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_crossmember",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 15,
+          "params": {
+            "pieces": "[{\"id\": \"beam\", \"kind\": \"box\", \"max\": [0.125, 0.09375, 0.875], \"min\": [0, 0, 0], \"slot\": \"chassis\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "hub": {
+          "fraction": [0.5, 0.5, 0.5],
+          "part": "body",
+          "solid": "rim"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_wheel",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "rim": "steel-grey",
+            "tyre": "rubber-black"
+          },
+          "id": "body",
+          "massKg": 30,
+          "params": {
+            "pieces": "[{\"axis\": \"z\", \"id\": \"tyre\", \"kind\": \"turned\", \"origin\": [0, 0, 0], \"profile\": [[-0.109375, 0.203125], [-0.109375, 0.375], [0.109375, 0.375], [0.109375, 0.203125], [-0.109375, 0.203125]], \"slot\": \"tyre\"}, {\"axis\": \"z\", \"id\": \"rim\", \"kind\": \"turned\", \"origin\": [0, 0, 0], \"profile\": [[-0.09375, 0], [-0.09375, 0.203125], [0.09375, 0.203125], [0.09375, 0], [-0.09375, 0]], \"slot\": \"rim\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_front_axle",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 140,
+          "params": {
+            "pieces": "[{\"id\": \"beam\", \"kind\": \"box\", \"max\": [1.96875, 0.40625, 0.5625], \"min\": [1.84375, 0.3125, -0.5625], \"slot\": \"chassis\"}, {\"id\": \"diff\", \"kind\": \"box\", \"max\": [2.0625, 0.40625, 0.09375], \"min\": [1.78125, 0.1875, -0.21875], \"slot\": \"chassis\"}, {\"axis\": \"z\", \"id\": \"hub_near\", \"kind\": \"turned\", \"origin\": [1.90625, 0.375, 0.578125], \"profile\": [[-0.015625, 0], [-0.015625, 0.140625], [0.015625, 0.140625], [0.015625, 0], [-0.015625, 0]], \"slot\": \"hub\"}, {\"axis\": \"z\", \"id\": \"hub_far\", \"kind\": \"turned\", \"origin\": [1.90625, 0.375, -0.578125], \"profile\": [[-0.015625, 0], [-0.015625, 0.140625], [0.015625, 0.140625], [0.015625, 0], [-0.015625, 0]], \"slot\": \"hub\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_rear_axle",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 140,
+          "params": {
+            "pieces": "[{\"id\": \"beam\", \"kind\": \"box\", \"max\": [-1.4375, 0.40625, 0.5625], \"min\": [-1.5625, 0.3125, -0.5625], \"slot\": \"chassis\"}, {\"id\": \"diff\", \"kind\": \"box\", \"max\": [-1.34375, 0.40625, 0.09375], \"min\": [-1.625, 0.1875, -0.21875], \"slot\": \"chassis\"}, {\"axis\": \"z\", \"id\": \"hub_near\", \"kind\": \"turned\", \"origin\": [-1.5, 0.375, 0.578125], \"profile\": [[-0.015625, 0], [-0.015625, 0.140625], [0.015625, 0.140625], [0.015625, 0], [-0.015625, 0]], \"slot\": \"hub\"}, {\"axis\": \"z\", \"id\": \"hub_far\", \"kind\": \"turned\", \"origin\": [-1.5, 0.375, -0.578125], \"profile\": [[-0.015625, 0], [-0.015625, 0.140625], [0.015625, 0.140625], [0.015625, 0], [-0.015625, 0]], \"slot\": \"hub\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_engine",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 280,
+          "params": {
+            "pieces": "[{\"id\": \"block\", \"kind\": \"box\", \"max\": [2.25, 0.8125, 0.3125], \"min\": [1.375, 0.53125, -0.3125], \"slot\": \"engine\"}, {\"id\": \"block_far\", \"kind\": \"box\", \"max\": [2.25, 0.90625, -0.25], \"min\": [1.375, 0.8125, -0.3125], \"slot\": \"engine\"}, {\"id\": \"block_near\", \"kind\": \"box\", \"max\": [2.25, 0.90625, 0.3125], \"min\": [1.375, 0.8125, 0.25], \"slot\": \"engine\"}, {\"id\": \"block_rear\", \"kind\": \"box\", \"max\": [1.4375, 0.90625, 0.25], \"min\": [1.375, 0.8125, -0.25], \"slot\": \"engine\"}, {\"id\": \"block_front\", \"kind\": \"box\", \"max\": [2.25, 0.90625, 0.25], \"min\": [2.1875, 0.8125, -0.25], \"slot\": \"engine\"}, {\"id\": \"top\", \"kind\": \"box\", \"max\": [2.1875, 0.90625, 0.25], \"min\": [1.4375, 0.8125, -0.25], \"slot\": \"alloy\"}, {\"id\": \"sump\", \"kind\": \"box\", \"max\": [2.125, 0.53125, 0.1875], \"min\": [1.5, 0.4375, -0.1875], \"slot\": \"engine\"}, {\"id\": \"mount_far\", \"kind\": \"box\", \"max\": [1.75, 0.53125, -0.3125], \"min\": [1.625, 0.46875, -0.4375], \"slot\": \"chassis\"}, {\"id\": \"mount_near\", \"kind\": \"box\", \"max\": [1.75, 0.53125, 0.4375], \"min\": [1.625, 0.46875, 0.3125], \"slot\": \"chassis\"}, {\"axis\": \"x\", \"id\": \"fan\", \"kind\": \"turned\", \"origin\": [2.28125, 0.71875, 0], \"profile\": [[-0.03125, 0], [-0.03125, 0.171875], [0.03125, 0.171875], [0.03125, 0], [-0.03125, 0]], \"slot\": \"trim\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_gearbox",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 70,
+          "params": {
+            "pieces": "[{\"id\": \"case\", \"kind\": \"box\", \"max\": [1.375, 0.78125, 0.15625], \"min\": [0.6875, 0.53125, -0.15625], \"slot\": \"engine\"}, {\"id\": \"transfer\", \"kind\": \"box\", \"max\": [1.25, 0.53125, 0.125], \"min\": [0.9375, 0.375, -0.125], \"slot\": \"engine\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_prop_shaft",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 18,
+          "params": {
+            "pieces": "[{\"axis\": \"z\", \"end\": 0.0625, \"id\": \"shaft\", \"kind\": \"prism\", \"profile\": [[-1.3373209503839683, 0.29731797499532675], [0.69392904961603152, 0.57856797499532675], [0.68107095038396848, 0.67143202500467325], [-1.3501790496160317, 0.39018202500467325]], \"slot\": \"chassis\", \"start\": -0.03125}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_fuel_tank",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 55,
+          "params": {
+            "pieces": "[{\"id\": \"tank\", \"kind\": \"box\", \"max\": [0.125, 0.53125, -0.5625], \"min\": [-0.8125, 0.25, -0.875], \"slot\": \"tank\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_exhaust",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 18,
+          "params": {
+            "pieces": "[{\"axis\": \"x\", \"id\": \"pipe\", \"kind\": \"turned\", \"origin\": [0.625, 0.4375, 0.625], \"profile\": [[-0.375, 0], [-0.375, 0.050000000000000003], [0.375, 0.050000000000000003], [0.375, 0], [-0.375, 0]], \"slot\": \"engine\"}, {\"id\": \"silencer\", \"kind\": \"box\", \"max\": [0.25, 0.5, 0.8125], \"min\": [-0.375, 0.3125, 0.5625], \"slot\": \"engine\"}, {\"axis\": \"x\", \"id\": \"tailpipe\", \"kind\": \"turned\", \"origin\": [-0.59375, 0.375, 0.6875], \"profile\": [[-0.21875, 0], [-0.21875, 0.050000000000000003], [0.21875, 0.050000000000000003], [0.21875, 0], [-0.21875, 0]], \"slot\": \"engine\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_radiator",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 15,
+          "params": {
+            "pieces": "[{\"id\": \"core\", \"kind\": \"box\", \"max\": [2.8125, 0.90625, 0.375], \"min\": [2.6875, 0.5, -0.375], \"slot\": \"radiator\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_cab_floor",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 80,
+          "params": {
+            "pieces": "[{\"id\": \"floor\", \"kind\": \"box\", \"max\": [2.875, 1, 0.90625], \"min\": [1.125, 0.9375, -0.90625], \"slot\": \"chassis\"}, {\"id\": \"carpet\", \"kind\": \"box\", \"max\": [2.5625, 1.03125, 0.75], \"min\": [1.21875, 1, -0.75], \"slot\": \"carpet\"}, {\"id\": \"mount_134_14\", \"kind\": \"box\", \"max\": [1.3125, 0.9375, -0.4375], \"min\": [1.1875, 0.53125, -0.5625], \"slot\": \"chassis\"}, {\"id\": \"mount_134_46\", \"kind\": \"box\", \"max\": [1.3125, 0.9375, 0.5625], \"min\": [1.1875, 0.53125, 0.4375], \"slot\": \"chassis\"}, {\"id\": \"mount_178_14\", \"kind\": \"box\", \"max\": [2.6875, 0.9375, -0.4375], \"min\": [2.5625, 0.53125, -0.5625], \"slot\": \"chassis\"}, {\"id\": \"mount_178_46\", \"kind\": \"box\", \"max\": [2.6875, 0.9375, 0.5625], \"min\": [2.5625, 0.53125, 0.4375], \"slot\": \"chassis\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_cab_skirt",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 10,
+          "params": {
+            "pieces": "[{\"id\": \"rear\", \"kind\": \"box\", \"max\": [1.484375, 0.9375, 0.90625], \"min\": [1.125, 0.5625, 0.78125], \"slot\": \"paint\"}, {\"id\": \"front\", \"kind\": \"box\", \"max\": [2.875, 0.9375, 0.90625], \"min\": [2.328125, 0.5625, 0.78125], \"slot\": \"paint\"}, {\"id\": \"strip_0\", \"kind\": \"box\", \"max\": [1.53125, 0.9375, 0.90625], \"min\": [1.484375, 0.56827057620082777, 0.78125], \"slot\": \"paint\"}, {\"id\": \"strip_1\", \"kind\": \"box\", \"max\": [1.578125, 0.9375, 0.90625], \"min\": [1.53125, 0.64016504294495524, 0.78125], \"slot\": \"paint\"}, {\"id\": \"strip_2\", \"kind\": \"box\", \"max\": [1.625, 0.9375, 0.90625], \"min\": [1.578125, 0.68944705933590789, 0.78125], \"slot\": \"paint\"}, {\"id\": \"strip_3\", \"kind\": \"box\", \"max\": [1.671875, 0.9375, 0.90625], \"min\": [1.625, 0.72578038001005707, 0.78125], \"slot\": \"paint\"}, {\"id\": \"strip_4\", \"kind\": \"box\", \"max\": [1.71875, 0.9375, 0.90625], \"min\": [1.671875, 0.75291833195149449, 0.78125], \"slot\": \"paint\"}, {\"id\": \"strip_5\", \"kind\": \"box\", \"max\": [1.765625, 0.9375, 0.90625], \"min\": [1.71875, 0.77274756441743297, 0.78125], \"slot\": \"paint\"}, {\"id\": \"strip_6\", \"kind\": \"box\", \"max\": [1.8125, 0.9375, 0.90625], \"min\": [1.765625, 0.78632645565900572, 0.78125], \"slot\": \"paint\"}, {\"id\": \"strip_7\", \"kind\": \"box\", \"max\": [1.859375, 0.9375, 0.90625], \"min\": [1.8125, 0.79426274578121059, 0.78125], \"slot\": \"paint\"}, {\"id\": \"strip_8\", \"kind\": \"box\", \"max\": [1.90625, 0.9375, 0.90625], \"min\": [1.859375, 0.796875, 0.78125], \"slot\": \"paint\"}, {\"id\": \"strip_9\", \"kind\": \"box\", \"max\": [1.953125, 0.9375, 0.90625], \"min\": [1.90625, 0.796875, 0.78125], \"slot\": \"paint\"}, {\"id\": \"strip_10\", \"kind\": \"box\", \"max\": [2, 0.9375, 0.90625], \"min\": [1.953125, 0.79426274578121059, 0.78125], \"slot\": \"paint\"}, {\"id\": \"strip_11\", \"kind\": \"box\", \"max\": [2.046875, 0.9375, 0.90625], \"min\": [2, 0.78632645565900572, 0.78125], \"slot\": \"paint\"}, {\"id\": \"strip_12\", \"kind\": \"box\", \"max\": [2.09375, 0.9375, 0.90625], \"min\": [2.046875, 0.77274756441743297, 0.78125], \"slot\": \"paint\"}, {\"id\": \"strip_13\", \"kind\": \"box\", \"max\": [2.140625, 0.9375, 0.90625], \"min\": [2.09375, 0.75291833195149449, 0.78125], \"slot\": \"paint\"}, {\"id\": \"strip_14\", \"kind\": \"box\", \"max\": [2.1875, 0.9375, 0.90625], \"min\": [2.140625, 0.72578038001005707, 0.78125], \"slot\": \"paint\"}, {\"id\": \"strip_15\", \"kind\": \"box\", \"max\": [2.234375, 0.9375, 0.90625], \"min\": [2.1875, 0.68944705933590789, 0.78125], \"slot\": \"paint\"}, {\"id\": \"strip_16\", \"kind\": \"box\", \"max\": [2.28125, 0.9375, 0.90625], \"min\": [2.234375, 0.64016504294495524, 0.78125], \"slot\": \"paint\"}, {\"id\": \"strip_17\", \"kind\": \"box\", \"max\": [2.328125, 0.9375, 0.90625], \"min\": [2.28125, 0.56827057620082777, 0.78125], \"slot\": \"paint\"}, {\"axis\": \"z\", \"end\": 0.9375, \"id\": \"arch_0\", \"kind\": \"prism\", \"profile\": [[2.328125, 0.375], [2.390625, 0.375], [2.3537541485601547, 0.56036228755184037], [2.2960116777781989, 0.53644457302902226]], \"slot\": \"trim\", \"start\": 0.90625}, {\"axis\": \"z\", \"end\": 0.9375, \"id\": \"arch_1\", \"kind\": \"prism\", \"profile\": [[2.2960116777781989, 0.53644457302902226], [2.3537541485601547, 0.56036228755184037], [2.2487548471372341, 0.71750484713723395], [2.2045606733130745, 0.6733106733130747]], \"slot\": \"trim\", \"start\": 0.90625}, {\"axis\": \"z\", \"end\": 0.9375, \"id\": \"arch_2\", \"kind\": \"prism\", \"profile\": [[2.2045606733130745, 0.6733106733130747], [2.2487548471372341, 0.71750484713723395], [2.0916122875518406, 0.82250414856015452], [2.0676945730290219, 0.76476167777819914]], \"slot\": \"trim\", \"start\": 0.90625}, {\"axis\": \"z\", \"end\": 0.9375, \"id\": \"arch_3\", \"kind\": \"prism\", \"profile\": [[2.0676945730290219, 0.76476167777819914], [2.0916122875518406, 0.82250414856015452], [1.90625, 0.859375], [1.90625, 0.796875]], \"slot\": \"trim\", \"start\": 0.90625}, {\"axis\": \"z\", \"end\": 0.9375, \"id\": \"arch_4\", \"kind\": \"prism\", \"profile\": [[1.90625, 0.796875], [1.90625, 0.859375], [1.7208877124481594, 0.82250414856015452], [1.7448054269709781, 0.76476167777819914]], \"slot\": \"trim\", \"start\": 0.90625}, {\"axis\": \"z\", \"end\": 0.9375, \"id\": \"arch_5\", \"kind\": \"prism\", \"profile\": [[1.7448054269709781, 0.76476167777819914], [1.7208877124481594, 0.82250414856015452], [1.5637451528627659, 0.71750484713723406], [1.6079393266869255, 0.6733106733130747]], \"slot\": \"trim\", \"start\": 0.90625}, {\"axis\": \"z\", \"end\": 0.9375, \"id\": \"arch_6\", \"kind\": \"prism\", \"profile\": [[1.6079393266869255, 0.6733106733130747], [1.5637451528627659, 0.71750484713723406], [1.4587458514398453, 0.56036228755184037], [1.5164883222218011, 0.53644457302902226]], \"slot\": \"trim\", \"start\": 0.90625}, {\"axis\": \"z\", \"end\": 0.9375, \"id\": \"arch_7\", \"kind\": \"prism\", \"profile\": [[1.5164883222218011, 0.53644457302902226], [1.4587458514398453, 0.56036228755184037], [1.421875, 0.37500000000000006], [1.484375, 0.37500000000000006]], \"slot\": \"trim\", \"start\": 0.90625}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_cab_back",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 35,
+          "params": {
+            "pieces": "[{\"id\": \"wall_low\", \"kind\": \"box\", \"max\": [1.21875, 1.5, 0.90625], \"min\": [1.125, 1, -0.90625], \"slot\": \"paint\"}, {\"id\": \"wall_high\", \"kind\": \"box\", \"max\": [1.21875, 2.09375, 0.90625], \"min\": [1.125, 1.8125, -0.90625], \"slot\": \"paint\"}, {\"id\": \"wall_far\", \"kind\": \"box\", \"max\": [1.21875, 1.8125, -0.5625], \"min\": [1.125, 1.5, -0.90625], \"slot\": \"paint\"}, {\"id\": \"wall_near\", \"kind\": \"box\", \"max\": [1.21875, 1.8125, 0.90625], \"min\": [1.125, 1.5, 0.5625], \"slot\": \"paint\"}, {\"id\": \"glass\", \"kind\": \"box\", \"max\": [1.21875, 1.8125, 0.5625], \"min\": [1.125, 1.5, -0.5625], \"slot\": \"glass\"}, {\"id\": \"pillar_near\", \"kind\": \"box\", \"max\": [1.3125, 2.09375, 0.90625], \"min\": [1.21875, 1, 0.78125], \"slot\": \"paint\"}, {\"id\": \"pillar_far\", \"kind\": \"box\", \"max\": [1.3125, 2.09375, -0.78125], \"min\": [1.21875, 1, -0.90625], \"slot\": \"paint\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_front_panel",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 20,
+          "params": {
+            "pieces": "[{\"id\": \"face\", \"kind\": \"box\", \"max\": [2.875, 1.4375, 0.78125], \"min\": [2.78125, 1, -0.78125], \"slot\": \"paint\"}, {\"id\": \"corner_near\", \"kind\": \"box\", \"max\": [2.875, 1.4375, 0.90625], \"min\": [2.71875, 1, 0.78125], \"slot\": \"paint\"}, {\"id\": \"corner_far\", \"kind\": \"box\", \"max\": [2.875, 1.4375, -0.78125], \"min\": [2.71875, 1, -0.90625], \"slot\": \"paint\"}, {\"id\": \"grille\", \"kind\": \"box\", \"max\": [2.890625, 1.3125, 0.4375], \"min\": [2.875, 1.0625, -0.4375], \"slot\": \"grille\"}, {\"id\": \"badge\", \"kind\": \"box\", \"max\": [2.890625, 1.40625, 0.125], \"min\": [2.875, 1.34375, -0.125], \"slot\": \"badge\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_a_post",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 6,
+          "params": {
+            "pieces": "[{\"id\": \"post\", \"kind\": \"box\", \"max\": [2.875, 2.09375, 0.90625], \"min\": [2.71875, 1.4375, 0.78125], \"slot\": \"paint\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_windscreen",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 14,
+          "params": {
+            "pieces": "[{\"id\": \"glass\", \"kind\": \"box\", \"max\": [2.84375, 2.09375, 0.78125], \"min\": [2.8125, 1.4375, -0.78125], \"slot\": \"glass\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_roof",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 30,
+          "params": {
+            "pieces": "[{\"axis\": \"z\", \"end\": 0.90625, \"id\": \"skin\", \"kind\": \"prism\", \"profile\": [[1.125, 2.09375], [2.875, 2.09375], [2.78125, 2.1875], [1.125, 2.1875]], \"slot\": \"paint\", \"start\": -0.90625}, {\"id\": \"headliner\", \"kind\": \"box\", \"max\": [2.71875, 2.09375, 0.75], \"min\": [1.21875, 2.0625, -0.75], \"slot\": \"headliner\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "hinge_a": {
+          "fraction": [1, 0.20000000000000001, 1],
+          "part": "body",
+          "solid": "skin"
+        },
+        "hinge_b": {
+          "fraction": [1, 0.80000000000000004, 1],
+          "part": "body",
+          "solid": "skin"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_door",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 30,
+          "params": {
+            "pieces": "[{\"id\": \"skin\", \"kind\": \"box\", \"max\": [2.71875, 1.4375, 0.90625], \"min\": [1.3125, 1, 0.78125], \"slot\": \"paint\"}, {\"id\": \"card\", \"kind\": \"box\", \"max\": [2.71875, 1.4375, 0.78125], \"min\": [1.3125, 1, 0.75], \"slot\": \"card\"}, {\"id\": \"frame_low\", \"kind\": \"box\", \"max\": [2.71875, 1.46875, 0.90625], \"min\": [1.3125, 1.4375, 0.78125], \"slot\": \"trim\"}, {\"id\": \"frame_high\", \"kind\": \"box\", \"max\": [2.71875, 2.09375, 0.90625], \"min\": [1.3125, 2.03125, 0.78125], \"slot\": \"trim\"}, {\"id\": \"frame_rear\", \"kind\": \"box\", \"max\": [1.375, 2.03125, 0.90625], \"min\": [1.3125, 1.46875, 0.78125], \"slot\": \"trim\"}, {\"id\": \"frame_front\", \"kind\": \"box\", \"max\": [2.71875, 2.03125, 0.90625], \"min\": [2.65625, 1.46875, 0.78125], \"slot\": \"trim\"}, {\"id\": \"glass\", \"kind\": \"box\", \"max\": [2.65625, 2.03125, 0.90625], \"min\": [1.375, 1.46875, 0.78125], \"slot\": \"glass\"}, {\"id\": \"handle\", \"kind\": \"box\", \"max\": [1.53125, 1.28125, 0.9375], \"min\": [1.375, 1.25, 0.90625], \"slot\": \"chrome\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_front_bumper",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 20,
+          "params": {
+            "pieces": "[{\"id\": \"bar\", \"kind\": \"box\", \"max\": [2.96875, 0.8125, 0.90625], \"min\": [2.875, 0.5625, -0.90625], \"slot\": \"trim\"}, {\"id\": \"bracket_far\", \"kind\": \"box\", \"max\": [2.9375, 0.5625, -0.4375], \"min\": [2.875, 0.40625, -0.5625], \"slot\": \"chassis\"}, {\"id\": \"bracket_near\", \"kind\": \"box\", \"max\": [2.9375, 0.5625, 0.5625], \"min\": [2.875, 0.40625, 0.4375], \"slot\": \"chassis\"}, {\"id\": \"plate\", \"kind\": \"box\", \"max\": [3, 0.75, 0.1875], \"min\": [2.96875, 0.625, -0.1875], \"slot\": \"plate\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_dashboard",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 18,
+          "params": {
+            "pieces": "[{\"id\": \"lower\", \"kind\": \"box\", \"max\": [2.78125, 1.4375, 0.75], \"min\": [2.5625, 1, -0.75], \"slot\": \"dash\"}, {\"id\": \"binnacle\", \"kind\": \"box\", \"max\": [2.71875, 1.65625, 0.6875], \"min\": [2.5625, 1.4375, 0.34375], \"slot\": \"dash\"}, {\"id\": \"dial\", \"kind\": \"box\", \"max\": [2.5625, 1.625, 0.65625], \"min\": [2.546875, 1.53125, 0.375], \"slot\": \"dial\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_engine_cover",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 12,
+          "params": {
+            "pieces": "[{\"id\": \"cover\", \"kind\": \"box\", \"max\": [2.5, 1.25, 0.25], \"min\": [1.6875, 1.03125, -0.25], \"slot\": \"trim\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "hips": {
+          "fraction": [0.40000000000000002, 1, 0.5],
+          "part": "body",
+          "solid": "cushion"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_bench",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 30,
+          "params": {
+            "pieces": "[{\"id\": \"cushion\", \"kind\": \"box\", \"max\": [1.6875, 1.375, 0.71875], \"min\": [1.3125, 1.03125, -0.71875], \"slot\": \"seat\"}, {\"id\": \"back\", \"kind\": \"box\", \"max\": [1.3125, 1.9375, 0.71875], \"min\": [1.21875, 1.375, -0.71875], \"slot\": \"seat\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_deck_floor",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 120,
+          "params": {
+            "pieces": "[{\"id\": \"floor\", \"kind\": \"box\", \"max\": [0.4375, 0.9375, 0.90625], \"min\": [-2.875, 0.875, -0.90625], \"slot\": \"load\"}, {\"id\": \"bearer_far\", \"kind\": \"box\", \"max\": [0.4375, 0.875, -0.4375], \"min\": [-2.875, 0.53125, -0.5625], \"slot\": \"chassis\"}, {\"id\": \"bearer_near\", \"kind\": \"box\", \"max\": [0.4375, 0.875, 0.5625], \"min\": [-2.875, 0.53125, 0.4375], \"slot\": \"chassis\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_headboard",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 15,
+          "params": {
+            "pieces": "[{\"id\": \"board\", \"kind\": \"box\", \"max\": [0.4375, 1.25, 0.90625], \"min\": [0.375, 0.9375, -0.90625], \"slot\": \"paint\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_mudguard",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 4,
+          "params": {
+            "pieces": "[{\"axis\": \"z\", \"end\": 0.84375, \"id\": \"guard_0\", \"kind\": \"prism\", \"profile\": [[-1.0970688450553867, 0.5], [-1.0075285884010281, 0.52777777777777779], [-1.079837735825586, 0.67388595214367264], [-1.1562308747663885, 0.619543051753914]], \"slot\": \"trim\", \"start\": 0.59375}, {\"axis\": \"z\", \"end\": 0.84375, \"id\": \"guard_1\", \"kind\": \"prism\", \"profile\": [[-1.1562308747663885, 0.619543051753914], [-1.079837735825586, 0.67388595214367264], [-1.194146195905353, 0.79011756304188485], [-1.2497559784680161, 0.7146416424888149]], \"slot\": \"trim\", \"start\": 0.59375}, {\"axis\": \"z\", \"end\": 0.84375, \"id\": \"guard_2\", \"kind\": \"prism\", \"profile\": [[-1.2497559784680161, 0.7146416424888149], [-1.194146195905353, 0.79011756304188485], [-1.3390277241548594, 0.86485412832213227], [-1.3682954106721577, 0.77578974135447187]], \"slot\": \"trim\", \"start\": 0.59375}, {\"axis\": \"z\", \"end\": 0.84375, \"id\": \"guard_3\", \"kind\": \"prism\", \"profile\": [[-1.3682954106721577, 0.77578974135447187], [-1.3390277241548594, 0.86485412832213227], [-1.5, 0.890625], [-1.5, 0.796875]], \"slot\": \"trim\", \"start\": 0.59375}, {\"axis\": \"z\", \"end\": 0.84375, \"id\": \"guard_4\", \"kind\": \"prism\", \"profile\": [[-1.5, 0.796875], [-1.5, 0.890625], [-1.6609722758451406, 0.86485412832213227], [-1.6317045893278423, 0.77578974135447187]], \"slot\": \"trim\", \"start\": 0.59375}, {\"axis\": \"z\", \"end\": 0.84375, \"id\": \"guard_5\", \"kind\": \"prism\", \"profile\": [[-1.6317045893278423, 0.77578974135447187], [-1.6609722758451406, 0.86485412832213227], [-1.805853804094647, 0.79011756304188485], [-1.7502440215319839, 0.7146416424888149]], \"slot\": \"trim\", \"start\": 0.59375}, {\"axis\": \"z\", \"end\": 0.84375, \"id\": \"guard_6\", \"kind\": \"prism\", \"profile\": [[-1.7502440215319839, 0.7146416424888149], [-1.805853804094647, 0.79011756304188485], [-1.920162264174414, 0.67388595214367275], [-1.8437691252336115, 0.61954305175391411]], \"slot\": \"trim\", \"start\": 0.59375}, {\"axis\": \"z\", \"end\": 0.84375, \"id\": \"guard_7\", \"kind\": \"prism\", \"profile\": [[-1.8437691252336115, 0.61954305175391411], [-1.920162264174414, 0.67388595214367275], [-1.9924714115989719, 0.52777777777777779], [-1.9029311549446133, 0.5]], \"slot\": \"trim\", \"start\": 0.59375}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_rear_underrun",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 20,
+          "params": {
+            "pieces": "[{\"id\": \"leg_far\", \"kind\": \"box\", \"max\": [-2.875, 0.53125, -0.4375], \"min\": [-3, 0.375, -0.5625], \"slot\": \"chassis\"}, {\"id\": \"leg_near\", \"kind\": \"box\", \"max\": [-2.875, 0.53125, 0.5625], \"min\": [-3, 0.375, 0.4375], \"slot\": \"chassis\"}, {\"id\": \"bar\", \"kind\": \"box\", \"max\": [-2.90625, 0.375, 0.8125], \"min\": [-3, 0.25, -0.8125], \"slot\": \"trim\"}, {\"id\": \"lamp_bracket_far\", \"kind\": \"box\", \"max\": [-2.9375, 0.5625, -0.4375], \"min\": [-3, 0.53125, -0.8125], \"slot\": \"chassis\"}, {\"id\": \"lamp_bracket_near\", \"kind\": \"box\", \"max\": [-2.9375, 0.5625, 0.8125], \"min\": [-3, 0.53125, 0.4375], \"slot\": \"chassis\"}, {\"id\": \"plate\", \"kind\": \"box\", \"max\": [-2.96875, 0.5, 0.1875], \"min\": [-3, 0.375, -0.1875], \"slot\": \"plate\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_tail_lamp",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 1,
+          "params": {
+            "pieces": "[{\"id\": \"indicator\", \"kind\": \"box\", \"max\": [-2.9375, 0.625, 0.8125], \"min\": [-3, 0.5625, 0.5625], \"slot\": \"amber\"}, {\"id\": \"lens\", \"kind\": \"box\", \"max\": [-2.9375, 0.71875, 0.8125], \"min\": [-3, 0.625, 0.5625], \"slot\": \"tail\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_crane_base",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 180,
+          "params": {
+            "pieces": "[{\"id\": \"sill_far\", \"kind\": \"box\", \"max\": [1.0625, 0.8125, -0.4375], \"min\": [0.5, 0.53125, -0.5625], \"slot\": \"crane\"}, {\"id\": \"sill_near\", \"kind\": \"box\", \"max\": [1.0625, 0.8125, 0.5625], \"min\": [0.5, 0.53125, 0.4375], \"slot\": \"crane\"}, {\"id\": \"plate\", \"kind\": \"box\", \"max\": [1.0625, 0.9375, 0.5625], \"min\": [0.5, 0.8125, -0.5625], \"slot\": \"crane\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_stabiliser",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 45,
+          "params": {
+            "pieces": "[{\"id\": \"beam\", \"kind\": \"box\", \"max\": [0.9375, 0.8125, 0.875], \"min\": [0.625, 0.6875, 0.5625], \"slot\": \"crane\"}, {\"id\": \"leg\", \"kind\": \"box\", \"max\": [0.875, 0.6875, 0.875], \"min\": [0.6875, 0.375, 0.75], \"slot\": \"crane\"}, {\"id\": \"foot\", \"kind\": \"box\", \"max\": [0.9375, 0.375, 0.90625], \"min\": [0.625, 0.3125, 0.71875], \"slot\": \"trim\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_crane_column",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 140,
+          "params": {
+            "pieces": "[{\"axis\": \"y\", \"id\": \"slew_ring\", \"kind\": \"turned\", \"origin\": [0.78125, 1, 0], \"profile\": [[-0.0625, 0], [-0.0625, 0.21875], [0.0625, 0.21875], [0.0625, 0], [-0.0625, 0]], \"slot\": \"chassis\"}, {\"id\": \"post\", \"kind\": \"box\", \"max\": [0.90625, 1.75, 0.125], \"min\": [0.65625, 1.0625, -0.125], \"slot\": \"crane\"}, {\"id\": \"cheek_far\", \"kind\": \"box\", \"max\": [0.9375, 2, -0.125], \"min\": [0.625, 1.625, -0.21875], \"slot\": \"crane\"}, {\"id\": \"cheek_near\", \"kind\": \"box\", \"max\": [0.9375, 2, 0.21875], \"min\": [0.625, 1.625, 0.125], \"slot\": \"crane\"}, {\"axis\": \"z\", \"id\": \"pin_far\", \"kind\": \"turned\", \"origin\": [0.78125, 1.875, -0.234375], \"profile\": [[-0.015625, 0], [-0.015625, 0.0625], [0.015625, 0.0625], [0.015625, 0], [-0.015625, 0]], \"slot\": \"chrome\"}, {\"axis\": \"z\", \"id\": \"pin_near\", \"kind\": \"turned\", \"origin\": [0.78125, 1.875, 0.234375], \"profile\": [[-0.015625, 0], [-0.015625, 0.0625], [0.015625, 0.0625], [0.015625, 0], [-0.015625, 0]], \"slot\": \"chrome\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_boom",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 90,
+          "params": {
+            "pieces": "[{\"axis\": \"z\", \"end\": 0.125, \"id\": \"boom\", \"kind\": \"prism\", \"profile\": [[0.79876106302286276, 1.9677378245956754], [-0.88873893697713724, 1.7177378245956754], [-0.86126106302286276, 1.5322621754043246], [0.82623893697713724, 1.7822621754043246]], \"slot\": \"crane\", \"start\": -0.125}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_boom_extension",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 70,
+          "params": {
+            "pieces": "[{\"axis\": \"z\", \"end\": 0.09375, \"id\": \"extension\", \"kind\": \"prism\", \"profile\": [[-0.66651287390490932, 1.7258094786888309], [-2.5727628739049093, 1.4445594786888309], [-2.5522371260950907, 1.3054405213111691], [-0.64598712609509068, 1.5866905213111691]], \"slot\": \"crane\", \"start\": -0.09375}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_luff_ram",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 35,
+          "params": {
+            "pieces": "[{\"axis\": \"z\", \"end\": 0.0625, \"id\": \"ram\", \"kind\": \"prism\", \"profile\": [[0.66827573007123053, 1.2931655338825261], [-0.10672426992876938, 1.6212905338825261], [-0.14327573007123062, 1.5349594661174739], [0.63172426992876929, 1.2068344661174739]], \"slot\": \"chrome\", \"start\": -0.0625}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_winch",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 45,
+          "params": {
+            "pieces": "[{\"axis\": \"z\", \"id\": \"drum\", \"kind\": \"turned\", \"origin\": [1, 1.375, 0], \"profile\": [[-0.15625, 0], [-0.15625, 0.109375], [0.15625, 0.109375], [0.15625, 0], [-0.15625, 0]], \"slot\": \"chassis\"}, {\"axis\": \"z\", \"id\": \"flange_far\", \"kind\": \"turned\", \"origin\": [1, 1.375, -0.171875], \"profile\": [[-0.015625, 0], [-0.015625, 0.140625], [0.015625, 0.140625], [0.015625, 0], [-0.015625, 0]], \"slot\": \"crane\"}, {\"axis\": \"z\", \"id\": \"flange_near\", \"kind\": \"turned\", \"origin\": [1, 1.375, 0.171875], \"profile\": [[-0.015625, 0], [-0.015625, 0.140625], [0.015625, 0.140625], [0.015625, 0], [-0.015625, 0]], \"slot\": \"crane\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_hook_block",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 15,
+          "params": {
+            "pieces": "[{\"id\": \"block\", \"kind\": \"box\", \"max\": [-2.4375, 1.3125, 0.0625], \"min\": [-2.625, 1.15625, -0.0625], \"slot\": \"amber\"}, {\"id\": \"hook\", \"kind\": \"box\", \"max\": [-2.5, 1.15625, 0.03125], \"min\": [-2.5625, 1.0625, -0.03125], \"slot\": \"chrome\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hoist_boom_rest",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "alloy": "steel",
+            "amber": "plastic-yellow",
+            "badge": "steel-stainless",
+            "card": "cloth-seat",
+            "carpet": "rubber-black",
+            "chassis": "paint-charcoal",
+            "chrome": "steel-stainless",
+            "crane": "paint-crane-yellow",
+            "dash": "plastic-black",
+            "dial": "plastic-white",
+            "engine": "steel-grey",
+            "glass": "glass-clear",
+            "grille": "plastic-black",
+            "headliner": "cloth-rag",
+            "hub": "steel-grey",
+            "load": "wood-birch",
+            "paint": "paint-cream",
+            "plate": "plastic-white",
+            "radiator": "paint-charcoal",
+            "seat": "cloth-seat",
+            "tail": "plastic-red",
+            "tank": "polymer-od-green",
+            "trim": "plastic-black"
+          },
+          "id": "body",
+          "massKg": 8,
+          "params": {
+            "pieces": "[{\"id\": \"rest\", \"kind\": \"box\", \"max\": [-2.1875, 1.3125, 0.09375], \"min\": [-2.3125, 0.9375, -0.09375], \"slot\": \"crane\"}]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "jeans",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "jeans",
+      "parts": [
+        {
+          "family": "folded-garment",
+          "finish": {
+            "body": "plastic-blue",
+            "trim": "paint-charcoal"
+          },
+          "id": "jeans",
+          "massKg": 0.69999999999999996,
+          "params": {
+            "cargoDepth": "0",
+            "depth": "0.44",
+            "height": "0.044999999999999998",
+            "hoodDepth": "0",
+            "legGap": "0.025000000000000001",
+            "pocketDepth": "0",
+            "sleeveLength": "0",
+            "style": "pants",
+            "width": "0.38"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "rubber_boots",
+        "roll": 0,
+        "solid": "shaft--1",
+        "turn": [0, 0, -90]
+      },
+      "id": "rubber_boots",
+      "parts": [
+        {
+          "family": "boots",
+          "finish": {
+            "body": "paint-charcoal",
+            "trim": "steel-grey"
+          },
+          "id": "rubber_boots",
+          "massKg": 1.8,
+          "params": {
+            "depth": "0.34000000000000002",
+            "gap": "0.025000000000000001",
+            "height": "0.22",
+            "width": "0.28000000000000003"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "cargo_pants",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "cargo_pants",
+      "parts": [
+        {
+          "family": "folded-garment",
+          "finish": {
+            "body": "cord-olive",
+            "trim": "paint-charcoal"
+          },
+          "id": "cargo_pants",
+          "massKg": 0.80000000000000004,
+          "params": {
+            "cargoDepth": "0.035000000000000003",
+            "depth": "0.46000000000000002",
+            "height": "0.050000000000000003",
+            "hoodDepth": "0",
+            "legGap": "0.025000000000000001",
+            "pocketDepth": "0",
+            "sleeveLength": "0",
+            "style": "pants",
+            "width": "0.40000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "hoodie",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "hoodie",
+      "parts": [
+        {
+          "family": "folded-garment",
+          "finish": {
+            "body": "plastic-red",
+            "trim": "paint-charcoal"
+          },
+          "id": "hoodie",
+          "massKg": 0.59999999999999998,
+          "params": {
+            "cargoDepth": "0",
+            "depth": "0.34000000000000002",
+            "height": "0.059999999999999998",
+            "hoodDepth": "0.13",
+            "legGap": "0",
+            "pocketDepth": "0.025000000000000001",
+            "sleeveLength": "0.16",
+            "style": "top",
+            "width": "0.41999999999999998"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "jacket",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "jacket",
+      "parts": [
+        {
+          "family": "folded-garment",
+          "finish": {
+            "body": "paperboard-brown",
+            "trim": "paint-charcoal"
+          },
+          "id": "jacket",
+          "massKg": 1.2,
+          "params": {
+            "cargoDepth": "0",
+            "depth": "0.35999999999999999",
+            "height": "0.070000000000000007",
+            "hoodDepth": "0",
+            "legGap": "0",
+            "pocketDepth": "0.029999999999999999",
+            "sleeveLength": "0.17000000000000001",
+            "style": "top",
+            "width": "0.44"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "utility_vest",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "utility_vest",
+      "parts": [
+        {
+          "family": "folded-garment",
+          "finish": {
+            "body": "polymer-od-green",
+            "trim": "paint-charcoal"
+          },
+          "id": "utility_vest",
+          "massKg": 0.90000000000000002,
+          "params": {
+            "cargoDepth": "0",
+            "depth": "0.29999999999999999",
+            "height": "0.059999999999999998",
+            "hoodDepth": "0",
+            "legGap": "0",
+            "pocketDepth": "0.035000000000000003",
+            "sleeveLength": "0",
+            "style": "vest",
+            "width": "0.38"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "fanny_pack",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "fanny_pack",
+      "parts": [
+        {
+          "family": "bag",
+          "finish": {
+            "body": "plastic-blue",
+            "trim": "paint-charcoal"
+          },
+          "id": "fanny_pack",
+          "massKg": 0.20000000000000001,
+          "params": {
+            "depth": "0.10000000000000001",
+            "flapHeight": "0",
+            "handleHeight": "0",
+            "height": "0.14000000000000001",
+            "pocketDepth": "0.025000000000000001",
+            "pocketHeight": "0.074999999999999997",
+            "strapWidth": "0.017999999999999999",
+            "width": "0.32000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "school_backpack",
+        "roll": 0,
+        "solid": "handle",
+        "turn": [0, 0, -90]
+      },
+      "id": "school_backpack",
+      "parts": [
+        {
+          "family": "bag",
+          "finish": {
+            "body": "plastic-red",
+            "trim": "paint-charcoal"
+          },
+          "id": "school_backpack",
+          "massKg": 0.59999999999999998,
+          "params": {
+            "depth": "0.17000000000000001",
+            "flapHeight": "0",
+            "handleHeight": "0.040000000000000001",
+            "height": "0.46000000000000002",
+            "pocketDepth": "0.035000000000000003",
+            "pocketHeight": "0.14999999999999999",
+            "strapWidth": "0.025000000000000001",
+            "width": "0.34000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "hiking_backpack",
+        "roll": 0,
+        "solid": "handle",
+        "turn": [0, 0, -90]
+      },
+      "id": "hiking_backpack",
+      "parts": [
+        {
+          "family": "bag",
+          "finish": {
+            "body": "cord-olive",
+            "trim": "paint-charcoal"
+          },
+          "id": "hiking_backpack",
+          "massKg": 1.3999999999999999,
+          "params": {
+            "depth": "0.23999999999999999",
+            "flapHeight": "0.12",
+            "handleHeight": "0.050000000000000003",
+            "height": "0.57999999999999996",
+            "pocketDepth": "0.050000000000000003",
+            "pocketHeight": "0.17999999999999999",
+            "strapWidth": "0.029999999999999999",
+            "width": "0.40000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "baseball_cap",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "baseball_cap",
+      "parts": [
+        {
+          "family": "cap",
+          "finish": {
+            "body": "plastic-blue",
+            "trim": "paint-charcoal"
+          },
+          "id": "baseball_cap",
+          "massKg": 0.080000000000000002,
+          "params": {
+            "brimDepth": "0.089999999999999997",
+            "brimWidth": "0.19",
+            "height": "0.080000000000000002",
+            "radius": "0.10000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "forward",
+        "part": "equipment",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, 0]
+      },
+      "id": "blowtorch",
+      "parts": [
+        {
+          "family": "blowtorch",
+          "finish": {
+            "body": "plastic-blue",
+            "control": "plastic-red",
+            "metal": "steel-grey",
+            "rubber": "paint-charcoal"
+          },
+          "id": "equipment",
+          "massKg": 0.90000000000000002,
+          "params": {
+            "bodyHeight": "0.115",
+            "footHeight": "0.0080000000000000002",
+            "mouthLength": "0.02",
+            "mouthRadius": "0.012999999999999999",
+            "neckHeight": "0.035000000000000003",
+            "neckRadius": "0.012",
+            "nozzleLength": "0.071999999999999995",
+            "nozzleRadius": "0.0070000000000000001",
+            "radius": "0.025999999999999999",
+            "valveRadius": "0.016"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "lens": {
+          "fraction": [0.5, 0.5, 0],
+          "part": "equipment",
+          "solid": "lens"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 1],
+        "hold": "forward",
+        "part": "equipment",
+        "roll": 0,
+        "solid": "strap",
+        "turn": [0, -90, 0]
+      },
+      "id": "headlamp",
+      "parts": [
+        {
+          "family": "headlamp",
+          "finish": {
+            "body": "plastic-red",
+            "control": "paint-charcoal",
+            "lens": "glass-grey",
+            "metal": "steel-grey",
+            "strap": "cord-olive"
+          },
+          "id": "equipment",
+          "massKg": 0.17999999999999999,
+          "params": {
+            "housingDepth": "0.029999999999999999",
+            "housingHeight": "0.040000000000000001",
+            "housingWidth": "0.059999999999999998",
+            "lensDepth": "0.0050000000000000001",
+            "lensRadius": "0.017000000000000001",
+            "strapRadius": "0.095000000000000001",
+            "strapWall": "0.0030000000000000001",
+            "strapWidth": "0.021999999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.10000000000000001, 0.5, 0.5],
+        "hold": "forward",
+        "part": "equipment",
+        "roll": 0,
+        "solid": "webbing-1",
+        "turn": [0, 0, 0]
+      },
+      "id": "weapon_sling",
+      "parts": [
+        {
+          "family": "webbingSling",
+          "finish": {
+            "metal": "steel-grey",
+            "strap": "cord-olive"
+          },
+          "id": "equipment",
+          "massKg": 0.14999999999999999,
+          "params": {
+            "buckleDepth": "0.035999999999999997",
+            "buckleWall": "0.0040000000000000001",
+            "buckleWidth": "0.025999999999999999",
+            "clipLength": "0.025999999999999999",
+            "clipWall": "0.0040000000000000001",
+            "clipWidth": "0.02",
+            "foldedLength": "0.28999999999999998",
+            "thickness": "0.0030000000000000001",
+            "width": "0.028000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "forward",
+        "part": "equipment",
+        "roll": 0,
+        "solid": "rim-left",
+        "turn": [0, 0, 0]
+      },
+      "id": "repair_kit",
+      "parts": [
+        {
+          "family": "repairKit",
+          "finish": {
+            "body": "paint-charcoal",
+            "cloth": "paperboard-tan",
+            "metal": "steel-grey",
+            "patch": "steel-grey",
+            "roll": "steel-grey"
+          },
+          "id": "equipment",
+          "massKg": 1.25,
+          "params": {
+            "depth": "0.13",
+            "height": "0.035000000000000003",
+            "kind": "patches",
+            "patchDepth": "0.089999999999999997",
+            "patchWidth": "0.080000000000000002",
+            "rollHeight": "0.032000000000000001",
+            "rollRadius": "0.029000000000000001",
+            "wall": "0.0030000000000000001",
+            "width": "0.20000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "equipment",
+        "roll": 0,
+        "solid": "grip--1",
+        "turn": [0, 0, 0]
+      },
+      "id": "wire_strippers",
+      "parts": [
+        {
+          "family": "pliers",
+          "finish": {
+            "dark": "paint-charcoal",
+            "grip": "plastic-red",
+            "metal": "steel-grey"
+          },
+          "id": "equipment",
+          "massKg": 0.17999999999999999,
+          "params": {
+            "gripWidth": "0.014",
+            "jawLength": "0.042000000000000003",
+            "kind": "wire",
+            "length": "0.16",
+            "pivotRadius": "0.012",
+            "spread": "0.048000000000000001",
+            "teeth": "5",
+            "thickness": "0.0070000000000000001",
+            "toothDepth": "0.0040000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "equipment",
+        "roll": 0,
+        "solid": "grip--1",
+        "turn": [0, 0, 0]
+      },
+      "id": "adjustable_pliers",
+      "parts": [
+        {
+          "family": "pliers",
+          "finish": {
+            "dark": "paint-charcoal",
+            "grip": "plastic-blue",
+            "metal": "steel-grey"
+          },
+          "id": "equipment",
+          "massKg": 0.29999999999999999,
+          "params": {
+            "gripWidth": "0.014",
+            "jawLength": "0.059999999999999998",
+            "kind": "groove",
+            "length": "0.20000000000000001",
+            "pivotRadius": "0.017000000000000001",
+            "spread": "0.055",
+            "teeth": "5",
+            "thickness": "0.0080000000000000002",
+            "toothDepth": "0.0040000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "forward",
+        "part": "equipment",
+        "roll": 0,
+        "solid": "rim-left",
+        "turn": [0, 0, 0]
+      },
+      "id": "sewing_repair_kit",
+      "parts": [
+        {
+          "family": "repairKit",
+          "finish": {
+            "body": "paint-terracotta",
+            "cloth": "paperboard-tan",
+            "metal": "steel-grey",
+            "patch": "cord-olive",
+            "roll": "plastic-red"
+          },
+          "id": "equipment",
+          "massKg": 0.41999999999999998,
+          "params": {
+            "depth": "0.11",
+            "height": "0.029999999999999999",
+            "kind": "sewing",
+            "patchDepth": "0.074999999999999997",
+            "patchWidth": "0.070000000000000007",
+            "rollHeight": "0.028000000000000001",
+            "rollRadius": "0.014999999999999999",
+            "wall": "0.002",
+            "width": "0.17999999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.25, 0.5],
+        "hold": "forward",
+        "part": "equipment",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 90, 0]
+      },
+      "id": "portable_radio",
+      "parts": [
+        {
+          "family": "portableRadio",
+          "finish": {
+            "body": "polymer-od-green",
+            "control": "paint-charcoal",
+            "display": "glass-grey",
+            "marker": "plastic-red",
+            "metal": "steel-grey"
+          },
+          "id": "equipment",
+          "massKg": 0.59999999999999998,
+          "params": {
+            "antennaLength": "0.048000000000000001",
+            "antennaRadius": "0.002",
+            "depth": "0.040000000000000001",
+            "dialDepth": "0.0080000000000000002",
+            "dialRadius": "0.01",
+            "grilleBars": "9",
+            "height": "0.13",
+            "speakerRadius": "0.025999999999999999",
+            "width": "0.074999999999999997"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "crowbar",
+      "parts": [
+        {
+          "family": "crowbar",
+          "finish": {
+            "body": "steel-grey"
+          },
+          "id": "crowbar",
+          "massKg": 1.5,
+          "params": {
+            "back": "0.40000000000000002",
+            "clawAt": "0.105",
+            "clawDrop": "0.129",
+            "depth": "0.029999999999999999",
+            "kickBack": "0.438",
+            "kickRise": "0.113",
+            "reach": "0.23100000000000001",
+            "thickness": "0.029999999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hammer",
+      "parts": [
+        {
+          "family": "hammer",
+          "finish": {
+            "handle": "wood-walnut",
+            "head": "steel-grey"
+          },
+          "id": "hammer",
+          "massKg": 0.69999999999999996,
+          "params": {
+            "clawReach": "0.10000000000000001",
+            "faceReach": "0.10000000000000001",
+            "handleBack": "0.27300000000000002",
+            "handleRadius": "0.017000000000000001",
+            "headBottom": "0.024",
+            "headDepth": "0.043999999999999997",
+            "headTop": "0.094"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "sledgehammer",
+      "parts": [
+        {
+          "family": "sledgehammer",
+          "finish": {
+            "handle": "wood-walnut",
+            "head": "steel-grey"
+          },
+          "id": "sledgehammer",
+          "massKg": 4.5,
+          "params": {
+            "faceReach": "0.095000000000000001",
+            "handleBack": "0.83999999999999997",
+            "handleRadius": "0.016",
+            "headBottom": "0.0050000000000000001",
+            "headDepth": "0.057000000000000002",
+            "headTop": "0.062"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "baseball_bat",
+      "parts": [
+        {
+          "family": "bat",
+          "finish": {
+            "body": "wood-birch"
+          },
+          "id": "baseball_bat",
+          "massKg": 0.90000000000000002,
+          "params": {
+            "back": "0.35199999999999998",
+            "barrelRadius": "0.035000000000000003",
+            "front": "0.42699999999999999",
+            "handleRadius": "0.016500000000000001",
+            "knobRadius": "0.019"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "kabar",
+      "parts": [
+        {
+          "family": "knife",
+          "finish": {
+            "blade": "steel-blued",
+            "guard": "steel-blued",
+            "handle": "rubber-black"
+          },
+          "id": "kabar",
+          "massKg": 0.29999999999999999,
+          "params": {
+            "back": "0.13200000000000001",
+            "drop": "0.016",
+            "guardDepth": "0.014",
+            "guardHalf": "0.036999999999999998",
+            "handleRadius": "0.014",
+            "joinAt": "0.01",
+            "reach": "0.2205",
+            "spine": "0.014",
+            "thickness": "0.0080000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "kitchen_knife",
+      "parts": [
+        {
+          "family": "knife",
+          "finish": {
+            "blade": "steel-stainless",
+            "guard": "steel-stainless",
+            "handle": "plastic-black"
+          },
+          "id": "kitchen_knife",
+          "massKg": 0.14999999999999999,
+          "params": {
+            "back": "0.115",
+            "drop": "0.028000000000000001",
+            "guardDepth": "0.012",
+            "guardHalf": "0.016",
+            "handleRadius": "0.010999999999999999",
+            "joinAt": "0.01",
+            "reach": "0.247",
+            "spine": "0.014999999999999999",
+            "thickness": "0.0060000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "machete",
+      "parts": [
+        {
+          "family": "knife",
+          "finish": {
+            "blade": "steel-grey",
+            "guard": "steel-grey",
+            "handle": "wood-walnut"
+          },
+          "id": "machete",
+          "massKg": 0.55000000000000004,
+          "params": {
+            "back": "0.27400000000000002",
+            "drop": "0.050000000000000003",
+            "guardDepth": "0.014",
+            "guardHalf": "0.021999999999999999",
+            "handleRadius": "0.014",
+            "joinAt": "-0.14999999999999999",
+            "reach": "0.245",
+            "spine": "0.02",
+            "thickness": "0.0060000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "wrench",
+      "parts": [
+        {
+          "family": "wrench",
+          "finish": {
+            "body": "steel-grey"
+          },
+          "id": "wrench",
+          "massKg": 0.5,
+          "params": {
+            "back": "0.245",
+            "depth": "0.014",
+            "gap": "0.021999999999999999",
+            "handleHalf": "0.012500000000000001",
+            "headAt": "0.02",
+            "headDown": "0.035000000000000003",
+            "headUp": "0.055",
+            "jawAt": "0.055",
+            "reach": "0.105"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "steel_pipe",
+      "parts": [
+        {
+          "family": "steelPipe",
+          "finish": {
+            "body": "steel-grey"
+          },
+          "id": "steel_pipe",
+          "massKg": 1.8,
+          "params": {
+            "bendDrop": "0.10000000000000001",
+            "length": "0.92700000000000005",
+            "radius": "0.016500000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "flashlight",
+      "parts": [
+        {
+          "family": "flashlight",
+          "finish": {
+            "body": "polymer-black",
+            "lens": "plastic-white"
+          },
+          "id": "flashlight",
+          "massKg": 0.25,
+          "params": {
+            "bodyRadius": "0.021999999999999999",
+            "headLength": "0.050000000000000003",
+            "headRadius": "0.033000000000000002",
+            "length": "0.20000000000000001",
+            "lensDepth": "0.0060000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "needle_mount": {
+          "fraction": [0.5, 1, 0.5],
+          "part": "compass",
+          "solid": "dial"
+        }
+      },
+      "connections": [],
+      "display": {
+        "fraction": [0.5, 1, 0.5],
+        "normal": [0, 1, 0],
+        "part": "compass",
+        "solid": "dial",
+        "up": [0, 0, -1]
+      },
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "compass",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "compass",
+      "parts": [
+        {
+          "family": "compass",
+          "finish": {
+            "bezel": "steel-grey",
+            "body": "plastic-black",
+            "dial": "paint-cream",
+            "lubber": "plastic-white"
+          },
+          "id": "compass",
+          "massKg": 0.12,
+          "params": {
+            "bezelHeight": "0.0040000000000000001",
+            "dialHeight": "0.001",
+            "height": "0.0089999999999999993",
+            "radius": "0.029999999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "lighter",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "lighter",
+      "parts": [
+        {
+          "family": "lighter",
+          "finish": {
+            "body": "plastic-red",
+            "cap": "steel-grey",
+            "wheel": "steel-grey"
+          },
+          "id": "lighter",
+          "massKg": 0.02,
+          "params": {
+            "capHeight": "0.0089999999999999993",
+            "depth": "0.012",
+            "height": "0.055",
+            "width": "0.024"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "matches",
+        "roll": 0,
+        "solid": "tray",
+        "turn": [0, 0, -90]
+      },
+      "id": "matches",
+      "parts": [
+        {
+          "family": "matchbox",
+          "finish": {
+            "sleeve": "paint-terracotta",
+            "striker": "paperboard-brown",
+            "tray": "paperboard-tan"
+          },
+          "id": "matches",
+          "massKg": 0.02,
+          "params": {
+            "depth": "0.035000000000000003",
+            "height": "0.014999999999999999",
+            "sleeve": "0.0040000000000000001",
+            "width": "0.055"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "dad_cabin_key",
+        "roll": 0,
+        "solid": "shaft",
+        "turn": [0, 0, -90]
+      },
+      "id": "dad_cabin_key",
+      "parts": [
+        {
+          "family": "key",
+          "finish": {
+            "metal": "steel-grey"
+          },
+          "id": "dad_cabin_key",
+          "massKg": 0.01,
+          "params": {
+            "bowRadius": "0.012",
+            "shaftLength": "0.037999999999999999",
+            "shaftWidth": "0.012",
+            "thickness": "0.0030000000000000001",
+            "toothDepth": "0.0080000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "pharmacy_key",
+        "roll": 0,
+        "solid": "shaft",
+        "turn": [0, 0, -90]
+      },
+      "id": "pharmacy_key",
+      "parts": [
+        {
+          "family": "key",
+          "finish": {
+            "metal": "brass"
+          },
+          "id": "pharmacy_key",
+          "massKg": 0.01,
+          "params": {
+            "bowRadius": "0.010999999999999999",
+            "shaftLength": "0.039",
+            "shaftWidth": "0.012",
+            "thickness": "0.0030000000000000001",
+            "toothDepth": "0.0080000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "camp_armoury_key",
+        "roll": 0,
+        "solid": "shaft",
+        "turn": [0, 0, -90]
+      },
+      "id": "camp_armoury_key",
+      "parts": [
+        {
+          "family": "key",
+          "finish": {
+            "metal": "steel-parkerized"
+          },
+          "id": "camp_armoury_key",
+          "massKg": 0.01,
+          "params": {
+            "bowRadius": "0.014",
+            "shaftLength": "0.042999999999999997",
+            "shaftWidth": "0.012",
+            "thickness": "0.0030000000000000001",
+            "toothDepth": "0.0080000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "camp_hq_safe_key",
+        "roll": 0,
+        "solid": "shaft",
+        "turn": [0, 0, -90]
+      },
+      "id": "camp_hq_safe_key",
+      "parts": [
+        {
+          "family": "key",
+          "finish": {
+            "metal": "brass"
+          },
+          "id": "camp_hq_safe_key",
+          "massKg": 0.01,
+          "params": {
+            "bowRadius": "0.01",
+            "shaftLength": "0.040000000000000001",
+            "shaftWidth": "0.012",
+            "thickness": "0.0030000000000000001",
+            "toothDepth": "0.0080000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "shed_key",
+        "roll": 0,
+        "solid": "shaft",
+        "turn": [0, 0, -90]
+      },
+      "id": "shed_key",
+      "parts": [
+        {
+          "family": "key",
+          "finish": {
+            "metal": "steel-grey"
+          },
+          "id": "shed_key",
+          "massKg": 0.01,
+          "params": {
+            "bowRadius": "0.012",
+            "shaftLength": "0.037999999999999999",
+            "shaftWidth": "0.012",
+            "thickness": "0.0030000000000000001",
+            "toothDepth": "0.0080000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "gauntlet_police_armoury_key",
+        "roll": 0,
+        "solid": "shaft",
+        "turn": [0, 0, -90]
+      },
+      "id": "gauntlet_police_armoury_key",
+      "parts": [
+        {
+          "family": "key",
+          "finish": {
+            "metal": "steel-blued"
+          },
+          "id": "gauntlet_police_armoury_key",
+          "massKg": 0.01,
+          "params": {
+            "bowRadius": "0.014",
+            "shaftLength": "0.042999999999999997",
+            "shaftWidth": "0.012",
+            "thickness": "0.0030000000000000001",
+            "toothDepth": "0.0080000000000000002"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "gauntlet_lab_entry_card",
+        "roll": 0,
+        "solid": "card",
+        "turn": [0, 0, -90]
+      },
+      "id": "gauntlet_lab_entry_card",
+      "parts": [
+        {
+          "family": "keycard",
+          "finish": {
+            "card": "plastic-white",
+            "stripe": "plastic-blue"
+          },
+          "id": "gauntlet_lab_entry_card",
+          "massKg": 0.0050000000000000001,
+          "params": {
+            "height": "0.055",
+            "stripeHeight": "0.012",
+            "thickness": "0.001",
+            "width": "0.085000000000000006"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "head": {
+          "fraction": [0.5, 1, 0.5],
+          "part": "bust",
+          "solid": "neck"
+        },
+        "hip_left": {
+          "fraction": [0.75, 0.12, 0.5],
+          "part": "bust",
+          "solid": "pelvis"
+        },
+        "hip_right": {
+          "fraction": [0.25, 0.12, 0.5],
+          "part": "bust",
+          "solid": "pelvis"
+        },
+        "neck": {
+          "fraction": [0.5, 0, 0.5],
+          "part": "bust",
+          "solid": "neck"
+        },
+        "shoulder_left": {
+          "fraction": [0.5, 0.5, 0.5],
+          "part": "bust",
+          "solid": "shoulder-left"
+        },
+        "shoulder_right": {
+          "fraction": [0.5, 0.5, 0.5],
+          "part": "bust",
+          "solid": "shoulder-right"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "player_bust",
+      "parts": [
+        {
+          "family": "bust",
+          "finish": {
+            "eye": "body-eye",
+            "hair": "body-hair",
+            "mouth": "body-mouth",
+            "pants": "cloth-pants-player",
+            "shirt": "cloth-shirt-player",
+            "skin": "body-skin-player"
+          },
+          "id": "bust",
+          "massKg": 38,
+          "params": {
+            "chestDepth": "0.22",
+            "chestHeight": "0.14999999999999999",
+            "chestWidth": "0.40000000000000002",
+            "hairCover": "0.070000000000000007",
+            "headDepth": "0.20000000000000001",
+            "headHeight": "0.23499999999999999",
+            "headWidth": "0.16500000000000001",
+            "jawHeight": "0.080000000000000002",
+            "neckHeight": "0.070000000000000007",
+            "neckWidth": "0.10000000000000001",
+            "pelvisDepth": "0.20000000000000001",
+            "pelvisHeight": "0.17000000000000001",
+            "pelvisWidth": "0.33000000000000002",
+            "ribDepth": "0.20999999999999999",
+            "ribHeight": "0.12",
+            "ribWidth": "0.34999999999999998",
+            "shoulderDepth": "0.12",
+            "shoulderHeight": "0.12",
+            "shoulderWidth": "0.089999999999999997",
+            "waistDepth": "0.19",
+            "waistHeight": "0.17000000000000001",
+            "waistWidth": "0.29999999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "electrical_tape",
+      "parts": [
+        {
+          "family": "ring",
+          "finish": {
+            "body": "paint-terracotta",
+            "core": "paperboard-tan"
+          },
+          "id": "electrical_tape",
+          "massKg": 0.029999999999999999,
+          "params": {
+            "coreRadius": "0.016",
+            "height": "0.021000000000000001",
+            "innerRadius": "0.012",
+            "outerRadius": "0.040000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "sewing_thread",
+      "parts": [
+        {
+          "family": "spool",
+          "finish": {
+            "core": "paperboard-tan",
+            "winding": "paint-terracotta"
+          },
+          "id": "sewing_thread",
+          "massKg": 0.014999999999999999,
+          "params": {
+            "coreRadius": "0.017999999999999999",
+            "flangeHeight": "0.0080000000000000002",
+            "flangeInset": "0.0040000000000000001",
+            "grooveDepth": "0.0015",
+            "height": "0.050000000000000003",
+            "outerRadius": "0.027",
+            "windingRadius": "0.025999999999999999",
+            "windings": "5"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "nylon_cord",
+      "parts": [
+        {
+          "family": "coil",
+          "finish": {
+            "body": "cord-olive"
+          },
+          "id": "nylon_cord",
+          "massKg": 0.059999999999999998,
+          "params": {
+            "pitch": "0.0060000000000000001",
+            "radius": "0.029000000000000001",
+            "tubeRadius": "0.0035000000000000001",
+            "turns": "4"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "fuse",
+      "parts": [
+        {
+          "family": "fuse",
+          "finish": {
+            "body": "glass-grey",
+            "cap": "steel-grey"
+          },
+          "id": "fuse",
+          "massKg": 0.01,
+          "params": {
+            "capLength": "0.0080000000000000002",
+            "capRadius": "0.010999999999999999",
+            "length": "0.070000000000000007",
+            "radius": "0.0089999999999999993"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "bear_trap",
+      "parts": [
+        {
+          "family": "bearTrap",
+          "finish": {
+            "chain": "steel-grey",
+            "frame": "steel-parkerized",
+            "jaw": "steel-grey"
+          },
+          "id": "bear_trap",
+          "massKg": 4.5,
+          "params": {
+            "barHeight": "0.012",
+            "barWidth": "0.035000000000000003",
+            "jawRadius": "0.16",
+            "jawSegments": "8",
+            "jawThickness": "0.0080000000000000002",
+            "jawWidth": "0.014",
+            "linkCount": "5",
+            "linkRadius": "0.017999999999999999",
+            "linkWire": "0.0050000000000000001",
+            "panHeight": "0.0060000000000000001",
+            "panRadius": "0.059999999999999998",
+            "springLength": "0.17000000000000001",
+            "springThickness": "0.01",
+            "springWidth": "0.040000000000000001",
+            "toothCount": "9",
+            "toothHeight": "0.017999999999999999"
+          },
+          "ports": []
         }
       ]
     }

@@ -5,6 +5,7 @@
 import type { BlockEntities, BlockEntity } from './blockEntities.ts';
 import { dominantSide, offSide } from './character.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
+import { coreMessage } from './coreText.ts';
 import type { HandHold, HandSide, Inventory } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import type { Body } from './physics.ts';
@@ -152,7 +153,8 @@ export class LadderHold implements HandHold {
   }
 
   private holding(): string {
-    return `Your ${this.hand()} hand is holding the ladder`;
+    const key = this.hand() === 'right' ? 'rightHandOnLadder' : 'leftHandOnLadder';
+    return coreMessage(this.options.inventory.registry, key);
   }
 
   private bothHands(item: Item): boolean {
@@ -165,8 +167,20 @@ export class LadderHold implements HandHold {
     if (this.options.entities.carrying()) {
       return inventory.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.handsFull;
     }
+    const reserved = this.options.entities.useRefusal(entity);
+    if (reserved) {
+      return reserved;
+    }
     this.hold = this.reached() ? { on: true } : { on: false, grabbed: entity };
     return undefined;
+  }
+
+  /** Lets go of a ladder that is being removed, so the hold never names a missing piece. */
+  releasePiece(entity: BlockEntity): void {
+    const held = this.hold?.on ? this.reached() : this.hold?.grabbed;
+    if (held?.uid === entity.uid) {
+      this.hold = undefined;
+    }
   }
 
   /**

@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { expect, it } from 'vitest';
 import { Character, practiceForNextLevel, SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -7,7 +5,8 @@ import { doorOptions } from '../src/core/options.ts';
 import { pryPlan } from '../src/core/prying.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
-import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
+import { baseRegistryWith } from './baseRegistry.ts';
+import { fixtureSources } from './economyFixtures.ts';
 import {
   advance,
   capture,
@@ -18,13 +17,6 @@ import {
   registry,
 } from './snapshotTestSupport.ts';
 
-const baseContent = readdirSync('src/content/base')
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({
-    source: file,
-    data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
-  }));
 const doorDef = registry.furniture.get('wood_door')!;
 const makeDoor = (runtime: ReturnType<typeof createRuntime>) => {
   const door = runtime.inventory.furnish({
@@ -39,17 +31,18 @@ const makeDoor = (runtime: ReturnType<typeof createRuntime>) => {
   }
   return door;
 };
-const carryCrowbar = (runtime: ReturnType<typeof createRuntime>) => {
+const carryTool = (runtime: ReturnType<typeof createRuntime>, type: string) => {
   const light = runtime.inventory.hands.left;
   if (!(light && runtime.inventory.consume(light))) {
-    throw new Error('Could not free a hand for the fixture crowbar');
+    throw new Error(`Could not free a hand for the fixture ${type}`);
   }
-  const crowbar = runtime.inventory.create('crowbar');
-  if (!runtime.inventory.add(crowbar, { kind: 'hand', side: 'left' })) {
-    throw new Error('Could not hold the fixture crowbar');
+  const tool = runtime.inventory.create(type);
+  if (!runtime.inventory.add(tool, { kind: 'hand', side: 'left' })) {
+    throw new Error(`Could not hold the fixture ${type}`);
   }
-  return crowbar;
+  return tool;
 };
+const carryCrowbar = (runtime: ReturnType<typeof createRuntime>) => carryTool(runtime, 'crowbar');
 const nearSpawn: [number, number, number] = [0, 1, 0];
 const makePryRuntime = (snapshot?: Parameters<typeof createRuntime>[0], active = false) => {
   const runtime = createRuntime(snapshot, false, undefined, { spawn: nearSpawn, active });
@@ -245,25 +238,25 @@ it('the matching key still unlocks a pryable door silently', () => {
 
 it('refuses a carried tool below the content quality threshold', () => {
   const { level } = doorDef.door!.methods.pry!;
-  const { registry: weakRegistry, issues } = buildRegistry([
-    ...baseContent,
-    {
-      source: 'weak-prying-tool.json',
-      data: {
-        items: [
-          {
-            id: 'weak_crowbar',
-            name: 'Weak crowbar',
-            category: 'tool',
-            weight: 1,
-            size: [1, 1],
-            tool: { qualities: { prying: level - 1 } },
-          },
-        ],
+  const weakRegistry = baseRegistryWith(
+    fixtureSources([
+      {
+        source: 'weak-prying-tool.json',
+        data: {
+          items: [
+            {
+              id: 'weak_crowbar',
+              name: 'Weak crowbar',
+              category: 'tool',
+              weight: 1,
+              size: [1, 1],
+              tool: { qualities: { prying: level - 1 } },
+            },
+          ],
+        },
       },
-    },
-  ]);
-  expect(issues).toEqual([]);
+    ]),
+  );
   const inventory = new Inventory(weakRegistry);
   const weakDoor = inventory.furnish({
     type: doorDef.id,
@@ -300,6 +293,22 @@ it('a prying strike travels through the sound-hearing path and draws a shambler'
   expect(runtime.heardSounds.filter(({ event }) => event === 'lock_pry')).toHaveLength(
     Math.floor(action.elapsed / strikeInterval),
   );
+  expect(shambler.mode).toBe('investigate');
+});
+
+it('a sledgehammer forces a door by hammering and its blows reach the sound-hearing path', () => {
+  const runtime = makePryRuntime();
+  const door = makeDoor(runtime);
+  const hammer = doorDef.door!.methods.hammer!;
+  const sledgehammer = carryTool(runtime, 'sledgehammer');
+  const shamblerType = registry.zombies.get('shambler')!;
+  const id = runtime.zombies.add({ ...shamblerType, sight: 0, nightSight: 0 }, [0, 1, 5], [1, 0, 0]);
+  const shambler = runtime.zombies.store.get(id)!;
+  expect(runtime.session.forceDoor(door, sledgehammer.uid)).toBeUndefined();
+
+  runtime.sim.scheduler.advance(hammer.strikeIntervalSimSeconds + 2);
+
+  expect(runtime.heardSounds.some(({ event }) => event === hammer.strikeSound)).toBe(true);
   expect(shambler.mode).toBe('investigate');
 });
 
@@ -369,7 +378,7 @@ it('a stopped part-done pry and a destroyed lock round-trip through save and loa
   const loaded = makePryRuntime(decoded.snapshot);
   expect(loaded.sim.actions.job).toMatchObject({
     jobType: 'forceDoor',
-    method: Object.keys(doorDef.door!.methods)[0],
+    method: 'pry',
     stopped: true,
     elapsed,
   });

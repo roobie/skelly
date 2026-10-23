@@ -9,6 +9,7 @@ import { createServer } from 'vite';
 import { pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove, pressWithDrawnCursor } from './menu-pointer.mjs';
 import { assertFixtureMods, selectFixtureMods } from './mods-startup.mjs';
+import { installSaveStatusTrace, saveLockSnapshot } from './save-lock-diagnostics.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { measureWeatheringMaterials } from './weatheringPixels.mjs';
 
@@ -30,7 +31,7 @@ const observation = {
     assert(code.includes(marker), 'game-loop observation point exists');
     const exposed = code.replace(
       marker,
-      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, worldLoading, spectatorCameraEnabled: () => spectatorCameraEnabled, THREE: FirefoxTHREE, weatheringStrengthMax: WEATHERING_STRENGTH_MAX } });\n${marker}`,
+      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, worldLoading, spectatorCameraEnabled: () => spectator.enabled, THREE: FirefoxTHREE, weatheringStrengthMax: WEATHERING_STRENGTH_MAX } });\n${marker}`,
     );
     const loadingMarker = '    updateWorldLoading(now);';
     assert(exposed.includes(loadingMarker), 'world-loading observation point exists');
@@ -63,6 +64,7 @@ try {
       consoleErrors.push(message.text());
     }
   });
+  await page.addInitScript(installSaveStatusTrace);
   await page.addInitScript(() => {
     localStorage.setItem('deadvox.hud-options', JSON.stringify({ clock: true }));
     let locked = null;
@@ -347,6 +349,26 @@ try {
     await page.keyboard.up('w');
   }
   assert.deepEqual(await page.evaluate(() => [...globalThis.firefoxUiTest.session.body.pos]), bodyBeforeSpectator);
+  const drawnAvatar = () =>
+    page.evaluate(
+      () =>
+        new Promise((resolve) =>
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() =>
+              resolve(
+                globalThis.firefoxUiTest.view.playerMeshes.group.children.map((mesh) => [
+                  ...mesh.instanceMatrix.array.slice(0, 16),
+                ]),
+              ),
+            ),
+          ),
+        ),
+    );
+  const avatarBeforeLook = await drawnAvatar();
+  await page.evaluate(() => {
+    globalThis.firefoxUiTest.input.yaw += 1;
+  });
+  assert.deepEqual(await drawnAvatar(), avatarBeforeLook, 'look input while detached must not turn the drawn avatar');
   await pressAction(page, 'debug.perception-labels-toggle');
   await page.waitForFunction(
     () => [...document.querySelectorAll('.zombie-perception-label')].some((label) => label.style.display !== 'none'),
@@ -470,6 +492,7 @@ try {
   if (runWeatheringTestPage) {
     pageErrors.length = 0;
     consoleErrors.length = 0;
+    const locksBeforeGoto = await saveLockSnapshot(page);
     await page.goto(
       browserStageUrl(
         'firefox-ui',
@@ -490,8 +513,9 @@ try {
         startupStatus: document.querySelector('#save-status')?.textContent,
         errors: document.querySelector('#errors')?.textContent,
       }));
+      const locks = { beforeGoto: locksBeforeGoto, afterTimeout: await saveLockSnapshot(page) };
       throw new Error(
-        `${error instanceof Error ? error.message : String(error)}; startup state: ${JSON.stringify(startupState)}; page errors: ${JSON.stringify(pageErrors)}; console errors: ${JSON.stringify(consoleErrors)}`,
+        `${error instanceof Error ? error.message : String(error)}; startup state: ${JSON.stringify(startupState)}; save locks: ${JSON.stringify(locks)}; page errors: ${JSON.stringify(pageErrors)}; console errors: ${JSON.stringify(consoleErrors)}`,
         { cause: error },
       );
     }

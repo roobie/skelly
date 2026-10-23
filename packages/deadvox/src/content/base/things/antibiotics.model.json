@@ -1,0 +1,7 @@
+{
+  "id": "antibiotics",
+  "file": "assets/models/antibiotics.glb",
+  "grip": { "at": [0, 0.03, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

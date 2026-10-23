@@ -1,4 +1,5 @@
 local shape = import 'furniture-shape.libsonnet';
+local breach = import 'furniture-breach.libsonnet';
 local look = import 'gauntlet-look.jsonnet';
 local city = import 'gauntlet-city.libsonnet';
 local kits = import 'gauntlet-city-kits.libsonnet';
@@ -113,7 +114,7 @@ local utilities = [
     ],
   },
 ];
-shape.colliding({
+breach.breaking(shape.colliding({
   items: types.items + publicNotes + houseNotes + lab.items,
   mapPools: kits.mapPools + city.mapPools,
   blocks: types.blocks,
@@ -155,4 +156,4 @@ shape.colliding({
     },
   ],
   templates: city.templates + perimeter.templates + utilities,
-})
+}))

@@ -21,17 +21,29 @@ import { runSweeps, sweepGroup } from './sweeps.ts';
  * Keys of `FAMILIES` (not family names: `ak-receiver` is also named `receiver`) whose default-run cases are a 3-wise covering array instead of the full product. Any
  * family not listed here (including every family added later) gets the full product.
  *
- * Why these three: `receiver` (the AR/pump one) is 32,256 of the 37,320 combinations, `barrel` and
- * `handguard` 1,944 each. The array keeps coverage of the built geometry: on a sample of
- * `parts.ts` mutants it killed every mutant the full product killed, where 2-wise missed one.
+ * Why these: they are the families whose full products dominate the default run (`receiver` alone is
+ * most of the combinations). For `receiver`, `barrel` and `handguard`, on a sample of `parts.ts`
+ * mutants the array killed every mutant the full product killed, where 2-wise missed one. The
+ * other sampled families were not measured; they are sampled for run time and the sweep keeps their
+ * full products.
  * `lower` stays a full product: the 3-wise array misses its `magazineOrientation=tilt` classes.
+ * `magazine` stays a full product: `acceptedCases` drops invalid length/profile rows, and filtering
+ * an array after generation would leave valid triples uncovered.
  * `sight` is sampled as an array so future optic parameters compose without making its full product
  * the default; the optic contract tests explicitly cover every stable catalog type. The full product
  * of these families still runs under `GUNGEN_SWEEPS` (see `sweepGroup` below).
  * `handleStyle` is deliberately excluded from these unconstrained products: arbitrary combinations
  * create invalid owner/pattern pairings. The compatible style × pattern × owner matrix below tests it.
  */
-const ARRAY_SAMPLED_KEYS = ['receiver', 'barrel', 'handguard', 'sight'] as const;
+const ARRAY_SAMPLED_KEYS = [
+  'receiver',
+  'barrel',
+  'handguard',
+  'sight',
+  'bolt-carrier',
+  'bolt-handle-arm',
+  'bolt-handle-knob',
+] as const;
 const ARRAY_STRENGTH = 3;
 // Sporter joints/support and cartridge-driven motion/export have dedicated contract tests;
 // multiplying their look controls through unrelated mechanisms only repeats geometry classes.
@@ -122,17 +134,19 @@ const isArraySampled = (key: string): boolean => (ARRAY_SAMPLED_KEYS as readonly
 const sameParams = (a: Record<string, string>, b: Record<string, string>): boolean =>
   Object.keys(a).length === Object.keys(b).length && Object.entries(a).every(([k, v]) => b[k] === v);
 
+// Straight STANAG only accepts M; the rejected lengths have a dedicated contract test.
+const acceptedCases = (key: string, cases: Record<string, string>[]): Record<string, string>[] =>
+  key === 'magazine'
+    ? cases.filter(({ profile, length: lengthClass }) => profile !== 'stanag-straight' || lengthClass === 'M')
+    : cases;
+
 /** The default product/covering-array cases; owner-specific styles are covered separately below. */
 const defaultCases = (key: string, family: PartFamily): Record<string, string>[] => {
   const params = withoutHandleStyle(family);
   if (!isArraySampled(key)) {
-    const cases = fullProduct(params);
-    // Straight STANAG only accepts M; the rejected lengths have a dedicated contract test.
-    return key === 'magazine'
-      ? cases.filter(({ profile, length: lengthClass }) => profile !== 'stanag-straight' || lengthClass === 'M')
-      : cases;
+    return acceptedCases(key, fullProduct(params));
   }
-  const cases = tWiseCases(params, ARRAY_STRENGTH);
+  const cases = acceptedCases(key, tWiseCases(params, ARRAY_STRENGTH));
   for (const extra of EXPLICIT_CASES[key] ?? []) {
     for (const [name, spec] of Object.entries(params)) {
       if (!spec.values.includes(extra[name] ?? '')) {
@@ -571,15 +585,18 @@ describe('part library', () => {
 
   it('scales the SMG magazine section by 0.6 in X and 0.8 in Z', () => {
     const body = FAMILIES.magazine!.build({ length: 'L', profile: 'smg' }).solids[0]!;
+    const standard = FAMILIES.magazine!.build({ length: 'L', profile: 'standard' }).solids[0]!;
     expect(body.kind).toBe('box');
-    if (body.kind === 'box') {
-      expect(body.box.half[0] * 2).toBeCloseTo(5.5 * 0.6);
-      expect(body.box.half[2] * 2).toBeCloseTo(2.5 * 0.8);
+    expect(standard.kind).toBe('box');
+    if (body.kind === 'box' && standard.kind === 'box') {
+      expect(body.box.half[0] / standard.box.half[0]).toBeCloseTo(0.6);
+      expect(body.box.half[2] / standard.box.half[2]).toBeCloseTo(0.8);
     }
   });
 
   // Each case checks only the PartDef that `build(params)` returns: grid alignment, orthonormal
   // ports, unique port ids and positive box sizes. No rules or geometry checks run.
+  const BatchCaseTimeoutMs = 40;
   const definePartChecks = (family: PartFamily, cases: Record<string, string>[], batchSize = 1): void => {
     let gridStep = GRID;
     if (family.name === 'forend' || family.name === 'ar-charging-handle') {
@@ -652,12 +669,16 @@ describe('part library', () => {
 
     for (let start = 0; start < cases.length; start += batchSize) {
       const batch = cases.slice(start, start + batchSize);
-      // 256 builds take under 1 s on the reference host; 10 s is ~10x measured and bounds the full sweep.
-      it(`cases ${start}-${start + batch.length - 1}: geometry and port definitions are valid on the ${gridStep}u grid`, () => {
-        for (const params of batch) {
-          expect(check(params), JSON.stringify(params)).toEqual(expected);
-        }
-      }, 10_000);
+      // The timeout scales with the batch's case count, never a flat number.
+      it(
+        `cases ${start}-${start + batch.length - 1}: geometry and port definitions are valid on the ${gridStep}u grid`,
+        () => {
+          for (const params of batch) {
+            expect(check(params), JSON.stringify(params)).toEqual(expected);
+          }
+        },
+        batch.length * BatchCaseTimeoutMs,
+      );
     }
   };
 
@@ -699,7 +720,7 @@ describe('part library', () => {
       describe(key, () => {
         // A skipped group still registers its cases, so build none in the default run.
         // Batch exhaustive cases to cap Vitest registration memory; failures retain the exact params.
-        definePartChecks(family, runSweeps ? fullProduct(withoutHandleStyle(family)) : [], 256);
+        definePartChecks(family, runSweeps ? acceptedCases(key, fullProduct(withoutHandleStyle(family))) : [], 256);
       });
     }
   });
@@ -848,7 +869,10 @@ describe('pump shotgun tube and barrel contact', () => {
     expect(topSlitFacets.length).toBeGreaterThanOrEqual(2);
     const tube = FAMILIES['tube-magazine']!.build({ bore: 'L', barrelLength: 'M', lengthPercent: '75' });
     expect(tube.ports.find((port) => port.id === 'forend')?.pos).toEqual([9, 0, 0]);
-    expect(tube.keepOuts.find(({ id }) => id === 'forend-travel')?.box.half[0]).toBe(2.75);
+    const forendPort = tube.ports.find((port) => port.id === 'forend')!;
+    const forendTravel = tube.keepOuts.find(({ id }) => id === 'forend-travel')!.box;
+    expect(forendTravel.half[0]).toBeGreaterThan(0);
+    expect(forendTravel.center[0] + forendTravel.half[0]).toBeCloseTo(forendPort.pos[0]);
     expect(forend.motion).toMatchObject({ axis: [-1, 0, 0], end: [0, 0, 0] });
   });
 

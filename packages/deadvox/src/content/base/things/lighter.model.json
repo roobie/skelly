@@ -1,0 +1,8 @@
+{
+  "id": "lighter",
+  "file": "assets/models/lighter.glb",
+  "parts": { "lighter": { "node": "lighter:lighter", "massKg": 0.02, "centreOfMass": [0, 0.030833333333333334, 0] } },
+  "grip": { "at": [0, 0.025, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

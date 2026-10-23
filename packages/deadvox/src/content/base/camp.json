@@ -1,10 +1,32 @@
 {
   "furniture": [
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#718087",
       "door": {
+        "detail": {
+          "fields": [5, 1],
+          "frame": 0.059999999999999998,
+          "handle": {
+            "along": 0.45000000000000001,
+            "fromFreeEdge": 0.12,
+            "kind": "pull",
+            "length": 0.5,
+            "thickness": 0.029999999999999999
+          },
+          "hardware": "#a9adb0",
+          "hinges": {
+            "count": 4,
+            "length": 0.080000000000000002,
+            "width": 0.059999999999999998
+          },
+          "relief": 0.014999999999999999,
+          "seam": 0.050000000000000003
+        },
         "handlingSimSeconds": 0.59999999999999998,
-        "material": "steel",
         "methods": {
           "pry": {
             "fastestTimeSimSeconds": 7.5,
@@ -18,10 +40,15 @@
         }
       },
       "id": "container_door",
+      "material": "steel",
       "name": "Steel container door",
       "size": [2, 4, 1]
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#69716f",
       "container": {
         "pockets": [
@@ -38,6 +65,7 @@
         ]
       },
       "id": "rifle_rack",
+      "material": "wood",
       "name": "Rifle rack",
       "shape": [
         {
@@ -106,6 +134,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#77725a",
       "container": {
         "pockets": [
@@ -116,6 +148,7 @@
         ]
       },
       "id": "ammo_crate",
+      "material": "wood",
       "name": "Ammunition crate",
       "shape": [
         {
@@ -187,6 +220,14 @@
       "solidFill": 0.01
     },
     {
+      "appearance": {
+        "kind": "lid",
+        "surface": "painted-metal"
+      },
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#5b6142",
       "container": {
         "pockets": [
@@ -197,10 +238,15 @@
         ]
       },
       "id": "ammo_can",
+      "material": "steel",
       "name": "Ammunition can",
       "size": [1, 1, 1]
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#6b756f",
       "container": {
         "pockets": [
@@ -211,6 +257,7 @@
         ]
       },
       "id": "footlocker",
+      "material": "wood",
       "name": "Footlocker",
       "shape": [
         {
@@ -292,8 +339,13 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#677a82",
       "id": "camp_cot",
+      "material": "wood",
       "name": "Folding cot",
       "rest": {
         "quality": 0.59999999999999998,
@@ -355,6 +407,10 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#59656a",
       "container": {
         "pockets": [
@@ -366,10 +422,10 @@
       },
       "door": {
         "handlingSimSeconds": 0.59999999999999998,
-        "material": "steel",
         "methods": {}
       },
       "id": "camp_hq_safe",
+      "material": "steel",
       "name": "Steel reserve safe",
       "shape": [
         {
@@ -380,6 +436,10 @@
       "size": [3, 2, 2]
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#7a5c3e",
       "container": {
         "pockets": [
@@ -390,6 +450,7 @@
         ]
       },
       "id": "field_desk",
+      "material": "wood",
       "name": "Field desk",
       "shape": [
         {
@@ -444,8 +505,13 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#a6936f",
       "id": "camp_orders",
+      "material": "wood",
       "name": "Camp orders board",
       "readable": {
         "text": "Hold the road and keep the clinic supplied. The medical site is under the camp's protection. Keep the armoury locked; its key stays with the officer.",
@@ -469,20 +535,48 @@
       "solid": false
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#9b8d6a",
       "id": "camp_sandbag_barricade",
+      "material": "wood",
       "name": "Sandbag barricade",
       "size": [2, 2, 2],
       "solid": true
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#666c70",
       "door": {
+        "detail": {
+          "fields": [8, 1],
+          "frame": 0.059999999999999998,
+          "handle": {
+            "along": 0.45000000000000001,
+            "fromFreeEdge": 0.14999999999999999,
+            "kind": "pull",
+            "length": 0.29999999999999999,
+            "thickness": 0.029999999999999999
+          },
+          "hardware": "#a9adb0",
+          "hinges": {
+            "count": 2,
+            "length": 0.29999999999999999,
+            "width": 0.080000000000000002
+          },
+          "relief": 0.014999999999999999,
+          "seam": 0.050000000000000003
+        },
         "handlingSimSeconds": 1.2,
-        "material": "steel",
         "methods": {}
       },
       "id": "camp_gate_leaf",
+      "material": "steel",
       "name": "Camp fence-gate leaf",
       "size": [6, 5, 1]
     }
@@ -499,9 +593,9 @@
       "key": {
         "lock": "camp_armoury"
       },
+      "model": "camp_armoury_key",
       "name": "Military armoury key",
-      "size": [1, 1],
-      "weight": 10
+      "size": [1, 1]
     },
     {
       "category": "book",
@@ -530,9 +624,9 @@
       "key": {
         "lock": "camp_hq_safe"
       },
+      "model": "camp_hq_safe_key",
       "name": "HQ reserve key",
-      "size": [1, 1],
-      "weight": 10
+      "size": [1, 1]
     },
     {
       "category": "note",
@@ -1465,8 +1559,8 @@
           "#..............#",
           "#..............#",
           "#..............#",
-          "#..............#",
-          "#..............#",
+          "#..L...........#",
+          "#..L...........#",
           "#..............#",
           "################"
         ],
@@ -1794,6 +1888,9 @@
           "loot": "camp_supplies"
         },
         "G": "galvanized",
+        "L": {
+          "furniture": "bedroll"
+        },
         "M": {
           "furniture": "field_desk",
           "loot": "camp_supplies"

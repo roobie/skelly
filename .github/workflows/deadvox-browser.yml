@@ -13,7 +13,7 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble
       options: --user pwuser
-    timeout-minutes: ${{ inputs.shard == 'control-check' && 100 || 30 }}
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: packages/deadvox
@@ -35,7 +35,8 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             packages/deadvox/tools/lit-check/package-lock.json
-      - run: npm ci --prefix ../..
+      # Registry-free install, same reason as the fast job in deadvox.yml.
+      - run: npm ci --prefix ../.. --no-audit --no-fund --prefer-offline
         timeout-minutes: 3
       - name: Install pinned go-jsonnet
         run: npm --prefix ../.. run jsonnet:setup
@@ -49,42 +50,32 @@ jobs:
         if: ${{ inputs.shard != 'firefox' }}
         timeout-minutes: 3
         run: npx playwright install chromium
-      - if: ${{ inputs.shard == 'control-check' }}
-        run: npm ci --prefix tools/lit-check
-        timeout-minutes: 3
-      - if: ${{ inputs.shard == 'control-check' }}
-        run: timeout 300 npm run lint:lit
-      - if: ${{ inputs.shard == 'control-check' }}
-        run: timeout 300 npm run typecheck
-      - name: Full test suite (includes the save budget fixture once)
-        if: ${{ inputs.shard == 'control-check' }}
-        run: timeout 300 npm test -- --maxWorkers=2
       - name: Browser UI contract (Chromium)
-        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'input' }}
+        if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 9
         run: node tools/ui-browser-contract.mjs
       - name: Melee/build-click browser contract
-        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'input' }}
+        if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 1
         run: node test/browser/melee-build-click.mjs
       - name: Primary-action interaction and replay contract
-        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'input' }}
+        if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 2
         run: node test/browser/primary-action.mjs
       - name: Primary-action glowstick pixel contract
-        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'input' }}
+        if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 1
         run: node test/browser/primary-action-pixel.mjs
       - name: Save-controller browser regressions
-        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'save-other' }}
+        if: ${{ inputs.shard == 'save-other' }}
         timeout-minutes: 4
         run: node test/browser/save-controller-regressions.mjs
       - name: Save-storage browser contract (Chromium)
-        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'save-other' }}
+        if: ${{ inputs.shard == 'save-other' }}
         timeout-minutes: 1
         run: node test/browser/save-storage.mjs chromium
       - name: Save autosave — OPFS Continue (Chromium)
-        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'opfs' }}
+        if: ${{ inputs.shard == 'opfs' }}
         timeout-minutes: 4
         env:
           SAVE_AUTOSAVE_ONLY: '1'
@@ -92,7 +83,7 @@ jobs:
           SAVE_AUTOSAVE_SCENARIO: continue
         run: node test/browser/save-storage.mjs chromium
       - name: Save autosave — OPFS replacement (Chromium)
-        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'opfs' }}
+        if: ${{ inputs.shard == 'opfs' }}
         timeout-minutes: 8
         env:
           SAVE_AUTOSAVE_ONLY: '1'
@@ -101,7 +92,7 @@ jobs:
         run: node test/browser/save-storage.mjs chromium
       # Chromium bfcache navigation is quarantined pending a proven timeout cause; #706.
       - name: Save autosave — IndexedDB Continue (Chromium)
-        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'indexeddb' }}
+        if: ${{ inputs.shard == 'indexeddb' }}
         timeout-minutes: 4
         env:
           SAVE_AUTOSAVE_ONLY: '1'
@@ -109,7 +100,7 @@ jobs:
           SAVE_AUTOSAVE_SCENARIO: continue
         run: node test/browser/save-storage.mjs chromium
       - name: Save autosave — IndexedDB replacement (Chromium)
-        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'indexeddb' }}
+        if: ${{ inputs.shard == 'indexeddb' }}
         timeout-minutes: 8
         env:
           SAVE_AUTOSAVE_ONLY: '1'
@@ -117,7 +108,7 @@ jobs:
           SAVE_AUTOSAVE_SCENARIO: replacement
         run: node test/browser/save-storage.mjs chromium
       - name: Save busy-lock relaunch (Chromium; independent of Continue)
-        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'indexeddb' }}
+        if: ${{ inputs.shard == 'indexeddb' }}
         timeout-minutes: 2
         env:
           SAVE_AUTOSAVE_ONLY: '1'
@@ -125,36 +116,36 @@ jobs:
           SAVE_AUTOSAVE_SCENARIO: busy-lock
         run: node test/browser/save-storage.mjs chromium
       - name: Insecure-context browser contract
-        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'save-other' }}
+        if: ${{ inputs.shard == 'save-other' }}
         timeout-minutes: 1
         run: node test/browser/insecure-saves.mjs
       - name: Install expression probe browsers and headed Firefox
-        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}
+        if: ${{ inputs.shard == 'firefox' }}
         timeout-minutes: 3
         run: npx playwright install firefox chromium
       - name: Install feasibility agreement browsers
-        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}
+        if: ${{ inputs.shard == 'firefox' }}
         timeout-minutes: 3
         run: npx playwright install chromium firefox webkit
       - name: Vehicle feasibility agreement (Node, Chromium, Firefox, WebKit)
-        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}
+        if: ${{ inputs.shard == 'firefox' }}
         timeout-minutes: 1
         run: node test/browser/vehicle-feasibility.mjs
       - name: Isolated expression Wasm cross-engine contract
-        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}
+        if: ${{ inputs.shard == 'firefox' }}
         timeout-minutes: 1
         run: node tools/probe-wasm-expressions.mjs
       # Native first-click #168, Firefox OPFS #224 and Continue #170 remain quarantined.
       - name: Firefox UI contract (synthetic pointer lock; native case remains quarantined)
-        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}
+        if: ${{ inputs.shard == 'firefox' }}
         timeout-minutes: 2
         run: xvfb-run -a node test/browser/firefox-ui.mjs
       - name: Firefox inventory-scroll browser contract
-        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}
+        if: ${{ inputs.shard == 'firefox' }}
         timeout-minutes: 1
         run: xvfb-run -a node test/browser/inventory-scroll.mjs firefox
       - name: Firefox busy-lock relaunch (independent of quarantined Continue)
-        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}
+        if: ${{ inputs.shard == 'firefox' }}
         timeout-minutes: 2
         env:
           SAVE_AUTOSAVE_ONLY: '1'
@@ -162,77 +153,71 @@ jobs:
           SAVE_AUTOSAVE_SCENARIO: busy-lock
         run: xvfb-run -a node test/browser/save-storage.mjs firefox
       - name: Firefox save navigation
-        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}
+        if: ${{ inputs.shard == 'firefox' }}
         timeout-minutes: 2
         env:
           SAVE_NAVIGATION_ONLY: '1'
         run: xvfb-run -a node test/browser/save-storage.mjs firefox
       - name: Firefox autosave — IndexedDB replacement
-        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}
+        if: ${{ inputs.shard == 'firefox' }}
         timeout-minutes: 1
         env:
           SAVE_AUTOSAVE_ONLY: '1'
           SAVE_AUTOSAVE_BACKEND: indexeddb
           SAVE_AUTOSAVE_SCENARIO: replacement
         run: xvfb-run -a node test/browser/save-storage.mjs firefox
-      - if: ${{ inputs.shard == 'control-check' }}
-        run: timeout 300 npm run validate
-      - if: ${{ inputs.shard == 'control-check' }}
-        run: timeout 300 npx vite build
-      - if: ${{ inputs.shard == 'control-check' }}
-        run: timeout 300 node tools/check-favicon.mjs
       - name: Inventory scroll browser contract (Chromium)
-        if: ${{ inputs.shard == 'control-stages' || inputs.shard == 'stages' }}
+        if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 1
         run: node test/browser/inventory-scroll.mjs chromium
       - name: Full-auto fire browser contract
-        if: ${{ inputs.shard == 'control-stages' || inputs.shard == 'stages' }}
+        if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 1
         run: node test/browser/full-auto.mjs
       - name: Case visual pool browser contract
-        if: ${{ inputs.shard == 'control-stages' || inputs.shard == 'stages' }}
+        if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 1
         run: node test/browser/case-visual-pool.mjs
       - name: Pump handling browser contract (Chromium)
-        if: ${{ inputs.shard == 'control-stages' || inputs.shard == 'stages' }}
+        if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 5
         run: timeout 300 node test/browser/pump-handling.mjs
       - name: Stairs traversal browser contract
-        if: ${{ inputs.shard == 'control-stages' || inputs.shard == 'stages' }}
+        if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 3
         run: node test/browser/stairs.mjs traversal
       - name: Stairs camo AO browser contract
-        if: ${{ inputs.shard == 'control-stages' || inputs.shard == 'stages' }}
+        if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 5
         run: node test/browser/stairs.mjs camo
       - name: Stairs lighting cellar browser contract
-        if: ${{ inputs.shard == 'control-stages' || inputs.shard == 'stages' }}
+        if: ${{ inputs.shard == 'stages' }}
         # Pixel readbacks doubled; scale their measured share, not the unchanged startup work.
         timeout-minutes: 5
         run: node test/browser/stairs.mjs lighting-cellar
       - name: Stairs lighting residents browser contract
-        if: ${{ inputs.shard == 'control-stages' || inputs.shard == 'stages' }}
+        if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 3
         run: node test/browser/stairs.mjs lighting-residents
       - name: Stairs lighting outdoor browser contract
-        if: ${{ !cancelled() && (inputs.shard == 'control-stages' || inputs.shard == 'stages') }}
+        if: ${{ !cancelled() && (inputs.shard == 'stages') }}
         # Preserve correctness evidence even when an earlier fixture proof fails.
         timeout-minutes: 3
         run: node test/browser/stairs.mjs lighting-outdoor
       - name: Stairs lighting atlas browser contract
-        if: ${{ inputs.shard == 'control-stages' || inputs.shard == 'stages' }}
+        if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 3
         run: node test/browser/stairs.mjs lighting-atlas
       - name: Reading consumer browser contract
-        if: ${{ inputs.shard == 'control-stages' || inputs.shard == 'stages' }}
+        if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 3
         run: node test/browser/reading.mjs consumer
       - name: Reading lifecycle browser contract
-        if: ${{ inputs.shard == 'control-stages' || inputs.shard == 'stages' }}
+        if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 3
         run: node test/browser/reading.mjs lifecycle
       - name: Upload browser diagnostics
-        if: ${{ always() && ((inputs.shard != 'control-check' && inputs.shard != 'control-stages') || failure()) }}
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: deadvox-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.shard }}

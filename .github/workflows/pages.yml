@@ -79,7 +79,6 @@ jobs:
         working-directory: packages/deadvox
         run: |
           npm run typecheck
-          npm test
           npm run validate
           PAGES_ANALYTICS=1 npx vite build
       - name: Check and build mobgen

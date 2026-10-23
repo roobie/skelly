@@ -39,6 +39,7 @@ export const SOUND_EVENT_IDS = [
   'revolver_round_insert',
   'revolver_hammer_cock',
   'shotgun_blast',
+  'shotgun_boom',
   'shotgun_rack_back',
   'shotgun_rack_forward',
   'shotgun_insert',
@@ -70,6 +71,7 @@ export const SOUND_EVENT_IDS = [
   'door_roller_open',
   'door_close',
   'door_blocked_close',
+  'door_bash',
   'furniture_scrape',
 ] as const;
 

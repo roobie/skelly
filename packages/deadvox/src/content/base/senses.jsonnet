@@ -1,3 +1,11 @@
+local crouch = {
+  speedMetresPerSimSecond: 1,
+  hearingRangeScale: 0.5,
+  sightRangeScale: 0.5,
+  eyeDropMetres: 0.7,
+  bodyHeightMetres: 1.2,
+};
+
 {
   senses: [
     {
@@ -7,12 +15,14 @@
         backwardSpeedScale: 0.5,
       },
       chestEyeFraction: 0.62,
-      crouch: {
-        speedMetresPerSimSecond: 1,
-        hearingRangeScale: 0.5,
-        sightRangeScale: 0.5,
-        eyeDropMetres: 0.7,
-        bodyHeightMetres: 1.2,
+      crouch: crouch,
+      // Hearing and sight copy crouch's until BR rules on lying down (#550).
+      prone: {
+        speedMetresPerSimSecond: 0.5,
+        hearingRangeScale: crouch.hearingRangeScale,
+        sightRangeScale: crouch.sightRangeScale,
+        eyeDropMetres: 1.3,
+        bodyHeightMetres: 0.6,
       },
       wall: {
         hearingRangeScale: 0.5,
@@ -28,6 +38,12 @@
         hardLandingMetres: 2.5,
       },
       vocalNoiseLifetimeSimSeconds: 0.5,
+      // The tiny end is pitched above the old law and the large end keeps its old-law pitch.
+      shamblerVoice: {
+        oldLawReferenceHeightMetres: 1.7,
+        smallestAnchorMultiplier: 1.2,
+        clampMultiplier: { min: 0.5, max: 1.3 },
+      },
       light: {
         playerDaySightScale: 0,
         lureRangeScale: 0.5,
@@ -39,6 +55,7 @@
         renderedBeamLimit: 2,
         throwArmSpeedMetresPerRealSecond: 9,
         throwArmEnergyJoules: 60,
+        groundLight: { senseHeightMetres: 0.075, renderLiftMetres: 0.4 },
       },
     },
   ],

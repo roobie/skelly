@@ -1,4 +1,5 @@
 import {
+  array,
   check,
   finite,
   type InferOutput,
@@ -18,12 +19,31 @@ import {
 } from 'valibot';
 
 export const ModelPointSchema = tuple([pipe(number(), finite()), pipe(number(), finite()), pipe(number(), finite())]);
+const dotOf = (a: readonly number[], b: readonly number[]) => a.reduce((sum, value, axis) => sum + value * b[axis]!, 0);
+const UnitVectorSchema = pipe(
+  ModelPointSchema,
+  check((point) => Math.abs(Math.hypot(...point) - 1) <= 1e-6, 'must be a unit vector'),
+);
 const Id = pipe(string(), regex(/^[a-z0-9_]+$/, 'must be lowercase letters, digits and _'));
+
+export const ModelBoxSchema = pipe(
+  strictObject({ min: ModelPointSchema, max: ModelPointSchema }),
+  check(({ min, max }) => min.every((value, axis) => value <= max[axis]!), 'box min must not exceed max'),
+);
 
 export const ModelPartSchema = strictObject({
   massKg: pipe(number(), finite(), minValue(0)),
   centreOfMass: ModelPointSchema,
   node: optional(pipe(string(), nonEmpty())),
+  collision: optional(pipe(array(ModelBoxSchema), nonEmpty('baked collision needs a box'))),
+  /** Metres between the planes, from the model origin, that its baked collision lies on when drawn in voxels. */
+  voxelGrain: optional(
+    pipe(
+      number(),
+      finite(),
+      check((grain) => grain > 0, 'voxel grain must be positive'),
+    ),
+  ),
 });
 
 export const NeutralModelSchema = strictObject({
@@ -38,8 +58,25 @@ export const NeutralModelSchema = strictObject({
   emissiveMaterial: optional(pipe(string(), nonEmpty('must not be empty'))),
   grip: optional(strictObject({ at: ModelPointSchema, turn: optional(ModelPointSchema) })),
   hold: optional(picklist(['forward', 'upright'])),
+  /** How the model rests on the ground: upright stands it on its −x end, the axis an upright hold raises. */
+  rest: optional(picklist(['lying', 'upright'])),
   roll: optional(pipe(number(), finite(), minValue(-180), maxValue(180))),
   anchors: optional(record(Id, ModelPointSchema)),
+  /**
+   * The screen of an item that shows something: its centre, the way it faces, the way its top points,
+   * and its width across and height along that top in metres.
+   */
+  display: optional(
+    pipe(
+      strictObject({
+        at: ModelPointSchema,
+        normal: UnitVectorSchema,
+        up: UnitVectorSchema,
+        size: tuple([pipe(number(), finite(), minValue(0)), pipe(number(), finite(), minValue(0))]),
+      }),
+      check(({ normal, up }) => Math.abs(dotOf(normal, up)) <= 1e-6, 'display up must be across its normal'),
+    ),
+  ),
 });
 
 export const modelSchema = <const Packs extends ObjectEntries>(packs: Packs) => {
@@ -54,3 +91,4 @@ export const modelSchema = <const Packs extends ObjectEntries>(packs: Packs) => 
 type DeepReadonly<T> = T extends object ? { readonly [K in keyof T]: DeepReadonly<T[K]> } : T;
 export type NeutralModel = DeepReadonly<InferOutput<typeof NeutralModelSchema>>;
 export type ModelParts = NonNullable<NeutralModel['parts']>;
+export type ModelBox = DeepReadonly<InferOutput<typeof ModelBoxSchema>>;

@@ -1,0 +1,16 @@
+{
+  "id": "compass",
+  "file": "assets/models/compass.glb",
+  "parts": {
+    "compass": {
+      "node": "compass:compass",
+      "massKg": 0.12,
+      "centreOfMass": [0, 0.007941176470588234, -0.001764705882352941]
+    }
+  },
+  "grip": { "at": [0, 0.005, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0,
+  "anchors": { "needle_mount": [0, 0.01, 0] },
+  "display": { "at": [0, 0.01, 0], "normal": [0, 1, 0], "up": [0, 0, -1], "size": [0.04, 0.04] }
+}

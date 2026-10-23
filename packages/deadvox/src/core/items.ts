@@ -3,6 +3,7 @@
 // items stack up to their type's limit.
 
 import type { ItemDef, ModelDef, Registry } from './content.ts';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { firearmSlotIds } from './firearmFitting.ts';
 import { assertFirearmState, type FirearmState, snapshotFirearm } from './firearmState.ts';
 import { magazineContentsReason, magazineSpec, magazineWellCalibre, slotsReason } from './magazine.ts';
@@ -47,6 +48,8 @@ export interface ItemFields<Node> {
   pinPulled?: true | undefined;
   /** An explosive's fuse left in Sim seconds; present once it has left the hand with the pin out. */
   fuseRemainingSimSeconds?: number;
+  /** A trap lying set on the floor, or shut on a leg (core/bearTrap.ts); absent while it is safe to carry. */
+  trap?: TrapState | undefined;
   /**
    * Game-clock timestamp when it was made; absent means before the world began (day 1,
    * 00:00). Food rots from then (core/food.ts).
@@ -58,10 +61,15 @@ export interface ItemFields<Node> {
   firearm?: FirearmState;
   /** A magazine's cartridge item types in feed order, top round first (core/magazine.ts). */
   cartridges?: string[];
+  /** A cargo space's size in inventory cells along x, y and z, kept from fitting to salvage (core/cargoSpace.ts). */
+  cargo?: [x: number, y: number, z: number];
   /** Items fitted to this one, owned by it like work components. Keys are exported mount IDs or named device slots. */
   slots?: ItemSlots<Node>;
   work?: CraftWork<Node> | undefined;
 }
+
+/** Holding a zombie by id, or the player when `zombie` is absent. */
+export type TrapState = { state: 'armed' } | { state: 'holding'; zombie?: number; remainingSimSeconds: number };
 
 type ItemSlots<Node> = Record<string, Node>;
 
@@ -87,6 +95,12 @@ export interface ItemState extends ItemFields<ItemState> {
 export type Placed = PlacedItem<Item>;
 export type PlacedState = PlacedItem<ItemState>;
 
+const trapField = (trap: TrapState | undefined): { trap?: TrapState } =>
+  trap === undefined ? {} : { trap: { ...trap } };
+
+const cargoField = (cargo: ItemFields<unknown>['cargo']): Pick<ItemFields<unknown>, 'cargo'> =>
+  cargo === undefined ? {} : { cargo: [...cargo] };
+
 /** Immutable, isolated item tree suitable for a save snapshot. */
 export const snapshotItem = (item: Item): Readonly<ItemState> =>
   freezeSnapshot({
@@ -101,9 +115,11 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
     ...(item.litAtGameTimestamp === undefined ? {} : { litAtGameTimestamp: item.litAtGameTimestamp }),
     ...(item.pinPulled === undefined ? {} : { pinPulled: item.pinPulled }),
     ...(item.fuseRemainingSimSeconds === undefined ? {} : { fuseRemainingSimSeconds: item.fuseRemainingSimSeconds }),
+    ...trapField(item.trap),
     ...(item.madeAtGameTimestamp === undefined ? {} : { madeAtGameTimestamp: item.madeAtGameTimestamp }),
     ...(item.firearm === undefined ? {} : { firearm: snapshotFirearm(item.firearm) }),
     ...(item.cartridges === undefined ? {} : { cartridges: [...item.cartridges] }),
+    ...cargoField(item.cargo),
     ...(item.slots === undefined
       ? {}
       : {
@@ -168,6 +184,40 @@ const assertSavedFuse = (def: ItemDef, state: ItemState): void => {
   }
 };
 
+/** Only a single trap is set or shut, and a hold never outlasts the trap's own. */
+const assertSavedTrap = (def: ItemDef, state: ItemState): void => {
+  const { trap } = state;
+  if (trap === undefined) {
+    return;
+  }
+  const holdValid =
+    trap.state === 'armed' ||
+    (Number.isFinite(trap.remainingSimSeconds) &&
+      trap.remainingSimSeconds > 0 &&
+      trap.remainingSimSeconds <= (def.trap?.holdSimSeconds ?? 0) &&
+      (trap.zombie === undefined || Number.isSafeInteger(trap.zombie)));
+  if (!(def.trap && state.count === 1 && holdValid)) {
+    throw new Error('Invalid saved trap state');
+  }
+};
+
+/** Only a cargo space has a size, in whole cells, and its one pocket is its floor. */
+const assertSavedCargo = (def: ItemDef, state: ItemState): void => {
+  const { cargo } = state;
+  if (
+    cargo !== undefined &&
+    !(
+      def.vehicle?.cargoSpace &&
+      state.count === 1 &&
+      cargo.length === 3 &&
+      cargo.every((cells) => Number.isSafeInteger(cells) && cells >= 1) &&
+      state.pockets?.length === 1
+    )
+  ) {
+    throw new Error('Invalid saved cargo space');
+  }
+};
+
 const assertSavedLootCount = (state: ItemState): void => {
   if (
     state.lootedCount !== undefined &&
@@ -208,7 +258,9 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
   const def = defOf(registry, state.type);
   assertSavedBurnState(def, state);
   assertSavedFuse(def, state);
+  assertSavedTrap(def, state);
   assertSavedLootCount(state);
+  assertSavedCargo(def, state);
   const firearm = restoreFirearmState(registry, def, state);
   const magazineReason =
     magazineContentsReason(registry, state.type, state.cartridges) ?? slotsReason(registry, state.type, state.slots);
@@ -229,9 +281,11 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
     ...(state.litAtGameTimestamp === undefined ? {} : { litAtGameTimestamp: state.litAtGameTimestamp }),
     ...(state.pinPulled === undefined ? {} : { pinPulled: state.pinPulled }),
     ...(state.fuseRemainingSimSeconds === undefined ? {} : { fuseRemainingSimSeconds: state.fuseRemainingSimSeconds }),
+    ...trapField(state.trap),
     ...(state.madeAtGameTimestamp === undefined ? {} : { madeAtGameTimestamp: state.madeAtGameTimestamp }),
     ...(firearm === undefined ? {} : { firearm }),
     ...(state.cartridges === undefined ? {} : { cartridges: [...state.cartridges] }),
+    ...cargoField(state.cargo),
     ...(state.slots === undefined
       ? {}
       : {
@@ -477,18 +531,16 @@ export const isEmpty = (item: Item): boolean =>
   Object.values(item.slots ?? {}).every((child) => child === undefined) &&
   (item.pockets ?? []).every((grid) => grid.length === 0);
 
-/** Condition as a word (`DESIGN.md`, "The item model"). */
-export const conditionWord = (condition: number): string => {
-  if (condition >= 0.9) {
-    return 'pristine';
-  }
-  if (condition >= 0.6) {
-    return 'worn';
-  }
-  if (condition >= 0.3) {
-    return 'damaged';
-  }
-  return condition >= 0.1 ? 'badly damaged' : 'ruined';
+/** Condition as a word, from the content band table (`DESIGN.md`, "The item model"). */
+export const conditionWord = (registry: Registry, condition: number): string => {
+  const bands = registry.inventory.get(CORE_CONTENT_IDS.player)!.conditionBands;
+  return (bands.findLast((band) => band.from <= condition) ?? bands[0]!).word;
+};
+
+/** The band word for a condition below the top band; a thing in the top band reads by its plain name. */
+export const damageWord = (registry: Registry, condition: number): string | undefined => {
+  const bands = registry.inventory.get(CORE_CONTENT_IDS.player)!.conditionBands;
+  return condition < bands.at(-1)!.from ? conditionWord(registry, condition) : undefined;
 };
 
 /** How many of `item` could join the `onto` stack. */

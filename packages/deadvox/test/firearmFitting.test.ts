@@ -12,6 +12,7 @@ import { simSeconds } from '../src/core/time.ts';
 import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
+import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 
 type Pair = NonNullable<GunModelDef['compatibilityPairs']>[number];
 type Choice = Pair[number];
@@ -43,9 +44,10 @@ const makeFixture = (character?: HandedCharacter, prepareRegistry?: (registry: R
   return { registry, model, modelId, inventory, firearm, foregrip, withModel };
 };
 
+/** The first two bottom-rail slots the export certifies for the foregrip, so a multi-notch span stays on the rail. */
 const bottomRailSlots = (model: GunModelDef): string[] =>
   (model.attachmentSlots ?? [])
-    .filter((slot) => slot.mount === 'rail-bottom')
+    .filter((slot) => slot.mount === 'rail-bottom' && model.compatibility?.[slot.id]?.includes('foregrip'))
     .map((slot) => slot.id)
     .slice(0, 2);
 
@@ -64,6 +66,8 @@ const makeCandidateFixture = (attachmentCount: number, includeOutOfReach = false
         pockets: [{ grid: [attachmentCount * 4 + 8, 4], handlingSimSeconds: simSeconds(0) }],
         wideReason: 'Test-owned grid for candidate discovery',
       },
+      breach: fixtureBreach(),
+      material: FIXTURE_MATERIAL,
     };
     registry.furniture.set(cabinet.id, cabinet);
   });

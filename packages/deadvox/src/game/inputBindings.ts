@@ -100,6 +100,7 @@ const INPUT_ACTIONS: readonly Action[] = [
   row('movement.sprint', 'Sprint', moving, 'held-state'),
   row('movement.walk-toggle', 'Walk / jog', moving),
   row('player.crouch-toggle', 'Toggle crouch', ['play', 'carrying', 'build']),
+  row('player.prone-toggle', 'Lie down or rise to a crouch', ['play', 'carrying', 'build']),
   row('player.throw', 'Tap to toggle throwing stance; hold to drop a held item', ['play']),
   row('movement.jump', 'Jump', ['play', 'carrying', 'build'], 'held-state'),
   row('carry.tip', 'Tip the carried piece over', ['carrying']),
@@ -136,6 +137,9 @@ const INPUT_ACTIONS: readonly Action[] = [
   row('inventory.previous', 'Select previous item', ['inventory'], 'press', { repeat: true }),
   row('inventory.next', 'Select next item', ['inventory'], 'press', { repeat: true }),
   row('inventory.search', 'Search next container', ['inventory']),
+  row('inventory.cycle-target', 'Choose the next container to put into', ['inventory']),
+  row('inventory.put-target', 'Put selected item into the chosen container', ['inventory']),
+  row('inventory.find', 'Find items by name or keyword', ['inventory']),
   row('inventory.hands', 'Wield selected item', ['inventory']),
   row('inventory.wear', 'Wear or remove', ['inventory']),
   row('inventory.drop', 'Drop selected item', ['inventory']),
@@ -168,6 +172,7 @@ const INPUT_ACTIONS: readonly Action[] = [
   debugRow('debug.god-toggle', 'God mode'),
   debugRow('debug.noclip-toggle', 'Noclip'),
   debugRow('debug.spectator-camera-toggle', 'Spectator camera'),
+  debugRow('debug.spectator-teleport', 'Teleport avatar to spectator camera'),
   debugRow('debug.third-person-toggle', 'Third-person avatar view'),
   debugRow('debug.perception-labels-toggle', 'Perception labels'),
   debugRow('debug.spawn-unaware-shambler', 'Spawn unaware shambler'),
@@ -753,6 +758,8 @@ export const comboBoxKey = (event: Event): ComboBoxKey | undefined => {
   }
   return event.key === 'Escape' || event.key === 'Tab' ? 'close' : undefined;
 };
+/** Whether a key clears the inventory find field (`src/ui/inventoryScreen.ts`). Like a native search field's, it is fixed. */
+export const clearsFindField = (event: Event): boolean => event instanceof KeyboardEvent && event.key === 'Escape';
 const typesCharacter = (event: Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'altKey'>): boolean =>
   event.key.length === 1 && !(event.ctrlKey || event.metaKey || event.altKey);
 const editable = (target: EventTarget | null): boolean =>

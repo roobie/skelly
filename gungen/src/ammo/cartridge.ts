@@ -121,6 +121,8 @@ export interface CartridgeBase {
   readonly relatedTo: readonly CartridgeRelation[];
   /** Free-form remarks: source values not mapped to a field, caveats on how a symbol was read. */
   readonly notes: readonly string[];
+  /** The voxel grain in metres its round and case export at, in place of their class grain. */
+  readonly voxelGrain?: number;
 }
 
 // ---------------------------------------------------------------- metallic cartridges

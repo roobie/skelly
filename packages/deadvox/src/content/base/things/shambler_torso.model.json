@@ -1,0 +1,14 @@
+{
+  "id": "shambler_torso",
+  "file": "assets/models/shambler_torso.glb",
+  "parts": {
+    "part": {
+      "node": "part:torso",
+      "massKg": 12,
+      "centreOfMass": [-0.00001047086508776095, 0.28300319523305756, 0.0005853969213497701]
+    }
+  },
+  "grip": { "at": [0, 0.37, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 0
+}

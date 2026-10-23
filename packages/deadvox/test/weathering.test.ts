@@ -1,8 +1,11 @@
+import type { WebGLProgramParametersWithUniforms, WebGLRenderer } from 'three';
 import { describe, expect, it } from 'vitest';
 import { blockColors, buildRegistry } from '../src/core/content.ts';
 import { buildMesh } from '../src/core/mesher.ts';
 import { blockWeatherability, PADDED, paddedIndex } from '../src/core/meshInput.ts';
 import { OCCLUSION_RADIUS, WIDE } from '../src/core/occlusion.ts';
+import { ChunkMeshes } from '../src/render/chunks.ts';
+import { startupContent } from './baseRegistry.ts';
 
 const R = OCCLUSION_RADIUS;
 const colors = new Uint8Array([0, 0, 0, 180, 160, 140]);
@@ -93,5 +96,26 @@ describe('mesher weathering attributes', () => {
       [11, 15, 10],
     );
     expect(low).toBeGreaterThan(high);
+  });
+});
+
+describe('chunk weathering shader', () => {
+  it('skips the weathering work on quads that cannot weather', () => {
+    const { material } = new ChunkMeshes(0.5, startupContent().registry);
+    const shader = {
+      uniforms: {},
+      vertexShader: '',
+      fragmentShader: '#include <common>\n#include <color_fragment>',
+    } as WebGLProgramParametersWithUniforms;
+    material.onBeforeCompile(shader, {} as WebGLRenderer);
+    const code = shader.fragmentShader;
+    // The first noise lookup after the colour chunk is weathering's; the branch enclosing it must
+    // test the quad's weatherable flag, so a non-weatherable quad never evaluates the noise.
+    const work = code.indexOf('vnoise(', code.indexOf('#include <color_fragment>'));
+    expect(work).toBeGreaterThan(0);
+    const branch = code.lastIndexOf('if (', work);
+    const condition = code.slice(branch, code.indexOf('{', branch));
+    expect(condition).toContain('uWeathering > 0.0');
+    expect(condition).toContain('vWeatherable > 0.5');
   });
 });

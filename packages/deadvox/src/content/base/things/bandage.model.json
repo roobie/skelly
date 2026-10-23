@@ -1,0 +1,14 @@
+{
+  "id": "bandage",
+  "file": "assets/models/bandage.glb",
+  "parts": {
+    "body": {
+      "node": "body:woundRoll",
+      "massKg": 0.02,
+      "centreOfMass": [0.0017763157894736838, 0.030263157894736832, 0]
+    }
+  },
+  "grip": { "at": [0, 0.025, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

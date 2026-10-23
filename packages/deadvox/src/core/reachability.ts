@@ -11,7 +11,7 @@ import { siteGenerationOf } from './sitePalette.ts';
 import { compileTemplate, type SpawnMarker } from './templates.ts';
 import { SEVERED_ITEM } from './zombieRegionNames.ts';
 
-/** BR's content-count exclusions for the current base; extend with new debug/case/part definitions. */
+/** Content types excluded from the content-count check; extend with new debug/case/part definitions. */
 const CONTENT_COUNT_EXCLUSIONS: ReadonlySet<string> = new Set([
   WORK_IN_PROGRESS, // Runtime-owned escrow, not an acquired content type.
   'debug_shotgun_pump',
@@ -63,6 +63,15 @@ const addItemOutputs = (registry: Registry, items: Set<string>): void => {
     for (const output of [item?.unpack?.item, item?.serving?.empty]) {
       if (output !== undefined) {
         items.add(output);
+      }
+    }
+    // A default attachment arrives fitted to its host and comes off it as its own item.
+    for (const fitted of registry.models.get(item?.model ?? '')?.gun?.attachments ?? []) {
+      const child = [...registry.items.values()].find(
+        (candidate) => registry.models.get(candidate.model ?? '')?.gun?.attachment?.id === fitted.id,
+      );
+      if (child) {
+        items.add(child.id);
       }
     }
   }

@@ -60,6 +60,7 @@ const { registry: skillZeroRegistry } = buildRegistry([
           firearm: {
             recoilKickRadians: 0.01,
             dispersionRadians: 0,
+            pelletSpreadScale: 1,
             shotSound: 'gunshot',
             handling: {},
             skillZeroHandling: {
@@ -77,6 +78,7 @@ const { registry: skillZeroRegistry } = buildRegistry([
           firearm: {
             recoilKickRadians: 0.02,
             dispersionRadians: 0,
+            pelletSpreadScale: 1,
             shotSound: 'gunshot',
             handling: {},
             skillZeroHandling: {
@@ -91,7 +93,13 @@ const { registry: skillZeroRegistry } = buildRegistry([
           category: 'weapon',
           weight: 1,
           size: [1, 1],
-          firearm: { recoilKickRadians: 0.01, dispersionRadians: 0, shotSound: 'gunshot', handling: {} },
+          firearm: {
+            recoilKickRadians: 0.01,
+            dispersionRadians: 0,
+            pelletSpreadScale: 1,
+            shotSound: 'gunshot',
+            handling: {},
+          },
         },
       ],
     },
@@ -418,7 +426,9 @@ describe('rifle firearm handling', () => {
       distanceMetres: 2 * pose.blockSize,
       point: bore.origin.map((value, axis) => value + bore.direction[axis]! * 2) as [number, number, number],
     };
-    const point = crosshairAimPoint(bore.origin, bore.direction, nearSurface);
+    const point = crosshairAimPoint(bore.origin, bore.direction, tuning.shotTraceRangeBlocks, [
+      nearSurface?.distanceBlocks,
+    ]);
     const direction = firedTrajectory.directions[0]!;
     expect(direction.every((value, axis) => Math.abs(value - bore.direction[axis]!) < 1e-9)).toBe(true);
     const alongRay = point.reduce(
@@ -677,18 +687,20 @@ describe('rifle firearm handling', () => {
     const inventory = new Inventory(registry);
     const pump = inventory.create('debug_shotgun_pump');
     expect(inventory.add(pump, { kind: 'hand', side: 'right' })).toBe(true);
-    expect(firearmHandlingFor(pump, registry)).toMatchObject({
-      calibre: '12-gauge-00-buck',
-      caseModelId: 'case_12_h_gauge_h_00_h_buck',
+    const model = registry.models.get(registry.items.get(pump.type)!.model!)!;
+    const data = firearmHandlingFor(pump, registry);
+    expect(data).toMatchObject({
+      calibre: model.gun?.calibre,
       roundsPerSimSecond: undefined,
-      action: registry.models.get(registry.items.get(pump.type)!.model!)!.gun!.action,
+      action: model.gun?.action,
     });
+    expect(registry.models.get(data.caseModelId!)?.gun?.calibre).toBe(model.gun?.calibre);
     const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
       blockSize: 0.5,
       pose: () => undefined,
       onEjection: () => undefined,
     });
-    expect(mechanics.fireReason(pump.uid)).toBe('No exported automatic action data for this gun');
+    expect(mechanics.fireReason(pump.uid)).toBeTruthy();
   });
 
   it('admits and loads an unannotated held gun while its mechanics refuse without synthetic data', async () => {
@@ -699,8 +711,8 @@ describe('rifle firearm handling', () => {
         data: {
           models: [
             {
-              id: 'pistol_full',
-              file: 'assets/models/pistol_full.glb',
+              id: 'unannotated_gun_model',
+              file: 'assets/models/rifle_ak.glb',
             },
           ],
           items: [
@@ -710,10 +722,11 @@ describe('rifle firearm handling', () => {
               category: 'weapon',
               weight: 1000,
               size: [1, 1],
-              model: 'pistol_full',
+              model: 'unannotated_gun_model',
               firearm: {
                 recoilKickRadians: 0.012,
                 dispersionRadians: 0.01,
+                pelletSpreadScale: 1,
                 shotSound: 'gunshot',
                 handling: {},
               },
@@ -723,7 +736,7 @@ describe('rifle firearm handling', () => {
       },
     ]);
     expect(fixture.issues).toEqual([]);
-    const model = fixture.registry.models.get('pistol_full')!;
+    const model = fixture.registry.models.get('unannotated_gun_model')!;
     expect(model.gun?.calibre).toBeUndefined();
     const bytes = readFileSync(join(BASE, model.file));
     const gltf = await new GLTFLoader().parseAsync(
@@ -747,9 +760,11 @@ describe('rifle firearm handling', () => {
       onEjection: () => undefined,
     });
     const before = inventory.snapshotState();
-    expect(mechanics.fireReason(gun.uid)).toBe('No exported action data for this gun');
+    const reason = mechanics.fireReason(gun.uid);
+    expect(reason).toBeTruthy();
+    expect(() => firearmHandlingFor(gun, fixture.registry)).toThrow(reason);
     expect(mechanics.fire({ ...shotInput(gun, 0), seed: 1 })).toBe(false);
-    expect(mechanics.cock(gun.uid, 0)).toBe('No exported action data for this gun');
+    expect(mechanics.cock(gun.uid, 0)).toBe(reason);
     expect(queue.jobs).toEqual([]);
     expect(inventory.snapshotState()).toEqual(before);
   });

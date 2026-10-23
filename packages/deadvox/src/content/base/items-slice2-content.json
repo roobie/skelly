@@ -1,6 +1,9 @@
 {
   "items": [
     {
+      "canister": {
+        "capacity": 8
+      },
       "category": "material",
       "description": "A small sealed bottle of fuel for lamps and improvised lighting.",
       "economy": {
@@ -11,6 +14,7 @@
       "model": "lamp_oil_bottle",
       "name": "Lamp oil",
       "size": [1, 2],
+      "stack": 2,
       "weight": 500
     },
     {
@@ -232,7 +236,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "wire_strippers",
-      "model": "pliers",
+      "model": "wire_strippers",
       "name": "Wire strippers",
       "size": [1, 2],
       "tool": {
@@ -240,8 +244,7 @@
           "cutting": 1,
           "screwing": 1
         }
-      },
-      "weight": 180
+      }
     },
     {
       "category": "tool",
@@ -250,7 +253,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "adjustable_pliers",
-      "model": "pliers",
+      "model": "adjustable_pliers",
       "name": "Adjustable pliers",
       "salvage": [
         {
@@ -269,8 +272,7 @@
           "cutting": 1,
           "wrenching": 1
         }
-      },
-      "weight": 300
+      }
     },
     {
       "category": "tool",
@@ -345,7 +347,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "dead_desk_lamp",
-      "model": "desk_lamp",
+      "model": "dead_desk_lamp",
       "name": "Dead desk lamp",
       "salvage": [
         {
@@ -475,7 +477,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "sewing_repair_kit",
-      "model": "sewing_kit",
+      "model": "sewing_repair_kit",
       "name": "Clothing repair kit",
       "size": [2, 2],
       "tool": {
@@ -483,8 +485,7 @@
           "repairing": 1,
           "sewing": 1
         }
-      },
-      "weight": 420
+      }
     },
     {
       "category": "tool",
@@ -700,8 +701,7 @@
         "qualities": {
           "wrenching": 1
         }
-      },
-      "weight": 500
+      }
     },
     {
       "category": "weapon",
@@ -723,6 +723,7 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "firearmAttachmentEffects": {
+        "kind": "suppressor",
         "recoilReduction": 0.050000000000000003,
         "wearPerShot": 0.02
       },

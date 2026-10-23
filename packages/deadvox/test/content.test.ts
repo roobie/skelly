@@ -12,6 +12,7 @@ import { blockColors, requiredContentIssues, validateContent } from '../src/core
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { ordinaryHamletSpawnWeights } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { corpseLootPoint, lootTypeIssue } from '../src/core/loot.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
 import { blockPatterns, blockWeatherability } from '../src/core/meshInput.ts';
 import { opticViewSettings } from '../src/core/opticView.ts';
@@ -33,7 +34,7 @@ import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_RANGES } from '../src/core/we
 import { INPUT_BINDINGS, inputBindings, POINTER_ACTIONS } from '../src/game/inputBindings.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { camoShaderConfig } from '../src/render/surfacePatterns.ts';
-import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
+import { buildFixtureRegistry as buildRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 
 const BASE = 'src/content/base';
 const CONTEXTUAL_KEY_LABEL = /^(?:[A-Za-z]+|[0-9]|[^\p{L}\p{N}\s]+)$/u;
@@ -54,6 +55,25 @@ const baseSounds = {
       .filter(({ source }) => source.startsWith('sounds'))
       .flatMap(({ data }) => (data as { sounds: unknown[] }).sounds),
   },
+};
+const reachableLootItems = (root: string | undefined): { table: string; item: string }[] => {
+  const found: { table: string; item: string }[] = [];
+  const seen = new Set<string>();
+  const pending = root === undefined ? [] : [root];
+  while (pending.length > 0) {
+    const table = baseRegistry.loot.get(pending.pop()!)!;
+    if (!seen.has(table.id)) {
+      seen.add(table.id);
+      for (const { item, table: nested } of table.entries) {
+        if (nested !== undefined) {
+          pending.push(nested);
+        } else if (item !== undefined) {
+          found.push({ table: table.id, item });
+        }
+      }
+    }
+  }
+  return found;
 };
 const invalidZombieRegionIssues = (zombieId: string, regionId: string, change: 'remove' | 'add') => {
   const zombieFile = base.find((file) => file.source === 'zombies.json')!;
@@ -204,7 +224,10 @@ describe('content', () => {
               name: 'Wood door',
               size: [2, 4, 1],
               color: '#7a5534',
-              door: { material: 'wood', methods: {}, handlingSimSeconds: 0.5 },
+              door: {
+                methods: {},
+                handlingSimSeconds: 0.5,
+              },
             },
           ],
           templates: [
@@ -263,8 +286,10 @@ describe('content', () => {
     const layoutSpawns = [...baseRegistry.layouts.values()].flatMap((layout) =>
       layout.shamblers.some(({ type }) => type === soldier.id) ? [layout] : [],
     );
+    const soldierSite = (id: string) => id.startsWith('camp_') || id.startsWith('crisis_hq');
     expect(templateSpawns.some((id) => id.startsWith('camp_'))).toBe(true);
-    expect(templateSpawns.every((id) => id.startsWith('camp_'))).toBe(true);
+    expect(templateSpawns.some((id) => id.startsWith('crisis_hq'))).toBe(true);
+    expect(templateSpawns.every(soldierSite)).toBe(true);
     expect(layoutSpawns.length).toBeGreaterThan(0);
     expect(layoutSpawns.every((layout) => layout.buildings.some(({ template }) => template.startsWith('camp_')))).toBe(
       true,
@@ -281,6 +306,16 @@ describe('content', () => {
   it('excludes authored-only kinds from ordinary hamlet spawn weights', () => {
     const soldier = baseRegistry.zombies.get('military_shambler')!;
     expect(ordinaryHamletSpawnWeights(baseRegistry).has(soldier.id)).toBe(false);
+  });
+
+  it('gives every zombie kind only kit items its corpse can drop', () => {
+    const dead = [...baseRegistry.zombies.values()].flatMap((kind) => {
+      const { context } = corpseLootPoint(kind.loot ?? '', 0, [0, 0, 0]);
+      return reachableLootItems(kind.loot)
+        .filter(({ item }) => lootTypeIssue(baseRegistry, item, context) !== undefined)
+        .map(({ table, item }) => `${kind.id} → ${table} → ${item}`);
+    });
+    expect(dead).toEqual([]);
   });
 
   it('resolves spawn names against the day cycle of the last file that defines one', () => {
@@ -436,6 +471,36 @@ describe('content', () => {
     expect(validateContent({ source: 'body.json', data: { body: [withRegionFactor({ chest: 1 })] } })).not.toEqual([]);
   });
 
+  it('rejects a heartbeat sound that is missing or has more than one variant', () => {
+    const body = baseRegistry.body.get('player')!;
+    const [onlyVariant] = [...baseRegistry.sounds.values()][0]!.variants;
+    const single = {
+      ...[...baseRegistry.sounds.values()][0]!,
+      id: 'heartbeat_fixture_single',
+      variants: [onlyVariant],
+    };
+    const pair = { ...single, id: 'heartbeat_fixture_pair', variants: [onlyVariant, onlyVariant] };
+    const events = [single.id, pair.id, 'heartbeat_fixture_absent'];
+    const { issues } = buildRegistry([
+      {
+        source: 'heartbeat-fixture.json',
+        data: {
+          sounds: [single, pair],
+          body: events.map((event, index) => ({
+            ...body,
+            id: `heartbeat_fixture_${index}`,
+            heartbeat: { ...body.heartbeat, sounds: { slow: event, fast: single.id } },
+          })),
+        },
+      },
+    ]);
+
+    expect(issues.filter(({ source }) => source === 'heartbeat-fixture.json').map(({ path }) => path)).toEqual([
+      'body[1].heartbeat.sounds.slow',
+      'body[2].heartbeat.sounds.slow',
+    ]);
+  });
+
   it('accepts a touch slot covering some regions only, and rejects one covering none', () => {
     const body = baseRegistry.body.get('player')!;
     const handSlot = body.touchFirst.hand;
@@ -522,6 +587,80 @@ describe('content', () => {
       true,
     );
     expect(issues.some(({ path }) => path.endsWith('.combat.firearms.wobbleNoiseSmoothingSimSeconds'))).toBe(true);
+  });
+
+  it('rejects firearms tuning without case ejection or shot trace range', () => {
+    const source = base.find((file) => file.source === 'recipes.json')!;
+    const data = structuredClone(source.data) as {
+      skills: { id: string; combat?: { firearms?: Record<string, unknown> } }[];
+    };
+    const firearms = data.skills.find(({ id }) => id === 'firearms_combat')!.combat!.firearms!;
+    Reflect.deleteProperty(firearms, 'caseEjection');
+    Reflect.deleteProperty(firearms, 'shotTraceRangeBlocks');
+    const { issues } = buildRegistry([{ source: source.source, data }]);
+    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.caseEjection'))).toBe(true);
+    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.shotTraceRangeBlocks'))).toBe(true);
+  });
+
+  it('rejects ammunition spread or firearm choke scale that is not authored', () => {
+    const files = structuredClone(base) as {
+      source: string;
+      data: { items?: { ammo?: Record<string, unknown>; firearm?: Record<string, unknown> }[] };
+    }[];
+    const items = files.flatMap(({ data }) => data.items ?? []);
+    const ammunition = items.find((item) => item.ammo !== undefined)!;
+    const firearm = items.find((item) => item.firearm !== undefined)!;
+    Reflect.deleteProperty(ammunition.ammo!, 'spreadDegrees');
+    Reflect.deleteProperty(firearm.firearm!, 'pelletSpreadScale');
+    const { issues } = buildRegistry(files);
+    expect(issues.some(({ path }) => path.endsWith('.ammo.spreadDegrees'))).toBe(true);
+    expect(issues.some(({ path }) => path.endsWith('.firearm.pelletSpreadScale'))).toBe(true);
+  });
+
+  it('rejects firearm attachment effects without a per-shot wear', () => {
+    const files = (
+      structuredClone(base) as { source: string; data: { items?: { firearmAttachmentEffects?: object }[] } }[]
+    ).filter(({ data }) => data.items);
+    const attachment = files
+      .flatMap((file) => file.data.items ?? [])
+      .find((item) => item.firearmAttachmentEffects !== undefined);
+    expect(attachment).toBeDefined();
+    Reflect.deleteProperty(attachment!.firearmAttachmentEffects!, 'wearPerShot');
+    const { issues } = buildRegistry(files);
+    expect(issues.some(({ path }) => path.endsWith('.firearmAttachmentEffects.wearPerShot'))).toBe(true);
+  });
+
+  it('rejects an attachment whose model kind has effects but whose item authors none', () => {
+    const data = {
+      items: [
+        {
+          id: 'fixture_suppressor',
+          economy: { usage: [], tiers: [] },
+          name: 'Fixture suppressor',
+          category: 'misc',
+          weight: 1,
+          size: [1, 2],
+          model: 'fixture_suppressor',
+        },
+      ],
+      models: [
+        {
+          id: 'fixture_suppressor',
+          file: 'assets/models/fixture_suppressor.glb',
+          gun: {
+            attachment: {
+              id: 'fixture-suppressor',
+              kind: 'suppressor',
+              mount: 'muzzle',
+              mountFrame: { normal: [-1, 0, 0], up: [0, 1, 0] },
+              properties: { noiseFactor: 0.25 },
+            },
+          },
+        },
+      ],
+    };
+    const { issues } = buildRegistry([{ source: 'effects-fixture.json', data }]);
+    expect(issues.map(({ path }) => path)).toEqual(['items[0].firearmAttachmentEffects']);
   });
 
   it('rejects an item that lacks the handling time its kind needs', () => {
@@ -619,6 +758,7 @@ describe('content', () => {
         pump: true,
         recoilKickRadians: 0.01,
         dispersionRadians: 0.01,
+        pelletSpreadScale: 1,
         shotSound: 'gunshot',
         handling: {},
         roundLoadSimSeconds: 1,
@@ -642,7 +782,7 @@ describe('content', () => {
       category: 'weapon',
       weight: 1,
       size: [1, 1],
-      firearm: { recoilKickRadians: 0.01, shotSound: 'gunshot', handling: {} },
+      firearm: { recoilKickRadians: 0.01, pelletSpreadScale: 1, shotSound: 'gunshot', handling: {} },
     };
     const missing = validateContent({ source, data: { items: [item] } });
     expect(missing.map(({ path }) => path)).toContain('items[0].firearm.dispersionRadians');
@@ -665,7 +805,13 @@ describe('content', () => {
           weight: 1,
           size: [1, 1],
           model: 'fixture_gun',
-          firearm: { recoilKickRadians: 0.01, dispersionRadians: 0, shotSound: 'gunshot', handling: {} },
+          firearm: {
+            recoilKickRadians: 0.01,
+            dispersionRadians: 0,
+            pelletSpreadScale: 1,
+            shotSound: 'gunshot',
+            handling: {},
+          },
         },
         {
           id: 'fixture_suppressor',
@@ -675,6 +821,7 @@ describe('content', () => {
           weight: 1,
           size: [1, 2],
           model: 'fixture_suppressor',
+          firearmAttachmentEffects: { kind: 'suppressor', recoilReduction: 0.1, wearPerShot: 0.01 },
         },
       ],
       models: [
@@ -769,8 +916,24 @@ describe('content', () => {
     const source = 'restable-furniture-fixture.json';
     const data: ContentFile = {
       furniture: [
-        { id: 'fixture_chair', name: 'Chair', size: [1, 2, 1], color: '#123456', rest: { quality: 0.5 } },
-        { id: 'fixture_sofa', name: 'Sofa', size: [4, 2, 2], color: '#654321', rest: { quality: 0.5, sleep: true } },
+        {
+          id: 'fixture_chair',
+          name: 'Chair',
+          size: [1, 2, 1],
+          color: '#123456',
+          rest: { quality: 0.5 },
+          breach: fixtureBreach(),
+          material: FIXTURE_MATERIAL,
+        },
+        {
+          id: 'fixture_sofa',
+          name: 'Sofa',
+          size: [4, 2, 2],
+          color: '#654321',
+          rest: { quality: 0.5, sleep: true },
+          breach: fixtureBreach(),
+          material: FIXTURE_MATERIAL,
+        },
       ],
     };
     const accepted = buildRegistry([{ source, data }]);
@@ -785,6 +948,17 @@ describe('content', () => {
     expect(rejected.issues.length).toBeGreaterThan(0);
   });
 
+  it('keeps every sleep surface that is carried like a rug poorer than every fixed one', () => {
+    const sleepers = [...baseRegistry.furniture.values()].filter((def) => def.rest?.sleep === true);
+    const carried = sleepers.filter((def) => def.cover === true);
+    const fixed = sleepers.filter((def) => def.cover !== true);
+    expect(carried.length).toBeGreaterThan(0);
+    expect(fixed.length).toBeGreaterThan(0);
+    const bestCarried = Math.max(...carried.map((def) => def.rest!.quality));
+    const worstFixed = Math.min(...fixed.map((def) => def.rest!.quality));
+    expect(bestCarried).toBeLessThan(worstFixed);
+  });
+
   it('rejects furniture shape boxes that leave the footprint on each axis', () => {
     const furniture = [
       {
@@ -794,6 +968,8 @@ describe('content', () => {
         color: '#123456',
         shape: [{ position: [0.5, 0.5, 0.25], size: [0.75, 0.5, 0.5] }],
         solidFill: 0.01,
+        breach: fixtureBreach(),
+        material: FIXTURE_MATERIAL,
       },
       {
         id: 'fixture_furniture_y',
@@ -802,6 +978,8 @@ describe('content', () => {
         color: '#123456',
         shape: [{ position: [0.25, 1.5, 0.25], size: [0.5, 0.75, 0.5] }],
         solidFill: 0.01,
+        breach: fixtureBreach(),
+        material: FIXTURE_MATERIAL,
       },
       {
         id: 'fixture_furniture_z',
@@ -810,6 +988,8 @@ describe('content', () => {
         color: '#123456',
         shape: [{ position: [0.25, 0.5, 0.5], size: [0.5, 0.5, 0.75] }],
         solidFill: 0.01,
+        breach: fixtureBreach(),
+        material: FIXTURE_MATERIAL,
       },
     ];
     const issues = validateContent({ source: 'outside-furniture-shape.json', data: { furniture } });
@@ -1399,6 +1579,46 @@ describe('content', () => {
   });
 });
 
+describe('condition bands', () => {
+  const baseRow = (base.find((file) => file.source === 'inventory.json')!.data as ContentFile).inventory![0]!;
+  const withBands = (conditionBands: { from: number; word: string }[]) =>
+    buildRegistry([{ source: 'bands.json', data: { inventory: [{ ...baseRow, conditionBands }] } }]).issues.map(
+      ({ path }) => path,
+    );
+
+  it('accepts bands that start at 0 and rise', () => {
+    expect(
+      withBands([
+        { from: 0, word: 'a' },
+        { from: 0.5, word: 'b' },
+      ]),
+    ).toEqual([]);
+  });
+
+  it.each([
+    ['a gap below the first bound', [{ from: 0.2, word: 'a' }]],
+    [
+      'an overlap',
+      [
+        { from: 0, word: 'a' },
+        { from: 0.5, word: 'b' },
+        { from: 0.5, word: 'c' },
+      ],
+    ],
+    [
+      'unordered bounds',
+      [
+        { from: 0, word: 'a' },
+        { from: 0.6, word: 'b' },
+        { from: 0.3, word: 'c' },
+      ],
+    ],
+    ['no bands', []],
+  ])('rejects %s', (_label, bands) => {
+    expect(withBands(bands)).not.toEqual([]);
+  });
+});
+
 describe('content references', () => {
   it('uses the content container-width limit and requires a reason for wider pockets', () => {
     const content = {
@@ -1625,6 +1845,38 @@ describe('content references', () => {
     ).toBe(true);
   });
 
+  it('rejects the Inventory Management skill without its handling tuning block', () => {
+    const recipes = structuredClone(recipeFile().data) as {
+      skills: { id: string; inventory?: unknown }[];
+    };
+    recipes.skills = recipes.skills.map(({ inventory, ...skill }) =>
+      skill.id === 'inventory_management' ? skill : { ...skill, ...(inventory === undefined ? {} : { inventory }) },
+    );
+    const { issues } = buildRegistry([{ source: 'recipes.json', data: recipes }]);
+    expect(
+      issues.some(
+        (issue) => issue.source === 'recipes.json' && issue.message.includes('missing required skill tuning'),
+      ),
+    ).toBe(true);
+  });
+
+  it('rejects a handling tuning block that leaves out a weight', () => {
+    const recipes = structuredClone(recipeFile().data) as {
+      skills: { id: string; inventory?: Record<string, number> }[];
+    };
+    const tuning = recipes.skills.find(({ id }) => id === 'inventory_management')!.inventory!;
+    for (const key of Object.keys(tuning).filter((name) => name !== 'handlingFactorFloor')) {
+      const partial = structuredClone(recipes);
+      const { [key]: _omitted, ...rest } = partial.skills.find(({ id }) => id === 'inventory_management')!.inventory!;
+      partial.skills.find(({ id }) => id === 'inventory_management')!.inventory = rest;
+      const { issues } = buildRegistry([{ source: 'recipes.json', data: partial }]);
+      expect(
+        issues.some((issue) => issue.source === 'recipes.json'),
+        key,
+      ).toBe(true);
+    }
+  });
+
   it('requires Inventory Management training to be untiered', () => {
     const baseActivity = baseRegistry.skills.get('inventory_management')?.training?.activities?.handling;
     expect(baseActivity?.practice).toBeDefined();
@@ -1692,7 +1944,7 @@ describe('content references', () => {
   const referenceDependencies = {
     source: 'reference-dependencies.json',
     data: {
-      items: baseContent('items-other.json').items!.filter(({ id }) => id === 'bandage'),
+      items: [{ id: 'fixture_non_battery', name: 'Not a battery', category: 'medical', weight: 1, size: [1, 1] }],
       skills: baseContent('recipes.json').skills!.map(({ startingRecipes: _, ...skill }) => skill),
       sounds: baseContent('sounds.json').sounds!.filter(({ id }) => Object.values(zombieSounds).includes(id)),
     },
@@ -1726,6 +1978,49 @@ describe('content references', () => {
     ]);
 
     expect(issues.some((issue) => issue.message === 'an emissive light model needs an emissive material')).toBe(true);
+  });
+
+  it('requires a held compass’s model to say where its display is, which way it faces and how its dial looks', () => {
+    const displayIssues = (model: Record<string, unknown>) =>
+      buildRegistry([
+        {
+          source: 'held-display.json',
+          data: {
+            items: [
+              {
+                id: 'fixture_compass',
+                name: 'Fixture compass',
+                category: 'tool',
+                weight: 1,
+                size: [1, 1],
+                model: 'fixture_compass',
+                heldDisplay: 'compass',
+              },
+            ],
+            models: [{ id: 'fixture_compass', file: 'assets/models/compass.glb', ...model }],
+          },
+        },
+      ]).issues.filter((issue) => issue.source === 'held-display.json');
+    // biome-ignore lint/style/useNamingConvention: model anchors use content Ids.
+    const needle = { anchors: { needle_mount: [0, 0.01, 0] } };
+    const display = { at: [0, 0.01, 0], normal: [0, 1, 0], up: [0, 0, -1], size: [0.04, 0.04] };
+    const dial = {
+      face: 'plastic-white',
+      ink: 'plastic-black',
+      north: 'plastic-red',
+      south: 'plastic-black',
+      marks: ['N'],
+      markHeight: 0.3,
+      needleLength: 0.6,
+      needleWidth: 0.2,
+    };
+    expect(displayIssues({ ...needle, dial }).map(({ message }) => message)).toEqual([
+      'a held display needs a model with a display',
+    ]);
+    expect(displayIssues({ ...needle, display }).map(({ message }) => message)).toEqual([
+      'a held compass needs a model with a dial',
+    ]);
+    expect(displayIssues({ ...needle, display, dial })).toEqual([]);
   });
 
   it('requires an explicit disassembly yield for a recipe result', () => {
@@ -1797,7 +2092,11 @@ describe('content references', () => {
             name: 'Fixture door',
             size: [1, 1, 1],
             color: '#333333',
-            door: { material: 'wood', methods: {}, handlingSimSeconds: 0.4, openNoise: { sound: 'door_open' } },
+            door: {
+              methods: {},
+              handlingSimSeconds: 0.4,
+              openNoise: { sound: 'door_open' },
+            },
           },
         ],
       },
@@ -2062,6 +2361,7 @@ describe('content references', () => {
     const furniture = {
       ...structuredClone(baseRegistry.furniture.get('crate')!),
       id: 'fixture_crate',
+      material: FIXTURE_MATERIAL,
     };
     const [width, height, depth] = furniture.size;
     const template = {
@@ -2131,9 +2431,9 @@ describe('content references', () => {
             name: 'Pry door',
             size: [1, 1, 1],
             color: '#333333',
+            material: 'missing_material',
             door: {
               handlingSimSeconds: 0.4,
-              material: 'wood',
               methods: {
                 pry: {
                   quality: 'prying',
@@ -2156,13 +2456,16 @@ describe('content references', () => {
             figureSeeds: [1],
             spawnWeight: 1,
             canJumpObstacles: true,
+            strength: 1,
             sounds: zombieSounds,
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
-            speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5 },
+            speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5, backgroundStepMetres: 1 },
             stepLength: 0.6,
             wander: {
               obstacleWanderChance: 0.25,
               obstacleWanderDistanceMetres: 10,
+              wayAroundReachMetres: 1.5,
+              wayAroundMinGainFraction: 0.25,
               idleSimSeconds: { min: 3, max: 10 },
               strollSimSeconds: { min: 3, max: 12 },
               leashMetres: 12,
@@ -2177,12 +2480,21 @@ describe('content references', () => {
             nightSight: 10,
             stimulusMemorySimSeconds: 1,
             sightCone: 60,
+            eyeHeightMetres: 1.3,
+            earHeightMetres: 1.3,
+            hordeSpacing: { innerMetres: 0.35, stepMetres: 0.38 },
             hearing: 1,
             hearingRange: { walk: 3, jog: 8, sprint: 15 },
             hearingModel: {
               farMultiplier: 2,
               bearingErrorRadians: 0.61,
               investigationDistanceMetres: 8,
+              loudNoiseRadiusMetres: 10,
+              hesitationSimSeconds: { min: 1, max: 1 },
+              refusalSuspicionSimSeconds: 2,
+              refusalLean: 0.75,
+              chainRadiusMetres: 4,
+              chainChance: 0.5,
               searchSimSeconds: { min: 40, max: 50 },
               searchRadiusMetres: 4,
               searchStrollSimSeconds: { min: 1, max: 3 },
@@ -2200,6 +2512,7 @@ describe('content references', () => {
             },
             attack: {
               reach: 1,
+              grabBandMetres: 1.7,
               cooldownSimSeconds: 1.5,
               windupSimSeconds: 0.3,
               moves: [
@@ -2234,16 +2547,16 @@ describe('content references', () => {
               seenFrom: 30,
               color: '#ffffff',
               intensity: 1,
-              power: { battery: 'bandage', chargePerGameHour: 1, swapSimSeconds: 1 },
+              power: { battery: 'fixture_non_battery', chargePerGameHour: 1, swapSimSeconds: 1 },
             },
           },
         ],
       },
     };
     expect(paths(buildRegistry([referenceDependencies, mod]).issues).sort()).toEqual([
-      'furniture[1].door.material',
       'furniture[1].door.methods.pry.skill',
       'furniture[1].door.methods.pry.strikeSound',
+      'furniture[1].material',
       'items[0].light.power.battery',
       'zombies[0].downed.dismember.quality',
       'zombies[0].loot',
@@ -2405,7 +2718,10 @@ describe('templates', () => {
             name: 'Door',
             size: [1, 1, 1],
             color: '#7a5534',
-            door: { material: 'wood', methods: {}, handlingSimSeconds: 0.5 },
+            door: {
+              methods: {},
+              handlingSimSeconds: 0.5,
+            },
           },
         ],
       },
@@ -2664,13 +2980,37 @@ describe('content', () => {
     ).toHaveLength(2);
   });
 
-  it('gives every base block a known pattern and patterns the stone work', () => {
-    const registry = baseRegistry;
+  it('gives every base block a known pattern', () => {
+    const patterns = blockPatterns(baseRegistry);
+    expect(patterns).toHaveLength(baseRegistry.blocks.length);
+    for (const [index, block] of baseRegistry.blocks.entries()) {
+      expect(BLOCK_PATTERNS[patterns[index]!], block.id).toBeDefined();
+    }
+  });
+
+  it('maps each authored pattern to its own pattern id, and none for a block that authors none', () => {
+    const plain = baseRegistry.blocks.find(({ pattern }) => pattern === undefined)!;
+    const { pattern: _pattern, patternPalette: _palette, patternWashout: _washout, ...template } = plain;
+    // Camo also needs shader settings, which the camo tests above cover.
+    const authored = BLOCK_PATTERNS.filter((pattern) => pattern !== 'camo');
+    const { registry, issues } = buildRegistry([
+      base.find(({ source }) => source === 'blocks.json')!,
+      baseSounds,
+      {
+        source: 'pattern-fixture.json',
+        data: {
+          blocks: [
+            { ...template, id: 'fixture_unpatterned' },
+            ...authored.map((pattern) => ({ ...template, id: `fixture_${pattern}`, pattern })),
+          ],
+        },
+      },
+    ]);
+    expect(issues).toEqual([]);
     const patternOf = (id: string) => BLOCK_PATTERNS[blockPatterns(registry)[registry.blockIds.get(id)!]!];
-    expect(patternOf('brick')).toBe('brick');
-    expect(patternOf('stone')).toBe('rough');
-    expect(patternOf('dressed_stone')).toBe('dressed');
-    expect(patternOf('cobblestone_mossy')).toBe('cobble');
-    expect(patternOf('hazard_yellow')).toBe('none');
+    expect(patternOf('fixture_unpatterned')).toBe('none');
+    for (const pattern of authored) {
+      expect(patternOf(`fixture_${pattern}`)).toBe(pattern);
+    }
   });
 });

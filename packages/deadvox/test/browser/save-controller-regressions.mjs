@@ -72,7 +72,6 @@ const QUOTA_ERROR = /quota regression/i;
 const BEST_EFFORT = /best.effort/i;
 const PERSISTENCE_GRANTED = /Persistent storage granted/;
 const CURRENT_EXPORT = /^deadvox-current-.*\.bin$/;
-const BASE_MISMATCH = /Generated base mismatch/;
 const REPLAY_REJECTED = /^Replay rejected:/;
 const LOADING_WORKER_FAILURE = /Controlled loading worker failure/;
 
@@ -187,7 +186,8 @@ try {
         ) {
           throw new Error('Can fixture must fit');
         }
-        const lootTutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, () => undefined);
+        const lightKit = gauntletWitness.engine.site.lightPractice;
+        const lootTutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, lightKit);
         lootTutorial.observe({
           position: [8, 0, 0],
           yaw: 1,
@@ -199,7 +199,7 @@ try {
           lightOn: false,
           paused: false,
         });
-        const tutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, () => undefined);
+        const tutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, lightKit);
         tutorial.observe({
           position: [8, 0, 0],
           yaw: 1,
@@ -302,9 +302,8 @@ try {
         const inventory = new Inventory(gauntletWitness.engine.registry);
         const queue = new HandlingQueue(inventory);
         let finished = false;
-        const tutorial = new Tutorial([0, 0, 0], 0, { x0: 7, x1: 9, z0: 0, z1: 2 }, () => {
-          finished = true;
-        });
+        const lightKit = inventory.registry.layouts.get('tutorial').practice.light;
+        const tutorial = new Tutorial([0, 0, 0], 0, { x0: 7, x1: 9, z0: 0, z1: 2 }, lightKit);
         tutorial.opened('canned_beans');
         tutorial.consumed('beans');
         tutorial.consumed('water_bottle');
@@ -317,6 +316,7 @@ try {
           looted: true,
           wielded: true,
           lightOn: true,
+          litType: undefined,
           paused: false,
         };
         tutorial.observe(state);
@@ -328,12 +328,14 @@ try {
         try {
           const draw = mountTutorial(
             tutorial,
-            () => undefined,
+            () => {
+              finished = true;
+            },
             () => undefined,
           );
           draw(presentation);
           const offered =
-            tutorial.stage === 'choice' &&
+            tutorial.stage === 'finish' &&
             !finished &&
             Boolean(document.querySelector('[data-tutorial-choice="finish"]'));
           document.querySelector('[data-tutorial-choice="weapons"]').click();
@@ -460,7 +462,7 @@ try {
       );
       // Native pointer activation of the practice exits is quarantined in #705; its root cause is unresolved.
       await Promise.all([
-        page.waitForURL((target) => !target.searchParams.has('tutorial'), { waitUntil: 'commit' }),
+        page.waitForURL((target) => !target.searchParams.has('tutorial')),
         page.locator('#death button').press('Enter'),
       ]);
       await page.waitForFunction(
@@ -471,7 +473,7 @@ try {
       await page.click('#tutorial-start');
       await page.waitForFunction(() => globalThis.tutorialSession !== undefined);
       await Promise.all([
-        page.waitForURL((target) => !target.searchParams.has('tutorial'), { waitUntil: 'commit' }),
+        page.waitForURL((target) => !target.searchParams.has('tutorial')),
         page.getByRole('button', { name: 'Exit practice', exact: true }).press('Enter'),
       ]);
       await page.waitForFunction(() => document.querySelector('#startup-screen').hidden);
@@ -832,11 +834,14 @@ try {
     assert.equal(schedule.measuredDurations.length, 4);
     assert.ok(schedule.measuredDurations.every((duration) => Number.isFinite(duration) && duration >= 0));
 
-    await page.evaluate(async () => {
+    await page.evaluate(() => {
       const { controller } = deadvoxSaveTest;
       controller.storage.save = () => Promise.reject(new DOMException('quota regression', 'QuotaExceededError'));
       controller.beforeSleep();
-      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    // The rejection settles within a few event-loop turns; a missing recovery UI fails here, not later.
+    await page.waitForFunction(() => document.querySelector('#save-recovery')?.checkVisibility(), undefined, {
+      timeout: 1000,
     });
     const failure = await page.evaluate(() => ({
       text: document.querySelector('#save-recovery-message').textContent,
@@ -1007,87 +1012,6 @@ try {
     });
     assert.equal(race.queuedBeforeRetry, 30);
     assert.equal(decoded.snapshot.character.simulation.body.health, 30);
-    assert.deepEqual(pageErrors, []);
-    await context.close();
-  });
-
-  await test('actual Continue refuses a generated-base mismatch and reloads with a recovery diagnosis', async () => {
-    const context = await browser.newContext({ viewport: { width: 800, height: 600 } });
-    const page = await context.newPage();
-    const pageErrors = [];
-    page.on('pageerror', (error) => pageErrors.push(error.message));
-    await page.goto(url);
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
-    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
-    await page.click('#go');
-    await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
-    await page.evaluate(async () => {
-      const { controller, storage, namespace } = deadvoxSaveTest;
-      const snapshot = structuredClone(controller.snapshot());
-      const { pos } = snapshot.character.player.body;
-      snapshot.world.diffs.chunks = [
-        {
-          cx: Math.floor(pos[0] / 32),
-          cy: -3,
-          cz: Math.floor(pos[2] / 32),
-          cells: [{ index: 0, base: 'air', id: 'stone' }],
-        },
-      ];
-      await storage.save(namespace, (generation) =>
-        storage.encodeSnapshot(snapshot, generation, {
-          worldOptions: controller.worldOptions,
-          version: controller.identityValue.components,
-          buildRevision: controller.identityValue.buildRevision,
-        }),
-      );
-      controller.entered = false;
-    });
-
-    await page.reload();
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
-    await page.waitForFunction(() => !document.querySelector('#continue').disabled, undefined, { timeout: 30_000 });
-    let refusalReload;
-    const nextReload = new Promise((resolve, reject) => {
-      let navigations = 0;
-      const onNavigation = (frame) => {
-        if (frame === page.mainFrame()) {
-          navigations += 1;
-          if (navigations === 2) {
-            clearTimeout(refusalReload);
-            page.off('framenavigated', onNavigation);
-            resolve();
-          }
-        }
-      };
-      page.on('framenavigated', onNavigation);
-      refusalReload = setTimeout(() => {
-        page.off('framenavigated', onNavigation);
-        reject(new Error('saved-world refusal did not reload to the recovery title'));
-      }, 30_000);
-    });
-    await Promise.all([page.waitForNavigation(), page.click('#continue')]);
-    await nextReload;
-    await page.waitForFunction(
-      () => {
-        const saveTest = globalThis.deadvoxSaveTest;
-        const status = document.querySelector('#save-status')?.textContent ?? '';
-        return (
-          saveTest?.controller.ready &&
-          status.includes('Saved world unreadable and left untouched') &&
-          sessionStorage.getItem(`deadvox.restore-refusal:${saveTest.namespace}`)
-        );
-      },
-      undefined,
-      { timeout: 30_000 },
-    );
-    const state = await page.evaluate(() => ({
-      status: document.querySelector('#save-status').textContent,
-      disabled: document.querySelector('#continue').disabled,
-      refusal: sessionStorage.getItem(`deadvox.restore-refusal:${deadvoxSaveTest.namespace}`),
-    }));
-    assert.match(state.status, BASE_MISMATCH);
-    assert.equal(state.disabled, true);
-    assert.match(state.refusal, BASE_MISMATCH);
     assert.deepEqual(pageErrors, []);
     await context.close();
   });

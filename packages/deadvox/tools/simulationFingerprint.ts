@@ -108,7 +108,7 @@ export const SIMULATION_EXCLUSIONS = [
   'src/game/saveStorage.ts',
   // Browser selection persistence is transport; admission and pack identity are fingerprinted separately.
   'src/game/modStorage.ts',
-  'src/game/saveStorageLockError.ts',
+  'src/game/saveStorageErrors.ts',
   'src/game/saveStorageRecord.ts',
   'src/game/saveStorageProtocol.ts',
   'src/game/controls.ts',
@@ -177,7 +177,11 @@ const PRESENTATION_ASSET_EXTENSIONS = new Set([
 const MODULE_QUERY_PATTERN = /[?#].*$/;
 const GLOB_REFERENCE = /\bimport\.meta\.glob\b/g;
 const GLOB_CALL = /\bimport\.meta\.glob(?:<[^>]*>)?\s*\(\s*(['"])(.*?)\1/g;
-const CONTENT_GLOB_PATTERNS = new Set(['../content/base/*.json', '../content/base/assets/audio/**/*.ogg']);
+const CONTENT_GLOB_PATTERNS = new Set([
+  '../content/base/*.json',
+  '../content/base/assets/audio/**/*.ogg',
+  '../config/bundled/*.json',
+]);
 const REQUIRE_CALL = /\brequire\s*\(/;
 const IMPORT_META_URL_REFERENCE = /\bimport\.meta\.url\b/g;
 const WORKER_URL_CALL = /\bnew\s+Worker\s*\(\s*new\s+URL\s*\(\s*(['"])(.*?)\1\s*,\s*import\.meta\.url\s*\)/g;
@@ -348,7 +352,10 @@ async function resolveTrackableModule(
   if (PRESENTATION_ASSET_EXTENSIONS.has(extension)) {
     return;
   }
-  if (extension === '.json' && (relativePath.startsWith('src/config/') || relativePath.startsWith('mobgen/'))) {
+  if (
+    extension === '.json' &&
+    ['src/config/', 'mobgen/', 'thing-core/'].some((prefix) => relativePath.startsWith(prefix))
+  ) {
     return { file, relativePath };
   }
   if (!SOURCE_EXTENSIONS.has(extension)) {

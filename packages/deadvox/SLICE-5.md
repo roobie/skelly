@@ -8,8 +8,14 @@ read_if:
 
 # Slice 5 — Holding ground
 
-**Status: planning; BR decision gates remain open.** The question from
-`EPIC.md`, "Slices", is: **Is a base worth building and defending?**
+**Status: the power network core is built; construction, fire and exposure,
+appliance controls and processes, and the integration proofs are open.** The wire
+graph, its cache invalidation, saved identity, closed-form away-time balance and
+refuelling exist; see `src/core/powerGraph.ts`, `PowerGraph`, and `src/core/power.ts`,
+`PowerNetwork`. The bear trap is built (`INTERACTIONS.md`, "Traps"). No player
+construction, placed-entity store, fire or smoke model, or appliance process exists in
+`src/core`. The question from `EPIC.md`, "Slices", is: **Is a base worth building and
+defending?**
 This plan separates settled intent from choices that must precede dependent work.
 The slice process is in `EPIC.md`, "How each slice runs".
 
@@ -89,7 +95,7 @@ Debt grades compare ongoing coupling and future replacement cost, not implementa
 time; negative space says what remains
 unbuilt. Unanswered gates block only their dependent work.
 
-### Settled construction rules — decision item d576
+### Settled construction rules
 
 - **Placement grain:** blocks use terrain cells; entities allow finer placement,
   so furnishings need not inherit structural coarseness. Occupancy consumers must
@@ -100,12 +106,9 @@ unbuilt. Unanswered gates block only their dependent work.
 - **Support:** persist authored support dependencies, so removal can resolve what
   depends on a structure rather than forgetting support after placement. Prove
   destructive cascades; physical stress simulation is not required.
-- **Removal contents:** require empty contents at start and completion, so removal
-  cannot lose, duplicate or silently relocate stored items. Automatic unloading is
-  outside this rule.
-- **Interrupted deconstruction:** reserve the structure against use while work is
-  pending, including pauses, so resumed work retains exclusive ownership. Keep
-  resumable work and snapshotted yields under `INTERACTIONS.md`, "Crafting";
+- **Removal contents:** see `DESIGN.md`, "Edits persist".
+- **Interrupted deconstruction:** the reservation is in `DESIGN.md`, "Edits persist".
+  Keep resumable work and snapshotted yields under `INTERACTIONS.md`, "Crafting";
   cancellation releases ownership without producing the completion yield. Partial
   salvage is not implied.
 
@@ -122,12 +125,12 @@ unbuilt. Unanswered gates block only their dependent work.
 
 ### Power and appliance ownership
 
-Power decisions belong to d577, not a second set of Slice 5 cards. Keep policy
-reasons with that implementation so allocation and catch-up cannot acquire
-conflicting authorities. Use its selected policies for the integration proofs below;
-this plan retains only the cross-system obligations.
+Power policy reasons live with the power implementation, not in a second set of
+Slice 5 cards, so allocation and catch-up cannot acquire conflicting authorities; see
+`src/core/power.ts`, `PowerNetwork`. The integration proofs below use the policies that
+implementation selects; this plan retains only the cross-system obligations.
 
-### Settled fire and exposure rules — decision item d576
+### Settled fire and exposure rules
 
 - **Fire grain:** burning is per cell, so material destruction, neighbouring spread
   and local exposure share a spatial boundary. Bound simulation work and lighting
@@ -216,22 +219,20 @@ validation, saves, replay evidence and reason-doc updates, not a later save retr
    dates in the owning tracker. Close dependent gates and run the small spikes below.
    Done when the implementation briefs can distinguish settled rules from blocked
    choices and each performance claim has an owning benchmark.
-2. **Power network core — d577-1.** This can proceed in parallel with planning from
-   the settled wire-graph contract: topology, cache invalidation and saved identity.
-   Prove split/merge and deterministic restoration there. Allocation, fuel use and
-   solar integration use d577's policies and must prove conservation and
-   exhaustion under the selected rules. Keep graph mechanics separate from wire
-   presentation and appliance content. Any provisional policy is a fixture, not a
-   BR rule. Topology edits must settle old-network time before reassignment so energy
-   cannot be created by rewiring.
+2. **Power network core: built.** Topology, cache invalidation, saved identity,
+   split/merge, deterministic restoration, closed-form balance, fuel exhaustion and
+   solar by time of day exist; see `src/core/powerGraph.ts`, `PowerGraph`,
+   `src/core/power.ts`, `PowerNetwork`, and `test/power.test.ts`. Graph mechanics stay
+   separate from wire presentation and appliance content. Topology edits settle
+   old-network time before reassignment so energy cannot be created by rewiring.
 3. **Construction and persistent placement.** Extend crafting/disassembly to world
    destinations with cell blocks, finer entities and the repair-and-fortify kit.
    Prove support-graph cascades, occupied-placement refusal, empty-content checks,
    reservation through paused removal, completion-time revalidation and no duplicate
    inputs or outputs across save/load. Show doors, floors and a barricade in use,
    not only a ghost preview. BR approves placement and covering-window readability.
-4. **Usable electricity and processes.** Join d577-1 to built instances and the
-   selected appliance loop. Show fuel/charge ownership, connect/disconnect controls,
+4. **Usable electricity and processes.** Join the power network to built instances
+   and the selected appliance loop. Show fuel/charge ownership, connect/disconnect controls,
    blackout and restart under the selected deficit rule. Compare ordinary ticking
    with catch-up across daylight, fuel exhaustion, switching and rewiring. Save during
    an unattended process, leave, and return to the same consequence. BR checks that
@@ -244,11 +245,8 @@ validation, saves, replay evidence and reason-doc updates, not a later save retr
    including collision-safe displacement, rather than silently upgrading the cellar
    guard. Add #276 charged player attacks and hit-induced shambler stagger; prove
    charge interruption/save timing and hit-response timing separately from brute
-   displacement. Add #107's bear trap with no zombie avoidance, uninterrupted timed
-   disarming without tools or accidental firing, reusable recovery, and player
-   restraint/injury. Prove interruption discards disarm progress, ownership survives
-   recovery, and the horizon preserves armed state without coarse contacts across
-   save/load. BR approves breach, combat and trap readability.
+   displacement. #107's bear trap is built; see `INTERACTIONS.md`, "Traps". BR
+   approves breach, combat and trap readability.
 6. **Fire, smoke and light.** Prove per-cell ignition and spread, material exhaustion,
    direct extinguishing, sight-blocking smoke, obstruction and light invalidation.
    Molotovs and wood cutting must enter the same fire owner; sufficient torch fuel
@@ -256,12 +254,10 @@ validation, saves, replay evidence and reason-doc updates, not a later save retr
    lamps expose light consistently to rendering and attention. Show a window cover
    changing source visibility through the opening. BR approves flame/smoke readability and
    what the player can do about a burning shelter.
-7. **Event rules, scenario wave and region integration.** Implement and validate
-   #313's data-driven trigger/condition/effect mechanism and persist its one-shot
-   state before authoring the wave. Use elapsed scenario time with the three-day
-   value in content; position-trigger permission is not a dependency. Prove one-shot
-   scheduling across save/load and horizon transitions without stream
-   arrival deciding whether it fires. Cross the catch-up horizon with a working and
+7. **Event rules, scenario wave and region integration.** #313's rules and their
+   one-shot state are in `DESIGN.md`, "Scenario events". The playtest scenario
+   adopts the wave from `src/content/base/holding-wave.libsonnet`, `rule`, with its
+   own arrival point. Cross the catch-up horizon with a working and
    a burning base. Prove canonical coarse outcomes, persisted damage, traps, processes
    and nearby/background light attention. Exercise preparation, the wave and recovery
    with charged attacks and stagger available; ordinary ambient attention remains
@@ -306,8 +302,8 @@ at rate changes so refrigeration or a blackout cannot rewrite earlier time.
 - **Fire catch-up and cross-border spread:** replay the same seeded ignition across
   a region edge, varying load order and player horizon transitions. Test near
   agreement separately from far deterministic coarse results, including save/resume
-  during spread. A failed spike blocks fire integration and exposes any missing
-  canonical coarse rule to d576 rather than using stream timing as an input.
+  during spread. A failed spike blocks fire integration and sends any missing
+  canonical coarse rule back to BR rather than using stream timing as an input.
 - **Construction and breach occupancy:** place and remove a door beside a populated
   container and a moving actor. Check movement, picking, sight and light after each
   operation and restore. See `src/core/blockEntities.ts`, `BlockEntities`, and

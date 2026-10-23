@@ -1,4 +1,5 @@
 local shape = import 'furniture-shape.libsonnet';
+local breach = import 'furniture-breach.libsonnet';
 local cabinets = import 'cabinet-shapes.libsonnet';
 local police = { usage: ['Police'], tier: 'Tier1' };
 local yard = import 'rural-police-yard.libsonnet';
@@ -278,7 +279,7 @@ local roofAir = [
   '......................................', '......................................', '......................................', '......................................',
   '......................................', '......................................',
 ];
-shape.colliding({
+breach.breaking(shape.colliding({
   furniture: [{
     id: 'dead_officer_body', name: 'Dead officer', size: [4, 1, 2], color: '#554f43', solid: false,
     shape: [
@@ -298,7 +299,7 @@ shape.colliding({
   }],
   items: [{
     id: 'gauntlet_police_armoury_key', name: 'Police armoury key', category: 'tool',
-    weight: 10, size: [1, 1], key: { lock: 'gauntlet_police_armoury' },
+    size: [1, 1], key: { lock: 'gauntlet_police_armoury' }, model: 'gauntlet_police_armoury_key',
     description: 'A small key stamped ARMOURY.',
     economy: { usage: ['Police'], tiers: ['Tier1'] },
   }],
@@ -359,4 +360,4 @@ shape.colliding({
     shamblers: [], woodlands: [],
     tracks: [{ points: [[34, 47], [94, 47]], width: 4, surface: 'dirt' }],
   }],
-})
+}))

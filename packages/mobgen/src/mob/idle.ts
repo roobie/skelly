@@ -12,7 +12,7 @@
 //   idlePose(actor, stance, time)      — the two composed, for a caller that doesn't need to cache the base.
 
 import type { Bone } from '../core/body.ts';
-import { IDENTITY_M, type Mat3, mulMM, rotX, rotY, rotZ, type Vec3 } from '../core/math.ts';
+import { clamp, IDENTITY_M, type Mat3, mulMM, rotX, rotY, rotZ, type Vec3 } from '../core/math.ts';
 import type { Pose } from '../core/pose.ts';
 import { eulerToMat3, scaleForGenome, upperArmLocalFromNet } from './attack.ts';
 import {
@@ -26,8 +26,6 @@ import {
   type WalkActor,
 } from './gait.ts';
 import type { HumanoidParams } from './humanoid.ts';
-
-const clamp = (x: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, x));
 
 export type IdleStance = 'slack' | 'aggravated';
 

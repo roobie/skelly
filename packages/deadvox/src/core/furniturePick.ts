@@ -60,6 +60,18 @@ export interface FurniturePickOptions {
   throughLadders?: boolean;
 }
 
+const swings = new WeakMap<BlockEntities['registry'], number>();
+
+/** The furthest, in blocks, that any door's panel reaches beyond its own cells. */
+const doorSwing = ({ registry }: BlockEntities): number => {
+  let swing = swings.get(registry);
+  if (swing === undefined) {
+    swing = Math.max(0, ...[...registry.furniture.values()].flatMap((def) => (def.door ? def.size : [])));
+    swings.set(registry, swing);
+  }
+  return swing;
+};
+
 interface PanelHit {
   entity: BlockEntity;
   distance: number;
@@ -79,7 +91,14 @@ const nearestPanelHit = ({
   blockSize: number;
 }): PanelHit | undefined => {
   let nearest: PanelHit | undefined;
-  for (const entity of entities.all) {
+  // An open leaf swings out of its cells by up to its width, so the ray's box grows by the widest door.
+  const swing = doorSwing(entities);
+  const ends = [0, maxDistanceMetres].map((along) =>
+    originMetres.map((value, axis) => (value + direction[axis]! * along) / blockSize),
+  );
+  const low = [0, 1, 2].map((axis) => Math.min(ends[0]![axis]!, ends[1]![axis]!) - swing) as Vec3;
+  const high = [0, 1, 2].map((axis) => Math.max(ends[0]![axis]!, ends[1]![axis]!) + swing) as Vec3;
+  for (const entity of entities.near(low, high)) {
     const definition = entities.defOf(entity);
     if (!definition.door) {
       continue;

@@ -21,19 +21,20 @@ const observation = (): TutorialObservation => ({
   looted: false,
   wielded: false,
   lightOn: false,
+  litType: undefined,
   paused: false,
 });
+const lightKit = BUNDLED_CONTENT.registry.layouts.get('tutorial')!.practice!.light;
 const fixture = () => {
-  const complete = vi.fn();
-  const tutorial = new Tutorial([0, 1, 0], 0, { x0: 10, z0: 10, x1: 12, z1: 12 }, complete);
+  const tutorial = new Tutorial([0, 1, 0], 0, { x0: 10, z0: 10, x1: 12, z1: 12 }, lightKit);
   const state = observation();
   const observe = () => tutorial.observe(state);
-  return { tutorial, state, complete, observe };
+  return { tutorial, state, observe };
 };
 
 describe('practice objectives', () => {
-  it('offers the optional branch before essentials-only completion', () => {
-    const { tutorial, state, complete, observe } = fixture();
+  it('advances only on completed outcomes and offers the optional modules after the final pause', () => {
+    const { tutorial, state, observe } = fixture();
     observe();
     expect(tutorial.stage).toBe('move');
     state.position = [7, 1, 0];
@@ -76,44 +77,75 @@ describe('practice objectives', () => {
     state.crouching = true;
     observe();
     expect(tutorial.stage).toBe('pause');
-    expect(complete).not.toHaveBeenCalled();
+    expect(tutorial.canStartLight).toBe(false);
     state.paused = true;
     observe();
+    expect(tutorial.stage).toBe('finish');
+    expect(tutorial.canStartLight).toBe(true);
+    tutorial.chooseWeapons();
+    expect(tutorial.stage).toBe('revolver');
+    tutorial.startLight();
     observe();
-    expect(tutorial.stage).toBe('choice');
-    expect(complete).not.toHaveBeenCalled();
-    tutorial.finish();
-    tutorial.finish();
-    expect(complete).toHaveBeenCalledOnce();
+    expect(tutorial.stage).toBe('revolver');
     expect(new URL(tutorialUrl('https://example.org/deadvox/?tutorial=1', false)).search).toBe('');
   });
 
-  it('accepting weapons keeps the disposable runtime and cannot finish incomplete weapons through pause', () => {
-    const { tutorial, state, complete, observe } = fixture();
-    tutorial.chooseWeapons();
-    expect(tutorial.stage).toBe('move');
-    Object.assign(state, {
-      position: [11, 1, 11],
-      yaw: 1,
-      doorOpen: true,
-      searched: true,
-      looted: true,
-      crouching: true,
-      lightOn: true,
+  it('completes the light module on a lit light, a finished battery swap and the light on again', () => {
+    const { tutorial, state, observe } = fixture();
+    const inventory = new Inventory(BUNDLED_CONTENT.registry);
+    const queue = new HandlingQueue(inventory);
+    const survival = new Survival(new Simulation({ seed: 1 }), inventory, queue, {
+      reach: bindReach({ inventory, position: state.position, blockSize: 1, clock: BASE_CLOCK }),
+      feet: () => ({ kind: 'pile', pos: state.position }),
+      notice: vi.fn(),
+      read: vi.fn(),
+      batterySwapped: (type) => tutorial.batterySwapped(type),
     });
+    const light = inventory.create(lightKit.light);
+    expect(inventory.add(light, { kind: 'hand', side: 'left' })).toBe(true);
+    const swap = () => {
+      if (!inventory.hands.right) {
+        expect(inventory.add(inventory.create(lightKit.battery), { kind: 'hand', side: 'right' })).toBe(true);
+      }
+      expect(survival.use(inventory.hands.right!)).toBeUndefined();
+    };
     tutorial.opened('canned_beans');
     tutorial.consumed('beans');
     tutorial.consumed('water_bottle');
+    Object.assign(state, { position: [7, 1, 0], yaw: 1, doorOpen: true, searched: true, looted: true, wielded: true });
+    state.lightOn = true;
     observe();
-    state.lightOn = false;
+    Object.assign(state, { lightOn: false, position: [11, 1, 11], crouching: true });
+    observe();
     state.paused = true;
     observe();
-    expect(tutorial.stage).toBe('choice');
-    tutorial.chooseWeapons();
-    expect(tutorial.stage).toBe('revolver');
+    // Outcomes before the module starts earn nothing.
+    state.litType = lightKit.light;
     observe();
-    tutorial.finish();
-    expect(complete).not.toHaveBeenCalled();
+    swap();
+    queue.tick(queue.remaining);
+    expect(tutorial.stage).toBe('finish');
+    tutorial.startLight();
+    expect(tutorial.canStartLight).toBe(false);
+    state.litType = undefined;
+    observe();
+    expect(tutorial.stage).toBe('light-on');
+    state.litType = lightKit.light;
+    observe();
+    expect(tutorial.stage).toBe('light-swap');
+    state.litType = undefined;
+    swap();
+    queue.cancel();
+    observe();
+    expect(tutorial.stage).toBe('light-swap');
+    swap();
+    expect(queue.tick(queue.remaining).failed).toEqual([]);
+    observe();
+    expect(tutorial.stage).toBe('light-relight');
+    state.litType = lightKit.light;
+    observe();
+    expect(tutorial.stage).toBe('finish');
+    tutorial.chooseWeapons();
     expect(tutorial.stage).toBe('revolver');
   });
 

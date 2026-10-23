@@ -1,17 +1,44 @@
 {
   "furniture": [
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#7a5534",
       "door": {
+        "detail": {
+          "fields": [1, 2],
+          "frame": 0.10000000000000001,
+          "handle": {
+            "along": 0.5,
+            "fromFreeEdge": 0.10000000000000001,
+            "kind": "lever",
+            "length": 0.12,
+            "thickness": 0.02
+          },
+          "hardware": "#c6b98e",
+          "hinges": {
+            "count": 3,
+            "length": 0.16,
+            "width": 0.050000000000000003
+          },
+          "relief": 0.012,
+          "seam": 0.12
+        },
         "handlingSimSeconds": 0.59999999999999998,
-        "material": "wood",
         "methods": {}
       },
       "id": "dad_front_door",
+      "material": "wood",
       "name": "Dad's cabin front door",
       "size": [2, 4, 1]
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#6e5037",
       "container": {
         "pockets": [
@@ -22,6 +49,7 @@
         ]
       },
       "id": "gun_cabinet",
+      "material": "wood",
       "name": "Gun cabinet",
       "shape": [
         {

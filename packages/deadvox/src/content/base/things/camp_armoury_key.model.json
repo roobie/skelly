@@ -1,0 +1,14 @@
+{
+  "id": "camp_armoury_key",
+  "file": "assets/models/camp_armoury_key.glb",
+  "parts": {
+    "camp_armoury_key": {
+      "node": "camp_armoury_key:key",
+      "massKg": 0.01,
+      "centreOfMass": [0.03566666666666667, 0.0023333333333333335, 0.005333333333333333]
+    }
+  },
+  "grip": { "at": [0.034999999999999996, 0.005, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

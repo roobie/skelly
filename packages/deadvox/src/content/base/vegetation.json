@@ -93,8 +93,13 @@
   ],
   "furniture": [
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#5a7040",
       "id": "shrub_small",
+      "material": "wood",
       "name": "Small shrub",
       "shape": [
         {
@@ -110,8 +115,13 @@
       "solid": false
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#47603a",
       "id": "shrub_tall",
+      "material": "wood",
       "name": "Tall shrub",
       "shape": [
         {
@@ -131,8 +141,13 @@
       "solid": false
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#6f7a3a",
       "id": "weed_tuft",
+      "material": "wood",
       "name": "Weeds",
       "shape": [
         {
@@ -164,8 +179,13 @@
       "solid": false
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#3f5a30",
       "id": "creeper_strip",
+      "material": "wood",
       "name": "Creeper",
       "shape": [
         {

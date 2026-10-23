@@ -38,11 +38,11 @@ local campWallRunCrouchHole = campWallRun + {
       "id": "camp_armoury_key",
       "name": "Military armoury key",
       "category": "tool",
-      "weight": 10,
       "size": [1, 1],
       "key": {
         "lock": "camp_armoury"
       },
+      "model": "camp_armoury_key",
       "description": "A key for the locked armoury container."
     },
     {
@@ -61,9 +61,9 @@ local campWallRunCrouchHole = campWallRun + {
       "id": "camp_hq_safe_key",
       "name": "HQ reserve key",
       "category": "tool",
-      "weight": 10,
       "size": [1, 1],
       "key": { "lock": "camp_hq_safe" },
+      "model": "camp_hq_safe_key",
       "description": "A key for the reserve safe in the officers' quarters."
     },
     {
@@ -158,16 +158,18 @@ local campWallRunCrouchHole = campWallRun + {
       "name": "Steel container door",
       "size": [2, 4, 1],
       "color": "#718087",
+      material: 'steel',
+      breach: { minimumStrength: 9, durability: 300 },
       "door": {
         "handlingSimSeconds": 0.6,
-        material: 'steel',
         "methods": { pry: {
           "quality": 'prying', level: 3, strikeSound: 'lock_pry',
           "skill": "mechanics",
           "timeSimSeconds": 15,
           "fastestTimeSimSeconds": 7.5,
           "strikeIntervalSimSeconds": 0.5
-        } }
+        } },
+        detail: (import 'door-detail.libsonnet').ribbed,
       }
     },
     {
@@ -231,6 +233,7 @@ local campWallRunCrouchHole = campWallRun + {
       "name": "Ammunition can",
       "size": [1, 1, 1],
       "color": "#5b6142",
+      "appearance": { "kind": "lid", "surface": "painted-metal" },
       "container": {
         "pockets": [
           {
@@ -302,7 +305,8 @@ local campWallRunCrouchHole = campWallRun + {
       "container": {
         "pockets": [{ "grid": [4, 4], "handlingSimSeconds": 1.2 }]
       },
-      "door": { material: 'steel', methods: {}, "handlingSimSeconds": 0.6 }
+      material: 'steel',
+      "door": { methods: {}, "handlingSimSeconds": 0.6 }
     },
     {
       "id": "field_desk",
@@ -347,9 +351,17 @@ local campWallRunCrouchHole = campWallRun + {
       "name": "Camp fence-gate leaf",
       "size": [6, 5, 1],
       "color": "#666c70",
+      material: 'steel',
+      breach: { minimumStrength: 9, durability: 300 },
       "door": {
-        material: 'steel', methods: {},
-        "handlingSimSeconds": 1.2
+        methods: {},
+        "handlingSimSeconds": 1.2,
+        // A fence gate: upright bars in a frame, hung on heavy straps.
+        detail: (import 'door-detail.libsonnet').ribbed + {
+          fields: [8, 1],
+          hinges: { count: 2, length: 0.3, width: 0.08 },
+          handle: { kind: 'pull', fromFreeEdge: 0.15, along: 0.45, length: 0.3, thickness: 0.03 },
+        },
       }
     }
   ],
@@ -1001,6 +1013,9 @@ local campWallRunCrouchHole = campWallRun + {
         "B": {
           "furniture": "bed"
         },
+        "L": {
+          "furniture": "bedroll"
+        },
         "R": {
           "furniture": "wardrobe",
           "loot": "wardrobe"
@@ -1053,8 +1068,8 @@ local campWallRunCrouchHole = campWallRun + {
           "#..............#",
           "#..............#",
           "#..............#",
-          "#..............#",
-          "#..............#",
+          "#..L...........#",
+          "#..L...........#",
           "#..............#",
           "################"
         ],

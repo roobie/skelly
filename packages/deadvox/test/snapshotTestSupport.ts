@@ -18,7 +18,7 @@ import type { BodyTuningDef } from '../src/core/schema.ts';
 import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
-import type { MoveIntent } from '../src/game/player.ts';
+import type { MoveIntent, StanceToggle } from '../src/game/player.ts';
 import { createSession, IDLE, type PlayerInputSample } from '../src/game/session.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -35,13 +35,6 @@ export const blockId = (id: string): number => {
   const found = registry.blockIds.get(id);
   if (found === undefined) {
     throw new Error(`Missing block ${id}`);
-  }
-  return found;
-};
-export const blockName = (id: number): string => {
-  const found = registry.blocks[id]?.id;
-  if (!found) {
-    throw new Error(`Missing block id ${id}`);
   }
   return found;
 };
@@ -104,13 +97,20 @@ const cloneFixtureChunk = (source: Chunk): Chunk => {
 
 export type Runtime = ReturnType<typeof createRuntime>;
 
+// These stand in for the streamer (`src/game/streamer.ts`, `Streamer`), so a touched column's
+// resident chunks are neither regenerated nor dropped.
 export const addFixtureColumn = (runtime: Runtime, cx: number, cz: number): void => {
   for (const chunk of fixtureChunksFor([[cx, cz]])) {
-    runtime.world.addChunk(cloneFixtureChunk(chunk));
+    if (!(runtime.world.isTouched(cx, cz) && runtime.world.getChunk(chunk.cx, chunk.cy, chunk.cz))) {
+      runtime.world.addChunk(cloneFixtureChunk(chunk));
+    }
   }
 };
 
 export const removeFixtureColumn = (runtime: Runtime, cx: number, cz: number): void => {
+  if (runtime.world.isTouched(cx, cz)) {
+    return;
+  }
   for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
     runtime.world.removeChunk(cx, cy, cz);
   }
@@ -169,7 +169,7 @@ export function createRuntime(
     yaw: options.yaw ?? hamlet.spawn.yaw,
     pitch: 0.03,
     walk: false,
-    crouchToggle: false,
+    stanceToggle: undefined as StanceToggle | undefined,
     intent: { ...IDLE },
   };
   const heardSounds: { event: string; file: string; time: number; position: [number, number, number] }[] = [];
@@ -215,9 +215,9 @@ export function createRuntime(
       ...(sampleAtPlayerTick ? { sampleAtPlayerTick } : {}),
       ...(options.readyHeld ? { readyHeld: options.readyHeld } : {}),
       ...(options.useDominant ? { useDominant: options.useDominant } : {}),
-      consumeCrouchToggle: () => {
-        const pressed = view.crouchToggle;
-        view.crouchToggle = false;
+      consumeStanceToggle: () => {
+        const pressed = view.stanceToggle;
+        view.stanceToggle = undefined;
         return pressed;
       },
       yaw: () => view.yaw,
@@ -314,8 +314,8 @@ export function createRuntime(
     playerAudio,
     heardSounds,
     emitPlayerSound: session.playPlayerSound,
-    toggleCrouch: () => {
-      view.crouchToggle = true;
+    toggleStance: (toggle: StanceToggle) => {
+      view.stanceToggle = toggle;
     },
   };
 }
@@ -348,12 +348,12 @@ export const inspect = (runtime: Runtime): unknown => {
     runtime.sim.scheduler as unknown as { entries: { spec: { id: string }; done: number; ticks: number }[] }
   ).entries;
   const spawns = (runtime.spawner as unknown as { spawned: Set<string> }).spawned;
-  const { deltas } = runtime.world as unknown as { deltas: Map<string, unknown> };
+  const { touched } = runtime.world as unknown as { touched: Set<string> };
   return {
     chunks: [...runtime.world.chunks.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, chunk]) => [key, chunk.toArray(), chunk.edited]),
-    deltas: [...deltas.entries()].sort(([a], [b]) => a.localeCompare(b)),
+      .map(([key, chunk]) => [key, chunk.toArray()]),
+    touched: [...touched].sort(),
     simulation: {
       seed: runtime.sim.seed,
       clock: runtime.sim.clock,
@@ -372,7 +372,7 @@ export const inspect = (runtime: Runtime): unknown => {
       yaw: runtime.player.yaw,
       pitch: runtime.player.pitch,
       walk: runtime.player.walk,
-      crouching: runtime.session.crouching,
+      stance: runtime.session.stance,
       sprinting: runtime.session.sprinting,
     },
     inventory: {

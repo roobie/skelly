@@ -3,7 +3,7 @@
 // table (rolled in full), or nothing. What comes out is a list of items to make, not
 // instances, so worldgen stays free of item uids.
 
-import { array, check, type InferOutput, picklist, pipe, strictObject } from 'valibot';
+import { array, check, type InferOutput, literal, optional, picklist, pipe, strictObject } from 'valibot';
 import type { ItemDef, LootEntry, Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
 import { Rng } from './random.ts';
@@ -15,19 +15,40 @@ export const UsageSchema = pipe(
   array(picklist(['Residential', 'Industrial', 'Medical', 'Hunting', 'Police', 'Military', 'Infected'])),
   check(distinct, 'usage tags must be unique'),
 );
-const LootTierSchema = picklist(['Tier1', 'Tier2', 'Tier3']);
+export const LOOT_TIERS = ['Tier1', 'Tier2', 'Tier3', 'Tier4'] as const;
+const LootTierSchema = picklist(LOOT_TIERS);
 export const ItemEconomySchema = strictObject({
   usage: UsageSchema,
   tiers: pipe(array(LootTierSchema), check(distinct, 'tiers must be unique')),
 });
-export const LootContextSchema = strictObject({ usage: UsageSchema, tier: LootTierSchema });
+/** `lowerTiers` makes the context roll its tier and every tier beneath it, so a deeper area adds a tier and keeps the rest. */
+export const LootContextSchema = strictObject({
+  usage: UsageSchema,
+  tier: LootTierSchema,
+  lowerTiers: optional(literal(true)),
+});
 
 export type ItemEconomy = InferOutput<typeof ItemEconomySchema>;
 export type LootContext = InferOutput<typeof LootContextSchema>;
+/** The part of a loot context an enclosing assembly hands down to the pieces inside it. */
+export type LootDepth = Pick<LootContext, 'tier' | 'lowerTiers'>;
 type UsageTag = ItemEconomy['usage'][number];
 
+export const lootDepthOf = ({ tier, lowerTiers }: LootContext): LootDepth => ({
+  tier,
+  ...(lowerTiers === true ? { lowerTiers } : {}),
+});
+
+/** The context with a piece's own depth in place of the placement's, if it has one. */
+export const withLootDepth = (context: LootContext, depth: LootDepth | undefined): LootContext =>
+  depth === undefined ? context : { usage: context.usage, ...depth };
+
+const tierReaches = (context: LootContext, tier: (typeof LOOT_TIERS)[number]): boolean =>
+  context.lowerTiers === true ? LOOT_TIERS.indexOf(tier) <= LOOT_TIERS.indexOf(context.tier) : tier === context.tier;
+
 export const economyEligible = (economy: ItemEconomy, context: LootContext): boolean =>
-  economy.tiers.includes(context.tier) && economy.usage.some((usage) => context.usage.includes(usage));
+  economy.tiers.some((tier) => tierReaches(context, tier)) &&
+  economy.usage.some((usage) => context.usage.includes(usage));
 
 export const militaryOnlyEconomy = (economy: ItemEconomy): boolean =>
   economy.usage.length === 1 && economy.usage[0] === 'Military';
@@ -72,6 +93,7 @@ export const lootSpawnPoint = (source: LootPointSource): LootSpawnPoint => ({
   context: {
     usage: source.usage === undefined ? [...source.context.usage] : [...source.usage],
     tier: source.context.tier,
+    ...(source.context.lowerTiers === true ? { lowerTiers: true as const } : {}),
   },
   supply: source.supply,
   required: source.required,
@@ -157,6 +179,8 @@ export interface Rolled {
   condition: number;
   /** Item types fitted to each one, by slot id; only authored fixed loot sets them. */
   fitted?: Readonly<Record<string, string>>;
+  /** Battery charge as a share of full; only authored fixed loot sets it. */
+  charge?: number;
 }
 
 const pick = <T extends { weight: number }>(entries: readonly T[], rng: Rng): T => {
@@ -223,7 +247,7 @@ const fixedItems = (
   point: LootSpawnPoint,
   rng: Rng,
 ): Rolled[] =>
-  items.flatMap(({ item, count = 1, condition = 1, fitted }) => {
+  items.flatMap(({ item, count = 1, condition = 1, fitted, charge }) => {
     const type = selectLootType(registry, point, [{ type: item, weight: 1, fitted }], rng);
     if (type === undefined) {
       if (point.required) {
@@ -231,7 +255,11 @@ const fixedItems = (
       }
       return [];
     }
-    return itemsOf(registry, { type, count, condition }).map((rolled) => (fitted ? { ...rolled, fitted } : rolled));
+    return itemsOf(registry, { type, count, condition }).map((rolled) => ({
+      ...rolled,
+      ...(fitted ? { fitted } : {}),
+      ...(charge === undefined ? {} : { charge }),
+    }));
   });
 
 const leafCandidates = (entries: readonly LootEntry[]): WeightedCandidate[] =>

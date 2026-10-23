@@ -7,7 +7,8 @@
 import { solidBlocks } from '../vehicles/solid.ts';
 import type { FurnitureDef, Registry } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
-import type { Vec3 } from './coords.ts';
+import { toChunk, type Vec3 } from './coords.ts';
+import { coreMessage } from './coreText.ts';
 import { type Placed, type PlacedState, restorePlaced, snapshotPlaced } from './items.ts';
 import { type Pose, rotatedSize, rotationOf, type Tip } from './orientation.ts';
 import { type Body, bodyOverlapsBlock } from './physics.ts';
@@ -40,6 +41,10 @@ export interface BlockEntity {
   /** Doors only. */
   open: boolean;
   lock?: DoorLockDef | undefined;
+  /** Strength of the blows the piece has taken toward its breach durability; absent while intact. */
+  damage?: number | undefined;
+  /** A door beaten in: it stands open with no lock and can't be shut again. */
+  broken?: true;
 }
 
 /** What worldgen asks for: a piece of furniture at a place. */
@@ -56,14 +61,24 @@ export interface BlockEntityState {
   searched: boolean;
   open: boolean;
   lock?: DoorLockDef;
+  damage?: number;
+  broken?: true;
   pockets?: PlacedState[][];
 }
 
 export type DoorOperation = 'open' | 'close' | 'lock' | 'unlock';
 
+/**
+ * What one blow did: nothing below the piece's minimum strength, else damage that may break a door leaf or ruin any
+ * other piece, which its caller then destroys (`src/core/furnitureMove.ts`, `ruinFurniture`).
+ */
+export type BashOutcome = 'resisted' | 'damaged' | 'broken' | 'ruined';
+
 export interface BlockEntitiesState {
   nextUid: number;
   entities: BlockEntityState[];
+  /** Pieces pending deconstruction, held against use; absent when none are. */
+  reserved?: number[];
 }
 
 export interface EntitySpec {
@@ -162,10 +177,11 @@ export const isBodyDoor = (def: FurnitureDef): boolean =>
   def.door !== undefined && def.shape !== undefined && def.container !== undefined;
 
 const key = (x: number, y: number, z: number) => `${x},${y},${z}`;
+const columnKey = (cx: number, cz: number) => `${cx},${cz}`;
 
 /** Everything a piece's drawn look and blocking cells follow from, so a view can skip pieces that didn't change. */
-export const poseKey = (entity: BlockEntity): string =>
-  `${entity.pos}|${entity.size}|${entity.facing}|${entity.tip ?? ''}|${entity.open}`;
+export const poseKey = (entity: BlockEntity, wear = 0): string =>
+  `${entity.pos}|${entity.size}|${entity.facing}|${entity.tip ?? ''}|${entity.open}|${entity.broken ?? false}|${wear}`;
 
 export interface BlockingBox {
   readonly pos: Readonly<Vec3>;
@@ -221,6 +237,17 @@ export class BlockEntities {
   private readonly doorways = new Map<string, BlockEntity>();
   private readonly masks = new WeakMap<FurnitureDef, ReadonlySet<string>>();
   private readonly boxes = new WeakMap<BlockEntity, { pose: string; boxes: readonly BlockingBox[] }>();
+  private readonly reservedUids = new Set<number>();
+  /**
+   * Derived from `byOrigin` and rebuilt on restore, never saved: every explored piece stays in memory, so a lookup
+   * must not scan them all (`DESIGN.md`, "Edits persist").
+   */
+  private readonly uids = new Map<number, BlockEntity>();
+  /** Each standing piece under every world column its cells reach into. */
+  private readonly columns = new Map<string, Set<BlockEntity>>();
+  /** Each piece's place in `byOrigin`, so a by-column lookup lists pieces in the order `all` does. */
+  private readonly sequence = new Map<BlockEntity, number>();
+  private sequenced = 0;
   private nextUid = 1;
   /** Goes up on every change, so views know when to redraw. */
   version = 0;
@@ -249,7 +276,23 @@ export class BlockEntities {
   }
 
   byUid(uid: number): BlockEntity | undefined {
-    return [...this.byOrigin.values()].find((entity) => entity.uid === uid);
+    return this.uids.get(uid);
+  }
+
+  /**
+   * The standing pieces whose cells reach into any world column that a box of points, in blocks, spans, in the order
+   * `all` lists them. Columns are coarse, so callers still test each piece's own box.
+   */
+  near(low: Readonly<Vec3>, high: Readonly<Vec3>): BlockEntity[] {
+    const found = new Set<BlockEntity>();
+    for (let cx = toChunk(Math.floor(low[0])); cx <= toChunk(Math.floor(high[0])); cx++) {
+      for (let cz = toChunk(Math.floor(low[2])); cz <= toChunk(Math.floor(high[2])); cz++) {
+        for (const entity of this.columns.get(columnKey(cx, cz)) ?? []) {
+          found.add(entity);
+        }
+      }
+    }
+    return [...found].sort((a, b) => this.sequence.get(a)! - this.sequence.get(b)!);
   }
 
   /** The piece in the player's hands. */
@@ -273,8 +316,11 @@ export class BlockEntities {
         searched: entity.searched,
         open: entity.open,
         ...(entity.lock ? { lock: { ...entity.lock } } : {}),
+        ...(entity.damage === undefined ? {} : { damage: entity.damage }),
+        ...(entity.broken ? { broken: true as const } : {}),
         ...(entity.pockets === undefined ? {} : { pockets: entity.pockets.map((grid) => grid.map(snapshotPlaced)) }),
       })),
+      ...(this.reservedUids.size === 0 ? {} : { reserved: [...this.reservedUids].sort((a, b) => a - b) }),
     });
   }
 
@@ -283,6 +329,10 @@ export class BlockEntities {
     this.byOrigin.clear();
     this.cells.clear();
     this.doorways.clear();
+    this.reservedUids.clear();
+    for (const uid of restored.reservedUids) {
+      this.reservedUids.add(uid);
+    }
     for (const [origin, entity] of restored.byOrigin) {
       this.byOrigin.set(origin, entity);
     }
@@ -292,8 +342,10 @@ export class BlockEntities {
     for (const [cell, entity] of restored.doorways) {
       this.doorways.set(cell, entity);
     }
+    this.reindex();
     this.nextUid = restored.nextUid;
-    this.version = restored.version;
+    // A restored count could repeat one a view cached for another state, and the view would keep the stale state.
+    this.version = Math.max(this.version, restored.version) + 1;
     this.standing += 1;
   }
 
@@ -315,7 +367,45 @@ export class BlockEntities {
       throw new Error('Invalid next block entity id');
     }
     entities.nextUid = state.nextUid;
+    for (const uid of state.reserved ?? []) {
+      if (!ids.has(uid) || entities.reservedUids.has(uid)) {
+        throw new Error(`Reserved block entity ${uid} is missing or repeated`);
+      }
+      entities.reservedUids.add(uid);
+    }
     return entities;
+  }
+
+  private reindex(): void {
+    this.uids.clear();
+    this.columns.clear();
+    this.sequence.clear();
+    for (const entity of this.byOrigin.values()) {
+      this.track(entity);
+      if (!entity.carried) {
+        this.index(entity, true);
+      }
+    }
+  }
+
+  private track(entity: BlockEntity): void {
+    this.uids.set(entity.uid, entity);
+    this.sequence.set(entity, this.sequenced);
+    this.sequenced += 1;
+  }
+
+  private index(entity: BlockEntity, filled: boolean): void {
+    for (let cx = toChunk(entity.pos[0]); cx <= toChunk(entity.pos[0] + entity.size[0] - 1); cx++) {
+      for (let cz = toChunk(entity.pos[2]); cz <= toChunk(entity.pos[2] + entity.size[2] - 1); cz++) {
+        const column = columnKey(cx, cz);
+        const pieces = this.columns.get(column);
+        if (filled) {
+          (pieces ?? this.columns.set(column, new Set()).get(column)!).add(entity);
+        } else if (pieces?.delete(entity) && pieces.size === 0) {
+          this.columns.delete(column);
+        }
+      }
+    }
   }
 
   private restoreEntity(saved: BlockEntityState): void {
@@ -328,9 +418,32 @@ export class BlockEntities {
       throw new Error('A locked door cannot be open');
     }
     entity.open = saved.open;
+    this.restoreDamage(entity, saved);
     if (saved.pockets) {
       entity.pockets = saved.pockets.map((grid) => grid.map((placed) => restorePlaced(this.registry, placed)));
     }
+  }
+
+  private restoreDamage(entity: BlockEntity, { damage, broken }: BlockEntityState): void {
+    if (damage !== undefined && !(Number.isFinite(damage) && damage > 0)) {
+      throw new Error('Invalid furniture damage');
+    }
+    const { durability } = this.defOf(entity).breach;
+    if (damage !== undefined && (this.breachable(entity) ? damage >= durability : damage > durability)) {
+      throw new Error("A standing piece's damage must stay within its durability, and a door's below it");
+    }
+    if (!broken) {
+      entity.damage = damage;
+      return;
+    }
+    if (!this.breachable(entity)) {
+      throw new Error('Only a door leaf can be broken');
+    }
+    if (!(entity.open && entity.lock === undefined)) {
+      throw new Error('A broken door stands open without a lock');
+    }
+    entity.damage = damage;
+    entity.broken = true;
   }
 
   defOf(entity: BlockEntity): FurnitureDef {
@@ -338,9 +451,9 @@ export class BlockEntities {
   }
 
   /**
-   * Adds a piece of furniture. A spec whose origin is already claimed is ignored and
-   * returns undefined, so a column that generates again doesn't bring back a piece
-   * the player moved away.
+   * Adds a piece of furniture. A spec whose origin is already claimed is ignored and returns undefined. A moved or
+   * removed piece stays away because a column is furnished once (`src/game/session.ts`, `rolledColumns`), not
+   * because of this claim.
    */
   add(spec: EntitySpec): BlockEntity | undefined {
     const entity = this.addWithUid(spec, this.nextUid, spec.pos);
@@ -386,6 +499,7 @@ export class BlockEntities {
       entity.pockets = def.container.pockets.map(() => []);
     }
     this.byOrigin.set(origin, entity);
+    this.track(entity);
     if (!entity.carried) {
       this.occupy(entity, true);
     }
@@ -405,6 +519,7 @@ export class BlockEntities {
         cells.delete(cell);
       }
     }
+    this.index(entity, filled);
   }
 
   /**
@@ -476,6 +591,63 @@ export class BlockEntities {
     this.occupy(entity, false);
     entity.pos = [entity.pos[0], y, entity.pos[2]];
     this.occupy(entity, true);
+    this.version += 1;
+    this.standing += 1;
+  }
+
+  /**
+   * Why a standing piece can't be taken out of the world by itself: it holds items, or it is a door with a piece
+   * barricading its doorway. What rests on it is the mover's to check (`src/core/furnitureMove.ts`,
+   * `removalRefusal`). See `DESIGN.md`, "Edits persist".
+   */
+  removalRefusal(entity: BlockEntity): string | undefined {
+    const messages = this.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages;
+    if (entity.pockets?.some((grid) => grid.length > 0)) {
+      return messages.holdsItems;
+    }
+    const [x0, y0, z0] = entity.pos;
+    const barricaded =
+      this.inDoorway(entity) &&
+      [...cellsOf(entity.size)].some(([x, y, z]) => this.cells.has(key(x0 + x, y0 + y, z0 + z)));
+    return barricaded ? messages.barricaded : undefined;
+  }
+
+  /**
+   * Takes a standing piece out of the world for good. A handle from before a restore throws, since its cells now
+   * belong to the restored piece; so does a piece `removalRefusal` refuses.
+   */
+  remove(entity: BlockEntity): void {
+    if (this.byOrigin.get(key(...entity.origin)) !== entity) {
+      throw new Error('Cannot remove a block entity that is no longer live');
+    }
+    if (entity.carried) {
+      throw new Error('Cannot remove a carried block entity');
+    }
+    const refusal = this.removalRefusal(entity);
+    if (refusal) {
+      throw new Error(refusal);
+    }
+    this.unlink(entity);
+  }
+
+  /**
+   * Takes a ruined piece out of the world for good, and its pockets with it; the caller lays what they held on
+   * piles (`src/core/furnitureMove.ts`, `ruinFurniture`): a blow can't be refused, so the removal refusals don't apply
+   * (`DESIGN.md`, "Edits persist").
+   */
+  destroy(entity: BlockEntity): void {
+    if (this.byOrigin.get(key(...entity.origin)) !== entity || entity.carried) {
+      throw new Error('Only a live standing block entity can be destroyed');
+    }
+    this.unlink(entity);
+  }
+
+  private unlink(entity: BlockEntity): void {
+    this.occupy(entity, false);
+    this.byOrigin.delete(key(...entity.origin));
+    this.uids.delete(entity.uid);
+    this.sequence.delete(entity);
+    this.reservedUids.delete(entity.uid);
     this.version += 1;
     this.standing += 1;
   }
@@ -562,7 +734,7 @@ export class BlockEntities {
 
   /** Close an open door only when neither the player nor any other body or piece occupies its cells. */
   closeDoor(entity: BlockEntity, player: Body, otherBodies: Iterable<Body>): 'player' | 'other' | undefined {
-    if (!(this.defOf(entity).door && entity.open)) {
+    if (!(this.defOf(entity).door && entity.open) || entity.broken) {
       return undefined;
     }
     if (this.bodyIntersects(entity, player)) {
@@ -584,24 +756,31 @@ export class BlockEntities {
   doorRefusal(entity: BlockEntity, operation: DoorOperation, keys: readonly string[], from?: Vec3): string | undefined {
     const { door } = this.defOf(entity);
     if (!door) {
-      return "It isn't a door";
+      return coreMessage(this.registry, 'notDoor');
     }
     if (operation === 'open') {
       if (entity.open) {
-        return "It's already open";
+        return coreMessage(this.registry, 'alreadyOpen');
       }
       if (door.barredFrom && from && this.sideOf(entity, from) === door.barredFrom) {
-        return "It's boarded up";
+        return coreMessage(this.registry, 'boardedUp');
       }
       if (door.hatch && this.lyingOn(entity)) {
         return this.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.hatchCovered;
       }
-      return entity.lock?.locked ? "It's locked" : undefined;
+      return entity.lock?.locked ? coreMessage(this.registry, 'locked') : undefined;
     }
     if (operation === 'close') {
-      return entity.open ? undefined : "It's already closed";
+      return this.closeRefusal(entity);
     }
     return this.lockRefusal(entity, operation === 'lock', keys);
+  }
+
+  private closeRefusal(entity: BlockEntity): string | undefined {
+    if (entity.broken) {
+      return coreMessage(this.registry, 'broken');
+    }
+    return entity.open ? undefined : coreMessage(this.registry, 'alreadyClosed');
   }
 
   /** Whether a piece lies on the cells just above a hatch, where its lid would swing. */
@@ -620,27 +799,27 @@ export class BlockEntities {
 
   private lockRefusal(entity: BlockEntity, locked: boolean, keys: readonly string[]): string | undefined {
     if (!entity.lock) {
-      return 'The door has no lock';
+      return coreMessage(this.registry, 'noLock');
     }
     if (entity.open) {
-      return 'Close the door first';
+      return coreMessage(this.registry, 'doorOpen');
     }
     if (keys.length === 0) {
-      return 'Hold the key in your hands';
+      return coreMessage(this.registry, 'noKey');
     }
     if (!keys.includes(entity.lock.id)) {
-      return "The key doesn't fit";
+      return coreMessage(this.registry, 'wrongKey');
     }
-    return entity.lock.locked === locked ? `It's already ${locked ? 'locked' : 'unlocked'}` : undefined;
+    return entity.lock.locked === locked
+      ? coreMessage(this.registry, locked ? 'alreadyLocked' : 'alreadyUnlocked')
+      : undefined;
   }
 
   /** Use closeDoor for a gameplay close, which also checks occupying bodies. */
   setOpen(entity: BlockEntity, open: boolean): string | undefined {
-    if (open) {
-      const reason = this.doorRefusal(entity, 'open', []);
-      if (reason) {
-        return reason;
-      }
+    const reason = open ? this.doorRefusal(entity, 'open', []) : entity.broken && this.doorRefusal(entity, 'close', []);
+    if (reason) {
+      return reason;
     }
     entity.open = open;
     this.version += 1;
@@ -661,14 +840,131 @@ export class BlockEntities {
   /** Prying destroys a closed padlock; the door remains unlocked and cannot be relocked. */
   breakLock(entity: BlockEntity): string | undefined {
     if (!(this.defOf(entity).door && entity.lock?.locked)) {
-      return "There's no locked padlock to pry";
+      return coreMessage(this.registry, 'noPadlock');
     }
     if (entity.open) {
-      return 'Close the door first';
+      return coreMessage(this.registry, 'doorOpen');
     }
     entity.lock = undefined;
     this.version += 1;
     return undefined;
+  }
+
+  /** A piece that stops movement and a body's box overlaps, such as the door or crate a zombie presses against. */
+  pieceTouching(body: Body): BlockEntity | undefined {
+    const halfDepth = body.halfDepth ?? body.halfWidth;
+    const [px, py, pz] = body.pos;
+    for (let x = Math.floor(px - body.halfWidth); x <= Math.floor(px + body.halfWidth); x++) {
+      for (let y = Math.floor(py); y <= Math.floor(py + body.height); y++) {
+        for (let z = Math.floor(pz - halfDepth); z <= Math.floor(pz + halfDepth); z++) {
+          if (this.isSolid(x, y, z) && bodyOverlapsBlock(body, [x, y, z])) {
+            return this.at(x, y, z);
+          }
+        }
+      }
+    }
+    return undefined;
+  }
+
+  /** A leaf that blows can break: an upright door or a hatch, not a cabinet's front, whose body stays standing. */
+  breachable(entity: BlockEntity): boolean {
+    const def = this.defOf(entity);
+    return def.door !== undefined && !isBodyDoor(def);
+  }
+
+  /**
+   * How many of its material's damage looks a piece has reached, 0 when none; a view redraws a piece when this
+   * changes, not on every blow (`FurnitureMeshes.damageLook`).
+   */
+  wearOf(entity: BlockEntity): number {
+    const { material, breach } = this.defOf(entity);
+    const steps = this.registry.furnitureMaterials.get(material)?.damaged;
+    if (!(steps && entity.damage)) {
+      return 0;
+    }
+    const fraction = entity.damage / breach.durability;
+    return steps.filter((step) => step.from <= fraction).length;
+  }
+
+  /**
+   * Worldgen's way to place a piece already worn: sets its damage to a share of its durability. The share stays below
+   * 1 because a ruined piece is gone, and worldgen never places one; every other change to damage is a blow (`bash`).
+   */
+  wear(entity: BlockEntity, share: number): void {
+    if (!(Number.isFinite(share) && share >= 0 && share < 1)) {
+      throw new Error('Worn share must be at least 0 and below 1');
+    }
+    const worn = this.wearOf(entity);
+    entity.damage = share === 0 ? undefined : share * this.defOf(entity).breach.durability;
+    this.version += 1;
+    if (this.wearOf(entity) !== worn) {
+      this.standing += 1;
+    }
+  }
+
+  /** The share of its durability a piece has left, from 1 intact to 0 broken; derived from damage, never stored. */
+  conditionOf(entity: BlockEntity): number {
+    return entity.broken ? 0 : Math.max(0, 1 - (entity.damage ?? 0) / this.defOf(entity).breach.durability);
+  }
+
+  /**
+   * One blow against a standing piece, a zombie's bash or a player's strike alike; an open leaf is a gap, not a
+   * target. A blow below the piece's minimum strength leaves no mark, so waiting never lets a weak attacker through;
+   * stronger blows add their strength until it reaches the durability. A broken leaf stands open and its lock is
+   * gone, so the breach is one-way, as forcing is. Any other piece is ruined, its damage set to its durability, and
+   * the caller destroys it at once (`src/core/furnitureMove.ts`, `ruinFurniture`). Where that finds no room the piece
+   * stands at full damage, and the next blow that lands ruins it again.
+   */
+  bash(entity: BlockEntity, strength: number): BashOutcome | undefined {
+    const { breach } = this.defOf(entity);
+    const leaf = this.breachable(entity);
+    if (entity.carried || (leaf && entity.open)) {
+      return undefined;
+    }
+    if (strength < breach.minimumStrength) {
+      return 'resisted';
+    }
+    const damage = (entity.damage ?? 0) + strength;
+    this.version += 1;
+    if (damage < breach.durability || !leaf) {
+      const worn = this.wearOf(entity);
+      entity.damage = Math.min(damage, breach.durability);
+      if (this.wearOf(entity) !== worn) {
+        this.standing += 1;
+      }
+      return damage < breach.durability ? 'damaged' : 'ruined';
+    }
+    entity.damage = undefined;
+    entity.broken = true;
+    entity.lock = undefined;
+    entity.open = true;
+    this.standing += 1;
+    return 'broken';
+  }
+
+  /**
+   * Holds a standing piece against use while its deconstruction is pending, paused or not, until `release` or its
+   * removal (`DESIGN.md`, "Edits persist").
+   */
+  reserve(entity: BlockEntity): void {
+    if (this.byUid(entity.uid) !== entity || entity.carried) {
+      throw new Error('Only a live standing block entity can be reserved');
+    }
+    this.reservedUids.add(entity.uid);
+    this.version += 1;
+  }
+
+  release(entity: BlockEntity): void {
+    if (this.reservedUids.delete(entity.uid)) {
+      this.version += 1;
+    }
+  }
+
+  /** Why a piece can't be used now: its deconstruction holds it. Every use path that refuses a missing piece asks. */
+  useRefusal(entity: BlockEntity): string | undefined {
+    return this.reservedUids.has(entity.uid)
+      ? this.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.reserved
+      : undefined;
   }
 
   markSearched(entity: BlockEntity): void {

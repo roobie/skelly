@@ -61,6 +61,7 @@ try {
         : null;
     let trustedStartGesture = false;
     globalThis.__startGesture = {
+      pointerDownAt: null,
       pointerDownTarget: null,
       clickTarget: null,
       startTarget: null,
@@ -75,6 +76,7 @@ try {
         trustedStartGesture ||= Boolean(event.isTrusted && event.target?.closest('#go'));
         globalThis.__startGesture.startTarget = describe(document.querySelector('#go'));
         globalThis.__startGesture.pointerDownTarget = describe(event.target);
+        globalThis.__startGesture.pointerDownAt ??= performance.now();
       },
       true,
     );
@@ -97,8 +99,16 @@ try {
         target: describe(this),
         userActivationActive: navigator.userActivation?.isActive,
         returnsPromise: Boolean(result) && typeof result.then === 'function',
+        hasFocus: document.hasFocus(),
+        visibility: document.visibilityState,
+        msSincePointerDown:
+          globalThis.__startGesture.pointerDownAt === null
+            ? null
+            : performance.now() - globalThis.__startGesture.pointerDownAt,
       });
-      result?.catch((error) => globalThis.__startGesture.lockErrors.push(String(error)));
+      result?.catch((error) =>
+        globalThis.__startGesture.lockErrors.push(`${String(error)} (hasFocus=${document.hasFocus()})`),
+      );
       return result;
     };
     const NativeAudioContext = globalThis.AudioContext;
@@ -219,6 +229,7 @@ try {
   process.stderr.write(
     `NATIVE_FIREFOX_FAILURE ${JSON.stringify({
       error: String(error),
+      firefoxVersion: browser?.version(),
       pageErrors,
       consoleErrors,
       state,

@@ -1,7 +1,10 @@
 import { Group, type PerspectiveCamera, PointLight, type Scene, Vector3 } from 'three';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Inventory, Location } from '../core/inventory.ts';
-import { lightExposureFor, WORLD_LIGHT_HEIGHT_METRES } from '../core/lights.ts';
+import type { Item } from '../core/items.ts';
+import { lightExposureFor } from '../core/lights.ts';
 import type { HeldItems } from './hands.ts';
+import type { PileMeshes } from './piles.ts';
 
 /** Fixed shader-light budget: carried sources and dropped sources have stable partitions. */
 const CARRIED_POINT_LIGHTS = 4;
@@ -12,6 +15,8 @@ export const NIGHT_VISION_HALOS = 4;
 
 interface LightPoolContext {
   held: Pick<HeldItems, 'lightPositionOf'>;
+  /** A light set down shines from its drawn flame; one drawn without a flame shines from over its cell. */
+  piles?: Pick<PileMeshes, 'lightPositionOf'>;
   camera: PerspectiveCamera;
   blockSize: number;
   daylightScale: number;
@@ -22,6 +27,26 @@ function handPriority(location: Location): number {
     return 2;
   }
   return location.side === 'right' ? 0 : 1;
+}
+
+function sourcePosition(
+  { item, location }: { item: Item; location: Location },
+  { held, piles, camera, blockSize }: LightPoolContext,
+  groundLiftMetres: number,
+  out: Vector3,
+): void {
+  if (location.kind === 'hand') {
+    if (!held.lightPositionOf(item, out)) {
+      out.copy(camera.position);
+    }
+  } else if (location.kind === 'pile') {
+    if (!piles?.lightPositionOf(item, out)) {
+      const [x, y, z] = location.pile.pos;
+      out.set((x + 0.5) * blockSize, y * blockSize + groundLiftMetres, (z + 0.5) * blockSize);
+    }
+  } else {
+    out.copy(camera.position);
+  }
 }
 
 export class LightPool {
@@ -62,7 +87,9 @@ export class LightPool {
     handLight.decay = source.decay;
   }
 
-  update(inventory: Inventory, { held, camera, blockSize, daylightScale }: LightPoolContext): void {
+  update(inventory: Inventory, context: LightPoolContext): void {
+    const { camera, blockSize, daylightScale } = context;
+    const groundLiftMetres = inventory.registry.senses.get(CORE_CONTENT_IDS.player)!.light.groundLight.renderLiftMetres;
     const entries = [...inventory.items()]
       .map((entry, order) => ({
         ...entry,
@@ -103,16 +130,7 @@ export class LightPool {
       }
       const spec = inventory.registry.items.get(entry.item.type)!.light!;
       const position = this.positions[index]!;
-      if (entry.location.kind === 'hand') {
-        if (!held.lightPositionOf(entry.item, position)) {
-          position.copy(camera.position);
-        }
-      } else if (entry.location.kind === 'pile') {
-        const [x, y, z] = entry.location.pile.pos;
-        position.set((x + 0.5) * blockSize, y * blockSize + WORLD_LIGHT_HEIGHT_METRES, (z + 0.5) * blockSize);
-      } else {
-        position.copy(camera.position);
-      }
+      sourcePosition(entry, context, groundLiftMetres, position);
       light.position.copy(position);
       light.color.set(spec.color);
       light.distance = spec.radius;

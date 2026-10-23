@@ -5,7 +5,7 @@ local leaves = { player: 'footstep_leaves', shambler: 'shambler_step_leaves' };
 local rustle = { gentle: 'foliage_rustle', fast: 'foliage_rustle_fast' };
 local box(position, size) = { position: position, size: size };
 
-{
+(import 'furniture-breach.libsonnet').breaking({
   blocks: [
     {
       id: 'tree_trunk',
@@ -116,4 +116,4 @@ local box(position, size) = { position: position, size: size };
       noise: { enabled: true, radiusMetres: 10 },
     },
   ],
-}
+})

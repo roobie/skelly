@@ -1,6 +1,14 @@
 {
   "furniture": [
     {
+      "appearance": {
+        "kind": "door",
+        "surface": "painted-metal"
+      },
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#666666",
       "container": {
         "pockets": [
@@ -12,6 +20,7 @@
         ]
       },
       "id": "key_box",
+      "material": "steel",
       "name": "Key box",
       "size": [1, 1, 1]
     }
@@ -28,9 +37,9 @@
       "key": {
         "lock": "test_shed"
       },
+      "model": "shed_key",
       "name": "Shed key",
-      "size": [1, 1],
-      "weight": 10
+      "size": [1, 1]
     }
   ],
   "layouts": [

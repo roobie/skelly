@@ -1,14 +1,37 @@
 {
   "furniture": [
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#8d969a",
       "door": {
+        "detail": {
+          "fields": [1, 2],
+          "frame": 0.059999999999999998,
+          "handle": {
+            "along": 0.5,
+            "fromFreeEdge": 0.14000000000000001,
+            "kind": "ring",
+            "length": 0.14000000000000001,
+            "thickness": 0.017999999999999999
+          },
+          "hardware": "#4a5053",
+          "hinges": {
+            "count": 3,
+            "length": 0.20000000000000001,
+            "width": 0.050000000000000003
+          },
+          "relief": 0.0080000000000000002,
+          "seam": 0.059999999999999998
+        },
         "handlingSimSeconds": 0.80000000000000004,
         "hatch": true,
-        "material": "steel",
         "methods": {}
       },
       "id": "gauntlet_start_hatch",
+      "material": "steel",
       "name": "Roof hatch",
       "size": [6, 1, 2]
     }

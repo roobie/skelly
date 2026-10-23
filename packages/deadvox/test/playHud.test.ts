@@ -1,7 +1,10 @@
 // @vitest-environment happy-dom
 import { BufferAttribute, BufferGeometry, Mesh, Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { expect, it } from 'vitest';
+import { BlockEntities } from '../src/core/blockEntities.ts';
 import { bodyRegionLabel } from '../src/core/body.ts';
+import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
+import { damageWord } from '../src/core/items.ts';
 import { inputBindings, labelForAction } from '../src/game/inputBindings.ts';
 import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';
 import {
@@ -14,6 +17,7 @@ import {
   renderPlayHud,
 } from '../src/ui/playHud.ts';
 import { playReadout } from '../src/ui/playReadout.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
 it('projects debug positions in metres and counts only existing chunk/geometry attribute bytes', () => {
   const geometry = new BufferGeometry();
@@ -225,6 +229,52 @@ it('uses a rebound registry label for restable furniture interactions', () => {
   } finally {
     inputBindings.reset();
   }
+});
+
+it("names a damaged piece's band from the shared band table below the top band, and only its name in the top band", () => {
+  const registry = baseRegistry();
+  const bands = registry.inventory.get(CORE_CONTENT_IDS.player)!.conditionBands;
+  const entities = new BlockEntities(registry);
+  const { uid } = entities.add({ type: 'kitchen_cupboard', pos: [0, 0, 0], size: [2, 2, 1], facing: 'n' })!;
+  const def = entities.defOf(entities.byUid(uid)!);
+  const name = def.name.toLowerCase();
+  /** The cupboard's search hint once its saved damage leaves it this condition, and the word the hint used. */
+  const hintAt = (condition: number) => {
+    const state = entities.snapshotState();
+    const damage = (1 - condition) * def.breach.durability;
+    entities.restoreState({
+      ...state,
+      entities: state.entities.map(({ damage: _saved, ...saved }) =>
+        saved.uid === uid && damage > 0 ? { ...saved, damage } : saved,
+      ),
+    });
+    const piece = entities.byUid(uid)!;
+    const damageText = damageWord(registry, entities.conditionOf(piece));
+    const hint = playInteractionText({
+      door: false,
+      open: false,
+      container: true,
+      readable: false,
+      climbable: false,
+      restAction: undefined,
+      searched: false,
+      name,
+      fullName: def.name,
+      damage: damageText,
+    });
+    return { word: damageText, text: drawn(hint).textContent };
+  };
+  const [top, ...below] = [...bands].reverse();
+  for (const [index, band] of below.entries()) {
+    const ceiling = (index === 0 ? top : below[index - 1])!.from;
+    const { word, text } = hintAt((band.from + ceiling) / 2);
+    expect(word).toBe(band.word);
+    expect(text).toContain(`${band.word} ${name}`);
+  }
+  const intact = hintAt(1);
+  expect(intact.word).toBeUndefined();
+  expect(intact.text).toContain(`the ${name}`);
+  expect(hintAt((top!.from + 1) / 2)).toEqual(intact);
 });
 
 it('renders immutable HUD projections and resets text/visibility on the next frame', () => {
