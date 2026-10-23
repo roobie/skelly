@@ -21,9 +21,9 @@ import { movableRefusal } from '../core/furnitureMove.ts';
 import { heldFirearmTransform, throwStanceWorldOffset } from '../core/heldPose.ts';
 import { interactionAffordance } from '../core/interactionAffordance.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
-import type { HandSide, Inventory, Pile, Target } from '../core/inventory.ts';
+import type { HandSide, Inventory, Pile } from '../core/inventory.ts';
 import { damageWord, type Item } from '../core/items.ts';
-import { hasMetThrowMinimumHold, throwDistanceForItem, traceItemLanding } from '../core/itemThrow.ts';
+import { flightForItem, hasMetThrowMinimumHold, throwDistanceForItem } from '../core/itemThrow.ts';
 import { chargeShare, offHandUse, wornNightVision } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
 import { doorOptions, doorPlan, dropTarget, pocketGroundItem, toHands } from '../core/options.ts';
@@ -2642,7 +2642,6 @@ export const startPlay = (
       return;
     }
     const distance = throwDistanceForItem(item, registry, itemThrowTuning, heldSimSeconds);
-    const chargeProgress = Math.min(1, heldSimSeconds / itemThrowTuning.chargeSimSeconds);
     if (!replayPlayer) {
       inputRecorder?.queueAction('item.throw', 'down', inputContext(), {
         payload: {
@@ -2654,7 +2653,7 @@ export const startPlay = (
       });
       pendingPlayerTickActions.enqueue(() => {
         applyToHeldItem(inventory.hands, hand, uid, (heldItem) => {
-          throwHeldItem(heldItem, hand, distance, chargeProgress);
+          throwHeldItem(heldItem, hand, distance);
           syncThrowingStance();
         });
       });
@@ -2691,25 +2690,40 @@ export const startPlay = (
     });
   }
 
-  function throwHeldItem(item: Item, hand: HandSide, distanceMetres: number, chargeProgress = 0): void {
+  function itemThrowFlight(item: Item, hand: HandSide, distanceMetres: number) {
+    const fullStrength = throwDistanceForItem(item, registry, itemThrowTuning, itemThrowTuning.chargeSimSeconds);
+    const chargeProgress = fullStrength > 0 ? Math.max(0, Math.min(1, distanceMetres / fullStrength)) : 0;
+    const offset: Vec3 = throwingStance
+      ? throwStanceWorldOffset(hand, input.yaw, input.pitch, chargeProgress)
+      : [0, 0, 0];
+    const origin: Vec3 = [
+      body.pos[0] * s + offset[0],
+      body.pos[1] * s + session.playerEyeHeightMetres + offset[1],
+      body.pos[2] * s + offset[2],
+    ];
+    return flightForItem(item, registry, {
+      from: origin,
+      direction: lookDir(),
+      distanceMetres,
+      blockSize: s,
+      minY: scale.minCy * CHUNK,
+      isSolid: engine.isSolid,
+    });
+  }
+
+  function throwHeldItem(item: Item, hand: HandSide, distanceMetres: number): void {
     if (inventory.hands[hand] !== item) {
       return;
     }
-    const target = itemLandingTarget(distanceMetres);
+    const flight = itemThrowFlight(item, hand, distanceMetres);
+    const origin = flight.points[0]!;
+    const target = flight.landing ? { kind: 'pile' as const, pos: flight.landing } : undefined;
     if (!target) {
       showRefusal(coreMessage(registry, 'noLanding'), sim.time);
       return;
     }
-    const throwOffset: Vec3 = throwingStance
-      ? throwStanceWorldOffset(hand, input.yaw, input.pitch, chargeProgress)
-      : [0, 0, 0];
-    const origin: Vec3 = [
-      body.pos[0] * s + throwOffset[0],
-      body.pos[1] * s + session.playerEyeHeightMetres + throwOffset[1],
-      body.pos[2] * s + throwOffset[2],
-    ];
     const startedAtSimSeconds = sim.time;
-    const landingAt = startedAtSimSeconds + reachTuning(registry).throwFlightSimSeconds;
+    const landingAt = startedAtSimSeconds + flight.durationSimSeconds;
     const landed = session.throwCharge.place(item, hand, target);
     if (!landed.landed) {
       if (landed.reason) {
@@ -2717,21 +2731,7 @@ export const startPlay = (
       }
       return;
     }
-    itemThrows.spawn({ item, itemUid: landed.item.uid, origin, startedAtSimSeconds, landingAt }, inventory);
-  }
-
-  function itemLandingTarget(distanceMetres: number): Extract<Target, { kind: 'pile' }> | undefined {
-    const from: Vec3 = [body.pos[0] * s, body.pos[1] * s + session.playerEyeHeightMetres, body.pos[2] * s];
-    const pos = traceItemLanding({
-      from,
-      direction: lookDir(),
-      distanceMetres,
-      arcHeightMetres: reachTuning(registry).throwArcHeightMetres,
-      blockSize: s,
-      minY: scale.minCy * CHUNK,
-      isSolid: engine.isSolid,
-    });
-    return pos ? { kind: 'pile', pos } : undefined;
+    itemThrows.spawn({ item, itemUid: landed.item.uid, origin, startedAtSimSeconds, landingAt, flight }, inventory);
   }
 
   function toggleRestFromTarget(kind: RestKind, entity: BlockEntity): void {
