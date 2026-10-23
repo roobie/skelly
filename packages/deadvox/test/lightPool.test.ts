@@ -6,25 +6,26 @@ import {
   drainLight,
   inventoryLightSources,
   lightSenseSourceFor,
-  sunExposedAt,
+  SunExposureCache,
   toggleLight,
 } from '../src/core/lights.ts';
 import { slotsReason } from '../src/core/magazine.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { gameSeconds } from '../src/core/time.ts';
-import { ZombieSystem } from '../src/core/zombies.ts';
-import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { HeldItems } from '../src/render/hands.ts';
-import { LightPool, POINT_LIGHT_POOL_SIZE } from '../src/render/lightPool.ts';
+import { LightPool } from '../src/render/lightPool.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_DAY_CYCLE, dayStateAtHour } from './dayPhaseFixture.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
+import { PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const SHAMBLER = registry.zombies.get('shambler')!;
 const SCALE = makeScale(0.5);
+const FIXTURE_LIMIT = TEST_SENSE_TUNING.light.renderedFixtureLimit;
 const TEST_LIGHTS = [
   { id: 'test_light_1', intensity: 11 },
   { id: 'test_light_2', intensity: 22 },
@@ -101,7 +102,7 @@ describe('made-light point pool', () => {
   it('shares the active point pool with hands without adding shadow casters', () => {
     const scene = new Scene();
     const handScene = new Scene();
-    const pool = new LightPool(scene, handScene);
+    const pool = new LightPool(scene, FIXTURE_LIMIT, handScene);
     const inventory = new Inventory(registry);
     const glowstick = inventory.create('glowstick');
     expect(toggleLight(registry, glowstick, 0)).toBeUndefined();
@@ -114,7 +115,7 @@ describe('made-light point pool', () => {
     pool.update(inventory, { held, camera, blockSize: 1, daylightScale: 1 });
 
     const handLights = handScene.children.filter((child): child is PointLight => child instanceof PointLight);
-    expect(handLights).toHaveLength(POINT_LIGHT_POOL_SIZE);
+    expect(handLights).toHaveLength(pool.size);
     expect(handLights[0]!.intensity).toBeGreaterThan(0);
     expect(handLights[0]!.position).toEqual(pool.lights[0]!.position);
     expect(handLights.every((light) => !light.castShadow)).toBe(true);
@@ -126,7 +127,7 @@ describe('made-light point pool', () => {
   it.each(['right', 'left'] as const)('places a carried fixture light at its held %s-hand position', (side) => {
     const fixtureRegistry = registryWithTestLights();
     const scene = new Scene();
-    const pool = new LightPool(scene);
+    const pool = new LightPool(scene, FIXTURE_LIMIT);
     const inventory = new Inventory(fixtureRegistry);
     const light = inventory.create(TEST_LIGHTS[0].id);
     expect(toggleLight(fixtureRegistry, light, 0)).toBeUndefined();
@@ -147,7 +148,7 @@ describe('made-light point pool', () => {
 
   it('keeps a dropped lit glowstick in both the renderer set and zombie sense', () => {
     const scene = new Scene();
-    const pool = new LightPool(scene);
+    const pool = new LightPool(scene, FIXTURE_LIMIT);
     const inventory = new Inventory(registry);
     const glowstick = inventory.create('glowstick');
     expect(inventory.add(glowstick, { kind: 'hand', side: 'right' })).toBe(true);
@@ -189,6 +190,7 @@ describe('made-light point pool', () => {
         movement: 'still',
         lit: false,
         lightSeenFrom: 40,
+        eyeHeightMetres: 1.3,
         lightSources: source ? [source] : [],
       }),
       isSolid: floor,
@@ -204,6 +206,29 @@ describe('made-light point pool', () => {
     zombies.tick(1 / 60);
     expect(zombies.store.get(id)!.mode).toBe('investigate');
     expect(zombies.store.get(id)!.lastPerceived).toEqual(source?.pos);
+  });
+
+  it('shines a set-down light from the flame its pile draws', () => {
+    const pool = new LightPool(new Scene(), FIXTURE_LIMIT);
+    const inventory = new Inventory(registry);
+    const glowstick = inventory.create('glowstick');
+    expect(toggleLight(registry, glowstick, 0)).toBeUndefined();
+    expect(inventory.add(glowstick, { kind: 'pile', pos: [3, 1, 0] })).toBe(true);
+    const flame = new Vector3(1.7, 0.9, 0.2);
+    pool.update(inventory, {
+      held: { lightPositionOf: () => false },
+      piles: {
+        lightPositionOf: (item, out) => {
+          out.copy(flame);
+          return item === glowstick;
+        },
+      },
+      camera: new PerspectiveCamera(),
+      blockSize: SCALE.blockSize,
+      daylightScale: 1,
+    });
+    expect(pool.lights[4]!.intensity).toBeGreaterThan(0);
+    expect(pool.lights[4]!.position.distanceTo(flame)).toBeLessThan(1e-9);
   });
 
   it('shares exposure for carried pockets but excludes lights stored in furniture', () => {
@@ -275,7 +300,7 @@ describe('made-light point pool', () => {
       }),
     ).toBeUndefined();
 
-    const pool = new LightPool(new Scene());
+    const pool = new LightPool(new Scene(), FIXTURE_LIMIT);
     pool.update(inventory, {
       held: { lightPositionOf: () => false },
       camera: new PerspectiveCamera(),
@@ -289,16 +314,12 @@ describe('made-light point pool', () => {
   it('uses daytime sky exposure for light gating, not direct sun angle', () => {
     const wallShadow: SolidAt = (_x, y, z) => y >= 0 && z === -1;
     const cycle = BASE_DAY_CYCLE;
-    const open = sunExposedAt({ position: [0.5, 1, 0.5], gameHours: 12, skyTop: 20, isOpaque: () => false, cycle });
-    const roofed = sunExposedAt({
-      position: [0.5, 1, 0.5],
-      gameHours: 12,
-      skyTop: 20,
-      isOpaque: (_x, y) => y === 2,
-      cycle,
-    });
-    const shadow = sunExposedAt({ position: [0.5, 1, 0.5], gameHours: 12, skyTop: 20, isOpaque: wallShadow, cycle });
-    const night = sunExposedAt({ position: [0.5, 1, 0.5], gameHours: 0, skyTop: 20, isOpaque: () => false, cycle });
+    const exposed = (isOpaque: SolidAt, gameHours: number) =>
+      new SunExposureCache(20, 0, isOpaque).isExposedAt([0.5, 1, 0.5], gameHours, cycle);
+    const open = exposed(() => false, 12);
+    const roofed = exposed((_x, y) => y === 2, 12);
+    const shadow = exposed(wallShadow, 12);
+    const night = exposed(() => false, 0);
 
     expect(open).toBe(true);
     expect(roofed).toBe(false);
@@ -306,9 +327,9 @@ describe('made-light point pool', () => {
     expect(night).toBe(false);
   });
 
-  it('keeps all eight shader-light slots allocated as sources change', () => {
+  it('keeps every shader-light slot allocated as sources change', () => {
     const scene = new Scene();
-    const pool = new LightPool(scene);
+    const pool = new LightPool(scene, FIXTURE_LIMIT);
     const inventory = new Inventory(registry);
     const camera = new PerspectiveCamera();
     camera.position.set(0, 1, 0);
@@ -318,18 +339,18 @@ describe('made-light point pool', () => {
     inventory.add(first, { kind: 'pile', pos: [1, 0, 0] });
 
     pool.update(inventory, { held, camera, blockSize: 1, daylightScale: 1 });
-    expect(pool.lights).toHaveLength(POINT_LIGHT_POOL_SIZE);
+    expect(pool.lights).toHaveLength(pool.size);
     expect(pool.lights.filter((light) => light.intensity > 0)).toHaveLength(1);
 
     inventory.consume(first);
     pool.update(inventory, { held, camera, blockSize: 1, daylightScale: 1 });
-    expect(pool.lights).toHaveLength(POINT_LIGHT_POOL_SIZE);
+    expect(pool.lights).toHaveLength(pool.size);
     expect(pool.lights.every((light) => light.intensity === 0)).toBe(true);
   });
 
   it('assigns the carried partition to both hands and the first pockets, excluding a fifth source', () => {
     const fixtureRegistry = registryWithTestLights();
-    const pool = new LightPool(new Scene());
+    const pool = new LightPool(new Scene(), FIXTURE_LIMIT);
     const inventory = new Inventory(fixtureRegistry);
     const camera = new PerspectiveCamera();
     const held = { lightPositionOf: () => false };
@@ -355,19 +376,15 @@ describe('made-light point pool', () => {
       .map(({ item }) => fixtureRegistry.items.get(item.type)!.light!.intensity);
     const handIntensities = [right, left].map((item) => fixtureRegistry.items.get(item.type)!.light!.intensity);
     expect(pocketIntensities).toHaveLength(3);
-    expect(pool.lights.map((light) => light.intensity)).toEqual([
+    expect(pool.lights.filter((light) => light.intensity > 0).map((light) => light.intensity)).toEqual([
       ...handIntensities,
       ...pocketIntensities.slice(0, 2),
-      0,
-      0,
-      0,
-      0,
     ]);
   });
 
   it('assigns the dropped partition to the nearest four stay-lit lights', () => {
     const fixtureRegistry = registryWithTestLights();
-    const pool = new LightPool(new Scene());
+    const pool = new LightPool(new Scene(), FIXTURE_LIMIT);
     const inventory = new Inventory(fixtureRegistry);
     const camera = new PerspectiveCamera();
     const held = { lightPositionOf: () => false };

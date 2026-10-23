@@ -6,6 +6,7 @@ import { ATTACK_CLIPS, attackPose } from '../src/mob/attack.ts';
 import {
   advanceClock,
   corners,
+  createGaitCache,
   footRestExtents,
   type GaitBasis,
   type GaitClock,
@@ -29,6 +30,7 @@ const actorOf = (found: ReturnType<typeof setup>) => ({
   extents: found.extents,
   params: found.params,
   seed: found.seed,
+  cache: createGaitCache(),
 });
 
 const CLIP = ATTACK_CLIPS.LUNGE_GRAB!;

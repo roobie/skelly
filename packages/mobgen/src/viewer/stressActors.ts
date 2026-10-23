@@ -66,7 +66,14 @@ import {
   crowdTextureLayout,
   packCrowdBoneMatrix,
 } from '../mob/crowd.ts';
-import { type Extent, footRestExtents, type LegGeometry, legGeometryFor, type WalkActor } from '../mob/gait.ts';
+import {
+  createGaitCache,
+  type Extent,
+  footRestExtents,
+  type LegGeometry,
+  legGeometryFor,
+  type WalkActor,
+} from '../mob/gait.ts';
 import type { HumanoidParams } from '../mob/humanoid.ts';
 import { TEMPLATES } from '../mob/templates.ts';
 import { geometryOf, vertexColors } from './scene.ts';
@@ -110,6 +117,7 @@ export const generatePoolEntry = (poolIndex: number, fromSeed: number): PoolGenR
     extents,
     params: genome.params as HumanoidParams,
     seed: genome.seed,
+    cache: createGaitCache(),
   };
   const ms = performance.now() - t0;
   return { entry: { genome, realized, walkActor, extents, legGeometryL }, ms, nextSeed: genome.seed + 1 };

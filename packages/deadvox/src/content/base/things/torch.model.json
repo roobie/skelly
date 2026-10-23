@@ -1,0 +1,10 @@
+{
+  "id": "torch",
+  "file": "assets/models/torch.glb",
+  "grip": { "at": [0.111, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "rest": "upright",
+  "roll": 0,
+  "anchors": { "flame": [0.42, 0, 0] },
+  "emissiveMaterial": "#2b241c"
+}

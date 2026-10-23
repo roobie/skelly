@@ -1,6 +1,9 @@
 {
   "items": [
     {
+      "canister": {
+        "capacity": 8
+      },
       "category": "material",
       "description": "A small sealed bottle of fuel for lamps and improvised lighting.",
       "economy": {
@@ -10,8 +13,11 @@
       "id": "lamp_oil",
       "model": "lamp_oil_bottle",
       "name": "Lamp oil",
+      "notLoot": false,
       "size": [1, 2],
-      "weight": 500
+      "stack": 2,
+      "weight": 500,
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -22,9 +28,11 @@
       "id": "glass_shards",
       "model": "glass_shards",
       "name": "Glass shards",
+      "notLoot": false,
       "size": [1, 1],
       "stack": 6,
-      "weight": 80
+      "weight": 80,
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -35,8 +43,10 @@
       "id": "electrical_tape",
       "model": "tape_roll",
       "name": "Electrical tape",
+      "notLoot": false,
       "size": [1, 1],
-      "stack": 6
+      "stack": 6,
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -65,9 +75,11 @@
       "id": "fastener_pack",
       "model": "fastener_pack",
       "name": "Mixed fasteners",
+      "notLoot": false,
       "size": [1, 1],
       "stack": 5,
-      "weight": 180
+      "weight": 180,
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -90,9 +102,11 @@
       "id": "wood_offcut",
       "model": "wood_offcut",
       "name": "Wood offcut",
+      "notLoot": false,
       "size": [1, 2],
       "stack": 4,
-      "weight": 250
+      "weight": 250,
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -103,9 +117,11 @@
       "id": "rubber_strip",
       "model": "rubber_strip",
       "name": "Rubber strip",
+      "notLoot": false,
       "size": [1, 1],
       "stack": 6,
-      "weight": 45
+      "weight": 45,
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -116,9 +132,11 @@
       "id": "circuit_board",
       "model": "circuit_board",
       "name": "Circuit board",
+      "notLoot": false,
       "size": [1, 2],
       "stack": 2,
-      "weight": 75
+      "weight": 75,
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -129,9 +147,11 @@
       "id": "glass_lens",
       "model": "glass_lens",
       "name": "Small glass lens",
+      "notLoot": false,
       "size": [1, 1],
       "stack": 3,
-      "weight": 40
+      "weight": 40,
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -142,9 +162,11 @@
       "id": "small_spring",
       "model": "small_spring",
       "name": "Small spring",
+      "notLoot": false,
       "size": [1, 1],
       "stack": 8,
-      "weight": 20
+      "weight": 20,
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -167,9 +189,11 @@
       "id": "cloth_strip",
       "model": "cloth_bundle",
       "name": "Cloth strip",
+      "notLoot": false,
       "size": [1, 1],
       "stack": 8,
-      "weight": 25
+      "weight": 25,
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -180,8 +204,10 @@
       "id": "sewing_thread",
       "model": "thread_spool",
       "name": "Sewing thread",
+      "notLoot": false,
       "size": [1, 1],
-      "stack": 6
+      "stack": 6,
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -192,8 +218,10 @@
       "id": "fuse",
       "model": "fuse",
       "name": "Glass fuse",
+      "notLoot": false,
       "size": [1, 1],
-      "stack": 10
+      "stack": 10,
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -204,8 +232,10 @@
       "id": "nylon_cord",
       "model": "cord_coil",
       "name": "Nylon cord",
+      "notLoot": false,
       "size": [1, 2],
-      "stack": 5
+      "stack": 5,
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -232,8 +262,9 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "wire_strippers",
-      "model": "pliers",
+      "model": "wire_strippers",
       "name": "Wire strippers",
+      "notLoot": false,
       "size": [1, 2],
       "tool": {
         "qualities": {
@@ -241,7 +272,7 @@
           "screwing": 1
         }
       },
-      "weight": 180
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -250,8 +281,9 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "adjustable_pliers",
-      "model": "pliers",
+      "model": "adjustable_pliers",
       "name": "Adjustable pliers",
+      "notLoot": false,
       "salvage": [
         {
           "count": 1,
@@ -270,7 +302,7 @@
           "wrenching": 1
         }
       },
-      "weight": 300
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -299,13 +331,15 @@
       "id": "sewing_kit",
       "model": "sewing_kit",
       "name": "Sewing kit",
+      "notLoot": false,
       "size": [2, 1],
       "tool": {
         "qualities": {
           "sewing": 1
         }
       },
-      "weight": 220
+      "weight": 220,
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -316,6 +350,7 @@
       "id": "broken_toaster",
       "model": "broken_toaster",
       "name": "Broken toaster",
+      "notLoot": false,
       "salvage": [
         {
           "count": 1,
@@ -336,7 +371,8 @@
       ],
       "salvageTimeGameMinutes": 5,
       "size": [3, 2],
-      "weight": 1400
+      "weight": 1400,
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -345,8 +381,9 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "dead_desk_lamp",
-      "model": "desk_lamp",
+      "model": "dead_desk_lamp",
       "name": "Dead desk lamp",
+      "notLoot": false,
       "salvage": [
         {
           "count": 1,
@@ -366,7 +403,8 @@
         }
       ],
       "salvageTimeGameMinutes": 5,
-      "size": [2, 3]
+      "size": [2, 3],
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -377,6 +415,7 @@
       "id": "broken_table_fan",
       "model": "table_fan",
       "name": "Broken table fan",
+      "notLoot": false,
       "salvage": [
         {
           "count": 1,
@@ -393,7 +432,8 @@
       ],
       "salvageTimeGameMinutes": 5,
       "size": [3, 3],
-      "weight": 1500
+      "weight": 1500,
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -404,6 +444,7 @@
       "id": "cracked_phone",
       "model": "cracked_phone",
       "name": "Cracked mobile phone",
+      "notLoot": false,
       "salvage": [
         {
           "count": 1,
@@ -420,7 +461,8 @@
       ],
       "salvageTimeGameMinutes": 5,
       "size": [1, 2],
-      "weight": 250
+      "weight": 250,
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -431,6 +473,7 @@
       "id": "broken_clock",
       "model": "broken_clock",
       "name": "Broken alarm clock",
+      "notLoot": false,
       "salvage": [
         {
           "count": 1,
@@ -447,7 +490,8 @@
       ],
       "salvageTimeGameMinutes": 5,
       "size": [2, 2],
-      "weight": 350
+      "weight": 350,
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -475,8 +519,9 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "sewing_repair_kit",
-      "model": "sewing_kit",
+      "model": "sewing_repair_kit",
       "name": "Clothing repair kit",
+      "notLoot": false,
       "size": [2, 2],
       "tool": {
         "qualities": {
@@ -484,7 +529,7 @@
           "sewing": 1
         }
       },
-      "weight": 420
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -520,6 +565,7 @@
       "id": "electrical_repair_kit",
       "model": "electrical_repair_kit",
       "name": "Electrical repair kit",
+      "notLoot": false,
       "size": [2, 2],
       "tool": {
         "qualities": {
@@ -527,11 +573,12 @@
           "screwing": 1
         }
       },
-      "weight": 650
+      "weight": 650,
+      "workInProgress": false
     },
     {
-      "category": "weapon",
-      "description": "A loose strap-and-bracket assembly.",
+      "category": "light",
+      "description": "A flashlight strapped to a bracket. Taped under the barrel of a long gun, its beam follows the barrel.",
       "disassembly": {
         "skill": "mechanics",
         "timeGameMinutes": 7,
@@ -555,10 +602,37 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "taped_flashlight_mount",
+      "light": {
+        "beam": {
+          "angleDegrees": 60,
+          "decay": 1,
+          "penumbra": 0.59999999999999998,
+          "spill": {
+            "enabled": false,
+            "intensity": 0.17999999999999999,
+            "radiusRatio": 1.5
+          }
+        },
+        "color": "#fff1d8",
+        "intensity": 5,
+        "power": {
+          "battery": "aa_battery",
+          "chargePerGameHour": 0.25,
+          "compatibleBatteries": ["rechargeable_aa_battery"],
+          "swapSimSeconds": 2
+        },
+        "radius": 20,
+        "seenFrom": 40
+      },
+      "lightMount": {
+        "kind": "strap"
+      },
       "model": "flashlight_mount",
       "name": "Taped-on flashlight mount",
+      "notLoot": false,
       "size": [1, 2],
-      "weight": 120
+      "weight": 120,
+      "workInProgress": false
     },
     {
       "category": "weapon",
@@ -588,8 +662,10 @@
       "id": "scrap_foregrip",
       "model": "scrap_foregrip",
       "name": "Scrap foregrip",
+      "notLoot": false,
       "size": [1, 2],
-      "weight": 180
+      "weight": 180,
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -600,6 +676,7 @@
       "id": "hinge_set",
       "model": "hinge_set",
       "name": "Small hinge set",
+      "notLoot": false,
       "salvage": [
         {
           "count": 1,
@@ -612,7 +689,8 @@
       ],
       "salvageTimeGameMinutes": 5,
       "size": [2, 1],
-      "weight": 360
+      "weight": 360,
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -623,9 +701,11 @@
       "id": "glass_bulb",
       "model": "glass_bulb",
       "name": "Small light bulb",
+      "notLoot": false,
       "size": [1, 1],
       "stack": 3,
-      "weight": 30
+      "weight": 30,
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -636,6 +716,7 @@
       "id": "hand_saw",
       "model": "hand_saw",
       "name": "Hand saw",
+      "notLoot": false,
       "salvage": [
         {
           "count": 1,
@@ -653,7 +734,8 @@
           "sawing": 1
         }
       },
-      "weight": 650
+      "weight": 650,
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -664,6 +746,7 @@
       "id": "screwdriver",
       "model": "screwdriver",
       "name": "Screwdriver",
+      "notLoot": false,
       "salvage": [
         {
           "count": 1,
@@ -677,7 +760,8 @@
           "screwing": 1
         }
       },
-      "weight": 160
+      "weight": 160,
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -688,6 +772,7 @@
       "id": "wrench",
       "model": "wrench",
       "name": "Adjustable wrench",
+      "notLoot": false,
       "salvage": [
         {
           "count": 1,
@@ -701,7 +786,7 @@
           "wrenching": 1
         }
       },
-      "weight": 500
+      "workInProgress": false
     },
     {
       "category": "weapon",
@@ -723,14 +808,19 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "firearmAttachmentEffects": {
+        "fitRefusal": "I can't fit this suppressor yet",
+        "fitSkillLevel": 4,
+        "kind": "suppressor",
         "recoilReduction": 0.050000000000000003,
         "wearPerShot": 0.02
       },
       "id": "improvised_suppressor",
       "model": "improvised_suppressor",
       "name": "Improvised suppressor",
+      "notLoot": false,
       "size": [2, 2],
-      "weight": 600
+      "weight": 600,
+      "workInProgress": false
     }
   ],
   "recipes": [
@@ -986,6 +1076,12 @@
         [
           {
             "count": 1,
+            "item": "flashlight"
+          }
+        ],
+        [
+          {
+            "count": 1,
             "item": "scrap_metal"
           }
         ],
@@ -1002,6 +1098,7 @@
           }
         ]
       ],
+      "consumeFitted": true,
       "id": "make_taped_flashlight_mount",
       "qualities": {
         "screwing": 1

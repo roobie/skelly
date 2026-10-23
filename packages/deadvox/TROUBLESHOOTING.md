@@ -44,11 +44,15 @@ The zombie spawn catalogue follows loaded content, including authored-only types
 
 ## Browser stages
 
+A successful throw fixture needs room at that item's own landing: different dragged flights do not share a destination, and generated loot is not guaranteed to leave it free. Select a valid aim rather than weakening the throw refusal or waiting longer for a refused launch. See `test/browser/primary-action.mjs`, `aimThrowAtFreeLanding`.
+
+Keep artifact-only screenshots out of pixel stages when the render-free flow already checks the interaction. Software-rendered capture and scene changes consume the stage budget without adding a visual assertion. See `test/browser/primary-action-pixel.mjs` and `test/browser/primary-action.mjs`.
+
 Wait for application readiness rather than optional third-party resources. For native selection, compare an observed UID change with its pre-key sample; an empty representation can otherwise appear successful before a row is selected. A stage walk must release its key in the page when its condition is satisfied, before the next simulation frame. A simulated wait's clock must be sampled with its trigger in one browser task; compressed time can otherwise consume the budget before the command is delivered. See `test/browser/inventory-selection.ts`, `inventorySelectionChanged`, and `test/browser/simulation-wait.mjs`, `waitForSimulation`.
 
 Keep Playwright's managed Chromium launch and isolated browser profiles. Treat system Chrome plus Playwright as unsupported until a root cause is established: the managed launcher mitigates its launch timeouts without explaining them. Firefox pointer-lock refusal (#168) and built IndexedDB Continue (#170) remain quarantined: do not restore either case without a fixed trial plan and before/after/restored-before evidence. See `test/browser/chromium.mjs`, `launchChromium`, and [browser-ci.md](../../docs/browser-ci.md).
 
-Native pointer activation of the practice terminal return and Exit practice transitions is quarantined in #705. The readiness hypothesis did not explain the navigation failure; keyboard activation preserves the save contract but does not fix or prove the pointer path. Investigate native event delivery, pointer lock and drawn-cursor capture before restoring clicks with deterministic before/after/restored-before evidence. The work tracker owns the revisit. See `test/browser/save-controller-regressions.mjs`.
+Native pointer activation of the practice terminal return and Exit practice transitions is quarantined in #705; keyboard activation keeps the save contract covered. Restore the clicks only with a deterministic reproduction and before/after/restored-before evidence for the cause: passing trials do not lift it. The recorded failure mode is the destination document's startup after navigation (the click navigates, the new document never finishes starting), not pointer delivery, so instrument the destination's startup milestones and outstanding module requests. See `test/browser/save-controller-regressions.mjs`.
 
 A busy-lock fixture uses an actual exclusive Web Lock in a same-origin blank document; it tests lock recovery without a second world or save worker. It simulates pointer lock and does not establish native-gesture coverage.
 

@@ -4,10 +4,11 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { type AcidSpitRelease, acidSpitWindupProgress, type PlayerSense, ZombieSystem } from '../src/core/zombies.ts';
-import { PLAYER, physicsFor } from '../src/game/player.ts';
+import { type AcidSpitRelease, acidSpitWindupProgress, type PlayerSense } from '../src/core/zombies.ts';
 import { startupContent } from './baseRegistry.ts';
+import { PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const { registry } = startupContent();
 const ACID = registry.zombies.get('acid_zombie')!;
@@ -28,7 +29,8 @@ const sensed = (pos: Vec3, movement: PlayerSense['movement'] = 'still'): PlayerS
   movement,
   lit: false,
   lightSeenFrom: 40,
-  crouching: false,
+  eyeHeightMetres: 1.3,
+  stance: 'standing',
 });
 
 interface Harness {
@@ -160,8 +162,8 @@ describe('acid spit', () => {
     const lowCover: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === Math.floor(inBand / 2) && y === 2);
     const stance = (crouching: boolean) => () => ({
       ...sensed(level),
-      crouching,
-      eyeHeightMetres: PLAYER.eye - (crouching ? TEST_SENSE_TUNING.crouch.eyeDropMetres : 0),
+      stance: crouching ? ('crouching' as const) : ('standing' as const),
+      eyeHeightMetres: PLAYER.eye - (crouching ? PLAYER.crouch.eyeDropMetres : 0),
     });
 
     const standing = harness(stance(false), lowCover);

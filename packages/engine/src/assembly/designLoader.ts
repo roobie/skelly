@@ -29,7 +29,8 @@ import {
   parseStringArray,
 } from './parseAssembly.ts';
 import type { Assembly, Domain, PartInstance, Resolved } from './schema.ts';
-import type { ConditionalChoice, ParamReference, SlotTemplate, Template } from './template.ts';
+import type { SlotTemplate, Template } from './template.ts';
+import { chosenParam, conditionMatches, isConditionalChoice, isParamReference } from './templateChoice.ts';
 import { validate } from './validate.ts';
 
 /**
@@ -58,7 +59,7 @@ const SUPPORTED_FORMAT = 1;
 const failure = (path: string, message: string): ParseFailure => ({ ok: false, error: { path, message } });
 const success = <T>(value: T): Parsed<T> => ({ ok: true, value });
 
-const readDeclaredStatus = (raw: unknown): DesignStatus | undefined =>
+export const readDeclaredStatus = (raw: unknown): DesignStatus | undefined =>
   isRecord(raw) && (raw.status === 'draft' || raw.status === 'published') ? raw.status : undefined;
 
 const fatal = (raw: unknown, error: DesignLoadError): DesignLoadResult => ({
@@ -164,28 +165,18 @@ const parseDesignBody = (raw: Record<string, unknown>): Parsed<Design> => {
 
 const partPath = (id: string, ...rest: string[]): string => ['assembly', 'parts', id, ...rest].join('.');
 
-const isParamReference = (choice: unknown): choice is ParamReference =>
-  isRecord(choice) && typeof choice.fromSlot === 'string';
-const isConditionalChoice = (choice: unknown): choice is ConditionalChoice => isRecord(choice) && 'when' in choice;
-
 const offeredValues = (choice: string | readonly string[]): readonly string[] =>
   typeof choice === 'string' ? [choice] : choice;
 
-const staleParam = (
-  part: PartInstance,
-  slot: SlotTemplate,
-  name: string,
-  parts: Assembly['parts'],
-): DesignIssue | undefined => {
+const staleParam = (slot: SlotTemplate, name: string, { parts }: Assembly, domain: Domain): DesignIssue | undefined => {
   const choice = slot.params?.[name];
-  const value = part.params?.[name];
+  const value = parts[slot.id]?.params?.[name];
   if (choice === undefined || value === undefined) {
     return undefined;
   }
   const path = partPath(slot.id, 'params', name);
   if (isConditionalChoice(choice)) {
-    const condition = parts[choice.when.part]?.params?.[choice.when.param];
-    const offered = condition === choice.when.equals ? choice.onMatch : choice.onMismatch;
+    const offered = conditionMatches(choice.when, parts, domain) ? choice.onMatch : choice.onMismatch;
     return offeredValues(offered).includes(value)
       ? undefined
       : {
@@ -196,7 +187,7 @@ const staleParam = (
         };
   }
   if (isParamReference(choice)) {
-    const referenced = parts[choice.fromSlot]?.params?.[choice.param];
+    const referenced = chosenParam(parts, domain, choice.fromSlot, choice.param);
     return referenced !== undefined && referenced !== value
       ? {
           code: 'template-choice',
@@ -216,19 +207,9 @@ const staleParam = (
       };
 };
 
-const slotConditionMatches = (slot: SlotTemplate, assembly: Assembly, domain: Domain): boolean => {
-  if (!slot.when) {
-    return true;
-  }
-  const source = assembly.parts[slot.when.part];
-  const family = source && domain.families[source.family];
-  const value = source?.params?.[slot.when.param] ?? family?.params[slot.when.param]?.default;
-  return value === slot.when.equals;
-};
-
 const slotIssues = (slot: SlotTemplate, assembly: Assembly, domain: Domain): DesignIssue[] => {
   const part = assembly.parts[slot.id];
-  if (!slotConditionMatches(slot, assembly, domain)) {
+  if (slot.when && !conditionMatches(slot.when, assembly.parts, domain)) {
     return part === undefined
       ? []
       : [
@@ -262,7 +243,7 @@ const slotIssues = (slot: SlotTemplate, assembly: Assembly, domain: Domain): Des
     });
   }
   for (const name of Object.keys(slot.params ?? {})) {
-    const issue = staleParam(part, slot, name, assembly.parts);
+    const issue = staleParam(slot, name, assembly, domain);
     if (issue) {
       issues.push(issue);
     }

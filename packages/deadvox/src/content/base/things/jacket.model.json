@@ -1,0 +1,14 @@
+{
+  "id": "jacket",
+  "file": "assets/models/jacket.glb",
+  "parts": {
+    "jacket": {
+      "node": "jacket:folded-garment",
+      "massKg": 1.2,
+      "centreOfMass": [0, 0.03481927710843374, -0.0022289156626506025]
+    }
+  },
+  "grip": { "at": [0, 0.035, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

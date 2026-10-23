@@ -1,4 +1,5 @@
 // Rest controls/rate selection only. Core LongActions owns saved state and stepping.
+import type { ActionText } from '../core/actionText.ts';
 import { nextSimTimeAt, SECONDS_PER_HOUR } from '../core/clock.ts';
 import type { RestAction, RestKind } from '../core/longAction.ts';
 import type { Simulation } from '../core/sim.ts';
@@ -15,6 +16,7 @@ export interface RestHooks {
   notice: (text: string) => void;
   /** Whether the player carries a working alarm clock (an item with `alarm`). */
   hasAlarm: () => boolean;
+  text: ActionText;
 }
 
 export const restKindForFurniture = (furniture: {
@@ -56,12 +58,13 @@ export class RestController {
     return this.hooks.hasAlarm();
   }
   start(kind: RestKind, furnitureUid: number): string | undefined {
+    const { text } = this.hooks;
     const furniture = this.hooks.furniture(furnitureUid);
     if (!furniture || (kind === 'sleep' && !furniture.sleepable)) {
-      return 'That furniture cannot be used for this action';
+      return text.rest.unusable;
     }
     if (!this.hooks.withinReach(furnitureUid)) {
-      return 'Too far away';
+      return text.common.tooFar;
     }
     const wakeAt =
       kind === 'sleep' && this.wakeGameHour !== undefined && this.canSetWakeTime
@@ -82,15 +85,16 @@ export class RestController {
   resume(): string | undefined {
     const { action } = this;
     if (action) {
+      const { text } = this.hooks;
       const furniture = this.hooks.furniture(action.furnitureUid);
       if (!furniture) {
-        return 'That furniture is no longer there';
+        return text.common.gone;
       }
       if (!this.hooks.withinReach(action.furnitureUid)) {
-        return 'Too far away';
+        return text.common.tooFar;
       }
       if (action.kind === 'sleep' && !furniture.sleepable) {
-        return 'That furniture cannot be used for this action';
+        return text.rest.unusable;
       }
     }
     return this.sim.actions.resume();

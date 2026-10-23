@@ -1,0 +1,14 @@
+{
+  "id": "wire_strippers",
+  "file": "assets/models/wire_strippers.glb",
+  "parts": {
+    "equipment": {
+      "node": "equipment:pliers",
+      "massKg": 0.18,
+      "centreOfMass": [0.1142079207920792, 0.0014356435643564356, -0.00014851485148514865]
+    }
+  },
+  "grip": { "at": [0.05, 0, -0.02], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 0
+}

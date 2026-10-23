@@ -45,7 +45,10 @@ const MAX_NESTING = 16;
 const itemOf = (search: Search, type: string): Item => {
   let item = search.items.get(type);
   if (!item) {
-    item = search.factory.create(search.registry, type);
+    // This admission proof only needs footprint; live loot resolves coverage from its source before creation.
+    item = search.factory.create(search.registry, type, 1, {
+      ...(search.registry.items.get(type)?.paperMap ? { paperMap: { x: 0, z: 0 } } : {}),
+    });
     search.items.set(type, item);
   }
   return item;
@@ -172,7 +175,9 @@ const runTable = (search: Search, states: States, tableId: string, depth: number
 const fixedStates = (search: Search, items: Extract<Supply, { kind: 'fixed' }>['items']): States => {
   let states: States = new Map([['', []]]);
   for (const { item, count = 1, fitted } of items) {
-    if (admittedCandidates(search.registry, search.point, [{ type: item, weight: 1, fitted }]).length > 0) {
+    if (
+      admittedCandidates(search.registry, search.point, [{ type: item, weight: 1, fitted, placed: true }]).length > 0
+    ) {
       states = addStacks(search, states, item, [count, count]);
     }
   }

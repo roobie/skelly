@@ -29,7 +29,7 @@ describe('trigger guards', () => {
   });
 
   // Check trigger-guard clearance across valid fixtures and published designs; broken-* fixtures intentionally violate geometry rules.
-  it('guards the trigger volume in every fixture and design', { timeout: 20_000 }, () => {
+  it('guards the trigger volume in every fixture and design', () => {
     const corpus = loadCorpus();
     expect(corpus.length).toBeGreaterThan(0);
     for (const { label, assembly } of corpus) {

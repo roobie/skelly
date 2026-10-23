@@ -9,8 +9,10 @@
       },
       "id": "mod_test_token",
       "name": "Mod token",
+      "notLoot": false,
       "size": [1, 1],
-      "weight": 0.10000000000000001
+      "weight": 0.10000000000000001,
+      "workInProgress": false
     }
   ],
   "zombies": [
@@ -18,6 +20,7 @@
       "abilities": [],
       "attack": {
         "cooldownSimSeconds": 1.5,
+        "grabBandMetres": 1.7,
         "moves": [
           {
             "damage": 9,
@@ -108,13 +111,24 @@
           "simSeconds": 3
         }
       },
+      "earHeightMetres": 1.3,
+      "eyeHeightMetres": 1.3,
       "figureSeeds": [1, 2, 3, 4, 5, 6, 7, 8],
       "footstepSound": "shambler",
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
+        "hesitationSimSeconds": {
+          "max": 5,
+          "min": 5
+        },
         "investigationDistanceMetres": 8,
+        "loudNoiseRadiusMetres": 30,
+        "refusalLean": 0.75,
+        "refusalSuspicionSimSeconds": 20,
         "searchRadiusMetres": 4,
         "searchSimSeconds": {
           "max": 50,
@@ -129,6 +143,10 @@
         "jog": 8,
         "sprint": 15,
         "walk": 3
+      },
+      "hordeSpacing": {
+        "innerMetres": 0.34999999999999998,
+        "stepMetres": 0.38
       },
       "id": "shambler",
       "loot": "shambler_pockets",
@@ -175,6 +193,14 @@
         "rightLeg": 24,
         "torso": 60
       },
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
+      },
       "sight": 25,
       "sightCone": 60,
       "sounds": {
@@ -185,6 +211,7 @@
       },
       "spawnWeight": 1,
       "speed": {
+        "backgroundStepMetres": 1,
         "chaseMetresPerSimSecond": 3.75,
         "wanderMetresPerSimSecond": 0.80000000000000004
       },
@@ -194,6 +221,7 @@
       },
       "stepLength": 0.59999999999999998,
       "stimulusMemorySimSeconds": 180,
+      "strength": 5,
       "wander": {
         "bodyLookArcDegrees": 150,
         "bodyTurnDegreesPerSimSecond": 90,
@@ -214,7 +242,9 @@
         "strollSimSeconds": {
           "max": 12,
           "min": 3
-        }
+        },
+        "wayAroundMinGainFraction": 0.25,
+        "wayAroundReachMetres": 2
       }
     }
   ]

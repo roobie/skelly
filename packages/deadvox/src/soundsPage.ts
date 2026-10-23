@@ -4,6 +4,7 @@ import type { Manifest } from './core/assets.ts';
 import { CORE_CONTENT_IDS } from './core/contentIds.ts';
 import type { SoundId } from './core/soundEvents.ts';
 import { GameAudio } from './game/audio.ts';
+import { playerHeartbeat } from './game/audioPresentation.ts';
 import { buildSoundsPageContent } from './soundsPageContent.ts';
 import { buildHeartbeatSoundGuide, buildSoundGuide, renderHeartbeatSoundGuide } from './ui/soundGuide.ts';
 import { applyUiTokens } from './ui/uiTokens.ts';
@@ -11,8 +12,13 @@ import { applyUiTokens } from './ui/uiTokens.ts';
 const { registry, issues } = buildSoundsPageContent();
 // The page shares the game's style sheet, which is measured in these tokens.
 applyUiTokens(registry, document.documentElement);
-const guide = buildSoundGuide([...registry.sounds.values()], assetManifest as Manifest);
-const heartbeat = buildHeartbeatSoundGuide(assetManifest as Manifest);
+const heartbeatTuning = playerHeartbeat(registry);
+const heartbeatEvents = new Set<SoundId>(Object.values(heartbeatTuning.sounds));
+const guide = buildSoundGuide(
+  [...registry.sounds.values()].filter(({ id }) => !heartbeatEvents.has(id)),
+  assetManifest as Manifest,
+);
+const heartbeat = buildHeartbeatSoundGuide(heartbeatTuning, registry.sounds, assetManifest as Manifest);
 const errorRoot = document.createElement('p');
 errorRoot.className = 'sound-errors';
 errorRoot.setAttribute('role', 'status');
@@ -40,12 +46,12 @@ const playExact = (event: SoundId, file: string) => {
   }
 };
 
-const playHeartbeat = (file: string, gain: number) => {
+const playHeartbeat = (event: SoundId, gain: number) => {
   errorRoot.textContent = '';
   try {
     audio.unlock();
-    if (!audio.previewHeartbeat(file, gain)) {
-      errorRoot.textContent = `Could not preview heartbeat file ${file}.`;
+    if (!audio.previewHeartbeat(event, gain)) {
+      errorRoot.textContent = `Could not preview heartbeat sound ${event}.`;
     }
   } catch (error) {
     errorRoot.textContent = `Audio preview failed: ${String(error)}`;
@@ -58,20 +64,20 @@ const sheet = html`
       <p class="eyebrow">DEADVOX · AUDIO REFERENCE</p>
       <h1>Listening sheet</h1>
       <p>
-        Generated from the <code>sounds*.json</code> content files and <code>assets/manifest.json</code>. Sound-event preview buttons play
+        Generated from the loaded sound content and <code>assets/manifest.json</code>. Sound-event preview buttons play
         the exact listed file or recipe at base event gain and pitch 1, through the game's saved master/category volume settings; variant
         selection jitter and cooldown are bypassed.
       </p>
       <p class="sound-debug-note">
-        Ordered roughly as a player encounters movement, doors, jumping, shamblers, damage, and combat. No event is
-        debug-only; repeatable <code>?debug=1</code> shortcuts are listed where useful.
+        Listed in content order. No event is debug-only; repeatable <code>?debug=1</code> shortcuts are listed
+        where useful.
       </p>
       <nav><a href="./">Back to game</a> · <a href="./?debug=1">Open game with debug help</a></nav>
     </div>
     <div class="sound-count">${guide.length + 1} events · ${guide.reduce((sum, event) => sum + event.variants.length, heartbeat.variants.length)} variants</div>
   </header>
   ${issues.length > 0 ? html`<p class="sound-errors">Content validation: ${issues.map((issue) => issue.message).join('; ')}</p>` : ''}
-  <section class="sound-list" aria-label="Sound events and bodily cues in gameplay order">
+  <section class="sound-list" aria-label="Sound events and bodily cues">
     ${guide.map(
       (event) => html`
         <article class="sound-event" data-sound-event=${event.id}>
@@ -87,7 +93,6 @@ const sheet = html`
             <div><dt>Minimum interval</dt><dd>${event.minIntervalSimSeconds} s</dd></div>
             <div><dt>Noise radius</dt><dd>${event.noiseRadiusMetres === null ? 'not emitted as noise' : `${event.noiseRadiusMetres} m`}</dd></div>
           </dl>
-          ${event.note ? html`<p class="sound-note"><strong>BR status:</strong> ${event.note}</p>` : ''}
           <ul class="sound-variants" aria-label=${`${event.id} recordings`}>
             ${event.variants.map(
               (variant) => html`

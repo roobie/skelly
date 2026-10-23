@@ -167,8 +167,15 @@ const round6 = (value: number): number => {
 };
 
 /** Convert a generated column into the optional DeadvoxModelEntry `rounds` field. */
-export const magazineRoundPoses = (column: Column): readonly MagazineRoundPose[] =>
-  column.rounds.map(({ position, angle, z }) => ({
-    at: [round6(position[0] * METRES_PER_UNIT), round6(position[1] * METRES_PER_UNIT), round6(z * METRES_PER_UNIT)],
-    tilt: round6((angle * 180) / Math.PI),
-  }));
+/** `place` moves each round's centre, in magazine units, onto the drawn model (see `drawn.ts`). */
+export const magazineRoundPoses = (
+  column: Column,
+  place: (point: Vec3) => Vec3 = (point) => point,
+): readonly MagazineRoundPose[] =>
+  column.rounds.map(({ position, angle, z }) => {
+    const at = place([position[0], position[1], z]);
+    return {
+      at: [round6(at[0] * METRES_PER_UNIT), round6(at[1] * METRES_PER_UNIT), round6(at[2] * METRES_PER_UNIT)],
+      tilt: round6((angle * 180) / Math.PI),
+    };
+  });

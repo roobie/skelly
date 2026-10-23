@@ -60,6 +60,13 @@ export interface FirearmsCombatTuning {
   readonly rackFactorHalfLifeLevels: number;
   readonly attachmentFactorFloor: number;
   readonly attachmentFactorHalfLifeLevels: number;
+  readonly caseEjection: {
+    readonly speedMetresPerSimSecond: number;
+    readonly flightSimSeconds: number;
+    readonly landingLiftMetres: number;
+  };
+  readonly shotTraceRangeBlocks: number;
+  readonly curve?: { readonly saturationFloor: number; readonly saturationHalfLifeLevels: number } | undefined;
 }
 
 export interface FirearmsSkillEffects {
@@ -75,7 +82,12 @@ export interface FirearmStanceEffects {
   readonly readyMovementFactor: number;
 }
 
-const expertControl = skillSaturation(SKILL_LEVEL_MAX, 0.42, 4);
+const curveFor = ({ curve }: FirearmsCombatTuning) => {
+  if (curve === undefined) {
+    throw new Error('Missing firearms-combat skill curve');
+  }
+  return { floor: curve.saturationFloor, halfLifeLevels: curve.saturationHalfLifeLevels };
+};
 const effectLevelFor = (level: number): number => {
   if (!Number.isSafeInteger(level) || level < SKILL_LEVEL_MIN || level > SKILL_LEVEL_LEGENDARY) {
     throw new Error('Invalid firearms skill level');
@@ -90,7 +102,9 @@ export const firearmsSkillEffects = (
   shotKind: FirearmsSkillShotKind = 'singleShot',
 ): FirearmsSkillEffects => {
   const effectLevel = effectLevelFor(level);
-  const control = skillSaturation(effectLevel, 0.42, 4);
+  const curve = curveFor(tuning);
+  const expertControl = skillSaturation(SKILL_LEVEL_MAX, curve);
+  const control = skillSaturation(effectLevel, curve);
   const progressFromExpert = (control - expertControl) / (1 - expertControl);
   const zero = tuning.skillZeroHandling[shotKind];
   const expertRecovery = 2 - expertControl;

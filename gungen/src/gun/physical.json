@@ -32,6 +32,14 @@
     },
     {
       "family": "receiver",
+      "id": "receiver-compact-smg",
+      "massKg": 0.69999999999999996,
+      "match": {
+        "section": "compact-smg"
+      }
+    },
+    {
+      "family": "receiver",
       "id": "receiver-bolt",
       "massKg": 0.84999999999999998,
       "match": {
@@ -201,11 +209,28 @@
     },
     {
       "family": "lower",
+      "id": "lower-trigger",
+      "massKg": 0.20000000000000001,
+      "match": {
+        "layout": "trigger"
+      }
+    },
+    {
+      "family": "lower",
       "id": "lower-sporter",
       "massKg": 0.17999999999999999,
       "match": {
         "layout": "conventional",
         "section": "sporter"
+      }
+    },
+    {
+      "family": "lower",
+      "id": "lower-compact-smg",
+      "massKg": 0.20000000000000001,
+      "match": {
+        "layout": "conventional",
+        "section": "compact-smg"
       }
     },
     {
@@ -323,6 +348,14 @@
       "match": {
         "length": "L",
         "section": "sporter"
+      }
+    },
+    {
+      "family": "barrel",
+      "id": "barrel-compact-smg",
+      "massKg": 0.29999999999999999,
+      "match": {
+        "section": "compact-smg"
       }
     },
     {
@@ -464,22 +497,6 @@
       }
     },
     {
-      "family": "ak-muzzle-device",
-      "id": "muzzle-ak-slant",
-      "massKg": 0.080000000000000002,
-      "match": {
-        "style": "slant"
-      }
-    },
-    {
-      "family": "ak-muzzle-device",
-      "id": "muzzle-ak-brake",
-      "massKg": 0.12,
-      "match": {
-        "style": "brake"
-      }
-    },
-    {
       "family": "handguard",
       "id": "handguard-ak",
       "massKg": 0.25,
@@ -521,6 +538,15 @@
       "match": {
         "layout": "standard",
         "section": "sporter"
+      }
+    },
+    {
+      "family": "handguard",
+      "id": "handguard-compact-smg",
+      "massKg": 0.25,
+      "match": {
+        "layout": "standard",
+        "section": "compact-smg"
       }
     },
     {
@@ -681,6 +707,33 @@
     },
     {
       "family": "stock",
+      "id": "stock-tapered-sawed-short",
+      "massKg": 0.29999999999999999,
+      "match": {
+        "length": "S",
+        "style": "tapered-sawed"
+      }
+    },
+    {
+      "family": "stock",
+      "id": "stock-tapered-sawed-medium",
+      "massKg": 0.40000000000000002,
+      "match": {
+        "length": "M",
+        "style": "tapered-sawed"
+      }
+    },
+    {
+      "family": "stock",
+      "id": "stock-tapered-sawed-long",
+      "massKg": 0.5,
+      "match": {
+        "length": "L",
+        "style": "tapered-sawed"
+      }
+    },
+    {
+      "family": "stock",
       "id": "stock-straight-short",
       "massKg": 0.25,
       "match": {
@@ -764,9 +817,23 @@
       }
     },
     {
+      "family": "front-sight",
+      "id": "front-sight-ringed",
+      "massKg": 0.040000000000000001,
+      "match": {
+        "style": "ringed"
+      }
+    },
+    {
       "family": "sporting-rear-sight",
       "id": "rear-sight-sporting",
       "massKg": 0.035000000000000003,
+      "match": {}
+    },
+    {
+      "family": "drum-rear-sight",
+      "id": "rear-sight-drum",
+      "massKg": 0.059999999999999998,
       "match": {}
     },
     {

@@ -1,3 +1,4 @@
+import { actionText } from '../core/actionText.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import type { Inventory } from '../core/inventory.ts';
@@ -21,22 +22,21 @@ export class QuickbarActions {
   }
 
   tap(item: Item): void {
-    const { inventory, queue, feet, notice } = this.dependencies;
+    const { inventory, queue, notice } = this.dependencies;
     const at = inventory.locate(item);
     if (!at) {
       return;
     }
-    const reason =
-      at.kind === 'hand' ? quickbarPutAway(inventory, queue, item) : quickbarTake(inventory, queue, item, feet());
+    const reason = at.kind === 'hand' ? quickbarPutAway(inventory, queue, item) : quickbarTake(inventory, queue, item);
     if (reason) {
       notice(reason);
     }
   }
 
   hold(item: Item): void {
-    const { queue, survival, notice } = this.dependencies;
+    const { inventory, queue, survival, notice } = this.dependencies;
     if (queue.busy) {
-      notice('Already handling something');
+      notice(actionText(inventory.registry).common.busy);
       return;
     }
     const reason = survival.useFromQuickbar(item);

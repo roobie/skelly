@@ -44,23 +44,6 @@
       "weatherable": false
     },
     {
-      "color": "#425b35",
-      "footsteps": {
-        "player": "footstep_leaves",
-        "shambler": "shambler_step_leaves"
-      },
-      "id": "hedge",
-      "name": "Hedge",
-      "opaque": true,
-      "pattern": "noise",
-      "rustle": {
-        "fast": "foliage_rustle_fast",
-        "gentle": "foliage_rustle"
-      },
-      "solid": false,
-      "weatherable": false
-    },
-    {
       "color": "#766047",
       "footsteps": {
         "player": "footstep_leaves",
@@ -93,8 +76,13 @@
   ],
   "furniture": [
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#5a7040",
       "id": "shrub_small",
+      "material": "wood",
       "name": "Small shrub",
       "shape": [
         {
@@ -110,8 +98,13 @@
       "solid": false
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#47603a",
       "id": "shrub_tall",
+      "material": "wood",
       "name": "Tall shrub",
       "shape": [
         {
@@ -131,8 +124,13 @@
       "solid": false
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#6f7a3a",
       "id": "weed_tuft",
+      "material": "wood",
       "name": "Weeds",
       "shape": [
         {
@@ -164,8 +162,13 @@
       "solid": false
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#3f5a30",
       "id": "creeper_strip",
+      "material": "wood",
       "name": "Creeper",
       "shape": [
         {
@@ -188,6 +191,7 @@
   "sounds": [
     {
       "category": "world",
+      "description": "Walk through bushes or other foliage that rustles.",
       "gain": 0.40000000000000002,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "foliage_rustle",
@@ -201,6 +205,7 @@
     },
     {
       "category": "world",
+      "description": "Jog or sprint through bushes or other foliage that rustles.",
       "gain": 0.75,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "foliage_rustle_fast",

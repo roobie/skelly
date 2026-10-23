@@ -4,6 +4,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import { type Item, weightOf } from '../src/core/items.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 
 const base = baseRegistry();
 const pocket = (owner: Item) => ({ kind: 'pocket', owner, pocket: 0 }) as const;
@@ -16,6 +17,8 @@ const fixture = () => {
     weight: 3,
     size: [1, 1],
     economy: { usage: [], tiers: [] },
+    workInProgress: false,
+    notLoot: false,
   };
   for (const [id, size, grid, rigid] of [
     ['fixture_bag', [2, 2], [4, 4], false],
@@ -37,6 +40,8 @@ const fixture = () => {
     size: [1, 1, 1],
     color: '#ffffff',
     container: { pockets: [{ grid: [4, 4], handlingSimSeconds: simSeconds(0.1) }] },
+    breach: fixtureBreach(),
+    material: FIXTURE_MATERIAL,
   });
   const inv = new Inventory(registry);
   const floor = (type: string) => {

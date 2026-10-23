@@ -169,13 +169,42 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
   // The main card already owns its locked wheel route, independent of cursor position.
   const gameOwnsWheel = () =>
     input.locked && (!input.menuPointer || document.getElementById('overlay')?.hidden === false);
+  let forwardingWheel = false;
+  // A wheel owner, such as the item viewer's zoom, takes the wheel instead of a pane; true when one did.
+  const toWheelOwner = (event: WheelEvent, target: EventTarget | null): boolean => {
+    const owner = target instanceof Element ? target.closest('[data-wheel-owner]') : null;
+    if (!owner) {
+      return false;
+    }
+    if (input.locked) {
+      forwardingWheel = true;
+      try {
+        owner.dispatchEvent(
+          new WheelEvent('wheel', {
+            cancelable: true,
+            deltaX: event.deltaX,
+            deltaY: event.deltaY,
+            deltaMode: event.deltaMode,
+          }),
+        );
+      } finally {
+        forwardingWheel = false;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    return true;
+  };
   document.addEventListener(
     'wheel',
     (event) => {
-      if (event.defaultPrevented || !(event.deltaX || event.deltaY) || gameOwnsWheel()) {
+      if (forwardingWheel || event.defaultPrevented || !(event.deltaX || event.deltaY) || gameOwnsWheel()) {
         return;
       }
       const target = input.locked ? document.elementFromPoint(input.cursorX, input.cursorY) : event.target;
+      if (toWheelOwner(event, target)) {
+        return;
+      }
       const pane = wheelPane(target, { x: event.deltaX, y: event.deltaY });
       if (pane) {
         pane.scrollTop += wheelPixels(event.deltaY, event.deltaMode, pane.clientHeight);

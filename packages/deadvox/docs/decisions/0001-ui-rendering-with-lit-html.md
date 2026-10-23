@@ -7,8 +7,6 @@ tags: [deadvox, adr, ui, lit-html]
 
 # 1. Render the UI with lit-html
 
-[[THIS grounds: ../../INTERACTIONS.md]]
-
 **Status:** accepted.
 
 ## Decision

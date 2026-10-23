@@ -2,7 +2,7 @@
 read_if:
   - you change recipe authoring, workstation, disassembly or salvage rules
   - you change craft ownership, progression, reading or save behavior
-  - you change reachability validation or the repair-corner scenario
+  - you change reachability validation or the repair-corner scenario and its authored stock destinations
 ---
 
 # Crafting ownership and planning
@@ -21,7 +21,9 @@ Gathering uses ordinary handling costs; work time follows recipe content, statio
 
 A craft requires both hands free; stowing is the player's decision. The work item escrows inputs so nothing else can consume them mid-craft. Losing a tool or station stops work without losing progress; the same work can resume when requirements return. Finishing consumes escrow once and creates the result. Cancellation returns exact input identities.
 
-Disassembly snapshots yield when work starts, so stopping, skill changes or tool changes cannot alter its promised output. Repair recipes improve an existing target and are not disassembly results. Craft completion awards practice; take-apart does not. Recipe knowledge is explicit, and books add knowledge without changing item ownership. Books teach recipes only; practice may come from any activity. See `src/core/disassembly.ts`, `planDisassembly`, and `src/core/character.ts`, `Character.awardPractice`.
+Disassembly snapshots yield when work starts, so stopping, skill changes or tool changes cannot alter its promised output. Repair recipes improve an existing target and are not disassembly results. Craft completion awards practice; take-apart does not. Recipe knowledge is explicit, and books add knowledge without changing item ownership. Books teach recipes; practice may come from any activity. See `src/core/disassembly.ts`, `planDisassembly`, and `src/core/character.ts`, `Character.awardPractice`.
+
+Blades already dull with use, so each wearing blade has two sharpening repairs: a grind at a grinding wheel found in garages and workshops, and a weaker hone with a carried whetstone. A fixed wheel at a base and a weaker field stone make keeping an edge a trip-or-carry decision. See `src/core/wear.ts`, `wearMeleeWeaponOnHit`, and `src/content/base/recipes.libsonnet`, `sharpenRecipes`.
 
 Reading a recipe book progresses only while its page is open. Closing the page pauses work and preserves progress; movement closes it and passes through. Readable-only notes and signs do not create a timed job. See `src/core/bookReading.ts`, `bookReadingHooks`, and `src/game/play.ts`, `stopReadingOnClose`.
 
@@ -37,4 +39,6 @@ Cooking uses a lit station for recipes that require heat. Losing it stops the pl
 
 ## Reachability and tests
 
-Validation checks recipe references and reachability from known recipes, components, tools and authored sources. The repair corner demonstrates reachable plans rather than pinning a particular stock catalogue. See `src/core/reachability.ts`, `checkReachability`, and `src/game/testHouse.ts`, `populateTestHouseRepairCorner`.
+The test-house repair stock demonstrates reachable plans rather than pinning a stock catalogue. Keep derivation separate from authored destinations so recipe changes do not require maintaining a second stock list: content names the building whose containers receive the stock, and game logic derives what goes in. A repair that needs a workstation is stocked only when that station stands in the building, so the stock never promises a repair the player cannot do there. See `src/game/testHouseRepair.ts`, `repairStockRecipes`, and `src/content/base/layouts-test-house.jsonnet`, `repairStock`.
+
+`checkReachability` proves recipes reachable from world sources and skips demo layouts, because debug stock must not make a recipe look reachable in normal play. The test house is a demo layout, so its stock is tested by planning each repair with live reach from a stand point inside the building, beside a damaged target. That also proves the containers and the station are within reach of each other. See `src/core/reachability.ts`, `checkReachability`, and `test/repairCorner.test.ts`, `planFromBuilding`.

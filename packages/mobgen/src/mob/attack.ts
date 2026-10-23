@@ -7,13 +7,11 @@
 // same rotation, but the bone points the other way at rest) — verified against boneTransforms when the
 // clip was added (af2df6a), not assumed; the check itself was not kept.
 
-import { type Mat3, mulMM, rotAxis, rotX, rotY, rotZ, type Vec3 } from '../core/math.ts';
+import { clamp, hermite, type Mat3, mulMM, rotAxis, rotX, rotY, rotZ, smoothstep, type Vec3 } from '../core/math.ts';
 import type { EulerDeg, Pose } from '../core/pose.ts';
 import { GROUND_SMOOTHING, groundOffset, legGeometryFor, type WalkActor } from './gait.ts';
 import type { HumanoidParams } from './humanoid.ts';
 
-const clamp = (x: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, x));
-const smoothstep = (x: number): number => x * x * (3 - 2 * x);
 const IDENTITY_M: Mat3 = [1, 0, 0, 0, 1, 0, 0, 0, 1];
 
 export interface AttackKey {
@@ -94,22 +92,6 @@ export const LUNGE_GRAB: AttackClip = {
 export const ATTACK_CLIPS: Readonly<Record<string, AttackClip>> = { LUNGE_GRAB };
 
 // ---- keyframe curve: monotone cubic Hermite, zero slope forced at the clip's first/last key ----
-
-interface Keyframe {
-  readonly value: number;
-  readonly slope: number;
-}
-
-const hermite = (u: number, k0: Keyframe, k1: Keyframe): number => {
-  const u2 = u * u;
-  const u3 = u2 * u;
-  return (
-    (2 * u3 - 3 * u2 + 1) * k0.value +
-    (u3 - 2 * u2 + u) * k0.slope +
-    (-2 * u3 + 3 * u2) * k1.value +
-    (u3 - u2) * k1.slope
-  );
-};
 
 /** Fritsch-Carlson tangent at an interior key: 0 at a local extremum, else the clamped average of the
  * two adjacent secant slopes (prevents the curve overshooting past either neighbour). */

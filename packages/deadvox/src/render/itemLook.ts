@@ -4,6 +4,7 @@
 
 import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { LIGHT_MOUNT_SLOT } from '../core/firearmFitting.ts';
 import { defOf, type Item } from '../core/items.ts';
 
 export interface ItemLookSlot {
@@ -51,19 +52,28 @@ export const itemLook = (registry: Registry, item: Item): ItemLook | undefined =
     if (slotId === 'magazine' || slotId === 'battery' || slotId === 'canister' || !child) {
       continue;
     }
-    const mount = modelDef?.gun?.attachmentSlots?.find(({ id }) => id === slotId);
-    const attachmentModel = defOf(registry, child.type).model;
-    const mountFrame = attachmentModel ? registry.models.get(attachmentModel)?.gun?.attachment?.mountFrame : undefined;
-    if (mount && attachmentModel && mountFrame) {
-      slots.push({
-        slot: slotId,
-        at: mount.position,
-        direction: mount.direction,
-        up: mount.up,
-        mountFrame,
-        model: attachmentModel,
-      });
+    const slot = attachmentSlot(registry, item, slotId, child);
+    if (slot) {
+      slots.push(slot);
     }
   }
   return { model, slots, key: [model, ...slots.map((entry) => `${entry.slot}=${entry.model ?? ''}`)].join('+') };
+};
+
+/** Where a fitted attachment draws: a gungen mount slot, or the gun's own light-mount site. */
+const attachmentSlot = (registry: Registry, item: Item, slotId: string, child: Item): ItemLookSlot | undefined => {
+  const attachmentModel = defOf(registry, child.type).model;
+  if (!attachmentModel) {
+    return undefined;
+  }
+  if (slotId === LIGHT_MOUNT_SLOT) {
+    const site = defOf(registry, item.type).lightMountSite;
+    return site && { slot: slotId, at: site.at, turn: site.turn, model: attachmentModel };
+  }
+  const modelId = defOf(registry, item.type).model;
+  const mount = modelId && registry.models.get(modelId)?.gun?.attachmentSlots?.find(({ id }) => id === slotId);
+  const mountFrame = registry.models.get(attachmentModel)?.gun?.attachment?.mountFrame;
+  return mount && mountFrame
+    ? { slot: slotId, at: mount.position, direction: mount.direction, up: mount.up, mountFrame, model: attachmentModel }
+    : undefined;
 };

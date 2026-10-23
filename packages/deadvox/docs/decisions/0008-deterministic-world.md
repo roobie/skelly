@@ -59,7 +59,7 @@ Every new simulation and worldgen system carries the number rule. Seeded outputs
 
 Crossing a region border admits or drops several regions at once, so admission needs a cost budget, and hysteresis to stop flicker along a border. The block's reach depends on where the player stands within their region. Under lockstep its cost grows with how far apart players are.
 
-The block decides influence near the player only. Influence that travels farther than one region, or continues after the player leaves, is carried by edits stored as diffs; a region event ledger or abstract hordes would add to that without a rewrite.
+The block decides influence near the player only. Influence that travels farther than one region, or continues after the player leaves, is carried by saved edits, whose changed columns are stored whole; a region event ledger or abstract hordes would add to that without a rewrite.
 
 Until networked play ships, nothing exercises input order across peers, so input timing, peer streams and the union of blocks may need rework when they first meet real peers.
 

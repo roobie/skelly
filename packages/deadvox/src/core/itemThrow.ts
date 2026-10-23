@@ -1,11 +1,24 @@
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
+import { coreMessage } from './coreText.ts';
 import type { Inventory, Target } from './inventory.ts';
-import { type Item, weightOf } from './items.ts';
+import { defOf, type Item, weightOf } from './items.ts';
 import { raycast, type SolidAt } from './raycast.ts';
+import { reachTuning } from './reach.ts';
 
 export const hasMetThrowMinimumHold = (heldSimSeconds: number, minimumHoldSimSeconds: number): boolean =>
   heldSimSeconds >= minimumHoldSimSeconds;
+
+const DRAG_FLIGHT_STEPS = 1024;
+/** Drag deceleration per squared speed, from the footprint area pushing against the air for the item's mass. */
+const dragPerMetre = (item: Item, registry: Registry, massKg: number): number => {
+  const { cellMetres, throwDrag } = reachTuning(registry);
+  const [w, h] = defOf(registry, item.type).size;
+  const areaSquareMetres = w * h * cellMetres ** 2;
+  return massKg > 0
+    ? (throwDrag.airDensityKgPerCubicMetre * throwDrag.footprintDragCoefficient * areaSquareMetres) / (2 * massKg)
+    : 0;
+};
 
 export const throwDistanceForItem = (
   item: Item,
@@ -28,16 +41,28 @@ export const throwDistanceForItem = (
   const energyLimitedSpeedSquared = massKg > 0 ? (2 * armEnergyJoules) / massKg : armSpeedSquared;
   const rangeFactor = Math.min(1, energyLimitedSpeedSquared / armSpeedSquared);
   const chargeFraction = Math.max(0, Math.min(1, heldSimSeconds / chargeSimSeconds));
-  return maximumDistanceMetres * rangeFactor * chargeFraction;
+  const dragFreeMetres = maximumDistanceMetres * rangeFactor * chargeFraction;
+  return dragFreeMetres;
 };
 
-export const itemFlightPoint = (from: Vec3, to: Vec3, progress: number, arcHeightMetres: number): Vec3 => {
+export const itemFlightPoint = (from: Vec3, to: Vec3, progress: number, flight: ItemFlight): Vec3 => {
   const t = Math.max(0, Math.min(1, progress));
-  return [
-    from[0] + (to[0] - from[0]) * t,
-    from[1] + (to[1] - from[1]) * t + Math.sin(Math.PI * t) * arcHeightMetres,
-    from[2] + (to[2] - from[2]) * t,
-  ];
+  if (t === 0) {
+    return from;
+  }
+  if (t === 1) {
+    return to;
+  }
+  const index = t * (flight.points.length - 1);
+  const low = Math.floor(index);
+  const a = flight.points[low]!;
+  const b = flight.points[Math.min(low + 1, flight.points.length - 1)]!;
+  const start = flight.points[0]!;
+  const end = flight.points.at(-1)!;
+  // Pile display poses are sub-cell offsets from the collision path, not a second flight.
+  return a.map(
+    (axis, i) => axis + (b[i]! - axis) * (index - low) + (from[i]! - start[i]!) * (1 - t) + (to[i]! - end[i]!) * t,
+  ) as Vec3;
 };
 
 export const settleOnWorld = (position: Vec3, blockSize: number, minY: number, isSolid: SolidAt): Vec3 | undefined => {
@@ -49,19 +74,16 @@ export const settleOnWorld = (position: Vec3, blockSize: number, minY: number, i
   return [Math.floor(origin[0]), hit.block[1] + 1, Math.floor(origin[2])];
 };
 
-export const NO_LANDING_REFUSAL = "Can't find a place for it to land";
-export const NO_GROUND_ROOM_REFUSAL = 'No room on the ground nearby';
-
 /** Why a new item, or a part leaving its slot, can't be put down at `target`, which is undefined with no ground nearby. */
 export const putDownRefusal = (
-  inventory: Pick<Inventory, 'planAdd'>,
+  inventory: Pick<Inventory, 'planAdd' | 'registry'>,
   item: Item,
   target: Target | undefined,
 ): string | undefined => {
   if (!target) {
-    return NO_LANDING_REFUSAL;
+    return coreMessage(inventory.registry, 'noLanding');
   }
-  return inventory.planAdd(item, target).ok ? undefined : NO_GROUND_ROOM_REFUSAL;
+  return inventory.planAdd(item, target).ok ? undefined : coreMessage(inventory.registry, 'noGroundRoom');
 };
 
 /** Where a pile put down in a block cell comes to rest; a solid cell has no room to put it in. */
@@ -70,12 +92,20 @@ export const settleCell = (cell: Vec3, blockSize: number, minY: number, isSolid:
     ? undefined
     : settleOnWorld(cell.map((axis) => (axis + 0.5) * blockSize) as Vec3, blockSize, minY, isSolid);
 
-/** Sweeps a thrown item's presentation arc through voxels, then settles it on the first solid below it. */
-export const traceItemLanding = ({
+export interface ItemFlight {
+  points: Vec3[];
+  durationSimSeconds: number;
+  landing: Vec3 | undefined;
+}
+
+/** Fixed simulation steps are shared by collision and presentation, independent of render frames. */
+export const steppedItemFlight = ({
   from,
   direction,
   distanceMetres,
   arcHeightMetres,
+  flightSimSeconds,
+  drag,
   blockSize,
   minY,
   isSolid,
@@ -84,26 +114,49 @@ export const traceItemLanding = ({
   direction: Vec3;
   distanceMetres: number;
   arcHeightMetres: number;
+  flightSimSeconds: number;
+  drag: number;
   blockSize: number;
   minY: number;
   isSolid: SolidAt;
-}): Vec3 | undefined => {
+}): ItemFlight => {
   const magnitude = Math.hypot(...direction);
-  const unit: Vec3 = magnitude > 0 ? (direction.map((axis) => axis / magnitude) as Vec3) : [0, 0, 1];
-  const to: Vec3 = [
-    from[0] + unit[0] * distanceMetres,
-    from[1] + unit[1] * distanceMetres,
-    from[2] + unit[2] * distanceMetres,
-  ];
-  const stepMetres = Math.min(blockSize * 0.35, 0.2);
-  const steps = Math.max(1, Math.ceil(distanceMetres / stepMetres));
-  let lastSafe = from;
-  for (let step = 0; step <= steps; step++) {
-    const point = itemFlightPoint(from, to, step / steps, arcHeightMetres);
-    if (isSolid(Math.floor(point[0] / blockSize), Math.floor(point[1] / blockSize), Math.floor(point[2] / blockSize))) {
-      return step === 0 ? undefined : settleOnWorld(lastSafe, blockSize, minY, isSolid);
-    }
-    lastSafe = point;
+  const unit = magnitude > 0 ? direction.map((axis) => axis / magnitude) : [0, 0, 1];
+  let velocity = unit.map((axis) => (axis * distanceMetres) / flightSimSeconds) as Vec3;
+  velocity[1] += (4 * arcHeightMetres) / flightSimSeconds;
+  const gravity = (8 * arcHeightMetres) / flightSimSeconds ** 2;
+  const dt = Math.min(flightSimSeconds / DRAG_FLIGHT_STEPS, (blockSize * 0.2) / Math.max(1, Math.hypot(...velocity)));
+  // Above this bound explicit drag steps can reverse velocity and diverge instead of landing.
+  const stableDrag = Math.min(drag, 0.5 / (dt * Math.max(Math.hypot(...velocity), Math.sqrt(gravity))));
+  const points: Vec3[] = [from];
+  if (isSolid(...(from.map((axis) => Math.floor(axis / blockSize)) as Vec3))) {
+    return { points, durationSimSeconds: 0, landing: undefined };
   }
-  return settleOnWorld(lastSafe, blockSize, minY, isSolid);
+  let point = from;
+  let elapsed = 0;
+  while (point[1] >= minY * blockSize) {
+    const speed = Math.hypot(...velocity);
+    const acceleration = velocity.map((v, i) => -stableDrag * speed * v - (i === 1 ? gravity : 0));
+    const next = point.map((axis, i) => axis + velocity[i]! * dt + 0.5 * acceleration[i]! * dt ** 2) as Vec3;
+    if (isSolid(...(next.map((axis) => Math.floor(axis / blockSize)) as Vec3))) {
+      break;
+    }
+    points.push(next);
+    velocity = velocity.map((v, i) => v + acceleration[i]! * dt) as Vec3;
+    point = next;
+    elapsed += dt;
+  }
+  return { points, durationSimSeconds: elapsed, landing: settleOnWorld(point, blockSize, minY, isSolid) };
 };
+
+export const flightForItem = (
+  item: Item,
+  registry: Registry,
+  options: Omit<Parameters<typeof steppedItemFlight>[0], 'drag' | 'arcHeightMetres' | 'flightSimSeconds'>,
+): ItemFlight =>
+  steppedItemFlight({
+    ...options,
+    drag: dragPerMetre(item, registry, weightOf(registry, item) / 1000),
+    arcHeightMetres: reachTuning(registry).throwArcHeightMetres,
+    flightSimSeconds: reachTuning(registry).throwFlightSimSeconds,
+  });

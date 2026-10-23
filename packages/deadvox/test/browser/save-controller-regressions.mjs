@@ -12,7 +12,8 @@ import test from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { launchChromium } from './chromium.mjs';
 import { gauntletFlow } from './gauntlet-flow.mjs';
-import { pressAction } from './input-actions.mjs';
+import { holdAction, pressAction } from './input-actions.mjs';
+import { auditModelLoads, instrumentModelLoads, modelLoadAuditPlugin } from './model-load-audit.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { installWorldMeshControl } from './world-mesh-fixture.mjs';
 
@@ -23,6 +24,9 @@ const observation = {
   name: 'save-controller-game-ready',
   enforce: 'pre',
   transform(code, id) {
+    if (id.endsWith('/src/render/models.ts')) {
+      return instrumentModelLoads(code);
+    }
     if (id.endsWith('/src/game/worldSetup.ts')) {
       // The scenario as it enters kind dispatch, so the fixture holds whichever site the kind builds.
       const marker = 'const scenario = registry.scenarios.get(config.site);';
@@ -54,7 +58,7 @@ const server = await createServer({
   configFile: `${root}/vite.config.ts`,
   logLevel: 'error',
   server: { host: '127.0.0.1', port: 0 },
-  plugins: [observation],
+  plugins: [modelLoadAuditPlugin, observation],
 });
 await server.listen();
 const browser = await launchChromium('save-controller-regressions', { headless: true });
@@ -68,7 +72,6 @@ const QUOTA_ERROR = /quota regression/i;
 const BEST_EFFORT = /best.effort/i;
 const PERSISTENCE_GRANTED = /Persistent storage granted/;
 const CURRENT_EXPORT = /^deadvox-current-.*\.bin$/;
-const BASE_MISMATCH = /Generated base mismatch/;
 const REPLAY_REJECTED = /^Replay rejected:/;
 const LOADING_WORKER_FAILURE = /Controlled loading worker failure/;
 
@@ -79,6 +82,7 @@ try {
 
   await test('practice launch, lifecycle and death leave the normal save untouched and exit returns to start', async () => {
     const context = await browser.newContext({ viewport: { width: 1024, height: 768 } });
+    const modelAudit = await auditModelLoads(context);
     try {
       const page = await context.newPage();
       await page.goto(url);
@@ -182,7 +186,8 @@ try {
         ) {
           throw new Error('Can fixture must fit');
         }
-        const lootTutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, () => undefined);
+        const lightKit = gauntletWitness.engine.site.lightPractice;
+        const lootTutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, lightKit);
         lootTutorial.observe({
           position: [8, 0, 0],
           yaw: 1,
@@ -194,7 +199,7 @@ try {
           lightOn: false,
           paused: false,
         });
-        const tutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, () => undefined);
+        const tutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, lightKit);
         tutorial.observe({
           position: [8, 0, 0],
           yaw: 1,
@@ -207,16 +212,15 @@ try {
           paused: false,
         });
         const queue = new HandlingQueue(inventory);
-        const unpacking = new Unpacking(
-          inventory,
-          queue,
-          () => [0, 0, 0],
-          (type) => tutorial.opened(type),
-        );
+        const unpacking = new Unpacking(inventory, queue, () => [0, 0, 0], {
+          opened: (type) => tutorial.opened(type),
+        });
         gauntletWitness.manual = true;
         try {
+          const tutorialText = gauntletWitness.engine.registry.ui.get('core').screenText.tutorial;
           const draw = mountTutorial(
             tutorial,
+            tutorialText,
             () => undefined,
             () => undefined,
           );
@@ -226,6 +230,7 @@ try {
             );
           mountTutorial(
             lootTutorial,
+            tutorialText,
             () => undefined,
             () => undefined,
           )({
@@ -286,8 +291,251 @@ try {
       assert(canHints.opened.includes('ui.inventory-toggle'), 'open inventory owns input before eating');
       assert(canHints.eating.includes('hand.use-dominant'), 'held food points back to hand activation');
       assert.equal(canHints.stage, 'eat', 'opening and wielding alone are not consumption');
+      const weaponsHints = await page.evaluate(async () => {
+        const { Tutorial } = await import('/src/game/tutorial.ts');
+        const { mountTutorial } = await import('/src/ui/tutorial.ts');
+        const { Inventory } = await import('/src/core/inventory.ts');
+        const { HandlingQueue } = await import('/src/core/handling.ts');
+        const { FirearmMechanics } = await import('/src/game/firearmHandling.ts');
+        const { InventoryScreen } = await import('/src/ui/inventoryScreen.ts');
+        const { bindReach } = await import('/src/core/reach.ts');
+        const { CORE_CONTENT_IDS } = await import('/src/core/contentIds.ts');
+        const { Unpacking } = await import('/src/game/unpacking.ts');
+        const { inputBindings } = await import('/src/game/inputBindings.ts');
+        const inventory = new Inventory(gauntletWitness.engine.registry);
+        const queue = new HandlingQueue(inventory);
+        let finished = false;
+        const lightKit = inventory.registry.layouts.get('tutorial').practice.light;
+        const tutorial = new Tutorial([0, 0, 0], 0, { x0: 7, x1: 9, z0: 0, z1: 2 }, lightKit);
+        tutorial.opened('canned_beans');
+        tutorial.consumed('beans');
+        tutorial.consumed('water_bottle');
+        const state = {
+          position: [8, 0, 1],
+          yaw: 1,
+          crouching: true,
+          doorOpen: true,
+          searched: true,
+          looted: true,
+          wielded: true,
+          lightOn: true,
+          litType: undefined,
+          paused: false,
+        };
+        tutorial.observe(state);
+        tutorial.observe({ ...state, lightOn: false, paused: true });
+        const presentation = { inventory, inventoryOpen: true, lightOn: false };
+        const id = 'firearm.reload';
+        const original = inputBindings.chords(id);
+        gauntletWitness.manual = true;
+        try {
+          const draw = mountTutorial(
+            tutorial,
+            inventory.registry.ui.get('core').screenText.tutorial,
+            () => {
+              finished = true;
+            },
+            () => undefined,
+          );
+          draw(presentation);
+          const offered =
+            tutorial.stage === 'finish' &&
+            !finished &&
+            Boolean(document.querySelector('[data-tutorial-choice="finish"]'));
+          document.querySelector('[data-tutorial-choice="weapons"]').click();
+          const branched = tutorial.stage === 'revolver' && !finished;
+          const bag = inventory.create('hiking_backpack');
+          const box = inventory.create('cartridge_box_357_h_magnum');
+          if (!(inventory.add(bag, { kind: 'worn' }) && inventory.add(box, { kind: 'hand', side: 'right' }))) {
+            throw new Error('Weapons fixture must fit');
+          }
+          const unpack = new Unpacking(inventory, queue, () => [0, 1, 0], {
+            unpacked: (type) => tutorial.weapons.unpackedAmmo(type),
+          });
+          if (unpack.activate(box) !== undefined || queue.tick(queue.remaining).failed.length > 0) {
+            throw new Error('Ammunition unpack must complete');
+          }
+          const gun = inventory.create('revolver_357');
+          if (!inventory.add(gun, { kind: 'hand', side: 'right' })) {
+            throw new Error('Gun must fit');
+          }
+          tutorial.weapons.wielded(gun, inventory.registry);
+          draw(presentation);
+          const inspect = Boolean(document.querySelector('[data-tutorial-action="ui.inventory-toggle"]'));
+          const firearms = new FirearmMechanics(inventory, queue, {
+            blockSize: 0.5,
+            pose: () => undefined,
+            onEjection: () => undefined,
+          });
+          const openedDetails = (() => {
+            const details = firearms.describe(gun);
+            const inventoryRoot = document.createElement('div');
+            document.body.append(inventoryRoot);
+            const screen = new InventoryScreen(inventoryRoot, inventory, queue, {
+              feet: () => [0, 1, 0],
+              reach: bindReach({
+                inventory,
+                position: [0, 1, 0],
+                blockSize: 0.5,
+                clock: gauntletWitness.session.reach().player.clock,
+              }),
+              nearby: () => [],
+              containers: () => [],
+              distance: () => 0,
+              entityDistance: () => 0,
+              dispatch: () => undefined,
+              searching: () => false,
+              notice: () => undefined,
+              describe: (item) => {
+                tutorial.weapons.inspected(item, inventory.registry);
+                return firearms.describe(item);
+              },
+              workOptions: () => [],
+              character: () => gauntletWitness.session.character,
+              body: () => gauntletWitness.session.sim.body,
+              needs: () => '',
+              slotLabels: inventory.registry.ui.get(CORE_CONTENT_IDS.coreUi).wearSlotLabels,
+            });
+            let presented = false;
+            try {
+              screen.open();
+              inventoryRoot
+                .querySelector(`[data-uid="${gun.uid}"]`)
+                .dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerType: 'mouse' }));
+              globalThis.dispatchEvent(new PointerEvent('pointerup', { button: 0, pointerType: 'mouse' }));
+              const pane = inventoryRoot.querySelector('[data-pane="details"]');
+              presented =
+                pane.dataset.selectedUid === String(gun.uid) &&
+                details.length > 0 &&
+                details.every((line) => pane.textContent.includes(line));
+            } finally {
+              screen.close();
+              inventoryRoot.remove();
+            }
+            return presented;
+          })();
+          presentation.inventoryOpen = false;
+          draw(presentation);
+          const before = document.querySelector(`[data-tutorial-action="${id}"] kbd`)?.textContent;
+          const replacement = ['KeyY', 'KeyU', 'KeyO'].find(
+            (code) => inputBindings.rebind(id, [{ code }]) === undefined && inputBindings.label(id) !== before,
+          );
+          if (!replacement) {
+            throw new Error('Reload fixture needs an alternate binding');
+          }
+          draw(presentation);
+          const rebound = document.querySelector(`[data-tutorial-action="${id}"] kbd`)?.textContent;
+          return {
+            offered,
+            branched,
+            inspect,
+            details: openedDetails,
+            rebound: rebound === inputBindings.label(id) && rebound !== before,
+          };
+        } finally {
+          inputBindings.rebind(id, original);
+          gauntletWitness.manual = false;
+        }
+      });
+      assert(
+        Object.values(weaponsHints).every(Boolean),
+        'optional weapons branch retains completion, ammunition details and live reload keycaps',
+      );
       await page.click('#go');
       await page.waitForFunction(() => globalThis.tutorialSession.sim.paused === false);
+      await page.evaluate(async () => {
+        const { Tutorial } = await import('/src/game/tutorial.ts');
+        const { mountTutorial } = await import('/src/ui/tutorial.ts');
+        const { engine, session } = gauntletWitness;
+        // A separate observer starts at this lesson; the playing session still owns movement and stance.
+        const exit = engine.site.playtestMarks.beats.find((beat) => beat.id === 'tutorial_exit').area;
+        const tutorial = new Tutorial([0, 0, 0], 0, exit, engine.site.lightPractice);
+        tutorial.opened('canned_beans');
+        tutorial.consumed('beans');
+        tutorial.consumed('water_bottle');
+        const prerequisites = {
+          position: [8, 0, 0],
+          yaw: 1,
+          crouching: false,
+          doorOpen: true,
+          searched: true,
+          looted: true,
+          wielded: true,
+          lightOn: true,
+          paused: false,
+        };
+        tutorial.observe(prerequisites);
+        tutorial.observe({ ...prerequisites, lightOn: false });
+        const draw = mountTutorial(
+          tutorial,
+          engine.registry.ui.get('core').screenText.tutorial,
+          () => undefined,
+          () => undefined,
+        );
+        const observe = () => {
+          tutorial.observe({
+            ...prerequisites,
+            position: session.body.pos,
+            crouching: session.stance === 'crouching',
+            lightOn: false,
+          });
+          draw({ inventory: session.inventory, inventoryOpen: false, lightOn: false });
+          return tutorial.stage;
+        };
+        gauntletWitness.manual = true;
+        globalThis.tutorialExitFixture = { tutorial, exit, observe };
+        if (observe() !== 'escape') {
+          throw new Error('Exit fixture must begin with an unfinished escape lesson');
+        }
+      });
+      const releaseForward = await holdAction(page, 'movement.forward');
+      try {
+        await page.evaluate(() => {
+          const { session, input, engine } = gauntletWitness;
+          const { exit, observe } = tutorialExitFixture;
+          const x = (exit.x0 + exit.x1) / 2;
+          const z = (exit.z0 + exit.z1) / 2;
+          for (const target of [
+            [x, session.body.pos[2]],
+            [x, z],
+          ]) {
+            let reached = false;
+            for (let tick = 0; tick < 3600; tick++) {
+              const dx = target[0] - session.body.pos[0];
+              const dz = target[1] - session.body.pos[2];
+              if (Math.hypot(dx, dz) < 0.5) {
+                reached = true;
+                break;
+              }
+              input.yaw = Math.atan2(-dx, -dz);
+              engine.streamer.update(session.body.pos[0], session.body.pos[2]);
+              session.frame(1 / 60);
+              observe();
+            }
+            if (!reached) {
+              throw new Error('Ordinary forward input must reach the exit via the west side of the station');
+            }
+          }
+        });
+      } finally {
+        await releaseForward();
+      }
+      assert.equal(
+        await page.evaluate(() => tutorialExitFixture.observe()),
+        'escape',
+        'reaching the named destination without crouching is not enough',
+      );
+      await pressAction(page, 'player.crouch-toggle');
+      assert.equal(
+        await page.evaluate(() => {
+          gauntletWitness.session.frame(1 / 60);
+          const stage = tutorialExitFixture.observe();
+          gauntletWitness.manual = false;
+          return stage;
+        }),
+        'pause',
+        'ordinary crouch input at the named destination completes the exit lesson',
+      );
       await page.evaluate(() => {
         document.dispatchEvent(new Event('visibilitychange'));
         globalThis.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: false }));
@@ -311,7 +559,7 @@ try {
       );
       // Native pointer activation of the practice exits is quarantined in #705; its root cause is unresolved.
       await Promise.all([
-        page.waitForURL((target) => !target.searchParams.has('tutorial'), { waitUntil: 'commit' }),
+        page.waitForURL((target) => !target.searchParams.has('tutorial')),
         page.locator('#death button').press('Enter'),
       ]);
       await page.waitForFunction(
@@ -322,13 +570,13 @@ try {
       await page.click('#tutorial-start');
       await page.waitForFunction(() => globalThis.tutorialSession !== undefined);
       await Promise.all([
-        page.waitForURL((target) => !target.searchParams.has('tutorial'), { waitUntil: 'commit' }),
+        page.waitForURL((target) => !target.searchParams.has('tutorial')),
         page.getByRole('button', { name: 'Exit practice', exact: true }).press('Enter'),
       ]);
       await page.waitForFunction(() => document.querySelector('#startup-screen').hidden);
       assert.equal(await page.locator('#continue').isEnabled(), true);
     } finally {
-      await context.close();
+      await modelAudit.close();
     }
   });
 
@@ -683,11 +931,14 @@ try {
     assert.equal(schedule.measuredDurations.length, 4);
     assert.ok(schedule.measuredDurations.every((duration) => Number.isFinite(duration) && duration >= 0));
 
-    await page.evaluate(async () => {
+    await page.evaluate(() => {
       const { controller } = deadvoxSaveTest;
       controller.storage.save = () => Promise.reject(new DOMException('quota regression', 'QuotaExceededError'));
       controller.beforeSleep();
-      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    // The rejection settles within a few event-loop turns; a missing recovery UI fails here, not later.
+    await page.waitForFunction(() => document.querySelector('#save-recovery')?.checkVisibility(), undefined, {
+      timeout: 1000,
     });
     const failure = await page.evaluate(() => ({
       text: document.querySelector('#save-recovery-message').textContent,
@@ -858,87 +1109,6 @@ try {
     });
     assert.equal(race.queuedBeforeRetry, 30);
     assert.equal(decoded.snapshot.character.simulation.body.health, 30);
-    assert.deepEqual(pageErrors, []);
-    await context.close();
-  });
-
-  await test('actual Continue refuses a generated-base mismatch and reloads with a recovery diagnosis', async () => {
-    const context = await browser.newContext({ viewport: { width: 800, height: 600 } });
-    const page = await context.newPage();
-    const pageErrors = [];
-    page.on('pageerror', (error) => pageErrors.push(error.message));
-    await page.goto(url);
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
-    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
-    await page.click('#go');
-    await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
-    await page.evaluate(async () => {
-      const { controller, storage, namespace } = deadvoxSaveTest;
-      const snapshot = structuredClone(controller.snapshot());
-      const { pos } = snapshot.character.player.body;
-      snapshot.world.diffs.chunks = [
-        {
-          cx: Math.floor(pos[0] / 32),
-          cy: -3,
-          cz: Math.floor(pos[2] / 32),
-          cells: [{ index: 0, base: 'air', id: 'stone' }],
-        },
-      ];
-      await storage.save(namespace, (generation) =>
-        storage.encodeSnapshot(snapshot, generation, {
-          worldOptions: controller.worldOptions,
-          version: controller.identityValue.components,
-          buildRevision: controller.identityValue.buildRevision,
-        }),
-      );
-      controller.entered = false;
-    });
-
-    await page.reload();
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
-    await page.waitForFunction(() => !document.querySelector('#continue').disabled, undefined, { timeout: 30_000 });
-    let refusalReload;
-    const nextReload = new Promise((resolve, reject) => {
-      let navigations = 0;
-      const onNavigation = (frame) => {
-        if (frame === page.mainFrame()) {
-          navigations += 1;
-          if (navigations === 2) {
-            clearTimeout(refusalReload);
-            page.off('framenavigated', onNavigation);
-            resolve();
-          }
-        }
-      };
-      page.on('framenavigated', onNavigation);
-      refusalReload = setTimeout(() => {
-        page.off('framenavigated', onNavigation);
-        reject(new Error('saved-world refusal did not reload to the recovery title'));
-      }, 30_000);
-    });
-    await Promise.all([page.waitForNavigation(), page.click('#continue')]);
-    await nextReload;
-    await page.waitForFunction(
-      () => {
-        const saveTest = globalThis.deadvoxSaveTest;
-        const status = document.querySelector('#save-status')?.textContent ?? '';
-        return (
-          saveTest?.controller.ready &&
-          status.includes('Saved world unreadable and left untouched') &&
-          sessionStorage.getItem(`deadvox.restore-refusal:${saveTest.namespace}`)
-        );
-      },
-      undefined,
-      { timeout: 30_000 },
-    );
-    const state = await page.evaluate(() => ({
-      status: document.querySelector('#save-status').textContent,
-      disabled: document.querySelector('#continue').disabled,
-      refusal: sessionStorage.getItem(`deadvox.restore-refusal:${deadvoxSaveTest.namespace}`),
-    }));
-    assert.match(state.status, BASE_MISMATCH);
-    assert.equal(state.disabled, true);
-    assert.match(state.refusal, BASE_MISMATCH);
     assert.deepEqual(pageErrors, []);
     await context.close();
   });

@@ -1,10 +1,11 @@
 import { shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { describe, expect, it } from 'vitest';
 import { shamblerVoiceLaw } from '../src/game/shamblerAudio.ts';
+import { BASE_SENSE_TUNING } from './senseFixture.ts';
 
 // Fixture seeds: the law is calibrated on whatever pool it is given, so this file keeps its own.
 const FIGURE_SEEDS = [1, 2, 3, 4, 5, 6, 7, 8];
-const { pitchClamp, bodyPitch } = shamblerVoiceLaw(FIGURE_SEEDS);
+const { pitchClamp, bodyPitch } = shamblerVoiceLaw(FIGURE_SEEDS, BASE_SENSE_TUNING.shamblerVoice);
 const figures = FIGURE_SEEDS.map((seed) => shamblerFigure(seed).realized.body);
 const bodyHeight = (body: (typeof figures)[number]): number => {
   const y = body.bones.flatMap(({ head, tail }) => [head[1], tail[1]]);
@@ -44,7 +45,7 @@ describe('shambler body-sized audio', () => {
     for (const body of figures) {
       const baseline = bodyPitch(body);
       expect(bodyPitch(body, '?site=voice_size&voicePitch=1.1&voicePitchLarge=0.9')).toBe(baseline);
-      expect(bodyPitch(body, '?site=hamlet&debug=1&voicePitch=1.1&voicePitchLarge=0.9')).toBe(baseline);
+      expect(bodyPitch(body, '?site=gauntlet&debug=1&voicePitch=1.1&voicePitchLarge=0.9')).toBe(baseline);
     }
   });
 });

@@ -15,10 +15,7 @@ import {
   Vector3,
 } from 'three';
 import type { Vec3 } from '../core/coords.ts';
-import { SHOT_TRACE_RANGE_BLOCKS } from '../core/crosshairTarget.ts';
-import type { SolidAt } from '../core/raycast.ts';
-import type { FirearmTrajectory } from '../game/firearmHandling.ts';
-import { type ShotTrace, traceShot } from './shotTrace.ts';
+import type { ShotTrace } from '../core/shotTrace.ts';
 
 export const IMPACT_MARK_CAP = 96;
 const DUST_SECONDS = 0.55;
@@ -52,7 +49,6 @@ export class ImpactEffects {
   readonly pings: InstancedMesh<CircleGeometry, MeshBasicMaterial>;
   readonly laser: LineSegments;
   private readonly blockSize: number;
-  private readonly solidAt: SolidAt;
   private readonly isTargetCell: (block: Vec3) => boolean;
   private readonly marks: Mark[];
   private readonly dummy = new Object3D();
@@ -60,9 +56,8 @@ export class ImpactEffects {
   private next = 0;
   private laserAge = LASER_SECONDS;
 
-  constructor(blockSize: number, solidAt: SolidAt, isTargetCell: (block: Vec3) => boolean = () => false) {
+  constructor(blockSize: number, isTargetCell: (block: Vec3) => boolean = () => false) {
     this.blockSize = blockSize;
-    this.solidAt = solidAt;
     this.isTargetCell = isTargetCell;
     const holeGeometry = new CircleGeometry(blockSize * 0.075, 10);
     const pingGeometry = new CircleGeometry(blockSize * 0.16, 12);
@@ -117,9 +112,8 @@ export class ImpactEffects {
     return this.marks.reduce((total, mark) => total + Number(mark.active), 0);
   }
 
-  /** Tracing, holes, pings and the laser share one resolved segment per pellet/round. */
-  fire(trajectory: FirearmTrajectory, debugLaser: boolean): void {
-    const traces = traceShot(trajectory.origin, trajectory.directions, SHOT_TRACE_RANGE_BLOCKS, this.solidAt);
+  /** Holes, pings and the laser draw the session's resolved segment per pellet/round; they never trace the world. */
+  fire(traces: readonly ShotTrace[], debugLaser: boolean): void {
     for (const trace of traces) {
       if (!trace.hit) {
         continue;

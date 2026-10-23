@@ -20,6 +20,8 @@ const modelFor = (properties: NonNullable<NonNullable<ModelDef['gun']>['attachme
 const itemFor = (opticMagnification?: number): ItemDef => ({
   id: 'optic_fixture_item',
   economy: { usage: [], tiers: [] },
+  workInProgress: false,
+  notLoot: false,
   name: 'Optic fixture',
   category: 'misc',
   weight: 1,

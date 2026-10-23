@@ -121,7 +121,7 @@ export const skyAt = (hour: number, cycle: DayCycleDef): Sky => {
 /**
  * How strongly the main light's shadows show: full whenever it shines, low sun and the night stand-in
  * included, and none (no map to draw) when it is out. A weaker shadow passes the rest of the light
- * through whatever the map blocks, so it lit a sealed room's sun-facing walls (#562); a sealed room
+ * through whatever the map blocks and would light a sealed room's sun-facing walls; a sealed room
  * stays dark at every hour.
  */
 export const sunShadowStrength = (lightIntensity: number): number => (lightIntensity > 0 ? 1 : 0);

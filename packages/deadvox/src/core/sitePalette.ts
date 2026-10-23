@@ -9,11 +9,6 @@ export interface SitePalette {
   readonly paving: number;
   readonly trees: { readonly trunk: number; readonly branch: number; readonly leaves: number };
   readonly leafLitter: number;
-  readonly hamlet: {
-    readonly hedge: number;
-    readonly northSide: readonly string[];
-    readonly southSide: readonly string[];
-  };
 }
 
 export const siteGenerationOf = (registry: Pick<Registry, 'siteGeneration'>) => {
@@ -28,7 +23,7 @@ export const terrainShapeOf = (registry: Pick<Registry, 'siteGeneration'>): Terr
   siteGenerationOf(registry).terrain;
 
 export const sitePalette = (registry: Pick<Registry, 'siteGeneration' | 'blockIds'>): SitePalette => {
-  const { palette, hamlet } = siteGenerationOf(registry);
+  const { palette } = siteGenerationOf(registry);
   const block = (name: string): number => {
     const id = registry.blockIds.get(name);
     if (id === undefined) {
@@ -50,12 +45,5 @@ export const sitePalette = (registry: Pick<Registry, 'siteGeneration' | 'blockId
       leaves: block(palette.trees.leaves),
     },
     leafLitter: block(palette.leafLitter),
-    hamlet: { hedge: block(hamlet.hedge), northSide: hamlet.northSide, southSide: hamlet.southSide },
   };
-};
-
-/** Every template the hamlet places. */
-export const hamletTemplateIds = (registry: Pick<Registry, 'siteGeneration'>): readonly string[] => {
-  const { hamlet } = siteGenerationOf(registry);
-  return [...hamlet.northSide, ...hamlet.southSide];
 };

@@ -19,17 +19,17 @@ import {
 } from '../src/core/authoredTerrain.mjs';
 import type { Registry } from '../src/core/content.ts';
 import { CHUNK, compassBearing, toChunk } from '../src/core/coords.ts';
-import { HAMLET_HORDE_MEMBERS, HAMLET_HORDE_TYPE } from '../src/core/hamlet.ts';
 import { couldFit, ItemFactory } from '../src/core/items.ts';
 import { lootTypeIssue } from '../src/core/loot.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
+import { HORDE_MEMBERS, HORDE_TYPE } from '../src/core/settlementSpawns.ts';
+import { rectsOverlap } from '../src/core/site.ts';
 import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { zombieBodyDimensions } from '../src/core/spawnClearance.ts';
 import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, footprint, placedSpawns } from '../src/core/templates.ts';
-import { rectsOverlap } from '../src/core/vegetation.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn } from '../src/core/worldgen.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
@@ -56,6 +56,35 @@ const validationLayout = (id: string): SiteLayoutDef => ({
   woodlands: [],
   tracks: [],
 });
+it('admits layout-selected vehicles and rejects missing blueprints or duplicate placement keys', () => {
+  const data = validationLayout('fixture_parking');
+  const blueprint = registry.vehicleBlueprints.keys().next().value!;
+  data.vehicles = [{ blueprint, placementKey: 'fixture.parked', position: [1, 0.5, 1], facing: 'e' }];
+  const vehicleSources = base.filter(({ source }) =>
+    ['vehicles.json', 'models-items.json', 'inventory.json'].includes(source),
+  );
+  const admit = () => buildRegistry([...vehicleSources, { source: 'fixture-parking.json', data: { layouts: [data] } }]);
+  expect(admit().issues).toEqual([]);
+  data.vehicles[0]!.blueprint = 'fixture_missing_blueprint';
+  expect(admit().issues.some(({ path, message }) => path.includes('vehicles') && message.includes('blueprint'))).toBe(
+    true,
+  );
+  data.vehicles[0]!.blueprint = blueprint;
+  data.vehicles.push(structuredClone(data.vehicles[0]!));
+  expect(admit().issues.some(({ message }) => message.includes('duplicate vehicle placement key'))).toBe(true);
+});
+
+it('refuses unsupported bays and a repair stock building the site does not place', () => {
+  const data = validationLayout('fixture_repair_stock');
+  data.bays = [{ position: [2, data.player.position[1], 2], facing: 'e' }];
+  expect(authoredLayoutIssues(data, registry)).toEqual([]);
+  data.bays[0]!.position[1] += 1;
+  data.repairStock = 'fixture_absent_building';
+  const paths = authoredLayoutIssues(data, registry).map(([path]) => path);
+  expect(paths).toContain('.bays[0].position');
+  expect(paths).toContain('.repairStock');
+});
+
 const layoutTemplateIds = new Set(layout.buildings.map(({ template }) => template));
 const layoutZombieIds = new Set(layout.shamblers.map(({ type }) => type));
 const layoutValidationBase = [
@@ -76,6 +105,7 @@ const layoutValidationBase = [
       zombies: [...layoutZombieIds].map((id) => {
         const zombie = structuredClone(registry.zombies.get(id)!);
         zombie.loot = undefined;
+        zombie.severedItems = Object.fromEntries(Object.keys(zombie.regions).map((region) => [region, null]));
         return zombie;
       }),
       // The zombies name the tool quality that dismembers them, so one tool has to have it.
@@ -444,7 +474,7 @@ describe('authored layout acceptance', () => {
         )
         .map(({ id, position }) => ({
           id: `${playtest.id}_${id}`,
-          type: HAMLET_HORDE_TYPE,
+          type: HORDE_TYPE,
           pos: position.map((metres) => metres / scale.blockSize),
         }));
     const minX = Math.floor(playtest.bounds.x0 / scale.blockSize / CHUNK) - 1;
@@ -455,8 +485,8 @@ describe('authored layout acceptance', () => {
       for (let cz = minZ; cz <= maxZ; cz++) {
         const hordes = site.hordesIn(cx, cz);
         for (const { members } of hordes) {
-          expect(members).toBeGreaterThanOrEqual(HAMLET_HORDE_MEMBERS[0]);
-          expect(members).toBeLessThanOrEqual(HAMLET_HORDE_MEMBERS[1]);
+          expect(members).toBeGreaterThanOrEqual(HORDE_MEMBERS[0]);
+          expect(members).toBeLessThanOrEqual(HORDE_MEMBERS[1]);
         }
         expect(hordes.map(({ id, type, pos }) => ({ id, type, pos }))).toEqual(expectedIn(cx, cz));
       }
@@ -754,7 +784,7 @@ describe('authored layout acceptance', () => {
     invalid({ ...layout, ground: 21.25 }, 'snapped to 0.5 m');
   });
   it('rejects a layout that shadows a built-in site', () => {
-    invalid({ ...layout, id: 'hamlet' }, 'reserved built-in site id');
+    invalid({ ...layout, id: 'city' }, 'reserved built-in site id');
   });
 });
 

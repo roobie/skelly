@@ -93,6 +93,7 @@ export interface PlayerCombatState {
 export interface PlayerCombatHooks {
   onWeaponHit?: (uid: number) => void;
   onLandedHit?: () => void;
+  onCompletedSwing?: (isFist: boolean) => void;
   /** Spends up to the stamina a charge release wants and returns what it paid. */
   payChargeStamina?: (wanted: number) => number;
 }
@@ -150,6 +151,7 @@ export class PlayerCombat {
   private readonly targets: MeleeTargetResolver;
   private readonly onWeaponHit: (uid: number) => void;
   private readonly onLandedHit: () => void;
+  private readonly onCompletedSwing: (isFist: boolean) => void;
   private readonly payChargeStamina: (wanted: number) => number;
 
   constructor(
@@ -162,6 +164,7 @@ export class PlayerCombat {
     this.targets = targets;
     this.onWeaponHit = hooks.onWeaponHit ?? (() => undefined);
     this.onLandedHit = hooks.onLandedHit ?? (() => undefined);
+    this.onCompletedSwing = hooks.onCompletedSwing ?? (() => undefined);
     this.payChargeStamina = hooks.payChargeStamina ?? ((wanted) => wanted);
   }
 
@@ -295,6 +298,7 @@ export class PlayerCombat {
       action.hitResolved = true;
     }
     if (elapsed >= action.cooldown) {
+      this.onCompletedSwing(action.profile === 'fists');
       this.meleeAction = null;
     } else {
       action.elapsed = elapsed;

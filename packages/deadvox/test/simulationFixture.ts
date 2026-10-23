@@ -4,6 +4,7 @@ import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { BodyTuningDef, CompressionCaps } from '../src/core/schema.ts';
 import { Simulation as CoreSimulation, type SimOptions } from '../src/core/sim.ts';
 import { gameHours, gameMinutes, gamePerHour, realSeconds, simRate, simSeconds } from '../src/core/time.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 
 export const BODY_TUNING_FIXTURE: BodyTuningDef = {
@@ -12,8 +13,10 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   antisepticWindowGameHours: gameHours(0.02),
   infectionChance: 0.5,
   knockoutSimSeconds: simSeconds(1),
+  knockoutRefusal: 'Fixture knockout',
   staminaRegenDelaySimSeconds: simSeconds(5),
   proneEyeHeightMetres: 0.2,
+  fragmentRegionHeights: { head: 0.85, torso: 0.45 },
   shockPerDamage: { blunt: 2, cut: 0, pierce: 0, acid: 1 },
   outerWearMultiplier: { blunt: 1, cut: 1, pierce: 1, acid: 4 },
   coverage: {
@@ -125,6 +128,14 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
     ],
     badlyHurt: { below: 25, message: 'Fixture badly hurt' },
   },
+  heartbeat: {
+    sounds: { slow: 'player_heartbeat_slow', fast: 'player_heartbeat_fast' },
+    startStamina: 80,
+    startHz: 1,
+    exhaustedHz: 3,
+    startGain: 0.1,
+    exhaustedGain: 0.8,
+  },
   fatigueRisePerGameHour: gamePerHour(4),
   restFatigueRecoveryPerGameHour: gamePerHour(5),
   sleepFatigueRecoveryPerGameHour: gamePerHour(10),
@@ -167,9 +178,17 @@ export const COMPRESSION_CAPS_FIXTURE: CompressionCaps = {
   treatment: 30,
 };
 
+let baseUi: Pick<Registry, 'ui'> | undefined;
+/** The base content's UI tuning, which words the simulation's refusals; read once, since it is never changed. */
+const baseText = (): Pick<Registry, 'ui'> => {
+  baseUi ??= { ui: baseRegistry().ui };
+  return baseUi;
+};
+
 export class Simulation extends CoreSimulation {
   constructor(
-    options: Omit<SimOptions, 'bodyTuning' | 'compressionCaps' | 'clock'> & {
+    options: Omit<SimOptions, 'registry' | 'bodyTuning' | 'compressionCaps' | 'clock'> & {
+      registry?: Pick<Registry, 'ui'>;
       bodyTuning?: BodyTuningDef;
       compressionCaps?: CompressionCaps;
       clock?: ClockSettings;
@@ -177,6 +196,7 @@ export class Simulation extends CoreSimulation {
   ) {
     super({
       ...options,
+      registry: options.registry ?? baseText(),
       clock: options.clock ?? BASE_CLOCK,
       bodyTuning: options.bodyTuning ?? BODY_TUNING_FIXTURE,
       compressionCaps: options.compressionCaps ?? COMPRESSION_CAPS_FIXTURE,

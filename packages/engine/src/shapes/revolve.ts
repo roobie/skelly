@@ -35,7 +35,18 @@ const dropRepeats = (profile: readonly Vec2[]): Vec2[] =>
   profile.filter((p, i) => i === 0 || Math.hypot(p[0] - profile[i - 1]![0], p[1] - profile[i - 1]![1]) > EPSILON);
 
 /** What is wrong with a revolved profile, or undefined when it can be turned. */
-export const revolvedProfileError = (profile: readonly Vec2[], axis?: string, origin?: Vec3): string | undefined => {
+export const revolvedProfileError = (
+  profile: readonly Vec2[],
+  axis?: string,
+  origin?: Vec3,
+  sides?: number,
+): string | undefined => {
+  if (
+    sides !== undefined &&
+    !(Number.isInteger(sides) && sides >= 4 && sides % 4 === 0 && sides <= MAX_REVOLVE_FACETS)
+  ) {
+    return `revolve sides must be a multiple of four from 4 to ${MAX_REVOLVE_FACETS}`;
+  }
   if (origin !== undefined && !(Array.isArray(origin) && origin.length === 3 && origin.every(Number.isFinite))) {
     return 'revolve origin must be a finite 3D point';
   }
@@ -90,12 +101,40 @@ const endNormal = (own: Vec2, other: Vec2 | undefined, creaseCos: number, onAxis
   return length < EPSILON ? own : [a / length, r / length];
 };
 
+interface RingCorner {
+  readonly angle: number;
+  /** Radius multiplier: a polygon's corners lie beyond the radius its flats sit at. */
+  readonly reach: number;
+  /** Angle of the vertex normal's radial part. */
+  readonly facing: number;
+}
+
 /**
- * The solid as a triangle mesh turned about local Z with `facets` facets. The caller orients it for
- * the solid's `axis` (see `meshForSolid`).
+ * The corners of one ring and the pairs of them that bound each facet. A round ring shares each corner between two
+ * facets and smooths across it; a sided ring gives each flat its own two corners, so its sides stay flat.
+ */
+const ringLayout = (sides: number | undefined, facets: number) => {
+  if (sides === undefined) {
+    const corners: RingCorner[] = Array.from({ length: facets }, (_, j) => {
+      const angle = (2 * Math.PI * j) / facets;
+      return { angle, reach: 1, facing: angle };
+    });
+    return { corners, quads: corners.map((_, j): Vec2 => [j, (j + 1) % facets]) };
+  }
+  const half = Math.PI / sides;
+  const corners: RingCorner[] = Array.from({ length: sides * 2 }, (_, i) => {
+    const facing = (2 * Math.PI * Math.floor(i / 2)) / sides;
+    return { angle: facing + (i % 2 === 0 ? -half : half), reach: 1 / Math.cos(half), facing };
+  });
+  return { corners, quads: Array.from({ length: sides }, (_, j): Vec2 => [2 * j, 2 * j + 1]) };
+};
+
+/**
+ * The solid as a triangle mesh turned about local Z with `facets` facets, or with its own `sides` when it has them.
+ * The caller orients it for the solid's `axis` (see `meshForSolid`).
  */
 export const meshForRevolved = (solid: RevolvedSolid, facets: number): TriangleMesh => {
-  const error = revolvedProfileError(solid.profile, solid.axis, solid.origin);
+  const error = revolvedProfileError(solid.profile, solid.axis, solid.origin, solid.sides);
   if (error) {
     throw new RangeError(`revolved solid '${solid.id}': ${error}`);
   }
@@ -111,15 +150,14 @@ export const meshForRevolved = (solid: RevolvedSolid, facets: number): TriangleM
   const positions: number[] = [];
   const normals: number[] = [];
   const indices: number[] = [];
-  const cos = Array.from({ length: facets }, (_, j) => Math.cos((2 * Math.PI * j) / facets));
-  const sin = Array.from({ length: facets }, (_, j) => Math.sin((2 * Math.PI * j) / facets));
+  const { corners, quads } = ringLayout(solid.sides, facets);
 
   // One ring per segment end, so a hard edge needs no vertex splitting logic: every segment owns its vertices.
   const ring = (point: Vec2, normal: Vec2): number => {
     const base = positions.length / 3;
-    for (let j = 0; j < facets; j++) {
-      positions.push(point[1] * cos[j]!, point[1] * sin[j]!, point[0]);
-      normals.push(normal[1] * cos[j]!, normal[1] * sin[j]!, normal[0]);
+    for (const { angle, reach, facing } of corners) {
+      positions.push(point[1] * reach * Math.cos(angle), point[1] * reach * Math.sin(angle), point[0]);
+      normals.push(normal[1] * Math.cos(facing), normal[1] * Math.sin(facing), normal[0]);
     }
     return base;
   };
@@ -129,8 +167,7 @@ export const meshForRevolved = (solid: RevolvedSolid, facets: number): TriangleM
     const b = profile[s + 1]!;
     const start = ring(a, endNormal(own, normals2d[s - 1], creaseCos, a[1] < EPSILON));
     const end = ring(b, endNormal(own, normals2d[s + 1], creaseCos, b[1] < EPSILON));
-    for (let j = 0; j < facets; j++) {
-      const k = (j + 1) % facets;
+    for (const [j, k] of quads) {
       // Winding: (start_j, start_k, end_k) has T_theta x T_profile as its normal, which points outward.
       // A ring on the axis collapses to one point, so its degenerate triangle is skipped.
       if (a[1] >= EPSILON) {
@@ -172,10 +209,13 @@ const upperEnvelope = (profile: readonly Vec2[]): Vec2[] => {
 
 /**
  * The convex hull of the solid in its part frame, used for collision. It ignores grooves and hollows.
- * It has `REVOLVE_COLLISION_FACETS` facets per ring and does not depend on any mesh level of detail.
+ * It has `REVOLVE_COLLISION_FACETS` facets per ring, or the solid's own sides exactly, and does not depend on any
+ * mesh level of detail.
  */
 export const revolvedLocalPolyhedron = (solid: RevolvedSolid): ConvexPolyhedron => {
-  const n = REVOLVE_COLLISION_FACETS;
+  const n = solid.sides ?? REVOLVE_COLLISION_FACETS;
+  const phase = solid.sides === undefined ? 0 : Math.PI / n;
+  const reach = 1 / Math.cos(phase);
   const envelope = upperEnvelope(solid.profile);
   const vertices: Vec3[] = [];
   /** First vertex of each envelope point's ring, or the single vertex of one on the axis. */
@@ -186,8 +226,10 @@ export const revolvedLocalPolyhedron = (solid: RevolvedSolid): ConvexPolyhedron 
       return start;
     }
     for (let j = 0; j < n; j++) {
-      const angle = (2 * Math.PI * j) / n;
-      vertices.push(extrusionPoint(solid.axis, [radius * Math.cos(angle), radius * Math.sin(angle)], axial));
+      const angle = (2 * Math.PI * j) / n + phase;
+      vertices.push(
+        extrusionPoint(solid.axis, [radius * reach * Math.cos(angle), radius * reach * Math.sin(angle)], axial),
+      );
     }
     return start;
   });

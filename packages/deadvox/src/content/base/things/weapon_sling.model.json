@@ -1,0 +1,14 @@
+{
+  "id": "weapon_sling",
+  "file": "assets/models/weapon_sling.glb",
+  "parts": {
+    "equipment": {
+      "node": "equipment:webbingSling",
+      "massKg": 0.15,
+      "centreOfMass": [-0.0006969696969696999, 0.00496969696969697, -0.0002121212121212127]
+    }
+  },
+  "grip": { "at": [-0.121, 0.005, 0], "turn": [0, 0, 0] },
+  "hold": "forward",
+  "roll": 0
+}

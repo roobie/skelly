@@ -3,6 +3,28 @@
     {
       "cellMetres": 0.10000000000000001,
       "chestHeightMetres": 1,
+      "conditionBands": [
+        {
+          "from": 0,
+          "word": "ruined"
+        },
+        {
+          "from": 0.10000000000000001,
+          "word": "badly damaged"
+        },
+        {
+          "from": 0.29999999999999999,
+          "word": "damaged"
+        },
+        {
+          "from": 0.59999999999999998,
+          "word": "worn"
+        },
+        {
+          "from": 0.90000000000000002,
+          "word": "pristine"
+        }
+      ],
       "containerMaxWidthCells": 10,
       "furnitureMove": {
         "carriedView": {
@@ -13,7 +35,12 @@
         },
         "carryStaminaPerSimSecond": 4,
         "liftStamina": 15,
-        "maxSizeMetres": 1
+        "maxSizeMetres": 1,
+        "slide": {
+          "reachMetres": 1,
+          "stamina": 8,
+          "stepSimSeconds": 2
+        }
       },
       "groundPileStateCap": 65536,
       "id": "player",
@@ -24,6 +51,10 @@
         "minSimSeconds": 1
       },
       "throwArcHeightMetres": 1.1000000000000001,
+      "throwDrag": {
+        "airDensityKgPerCubicMetre": 1.2,
+        "footprintDragCoefficient": 0.25
+      },
       "throwFlightSimSeconds": 0.75,
       "useReachMetres": 2
     }

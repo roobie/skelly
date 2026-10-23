@@ -6,6 +6,8 @@ local zombies = import '../../../src/content/base/zombies.jsonnet';
     name: 'Mod token',
     category: 'misc',
     economy: { usage: [], tiers: [] },
+    workInProgress: false,
+    notLoot: false,
     weight: 0.1,
     size: [1, 1],
   }],

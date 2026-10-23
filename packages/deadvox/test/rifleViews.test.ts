@@ -1,4 +1,5 @@
 // A rifle as the player sees it: drawn with the magazine it really has in every view (`DESIGN.md`, "Piles and item models"), and its handling played on it from the job alone.
+
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
@@ -22,6 +23,7 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { heldFirearmTransform } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { Rng } from '../src/core/random.ts';
+import { firearmsCombatTuning } from '../src/core/skillTraining.ts';
 import { type FirearmBoreRay, firearmBoreRay } from '../src/game/firearmAim.ts';
 import { FirearmMechanics, firearmHandlingFor } from '../src/game/firearmHandling.ts';
 import { handlingRotation } from '../src/render/handlingTurn.ts';
@@ -30,6 +32,7 @@ import { itemLook } from '../src/render/itemLook.ts';
 import { ModelLibrary } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { PLAYER } from './playerFixture.ts';
 import { rifleAmmunition, rifleInHand, settle } from './rifleFixture.ts';
 
 const BASE = 'src/content/base';
@@ -376,6 +379,7 @@ it('keeps over-limit view pitch changes in ADS while the held pose takes the rec
   const { mechanics, gun, camera, heldFrame, dispose } = await heldGun(RIFLE);
   const tuning = registry.skills.get('firearms_combat')!.combat!.firearms!;
   const aim = new AimController({
+    tuning: PLAYER.aim,
     wobbleLimitRadians: tuning.wobbleLimitRadians,
     wobbleShape: {
       verticalToHorizontalRatio: tuning.wobbleVerticalToHorizontalRatio,
@@ -469,7 +473,10 @@ it.each([RIFLE, PUMP])('keeps the crosshair on the drawn %s bore through a rack,
     });
   };
   const onScreen = ({ muzzle, direction }: { muzzle: Vec3; direction: Vec3 }): Vector3 =>
-    new Vector3(...crosshairAimPoint(muzzle, direction, undefined)).multiplyScalar(BLOCK).project(camera).setZ(0);
+    new Vector3(...crosshairAimPoint(muzzle, direction, firearmsCombatTuning(registry).shotTraceRangeBlocks, []))
+      .multiplyScalar(BLOCK)
+      .project(camera)
+      .setZ(0);
   const { action } = firearmHandlingFor(gun, content);
   try {
     const restFrame = heldFrame();

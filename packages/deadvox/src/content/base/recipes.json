@@ -7,10 +7,12 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "stick",
+      "model": "stick",
       "name": "Stick",
+      "notLoot": false,
       "size": [1, 4],
       "stack": 6,
-      "weight": 200
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -19,10 +21,12 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "wax",
+      "model": "wax",
       "name": "Wax lump",
+      "notLoot": false,
       "size": [1, 1],
       "stack": 10,
-      "weight": 50
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -43,9 +47,11 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "wooden_plank",
+      "model": "wooden_plank",
       "name": "Wooden plank",
+      "notLoot": false,
       "size": [2, 4],
-      "weight": 500
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -79,14 +85,16 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "repair_kit",
+      "model": "repair_kit",
       "name": "Repair kit",
+      "notLoot": false,
       "size": [2, 2],
       "tool": {
         "qualities": {
           "repairing": 1
         }
       },
-      "weight": 1250
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -109,8 +117,10 @@
       "id": "copper_wire",
       "model": "wire_spool",
       "name": "Salvaged wire",
+      "notLoot": false,
       "size": [1, 2],
-      "weight": 80
+      "weight": 80,
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -137,9 +147,11 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "field_patch",
+      "model": "field_patch",
       "name": "Field repair patch",
+      "notLoot": false,
       "size": [1, 2],
-      "weight": 120
+      "workInProgress": false
     }
   ],
   "recipes": [
@@ -344,26 +356,215 @@
       },
       "timeGameMinutes": 4,
       "workstation": "workbench"
+    },
+    {
+      "components": [
+        [
+          {
+            "count": 2,
+            "item": "wooden_plank"
+          }
+        ]
+      ],
+      "id": "door_bar",
+      "qualities": {
+        "sawing": 1
+      },
+      "result": {
+        "count": 1,
+        "item": "door_bar"
+      },
+      "skills": {
+        "crafting": 0
+      },
+      "timeGameMinutes": 10,
+      "workstation": "workbench"
+    },
+    {
+      "activation": "sharpen",
+      "components": [],
+      "id": "grind_kitchen_knife",
+      "kind": "repair",
+      "qualities": {},
+      "repair": {
+        "amount": 0.5,
+        "perSkill": 0.050000000000000003,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "kitchen_knife"
+      },
+      "skills": {
+        "crafting": 0
+      },
+      "timeGameMinutes": 10,
+      "workstation": "grinding_wheel"
+    },
+    {
+      "activation": "sharpen",
+      "components": [],
+      "id": "hone_kitchen_knife",
+      "kind": "repair",
+      "qualities": {
+        "sharpening": 1
+      },
+      "repair": {
+        "amount": 0.20000000000000001,
+        "perSkill": 0.050000000000000003,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "kitchen_knife"
+      },
+      "skills": {
+        "crafting": 0
+      },
+      "timeGameMinutes": 20,
+      "workstation": null
+    },
+    {
+      "activation": "sharpen",
+      "components": [],
+      "id": "grind_kabar",
+      "kind": "repair",
+      "qualities": {},
+      "repair": {
+        "amount": 0.5,
+        "perSkill": 0.050000000000000003,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "kabar"
+      },
+      "skills": {
+        "crafting": 0
+      },
+      "timeGameMinutes": 10,
+      "workstation": "grinding_wheel"
+    },
+    {
+      "activation": "sharpen",
+      "components": [],
+      "id": "hone_kabar",
+      "kind": "repair",
+      "qualities": {
+        "sharpening": 1
+      },
+      "repair": {
+        "amount": 0.20000000000000001,
+        "perSkill": 0.050000000000000003,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "kabar"
+      },
+      "skills": {
+        "crafting": 0
+      },
+      "timeGameMinutes": 20,
+      "workstation": null
+    },
+    {
+      "activation": "sharpen",
+      "components": [],
+      "id": "grind_machete",
+      "kind": "repair",
+      "qualities": {},
+      "repair": {
+        "amount": 0.5,
+        "perSkill": 0.050000000000000003,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "machete"
+      },
+      "skills": {
+        "crafting": 0
+      },
+      "timeGameMinutes": 10,
+      "workstation": "grinding_wheel"
+    },
+    {
+      "activation": "sharpen",
+      "components": [],
+      "id": "hone_machete",
+      "kind": "repair",
+      "qualities": {
+        "sharpening": 1
+      },
+      "repair": {
+        "amount": 0.20000000000000001,
+        "perSkill": 0.050000000000000003,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "machete"
+      },
+      "skills": {
+        "crafting": 0
+      },
+      "timeGameMinutes": 20,
+      "workstation": null
+    }
+  ],
+  "skillProgression": [
+    {
+      "id": "core",
+      "practicePerLevel": 10
     }
   ],
   "skills": [
     {
+      "curve": {
+        "saturationFloor": 0.41999999999999998,
+        "saturationHalfLifeLevels": 4
+      },
       "id": "crafting",
       "name": "Crafting",
-      "startingRecipes": ["torch", "candle", "repair_kit", "repair_crowbar", "sawn_plank"],
+      "startingRecipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
       "training": {
         "craftingTierOffset": 1
       }
     },
     {
+      "curve": {
+        "saturationFloor": 0.41999999999999998,
+        "saturationHalfLifeLevels": 4
+      },
       "id": "mechanics",
       "name": "Mechanics"
     },
     {
+      "curve": {
+        "saturationFloor": 0.41999999999999998,
+        "saturationHalfLifeLevels": 4
+      },
       "id": "inventory_management",
       "inventory": {
         "handlingFactorFloor": 0,
-        "handlingFactorHalfLifeLevels": 1.1000000000000001
+        "handlingFactorHalfLifeLevels": 1.1000000000000001,
+        "handlingGroundSimSeconds": 1,
+        "handlingPerCellSimSeconds": 0.050000000000000003,
+        "handlingWearSimSeconds": 2
       },
       "name": "Inventory Management (IM)",
       "training": {
@@ -380,6 +581,11 @@
           "adsApertureFill": 0.84999999999999998,
           "attachmentFactorFloor": 0,
           "attachmentFactorHalfLifeLevels": 1.1000000000000001,
+          "caseEjection": {
+            "flightSimSeconds": 0.47999999999999998,
+            "landingLiftMetres": 0.0060000000000000001,
+            "speedMetresPerSimSecond": 3.5
+          },
           "loweredPitchRadians": 0.55000000000000004,
           "rackFactorFloor": 0.16,
           "rackFactorHalfLifeLevels": 3,
@@ -391,6 +597,7 @@
           "readyMovementRange": 0.34999999999999998,
           "reloadFactorFloor": 0.025000000000000001,
           "reloadFactorHalfLifeLevels": 5,
+          "shotTraceRangeBlocks": 240,
           "skillZeroHandling": {
             "automaticFollowup": {
               "recoilKickScale": 12,
@@ -412,6 +619,10 @@
           "wobbleSkillTenVariance": 0.050000000000000003,
           "wobbleVerticalToHorizontalRatio": 0.22500000000000001
         }
+      },
+      "curve": {
+        "saturationFloor": 0.41999999999999998,
+        "saturationHalfLifeLevels": 4
       },
       "id": "firearms_combat",
       "name": "Firearms Combat (FC)",
@@ -458,6 +669,10 @@
           "staminaCostHalfLifeLevels": 3,
           "staminaPerAbsorbedPoint": 2
         }
+      },
+      "curve": {
+        "saturationFloor": 0.41999999999999998,
+        "saturationHalfLifeLevels": 4
       },
       "id": "melee_combat",
       "name": "Melee Combat (MC)",

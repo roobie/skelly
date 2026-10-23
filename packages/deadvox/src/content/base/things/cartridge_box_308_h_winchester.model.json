@@ -1,7 +1,13 @@
 {
   "id": "cartridge_box_308_h_winchester",
   "file": "assets/models/cartridge_box_308_h_winchester.glb",
-  "parts": { "package": { "node": "package:carton", "massKg": 0.52, "centreOfMass": [0, 0.04069044717496923, 0] } },
+  "parts": {
+    "package": {
+      "node": "package:carton",
+      "massKg": 0.52,
+      "centreOfMass": [-0.0003623188405797101, 0.042536231884057966, 0]
+    }
+  },
   "grip": { "at": [0, 0.04, 0], "turn": [0, 0, -90] },
   "hold": "upright",
   "roll": 0

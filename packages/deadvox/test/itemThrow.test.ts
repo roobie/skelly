@@ -4,16 +4,18 @@ import type { Registry } from '../src/core/content.ts';
 import type { Inventory } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
 import {
+  flightForItem,
   hasMetThrowMinimumHold,
   itemFlightPoint,
+  steppedItemFlight,
   throwDistanceForItem,
-  traceItemLanding,
 } from '../src/core/itemThrow.ts';
 import { pileItemPosition } from '../src/core/pileLayout.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { reachTuning } from '../src/core/reach.ts';
 import { ItemThrows } from '../src/render/itemThrows.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { presentationFlight } from './itemFlightFixture.ts';
 
 const base = baseRegistry();
 const { throwArcHeightMetres: arcHeightMetres } = reachTuning(base);
@@ -21,7 +23,7 @@ const { throwArcHeightMetres: arcHeightMetres } = reachTuning(base);
 const testItem = (type: string): Item => ({ uid: 1, type, count: 1, condition: 1 });
 const testRegistry = (weights: Record<string, number>): Registry =>
   ({
-    items: new Map(Object.entries(weights).map(([id, weight]) => [id, { id, weight }])),
+    items: new Map(Object.entries(weights).map(([id, weight]) => [id, { id, weight, size: [1, 1] }])),
     models: new Map(),
     inventory: base.inventory,
   }) as unknown as Registry;
@@ -67,12 +69,102 @@ describe('held-item throws', () => {
     expect(heavyRange).toBeLessThan(lightRange);
   });
 
-  it('keeps a light item at the tuned maximum range at full charge', () => {
+  it('records drag-free launch strength rather than baking drag into replay distance', () => {
     const registry = testRegistry({ light: 450 });
 
-    expect(throwDistanceForItem(testItem('light'), registry, tuning, tuning.chargeSimSeconds)).toBe(
+    expect(throwDistanceForItem(testItem('light'), registry, tuning, tuning.chargeSimSeconds)).toBeCloseTo(
       tuning.maximumDistanceMetres,
+      3,
     );
+  });
+
+  it('flies lower and for less simulated time when the same mass pushes more air', () => {
+    const registry = testRegistry({ compact: 100, flimsy: 100 });
+    registry.items.set('flimsy', { id: 'flimsy', weight: 100, size: [2, 3] } as never);
+    const fly = (type: string) =>
+      flightForItem(testItem(type), registry, {
+        from: [0, 1, 0],
+        direction: [1, 0, 0],
+        distanceMetres: throwDistanceForItem(testItem(type), registry, tuning, tuning.chargeSimSeconds),
+        blockSize: 1,
+        minY: -2,
+        isSolid: (_x, y) => y < 1,
+      });
+    const compact = fly('compact');
+    const flimsy = fly('flimsy');
+    expect(flimsy.landing![0]).toBeLessThan(compact.landing![0]);
+    expect(flimsy.durationSimSeconds).toBeLessThan(compact.durationSimSeconds);
+    expect(Math.max(...flimsy.points.map((point) => point[1]))).toBeLessThan(
+      Math.max(...compact.points.map((point) => point[1])),
+    );
+  });
+
+  it('never lengthens a throw as drag rises, and lands however light the item', () => {
+    // Drag past the stepper's stable limit made the arc diverge and never come back down.
+    const ranges = [0, 0.1, 1, 10, 100, 1e3, 1e6].map((drag) => {
+      const flight = steppedItemFlight({
+        from: [0, 1, 0],
+        direction: [1, 0, 0],
+        distanceMetres: 8,
+        arcHeightMetres: 1,
+        flightSimSeconds: 1,
+        drag,
+        blockSize: 1,
+        minY: -2,
+        isSolid: (_x, y) => y < 1,
+      });
+      expect(flight.landing).toBeDefined();
+      expect(Number.isFinite(flight.durationSimSeconds)).toBe(true);
+      return flight.points.at(-1)![0];
+    });
+    for (let index = 1; index < ranges.length; index++) {
+      expect(ranges[index]).toBeGreaterThan(0);
+      expect(ranges[index]).toBeLessThanOrEqual(ranges[index - 1]!);
+    }
+  });
+
+  it('changes dragged range with pitch and draws the stepped path', () => {
+    const registry = testRegistry({ light: 100 });
+    const item = testItem('light');
+    const distanceMetres = throwDistanceForItem(item, registry, tuning, tuning.chargeSimSeconds);
+    const fly = (pitch: number) =>
+      flightForItem(item, registry, {
+        from: [0, 1, 0],
+        direction: [Math.cos(pitch), Math.sin(pitch), 0],
+        distanceMetres,
+        blockSize: 1,
+        minY: -2,
+        isSolid: (_x, y) => y < 1,
+      });
+    const down = fly(-0.3);
+    const level = fly(0);
+    const up = fly(0.3);
+    expect(down.points.at(-1)![0]).toBeLessThan(level.points.at(-1)![0]);
+    expect(up.points.at(-1)![0]).toBeGreaterThan(level.points.at(-1)![0]);
+    const throws = new ItemThrows(registry);
+    const inventory = presentationInventory(item);
+    throws.spawn(
+      { item, origin: up.points[0]!, flight: up, startedAtSimSeconds: 2, landingAt: 2 + up.durationSimSeconds },
+      inventory,
+    );
+    throws.update(2 + up.durationSimSeconds / 2, inventory);
+    const visual = throws.group.children[0]!;
+    const location = inventory.locate(item)!;
+    if (location.kind !== 'pile') {
+      throw new Error('fixture item must be in a pile');
+    }
+    const end = pileItemPosition(registry, location.pile, item.uid, { blockSize: 1 })!;
+    const middleIndex = (up.points.length - 1) / 2;
+    const before = up.points[Math.floor(middleIndex)]!;
+    const after = up.points[Math.ceil(middleIndex)]!;
+    for (let axis = 0; axis < 3; axis++) {
+      const sampled = (before[axis]! + after[axis]!) / 2;
+      const poseOffset = (end[axis]! - up.points.at(-1)![axis]!) / 2;
+      expect(visual.position.toArray()[axis]).toBeCloseTo(sampled + poseOffset);
+    }
+    throws.update(2 + up.durationSimSeconds, inventory);
+    expect(visual.position.toArray()).toEqual(end);
+    throws.dispose();
   });
 
   it('uses the thrown item look, including its fitted magazine', () => {
@@ -94,7 +186,7 @@ describe('held-item throws', () => {
     const magazine = testItem('magazine');
     const rifle = { ...testItem('rifle'), slots: { magazine } } as Item;
     const throws = new ItemThrows(registry, models, 1);
-    throws.spawn({ origin: [0, 1, 0], item: rifle }, presentationInventory(rifle));
+    throws.spawn({ origin: [0, 1, 0], item: rifle, flight: presentationFlight }, presentationInventory(rifle));
 
     expect(requestedLook).toMatchObject({
       model: 'rifle_model',
@@ -109,7 +201,7 @@ describe('held-item throws', () => {
     registry.items.set('rag', { id: 'rag', weight: 20, size: [1, 2] } as never);
     const throws = new ItemThrows(registry, undefined, 1);
     const item = testItem('rag');
-    throws.spawn({ origin: [0, 1, 0], item }, presentationInventory(item));
+    throws.spawn({ origin: [0, 1, 0], item, flight: presentationFlight }, presentationInventory(item));
     const flight = throws.group.children[0] as Group;
     const bundle = flight.children[0] as Mesh;
 
@@ -124,7 +216,7 @@ describe('held-item throws', () => {
     registry.items.set('glow', { id: 'glow', weight: 30, size: [1, 2], light } as never);
     const throws = new ItemThrows(registry, undefined, 1);
     const item = { ...testItem('glow'), on: true };
-    throws.spawn({ origin: [0, 1, 0], item }, presentationInventory(item));
+    throws.spawn({ origin: [0, 1, 0], item, flight: presentationFlight }, presentationInventory(item));
     const flight = throws.group.children[0] as Group;
     const marker = flight.children.find(
       (child) => child instanceof Mesh && child.material instanceof MeshBasicMaterial,
@@ -154,7 +246,7 @@ describe('held-item throws', () => {
     } as unknown as import('../src/render/models.ts').ModelLibrary;
     const throws = new ItemThrows(registry, models, 1);
     const item = { ...testItem('glow'), on: true };
-    throws.spawn({ origin: [0, 1, 0], item }, presentationInventory(item));
+    throws.spawn({ origin: [0, 1, 0], item, flight: presentationFlight }, presentationInventory(item));
     const flight = throws.group.children[0] as Group;
     const shownModel = flight.children[0] as Group;
     let tube: Mesh | undefined;
@@ -184,14 +276,14 @@ describe('held-item throws', () => {
     const inventory = presentationInventory(item);
     const pile = { pos: [2, 0, 0] as [number, number, number], items: [{ item, x: 0, y: 0, rotated: false }] };
     const landing = pileItemPosition(registry, pile, item.uid, { blockSize: 1 })!;
-    throws.spawn({ origin: start, item, startedAtSimSeconds: 4, landingAt: 5 }, inventory);
+    throws.spawn({ origin: start, item, flight: presentationFlight, startedAtSimSeconds: 4, landingAt: 5 }, inventory);
     const visual = throws.group.children[0] as Group;
     throws.update(4.99, inventory);
     expect(throws.activeCount).toBe(1);
     throws.update(5, inventory);
     expect(throws.activeCount).toBe(0);
     expect(visual.visible).toBe(false);
-    expect(visual.position.toArray()).toEqual(itemFlightPoint(start, landing, 1, arcHeightMetres));
+    expect(visual.position.toArray()).toEqual(itemFlightPoint(start, landing, 1, presentationFlight));
     throws.dispose();
   });
 
@@ -200,7 +292,7 @@ describe('held-item throws', () => {
     registry.items.set('rag', { id: 'rag', weight: 20, size: [1, 2] } as never);
     const throws = new ItemThrows(registry);
     const item = testItem('rag');
-    throws.spawn({ origin: [0, 1, 0], item }, presentationInventory(item));
+    throws.spawn({ origin: [0, 1, 0], item, flight: presentationFlight }, presentationInventory(item));
 
     expect(throws.group.children.some((child) => child instanceof PointLight)).toBe(false);
     throws.dispose();
@@ -209,7 +301,9 @@ describe('held-item throws', () => {
   it('settles an elevated throw onto the first solid surface below instead of retaining release height', () => {
     const from: [number, number, number] = [1.5, 8.5, 1.5];
     const isSolid: SolidAt = (_x, y) => y === 5 || y === 0;
-    const landing = traceItemLanding({
+    const { landing } = steppedItemFlight({
+      drag: 0,
+      flightSimSeconds: 1,
       from,
       direction: [1, 0, 0],
       distanceMetres: 4,
@@ -226,7 +320,9 @@ describe('held-item throws', () => {
   });
 
   it('does not invent a landing surface when the column below the throw is unknown', () => {
-    const landing = traceItemLanding({
+    const { landing } = steppedItemFlight({
+      drag: 0,
+      flightSimSeconds: 1,
       from: [1.5, 8.5, 1.5],
       direction: [1, 0, 0],
       distanceMetres: 4,
@@ -241,7 +337,9 @@ describe('held-item throws', () => {
 
   it('settles a charged arc on the thrower side of a near wall', () => {
     const isSolid: SolidAt = (x, y) => y === 0 || (x === 4 && y > 0 && y < 4);
-    const landing = traceItemLanding({
+    const { landing } = steppedItemFlight({
+      drag: 0,
+      flightSimSeconds: 1,
       from: [1.5, 1.5, 1.5],
       direction: [1, 0, 0],
       distanceMetres: 8,
@@ -258,7 +356,9 @@ describe('held-item throws', () => {
 
   it('stops the charged arc at a low ceiling and settles below it', () => {
     const isSolid: SolidAt = (x, y) => y === 0 || (y === 2 && x < 6);
-    const landing = traceItemLanding({
+    const { landing } = steppedItemFlight({
+      drag: 0,
+      flightSimSeconds: 1,
       from: [1.5, 1.5, 1.5],
       direction: [1, 0, 0],
       distanceMetres: 8,

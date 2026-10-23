@@ -1,12 +1,15 @@
 import { html, render, type TemplateResult } from 'lit-html';
 import { GRAPHICS_KEYS, type GraphicsKey, type GraphicsOptions } from '../core/graphics.ts';
+import type { ScreenText } from '../core/schema.ts';
 import type { GraphicsControls } from '../game/graphicsControls.ts';
 
-const valueText = (value: number | boolean): string => {
+type OptionsText = ScreenText['options'];
+
+const valueText = (value: number | boolean, text: OptionsText): string => {
   if (typeof value === 'number') {
     return value.toFixed(2);
   }
-  return value ? 'On' : 'Off';
+  return value ? text.on : text.off;
 };
 
 const scaleControl = (
@@ -37,7 +40,7 @@ const scaleControl = (
   />`;
 };
 
-export const renderGraphicsOptions = (root: HTMLElement, graphics: GraphicsControls): void => {
+export const renderGraphicsOptions = (root: HTMLElement, graphics: GraphicsControls, text: OptionsText): void => {
   const draw = (): void => {
     const { values, player } = graphics;
     const controls = GRAPHICS_KEYS.map((key): TemplateResult => {
@@ -61,7 +64,7 @@ export const renderGraphicsOptions = (root: HTMLElement, graphics: GraphicsContr
               />`
               : scaleControl(key, option, { value: Number(values[key]), overridden, change })
           }
-          <output>${valueText(values[key])}</output>
+          <output>${valueText(values[key], text)}</output>
           <button
             type="button"
             ?disabled=${player[key] === undefined}
@@ -69,12 +72,12 @@ export const renderGraphicsOptions = (root: HTMLElement, graphics: GraphicsContr
               graphics.clear(key);
               draw();
             }}
-          >Mod default</button>
-          ${overridden ? html`<span>URL override</span>` : ''}
+          >${text.modDefault}</button>
+          ${overridden ? html`<span>${text.urlOverride}</span>` : ''}
         </div>
       `;
     });
-    render(html`<section class="graphics-options"><h2>Graphics</h2>${controls}</section>`, root);
+    render(html`<section class="graphics-options"><h2>${text.graphicsHeading}</h2>${controls}</section>`, root);
   };
   draw();
 };

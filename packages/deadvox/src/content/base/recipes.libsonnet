@@ -1,9 +1,34 @@
+// Every wearing blade gets one repair per sharpening method: the wheel restores more in less time, so keeping an edge
+// is a choice between a trip to the wheel and a stone carried in the field.
+local sharpening = [
+  { prefix: 'grind_', qualities: {}, workstation: 'grinding_wheel', amount: 0.5, timeGameMinutes: 10 },
+  { prefix: 'hone_', qualities: { sharpening: 1 }, workstation: null, amount: 0.2, timeGameMinutes: 20 },
+];
+local blades = [
+  item.id
+  for item in (import 'items-tools.libsonnet').items
+  if std.objectHas(item, 'weapon') && item.weapon.melee.type == 'cut' && std.objectHas(item.weapon.melee, 'wearPerHit')
+];
+local sharpen(blade, method) = {
+  id: method.prefix + blade,
+  kind: 'repair',
+  activation: 'sharpen',
+  result: { item: blade, count: 1 },
+  repair: { skill: 'crafting', amount: method.amount, perSkill: 0.05 },
+  timeGameMinutes: method.timeGameMinutes,
+  skills: { crafting: 0 },
+  qualities: method.qualities,
+  components: [],
+  workstation: method.workstation,
+};
+local sharpenRecipes = [sharpen(blade, method) for blade in blades for method in sharpening];
+local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
 {
-  "skills": [
+  "skills": [skill + { curve: skillCurve } for skill in [
     {
       "id": "crafting",
       "name": "Crafting",
-      "startingRecipes": ["torch", "candle", "repair_kit", "repair_crowbar", "sawn_plank"],
+      "startingRecipes": ["torch", "candle", "repair_kit", "repair_crowbar", "sawn_plank", "door_bar"] + [recipe.id for recipe in sharpenRecipes],
       "training": { "craftingTierOffset": 1 },
     },
     { "id": "mechanics", "name": "Mechanics" },
@@ -11,7 +36,13 @@
       "id": "inventory_management",
       "name": "Inventory Management (IM)",
       "training": { "activities": { "handling": { "practice": 2.5 } } },
-      "inventory": { "handlingFactorFloor": 0, "handlingFactorHalfLifeLevels": 1.1 }
+      "inventory": {
+        "handlingFactorFloor": 0,
+        "handlingFactorHalfLifeLevels": 1.1,
+        "handlingPerCellSimSeconds": 0.05,
+        "handlingGroundSimSeconds": 1,
+        "handlingWearSimSeconds": 2
+      }
     },
     {
       "id": "firearms_combat",
@@ -52,7 +83,9 @@
           "rackFactorFloor": 0.16,
           "rackFactorHalfLifeLevels": 3,
           "attachmentFactorFloor": 0,
-          "attachmentFactorHalfLifeLevels": 1.1
+          "attachmentFactorHalfLifeLevels": 1.1,
+          "caseEjection": { "speedMetresPerSimSecond": 3.5, "flightSimSeconds": 0.48, "landingLiftMetres": 0.006 },
+          "shotTraceRangeBlocks": 240
         }
       }
     },
@@ -84,15 +117,16 @@
         }
       }
     }
-  ],
+  ]],
+  "skillProgression": [{ "id": "core", "practicePerLevel": 10 }],
   "items": [
-    { "id": "stick", "name": "Stick", "category": "material", "weight": 200, "size": [1, 4], "stack": 6 },
-    { "id": "wax", "name": "Wax lump", "category": "material", "weight": 50, "size": [1, 1], "stack": 10 },
+    { "id": "stick", "name": "Stick", "category": "material", "model": "stick", "size": [1, 4], "stack": 6 },
+    { "id": "wax", "name": "Wax lump", "category": "material", "model": "wax", "size": [1, 1], "stack": 10 },
     {
       "id": "wooden_plank",
       "name": "Wooden plank",
       "category": "material",
-      "weight": 500,
+      "model": "wooden_plank",
       "size": [2, 4],
       "disassembly": {
         "timeGameMinutes": 4,
@@ -104,7 +138,7 @@
       "id": "repair_kit",
       "name": "Repair kit",
       "category": "tool",
-      "weight": 1250,
+      "model": "repair_kit",
       "size": [2, 2],
       "description": "Metal patches, tape and rags for a makeshift repair.",
       "disassembly": {
@@ -135,7 +169,7 @@
       "id": "field_patch",
       "name": "Field repair patch",
       "category": "material",
-      "weight": 120,
+      "model": "field_patch",
       "size": [1, 2],
       "disassembly": {
         "timeGameMinutes": 12,
@@ -215,6 +249,15 @@
       "qualities": { "sawing": 1 },
       "components": [[{ "item": "stick", "count": 2 }]],
       "workstation": "workbench"
+    },
+    {
+      "id": "door_bar",
+      "result": { "item": "door_bar", "count": 1 },
+      "timeGameMinutes": 10,
+      "skills": { "crafting": 0 },
+      "qualities": { "sawing": 1 },
+      "components": [[{ "item": "wooden_plank", "count": 2 }]],
+      "workstation": "workbench"
     }
-  ]
+  ] + sharpenRecipes
 }

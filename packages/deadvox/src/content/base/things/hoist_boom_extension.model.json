@@ -1,0 +1,14 @@
+{
+  "id": "hoist_boom_extension",
+  "file": "assets/models/hoist_boom_extension.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 70,
+      "centreOfMass": [-1.6059027777777777, 1.515625, 0],
+      "collision": [{ "min": [-2.5625, 1.3125, -0.09375], "max": [-0.65625, 1.71875, 0.09375] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

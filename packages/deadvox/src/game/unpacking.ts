@@ -1,3 +1,4 @@
+import { actionText, fillText } from '../core/actionText.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import type { Inventory, Target } from '../core/inventory.ts';
@@ -8,16 +9,23 @@ import { unpackingTool } from './canOpening.ts';
 
 export const UNPACK_ACTION = 'item.unpack';
 
+export interface UnpackingDone {
+  calendar?: () => number;
+  opened?: (type: string) => void;
+  unpacked?: (type: string) => void;
+}
+
 /** Activation only: deliberately not an inventory Use option. */
 export class Unpacking {
   private readonly inventory: Inventory;
   private readonly queue: HandlingQueue;
   private readonly feet: () => Vec3;
+  private readonly done: UnpackingDone;
+  private readonly calendar: () => number;
 
-  private readonly opened: ((type: string) => void) | undefined;
-
-  constructor(inventory: Inventory, queue: HandlingQueue, feet: () => Vec3, opened?: (type: string) => void) {
-    this.opened = opened;
+  constructor(inventory: Inventory, queue: HandlingQueue, feet: () => Vec3, done: UnpackingDone = {}) {
+    this.calendar = done.calendar ?? (() => 0);
+    this.done = done;
     this.inventory = inventory;
     this.queue = queue;
     this.feet = feet;
@@ -25,25 +33,26 @@ export class Unpacking {
   }
 
   activate(item: Item): string | undefined {
+    const text = actionText(this.inventory.registry);
     const { unpack } = defOf(this.inventory.registry, item.type);
     if (!unpack) {
-      return 'This item cannot be unpacked';
+      return text.unpacking.cannot;
     }
     const tool = unpackingTool(this.inventory, item);
     if (Object.keys(unpack.qualities ?? {}).length > 0 && !tool) {
-      return 'I need a tool in my other hand';
+      return text.unpacking.needTool;
     }
     const rate =
       unpack.qualities?.opening && tool ? defOf(this.inventory.registry, tool.type).tool!.qualities.opening! : 1;
     if (this.inventory.locate(item)?.kind !== 'hand') {
-      return 'Wield the package to unpack it';
+      return text.unpacking.notInHands;
     }
     if (this.queue.busy) {
-      return 'Already handling something';
+      return text.common.busy;
     }
     this.queue.enqueueAction(
       UNPACK_ACTION,
-      `Unpack ${this.inventory.name(item)}`,
+      fillText(text.unpacking.unpack, { item: this.inventory.name(item) }),
       this.inventory.scaleHandlingTime(unpack.simSeconds / rate),
       {
         uid: item.uid,
@@ -54,24 +63,29 @@ export class Unpacking {
   }
 
   private complete(uid: unknown, toolUid: unknown): string | undefined {
+    const text = actionText(this.inventory.registry);
     const box = typeof uid === 'number' ? this.inventory.itemByUid(uid) : undefined;
     if (!box || this.inventory.locate(box)?.kind !== 'hand') {
-      return 'Package is no longer held';
+      return text.common.notHeld;
     }
     const payload = defOf(this.inventory.registry, box.type).unpack;
     if (!payload) {
-      return 'Package no longer has unpacking data';
+      return text.unpacking.cannot;
     }
     if (Object.keys(payload.qualities ?? {}).length > 0 && unpackingTool(this.inventory, box)?.uid !== toolUid) {
-      return 'The opening tool is no longer in my other hand';
+      return text.unpacking.toolGone;
     }
     if (payload.inPlace) {
       const { type } = box;
-      this.inventory.transform(box, payload.item);
-      this.opened?.(type);
+      this.inventory.transform(
+        box,
+        payload.item,
+        box.foodExposure ? { kind: 'same' } : { kind: 'new', calendar: this.calendar() },
+      );
+      this.done.opened?.(type);
       return undefined;
     }
-    const shell = this.inventory.create(payload.item, payload.count, 1);
+    const shell = this.createOutput(payload.item, payload.count, box);
     // Admission guarantees one stack. Reserve enough ordinary spill capacity for the entire
     // payload before consuming the package; filling pockets can only reduce that spill.
     const landed = freshDropTarget(this.inventory, shell, this.feet());
@@ -82,10 +96,20 @@ export class Unpacking {
       return refusal;
     }
     if (!this.inventory.consume(box, 1)) {
-      return 'Package is no longer held';
+      return text.common.notHeld;
     }
     this.deliver(shell, { pocket, spill });
+    this.done.unpacked?.(payload.item);
     return undefined;
+  }
+
+  private createOutput(type: string, count: number, source: Item): Item {
+    const output = this.inventory.create(type, count, 1, this.calendar());
+    if (source.foodExposure && output.foodExposure) {
+      output.foodExposure = this.inventory.currentFood(source);
+      output.madeAtGameTimestamp = source.madeAtGameTimestamp;
+    }
+    return output;
   }
 
   private deliver(shell: Item, { pocket, spill }: { pocket: Target | undefined; spill: Target | undefined }): void {
@@ -98,7 +122,7 @@ export class Unpacking {
     const { count } = shell;
     shell.count = 1;
     for (let i = 0; i < count; i++) {
-      const next = i === 0 ? shell : this.inventory.create(shell.type, 1, 1);
+      const next = i === 0 ? shell : this.createOutput(shell.type, 1, shell);
       const target = this.pocketFor(next) ?? spill!;
       if (!this.inventory.add(next, target)) {
         throw new Error('Reserved unpack spill capacity changed during synchronous commit');

@@ -3,10 +3,11 @@ import type { Chunk } from './chunk.ts';
 import { type CityPlan, cityRowStart } from './cityPlan.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, toChunk, type Vec3 } from './coords.ts';
-import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
 import { type LootSpawnPoint, lootPointsByColumn } from './loot.ts';
+import type { PublicCartographicFeature } from './publicCartography.ts';
 import type { Scale } from './scale.ts';
 import { cityRowDepth } from './settlementPools.ts';
+import { TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
 import { type FurnitureSpawn, furnitureOf, lootSourcesOf, rectDistance, type Site, type ZombieSpawn } from './site.ts';
 import { sitePalette } from './sitePalette.ts';
 import { stampChunk } from './structure.ts';
@@ -20,13 +21,14 @@ export class CitySite implements Site {
   readonly registry: Registry;
   readonly plan: CityPlan;
   readonly spawn: Site['spawn'];
+  readonly publicCartography: readonly PublicCartographicFeature[];
   protected readonly byColumn = new Map<string, Placement[]>();
   private readonly paving: number;
   private readonly lootColumns: ReadonlyMap<string, readonly LootSpawnPoint[]>;
 
   constructor(seed: number, registry: Registry, scale: Scale, plan: CityPlan) {
-    if (scale.blockSize !== HAMLET_BLOCK_SIZE) {
-      throw new Error(`the city's templates need ${HAMLET_BLOCK_SIZE} m blocks`);
+    if (scale.blockSize !== TEMPLATE_BLOCK_SIZE) {
+      throw new Error(`the city's templates need ${TEMPLATE_BLOCK_SIZE} m blocks`);
     }
     this.seed = seed;
     this.registry = registry;
@@ -43,6 +45,29 @@ export class CitySite implements Site {
       ),
     );
     this.spawn = { pos: plan.spawn.map((value) => value * scale.blockSize) as Vec3, yaw: -Math.PI / 2 };
+    const paved = plan.grid.paving ?? [
+      ...Array.from({ length: plan.grid.blocksX * 2 + 1 }, (_, i) => ({
+        x0: (i - plan.grid.blocksX) * (plan.grid.street + plan.grid.blockX),
+        x1: (i - plan.grid.blocksX) * (plan.grid.street + plan.grid.blockX) + plan.grid.street,
+        z0: plan.core.z0,
+        z1: plan.core.z1,
+      })),
+      ...Array.from({ length: plan.grid.blocksZ * 2 + 1 }, (_, i) => ({
+        x0: plan.core.x0,
+        x1: plan.core.x1,
+        z0: (i - plan.grid.blocksZ) * (plan.grid.street + plan.grid.blockZ),
+        z1: (i - plan.grid.blocksZ) * (plan.grid.street + plan.grid.blockZ) + plan.grid.street,
+      })),
+    ];
+    this.publicCartography = paved.map(({ x0, x1, z0, z1 }) => ({
+      kind: 'road',
+      bounds: {
+        x0: x0 * scale.blockSize,
+        x1: x1 * scale.blockSize,
+        z0: z0 * scale.blockSize,
+        z1: z1 * scale.blockSize,
+      },
+    }));
     for (const placement of plan.placements) {
       const [width, depth] = footprint(placement);
       for (let cz = toChunk(placement.origin[2]); cz <= toChunk(placement.origin[2] + depth - 1); cz++) {

@@ -2,6 +2,8 @@ import type { TemplateDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { CompiledTemplate, VoxelProvenance } from './templates.ts';
 
+export const OWNERSHIP_AIR = 2;
+
 export const ownershipShapeIssues = (template: Pick<TemplateDef, 'size' | 'ownership'>): [string, string][] => {
   if (!template.ownership) {
     return [];
@@ -47,7 +49,7 @@ export const compileOwnership = (
             `${source}: ${template.id}: ownership ${mark} disagrees with occupancy at ${[x, y, z].join(',')}`,
           );
         }
-        ownership[index] = { S: 1, '.': 0, A: 2, R: 2 }[mark]!;
+        ownership[index] = { S: 1, '.': 0, A: OWNERSHIP_AIR, R: OWNERSHIP_AIR }[mark]!;
         reserved[index] = Number(mark === 'R');
         if (mark !== '.') {
           provenance[index] = {

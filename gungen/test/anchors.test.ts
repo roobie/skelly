@@ -115,7 +115,7 @@ describe('resolveAnchors (core)', () => {
 
 describe('hold selection', () => {
   // Check hold selection across every fixture and published design, not just generated samples.
-  it('every fixture and design resolves exactly one hold without a selection error', { timeout: 10_000 }, () => {
+  it('every fixture and design resolves exactly one hold without a selection error', () => {
     const corpus = loadCorpus();
     expect(corpus.some(({ label }) => label.startsWith('fixture '))).toBe(true);
     expect(corpus.some(({ label }) => label.startsWith('design '))).toBe(true);
@@ -260,9 +260,7 @@ describe('anchor data', () => {
   });
 
   // Check selected-frame validity across the authored corpus, not only generated samples.
-  it('fixture and design frames are unit-length and right-handed; hold frames sit within their part', {
-    timeout: 10_000,
-  }, () => {
+  it('fixture and design frames are unit-length and right-handed; hold frames sit within their part', () => {
     const facts = frameFacts(loadCorpus().map(({ assembly }) => assembly));
     expect(facts.defective).toEqual([]);
     expect(facts.outside).toEqual([]);

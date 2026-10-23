@@ -1,0 +1,14 @@
+{
+  "id": "cargo_space",
+  "file": "assets/models/cargo_space.glb",
+  "parts": {
+    "body": {
+      "node": "body:block",
+      "massKg": 0.2,
+      "centreOfMass": [0, 0.046875, 0],
+      "collision": [{ "min": [-0.0625, 0, -0.0625], "max": [0.0625, 0.09375, 0.0625] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

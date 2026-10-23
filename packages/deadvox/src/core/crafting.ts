@@ -1,10 +1,11 @@
 // Pure craft planning: no removal, effect, timer or world mutation.
 import type { BlockEntity } from './blockEntities.ts';
 import { type CraftCharacter, SKILL_LEVEL_MIN, skillEffectLevel } from './character.ts';
-import type { RecipeDef } from './content.ts';
+import type { RecipeDef, Registry } from './content.ts';
+import { coreMessage } from './coreText.ts';
 import type { DisassemblyPlan } from './disassembly.ts';
 import type { Location } from './inventory.ts';
-import { type Item, isEmpty } from './items.ts';
+import { craftComponentEligible, type Item, isEmpty } from './items.ts';
 import type { ReachEntry, ReachSnapshot } from './reach.ts';
 
 interface CraftComponent {
@@ -41,7 +42,7 @@ interface ReachIndex {
   byType: Map<string, ReachEntry[]>;
   qualities: Map<string, { entry: ReachEntry; level: number }[]>;
 }
-const indexes = new WeakMap<ReachSnapshot, ReachIndex>();
+const indexes = new WeakMap<ReachSnapshot, Map<boolean, ReachIndex>>();
 const plans = new WeakMap<ReachSnapshot, WeakMap<RecipeDef, Map<string, CraftPlan | null>>>();
 const cachedPlans = (snapshot: ReachSnapshot, recipe: RecipeDef): Map<string, CraftPlan | null> => {
   let recipes = plans.get(snapshot);
@@ -63,8 +64,8 @@ const copyPlan = (plan: CraftPlan): CraftPlan => ({
   tools: plan.tools.map((tool) => ({ ...tool })),
 });
 /** Derived per-snapshot index, not an owning UID lookup or a global item registry. */
-export const indexCraftReach = (snapshot: ReachSnapshot): ReachIndex => {
-  const cached = indexes.get(snapshot);
+export const indexCraftReach = (snapshot: ReachSnapshot, consumeFitted = false): ReachIndex => {
+  const cached = indexes.get(snapshot)?.get(consumeFitted);
   if (cached) {
     return cached;
   }
@@ -72,7 +73,7 @@ export const indexCraftReach = (snapshot: ReachSnapshot): ReachIndex => {
   const qualities = new Map<string, { entry: ReachEntry; level: number }[]>();
   for (const entry of snapshot.entries) {
     const { item } = entry;
-    if (isEmpty(item)) {
+    if (craftComponentEligible(item, consumeFitted)) {
       const candidates = byType.get(item.type) ?? [];
       candidates.push(entry);
       byType.set(item.type, candidates);
@@ -92,7 +93,9 @@ export const indexCraftReach = (snapshot: ReachSnapshot): ReachIndex => {
     entries.sort((a, b) => a.handlingTime - b.handlingTime || stackTie(a.item, b.item));
   }
   const index = { byType, qualities };
-  indexes.set(snapshot, index);
+  const variants = indexes.get(snapshot) ?? new Map<boolean, ReachIndex>();
+  variants.set(consumeFitted, index);
+  indexes.set(snapshot, variants);
   return index;
 };
 
@@ -152,7 +155,7 @@ export const requirementStatus = (
   snapshot: ReachSnapshot,
   character: CraftCharacter,
 ): CraftRequirements => {
-  const index = indexCraftReach(snapshot);
+  const index = indexCraftReach(snapshot, recipe.consumeFitted);
   return {
     knowledge: !character.knownRecipes.has(recipe.id),
     skills: Object.entries(recipe.skills).map(([skill, required]) => ({
@@ -282,6 +285,14 @@ const allocateCombination = (
   return allocation;
 };
 
+export const craftWorkDuration = (recipe: RecipeDef, character: CraftCharacter, workFactorBonus = 0): number => {
+  const skillLevel = Math.max(
+    SKILL_LEVEL_MIN,
+    ...Object.keys(recipe.skills).map((skill) => skillEffectLevel(character.skills[skill] ?? SKILL_LEVEL_MIN)),
+  );
+  return (recipe.timeGameMinutes * (1 - workFactorBonus)) / (1 + skillLevel * 0.1);
+};
+
 const craftPlan = (
   recipe: RecipeDef,
   snapshot: ReachSnapshot,
@@ -292,11 +303,7 @@ const craftPlan = (
         .filter((station) => stationMatches(recipe, station))
         .sort((a, b) => b.workFactorBonus - a.workFactorBonus || a.entity.uid - b.entity.uid)[0]
     : undefined;
-  const skillLevel = Math.max(
-    SKILL_LEVEL_MIN,
-    ...Object.keys(recipe.skills).map((skill) => skillEffectLevel(character.skills[skill] ?? SKILL_LEVEL_MIN)),
-  );
-  const work = (recipe.timeGameMinutes * (1 - (workstation?.workFactorBonus ?? 0))) / (1 + skillLevel * 0.1);
+  const work = craftWorkDuration(recipe, character, workstation?.workFactorBonus);
   return {
     kind: 'craft',
     recipe: recipe.id,
@@ -307,29 +314,35 @@ const craftPlan = (
   };
 };
 
-const refusalReason = (recipe: RecipeDef, prefer: CraftPreference, missing: CraftRequirements): string | undefined => {
+const refusalReason = (
+  registry: Registry,
+  recipe: RecipeDef,
+  prefer: CraftPreference,
+  missing: CraftRequirements,
+): string | undefined => {
   for (const [number, item] of Object.entries(prefer)) {
     if (!recipe.components[Number(number)]?.some((alternative) => alternative.item === item)) {
       return `Preferred ${item} is not an alternative for group ${number}`;
     }
   }
   if (missing.knowledge) {
-    return 'Recipe not known';
+    return coreMessage(registry, 'recipeUnknown');
   }
   if (missing.skills.some(({ available, required }) => available < required)) {
-    return 'Skill level too low';
+    return coreMessage(registry, 'skillTooLow');
   }
   const quality = missing.qualities.find(({ available, required }) => available < required);
   if (quality) {
-    return `Required ${quality.quality} tool is not in reach`;
+    return coreMessage(registry, 'toolNotInReach', { quality: quality.quality });
   }
   if (missing.workstation) {
-    return 'Required workstation not in reach';
+    return coreMessage(registry, 'workstationNotInReach');
   }
   return undefined;
 };
 
 const componentRefusal = (snapshot: ReachSnapshot, status: CraftRequirements, prefer: CraftPreference): string => {
+  const { registry } = snapshot.player.inventory;
   const shortage = status.components.find(
     ({ group, alternatives }) =>
       !alternatives.some(
@@ -339,9 +352,14 @@ const componentRefusal = (snapshot: ReachSnapshot, status: CraftRequirements, pr
   const alternative = shortage?.alternatives.find(
     ({ item }) => prefer[shortage.group] === undefined || prefer[shortage.group] === item,
   );
-  return alternative
-    ? `Needs ${alternative.needed} ${snapshot.player.inventory.registry.items.get(alternative.item)!.name.toLowerCase()} (${alternative.available} found)`
-    : `${Object.keys(prefer).length > 0 ? 'Preferred alternatives' : 'Components'} compete for the same stock or would consume a required tool`;
+  if (alternative) {
+    return coreMessage(registry, 'componentsShort', {
+      count: String(alternative.needed),
+      item: registry.items.get(alternative.item)!.name.toLowerCase(),
+      found: String(alternative.available),
+    });
+  }
+  return coreMessage(registry, Object.keys(prefer).length > 0 ? 'preferredCompete' : 'componentsCompete');
 };
 
 /** Shared equipment/knowledge/skill admission; components are held in escrow on Continue. */
@@ -349,7 +367,8 @@ export const admissionRefusal = (
   recipe: RecipeDef,
   snapshot: ReachSnapshot,
   character: CraftCharacter,
-): string | undefined => refusalReason(recipe, {}, requirementStatus(recipe, snapshot, character));
+): string | undefined =>
+  refusalReason(snapshot.player.inventory.registry, recipe, {}, requirementStatus(recipe, snapshot, character));
 
 const stationMatches = (recipe: RecipeDef, station: ReachSnapshot['workstations'][number]): boolean =>
   Boolean(recipe.workstation) && station.id === recipe.workstation;
@@ -361,7 +380,7 @@ export const planCraft = (
   character: CraftCharacter,
   prefer: CraftPreference = {},
 ): CraftResult => {
-  const index = indexCraftReach(snapshot);
+  const index = indexCraftReach(snapshot, recipe.consumeFitted);
   const status = requirementStatus(recipe, snapshot, character);
   const missing: CraftMissing = {
     ...status,
@@ -370,7 +389,7 @@ export const planCraft = (
     qualities: status.qualities.filter(({ available, required }) => available < required),
   };
   const refusal = (reason: string): CraftResult => ({ missing: { ...missing, reason } });
-  const requirementReason = refusalReason(recipe, prefer, missing);
+  const requirementReason = refusalReason(snapshot.player.inventory.registry, recipe, prefer, missing);
   if (requirementReason) {
     return refusal(requirementReason);
   }

@@ -1,0 +1,14 @@
+{
+  "id": "nails",
+  "file": "assets/models/nails.glb",
+  "parts": {
+    "material": {
+      "node": "material:turnedStock",
+      "massKg": 0.005,
+      "centreOfMass": [0.040783783783783785, -0.000013513513513513596, -0.000013513513513513596]
+    }
+  },
+  "grip": { "at": [0.037000000000000005, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 0
+}

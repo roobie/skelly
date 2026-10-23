@@ -1,0 +1,14 @@
+{
+  "id": "frag_grenade",
+  "file": "assets/models/frag_grenade.glb",
+  "parts": {
+    "grenade": {
+      "node": "grenade:grenade",
+      "massKg": 0.4,
+      "centreOfMass": [0.004585062240663901, 0.04470954356846474, 0.0023858921161825737]
+    }
+  },
+  "grip": { "at": [0, 0.035, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

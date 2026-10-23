@@ -4,6 +4,9 @@ import { buildItem, catalogue, loadCatalogue } from '../src/catalogue.ts';
 import { exportItem, loadThingRecipe } from '../src/exports.ts';
 
 const material = Object.keys(MATERIALS)[0]!;
+// Fine enough that a voxelized box stays within `toBeCloseTo` of the smooth datum it follows.
+const VOXEL = { voxelGrain: 0.002 };
+const ROW_VOXEL = { grain: 0.01 };
 const port = (id: string, gender: 'male' | 'female', y: number) => ({
   id,
   mount: 'fixture-joint',
@@ -69,6 +72,7 @@ it('exports a grip following the held solid through resizing and assembly placem
         items: [{ ...input.items[0], handling: datum }],
       }).items[0]!,
       { id: 'fixture', file: 'assets/models/fixture.glb' },
+      VOXEL,
     ).modelEntry;
   const before = exportFixture();
   expect(before.grip?.at[1]).toBeCloseTo(0.03);
@@ -81,14 +85,45 @@ it('exports a grip following the held solid through resizing and assembly placem
   const after = exportFixture();
   expect(after.grip?.at[1]).toBeCloseTo(0.08);
   datum.solid = 'missing';
-  expect(exportFixture).toThrow('missing handling geometry');
+  expect(exportFixture).toThrow('missing datum geometry');
+});
+it('exports datums and baked collision that follow the resized solid', () => {
+  const input = fixture();
+  const exportFixture = () =>
+    exportItem(
+      loadCatalogue({
+        ...input,
+        items: [{ ...input.items[0], anchors: { top: { part: 'upper', solid: 'body', fraction: [0.5, 1, 0.5] } } }],
+      }).items[0]!,
+      { id: 'fixture', file: 'assets/models/fixture.glb' },
+      VOXEL,
+      { collision: true },
+    ).modelEntry;
+  const topOf = (entry: ReturnType<typeof exportFixture>) => ({
+    datum: entry.anchors?.top?.[1],
+    box: entry.parts?.upper?.collision?.[0]?.max[1],
+  });
+  const before = topOf(exportFixture());
+  expect(before.box).toBeCloseTo(before.datum!);
+  input.items[0]!.parts[1]!.params.height = '0.08';
+  const after = topOf(exportFixture());
+  expect(after.datum).toBeGreaterThan(before.datum!);
+  expect(after.box).toBeCloseTo(after.datum!);
+});
+it('refuses baked collision on an inventory atom, whose export carries no parts', () => {
+  const input = fixture();
+  input.items[0]!.exportMass = 'inventory-atom';
+  const item = loadCatalogue(input).items[0]!;
+  expect(() =>
+    exportItem(item, { id: 'fixture', file: 'assets/models/fixture.glb' }, VOXEL, { collision: true }),
+  ).toThrow('baked collision travels with exported parts');
 });
 it('omits runtime part masses only when inventory-atom export is authored', () => {
   const input = fixture();
   const asset = { id: 'fixture', file: 'assets/models/fixture.glb' } as const;
-  const assembly = exportItem(loadCatalogue(input).items[0]!, asset);
+  const assembly = exportItem(loadCatalogue(input).items[0]!, asset, VOXEL);
   input.items[0]!.exportMass = 'inventory-atom';
-  const atom = exportItem(loadCatalogue(input).items[0]!, asset);
+  const atom = exportItem(loadCatalogue(input).items[0]!, asset, VOXEL);
   expect(assembly.modelEntry.parts).toBeDefined();
   expect(atom.modelEntry).not.toHaveProperty('parts');
   expect(atom.glb).toEqual(assembly.glb);
@@ -102,10 +137,25 @@ it('refuses recipe mass ownership that differs from the authored item', () => {
         id: 'fixture',
         kind: 'item',
         source: item.id,
+        voxel: ROW_VOXEL,
         options: { mass: item.exportMass === 'parts' ? 'inventory-atom' : 'parts' },
       },
     ]),
   ).toThrow('Recipe mass ownership differs');
+});
+it('refuses a recipe row without a voxel class, so no model exports smooth', () => {
+  const item = catalogue.items[0]!;
+  expect(() =>
+    loadThingRecipe([{ id: 'fixture', kind: 'item', source: item.id, options: { mass: item.exportMass } }]),
+  ).toThrow('Expected "voxel"');
+});
+it.each([0, -1])('refuses a voxel class grain of %s', (grain) => {
+  const item = catalogue.items[0]!;
+  expect(() =>
+    loadThingRecipe([
+      { id: 'fixture', kind: 'item', source: item.id, voxel: { grain }, options: { mass: item.exportMass } },
+    ]),
+  ).toThrow('Invalid');
 });
 it('refuses unknown geometry families during catalogue loading', () => {
   const input = fixture();
@@ -114,6 +164,18 @@ it('refuses unknown geometry families during catalogue loading', () => {
 });
 it('refuses recipe references outside the authored item set', () => {
   expect(() =>
-    loadThingRecipe([{ id: 'fixture', kind: 'item', source: 'fixture-unknown', options: { mass: 'parts' } }]),
+    loadThingRecipe([
+      { id: 'fixture', kind: 'item', source: 'fixture-unknown', voxel: ROW_VOXEL, options: { mass: 'parts' } },
+    ]),
   ).toThrow('Unknown tool item');
+});
+it('exports the player bust with joint anchors that seat the limbs symmetrically about the centre line', () => {
+  const row = loadThingRecipe().find((candidate) => candidate.id === 'player_bust')!;
+  const anchors = row.generate().modelEntry.anchors!;
+  for (const joint of ['neck', 'head', 'shoulder_left', 'shoulder_right', 'hip_left', 'hip_right']) {
+    expect(anchors[joint], joint).toBeDefined();
+  }
+  expect(anchors.shoulder_left![1]).toBeCloseTo(anchors.shoulder_right![1]);
+  expect(anchors.shoulder_left![0]).toBeCloseTo(-anchors.shoulder_right![0]);
+  expect(anchors.hip_left![0]).toBeCloseTo(-anchors.hip_right![0]);
 });

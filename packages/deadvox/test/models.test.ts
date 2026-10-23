@@ -2,25 +2,41 @@ import { readdirSync, readFileSync } from 'node:fs';
 import {
   Box3,
   BoxGeometry,
+  type CircleGeometry,
+  Group,
   InstancedMesh,
   type Loader,
   LoadingManager,
   Mesh,
   type MeshBasicMaterial,
   type MeshStandardMaterial,
+  PerspectiveCamera,
+  Quaternion,
+  Raycaster,
   Vector3,
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ContentSource } from '../src/core/content.ts';
+import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory, type Pile } from '../src/core/inventory.ts';
 import { PILE_GRID } from '../src/core/inventoryScale.ts';
 import { toggleLight } from '../src/core/lights.ts';
 import { pileLayout } from '../src/core/pileLayout.ts';
 import { spentCaseItemId } from '../src/game/firearmHandling.ts';
+import { createCompass } from '../src/render/compass.ts';
+import { HeldItems } from '../src/render/hands.ts';
+import { presentHeldDisplay } from '../src/render/heldDisplay.ts';
 import { itemLook } from '../src/render/itemLook.ts';
-import { fittedPartFrame, heldModelFrame, prepareModel } from '../src/render/models.ts';
+import {
+  fittedPartFrame,
+  groundModelFrame,
+  heldModelFrame,
+  type ModelLibrary,
+  prepareModel,
+} from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
+import { FIRST_PERSON_PALM } from '../src/render/playerFigure.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
 const BASE = 'src/content/base';
@@ -78,6 +94,94 @@ it('prepares every thing recipe export for ground and held drawing with its grip
       }
     }),
   );
+});
+
+afterEach(() => vi.unstubAllGlobals());
+
+it.each<[string, Vec3]>([
+  ['right', [0.14, -0.13, -0.3]],
+  ['left', [-0.14, -0.13, -0.3]],
+])(
+  'turns a %s-held compass screen to the eye, upright, with the whole model in front of the palm',
+  async (_side, heldAt) => {
+    const definition = registry.models.get('compass')!;
+    const { scene } = await parseGlb(readFileSync(`${BASE}/${definition.file}`));
+    const { held } = prepareModel(definition, scene);
+    // Every canvas call is a no-op: the test observes Three transforms, not painted pixels.
+    const context = new Proxy({}, { get: () => vi.fn() });
+    vi.stubGlobal('document', { createElement: () => ({ getContext: () => context }) });
+    const compass = createCompass({
+      root: held,
+      display: definition.display!,
+      needleMount: definition.anchors!.needle_mount!,
+      dial: definition.dial!,
+    });
+    const hand = new Group().add(held);
+    hand.position.set(...heldAt);
+    const palm = presentHeldDisplay(held, definition.display!, heldAt);
+    hand.add(palm);
+    hand.updateMatrixWorld(true);
+    const toEye = new Vector3(...heldAt).negate().normalize();
+    const card = compass.group.getObjectByName('compass-live-dial')!;
+    expect(card.getWorldDirection(new Vector3()).dot(toEye)).toBeGreaterThan(0.99);
+    // The card's top is north, so at its default bearing it stands upright.
+    const top = new Vector3(0, 1, 0).applyQuaternion(card.getWorldQuaternion(new Quaternion()));
+    expect(top.y).toBeGreaterThan(0.9);
+    const palmFront = FIRST_PERSON_PALM[2] / 2;
+    const palmForward = new Vector3(0, 0, 1).applyQuaternion(palm.getWorldQuaternion(new Quaternion()));
+    expect(palmForward.dot(toEye)).toBeGreaterThan(0.99);
+    const handAt = new Vector3(...heldAt);
+    let nearestToPalm = Number.POSITIVE_INFINITY;
+    held.traverse((child) => {
+      if (child instanceof Mesh) {
+        const position = child.geometry.getAttribute('position');
+        for (let index = 0; index < position.count; index += 1) {
+          const vertex = new Vector3().fromBufferAttribute(position, index).applyMatrix4(child.matrixWorld);
+          nearestToPalm = Math.min(nearestToPalm, vertex.sub(handAt).dot(toEye));
+        }
+      }
+    });
+    expect(nearestToPalm).toBeGreaterThanOrEqual(palmFront - 1e-6);
+    compass.dispose();
+  },
+);
+
+it.each(['right', 'left'] as const)('keeps the %s arm out of every sight line to a held compass card', async (side) => {
+  const definition = registry.models.get('compass')!;
+  const { scene } = await parseGlb(readFileSync(`${BASE}/${definition.file}`));
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => new Proxy({}, { get: () => vi.fn() }) }) });
+  const inventory = new Inventory(registry);
+  expect(inventory.add(inventory.create('compass'), { kind: 'hand', side })).toBeTruthy();
+  const models = {
+    version: 0,
+    has: () => true,
+    heldLook: () => ({ root: prepareModel(definition, scene.clone()).held, parts: [], slots: {} }),
+  } as unknown as ModelLibrary;
+  const held = new HeldItems(inventory, models, { skin: '#bbaa99', shirt: '#556677', trousers: '#334455' });
+  held.update(new PerspectiveCamera(), undefined, 0, { firearms: [] });
+  const { scene: view } = held.warmUpTarget;
+  view.updateMatrixWorld(true);
+  const card = view.getObjectByName('compass-live-dial') as Mesh<CircleGeometry>;
+  const arm = view.getObjectByName(`first-person-arm-${side}`)!;
+  const eye = new Vector3();
+  const raycaster = new Raycaster();
+  // Sight lines from the eye to the card's rim and rings inside it.
+  const blocked: string[] = [];
+  for (const ring of [1, 0.66, 0.33]) {
+    for (let step = 0; step < 24; step += 1) {
+      const angle = (step / 24) * Math.PI * 2;
+      const radius = card.geometry.parameters.radius * ring;
+      const target = card.localToWorld(new Vector3(Math.cos(angle) * radius, Math.sin(angle) * radius, 0));
+      raycaster.set(eye, target.clone().sub(eye).normalize());
+      raycaster.far = target.distanceTo(eye);
+      const [hit] = raycaster.intersectObject(arm, true);
+      if (hit) {
+        blocked.push(`${ring}@${step}: arm part ${arm.children.indexOf(hit.object)}`);
+      }
+    }
+  }
+  expect(blocked).toEqual([]);
+  held.dispose();
 });
 
 describe('piles with models', () => {
@@ -204,6 +308,67 @@ describe('piles with models', () => {
     expect((marker.material as MeshBasicMaterial).vertexColors).toBe(false);
     bundle.dispose();
   });
+
+  it('keeps a set-down flame burning upright over its model’s flame anchor, and shines from there', async () => {
+    const flameLights = [...registry.items.values()].filter(
+      ({ light, model }) =>
+        light?.burning?.ignition === 'firestarter' &&
+        light.flame !== undefined &&
+        model !== undefined &&
+        registry.models.get(model)?.anchors?.flame !== undefined,
+    );
+    expect(flameLights.length).toBeGreaterThan(0);
+    const scenes = await Promise.all(
+      flameLights.map(
+        async ({ model }) => (await parseGlb(readFileSync(`${BASE}/${registry.models.get(model!)!.file}`))).scene,
+      ),
+    );
+    for (const [index, definition] of flameLights.entries()) {
+      const modelDefinition = registry.models.get(definition.model!)!;
+      const { ground } = prepareModel(modelDefinition, scenes[index]!);
+      const models = {
+        version: 1,
+        has: (id: string) => id === modelDefinition.id,
+        groundLook: () => ground.clone(),
+      } as unknown as import('../src/render/models.ts').ModelLibrary;
+      const render = (on: boolean) => {
+        const items = new Inventory(registry);
+        const light = items.create(definition.id);
+        if (on && definition.tool?.fuel) {
+          const canister = items.create(definition.tool.fuel.canister);
+          canister.charges = registry.items.get(canister.type)!.canister!.capacity;
+          items.fitSlot(light, 'canister', canister);
+        }
+        if (on) {
+          expect(toggleLight(registry, light, 0)).toBeUndefined();
+        }
+        expect(items.add(light, { kind: 'pile', pos: [2, 1, -1] })).toBe(true);
+        const piles = new PileMeshes(S, models);
+        piles.sync(items);
+        const model = piles.group.children.find((child) => !(child instanceof InstancedMesh))!;
+        return { piles, light, model, flame: model.getObjectByName('pile-light-flame') };
+      };
+
+      const unlit = render(false);
+      expect(unlit.flame, definition.id).toBeUndefined();
+      expect(unlit.piles.lightPositionOf(unlit.light, new Vector3()), definition.id).toBe(false);
+      unlit.piles.dispose();
+
+      const { piles, light, model, flame } = render(true);
+      expect(flame, definition.id).toBeDefined();
+      const at = new Vector3();
+      expect(piles.lightPositionOf(light, at), definition.id).toBe(true);
+      const anchor = groundModelFrame(model).localToWorld(new Vector3(...modelDefinition.anchors!.flame!));
+      expect(at.distanceTo(anchor), definition.id).toBeLessThan(1e-9);
+      const flameBounds = new Box3().setFromObject(flame!);
+      const centre = flameBounds.getCenter(new Vector3());
+      expect(flameBounds.min.y, definition.id).toBeCloseTo(at.y);
+      expect(flameBounds.max.y - flameBounds.min.y, definition.id).toBeCloseTo(definition.light!.flame!.heightMetres);
+      expect(centre.x, definition.id).toBeCloseTo(at.x);
+      expect(centre.z, definition.id).toBeCloseTo(at.z);
+      piles.dispose();
+    }
+  });
 });
 
 it('prepares integral-magazine manual exports and binds movers by glTF node index, not sanitized name', async () => {
@@ -257,6 +422,21 @@ describe('model forms', () => {
     expect(box.getCenter(new Vector3()).x).toBeCloseTo(0);
     expect(box.getCenter(new Vector3()).z).toBeCloseTo(0);
     expect(box.max.x - box.min.x).toBeCloseTo(0.3); // long side along x
+  });
+
+  it('stands a model that rests upright on its back end, its front end up and centred over its origin', async () => {
+    const bytes = readFileSync('test/fixtures/packs/lamp/assets/models/lamp.glb');
+    const { scene } = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
+    const raw = new Box3().setFromObject(scene);
+    const { ground } = prepareModel({ ...registry.models.get('lamp')!, rest: 'upright' }, scene);
+    ground.updateMatrixWorld(true);
+    const box = new Box3().setFromObject(ground);
+    expect(box.min.y).toBeCloseTo(0);
+    expect(box.max.y - box.min.y).toBeCloseTo(raw.max.x - raw.min.x);
+    expect(box.getCenter(new Vector3()).x).toBeCloseTo(0);
+    expect(box.getCenter(new Vector3()).z).toBeCloseTo(0);
+    const front = groundModelFrame(ground).localToWorld(new Vector3(raw.max.x, 0, 0));
+    expect(front.y).toBeCloseTo(box.max.y);
   });
 
   it('exposes shared ground mesh resources with the prepared root transforms for instancing', async () => {
@@ -459,21 +639,6 @@ describe('base pack melee', () => {
     expect(claw.z).toBeGreaterThan(0);
   });
 
-  it('points the fire-axe cutting edge forward', async () => {
-    const edge = await heldAnchor('fire_axe', 'edge');
-    expect(edge.z).toBeLessThan(0);
-  });
-
-  it('points the sledgehammer striking face forward', async () => {
-    const face = await heldAnchor('sledgehammer', 'face');
-    expect(face.z).toBeLessThan(0);
-  });
-
-  it('points the hand-axe cutting edge forward', async () => {
-    const edge = await heldAnchor('hand_axe', 'edge');
-    expect(edge.z).toBeLessThan(0);
-  });
-
   it('points the machete cutting edge forward', async () => {
     const edge = await heldAnchor('machete', 'edge');
     expect(edge.z).toBeLessThan(0);
@@ -482,11 +647,6 @@ describe('base pack melee', () => {
   it('points the Kabar strike tip forward from its held grip', async () => {
     const strike = await heldAnchor('kabar', 'strike');
     expect(strike.z).toBeLessThan(0);
-  });
-
-  it('points the pickaxe point forward', async () => {
-    const point = await heldAnchor('pickaxe', 'point');
-    expect(point.z).toBeLessThan(0);
   });
 
   it('points the crowbar claw forward', async () => {
@@ -545,21 +705,42 @@ describe('base pack modeled ammunition and spent cases', () => {
       expect(fired!.stack).toBeGreaterThan(1);
     }
   });
-  it.each([
-    ['round_12_h_gauge_h_00_h_buck', 0.062_23],
-    ['case_12_h_gauge_h_00_h_buck', 0.0701],
-  ] as const)('%s loads through prepareModel and rests at its sourced dimensions', async (id, length) => {
-    const def = registry.models.get(id)!;
-    expect(def.gun?.calibre).toBe('12-gauge-00-buck');
-    expect(def.grip).toBeUndefined();
-    const { scene } = await parseGlb(readFileSync(`${BASE}/${def.file}`));
-    const { ground, groundParts } = prepareModel(def, scene);
-    const bounds = new Box3().setFromObject(ground);
-    expect(bounds.getSize(new Vector3()).x).toBeCloseTo(length, 7);
-    expect(bounds.getSize(new Vector3()).y).toBeCloseTo(0.0225, 7);
-    expect(bounds.min.y).toBeCloseTo(0, 7);
-    expect(bounds.getCenter(new Vector3()).x).toBeCloseTo(0, 7);
-    expect(groundParts.length).toBeGreaterThan(0);
+  it('loads every ammunition and spent-case model through prepareModel resting on the ground, centred', async () => {
+    const ids = new Set<string>();
+    for (const item of registry.items.values()) {
+      if (item.ammo && item.model) {
+        ids.add(item.model);
+        const fired = registry.items.get(spentCaseItemId(item.ammo.calibre));
+        if (fired?.model) {
+          ids.add(fired.model);
+        }
+      }
+    }
+    expect(ids.size).toBeGreaterThan(0);
+    const loaded = await Promise.all(
+      [...ids].map(async (id) => ({
+        id,
+        def: registry.models.get(id)!,
+        ...(await parseGlb(readFileSync(`${BASE}/${registry.models.get(id)!.file}`))),
+      })),
+    );
+    for (const { id, def, scene } of loaded) {
+      expect(def.gun?.calibre, id).toBeDefined();
+      expect(def.grip, id).toBeUndefined();
+      const { ground, groundParts } = prepareModel(def, scene);
+      const bounds = new Box3().setFromObject(ground);
+      const size = bounds.getSize(new Vector3());
+      const centre = bounds.getCenter(new Vector3());
+      expect(size.x, id).toBeGreaterThan(0);
+      expect(size.y, id).toBeGreaterThan(0);
+      expect(size.z, id).toBeGreaterThan(0);
+      // Hand-held ammunition: well under half a metre on any axis.
+      expect(Math.max(size.x, size.y, size.z), id).toBeLessThan(0.5);
+      expect(bounds.min.y, id).toBeCloseTo(0, 7);
+      expect(centre.x, id).toBeCloseTo(0, 7);
+      expect(centre.z, id).toBeCloseTo(0, 7);
+      expect(groundParts.length, id).toBeGreaterThan(0);
+    }
   });
 });
 

@@ -1,6 +1,6 @@
 import type { Registry } from './content.ts';
 import { couldFit, ItemFactory } from './items.ts';
-import { type LootContext, lootTypeIssue } from './loot.ts';
+import { type LootContext, placedTypeIssue, withLootDepth } from './loot.ts';
 import { slotsReason } from './magazine.ts';
 import { groundPileIssue } from './pileBound.ts';
 import { reachTuning } from './reach.ts';
@@ -25,7 +25,15 @@ const fixedItemIssue = (registry: Registry, fixed: FixedLootItemDef, context: Lo
       return issue;
     }
   }
-  return lootTypeIssue(registry, fixed.item, context, fixed.fitted);
+  if (fixed.charge !== undefined) {
+    const item = new ItemFactory().create(registry, fixed.item);
+    const fittedTypes = Object.values(item.slots ?? {}).map(({ type }) => type);
+    const types = [fixed.item, ...fittedTypes, ...Object.values(fixed.fitted ?? {})];
+    if (!types.some((type) => registry.items.get(type)?.battery)) {
+      return `"${fixed.item}" has no battery to charge`;
+    }
+  }
+  return placedTypeIssue(registry, fixed.item, context, fixed.fitted);
 };
 
 // Furnishing leaves out an item that fits no pocket, so a fixed item that can't fit even an empty one would vanish.
@@ -83,7 +91,11 @@ export const pieceItemIssues = (
       issues.push([path, `furniture "${piece.furniture}" at ${piece.pos.join(',')} has no container`]);
     }
     for (const [itemIndex, fixed] of items.entries()) {
-      const issue = fixedItemIssue(registry, fixed, { usage: piece.lootUsage ?? context.usage, tier: context.tier });
+      const issue = fixedItemIssue(
+        registry,
+        fixed,
+        withLootDepth({ ...context, usage: piece.lootUsage ?? context.usage }, piece.lootDepth),
+      );
       if (issue !== undefined) {
         issues.push([`${path}[${itemIndex}].item`, issue]);
       }
@@ -115,7 +127,7 @@ export const groundLootSupplyIssues = (
     groundPointIssues(
       registry,
       point,
-      { usage: point.lootUsage ?? context.usage, tier: context.tier },
+      withLootDepth({ ...context, usage: point.lootUsage ?? context.usage }, point.lootDepth),
       `.groundLoot[${index}].supply`,
     ),
   );
@@ -149,10 +161,11 @@ export const placementLootIssues = (
     }
     for (const [itemIndex, fixed] of override.items.entries()) {
       const issue =
-        fixedItemIssue(registry, fixed, {
-          usage: override.lootUsage ?? piece.lootUsage ?? context.usage,
-          tier: context.tier,
-        }) ?? pocketFitIssue(registry, fixed, piece.furniture, pockets);
+        fixedItemIssue(
+          registry,
+          fixed,
+          withLootDepth({ ...context, usage: override.lootUsage ?? piece.lootUsage ?? context.usage }, piece.lootDepth),
+        ) ?? pocketFitIssue(registry, fixed, piece.furniture, pockets);
       if (issue !== undefined) {
         issues.push([`${at}.items[${itemIndex}].item`, issue]);
       }

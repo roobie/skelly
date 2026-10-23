@@ -28,7 +28,9 @@ local ladderOnFooting = function(pieces, facing) {
       // Deep enough along the ladder's facing for the climber's body, which the ladder holds on its centre line.
       size: [2, 1, 3],
       color: "#8d969a",
-      door: { material: 'steel', methods: {}, handlingSimSeconds: 0.8, hatch: true },
+      material: 'steel',
+      breach: { minimumStrength: 9, durability: 300 },
+      door: { methods: {}, handlingSimSeconds: 0.8, hatch: true, detail: (import 'door-detail.libsonnet').hatch },
     },
   ],
   templates: [

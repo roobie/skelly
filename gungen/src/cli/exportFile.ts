@@ -1,6 +1,6 @@
 import { parseAssemblyJson } from '@skelly/engine/assembly/parseAssembly.ts';
 import type { Assembly } from '@skelly/engine/assembly/schema.ts';
-import type { AppearanceContext, GlbAssetIdentity } from '@skelly/thing-export/exportTypes.ts';
+import type { AppearanceContext, GlbAssetIdentity, VoxelGrains } from '@skelly/thing-export/exportTypes.ts';
 import { loadGunDesign } from '../gun/designLoader.ts';
 import { exportGunGlb, type GunDeadvoxModelEntry, type GunExportMetadata } from '../gun/exportGlb.ts';
 import { GUN_APPEARANCE } from '../gun/palette.ts';
@@ -109,10 +109,14 @@ const readFixtureAssembly = (text: string, raw: unknown): ReadAssemblyResult => 
   if (calibre !== undefined && (typeof calibre !== 'string' || calibre.trim() === '')) {
     return { message: 'calibre: expected a non-empty cartridge id' };
   }
+  const appearance = metadata.context ?? FIXTURE_APPEARANCE[parsed.assembly.name];
+  if (!appearance) {
+    return { message: `no appearance profile for fixture ${JSON.stringify(parsed.assembly.name)}` };
+  }
   return {
     assembly: parsed.assembly,
     warnings: [],
-    appearance: metadata.context ?? FIXTURE_APPEARANCE[parsed.assembly.name] ?? {},
+    appearance,
     ...(calibre === undefined ? {} : { calibre }),
   };
 };
@@ -133,6 +137,7 @@ export const exportFileText = (
   text: string,
   asset: GlbAssetIdentity,
   metadata: GunExportMetadata = {},
+  voxel: Partial<VoxelGrains> = {},
 ): ExportFileResult => {
   const read = readAssembly(text);
   if ('message' in read) {
@@ -153,6 +158,7 @@ export const exportFileText = (
   const result = exportGunGlb(read.assembly, asset, read.appearance, {
     ...exportMetadata,
     includeAttachmentCompatibility: true,
+    ...voxel,
     ...(read.excludedAttachments === undefined ? {} : { excludedAttachments: read.excludedAttachments }),
   });
   if (!result.ok) {

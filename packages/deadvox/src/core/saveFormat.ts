@@ -10,15 +10,20 @@ import {
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from './character.ts';
 import { CHUNK, CHUNK_VOLUME } from './coords.ts';
 import { assertFirearmState } from './firearmState.ts';
-import { type InventoryState, WORK_IN_PROGRESS } from './inventory.ts';
+import { FOOD_EXPOSURE_DENOMINATOR, foodMillisecondsAt } from './food.ts';
+import type { InventoryState } from './inventory.ts';
 import type { ItemState } from './items.ts';
 import { itemIds as collectItemIds, savedItemTree } from './itemTree.ts';
 import { validateLongJob } from './longAction.ts';
 import { MELEE_MOTIONS } from './meleeMotion.ts';
 import type { PlayerCombatState } from './playerCombat.ts';
+import { PLAYER_STANCES } from './playerStance.ts';
 import type { SaveSnapshot } from './saveState.ts';
 import { assertScenarioRun } from './scenarioRun.ts';
 import { freezeSnapshot } from './snapshotData.ts';
+import { assertVehicleState, type VehicleInstancesState } from './vehicleInstances.ts';
+import type { SavedChunk, SavedColumn } from './world.ts';
+import { regionIndex, WORLD_REGION_METRES } from './worldRegion.ts';
 import type { HordeState, ZombieState, ZombieSystemState } from './zombies.ts';
 
 /** Disk-format API. The implementation is data-only and safe to use in Node, workers, and browsers. */
@@ -58,8 +63,9 @@ export type SaveContentKind =
   | 'scheduler'
   | 'skill'
   | 'recipe'
-  | 'scenario';
-type SaveContentLookup = (kind: SaveContentKind, id: string) => boolean;
+  | 'scenario'
+  | 'vehicleBlueprint';
+type SaveContentLookup = (kind: SaveContentKind, id: string, item?: ItemState) => boolean;
 
 export interface EncodeSaveOptions {
   /** Slot owner supplies a strictly increasing safe-integer generation; the codec has no storage state. */
@@ -78,6 +84,7 @@ export interface DecodeSaveOptions {
   /** Running revision is shown in refusal messages but never gates compatibility. */
   buildRevision?: string;
   contentLookup: SaveContentLookup;
+  /** Bounds the decompressed payload, so it is enforced while inflating. */
   maxPayloadBytes?: number;
 }
 
@@ -88,23 +95,14 @@ export interface DecodedSave {
   worldOptions: SaveWorldIdentity;
 }
 
-interface Run {
-  start: number;
-  length: number;
-  base: number;
-  id: number;
-}
-
-interface EncodedChunk {
+interface EncodedChunk extends SavedChunk {
   cx: number;
-  cy: number;
   cz: number;
   order: number;
-  palette: string[];
-  runs: Run[];
 }
 
 interface Region {
+  vehicles: { order: number; id: number; vehicle: VehicleInstancesState['instances'][number]['vehicle'] }[];
   chunks: EncodedChunk[];
   zombies: { order: number; id: number; zombie: ZombieState }[];
   entities: { order: number; entity: BlockEntityState }[];
@@ -115,6 +113,7 @@ interface WirePayload {
   world: {
     id: string;
     options: SaveWorldIdentity;
+    power?: SaveSnapshot['world']['power'];
     regions: Record<string, Region>;
     zombieSystem: {
       nextEntityId: number;
@@ -123,7 +122,9 @@ interface WirePayload {
       acidGlobs: ZombieSystemState['acidGlobs'];
       acidPuddles: ZombieSystemState['acidPuddles'];
     };
+    vehiclesNextId: number;
     blockEntitiesNextUid: number;
+    blockEntitiesReserved?: number[];
     spawned: string[];
     rolledColumns: string[];
   };
@@ -155,9 +156,8 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 54;
-const WORLD_REGION_METRES = 512;
-const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
+export const SAVE_SCHEMA_VERSION = 61;
+export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
 const REGION_KEY = /^(0|-?[1-9]\d*),(0|-?[1-9]\d*)$/;
@@ -356,14 +356,30 @@ itemSchema = obj({
   lootedCount: opt(nonNegativeInt),
   condition: num({ min: 0, max: 1 }),
   charges: opt(nonNegative),
+  batteryMicrojoules: opt(nonNegativeInt),
   on: opt(bool),
   burnRemainingGameSeconds: opt(nonNegative),
   litAtGameTimestamp: opt(nonNegative),
   pinPulled: opt(bool),
   fuseRemainingSimSeconds: opt(nonNegative),
+  trap: opt(
+    union(
+      obj({ state: enumeration(['armed']) }),
+      obj({ state: enumeration(['holding']), zombie: opt(positiveInt), remainingSimSeconds: positive }),
+    ),
+  ),
   madeAtGameTimestamp: opt(nonNegative),
+  foodExposure: opt(
+    obj({
+      gameMilliseconds: num({ integer: true, safe: true, min: 0 }),
+      remainder: num({ integer: true, safe: true, min: 0, max: FOOD_EXPOSURE_DENOMINATOR - 1 }),
+      settledAtGameMilliseconds: num({ integer: true, safe: true, min: 0 }),
+    }),
+  ),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
   cartridges: opt(arr(str({ id: true }))),
+  paperMap: opt(obj({ x: safeInt, z: safeInt })),
+  cargo: opt(arr(positiveInt)),
   slots: opt(record(lazy(() => itemSchema))),
   firearm: opt(
     obj({
@@ -488,14 +504,44 @@ const blockEntitySchema = obj({
   facing: enumeration(['n', 'e', 's', 'w']),
   tip: opt(enumeration(['back', 'front', 'left', 'right', 'top'])),
   carried: opt(enumeration([true])),
+  floorLocked: opt(enumeration([true])),
   fixed: opt(enumeration([true])),
   searched: bool,
   open: bool,
+  damage: opt(positive),
+  broken: opt(enumeration([true])),
   lock: opt(obj({ id: str({ id: true }), locked: bool })),
+  bar: opt(obj({ side: enumeration(['front', 'back']), item: str({ id: true }) })),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
+  charging: opt(obj({ batteryUid: positiveInt, atGameMilliseconds: nonNegativeInt })),
+});
+const vehiclePlacementFields = {
+  id: str({ id: true }),
+  at: vec3,
+  mirror: opt(enumeration([true])),
+  supportedBy: arr(str({ id: true })),
+  service: opt(
+    obj({
+      mount: str({ id: true }),
+      durationSimSeconds: positive,
+      qualities: record(positiveInt),
+    }),
+  ),
+};
+const vehicleSchema = obj({
+  blueprint: str({ id: true }),
+  placementKey: str({ nonEmpty: true }),
+  origin: vec3,
+  facing: enumeration(['n', 'e', 's', 'w']),
+  sites: arr(obj(vehiclePlacementFields)),
+  fittings: arr(obj({ ...vehiclePlacementFields, item: lazy(() => itemSchema) })),
+});
+const vehiclesStateSchema = obj({
+  nextId: positiveInt,
+  instances: arr(obj({ id: positiveInt, vehicle: vehicleSchema })),
 });
 const pileSchema = obj({ pos: tuple(safeInt, safeInt, safeInt), items: placedGrid });
-const entitiesState = obj({ nextUid: positiveInt, entities: arr(blockEntitySchema) });
+const entitiesState = obj({ nextUid: positiveInt, entities: arr(blockEntitySchema), reserved: opt(arr(positiveInt)) });
 const inventory = obj({
   ...inventoryCore.fields,
   piles: arr(pileSchema),
@@ -515,6 +561,9 @@ const longJob = (jobType: Schema, extra: Record<string, Schema> = {}) =>
     region: opt(enumeration(bodyRegionValues)),
     itemUid: opt(positiveInt),
     itemType: opt(str({ id: true })),
+    kind: opt(enumeration(['install', 'remove'])),
+    vehicleId: opt(positiveInt),
+    fittingId: opt(str({ id: true })),
     duration: opt(positive),
     strikeInterval: opt(positive),
     nextStrike: opt(positive),
@@ -532,7 +581,7 @@ const longJob = (jobType: Schema, extra: Record<string, Schema> = {}) =>
 const longAction = obj({
   job: nullable(
     union(
-      longJob(enumeration(['rest', 'sleep', 'craft', 'reading', 'treatment', 'wait'])),
+      longJob(enumeration(['rest', 'sleep', 'craft', 'reading', 'treatment', 'wait', 'vehicleWork'])),
       longJob(enumeration(['forceDoor']), { method: str({ id: true }) }),
     ),
   ),
@@ -583,8 +632,11 @@ const zombie = obj({
   body,
   facing: vec3,
   home: vec3,
-  mode: enumeration(['idle', 'stroll', 'search', 'chase', 'investigate', 'return']),
+  mode: enumeration(['idle', 'stroll', 'hesitate', 'search', 'chase', 'investigate', 'return']),
   investigationTier: opt(enumeration(['near', 'far'])),
+  hesitationFrom: opt(enumeration(['idle', 'stroll'])),
+  refusedAt: opt(nonNegative),
+  leanTarget: opt(vec3),
   behaviorRng: tuple(safeInt, safeInt, safeInt, safeInt),
   soundRng: tuple(safeInt, safeInt, safeInt, safeInt),
   dismemberRng: tuple(safeInt, safeInt, safeInt, safeInt),
@@ -644,7 +696,7 @@ const playerState = obj({
   yaw: finite,
   pitch: finite,
   walk: bool,
-  crouching: bool,
+  stance: enumeration(PLAYER_STANCES),
   sprinting: bool,
   firearmReadyWalking: bool,
   handlingPausedForKnockout: bool,
@@ -754,10 +806,29 @@ const scenarioRun = nullable(
   }),
 );
 
+const savedRun = obj({ start: nonNegativeInt, length: positiveInt, id: nonNegativeInt });
+
+const powerState = obj({
+  atGameMilliseconds: nonNegativeInt,
+  devices: arr(
+    obj({
+      id: str({ nonEmpty: true }),
+      type: str({ nonEmpty: true }),
+      enabled: bool,
+      fuelUnits: nonNegativeInt,
+      storedMicrojoules: nonNegativeInt,
+      powered: bool,
+      restartBlocked: bool,
+    }),
+  ),
+  links: arr(obj({ from: str({ nonEmpty: true }), to: str({ nonEmpty: true }), itemUid: positiveInt })),
+});
+
 const wirePayloadSchema = obj({
   world: obj({
     id: str({ nonEmpty: true }),
     options: worldIdentitySchema,
+    power: opt(powerState),
     regions: record(
       obj({
         chunks: arr(
@@ -767,10 +838,11 @@ const wirePayloadSchema = obj({
             cz: safeInt,
             order: nonNegativeInt,
             palette: arr(str({ id: true }), 1),
-            runs: arr(obj({ start: nonNegativeInt, length: positiveInt, base: nonNegativeInt, id: nonNegativeInt }), 1),
+            runs: arr(savedRun, 1),
           }),
         ),
         zombies: arr(obj({ order: nonNegativeInt, id: positiveInt, zombie })),
+        vehicles: arr(obj({ order: nonNegativeInt, id: positiveInt, vehicle: vehicleSchema })),
         entities: arr(obj({ order: nonNegativeInt, entity: blockEntitySchema })),
         piles: arr(obj({ order: nonNegativeInt, pile: pileSchema })),
       }),
@@ -782,7 +854,9 @@ const wirePayloadSchema = obj({
       acidGlobs: arr(acidGlob),
       acidPuddles: arr(acidPuddle),
     }),
+    vehiclesNextId: positiveInt,
     blockEntitiesNextUid: positiveInt,
+    blockEntitiesReserved: opt(arr(positiveInt)),
     spawned: arr(str({ nonEmpty: true })),
     rolledColumns: arr(str({ nonEmpty: true })),
   }),
@@ -933,6 +1007,57 @@ async function sha256(bytes: Uint8Array): Promise<string> {
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
+/** Returns undefined once more than `maxBytes` arrive, without reading the rest. */
+async function readStream(
+  stream: ReadableStream<Uint8Array>,
+  maxBytes = Number.POSITIVE_INFINITY,
+): Promise<Uint8Array | undefined> {
+  const reader = stream.getReader();
+  const parts: Uint8Array[] = [];
+  let length = 0;
+  for (;;) {
+    // biome-ignore lint/performance/noAwaitInLoops: stream chunks arrive in order.
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+    length += value.byteLength;
+    if (length > maxBytes) {
+      await reader.cancel();
+      return undefined;
+    }
+    parts.push(value);
+  }
+  const bytes = new Uint8Array(length);
+  let offset = 0;
+  for (const part of parts) {
+    bytes.set(part, offset);
+    offset += part.byteLength;
+  }
+  return bytes;
+}
+
+async function gzip(bytes: Uint8Array): Promise<Uint8Array> {
+  const compressed = new Blob([bytes.slice()]).stream().pipeThrough(new CompressionStream('gzip'));
+  return (await readStream(compressed))!;
+}
+
+const envelopeLimit = (maxPayloadBytes: number): number => maxPayloadBytes + 1024 * 1024;
+
+async function gunzipBounded(bytes: Uint8Array<ArrayBuffer>, maxBytes: number): Promise<Uint8Array> {
+  // A small record must not inflate without limit, so the bound applies while streaming.
+  let inflated: Uint8Array | undefined;
+  try {
+    inflated = await readStream(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')), maxBytes);
+  } catch (error) {
+    throw new Error('Invalid or truncated compressed save', { cause: error });
+  }
+  if (!inflated) {
+    throw new Error('Save envelope exceeds configured limit');
+  }
+  return inflated;
+}
+
 function validateVersion(version: SaveVersionComponents): void {
   validateSchema(versionComponentsSchema, version, 'version');
   if (!HASH.test(version.simulationHash)) {
@@ -1064,10 +1189,6 @@ export async function currentSaveVersionIdentity(
   };
 }
 
-function regionIndex(blockCoordinate: number, blockSize: number): number {
-  return Math.floor((blockCoordinate * blockSize) / WORLD_REGION_METRES);
-}
-
 function parseRegionKey(key: string): [number, number] {
   const parts = REGION_KEY.exec(key);
   if (!parts) {
@@ -1091,35 +1212,31 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
     const key = `${x},${z}`;
     let region = regions.get(key);
     if (!region) {
-      region = { chunks: [], zombies: [], entities: [], piles: [] };
+      region = { chunks: [], zombies: [], entities: [], piles: [], vehicles: [] };
       regions.set(key, region);
     }
     return region;
   };
-  snapshot.world.diffs.chunks.forEach((chunk, order) => {
-    const x = Math.floor(chunk.cx / regionChunks);
-    const z = Math.floor(chunk.cz / regionChunks);
-    const pairs = chunk.cells.map(({ base, id }) => `${base}\u0000${id}`);
-    const palette = [...new Set(chunk.cells.flatMap(({ base, id }) => [base, id]))].sort();
-    const paletteIndex = new Map(palette.map((id, index) => [id, index]));
-    const runs: Run[] = [];
-    for (let index = 0; index < chunk.cells.length; index++) {
-      const cell = chunk.cells[index]!;
-      const previous = runs.at(-1);
-      if (previous && previous.start + previous.length === cell.index && pairs[index] === pairs[index - 1]) {
-        previous.length += 1;
-      } else {
-        runs.push({ start: cell.index, length: 1, base: paletteIndex.get(cell.base)!, id: paletteIndex.get(cell.id)! });
-      }
+  let chunkOrder = 0;
+  for (const { cx, cz, chunks } of snapshot.world.columns) {
+    const region = getRegion(Math.floor(cx / regionChunks), Math.floor(cz / regionChunks));
+    for (const chunk of chunks) {
+      region.chunks.push({ cx, cz, order: chunkOrder, ...chunk });
+      chunkOrder += 1;
     }
-    getRegion(x, z).chunks.push({ cx: chunk.cx, cy: chunk.cy, cz: chunk.cz, order, palette, runs });
-  });
+  }
   snapshot.world.zombies.zombies.forEach((entry, order) => {
     const [x, , z] = entry.zombie.body.pos;
     getRegion(regionIndex(x, worldOptions.blockSize), regionIndex(z, worldOptions.blockSize)).zombies.push({
       ...entry,
       order,
     });
+  });
+  snapshot.world.vehicles.instances.forEach(({ id, vehicle }, order) => {
+    getRegion(
+      regionIndex(vehicle.origin[0], worldOptions.blockSize),
+      regionIndex(vehicle.origin[2], worldOptions.blockSize),
+    ).vehicles.push({ order, id, vehicle });
   });
   snapshot.character.inventory.entities.entities.forEach((entity, order) => {
     getRegion(
@@ -1137,6 +1254,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
   const wire: WirePayload = {
     world: {
       id: snapshot.world.id,
+      ...(snapshot.world.power ? { power: structuredClone(snapshot.world.power) } : {}),
       options: {
         ...worldOptions,
         seed: snapshot.character.simulation.seed,
@@ -1150,7 +1268,9 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
         acidGlobs: [...snapshot.world.zombies.acidGlobs],
         acidPuddles: [...snapshot.world.zombies.acidPuddles],
       },
+      vehiclesNextId: snapshot.world.vehicles.nextId,
       blockEntitiesNextUid: savedInventory.entities.nextUid,
+      ...(savedInventory.entities.reserved ? { blockEntitiesReserved: [...savedInventory.entities.reserved] } : {}),
       spawned: [...snapshot.world.spawned],
       rolledColumns: [...snapshot.world.rolledColumns],
     },
@@ -1191,29 +1311,38 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
 }
 
 function restoreWirePayload(wire: WirePayload): SaveSnapshot {
-  const chunks: { order: number; chunk: SaveSnapshot['world']['diffs']['chunks'][number] }[] = [];
+  const chunks: EncodedChunk[] = [];
   const zombies: { order: number; id: number; zombie: ZombieState }[] = [];
   const entities: BlockEntityState[] = [];
   const piles: InventoryState['piles'] = [];
   for (const region of Object.values(wire.world.regions)) {
-    for (const encoded of region.chunks) {
-      const cells: SaveSnapshot['world']['diffs']['chunks'][number]['cells'] = [];
-      for (const run of encoded.runs) {
-        for (let offset = 0; offset < run.length; offset++) {
-          cells.push({ index: run.start + offset, base: encoded.palette[run.base]!, id: encoded.palette[run.id]! });
-        }
-      }
-      chunks.push({ order: encoded.order, chunk: { cx: encoded.cx, cy: encoded.cy, cz: encoded.cz, cells } });
-    }
+    chunks.push(...region.chunks);
     zombies.push(...region.zombies);
     entities.push(...region.entities.map(({ order: _order, entity }) => entity));
     piles.push(...region.piles.map(({ order: _order, pile }) => pile));
   }
   const ordered = <T extends { order: number }>(values: T[]): T[] => values.sort((a, b) => a.order - b.order);
+  // A column's chunks are consecutive in order, so a change of column starts the next one.
+  const columns: SavedColumn[] = [];
+  for (const { cx, cz, order: _order, ...chunk } of ordered(chunks)) {
+    const column = columns.at(-1);
+    if (column?.cx === cx && column.cz === cz) {
+      column.chunks.push(chunk);
+    } else {
+      columns.push({ cx, cz, chunks: [chunk] });
+    }
+  }
   const snapshot: SaveSnapshot = {
     world: {
       id: wire.world.id,
-      diffs: { chunks: ordered(chunks).map(({ chunk }) => chunk) },
+      ...(wire.world.power ? { power: structuredClone(wire.world.power) } : {}),
+      columns,
+      vehicles: {
+        nextId: wire.world.vehiclesNextId,
+        instances: ordered(Object.values(wire.world.regions).flatMap((region) => region.vehicles)).map(
+          ({ order: _order, ...entry }) => entry,
+        ),
+      },
       zombies: { ...wire.world.zombieSystem, zombies: ordered(zombies).map(({ order: _order, ...entry }) => entry) },
       spawned: [...wire.world.spawned],
       rolledColumns: [...wire.world.rolledColumns],
@@ -1229,6 +1358,7 @@ function restoreWirePayload(wire: WirePayload): SaveSnapshot {
           entities: ordered(Object.values(wire.world.regions).flatMap((region) => region.entities)).map(
             ({ entity }) => entity,
           ),
+          ...(wire.world.blockEntitiesReserved ? { reserved: [...wire.world.blockEntitiesReserved] } : {}),
         },
       },
     },
@@ -1236,46 +1366,48 @@ function restoreWirePayload(wire: WirePayload): SaveSnapshot {
   return snapshot;
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: combines run ordering, palette, and maximality invariants for one chunk.
-function encodeChunkRunsValidate(chunks: EncodedChunk[], path: string): void {
-  const chunkKeys = new Set<string>();
-  for (const [ci, chunk] of chunks.entries()) {
-    const chunkPath = `${path}.chunks[${ci}]`;
-    const key = `${chunk.cx},${chunk.cy},${chunk.cz}`;
-    if (chunkKeys.has(key)) {
-      throw new Error(`Duplicate chunk ${key}`);
+/** Runs cover the chunk in order and are maximal, so each chunk has exactly one encoding. */
+function validateSavedChunk(chunk: SavedChunk, path: string): void {
+  if (chunk.palette.some((id, i) => i > 0 && chunk.palette[i - 1]! >= id)) {
+    throw new Error(`Invalid RLE palette at ${path}.palette`);
+  }
+  const used = new Set<number>();
+  let end = 0;
+  let previousId: number | undefined;
+  for (const [ri, run] of chunk.runs.entries()) {
+    if (run.length === 0 || run.start !== end || run.id >= chunk.palette.length) {
+      throw new Error(`Malformed RLE run at ${path}.runs[${ri}]`);
     }
-    chunkKeys.add(key);
-    if (
-      new Set(chunk.palette).size !== chunk.palette.length ||
-      chunk.palette.some((id, i) => i > 0 && chunk.palette[i - 1]! >= id)
-    ) {
-      throw new Error(`Invalid RLE palette at ${chunkPath}.palette`);
+    if (run.id === previousId) {
+      throw new Error(`Non-maximal RLE runs at ${path}.runs[${ri}]`);
     }
-    const used = new Set<number>();
-    let end = 0;
-    let previous: Run | undefined;
-    for (const [ri, run] of chunk.runs.entries()) {
-      if (
-        run.length === 0 ||
-        run.start + run.length > CHUNK_VOLUME ||
-        run.start < end ||
-        run.base === run.id ||
-        run.base >= chunk.palette.length ||
-        run.id >= chunk.palette.length
-      ) {
-        throw new Error(`Malformed RLE run at ${chunkPath}.runs[${ri}]`);
+    used.add(run.id);
+    end = run.start + run.length;
+    previousId = run.id;
+  }
+  if (end !== CHUNK_VOLUME) {
+    throw new Error(`RLE runs do not cover the chunk at ${path}.runs`);
+  }
+  if (used.size !== chunk.palette.length) {
+    throw new Error(`Unused RLE palette entry at ${path}.palette`);
+  }
+}
+
+function validateSavedColumns(columns: readonly SavedColumn[]): void {
+  for (const [index, column] of columns.entries()) {
+    const path = `world.columns[${index}]`;
+    const previous = columns[index - 1];
+    if (previous && (previous.cx > column.cx || (previous.cx === column.cx && previous.cz >= column.cz))) {
+      throw new Error(`Unsorted or duplicate saved column at ${path}`);
+    }
+    if (column.chunks.length === 0) {
+      throw new Error(`Empty saved column at ${path}`);
+    }
+    for (const [ci, chunk] of column.chunks.entries()) {
+      if (ci > 0 && column.chunks[ci - 1]!.cy >= chunk.cy) {
+        throw new Error(`Unsorted or duplicate saved chunk at ${path}.chunks[${ci}]`);
       }
-      if (previous && end === run.start && previous.base === run.base && previous.id === run.id) {
-        throw new Error(`Non-maximal RLE runs at ${chunkPath}.runs[${ri}]`);
-      }
-      used.add(run.base);
-      used.add(run.id);
-      end = run.start + run.length;
-      previous = run;
-    }
-    if (used.size !== chunk.palette.length) {
-      throw new Error(`Unused RLE palette entry at ${chunkPath}.palette`);
+      validateSavedChunk(chunk, `${path}.chunks[${ci}]`);
     }
   }
 }
@@ -1308,17 +1440,32 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
   const zombieOrders: number[] = [];
   const entityOrders: number[] = [];
   const pileOrders: number[] = [];
+  const vehicleOrders: number[] = [];
   for (const [regionKey, region] of Object.entries(wire.world.regions)) {
-    const path = `payload.world.regions[${JSON.stringify(regionKey)}]`;
     const [regionX, regionZ] = parseRegionKey(regionKey);
     if (regions.has(regionKey)) {
       throw new Error(`Duplicate region ${regionKey}`);
     }
     regions.add(regionKey);
-    if (region.chunks.length + region.zombies.length + region.entities.length + region.piles.length === 0) {
+    if (
+      region.chunks.length +
+        region.zombies.length +
+        region.entities.length +
+        region.piles.length +
+        region.vehicles.length ===
+      0
+    ) {
       throw new Error(`Empty region ${regionKey}`);
     }
-    encodeChunkRunsValidate(region.chunks, path);
+    for (const { order, vehicle } of region.vehicles) {
+      vehicleOrders.push(order);
+      if (
+        regionIndex(vehicle.origin[0], worldOptions.blockSize) !== regionX ||
+        regionIndex(vehicle.origin[2], worldOptions.blockSize) !== regionZ
+      ) {
+        throw new Error('Vehicle is in the wrong region');
+      }
+    }
     for (const chunk of region.chunks) {
       chunkOrders.push(chunk.order);
       const key = `${chunk.cx},${chunk.cy},${chunk.cz}`;
@@ -1381,6 +1528,7 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
   checkOrder(zombieOrders, 'zombie');
   checkOrder(entityOrders, 'block entity');
   checkOrder(pileOrders, 'pile');
+  checkOrder(vehicleOrders, 'vehicle');
   if (
     new Set(wire.world.rolledColumns).size !== wire.world.rolledColumns.length ||
     wire.world.rolledColumns.some((key) => {
@@ -1397,11 +1545,16 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
     spawnKeys.add(key);
   }
   const snapshot = restoreWirePayload(wire);
+  assertVehicleState(snapshot.world.vehicles);
+  validateSavedColumns(snapshot.world.columns);
   assertAimState(snapshot.character.aim);
   assertAimWobbleNoiseState(snapshot.character.aim.wobbleNoise);
   validateActionReferences(snapshot);
-  collectItemIds(savedItemTree(snapshot.character.inventory), snapshot.character.inventory.nextItemUid);
-  for (const { item, path } of savedItemTree(snapshot.character.inventory)) {
+  collectItemIds(
+    savedItemTree(snapshot.character.inventory, snapshot.world.vehicles),
+    snapshot.character.inventory.nextItemUid,
+  );
+  for (const { item, path } of savedItemTree(snapshot.character.inventory, snapshot.world.vehicles)) {
     if (item.firearm) {
       if (item.count !== 1) {
         throw new Error(`Mechanical firearm state needs one item at ${path}`);
@@ -1419,12 +1572,6 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
   }
   if (snapshot.world.id === snapshot.character.id) {
     throw new Error('World and character IDs must be distinct');
-  }
-  if (
-    new Set(snapshot.world.diffs.chunks.map(({ cx, cy, cz }) => `${cx},${cy},${cz}`)).size !==
-    snapshot.world.diffs.chunks.length
-  ) {
-    throw new Error('Duplicate chunk diff');
   }
   if (new Set(snapshot.world.zombies.zombies.map(({ id }) => id)).size !== snapshot.world.zombies.zombies.length) {
     throw new Error('Duplicate zombie id');
@@ -1454,7 +1601,7 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
 
 function validateWorkItems(tree: readonly { item: ItemState }[], itemsByUid: ReadonlyMap<number, ItemState>): void {
   for (const { item } of tree) {
-    if (item.work && (item.type !== WORK_IN_PROGRESS || item.work.elapsed > item.work.duration)) {
+    if (item.work && item.work.elapsed > item.work.duration) {
       throw new Error('Invalid craft work payload');
     }
     if (item.work?.repairTargetUid !== undefined) {
@@ -1469,20 +1616,37 @@ function validateWorkItems(tree: readonly { item: ItemState }[], itemsByUid: Rea
 function ownsLongActionItem(
   job: SaveSnapshot['character']['longAction']['job'],
   tree: readonly { item: ItemState }[],
+  vehicles: VehicleInstancesState,
 ): boolean {
   if (job?.jobType === 'craft') {
     return tree.some(({ item }) => item.uid === job.workUid && item.work !== undefined);
   }
   if (job?.jobType === 'reading') {
-    return tree.some(({ item }) => item.uid === job.bookUid && item.type !== WORK_IN_PROGRESS);
+    return tree.some(({ item }) => item.uid === job.bookUid && item.work === undefined);
   }
   if (job?.jobType === 'forceDoor') {
-    return tree.some(({ item }) => item.uid === job.toolUid && item.type !== WORK_IN_PROGRESS);
+    return tree.some(({ item }) => item.uid === job.toolUid && item.work === undefined);
   }
   if (job?.jobType === 'treatment') {
     return tree.some(({ item }) => item.uid === job.itemUid && item.type === job.itemType);
   }
+  if (job?.jobType === 'vehicleWork') {
+    const vehicle = vehicles.instances.find(({ id }) => id === job.vehicleId)?.vehicle;
+    const fitting = vehicle?.fittings.find(({ id }) => id === job.fittingId);
+    const item = tree.find(({ item: candidate }) => candidate.uid === job.itemUid)?.item;
+    return job.kind === 'remove' ? fitting?.item.uid === job.itemUid : item !== undefined && fitting === undefined;
+  }
   return true;
+}
+
+function validateFoodWatermarks(snapshot: SaveSnapshot, tree: readonly { item: ItemState }[]): void {
+  const { clock: savedClock, time } = snapshot.character.simulation;
+  const foodTimestamp = foodMillisecondsAt(savedClock.start + time * savedClock.ratio);
+  for (const { item } of tree) {
+    if (item.foodExposure && item.foodExposure.settledAtGameMilliseconds !== foodTimestamp) {
+      throw new Error('Food exposure watermark differs from snapshot');
+    }
+  }
 }
 
 function validateActionReferences(snapshot: SaveSnapshot): void {
@@ -1495,10 +1659,11 @@ function validateActionReferences(snapshot: SaveSnapshot): void {
   ) {
     throw new Error('Running forcing action cannot use compression');
   }
-  const tree = [...savedItemTree(snapshot.character.inventory)];
+  const tree = [...savedItemTree(snapshot.character.inventory, snapshot.world.vehicles)];
+  validateFoodWatermarks(snapshot, tree);
   const itemsByUid = new Map(tree.map(({ item }) => [item.uid, item]));
   validateWorkItems(tree, itemsByUid);
-  if (!ownsLongActionItem(job, tree)) {
+  if (!ownsLongActionItem(job, tree, snapshot.world.vehicles)) {
     let reason = 'Missing craft work item';
     if (job?.jobType === 'reading') {
       reason = 'Missing reading book';
@@ -1514,6 +1679,10 @@ function validateActionReferences(snapshot: SaveSnapshot): void {
     !snapshot.character.inventory.entities.entities.some(({ uid }) => uid === job.entityUid)
   ) {
     throw new Error('Missing forcing target');
+  }
+  const { entities } = snapshot.character.inventory;
+  if (entities.reserved?.some((uid) => !entities.entities.some((entity) => entity.uid === uid))) {
+    throw new Error('Missing reserved block entity');
   }
   if (snapshot.character.player.ladder?.on === false && !grabbedLadder(snapshot)) {
     throw new Error('Missing grabbed ladder');
@@ -1532,10 +1701,11 @@ function grabbedLadder(
 
 function validateItemContentReferences(
   state: SaveSnapshot['character']['inventory'],
-  check: (kind: SaveContentKind, id: string, path: string) => void,
+  vehicles: VehicleInstancesState,
+  check: (kind: SaveContentKind, id: string, path: string, item?: ItemState) => void,
 ): void {
-  for (const { item, path } of savedItemTree(state)) {
-    check('item', item.type, `${path}.type`);
+  for (const { item, path } of savedItemTree(state, vehicles)) {
+    check('item', item.type, `${path}.type`, item);
     if (item.firearm?.roundType) {
       check('item', item.firearm.roundType, `${path}.firearm.roundType`);
     }
@@ -1568,16 +1738,18 @@ function validateItemContentReferences(
 }
 
 function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLookup): void {
-  const check = (kind: SaveContentKind, id: string, path: string) => {
-    if (!lookup(kind, id)) {
+  const check = (kind: SaveContentKind, id: string, path: string, item?: ItemState) => {
+    if (!lookup(kind, id, item)) {
       throw new Error(`Unknown ${kind} content id "${id}" at ${path}`);
     }
   };
-  for (const chunk of snapshot.world.diffs.chunks) {
-    for (const [index, cell] of chunk.cells.entries()) {
-      check('block', cell.base, `world.diffs.chunks.${chunk.cx},${chunk.cy},${chunk.cz}.cells[${index}].base`);
-      check('block', cell.id, `world.diffs.chunks.${chunk.cx},${chunk.cy},${chunk.cz}.cells[${index}].id`);
-    }
+  const savedBlocks = snapshot.world.columns.flatMap(({ cx, cz, chunks }) =>
+    chunks.flatMap(({ cy, palette }) =>
+      palette.map((id, index) => ({ id, path: `world.columns.${cx},${cy},${cz}.palette[${index}]` })),
+    ),
+  );
+  for (const { id, path } of savedBlocks) {
+    check('block', id, path);
   }
   if (snapshot.character.scenarioRun) {
     check('scenario', snapshot.character.scenarioRun.scenario, 'character.scenarioRun.scenario');
@@ -1596,7 +1768,10 @@ function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLo
   ) {
     throw new Error('Duplicate known recipe');
   }
-  validateItemContentReferences(snapshot.character.inventory, check);
+  validateItemContentReferences(snapshot.character.inventory, snapshot.world.vehicles, check);
+  for (const { id, vehicle } of snapshot.world.vehicles.instances) {
+    check('vehicleBlueprint', vehicle.blueprint, `world.vehicles.${id}.blueprint`);
+  }
   for (const [ei, entity] of snapshot.character.inventory.entities.entities.entries()) {
     check('furniture', entity.type, `character.inventory.entities[${ei}].type`);
   }
@@ -1638,16 +1813,15 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
     obj({
       world: obj({
         id: str({ nonEmpty: true }),
-        diffs: obj({
-          chunks: arr(
-            obj({
-              cx: safeInt,
-              cy: safeInt,
-              cz: safeInt,
-              cells: arr(obj({ index: nonNegativeInt, base: str({ id: true }), id: str({ id: true }) })),
-            }),
-          ),
-        }),
+        vehicles: vehiclesStateSchema,
+        power: opt(powerState),
+        columns: arr(
+          obj({
+            cx: safeInt,
+            cz: safeInt,
+            chunks: arr(obj({ cy: safeInt, palette: arr(str({ id: true }), 1), runs: arr(savedRun, 1) }), 1),
+          }),
+        ),
         zombies: obj({
           nextEntityId: positiveInt,
           nextPuddleId: nonNegativeInt,
@@ -1678,6 +1852,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
     snapshot,
     'snapshot',
   );
+  validateSavedColumns(snapshot.world.columns);
   assertAimState(snapshot.character.aim);
   assertAimWobbleNoiseState(snapshot.character.aim.wobbleNoise);
   validateActionReferences(snapshot);
@@ -1700,6 +1875,11 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
       }
     }
   }
+  assertVehicleState(snapshot.world.vehicles);
+  collectItemIds(
+    savedItemTree(snapshot.character.inventory, snapshot.world.vehicles),
+    snapshot.character.inventory.nextItemUid,
+  );
   const blockEntities = snapshot.character.inventory.entities;
   if (blockEntities.nextUid <= Math.max(0, ...blockEntities.entities.map(({ uid }) => uid))) {
     throw new Error('Invalid next block entity id');
@@ -1759,7 +1939,16 @@ export async function encodeSave(snapshot: SaveSnapshot, options: EncodeSaveOpti
     checksum: await sha256(payloadBytes),
     payload,
   };
-  return canonicalBytes(envelope);
+  return gzip(canonicalBytes(envelope));
+}
+
+/** Unchecked version metadata of a save this build may refuse, for describing it to the player. */
+export async function readSaveVersionMetadata(input: Uint8Array): Promise<Partial<SaveVersionIdentity> | undefined> {
+  const envelopeBytes = await gunzipBounded(input.slice(), envelopeLimit(DEFAULT_MAX_PAYLOAD_BYTES));
+  const envelope = JSON.parse(new TextDecoder().decode(envelopeBytes)) as unknown;
+  return isRecord(envelope) && isRecord(envelope.versionIdentity)
+    ? (envelope.versionIdentity as Partial<SaveVersionIdentity>)
+    : undefined;
 }
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ordered refusal gates must remain visible in the public decoder path.
@@ -1776,13 +1965,15 @@ export async function decodeSave(input: Uint8Array | ArrayBuffer, options: Decod
   if (!Number.isSafeInteger(maxPayloadBytes) || maxPayloadBytes < 1) {
     throw new Error('Invalid payload limit');
   }
-  if (bytes.byteLength > maxPayloadBytes + 1024 * 1024) {
+  const maxEnvelopeBytes = envelopeLimit(maxPayloadBytes);
+  if (bytes.byteLength > maxEnvelopeBytes) {
     throw new Error('Save envelope exceeds configured limit');
   }
+  const envelopeBytes = await gunzipBounded(bytes, maxEnvelopeBytes);
   let raw: string;
   let envelope: unknown;
   try {
-    raw = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    raw = new TextDecoder('utf-8', { fatal: true }).decode(envelopeBytes);
     envelope = JSON.parse(raw) as unknown;
   } catch (error) {
     throw new Error('Invalid or truncated UTF-8 JSON save', { cause: error });

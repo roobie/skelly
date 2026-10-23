@@ -1,6 +1,10 @@
 {
   "furniture": [
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#657063",
       "container": {
         "pockets": [
@@ -11,6 +15,7 @@
         ]
       },
       "id": "hq_weapon_cabinet",
+      "material": "wood",
       "name": "Weapon cabinet",
       "shape": [
         {
@@ -183,8 +188,13 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#77664c",
       "id": "hq_meeting_table",
+      "material": "wood",
       "name": "Meeting table",
       "shape": [
         {
@@ -212,8 +222,13 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#59634e",
       "id": "hq_generator",
+      "material": "wood",
       "name": "Generator",
       "shape": [
         {

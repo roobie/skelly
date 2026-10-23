@@ -1,11 +1,11 @@
-import { Box3, type Group, type Matrix4, type Mesh, type MeshLambertMaterial, Vector3 } from 'three';
+import { Box3, type Group, Matrix4, type Mesh, type MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { BlockEntities, doorPanel, panelFor, searchTime } from '../src/core/blockEntities.ts';
+import { BlockEntities, doorPanel, panelFor, poseKey, searchTime } from '../src/core/blockEntities.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { buildRegistry, type TemplateDef } from '../src/core/content.ts';
 import { pickFurniture } from '../src/core/furniturePick.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
-import { HANDLING, Inventory } from '../src/core/inventory.ts';
+import { handlingWeights, Inventory } from '../src/core/inventory.ts';
 import { couldFit, ItemFactory } from '../src/core/items.ts';
 import type { Body } from '../src/core/physics.ts';
 import { reachTuning } from '../src/core/reach.ts';
@@ -21,6 +21,7 @@ import {
 import { DOOR_ACTION, registerDoorAction } from '../src/game/doorAction.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterialSource } from './economyFixtures.ts';
 
 const registry = baseRegistry();
 
@@ -105,7 +106,9 @@ describe('furniture', () => {
     const [w, h] = registry.items.get('canned_beans')!.size;
     const cells = w * h;
     const expected =
-      def.container!.pockets[0]!.handlingSimSeconds + inv.pocketHandling(hoodie, 0) + 2 * HANDLING.perCell * cells;
+      def.container!.pockets[0]!.handlingSimSeconds +
+      inv.pocketHandling(hoodie, 0) +
+      2 * handlingWeights(registry).perCell * cells;
     expect(plan.ok && plan.time).toBeCloseTo(expected);
   });
 
@@ -267,6 +270,8 @@ describe('furniture', () => {
       name: 'Fixture shaped furniture',
       size: [1, 2, 1] as [number, number, number],
       color: '#123456',
+      breach: fixtureBreach(),
+      material: FIXTURE_MATERIAL,
       shape: [
         { position: [0.1, 0, 0.1], size: [0.3, 0.5, 0.3] },
         { position: [0.6, 0.5, 0.1], size: [0.3, 0.5, 0.3] },
@@ -274,6 +279,7 @@ describe('furniture', () => {
       solidFill: 0.01,
     };
     const { registry: fixtureRegistry, issues } = buildRegistry([
+      fixtureMaterialSource(),
       { source: 'furniture-render-fixture.json', data: { furniture: [fixture] } },
     ]);
     expect(issues).toEqual([]);
@@ -297,11 +303,14 @@ describe('furniture', () => {
       name: 'Fixture plaque',
       size: [1, 1, 1],
       color: '#99794c',
+      breach: fixtureBreach(),
+      material: FIXTURE_MATERIAL,
       mount: 'wall',
       solid: false,
       shape: [{ position: [0, 0, 0.875], size: [1, 1, 0.125] }],
     };
     const { registry: fixtureRegistry, issues } = buildRegistry([
+      fixtureMaterialSource(),
       { source: 'plaque-render-fixture.json', data: { furniture: [fixture] } },
     ]);
     expect(issues).toEqual([]);
@@ -324,30 +333,120 @@ describe('furniture', () => {
     }
   });
 
-  it('picks the closed HQ safe only through its visible door', () => {
-    const definition = registry.furniture.get('camp_hq_safe')!;
+  it('repaints a door leaf once a blow breaks it, on the view that already drew it intact', () => {
     const entities = new BlockEntities(registry);
-    const safe = entities.add({ type: definition.id, pos: [4, 1, 8], size: definition.size, facing: 'n' })!;
+    const door = entities.add({ type: 'wood_door', pos: [4, 1, 0], size: [2, 4, 1], facing: 'n' })!;
     const furniture = new FurnitureMeshes(BLOCK_SIZE);
+    const colours = (): string[] => {
+      const found: string[] = [];
+      furniture.group.traverse((child) => {
+        if ((child as Mesh).isMesh) {
+          found.push(((child as Mesh).material as MeshLambertMaterial).color.getHexString());
+        }
+      });
+      return found.sort();
+    };
     furniture.sync(entities);
-    furniture.group.updateMatrixWorld(true);
+    const intact = colours();
+    for (let blows = 0; entities.bash(door, 1e6) !== 'broken'; blows++) {
+      expect(blows).toBeLessThan(1000);
+    }
+    furniture.sync(entities);
+    expect(colours()).not.toEqual(intact);
+  });
 
-    const assembly = furniture.group.children[0] as Group;
-    expect(assembly.children).toHaveLength(2);
-    const body = assembly.children[0] as Mesh;
-    const door = assembly.children[1] as Group;
-    expect(door.children).toHaveLength(2);
-    const panel = door.children[0] as Mesh;
-    const handle = door.children[1] as Mesh;
-    const bodyBounds = new Box3().setFromObject(body);
-    const panelBounds = new Box3().setFromObject(panel);
-    const bodyMaterial = body.material as MeshLambertMaterial;
-    const panelMaterial = panel.material as MeshLambertMaterial;
-    const handleMaterial = handle.material as MeshLambertMaterial;
-    expect(panelMaterial.color.getHex()).not.toBe(bodyMaterial.color.getHex());
-    expect(handleMaterial.color.getHex()).not.toBe(panelMaterial.color.getHex());
-    expect(panelBounds.min.z).toBeLessThan(bodyBounds.min.z);
-    expect(panelBounds.max.z).toBeCloseTo(bodyBounds.min.z);
+  it('repaints a door leaf damaged short of breaking, on the view that already drew it intact', () => {
+    const entities = new BlockEntities(registry);
+    const door = entities.add({ type: 'wood_door', pos: [4, 1, 0], size: [2, 4, 1], facing: 'n' })!;
+    const furniture = new FurnitureMeshes(BLOCK_SIZE);
+    const colours = (): string[] => {
+      const found: string[] = [];
+      furniture.group.traverse((child) => {
+        if ((child as Mesh).isMesh) {
+          found.push(((child as Mesh).material as MeshLambertMaterial).color.getHexString());
+        }
+      });
+      return found.sort();
+    };
+    furniture.sync(entities);
+    const intact = colours();
+    const { durability } = entities.defOf(door).breach;
+    expect(entities.bash(door, durability * 0.8)).toBe('damaged');
+    furniture.sync(entities);
+    expect(door.broken).toBeUndefined();
+    expect(colours()).not.toEqual(intact);
+  });
+
+  it('keeps a drawn door leaf when a blow leaves its look unchanged', () => {
+    const entities = new BlockEntities(registry);
+    const door = entities.add({ type: 'wood_door', pos: [4, 1, 0], size: [2, 4, 1], facing: 'n' })!;
+    const { durability, minimumStrength } = entities.defOf(door).breach;
+    const furniture = new FurnitureMeshes(BLOCK_SIZE);
+    entities.bash(door, durability * 0.8);
+    furniture.sync(entities);
+    const [drawn] = furniture.group.children;
+    const { standing } = entities;
+    expect(entities.bash(door, minimumStrength)).toBe('damaged');
+    expect(entities.standing).toBe(standing);
+    furniture.sync(entities);
+    expect(furniture.group.children[0]).toBe(drawn);
+  });
+
+  it("repaints a piece that isn't a door only when its damage crosses into another of its material's steps", () => {
+    const entities = new BlockEntities(registry);
+    const { uid } = entities.add({ type: 'crate', pos: [0, 0, 0], size: [2, 2, 2], facing: 'n' })!;
+    const def = entities.defOf(entities.byUid(uid)!);
+    const steps = registry.furnitureMaterials.get(def.material)?.damaged ?? [];
+    if (steps.length < 2) {
+      throw new Error(`the crate's material "${def.material}" needs two damage steps for this test`);
+    }
+    const furniture = new FurnitureMeshes(BLOCK_SIZE);
+    /** The crate's pose key and drawn colour once its saved damage is this share of its durability. */
+    const drawnAt = (fraction: number) => {
+      const state = entities.snapshotState();
+      entities.restoreState({
+        ...state,
+        entities: state.entities.map(({ damage: _saved, ...saved }) =>
+          saved.uid === uid && fraction > 0 ? { ...saved, damage: fraction * def.breach.durability } : saved,
+        ),
+      });
+      const piece = entities.byUid(uid)!;
+      furniture.sync(entities);
+      const mesh = furniture.group.children[0] as Mesh;
+      return {
+        pose: poseKey(piece, entities.wearOf(piece)),
+        colour: (mesh.material as MeshLambertMaterial).color.getHexString(),
+      };
+    };
+    const intact = drawnAt(0);
+    const first = drawnAt(steps[0]!.from);
+    const deeperInFirst = drawnAt((steps[0]!.from + steps[1]!.from) / 2);
+    const second = drawnAt(steps[1]!.from);
+    expect(first.colour).not.toBe(intact.colour);
+    expect(deeperInFirst).toEqual(first);
+    expect(second.pose).not.toBe(first.pose);
+    expect(second.colour).not.toBe(first.colour);
+  });
+
+  it('picks a closed body-door container only through its visible door, not its body', () => {
+    const fixture = {
+      id: 'fixture_safe',
+      name: 'Fixture safe',
+      size: [3, 2, 2],
+      color: '#59656a',
+      breach: fixtureBreach(),
+      material: FIXTURE_MATERIAL,
+      container: { pockets: [{ grid: [2, 2], handlingSimSeconds: 1 }] },
+      door: { handlingSimSeconds: 0.5, methods: {} },
+      shape: [{ position: [0, 0, 0], size: [3, 2, 2] }],
+    };
+    const { registry: fixtureRegistry, issues } = buildRegistry([
+      fixtureMaterialSource(),
+      { source: 'safe-pick-fixture.json', data: { furniture: [fixture] } },
+    ]);
+    expect(issues).toEqual([]);
+    const entities = new BlockEntities(fixtureRegistry);
+    const safe = entities.add({ type: fixture.id, pos: [4, 1, 8], size: [3, 2, 2], facing: 'n' })!;
     const pick = (origin: [number, number, number], direction: [number, number, number], maxDistance: number) =>
       pickFurniture({ entities, origin, direction, maxDistance, blockSize: BLOCK_SIZE, isSolid: () => false });
     expect(pick([5.5, 2.5, 7], [0, 0, 1], 3)).toBe(safe);
@@ -415,11 +514,14 @@ describe('furniture', () => {
       name: 'Fixture body',
       size: [4, 2, 2],
       color: '#554f43',
+      breach: fixtureBreach(),
+      material: FIXTURE_MATERIAL,
       solid: false,
       container: { pockets: [{ grid: [6, 4], handlingSimSeconds: 1.2 }] },
       shape: [{ position: [0, 0, 0], size: [4, 0.5, 2] }],
     };
     const { registry: fixtureRegistry, issues } = buildRegistry([
+      fixtureMaterialSource(),
       { source: 'body-fixture.json', data: { furniture: [fixture] } },
     ]);
     expect(issues).toEqual([]);
@@ -465,7 +567,11 @@ describe('furniture', () => {
         const box = doorPanel(door, 0.5);
         const group = furniture.group.children[index]!;
         const panel = group.children[0] as import('three').Mesh;
-        const error = maxCornerError(panelCorners(box), renderedCorners(panel.matrixWorld));
+        // A detailed leaf is built in its own hinge frame: its core slab spans the panel's length and height, and its
+        // depth is the panel's thin side.
+        const { max } = panel.geometry.boundingBox!;
+        const slab = new Matrix4().makeScale(2 * max.x, 2 * max.y, Math.min(...box.size));
+        const error = maxCornerError(panelCorners(box), renderedCorners(panel.matrixWorld.clone().multiply(slab)));
         expect(error, `${door.facing} door ${open ? 'open' : 'closed'}`).toBeLessThan(0.001);
       }
     }

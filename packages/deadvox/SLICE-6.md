@@ -2,7 +2,7 @@
 read_if:
   - you're planning vehicle implementation, authoring or the Wheels playtest
   - you're applying the settled vehicle scope and deferred directions from issue 322
-  - you're integrating vehicle state with items, saves, collision or region simulation
+  - you're integrating vehicle state with items, saves, collision, authored placement or region simulation
   - you're building the heavy-part-hoist vehicle or impact detachment
 ---
 
@@ -26,7 +26,9 @@ The hatchback and pickup are the first transport hosts, with genuinely shared
 service parts and a freely placed capability-matched add-on. Two hosts expose
 accidental blueprint-specific restrictions; the add-on exposes a disguised fixed
 socket system. The motorbike follows after the four-wheel loop, rather than putting
-balance and lean on the first playtest's critical path.
+balance and lean on the first playtest's critical path. Each host is authored as
+content parts and a content blueprint, the hatchback remade from a real car, so no
+vehicle is authored twice; see `docs/vehicle-spike.md`, "The hatchback from content".
 
 Building starts from factory structures with compatible parts and add-ons, not raw
 rails and plates. Factory welded structure is one player-facing assembly while
@@ -36,7 +38,10 @@ fabrication or cutting.
 
 Heavy salvage uses a mobile heavy-part-hoist that is itself a vehicle, built and
 driven through the same vehicle systems. It is not a separate equipment kind or a
-workshop-only transfer exception. Field engine recovery therefore has a physical
+workshop-only transfer exception. Lifting is a capability of its fitted crane parts,
+not of a hoist vehicle kind: removing or breaking the crane removes the capability,
+and a salvaged crane stays an ordinary part, so no vehicle-wide flag can outlive the
+parts that justify it. Field engine recovery therefore has a physical
 workflow, with lifting, load ownership and clearance to prove. The hoist is required
 utility content alongside the two transport hosts, not a third transport host that
 reopens the roster choice.
@@ -76,11 +81,14 @@ interior visibility. A passing debug route or export tool is not that exit.
 
 ### Things, not a second item universe
 
-A removed vehicle part remains the same item: condition, finish, charge, liquid and
-contents must survive fitting and removal. Fitting adds placement, supports and
-joint state; it must not create another independently mutable copy of the item.
-Vehicle membership and ordinary inventory ownership are exclusive. A failed or
-interrupted transfer must not duplicate the part or consume it without a destination.
+Vehicle membership and ordinary inventory ownership are exclusive so salvage can
+retain the item's condition, resources and contents without reconciling two mutable
+copies. The production owner is `src/core/vehicleInstances.ts`, `VehicleInstances`;
+its parts join ordinary lookup and UID validation through `src/core/itemTree.ts`,
+`itemRoots` and `savedItemTree`. Factory service suggestions remain distinct from
+occupied fittings so an absent part does not erase its reinstall location or seal
+the build to blueprint sockets. Failed or interrupted transfers must retain the
+original owner until a destination has been admitted.
 
 VAT assembles things; the thing tool authors their shapes. The VAT export carries
 baked per-part collision geometry beside render geometry so simulation never
@@ -159,14 +167,15 @@ Glazing blocks bodies while transmitting sight and light; sound attenuation is
 explicit content. This keeps the driver's view, external observers and interior
 lighting consistent rather than hiding an opaque cabin behind a transparent mesh.
 Bullet interaction uses the combat material rules, not an inference from movement
-blocking. Gas sealing is a separate question. #1016 gates interior visibility.
+blocking. Gas sealing is a separate question.
 
 Fitted parts and their poses own both appearance and obstruction. Keep parked
-world collision and picking derived, not hand-authored per wreck. See
-`src/vehicles/solid.ts`, `solidBlocks`, and `src/core/blockEntities.ts`,
-`BlockEntities.hasPartAt`. The filled-column approximation is not an enterable-cabin
-or transparent-window model. Extend the consumers without treating that approximation
-as the cabin's authoritative empty space.
+world collision and picking derived, not hand-authored per wreck. The shared pose and
+part boxes are projected by `src/core/vehicleProjection.ts`, `projectVehicleParts`,
+and presentation groups each instance through `src/render/vehicles.ts`,
+`VehicleMeshes`. The filled-column approximation is not an enterable-cabin or
+transparent-window model. Extend the consumers without treating that approximation as
+the cabin's authoritative empty space.
 
 A moving body needs swept collision and a defined handoff to parked occupancy.
 Both representations derive from the same build and pose; neither may leave stale
@@ -208,7 +217,11 @@ resource amounts, vehicle pose and motion, occupants, lifted loads and any resum
 work. These are intended state obligations, not a parallel field schema. Extend
 owning types and `src/core/saveState.ts`, `SaveSnapshot`, as each obligation lands.
 Derived mass, capabilities, geometry caches and world occupancy are rebuilt from
-that truth, never restored as independent editable totals.
+that truth, never restored as independent editable totals. The parked owner crosses
+the durable boundary through `src/core/saveFormat.ts`, `makeWirePayload` and
+`restoreWirePayload`, rather than relying on a snapshot-only copy. Scenario
+registration must preserve saved builds instead of regenerating missing parts;
+see `src/game/layoutVehicles.ts`, `registerLayoutVehicles`.
 
 Saving in motion, during work or across detachment must be equivalent to continuing
 without a load; parking is not permission to erase momentum at save time. Settled
@@ -231,11 +244,9 @@ leaving saves to an integration finale.
    feasibility envelope so neither becomes a late exception. BR judges handling,
    the constrained boundary and the mass-placement difference. Select neither a
    library nor its version without evidence and the dependency-age check.
-2. **Authoring-to-game contract.** A shared exported thing must validate and load on
-   two hosts; a mod-authored compatible part needs no code edit. Refuse broken
-   references, invalid supports and unsupported capabilities. Exercise reflected
-   datums and baked collision geometry. Keep VAT production deployment in #323
-   rather than making a full editor a prerequisite for reproducible exports.
+2. **Authoring-to-game contract.** Settled in
+   `docs/vehicle-spike.md`, "Export contract". VAT production deployment stays in
+   #323 rather than making a full editor a prerequisite for reproducible exports.
 3. **Persistent parked instances and light salvage.** Replace selected wreck
    placements with vehicle-owned state. Prove independent instances, saved removals
    and contents, deterministic placement and cache invalidation. Add install,
@@ -247,7 +258,7 @@ leaving saves to an integration finale.
    controls and engine noise. Prove blocked entry/exit and swing refusal, moving-to-
    parked handoff, braking, lost propulsion and save/load in motion. Include safe
    placement when exiting a moving vehicle without arresting the vehicle. BR checks
-   interior visibility for #1016. Compare mass-placement variants while holding
+   interior visibility. Compare mass-placement variants while holding
    total mass, power and silhouette fixed; do not pin tuned trajectories.
 5. **Heavy-part-hoist vehicle and heavy salvage.** Build the hoist through the same
    authoring, instance and driving path, then add its lifting operation. Prove field

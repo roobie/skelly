@@ -2,22 +2,26 @@ import { describe, expect, it } from 'vitest';
 import { bodyIsClear, placeShamblerRing } from '../src/bench/shamblerPlacement.ts';
 import { type Body, bodyOverlapsBlock } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
-import {
-  ZombieSystem,
-  zombieAttackReachForType,
-  zombieAttackReachMetres,
-  zombieBodyDimensions,
-} from '../src/core/zombies.ts';
+import { zombieAttackReachForType, zombieAttackReachMetres, zombieBodyDimensions } from '../src/core/zombies.ts';
 import { spawnShamblers, spawnZombieType } from '../src/debug/shamblerSpawning.ts';
 import type { Engine } from '../src/game/engine.ts';
-import { createPlayerBody, PLAYER, physicsFor } from '../src/game/player.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { createPlayerBody, PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const SCALE = makeScale(0.5);
 const player = () => createPlayerBody(SCALE, 0, 1, 0);
+
+const footprint = (type: typeof registry.zombies extends ReadonlyMap<string, infer T> ? T : never): number => {
+  const body = zombieBodyDimensions(type, SCALE.blockSize);
+  return Math.max(body.halfWidth, body.halfDepth ?? body.halfWidth);
+};
+const largestType = [...registry.zombies.values()].reduce((best, type) =>
+  footprint(type) > footprint(best) ? type : best,
+);
 
 const testEngine = (isSolid: (x: number, y: number, z: number) => boolean, seed = 2026): Engine =>
   ({
@@ -44,6 +48,7 @@ const zombiesFor = (body: ReturnType<typeof player>, isSolid: (x: number, y: num
       movement: 'still',
       lit: false,
       lightSeenFrom: 40,
+      eyeHeightMetres: 1.3,
     }),
     dayPhase: () => dayStateAtHour(12),
     hurtPlayer: () => undefined,
@@ -88,13 +93,13 @@ describe('debug shambler spawning', () => {
     }
   });
 
-  it('debug-spawned amalgams pursue from beyond their scaled attack reach', () => {
+  it('debug-spawned largest-envelope zombies pursue from beyond their scaled attack reach', () => {
     const body = player();
     const solid = (_x: number, y: number) => y === 0;
     const engine = testEngine(solid, 73);
     const zombies = zombiesFor(body, solid);
 
-    expect(spawnZombieType(engine, body, zombies, { typeId: 'amalgam', count: 1 })).toBe(1);
+    expect(spawnZombieType(engine, body, zombies, { typeId: largestType.id, count: 1 })).toBe(1);
     const [id, zombie] = [...zombies.store.entries()][0]!;
     const initialDistance =
       Math.hypot(body.pos[0] - zombie.body.pos[0], body.pos[2] - zombie.body.pos[2]) * SCALE.blockSize;
@@ -110,8 +115,8 @@ describe('debug shambler spawning', () => {
     expect(remainingDistance).toBeLessThan(initialDistance);
   });
 
-  it('keeps the realized amalgam envelope clear when the debug path places it', () => {
-    const type = registry.zombies.get('amalgam')!;
+  it('keeps the realized largest envelope clear when the debug path places it', () => {
+    const type = largestType;
     const body = player();
     const floor = (_x: number, y: number) => y === 0;
     const openEngine = testEngine(floor, 73);
@@ -156,7 +161,7 @@ describe('debug shambler spawning', () => {
     const engine = testEngine(solid, 73);
     const zombies = zombiesFor(body, solid);
 
-    expect(spawnZombieType(engine, body, zombies, { typeId: 'amalgam', count: 1 })).toBe(1);
+    expect(spawnZombieType(engine, body, zombies, { typeId: type.id, count: 1 })).toBe(1);
     expect(bodyIsClear([...zombies.store.entries()][0]![1].body, solid)).toBe(true);
   });
 

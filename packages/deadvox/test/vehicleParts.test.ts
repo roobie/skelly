@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
+import { sizeFits } from '../src/core/items.ts';
+import { APC } from '../src/vehicles/apc.ts';
 import { pairAcross } from '../src/vehicles/authoring.ts';
+import { BOX_VAN } from '../src/vehicles/boxVan.ts';
 import { CATALOGUE } from '../src/vehicles/catalogue.ts';
 import {
   addFitting,
@@ -13,10 +16,12 @@ import {
   partTypeOf,
   removeFitting,
   supportProblems,
+  VOXEL,
 } from '../src/vehicles/model.ts';
 import { MOTORBIKE } from '../src/vehicles/motorbike.ts';
 import { PICKUP } from '../src/vehicles/pickup.ts';
 import { RANGE_ROVER, STRIPPED_REMOVED } from '../src/vehicles/rangeRover.ts';
+import { SEDAN } from '../src/vehicles/sedan.ts';
 import {
   GLASS,
   keyVoxel,
@@ -27,6 +32,8 @@ import {
   voxelKey,
 } from '../src/vehicles/voxels.ts';
 import { WEAR_MATERIALS, wearGrid, wearKey } from '../src/vehicles/wear.ts';
+import { baseRegistry } from './baseRegistry.ts';
+import { PLAYER } from './playerFixture.ts';
 
 const FACES = [
   [1, 0, 0],
@@ -49,7 +56,10 @@ const library = new PartLibrary(CATALOGUE);
 const BLUEPRINTS: readonly { readonly blueprint: Blueprint; readonly builds: readonly (readonly string[])[] }[] = [
   { blueprint: RANGE_ROVER, builds: [[], STRIPPED_REMOVED] },
   { blueprint: PICKUP, builds: [[]] },
+  { blueprint: BOX_VAN, builds: [[]] },
+  { blueprint: SEDAN, builds: [[]] },
   { blueprint: MOTORBIKE, builds: [[]] },
+  { blueprint: APC, builds: [[]] },
 ];
 
 describe.each(BLUEPRINTS)('$blueprint.id built from parts', ({ blueprint, builds }) => {
@@ -98,6 +108,87 @@ describe.each(BLUEPRINTS)('$blueprint.id built from parts', ({ blueprint, builds
       }
     }
     expect(Object.fromEntries(clashes)).toEqual({});
+  });
+});
+
+describe('the APC troop compartment', () => {
+  const registry = baseRegistry();
+  const crouched = registry.player.get('player')!.crouch.bodyHeightMetres;
+  const heightVoxels = Math.ceil(crouched / VOXEL);
+  const widthVoxels = Math.ceil((2 * PLAYER.halfWidth) / VOXEL);
+  const placed = (id: string) => library.placed(newInstance(APC, 'complete').fittings.find((f) => f.id === id)!);
+
+  /** Plan columns (x,z) where a fitted part, the ramp excepted, stands within the player's height of the floor. */
+  const blockedColumns = (floor: number): Set<string> => {
+    const blocked = new Set<string>();
+    const fitted = newInstance(APC, 'complete').fittings.filter(({ id }) => id !== 'ramp');
+    for (const key of fitted.flatMap((fitting) => [...library.placed(fitting).grid.keys()])) {
+      const [x, y, z] = keyVoxel(key);
+      if (y >= floor && y < floor + heightVoxels) {
+        blocked.add(`${x},${z}`);
+      }
+    }
+    return blocked;
+  };
+
+  /** The front-most x a player's body can reach from the ramp, walking in plan within the hull's width. */
+  const frontReached = (blocked: Set<string>, startX: number, zLow: number, zHigh: number): number => {
+    const fits = (x: number, z: number): boolean => {
+      for (let k = 0; k < widthVoxels ** 2; k += 1) {
+        if (blocked.has(`${x + (k % widthVoxels)},${z + Math.floor(k / widthVoxels)}`)) {
+          return false;
+        }
+      }
+      return z >= zLow && z + widthVoxels - 1 <= zHigh;
+    };
+    const seen = new Set<string>();
+    const queue: (readonly [number, number])[] = [];
+    const visit = (x: number, z: number): void => {
+      if (x >= startX && !seen.has(`${x},${z}`) && fits(x, z)) {
+        seen.add(`${x},${z}`);
+        queue.push([x, z]);
+      }
+    };
+    for (let z = zLow; z <= zHigh; z += 1) {
+      visit(startX, z);
+    }
+    for (const [x, z] of queue) {
+      visit(x + 1, z);
+      visit(x - 1, z);
+      visit(x, z + 1);
+      visit(x, z - 1);
+    }
+    return Math.max(startX - 1, ...queue.map(([x]) => x + widthVoxels - 1));
+  };
+
+  it('leaves a crouched player a free path from the rear ramp opening to the driver’s station', () => {
+    const [startX, floor] = placed('ramp').bounds.min;
+    const { min: seatMin } = placed('driver-seat').bounds;
+    const { min: farSide } = placed('hull-side-far').bounds;
+    const { max: nearSide } = placed('hull-side-near').bounds;
+    expect(frontReached(blockedColumns(floor), startX, farSide[2], nearSide[2])).toBeGreaterThanOrEqual(seatMin[0]);
+  });
+});
+
+describe('the APC stowage', () => {
+  const pockets = newInstance(APC, 'complete').fittings.flatMap(
+    (fitting) => partTypeOf(CATALOGUE, fitting).storage?.pockets ?? [],
+  );
+  const defs = [...baseRegistry().items.values()];
+  const holds = (def: (typeof defs)[number]): boolean =>
+    pockets.some(({ grid: [w, h] }) => sizeFits(def.size, { w, h }));
+
+  it('has fitted storage whose pockets are real grids', () => {
+    expect(pockets.length).toBeGreaterThan(0);
+    expect(pockets.filter(({ grid }) => !grid.every((cells) => Number.isInteger(cells) && cells >= 1))).toEqual([]);
+  });
+
+  it('holds a firearm in one pocket and ammunition in another', () => {
+    const firearms = defs.filter((def) => def.firearm !== undefined);
+    const ammunition = defs.filter((def) => def.category === 'ammo');
+    expect(firearms.length).toBeGreaterThan(0);
+    expect(firearms.some(holds)).toBe(true);
+    expect(ammunition.some(holds)).toBe(true);
   });
 });
 

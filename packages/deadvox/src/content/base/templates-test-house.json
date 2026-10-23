@@ -1,0 +1,1076 @@
+{
+  "templates": [
+    {
+      "id": "test_house_charging",
+      "layers": [["GGG", "GGG", "GGG"], ["...", "KK.", "KKX"], ["...", "KK.", "KK."]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["...", "...", "..."], ["RRR", "SSR", "SSS"], ["RRR", "SSR", "SSR"]]
+      },
+      "palette": {
+        ".": "air",
+        "G": {
+          "ground": true
+        },
+        "K": {
+          "furniture": "crate",
+          "items": [
+            {
+              "charge": 0.25,
+              "count": 1,
+              "item": "rechargeable_aa_battery",
+              "placement": "surface"
+            },
+            {
+              "charge": 0,
+              "count": 1,
+              "item": "flashlight",
+              "placement": "surface"
+            }
+          ]
+        },
+        "X": {
+          "fixed": true,
+          "furniture": "battery_charger"
+        }
+      },
+      "size": [3, 3, 3]
+    },
+    {
+      "id": "test_house_home",
+      "layers": [
+        [
+          "GGGGGGGGGGGGGGGGGGGGGGG",
+          "ppppppppppppppppppppGGG",
+          "ptttttttttppppppppppGGG",
+          "ptttttttttppppppppppGGG",
+          "ptttttttttppppppppppGGG",
+          "ptttttttttppppppppppGGG",
+          "ptttttttttppppppppppGGG",
+          "ptttttttttppppppppppGGG",
+          "ptttttttttppppppppppGGG",
+          "ptttttttttppppppppppGGG",
+          "ptttttttttppppppppppGGG",
+          "ptttttttttppppppppppGGG",
+          "ptttttttttppppppppppGGG",
+          "ptttttttttppppppppppGGG",
+          "ppppppppppppppppppppGGG"
+        ],
+        [
+          ".......................",
+          "ssssssssssssssssssss...",
+          "s.tttttt..a.pppppp.s...",
+          "s.tttttt..a.pppppp.s...",
+          "s.........a.......Ws...",
+          "s.........a.......Ws...",
+          "sL........aL.......s...",
+          "............H......s...",
+          "...................s...",
+          "s.........a........s...",
+          "s....ppp..a....ffffs...",
+          "s....ppp..a....ffffsss.",
+          "s.FF......a....ffffsss.",
+          "s.FF..CC..a....ffffsss.",
+          "ssssssssssssssssssss..."
+        ],
+        [
+          "RRRRRRRRRRBBBBBBBBBB...",
+          "bbbbbbbbbbbbbbbbbbbb...",
+          "b.tttttt..a..ppppp.b...",
+          "b.tttttt..a..ppppp.b...",
+          "b.........a.......Wb...",
+          "b.........a.......Wb...",
+          "bL........aL.......b...",
+          "............H......b...",
+          "...................b...",
+          "b.........a........b...",
+          "b....ppp..a........b...",
+          "b....ppp..a........bss.",
+          "b.FF......a........bss.",
+          "b.FF..CC..a........bss.",
+          "bbbbbbbbbbbbbbbbbbbb..."
+        ],
+        [
+          "RRRR..RRRRBBBBBBBBBB...",
+          "bbbb..bbbbbbbbbbbbbb...",
+          "b.........a...pppp.b...",
+          "b.........a...pppp.b...",
+          "b.........a.......Wb...",
+          "b.........a.......Wb...",
+          "bL........aL.......b...",
+          ".......................",
+          ".......................",
+          "b.........a........b...",
+          "b.........a........b...",
+          "b.........a........bss.",
+          "b.FF......a........bss.",
+          "b.FF......a........bss.",
+          "bbbb..bbbbbbbb..bbbb..."
+        ],
+        [
+          "RRRR..RRRRBBBBBBBBBB...",
+          "bbbb..bbbbbbbbbbbbbb...",
+          "b.........a....ppp.b...",
+          "b.........a....ppp.b...",
+          "b.........a.......Wb...",
+          "b.........a.......Wb...",
+          "b.........a........b...",
+          ".......................",
+          ".......................",
+          "b.........a........b...",
+          "b.........a........b...",
+          "b.........a........bss.",
+          "b.FF......a........bss.",
+          "b.FF......a........bss.",
+          "bbbb..bbbbbbbb..bbbb..."
+        ],
+        [
+          "RRRRRRRRRRBBBBBBBBBB...",
+          "bbbbbbbbbbbbbbbbbbbb...",
+          "b.........a.....pp.b...",
+          "b.........a.....pp.b...",
+          "b.........a........b...",
+          "b.........a........b...",
+          "b.........a........b...",
+          "b.........a........b...",
+          "b.........a........b...",
+          "b.........a........b...",
+          "b.........a........b...",
+          "b.........a........bss.",
+          "b.........a........bss.",
+          "b.........a........bss.",
+          "bbbbbbbbbbbbbbbbbbbb..."
+        ],
+        [
+          "RRRRRRRRRRBBBBBBBBBB...",
+          "bbbbbbbbbbbbbbbbbbbb...",
+          "b.........a......p.b...",
+          "b.........a......p.b...",
+          "b.........a........b...",
+          "b.........a........b...",
+          "b.........a........b...",
+          "b.........a........b...",
+          "b.........a........b...",
+          "b.........a........b...",
+          "b.........a........b...",
+          "b.........a........bss.",
+          "b.........a........bss.",
+          "b.........a........bss.",
+          "bbbbbbbbbbbbbbbbbbbb..."
+        ],
+        [
+          ".......................",
+          "rrrrrrrrrrrrrrrrrrrr...",
+          "rrrrrrrrrrrr......rr...",
+          "rrrrrrrrrrrr......rr...",
+          "rrrrrrrrrrrrrrrrrrrr...",
+          "rrrrrrrrrrrrrrrrrrrr...",
+          "rrrrrrrrrrrrrrrrrrrr...",
+          "rrrrrrrrrrrrrrrrrrrr...",
+          "rrrrrrrrrrrrrrrrrrrr...",
+          "rrrrrrrrrrrrrrrrrrrr...",
+          "rrrrrrrrrrrrrrrrrrrr...",
+          "rrrrrrrrrrrrrrrrrrrrss.",
+          "rrrrrrrrrrrrrrrrrrrrss.",
+          "rrrrrrrrrrrrrrrrrrrrss.",
+          "rrrrrrrrrrrrrrrrrrrr..."
+        ],
+        [
+          ".......................",
+          ".......................",
+          ".......................",
+          ".......................",
+          ".......................",
+          ".......................",
+          ".......................",
+          ".......................",
+          ".......................",
+          ".......................",
+          ".......................",
+          "....................ss.",
+          "....................ss.",
+          "....................ss.",
+          "......................."
+        ],
+        [
+          ".......................",
+          ".......................",
+          ".......................",
+          ".......................",
+          ".......................",
+          ".......................",
+          ".......................",
+          ".......................",
+          ".......................",
+          ".......................",
+          ".......................",
+          "....................ss.",
+          "....................ss.",
+          "....................ss.",
+          "......................."
+        ],
+        [
+          ".......................",
+          ".......................",
+          ".......................",
+          ".......................",
+          ".......................",
+          ".......................",
+          ".......................",
+          ".......................",
+          ".......................",
+          ".......................",
+          "...................dddd",
+          "...................dddd",
+          "...................dddd",
+          "...................dddd",
+          "...................dddd"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            ".......................",
+            "SSSSSSSSSSSSSSSSSSSS...",
+            "SSSSSSSSSSSSSSSSSSSS...",
+            "SSSSSSSSSSSSSSSSSSSS...",
+            "SSSSSSSSSSSSSSSSSSSS...",
+            "SSSSSSSSSSSSSSSSSSSS...",
+            "SSSSSSSSSSSSSSSSSSSS...",
+            "SSSSSSSSSSSSSSSSSSSS...",
+            "SSSSSSSSSSSSSSSSSSSS...",
+            "SSSSSSSSSSSSSSSSSSSS...",
+            "SSSSSSSSSSSSSSSSSSSS...",
+            "SSSSSSSSSSSSSSSSSSSS...",
+            "SSSSSSSSSSSSSSSSSSSS...",
+            "SSSSSSSSSSSSSSSSSSSS...",
+            "SSSSSSSSSSSSSSSSSSSS..."
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "SSSSSSSSSSSSSSSSSSSSRRR",
+            "SRSSSSSSRRSRSSSSSSRSRRR",
+            "SRSSSSSSRRSRSSSSSSRSRRR",
+            "SRRRRRRRRRSRRRRRRRSSRRR",
+            "SRRRRRRRRRSRRRRRRRSSRRR",
+            "SSRRRRRRRRSSRRRRRRRSRRR",
+            "RRRRRRRRRRRRSRRRRRRSRRR",
+            "RRRRRRRRRRRRRRRRRRRSRRR",
+            "SRRRRRRRRRSRRRRRRRRSRRR",
+            "SRRRRSSSRRSRRRRSSSSSRRR",
+            "SRRRRSSSRRSRRRRSSSSSSSR",
+            "SRSSRRRRRRSRRRRSSSSSSSR",
+            "SRSSRRSSRRSRRRRSSSSSSSR",
+            "SSSSSSSSSSSSSSSSSSSSRRR"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSRRR",
+            "SSSSSSSSSSSSSSSSSSSSRRR",
+            "SRSSSSSSRRSRRSSSSSRSRRR",
+            "SRSSSSSSRRSRRSSSSSRSRRR",
+            "SRRRRRRRRRSRRRRRRRSSRRR",
+            "SRRRRRRRRRSRRRRRRRSSRRR",
+            "SSRRRRRRRRSSRRRRRRRSRRR",
+            "RRRRRRRRRRRRSRRRRRRSRRR",
+            "RRRRRRRRRRRRRRRRRRRSRRR",
+            "SRRRRRRRRRSRRRRRRRRSRRR",
+            "SRRRRSSSRRSRRRRRRRRSRRR",
+            "SRRRRSSSRRSRRRRRRRRSSSR",
+            "SRSSRRRRRRSRRRRRRRRSSSR",
+            "SRSSRRSSRRSRRRRRRRRSSSR",
+            "SSSSSSSSSSSSSSSSSSSSRRR"
+          ],
+          [
+            "SSSSRRSSSSSSSSSSSSSSRRR",
+            "SSSSRRSSSSSSSSSSSSSSRRR",
+            "SRRRRRRRRRSRRRSSSSRSRRR",
+            "SRRRRRRRRRSRRRSSSSRSRRR",
+            "SRRRRRRRRRSRRRRRRRSSRRR",
+            "SRRRRRRRRRSRRRRRRRSSRRR",
+            "SSRRRRRRRRSSRRRRRRRSRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRSRRRRRRRRSRRR",
+            "SRRRRRRRRRSRRRRRRRRSRRR",
+            "SRRRRRRRRRSRRRRRRRRSSSR",
+            "SRSSRRRRRRSRRRRRRRRSSSR",
+            "SRSSRRRRRRSRRRRRRRRSSSR",
+            "SSSSRRSSSSSSSSRRSSSSRRR"
+          ],
+          [
+            "SSSSRRSSSSSSSSSSSSSSRRR",
+            "SSSSRRSSSSSSSSSSSSSSRRR",
+            "SRRRRRRRRRSRRRRSSSRSRRR",
+            "SRRRRRRRRRSRRRRSSSRSRRR",
+            "SRRRRRRRRRSRRRRRRRSSRRR",
+            "SRRRRRRRRRSRRRRRRRSSRRR",
+            "SRRRRRRRRRSRRRRRRRRSRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRSRRRRRRRRSRRR",
+            "SRRRRRRRRRSRRRRRRRRSRRR",
+            "SRRRRRRRRRSRRRRRRRRSSSR",
+            "SRSSRRRRRRSRRRRRRRRSSSR",
+            "SRSSRRRRRRSRRRRRRRRSSSR",
+            "SSSSRRSSSSSSSSRRSSSSRRR"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSRRR",
+            "SSSSSSSSSSSSSSSSSSSSRRR",
+            "SRRRRRRRRRSRRRRRSSRSRRR",
+            "SRRRRRRRRRSRRRRRSSRSRRR",
+            "SRRRRRRRRRSRRRRRRRRSRRR",
+            "SRRRRRRRRRSRRRRRRRRSRRR",
+            "SRRRRRRRRRSRRRRRRRRSRRR",
+            "SRRRRRRRRRSRRRRRRRRSRRR",
+            "SRRRRRRRRRSRRRRRRRRSRRR",
+            "SRRRRRRRRRSRRRRRRRRSRRR",
+            "SRRRRRRRRRSRRRRRRRRSRRR",
+            "SRRRRRRRRRSRRRRRRRRSSSR",
+            "SRRRRRRRRRSRRRRRRRRSSSR",
+            "SRRRRRRRRRSRRRRRRRRSSSR",
+            "SSSSSSSSSSSSSSSSSSSSRRR"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSRRR",
+            "SSSSSSSSSSSSSSSSSSSSRRR",
+            "SRRRRRRRRRSRRRRRRSRSRRR",
+            "SRRRRRRRRRSRRRRRRSRSRRR",
+            "SRRRRRRRRRSRRRRRRRRSRRR",
+            "SRRRRRRRRRSRRRRRRRRSRRR",
+            "SRRRRRRRRRSRRRRRRRRSRRR",
+            "SRRRRRRRRRSRRRRRRRRSRRR",
+            "SRRRRRRRRRSRRRRRRRRSRRR",
+            "SRRRRRRRRRSRRRRRRRRSRRR",
+            "SRRRRRRRRRSRRRRRRRRSRRR",
+            "SRRRRRRRRRSRRRRRRRRSSSR",
+            "SRRRRRRRRRSRRRRRRRRSSSR",
+            "SRRRRRRRRRSRRRRRRRRSSSR",
+            "SSSSSSSSSSSSSSSSSSSSRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "SSSSSSSSSSSSSSSSSSSSRRR",
+            "SSSSSSSSSSSSRRRRRRSSRRR",
+            "SSSSSSSSSSSSRRRRRRSSRRR",
+            "SSSSSSSSSSSSSSSSSSSSRRR",
+            "SSSSSSSSSSSSSSSSSSSSRRR",
+            "SSSSSSSSSSSSSSSSSSSSRRR",
+            "SSSSSSSSSSSSSSSSSSSSRRR",
+            "SSSSSSSSSSSSSSSSSSSSRRR",
+            "SSSSSSSSSSSSSSSSSSSSRRR",
+            "SSSSSSSSSSSSSSSSSSSSRRR",
+            "SSSSSSSSSSSSSSSSSSSSSSR",
+            "SSSSSSSSSSSSSSSSSSSSSSR",
+            "SSSSSSSSSSSSSSSSSSSSSSR",
+            "SSSSSSSSSSSSSSSSSSSSRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRSSR",
+            "RRRRRRRRRRRRRRRRRRRRSSR",
+            "RRRRRRRRRRRRRRRRRRRRSSR",
+            "RRRRRRRRRRRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRSSR",
+            "RRRRRRRRRRRRRRRRRRRRSSR",
+            "RRRRRRRRRRRRRRRRRRRRSSR",
+            "RRRRRRRRRRRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRRRSSSS",
+            "RRRRRRRRRRRRRRRRRRRSSSS",
+            "RRRRRRRRRRRRRRRRRRRSSSS",
+            "RRRRRRRRRRRRRRRRRRRSSSS",
+            "RRRRRRRRRRRRRRRRRRRSSSS"
+          ]
+        ]
+      },
+      "palette": {
+        ".": "air",
+        "B": "siding_blue",
+        "C": {
+          "furniture": "kitchen_cupboard"
+        },
+        "F": {
+          "fixed": true,
+          "furniture": "fridge"
+        },
+        "G": {
+          "ground": true
+        },
+        "H": {
+          "furniture": "chair"
+        },
+        "L": {
+          "fixed": true,
+          "furniture": "electric_lamp"
+        },
+        "R": "siding_red",
+        "W": {
+          "facing": "w",
+          "furniture": "wardrobe"
+        },
+        "a": "plaster",
+        "b": "brick",
+        "d": "dressed_stone",
+        "f": "fabric",
+        "p": "planks",
+        "r": "roof",
+        "s": "stone",
+        "t": "tiles"
+      },
+      "size": [23, 11, 15]
+    },
+    {
+      "id": "test_house_shed",
+      "layers": [
+        ["pppppp", "pppppp", "pppppp", "pppppp", "pppppp"],
+        ["BBBBBB", "BUUVJB", "BUU..B", "B....B", "BB..BB"],
+        ["BBBBBB", "BUUVJB", "BUU..B", "B....B", "BB..BB"],
+        ["BBBBBB", "B....B", "B....B", "B....B", "BB..BB"],
+        ["BBBBBB", "B....B", "B....B", "B....B", "BB..BB"],
+        ["BBBBBB", "B....B", "B....B", "B....B", "BBBBBB"],
+        ["gggggg", "gggggg", "gggggg", "gggggg", "gggggg"],
+        ["......", ".SSSS.", ".SSSS.", "......", "......"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSSSS", "SSSSSS", "SSSSSS", "SSSSSS", "SSSSSS"],
+          ["SSSSSS", "SSSSSS", "SSSRRS", "SRRRRS", "SSRRSS"],
+          ["SSSSSS", "SSSSSS", "SSSRRS", "SRRRRS", "SSRRSS"],
+          ["SSSSSS", "SRRRRS", "SRRRRS", "SRRRRS", "SSRRSS"],
+          ["SSSSSS", "SRRRRS", "SRRRRS", "SRRRRS", "SSRRSS"],
+          ["SSSSSS", "SRRRRS", "SRRRRS", "SRRRRS", "SSSSSS"],
+          ["SSSSSS", "SSSSSS", "SSSSSS", "SSSSSS", "SSSSSS"],
+          ["RRRRRR", "RSSSSR", "RSSSSR", "RRRRRR", "RRRRRR"]
+        ]
+      },
+      "palette": {
+        ".": "air",
+        "B": "siding_blue",
+        "J": {
+          "fixed": true,
+          "furniture": "main_breaker"
+        },
+        "S": {
+          "fixed": true,
+          "furniture": "solar_panel"
+        },
+        "U": {
+          "fixed": true,
+          "furniture": "fuel_generator"
+        },
+        "V": {
+          "fixed": true,
+          "furniture": "storage_battery"
+        },
+        "g": "galvanized",
+        "p": "planks"
+      },
+      "size": [6, 8, 5]
+    },
+    {
+      "id": "test_house_garden_wall",
+      "layers": [
+        ["GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"],
+        ["ssssssssssssssss..ssssssssssssss"],
+        ["mmmmmmmmmmmmmmmh..hmmmmmmmmmmmmm"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["................................"],
+          ["SSSSSSSSSSSSSSSSRRSSSSSSSSSSSSSS"],
+          ["SSSSSSSSSSSSSSSSRRSSSSSSSSSSSSSS"]
+        ]
+      },
+      "palette": {
+        ".": "air",
+        "G": {
+          "ground": true
+        },
+        "h": "hazard_yellow",
+        "m": "cobblestone_mossy",
+        "s": "stone"
+      },
+      "size": [32, 3, 1]
+    },
+    {
+      "id": "test_house_garage",
+      "layers": [
+        [
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk"
+        ],
+        [
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "b..............eeEEeewww.nn..b",
+          "b....................www.nn..b",
+          "b............................b",
+          "b...........j................b",
+          "b....................oo......b",
+          "b....................oo......b",
+          "b....................qq......b",
+          "b....................qq......b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "bb........bb........bbbbbbbbbb"
+        ],
+        [
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "b..............eeEEeewww.nn..b",
+          "b....................www.nn..b",
+          "b............................b",
+          "b............................b",
+          "b....................oo......b",
+          "b....................oo......b",
+          "b....................qq......b",
+          "b....................qq......b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "bb........bb........bbbbbbbbbb"
+        ],
+        [
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "b..............eeEEee........b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "bb........bb........bbbbbbbbbb"
+        ],
+        [
+          "bbbb....bbbbbb....bbbbb....bbb",
+          "b..............eeEEee........b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "bb........bb........bbbbbbbbbb"
+        ],
+        [
+          "bbbb....bbbbbb....bbbbb....bbb",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "bb........bb........bbbbbbbbbb"
+        ],
+        [
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "bbddddddddbbddddddddbbbbbbbbbb"
+        ],
+        [
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b......................II....b",
+          "b....II........II............b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b....II........II............b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "b............................b",
+          "bbddddddddbbddddddddbbbbbbbbbb"
+        ],
+        [
+          "gggggggggggggggggggggggggggggg",
+          "gggggggggggggggggggggggggggggg",
+          "gggggggggggggggggggggggggggggg",
+          "gggggggggggggggggggggggggggggg",
+          "gggggggggggggggggggggggggggggg",
+          "gggggggggggggggggggggggggggggg",
+          "gggggggggggggggggggggggggggggg",
+          "gggggggggggggggggggggggggggggg",
+          "gggggggggggggggggggggggggggggg",
+          "gggggggggggggggggggggggggggggg",
+          "gggggggggggggggggggggggggggggg",
+          "gggggggggggggggggggggggggggggg",
+          "gggggggggggggggggggggggggggggg",
+          "gggggggggggggggggggggggggggggg",
+          "gggggggggggggggggggggggggggggg",
+          "gggggggggggggggggggggggggggggg",
+          "gggggggggggggggggggggggggggggg"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SRRRRRRRRRRRRRRSSSSSSSSSRSSRRS",
+            "SRRRRRRRRRRRRRRRRRRRRSSSRSSRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRARRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRSSRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRSSRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRSSRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRSSRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SSRRRRRRRRSSRRRRRRRRSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SRRRRRRRRRRRRRRSSSSSSSSSRSSRRS",
+            "SRRRRRRRRRRRRRRRRRRRRSSSRSSRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRSSRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRSSRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRSSRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRSSRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SSRRRRRRRRSSRRRRRRRRSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SRRRRRRRRRRRRRRSSSSSSRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SSRRRRRRRRSSRRRRRRRRSSSSSSSSSS"
+          ],
+          [
+            "SSSSRRRRSSSSSSRRRRSSSSSRRRRSSS",
+            "SRRRRRRRRRRRRRRSSSSSSRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SSRRRRRRRRSSRRRRRRRRSSSSSSSSSS"
+          ],
+          [
+            "SSSSRRRRSSSSSSRRRRSSSSSRRRRSSS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SSRRRRRRRRSSRRRRRRRRSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRSSRRRRS",
+            "SRRRRSSRRRRRRRRSSRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRSSRRRRRRRRSSRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ]
+        ]
+      },
+      "palette": {
+        ".": "air",
+        "E": {
+          "facing": "s",
+          "furniture": "shelf"
+        },
+        "I": {
+          "fixed": true,
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "b": "brick",
+        "d": "dressed_stone",
+        "e": {
+          "facing": "s",
+          "furniture": "shelf"
+        },
+        "g": "galvanized",
+        "j": {
+          "groundLoot": {
+            "items": [
+              {
+                "item": "engine_hoist"
+              }
+            ],
+            "kind": "fixed"
+          }
+        },
+        "k": "concrete",
+        "n": {
+          "fixed": true,
+          "furniture": "grinding_wheel"
+        },
+        "o": {
+          "furniture": "crate"
+        },
+        "q": {
+          "furniture": "crate"
+        },
+        "w": {
+          "fixed": true,
+          "furniture": "workbench"
+        }
+      },
+      "size": [30, 9, 17]
+    },
+    {
+      "id": "test_house_garage_ladder",
+      "layers": [
+        ["k", "k"],
+        ["Y", "Y"],
+        ["Y", "Y"],
+        ["Y", "Y"],
+        ["Y", "Y"],
+        ["Y", "Y"],
+        ["Y", "Y"],
+        ["Y", "Y"],
+        ["Y", "Y"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["S", "S"],
+          ["S", "S"],
+          ["S", "S"],
+          ["S", "S"],
+          ["S", "S"],
+          ["S", "S"],
+          ["S", "S"],
+          ["S", "S"],
+          ["S", "S"]
+        ]
+      },
+      "palette": {
+        "Y": {
+          "facing": "w",
+          "furniture": "ladder"
+        },
+        "k": "concrete"
+      },
+      "size": [1, 9, 2]
+    },
+    {
+      "id": "test_house_path",
+      "layers": [["ssssssssssssss", "ssssssssssssss"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SSSSSSSSSSSSSS", "SSSSSSSSSSSSSS"]]
+      },
+      "palette": {
+        "s": "stone"
+      },
+      "size": [14, 1, 2]
+    },
+    {
+      "id": "test_house_step",
+      "layers": [["dd", "dd", "dd", "dd"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SS", "SS", "SS", "SS"]]
+      },
+      "palette": {
+        "d": "dressed_stone"
+      },
+      "size": [2, 1, 4]
+    },
+    {
+      "id": "test_house_outdoor_stock",
+      "layers": [["GG", "GG"], ["QQ", "QQ"], ["QQ", "QQ"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["..", ".."], ["SS", "SS"], ["SS", "SS"]]
+      },
+      "palette": {
+        "G": {
+          "ground": true
+        },
+        "Q": {
+          "furniture": "crate",
+          "loot": "sample_note_loot"
+        }
+      },
+      "size": [2, 3, 2]
+    },
+    {
+      "id": "test_house_sign",
+      "layers": [["GG"], ["NN"], ["NN"], ["NN"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [[".."], ["SS"], ["SS"], ["SS"]]
+      },
+      "palette": {
+        "G": {
+          "ground": true
+        },
+        "N": {
+          "furniture": "sample_sign"
+        }
+      },
+      "size": [2, 4, 1]
+    },
+    {
+      "id": "test_house_loose_wardrobe",
+      "layers": [["GG"], ["OO"], ["OO"], ["OO"], ["OO"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [[".."], ["SS"], ["SS"], ["SS"], ["SS"]]
+      },
+      "palette": {
+        "G": {
+          "ground": true
+        },
+        "O": {
+          "facing": "n",
+          "furniture": "wardrobe"
+        }
+      },
+      "size": [2, 5, 1]
+    }
+  ]
+}

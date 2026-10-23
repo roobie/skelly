@@ -65,7 +65,7 @@ try {
             [
               '/src/game/play.ts',
               '  const onForwardPress = (e: MouseEvent) => {',
-              '  globalThis.uiContractRuntime = { sim, inventory, quickbar, screen, eye: () => [...eye()] };\n',
+              '  globalThis.uiContractRuntime = { sim, session, inventory, quickbar, screen, eye: () => [...eye()] };\n',
             ],
             [
               '/src/debug/index.ts',
@@ -224,7 +224,8 @@ try {
     'https://github.com/roobie/skelly/issues/new?template=playtest-feedback.md',
     'feedback link opens the playtest issue template',
   );
-  await evaluate(`(() => {
+  const captureMetricsDownload = () =>
+    evaluate(`(() => {
     window.__metricsBlob = undefined;
     const createObjectURL = URL.createObjectURL.bind(URL);
     const revokeObjectURL = URL.revokeObjectURL.bind(URL);
@@ -236,6 +237,7 @@ try {
     URL.revokeObjectURL = (url) => { if (url !== 'blob:playtest-metrics') revokeObjectURL(url); };
     HTMLAnchorElement.prototype.click = function() { if (this.download) window.__metricsFilename = this.download; };
   })()`);
+  await captureMetricsDownload();
   await evaluate(`(() => {
     window.__f4Prevented = false;
     window.addEventListener('keydown', (event) => {
@@ -323,7 +325,7 @@ try {
     await loaded;
     const probe = frame.contentDocument.querySelector('.inv-option');
     const measure = (tuning) => {
-      const sound = { id: 'player_nope', variants: ['assets/audio/nope.ogg'], gain: 0.5, pitchJitter: [1, 1], gainJitter: [1, 1], minIntervalSimSeconds: 0.75, category: 'body', noise: { enabled: false, radiusMetres: 1 } };
+      const sound = { id: 'player_nope', description: 'fixture refusal', variants: ['assets/audio/nope.ogg'], gain: 0.5, pitchJitter: [1, 1], gainJitter: [1, 1], minIntervalSimSeconds: 0.75, category: 'body', noise: { enabled: false, radiusMetres: 1 } };
       const { registry, issues } = buildRegistry([
         { source: 'ui-probe-sounds.json', data: { sounds: [sound] } },
         { source: 'ui-probe.json', data: { ui: [{ ...baseUi.ui.find((row) => row.id === 'core'), refusalSound: sound.id, ...tuning }] } },
@@ -466,11 +468,21 @@ try {
   );
   await evaluate("document.querySelector('#export-metrics').click()");
   const exportedMetrics = await evaluate('window.__metricsBlob?.text().then((text) => JSON.parse(text))');
-  assert.equal(exportedMetrics.schemaVersion, 1, 'metrics download is valid versioned JSON');
-  assert.match(
+  const liveAttempt = await evaluate(`(() => {
+    const { sim, session } = window.uiContractRuntime;
+    return { seed: sim.seed, run: session.scenarioRun };
+  })()`);
+  assert.ok(liveAttempt.run, 'default entry starts a scenario attempt');
+  assert.deepEqual(exportedMetrics.run, liveAttempt.run, 'download includes the live scenario progress');
+  assert.equal(exportedMetrics.seed, liveAttempt.seed, 'download identifies the live world seed');
+  assert.equal(exportedMetrics.outcome, 'running', 'download identifies an unfinished attempt');
+  assert.equal(exportedMetrics.death, null);
+  assert.ok(Number.isFinite(exportedMetrics.elapsedGameSeconds) && exportedMetrics.elapsedGameSeconds >= 0);
+  assert.ok(exportedMetrics.worldId.length > 0 && exportedMetrics.characterId.length > 0);
+  assert.equal(
     await evaluate('window.__metricsFilename'),
-    /^deadvox-metrics-seed-\d+\.json$/,
-    'metrics download has a useful filename',
+    `deadvox-attempt-${exportedMetrics.characterId}.json`,
+    'attempt download is named for its character',
   );
   await action('debug.panel-toggle');
   await evaluate(`(() => {
@@ -581,13 +593,18 @@ try {
     savedWorldVolume,
     'world volume is persisted to localStorage',
   );
-  const restoredVolumes = await evaluate(`import('/src/game/audio.ts').then(({ GameAudio }) => new GameAudio({
-    registry: { sounds: new Map(), soundOrigins: new Map() },
-    seed: 1,
-    blockSize: 1,
-    isSolid: () => false,
-    report: () => {},
-  }).settings)`);
+  const restoredVolumes = await evaluate(`Promise.all([
+    import('/src/game/audio.ts'), import('/src/game/bundledContent.ts')
+  ]).then(([{ GameAudio }, { buildBundledContent }]) => {
+    const { ui, body } = buildBundledContent().registry;
+    return new GameAudio({
+      registry: { sounds: new Map(), soundOrigins: new Map(), ui, body },
+      seed: 1,
+      blockSize: 1,
+      isSolid: () => false,
+      report: () => {},
+    }).settings;
+  })`);
   assert.equal(restoredVolumes.world, savedWorldVolume, 'a fresh audio instance reads the persisted volume');
   await evaluate("document.querySelector('#graphics-fastCamo').scrollIntoView({ block: 'center' })");
   const initialCamo = await evaluate("document.querySelector('#graphics-fastCamo').checked");
@@ -1359,6 +1376,26 @@ try {
     await evaluate('window.__webglContextRequests'),
     [],
     'UI contract remains independent of WebGL rendering',
+  );
+  const independentUrl = new URL(stageUrl);
+  independentUrl.searchParams.set('site', 'testHouse');
+  await page.goto(independentUrl.href, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+  await waitFor(
+    () => evaluate("document.querySelector('#go')?.getAttribute('aria-disabled') === 'false'"),
+    'independent-world launch readiness',
+  );
+  await captureMetricsDownload();
+  await evaluate("document.querySelector('#go').click()");
+  await waitFor(() => evaluate('Boolean(window.uiContractRuntime)'), 'independent-world session');
+  assert.equal(await evaluate('window.uiContractRuntime.session.scenarioRun'), null);
+  await evaluate("document.querySelector('#export-metrics').click()");
+  const sandboxMetrics = await evaluate('window.__metricsBlob?.text().then((text) => JSON.parse(text))');
+  assert.equal(sandboxMetrics.schemaVersion, 1, 'independent-world metrics download is valid versioned JSON');
+  assert.equal(sandboxMetrics.seed, await evaluate('window.uiContractRuntime.sim.seed'));
+  assert.equal(
+    await evaluate('window.__metricsFilename'),
+    `deadvox-metrics-seed-${sandboxMetrics.seed}.json`,
+    'independent-world metrics download identifies its seed',
   );
   process.stdout.write(
     'UI browser contract passed: container drag/drop, pointer-locked menus, cursor clicks/focus, combo box choice without blur, spawn count, V status, audio volume persistence, unlock, menu/browser keys, inventory stats.\n',

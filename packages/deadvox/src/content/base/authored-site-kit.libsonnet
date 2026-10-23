@@ -24,6 +24,8 @@ local inBay(bays, x, y, z) = std.length([
       ownership: { layers: [
         [std.join('', [
           if inBay(bays, x, y, z) then '.'
+          else if std.type(template.palette[rows[y][z][x]]) == 'object' && std.objectHas(template.palette[rows[y][z][x]], 'groundLoot') then 'A'
+          else if std.type(template.palette[rows[y][z][x]]) == 'object' && std.objectHas(template.palette[rows[y][z][x]], 'spawn') then 'R'
           else if std.type(template.palette[rows[y][z][x]]) == 'object' && std.get(template.palette[rows[y][z][x]], 'ground', false) then '.'
           else if rows[y][z][x] == '.' then 'R' else 'S'
           for x in std.range(0, template.size[0] - 1)

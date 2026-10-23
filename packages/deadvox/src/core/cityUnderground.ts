@@ -1,7 +1,8 @@
-import { type lotRect, rectsOverlap } from './cityLots.ts';
+import type { lotRect } from './cityLots.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { ScenarioDef } from './schema.ts';
+import { rectsOverlap } from './site.ts';
 import { footprint, type Placement, placedBlockAt } from './templates.ts';
 
 export type Underground = NonNullable<ScenarioDef['city']['underground']>[number];

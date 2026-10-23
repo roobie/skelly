@@ -4,7 +4,8 @@ import type { Registry } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
 import { Rng, valueNoise2 } from './random.ts';
 import type { Scale } from './scale.ts';
-import { type Rect, rectDistance } from './site.ts';
+import type { TreeConeCrown } from './schema.ts';
+import { type Rect, rectDistance, rectsOverlap } from './site.ts';
 import { siteGenerationOf, sitePalette } from './sitePalette.ts';
 import { type BlockBox, type MetreBox, rasterize, stampChunk } from './structure.ts';
 import type { TreeShape } from './treeShapes.ts';
@@ -31,9 +32,6 @@ export interface TreePlacement {
   readonly boxes: readonly BlockBox[];
 }
 
-/** The complete canopy footprint must clear a reserved rectangle, not just the trunk. */
-export const rectsOverlap = (a: Rect, b: Rect): boolean => a.x0 < b.x1 && b.x0 < a.x1 && a.z0 < b.z1 && b.z0 < a.z1;
-
 const crown = (leaf: number, centreY: number, [rx, ry, rz]: Vec3): MetreBox[] => {
   const boxes: MetreBox[] = [];
   for (let y = centreY - ry; y < centreY + ry; y += 0.5) {
@@ -48,23 +46,32 @@ const crown = (leaf: number, centreY: number, [rx, ry, rz]: Vec3): MetreBox[] =>
   return boxes;
 };
 
+const cone = (leaf: number, { baseMetres, topMetres, taper, minHalfWidthMetres }: TreeConeCrown): MetreBox[] => {
+  const boxes: MetreBox[] = [];
+  for (let y = baseMetres; y < topMetres; y += 0.5) {
+    const width = Math.max(minHalfWidthMetres, (topMetres - y) * taper);
+    boxes.push({ min: [-width, y, -width], max: [width, y + 0.5, width], block: leaf });
+  }
+  return boxes;
+};
+
 /** Metre-authored shapes reuse structure rasterization and chunk clipping, not another stamping engine. */
 const treeShapes = (registry: Registry, scale: Scale): Readonly<Record<TreeShape, readonly BlockBox[]>> => {
   const { trunk, branch, leaves: leaf } = sitePalette(registry).trees;
-  const pine: MetreBox[] = [];
-  for (let y = 2; y < 8.5; y += 0.5) {
-    const width = Math.max(0.25, (8.5 - y) * 0.38);
-    pine.push({ min: [-width, y, -width], max: [width, y + 0.5, width], block: leaf });
-  }
+  const { trunkHalfWidthMetres: half, branchLayer, shapes } = siteGenerationOf(registry).vegetation.trees;
+  const upper = branchLayer.topDropMetres;
+  const lower = upper + branchLayer.thicknessMetres;
+  const lowest = lower + branchLayer.thicknessMetres;
   const wood = (height: number, reach: number): MetreBox[] => [
-    { min: [-reach, height - 1.5, -0.25], max: [reach, height - 1, 0.25], block: branch },
-    { min: [-0.25, height - 2, -reach], max: [0.25, height - 1.5, reach], block: branch },
-    { min: [-0.25, 0, -0.25], max: [0.25, height, 0.25], block: trunk },
+    { min: [-reach, height - lower, -half], max: [reach, height - upper, half], block: branch },
+    { min: [-half, height - lowest, -reach], max: [half, height - lower, reach], block: branch },
+    { min: [-half, 0, -half], max: [half, height, half], block: trunk },
   ];
-  const authored: Record<TreeShape, MetreBox[]> = {
-    broadleaf: [...crown(leaf, 5.5, [3, 2, 2.5]), ...wood(5, 2)],
-    conifer: [...pine, ...wood(8.5, 1)],
-    young: [...crown(leaf, 3.25, [1.5, 1.5, 1.5]), ...wood(3.25, 1)],
+  const authored = (shape: TreeShape): MetreBox[] => {
+    const { crown: leaves, heightMetres, branchReachMetres } = shapes[shape];
+    const crownBoxes =
+      leaves.kind === 'cone' ? cone(leaf, leaves) : crown(leaf, leaves.centreMetres, leaves.radiiMetres);
+    return [...crownBoxes, ...wood(heightMetres, branchReachMetres)];
   };
   // Anchor on the centre of a ground block, so a 0.5m trunk occupies one 0.5m cell.
   const compile = (boxes: MetreBox[]) =>
@@ -76,7 +83,11 @@ const treeShapes = (registry: Registry, scale: Scale): Readonly<Record<TreeShape
       })),
       scale.blockSize,
     );
-  return { broadleaf: compile(authored.broadleaf), conifer: compile(authored.conifer), young: compile(authored.young) };
+  return {
+    broadleaf: compile(authored('broadleaf')),
+    conifer: compile(authored('conifer')),
+    young: compile(authored('young')),
+  };
 };
 
 export const placeTree = (shape: TreeShape, origin: Vec3, prototype: readonly BlockBox[]): TreePlacement => {
@@ -118,9 +129,9 @@ export const vegetationPlacements = ({
   shapeMix?: (x: number, z: number) => readonly TreeShape[];
 }): TreePlacement[] => {
   const shapes = treeShapes(registry, scale);
-  const { treeCellMetres, treeMix } = siteGenerationOf(registry).vegetation;
+  const { treeCellMetres, treeJitterMetres, treeMix } = siteGenerationOf(registry).vegetation;
   const step = treeCellMetres / scale.blockSize;
-  const jitter = Math.round(1.5 / scale.blockSize);
+  const jitter = Math.round(treeJitterMetres / scale.blockSize);
   const trees: TreePlacement[] = [];
   for (let cz = Math.floor(area.z0 / step); cz < Math.ceil(area.z1 / step); cz++) {
     for (let cx = Math.floor(area.x0 / step); cx < Math.ceil(area.x1 / step); cx++) {

@@ -23,6 +23,8 @@ it('gets an assembly item stack weight from the sum of its physical parts', () =
         items: [
           {
             id: 'mass_item',
+            workInProgress: false,
+            notLoot: false,
             name: 'Fixture',
             category: 'misc',
             economy: { usage: [], tiers: [] },
@@ -63,7 +65,7 @@ it('excludes baked replaceable geometry so fitted child items own that mass', ()
           node: suppressor.node,
           mountedAt: 'fixture_muzzle',
           mountFrame: { normal: [1, 0, 0], up: [0, 1, 0] },
-          properties: {},
+          properties: { noiseFactor: 0.5 },
         },
       ],
     },
@@ -75,6 +77,8 @@ it('keeps each atom authored weight when several items share a visual model', ()
   const atom = { id: model.id, file: model.file };
   const items = [2, 7].map((weight, index) => ({
     id: `atom_${index}`,
+    workInProgress: false,
+    notLoot: false,
     name: `Atom ${index}`,
     category: 'misc',
     economy: { usage: [], tiers: [] },
@@ -101,6 +105,8 @@ it('requires exactly one authored mass source per item', () => {
             items: [
               {
                 id: 'fixture_item',
+                workInProgress: false,
+                notLoot: false,
                 name: 'Fixture',
                 category: 'misc',
                 economy: { usage: [], tiers: [] },

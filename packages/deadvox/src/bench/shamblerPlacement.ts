@@ -1,10 +1,12 @@
+import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { type Body, bodyOverlapsBlock } from '../core/physics.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
 import type { Scale } from '../core/scale.ts';
-import { createPlayerBody } from '../game/player.ts';
+import { createPlayerBody, playerTuning } from '../game/player.ts';
 
 export interface ShamblerPlacementWorld {
+  registry: Registry;
   config: { scale: Scale };
   spawn: { pos: Vec3 };
   groundAt: (xm: number, zm: number) => number;
@@ -48,7 +50,11 @@ const placementBody = (
     scale,
     scale: { blockSize },
   } = engine.config;
-  const body = createPlayerBody(scale, x / blockSize, engine.groundAt(x, z) / blockSize, z / blockSize);
+  const body = createPlayerBody(
+    scale,
+    [x / blockSize, engine.groundAt(x, z) / blockSize, z / blockSize],
+    playerTuning(engine.registry),
+  );
   body.halfWidth = bodyDimensions?.halfWidth ?? 0.28 / blockSize;
   if (bodyDimensions?.halfDepth !== undefined) {
     body.halfDepth = bodyDimensions.halfDepth;
@@ -58,7 +64,7 @@ const placementBody = (
   return body;
 };
 
-/** Finds the same clear player foothold near the hamlet spawn for browser and CPU runs. */
+/** Finds the same clear player foothold near the scenario spawn for browser and CPU runs. */
 export const findShamblerBenchPlayer = (engine: ShamblerPlacementWorld): Body => {
   const s = engine.config.scale.blockSize;
   const [baseX, , baseZ] = engine.spawn.pos;
@@ -69,14 +75,18 @@ export const findShamblerBenchPlayer = (engine: ShamblerPlacementWorld): Body =>
       const angle = (i / attempts) * Math.PI * 2 + ring * 0.13;
       const x = baseX + radius * Math.cos(angle);
       const z = baseZ + radius * Math.sin(angle);
-      const body = createPlayerBody(engine.config.scale, x / s, engine.groundAt(x, z) / s, z / s);
+      const body = createPlayerBody(
+        engine.config.scale,
+        [x / s, engine.groundAt(x, z) / s, z / s],
+        playerTuning(engine.registry),
+      );
       body.onGround = true;
       if (bodyIsClear(body, engine.isSolid)) {
         return body;
       }
     }
   }
-  throw new Error('Could not find open terrain near the hamlet spawn for the player.');
+  throw new Error('Could not find open terrain near the scenario spawn for the player.');
 };
 
 /** Places N deterministic, non-overlapping bodies in the lit 8–20 m sight ring. */

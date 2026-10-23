@@ -1,6 +1,14 @@
 import { SECONDS_PER_HOUR } from './clock.ts';
+import type { CoreMessageKey } from './coreText.ts';
 import { type ModifiedEffect, type Modifier, type ModifierActor, modified } from './modifiers.ts';
-import type { CriticalRule, Needs, NourishmentScale, RecoveryState, StaminaRules } from './needs.ts';
+import {
+  type CriticalRule,
+  clamp,
+  type Needs,
+  type NourishmentScale,
+  type RecoveryState,
+  type StaminaRules,
+} from './needs.ts';
 import {
   type AnalgesicLookup,
   ageDoses,
@@ -46,6 +54,8 @@ interface BodyWound {
   infectionAtRisk: boolean;
 }
 
+/** What the body itself died of, as the core message that words it. */
+type TerminalCause = Extract<CoreMessageKey, 'causeInjuries' | 'causeBloodLoss'>;
 export type BodyWounds = Record<BodyRegion, BodyWound | null>;
 export type BodyRegionDamage = Record<BodyRegion, number>;
 
@@ -91,7 +101,6 @@ const BODY_START: Readonly<BodyState> = Object.freeze({
   pain: Object.freeze({ acute: 0, doses: [] }),
 });
 
-const clamp = (value: number): number => Math.max(0, Math.min(100, value));
 const validVitals = (value: number): boolean => Number.isFinite(value) && value >= 0 && value <= 100;
 const validWound = (value: unknown, tierCount: number): value is BodyWound | null =>
   value === null ||
@@ -151,7 +160,7 @@ export class Body implements ModifierActor {
   }
 
   get actionRefusal(): string | undefined {
-    return this.unconscious ? 'You are unconscious' : undefined;
+    return this.unconscious ? this.tuning.knockoutRefusal : undefined;
   }
 
   /** Bleeding at or above content's loss rate refuses time compression (`DESIGN.md`, "Bleeding"). */
@@ -240,6 +249,11 @@ export class Body implements ModifierActor {
       }
     }
     return total;
+  }
+
+  /** Whether felt pain reaches the content threshold that empties shock. */
+  private painKnocksOut(): boolean {
+    return this.pain.felt >= this.modified('body.painKnockoutAt', this.tuning.pain.knockoutAt);
   }
 
   /** Starts one dose of a painkiller; its relief follows the item's curve (`pain.ts`, `doseRelief`). */
@@ -416,6 +430,15 @@ export class Body implements ModifierActor {
     }
   }
 
+  /** Applies impact shock, letting threshold pain use the same knockout state and recovery path. */
+  private applyImpactShock(shockDamage: number, painKnockout: boolean): void {
+    const previousShock = this.state.shock;
+    this.state.shock = painKnockout ? 0 : Math.max(0, this.state.shock - shockDamage);
+    if (this.state.shock === 0 && (previousShock > 0 || shockDamage > 0 || painKnockout)) {
+      this.state.knockoutElapsed = 0;
+    }
+  }
+
   /** Applies one localized impact; unresolved hits are assigned to the torso by the caller. */
   impact(amount: number, region: BodyRegion, effects: BodyImpact = {}): number {
     if (!Number.isFinite(amount) || amount < 0) {
@@ -443,11 +466,7 @@ export class Body implements ModifierActor {
       effects.kind === undefined ? 0 : this.modified('body.painPerDamage', this.tuning.pain.perDamage[effects.kind]);
     this.state.pain.acute += amount * painPerDamage * this.tuning.pain.regionWeight[region];
     this.state.regionDamage[region] = clamp(this.state.regionDamage[region] + amount);
-    const previousShock = this.state.shock;
-    this.state.shock = Math.max(0, this.state.shock - shockDamage);
-    if (this.state.shock === 0 && (previousShock > 0 || shockDamage > 0)) {
-      this.state.knockoutElapsed = 0;
-    }
+    this.applyImpactShock(shockDamage, this.painKnocksOut());
     if (effects.bleeding !== undefined) {
       this.state.wounds[region] = bleedingWound(
         this.state.wounds[region],
@@ -459,7 +478,7 @@ export class Body implements ModifierActor {
   }
 
   /**
-   * Advances body consequences by simulation seconds and returns a terminal cause, if any. `recovering` says
+   * Advances body consequences by simulation seconds and returns the key of a terminal cause, if any. `recovering` says
    * the needs let the body recover (needs.ts, `needsAllowRecovery`); then every uninfected wound also closes
    * by itself (`DESIGN.md`, "Bleeding"). `recoveryFactor` multiplies blood recovery (sleep's `sleepRecoveryFactor`).
    */
@@ -468,7 +487,7 @@ export class Body implements ModifierActor {
     damageImmune = false,
     gameSeconds = seconds,
     { recovering = false, recoveryFactor = 1 }: BodyRecovery = {},
-  ): string | undefined {
+  ): TerminalCause | undefined {
     if (
       !Number.isFinite(seconds) ||
       seconds < 0 ||
@@ -540,12 +559,12 @@ export class Body implements ModifierActor {
     this.state.blood = clamp(this.state.blood + change);
   }
 
-  private terminalCause(): string | undefined {
+  private terminalCause(): TerminalCause | undefined {
     if (this.state.health <= 0) {
-      return 'your injuries';
+      return 'causeInjuries';
     }
     if (this.state.blood <= 0) {
-      return 'blood loss';
+      return 'causeBloodLoss';
     }
     return undefined;
   }

@@ -21,11 +21,11 @@ import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import type { Engine } from '../src/game/engine.ts';
 import { firearmHandlingFor } from '../src/game/firearmHandling.ts';
 import { startPlayerMelee } from '../src/game/melee.ts';
-import type { MoveIntent } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
-import { MobActorMeshes } from '../src/render/mobActors.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
+import { MobActorMeshes } from './mobActorsFixture.ts';
+import type { MoveIntent } from './playerFixture.ts';
 
 const registry = baseRegistry();
 const contentNoiseEvents = new Set(
@@ -134,7 +134,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     if (sound.event.startsWith('door_')) {
       return state.doorPosition!;
     }
-    if (sound.event === 'furniture_scrape') {
+    if (sound.event === 'furniture_scrape' || sound.event === 'furniture_drag') {
       return state.furniturePosition!;
     }
     if (sound.event === 'melee_swing') {
@@ -409,6 +409,34 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
       'prying sound is played',
       played.slice(soundCount).some(({ sound }) => sound.event === 'lock_pry'),
     );
+    const hammerEventCount = scenario.events.length;
+    session.playPlayerSound('lock_hammer', session.sim.time, { sourceLabel: 'noise-pairing fixture' });
+    scenario.drainEvents();
+    observe(
+      scenario,
+      'hammering sound reaches the noise event path',
+      scenario.events.slice(hammerEventCount).some((event) => event.kind === 'noise' && event.event === 'lock_hammer'),
+    );
+    const feet = session.feet();
+    const struckOrigin: Vec3 = [Math.floor(feet[0]) - 1, Math.floor(feet[1]), Math.floor(feet[2]) - 2];
+    session.entities.add({ type: 'wood_door', pos: struckOrigin, size: doorSize, facing: 'n' });
+    state.doorPosition = [struckOrigin[0] + 1, struckOrigin[1] + 2, struckOrigin[2] + 0.5];
+    const strikeEvents = events.length;
+    session.playerCombat.beginMeleeSwing({
+      origin: session.chest(),
+      direction: [0, 0, -1],
+      weapon: FISTS_MELEE,
+      profile: 'fists',
+      twoHanded: false,
+      hands: { right: null, left: null },
+    });
+    advance(60);
+    scenario.drainEvents();
+    observe(
+      scenario,
+      'a strike on a closed door enters the noise path',
+      events.slice(strikeEvents).some((event) => event.kind === 'noise' && event.event === 'door_bash'),
+    );
   };
 
   const exerciseFurnitureMove = (scenario: NoiseScenario) => {
@@ -451,6 +479,38 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
       scenario,
       'lift and place both scrape',
       played.filter(({ sound }) => sound.event === 'furniture_scrape').length === 2,
+    );
+    const { maxSizeMetres, slide } = registry.inventory.get(CORE_CONTENT_IDS.player)!.furnitureMove;
+    const oversized = [...registry.furniture.values()].find(
+      (def) =>
+        def.container &&
+        !def.door &&
+        !def.mount &&
+        !def.vehicle &&
+        !def.climbable &&
+        !def.cover &&
+        def.size[1] * scenario.blockSize > maxSizeMetres,
+    );
+    if (!oversized) {
+      throw new Error('Furniture noise fixture needs an oversized loose container');
+    }
+    const heavy = session.entities.add({
+      type: oversized.id,
+      pos: [cell[0] + 2, cell[1], cell[2]],
+      size: oversized.size,
+      facing: 'n',
+    })!;
+    state.furniturePosition = [
+      heavy.pos[0] + 1 + heavy.size[0] / 2,
+      heavy.pos[1] + heavy.size[1] / 2,
+      heavy.pos[2] + heavy.size[2] / 2,
+    ];
+    observe(scenario, 'oversized piece starts a floor step', session.slideFurniture(heavy.uid, 'push') === undefined);
+    advance(Math.ceil(slide.stepSimSeconds * 60));
+    observe(
+      scenario,
+      'floor step scrapes',
+      played.some(({ sound }) => sound.event === 'furniture_drag'),
     );
   };
 
@@ -808,7 +868,7 @@ it('debug test noise reaches a shambler behind a wall and starts its hearing gaz
   for (let frame = 0; frame < 3; frame++) {
     session.frame(1 / 60);
   }
-  expect(zombie.mode).toBe('investigate');
+  expect(zombie.mode).toBe('hesitate');
   expect(zombie.investigationTier).toBe('near');
   expect(zombie.lastPerceived).toEqual(noise.pos);
 

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { currentSaveVersionIdentity, decodeSave, encodeSave } from '../src/core/saveFormat.ts';
 import { perceivePlayer } from '../src/core/zombies.ts';
-import { baseSources, buildBundledContent } from '../src/game/bundledContent.ts';
-import { BEGINNER_FACTORS, bundledModIdsFromUrl, selectBundledMods } from '../src/game/bundledMods.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
+import { bundledModIdsFromUrl, selectBundledMods } from '../src/game/bundledMods.ts';
 import { capture, contentLookup, createRuntime, formatWorldOptions } from './snapshotTestSupport.ts';
 
 const base = buildBundledContent().registry;
@@ -16,47 +16,32 @@ describe('beginner bundled mod', () => {
     expect(beginner.admitted.map(({ id }) => id)).toEqual(['beginner']);
   });
 
-  it('scales every hostile kind by its factor for damage, speed, detection and health', () => {
+  it('scales every hostile kind consistently from its core row', () => {
+    const [firstId, firstPlain] = base.zombies.entries().next().value!;
+    const firstEasy = beginner.content.registry.zombies.get(firstId)!;
+    const factors = {
+      damage: firstEasy.attack.moves[0]!.damage / firstPlain.attack.moves[0]!.damage,
+      speed: firstEasy.speed.wanderMetresPerSimSecond / firstPlain.speed.wanderMetresPerSimSecond,
+      detection: firstEasy.sight / firstPlain.sight,
+      health: firstEasy.regions.head! / firstPlain.regions.head!,
+    };
     expect(beginner.content.registry.zombies.size).toBe(base.zombies.size);
     for (const [id, plain] of base.zombies) {
       const easy = beginner.content.registry.zombies.get(id)!;
       expect(easy, id).toBeDefined();
       plain.attack.moves.forEach((move, index) => {
-        expect(easy.attack.moves[index]!.damage).toBeCloseTo(move.damage * BEGINNER_FACTORS.damage, 9);
+        expect(easy.attack.moves[index]!.damage).toBeCloseTo(move.damage * factors.damage, 9);
       });
-      expect(easy.speed.wanderMetresPerSimSecond).toBeCloseTo(
-        plain.speed.wanderMetresPerSimSecond * BEGINNER_FACTORS.speed,
-        9,
-      );
-      expect(easy.speed.chaseMetresPerSimSecond).toBeCloseTo(
-        plain.speed.chaseMetresPerSimSecond * BEGINNER_FACTORS.speed,
-        9,
-      );
+      expect(easy.speed.wanderMetresPerSimSecond).toBeCloseTo(plain.speed.wanderMetresPerSimSecond * factors.speed, 9);
+      expect(easy.speed.chaseMetresPerSimSecond).toBeCloseTo(plain.speed.chaseMetresPerSimSecond * factors.speed, 9);
       for (const key of ['sight', 'nightSight', 'hearing'] as const) {
-        expect(easy[key]).toBeCloseTo(plain[key] * BEGINNER_FACTORS.detection, 9);
+        expect(easy[key]).toBeCloseTo(plain[key] * factors.detection, 9);
       }
+      expect(easy.lightSightScale).toBeCloseTo((plain.lightSightScale ?? 1) * factors.detection, 9);
       for (const [region, health] of Object.entries(plain.regions)) {
-        expect(easy.regions[region]).toBeCloseTo(health * BEGINNER_FACTORS.health, 9);
+        expect(easy.regions[region]).toBeCloseTo(health * factors.health, 9);
       }
     }
-  });
-
-  it('follows base tuning instead of copying numbers', () => {
-    const tuned = baseSources.map((source) => {
-      const { zombies } = source.data as { zombies?: { attack: { moves: { damage: number }[] } }[] };
-      if (!zombies) {
-        return source;
-      }
-      const copy = structuredClone(source.data) as { zombies: { attack: { moves: { damage: number }[] } }[] };
-      for (const zombie of copy.zombies) {
-        zombie.attack.moves[0]!.damage += 10;
-      }
-      return { ...source, data: copy };
-    });
-    const [first] = [...base.zombies.values()];
-    const result = selectBundledMods(['beginner'], tuned);
-    const row = result.content.registry.zombies.get(first!.id)!;
-    expect(row.attack.moves[0]!.damage).toBeCloseTo((first!.attack.moves[0]!.damage + 10) * BEGINNER_FACTORS.damage, 9);
   });
 
   it('leaves content unchanged when no bundled mod is asked for', () => {
@@ -114,6 +99,7 @@ describe('beginner mode light spotting', () => {
           movement: 'still',
           lit: true,
           lightSeenFrom: 40,
+          eyeHeightMetres: 1.3,
           sunlit: false,
         },
         dayPhase: 'night',

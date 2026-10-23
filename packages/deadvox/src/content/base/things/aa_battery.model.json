@@ -1,0 +1,14 @@
+{
+  "id": "aa_battery",
+  "file": "assets/models/aa_battery.glb",
+  "parts": {
+    "material": {
+      "node": "material:vessel",
+      "massKg": 0.023,
+      "centreOfMass": [-0.0002631578947368421, 0.02605263157894737, 0]
+    }
+  },
+  "grip": { "at": [0, 0.025, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

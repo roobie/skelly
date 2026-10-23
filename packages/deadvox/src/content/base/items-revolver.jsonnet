@@ -5,7 +5,7 @@
       size: [2, 3], twoHanded: false, model: 'revolver',
       firearm: {
         shotSound: 'revolver_shot', dryFireSound: 'revolver_dry_click', triggerCocks: true,
-        recoilKickRadians: 0.035, dispersionRadians: 0.012,
+        recoilKickRadians: 0.035, dispersionRadians: 0.012, pelletSpreadScale: 1,
         handling: {},
         skillZeroHandling: {
           singleShot: { recoilKickScale: 10, recoilRecoveryScale: 0.3, variance: 30 },
@@ -26,7 +26,7 @@
     {
       id: 'cartridge_357_h_magnum', name: '.357 Magnum round', category: 'ammo',
       weight: 16, size: [1, 1], stack: 50, model: 'round_357_h_magnum',
-      ammo: { calibre: '357-magnum', pellets: 1, diameterMm: 9.07, damage: 70, impulse: 4, rangeMetres: 100, loadSimSeconds: 0.7, stripSimSeconds: 0.5 },
+      ammo: { calibre: '357-magnum', pellets: 1, spreadDegrees: 0, diameterMm: 9.07, damage: 70, impulse: 4, rangeMetres: 100, loadSimSeconds: 0.7, stripSimSeconds: 0.5 },
     },
     {
       id: 'cartridge_box_357_h_magnum', name: '.357 Magnum box', category: 'ammo',

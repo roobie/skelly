@@ -2,7 +2,7 @@
 read_if:
   - you're planning a version 1 slice, milestone or playtest
   - you're deciding which features belong in deadvox version 1
-  - you're changing firearm handling or combat design for version 1
+  - you're deciding what to cut if version 1 runs late
 ---
 
 # deadvox — the road to version 1
@@ -126,8 +126,6 @@ rendering separate from simulation state. Craft and mend covers:
 - About 80 item types. The validator checks that every component can be found
   or crafted.
 - More templates: a hardware store and a garage.
-- A sneak peek at trees and hedges in the hamlet, pulled forward from Slice 4a
-  (2.13).
 
 ### 3. Flesh and noise
 
@@ -150,7 +148,7 @@ choose to attach their local metrics and a recent replay. Testers without GitHub
 can email their metrics and feedback to the organiser; the organiser provides
 the address separately with the link.
 
-The authored route runs from the lone house through the hamlet, hunting cabins,
+The independently selected authored playtest route runs from the lone house through its hamlet neighborhood, hunting cabins,
 medical site and military camp, with the first and second nights along the way.
 The game does not script zombie behavior. Testers explore the map and make their
 own choices; the run is not facilitated or shadowed.
@@ -165,9 +163,8 @@ Use the metrics and feedback testers choose to share to assess:
 4. Is compressed sleep readable? Is the interruption clear and fair?
 5. Are a few shamblers enough threat to make looting and sleep meaningful?
 6. Is the first night frightening? What scared the player, and did it come from
-   darkness and sounds rather than a scripted moment? Until voxel light arrives
-   in Slice 4a, interiors are no darker than outdoors; interpret feedback with
-   that in mind ([DESIGN.md](DESIGN.md#light)).
+   darkness and sounds rather than a scripted moment? Light is in
+   [DESIGN.md](DESIGN.md#light).
 7. Does the 1:8 clock ratio give players enough time to explore the world?
 8. Do non-respawning shamblers make the second night too safe?
 9. Is combat readable and visceral? Do noise and wounds change what players do?
@@ -189,9 +186,6 @@ evidence to update DESIGN, CHALLENGES and this EPIC before planning Slice 4a. If
 the second night is too safe, add night wanderers after the first playtest. The
 organiser's sheet in [docs/playtest-run.md](docs/playtest-run.md) explains
 how testers can export and share their metrics and feedback.
-
-The death/new-run contract is still open for version 1: should a new run in the
-same world preserve piles left by the previous character?
 
 Slice 3's scope and milestone-by-milestone plan are in [SLICE-3.md](SLICE-3.md).
 The body model, melee and firearm work, ready stance, senses, light, weapon mods,
@@ -237,6 +231,8 @@ The scope, open decision gates and reviewable build order are in [SLICE-5.md](SL
 The settled scope, implementation gates and build order are in [SLICE-6.md](SLICE-6.md).
 The hatchback and pickup establish the transport loop; the heavy-part-hoist uses the
 same vehicle systems for field salvage. The motorbike follows the four-wheel loop.
+Every new vehicle starts on the content path; see
+`docs/vehicle-spike.md`, "The hatchback from content".
 
 - Vehicles as grids of parts: building from wrecks, installing and removing
   parts, and repair.
@@ -264,15 +260,14 @@ same vehicle systems for field salvage. The motorbike follows the four-wheel loo
 
 ### Sound polish
 
-The current d13-selected recordings are approved. Explicit placeholders and
-rejected or deferred work below remain open, including a better fist hit, a
+The placeholders and rejected or deferred work below are open, including a better fist hit, a
 hard-landing-specific sound, a distinct stuck-door cue and replacement mud/stone
 footsteps.
 
-- Surface-hit sounds by weapon type and surface: blade on stone has recordings parked as `melee-swing-01..03.ogg`; blunt on a wall and blunt on wood still need recordings. Implement after d7's deferred surface-hit result.
+- Surface-hit sounds by weapon type and surface: blade on stone has recordings parked as `melee-swing-01..03.ogg`; blunt on a wall and blunt on wood need recordings.
 - Split item-drop sounds by pile surface; the wood clips play on every surface because piles expose no surface classification.
-- Short drop onto a hard floor: still needed; candidate `.agent-mail/scratch/sounds-101/deferred/hard_floor_drop--bfh1_wood_hit_02.ogg` is in the mail scratch and intentionally not in the repo.
-- Wood tap or knock: still needed; candidate `.agent-mail/scratch/sounds-101/deferred/wood_tap--thwack-02.wav` is in the mail scratch and intentionally not in the repo.
+- A short drop onto a hard floor needs a recording.
+- A wood tap or knock needs a recording.
 - New sources for `footstep_mud` and `shambler_step_mud`; the existing variants are rejected.
 - More `footstep_leaves` variants. Do not use `footstep-leaves-02.ogg`; it sounds like linoleum.
 - New sources for `footstep_stone` and `shambler_step_stone`; keep the gravel-sounding clips for a future gravel surface.
@@ -310,8 +305,7 @@ Q and E remain reserved for later actions and have no world bindings.
 
 - Items carried in clothing can be damaged when that clothing is hit.
 - Condition can affect an item's performance before it is ruined.
-- Books teach recipes only, for now; they may also speed up skill practice in a
-  later reading design.
+- Books teach recipes and may teach skill too.
 - Learning from books will become gradual: reading lets the player use the book
   as a reference while doing the work, until the recipe is learned fully.
 - Condition may lower salvage yield.
@@ -351,10 +345,9 @@ qualities, the body model, saves, dark nights and sound. They are the game.
    and reviews check consolidation; deliveries record its scope, proof and
    metrics. Revisit dated backlog decisions throughout the slice, not just at
    its end.
-3. **Playtest:** at least 3 people follow a short script, and the build logs
-   local metrics. The first real playtest is scheduled for the end of Slice 3,
-   covering the first-slice questions recorded above plus
-   questions from Slices 2 and 3.
+3. **Playtest:** at least 3 people play on their own with no scripted session, and
+   the build logs local metrics. The first real playtest is at the end of Slice 3
+   (`EPIC.md`, "Playtest plan").
 4. **Review the slice:** run the exit consolidation surveys and report the
    process metrics: findings and their dispositions, per-item line/site changes,
    regressions including review-caught defects, standalone/folded capacity,

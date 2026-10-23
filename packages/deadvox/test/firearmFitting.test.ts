@@ -12,6 +12,7 @@ import { simSeconds } from '../src/core/time.ts';
 import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
+import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 
 type Pair = NonNullable<GunModelDef['compatibilityPairs']>[number];
 type Choice = Pair[number];
@@ -43,9 +44,10 @@ const makeFixture = (character?: HandedCharacter, prepareRegistry?: (registry: R
   return { registry, model, modelId, inventory, firearm, foregrip, withModel };
 };
 
+/** The first two bottom-rail slots the export certifies for the foregrip, so a multi-notch span stays on the rail. */
 const bottomRailSlots = (model: GunModelDef): string[] =>
   (model.attachmentSlots ?? [])
-    .filter((slot) => slot.mount === 'rail-bottom')
+    .filter((slot) => slot.mount === 'rail-bottom' && model.compatibility?.[slot.id]?.includes('foregrip'))
     .map((slot) => slot.id)
     .slice(0, 2);
 
@@ -64,6 +66,8 @@ const makeCandidateFixture = (attachmentCount: number, includeOutOfReach = false
         pockets: [{ grid: [attachmentCount * 4 + 8, 4], handlingSimSeconds: simSeconds(0) }],
         wideReason: 'Test-owned grid for candidate discovery',
       },
+      breach: fixtureBreach(),
+      material: FIXTURE_MATERIAL,
     };
     registry.furniture.set(cabinet.id, cabinet);
   });
@@ -361,6 +365,51 @@ describe('certified firearm fitting', () => {
     expect(trained.fit).toBeLessThan(untrained.fit);
     expect(trained.remove).toBeLessThan(untrained.remove);
     expect(durations(0, 10)).toEqual(untrained);
+  });
+
+  it('requires Firearms Combat 4 to fit a suppressor but not to remove one', () => {
+    const character = new Character(baseRegistry);
+    character.skills.firearms_combat = 3;
+    const fixture = makeFixture(character);
+    const suppressorType = [...fixture.registry.items.values()].find((item) => {
+      const model = item.model === undefined ? undefined : fixture.registry.models.get(item.model);
+      return model?.gun?.attachment?.kind === 'suppressor';
+    })?.id;
+    if (!suppressorType) {
+      throw new Error('Fixture registry needs a suppressor');
+    }
+    const suppressor = fixture.inventory.create(suppressorType);
+    const suppressorId = fixture.registry.models.get(defOf(fixture.registry, suppressor.type).model!)!.gun!.attachment!
+      .id;
+    const slot = fixture.model.attachmentSlots?.find(
+      ({ id }) => fixture.model.compatibility?.[id]?.includes(suppressorId) && !fixture.firearm.slots?.[id],
+    )?.id;
+    if (!slot) {
+      throw new Error('Fixture rifle needs a free suppressor mount');
+    }
+    const queue = new HandlingQueue(fixture.inventory);
+    const handling = new FirearmAttachmentHandling(fixture.inventory, queue, () => [0, 0, 0]);
+    if (
+      !(
+        fixture.inventory.add(fixture.firearm, { kind: 'hand', side: 'right' }) &&
+        fixture.inventory.add(suppressor, { kind: 'pile', pos: [0, 0, 0] })
+      )
+    ) {
+      throw new Error('Fixture suppressor could not be placed');
+    }
+
+    expect(handling.fit(fixture.firearm.uid, slot, suppressor.uid)).toBe("I can't fit this suppressor yet");
+    expect(queue.jobs).toHaveLength(0);
+
+    character.skills.firearms_combat = 4;
+    expect(handling.fit(fixture.firearm.uid, slot, suppressor.uid)).toBeUndefined();
+    queue.tick(10);
+    expect(fixture.firearm.slots?.[slot]).toBe(suppressor);
+
+    character.skills.firearms_combat = 0;
+    expect(handling.remove(fixture.firearm.uid, slot)).toBeUndefined();
+    queue.tick(10);
+    expect(fixture.firearm.slots?.[slot]).toBeUndefined();
   });
 
   it('keeps an unconfigured variable-power optic out of fitting', () => {

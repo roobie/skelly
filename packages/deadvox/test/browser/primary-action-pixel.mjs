@@ -3,6 +3,7 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone browser contract uses Node assertions
 // biome-ignore-all lint/style/noProcessEnv: runner controls the source checkout for A/B tests
 import assert from 'node:assert/strict';
+import { Buffer } from 'node:buffer';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import process from 'node:process';
@@ -65,6 +66,82 @@ const measureGlowstickFloor = async (page, uid, label, capture) => {
   );
   return { measurement, screenshot };
 };
+
+// Puts a compass in the dominant hand by daylight and counts how many pixels of the square around
+// its card differ visibly between the first frame that shows the card and the next frame, drawn
+// with only the card hidden. A page screenshot costs seconds per frame on the software renderer in
+// CI, so this reads the drawing buffer right after the held layer, the frame's last draw, in one
+// page call. The shown window also comes back as a PNG for the artifact.
+const heldCompassCardChange = (page) =>
+  page.evaluate((noon) => {
+    const r = globalThis.primaryActionTest;
+    const { sim } = r.session;
+    sim.setDebugCalendarTime(r.nextTimeOfDay(sim.calendar, noon));
+    r.setHand(r.dominant, r.inventory.create('compass'));
+    const { held } = r.view;
+    const { scene, camera } = held.warmUpTarget;
+    const gl = r.engine.renderer.getContext();
+    let window;
+    const read = (dial) => {
+      if (!window) {
+        const width = gl.drawingBufferWidth;
+        const height = gl.drawingBufferHeight;
+        const point = dial.getWorldPosition(dial.position.clone()).project(camera);
+        const rim = dial.localToWorld(dial.position.clone().set(dial.geometry.parameters.radius, 0, 0)).project(camera);
+        const radius = Math.round(Math.hypot(((rim.x - point.x) * width) / 2, ((rim.y - point.y) * height) / 2));
+        window = {
+          left: Math.round(((point.x + 1) / 2) * width) - radius,
+          bottom: Math.round(((point.y + 1) / 2) * height) - radius,
+          side: radius * 2 + 1,
+        };
+      }
+      const { left, bottom, side } = window;
+      const flipped = new Uint8Array(side * side * 4);
+      gl.readPixels(left, bottom, side, side, gl.RGBA, gl.UNSIGNED_BYTE, flipped);
+      const data = new Uint8ClampedArray(flipped.length);
+      for (let row = 0; row < side; row += 1) {
+        data.set(flipped.subarray((side - 1 - row) * side * 4, (side - row) * side * 4), row * side * 4);
+      }
+      return data;
+    };
+    const compare = (shown, hidden) => {
+      let changed = 0;
+      for (let index = 0; index < shown.length; index += 4) {
+        const difference = [0, 1, 2].reduce(
+          (sum, channel) => sum + Math.abs(shown[index + channel] - hidden[index + channel]),
+          0,
+        );
+        if (difference > 48) {
+          changed += 1;
+        }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = window.side;
+      canvas.height = window.side;
+      canvas.getContext('2d').putImageData(new ImageData(shown, window.side, window.side), 0, 0);
+      return { changed, pixels: shown.length / 4, side: window.side, png: canvas.toDataURL('image/png').split(',')[1] };
+    };
+    return new Promise((drawn, failed) => {
+      const { render } = held;
+      let shown;
+      let renders = 0;
+      held.render = (...args) => {
+        render.apply(held, args);
+        renders += 1;
+        const dial = scene.getObjectByName('compass-live-dial');
+        if (renders > 30) {
+          held.render = render;
+          failed(new Error('The held compass card was not drawn within 30 held-layer frames'));
+        } else if (dial?.visible === true && !shown) {
+          shown = read(dial);
+          dial.visible = false;
+        } else if (dial?.visible === false && shown) {
+          held.render = render;
+          drawn(compare(shown, read(dial)));
+        }
+      };
+    });
+  }, 12 * 3600);
 
 const visorRatio = (page, shot) =>
   page.evaluate(async (base64) => {
@@ -241,22 +318,17 @@ try {
     assert.ok(Math.abs(restored / baseline - 1) < 0.02, 'removing the helmet restores the scene ratio');
     assert.deepEqual(pageErrors, []);
   });
-  await page.evaluate(() => {
-    const r = globalThis.primaryActionTest;
-    r.clearHand(r.dominant);
-    r.clearHand(r.off);
-    r.setHand(r.dominant, r.inventory.create('machete'));
-    r.setHand(r.off, r.inventory.create('canned_beans'));
+  await timePhase('held-compass-pixel-assertion', async () => {
+    // The card is lit like the model, so it is read by daylight; nothing after this phase needs the
+    // night. Hiding only the card isolates its own pixels from the lit floor and the arm around it.
+    const { png, ...change } = await heldCompassCardChange(page);
+    await writeFile(resolve(projectRoot, 'test-results/primary-action/held-compass.png'), Buffer.from(png, 'base64'));
+    process.stdout.write(`Held compass card pixels: ${JSON.stringify(change)}\n`);
+    assert.ok(
+      change.changed > change.pixels / 20,
+      'the held compass card is visible: hiding it changes its marks and needle on screen',
+    );
   });
-  await page.waitForFunction(() => !document.querySelector('#item-action-list').hidden);
-  await page.mouse.wheel(0, 100);
-  await page.waitForFunction(() => {
-    const r = globalThis.primaryActionTest;
-    return r.survival.selectedItemAction(r.inventory.hands[r.dominant])?.opening === true;
-  });
-  const artifacts = resolve(projectRoot, 'test-results/primary-action');
-  await mkdir(artifacts, { recursive: true });
-  await page.screenshot({ path: resolve(artifacts, 'can-action-list.png') });
 } finally {
   if (browser) {
     await timePhase('browser-close', () => browser.close());

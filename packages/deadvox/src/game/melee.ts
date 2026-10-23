@@ -18,7 +18,7 @@ export const meleeWeaponFromContent = (weapon: ContentMeleeWeapon): MeleeWeapon 
     contactFraction: weapon.contactFraction,
     windupCapSimSeconds: weapon.windupCapSimSeconds,
     stamina: weapon.stamina,
-    ...(weapon.impulse === undefined ? {} : { impulse: weapon.impulse }),
+    impulse: weapon.impulse,
     ...(weapon.damageVariance === undefined ? {} : { damageVariance: weapon.damageVariance }),
     ...(weapon.headDamageMultiplier === undefined ? {} : { headDamageMultiplier: weapon.headDamageMultiplier }),
     ...(weapon.limbDamageMultiplier === undefined ? {} : { limbDamageMultiplier: weapon.limbDamageMultiplier }),

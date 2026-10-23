@@ -1,5 +1,5 @@
 import { CHUNK, chunkKey, type Vec3 } from './coords.ts';
-import { SKY_LOSS, type SkyBounds, type SkyVolume, skyIndex } from './skylight.ts';
+import { SKY_LOSS, type SkyBounds, type SkyChannel, type SkyVolume, skyIndex } from './skylight.ts';
 import {
   containsSky,
   growSky,
@@ -15,12 +15,16 @@ export interface SkyResult {
   heights: Float32Array;
   volume: SkyVolume | undefined;
 }
+/** `flags` packs solid + roofed * 2 with furniture in bits 0-1 and without it in bits 2-3. */
 type Visit = (column: readonly [number, number], y: number, flags: number, highest: number) => void;
+const FURNISHED = 3;
+const UNFURNISHED_SHIFT = 2;
 interface Column {
   point: [number, number];
   index: number;
   furniture: SkyBounds[];
   roof: boolean;
+  blockRoof: boolean;
   /** Still inside the column's topmost run of furniture-only cells. */
   furnitureTop: boolean;
   highest: number;
@@ -55,8 +59,10 @@ function visitCell(
     column.highest = y - 1;
   }
   column.roof ||= solid;
+  column.blockRoof ||= cell === BLOCK;
   if (y < bounds.max[1]) {
-    visit(column.point, y, Number(solid) + Number(column.roof) * 2, column.highest);
+    const bare = Number(cell === BLOCK) + Number(column.blockRoof) * 2;
+    visit(column.point, y, Number(solid) + Number(column.roof) * 2 + (bare << UNFURNISHED_SHIFT), column.highest);
   }
 }
 function scanColumn(
@@ -73,6 +79,7 @@ function scanColumn(
       (box) => x >= box.min[0] && x < box.max[0] && z >= box.min[2] && z < box.max[2],
     ),
     roof: false,
+    blockRoof: false,
     furnitureTop: false,
     highest: snapshot.bottom - 1,
   };
@@ -103,24 +110,25 @@ function scan(snapshot: SkySnapshot, bounds: SkyBounds, visit: Visit): void {
   }
 }
 interface Flood {
-  volume: SkyVolume;
+  size: Vec3;
+  light: Uint8Array;
   blocked: Uint8Array;
   queue: Uint32Array;
   tail: number;
 }
 function offer(flood: Flood, index: number, value: number): void {
-  if (!flood.blocked[index] && flood.volume.light[index] === 0) {
-    flood.volume.light[index] = value;
+  if (!flood.blocked[index] && flood.light[index] === 0) {
+    flood.light[index] = value;
     flood.queue[flood.tail] = index;
     flood.tail += 1;
   }
 }
 function floodAir(flood: Flood): void {
-  const { volume } = flood;
-  const [sx, sy, sz] = volume.size;
+  const { light } = flood;
+  const [sx, sy, sz] = flood.size;
   for (let head = 0; head < flood.tail; head++) {
     const index = flood.queue[head]!;
-    const value = volume.light[index]! - SKY_LOSS;
+    const value = light[index]! - SKY_LOSS;
     if (value <= 0) {
       continue;
     }
@@ -147,38 +155,57 @@ function floodAir(flood: Flood): void {
     }
   }
 }
-function transport(snapshot: SkySnapshot, bounds: SkyBounds): SkyVolume {
-  const size = bounds.max.map((value, axis) => value - bounds.min[axis]!) as Vec3;
-  const volume = { ...bounds, size, light: new Uint8Array(size[0] * size[1] * size[2]) };
-  const flood: Flood = {
-    volume,
-    blocked: new Uint8Array(volume.light.length),
-    queue: new Uint32Array(volume.light.length),
+const newFlood = (size: Vec3): Flood => {
+  const length = size[0] * size[1] * size[2];
+  return {
+    size,
+    light: new Uint8Array(length),
+    blocked: new Uint8Array(length),
+    queue: new Uint32Array(length),
     tail: 0,
   };
+};
+function seed(flood: Flood, index: number, flags: number): void {
+  flood.blocked[index] = flags & 1;
+  if (flags === 0) {
+    flood.light[index] = 255;
+    flood.queue[flood.tail] = index;
+    flood.tail += 1;
+  }
+}
+function transport(snapshot: SkySnapshot, bounds: SkyBounds): SkyVolume {
+  const size = bounds.max.map((value, axis) => value - bounds.min[axis]!) as Vec3;
+  const furnished = newFlood(size);
+  const unfurnished = newFlood(size);
   scan(snapshot, bounds, ([x, z], y, flags) => {
     const index = skyIndex(size, x - bounds.min[0], y - bounds.min[1], z - bounds.min[2]);
-    flood.blocked[index] = flags & 1;
-    if (flags === 0) {
-      volume.light[index] = 255;
-      flood.queue[flood.tail] = index;
-      flood.tail += 1;
-    }
+    seed(furnished, index, flags & FURNISHED);
+    seed(unfurnished, index, flags >> UNFURNISHED_SHIFT);
   });
-  floodAir(flood);
-  return volume;
+  floodAir(furnished);
+  floodAir(unfurnished);
+  return { ...bounds, size, light: furnished.light, unfurnished: unfurnished.light };
 }
-function crop(volume: SkyVolume, bounds: SkyBounds): SkyVolume {
+function cropChannel(volume: SkyVolume, bounds: SkyBounds, channel: SkyChannel): Uint8Array {
   const size = bounds.max.map((value, axis) => value - bounds.min[axis]!) as Vec3;
-  const light = new Uint8Array(size[0] * size[1] * size[2]);
+  const cropped = new Uint8Array(size[0] * size[1] * size[2]);
   const offset = bounds.min.map((value, axis) => value - volume.min[axis]!) as Vec3;
   for (let y = 0; y < size[1]; y++) {
     for (let z = 0; z < size[2]; z++) {
       const start = skyIndex(volume.size, offset[0], y + offset[1], z + offset[2]);
-      light.set(volume.light.subarray(start, start + size[0]), skyIndex(size, 0, y, z));
+      cropped.set(volume[channel].subarray(start, start + size[0]), skyIndex(size, 0, y, z));
     }
   }
-  return { ...bounds, size, light };
+  return cropped;
+}
+function crop(volume: SkyVolume, bounds: SkyBounds): SkyVolume {
+  const size = bounds.max.map((value, axis) => value - bounds.min[axis]!) as Vec3;
+  return {
+    ...bounds,
+    size,
+    light: cropChannel(volume, bounds, 'light'),
+    unfurnished: cropChannel(volume, bounds, 'unfurnished'),
+  };
 }
 export function buildSkyResult(snapshot: SkySnapshot): SkyResult {
   const { bounds } = snapshot;
@@ -192,7 +219,7 @@ export function buildSkyResult(snapshot: SkySnapshot): SkyResult {
   const max: Vec3 = [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY];
   scan(snapshot, heightBounds, ([x, z], y, flags, highest) => {
     heights[x - heightBounds.min[0] + width * (z - heightBounds.min[2])] = highest;
-    if (flags === 2 && containsSky(bounds, [x, y, z])) {
+    if ((flags & FURNISHED) === 2 && containsSky(bounds, [x, y, z])) {
       const point: Vec3 = [x, y, z];
       for (let axis = 0; axis < 3; axis++) {
         min[axis] = Math.min(min[axis]!, point[axis]!);
@@ -212,7 +239,7 @@ export function buildSkyResult(snapshot: SkySnapshot): SkyResult {
 }
 
 /** Matches linear texture sampling at voxel centres, including the clamped interpolation shell. */
-export function sampleSky(volume: SkyVolume, point: Vec3): number {
+export function sampleSky(volume: SkyVolume, point: Vec3, channel: SkyChannel = 'light'): number {
   if (!containsSky(volume, point)) {
     return 0;
   }
@@ -228,7 +255,7 @@ export function sampleSky(volume: SkyVolume, point: Vec3): number {
           Math.min(volume.size[axis]! - 1, Math.floor(value) + steps[axis]!),
         ) as Vec3;
         const weight = cell.reduce((product, value, axis) => product * (steps[axis] ? value % 1 : 1 - (value % 1)), 1);
-        sum += volume.light[skyIndex(volume.size, ...index)]! * weight;
+        sum += volume[channel][skyIndex(volume.size, ...index)]! * weight;
       }
     }
   }

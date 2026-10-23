@@ -4,13 +4,14 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
-import { type Zombie, ZombieSystem } from '../src/core/zombies.ts';
+import type { Zombie } from '../src/core/zombies.ts';
 import { DebugAimOverlay } from '../src/debug/aimOverlay.ts';
-import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
+import { PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const SCALE = makeScale(0.5);
@@ -25,6 +26,7 @@ const standing = (position: Vec3, facing: Vec3) => {
       movement: 'still',
       lit: false,
       lightSeenFrom: 40,
+      eyeHeightMetres: 1.3,
     }),
     isSolid: FLOOR,
     isOpaque: FLOOR,

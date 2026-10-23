@@ -2,25 +2,47 @@
 // as a child item in `slots.battery`, so charge and identity have one owner. A light drains only
 // while it's on, at its rate per game hour, in closed form: a long step drains exactly
 // what ticking every second would, and the light goes out when the charge runs out.
-// Swapping in a fresh battery is handling; the old one comes out with what it had left.
+// Swapping in a fresh battery is handling; the old one comes out with what it had left, as it
+// does when the battery is taken out alone.
 
+import { batteryCharge, batteryEnergy, batteryFields, batteryFits, spentBattery } from './battery.ts';
 import type { BlockEntity } from './blockEntities.ts';
 import { offSide } from './character.ts';
 import type { Registry } from './content.ts';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
+import { type CoreMessageKey, coreMessage } from './coreText.ts';
 import type { DayCycle } from './dayPhase.ts';
 import type { Inventory, Location, Pile, Target } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { putDownRefusal } from './itemThrow.ts';
-import { isInHeldItemSlotTree, itemRoots } from './itemTree.ts';
-import { raycast, type SolidAt } from './raycast.ts';
+import { isInHeldItemSlotTree, itemRoots, walkItemTree } from './itemTree.ts';
+import type { SolidAt } from './raycast.ts';
 import type { NightVision, SenseDef, WearSlot } from './schema.ts';
 import { sunDirection } from './sky.ts';
 import { type GameRate, type GameSeconds, gameSeconds } from './time.ts';
 
-/** Lift ground-light emitters so the near-field falloff reaches nearby surfaces, rather than only grazing the floor. */
-export const WORLD_LIGHT_HEIGHT_METRES = 0.4;
 export type LightExposure = 'carried' | 'world';
+const WORN_SLOT_TREE_PATH = /^inventory\.worn\.[^.]+\.slots\./;
+const PILE_SLOT_TREE_PATH = /^inventory\.piles\[\d+\]\.items\[\d+\]\.item(?:\.slots\.[^.]+)+$/;
+
+/** Exposed world attachments use their root's pile location, never a container's contents. */
+export function* inventoryLightEntries(inventory: Inventory) {
+  yield* inventory.carriedTree();
+  for (const root of itemRoots<Item, Pile, BlockEntity>({
+    hands: {},
+    worn: {},
+    piles: inventory.piles.values(),
+    entities: [],
+  })) {
+    yield root;
+    for (const entry of walkItemTree([root])) {
+      if (entry.location.kind === 'slot' && PILE_SLOT_TREE_PATH.test(entry.path)) {
+        yield { ...entry, location: root.location };
+      }
+    }
+  }
+}
 
 export interface LightSenseSource {
   pos: Vec3;
@@ -40,14 +62,17 @@ export const lightExposureFor = (
   if (!(item.on && definition?.light) || (definition.light.power && chargeOf(registry, item) === 0)) {
     return undefined;
   }
-  const inHeldItemSlotTree = location.kind === 'slot' && isInHeldItemSlotTree(path);
-  if (location.kind === 'hand' || location.kind === 'worn' || inHeldItemSlotTree) {
+  const inCarriedSlotTree =
+    location.kind === 'slot' &&
+    (isInHeldItemSlotTree(path) || WORN_SLOT_TREE_PATH.test(path)) &&
+    !path.includes('.pockets[');
+  if (location.kind === 'hand' || location.kind === 'worn' || inCarriedSlotTree) {
     return 'carried';
   }
   if (location.kind === 'pocket' && (path.startsWith('inventory.hands.') || path.startsWith('inventory.worn.'))) {
     return 'carried';
   }
-  if (location.kind === 'pile' && definition.light.burning?.drop === 'stay') {
+  if (location.kind === 'pile' && (definition.light.burning?.drop === 'stay' || PILE_SLOT_TREE_PATH.test(path))) {
     return 'world';
   }
   return undefined;
@@ -91,9 +116,9 @@ export const lightSenseSourceFor = ({
   if (location.kind === 'pile') {
     const [x, y, z] = location.pile.pos;
     return {
-      pos: [x + 0.5, y + 0.15, z + 0.5],
+      pos: [x + 0.5, y, z + 0.5],
       seenFrom: light.seenFrom,
-      heightMetres: 0,
+      heightMetres: registry.senses.get(CORE_CONTENT_IDS.player)!.light.groundLight.senseHeightMetres,
       carried: false,
     };
   }
@@ -106,50 +131,20 @@ export const inventoryLightSources = (
   eyeHeightMetres: number,
 ): LightSenseSource[] => {
   const sources: LightSenseSource[] = [];
-  const collect = (entries: ReturnType<Inventory['items']> | ReturnType<typeof itemRoots<Item, Pile, BlockEntity>>) => {
-    for (const { item, location, path } of entries) {
-      const source = lightSenseSourceFor({
-        registry: inventory.registry,
-        item,
-        location,
-        path,
-        playerPosition,
-        eyeHeightMetres,
-      });
-      if (source) {
-        sources.push(source);
-      }
+  for (const { item, location, path } of inventoryLightEntries(inventory)) {
+    const source = lightSenseSourceFor({
+      registry: inventory.registry,
+      item,
+      location,
+      path,
+      playerPosition,
+      eyeHeightMetres,
+    });
+    if (source) {
+      sources.push(source);
     }
-  };
-  // Only carried trees and pile roots can be exposed; furniture and pile descendants cannot emit.
-  collect(inventory.carriedTree());
-  collect(itemRoots<Item, Pile, BlockEntity>({ hands: {}, worn: {}, piles: inventory.piles.values(), entities: [] }));
+  }
   return sources;
-};
-
-/** A daylight sky-exposure test for simulation senses; authored renderer skylight is not authoritative here. */
-export const sunExposedAt = ({
-  position,
-  gameHours,
-  skyTop,
-  isOpaque,
-  cycle,
-}: {
-  position: readonly [number, number, number];
-  gameHours: number;
-  skyTop: number;
-  isOpaque: SolidAt;
-  cycle: DayCycle;
-}): boolean => {
-  if (sunDirection(gameHours, cycle)[1] <= 0) {
-    return false;
-  }
-  const distance = skyTop - position[1];
-  if (distance <= 0) {
-    return false;
-  }
-  const origin: [number, number, number] = [position[0], position[1] + 1e-4, position[2]];
-  return raycast(origin, [0, 1, 0], distance, isOpaque) === undefined;
 };
 
 /** Reuses the highest opaque block in each vertical column for the session's sun checks. */
@@ -204,8 +199,6 @@ const capacityOf = (registry: Registry, batteryType: string): number =>
   defOf(registry, batteryType).battery?.capacity ?? 0;
 
 /** Battery power, if this source takes replaceable batteries. */
-const batteryPowerOf = (registry: Registry, light: Item) => defOf(registry, light.type).light?.power;
-
 /** Charge used per game second by a battery- or self-fuelled light. */
 const drainRateOf = (registry: Registry, light: Item): GameRate | undefined => {
   const spec = defOf(registry, light.type).light;
@@ -216,14 +209,14 @@ const drainRateOf = (registry: Registry, light: Item): GameRate | undefined => {
 export const chargeOf = (registry: Registry, item: Item): number | undefined => {
   const def = defOf(registry, item.type);
   if (def.battery) {
-    return item.charges ?? def.battery.capacity;
+    return batteryCharge(registry, item);
   }
   if (def.canister) {
     return item.charges ?? def.canister.capacity;
   }
   if (def.light?.power) {
     const battery = item.slots?.battery;
-    return battery ? (battery.charges ?? capacityOf(registry, battery.type)) : 0;
+    return battery ? chargeOf(registry, battery) : 0;
   }
   if (def.tool?.fuel) {
     const canister = item.slots?.canister;
@@ -245,33 +238,50 @@ export const chargeShare = (registry: Registry, item: Item): number | undefined 
   return capacity === undefined || charge === undefined ? undefined : charge / capacity;
 };
 
+/** Starts a consumable light's burn clock. Returns why it can't light, or undefined. */
+const startBurn = (
+  light: Item,
+  spec: NonNullable<ReturnType<typeof defOf>['light']>,
+  burnTime: number,
+  calendar: number,
+): CoreMessageKey | undefined => {
+  if (light.burnRemainingGameSeconds !== undefined && !spec.burning?.relight) {
+    return 'cantRelight';
+  }
+  const remaining = light.burnRemainingGameSeconds ?? burnTime;
+  if (remaining <= 0) {
+    return 'burnedOut';
+  }
+  light.burnRemainingGameSeconds = remaining;
+  light.litAtGameTimestamp = calendar;
+  return undefined;
+};
+
 /** Switches a light on or off. Returns why it can't come on, or undefined. */
 export const toggleLight = (registry: Registry, light: Item, calendar = 0): string | undefined => {
   const def = defOf(registry, light.type);
   const spec = def.light;
   if (spec === undefined) {
-    return "It isn't a light";
+    return coreMessage(registry, 'notLight');
   }
   if (light.on) {
     if (spec.burning && !spec.burning.douse) {
-      return "It can't be doused";
+      return coreMessage(registry, 'cantDouse');
     }
     light.on = false;
     light.litAtGameTimestamp = undefined;
     return undefined;
   }
   if (spec.burnTimeGameHours !== undefined) {
-    if (light.burnRemainingGameSeconds !== undefined && !spec.burning?.relight) {
-      return "It can't be lit again";
+    const blocked = startBurn(light, spec, spec.burnTimeGameHours, calendar);
+    if (blocked) {
+      return coreMessage(registry, blocked);
     }
-    const remaining = light.burnRemainingGameSeconds ?? spec.burnTimeGameHours;
-    if (remaining <= 0) {
-      return 'It has burned out';
-    }
-    light.burnRemainingGameSeconds = remaining;
-    light.litAtGameTimestamp = calendar;
   } else if (chargeOf(registry, light) === 0) {
-    return def.igniter ? "It's out of fuel" : 'The battery is dead';
+    if (spec.power && !light.slots?.battery) {
+      return coreMessage(registry, 'noBattery');
+    }
+    return coreMessage(registry, def.igniter || def.tool?.fuel ? 'outOfFuel' : 'batteryDead');
   }
   light.on = true;
   return undefined;
@@ -306,17 +316,33 @@ export const drainLight = (
   if (!(light.on && ratePerGameSecond !== undefined)) {
     return undefined;
   }
-  const battery = light.slots?.battery;
+  // A fuelled lamp holds its oil in the canister slot, as a powered light holds its battery.
+  const cell = light.slots?.battery ?? light.slots?.canister;
   const charge = chargeOf(registry, light) ?? 0;
   const lasts = charge / ratePerGameSecond;
   if (lasts > elapsedGameSeconds) {
-    if (battery) {
-      battery.charges = charge - ratePerGameSecond * elapsedGameSeconds;
+    if (cell) {
+      const mapping = defOf(registry, cell.type).battery?.rechargeable;
+      if (mapping) {
+        cell.batteryMicrojoules = Math.max(
+          0,
+          batteryEnergy(registry, cell) -
+            Math.ceil(ratePerGameSecond * elapsedGameSeconds * mapping.microjoulesPerCharge),
+        );
+        cell.charges = undefined;
+      } else {
+        cell.charges = charge - ratePerGameSecond * elapsedGameSeconds;
+      }
     }
     return undefined;
   }
-  if (battery) {
-    battery.charges = 0;
+  if (cell) {
+    if (defOf(registry, cell.type).battery?.rechargeable) {
+      cell.batteryMicrojoules = 0;
+      cell.charges = undefined;
+    } else {
+      cell.charges = 0;
+    }
   }
   light.on = false;
   return gameSeconds(lasts);
@@ -328,9 +354,20 @@ export const offHandUse = (registry: Registry, inventory: Inventory): Item | und
   return item && defOf(registry, item.type).light ? item : undefined;
 };
 
+/** A fitted light is serviced with its gun in hand, without detaching it. */
+export const lightInHands = (inventory: Inventory, light: Item): boolean => {
+  const at = inventory.locate(light);
+  return (
+    at?.kind === 'hand' ||
+    (at?.kind === 'slot' &&
+      defOf(inventory.registry, at.owner.type).firearm !== undefined &&
+      inventory.locate(at.owner)?.kind === 'hand')
+  );
+};
+
 /** Whether a battery fits a light. */
 export const fitsLight = (registry: Registry, light: Item, battery: Item): boolean =>
-  batteryPowerOf(registry, light)?.battery === battery.type;
+  batteryFits(registry, light.type, battery.type);
 
 /**
  * Puts one of `battery` into `light`, in place. The old battery comes out with its
@@ -345,14 +382,9 @@ export const swapBattery = (
 ): string | undefined => {
   const { registry } = inventory;
   if (!fitsLight(registry, light, battery)) {
-    return "It doesn't take that battery";
+    return coreMessage(registry, 'wrongBattery');
   }
-  const oldBattery = light.slots?.battery;
-  const old = oldBattery ? (chargeOf(registry, oldBattery) ?? 0) : 0;
-  const kept = oldBattery && old > 0 ? oldBattery : undefined;
-  if (kept) {
-    kept.charges = old;
-  }
+  const kept = spentBattery(registry, light.slots?.battery);
   const target = kept && spent(kept);
   if (kept) {
     const refusal = putDownRefusal(inventory, kept, target);
@@ -361,15 +393,43 @@ export const swapBattery = (
     }
   }
   const replacement = battery.count > 1 ? inventory.create(battery.type, 1, battery.condition) : battery;
-  if (battery.charges !== undefined) {
-    replacement.charges = battery.charges;
-  }
+  Object.assign(replacement, batteryFields(battery));
   if (!inventory.consume(battery)) {
-    return 'The battery is gone';
+    return coreMessage(registry, 'batteryGone');
   }
   inventory.fitSlot(light, 'battery', replacement);
   if (kept && target) {
     inventory.add(kept, target);
   }
+  return undefined;
+};
+
+/** Whether `light` holds a battery that could be taken out. */
+export const canUnloadBattery = (registry: Registry, light: Item): boolean =>
+  defOf(registry, light.type).light?.power !== undefined && light.slots?.battery !== undefined;
+
+/**
+ * Takes the battery out of `light` and switches it off. The battery keeps its charge and goes
+ * where `stow` puts it; a dead one is thrown away, as in a swap. With nowhere to put it, it stays
+ * fitted. Returns why it couldn't, or undefined.
+ */
+export const unloadBattery = (
+  inventory: Inventory,
+  light: Item,
+  stow: (item: Item) => Target | undefined,
+): string | undefined => {
+  const { registry } = inventory;
+  const removed = inventory.fitSlot(light, 'battery', undefined);
+  if (!removed) {
+    return coreMessage(registry, 'batteryGone');
+  }
+  const kept = spentBattery(registry, removed);
+  const target = kept && stow(kept);
+  if (kept && !(target && inventory.add(kept, target))) {
+    inventory.fitSlot(light, 'battery', kept);
+    return coreMessage(registry, 'cantStow', { item: defOf(registry, kept.type).name.toLowerCase() });
+  }
+  light.on = false;
+  light.litAtGameTimestamp = undefined;
   return undefined;
 };

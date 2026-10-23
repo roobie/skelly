@@ -1,5 +1,6 @@
 // Craft intents revalidate live ownership; views never execute a previously displayed plan.
 import { type CraftCharacter, dominantSide, SKILL_LEVEL_MIN, skillEffectLevel } from './character.ts';
+import { coreLabel, coreMessage } from './coreText.ts';
 import { type CraftPreference, type CraftResult, planCraft } from './crafting.ts';
 import { planDisassembly } from './disassembly.ts';
 import type { HandlingQueue } from './handling.ts';
@@ -55,16 +56,16 @@ export class CraftCommands {
   }
   startReason(): string | undefined {
     if (this.inventory.hands.right || this.inventory.hands.left) {
-      return 'Hands full — empty both hands';
+      return coreMessage(this.inventory.registry, 'handsFull');
     }
     if (this.queue.busy) {
-      return 'Finish handling first';
+      return coreMessage(this.inventory.registry, 'handsBusy');
     }
     return undefined;
   }
   preview(recipeId: string, prefer?: CraftPreference): CraftResult | undefined {
     const recipe = this.inventory.registry.recipes.get(recipeId);
-    return recipe && planCraft(recipe, this.reach(), this.character, prefer);
+    return recipe && !recipe.activation ? planCraft(recipe, this.reach(), this.character, prefer) : undefined;
   }
   start(recipeId: string, prefer?: CraftPreference): string | undefined {
     const reason = this.startReason();
@@ -84,7 +85,7 @@ export class CraftCommands {
     }
     const target = this.repairTarget(recipe.result.item);
     if (!target) {
-      return 'No damaged repair target in reach';
+      return coreMessage(this.inventory.registry, 'noRepairTarget');
     }
     const repair = recipe.repair!;
     const skill = skillEffectLevel(this.character.skills[repair.skill] ?? SKILL_LEVEL_MIN);
@@ -99,19 +100,21 @@ export class CraftCommands {
   }
   private reachable(uid: number): string | undefined {
     const item = this.inventory.itemByUid(uid);
+    const { registry } = this.inventory;
     if (!item?.work) {
-      return 'The work item is missing';
+      return coreMessage(registry, 'gone');
     }
-    return this.reach().entries.some((entry) => entry.item === item) ? undefined : 'The work item is out of reach';
+    return this.reach().entries.some((entry) => entry.item === item) ? undefined : coreMessage(registry, 'outOfReach');
   }
   private disassemblyOption(item: Item): WorkOption[] {
-    const definition = this.inventory.registry.items.get(item.type)!;
+    const { registry } = this.inventory;
+    const definition = registry.items.get(item.type)!;
     if (!(definition.disassembly || definition.salvage)) {
       return [];
     }
     const snapshot = this.reach();
     const reachable = snapshot.entries.some((entry) => entry.item === item);
-    const reason = reachable ? this.startReason() : 'The item is out of reach';
+    const reason = reachable ? this.startReason() : coreMessage(registry, 'outOfReach');
     const plan = planDisassembly(item, snapshot, this.character);
     let result: Plan;
     if (reason) {
@@ -119,12 +122,12 @@ export class CraftCommands {
     } else if (plan) {
       result = { ok: true, time: 0 };
     } else {
-      result = { ok: false, reason: 'The item cannot be taken apart' };
+      result = { ok: false, reason: coreMessage(registry, 'cantTakeApart') };
     }
     return [
       {
         operation: 'disassemble',
-        label: 'Take apart',
+        label: coreLabel(registry, 'takeApart'),
         ...(!reason && plan ? { duration: plan.duration } : {}),
         plan: result,
       },
@@ -135,27 +138,31 @@ export class CraftCommands {
     if (!work) {
       return [];
     }
+    const { registry } = this.inventory;
     const { job } = this.sim.actions;
+    const crafting = job?.jobType === 'craft' && !job.stopped;
     const reason =
       this.reachable(uid) ??
-      (this.queue.busy ? 'Finish handling first' : undefined) ??
-      (job?.jobType === 'craft' && !job.stopped && job.workUid !== uid ? 'Another craft is active' : undefined) ??
-      (job?.jobType === 'craft' && !job.stopped ? 'Already working' : undefined) ??
+      (this.queue.busy ? coreMessage(registry, 'handsBusy') : undefined) ??
+      (crafting && job.workUid !== uid ? coreMessage(registry, 'otherCraft') : undefined) ??
+      (crafting ? coreMessage(registry, 'alreadyWorking') : undefined) ??
       this.sim.actions.craft?.validate(uid);
     const name =
       work.kind === 'craft'
-        ? this.inventory.registry.items
-            .get(this.inventory.registry.recipes.get(work.recipe)!.result.item)!
-            .name.toLowerCase()
-        : this.inventory.registry.items.get(work.source)!.name.toLowerCase();
+        ? registry.items.get(registry.recipes.get(work.recipe)!.result.item)!.name.toLowerCase()
+        : registry.items.get(work.source)!.name.toLowerCase();
     const apart = this.reachable(uid);
     return [
       {
         operation: 'continue',
-        label: `Continue: ${name}`,
+        label: coreLabel(registry, 'continueWork', { item: name }),
         plan: reason ? { ok: false, reason } : { ok: true, time: 0 },
       },
-      { operation: 'apart', label: 'Take apart', plan: apart ? { ok: false, reason: apart } : { ok: true, time: 0 } },
+      {
+        operation: 'apart',
+        label: coreLabel(registry, 'takeApart'),
+        plan: apart ? { ok: false, reason: apart } : { ok: true, time: 0 },
+      },
     ];
   }
   options(uid: number): WorkOption[] {
@@ -168,7 +175,7 @@ export class CraftCommands {
   act(uid: number, operation: WorkOperation): string | undefined {
     const option = this.options(uid).find((candidate) => candidate.operation === operation);
     if (!option) {
-      return 'The work item is missing';
+      return coreMessage(this.inventory.registry, 'gone');
     }
     if (!option.plan.ok) {
       return option.plan.reason;
@@ -180,11 +187,11 @@ export class CraftCommands {
       return this.sim.actions.cancelCraft(uid);
     }
     const item = this.inventory.itemByUid(uid);
-    const reason = item ? this.startReason() : 'The item is missing';
+    const reason = item ? this.startReason() : coreMessage(this.inventory.registry, 'gone');
     if (reason) {
       return reason;
     }
     const plan = item && planDisassembly(item, this.reach(), this.character);
-    return plan ? this.sim.actions.beginCraft(plan) : 'The item cannot be taken apart';
+    return plan ? this.sim.actions.beginCraft(plan) : coreMessage(this.inventory.registry, 'cantTakeApart');
   }
 }

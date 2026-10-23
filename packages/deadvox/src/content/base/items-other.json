@@ -19,7 +19,9 @@
       "id": "ammo_can",
       "model": "ammo_can",
       "name": "Ammo can",
-      "size": [3, 2]
+      "notLoot": false,
+      "size": [3, 2],
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -29,9 +31,32 @@
       },
       "id": "work_in_progress",
       "name": "Work in progress",
+      "notLoot": true,
       "size": [2, 2],
       "twoHanded": true,
-      "weight": 0
+      "weight": 0,
+      "workInProgress": true
+    },
+    {
+      "battery": {
+        "capacity": 1,
+        "rechargeable": {
+          "microjoulesPerCharge": 7200000000
+        }
+      },
+      "category": "battery",
+      "description": "A rechargeable AA cell.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+      },
+      "id": "rechargeable_aa_battery",
+      "model": "aa_battery",
+      "name": "Rechargeable AA battery",
+      "notLoot": false,
+      "size": [1, 1],
+      "stack": 10,
+      "workInProgress": false
     },
     {
       "battery": {
@@ -43,10 +68,12 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "aa_battery",
+      "model": "aa_battery",
       "name": "AA battery",
+      "notLoot": false,
       "size": [1, 1],
       "stack": 10,
-      "weight": 23
+      "workInProgress": false
     },
     {
       "category": "medical",
@@ -58,11 +85,13 @@
       "id": "bandage",
       "model": "bandage",
       "name": "Bandage",
+      "notLoot": false,
       "size": [1, 1],
       "stack": 4,
       "treatment": {
         "bleeding": 8
-      }
+      },
+      "workInProgress": false
     },
     {
       "category": "medical",
@@ -74,6 +103,7 @@
       "id": "antiseptic",
       "model": "antiseptic",
       "name": "Antiseptic",
+      "notLoot": false,
       "size": [1, 1],
       "stack": 4,
       "treatment": {
@@ -82,7 +112,8 @@
           "stages": ["early"]
         }
       },
-      "weight": 100
+      "weight": 100,
+      "workInProgress": false
     },
     {
       "category": "medical",
@@ -94,6 +125,7 @@
       "id": "antibiotics",
       "model": "antibiotics",
       "name": "Tetracycline",
+      "notLoot": false,
       "size": [1, 1],
       "stack": 4,
       "treatment": {
@@ -102,7 +134,8 @@
           "stages": ["advanced"]
         }
       },
-      "weight": 50
+      "weight": 50,
+      "workInProgress": false
     },
     {
       "analgesic": {
@@ -123,9 +156,11 @@
       "id": "painkillers",
       "model": "painkillers",
       "name": "Aspirin",
+      "notLoot": false,
       "size": [1, 1],
       "stack": 24,
-      "weight": 1
+      "weight": 1,
+      "workInProgress": false
     },
     {
       "analgesic": {
@@ -147,9 +182,11 @@
       "id": "codeine",
       "model": "codeine",
       "name": "Codeine",
+      "notLoot": false,
       "size": [1, 1],
       "stack": 24,
-      "weight": 1
+      "weight": 1,
+      "workInProgress": false
     },
     {
       "analgesic": {
@@ -171,8 +208,10 @@
       "id": "morphine",
       "model": "morphine",
       "name": "Morphine",
+      "notLoot": false,
       "size": [1, 1],
-      "weight": 20
+      "weight": 20,
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -181,13 +220,15 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "rag",
+      "model": "rag",
       "name": "Rag",
+      "notLoot": false,
       "size": [1, 1],
       "stack": 6,
       "treatment": {
         "bleeding": 2
       },
-      "weight": 50
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -196,9 +237,11 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "duct_tape",
+      "model": "duct_tape",
       "name": "Duct tape",
+      "notLoot": false,
       "size": [1, 1],
-      "weight": 150
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -207,10 +250,12 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "nails",
+      "model": "nails",
       "name": "Nails",
+      "notLoot": false,
       "size": [1, 1],
       "stack": 100,
-      "weight": 5
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -219,10 +264,12 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "scrap_metal",
+      "model": "scrap_metal",
       "name": "Scrap metal",
+      "notLoot": false,
       "size": [1, 2],
       "stack": 5,
-      "weight": 500
+      "workInProgress": false
     },
     {
       "book": {
@@ -244,12 +291,14 @@
       "id": "field_manual",
       "model": "notebook",
       "name": "Field Manual: Making Do",
+      "notLoot": false,
       "readable": {
         "text": "A pocket guide to salvaging useful material from damaged equipment.",
         "title": "Field Manual: Making Do"
       },
       "size": [2, 2],
-      "weight": 400
+      "weight": 400,
+      "workInProgress": false
     },
     {
       "book": {
@@ -272,12 +321,14 @@
       "id": "camp_craft_book",
       "model": "notebook",
       "name": "Camp Craft",
+      "notLoot": false,
       "readable": {
         "text": "Notes on making simple light and shelter from things found nearby.",
         "title": "Camp Craft"
       },
       "size": [2, 2],
-      "weight": 350
+      "weight": 350,
+      "workInProgress": false
     },
     {
       "book": {
@@ -313,12 +364,14 @@
       "id": "home_repair_book",
       "model": "notebook",
       "name": "Home Repair Handbook",
+      "notLoot": false,
       "readable": {
         "text": "A practical handbook for keeping tools and household goods working.",
         "title": "Home Repair Handbook"
       },
       "size": [2, 2],
-      "weight": 500
+      "weight": 500,
+      "workInProgress": false
     },
     {
       "book": {
@@ -342,12 +395,14 @@
       "id": "workshop_notes",
       "model": "notebook",
       "name": "Workshop Notes",
+      "notLoot": false,
       "readable": {
         "text": "Handwritten notes on careful repairs and using salvaged wire.",
         "title": "Workshop Notes"
       },
       "size": [2, 2],
-      "weight": 300
+      "weight": 300,
+      "workInProgress": false
     },
     {
       "category": "book",
@@ -359,8 +414,10 @@
       "id": "paperback",
       "model": "notebook",
       "name": "Paperback novel",
+      "notLoot": false,
       "size": [2, 2],
-      "weight": 300
+      "weight": 300,
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -370,7 +427,9 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "portable_radio",
+      "model": "portable_radio",
       "name": "Portable radio",
+      "notLoot": false,
       "salvage": [
         {
           "count": 1,
@@ -383,7 +442,7 @@
       ],
       "salvageTimeGameMinutes": 5,
       "size": [2, 2],
-      "weight": 600
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -395,7 +454,9 @@
       "id": "jerry_can",
       "model": "jerry_can",
       "name": "Jerry can",
-      "size": [4, 5]
+      "notLoot": false,
+      "size": [4, 5],
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -407,10 +468,12 @@
       "id": "spent_case_5_d_56x45",
       "model": "case_5_d_56x45",
       "name": "Spent 5.56×45 case",
+      "notLoot": true,
       "pileDisplay": "scatter",
       "size": [1, 1],
       "stack": 10000,
-      "weight": 6
+      "weight": 6,
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -422,10 +485,12 @@
       "id": "spent_case_7_d_62x39",
       "model": "case_7_d_62x39",
       "name": "Spent 7.62×39 case",
+      "notLoot": false,
       "pileDisplay": "scatter",
       "size": [1, 1],
       "stack": 10000,
-      "weight": 6
+      "weight": 6,
+      "workInProgress": false
     },
     {
       "ammo": {
@@ -436,6 +501,7 @@
         "loadSimSeconds": 0.80000000000000004,
         "pellets": 9,
         "rangeMetres": 50,
+        "spreadDegrees": 2,
         "stripSimSeconds": 0.5
       },
       "category": "ammo",
@@ -447,9 +513,11 @@
       "id": "shell_12_gauge_00_buck",
       "model": "round_12_h_gauge_h_00_h_buck",
       "name": "12 gauge 00 buckshot shell",
+      "notLoot": false,
       "size": [1, 1],
       "stack": 25,
-      "weight": 40
+      "weight": 40,
+      "workInProgress": false
     },
     {
       "category": "ammo",
@@ -461,12 +529,14 @@
       "id": "shotshell_box",
       "model": "shotshell_box",
       "name": "Sealed shotshell box (20)",
+      "notLoot": false,
       "size": [2, 2],
       "unpack": {
         "count": 20,
         "item": "shell_12_gauge_00_buck",
         "simSeconds": 1.2
-      }
+      },
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -478,10 +548,12 @@
       "id": "spent_case_12_h_gauge_h_00_h_buck",
       "model": "case_12_h_gauge_h_00_h_buck",
       "name": "Spent 12 gauge hull",
+      "notLoot": false,
       "pileDisplay": "scatter",
       "size": [1, 1],
       "stack": 10000,
-      "weight": 5
+      "weight": 5,
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -492,7 +564,9 @@
       "id": "shambler_torso",
       "model": "shambler_torso",
       "name": "Severed shambler torso",
-      "size": [4, 6]
+      "notLoot": true,
+      "size": [4, 6],
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -503,7 +577,9 @@
       "id": "shambler_head",
       "model": "shambler_head",
       "name": "Severed shambler head",
-      "size": [2, 3]
+      "notLoot": true,
+      "size": [2, 3],
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -514,7 +590,9 @@
       "id": "shambler_left_arm",
       "model": "shambler_left_arm",
       "name": "Severed shambler left arm",
-      "size": [1, 7]
+      "notLoot": true,
+      "size": [1, 7],
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -525,7 +603,9 @@
       "id": "shambler_right_arm",
       "model": "shambler_right_arm",
       "name": "Severed shambler right arm",
-      "size": [1, 7]
+      "notLoot": true,
+      "size": [1, 7],
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -536,7 +616,9 @@
       "id": "shambler_left_leg",
       "model": "shambler_left_leg",
       "name": "Severed shambler left leg",
-      "size": [2, 9]
+      "notLoot": true,
+      "size": [2, 9],
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -547,7 +629,9 @@
       "id": "shambler_right_leg",
       "model": "shambler_right_leg",
       "name": "Severed shambler right leg",
-      "size": [2, 9]
+      "notLoot": true,
+      "size": [2, 9],
+      "workInProgress": false
     }
   ]
 }

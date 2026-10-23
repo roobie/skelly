@@ -1,0 +1,103 @@
+{
+  "layouts": [
+    {
+      "bays": [
+        {
+          "facing": "e",
+          "position": [-19, 21, -7]
+        },
+        {
+          "facing": "e",
+          "position": [-14, 21, -7]
+        }
+      ],
+      "bounds": {
+        "x0": -23,
+        "x1": 17,
+        "z0": -13,
+        "z1": 6
+      },
+      "buildings": [
+        {
+          "position": [-4.5, 20.5, -2.5],
+          "rotation": 0,
+          "template": "test_house_charging"
+        },
+        {
+          "position": [4, 20.5, -4.5],
+          "rotation": 0,
+          "template": "test_house_home"
+        },
+        {
+          "position": [-5, 20.5, -7],
+          "rotation": 0,
+          "template": "test_house_shed"
+        },
+        {
+          "position": [-22, 20.5, -12],
+          "rotation": 0,
+          "template": "test_house_garage"
+        },
+        {
+          "position": [-22.5, 20.5, -8.5],
+          "rotation": 0,
+          "template": "test_house_garage_ladder"
+        },
+        {
+          "position": [-2, 20.5, 4.5],
+          "rotation": 0,
+          "template": "test_house_garden_wall"
+        },
+        {
+          "position": [-4, 20.5, -1],
+          "rotation": 0,
+          "template": "test_house_path"
+        },
+        {
+          "position": [3, 20.5, -1.5],
+          "rotation": 0,
+          "template": "test_house_step"
+        },
+        {
+          "position": [2, 20.5, 0.5],
+          "rotation": 0,
+          "template": "test_house_outdoor_stock"
+        },
+        {
+          "position": [-2, 20.5, 0.5],
+          "rotation": 0,
+          "template": "test_house_sign"
+        },
+        {
+          "position": [-2, 20.5, -3],
+          "rotation": 0,
+          "template": "test_house_loose_wardrobe"
+        }
+      ],
+      "demo": true,
+      "ground": 20.5,
+      "id": "testHouse",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "player": {
+        "bearing": 90,
+        "position": [-4, 21, -0.5]
+      },
+      "repairStock": "test_house_garage",
+      "shamblers": [],
+      "terrain": [],
+      "tracks": [],
+      "vehicles": [
+        {
+          "blueprint": "hatchback",
+          "facing": "e",
+          "placementKey": "testHouse.parked-hatchback",
+          "position": [-19, 21, -7]
+        }
+      ],
+      "woodlands": []
+    }
+  ]
+}

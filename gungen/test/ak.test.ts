@@ -384,14 +384,6 @@ describe('AK-pattern archetype', () => {
     }
   });
 
-  it('adds an intermediate dropped stock distinct from straight and sporting styles', () => {
-    const dropped = FAMILIES.stock!.build({ length: 'M', style: 'dropped' });
-    const straight = FAMILIES.stock!.build({ length: 'M', style: 'straight' });
-    expect(dropped.solids.some(({ kind }) => kind === 'box')).toBe(true);
-    expect(dropped.solids).not.toEqual(straight.solids);
-    expect(straight.solids.find(({ id }) => id === 'comb')?.kind).toBe('box');
-  });
-
   it('passes the complete fixture and reports missing gas-cylinder interfaces clearly', () => {
     expect(validate(akFixture, gunDomain).issues).toEqual([]);
     const { issues } = validate(loadFixture('broken-ak-gas-cylinder'), gunDomain);

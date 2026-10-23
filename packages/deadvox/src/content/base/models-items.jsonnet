@@ -1,5 +1,4 @@
-{
-  "models": [
+local authored = [
     std.objectRemoveKey(import 'things/canned_beans.model.json', 'parts'),
     std.objectRemoveKey(import 'things/canned_soup.model.json', 'parts'),
     import 'things/opened_beans.model.json',
@@ -18,6 +17,7 @@
     import 'things/crackers.model.json',
     import 'things/chocolate_bar.model.json',
     import 'things/soda_can.model.json',
+    import 'things/empty_soda_can.model.json',
     import 'things/water_bottle.model.json',
     import 'things/juice_carton.model.json',
     import 'things/cartridge_box_308_h_winchester.model.json',
@@ -28,6 +28,23 @@
     import 'things/ammo_can.model.json',
     import 'things/jerry_can.model.json',
     import 'things/gas_canister.model.json',
+    import 'things/frag_grenade.model.json',
+    import 'things/torch.model.json',
+    (import 'things/flashlight.model.json') + { grip: { at: [0.085, 0, 0] }, anchors: { lens: [0.199, 0, 0] } },
+    import 'things/candle.model.json',
+    import 'things/bear_trap.model.json',
+    (import 'things/compass.model.json') + {
+      dial: {
+        face: 'paint-cream',
+        ink: 'plastic-black',
+        north: 'plastic-red',
+        south: 'plastic-black',
+        marks: ['N', 'E', 'S', 'W'],
+        markHeight: 0.3,
+        needleLength: 0.6,
+        needleWidth: 0.2,
+      },
+    },
     {
       "id": "hand_saw",
       "file": "assets/models/hand_saw.glb",
@@ -66,7 +83,8 @@
     { "id": "pliers", "file": "assets/models/pliers.glb" },
     { "id": "sewing_kit", "file": "assets/models/sewing_kit.glb" },
     { "id": "broken_toaster", "file": "assets/models/broken_toaster.glb" },
-    import 'things/desk_lamp.model.json',
+    import 'things/dead_desk_lamp.model.json',
+    (import 'things/dead_desk_lamp.model.json') + { id: 'oil_lamp', anchors: { flame: [0.069, 0.05, 0] } },
     { "id": "table_fan", "file": "assets/models/table_fan.glb" },
     { "id": "cracked_phone", "file": "assets/models/cracked_phone.glb" },
     { "id": "broken_clock", "file": "assets/models/broken_clock.glb" },
@@ -84,5 +102,12 @@
     import 'things/shambler_right_arm.model.json',
     import 'things/shambler_left_leg.model.json',
     import 'things/shambler_right_leg.model.json'
-  ]
+];
+{
+  // A melee row imports its exported model and adds the grip and anchors, so the index must not list it again.
+  models: authored + [
+    model
+    for model in import 'things/index.json'
+    if !std.member([entry.id for entry in authored + (import 'models-melee.jsonnet').models], model.id)
+  ],
 }

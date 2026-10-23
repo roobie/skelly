@@ -3,6 +3,7 @@ import {
   Fog,
   NeutralToneMapping,
   NoToneMapping,
+  type Object3D,
   PerspectiveCamera,
   Scene,
   type ToneMapping,
@@ -25,6 +26,7 @@ import { baseRegistry } from './baseRegistry.ts';
 const owner = vi.hoisted(() => ({
   composers: [] as {
     passes: unknown[];
+    readBuffer: object;
     dispose: ReturnType<typeof vi.fn>;
     setPixelRatio: ReturnType<typeof vi.fn>;
     render: ReturnType<typeof vi.fn>;
@@ -35,6 +37,7 @@ const owner = vi.hoisted(() => ({
 vi.mock('three/addons/postprocessing/EffectComposer.js', () => {
   class EffectComposer {
     passes: { dispose: () => void }[] = [];
+    readBuffer = {};
     dispose = vi.fn();
     setPixelRatio = vi.fn();
     setSize = vi.fn();
@@ -178,6 +181,37 @@ it("shows only the goggles' view in a chain run for them while the look's post i
   expect(u.uGrain!.value).toBe(0);
   expect(u.uDrugVignette!.value).toBe(0);
 });
+
+it.each([false, true])(
+  'warms each scene for both the direct screen path and the post chain with post %s',
+  async (post) => {
+    let target: unknown = null;
+    const compiled: [Object3D, unknown][] = [];
+    const renderer = {
+      ...fakeRenderer(NeutralToneMapping, 1),
+      getRenderTarget: () => target,
+      setRenderTarget: (into: unknown) => {
+        target = into;
+      },
+      compileAsync: vi.fn((root: Object3D) => {
+        compiled.push([root, target]);
+        return Promise.resolve();
+      }),
+    } as unknown as WebGLRenderer;
+    const scene = new Scene();
+    const mood = new Mood(renderer, scene, new PerspectiveCamera(), graphics.graphics[0]!);
+    mood.externalGpuTiming = true;
+    mood.setPost(post);
+
+    await mood.warmUp([{ scene, camera: new PerspectiveCamera() }]);
+
+    const chain = owner.composers.at(-1)!.readBuffer;
+    const targets = compiled.filter(([root]) => root === scene).map(([, into]) => into);
+    expect(targets).toContain(null);
+    expect(targets).toContain(chain);
+    expect(target).toBeNull();
+  },
+);
 
 it('abandons lost-context post targets without deleting dead handles and rebuilds them for rendering', () => {
   const canvas = new EventTarget();

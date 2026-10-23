@@ -1,0 +1,14 @@
+{
+  "id": "wooden_plank",
+  "file": "assets/models/wooden_plank.glb",
+  "parts": {
+    "material": {
+      "node": "material:cutStock",
+      "massKg": 0.5,
+      "centreOfMass": [-0.003135359116022099, 0.01, 0.004599447513812155]
+    }
+  },
+  "grip": { "at": [0, 0.01, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 0
+}

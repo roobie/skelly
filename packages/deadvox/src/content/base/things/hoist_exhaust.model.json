@@ -1,0 +1,18 @@
+{
+  "id": "hoist_exhaust",
+  "file": "assets/models/hoist_exhaust.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 18,
+      "centreOfMass": [0.014300847457627119, 0.4088983050847458, 0.6747881355932204],
+      "collision": [
+        { "min": [0.25, 0.375, 0.5625], "max": [1, 0.5, 0.6875] },
+        { "min": [-0.375, 0.3125, 0.5625], "max": [0.25, 0.5, 0.8125] },
+        { "min": [-0.8125, 0.3125, 0.625], "max": [-0.375, 0.4375, 0.75] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

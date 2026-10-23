@@ -30,7 +30,6 @@ export function skyWorldFixture(boxes: SkyBounds[] = [fixtureBox]) {
     {
       source: 'sky-fixture.json',
       data: {
-        doorMaterials: [{ id: 'wood', methods: [] }],
         blocks: [
           { id: 'fixture_wall', name: 'Fixture wall', color: '#888888', solid: true },
           { id: 'fixture_leaves', name: 'Fixture leaves', color: '#228844', solid: false, opaque: true },
@@ -38,6 +37,7 @@ export function skyWorldFixture(boxes: SkyBounds[] = [fixtureBox]) {
         siteGeneration: [
           {
             id: CORE_CONTENT_IDS.authoredSite,
+            activeZombieRadiusMetres: baseSite.activeZombieRadiusMetres,
             topography: {
               amplitudeMetres: 0,
               wavelengthMetres: 1,
@@ -60,8 +60,6 @@ export function skyWorldFixture(boxes: SkyBounds[] = [fixtureBox]) {
               trees: { trunk: 'fixture_wall', branch: 'fixture_wall', leaves: 'fixture_leaves' },
               leafLitter: 'fixture_leaves',
             },
-            hamlet: { hedge: 'fixture_leaves', northSide: ['fixture_shell'], southSide: ['fixture_shell'] },
-            placement: baseSite.placement,
           },
         ],
         templates: [
@@ -78,7 +76,10 @@ export function skyWorldFixture(boxes: SkyBounds[] = [fixtureBox]) {
             name: 'Fixture door',
             size: [1, 1, 1],
             color: '#888888',
-            door: { material: 'wood', methods: {}, handlingSimSeconds: 1 },
+            door: {
+              methods: {},
+              handlingSimSeconds: 1,
+            },
           },
         ],
       },

@@ -283,21 +283,28 @@ describe('made light burn state', () => {
     }
   });
 
-  it('applies BR’s drop ruling to torches, candles and glowsticks', () => {
-    for (const [type, staysLit] of [
-      ['torch', false],
-      ['candle', false],
-      ['glowstick', true],
-    ] as const) {
+  it('keeps every dropped burn light burning on its fuel until it burns out on the floor', () => {
+    const burnLights = [...registry.items.values()].filter(({ light }) => light?.burnTimeGameHours !== undefined);
+    const igniter = [...registry.items.values()].find((definition) => definition.igniter)!.id;
+    expect(burnLights.length).toBeGreaterThan(0);
+
+    for (const definition of burnLights) {
       const { sim, inventory, survival, hold } = setup();
-      const light = hold(type);
-      if (registry.items.get(type)!.light!.burning!.ignition === 'firestarter') {
-        hold('lighter', 'left');
+      const light = hold(definition.id);
+      if (definition.light!.burning!.ignition === 'firestarter') {
+        hold(igniter, 'left');
       }
       expect(survival.use(light)).toBeUndefined();
       expect(inventory.move(light, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
       sim.scheduler.advance(1);
-      expect(light.on).toBe(staysLit);
+      expect([definition.id, light.on]).toEqual([definition.id, true]);
+
+      const expiresAt = light.litAtGameTimestamp! + light.burnRemainingGameSeconds!;
+      sim.setDebugCalendarTime(expiresAt - 1.5 * sim.clock.ratio);
+      sim.scheduler.advance(1);
+      expect(light.on).toBe(true);
+      sim.scheduler.advance(1);
+      expect([light.on, light.burnRemainingGameSeconds]).toEqual([false, 0]);
     }
   });
 

@@ -1,0 +1,14 @@
+{
+  "id": "portable_radio",
+  "file": "assets/models/portable_radio.glb",
+  "parts": {
+    "equipment": {
+      "node": "equipment:portableRadio",
+      "massKg": 0.6,
+      "centreOfMass": [-0.0006851851851851849, 0.06683333333333329, -0.003944444444444443]
+    }
+  },
+  "grip": { "at": [0, 0.0325, 0], "turn": [0, 90, 0] },
+  "hold": "forward",
+  "roll": 0
+}
