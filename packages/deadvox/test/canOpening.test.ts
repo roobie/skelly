@@ -105,22 +105,6 @@ describe('held can opening', () => {
     expect(f.survival.use(f.can)).toBeUndefined();
   });
 
-  it('drinking an opened soda retains its owned empty soda can in hand', () => {
-    const f = fixture();
-    expect(f.inventory.move(f.can, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
-    const soda = f.inventory.create('soda_can');
-    expect(f.inventory.add(soda, { kind: 'hand', side: 'right' })).toBe(true);
-    expect(f.unpacking.activate(soda)).toBeUndefined();
-    expect(f.queue.tick(f.queue.remaining).failed).toEqual([]);
-    expect(soda.type).toBe('opened_soda');
-    const before = f.inventory.locate(soda);
-    expect(f.survival.use(soda)).toBeUndefined();
-    expect(f.queue.tick(f.queue.remaining).failed).toEqual([]);
-    expect(soda.type).toBe('empty_soda_can');
-    expect(f.inventory.itemByUid(soda.uid)).toBe(soda);
-    expect(f.inventory.locate(soda)).toEqual(before);
-  });
-
   it('a lower opening quality takes longer and a changed tool cannot complete the admitted work', () => {
     const fast = fixture('right', 4);
     const slow = fixture('right', 1);

@@ -236,7 +236,7 @@ describe('using what you hold', () => {
     for (const def of cans) {
       const { inventory, queue, survival, hold } = setup();
       const can = hold(def.id);
-      const quality = Object.keys(def.unpack!.qualities ?? {})[0];
+      const [quality] = Object.keys(def.unpack!.qualities ?? {});
       if (quality !== undefined) {
         const tool = [...registry.items.values()].find((item) => (item.tool?.qualities?.[quality] ?? 0) > 0)!;
         hold(tool.id, 'left');
