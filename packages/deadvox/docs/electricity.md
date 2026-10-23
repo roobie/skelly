@@ -46,8 +46,8 @@ orientation remain open. See `src/core/dayPhase.ts`, `dayPhaseAt`, and
 The approved per-phase output is authored in `src/content/base/power.jsonnet`,
 `solar_panel`. There is no manufacturing grade: a better panel is another item
 type with more authored output, and damage lowers output. Better and less damaged
-panels are therefore worth seeking out and repairing. Physical panel placement and
-damage integration remain outside authored building wiring.
+panels are therefore worth seeking out and repairing. Player-directed panel placement
+and damage integration remain outside authored building wiring.
 
 Elapsed time settles old service before changing rates so a load or wiring
 change cannot rewrite earlier work. Completion must feed demand back into the
