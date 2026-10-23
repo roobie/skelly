@@ -74,16 +74,15 @@ it('admits layout-selected vehicles and rejects missing blueprints or duplicate 
   expect(admit().issues.some(({ message }) => message.includes('duplicate vehicle placement key'))).toBe(true);
 });
 
-it('refuses unsupported repair fixture destinations', () => {
+it('refuses unsupported bays and a repair stock building the site does not place', () => {
   const data = validationLayout('fixture_repair_stock');
-  data.fixturePiles = [[2, data.player.position[1], 2]];
+  data.bays = [{ position: [2, data.player.position[1], 2], facing: 'e' }];
   expect(authoredLayoutIssues(data, registry)).toEqual([]);
-  data.fixturePiles[0]![1] += 1;
-  expect(
-    authoredLayoutIssues(data, registry).some(
-      ([path, message]) => path.includes('fixturePiles') && message.includes('supported'),
-    ),
-  ).toBe(true);
+  data.bays[0]!.position[1] += 1;
+  data.repairStock = 'fixture_absent_building';
+  const paths = authoredLayoutIssues(data, registry).map(([path]) => path);
+  expect(paths).toContain('.bays[0].position');
+  expect(paths).toContain('.repairStock');
 });
 
 const layoutTemplateIds = new Set(layout.buildings.map(({ template }) => template));
