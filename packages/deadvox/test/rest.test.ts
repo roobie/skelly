@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { actionText } from '../src/core/actionText.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { Body } from '../src/core/body.ts';
 import { hourOfDay, SECONDS_PER_HOUR, simSecondsPerHour, simToGameHours } from '../src/core/clock.ts';
@@ -41,6 +42,7 @@ const makeRest = (
     withinReach: hooks.withinReach ?? (() => true),
     notice: hooks.notice ?? (() => undefined),
     hasAlarm: hooks.hasAlarm ?? (() => false),
+    text: actionText(registry),
   });
   return { sim, rest };
 };

@@ -1,3 +1,4 @@
+import { type ActionText, actionText, fillText } from '../core/actionText.ts';
 import { SKILL_LEVEL_MIN, skillEffectLevel, skillSaturation } from '../core/character.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
@@ -48,11 +49,13 @@ export class FirearmAttachmentHandling {
   private readonly inventory: Inventory;
   private readonly queue: HandlingQueue;
   private readonly feet: () => Vec3;
+  private readonly text: ActionText;
 
   constructor(inventory: Inventory, queue: HandlingQueue, feet: () => Vec3) {
     this.inventory = inventory;
     this.queue = queue;
     this.feet = feet;
+    this.text = actionText(inventory.registry);
     queue.registerAction(ATTACHMENT_ACTION, (params) => this.complete(params));
   }
 
@@ -96,20 +99,20 @@ export class FirearmAttachmentHandling {
 
   fitReason(firearm: Item, slotId: string, attachment: Item): string | undefined {
     if (!(available(this.inventory, firearm) && defOf(this.inventory.registry, firearm.type).firearm)) {
-      return 'Firearm is no longer accessible';
+      return this.text.common.gone;
     }
     if (!available(this.inventory, attachment)) {
-      return 'Attachment is no longer accessible';
+      return this.text.attachments.gone;
     }
     return this.firearmSlotReason(firearm, slotId) ?? this.attachmentFitReason(firearm, slotId, attachment);
   }
 
   private firearmSlotReason(firearm: Item, slotId: string): string | undefined {
     if (!firearmSlotIds(this.inventory.registry, defOf(this.inventory.registry, firearm.type)).includes(slotId)) {
-      return 'Firearm has no such attachment slot';
+      return this.text.attachments.noSuchSlot;
     }
     if (firearm.slots?.[slotId]) {
-      return 'That slot is occupied';
+      return this.text.attachments.slotTaken;
     }
     return undefined;
   }
@@ -130,7 +133,7 @@ export class FirearmAttachmentHandling {
   }
 
   private slingReason(attachment: Item): string | undefined {
-    return defOf(this.inventory.registry, attachment.type).sling ? undefined : 'Only a sling fits the sling mount';
+    return defOf(this.inventory.registry, attachment.type).sling ? undefined : this.text.attachments.slingOnly;
   }
 
   private exportedAttachmentReason(attachment: Item): string | undefined {
@@ -160,18 +163,19 @@ export class FirearmAttachmentHandling {
   }
 
   removeReason(firearm: Item, slotId: string): string | undefined {
+    const { attachments } = this.text;
     if (!(available(this.inventory, firearm) && defOf(this.inventory.registry, firearm.type).firearm)) {
-      return 'Firearm is no longer accessible';
+      return this.text.common.gone;
     }
     if (!firearmSlotIds(this.inventory.registry, defOf(this.inventory.registry, firearm.type)).includes(slotId)) {
-      return 'Firearm has no such attachment slot';
+      return attachments.noSuchSlot;
     }
     if (!firearm.slots?.[slotId]) {
-      return 'That slot is empty';
+      return attachments.slotEmpty;
     }
     // The shoulder holds the gun by its sling, so the sling stays while the gun is slung.
     if (slotId === SLING_SLOT && this.inventory.locate(firearm)?.kind === 'worn') {
-      return 'Take it off your shoulder first';
+      return attachments.onShoulder;
     }
     return undefined;
   }
@@ -180,7 +184,7 @@ export class FirearmAttachmentHandling {
     const firearm = this.inventory.itemByUid(firearmUid);
     const attachment = this.inventory.itemByUid(attachmentUid);
     if (!(firearm && attachment)) {
-      return 'Firearm or attachment is no longer available';
+      return this.text.common.gone;
     }
     const reason = this.fitReason(firearm, slotId, attachment);
     if (reason) {
@@ -188,7 +192,7 @@ export class FirearmAttachmentHandling {
     }
     this.queue.enqueueAction(
       ATTACHMENT_ACTION,
-      `Fit ${this.inventory.name(attachment)}`,
+      fillText(this.text.attachments.fit, { item: this.inventory.name(attachment) }),
       attachmentWorkSeconds(this.inventory),
       {
         operation: 'fit',
@@ -203,7 +207,7 @@ export class FirearmAttachmentHandling {
   remove(firearmUid: number, slotId: string): string | undefined {
     const firearm = this.inventory.itemByUid(firearmUid);
     if (!firearm) {
-      return 'Firearm is no longer available';
+      return this.text.common.gone;
     }
     const reason = this.removeReason(firearm, slotId);
     if (reason) {
@@ -212,7 +216,7 @@ export class FirearmAttachmentHandling {
     const attachment = firearm.slots![slotId]!;
     this.queue.enqueueAction(
       ATTACHMENT_ACTION,
-      `Remove ${this.inventory.name(attachment)}`,
+      fillText(this.text.attachments.remove, { item: this.inventory.name(attachment) }),
       attachmentWorkSeconds(this.inventory),
       {
         operation: 'remove',
@@ -227,12 +231,12 @@ export class FirearmAttachmentHandling {
     const firearm = typeof params.firearmUid === 'number' ? this.inventory.itemByUid(params.firearmUid) : undefined;
     const slotId = typeof params.slotId === 'string' ? params.slotId : undefined;
     if (!(firearm && slotId)) {
-      return 'Firearm or slot is no longer available';
+      return this.text.common.gone;
     }
     if (params.operation === 'fit') {
       const attachmentUid = typeof params.attachmentUid === 'number' ? params.attachmentUid : undefined;
       return attachmentUid === undefined
-        ? 'Attachment is no longer available'
+        ? this.text.attachments.gone
         : this.completeFit(firearm, slotId, attachmentUid);
     }
     if (params.operation === 'remove') {
@@ -242,9 +246,10 @@ export class FirearmAttachmentHandling {
   }
 
   private completeFit(firearm: Item, slotId: string, attachmentUid: number): string | undefined {
+    const { attachments } = this.text;
     const attachment = this.inventory.itemByUid(attachmentUid);
     if (!attachment) {
-      return 'Attachment is no longer available';
+      return attachments.gone;
     }
     const reason = this.fitReason(firearm, slotId, attachment);
     if (reason) {
@@ -252,17 +257,17 @@ export class FirearmAttachmentHandling {
     }
     const source = this.inventory.locate(attachment);
     if (!source) {
-      return 'Attachment is no longer available';
+      return attachments.gone;
     }
     const returnTo = rootTarget(this.inventory, source);
     if (!this.inventory.consume(attachment, attachment.count)) {
-      return 'Attachment is no longer available';
+      return attachments.gone;
     }
     try {
       this.inventory.fitSlot(firearm, slotId, attachment);
     } catch (error) {
       this.inventory.add(attachment, returnTo);
-      return error instanceof Error ? error.message : 'Attachment no longer fits';
+      return error instanceof Error ? error.message : attachments.noLongerFits;
     }
     return undefined;
   }
@@ -282,6 +287,6 @@ export class FirearmAttachmentHandling {
     if (removed) {
       this.inventory.fitSlot(firearm, slotId, removed);
     }
-    return 'There is nowhere to put the attachment';
+    return this.text.attachments.nowhereToPut;
   }
 }

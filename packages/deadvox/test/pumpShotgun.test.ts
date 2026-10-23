@@ -639,11 +639,15 @@ describe('real pump ammunition', () => {
     }
     f.rack(f.capacity);
     const inGun = 1 + f.gun.firearm!.tube!.length;
-    const target = reloadTarget(f.mechanics, {
-      reloadableUid: () => undefined,
-      loadNext: () => 'No magazine',
-      cancelLoad: () => undefined,
-    })!;
+    const target = reloadTarget(
+      f.mechanics,
+      {
+        reloadableUid: () => undefined,
+        loadNext: () => 'No magazine',
+        cancelLoad: () => undefined,
+      },
+      'fixture not holding a gun',
+    )!;
     let now = f.capacity * 1000 + 1000;
     const binding: ReloadBinding = {
       uid: target.uid,

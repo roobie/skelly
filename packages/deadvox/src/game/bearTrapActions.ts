@@ -1,3 +1,4 @@
+import { actionText } from '../core/actionText.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { HandlingQueue, Job } from '../core/handling.ts';
 import type { Inventory } from '../core/inventory.ts';
@@ -46,14 +47,15 @@ export const interruptDisarm = (queue: HandlingQueue): void => {
 
 /** On completion each action is checked again against the live trap; a valid disarm never springs it. */
 export const registerTrapActions = ({ queue, inventory, reach, setCell }: TrapActionHooks): void => {
+  const text = actionText(inventory.registry);
   queue.registerAction(SET_ACTION, ({ itemUid }): string | undefined => {
     const item = itemParam(inventory, itemUid);
     if (!(item && defOf(inventory.registry, item.type).trap && inventory.locate(item)?.kind === 'hand')) {
-      return "The trap isn't in my hands";
+      return text.trap.notInHands;
     }
     const pos = setCell();
     if (!pos) {
-      return 'No ground to set it on';
+      return text.trap.noGround;
     }
     const moved = inventory.move(item, { kind: 'pile', pos });
     if (!moved.ok) {
@@ -65,10 +67,10 @@ export const registerTrapActions = ({ queue, inventory, reach, setCell }: TrapAc
   queue.registerAction(DISARM_ACTION, ({ itemUid }): string | undefined => {
     const item = itemParam(inventory, itemUid);
     if (item?.trap?.state !== 'armed') {
-      return "The trap isn't set";
+      return text.trap.notSet;
     }
     if (!reach().entries.some((entry) => entry.item === item)) {
-      return 'Too far away';
+      return text.common.tooFar;
     }
     item.trap = undefined;
     return undefined;

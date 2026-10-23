@@ -1,3 +1,4 @@
+import { actionText } from '../core/actionText.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
 import type { CraftPreference } from '../core/crafting.ts';
 import type { HandlingQueue } from '../core/handling.ts';
@@ -197,7 +198,7 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
 };
 
 export interface ReplayCommandOwners {
-  inventory: Pick<Inventory, 'itemByUid' | 'carriedByUid' | 'resolveTarget'>;
+  inventory: Pick<Inventory, 'itemByUid' | 'carriedByUid' | 'resolveTarget' | 'registry'>;
   queue: Pick<HandlingQueue, 'enqueue' | 'cancel'>;
   quickbar: Pick<Quickbar, 'assign'>;
   search: (entityUid: number) => string | undefined;
@@ -246,7 +247,7 @@ export const applyReplayActionPayload = (
       const item = owners.inventory.itemByUid(payload.itemUid);
       const target = owners.inventory.resolveTarget(payload.target);
       if (!(item && target)) {
-        return 'The item or destination is no longer available';
+        return actionText(owners.inventory.registry).common.gone;
       }
       const result = owners.queue.enqueue(item, target, payload.count);
       return result.ok ? undefined : result.reason;
@@ -283,7 +284,7 @@ export const applyReplayActionPayload = (
     case 'inventory.assign': {
       const item = owners.inventory.carriedByUid(payload.itemUid);
       if (!item) {
-        return "I'm not carrying that";
+        return actionText(owners.inventory.registry).common.notCarried;
       }
       owners.quickbar.assign(payload.slot, item);
       return undefined;

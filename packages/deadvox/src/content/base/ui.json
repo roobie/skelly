@@ -1,6 +1,204 @@
 {
   "ui": [
     {
+      "actionText": {
+        "attachments": {
+          "fit": "Fit {item}",
+          "gone": "The attachment isn't there any more",
+          "noLongerFits": "Attachment no longer fits",
+          "noSuchSlot": "Firearm has no such attachment slot",
+          "nowhereToPut": "There is nowhere to put the attachment",
+          "onShoulder": "It's on my shoulder",
+          "remove": "Remove {item}",
+          "slingOnly": "Only a sling fits the sling mount",
+          "slotEmpty": "That slot is empty",
+          "slotTaken": "That slot is occupied"
+        },
+        "causes": {
+          "bearTrap": "a bear trap",
+          "foodPoisoning": "food poisoning",
+          "grenade": "a grenade"
+        },
+        "common": {
+          "busy": "My hands are busy",
+          "gone": "It isn't there any more",
+          "notCarried": "I'm not carrying that",
+          "notHeld": "I'm not holding it",
+          "tooFar": "Too far away"
+        },
+        "doors": {
+          "anyTool": "a suitable tool",
+          "lock": "Lock the {door}",
+          "lockHint": "Lock",
+          "operate": "{action} the {door}",
+          "pryWith": "with the {tool}",
+          "pryWithAny": "with {tools} — {reason}",
+          "refusedHint": "{hint} — {reason}",
+          "toolSeparator": " or ",
+          "unlock": "Unlock the {door}",
+          "unlockHint": "Unlock"
+        },
+        "downedBody": {
+          "dismember": "Dismember the {zombie} with the {tool}",
+          "finishOff": "Finish off the {zombie}",
+          "gone": "It isn't lying there any more",
+          "noTool": "I have no {quality} tool up to it"
+        },
+        "firearm": {
+          "boltClosedDetail": "Bolt: closed",
+          "boltOpen": "The bolt is open",
+          "boltOpenDetail": "Bolt: open",
+          "chamberDetail": "Chamber: {contents}",
+          "chamberEmpty": "The chamber is empty",
+          "chamberSpent": "There's a spent case in the chamber",
+          "changeMagazine": "Change magazine",
+          "charge": "Charge {gun}",
+          "cylinderClosed": "The cylinder is closed",
+          "cylinderDetail": "Cylinder: {loaded}/{chambers} loaded",
+          "cylinderOpen": "The cylinder is open",
+          "emptyChamber": "empty",
+          "firedHull": "fired hull",
+          "insertMagazine": "Insert magazine",
+          "magazineDetail": "Magazine: {count}/{capacity}",
+          "magazineGone": "I'm not carrying that magazine any more",
+          "noMagazine": "I'm not carrying a magazine for it",
+          "noMagazineDetail": "Magazine: none",
+          "noMagazineFitted": "There's no magazine in it",
+          "noRoomForMagazine": "I have no room for the magazine",
+          "openCylinderDetail": "Cylinder: {loaded}/{chambers} loaded · open",
+          "rack": "Rack {gun}",
+          "removeMagazine": "Remove magazine",
+          "retainedRoundDetail": "Retained round: {round}",
+          "spentCase": "spent case",
+          "takesNoMagazine": "It takes no magazine",
+          "tubeDetail": "Tube: {count}/{capacity} shells"
+        },
+        "hints": {
+          "activate": "{key}: activate {name}",
+          "cancel": "Cancel ({key})",
+          "downedBody": "{key}: {finish} · {key} (hold): dismember",
+          "downedBodyRefused": "{key}: {finish} · {key} (hold): dismember — {reason}",
+          "groundItem": "{key}: pocket {item} · {key} (hold): wield",
+          "setDown": "{key}: set down {name}"
+        },
+        "infection": {
+          "advanced": "advanced infection",
+          "early": "early infection",
+          "none": "no infection",
+          "resolved": "resolved infection"
+        },
+        "itemActions": {
+          "openCan": "Open can",
+          "stripRound": "Strip a round",
+          "swing": "Swing",
+          "use": "Use"
+        },
+        "loading": {
+          "cantReachRound": "I can't reach a round",
+          "full": "It's full",
+          "loadRound": "Load round {count}/{capacity}",
+          "noRoomForRound": "I have no room for the round",
+          "noRounds": "I have no rounds that fit",
+          "noRoundsOf": "I have no {round}s",
+          "otherHandFull": "My other hand is full",
+          "removeRound": "Remove round",
+          "roundsNotCarried": "I'm not carrying those rounds",
+          "wrongRounds": "These rounds don't fit"
+        },
+        "longActions": {
+          "forcingPadlock": "Forcing padlock",
+          "reading": "Reading {item}",
+          "readingUnnamed": "Reading",
+          "treating": "Treating {item}",
+          "treatingUnnamed": "Treating wound"
+        },
+        "magazine": {
+          "cartridgesDetail": "Cartridges: {count}/{capacity}",
+          "empty": "It's empty"
+        },
+        "melee": {
+          "tooTired": "I'm too tired to swing"
+        },
+        "objective": {
+          "blocked": "Something's in the way",
+          "notObjective": "This isn't the objective",
+          "nothingToRead": "There's nothing to read",
+          "survivorDied": "This survivor died"
+        },
+        "play": {
+          "continueRefused": "Can't continue: {reason}",
+          "dropRefused": "Can't drop it: {reason}",
+          "fuseBurning": "The fuse is already burning",
+          "gunNotReady": "The gun isn't ready",
+          "noRoomToCrouch": "No room to crouch",
+          "noRoomToStand": "No room to stand up",
+          "notHoldingGun": "I'm not holding a gun",
+          "onQuickbar": "{item} on quickbar {slot}",
+          "pinIn": "Pin back in",
+          "pinPulled": "Pin pulled",
+          "quickbarEmpty": "Quickbar {slot} is empty",
+          "restRefused": "Can't rest: {reason}",
+          "search": "Search the {furniture}",
+          "sleepRefused": "Can't sleep: {reason}",
+          "throwLostItem": "It left my hand before I could throw it",
+          "throwRefused": "Can't throw it there: {reason}",
+          "waitingForHandling": "Waiting for handling to finish"
+        },
+        "rest": {
+          "unusable": "I can't use it for that"
+        },
+        "revolver": {
+          "close": "Close cylinder",
+          "cock": "Cock hammer",
+          "eject": "Eject",
+          "open": "Open cylinder",
+          "pick": "Pick out case",
+          "pull": "Trigger pull"
+        },
+        "survival": {
+          "actionListHeading": "{item}:",
+          "batteryDetail": "Battery {percent}%",
+          "burnedOut": "It has burned out",
+          "cantUseFromHere": "I can't use the {item} from here",
+          "cartridgeGone": "The cartridge isn't there any more",
+          "cartridgeOutOfReach": "The cartridge is out of reach",
+          "freshnessDetail": "It's {freshness}",
+          "fuelDetail": "Fuel {percent}%",
+          "igniterDetail": "Fuel for lighting a light held in the other hand",
+          "itemGone": "The {item} isn't there any more",
+          "itemMoved": "The {item} moved before I could use it",
+          "itemNotInHands": "The {item} isn't in my hands",
+          "itemOutOfReach": "The {item} is out of reach",
+          "lightDied": "The {item} died",
+          "lightNotInHands": "The light isn't in my hands",
+          "lightOffDetail": "{charge} · off",
+          "lightOnDetail": "{charge} · on",
+          "needFirestarter": "I need a firestarter in my other hand",
+          "noWound": "No wound needs the {item}",
+          "notInHands": "It isn't in my hands",
+          "nothingLeft": "There's nothing left",
+          "outOfFuel": "It's out of fuel",
+          "rotten": "The {item} was rotten",
+          "toolNotInHands": "The tool isn't in my hands"
+        },
+        "trap": {
+          "noGround": "There's no ground to set it on",
+          "notInHands": "The trap isn't in my hands",
+          "notSet": "The trap isn't set"
+        },
+        "treatment": {
+          "doesNotApply": "It won't help that wound",
+          "gone": "I don't have it any more"
+        },
+        "unpacking": {
+          "cannot": "It doesn't open",
+          "needTool": "I need a tool in my other hand",
+          "noCan": "I have no can to open",
+          "notInHands": "It has to be in my hands",
+          "toolGone": "The tool isn't in my other hand",
+          "unpack": "Unpack {item}"
+        }
+      },
       "audioVolumes": {
         "body": 0.80000000000000004,
         "master": 0.80000000000000004,
@@ -198,9 +396,6 @@
       },
       "hudScale": 1,
       "id": "core",
-      "itemActionLabels": {
-        "stripRound": "Strip a round"
-      },
       "refusalSound": "player_nope",
       "restLabels": {
         "rest": "Resting",

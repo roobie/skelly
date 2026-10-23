@@ -59,7 +59,7 @@ describe('held sharpening', () => {
     (side) => {
       const f = fixture(side);
       const { body } = new Simulation({ seed: 1 });
-      const selection = new ItemActionSelection();
+      const selection = new ItemActionSelection('fixture open can');
       const actions = itemActionsFor(f.blade, f.inventory, body);
       expect(selectPrimaryAction(f.inventory, side).kind).toBe('melee');
       expect(selection.step(f.blade, actions, 1)).toBe(true);
