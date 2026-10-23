@@ -2109,15 +2109,18 @@ passed can each hold one. See
 `src/game/streamer.ts`, `dispatchSky`, `src/core/skyField.ts`, `request`, and
 `src/render/skylight.ts`, `prepare`.
 
-Until a field's answer lands, the view draws it dimmed, without direct sun, during the
-load pause and in play alike. This is a presentation fallback, not the simulation's
-answer: a query builds the field synchronously, so gameplay already reads the room's
-real light. A room briefly too dark reads as "not lit yet", while open sky in a roofed
-room reads as wrong light; finishing a field before revealing its room would avoid both
-but stalls frames on walks without scheduling to spread that work. When #1261 provides
-that scheduling, finishing before reveal replaces this fallback. The dimming cap is
-content: see `src/content/base/graphics.jsonnet`, `unbuiltSkyCap`. Once a field has a complete result, the view keeps it
-while an edit is rebuilt, so opening a door cannot flash a dark room. The replacement
+Until a field's answer lands, the view dims its diffuse sky to a content cap, during the
+load pause and in play alike. Near the player, direct sun still follows the shadow map,
+because that map is cast from real geometry; beyond the shadow map, an unbuilt receiver
+gets no direct sun. This is a presentation fallback, not the simulation's answer: a
+query builds the field synchronously, so gameplay already reads the room's real light.
+A room briefly too dark reads as "not lit yet", while open sky in a roofed room reads
+as wrong light; finishing a field before revealing its room would avoid both but stalls
+frames on walks without scheduling to spread that work. When #1261 provides that
+scheduling, finishing before reveal replaces this fallback. See
+`src/content/base/graphics.jsonnet`, `unbuiltSkyCap`. Once a field has a complete
+result, the view keeps it while an edit is rebuilt, so opening a door cannot flash a
+dark room. The replacement
 swaps atomically, and a late result for superseded geometry cannot install. Retained
 column heights supply the nonresident estimate. CPU and shader share this policy. The
 kept result can delay a darkening edit or step visibly at replacement; that is

@@ -83,9 +83,9 @@ function regionIndex(fields: readonly SkyField[]) {
 }
 /**
  * An upload view over the shared sky field cache: it asks the cache to build fields near the camera off
- * the main thread and draws the results the cache holds. Where no covering field has a result yet, it draws
- * dimmed sky without direct sun (`packages/deadvox/DESIGN.md`, "Light"); a field being rebuilt keeps its last
- * complete result until the new one lands.
+ * the main thread and draws the results the cache holds. Where no covering field has a result yet, it dims
+ * diffuse sky to a cap and, beyond the near shadow map, drops direct sun (`packages/deadvox/DESIGN.md`,
+ * "Light"); a field being rebuilt keeps its last complete result until the new one lands.
  */
 export class Skylight {
   private readonly texture = { value: volumeTexture(new Uint8Array([255]), [1, 1, 1]) };
