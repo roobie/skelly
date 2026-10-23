@@ -722,14 +722,9 @@ export const createSession = (options: SessionOptions) => {
   const isOpaque = (x: number, y: number, z: number) => options.isOpaque(x, y, z) || vehicleSight.isSolid(x, y, z);
   const isLightBlocking = (x: number, y: number, z: number) =>
     options.isOpaque(x, y, z) || vehicleLight.isSolid(x, y, z);
-  const wearPlaced = (piece: BlockEntity | undefined, wear: number | undefined): void => {
-    if (piece && wear !== undefined) {
-      inventory.entities.wear(piece, wear);
-    }
-  };
   const generateColumnSupply = (cx: number, cz: number, source: ColumnSource): void => {
-    for (const { spec, loot, surfaceLoot, fixedCount, wear } of source.furnitureIn(cx, cz)) {
-      wearPlaced(inventory.furnish(spec, loot, surfaceLoot, fixedCount), wear);
+    for (const spawn of source.furnitureIn(cx, cz)) {
+      inventory.furnishSpawn(spawn);
     }
     for (const point of source.lootPointsIn(cx, cz)) {
       if (point.channel !== 'ground') {

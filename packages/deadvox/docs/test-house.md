@@ -71,9 +71,10 @@ layout's `repairStock` names the building that receives it, so the house no long
 needs piles of its own. See `src/core/authoredLayout.ts`, `repairStock`.
 
 Debug stock is placed at session start, before the garage's column arrives, so its
-containers are added then. Arrival later furnishes the same containers rather than
-duplicating them, which keeps the stock where it was placed. See
-`src/game/testHouseRepair.ts`, `standingContainer`.
+containers are spawned then, from the site's own furniture spawns, so they keep their
+authored pose and contents. Arrival finds them standing and adds nothing twice, which
+keeps the stock where it was placed. See `src/game/testHouseRepair.ts`,
+`standingContainer`.
 
 ## Benchmark scale
 

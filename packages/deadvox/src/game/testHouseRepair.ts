@@ -1,7 +1,12 @@
 import type { BlockEntity } from '../core/blockEntities.ts';
 import type { RecipeDef, Registry } from '../core/content.ts';
+import { toChunk, type Vec3 } from '../core/coords.ts';
 import type { Inventory } from '../core/inventory.ts';
-import { type PlacedPiece, type Placement, placedPieces } from '../core/templates.ts';
+import type { Site } from '../core/site.ts';
+import { type PlacedPiece, placedPieces } from '../core/templates.ts';
+
+/** The site the stock stands in: its authored placements (absent on a generated site) and its furniture spawns. */
+type StockSource = Pick<Site, 'authoredPlacements' | 'furnitureIn'>;
 
 /** #231 can provide book item IDs here once content records which recipes each book teaches. */
 type RepairBookHook = (registry: Registry, recipes: readonly RecipeDef[]) => readonly string[];
@@ -11,8 +16,7 @@ interface TestHouseRepairCornerOptions {
   registry: Registry;
   site: string;
   debug: boolean;
-  /** The authored site's placements; absent on a generated site. */
-  placements: readonly Placement[] | undefined;
+  source: StockSource | undefined;
   repairBooks?: RepairBookHook;
 }
 
@@ -58,15 +62,21 @@ const repairCornerToolTypes = (
   return tools;
 };
 
-/** The stock exists before its column streams in, so the container is placed now and arrival keeps it. */
-const standingContainer = (inventory: Inventory, piece: PlacedPiece): BlockEntity => {
-  const standing = [...inventory.entities.records].find(
-    (record) => record.type === piece.furniture && record.origin.every((value, axis) => value === piece.pos[axis]),
-  );
-  const { furniture: type, pos, size, facing, fixed } = piece;
-  const entity = standing ?? inventory.entities.add({ type, pos, size, facing, ...(fixed ? { fixed } : {}) });
+const samePiece = (type: string, origin: Vec3, piece: PlacedPiece): boolean =>
+  type === piece.furniture && origin.every((value, axis) => value === piece.pos[axis]);
+
+/**
+ * The stock exists before its column streams in, so the container is spawned now, whole, from the site's own
+ * furniture spawn; arrival then finds its origin claimed and adds nothing twice.
+ */
+const standingContainer = (inventory: Inventory, source: StockSource, piece: PlacedPiece): BlockEntity => {
+  const standing = [...inventory.entities.records].find((record) => samePiece(record.type, record.origin, piece));
+  const spawn = source
+    .furnitureIn(toChunk(piece.pos[0]), toChunk(piece.pos[2]))
+    .find(({ spec }) => samePiece(spec.type, spec.pos, piece));
+  const entity = standing ?? (spawn && inventory.furnishSpawn(spawn));
   if (!entity) {
-    throw new Error(`Repair stock container ${type} could not be placed`);
+    throw new Error(`Repair stock container ${piece.furniture} could not be placed`);
   }
   return entity;
 };
@@ -114,12 +124,12 @@ export const populateTestHouseRepairCorner = ({
   registry,
   site,
   debug,
-  placements,
+  source,
   repairBooks = () => [],
 }: TestHouseRepairCornerOptions): void => {
   const building = registry.layouts.get(site)?.repairStock;
-  const placement = placements?.find(({ template }) => template.id === building);
-  if (!(debug && placement)) {
+  const placement = source?.authoredPlacements?.find(({ template }) => template.id === building);
+  if (!(debug && source && placement)) {
     return;
   }
   const pieces = placedPieces(placement);
@@ -129,7 +139,7 @@ export const populateTestHouseRepairCorner = ({
   }
   const containers = pieces
     .filter(({ furniture }) => registry.furniture.get(furniture)?.container)
-    .map((piece) => standingContainer(inventory, piece));
+    .map((piece) => standingContainer(inventory, source, piece));
   const stock = repairCornerStock(registry, recipes);
   const tools = repairCornerToolTypes(registry, recipes, stock.qualities, repairBooks);
   recipes.forEach((recipe, index) => {

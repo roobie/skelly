@@ -45,25 +45,49 @@ const stockBuilding = house.site.placements.find(({ template }) => template.id =
 const repairRecipes = repairStockRecipes(scenarioRegistry, placedPieces(stockBuilding));
 
 const addRepairCorner = (inventory: Inventory, site: string, debug = true): void => {
-  populateTestHouseRepairCorner({
-    inventory,
-    registry: scenarioRegistry,
-    site,
-    debug,
-    placements: house.site.placements,
-  });
+  populateTestHouseRepairCorner({ inventory, registry: scenarioRegistry, site, debug, source: house.site });
 };
 
 /** Column arrival as the session does it, for the stock building's furniture only. */
-const arriveStockBuilding = (inventory: Inventory): void => {
+const arriveStockBuilding = (inventory: Inventory, at = house): void => {
   const [ox, , oz] = stockBuilding.origin;
   const [width, depth] = footprint(stockBuilding);
-  for (const { spec, loot, surfaceLoot, fixedCount } of house.furniture) {
-    const [x, , z] = spec.pos;
+  for (const spawn of at.furniture) {
+    const [x, , z] = spawn.spec.pos;
     if (x >= ox && x < ox + width && z >= oz && z < oz + depth) {
-      inventory.furnish(spec, loot, surfaceLoot, fixedCount);
+      inventory.furnishSpawn(spawn);
     }
   }
+};
+
+/** The stock building with one container mark drawn tipped and holding an authored item, as valid content may. */
+const authoredStockFixture = () => {
+  const template = scenarioRegistry.templates.get(house.layout.repairStock!)!;
+  const marks = Object.entries(template.palette).flatMap(([char, candidate]) =>
+    typeof candidate === 'object' && 'furniture' in candidate && candidate.furniture && !candidate.tip
+      ? [{ char, entry: candidate, furniture: candidate.furniture }]
+      : [],
+  );
+  const mark = marks.find(({ furniture }) => {
+    const def = scenarioRegistry.furniture.get(furniture);
+    // Tipping back swaps height and depth, so a piece with equal ones keeps its drawn footprint.
+    return def?.container && def.size[1] === def.size[2];
+  })!;
+  const stockTypes = new Set(
+    repairRecipes.flatMap(({ result, components }) => [result.item, ...components.flat().map((part) => part.item)]),
+  );
+  const item = [...scenarioRegistry.items.values()]
+    .sort((a, b) => a.id.localeCompare(b.id))
+    .find(({ id, tool }) => !(tool || stockTypes.has(id)))!.id;
+  const authored: typeof template = {
+    ...template,
+    palette: { ...template.palette, [mark.char]: { ...mark.entry, tip: 'back', items: [{ item, count: 1 }] } },
+  };
+  const registry: Registry = {
+    ...scenarioRegistry,
+    templates: new Map([...scenarioRegistry.templates, [template.id, authored]]),
+  };
+  return { registry, at: testHouseSite(registry), furniture: mark.furniture, item };
 };
 
 const furnitureCells = new Set(
@@ -242,6 +266,42 @@ describe('test-house repair stock', () => {
     const containers = [...inventory.entities.records].filter(({ pockets }) => pockets);
     expect(containers.map(({ uid }) => uid).sort()).toEqual(stocked.sort());
     expect([...inventory.items()].length).toBe(items);
+  });
+
+  it('keeps a stock container’s authored pose and contents through early stocking and arrival, once', () => {
+    const fixture = authoredStockFixture();
+    const inventory = new Inventory(fixture.registry);
+    populateTestHouseRepairCorner({
+      inventory,
+      registry: fixture.registry,
+      site: 'testHouse',
+      debug: true,
+      source: fixture.at.site,
+    });
+    const state = () => {
+      const tipped = [...inventory.entities.records].filter(
+        ({ type, tip }) => type === fixture.furniture && tip === 'back',
+      );
+      const holders = new Set(
+        [...inventory.items()].flatMap(({ item, location }) =>
+          item.type === fixture.item && location.kind === 'furniture' ? [location.entity.uid] : [],
+        ),
+      );
+      return {
+        tipped: tipped.map(({ uid }) => uid).sort(),
+        stocked: tipped.every(({ uid }) => holders.has(uid)),
+        containers: [...inventory.entities.records]
+          .filter(({ type }) => fixture.registry.furniture.get(type)?.container)
+          .map(({ uid }) => uid)
+          .sort(),
+        items: [...inventory.items()].length,
+      };
+    };
+    const early = state();
+    expect(early.tipped.length).toBeGreaterThan(0);
+    expect(early.stocked).toBe(true);
+    arriveStockBuilding(inventory, fixture.at);
+    expect(state()).toEqual(early);
   });
 
   it('keeps derived repair stock out of normal mode', () => {

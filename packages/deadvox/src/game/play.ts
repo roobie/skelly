@@ -1092,7 +1092,7 @@ export const startPlay = (
       registry,
       site: config.site,
       debug: config.debug,
-      placements: engine.site?.authoredPlacements,
+      source: engine.site,
     });
   }
   const { load: applyColumnLoad, unload: applyColumnUnload } = columnArrival(session, engine);
