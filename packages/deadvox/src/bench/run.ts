@@ -8,6 +8,8 @@ import { type Registry, requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
+import { graphicsTuningOf } from '../core/graphicsTuning.ts';
+import { lookDefaultsOf } from '../core/lookDefaults.ts';
 import type { Body } from '../core/physics.ts';
 import { Simulation } from '../core/sim.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
@@ -334,7 +336,12 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
         registry: engine.registry,
         zombies,
       });
-      zombieMeshes = new MobActorMeshes(s, shamblerCount, { figureSeeds: figureSeedPool(engine.registry.zombies) });
+      const graphics = graphicsTuningOf(engine.registry);
+      zombieMeshes = new MobActorMeshes(s, shamblerCount, {
+        figureSeeds: figureSeedPool(engine.registry.zombies),
+        look: lookDefaultsOf(engine.registry).mobActors,
+        maxCorpses: graphics.mobActors.maxCorpses,
+      });
       engine.scene.add(zombieMeshes.group);
     } catch (error) {
       aborted = true;

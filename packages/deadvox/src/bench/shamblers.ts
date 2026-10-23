@@ -5,6 +5,8 @@ import { hourOfDay, parseTimeOfDay } from '../core/clock.ts';
 import { requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
+import { graphicsTuningOf } from '../core/graphicsTuning.ts';
+import { lookDefaultsOf } from '../core/lookDefaults.ts';
 import { type Body, stepBody } from '../core/physics.ts';
 import { Simulation } from '../core/sim.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
@@ -176,9 +178,14 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
         tier: 'background',
       });
     }
+    const graphics = graphicsTuningOf(engine.registry);
     zombieMeshes =
       run.actors === 'detailed'
-        ? new MobActorMeshes(s, count, { figureSeeds: figureSeedPool(engine.registry.zombies) })
+        ? new MobActorMeshes(s, count, {
+            figureSeeds: figureSeedPool(engine.registry.zombies),
+            look: lookDefaultsOf(engine.registry).mobActors,
+            maxCorpses: graphics.mobActors.maxCorpses,
+          })
         : new ZombieMeshes(s, count);
     scene.add(zombieMeshes.group);
   };
