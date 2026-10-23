@@ -232,7 +232,8 @@ export const gauntletFlow = async (browser, baseUrl) => {
     await page.evaluate(async () => {
       const w = globalThis.gauntletWitness;
       const { engine, session } = w;
-      const { chargeOf } = await import('/src/core/lights.ts');
+      const lightsModule = '/src/core/lights.ts';
+      const { chargeOf } = await import(lightsModule);
       const { registry } = engine;
       const roll = (type) => session.inventory.createRolled({ type, count: 1, condition: 1, charge: 1 });
       const lightType = [...registry.items.keys()].find((id) => {
