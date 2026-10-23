@@ -648,10 +648,7 @@ export const measureVoxels = (
   const grids: Grid[] = sources.map(() => new Map());
   sample(sources, { grain, origin }, (index) => grids[index]!);
   const at = (axis: number, cells: number): number => cells * grain + origin[axis]!;
-  return grids.map((grid) => {
-    if (grid.size === 0) {
-      return;
-    }
+  const measureOf = (grid: Grid): VoxelMeasure => {
     const [low, high] = boundsOf(grid);
     const sum = [0, 0, 0];
     for (const key of grid.keys()) {
@@ -665,7 +662,8 @@ export const measureVoxels = (
       centroid: [at(0, sum[0]! / grid.size + 0.5), at(1, sum[1]! / grid.size + 0.5), at(2, sum[2]! / grid.size + 0.5)],
       voxels: grid.size,
     };
-  });
+  };
+  return grids.map((grid) => (grid.size === 0 ? undefined : measureOf(grid)));
 };
 
 /**
