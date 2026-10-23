@@ -1,4 +1,4 @@
-// What stands near spawn: the hamlet, or the stress-test city. A site shapes the
+// A scenario, authored layout or debug world. A site shapes the
 // ground, writes its buildings into chunks and says what furniture each column has.
 // Everything is a pure function of the seed and position, so chunks can generate in
 // any order.

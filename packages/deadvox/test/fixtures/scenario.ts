@@ -158,8 +158,6 @@ export const fixtureScenarioSources = (
               trees: { trunk: 'fixture_solid', branch: 'fixture_solid', leaves: 'fixture_solid' },
               leafLitter: 'fixture_solid',
             },
-            hamlet: { hedge: 'fixture_solid', northSide: ['fixture_house'], southSide: ['fixture_house'] },
-            placement: baseSite.placement,
           },
         ],
         furniture: [

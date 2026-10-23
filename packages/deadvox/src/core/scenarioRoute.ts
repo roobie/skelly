@@ -2,10 +2,10 @@ import { BlockEntities, type BlockEntity } from './blockEntities.ts';
 import type { CitySite } from './citySite.ts';
 import { worldOpaque, worldSolid } from './collision.ts';
 import { CHUNK, toChunk, type Vec3 } from './coords.ts';
-import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
 import { raycast } from './raycast.ts';
 import { pileDistance, reachTuning } from './reach.ts';
 import { makeScale } from './scale.ts';
+import { TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
 import { sitePalette, terrainShapeOf } from './sitePalette.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
 import { footprint, type Placement } from './templates.ts';
@@ -63,7 +63,7 @@ export class ScenarioRouteSpace {
     );
     this.terrain = {
       seed: site.seed,
-      scale: makeScale(HAMLET_BLOCK_SIZE),
+      scale: makeScale(TEMPLATE_BLOCK_SIZE),
       blocks: sitePalette(site.registry).terrain,
       shape: terrainShapeOf(site.registry),
       surface: site.surface,
@@ -287,7 +287,7 @@ export class ScenarioRouteSpace {
 
   visibleReach(point: Readonly<Vec3>, entity: BlockEntity): boolean {
     const { chestHeightMetres, reachMetres } = reachTuning(this.site.registry);
-    const chest: Vec3 = [point[0], point[1] + chestHeightMetres / HAMLET_BLOCK_SIZE, point[2]];
+    const chest: Vec3 = [point[0], point[1] + chestHeightMetres / TEMPLATE_BLOCK_SIZE, point[2]];
     const target = chest.map((value, axis) =>
       Math.max(entity.pos[axis]!, Math.min(value, entity.pos[axis]! + entity.size[axis]!)),
     ) as Vec3;
@@ -297,9 +297,9 @@ export class ScenarioRouteSpace {
   visibleGroundReach(point: Readonly<Vec3>, target: Readonly<Vec3>): boolean {
     const { chestHeightMetres, reachMetres } = reachTuning(this.site.registry);
     return (
-      pileDistance([...point], [...target], HAMLET_BLOCK_SIZE) <= reachMetres &&
+      pileDistance([...point], [...target], TEMPLATE_BLOCK_SIZE) <= reachMetres &&
       this.visibleTarget(
-        [point[0], point[1] + chestHeightMetres / HAMLET_BLOCK_SIZE, point[2]],
+        [point[0], point[1] + chestHeightMetres / TEMPLATE_BLOCK_SIZE, point[2]],
         target.map((value) => value + 0.5) as Vec3,
         Number.POSITIVE_INFINITY,
       )
@@ -314,7 +314,7 @@ export class ScenarioRouteSpace {
   ): boolean {
     const offset = target.map((value, axis) => value - chest[axis]!) as Vec3;
     const distance = Math.hypot(...offset);
-    if (distance * HAMLET_BLOCK_SIZE > reachMetres) {
+    if (distance * TEMPLATE_BLOCK_SIZE > reachMetres) {
       return false;
     }
     if (distance === 0) {

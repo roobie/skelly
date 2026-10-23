@@ -21,6 +21,23 @@ export const observationPlugin = {
   name: 'primary-action-test-observation',
   enforce: 'pre',
   transform(code, id) {
+    // A quiet test-owned site isolates replay's stream-edge witness from scenario population changes.
+    if (id.endsWith('/src/content/base/layouts.json')) {
+      const data = JSON.parse(code);
+      data.layouts.push({
+        id: 'replay_fixture',
+        lootContext: { usage: ['Residential'], tier: 'Tier1' },
+        bounds: { x0: -64, z0: -64, x1: 64, z1: 64 },
+        ground: 20,
+        terrain: [],
+        buildings: [],
+        woodlands: [],
+        tracks: [],
+        player: { position: [8, 20.5, 8], bearing: 0 },
+        shamblers: [{ type: 'shambler', position: [56, 20.5, 8] }],
+      });
+      return JSON.stringify(data);
+    }
     if (!id.endsWith('/src/game/play.ts')) {
       return;
     }

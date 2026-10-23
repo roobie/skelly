@@ -58,7 +58,7 @@ const placementBody = (
   return body;
 };
 
-/** Finds the same clear player foothold near the hamlet spawn for browser and CPU runs. */
+/** Finds the same clear player foothold near the scenario spawn for browser and CPU runs. */
 export const findShamblerBenchPlayer = (engine: ShamblerPlacementWorld): Body => {
   const s = engine.config.scale.blockSize;
   const [baseX, , baseZ] = engine.spawn.pos;
@@ -76,7 +76,7 @@ export const findShamblerBenchPlayer = (engine: ShamblerPlacementWorld): Body =>
       }
     }
   }
-  throw new Error('Could not find open terrain near the hamlet spawn for the player.');
+  throw new Error('Could not find open terrain near the scenario spawn for the player.');
 };
 
 /** Places N deterministic, non-overlapping bodies in the lit 8–20 m sight ring. */

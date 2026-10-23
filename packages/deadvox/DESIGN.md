@@ -698,6 +698,10 @@ rolled pockets, so the approach signals that the lab needs preparation before th
 player commits to it. See `src/content/base/gauntlet-service.libsonnet`,
 `gauntlet_scavenger_pockets`.
 
+The gauntlet is the default entry because one discovery route should carry the playable start rather than compete with a separate sandbox. The authored playtest remains an independently selected route. See `src/game/config.ts`, `makeConfig` and `configFromUrl`.
+
+The shambler CPU and browser benchmarks use the same forest world because a playable scenario's enclosed start can prevent the benchmark's sight-ring placement. Keep that workload independent of the default entry. See `src/bench/shamblerWorld.ts`, `createHeadlessShamblerWorld`, and `src/main.ts`, `bench`.
+
 Marker-only population omits the ordinary settlement's wanderers and horde, making
 empty marker sets silently remove street pressure. A scenario therefore scales the
 ordinary settlement policy by building groups, not by the reserved campus's empty
@@ -707,7 +711,7 @@ The gauntlet places one horde rather than one per building group, and stragglers
 carry more of the street pressure. This reuses population and spawn
 admission instead of inventing an enemy-density runtime. See `src/core/schema.ts`,
 `ScenarioSchema`; `src/content/base/scenarios.jsonnet`; `src/core/gauntlet.ts`,
-`gauntletPopulation`; `src/core/hamlet.ts`, `hamletZombieSpawns`; and
+`gauntletPopulation`; `src/core/settlementSpawns.ts`, `settlementZombieSpawns`; and
 `src/core/zombieSpawns.ts`, `ZombieSpawner`.
 
 The route/save browser flow proves connectivity and persistence, not balance or
@@ -959,7 +963,7 @@ are not built; until they are, the room and its marking are enough. Deeper level
 lab has no lighting category until its light round. See
 `src/content/base/gauntlet-lab-entry.libsonnet`, `rooms`, and
 `src/content/base/gauntlet-lab-administration.libsonnet`, `rooms`. Finished site placements
-expose the same sky eligibility contract across authored layouts, hamlets and
+expose the same sky eligibility contract across authored layouts and
 scenario composition. Benchmark city plans do not opt into scenario
 sky work, preserving their stress policy. Demo stock stays outside ordinary
 reachability, while admitted scenario templates and fixed items are world sources.
@@ -1960,7 +1964,7 @@ outdoor lighting. See `src/render/playView.ts`, `prepareLighting`, and
 `src/render/skylight.ts`, `Skylight`.
 
 Dark interiors make carried light useful without an authored indoor flag.
-For authored sites and hamlets, live opaque blocks and blocking furniture determine
+For authored worlds, live opaque blocks and blocking furniture determine
 diffuse sky transport; placement geometry only bounds discovery. Roofs, openings
 and doors therefore change the estimate through geometry, not template categories.
 Blocking furniture counts as its whole envelope, so a shaped piece whose faces sit
@@ -2156,7 +2160,7 @@ reused across types: `grab`, `leap`, `scream`, `explode`, `acidSpit`,
 | 3 | Incandescent hulk | A brute running a fever of a thousand degrees: glows, sets fires, warps glass. Seen from far away at night |
 | 3 | Lantern | Bioluminescent lure that draws you in, and others |
 
-Zombie types are content definitions used by shared systems; choose behavior through content properties rather than type-id cases. `src/core/schema.ts`, `ZombieSchema`, defines those properties, and `src/core/zombies.ts`, `ZombieSystem.emitFootsteps`, uses the declared footstep family. The soldier appears only at military-camp markers, explicit camp spawns and the crisis HQ's markers, because the HQ is a military site whose threat should be mostly soldiers; no other place that merely looks military takes them; `src/core/hamlet.ts`, `ordinaryHamletSpawnWeights`, excludes authored-only kinds from ordinary selection.
+Zombie types are content definitions used by shared systems; choose behavior through content properties rather than type-id cases. `src/core/schema.ts`, `ZombieSchema`, defines those properties, and `src/core/zombies.ts`, `ZombieSystem.emitFootsteps`, uses the declared footstep family. The soldier appears only at military-camp markers, explicit camp spawns and the crisis HQ's markers, because the HQ is a military site whose threat should be mostly soldiers; no other place that merely looks military takes them; `src/core/settlementSpawns.ts`, `ordinarySpawnWeights`, excludes authored-only kinds from ordinary selection.
 
 A shambler's kit is the loot table its type names in `loot`, rolled when it dies from the world seed and the zombie's id (see `src/game/session.ts`, `onDeath`), so it is deterministic and needs no state of its own: the drop is an ordinary pile that saves already cover. Kit belongs to the kind and lives in content, not in code, because a kind such as the farmer, the site worker or the medic then differs from a plain shambler by one more type and one more table, never by a branch on its id. Kinds with a kit are authored-only and spawn only where their place puts them. Kit uses ordinary items; military loot remains restricted to site containers. A corpse drops only what its loot context admits, so a base kit item outside that context is dead content and a base-content test rejects it; validate does not, because a table supplies weights, not a second geography authority (`DESIGN.md`, "Military loot"). For #487, defer rendering what a kind wears and carries, the military clothing palette, armour, and body searching; until then clothes and tools appear only as drops.
 
@@ -2258,7 +2262,7 @@ The runner's threat comes from speed rather than stronger attacks; the crawler's
 low posture confines its bite to the legs. Keep their moves, hit regions, sounds and
 spawn chance authored with the type. See `src/content/base/zombies.jsonnet` and the
 spawn markers in `src/content/base/templates.json`. Type weights scale authored
-marker chances and choose hamlet wanderers, keeping rarity a content property
+marker chances and choose settlement wanderers, keeping rarity a content property
 rather than an inference from generated counts.
 
 The crawler is a prone ground-crawler with amputated legs, a grounded pose, and a
@@ -2332,9 +2336,9 @@ crouch rules. See `src/core/zombies.ts`, `hearingTier`, `hearVocalNoise` and
   | Abstract | Actors in unloaded chunks | Hordes moving as groups on the region map (Slice 4b) |
 
   Loaded distant actors remain in the same store and switch their update
-  schedule by derived proximity and terrain availability. The hamlet's first
-  group shares noise-driven targets and drifts at night, but
-  remains individual actors rather than a region-map abstraction. Save the
+  schedule by derived proximity and terrain availability. Loaded hordes
+  share noise-driven targets and drift at night, but
+  remain individual actors rather than a region-map abstraction. Save the
   group's target and random stream with member offsets so noise response and
   roaming continue after load; derive the tier again instead of saving it. This
   keeps the terrain collision authority live and avoids persisting a navigation

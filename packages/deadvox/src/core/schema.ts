@@ -2383,7 +2383,7 @@ const ScenarioSchema = strictObject({
     hordeAreas: optional(array(LayoutRect)),
     /** Metres each side of a street's centreline where stragglers stand. */
     roadsideOffset: pipe(Count, minValue(1), maxValue(32)),
-    /** Stragglers added to each group on top of its hamlet-sized count. */
+    /** Stragglers added to each group on top of its baseline settlement count. */
     extraStragglers: pipe(Count, maxValue(16)),
   }),
   city: strictObject({
@@ -2522,9 +2522,9 @@ const ZombieSchema = strictObject({
   soundPitchMultiplier: optional(Positive),
   /** Health keyed by hit-region id; ordinary shamblers use six anatomy keys, amalgams use manifest ids. */
   regions: record(pipe(string(), nonEmpty('must not be empty')), Positive),
-  /** Relative chance that an ordinary hamlet spawn chooses this type; 1 is the common baseline. */
+  /** Relative chance that an ordinary settlement spawn chooses this type; 1 is the common baseline. */
   spawnWeight: pipe(Positive, maxValue(1, 'must be at most 1')),
-  /** Excludes this kind from ordinary hamlet selection while keeping authored/debug spawns available. */
+  /** Excludes this kind from ordinary settlement selection while keeping authored/debug spawns available. */
   authoredOnly: optional(vBoolean()),
   sounds: strictObject({
     idle: picklist(SOUND_EVENT_IDS),
@@ -2898,7 +2898,6 @@ const SiteGenerationSchema = strictObject({
     /** How far a tree may stray from its cell's centre on each axis. */
     treeJitterMetres: NonNegative,
     trees: TreesSchema,
-    hamletDensity: Fraction,
     forestHalfExtentMetres: PositiveMetres,
     forestDensityField: strictObject({
       wavelengthMetres: PositiveMetres,
@@ -2915,25 +2914,6 @@ const SiteGenerationSchema = strictObject({
     trees: strictObject({ trunk: Id, branch: Id, leaves: Id }),
     leafLitter: Id,
   }),
-  hamlet: strictObject({
-    hedge: Id,
-    northSide: pipe(array(Id), minLength(1)),
-    southSide: pipe(array(Id), minLength(1)),
-  }),
-  // Where the hamlet may stand: a square grid of candidate sites around the world origin, scored on flatness.
-  placement: pipe(
-    strictObject({
-      gridStepMetres: PositiveMetres,
-      reachMetres: NonNegative,
-      sampleMetres: PositiveMetres,
-      lowestMetres: NonNegative,
-    }),
-    // The search walks whole grid steps out to the reach, so a fractional count would silently shrink it.
-    check(
-      ({ gridStepMetres, reachMetres }) => Number.isInteger(reachMetres / gridStepMetres),
-      'reach must be a whole number of grid steps',
-    ),
-  ),
 });
 
 const BlockCount = pipe(number(), integer('must be a whole number'), minValue(1, 'must be at least 1'));

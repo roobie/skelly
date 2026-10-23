@@ -1,11 +1,6 @@
 {
   "siteGeneration": [
     {
-      "hamlet": {
-        "hedge": "hedge",
-        "northSide": ["small_house", "bungalow", "corner_store", "hardware_store"],
-        "southSide": ["gas_station", "shed", "garage"]
-      },
       "id": "authored",
       "palette": {
         "leafLitter": "leaf_litter",
@@ -21,12 +16,6 @@
           "leaves": "leaves",
           "trunk": "tree_trunk"
         }
-      },
-      "placement": {
-        "gridStepMetres": 32,
-        "lowestMetres": 15,
-        "reachMetres": 160,
-        "sampleMetres": 4
       },
       "terrain": {
         "beachBelowMetres": 14,
@@ -52,7 +41,6 @@
           "wavelengthMetres": 128
         },
         "forestHalfExtentMetres": 384,
-        "hamletDensity": 0.5,
         "obstacleMarginMetres": 1,
         "openDensity": 0.035000000000000003,
         "treeCellMetres": 8,

@@ -162,7 +162,7 @@ export const benchSiteLabel = (run: BenchRun): string =>
   ({
     forest: run.density === null ? 'forest, seeded density field' : `forest, density ${run.density}`,
     city: `city, up to ${run.storeys} storeys`,
-    hamlet: 'hamlet',
+    gauntlet: 'gauntlet',
     testHouse: 'test house',
   })[run.site] ?? `authored site ${run.site}`;
 

@@ -148,7 +148,7 @@ choose to attach their local metrics and a recent replay. Testers without GitHub
 can email their metrics and feedback to the organiser; the organiser provides
 the address separately with the link.
 
-The authored route runs from the lone house through the hamlet, hunting cabins,
+The independently selected authored playtest route runs from the lone house through its hamlet neighborhood, hunting cabins,
 medical site and military camp, with the first and second nights along the way.
 The game does not script zombie behavior. Testers explore the map and make their
 own choices; the run is not facilitated or shadowed.

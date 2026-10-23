@@ -296,22 +296,9 @@ The grounded prone form and perception-directed gaze make the crawler's shape an
 
 ### 3.9 Hordes and the background tier
 
-**BR, 2026-10-05 21:32, inline answers:**
+Background work must stay bounded without shared navigation fields, while gunshots remain a decision that can draw distant actors and groups. Persist group attention and random state so a save cannot reset the consequence of that noise; derive simulation tier again from loaded terrain. See `src/core/zombies.ts`, `ZombieSystem.tickBackground` and `ZombieSystem.addHorde`, and `DESIGN.md`, "Senses and AI".
 
-> 1. Flow fields: ... Do background zombies just beeline in big cheap steps, and flow fields drop from the plan?
-> yes
-> 2. Tier sizes: keep CHALLENGES.md's targets for Slice 3, about 60 active and 300 in the background?
-> let's keep it like that for now, but ideally we could make it so we can have many more at once
-> 3. First horde: what is it in Slice 3? For example, a group of 20–50 drifting together through the hamlet, drawn by loud noise such as gunshots, or roaming at night.
-> yeah, let's try that to start off with
-> 4. Gunshots: does a gunshot carry far enough to pull background zombies, and hordes, toward you? That would make firing a real decision.
-> yes, it's loud and brings in enemies from far
-
-**In:** Background zombies beeline in big, cheap steps; no shared flow fields. Keep the targets in `CHALLENGES.md`, "Many zombies in a browser", as an initial target while measuring whether substantially more are possible. Add the first group drifting through the hamlet, attracted by loud noise such as gunshots or roaming at night. Gunshots carry far and pull background zombies and hordes toward the source. Abstract region-map hordes remain Slice 4b.
-**Saves:** Save the background actors/group state needed to continue movement, target and noise response after load. Keep active and background ownership explicit and fingerprinted; do not serialize a derived navigation field.
-**Tests:** repeated simulation steps move background actors toward the chosen target without traversing blocked geometry; gunshot attention reaches distant background actors; group behavior stays deterministic over save/load; measure the active/background workload and frame cost without asserting a drifting actor count in a unit test.
-**Done when:** the first horde responds to noise, background actors beeline with bounded cheap work, and the measured workload is recorded against the project performance gate.
-**First look / BR approval:** the moving horde and its response to a distant gunshot.
+Measure the workload against `CHALLENGES.md`, "Many zombies in a browser", without pinning a development population count. Persistence and noise-response coverage belongs in `test/snapshot-continuation.test.ts`. Abstract region-map hordes remain Slice 4b.
 
 ### 3.10 Input recording and replay
 
@@ -329,7 +316,7 @@ Replay retains generated-column transitions because readiness determines whether
 
 The end-of-slice playtest uses the authored progression in [#181](https://github.com/roobie/skelly/issues/181). Testers open the frozen round's landing page and use its play link to enter the map; the Pages landing directs them there. They can explore for as long as they like; the game is not a facilitated or shadowed session. The localized task is authored in `site/playtest.jsonnet`, `en.task` and `sv.task`. See `EPIC.md`, "Playtest plan", and [docs/playtest-run.md](docs/playtest-run.md) for the self-serve format, frozen round publication and how tester feedback and metrics inform Slice 4a.
 
-**In:** Finish the authored progression from the lone house through the hamlet, hunting cabins, a larger standalone workshop, medical site and low-to-mid-tier military site. The medical site's virus-sampling research is lore, not a player mission. Its wards stay dangerous because the sick brought there remain among the beds; crawler markers make that threat part of the care setting rather than a scripted encounter. Ordinary shamblers also occupy the FOB, medical site, workshop and cabins, inside and outside where clear routes and the finale remain legible. See `src/content/base/templates-medical.json`, `medical_hall`, and `maps/playtest.tmj`, its spawn layer.
+**In:** Finish the independently selected authored playtest progression from the lone house through its hamlet neighborhood, hunting cabins, a larger standalone workshop, medical site and low-to-mid-tier military site. The medical site's virus-sampling research is lore, not a player mission. Its wards stay dangerous because the sick brought there remain among the beds; crawler markers make that threat part of the care setting rather than a scripted encounter. Ordinary shamblers also occupy the FOB, medical site, workshop and cabins, inside and outside where clear routes and the finale remain legible. See `src/content/base/templates-medical.json`, `medical_hall`, and `maps/playtest.tmj`, its spawn layer.
 
 - **Discoverable lore:** readable notes and documents, perhaps a wall notice; distinct from 2.5's recipe-teaching books.
 - **Nights:** the first night is near the hunting cabins; the second is at the medical site.

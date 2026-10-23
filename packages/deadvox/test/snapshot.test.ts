@@ -817,14 +817,14 @@ describe('restored session world state', () => {
 
     const countsBefore = [...loaded.entities.all].map((entity) => [entity.uid, entity.pockets?.map((p) => p.length)]);
     for (const [cx, cz] of loaded.columns) {
-      loaded.session.onColumn(cx, cz, loaded.hamlet);
+      loaded.session.onColumn(cx, cz, loaded.site);
     }
     expect([...loaded.entities.all].map((entity) => [entity.uid, entity.pockets?.map((p) => p.length)])).toEqual(
       countsBefore,
     );
     expect(loaded.zombies.store.size).toBe(snapshot.world.zombies.zombies.length);
 
-    const fresh = loaded.hamlet.furnitureIn(...loaded.columns[0]!)[0]!;
+    const fresh = loaded.site.furnitureIn(...loaded.columns[0]!)[0]!;
     const freshSpec = {
       ...fresh.spec,
       pos: [fresh.spec.pos[0] + CHUNK * 100, ...fresh.spec.pos.slice(1)] as [number, number, number],

@@ -5,7 +5,6 @@ import type { Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { CHUNK, localIndex, toChunk } from '../src/core/coords.ts';
 import type { MapEntityStore } from '../src/core/entities.ts';
-import { Hamlet } from '../src/core/hamlet.ts';
 import {
   encodeSave,
   SAVE_SCHEMA_VERSION,
@@ -23,6 +22,7 @@ import { createSession, IDLE, type PlayerInputSample } from '../src/game/session
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
+import { SnapshotSite } from './fixtures/snapshotSite.ts';
 import { withPlayerBodyTuning } from './simulationFixture.ts';
 
 const registry = baseRegistry();
@@ -39,14 +39,11 @@ export const blockId = (id: string): number => {
   return found;
 };
 
-export const fixtureHamlet = new Hamlet(seed, registry, scale);
+export const fixtureSite = new SnapshotSite(seed, registry, scale);
 export const fixtureColumns: [number, number][] = [];
-for (let cz = toChunk(fixtureHamlet.bounds.z0); cz <= toChunk(fixtureHamlet.bounds.z1 - 1); cz++) {
-  for (let cx = toChunk(fixtureHamlet.bounds.x0); cx <= toChunk(fixtureHamlet.bounds.x1 - 1); cx++) {
-    if (
-      fixtureHamlet.hordesIn(cx, cz).length === 0 &&
-      (fixtureHamlet.furnitureIn(cx, cz).length > 0 || fixtureHamlet.zombiesIn(cx, cz).length > 0)
-    ) {
+for (let cz = toChunk(fixtureSite.bounds.z0); cz <= toChunk(fixtureSite.bounds.z1 - 1); cz++) {
+  for (let cx = toChunk(fixtureSite.bounds.x0); cx <= toChunk(fixtureSite.bounds.x1 - 1); cx++) {
+    if (fixtureSite.furnitureIn(cx, cz).length > 0 || fixtureSite.zombiesIn(cx, cz).length > 0) {
       fixtureColumns.push([cx, cz]);
     }
   }
@@ -56,10 +53,10 @@ const fixtureTerrain: Terrain = {
   shape: terrainShapeOf(registry),
   blocks: { grass: blockId('grass'), dirt: blockId('dirt'), rock: blockId('stone'), sand: blockId('sand') },
   scale,
-  surface: fixtureHamlet.surface,
-  stamp: (chunk) => fixtureHamlet.stamp(chunk),
+  surface: fixtureSite.surface,
+  stamp: (chunk) => fixtureSite.stamp(chunk),
 };
-const foundZombieColumn = fixtureColumns.find(([cx, cz]) => fixtureHamlet.zombiesIn(cx, cz).length > 0);
+const foundZombieColumn = fixtureColumns.find(([cx, cz]) => fixtureSite.zombiesIn(cx, cz).length > 0);
 if (!foundZombieColumn) {
   throw new Error('Snapshot fixture has no zombie column');
 }
@@ -117,7 +114,7 @@ export const removeFixtureColumn = (runtime: Runtime, cx: number, cz: number): v
 };
 
 // The scenario factory builds the same session the game does (src/game/session.ts) and only
-// supplies what the DOM would: controls, sound output, and the hamlet's world. Fresh and
+// supplies what the DOM would: controls, sound output, and the fixture world. Fresh and
 // restored runs share it.
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: keep test runtime wiring in one auditable place.
 export function createRuntime(
@@ -150,9 +147,9 @@ export function createRuntime(
   const contentRegistry = options.registry ?? registry;
   const restFixture = fixture === true;
   const handedness = typeof fixture === 'string' ? fixture : undefined;
-  const hamlet = fixtureHamlet;
+  const site = fixtureSite;
   const columns = columnsOverride ?? (restFixture ? fixtureColumns : [fixtureZombieColumn]);
-  const { x1 } = hamlet.bounds;
+  const { x1 } = site.bounds;
   const world = new World();
   const sharedEntities = new BlockEntities(contentRegistry);
   for (const chunk of fixtureChunksFor(columns)) {
@@ -161,12 +158,12 @@ export function createRuntime(
   const [editCx, editCz] = columns[0]!;
   const editChunk = [...world.chunks.values()].find((chunk) => chunk.cx === editCx && chunk.cz === editCz)!;
 
-  const [sx, sy, sz] = hamlet.spawn.pos.map((metres) => metres / scale.blockSize);
-  // Real wiring refuses to rest with a shambler within 30 m, so the player starts falling well clear of the hamlet.
+  const [sx, sy, sz] = site.spawn.pos.map((metres) => metres / scale.blockSize);
+  // Real wiring refuses to rest with a shambler within 30 m, so the player starts falling well clear of the fixture's shamblers.
   const awayFromShamblers = x1 - sx! + 200;
   // Where the player is looking: the game reads this from its input, here it is plain state.
   const view = {
-    yaw: options.yaw ?? hamlet.spawn.yaw,
+    yaw: options.yaw ?? site.spawn.yaw,
     pitch: 0.03,
     walk: false,
     crouchToggle: false,
@@ -257,7 +254,7 @@ export function createRuntime(
   if (!snapshot) {
     session.body.vel[1] = -1;
     for (const [cx, cz] of columns) {
-      session.onColumn(cx, cz, hamlet);
+      session.onColumn(cx, cz, site);
     }
     const backpack = inventory.create('school_backpack');
     const beans = inventory.create('canned_beans');
@@ -296,7 +293,7 @@ export function createRuntime(
   return {
     session,
     restAnchorUid,
-    hamlet,
+    site,
     columns,
     world,
     sim,
@@ -475,7 +472,7 @@ export const prepareAudioContinuation = (runtime: Runtime): Runtime => {
     | [number, import('../src/core/zombies.ts').Zombie]
     | undefined;
   if (!firstZombie) {
-    throw new Error('Hamlet continuation requires a live shambler');
+    throw new Error('Snapshot continuation requires a live shambler');
   }
   const playerNoise = runtime.emitPlayerSound('player_strain', runtime.sim.time);
   if (!(playerNoise && runtime.playerAudio.vocalNoise)) {

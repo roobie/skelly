@@ -286,6 +286,7 @@ if (bench === 'report') {
   const run = shamblerRunFromUrl(params);
   if (run) {
     const config = makeConfig(run.seed, DEFAULT_RADIUS_M, content);
+    config.site = 'forest';
     config.start = parseTimeOfDay(run.time)!;
     applyBenchWeathering(config);
     startShamblerBench(createEngine(config, view, undefined, { graphicsSource: 'mod' }), run);

@@ -1,6 +1,6 @@
 // The spawn menu (G, with ?debug=1): a development tool that makes any item in the
 // content and drops it at your feet, for looking at models and trying things out
-// without hunting through the hamlet's furniture.
+// without hunting through the world's furniture.
 
 import { html, render, type TemplateResult } from 'lit-html';
 import type { Registry } from '../core/content.ts';

@@ -46,7 +46,6 @@
             },
           },
         },
-        hamletDensity: 0.5,
         forestHalfExtentMetres: 384,
         forestDensityField: {
           wavelengthMetres: 128,
@@ -61,17 +60,6 @@
         paving: 'asphalt',
         trees: { trunk: 'tree_trunk', branch: 'tree_branch', leaves: 'leaves' },
         leafLitter: 'leaf_litter',
-      },
-      hamlet: {
-        hedge: 'hedge',
-        northSide: ['small_house', 'bungalow', 'corner_store', 'hardware_store'],
-        southSide: ['gas_station', 'shed', 'garage'],
-      },
-      placement: {
-        gridStepMetres: 32,
-        reachMetres: 160,
-        sampleMetres: 4,
-        lowestMetres: 15,
       },
     },
   ],

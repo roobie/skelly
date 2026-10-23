@@ -117,20 +117,6 @@ describe('settlement collection admission', () => {
     expect(scenarioSources(registry).templates).not.toContain('fixture_small_house');
   });
 
-  it('keeps benchmark candidates unchanged when the fixture hamlet roster changes', () => {
-    const { sources, data } = fixture();
-    data.cityBenchmarks = [benchmark()];
-    const before = buildRegistry(sources);
-    expect(before.issues).toEqual([]);
-    const candidates = benchmarkCityGrid(before.registry).templates;
-    expect(candidates.length).toBeGreaterThan(0);
-    data.siteGeneration![0]!.hamlet.northSide = ['fixture_small_house', 'fixture_small_house'];
-    data.siteGeneration![0]!.hamlet.southSide = ['fixture_small_house'];
-    const after = buildRegistry(sources);
-    expect(after.issues).toEqual([]);
-    expect(benchmarkCityGrid(after.registry).templates).toEqual(candidates);
-  });
-
   it('validates benchmark references and empty filtered candidates without requiring a benchmark in other stacks', () => {
     const { sources, data } = fixture();
     expect(buildRegistry(sources).issues).toEqual([]);

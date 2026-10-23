@@ -10,7 +10,6 @@ import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { parseTimeOfDay, resolveSpawnTime } from '../src/core/clock.ts';
 import { blockColors, requiredContentIssues, validateContent } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
-import { ordinaryHamletSpawnWeights } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { corpseLootPoint, lootTypeIssue } from '../src/core/loot.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
@@ -24,6 +23,7 @@ import {
   DayCycleSchema,
   type TemplateDef,
 } from '../src/core/schema.ts';
+import { ordinarySpawnWeights } from '../src/core/settlementSpawns.ts';
 import { furnitureOf, lootPointsOf } from '../src/core/site.ts';
 import { sitePalette } from '../src/core/sitePalette.ts';
 import { SOUND_EVENT_IDS } from '../src/core/soundEvents.ts';
@@ -303,9 +303,9 @@ describe('content', () => {
     expect(soldier.loot).not.toBe(shambler.loot);
   });
 
-  it('excludes authored-only kinds from ordinary hamlet spawn weights', () => {
+  it('excludes authored-only kinds from ordinary settlement spawn weights', () => {
     const soldier = baseRegistry.zombies.get('military_shambler')!;
-    expect(ordinaryHamletSpawnWeights(baseRegistry).has(soldier.id)).toBe(false);
+    expect(ordinarySpawnWeights(baseRegistry).has(soldier.id)).toBe(false);
   });
 
   it('gives every zombie kind only kit items its corpse can drop', () => {
@@ -1090,18 +1090,14 @@ describe('content', () => {
     expect(result.registry.items.has('book_reference_fixture')).toBe(false);
   });
 
-  it('rejects a site palette that names a missing block or template', () => {
+  it('rejects a site palette that names a missing block', () => {
     const source = 'site-generation-fixture.json';
     const data = structuredClone(base.find((file) => file.source === 'site-generation.json')!.data) as ContentFile;
     const entry = data.siteGeneration![0]!;
     entry.palette.terrain.rock = 'no_such_block';
-    entry.hamlet.northSide = ['no_such_template'];
     const { issues } = buildRegistry([{ source, data }]);
     expect(issues.map(({ path, message }) => `${path}: ${message}`)).toEqual(
-      expect.arrayContaining([
-        'siteGeneration[0].palette.terrain.rock: no block "no_such_block"',
-        'siteGeneration[0].hamlet.northSide: no template "no_such_template"',
-      ]),
+      expect.arrayContaining(['siteGeneration[0].palette.terrain.rock: no block "no_such_block"']),
     );
   });
 
@@ -1124,18 +1120,18 @@ describe('content', () => {
     // Only the container changes: shape/references and actual marked placement stay identical.
     const control = structuredClone(data);
     control.furniture![0]!.container = { pockets: [{ grid: [1, 1], handlingSimSeconds: simSeconds(1) }] };
-    // Reachability reads the hamlet template pools from site generation, so the fixture supplies them.
-    control.blocks = [{ id: 'fixture_block', name: 'Fixture block', color: '#888888', solid: true }];
-    control.siteGeneration = [
+    control.layouts = [
       {
-        ...(base.find((file) => file.source === 'site-generation.json')!.data as ContentFile).siteGeneration![0]!,
-        palette: {
-          terrain: { grass: 'fixture_block', dirt: 'fixture_block', rock: 'fixture_block', sand: 'fixture_block' },
-          paving: 'fixture_block',
-          trees: { trunk: 'fixture_block', branch: 'fixture_block', leaves: 'fixture_block' },
-          leafLitter: 'fixture_block',
-        },
-        hamlet: { hedge: 'fixture_block', northSide: ['shed'], southSide: ['shed'] },
+        id: 'loot_fixture',
+        lootContext,
+        bounds: { x0: 0, z0: 0, x1: 16, z1: 16 },
+        ground: 0,
+        terrain: [],
+        buildings: [{ template: 'shed', position: [0, 0, 0], rotation: 0 }],
+        player: { position: [8, 0.5, 8], bearing: 0 },
+        shamblers: [],
+        woodlands: [],
+        tracks: [],
       },
     ];
     const { registry, issues } = buildRegistry([{ source, data: control }]);

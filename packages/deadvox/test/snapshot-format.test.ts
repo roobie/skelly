@@ -59,15 +59,15 @@ const editBudgetChunk = (runtime: ReturnType<typeof createRuntime>, cx: number, 
 // The 25%-edited / 8-cells-per-edited-chunk load is an explicit high-side stress assumption.
 const applyBudgetWorldEdits = (runtime: ReturnType<typeof createRuntime>) => {
   const radiusChunks = chunksFor(scale, 96);
-  const centerX = toChunk(Math.floor(runtime.hamlet.spawn.pos[0] / scale.blockSize));
-  const centerZ = toChunk(Math.floor(runtime.hamlet.spawn.pos[2] / scale.blockSize));
+  const centerX = toChunk(Math.floor(runtime.site.spawn.pos[0] / scale.blockSize));
+  const centerZ = toChunk(Math.floor(runtime.site.spawn.pos[2] / scale.blockSize));
   const visitedChunks = (radiusChunks * 2 + 1) ** 2 * (scale.maxCy - scale.minCy + 1);
   let ordinal = 0;
   let editedChunks = 0;
   // 13x13 horizontal columns x 8 vertical layers: one edited layer in four, 8 block changes.
   for (let cz = centerZ - radiusChunks; cz <= centerZ + radiusChunks; cz++) {
     for (let cx = centerX - radiusChunks; cx <= centerX + radiusChunks; cx++) {
-      runtime.session.onColumn(cx, cz, runtime.hamlet);
+      runtime.session.onColumn(cx, cz, runtime.site);
       for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
         const editThisChunk = ordinal % 4 === 0;
         ordinal += 1;
@@ -82,16 +82,16 @@ const applyBudgetWorldEdits = (runtime: ReturnType<typeof createRuntime>) => {
   return { visitedChunks, editedChunks };
 };
 
-// One full floor pile per hamlet lot each game hour over the ten-hour scenario.
+// One full floor pile per fixture building each game hour over the ten-hour scenario.
 // PILE_GRID is 8x6 and duct_tape is a real 1x1 non-stackable content item.
 const applyBudgetPiles = (runtime: ReturnType<typeof createRuntime>) => {
   const baselinePileCount = runtime.inventory.piles.size;
   const baselinePileItems = [...runtime.inventory.piles.values()].reduce((sum, pile) => sum + pile.items.length, 0);
-  const pileCount = 10 * runtime.hamlet.lots.length;
+  const pileCount = 10 * runtime.site.placements.length;
   const pileCapacity = PILE_GRID.w * PILE_GRID.h;
-  const centerX = toChunk(Math.floor(runtime.hamlet.spawn.pos[0] / scale.blockSize));
-  const centerZ = toChunk(Math.floor(runtime.hamlet.spawn.pos[2] / scale.blockSize));
-  const pileY = Math.floor(runtime.hamlet.spawn.pos[1] / scale.blockSize);
+  const centerX = toChunk(Math.floor(runtime.site.spawn.pos[0] / scale.blockSize));
+  const centerZ = toChunk(Math.floor(runtime.site.spawn.pos[2] / scale.blockSize));
+  const pileY = Math.floor(runtime.site.spawn.pos[1] / scale.blockSize);
   let addedItems = 0;
   for (let index = 0; index < pileCount; index++) {
     const pos: [number, number, number] = [
@@ -559,8 +559,8 @@ describe('canonical save format', () => {
     expect(decoded.worldOptions.site).toBe('lone_house');
   });
 
-  // One edited hamlet column is encoded, restored, continued and canonically re-encoded.
-  it('round-trips an edited hamlet column byte-exactly and continues deterministically from restored bytes', async () => {
+  // An edited fixture column is encoded, restored, continued and canonically re-encoded.
+  it('round-trips an edited fixture column byte-exactly and continues deterministically from restored bytes', async () => {
     const columns = [fixtureZombieColumn] as const;
     let source = createRuntime(undefined, true, columns);
     expect(startRest(source, 'rest')).toBeUndefined();
@@ -600,7 +600,7 @@ describe('canonical save format', () => {
     expect(await encodeFixture(reversed)).toEqual(bytes);
   });
 
-  it('checks a representative ten-hour hamlet save and records its size and timings', async () => {
+  it('checks a representative ten-hour fixture save and records its size and timings', async () => {
     const runtime = createRuntime(undefined, true);
     const worldStats = applyBudgetWorldEdits(runtime);
     const pileStats = applyBudgetPiles(runtime);

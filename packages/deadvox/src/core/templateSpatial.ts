@@ -3,11 +3,11 @@ import { BlockEntities, isBodyDoor } from './blockEntities.ts';
 import { type ClimbLink, climbCertificate } from './climbCertificate.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
-import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
 import { Inventory } from './inventory.ts';
 import { groundLootSupplyIssues } from './placementLoot.ts';
 import { pileInReach, reachTuning } from './reach.ts';
 import type { StairDef } from './schema.ts';
+import { TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
 import { spawnOverlappingSolidBlock, zombieBodyDimensions } from './spawnClearance.ts';
 import { type FlightPlan, planFlight, STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
 import { type CompiledTemplate, cellsOf, type Placement, placedPieces, placedPoint } from './templates.ts';
@@ -358,7 +358,7 @@ export const templateSpawnClearanceIssues = (registry: Registry, template: Compi
     }
     const blocked = spawnOverlappingSolidBlock(
       spawn.pos,
-      zombieBodyDimensions(type, HAMLET_BLOCK_SIZE),
+      zombieBodyDimensions(type, TEMPLATE_BLOCK_SIZE),
       (x, y, z) => x >= 0 && y >= 0 && z >= 0 && x < sx && y < sy && z < sz && space.occupied(x, y, z, false),
     );
     return blocked
@@ -551,7 +551,7 @@ export const templateGroundLootIssues = (registry: Registry, template: CompiledT
         {
           inventory,
           position: feet,
-          blockSize: HAMLET_BLOCK_SIZE,
+          blockSize: TEMPLATE_BLOCK_SIZE,
           obstacles: {
             isSolid: (bx, by, bz) => space.occupied(bx, by, bz, true),
             version: 0,
