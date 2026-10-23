@@ -3624,6 +3624,7 @@ try {
   } else {
     await withTestHouse(browser, address.port, renderOverride, async (testHousePage) => {
       await timePhase('container-search-tab-case', () => verifyContainerSearchTab(testHousePage));
+      await timePhase('vehicle-service-case', () => verifyVehicleService(testHousePage));
     });
     await timePhase('clean-look-replay-case', () => verifyCleanLookReplay(browser, address.port, renderOverride));
     await timePhase('stance-throw-replay-case', () => verifyStanceThrowReplay(browser, address.port, renderOverride));
