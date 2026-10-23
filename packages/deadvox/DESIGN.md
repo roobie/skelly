@@ -10,7 +10,7 @@ read_if:
   - you decide how sunlight, shadows or interior sky should read during discovery and edit revalidation
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance, performance targets or the default render scale
-  - you change player movement, load or aim tuning, or what crouching or lying prone lets the player fit through
+  - you change player movement, load or aim tuning, saved aim admission, or what crouching or lying prone lets the player fit through
   - you're changing world block shapes, wire fences or their supports, sight opacity, reach through obstacles, sound blocking or slab geometry
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry and put down, or how stacks settle
@@ -160,8 +160,11 @@ not split between sensory tuning and code, so mods can retune the player without
 changing mechanisms. See `src/content/base/player.jsonnet`, `player`;
 `src/core/schema.ts`, `PlayerSchema`; `src/game/player.ts`, `playerTuning`,
 `movementPace` and `steer`; and `src/core/aim.ts`, `AimController`.
-Gravity remains physics rather than player tuning. Save-state checks must not
-reject a finite aim offset solely because it exceeds the core pack's tuning.
+Gravity remains physics rather than player tuning. Saved look offsets must obey
+the geometric ceiling shared by all valid player tuning, not the core pack's
+chosen tuning: impossible offsets can overflow on advancement even when the
+saved numbers are finite. See `src/core/aim.ts`, `assertAimState`, and
+`src/core/schema.ts`, `PlayerSchema`.
 
 ### Crouching and lying prone
 

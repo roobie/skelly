@@ -234,6 +234,8 @@ export const assertAimState = (state: AimState): void => {
       ].every(Number.isFinite)
     ) ||
     typeof state.hasLookSample !== 'boolean' ||
+    Math.abs(state.lookYaw) > Math.PI / 2 ||
+    Math.abs(state.lookPitch) > Math.PI / 2 ||
     Math.hypot(state.frame.yaw, state.frame.pitch) > Math.PI
   ) {
     throw new Error('Invalid aim state');
