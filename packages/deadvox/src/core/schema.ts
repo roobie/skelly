@@ -999,6 +999,7 @@ const ItemSchema = strictObject({
   explosive: optional(ExplosiveSchema),
   trap: optional(TrapSchema),
   readable: optional(ReadableSchema),
+  paperMap: optional(literal(true)),
   /** Display capability shown in first person; later devices can share this rendering seam. */
   heldDisplay: optional(picklist(HELD_DISPLAY_KINDS)),
   /** How the item appears when it is in a ground pile. */
