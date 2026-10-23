@@ -4,8 +4,8 @@ import type { Inventory, Location, Target } from './inventory.ts';
 import type { VehicleWorkHooks } from './longAction.ts';
 
 export interface VehicleWorkOptions {
-  /** The ordinary output owner selected by the caller for a removal. */
-  output: Target;
+  /** Resolves the ordinary output owner when a removal completes. */
+  output: () => Target;
   /** Available tool qualities are derived by the interaction/reach owner. */
   quality: (name: string) => number;
 }
@@ -64,6 +64,12 @@ export const vehicleWorkHooks = (inventory: Inventory, options: VehicleWorkOptio
     validate,
     finish: (kind, vehicleId, fittingId, itemUid) =>
       validate(kind, vehicleId, fittingId, itemUid) ??
-      inventory.vehicleTransfer({ kind, vehicleId, fittingId, itemUid, output: options.output }),
+      inventory.vehicleTransfer({
+        kind,
+        vehicleId,
+        fittingId,
+        itemUid,
+        ...(kind === 'remove' ? { output: options.output() } : {}),
+      }),
   };
 };

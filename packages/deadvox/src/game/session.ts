@@ -1041,7 +1041,7 @@ export const createSession = (options: SessionOptions) => {
   sim.actions.reading = bookReadingHooks(inventory, character);
   sim.actions.treatment = playerTreatmentHooks(inventory, sim);
   sim.actions.vehicleWork = vehicleWorkHooks(inventory, {
-    output: { kind: 'pile', pos: feet() },
+    output: () => ({ kind: 'pile', pos: feet() }),
     quality: (quality) =>
       Math.max(0, ...reach().entries.map(({ item }) => registry.items.get(item.type)?.tool?.qualities[quality] ?? 0)),
   });

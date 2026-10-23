@@ -1,16 +1,24 @@
 import { describe, expect, it } from 'vitest';
+import { toChunk } from '../src/core/coords.ts';
 import type { Inventory } from '../src/core/inventory.ts';
 import { savedItemTree } from '../src/core/itemTree.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
+import { terrainShapeOf } from '../src/core/sitePalette.ts';
+import { terrainHeight } from '../src/core/worldgen.ts';
+import { IDLE } from '../src/game/session.ts';
 import { registerTestHouseVehicles, testHouseVehiclePlacement } from '../src/game/testHouseVehicles.ts';
 import {
+  advance,
   capture,
   contentLookup,
   createRuntime,
   encodeFixture,
+  fixtureSite,
   formatVersion,
   registry,
+  scale,
+  seed,
 } from './snapshotTestSupport.ts';
 
 const spec = (placementKey: string) => ({
@@ -31,6 +39,7 @@ const wheelWork = (runtime: ReturnType<typeof createRuntime>, placementKey: stri
     Math.floor(runtime.player.body.pos[2]),
   ];
   runtime.inventory.canReach = () => true;
+  runtime.inventory.canReachVehicle = () => true;
   const id = runtime.inventory.registerVehicle({ placementKey, blueprint: 'hatchback', origin: pos, facing: 'n' });
   const fitting = runtime.inventory.vehicles
     .get(id)!
@@ -270,8 +279,34 @@ describe('production vehicle ownership', () => {
     expect(inventory.itemByUid(fitting.item.uid)).toBe(fitting.item);
   });
 
-  it('resumes saved authored-wheel service work as the uninterrupted operation', async () => {
-    const uninterrupted = createRuntime();
+  it('removes a moved player’s wheel at the same destination after save continuation', async () => {
+    const hedge = fixtureSite.hedges.find(({ min }) => toChunk(min[2]) === toChunk(min[2] + 3.5));
+    if (!hedge) {
+      throw new Error('Snapshot fixture has no walkable hedge');
+    }
+    const [x, , z] = hedge.min;
+    const startZ = z + 3.5;
+    const ground = fixtureSite.surface.height(
+      x,
+      startZ,
+      terrainHeight(seed, terrainShapeOf(registry), scale, x, startZ),
+    );
+    const spawn: [number, number, number] = [x + 0.5, ground + 1.0001, startZ];
+    const columns: [number, number][] = [];
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dz = -1; dz <= 1; dz++) {
+        columns.push([toChunk(x) + dx, toChunk(z) + dz]);
+      }
+    }
+    const intent = { ...IDLE, forward: 1, walk: true };
+    const runtimeFor = (snapshot?: ReturnType<typeof capture>) =>
+      createRuntime(snapshot, false, columns, { spawn, yaw: 0, active: true, intent: () => intent });
+
+    const uninterrupted = runtimeFor();
+    const startedAt = uninterrupted.player.body.pos.map(Math.floor);
+    advance(uninterrupted, 60);
+    intent.forward = 0;
+    expect(uninterrupted.player.body.pos.map(Math.floor)).not.toEqual(startedAt);
     const original = wheelWork(uninterrupted, 'fixture.saved-wheel.uninterrupted', 'remove');
     uninterrupted.sim.scheduler.advance(10);
     const midwayAction = uninterrupted.sim.actions.snapshotState();
@@ -280,13 +315,16 @@ describe('production vehicle ownership', () => {
       version: formatVersion,
       contentLookup,
     });
-    const resumed = createRuntime(saved.snapshot);
+    const resumed = runtimeFor(saved.snapshot);
     expect(resumed.sim.actions.snapshotState()).toEqual(midwayAction);
 
     uninterrupted.sim.scheduler.advance(30);
     resumed.sim.scheduler.advance(30);
     expect(capture(resumed)).toEqual(capture(uninterrupted));
-    expect(resumed.inventory.locate(resumed.inventory.itemByUid(original.item.uid)!)).toMatchObject({ kind: 'pile' });
+    expect(resumed.inventory.locate(resumed.inventory.itemByUid(original.item.uid)!)).toMatchObject({
+      kind: 'pile',
+      pile: { pos: resumed.player.body.pos.map(Math.floor) },
+    });
   });
 
   it('stops installation when removing its supporting fitting keeps the selected UID at one owner', () => {
