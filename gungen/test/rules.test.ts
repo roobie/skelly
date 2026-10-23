@@ -160,6 +160,41 @@ describe('rules', () => {
     expect(issues[0]?.parts).toEqual(expect.arrayContaining(['barrel', 'slide']));
   });
 
+  it('refuses a pump tube longer than its barrel while allowing an equal-length tube', () => {
+    const equalLength = variant('archetype-pump-shotgun', (x) => {
+      x.parts.tube!.params = { lengthPercent: '100' };
+    });
+    expect(validate(equalLength, gunDomain).ok).toBe(true);
+
+    const tube = gunDomain.families['tube-magazine']!;
+    const longest = Math.max(...tube.params.lengthPercent!.values.map(Number));
+    const longer = String(longest + 1);
+    const domain: Domain = {
+      ...gunDomain,
+      families: {
+        ...gunDomain.families,
+        'tube-magazine': {
+          ...tube,
+          params: {
+            ...tube.params,
+            lengthPercent: { ...tube.params.lengthPercent!, values: [...tube.params.lengthPercent!.values, longer] },
+          },
+        },
+      },
+    };
+    const tooLong = variant('archetype-pump-shotgun', (x) => {
+      x.parts.tube!.params = { lengthPercent: longer };
+    });
+    expect(validate(tooLong, domain).issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          rule: 'structure',
+          message: 'Part "tube" (tube-magazine) cannot be built: Tube magazines cannot be longer than their barrels.',
+        }),
+      ]),
+    );
+  });
+
   it('feed-match: tube-fed receiver on a lower with a magazine well', () => {
     const a = variant('archetype-pump-shotgun', (x) => {
       x.parts.lower = { family: 'lower', params: { layout: 'conventional' } };

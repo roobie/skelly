@@ -141,6 +141,7 @@ export function createRuntime(
     ) => PlayerInputSample;
     onOpaque?: () => void;
     registry?: Registry;
+    powerDevices?: import('../src/core/sitePower.ts').PlacedPowerDevice[];
   } = {},
 ) {
   const { sampleAtPlayerTick } = options;
@@ -191,6 +192,7 @@ export function createRuntime(
   }
   const session = createSession({
     registry: contentRegistry,
+    ...(options.powerDevices ? { powerDevices: options.powerDevices } : {}),
     world,
     isSolid: worldSolid(world, contentRegistry, sharedEntities),
     isOpaque: (x, y, z) => {

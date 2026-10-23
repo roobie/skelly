@@ -46,7 +46,7 @@ breach.breaking(shape.colliding({
       ],
     },
     {
-      id: 'gauntlet_look_console', name: 'Prototype objective console', size: [4, 2, 2], color: '#7c868c',
+      id: 'gauntlet_look_console', name: 'Prototype objective console', power: { device: 'lab_machine', fuelLitres: 0, enabled: true }, size: [4, 2, 2], color: '#7c868c',
       shape: [
         { position: [0, 0, 0], size: [4, 1.2, 2] },
         { position: [0, 1.2, 0], size: [4, 0.8, 0.3] },
@@ -54,7 +54,7 @@ breach.breaking(shape.colliding({
       ],
     },
     {
-      id: 'gauntlet_look_containment_bay', name: 'Prototype containment bay', size: [4, 4, 2], color: '#b29a61',
+      id: 'gauntlet_look_containment_bay', name: 'Prototype containment bay', power: { device: 'lab_machine', fuelLitres: 0, enabled: true }, size: [4, 4, 2], color: '#b29a61',
       shape: [
         { position: [0, 0, 0], size: [4, 0.3, 2] },
         { position: [0, 3.7, 0], size: [4, 0.3, 2] },
@@ -64,7 +64,7 @@ breach.breaking(shape.colliding({
       ],
     },
     {
-      id: 'gauntlet_look_breached_bay', name: 'Prototype breached containment bay', size: [4, 5, 2], color: '#9b5550',
+      id: 'gauntlet_look_breached_bay', name: 'Prototype breached containment bay', power: { device: 'lab_machine', fuelLitres: 0, enabled: false }, size: [4, 5, 2], color: '#9b5550',
       shape: [
         { position: [0, 0, 0], size: [4, 0.3, 2] },
         { position: [0, 4.7, 0], size: [4, 0.3, 2] },
