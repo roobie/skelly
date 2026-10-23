@@ -809,7 +809,8 @@ export const createSession = (options: SessionOptions) => {
     },
     obstacles: {
       isSolid: (x: number, y: number, z: number) => physicalSolid(x, y, z),
-      isSolidIgnoringVehicles: (x: number, y: number, z: number) => isSolid(x, y, z),
+      isSolidExceptVehicle: (vehicleId: number, x: number, y: number, z: number) =>
+        isSolid(x, y, z) || vehicleOccupancy.isSolidExcept(vehicleId, x, y, z),
       get version() {
         return world.version + inventory.vehicles.version;
       },

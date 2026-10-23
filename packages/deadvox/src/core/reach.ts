@@ -32,8 +32,8 @@ export interface ReachPlayer {
 interface ReachObstacles {
   /** Cells holding furniture defer to it: only a closed door blocks, so a table never hides the shelf behind it. */
   readonly isSolid: SolidAt;
-  /** The same cells without any vehicle's rasterized body, so a car's own parts never hide themselves; absent, `isSolid`. */
-  readonly isSolidIgnoringVehicles?: SolidAt;
+  /** The same cells without one vehicle's own rasterized body, so a car's parts never hide themselves but another car still blocks; absent, `isSolid`. */
+  readonly isSolidExceptVehicle?: (vehicleId: number, x: number, y: number, z: number) => boolean;
   /** Changes on every block edit, so a cached snapshot follows broken and built walls. */
   readonly version: number;
 }
@@ -168,34 +168,35 @@ export const pileInReach = (player: ReachGeometry, position: Vec3): boolean =>
  * reached at the part beside the player, never at its origin, so whatever F can pick on it is also in reach.
  * Distance only; `vehicleInReach` adds the line.
  */
-export const vehicleDistance = (player: ReachGeometry, boxes: readonly ModelBox[]): number => {
+export const vehicleDistance = (player: ReachGeometry, boxes: readonly ModelBox[]): number =>
+  Math.min(...boxes.map((box) => boxDistanceMetres(player, box)));
+
+const boxDistanceMetres = (player: ReachGeometry, { min, max }: ModelBox): number => {
   const chest = chestOf(player).map((value) => value * player.blockSize);
-  return Math.min(
-    ...boxes.map(({ min, max }) =>
-      Math.hypot(...chest.map((value, axis) => value - Math.min(Math.max(value, min[axis]!), max[axis]!))),
-    ),
-  );
+  return Math.hypot(...chest.map((value, axis) => value - Math.min(Math.max(value, min[axis]!), max[axis]!)));
 };
 
 /**
- * Within the limit and along a clear line to some part box, as furniture is, so a wall can't be worked through. The
- * line ignores vehicle cells: the car's own rasterized body would hide every part it is reached at.
+ * Some one part box is both within the limit and along a clear line, as furniture is, so a wall can't be worked
+ * through and a near part behind it can't borrow a far visible one. The line ignores this vehicle's own cells (its
+ * rasterized body would hide every part it is reached at) but not another vehicle's.
  */
-export const vehicleInReach = (player: ReachGeometry, boxes: readonly ModelBox[]): boolean => {
-  if (boxes.length === 0 || vehicleDistance(player, boxes) > reachTuning(player.inventory.registry).reachMetres) {
-    return false;
-  }
+export const vehicleInReach = (player: ReachGeometry, vehicleId: number, boxes: readonly ModelBox[]): boolean => {
   const { obstacles } = player;
-  if (obstacles === undefined) {
-    return true;
-  }
-  const blind = { ...obstacles, isSolid: obstacles.isSolidIgnoringVehicles ?? obstacles.isSolid };
-  return boxes.some(({ min, max }) =>
-    clearLine(
-      player,
-      blind,
-      [min.map((value) => value / player.blockSize) as Vec3, max.map((value) => value / player.blockSize) as Vec3],
-    ),
+  const limit = reachTuning(player.inventory.registry).reachMetres;
+  const blind = obstacles && {
+    ...obstacles,
+    isSolid: (x: number, y: number, z: number) =>
+      obstacles.isSolidExceptVehicle?.(vehicleId, x, y, z) ?? obstacles.isSolid(x, y, z),
+  };
+  return boxes.some(
+    (box) =>
+      boxDistanceMetres(player, box) <= limit &&
+      (blind === undefined ||
+        clearLine(player, blind, [
+          box.min.map((value) => value / player.blockSize) as Vec3,
+          box.max.map((value) => value / player.blockSize) as Vec3,
+        ])),
   );
 };
 
@@ -212,7 +213,7 @@ export const bindReach = (
   player.inventory.canReach = (position) => pileInReach(player, position);
   player.inventory.canReachEntity = (entity) => furnitureInReach(player, entity);
   if (vehicleParts) {
-    player.inventory.canReachVehicle = (vehicleId) => vehicleInReach(player, vehicleParts.boxesOf(vehicleId));
+    player.inventory.canReachVehicle = (vehicleId) => vehicleInReach(player, vehicleId, vehicleParts.boxesOf(vehicleId));
   }
   player.inventory.actorPosition = () => player.position;
   return () => reach(player);

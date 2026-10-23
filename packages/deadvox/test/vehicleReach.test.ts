@@ -3,7 +3,7 @@ import { expect, it } from 'vitest';
 import type { Vec3 } from '../src/core/coords.ts';
 import { coreMessage } from '../src/core/coreText.ts';
 import { pickInteractionTarget } from '../src/core/interactionPick.ts';
-import { reachTuning } from '../src/core/reach.ts';
+import { reachTuning, vehicleInReach } from '../src/core/reach.ts';
 import { blockId, createRuntime, registry, scale } from './snapshotTestSupport.ts';
 
 const s = scale.blockSize;
@@ -109,4 +109,44 @@ it('refuses vehicle service through a wall and allows it again once the wall is 
     runtime.world.setBlock(x, y, z, 0);
   }
   expect(runtime.inventory.canReachVehicle(vehicleId), 'the same position without the wall').toBe(true);
+});
+
+it('refuses vehicle service through another parked vehicle but not through its own body', () => {
+  const runtime = createRuntime();
+  const origin = [...runtime.player.body.pos] as Vec3;
+  const vehicleId = runtime.inventory.registerVehicle({
+    placementKey: 'target-fixture',
+    blueprint: 'hatchback',
+    origin,
+    facing: 'n',
+  });
+  const faceMetres = Math.max(...runtime.session.vehicleParts.boxesOf(vehicleId).map(({ max }) => max[0]));
+  // Stood off the nearest face, inside reach, with the car's own cells between the chest and its far parts.
+  runtime.player.body.pos = [(faceMetres + reachTuning(registry).reachMetres * 0.85) / s, origin[1], origin[2]];
+  expect(runtime.inventory.canReachVehicle(vehicleId), 'in reach with nothing between').toBe(true);
+
+  // A second car turned across the line, overlapping the target's end so no gap is left to see through.
+  runtime.inventory.registerVehicle({
+    placementKey: 'blocker-fixture',
+    blueprint: 'hatchback',
+    origin: [(faceMetres + 0.575) / s, origin[1], origin[2]],
+    facing: 'e',
+  });
+  expect(runtime.inventory.canReachVehicle(vehicleId), 'another vehicle between player and target').toBe(false);
+});
+
+it('needs the near part, not just any part, to be both in range and in view', () => {
+  const runtime = createRuntime();
+  const { reachMetres: limit, chestHeightMetres: chest } = reachTuning(registry);
+  const player = {
+    inventory: runtime.inventory,
+    position: [0, 0, 0] as Vec3,
+    blockSize: limit / 10,
+    obstacles: { version: 0, isSolid: (x: number) => x === 3 },
+  };
+  const near = { min: [limit * 0.6, chest - 0.1, 0], max: [limit * 0.7, chest + 0.1, 0.1] } as ModelBox;
+  const far = { min: [0, chest - 0.1, limit * 2], max: [0.1, chest + 0.1, limit * 2.1] } as ModelBox;
+  expect(vehicleInReach(player, 1, [near]), 'near part behind the wall').toBe(false);
+  expect(vehicleInReach(player, 1, [far]), 'far part in view').toBe(false);
+  expect(vehicleInReach(player, 1, [near, far]), 'neither part satisfies both').toBe(false);
 });

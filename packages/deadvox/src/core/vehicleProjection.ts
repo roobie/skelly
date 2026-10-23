@@ -142,7 +142,7 @@ export type VehicleObstructionChannel = 'sight' | 'light' | 'sound' | 'combat';
 
 /** A warmed cell query over one channel; its key is the collection revision, never a stale part snapshot. */
 export class VehicleOccupancy {
-  private readonly cells = new Set<string>();
+  private readonly cells = new Map<string, Set<number>>();
   private seenVersion = -1;
 
   private readonly registry: Registry;
@@ -162,6 +162,13 @@ export class VehicleOccupancy {
     return this.cells.has(`${x},${y},${z}`);
   }
 
+  /** Solid because of some vehicle other than this one, so a car's own body can be ignored without ignoring its neighbours. */
+  isSolidExcept(vehicleId: number, x: number, y: number, z: number): boolean {
+    this.rebuild();
+    const owners = this.cells.get(`${x},${y},${z}`);
+    return owners !== undefined && [...owners].some((owner) => owner !== vehicleId);
+  }
+
   private rebuild(): void {
     if (this.seenVersion === this.vehicles.version) {
       return;
@@ -174,7 +181,13 @@ export class VehicleOccupancy {
         }
         for (const box of part.boxes) {
           for (const [x, y, z] of cellsOfBox(box, this.blockSize)) {
-            this.cells.add(`${x},${y},${z}`);
+            const key = `${x},${y},${z}`;
+            const owners = this.cells.get(key);
+            if (owners) {
+              owners.add(vehicleId);
+            } else {
+              this.cells.set(key, new Set([vehicleId]));
+            }
           }
         }
       }
