@@ -42,25 +42,34 @@ export const copyVehiclePlacement = ({ id, at, mirror, supportedBy, service }: V
   supportedBy: [...supportedBy],
 });
 
+const validService = (service: VehiclePlacement['service']): boolean => {
+  if (service === undefined) {
+    return true;
+  }
+  return (
+    Boolean(service.mount) &&
+    Number.isFinite(service.durationSimSeconds) &&
+    service.durationSimSeconds > 0 &&
+    Object.entries(service.qualities).every(
+      ([quality, level]) => Boolean(quality) && Number.isInteger(level) && level >= 1,
+    )
+  );
+};
+
+const validPlacement = (value: VehiclePlacement, ids: Set<string>): boolean =>
+  Boolean(value.id) &&
+  !ids.has(value.id) &&
+  value.at.length === 3 &&
+  value.at.every(Number.isFinite) &&
+  (value.mirror === undefined || value.mirror) &&
+  value.supportedBy.every(Boolean) &&
+  new Set(value.supportedBy).size === value.supportedBy.length &&
+  validService(value.service);
+
 const assertPlacements = (values: readonly VehiclePlacement[]): void => {
   const ids = new Set<string>();
   for (const value of values) {
-    if (
-      !value.id ||
-      ids.has(value.id) ||
-      value.at.length !== 3 ||
-      value.at.some((v) => !Number.isFinite(v)) ||
-      (value.mirror !== undefined && value.mirror !== true) ||
-      value.supportedBy.some((id) => !id) ||
-      new Set(value.supportedBy).size !== value.supportedBy.length ||
-      (value.service !== undefined &&
-        (!value.service.mount ||
-          !Number.isFinite(value.service.durationSimSeconds) ||
-          value.service.durationSimSeconds <= 0 ||
-          Object.entries(value.service.qualities).some(
-            ([quality, level]) => !quality || !Number.isInteger(level) || level < 1,
-          )))
-    ) {
+    if (!validPlacement(value, ids)) {
       throw new Error('Invalid or duplicate vehicle placement');
     }
     ids.add(value.id);

@@ -11,6 +11,11 @@ export interface VehicleWorkOptions {
 }
 
 type WorkKind = 'install' | 'remove';
+interface WorkTarget {
+  vehicleId: number;
+  fittingId: string;
+  itemUid: number;
+}
 
 const sourceRefusal = (inventory: Inventory, kind: WorkKind, itemUid: number): string | undefined => {
   const item = inventory.itemByUid(itemUid);
@@ -26,20 +31,20 @@ const sourceRefusal = (inventory: Inventory, kind: WorkKind, itemUid: number): s
 
 const reachableSource = (inventory: Inventory, location: Location): boolean => {
   const place = inventory.placeOf(location);
-  if (place?.kind === 'vehicle') return inventory.canReach(place.origin);
+  if (place?.kind === 'vehicle') {
+    return inventory.canReach(place.origin);
+  }
   return place?.kind !== 'pile' || inventory.canReach(place.pile.pos);
 };
 
 const serviceRefusal = (
   inventory: Inventory,
   options: VehicleWorkOptions,
-  vehicleId: number,
-  fittingId: string,
-  itemUid: number,
+  { vehicleId, fittingId, itemUid }: WorkTarget,
 ): string | undefined => {
   const service = inventory.vehicleService(vehicleId, fittingId, itemUid);
   const vehicle = inventory.vehicles.get(vehicleId);
-  if (!(service && vehicle) || !inventory.canReach(vehicle.origin)) {
+  if (!(service && vehicle && inventory.canReach(vehicle.origin))) {
     return 'Vehicle service target is unavailable';
   }
   if (Object.entries(service.qualities).some(([quality, level]) => options.quality(quality) < level)) {
@@ -54,11 +59,11 @@ const serviceRefusal = (
  */
 export const vehicleWorkHooks = (inventory: Inventory, options: VehicleWorkOptions): VehicleWorkHooks => {
   const validate = (kind: WorkKind, vehicleId: number, fittingId: string, itemUid: number) =>
-    serviceRefusal(inventory, options, vehicleId, fittingId, itemUid) ?? sourceRefusal(inventory, kind, itemUid);
+    serviceRefusal(inventory, options, { vehicleId, fittingId, itemUid }) ?? sourceRefusal(inventory, kind, itemUid);
   return {
     validate,
     finish: (kind, vehicleId, fittingId, itemUid) =>
       validate(kind, vehicleId, fittingId, itemUid) ??
-      inventory.vehicleTransfer(kind, vehicleId, fittingId, itemUid, options.output),
+      inventory.vehicleTransfer({ kind, vehicleId, fittingId, itemUid, output: options.output }),
   };
 };

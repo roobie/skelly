@@ -122,6 +122,14 @@ export interface VehicleWorkHooks {
   validate: (kind: 'install' | 'remove', vehicleId: number, fittingId: string, itemUid: number) => string | undefined;
   finish: (kind: 'install' | 'remove', vehicleId: number, fittingId: string, itemUid: number) => string | undefined;
 }
+
+export interface VehicleWorkStart {
+  kind: 'install' | 'remove';
+  vehicleId: number;
+  fittingId: string;
+  itemUid: number;
+  duration: number;
+}
 export interface LongActionState {
   job: LongJob | null;
   /** The hour of day (0–23) an alarm sleep wakes at; unset sleeps until rested. */
@@ -364,40 +372,25 @@ export class LongActions {
   }
   restoreState(state: LongActionState): void {
     validateLongJob(state.job, this.sim.time);
-    const { wakeGameHour } = state;
-    validateWakeGameHour(wakeGameHour);
-    if (state.job?.jobType === 'craft' && !this.craft?.owns(state.job.workUid)) {
-      throw new Error('Missing craft work item');
-    }
-    if (state.job?.jobType === 'reading' && !this.reading?.owns(state.job.bookUid)) {
-      throw new Error('Missing reading book');
-    }
-    if (state.job?.jobType === 'forceDoor') {
-      const reason = this.forcing?.validate(state.job.entityUid, state.job.toolUid, state.job.method);
-      if (!this.forcing || reason) {
-        throw new Error(reason ?? 'Missing forcing action owner');
-      }
-    }
-    if (state.job?.jobType === 'vehicleWork') {
-      const reason = this.vehicleWork?.validate(
-        state.job.kind,
-        state.job.vehicleId,
-        state.job.fittingId,
-        state.job.itemUid,
-      );
-      if (!this.vehicleWork || reason) {
-        throw new Error(reason ?? 'Missing vehicle work owner');
-      }
-    }
-    if (state.job?.jobType === 'treatment') {
-      const reason = this.treatment?.validate(state.job.region, state.job.itemUid, state.job.itemType);
-      if (!this.treatment || reason) {
-        throw new Error(reason ?? 'Missing treatment owner');
-      }
+    validateWakeGameHour(state.wakeGameHour);
+    const reason = this.restoredOwnerRefusal(state.job);
+    if (reason) {
+      throw new Error(reason);
     }
     this.current = state.job === null ? undefined : structuredClone(state.job);
-    this.wakeGameHour = wakeGameHour;
+    this.wakeGameHour = state.wakeGameHour;
     this.restoreCompressionCap();
+  }
+  private restoredOwnerRefusal(job: LongJob | null): string | undefined {
+    if (job?.jobType === 'craft' && !this.craft?.owns(job.workUid)) {
+      return 'Missing craft work item';
+    }
+    if (job?.jobType === 'reading' && !this.reading?.owns(job.bookUid)) {
+      return 'Missing reading book';
+    }
+    return job?.jobType === 'forceDoor' || job?.jobType === 'vehicleWork' || job?.jobType === 'treatment'
+      ? this.validateOwner(job)
+      : undefined;
   }
   /** A restored running action compresses up to its own cap, not the default. */
   private restoreCompressionCap(): void {
@@ -572,29 +565,36 @@ export class LongActions {
     };
     return undefined;
   }
-  beginVehicleWork(
-    kind: 'install' | 'remove',
-    vehicleId: number,
-    fittingId: string,
-    itemUid: number,
-    duration: number,
-  ): string | undefined {
+  beginVehicleWork({ kind, vehicleId, fittingId, itemUid, duration }: VehicleWorkStart): string | undefined {
     const actionRefusal = this.bodyActionRefusal();
-    if (actionRefusal) return actionRefusal;
-    if (!this.vehicleWork) return 'Missing vehicle work owner';
-    if (this.current && !this.current.stopped) return coreMessage(this.sim.registry, 'busy');
+    if (actionRefusal) {
+      return actionRefusal;
+    }
+    if (!this.vehicleWork) {
+      return 'Missing vehicle work owner';
+    }
+    if (this.current && !this.current.stopped) {
+      return coreMessage(this.sim.registry, 'busy');
+    }
     const reason = this.vehicleWork.validate(kind, vehicleId, fittingId, itemUid);
-    if (reason) return reason;
-    if (!Number.isFinite(duration) || duration <= 0) return 'Invalid vehicle work time';
+    if (reason) {
+      return reason;
+    }
+    if (!Number.isFinite(duration) || duration <= 0) {
+      return 'Invalid vehicle work time';
+    }
     const refusal = this.startTiming('vehicleWork');
-    if (refusal) return refusal;
+    if (refusal) {
+      return refusal;
+    }
+    const previous = this.current;
     const elapsed =
-      this.current?.jobType === 'vehicleWork' &&
-      this.current.kind === kind &&
-      this.current.vehicleId === vehicleId &&
-      this.current.fittingId === fittingId &&
-      this.current.itemUid === itemUid
-        ? this.current.elapsed
+      previous?.jobType === 'vehicleWork' &&
+      previous.kind === kind &&
+      previous.vehicleId === vehicleId &&
+      previous.fittingId === fittingId &&
+      previous.itemUid === itemUid
+        ? previous.elapsed
         : 0;
     this.current = {
       jobType: 'vehicleWork',

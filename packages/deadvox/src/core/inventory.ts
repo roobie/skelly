@@ -155,6 +155,14 @@ export type Target =
   | { kind: 'pile'; pos: Vec3; at?: Spot }
   | { kind: 'furniture'; entity: BlockEntity; pocket: number; at?: Spot };
 
+export interface VehicleTransfer {
+  kind: 'install' | 'remove';
+  vehicleId: number;
+  fittingId: string;
+  itemUid: number;
+  output?: Target;
+}
+
 type Place =
   | { kind: 'pile'; pile: Pile }
   | { kind: 'furniture'; entity: BlockEntity }
@@ -343,50 +351,65 @@ export class Inventory {
    * Moves one exact UID between an ordinary owner and a serviceable vehicle site.  The destination
    * is completely admitted before either owner changes; see `vehicleTransfer`.
    */
-  vehicleTransfer(
-    kind: 'install' | 'remove',
-    vehicleId: number,
-    fittingId: string,
-    itemUid: number,
-    output?: Target,
-  ): string | undefined {
+  vehicleTransfer(request: VehicleTransfer): string | undefined {
+    const { kind, vehicleId, fittingId, itemUid } = request;
     const vehicle = this.vehicles.get(vehicleId);
     const site = vehicle?.sites.find(({ id }) => id === fittingId);
-    const fitted = vehicle?.fittings.find(({ id }) => id === fittingId);
     const item = this.itemByUid(itemUid);
-    if (!vehicle || !site || !site.service || !item) {
+    if (!(vehicle && site?.service && item)) {
       return 'Vehicle service target is unavailable';
     }
-    const mount = this.registry.items.get(item.type)?.vehicle?.mount;
-    if (mount !== site.service.mount || item.count !== 1) {
+    if (this.registry.items.get(item.type)?.vehicle?.mount !== site.service.mount || item.count !== 1) {
       return 'Part does not fit this service site';
     }
-    if (kind === 'install') {
-      const from = this.locate(item);
-      if (!from || from.kind === 'vehicle' || fitted) {
-        return 'Vehicle service source changed';
-      }
-      const build: VehicleInstance = {
-        ...vehicle,
-        origin: [...vehicle.origin],
-        sites: vehicle.sites.map(copyVehiclePlacement),
-        fittings: [
-          ...vehicle.fittings.map((entry) => ({ ...copyVehiclePlacement(entry), item: entry.item })),
-          {
-            ...copyVehiclePlacement(site),
-            item,
-          },
-        ],
-      };
-      try {
-        this.vehicles.replace(this.registry, vehicleId, build);
-      } catch (error) {
-        return error instanceof Error ? error.message : 'Vehicle service refused';
-      }
-      this.remove(from);
-      this.version += 1;
+    return kind === 'install'
+      ? this.installVehiclePart(vehicle, site, item, vehicleId)
+      : this.removeVehiclePart(vehicle, item, request);
+  }
+
+  private replaceVehicle(vehicleId: number, build: VehicleInstance): string | undefined {
+    try {
+      this.vehicles.replace(this.registry, vehicleId, build);
       return undefined;
+    } catch (error) {
+      return error instanceof Error ? error.message : 'Vehicle service refused';
     }
+  }
+
+  private vehicleBuild(vehicle: VehicleInstance, fittings: VehicleInstance['fittings']): VehicleInstance {
+    return {
+      ...vehicle,
+      origin: [...vehicle.origin],
+      sites: vehicle.sites.map(copyVehiclePlacement),
+      fittings: fittings.map((entry) => ({ ...copyVehiclePlacement(entry), item: entry.item })),
+    };
+  }
+
+  private installVehiclePart(
+    vehicle: VehicleInstance,
+    site: VehicleInstance['sites'][number],
+    item: Item,
+    vehicleId: number,
+  ): string | undefined {
+    const from = this.locate(item);
+    if (!from || from.kind === 'vehicle' || vehicle.fittings.some(({ id }) => id === site.id)) {
+      return 'Vehicle service source changed';
+    }
+    const refusal = this.replaceVehicle(
+      vehicleId,
+      this.vehicleBuild(vehicle, [...vehicle.fittings, { ...copyVehiclePlacement(site), item }]),
+    );
+    if (refusal) {
+      return refusal;
+    }
+    this.remove(from);
+    this.version += 1;
+    return undefined;
+  }
+
+  private removeVehiclePart(vehicle: VehicleInstance, item: Item, request: VehicleTransfer): string | undefined {
+    const { fittingId, output, vehicleId } = request;
+    const fitted = vehicle.fittings.find(({ id }) => id === fittingId);
     if (!fitted || fitted.item !== item || !output) {
       return 'Vehicle service source changed';
     }
@@ -397,18 +420,15 @@ export class Inventory {
     if (!placement.ok) {
       return placement.reason;
     }
-    const build: VehicleInstance = {
-      ...vehicle,
-      origin: [...vehicle.origin],
-      sites: vehicle.sites.map(copyVehiclePlacement),
-      fittings: vehicle.fittings
-        .filter((entry) => entry !== fitted)
-        .map((entry) => ({ ...copyVehiclePlacement(entry), item: entry.item })),
-    };
-    try {
-      this.vehicles.replace(this.registry, vehicleId, build);
-    } catch (error) {
-      return error instanceof Error ? error.message : 'Vehicle service refused';
+    const refusal = this.replaceVehicle(
+      vehicleId,
+      this.vehicleBuild(
+        vehicle,
+        vehicle.fittings.filter((entry) => entry !== fitted),
+      ),
+    );
+    if (refusal) {
+      return refusal;
     }
     if (placement.merge) {
       this.mergeStack(placement.merge, item);

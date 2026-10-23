@@ -18,12 +18,19 @@ local part(id, name, size, capabilities, description=null) = {
     },
   },
 } + (if description == null then {} else { description: description });
-local fitting(id, part, at, supportedBy=[]) = { id: id, part: part, at: at, supportedBy: supportedBy };
+local fitting(id, part, at, supportedBy=[], service=null) =
+  { id: id, part: part, at: at, supportedBy: supportedBy } +
+  if service == null then {} else { service: service };
+local service(mount, durationSimSeconds, qualities={}) = {
+  mount: mount,
+  durationSimSeconds: durationSimSeconds,
+  qualities: qualities,
+};
 // A near-side fitting and its far-side twin, reflected across the centre plane. `0 - z` rather than `-z`
 // keeps a centred twin at 0: -0 doesn't survive a JSON round trip, so the admitted registry would differ.
-local pair(id, part, at, supportedBy) = [
-  fitting(id + '_near', part, at, [support + '_near' for support in supportedBy.paired] + supportedBy.shared),
-  fitting(id + '_far', part, [at[0], at[1], 0 - at[2]], [support + '_far' for support in supportedBy.paired] + supportedBy.shared) + { mirror: true },
+local pair(id, part, at, supportedBy, service=null) = [
+  fitting(id + '_near', part, at, [support + '_near' for support in supportedBy.paired] + supportedBy.shared, service),
+  fitting(id + '_far', part, [at[0], at[1], 0 - at[2]], [support + '_far' for support in supportedBy.paired] + supportedBy.shared, service) + { mirror: true },
 ];
 local on(shared=[], paired=[]) = { shared: shared, paired: paired };
 local batteryBay(tray, at, supportedBy=[]) = [
@@ -62,7 +69,7 @@ local hatchback = [
   + pair('front_wing', 'hatchback_front_wing', origin, on(['shell']))
   + pair('tail_lamp', 'hatchback_tail_lamp', origin, on(['shell']))
   + pair('front_strut', 'hatchback_front_strut', origin, on(['shell']))
-  + pair('front_wheel', 'wheel_205_55r16', [1.24, 0.316, 0.75], on(paired=['front_strut']))
+  + pair('front_wheel', 'wheel_205_55r16', [1.24, 0.316, 0.75], on(paired=['front_strut']), service('hatchback_wheel', 30, { wrench: 1 }))
   + pair('rear_wheel', 'wheel_205_55r16', [-1.27, 0.316, 0.75], on(['rear_axle']))
   + pair('front_seat', 'front_seat', [0, 0.3, 0.37], on(['shell']))
   + pair('door_mirror', 'door_mirror', [0.66, 0.98, 0.8675], on(['shell']))
@@ -210,7 +217,7 @@ local boxVan = [
     part('car_headlamp', 'Headlamp unit', [2, 2], ['light', 'glazing'], 'A sealed lamp and its lens.'),
     part('hatchback_battery_tray', 'Hatchback battery tray', [3, 2], ['structure'], 'A pressed steel shelf for a battery.'),
     part('pickup_battery_tray', 'Pickup battery tray', [4, 3], ['structure'], 'A heavy steel shelf for a battery.'),
-    part('wheel_205_55r16', 'Wheel 205/55 R16', [6, 6], ['wheel']),
+    part('wheel_205_55r16', 'Wheel 205/55 R16', [6, 6], ['wheel']) + { vehicle+: { mount: 'hatchback_wheel' } },
     part('front_seat', 'Front seat', [5, 10], ['seat']),
     part('door_mirror', 'Door mirror', [2, 2], []),
     part('steering_wheel', 'Steering wheel', [4, 4], ['steered']),

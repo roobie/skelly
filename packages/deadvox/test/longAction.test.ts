@@ -149,10 +149,17 @@ describe('core long actions', () => {
       validate: () => (reachable ? undefined : 'Vehicle service target is unavailable'),
       finish: () => {
         finished += 1;
-        return;
       },
     };
-    expect(sim.actions.beginVehicleWork('install', 1, 'fixture_site', 7, 10)).toBeUndefined();
+    expect(
+      sim.actions.beginVehicleWork({
+        kind: 'install',
+        vehicleId: 1,
+        fittingId: 'fixture_site',
+        itemUid: 7,
+        duration: 10,
+      }),
+    ).toBeUndefined();
     sim.scheduler.advance(4);
     const state = sim.actions.snapshotState();
     expect(state.job).toMatchObject({
