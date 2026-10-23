@@ -1,6 +1,7 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import { graphicsTuningOf } from '../src/core/graphicsTuning.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { authoredSkyBoxes, SkyFields } from '../src/core/skyField.ts';
 import { createEngine } from '../src/game/engine.ts';
@@ -57,7 +58,7 @@ it('draws the shared cache for an above-ground authored placement without an ind
   );
   const room: Vec3 = [8.5, 4.5, 8.5];
   const metres = room.map((value) => value * scale.blockSize) as Vec3;
-  expect(engine.skylight?.at(metres)).toBe(1);
+  expect(engine.skylight!.at(metres)).toBeLessThanOrEqual(graphicsTuningOf(fixture.registry).unbuiltSkyCap);
   expect(skyFields.visibilityAt(room)).toBe(0);
   engine.skylight!.update(engine.scene, room);
   expect(engine.skylight!.at(metres)).toBe(0);

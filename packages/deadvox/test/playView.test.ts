@@ -12,6 +12,7 @@ import {
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import type { Vec3 } from '../src/core/coords.ts';
+import { graphicsTuningOf } from '../src/core/graphicsTuning.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { inventoryLightSources, toggleLight } from '../src/core/lights.ts';
 import type { Body } from '../src/core/physics.ts';
@@ -146,7 +147,7 @@ function litWorld(geometry: 'doorway' | 'near-wall') {
   camera.lookAt(camera.position.clone().add(new Vector3(...aim)));
   const sky = new Skylight(
     new SkyFields(owner, { bottom: 0, top: 31 }, [box]),
-    { blockSize: 0.5, viewRadiusM: 64 },
+    { blockSize: 0.5, viewRadiusM: 64, unbuiltCap: graphicsTuningOf(owner.registry).unbuiltSkyCap },
     {
       clock: () => 0,
       submit: (input, receive) => {
@@ -344,7 +345,7 @@ describe('play presentation ownership', () => {
       expect(f.owner.knownOpaque(...(target.map((axis) => Math.floor(axis / 0.5)) as Vec3))).toBe(false);
       expect(f.sky.at(target)).toBeLessThan(f.sky.at(cameraPosition));
       const receiver = receiverLighting(f, target);
-      expect(receiver.shader).toContain('float receiverSkyVisibility = skyVisibility();');
+      expect(receiver.shader).toContain('float receiverSkyVisibility = skyVisibility(receiverSkyUnbuilt);');
       expect(receiver.shader).toContain('irradiance *= receiverSkyVisibility;');
       expect(f.view.flashlight.daylightScale * receiver.scale).toBeGreaterThan(
         flashlightDaylightScale(f.daylight) * 10,

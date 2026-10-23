@@ -6,6 +6,7 @@ local toggle(label, default=false) = { label: label, default: default, options: 
     id: 'core',
     readyRadiusM: 64,
     itemPictureCacheCapacity: 128,
+    unbuiltSkyCap: 0.5,
     itemViewer: {
       framing: 1.1,
       startYawDegrees: 45,

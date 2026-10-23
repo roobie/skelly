@@ -128,15 +128,15 @@ const vite = await createServer({
         if (hasSkyControl && id.endsWith('/src/render/skylight.ts')) {
           // Test-only reference: identical scene with diffuse sky visibility forced to one.
           assert.ok(code.includes('shader.uniforms.uSkyVolume = this.texture;'));
-          assert.ok(code.includes('float skyVisibility() {'));
+          assert.ok(code.includes('float skyVisibility(out bool unbuilt) {'));
           return code
             .replace(
               'shader.uniforms.uSkyVolume = this.texture;',
               'shader.uniforms.uSkyVolume = this.texture;\nshader.uniforms.uSkyProofControl = (globalThis.skyProofControl ??= {value:0});',
             )
             .replace(
-              'float skyVisibility() {',
-              'uniform float uSkyProofControl;\nfloat skyVisibility() {\n  if (uSkyProofControl > 0.5) return 1.0;',
+              'float skyVisibility(out bool unbuilt) {',
+              'uniform float uSkyProofControl;\nfloat skyVisibility(out bool unbuilt) {\n  if (uSkyProofControl > 0.5) { unbuilt = false; return 1.0; }',
             );
         }
         if (!id.endsWith('/src/game/play.ts')) {
@@ -770,11 +770,12 @@ try {
     assert.ok(selection, 'the owned shader proof completed before entering Play');
     assert.ok(selection.requested > 0 && selection.completed === selection.requested, 'owned worker jobs completed');
     assert.ok(selection.oracleCanopy > 0 && selection.oracleCanopy < 1, 'lateral diffuse paths exist under the canopy');
-    assert.deepEqual(
-      selection.pending.room,
-      { cpu: 1, shader: 1 },
-      'a field with no result to draw yet falls back to open sky in the view',
+    const { room: unbuiltRoom } = selection.pending;
+    assert.ok(
+      unbuiltRoom.cpu > 0 && unbuiltRoom.cpu <= selection.unbuiltSkyCap,
+      'a field with no result yet draws dimmed, at or below its cap',
     );
+    assert.ok(Math.abs(unbuiltRoom.cpu - unbuiltRoom.shader) <= 1 / 255, 'CPU and shader draw the same fallback');
     for (const phase of [selection.ready, selection.evicted]) {
       assert.deepEqual(
         phase.room,

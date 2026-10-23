@@ -1,5 +1,6 @@
 import { Scene } from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import graphicsFile from '../src/content/base/graphics.json' with { type: 'json' };
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import type { Chunk } from '../src/core/chunk.ts';
 import { buildRegistry } from '../src/core/content.ts';
@@ -47,7 +48,7 @@ it('builds a field over arriving all-air chunks and stops certifying it once its
   ]);
   const sky = new Skylight(
     fields,
-    { blockSize: 0.5, viewRadiusM: 32 },
+    { blockSize: 0.5, viewRadiusM: 32, unbuiltCap: graphicsFile.graphics[0]!.unbuiltSkyCap },
     {
       clock: () => 0,
       submit: (input, receive) => {

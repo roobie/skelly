@@ -1,5 +1,6 @@
 import { BoxGeometry, Mesh, MeshLambertMaterial, Scene } from 'three';
 import type { Vec3 } from '../../src/core/coords.ts';
+import { graphicsTuningOf } from '../../src/core/graphicsTuning.ts';
 import { SkyFields } from '../../src/core/skyField.ts';
 import type { SkyBounds } from '../../src/core/skylight.ts';
 import { type CapturedSky, captureSky, growSky, SKY_SHELL, type SkySnapshot } from '../../src/core/skySnapshot.ts';
@@ -11,9 +12,10 @@ export function skyFixture(boxes: SkyBounds[] = [fixtureBox], clock = () => 0) {
   const owner = skyWorldFixture(boxes);
   const pending: { input: SkySnapshot; receive: (result: SkyResult, ms: number) => void }[] = [];
   const fields = new SkyFields(owner, { bottom: 0, top: 31 }, boxes);
+  const { unbuiltSkyCap } = graphicsTuningOf(owner.registry);
   const sky = new Skylight(
     fields,
-    { blockSize: 1, viewRadiusM: 160 },
+    { blockSize: 1, viewRadiusM: 160, unbuiltCap: unbuiltSkyCap },
     {
       clock,
       submit: (input, receive) => {
@@ -53,5 +55,5 @@ export function skyFixture(boxes: SkyBounds[] = [fixtureBox], clock = () => 0) {
     material.onBeforeCompile(result as never, null as never);
     return result;
   };
-  return { ...owner, fields, sky, pending, scene, material, update, complete, capture, shader };
+  return { ...owner, fields, sky, unbuiltSkyCap, pending, scene, material, update, complete, capture, shader };
 }

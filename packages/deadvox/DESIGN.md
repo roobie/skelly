@@ -2109,19 +2109,21 @@ passed can each hold one. See
 `src/game/streamer.ts`, `dispatchSky`, `src/core/skyField.ts`, `request`, and
 `src/render/skylight.ts`, `prepare`.
 
-A field with no result to draw yet draws open sky. This is a presentation fallback, not
-the simulation's answer: a query builds the field synchronously, so a loaded roofed room
-answers dark to the simulation while the view still draws it bright. The fallback keeps
-cold discovery from making an open surface appear sealed, at the cost of an unbuilt room
-reading bright until its field lands. Once a field has a complete result, the view keeps it while an
-edit is rebuilt: dropping to open sky would flash a dark room bright when a door opens.
-The replacement swaps atomically, and a late result for superseded geometry cannot
-install. Retained column heights supply the nonresident estimate. CPU and shader share
-this policy. The kept result can delay a darkening edit or step visibly at replacement;
-that is presentation latency only, since gameplay's answer is already current. Results
-survive GPU eviction, so re-entry does not repeat transport. Solve halos and spatial
-lookup cells do not expand the fields. Arbitrary construction and caves remain outside
-them.
+Until a field's answer lands, the view draws it dimmed, without direct sun, during the
+load pause and in play alike. This is a presentation fallback, not the simulation's
+answer: a query builds the field synchronously, so gameplay already reads the room's
+real light. A room briefly too dark reads as "not lit yet", while open sky in a roofed
+room reads as wrong light; finishing a field before revealing its room would avoid both
+but stalls frames on walks without scheduling to spread that work. When #1261 provides
+that scheduling, finishing before reveal replaces this fallback. The dimming cap is
+content: see `src/content/base/graphics.jsonnet`, `unbuiltSkyCap`. Once a field has a complete result, the view keeps it
+while an edit is rebuilt, so opening a door cannot flash a dark room. The replacement
+swaps atomically, and a late result for superseded geometry cannot install. Retained
+column heights supply the nonresident estimate. CPU and shader share this policy. The
+kept result can delay a darkening edit or step visibly at replacement; that is
+presentation latency only, since gameplay's answer is already current. Results survive
+GPU eviction, so re-entry does not repeat transport. Solve halos and spatial lookup
+cells do not expand the fields. Arbitrary construction and caves remain outside them.
 
 Worker execution protects rendering from dense transport work, but copying, submission,
 publication and texture uploads still consume the main frame, so background execution

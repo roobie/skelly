@@ -83,9 +83,9 @@ function regionIndex(fields: readonly SkyField[]) {
 }
 /**
  * An upload view over the shared sky field cache: it asks the cache to build fields near the camera off
- * the main thread and draws the results the cache holds. A field with no result to draw yet draws open sky as
- * a presentation fallback, even where the simulation's synchronous build answers dark; one being rebuilt keeps
- * its last complete result until the new one lands.
+ * the main thread and draws the results the cache holds. Where no covering field has a result yet, it draws
+ * dimmed sky without direct sun (`packages/deadvox/DESIGN.md`, "Light"); a field being rebuilt keeps its last
+ * complete result until the new one lands.
  */
 export class Skylight {
   private readonly texture = { value: volumeTexture(new Uint8Array([255]), [1, 1, 1]) };
@@ -125,9 +125,10 @@ export class Skylight {
 
   private readonly blockSize: number;
   private readonly viewRadiusM: number;
+  private readonly unbuiltCap: number;
   constructor(
     sky: SkyFields,
-    { blockSize, viewRadiusM }: { blockSize: number; viewRadiusM: number },
+    { blockSize, viewRadiusM, unbuiltCap }: { blockSize: number; viewRadiusM: number; unbuiltCap: number },
     runtime: SkyRuntime,
   ) {
     this.sky = sky;
@@ -135,6 +136,7 @@ export class Skylight {
     this.shown = this.fields.map(() => undefined);
     this.blockSize = blockSize;
     this.viewRadiusM = viewRadiusM;
+    this.unbuiltCap = unbuiltCap;
     this.jobs = runtime;
     this.clock = runtime.clock ?? (() => performance.now());
     let heightOffset = 0;
@@ -344,16 +346,20 @@ export class Skylight {
   /** Sky visibility the view draws at a point in metres: no build, so it never stalls a frame. */
   at(position: Vec3): number {
     const point = position.map((value) => value / this.blockSize) as Vec3;
-    const known = this.fields
+    const covering = this.fields
       .map((field, index) => ({ field, index, result: this.shown[index] }))
-      .filter(({ field, result }) => result && containsSky(field.bounds, point));
+      .filter(({ field }) => containsSky(field.bounds, point));
+    if (covering.length === 0) {
+      return 1;
+    }
+    const known = covering.filter(({ result }) => result);
     for (const { index, result } of known) {
       if (this.active.includes(index) && result!.volume && containsSky(result!.volume, point)) {
         return sampleSky(result!.volume, point);
       }
     }
     if (known.length === 0) {
-      return 1;
+      return this.unbuiltCap;
     }
     return Number(known.some(({ field, result }) => Math.floor(point[1]) > skyRoofAt(field, result!, point)));
   }
@@ -452,11 +458,13 @@ uniform float uSkyAtlasOffset[${RESIDENT_FIELDS}];
 uniform float uSkyEnabled;
 varying vec3 vSkyWorld;
 varying vec3 vSkyNormal;
-float skyVisibility() {
+float skyVisibility(out bool unbuilt) {
+  unbuilt = false;
   vec3 point = vSkyWorld + normalize(vSkyNormal) * float(${this.blockSize * 0.5});
   vec2 gridCell = floor(point.xz / float(${this.blockSize * CHUNK})) - uSkyGridOrigin;
   if (any(lessThan(gridCell, vec2(0.0))) || any(greaterThanEqual(gridCell, uSkyGridSize))) return 1.0;
   vec2 candidates = texture2D(uSkyGrid, (gridCell + 0.5) / uSkyGridSize).xy;
+  bool covered = false;
   bool known = false;
   float fallback = 0.0;
   for (int local = 0; local < ${this.index.maximum}; local++) {
@@ -466,6 +474,7 @@ float skyVisibility() {
     vec4 lower = texture2D(uSkyRegions, vec2(0.5 / 3.0, row));
     vec4 upper = texture2D(uSkyRegions, vec2(1.5 / 3.0, row));
     if (any(lessThan(point, lower.xyz)) || any(greaterThanEqual(point, upper.xyz))) continue;
+    covered = true;
     if (lower.w < 0.5) continue;
     known = true;
     vec4 heightTile = texture2D(uSkyRegions, vec2(2.5 / 3.0, row));
@@ -483,12 +492,14 @@ float skyVisibility() {
       return texture(uSkyVolume, atlas).r;
     }
   }
-  return known ? fallback : 1.0;
+  unbuilt = covered && !known;
+  return covered ? (known ? fallback : float(${this.unbuiltCap})) : 1.0;
 }`,
         )
         .replace(
           '#include <lights_fragment_begin>',
-          `float receiverSkyVisibility = skyVisibility();
+          `bool receiverSkyUnbuilt;
+float receiverSkyVisibility = skyVisibility(receiverSkyUnbuilt);
 ${ShaderChunk.lights_fragment_begin
   .replace(
     DIRECTIONAL_LIGHT_INFO_CALL,
@@ -497,7 +508,7 @@ ${ShaderChunk.lights_fragment_begin
   vec3 nearCoord = vDirectionalShadowCoord[ i ].xyz / vDirectionalShadowCoord[ i ].w;
   bool coveredNear = all(greaterThanEqual(nearCoord.xy, vec2(0.0)))
     && all(lessThanEqual(nearCoord.xy, vec2(1.0))) && nearCoord.z <= 1.0;
-  if (!coveredNear && receiverSkyVisibility <= 0.0) directLight.color *= 0.0;
+  if (!coveredNear && (receiverSkyVisibility <= 0.0 || receiverSkyUnbuilt)) directLight.color *= 0.0;
 #endif`,
   )
   .replace(
@@ -515,7 +526,7 @@ ${ShaderChunk.lights_fragment_begin
       }
     };
     material.customProgramCacheKey = () =>
-      `${key.call(material)}:receiver-daylight-far-sun-skylight:${this.blockSize}:${this.fields.length}:${this.index.maximum}:${this.index.length}`;
+      `${key.call(material)}:receiver-daylight-far-sun-skylight:${this.blockSize}:${this.unbuiltCap}:${this.fields.length}:${this.index.maximum}:${this.index.length}`;
     material.needsUpdate = true;
   }
 }

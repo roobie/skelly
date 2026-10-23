@@ -4016,6 +4016,8 @@ const GraphicsTuningSchema = strictObject({
   id: Id,
   readyRadiusM: pipe(number(), finite(), minValue(0)),
   itemPictureCacheCapacity: pipe(number(), integer(), minValue(1)),
+  /** Sky visibility drawn, without direct sun, where a sky field has no answer yet. */
+  unbuiltSkyCap: Fraction,
   /** The inventory item viewer: opening pose, drag and wheel response, and zoom range around the opening zoom of 1. */
   itemViewer: pipe(
     strictObject({

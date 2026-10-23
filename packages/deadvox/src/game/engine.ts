@@ -91,11 +91,15 @@ export function createEngine(
   scene.add(meshes.group);
   // Chunk meshes are culled against their tight boxes, after three.js has updated the camera.
   const { skyFields } = worldSetup;
+  const graphicsTuning = worldSetup.registry.graphics.get(CORE_CONTENT_IDS.coreGraphics);
+  if (!graphicsTuning) {
+    throw new Error('Missing core graphics policy');
+  }
   const skylight =
     skyFields.fields.length > 0
       ? new Skylight(
           skyFields,
-          { blockSize: scale.blockSize, viewRadiusM: radiusM },
+          { blockSize: scale.blockSize, viewRadiusM: radiusM, unbuiltCap: graphicsTuning.unbuiltSkyCap },
           { submit: (input, receive) => worldSetup.streamer.requestSky(input, receive) },
         )
       : undefined;
@@ -108,10 +112,6 @@ export function createEngine(
     meshes.cull(cam);
   };
 
-  const graphicsTuning = worldSetup.registry.graphics.get(CORE_CONTENT_IDS.coreGraphics);
-  if (!graphicsTuning) {
-    throw new Error('Missing core graphics policy');
-  }
   const mood = renderer ? new Mood(renderer, scene, camera, graphicsTuning) : undefined;
   const shadows = renderer ? new Shadows(renderer, scene, { light: sky.light, rig: sunRig }, meshes) : undefined;
   const graphics = new GraphicsControls(

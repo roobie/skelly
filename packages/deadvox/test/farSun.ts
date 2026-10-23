@@ -49,8 +49,9 @@ export function farSunProof() {
   try {
     const unknownFar = sample(point, false);
     const nearUnknown = sample(point, true);
-    if (fixture.sky.at(point) !== 1) {
-      throw new Error('A field with no result to draw yet must fall back to open sky in the view');
+    const unbuilt = fixture.sky.at(point);
+    if (!(unbuilt > 0 && unbuilt <= fixture.unbuiltSkyCap)) {
+      throw new Error(`A field with no result yet must draw dimmed sky at or below its cap: ${unbuilt}`);
     }
     fixture.complete();
     fixture.update(point);
@@ -64,11 +65,11 @@ export function farSunProof() {
     if (!(fixture.sky.at(exposed) > 0)) {
       throw new Error('Exposed fixture must have nonzero diffuse sky');
     }
-    if (zeroFar !== 0) {
-      throw new Error(`Far receivers with zero sky must get no sun: ${zeroFar}`);
+    if (unknownFar !== 0 || zeroFar !== 0) {
+      throw new Error(`Far receivers with unbuilt or zero sky must get no sun: ${unknownFar}, ${zeroFar}`);
     }
-    if (!(nonzeroFar > 0 && unknownFar > 0)) {
-      throw new Error(`Far receivers with nonzero or unbuilt sky must keep direct sun: ${nonzeroFar}, ${unknownFar}`);
+    if (!(nonzeroFar > 0)) {
+      throw new Error(`Far receivers with nonzero sky must keep direct sun: ${nonzeroFar}`);
     }
     if (!(nearUnknown > 0 && nearZero === nearUnknown)) {
       throw new Error(`Near-map direct sun must ignore the far sky rule: ${nearUnknown}, ${nearZero}`);

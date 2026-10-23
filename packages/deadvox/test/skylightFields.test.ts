@@ -33,11 +33,12 @@ it('draws a field the simulation built first without asking for another build', 
   expect(fixture.sky.at(inside)).toBe(answer);
 });
 
-it('draws open sky for a field the cache has not built, then the built result', () => {
+it('draws dimmed sky, at or below the cap, for a field the cache has not built, then the built result', () => {
   const fixture = skyFixture();
   fixture.update();
   expect(fixture.pending.length).toBeGreaterThan(0);
-  expect(fixture.sky.at(inside)).toBe(1);
+  expect(fixture.sky.at(inside)).toBeGreaterThan(0);
+  expect(fixture.sky.at(inside)).toBeLessThanOrEqual(fixture.unbuiltSkyCap);
   const { uniforms } = fixture.shader();
   const { data } = uniforms.uSkyRegions!.value.image;
   expect(data[3]).toBe(0);
