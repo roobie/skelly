@@ -343,6 +343,8 @@ export interface SessionOptions {
   spawn: Vec3;
   /** The game's shared block entities; restore populates this same object in place. */
   entities?: Inventory['entities'];
+  /** Deterministic scenario registrations run after restore, before world consumers. */
+  registerVehicles?: ((inventory: Inventory) => void) | undefined;
   terrainFloor?: (x: number, z: number) => number;
   /** Whether the world under (x, z), in blocks, is loaded enough to stand on. */
   ready: (x: number, z: number) => boolean;
@@ -689,8 +691,12 @@ export const createSession = (options: SessionOptions) => {
   const currentFirearmsCombatTuning = (): FirearmsCombatTuning => firearmsCombatTuning;
   const meleeCombatTuning = registry.skills.get(CORE_CONTENT_IDS.meleeCombat)?.combat?.melee;
   const inventory = restored
-    ? Inventory.restoreState(registry, restored.character.inventory, options.entities, character)
+    ? Inventory.restoreState(registry, restored.character.inventory, options.entities, {
+        character,
+        vehicles: restored.world.vehicles,
+      })
     : new Inventory(registry, undefined, options.entities, character);
+  options.registerVehicles?.(inventory);
   const wearPlaced = (piece: BlockEntity | undefined, wear: number | undefined): void => {
     if (piece && wear !== undefined) {
       inventory.entities.wear(piece, wear);
@@ -2068,6 +2074,7 @@ export const createSession = (options: SessionOptions) => {
     body,
     /** Set when the session was restored: the view direction to hand back to the input. */
     restoredLook,
+    vehicles: inventory.vehicles,
     /** The player's noise state; saved with the character. */
     playerAudio,
     worldColumns: () => world.snapshotColumns((id) => registry.blocks[id]!.id),
