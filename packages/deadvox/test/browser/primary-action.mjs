@@ -1216,8 +1216,12 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
       );
     }
     await pressAction(page, 'world.interact');
+    // The queued search proves the tap resolved to Search; waiting for it to finish adds only its game time.
     await page.waitForFunction(
-      (uid) => globalThis.primaryActionTest.inventory.entities.byUid(uid)?.searched === true,
+      (uid) =>
+        globalThis.primaryActionTest.queue.jobs.some(
+          (job) => job.jobType === 'furniture.search' && job.params.entityUid === uid,
+        ),
       fixedUid,
     );
     assert.equal(
