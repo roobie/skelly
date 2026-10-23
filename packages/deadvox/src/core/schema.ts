@@ -340,6 +340,11 @@ const InventoryTuningSchema = strictObject({
     maxSizeMetres: Positive,
     /** Stamina spent to lift a piece. */
     liftStamina: NonNegative,
+    slide: strictObject({
+      reachMetres: Positive,
+      stepSimSeconds: PositiveSimSeconds,
+      stamina: NonNegative,
+    }),
     /** Stamina spent per Sim second of carrying; running out drops the piece. */
     carryStaminaPerSimSecond: SimRate,
     /** How the carried piece shows in first person, in view metres (x right, y up, z back from the eye). */
@@ -397,6 +402,9 @@ const UiTuningSchema = strictObject({
    */
   furnitureMoveMessages: strictObject({
     tooBig: Name,
+    carryInstead: Name,
+    floorOnly: Name,
+    slideTired: Name,
     fastened: Name,
     handsFull: Name,
     tired: Name,

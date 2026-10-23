@@ -61,8 +61,15 @@ const TRIGGER_ENTRIES = [
   [
     'furniture_scrape',
     {
-      trigger: 'Hold F on a crate or other small piece to lift it, or press F to set it down.',
+      trigger: 'Lift a small piece of furniture or set it down.',
       note: 'Temporary stand-in: shares the door-blocked recording, pitched down.',
+    },
+  ],
+  [
+    'furniture_drag',
+    {
+      trigger: 'Push or drag an oversized piece of furniture across the floor.',
+      note: 'Temporary stand-in: shares the door-blocked recording, pitched down. It carries farther than lifting.',
     },
   ],
   [

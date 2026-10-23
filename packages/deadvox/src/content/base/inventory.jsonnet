@@ -22,6 +22,7 @@
       furnitureMove: {
         maxSizeMetres: 1,
         liftStamina: 15,
+        slide: { reachMetres: 1, stepSimSeconds: 2, stamina: 8 },
         carryStaminaPerSimSecond: 4,
         carriedView: {
           offsetMetres: [0, -0.5, -0.9],

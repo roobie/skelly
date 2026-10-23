@@ -1,6 +1,5 @@
-// Moving furniture (`DESIGN.md`, "Moving furniture"): lifting a piece into both
-// hands and standing it down elsewhere. Each move is worked out on a shadow of the
-// cells before anything changes, so a refusal leaves the world as it was.
+// Each move is worked out on a shadow of the cells before anything changes,
+// so a refusal leaves the world as it was (`DESIGN.md`, "Moving furniture").
 
 import { type BlockEntities, type BlockEntity, boxIntersectsBody } from './blockEntities.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
@@ -158,10 +157,18 @@ interface Settled {
  * nowhere to land or onto someone refuses a move; under a ruin, which can't be refused,
  * that piece is destroyed in turn instead, so nothing floats.
  */
-const settle = (mover: FurnitureMover, shadow: Shadow, lifted: BlockEntity, ruin = false): Settled | string => {
+const settle = (
+  mover: FurnitureMover,
+  shadow: Shadow,
+  lifted: BlockEntity,
+  { ruin = false, movedTo }: { ruin?: boolean; movedTo?: Vec3 } = {},
+): Settled | string => {
   const messages = messagesOf(mover.inventory);
   const vacated = new Set(boxCells(lifted.pos, lifted.size).map(key));
   shadow.fill(lifted, lifted.pos, false);
+  if (movedTo) {
+    shadow.fill(lifted, movedTo, true);
+  }
   // Only a piece over a vacated cell can fall, and it shares that cell's column, so candidates come from the columns
   // of what moved. A fall adds its own columns; the pieces that brings in stand above it, so the lowest-first order holds.
   const seen = new Set<BlockEntity>([lifted]);
@@ -409,7 +416,7 @@ const debrisOf = (inventory: Inventory, entity: BlockEntity): Placed[] =>
 export const ruinFurniture = (mover: FurnitureMover, entity: BlockEntity): BlockEntity[] | undefined => {
   const { inventory } = mover;
   const shadow = new Shadow(mover.terrainSolid, inventory.entities);
-  const { falls, ruined } = settle(mover, shadow, entity, true) as Settled;
+  const { falls, ruined } = settle(mover, shadow, entity, { ruin: true }) as Settled;
   const destroyed = [entity, ...ruined];
   const standIns = new Set<Placed>();
   const loose = destroyed.map((piece) => {
@@ -495,6 +502,115 @@ export const liftFurniture = (mover: FurnitureMover, entity: BlockEntity): strin
   }
   inventory.shiftPiles(moves);
   return undefined;
+};
+
+export type FurnitureSlideWay = 'push' | 'drag';
+
+export const oversizedFurniture = (inventory: Inventory, entity: BlockEntity, blockSize: number): boolean =>
+  inventory.entities.defOf(entity).cover !== true &&
+  entity.size.some((cells) => cells * blockSize > reachTuning(inventory.registry).furnitureMove.maxSizeMetres);
+
+const slideRefusal = (mover: FurnitureMover, entity: BlockEntity): string | undefined => {
+  const { inventory } = mover;
+  const messages = messagesOf(inventory);
+  const tuning = reachTuning(inventory.registry).furnitureMove.slide;
+  const refusal = inventory.entities.useRefusal(entity);
+  if (refusal) {
+    return refusal;
+  }
+  if (fastened(inventory, entity)) {
+    return messages.fastened;
+  }
+  if (!oversizedFurniture(inventory, entity, mover.blockSize)) {
+    return messages.carryInstead;
+  }
+  const chest: Vec3 = [
+    mover.player.pos[0],
+    mover.player.pos[1] + reachTuning(inventory.registry).chestHeightMetres / mover.blockSize,
+    mover.player.pos[2],
+  ];
+  if (
+    entity.carried ||
+    !inventory.canReachEntity(entity) ||
+    inventory.entities.distance(entity, chest) * mover.blockSize > tuning.reachMetres
+  ) {
+    return messages.outOfReach;
+  }
+  if (mover.stamina < tuning.stamina) {
+    return messages.slideTired;
+  }
+  return supportRefusal(mover, entity, true);
+};
+
+/** Plans before committing, so a refused floor step never disturbs the stack or its loose items. */
+export const slideFurniture = (
+  mover: FurnitureMover,
+  entity: BlockEntity,
+  way: FurnitureSlideWay,
+  { commit = true, destination }: { commit?: boolean; destination?: Readonly<Vec3> } = {},
+): string | undefined => {
+  const { inventory } = mover;
+  const messages = messagesOf(inventory);
+  const refusal = slideRefusal(mover, entity);
+  if (refusal) {
+    return refusal;
+  }
+  const pos = slideDestination(mover.player, entity, way);
+  if (destination && pos.some((value, axis) => value !== destination[axis])) {
+    return messages.outOfReach;
+  }
+  const shadow = new Shadow(mover.terrainSolid, inventory.entities);
+  shadow.fill(entity, entity.pos, false);
+  if (!shadow.free(pos, entity.size)) {
+    return messages.noRoom;
+  }
+  if (
+    ![...footprint(entity.pos, entity.size), ...footprint(pos, entity.size)].every(([x, y, z]) =>
+      mover.terrainSolid(x, y - 1, z),
+    )
+  ) {
+    return messages.floorOnly;
+  }
+  const standing = standRefusal(mover, shadow, pos, entity);
+  if (standing) {
+    return standing;
+  }
+  const settled = settle(mover, shadow, entity, { movedTo: pos });
+  if (typeof settled === 'string') {
+    return settled;
+  }
+  const { falls } = settled;
+  const boxes = [
+    entity,
+    { pos, size: entity.size },
+    ...falls.flatMap(({ entity: fallen, y }) => [
+      fallen,
+      { pos: [fallen.pos[0], y, fallen.pos[2]] as Vec3, size: fallen.size },
+    ]),
+  ];
+  const moves = resettlePiles(mover, shadow, pilesOver(inventory, boxes));
+  if (!moves) {
+    return messages.nowhereToLand;
+  }
+  if (commit) {
+    inventory.entities.slide(entity, pos);
+    for (const { entity: fallen, y } of falls) {
+      inventory.entities.drop(fallen, y);
+    }
+    inventory.shiftPiles(moves);
+  }
+  return undefined;
+};
+
+export const slideDestination = (player: Body, entity: BlockEntity, way: FurnitureSlideWay): Vec3 => {
+  const dx = entity.pos[0] + entity.size[0] / 2 - player.pos[0];
+  const dz = entity.pos[2] + entity.size[2] / 2 - player.pos[2];
+  const sign = way === 'push' ? 1 : -1;
+  return [
+    entity.pos[0] + (Math.abs(dx) >= Math.abs(dz) ? Math.sign(dx) * sign : 0),
+    entity.pos[1],
+    entity.pos[2] + (Math.abs(dx) < Math.abs(dz) ? Math.sign(dz) * sign : 0),
+  ];
 };
 
 /** The lowest corner a carried piece would stand at when put down at an aimed cell, before it settles. */

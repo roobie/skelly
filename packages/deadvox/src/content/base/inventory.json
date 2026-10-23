@@ -35,7 +35,12 @@
         },
         "carryStaminaPerSimSecond": 4,
         "liftStamina": 15,
-        "maxSizeMetres": 1
+        "maxSizeMetres": 1,
+        "slide": {
+          "reachMetres": 1,
+          "stamina": 8,
+          "stepSimSeconds": 2
+        }
       },
       "groundPileStateCap": 65536,
       "id": "player",

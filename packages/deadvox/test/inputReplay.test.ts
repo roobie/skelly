@@ -142,6 +142,8 @@ const applyCommand = (
       throw new Error('Furniture interaction is not implemented in the replay test harness');
     },
     lift: (uid) => runtime.session.liftFurniture(uid),
+    useFurniture: () => undefined,
+    slide: (uid, way) => runtime.session.slideFurniture(uid, way),
     place: (pos) => runtime.session.placeFurniture(pos),
     turn: () => runtime.session.turnFurniture(),
     tip: () => runtime.session.tipFurniture(),

@@ -73,6 +73,7 @@ export const SOUND_EVENT_IDS = [
   'door_blocked_close',
   'door_bash',
   'furniture_scrape',
+  'furniture_drag',
 ] as const;
 
 export type SoundEventId = (typeof SOUND_EVENT_IDS)[number];

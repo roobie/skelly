@@ -1139,6 +1139,28 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
       r.input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
     }, doorUid);
     await pressAction(page, 'world.interact');
+    await page.waitForFunction(() => !document.querySelector('#item-action-list').hidden);
+    for (const way of ['push', 'drag']) {
+      await page.mouse.wheel(0, 100);
+      await pressAction(page, 'world.interact');
+      await page.waitForFunction(
+        ({ uid, way: expectedWay }) =>
+          globalThis.primaryActionTest.inputRecorder
+            .copyInputs()
+            .actions.some(
+              ({ payload }) =>
+                payload?.kind === 'furniture.slide' && payload.entityUid === uid && payload.way === expectedWay,
+            ),
+        { uid: doorUid, way },
+      );
+      assert.equal(
+        await page.evaluate(() => globalThis.primaryActionTest.queue.busy),
+        false,
+        'a fastened piece refuses movement rather than queuing a step',
+      );
+    }
+    await page.mouse.wheel(0, 100);
+    await pressAction(page, 'world.interact');
     await page.waitForFunction(
       (uid) => globalThis.primaryActionTest.inventory.entities.byUid(uid)?.open === true,
       doorUid,
@@ -2977,6 +2999,8 @@ try {
       r.clearNotice();
       return { uid: door.uid, start: r.session.sim.time };
     });
+    await pressAction(lockedPage, 'world.interact');
+    await lockedPage.waitForFunction(() => !document.querySelector('#item-action-list').hidden);
     await pressAction(lockedPage, 'world.interact');
     await waitForSimulation(
       lockedPage,

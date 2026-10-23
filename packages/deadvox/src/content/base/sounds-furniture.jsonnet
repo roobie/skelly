@@ -6,6 +6,11 @@
       category: 'world', noise: { enabled: true, radiusMetres: 20 },
     },
     {
+      id: 'furniture_drag', variants: ['assets/audio/door_blocked_close-01.ogg'], gain: 1,
+      pitchJitter: [0.55, 0.65], gainJitter: [0.9, 1.1], minIntervalSimSeconds: 0,
+      category: 'world', noise: { enabled: true, radiusMetres: 30 },
+    },
+    {
       id: 'door_bash', variants: ['assets/audio/door_blocked_close-01.ogg'], gain: 0.9,
       pitchJitter: [0.55, 0.65], gainJitter: [0.9, 1.1], minIntervalSimSeconds: 0,
       category: 'world', noise: { enabled: true, radiusMetres: 40 },
