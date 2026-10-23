@@ -1,4 +1,12 @@
 local figureSeeds = std.range(1, 8);
+local severedItems = {
+  head: 'shambler_head',
+  torso: 'shambler_torso',
+  leftArm: 'shambler_left_arm',
+  rightArm: 'shambler_right_arm',
+  leftLeg: 'shambler_left_leg',
+  rightLeg: 'shambler_right_leg',
+};
 local senseHeightMetres = 1.3;
 local hordeSpacing = { innerMetres: 0.35, stepMetres: 0.38 };
 local grabBandMetres = 1.7;
@@ -670,6 +678,7 @@ local content = {
 };
 content + {
   zombies: [zombie + {
+    severedItems: if zombie.model == 'amalgam' then { [region]: null for region in std.objectFields(zombie.regions) } else severedItems,
     hearingModel+: {
       loudNoiseRadiusMetres: 30,
       hesitationSimSeconds: { min: 5, max: 5 },
