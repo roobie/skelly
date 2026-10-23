@@ -3,6 +3,7 @@ read_if:
   - you're authoring readable item or furniture content, or changing the player tuning used for plaque mounting height
   - you're changing how authored text enters play or how reading owns time
   - you're changing gameplay input while a readable is open
+  - you're changing how much light reading needs or where it is measured
 ---
 
 # Authored notes and signs
@@ -25,6 +26,8 @@ The paper surface is one scrollable body, with no pages: page metadata, navigati
 
 Prototype samples remain explicitly marked as placeholders and separate from authored playtest lore. The medical sampling log and notice are drafts; approved evacuation and hunter text belongs to the playtest scenes. See `src/content/base/readables.json` and `src/content/base/layouts-playtest.json`.
 
-## Darkness remains open
+## Reading needs light
 
-No reading-darkness gate is implemented. A future gate must read sky visibility from the simulation's cache (`src/core/skyField.ts`, `SkyFields`), which fails open outside authored fields; it may combine core sky visibility, sky intensity and charged held-light state, but cannot claim local photometric illumination or flashlight-beam occlusion. It must not depend on renderer camera residency. BR still decides the threshold and how crafted light should pay off in Beat 3.
+All readable paper, notes, maps, books and signs alike, opens only where the light reaches the content reading threshold, so a dark building asks for a carried light before its paper gives anything up. Carried paper is measured at the reader's eyes, because it is held there; a sign is measured at the sign, because that is where the player must bring light. The measure is the shared photometry the renderer draws (`DESIGN.md`, "Light"), so a page that looks readable is readable. Sky visibility comes from the simulation's cache, which answers open sky outside authored fields so missing data never reads as darkness, and it never depends on camera residency. See `src/core/illumination.ts`, `readingLightRefusal`, and `src/game/session.ts`, `readingLight`.
+
+Light that fails while a page is open closes it with a short reason, and a book's timed reading stops, keeping its progress: reading on in the dark would let one lit moment pay for the whole text. See `src/game/session.ts`, `readingLight`, and `src/game/survival.ts`, `readingLight`.
