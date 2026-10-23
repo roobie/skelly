@@ -17,9 +17,9 @@ import {
 } from 'three';
 import { BODY_REGIONS, type BodyRegion } from '../core/body.ts';
 import type { Vec3 } from '../core/coords.ts';
-import type { GraphicsTuningDef } from '../core/schema.ts';
 import type { EntityStore } from '../core/entities.ts';
 import { Rng } from '../core/random.ts';
+import type { GraphicsTuningDef } from '../core/schema.ts';
 import type { HitImpulse, Zombie } from '../core/zombies.ts';
 import { PLAYER_REGION_BOXES, type PlayerFigurePlacement, setPlayerFigurePosition } from './playerFigure.ts';
 
@@ -315,7 +315,7 @@ export class Gore {
 
   /** Starts one droplet, reusing the oldest; false once this update's spawn budget is spent. */
   private emit(origin: Vector3, velocity: Vector3, sizeMetres: number): boolean {
-    if (this.spawnedSinceUpdate >= this.tuning.dropletSpawnsPerFrame) {
+    if (this.droplets.length === 0 || this.spawnedSinceUpdate >= this.tuning.dropletSpawnsPerFrame) {
       return false;
     }
     this.spawnedSinceUpdate += 1;
@@ -332,7 +332,7 @@ export class Gore {
   /** The nearest wounded bodies within range, nearest first; distance is checked before the severity. */
   private pickDrippers(bodies: GoreBodies | undefined): void {
     this.dripperCount = 0;
-    if (!bodies) {
+    if (!bodies || this.drippers.length === 0) {
       return;
     }
     const [lx, ly, lz] = bodies.listener;
@@ -434,6 +434,9 @@ export class Gore {
   }
 
   private splat(point: Vector3, normal: Vector3, radiusMetres: number): void {
+    if (this.splats.length === 0) {
+      return;
+    }
     const slot = this.nextSplat;
     this.nextSplat = (this.nextSplat + 1) % this.tuning.splatCap;
     const splat = this.splats[slot]!;

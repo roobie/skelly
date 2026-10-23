@@ -275,7 +275,7 @@ describe('severed limb energy', () => {
         expect(report.appliedPoints).toHaveLength(1);
         expect(impactPointIsInside(report.appliedPoints[0]!)).toBe(true);
         expect(Math.hypot(...angularVelocity(report.body!))).toBeLessThanOrEqual(
-          LOOK_FIXTURE.mobActors.launchSpinRadiansPerSecond + 1e-6,
+          LOOK_FIXTURE.mobActors.launchSpinRadiansPerSimSecond + 1e-6,
         );
       }
     } finally {
@@ -292,7 +292,7 @@ describe('severed limb energy', () => {
       expect(report.swingHit).toBe(report.id);
       expect(report.body).toBeDefined();
       expect(Math.hypot(...angularVelocity(report.body!))).toBeLessThanOrEqual(
-        LOOK_FIXTURE.mobActors.launchSpinRadiansPerSecond + 1e-6,
+        LOOK_FIXTURE.mobActors.launchSpinRadiansPerSimSecond + 1e-6,
       );
       expect(report.appliedPoints).toHaveLength(1);
       expect(impactPointIsInside(report.appliedPoints[0]!)).toBe(true);

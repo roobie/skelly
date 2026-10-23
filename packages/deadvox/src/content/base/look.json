@@ -27,7 +27,7 @@
           "pitchDegrees": 3,
           "yawDegrees": 5
         },
-        "launchSpinRadiansPerSecond": 20
+        "launchSpinRadiansPerSimSecond": 20
       },
       "painCue": {
         "pulseFallRealSeconds": 1.2,

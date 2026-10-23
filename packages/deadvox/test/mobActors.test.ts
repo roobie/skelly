@@ -23,6 +23,8 @@ import { Color, type DataTexture, type InstancedBufferAttribute, type InstancedM
 import { describe, expect, it } from 'vitest';
 import { carveAround, missingFlesh } from '../src/core/amalgamCarving.ts';
 import { amalgamFigureForType } from '../src/core/amalgamFigure.ts';
+import { buildRegistry, validateContent } from '../src/core/content.ts';
+import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import { initialShamblerFootstepClock } from '../src/core/footsteps.ts';
@@ -36,9 +38,11 @@ import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { ZOMBIE_RATE } from '../src/game/simulationRates.ts';
 import { CARVED_NEIGHBOUR } from '../src/render/amalgamFlesh.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
+import { Gore } from '../src/render/gore.ts';
 import {
   fallDirectionAwayFromPlayer,
   perceptionLabelFor,
+  MobActorMeshes as RenderMobActorMeshes,
   hearingGazeTarget as renderHearingGazeTarget,
 } from '../src/render/mobActors.ts';
 import { ZombieMeshes } from '../src/render/zombies.ts';
@@ -1157,6 +1161,49 @@ describe('fallDirectionAwayFromPlayer', () => {
 });
 
 describe('MobActorMeshes reactions', () => {
+  it('honours validated zero drip and dead-thing budgets while retaining live downed bodies', () => {
+    const graphics = {
+      ...registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!,
+      mobActors: { maxCorpses: 0 },
+      gore: { dropletCap: 3, splatCap: 3, dropletSpawnsPerFrame: 3, dripSourceCap: 0 },
+    };
+    const source = { source: 'zero-budget-fixture', data: { graphics: [graphics] } };
+    expect(validateContent(source)).toEqual([]);
+    const row = buildRegistry([source]).registry.graphics.get(graphics.id)!;
+    const renderer = new RenderMobActorMeshes(0.5, 3, {
+      figureSeeds: figureSeedPool(registry.zombies),
+      poolSize: 1,
+      look: LOOK_FIXTURE.mobActors,
+      maxCorpses: row.mobActors.maxCorpses,
+    });
+    const gore = new Gore(0.5, row.gore);
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const zombie = makeZombie([0, 0, 0]);
+      const id = store.add(zombie);
+      renderer.sync(store, 0, 1);
+      gore.update(1, () => false, { zombies: store, listener: [0, 0, 0] });
+      expect(gore.activeDroplets).toBe(0);
+      renderer.zombieSevered(id, 'hand.L');
+      expect(debrisEntries(renderer).size).toBe(0);
+      renderer.zombieDied(id, zombie);
+      store.remove(id);
+      expect(renderer.isTracked(id)).toBe(false);
+      const downed = makeZombie([0, 0, 0]);
+      const downedId = store.add(downed);
+      renderer.sync(store, 0, 1);
+      const damage = incapacitate(downed);
+      renderer.sync(store, 0, 1);
+      expect(renderer.isTracked(downedId)).toBe(true);
+      damage.system.finishDowned(damage.id, false);
+      renderer.zombieDied(downedId, downed);
+      store.remove(downedId);
+      expect(renderer.isTracked(downedId)).toBe(false);
+    } finally {
+      gore.dispose();
+      renderer.dispose();
+    }
+  });
   it('keeps a corpse (its slot) until it has lain and sunk, then frees it — unlike a plain vanish', () => {
     const renderer = new MobActorMeshes(0.5, 2, { figureSeeds: figureSeedPool(registry.zombies), poolSize: 1 });
     try {

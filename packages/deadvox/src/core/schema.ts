@@ -3537,7 +3537,7 @@ const LookDefaultsSchema = strictObject({
     corpseLieSimSeconds: PositiveSimSeconds,
     corpseSinkSimSeconds: PositiveSimSeconds,
     corpseSinkDepthMetres: Positive,
-    launchSpinRadiansPerSecond: Positive,
+    launchSpinRadiansPerSimSecond: Positive,
     hearingGazeJitter: strictObject({
       yawDegrees: NonNegative,
       pitchDegrees: NonNegative,

@@ -37,9 +37,15 @@ export class DamageFeedback {
     }
     this.vignetteAge = 0;
     this.rollAge = 0;
-    this.vignetteStrength = Math.min(this.tuning.vignetteMax, (amount / this.tuning.damageForFullStrength) * this.tuning.vignetteMax);
+    this.vignetteStrength = Math.min(
+      this.tuning.vignetteMax,
+      (amount / this.tuning.damageForFullStrength) * this.tuning.vignetteMax,
+    );
     this.rollPeak =
-      Math.min(this.tuning.rollPeakDegrees, (amount / this.tuning.damageForFullStrength) * this.tuning.rollPeakDegrees) *
+      Math.min(
+        this.tuning.rollPeakDegrees,
+        (amount / this.tuning.damageForFullStrength) * this.tuning.rollPeakDegrees,
+      ) *
       (Math.PI / 180);
     this.direction = direction ?? -this.direction;
   }
@@ -48,9 +54,10 @@ export class DamageFeedback {
   step(dt: number, settle = 1): DamageFeedbackState {
     this.vignetteAge += dt;
     this.rollAge += dt;
-    const vignetteOpacity = this.vignetteAge >= this.tuning.vignetteFadeRealSeconds
-      ? 0
-      : this.vignetteStrength * (1 - this.vignetteAge / this.tuning.vignetteFadeRealSeconds);
+    const vignetteOpacity =
+      this.vignetteAge >= this.tuning.vignetteFadeRealSeconds
+        ? 0
+        : this.vignetteStrength * (1 - this.vignetteAge / this.tuning.vignetteFadeRealSeconds);
     let roll = 0;
     const rise = this.tuning.rollRiseRealSeconds;
     const settled = rise + (this.tuning.rollSettleRealSeconds - rise) * settle;

@@ -24,7 +24,7 @@
       corpseLieSimSeconds: 8,
       corpseSinkSimSeconds: 1.5,
       corpseSinkDepthMetres: 1.5,
-      launchSpinRadiansPerSecond: 20,
+      launchSpinRadiansPerSimSecond: 20,
       hearingGazeJitter: { yawDegrees: 5, pitchDegrees: 3, cyclesPerSimSecond: 0.6 },
     },
   }],

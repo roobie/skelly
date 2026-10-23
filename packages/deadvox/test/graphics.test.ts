@@ -15,6 +15,7 @@ import {
 import { drugVignetteShown } from '../src/core/mood.ts';
 import { GraphicsControls } from '../src/game/graphicsControls.ts';
 import { readGraphicsSettings, writeGraphicsSettings } from '../src/game/graphicsSettings.ts';
+import { Gore } from '../src/render/gore.ts';
 import { Mood } from '../src/render/mood.ts';
 
 const scale = (label: string) => ({ label, min: 0.2, max: 0.9, default: 0.6 });
@@ -45,6 +46,34 @@ const source = (options: GraphicsOptions) => ({
     ],
   },
 });
+
+it.each(['dropletCap', 'splatCap', 'dropletSpawnsPerFrame'] as const)(
+  'renders validated zero %s without allocating that effect',
+  (capacity) => {
+    const candidate = source(tuning);
+    candidate.data.graphics[0]!.gore[capacity] = 0;
+    expect(validateContent(candidate)).toEqual([]);
+    const row = buildRegistry([candidate]).registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!;
+    const gore = new Gore(1, row.gore);
+    try {
+      gore.spray({ point: [0.5, 0.05, 0.5], direction: [0, -1, 0], impulse: 4 }, 100);
+      if (capacity === 'splatCap') {
+        expect(gore.activeDroplets).toBeGreaterThan(0);
+      } else {
+        expect(gore.activeDroplets).toBe(0);
+      }
+      gore.update(1, () => true);
+      gore.landed([0.5, 0, 0.5]);
+      if (capacity === 'splatCap') {
+        expect(gore.activeSplats).toBe(0);
+      } else {
+        expect(gore.activeSplats).toBeGreaterThan(0);
+      }
+    } finally {
+      gore.dispose();
+    }
+  },
+);
 
 it('validates graphics ranges, defaults and allowed toggle choices before admitting a file', () => {
   expect(validateContent(source(tuning))).toEqual([]);

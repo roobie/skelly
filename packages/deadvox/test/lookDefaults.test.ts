@@ -17,7 +17,7 @@ describe('the content default look', () => {
     const source = (look: unknown) => ({ source: 'fixture-look.json', data: { look: [look] } });
     expect(validateContent(source(row))).toEqual([]);
     expect(buildRegistry([source(row)]).registry.look.get(row.id)?.mobActors).toEqual(row.mobActors);
-    const { launchSpinRadiansPerSecond: _spin, ...incomplete } = row.mobActors;
+    const { launchSpinRadiansPerSimSecond: _spin, ...incomplete } = row.mobActors;
     for (const mobActors of [
       incomplete,
       { ...row.mobActors, corpseSinkSimSeconds: 0 },

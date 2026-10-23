@@ -26,7 +26,7 @@ export const LOOK_FIXTURE: LookDefaults = {
     corpseLieSimSeconds: 5,
     corpseSinkSimSeconds: 1,
     corpseSinkDepthMetres: 1,
-    launchSpinRadiansPerSecond: 12,
+    launchSpinRadiansPerSimSecond: 12,
     hearingGazeJitter: { yawDegrees: 3, pitchDegrees: 2, cyclesPerSimSecond: 0.4 },
   },
 };

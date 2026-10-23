@@ -6,7 +6,7 @@ import { Simulation } from './simulationFixture.ts';
 const FRAME = 1 / 60;
 
 describe('damage feedback', () => {
-  it('scales subtle and clear hits and fades the vignette within one second', () => {
+  it('scales subtle and clear hits and fades the vignette within its fixture duration', () => {
     const feedback = new DamageFeedback(DAMAGE_FEEDBACK_TUNING_FIXTURE);
     feedback.hit(5);
     const subtle = feedback.step(0);
@@ -21,7 +21,7 @@ describe('damage feedback', () => {
     expect(feedback.step(0).vignetteOpacity).toBe(0);
   });
 
-  it('restarts on another hit and returns roll exactly to zero by 0.35 seconds', () => {
+  it('restarts on another hit and returns roll exactly to zero after its fixture settling duration', () => {
     const feedback = new DamageFeedback(DAMAGE_FEEDBACK_TUNING_FIXTURE);
     feedback.hit(25, 1);
     for (let i = 0; i < 4; i++) {

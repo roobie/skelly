@@ -65,7 +65,7 @@ export type LookDefaults = Omit<LookState & MoodState, 'bloomClip'> & {
     readonly corpseLieSimSeconds: number;
     readonly corpseSinkSimSeconds: number;
     readonly corpseSinkDepthMetres: number;
-    readonly launchSpinRadiansPerSecond: number;
+    readonly launchSpinRadiansPerSimSecond: number;
     readonly hearingGazeJitter: {
       readonly yawDegrees: number;
       readonly pitchDegrees: number;

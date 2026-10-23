@@ -1304,6 +1304,14 @@ export class MobActorMeshes implements ZombieRenderer {
   zombieDied(id: EntityId, zombie: Zombie, playerPos?: Vec3): void {
     this.removePerceptionLabel(id);
     this.removeTentacle(id);
+    if (this.options.maxCorpses === 0) {
+      this.freeCorpse(id);
+      const state = this.states.get(id);
+      if (state) {
+        this.removeZombie(id, state);
+      }
+      return;
+    }
     if (this.corpses.get(id)?.incapacitated) {
       this.finishDownedCorpse(id, zombie);
       return;
@@ -1509,8 +1517,8 @@ export class MobActorMeshes implements ZombieRenderer {
       dz * hit.impulse,
     ]);
     const spin = Math.hypot(...angularVelocity(body));
-    if (spin > this.options.look.launchSpinRadiansPerSecond) {
-      const factor = this.options.look.launchSpinRadiansPerSecond / spin;
+    if (spin > this.options.look.launchSpinRadiansPerSimSecond) {
+      const factor = this.options.look.launchSpinRadiansPerSimSecond / spin;
       body.angularMomentum = [
         body.angularMomentum[0] * factor,
         body.angularMomentum[1] * factor,
@@ -1521,6 +1529,9 @@ export class MobActorMeshes implements ZombieRenderer {
   }
 
   private insertDebris(spawn: DebrisSpawn): void {
+    if (this.options.maxCorpses === 0) {
+      return;
+    }
     const {
       id,
       part,
