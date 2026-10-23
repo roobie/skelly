@@ -252,6 +252,8 @@ export class Inventory {
   version = 0;
   /** Whether a pile's block is within reach; the game sets it from the player's position. */
   canReach: (pos: Vec3) => boolean = () => true;
+  /** Whether a vehicle service point is within reach. */
+  canReachVehicle: (pos: Vec3) => boolean = () => true;
   /** Whether a piece of furniture is within reach. */
   canReachEntity: (entity: BlockEntity) => boolean = () => true;
   /** Where a pile put down in a block comes to rest, or undefined with nowhere to land; the game sets it. */
@@ -444,9 +446,13 @@ export class Inventory {
     fittingId: string,
     itemUid: number,
   ): Readonly<{ durationSimSeconds: number; qualities: Readonly<Record<string, number>> }> | undefined {
-    const site = this.vehicles.get(vehicleId)?.sites.find(({ id }) => id === fittingId);
+    const vehicle = this.vehicles.get(vehicleId);
+    const site = vehicle?.sites.find(({ id }) => id === fittingId);
     const item = this.itemByUid(itemUid);
-    return site?.service && item && this.registry.items.get(item.type)?.vehicle?.mount === site.service.mount
+    return site?.service &&
+      item &&
+      site.supportedBy.every((support) => vehicle?.fittings.some(({ id }) => id === support)) &&
+      this.registry.items.get(item.type)?.vehicle?.mount === site.service.mount
       ? site.service
       : undefined;
   }

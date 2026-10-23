@@ -19,6 +19,57 @@ const spec = (placementKey: string) => ({
   origin: [-1100.25, 7, 2100.5] as [number, number, number],
   facing: 'w' as const,
 });
+const wheelWork = (runtime: ReturnType<typeof createRuntime>, placementKey: string, kind: 'install' | 'remove') => {
+  const pos: [number, number, number] = [
+    runtime.player.body.pos[0] + 1,
+    runtime.player.body.pos[1],
+    runtime.player.body.pos[2],
+  ];
+  const output: [number, number, number] = [
+    Math.floor(runtime.player.body.pos[0]),
+    Math.floor(runtime.player.body.pos[1]),
+    Math.floor(runtime.player.body.pos[2]),
+  ];
+  runtime.inventory.canReach = () => true;
+  const id = runtime.inventory.registerVehicle({ placementKey, blueprint: 'hatchback', origin: pos, facing: 'n' });
+  const fitting = runtime.inventory.vehicles
+    .get(id)!
+    .fittings.find(({ id: fittingId }) => fittingId === 'front_wheel_near')!;
+  const backpack = runtime.inventory.hands.right;
+  const wrench = runtime.inventory.create('wrench');
+  if (!(backpack && runtime.inventory.add(wrench, { kind: 'pocket', owner: backpack, pocket: 0 }))) {
+    throw new Error('Could not pack fixture wrench');
+  }
+  if (kind === 'install') {
+    const removal = runtime.inventory.vehicleTransfer({
+      kind: 'remove',
+      vehicleId: id,
+      fittingId: fitting.id,
+      itemUid: fitting.item.uid,
+      output: { kind: 'pile', pos: output },
+    });
+    if (removal) {
+      throw new Error(removal);
+    }
+  }
+  const item = kind === 'install' ? runtime.inventory.itemByUid(fitting.item.uid)! : fitting.item;
+  const service = runtime.inventory.vehicleService(id, fitting.id, item.uid);
+  if (!service) {
+    throw new Error('Missing fixture wheel service');
+  }
+  const refusal = runtime.sim.actions.beginVehicleWork({
+    kind,
+    vehicleId: id,
+    fittingId: fitting.id,
+    itemUid: item.uid,
+    duration: service.durationSimSeconds,
+  });
+  if (refusal) {
+    throw new Error(refusal);
+  }
+  return { id, fitting, item, output };
+};
+
 const occupied = (inventory: Inventory, id: number, fittingId: string) => {
   const fitting = inventory.vehicles.get(id)!.fittings.find((entry) => entry.id === fittingId);
   if (!fitting) {
@@ -217,6 +268,50 @@ describe('production vehicle ownership', () => {
     ).toBeDefined();
     expect(inventory.locate(fitting.item)).toMatchObject({ kind: 'vehicle', vehicleId: id, fittingId: fitting.id });
     expect(inventory.itemByUid(fitting.item.uid)).toBe(fitting.item);
+  });
+
+  it('resumes saved authored-wheel service work as the uninterrupted operation', async () => {
+    const uninterrupted = createRuntime();
+    const original = wheelWork(uninterrupted, 'fixture.saved-wheel.uninterrupted', 'remove');
+    uninterrupted.sim.scheduler.advance(10);
+    const midwayAction = uninterrupted.sim.actions.snapshotState();
+
+    const saved = await decodeSave(await encodeFixture(capture(uninterrupted)), {
+      version: formatVersion,
+      contentLookup,
+    });
+    const resumed = createRuntime(saved.snapshot);
+    expect(resumed.sim.actions.snapshotState()).toEqual(midwayAction);
+
+    uninterrupted.sim.scheduler.advance(30);
+    resumed.sim.scheduler.advance(30);
+    expect(capture(resumed)).toEqual(capture(uninterrupted));
+    expect(resumed.inventory.locate(resumed.inventory.itemByUid(original.item.uid)!)).toMatchObject({ kind: 'pile' });
+  });
+
+  it('stops installation when removing its supporting fitting keeps the selected UID at one owner', () => {
+    const runtime = createRuntime();
+    const work = wheelWork(runtime, 'fixture.changed-wheel-support', 'install');
+    runtime.sim.scheduler.advance(10);
+    const strut = runtime.inventory.vehicles.get(work.id)!.fittings.find(({ id }) => id === 'front_strut_near')!;
+    expect(
+      runtime.inventory.vehicleTransfer({
+        kind: 'remove',
+        vehicleId: work.id,
+        fittingId: strut.id,
+        itemUid: strut.item.uid,
+        output: { kind: 'pile', pos: work.output },
+      }),
+    ).toBeUndefined();
+
+    runtime.sim.scheduler.advance(1);
+    expect(runtime.sim.actions.snapshotState().job).toMatchObject({ jobType: 'vehicleWork', stopped: true });
+    expect(runtime.inventory.locate(work.item)).toMatchObject({ kind: 'pile' });
+    expect(
+      [...savedItemTree(capture(runtime).character.inventory, capture(runtime).world.vehicles)].filter(
+        ({ item }) => item.uid === work.item.uid,
+      ),
+    ).toHaveLength(1);
   });
 
   it('repeated testHouse registration after restore preserves saved missing parts and placement identity', async () => {

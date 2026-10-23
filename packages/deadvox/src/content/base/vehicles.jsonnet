@@ -68,8 +68,8 @@ local hatchback = [
   + pair('rear_door', 'hatchback_rear_door', origin, on(['shell']))
   + pair('front_wing', 'hatchback_front_wing', origin, on(['shell']))
   + pair('tail_lamp', 'hatchback_tail_lamp', origin, on(['shell']))
-  + pair('front_strut', 'hatchback_front_strut', origin, on(['shell']))
-  + pair('front_wheel', 'wheel_205_55r16', [1.24, 0.316, 0.75], on(paired=['front_strut']), service('hatchback_wheel', 30, { wrench: 1 }))
+  + pair('front_strut', 'hatchback_front_strut', origin, on(['shell']), service('hatchback_front_strut', 30, { wrenching: 1 }))
+  + pair('front_wheel', 'wheel_205_55r16', [1.24, 0.316, 0.75], on(paired=['front_strut']), service('hatchback_wheel', 30, { wrenching: 1 }))
   + pair('rear_wheel', 'wheel_205_55r16', [-1.27, 0.316, 0.75], on(['rear_axle']))
   + pair('front_seat', 'front_seat', [0, 0.3, 0.37], on(['shell']))
   + pair('door_mirror', 'door_mirror', [0.66, 0.98, 0.8675], on(['shell']))
@@ -233,7 +233,7 @@ local boxVan = [
     part('hatchback_front_bumper', 'Hatchback front bumper', pileSize, ['protection']),
     part('hatchback_rear_bumper', 'Hatchback rear bumper', pileSize, ['protection']),
     part('hatchback_tail_lamp', 'Hatchback tail lamp', [3, 2], ['light']),
-    part('hatchback_front_strut', 'Hatchback front strut', [4, 6], ['structure']),
+    part('hatchback_front_strut', 'Hatchback front strut', [4, 6], ['structure']) + { vehicle+: { mount: 'hatchback_front_strut' } },
     part('hatchback_rear_axle', 'Hatchback rear axle', [12, 4], ['structure']),
     part('hatchback_engine', 'Hatchback engine', [6, 5], ['power']),
     part('hatchback_gearbox', 'Hatchback gearbox', [3, 3], ['driven']),

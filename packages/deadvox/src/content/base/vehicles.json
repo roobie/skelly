@@ -436,6 +436,7 @@
       "size": [4, 6],
       "vehicle": {
         "capabilities": ["structure"],
+        "mount": "hatchback_front_strut",
         "obstruction": {
           "combat": true,
           "light": true,
@@ -3923,6 +3924,13 @@
           "at": [0, 0, 0],
           "id": "front_strut_near",
           "part": "hatchback_front_strut",
+          "service": {
+            "durationSimSeconds": 30,
+            "mount": "hatchback_front_strut",
+            "qualities": {
+              "wrenching": 1
+            }
+          },
           "supportedBy": ["shell"]
         },
         {
@@ -3930,6 +3938,13 @@
           "id": "front_strut_far",
           "mirror": true,
           "part": "hatchback_front_strut",
+          "service": {
+            "durationSimSeconds": 30,
+            "mount": "hatchback_front_strut",
+            "qualities": {
+              "wrenching": 1
+            }
+          },
           "supportedBy": ["shell"]
         },
         {
@@ -3940,7 +3955,7 @@
             "durationSimSeconds": 30,
             "mount": "hatchback_wheel",
             "qualities": {
-              "wrench": 1
+              "wrenching": 1
             }
           },
           "supportedBy": ["front_strut_near"]
@@ -3954,7 +3969,7 @@
             "durationSimSeconds": 30,
             "mount": "hatchback_wheel",
             "qualities": {
-              "wrench": 1
+              "wrenching": 1
             }
           },
           "supportedBy": ["front_strut_far"]

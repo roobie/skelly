@@ -790,6 +790,8 @@ export const createSession = (options: SessionOptions) => {
     },
   };
   const reach = bindReach(reachPlayer);
+  inventory.canReachVehicle = (position) =>
+    distanceToPile(body.pos, position, s) <= reachTuning(inventory.registry).reachMetres;
   inventory.landing = (pos) => settleCell(pos, s, scale.minCy * CHUNK, physicalSolid);
   inventory.dropFeet = feet;
   const pileDistance = (pos: Vec3) => distanceToPile(body.pos, pos, s);

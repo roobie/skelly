@@ -32,7 +32,7 @@ const sourceRefusal = (inventory: Inventory, kind: WorkKind, itemUid: number): s
 const reachableSource = (inventory: Inventory, location: Location): boolean => {
   const place = inventory.placeOf(location);
   if (place?.kind === 'vehicle') {
-    return inventory.canReach(place.origin);
+    return inventory.canReachVehicle(place.origin);
   }
   return place?.kind !== 'pile' || inventory.canReach(place.pile.pos);
 };
@@ -44,7 +44,7 @@ const serviceRefusal = (
 ): string | undefined => {
   const service = inventory.vehicleService(vehicleId, fittingId, itemUid);
   const vehicle = inventory.vehicles.get(vehicleId);
-  if (!(service && vehicle && inventory.canReach(vehicle.origin))) {
+  if (!(service && vehicle && inventory.canReachVehicle(vehicle.origin))) {
     return 'Vehicle service target is unavailable';
   }
   if (Object.entries(service.qualities).some(([quality, level]) => options.quality(quality) < level)) {
