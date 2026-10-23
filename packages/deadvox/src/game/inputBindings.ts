@@ -149,6 +149,8 @@ const INPUT_ACTIONS: readonly Action[] = [
   row('inventory.quick-action-gate', 'Hold and click an item for its quick action', ['inventory'], 'held-state', {
     plainKey: true,
   }),
+  // Pressed over an item card it views that card; as a key it views the selected item.
+  row('inventory.view-item', 'View an item in 3D', ['inventory'], 'press', { device: 'pointer' }),
   row('reading.close', 'Put away reading', ['reading']),
   row('reading.line-up', 'Read previous line', ['reading'], 'press', { repeat: true }),
   row('reading.line-down', 'Read next line', ['reading'], 'press', { repeat: true }),
