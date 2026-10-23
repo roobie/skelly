@@ -8,6 +8,7 @@ import { requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityStore } from '../core/entities.ts';
+import { graphicsTuningOf } from '../core/graphicsTuning.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { lookDefaultsOf } from '../core/lookDefaults.ts';
@@ -39,8 +40,8 @@ import { DrawCounters } from './drawCounters.ts';
 import { Flashlight, flashlightDaylightScale, spillSwitchFromSearch } from './flashlight.ts';
 import { FurnitureMeshes } from './furniture.ts';
 import { Gore } from './gore.ts';
-import { setHeightFogTuning } from './heightFog.ts';
 import { type HeldHandlingFrame, HeldItems } from './hands.ts';
+import { setHeightFogTuning } from './heightFog.ts';
 import { ImpactEffects } from './impactEffects.ts';
 import { ItemThrows } from './itemThrows.ts';
 import { LightPool } from './lightPool.ts';
@@ -171,10 +172,7 @@ export const createPlayView = (
   const drawCounters = config.debug && renderer ? new DrawCounters(renderer) : undefined;
   const dayCycle = requireDayCycle(registry);
   const look = lookDefaultsOf(registry);
-  const graphics = registry.graphics.get(CORE_CONTENT_IDS.coreGraphics);
-  if (graphics === undefined) {
-    throw new Error('Missing core graphics tuning');
-  }
+  const graphics = graphicsTuningOf(registry);
   const s = config.scale.blockSize;
   // Play's look defaults are presentation; benchmark mode never applies them.
   if (renderer) {
@@ -261,6 +259,8 @@ export const createPlayView = (
   const zombieMeshes: ZombieRenderer =
     config.actors === 'detailed'
       ? new MobActorMeshes(s, undefined, {
+          look: look.mobActors,
+          maxCorpses: graphics.mobActors.maxCorpses,
           canvas: engine.renderer?.domElement,
           reveal: meshes,
           figureSeeds: figureSeedPool(registry.zombies),

@@ -37,17 +37,20 @@ import { ZOMBIE_RATE } from '../src/game/simulationRates.ts';
 import { CARVED_NEIGHBOUR } from '../src/render/amalgamFlesh.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import {
-  CORPSE_LIFECYCLE,
   fallDirectionAwayFromPlayer,
-  HEARING_GAZE_JITTER,
-  hearingGazeTarget,
-  MobActorMeshes,
   perceptionLabelFor,
+  hearingGazeTarget as renderHearingGazeTarget,
 } from '../src/render/mobActors.ts';
 import { ZombieMeshes } from '../src/render/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { LOOK_FIXTURE } from './lookFixture.ts';
+import { CORPSE_LIFECYCLE, HEARING_GAZE_JITTER, MobActorMeshes } from './mobActorsFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+
+const hearingGazeTarget = (target: Vec3, id: number, time: number): Vec3 =>
+  renderHearingGazeTarget(target, id, time, LOOK_FIXTURE.mobActors.hearingGazeJitter);
+
 import { ZombieSystem } from './zombieSystemFixture.ts';
 
 interface TestDebris {

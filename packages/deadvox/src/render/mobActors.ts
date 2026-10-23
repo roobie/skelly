@@ -44,7 +44,7 @@
 // one piece of flying debris (see the Debris type below) — its own InstancedMesh row shows only the
 // severed subtree (the inverse of a live zombie/corpse: the carried bones are real, everything else is
 // zeroed) and is driven by the core rigid-body stepper, reusing the corpse cap/eviction/lifecycle machinery
-// (a debris row counts toward MAX_CORPSES exactly like a corpse does).
+// (a debris row counts toward the shared corpse budget exactly like a corpse does).
 
 import type { Realized } from '@mobgen/core/generate.ts';
 import { voxelBounds } from '@mobgen/core/massProperties.ts';
@@ -106,6 +106,7 @@ import {
 import { AMALGAM_FIGURE_SEED, type AmalgamFigure } from '../core/amalgamFigure.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
+import type { LookDefaults } from '../core/mood.ts';
 import {
   angularVelocity,
   applyImpulseAtClampedPoint,
@@ -178,21 +179,6 @@ const severedBoneIds = (variant: Variant, parts: readonly string[]): ReadonlySet
     variant.realized.body.bones,
     parts.map((part) => variant.severedRoots.get(part) ?? part),
   );
-// Corpse lifecycle: death fall (mobgen's own DEATH_FALL_DURATION), then lies still, then sinks out of
-// view — see MobActorMeshes' own doc comment on why a corpse keeps its slot the whole time.
-export const CORPSE_LIFECYCLE = {
-  lieSimSeconds: 8,
-  sinkSimSeconds: 1.5,
-  sinkDepthMetres: 1.5,
-  maxCorpses: 16,
-} as const;
-const CORPSE_LIE_S = CORPSE_LIFECYCLE.lieSimSeconds;
-const CORPSE_SINK_S = CORPSE_LIFECYCLE.sinkSimSeconds;
-const CORPSE_SINK_DEPTH_M = CORPSE_LIFECYCLE.sinkDepthMetres;
-const CORPSE_LIFETIME_S = DEATH_FALL_DURATION + CORPSE_LIE_S + CORPSE_SINK_S;
-// Global cap across every variant, corpses AND debris together — see zombieDied's and zombieSevered's eviction.
-const MAX_CORPSES = CORPSE_LIFECYCLE.maxCorpses;
-const MAX_LAUNCH_SPIN_RADPS = 20; // presentation cap; BR's call.
 
 /** Which way a corpse should topple: away from the player if a position is available (in reach at the
  * moment of death, in the player's forward hemisphere from the zombie's own facing → topple backward,
@@ -285,16 +271,6 @@ interface TentacleMeshes {
   readonly tip: Mesh;
 }
 
-/** A dead zombie that still occupies its live slot (see MobActorMeshes' own doc comment): frozen at the
- * pose/position/facing/fall-direction it died with, and driven purely by `elapsed` from there — the sim
- * has already forgotten this id entirely. */
-/** Render-only hearing variation. The entity id and simulation presentation time make this repeatable without an RNG stream. */
-export const HEARING_GAZE_JITTER = {
-  yawDeg: 5,
-  pitchDeg: 3,
-  cyclesPerSimSecond: 0.6,
-} as const;
-
 export type PerceptionLabel = 'sees you' | 'hears you' | 'notices something' | 'remembers' | 'unaware';
 
 const perceivedAtPlayer = (target: Vec3, playerEye: Vec3 | undefined, blockSize: number): boolean => {
@@ -327,30 +303,29 @@ export const perceptionLabelFor = (
   return 'unaware';
 };
 
+/** Entity identity and simulation presentation time keep render-only variation repeatable without an RNG stream. */
 export const hearingGazeTarget = (
   target: readonly [number, number, number],
   id: EntityId,
   presentationSimSeconds: number,
+  jitter: LookDefaults['mobActors']['hearingGazeJitter'],
 ): Vec3 => {
   const distance = Math.hypot(...target);
   if (distance === 0) {
     return [...target];
   }
-  const phase =
-    id * 2.399_963_229_728_653 + presentationSimSeconds * 2 * Math.PI * HEARING_GAZE_JITTER.cyclesPerSimSecond;
-  const yaw = Math.atan2(-target[0], -target[2]) + (HEARING_GAZE_JITTER.yawDeg * Math.PI * Math.sin(phase)) / 180;
+  const phase = id * 2.399_963_229_728_653 + presentationSimSeconds * 2 * Math.PI * jitter.cyclesPerSimSecond;
+  const yaw = Math.atan2(-target[0], -target[2]) + (jitter.yawDegrees * Math.PI * Math.sin(phase)) / 180;
   const pitchBase = Math.atan2(target[1], Math.hypot(target[0], target[2]));
   const pitch = Math.max(
     -Math.PI / 2,
-    Math.min(
-      Math.PI / 2,
-      pitchBase + (HEARING_GAZE_JITTER.pitchDeg * Math.PI * Math.sin(phase + 1.618_033_988_749_895)) / 180,
-    ),
+    Math.min(Math.PI / 2, pitchBase + (jitter.pitchDegrees * Math.PI * Math.sin(phase + 1.618_033_988_749_895)) / 180),
   );
   const horizontal = distance * Math.cos(pitch);
   return [-Math.sin(yaw) * horizontal, Math.sin(pitch) * distance, -Math.cos(yaw) * horizontal];
 };
 
+/** A dead zombie keeps its live slot after the simulation has forgotten it. */
 interface Corpse extends SlotHolder {
   /** Permanent incapacitation uses the fall pose but remains a saved simulation entity and is never evicted. */
   readonly incapacitated: boolean;
@@ -420,6 +395,8 @@ interface Debris extends SlotHolder {
 }
 
 export interface MobActorMeshesOptions {
+  readonly look: LookDefaults['mobActors'];
+  readonly maxCorpses: number;
   readonly canvas?: HTMLCanvasElement | undefined;
   readonly reveal?: ColumnReveal;
   /** The authored figure seeds to build variants for (`figureSeedPool` of the registry's zombie types). */
@@ -569,7 +546,10 @@ export class MobActorMeshes implements ZombieRenderer {
   private readonly boundingSphere = new Sphere(new Vector3(), BOUNDING_RADIUS_M);
   private world: RigidWorld | undefined;
 
+  private readonly options: MobActorMeshesOptions;
+
   constructor(blockSize: number, requestedCapacity: number | undefined, options: MobActorMeshesOptions) {
+    this.options = options;
     const capacity = requestedCapacity ?? DEFAULT_CAPACITY;
     this.blockSize = blockSize;
     this.reveal = options.reveal;
@@ -943,7 +923,7 @@ export class MobActorMeshes implements ZombieRenderer {
   }
 
   /** The oldest (lowest insertOrder) corpse or debris belonging to `variantIndex` — evicted to make room
-   * for a live zombie needing a slot there, or a new corpse/debris exceeding MAX_CORPSES. Scans both Maps
+   * for a live zombie needing a slot there, or a new corpse/debris exceeding the shared corpse budget. Scans both Maps
    * since neither's own iteration order alone says which of a corpse and a debris is older (see Corpse/
    * Debris's own insertOrder doc comments). */
   private evictOldestDeadThingInVariant(variantIndex: number): void {
@@ -972,7 +952,7 @@ export class MobActorMeshes implements ZombieRenderer {
   }
 
   /** Same as evictOldestDeadThingInVariant but across every variant — used when a new corpse or debris
-   * itself would exceed the global MAX_CORPSES cap. */
+   * itself would exceed the global corpse cap. */
   private evictOldestDeadThingGlobally(): void {
     let oldestOrder = Number.POSITIVE_INFINITY;
     let oldestCorpseId: EntityId | undefined;
@@ -1278,7 +1258,7 @@ export class MobActorMeshes implements ZombieRenderer {
   }
 
   /** A torso-destroyed zombie remains in the store, so its fallen row stays while it lies there: no sink/despawn
-   * and no MAX_CORPSES eviction until it dies (see finishDownedCorpse). A death corpse is render-only with the
+   * and no corpse-budget eviction until it dies (see finishDownedCorpse). A death corpse is render-only with the
    * finite lifecycle below. */
   zombieIncapacitated(id: EntityId, zombie: Zombie): void {
     const state = this.states.get(id);
@@ -1318,7 +1298,7 @@ export class MobActorMeshes implements ZombieRenderer {
    * `this.states` (the live map) into `this.corpses` *immediately and synchronously*, so sync()'s prune
    * loop — which only ever looks at `this.states` — never sees `id` at all once it's died, whichever order
    * sync() and this run in. A corpse keeps its existing slot/variant/instance untouched (still drawn every
-   * frame, see packCorpse) until its own lifetime (CORPSE_LIFETIME_S) frees it the same way a plain vanish
+   * frame, see packCorpse) until its content-authored lifetime frees it the same way a plain vanish
    * would. No-ops for an id this renderer was never drawing (e.g. its variant was already full).
    */
   zombieDied(id: EntityId, zombie: Zombie, playerPos?: Vec3): void {
@@ -1336,7 +1316,7 @@ export class MobActorMeshes implements ZombieRenderer {
     // compact the *dying* zombie's own instance into the vacated slot (if it happens to be the one
     // currently last in its variant's liveIds) — freeSlot's lookup must still find it as a SlotHolder,
     // which this.states (not yet deleted) still provides, exactly as it did before this death.
-    if (this.evictableDeadThingCount() >= MAX_CORPSES) {
+    if (this.evictableDeadThingCount() >= this.options.maxCorpses) {
       this.evictOldestDeadThingGlobally();
     }
     const worldPos: Vec3 = [
@@ -1367,7 +1347,7 @@ export class MobActorMeshes implements ZombieRenderer {
   /** A downed body that dies (finished off or dismembered) becomes an ordinary corpse where it lies: it keeps its
    * fallen pose and slot, shows the parts cut since it fell, then lies and sinks like any other corpse. */
   private finishDownedCorpse(id: EntityId, zombie: Zombie): void {
-    if (this.evictableDeadThingCount() >= MAX_CORPSES) {
+    if (this.evictableDeadThingCount() >= this.options.maxCorpses) {
       this.evictOldestDeadThingGlobally();
     }
     // Read after the eviction, which may have moved this corpse's instance.
@@ -1389,7 +1369,7 @@ export class MobActorMeshes implements ZombieRenderer {
    * which calls onSever before onDeath on the same hit — already dead this exact hit is impossible, since
    * zombieDied hasn't run yet; but a stale/unknown part name, or no position yet on the zombie's very first
    * frame, are both defensively handled the same way: nothing to spawn from). Debris counts toward
-   * MAX_CORPSES exactly like a corpse (see zombieDied's own eviction).
+   * the shared corpse budget exactly like a corpse (see zombieDied's own eviction).
    */
   zombieSevered(id: EntityId, part: string, hit?: HitImpulse, zombie?: Zombie): void {
     const state = this.states.get(id);
@@ -1529,8 +1509,8 @@ export class MobActorMeshes implements ZombieRenderer {
       dz * hit.impulse,
     ]);
     const spin = Math.hypot(...angularVelocity(body));
-    if (spin > MAX_LAUNCH_SPIN_RADPS) {
-      const factor = MAX_LAUNCH_SPIN_RADPS / spin;
+    if (spin > this.options.look.launchSpinRadiansPerSecond) {
+      const factor = this.options.look.launchSpinRadiansPerSecond / spin;
       body.angularMomentum = [
         body.angularMomentum[0] * factor,
         body.angularMomentum[1] * factor,
@@ -1554,7 +1534,7 @@ export class MobActorMeshes implements ZombieRenderer {
       body,
       bloodiness,
     } = spawn;
-    if (this.evictableDeadThingCount() >= MAX_CORPSES) {
+    if (this.evictableDeadThingCount() >= this.options.maxCorpses) {
       this.evictOldestDeadThingGlobally();
     }
     if (variant.freeLocalSlots.length === 0) {
@@ -1755,6 +1735,7 @@ export class MobActorMeshes implements ZombieRenderer {
           ]),
           state.id,
           presentationSimSeconds,
+          this.options.look.hearingGazeJitter,
         );
       }
       const gaze = lookAtPose({
@@ -1824,17 +1805,19 @@ export class MobActorMeshes implements ZombieRenderer {
 
   /** A corpse's own per-frame pose+pack: deathPose from its frozen basePose, sinking (an extra downward Y
    * offset, no re-posing needed) once it's been lying long enough. No LOD/frustum culling — the global
-   * MAX_CORPSES cap already bounds this to a small, fixed extra cost regardless of camera or distance. */
+   * shared corpse cap already bounds this to a small, fixed extra cost regardless of camera or distance. */
   private packCorpse(corpse: Corpse): void {
     const variant = this.variants[corpse.variantIndex]!;
     const deathActor: DeathActor = { ...corpse.walkActor, bodyExtents: variant.bodyExtents };
     const pose = deathPose(deathActor, corpse.basePose, corpse.elapsed, { direction: corpse.direction });
 
-    const sinkElapsed = corpse.elapsed - (DEATH_FALL_DURATION + CORPSE_LIE_S);
-    const sinkT = corpse.incapacitated ? 0 : Math.max(0, Math.min(1, sinkElapsed / CORPSE_SINK_S));
+    const sinkElapsed = corpse.elapsed - (DEATH_FALL_DURATION + this.options.look.corpseLieSimSeconds);
+    const sinkT = corpse.incapacitated
+      ? 0
+      : Math.max(0, Math.min(1, sinkElapsed / this.options.look.corpseSinkSimSeconds));
     const crowdPlacement: CrowdPlacement = {
       x: corpse.worldPos[0],
-      y: corpse.worldPos[1] - sinkT * CORPSE_SINK_DEPTH_M,
+      y: corpse.worldPos[1] - sinkT * this.options.look.corpseSinkDepthMetres,
       z: corpse.worldPos[2],
       yawRad: corpse.yaw,
     };
@@ -1858,11 +1841,11 @@ export class MobActorMeshes implements ZombieRenderer {
     const currentRotation = quatToMat3(d.body.orientation);
     const originalRotation = quatToMat3(d.initialOrientation);
     const delta = mulMM(currentRotation, transpose(originalRotation));
-    const sinkElapsed = d.elapsed - (d.groundedAt ?? d.elapsed) - CORPSE_LIE_S;
-    const sinkT = Math.max(0, Math.min(1, sinkElapsed / CORPSE_SINK_S));
+    const sinkElapsed = d.elapsed - (d.groundedAt ?? d.elapsed) - this.options.look.corpseLieSimSeconds;
+    const sinkT = Math.max(0, Math.min(1, sinkElapsed / this.options.look.corpseSinkSimSeconds));
     const center: Vec3 = [
       d.body.center[0],
-      d.body.center[1] + d.originOffsetY - sinkT * CORPSE_SINK_DEPTH_M,
+      d.body.center[1] + d.originOffsetY - sinkT * this.options.look.corpseSinkDepthMetres,
       d.body.center[2],
     ];
     const carried = new Set(d.severedIndices);
@@ -2078,7 +2061,10 @@ export class MobActorMeshes implements ZombieRenderer {
         }
         continue;
       }
-      if (corpse.elapsed >= CORPSE_LIFETIME_S) {
+      if (
+        corpse.elapsed >=
+        DEATH_FALL_DURATION + this.options.look.corpseLieSimSeconds + this.options.look.corpseSinkSimSeconds
+      ) {
         this.freeCorpse(id);
         continue;
       }
@@ -2098,7 +2084,10 @@ export class MobActorMeshes implements ZombieRenderer {
       if (d.body.asleep && d.groundedAt === undefined) {
         d.groundedAt = d.elapsed;
       }
-      if (d.groundedAt !== undefined && d.elapsed >= d.groundedAt + CORPSE_LIE_S + CORPSE_SINK_S) {
+      if (
+        d.groundedAt !== undefined &&
+        d.elapsed >= d.groundedAt + this.options.look.corpseLieSimSeconds + this.options.look.corpseSinkSimSeconds
+      ) {
         this.freeDebris(key);
         continue;
       }
