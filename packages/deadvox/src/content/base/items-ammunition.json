@@ -10,6 +10,7 @@
         "loadSimSeconds": 0.80000000000000004,
         "pellets": 1,
         "rangeMetres": 700,
+        "spreadDegrees": 0,
         "stripSimSeconds": 0.5
       },
       "category": "ammo",
@@ -63,6 +64,7 @@
         "loadSimSeconds": 0.80000000000000004,
         "pellets": 1,
         "rangeMetres": 500,
+        "spreadDegrees": 0,
         "stripSimSeconds": 0.5
       },
       "category": "ammo",
@@ -88,6 +90,7 @@
         "loadSimSeconds": 0.80000000000000004,
         "pellets": 1,
         "rangeMetres": 400,
+        "spreadDegrees": 0,
         "stripSimSeconds": 0.5
       },
       "category": "ammo",
