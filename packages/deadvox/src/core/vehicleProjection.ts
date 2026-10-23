@@ -5,7 +5,7 @@ import type { Item } from './items.ts';
 import { type PlacedFitting, placeFitting } from './vehicleBlueprint.ts';
 import type { VehicleInstance } from './vehicleInstances.ts';
 
-export interface VehicleFittingTransform {
+interface VehicleFittingTransform {
   /** The fitting model's origin in world metres. */
   readonly position: Vec3;
   /** Rotation about world up, from the content vehicle frame. */
@@ -63,18 +63,17 @@ const transformBox = (transform: VehicleFittingTransform, { min, max }: ModelBox
 };
 
 /** The one placement contract for occupied part render models, pick boxes and spatial consumers. */
-export const vehicleFittingTransform = (
+const vehicleFittingTransform = (
   vehicle: VehicleInstance,
   fitting: Pick<VehicleInstance['fittings'][number], 'at' | 'mirror'>,
   blockSize: number,
 ): VehicleFittingTransform => {
   const yaw = yawForFacing(vehicle.facing);
-  const localZ = fitting.mirror ? -fitting.at[2] : fitting.at[2];
   return {
     position: [
-      vehicle.origin[0] * blockSize + Math.cos(yaw) * fitting.at[0] + Math.sin(yaw) * localZ,
+      vehicle.origin[0] * blockSize + Math.cos(yaw) * fitting.at[0] + Math.sin(yaw) * fitting.at[2],
       vehicle.origin[1] * blockSize + fitting.at[1],
-      vehicle.origin[2] * blockSize - Math.sin(yaw) * fitting.at[0] + Math.cos(yaw) * localZ,
+      vehicle.origin[2] * blockSize - Math.sin(yaw) * fitting.at[0] + Math.cos(yaw) * fitting.at[2],
     ],
     yaw,
     mirror: fitting.mirror === true,

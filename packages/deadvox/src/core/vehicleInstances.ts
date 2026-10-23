@@ -151,6 +151,7 @@ export class VehicleInstances {
       throw new Error('Duplicate vehicle placement key');
     }
     validateBuild(registry, vehicle);
+    assertVehicleState({ nextId: 2, instances: [{ id: 1, vehicle }] });
     if (!this.store.replace(id, vehicle)) {
       throw new Error(`Unknown vehicle ${id}`);
     }

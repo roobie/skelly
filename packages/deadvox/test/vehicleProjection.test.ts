@@ -1,5 +1,6 @@
 import { Group } from 'three';
 import { describe, expect, it } from 'vitest';
+import { placeFitting } from '../src/core/vehicleBlueprint.ts';
 import { projectVehicleParts } from '../src/core/vehicleProjection.ts';
 import { VehicleMeshes } from '../src/render/vehicles.ts';
 import { createRuntime, registry, scale } from './snapshotTestSupport.ts';
@@ -22,24 +23,51 @@ const models = {
 };
 
 describe('production vehicle projection', () => {
-  it('uses the loaded mirrored fitting frame after the vehicle faces east', () => {
+  it('keeps a mirrored render holder and its boxes at the loader placement after the vehicle faces east', () => {
     const { inventory } = createRuntime();
     const id = inventory.registerVehicle(spec('projection.east', 'e'));
     const vehicle = inventory.vehicles.get(id)!;
     const mirrored = vehicle.fittings.find((fitting) => fitting.mirror)!;
-    const projected = projectVehicleParts(registry, id, vehicle, scale.blockSize).find(
-      (part) => part.fittingId === mirrored.id,
-    )!;
+    const loaded = placeFitting(registry, {
+      id: mirrored.id,
+      at: mirrored.at,
+      mirror: true,
+      supportedBy: mirrored.supportedBy,
+      part: mirrored.item.type,
+      ...(mirrored.item.cargo ? { cargo: mirrored.item.cargo } : {}),
+    });
+    const parts = projectVehicleParts(registry, id, vehicle, scale.blockSize);
+    const partIndex = parts.findIndex((part) => part.fittingId === mirrored.id);
+    const projected = parts[partIndex]!;
+    const rendered = new VehicleMeshes(registry, models as never, scale.blockSize);
+    rendered.sync(inventory.vehicles);
+    const holder =
+      rendered.groupFor(id)!.children[parts.slice(0, partIndex + 1).filter((part) => part.model).length - 1]!;
+    const [x, y, z] = loaded.lattice!.origin;
+    const anchor = [
+      vehicle.origin[0] * scale.blockSize + z,
+      vehicle.origin[1] * scale.blockSize + y,
+      vehicle.origin[2] * scale.blockSize - x,
+    ];
 
     expect(projected.transform.mirror).toBe(true);
     expect(projected.transform.yaw).toBeCloseTo(Math.PI / 2);
-    expect(projected.transform.position).toEqual([
-      vehicle.origin[0] * scale.blockSize - mirrored.at[2],
-      vehicle.origin[1] * scale.blockSize + mirrored.at[1],
-      vehicle.origin[2] * scale.blockSize - mirrored.at[0],
-    ]);
-    expect(projected.boxes.length).toBeGreaterThan(0);
-    expect(projected.boxes.every(({ min, max }) => min.every((value, axis) => value <= max[axis]!))).toBe(true);
+    expect(holder.position.toArray()).toEqual(anchor);
+    expect(projected.transform.position).toEqual(anchor);
+    expect(projected.boxes).toEqual(
+      loaded.collision.map(({ min, max }) => ({
+        min: [
+          vehicle.origin[0] * scale.blockSize + min[2],
+          vehicle.origin[1] * scale.blockSize + min[1],
+          vehicle.origin[2] * scale.blockSize - max[0],
+        ],
+        max: [
+          vehicle.origin[0] * scale.blockSize + max[2],
+          vehicle.origin[1] * scale.blockSize + max[1],
+          vehicle.origin[2] * scale.blockSize - min[0],
+        ],
+      })),
+    );
   });
 
   it('omits an absent fitting from both the render projection and pick boxes', () => {
