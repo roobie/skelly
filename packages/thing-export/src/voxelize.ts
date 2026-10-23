@@ -589,11 +589,14 @@ const checkedGrain = (grain: number): void => {
   }
 };
 
-/** Fills `filled` with the sources' voxels and, with `met`, records the cells their surfaces touch. */
+/**
+ * Fills each source's voxels into `filled(index)`, sampled together so thinness is judged on the shape they make, and,
+ * with `met`, records the cells their surfaces touch.
+ */
 const sample = (
   solids: readonly VoxelSource[],
   lattice: { readonly grain: number; readonly origin: readonly number[] },
-  filled: Grid,
+  filled: (index: number) => Grid,
   met?: Grid,
 ): void => {
   const { grain, origin } = lattice;
@@ -612,7 +615,7 @@ const sample = (
       return surface;
     };
     fillSource(
-      { grid: filled, group: local.group, grain },
+      { grid: filled(index), group: local.group, grain },
       spans[index]!.map((own, axis) => ({ own, joined: joined[axis]! })),
       surfaceOf,
     );
@@ -632,34 +635,37 @@ export interface VoxelMeasure {
 }
 
 /**
- * Measures the voxels `voxelize` fills for the sources on the same lattice, before bridging joins them to anything, so
- * a datum read off one solid follows the voxels that solid draws. No voxels gives undefined.
+ * Measures, source by source, the voxels `voxelize` fills when it samples these sources together on the same lattice,
+ * before bridging joins them to anything, so a datum read off one solid follows the voxels that solid draws beside its
+ * siblings. A source that fills no voxels measures undefined.
  */
 export const measureVoxels = (
   sources: readonly VoxelSource[],
   grain: number,
   origin: readonly number[] = [0, 0, 0],
-): VoxelMeasure | undefined => {
+): (VoxelMeasure | undefined)[] => {
   checkedGrain(grain);
-  const grid: Grid = new Map();
-  sample(sources, { grain, origin }, grid);
-  if (grid.size === 0) {
-    return undefined;
-  }
-  const [low, high] = boundsOf(grid);
-  const sum = [0, 0, 0];
-  for (const key of grid.keys()) {
-    voxelOf(key).forEach((index, axis) => {
-      sum[axis] = sum[axis]! + index;
-    });
-  }
+  const grids: Grid[] = sources.map(() => new Map());
+  sample(sources, { grain, origin }, (index) => grids[index]!);
   const at = (axis: number, cells: number): number => cells * grain + origin[axis]!;
-  return {
-    min: [at(0, low[0]!), at(1, low[1]!), at(2, low[2]!)],
-    max: [at(0, high[0]! + 1), at(1, high[1]! + 1), at(2, high[2]! + 1)],
-    centroid: [at(0, sum[0]! / grid.size + 0.5), at(1, sum[1]! / grid.size + 0.5), at(2, sum[2]! / grid.size + 0.5)],
-    voxels: grid.size,
-  };
+  return grids.map((grid) => {
+    if (grid.size === 0) {
+      return;
+    }
+    const [low, high] = boundsOf(grid);
+    const sum = [0, 0, 0];
+    for (const key of grid.keys()) {
+      voxelOf(key).forEach((index, axis) => {
+        sum[axis] = sum[axis]! + index;
+      });
+    }
+    return {
+      min: [at(0, low[0]!), at(1, low[1]!), at(2, low[2]!)],
+      max: [at(0, high[0]! + 1), at(1, high[1]! + 1), at(2, high[2]! + 1)],
+      centroid: [at(0, sum[0]! / grid.size + 0.5), at(1, sum[1]! / grid.size + 0.5), at(2, sum[2]! / grid.size + 0.5)],
+      voxels: grid.size,
+    };
+  });
 };
 
 /**
@@ -679,9 +685,9 @@ export const voxelize = (
   const lattice = { grain, origin };
   const grid: Grid = new Map();
   const reach: Grid = new Map();
-  sample(sources, lattice, grid, reach);
+  sample(sources, lattice, () => grid, reach);
   const anchor: Grid = new Map();
-  sample(neighbours, lattice, anchor);
+  sample(neighbours, lattice, () => anchor);
   bridge(grid, reach, anchor);
   if (grid.size === 0) {
     return { groups: new Map(), stats: { voxels: 0, faces: 0, quads: 0 } };

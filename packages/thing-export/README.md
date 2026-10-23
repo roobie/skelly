@@ -85,10 +85,12 @@ A datum lies on the drawn voxels. Grips and other anchors, a candle's flame, mag
 poses, collision boxes and centres of mass all read off the voxels the file draws, not off
 the smooth design. What the player sees and what the game computes must agree with the
 drawn model, so a flame sits on its wick and a vehicle collides where it is drawn. One rule
-covers every model, with no list of exceptions. Each solid is measured alone on its part's
-lattice, as the file draws it: a collision box bounds its voxels, a centre of mass is their
-centroid, and a point keeps its fraction of the smallest solid or part around it, so a
-point on a face lands on the drawn face. See `src/drawn.ts`, `drawnGeometry`.
+covers every model, with no list of exceptions. Each solid is measured by the voxels it
+fills when it is sampled with the solids it is drawn among on its part's lattice, as the
+file draws it, because a solid's voxels depend on the solids it meets (see the thinness
+rule below): a collision box bounds its voxels, a centre of mass is their centroid, and a
+point keeps its fraction of the smallest solid or part around it, so a point on a face
+lands on the drawn face. See `src/drawn.ts`, `drawnGeometry`.
 
 An iron sight line runs between the voxel tops the file draws, and the muzzle sits on the
 drawn front of the barrel. The up vector is made perpendicular to that line, since the game
