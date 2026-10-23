@@ -496,11 +496,13 @@ because rearranging a room should not require destroying its contents. See `src/
   position, so stopping between steps needs no persistent drag mode. See
   `src/core/furnitureMove.ts`, `slideFurniture`, and `src/game/session.ts`,
   `slidePiece`.
-- **Movement choices.** Oversized furniture keeps its ordinary use alongside
-  movement in the existing action selector, because adding a move must not
-  hide a container's search or a bed's rest. Small pieces keep direct interaction
-  and hold-to-lift. See `src/game/play.ts`, `furnitureActions`, and
-  `src/game/itemActions.ts`, `ItemActionSelection`.
+- **Movement choices.** Movement must not hide a container's search or a bed's
+  rest. The selector belongs to movable kinds: building parts keep direct use
+  because offering impossible moves would obstruct their ordinary interaction.
+  A fitted placement of a movable kind still offers the choice and explains why
+  it cannot move, so fitting does not silently change that kind's controls. See
+  `src/core/furnitureMove.ts`, `slidableFurniture`, `src/game/play.ts`,
+  `furnitureActions`, and `src/game/itemActions.ts`, `ItemActionSelection`.
 - **What lifts.** Pieces that are part of the building stay put. Fitted is a
   mark on a placement, not a definition, because the same cupboard is fixed in
   a kitchen and loose in a shed. A moved piece keeps its origin, so generation

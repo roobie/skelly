@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Registry } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { type FurnitureMover, slideFurniture } from '../src/core/furnitureMove.ts';
+import { type FurnitureMover, slidableFurniture, slideFurniture } from '../src/core/furnitureMove.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
@@ -99,6 +99,25 @@ const runtime = (restore?: SaveSnapshot) => {
 };
 
 describe('floor furniture steps', () => {
+  it.each(['mount', 'door', 'climbable', 'vehicle', 'scenarioGoal', 'cover'] as const)(
+    'keeps oversized content with %s out of the movement selector',
+    (field) => {
+      const source = [...base.furniture.values()].find((def) => Boolean(def[field]));
+      expect(source).toBeDefined();
+      const inventory = new Inventory({
+        ...registry,
+        furniture: new Map(registry.furniture).set('slide_fixture', {
+          ...source!,
+          id: 'slide_fixture',
+          size: spec.size,
+        }),
+      });
+      const entity = inventory.furnish(spec)!;
+      expect(entity).toBeDefined();
+      expect(slidableFurniture(inventory, entity, 0.5)).toBe(false);
+    },
+  );
+
   it.each(['push', 'drag'] as const)(
     'finishes one timed %s step with stamina and audible noise, without occupying hands',
     (way) => {
@@ -147,8 +166,11 @@ describe('floor furniture steps', () => {
   it('refuses fastened pieces, carry-sized pieces, exhaustion and destinations occupied by a body', () => {
     const { entity, inventory, mover } = fixture();
     const fixed = inventory.furnish({ ...spec, pos: [5, 1, 10], fixed: true })!;
+    expect(slidableFurniture(inventory, entity, mover.blockSize)).toBe(true);
+    expect(slidableFurniture(inventory, fixed, mover.blockSize)).toBe(true);
     expect(slideFurniture(mover, fixed, 'push')).toBe(messages.fastened);
     const small = inventory.furnish({ type: template.id, pos: [5, 1, 12], size: [1, 1, 1], facing: 'n' })!;
+    expect(slidableFurniture(inventory, small, mover.blockSize)).toBe(false);
     expect(slideFurniture(mover, small, 'push')).toBe(messages.carryInstead);
     expect(slideFurniture({ ...mover, stamina: 0 }, entity, 'push')).toBe(messages.slideTired);
     expect(slideFurniture({ ...mover, others: [{ ...player(), pos: [9.5, 1, 6] }] }, entity, 'push')).toBe(

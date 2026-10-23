@@ -1107,53 +1107,83 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
     assert.equal(wielded.location.kind, 'hand', 'holding F wields the targeted item');
     assert.equal(wielded.action.itemUid, wieldUid, 'the replay records the resolved hold gesture');
 
-    const doorUid = await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      const doorDef = [...r.inventory.registry.furniture.values()].find((def) => def.door);
-      if (!doorDef) {
-        throw new Error('Door fixture is missing');
-      }
-      const floor = r.feet();
-      let door;
-      for (const [dx, dz] of [
-        [2, 0],
-        [-2, 0],
-        [0, 2],
-        [0, -2],
-        [3, 0],
-        [-3, 0],
-      ]) {
-        door = r.inventory.furnish({
-          type: doorDef.id,
-          pos: [floor[0] + dx, floor[1], floor[2] + dz],
-          size: doorDef.size,
-          facing: 'n',
-        });
-        if (door) {
-          break;
+    const aimFurnitureFixture = async (fixtureKind) => {
+      const fixtureUid = await page.evaluate((kind) => {
+        const r = globalThis.primaryActionTest;
+        const doorDef = [...r.inventory.registry.furniture.values()].find((def) =>
+          kind === 'door'
+            ? def.door
+            : def.container &&
+              !def.mount &&
+              !def.door &&
+              !def.climbable &&
+              !def.vehicle &&
+              !def.scenarioGoal &&
+              !def.cover &&
+              def.size.some(
+                (cells) =>
+                  cells * r.scale.blockSize > r.inventory.registry.inventory.get('player').furnitureMove.maxSizeMetres,
+              ),
+        );
+        if (!doorDef) {
+          throw new Error('Door fixture is missing');
         }
-      }
-      if (!door) {
-        throw new Error('Could not place a door for the F tap regression');
-      }
-      return door.uid;
-    });
-    await page.waitForFunction(() => !globalThis.primaryActionTest.queue.busy);
-    await page.evaluate((uid) => {
-      const r = globalThis.primaryActionTest;
-      const door = r.inventory.entities.byUid(uid);
-      const target = [door.pos[0] + door.size[0] / 2, door.pos[1] + door.size[1] / 2, door.pos[2] + door.size[2] / 2];
-      const eye = [
-        r.session.body.pos[0],
-        r.session.body.pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize,
-        r.session.body.pos[2],
-      ];
-      const dx = target[0] - eye[0];
-      const dy = target[1] - eye[1];
-      const dz = target[2] - eye[2];
-      r.input.yaw = Math.atan2(-dx, -dz);
-      r.input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
-    }, doorUid);
+        const floor = r.feet();
+        let door;
+        for (const [dx, dz] of [
+          [2, 0],
+          [-2, 0],
+          [0, 2],
+          [0, -2],
+          [3, 0],
+          [-3, 0],
+        ]) {
+          door = r.inventory.furnish({
+            type: doorDef.id,
+            fixed: kind === 'fixed',
+            pos: [floor[0] + dx, floor[1], floor[2] + dz],
+            size: doorDef.size,
+            facing: 'n',
+          });
+          if (door) {
+            break;
+          }
+        }
+        if (!door) {
+          throw new Error('Could not place a door for the F tap regression');
+        }
+        return door.uid;
+      }, fixtureKind);
+      await page.waitForFunction(() => !globalThis.primaryActionTest.queue.busy);
+      await page.evaluate((uid) => {
+        const r = globalThis.primaryActionTest;
+        const door = r.inventory.entities.byUid(uid);
+        const target = [door.pos[0] + door.size[0] / 2, door.pos[1] + door.size[1] / 2, door.pos[2] + door.size[2] / 2];
+        const eye = [
+          r.session.body.pos[0],
+          r.session.body.pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize,
+          r.session.body.pos[2],
+        ];
+        const dx = target[0] - eye[0];
+        const dy = target[1] - eye[1];
+        const dz = target[2] - eye[2];
+        r.input.yaw = Math.atan2(-dx, -dz);
+        r.input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+      }, fixtureUid);
+      return fixtureUid;
+    };
+    const doorUid = await aimFurnitureFixture('door');
+    await pressAction(page, 'world.interact');
+    await page.waitForFunction(
+      (uid) => globalThis.primaryActionTest.inventory.entities.byUid(uid)?.open === true,
+      doorUid,
+    );
+    assert.equal(
+      await page.locator('#item-action-list').isVisible(),
+      false,
+      'a door opens directly without a movement list',
+    );
+    const fixedUid = await aimFurnitureFixture('fixed');
     await pressAction(page, 'world.interact');
     await page.waitForFunction(() => !document.querySelector('#item-action-list').hidden);
     for (const way of ['push', 'drag']) {
@@ -1167,7 +1197,7 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
               ({ payload }) =>
                 payload?.kind === 'furniture.slide' && payload.entityUid === uid && payload.way === expectedWay,
             ),
-        { uid: doorUid, way },
+        { uid: fixedUid, way },
       );
       assert.equal(
         await page.evaluate(() => globalThis.primaryActionTest.queue.busy),
@@ -1175,12 +1205,6 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
         'a fastened piece refuses movement rather than queuing a step',
       );
     }
-    await page.mouse.wheel(0, 100);
-    await pressAction(page, 'world.interact');
-    await page.waitForFunction(
-      (uid) => globalThis.primaryActionTest.inventory.entities.byUid(uid)?.open === true,
-      doorUid,
-    );
     assert.deepEqual(pageErrors, []);
   } finally {
     await context.close();
@@ -3091,8 +3115,6 @@ try {
       r.clearNotice();
       return { uid: door.uid, start: r.session.sim.time };
     });
-    await pressAction(lockedPage, 'world.interact');
-    await lockedPage.waitForFunction(() => !document.querySelector('#item-action-list').hidden);
     await pressAction(lockedPage, 'world.interact');
     await waitForSimulation(
       lockedPage,

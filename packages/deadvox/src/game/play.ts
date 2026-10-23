@@ -17,7 +17,7 @@ import type { WorkOperation } from '../core/craftCommands.ts';
 import { crosshairTarget } from '../core/crosshairTarget.ts';
 import type { EntityId } from '../core/entities.ts';
 import type { PinState } from '../core/explosive.ts';
-import { movableRefusal, oversizedFurniture } from '../core/furnitureMove.ts';
+import { movableRefusal, slidableFurniture } from '../core/furnitureMove.ts';
 import { heldFirearmTransform, throwStanceWorldOffset } from '../core/heldPose.ts';
 import { interactionAffordance } from '../core/interactionAffordance.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
@@ -2597,7 +2597,7 @@ export const startPlay = (
   };
 
   const furniturePayload = (entity: BlockEntity, mode: 'pocket' | 'wield'): ReplayActionPayload => {
-    if (oversizedFurniture(inventory, entity, s) && furnitureActionUid === entity.uid) {
+    if (slidableFurniture(inventory, entity, s) && furnitureActionUid === entity.uid) {
       const selected = furnitureActionSelection.forItem(entity, furnitureActions(entity))!;
       return selected.id === 'use'
         ? { kind: 'furniture.use', entityUid: entity.uid }
@@ -2660,7 +2660,7 @@ export const startPlay = (
     if (compression.locksInput && rest.action?.furnitureUid !== entity.uid) {
       return undefined;
     }
-    if (oversizedFurniture(inventory, entity, s)) {
+    if (slidableFurniture(inventory, entity, s)) {
       furnitureActionUid = entity.uid;
       furnitureActionSelection.forItem(entity, furnitureActions(entity));
     } else {
@@ -3278,10 +3278,10 @@ export const startPlay = (
   const furnitureInteractionHint = (entity: BlockEntity): HintText => {
     const key = keyCap('world.interact');
     const selected =
-      oversizedFurniture(inventory, entity, s) && furnitureActionUid === entity.uid
+      slidableFurniture(inventory, entity, s) && furnitureActionUid === entity.uid
         ? furnitureActionSelection.forItem(entity, furnitureActions(entity))
         : undefined;
-    const actionHint = oversizedFurniture(inventory, entity, s)
+    const actionHint = slidableFurniture(inventory, entity, s)
       ? html`${key}: ${selected?.label ?? 'Actions'} ${nameOf(entity)}`
       : useText(entity);
     if (entity.bar) {
@@ -3291,7 +3291,7 @@ export const startPlay = (
         : fillText(screenText.interaction.blocked, { action: screenText.interaction.liftBar, reason: lift.reason });
       return html`${actionHint} · ${fillHint(screenText.interaction.hold, { key, action })}`;
     }
-    if (oversizedFurniture(inventory, entity, s)) {
+    if (slidableFurniture(inventory, entity, s)) {
       return actionHint;
     }
     return liftable(entity) ? html`${useText(entity)} · ${key} (hold): lift` : useText(entity);

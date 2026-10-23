@@ -130,10 +130,12 @@ export const movableRefusal = (inventory: Inventory, entity: BlockEntity, blockS
 };
 
 /** Fixed where it stands: such a piece neither lifts nor falls. */
-const fastened = (inventory: Inventory, entity: BlockEntity): boolean => {
+const fastened = (inventory: Inventory, entity: BlockEntity): boolean =>
+  entity.fixed === true || fastenedKind(inventory, entity);
+
+const fastenedKind = (inventory: Inventory, entity: BlockEntity): boolean => {
   const def = inventory.entities.defOf(entity);
   return (
-    entity.fixed === true ||
     def.mount !== undefined ||
     def.door !== undefined ||
     def.climbable !== undefined ||
@@ -506,7 +508,10 @@ export const liftFurniture = (mover: FurnitureMover, entity: BlockEntity): strin
 
 export type FurnitureSlideWay = 'push' | 'drag';
 
-export const oversizedFurniture = (inventory: Inventory, entity: BlockEntity, blockSize: number): boolean =>
+export const slidableFurniture = (inventory: Inventory, entity: BlockEntity, blockSize: number): boolean =>
+  !fastenedKind(inventory, entity) && oversizedFurniture(inventory, entity, blockSize);
+
+const oversizedFurniture = (inventory: Inventory, entity: BlockEntity, blockSize: number): boolean =>
   inventory.entities.defOf(entity).cover !== true &&
   entity.size.some((cells) => cells * blockSize > reachTuning(inventory.registry).furnitureMove.maxSizeMetres);
 
