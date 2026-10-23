@@ -99,6 +99,7 @@ describe('practice objectives', () => {
       reach: bindReach({ inventory, position: state.position, blockSize: 1, clock: BASE_CLOCK }),
       feet: () => ({ kind: 'pile', pos: state.position }),
       notice: vi.fn(),
+      readingLight: () => undefined,
       read: vi.fn(),
       batterySwapped: (type) => tutorial.batterySwapped(type),
     });
@@ -159,6 +160,7 @@ describe('practice objectives', () => {
       reach: bindReach({ inventory, position: state.position, blockSize: 1, clock: BASE_CLOCK }),
       feet: () => ({ kind: 'pile', pos: state.position }),
       notice: vi.fn(),
+      readingLight: () => undefined,
       read: vi.fn(),
       consumed: (type) => tutorial.consumed(type),
     });

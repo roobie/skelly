@@ -4064,6 +4064,14 @@ export const startPlay = (
     });
     screen.update();
     reading.revalidate((ownerUid) => Object.values(inventory.hands).some((item) => item?.uid === ownerUid));
+    const tooDark = reading.isOpen ? session.readingLight(reading.lightAt) : undefined;
+    if (tooDark) {
+      reading.close();
+      // A skip stopped by the same darkness already names the reason.
+      if (compression.interruption === undefined) {
+        showRefusal(tooDark, sim.time);
+      }
+    }
     syncReadingProgress(reading.bookUid, currentPresentation.longAction, reading.setProgress, isBookComplete);
     craftPanel.update(screen.isOpen && !sim.dead, visible.messages);
     drawQuickbar();

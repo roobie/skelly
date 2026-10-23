@@ -68,6 +68,8 @@ export interface SurvivalHooks {
   reach: () => ReachSnapshot;
   /** Presents a validated authored text or generated paper surface. */
   read: (request: ReadRequest) => void;
+  /** Why carried paper can't be read at the reader, or undefined when it has enough light. */
+  readingLight: () => string | undefined;
   /** Whether the book has already taught every recipe it owns. */
   bookRead?: (bookUid: number) => boolean;
   consumed?: ((type: string) => void) | undefined;
@@ -252,6 +254,10 @@ export class Survival {
   }
 
   private readItem(item: Item, readable: Readonly<Readable> | undefined): string | undefined {
+    const dark = this.hooks.readingLight();
+    if (dark) {
+      return dark;
+    }
     const definition = defOf(this.inventory.registry, item.type);
     const hasBook = definition.book !== undefined;
     if (hasBook && this.hooks.bookRead?.(item.uid) !== true) {

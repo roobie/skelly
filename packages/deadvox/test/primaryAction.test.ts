@@ -169,6 +169,7 @@ const survivalFor = (inventory: Inventory) => {
     reach: bindReach(player),
     feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
     notice: () => undefined,
+    readingLight: () => undefined,
     read: () => {
       throw new Error('Unexpected reading in primary-action fixture');
     },
@@ -263,6 +264,7 @@ describe('held-item hand action', () => {
       notice: () => {
         throw new Error('Unexpected use notice in primary-action fixture');
       },
+      readingLight: () => undefined,
       read: () => {
         throw new Error('Unexpected reading in primary-action fixture');
       },

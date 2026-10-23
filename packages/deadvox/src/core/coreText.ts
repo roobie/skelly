@@ -120,6 +120,7 @@ export const CORE_MESSAGE_SLOTS = {
   preferredCompete: [],
   bookGone: [],
   bookNotHeld: [],
+  tooDarkToRead: [],
   wrongCartridge: [],
   rightHandOnLadder: [],
   leftHandOnLadder: [],

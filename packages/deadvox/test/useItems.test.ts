@@ -143,6 +143,7 @@ const setup = (
     reach,
     feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
     notice: (text) => notices.push(text),
+    readingLight: () => undefined,
     read: readHook,
   });
   const hold = (type: string, side: 'right' | 'left' = 'right') => {

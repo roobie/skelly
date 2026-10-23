@@ -63,6 +63,7 @@ const fixture = (side: HandSide = 'right', quality = 2) => {
     reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 1, clock: BASE_CLOCK }),
     feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
     notice: vi.fn(),
+    readingLight: () => undefined,
     read: vi.fn(),
   });
   return { registry, inventory, can, tool, other, queue, opened, unpacking, survival };

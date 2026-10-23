@@ -150,6 +150,7 @@
         "softBagNested": "I can't pack a loaded soft bag inside another container",
         "stillLit": "It's still lit",
         "tooBig": "It's too big for that",
+        "tooDarkToRead": "It's too dark to read",
         "tooFar": "Too far away",
         "toolNotInReach": "Required {quality} tool is not in reach",
         "trapSet": "It's set",
