@@ -14,58 +14,22 @@ import {
   Vector2,
   Vector3,
 } from 'three';
-import type { BlockEntities } from '../core/blockEntities.ts';
-import type { Registry } from '../core/content.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import type { Sky } from '../core/sky.ts';
-import type { SkyBounds } from '../core/skylight.ts';
+import { type SkyField, type SkyFields, type SkySubmit, skyRoofAt } from '../core/skyField.ts';
 import { skyIndex } from '../core/skylight.ts';
-import {
-  type CapturedSky,
-  captureSky,
-  containsSky,
-  furnitureBounds,
-  growSky,
-  overlapsSky,
-  SKY_SHELL,
-  type SkySnapshot,
-  skyDependencyBounds,
-} from '../core/skySnapshot.ts';
+import { containsSky } from '../core/skySnapshot.ts';
 import { type SkyResult, sampleSky } from '../core/skyTransport.ts';
-import type { World } from '../core/world.ts';
 import { FADE_SHARPNESS, HALF_BRIGHTNESS } from './flashlight.ts';
 import { SKY_ANCHOR_ATTRIBUTE } from './skyAnchor.ts';
 
 const SPOT_LIGHT_INFO_CALL = /getSpotLightInfo\([^;]+\);/;
 const DIRECTIONAL_LIGHT_INFO_CALL = /getDirectionalLightInfo\([^;]+\);/;
 const RESIDENT_FIELDS = 4;
-const PREPARE_MS = 0.5;
 const PREFETCH_M = 16;
-const UNKNOWN_SKY_CAP = 0.5;
-interface Field {
-  index: number;
-  bounds: SkyBounds;
-  dependency: SkyBounds;
-  revision: number;
-  attempted: boolean;
-  result: SkyResult | undefined;
-  resultRevision: number | undefined;
-  entityKey: string;
-  heightOffset: number;
-}
 interface SkyRuntime {
-  world: World;
-  entities: BlockEntities;
-  registry: Registry;
-  bottom: number;
-  submit: (input: SkySnapshot, receive: (result: SkyResult, ms: number) => void) => boolean;
+  submit: SkySubmit;
   clock?: () => number;
-}
-interface Preparation {
-  field: Field;
-  revision: number;
-  iterator: Generator<void, CapturedSky>;
-  captured?: CapturedSky;
 }
 const vectors = () => Array.from({ length: RESIDENT_FIELDS }, () => new Vector3());
 const volumeTexture = (light: Uint8Array, [x, y, z]: Vec3): Data3DTexture => {
@@ -85,20 +49,20 @@ const floatTexture = (data: Float32Array, width: number, height: number, rgba = 
   texture.needsUpdate = true;
   return texture;
 };
-function regionIndex(fields: readonly Field[]) {
+function regionIndex(fields: readonly SkyField[]) {
   const x0 = fields.length > 0 ? Math.floor(Math.min(...fields.map((field) => field.bounds.min[0])) / CHUNK) : 0;
   const z0 = fields.length > 0 ? Math.floor(Math.min(...fields.map((field) => field.bounds.min[2])) / CHUNK) : 0;
   const width = fields.length > 0 ? Math.ceil(Math.max(...fields.map((field) => field.bounds.max[0])) / CHUNK) - x0 : 1;
   const height =
     fields.length > 0 ? Math.ceil(Math.max(...fields.map((field) => field.bounds.max[2])) / CHUNK) - z0 : 1;
   const cells: number[][] = Array.from({ length: width * height }, () => []);
-  for (const field of fields) {
+  fields.forEach((field, index) => {
     for (let z = Math.floor(field.bounds.min[2] / CHUNK); z < Math.ceil(field.bounds.max[2] / CHUNK); z++) {
       for (let x = Math.floor(field.bounds.min[0] / CHUNK); x < Math.ceil(field.bounds.max[0] / CHUNK); x++) {
-        cells[x - x0 + width * (z - z0)]!.push(field.index);
+        cells[x - x0 + width * (z - z0)]!.push(index);
       }
     }
-  }
+  });
   const grid = new Float32Array(cells.length * 4);
   const indices: number[] = [];
   cells.forEach((cell, index) => {
@@ -117,11 +81,20 @@ function regionIndex(fields: readonly Field[]) {
     length: Math.max(1, indices.length),
   };
 }
+/**
+ * An upload view over the shared sky field cache: it asks the cache to build fields near the camera off
+ * the main thread and draws the results the cache holds. A field the cache has not built draws open sky,
+ * as the cache answers there; one being rebuilt keeps its last complete result until the new one lands.
+ */
 export class Skylight {
   private readonly texture = { value: volumeTexture(new Uint8Array([255]), [1, 1, 1]) };
   private readonly patched = new WeakSet<Material>();
-  private readonly fields: Field[];
-  private active: Field[] = [];
+  private readonly sky: SkyFields;
+  private readonly fields: readonly SkyField[];
+  /** The result each field's uploads were made from. */
+  private readonly shown: (SkyResult | undefined)[];
+  private readonly heightOffsets: number[];
+  private active: number[] = [];
   private readonly enabled = { value: 0 };
   private readonly daylight = { value: 0 };
   private readonly minimum = { value: vectors() };
@@ -131,32 +104,17 @@ export class Skylight {
   private readonly regions: { value: DataTexture };
   private readonly heights: { value: DataTexture };
   private readonly heightSize: { value: Vector2 };
-  private readonly context: SkyRuntime;
+  private readonly runtime: SkyRuntime;
   private readonly index: ReturnType<typeof regionIndex>;
   private readonly clock: () => number;
-  private preparation: Preparation | undefined;
   private recordedTerrain = false;
 
+  /** Replays request only fields whose recorded terrain is all present. */
   setRecordedTerrain(): void {
     this.recordedTerrain = true;
   }
 
-  private hasDependency(field: Field): boolean {
-    const { min, max } = field.dependency;
-    for (let z = Math.floor(min[2] / CHUNK); z < Math.ceil(max[2] / CHUNK); z++) {
-      for (let x = Math.floor(min[0] / CHUNK); x < Math.ceil(max[0] / CHUNK); x++) {
-        for (let y = Math.floor(Math.max(this.context.bottom, min[1]) / CHUNK); y < Math.ceil(max[1] / CHUNK); y++) {
-          if (!this.context.world.getChunk(x, y, z)) {
-            return false;
-          }
-        }
-      }
-    }
-    return true;
-  }
   private inFlight = false;
-  private completed: { preparation: Preparation; result: SkyResult } | undefined;
-  private entityVersion = -1;
   private metadataDirty = true;
   private atlasDirty = false;
   readonly stats = { requested: 0, completed: 0, accepted: 0, discarded: 0, volumes: 0, roofFree: 0 };
@@ -165,78 +123,39 @@ export class Skylight {
   onJob: ((workerMs: number, latencyMs: number) => void) | undefined;
 
   private readonly blockSize: number;
-  private readonly top: number;
   private readonly viewRadiusM: number;
   constructor(
-    boxes: readonly SkyBounds[],
-    { blockSize, top, viewRadiusM }: { blockSize: number; top: number; viewRadiusM: number },
-    context: SkyRuntime,
+    sky: SkyFields,
+    { blockSize, viewRadiusM }: { blockSize: number; viewRadiusM: number },
+    runtime: SkyRuntime,
   ) {
+    this.sky = sky;
+    this.fields = sky.fields;
+    this.shown = this.fields.map(() => undefined);
     this.blockSize = blockSize;
-    this.top = top;
     this.viewRadiusM = viewRadiusM;
-    this.context = context;
-    this.clock = context.clock ?? (() => performance.now());
+    this.runtime = runtime;
+    this.clock = runtime.clock ?? (() => performance.now());
     let heightOffset = 0;
-    this.fields = boxes.map((box, index) => {
-      const bounds = growSky(box, SKY_SHELL);
-      const field: Field = {
-        index,
-        bounds,
-        dependency: skyDependencyBounds(bounds, top),
-        revision: 0,
-        attempted: false,
-        result: undefined,
-        resultRevision: undefined,
-        entityKey: '',
-        heightOffset,
-      };
-      heightOffset += field.dependency.max[2] - field.dependency.min[2];
-      return field;
+    this.heightOffsets = this.fields.map(({ dependency }) => {
+      const offset = heightOffset;
+      heightOffset += dependency.max[2] - dependency.min[2];
+      return offset;
     });
     this.index = regionIndex(this.fields);
     const width = Math.max(1, ...this.fields.map((field) => field.dependency.max[0] - field.dependency.min[0]));
     const height = Math.max(1, heightOffset);
-    this.regions = {
-      value: floatTexture(new Float32Array(Math.max(1, boxes.length) * 12), 3, Math.max(1, boxes.length), true),
-    };
-    this.heights = { value: floatTexture(new Float32Array(width * height).fill(top + 1), width, height) };
+    const rows = Math.max(1, this.fields.length);
+    this.regions = { value: floatTexture(new Float32Array(rows * 12), 3, rows, true) };
+    this.heights = { value: floatTexture(new Float32Array(width * height).fill(sky.range.top + 1), width, height) };
     this.heightSize = { value: new Vector2(width, height) };
     this.refreshMetadata();
   }
 
-  private invalidate(field: Field): void {
-    field.revision += 1;
-    field.attempted = false;
-    this.metadataDirty = true;
-  }
-  chunkChanged(origin: Vec3): void {
-    const chunk = { min: origin, max: origin.map((value) => value + CHUNK) as Vec3 };
-    for (const field of this.fields) {
-      if (overlapsSky(field.dependency, chunk)) {
-        this.invalidate(field);
-      }
-    }
-  }
-  private refreshEntities(): void {
-    const { entities } = this.context;
-    if (this.entityVersion === entities.standing) {
-      return;
-    }
-    this.entityVersion = entities.standing;
-    const furniture = furnitureBounds(entities);
-    for (const field of this.fields) {
-      const key = JSON.stringify(furniture.filter((box) => overlapsSky(field.dependency, box)));
-      if (key !== field.entityKey) {
-        field.entityKey = key;
-        this.invalidate(field);
-      }
-    }
-  }
-  private nearby(position: Vec3): Field[] {
+  private nearby(position: Vec3): number[] {
     return this.fields
-      .map((field) => ({
-        field,
+      .map((field, index) => ({
+        index,
         distance: position.reduce(
           (sum, value, axis) =>
             sum + Math.max(field.bounds.min[axis]! - value, 0, value - field.bounds.max[axis]!) ** 2,
@@ -244,73 +163,68 @@ export class Skylight {
         ),
       }))
       .filter((entry) => entry.distance <= (this.viewRadiusM / this.blockSize) ** 2)
-      .sort((a, b) => a.distance - b.distance || a.field.index - b.field.index)
-      .map((entry) => entry.field);
+      .sort((a, b) => a.distance - b.distance || a.index - b.index)
+      .map((entry) => entry.index);
   }
+  /** Takes up every field whose latest complete result changed since its last upload. */
   private publish(): void {
-    const ready = this.completed;
-    if (!ready) {
-      return;
-    }
-    this.completed = undefined;
-    const { preparation, result } = ready;
-    if (preparation.revision !== preparation.field.revision || !preparation.captured!.current()) {
-      this.stats.discarded += 1;
-      preparation.field.attempted = false;
-      return;
-    }
-    if (!result.complete) {
-      return;
-    }
-    preparation.field.result = result;
-    preparation.field.resultRevision = preparation.revision;
-    this.stats.accepted += 1;
-    if (result.volume) {
-      this.stats.volumes += 1;
-    } else {
-      this.stats.roofFree += 1;
-    }
-    const { width } = this.heights.value.image;
-    const data = this.heights.value.image.data!;
-    const { dependency, heightOffset } = preparation.field;
-    const rowWidth = dependency.max[0] - dependency.min[0];
-    for (let z = 0; z < dependency.max[2] - dependency.min[2]; z++) {
-      data.set(result.heights.subarray(z * rowWidth, (z + 1) * rowWidth), (heightOffset + z) * width);
-    }
-    this.heights.value.needsUpdate = true;
-    this.metadataDirty = true;
-    this.atlasDirty = true;
+    this.fields.forEach(({ dependency }, index) => {
+      const result = this.sky.latest(index);
+      if (result === this.shown[index]) {
+        return;
+      }
+      this.shown[index] = result;
+      if (!result) {
+        return;
+      }
+      const { width } = this.heights.value.image;
+      const data = this.heights.value.image.data!;
+      const rowWidth = dependency.max[0] - dependency.min[0];
+      for (let z = 0; z < dependency.max[2] - dependency.min[2]; z++) {
+        data.set(result.heights.subarray(z * rowWidth, (z + 1) * rowWidth), (this.heightOffsets[index]! + z) * width);
+      }
+      this.heights.value.needsUpdate = true;
+      this.metadataDirty = true;
+      this.atlasDirty ||= this.active.includes(index);
+    });
   }
-  private demanded(position: Vec3): Field[] {
+  private demanded(position: Vec3): number[] {
     const range = PREFETCH_M / this.blockSize;
     return this.nearby(position).filter(
-      (field) =>
+      (index) =>
         position.every(
-          (value, axis) => value >= field.bounds.min[axis]! - range && value < field.bounds.max[axis]! + range,
+          (value, axis) =>
+            value >= this.fields[index]!.bounds.min[axis]! - range &&
+            value < this.fields[index]!.bounds.max[axis]! + range,
         ) &&
-        (!this.recordedTerrain || this.hasDependency(field)),
+        (!this.recordedTerrain || this.sky.loaded(index)),
     );
   }
 
-  private residentCandidates(nearby: Field[]): Field[] {
-    return nearby.filter((field) => field.result?.volume).slice(0, RESIDENT_FIELDS);
+  private residentCandidates(nearby: number[]): number[] {
+    return nearby.filter((index) => this.shown[index]?.volume).slice(0, RESIDENT_FIELDS);
+  }
+
+  /** Whether the field's current result is complete and is what the view draws. */
+  private drawnCurrent(index: number): boolean {
+    const result = this.sky.current(index);
+    return Boolean(result?.complete) && result === this.shown[index];
   }
 
   loadingReadiness(position: Vec3) {
-    this.refreshEntities();
     const fields = this.demanded(position);
     const selected = this.residentCandidates(this.nearby(position));
     return {
       ready:
-        fields.every((field) => field.result?.complete && field.resultRevision === field.revision) &&
-        selected.every((field) => this.active.includes(field)) &&
+        fields.every((index) => this.drawnCurrent(index)) &&
+        selected.every((index) => this.active.includes(index)) &&
         !this.atlasDirty &&
         !this.metadataDirty,
       workUnits: fields.reduce(
-        (sum, field) =>
+        (sum, index) =>
           sum +
-          field.dependency.min.reduce(
-            (cells, min, axis) => cells * Math.ceil((field.dependency.max[axis]! - min) / CHUNK),
+          this.fields[index]!.dependency.min.reduce(
+            (cells, min, axis) => cells * Math.ceil((this.fields[index]!.dependency.max[axis]! - min) / CHUNK),
             1,
           ),
         0,
@@ -318,63 +232,39 @@ export class Skylight {
     };
   }
 
-  private prepare(nearby: Field[], position: Vec3, deadline: number): void {
-    if (this.preparation?.revision !== this.preparation?.field.revision) {
-      this.preparation = undefined;
-    }
-    if (!this.preparation) {
-      const demanded = new Set(this.demanded(position));
-      const field = nearby.find((candidate) => !candidate.attempted && demanded.has(candidate));
-      if (!field) {
-        return;
-      }
-      this.preparation = {
-        field,
-        revision: field.revision,
-        iterator: captureSky(this.context, field.bounds, { bottom: this.context.bottom, top: this.top }),
-      };
-    }
-    const { preparation } = this;
-    while (!preparation.captured && this.clock() < deadline) {
-      const next = preparation.iterator.next();
-      if (next.done) {
-        preparation.captured = next.value;
-      }
-    }
-    if (!preparation.captured) {
-      return;
-    }
-    if (!preparation.captured.current()) {
-      this.preparation = undefined;
-      this.stats.discarded += 1;
-      return;
-    }
-    if (this.inFlight) {
+  /** Asks the cache for the nearest demanded field it lacks, one off-thread build at a time. */
+  private prepare(position: Vec3): void {
+    const index = this.demanded(position).find((field) => !(this.sky.current(field) || this.sky.submitted(field)));
+    if (index === undefined) {
       return;
     }
     const start = this.clock();
-    if (
-      this.context.submit(preparation.captured.input, (result, ms) => {
+    const sent = this.sky.request(
+      index,
+      (input, receive) => !this.inFlight && this.runtime.submit(input, receive),
+      ({ accepted, result, ms }) => {
         this.inFlight = false;
         this.stats.completed += 1;
-        this.completed = { preparation, result };
+        if (!accepted) {
+          this.stats.discarded += 1;
+        } else if (result.complete) {
+          this.stats.accepted += 1;
+          this.stats[result.volume ? 'volumes' : 'roofFree'] += 1;
+        }
         this.onJob?.(ms, this.clock() - start);
-      })
-    ) {
-      preparation.field.attempted = true;
+      },
+    );
+    if (sent) {
       this.inFlight = true;
       this.stats.requested += 1;
-      this.preparation = undefined;
-      this.prepare(nearby, position, deadline);
     }
   }
   update(scene: Scene, position: Vec3): void {
     const start = this.clock();
-    this.refreshEntities();
     this.publish();
     const nearby = this.nearby(position);
-    const resident = this.residentCandidates(nearby).sort((a, b) => a.index - b.index);
-    if (resident.length !== this.active.length || resident.some((field, index) => field !== this.active[index])) {
+    const resident = this.residentCandidates(nearby).sort((a, b) => a - b);
+    if (resident.length !== this.active.length || resident.some((index, slot) => index !== this.active[slot])) {
       this.active = resident;
       this.atlasDirty = true;
       this.metadataDirty = true;
@@ -386,7 +276,7 @@ export class Skylight {
     if (this.metadataDirty) {
       this.refreshMetadata();
     }
-    this.prepare(nearby, position, start + PREPARE_MS);
+    this.prepare(position);
     scene.traverse((object) => {
       const { material } = object as Mesh;
       if (material) {
@@ -399,38 +289,38 @@ export class Skylight {
   }
   private refreshMetadata(): void {
     const data = this.regions.value.image.data!;
-    for (const field of this.fields) {
-      const start = field.index * 12;
+    this.fields.forEach((field, index) => {
+      const start = index * 12;
       data.set(
         field.bounds.min.map((value) => value * this.blockSize),
         start,
       );
-      data[start + 3] = Number(Boolean(field.result));
+      data[start + 3] = Number(Boolean(this.shown[index]));
       data.set(
         field.bounds.max.map((value) => value * this.blockSize),
         start + 4,
       );
-      data[start + 7] = this.active.indexOf(field);
-      data[start + 8] = field.heightOffset;
+      data[start + 7] = this.active.indexOf(index);
+      data[start + 8] = this.heightOffsets[index]!;
       data[start + 9] = field.dependency.min[0];
       data[start + 10] = field.dependency.min[2];
-    }
+    });
     this.regions.value.needsUpdate = true;
     this.metadataDirty = false;
   }
   private upload(): void {
+    const volumes = this.active.map((index) => this.shown[index]!.volume!);
     const size: Vec3 = [
-      Math.max(1, ...this.active.map((field) => field.result!.volume!.size[0])),
+      Math.max(1, ...volumes.map((volume) => volume.size[0])),
       Math.max(
         1,
-        this.active.reduce((sum, field) => sum + field.result!.volume!.size[1], 0),
+        volumes.reduce((sum, volume) => sum + volume.size[1], 0),
       ),
-      Math.max(1, ...this.active.map((field) => field.result!.volume!.size[2])),
+      Math.max(1, ...volumes.map((volume) => volume.size[2])),
     ];
     const light = new Uint8Array(size[0] * size[1] * size[2]).fill(255);
     let offset = 0;
-    this.active.forEach((field, slot) => {
-      const volume = field.result!.volume!;
+    volumes.forEach((volume, slot) => {
       for (let y = 0; y < volume.size[1]; y++) {
         for (let z = 0; z < volume.size[2]; z++) {
           const start = skyIndex(volume.size, 0, y, z);
@@ -450,43 +340,30 @@ export class Skylight {
   setDaylight(sky: Pick<Sky, 'lightIntensity' | 'ambientIntensity'>): void {
     this.daylight.value = sky.lightIntensity + sky.ambientIntensity;
   }
+  /** Sky visibility the view draws at a point in metres: no build, so it never stalls a frame. */
   at(position: Vec3): number {
-    this.refreshEntities();
     const point = position.map((value) => value / this.blockSize) as Vec3;
-    const eligible = this.fields.filter((field) => containsSky(field.bounds, point));
-    if (eligible.length === 0) {
-      return 1;
-    }
-    for (const field of this.active) {
-      if (eligible.includes(field) && field.result?.volume && containsSky(field.result.volume, point)) {
-        return sampleSky(field.result.volume, point);
+    const known = this.fields
+      .map((field, index) => ({ field, index, result: this.shown[index] }))
+      .filter(({ field, result }) => result && containsSky(field.bounds, point));
+    for (const { index, result } of known) {
+      if (this.active.includes(index) && result!.volume && containsSky(result!.volume, point)) {
+        return sampleSky(result!.volume, point);
       }
     }
-    const known = eligible.filter((field) => field.result !== undefined);
     if (known.length === 0) {
-      return UNKNOWN_SKY_CAP;
+      return 1;
     }
-    return Number(
-      known.some(
-        (field) =>
-          field.result &&
-          Math.floor(point[1]) >
-            field.result.heights[
-              Math.floor(point[0]) -
-                field.dependency.min[0] +
-                (field.dependency.max[0] - field.dependency.min[0]) * (Math.floor(point[2]) - field.dependency.min[2])
-            ]!,
-      ),
-    );
+    return Number(known.some(({ field, result }) => Math.floor(point[1]) > skyRoofAt(field, result!, point)));
   }
   inspect() {
-    return this.fields.map((field) => {
-      const volume = field.result?.volume;
+    return this.fields.map((field, index) => {
+      const volume = this.shown[index]?.volume;
       return {
         bounds: { min: [...field.bounds.min] as Vec3, max: [...field.bounds.max] as Vec3 },
-        complete: field.result !== undefined,
-        current: field.result !== undefined && field.resultRevision === field.revision,
-        resident: this.active.includes(field),
+        complete: this.shown[index] !== undefined,
+        current: this.drawnCurrent(index),
+        resident: this.active.includes(index),
         volume: volume
           ? {
               sample: (point: Vec3) => sampleSky(volume, point),
@@ -574,13 +451,11 @@ uniform float uSkyAtlasOffset[${RESIDENT_FIELDS}];
 uniform float uSkyEnabled;
 varying vec3 vSkyWorld;
 varying vec3 vSkyNormal;
-float skyVisibility(out bool unknown) {
-  unknown = false;
+float skyVisibility() {
   vec3 point = vSkyWorld + normalize(vSkyNormal) * float(${this.blockSize * 0.5});
   vec2 gridCell = floor(point.xz / float(${this.blockSize * CHUNK})) - uSkyGridOrigin;
   if (any(lessThan(gridCell, vec2(0.0))) || any(greaterThanEqual(gridCell, uSkyGridSize))) return 1.0;
   vec2 candidates = texture2D(uSkyGrid, (gridCell + 0.5) / uSkyGridSize).xy;
-  bool eligible = false;
   bool known = false;
   float fallback = 0.0;
   for (int local = 0; local < ${this.index.maximum}; local++) {
@@ -590,7 +465,6 @@ float skyVisibility(out bool unknown) {
     vec4 lower = texture2D(uSkyRegions, vec2(0.5 / 3.0, row));
     vec4 upper = texture2D(uSkyRegions, vec2(1.5 / 3.0, row));
     if (any(lessThan(point, lower.xyz)) || any(greaterThanEqual(point, upper.xyz))) continue;
-    eligible = true;
     if (lower.w < 0.5) continue;
     known = true;
     vec4 heightTile = texture2D(uSkyRegions, vec2(2.5 / 3.0, row));
@@ -608,14 +482,12 @@ float skyVisibility(out bool unknown) {
       return texture(uSkyVolume, atlas).r;
     }
   }
-  unknown = eligible && !known;
-  return eligible ? (known ? fallback : float(${UNKNOWN_SKY_CAP})) : 1.0;
+  return known ? fallback : 1.0;
 }`,
         )
         .replace(
           '#include <lights_fragment_begin>',
-          `bool receiverSkyUnknown;
-float receiverSkyVisibility = skyVisibility(receiverSkyUnknown);
+          `float receiverSkyVisibility = skyVisibility();
 ${ShaderChunk.lights_fragment_begin
   .replace(
     DIRECTIONAL_LIGHT_INFO_CALL,
@@ -624,7 +496,7 @@ ${ShaderChunk.lights_fragment_begin
   vec3 nearCoord = vDirectionalShadowCoord[ i ].xyz / vDirectionalShadowCoord[ i ].w;
   bool coveredNear = all(greaterThanEqual(nearCoord.xy, vec2(0.0)))
     && all(lessThanEqual(nearCoord.xy, vec2(1.0))) && nearCoord.z <= 1.0;
-  if (!coveredNear && (receiverSkyVisibility <= 0.0 || receiverSkyUnknown)) directLight.color *= 0.0;
+  if (!coveredNear && receiverSkyVisibility <= 0.0) directLight.color *= 0.0;
 #endif`,
   )
   .replace(

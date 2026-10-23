@@ -57,7 +57,7 @@ it('benchmark engines use mod defaults despite saved graphics preferences and de
     },
   ]);
   const { registry } = content;
-  owner.setup = { registry };
+  owner.setup = { registry, skyFields: { fields: [] } };
   let saved = '';
   const storage = {
     getItem: vi.fn(() => saved),

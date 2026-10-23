@@ -30,7 +30,7 @@ Scenario plans depend on immutable admitted definitions, so proving the same pla
 
 Construction-route probes share an immutable site, so a loaded chunk's predecessor furniture columns need no preparation on later body-cell queries. Repeating their admission checks for every sampled cell adds work without changing the route proof. See `src/core/scenarioRoute.ts`, `ScenarioRouteSpace`, and `test/scenarioCertificate.test.ts`, "prepares furniture columns only on the first route probe into a chunk".
 
-Furniture occlusion depends on standing geometry, not container search state. Repeating shape transforms for every lighting field multiplies startup work by both furniture and field count without adding information. See `src/render/skylight.ts`, `refreshEntities`, and `test/skylightFields.test.ts`, "shares one furniture bounds scan across fields and readiness polls until standing geometry changes".
+Furniture occlusion depends on standing geometry, not container search state. Repeating shape transforms for every lighting field multiplies startup work by both furniture and field count without adding information. See `src/core/skyField.ts`, `SkyFields`, and `test/skylightFields.test.ts`, "shares one furniture bounds scan across fields until standing geometry changes".
 
 Local pixel fixtures should load only the terrain needed by their observation. A nearby dropped-light check does not earn the cost of a distant view ring; full-ring readiness makes that unrelated work part of startup. Keep the pixel oracle and completed-readiness boundary intact rather than lengthening the wait. See `test/browser/primary-action-pixel.mjs`, `measureGlowstickFloor`.
 

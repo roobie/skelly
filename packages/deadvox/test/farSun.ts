@@ -12,7 +12,7 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { skyFixture } from './fixtures/sky.ts';
 import { fixtureBox } from './fixtures/skyWorld.ts';
 
-/** Runs the production material and sky metadata on WebGL, including unknown-field publication. */
+/** Runs the production material and sky metadata on WebGL, before and after a field is built. */
 export function farSunProof() {
   const fixture = skyFixture();
   const renderer = new WebGLRenderer();
@@ -49,8 +49,8 @@ export function farSunProof() {
   try {
     const unknownFar = sample(point, false);
     const nearUnknown = sample(point, true);
-    if (!(fixture.sky.at(point) > 0 && fixture.sky.at(point) < 1)) {
-      throw new Error('Unknown-field fixture must retain its nonzero diffuse fallback');
+    if (fixture.sky.at(point) !== 1) {
+      throw new Error('An unbuilt field must draw open sky, as the cache answers');
     }
     fixture.complete();
     fixture.update(point);
@@ -64,11 +64,11 @@ export function farSunProof() {
     if (!(fixture.sky.at(exposed) > 0)) {
       throw new Error('Exposed fixture must have nonzero diffuse sky');
     }
-    if (unknownFar !== 0 || zeroFar !== 0) {
-      throw new Error(`Far receivers with unknown or zero sky must get no sun: ${unknownFar}, ${zeroFar}`);
+    if (zeroFar !== 0) {
+      throw new Error(`Far receivers with zero sky must get no sun: ${zeroFar}`);
     }
-    if (!(nonzeroFar > 0)) {
-      throw new Error('Far receiver with nonzero sky must keep direct sun');
+    if (!(nonzeroFar > 0 && unknownFar > 0)) {
+      throw new Error(`Far receivers with nonzero or unbuilt sky must keep direct sun: ${nonzeroFar}, ${unknownFar}`);
     }
     if (!(nearUnknown > 0 && nearZero === nearUnknown)) {
       throw new Error(`Near-map direct sun must ignore the far sky rule: ${nearUnknown}, ${nearZero}`);
