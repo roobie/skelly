@@ -10,7 +10,7 @@ import { fillHint, keyCap } from './keyCap.ts';
 import { wheelPixels } from './wheel.ts';
 
 /** Radians, and the view's half height per bounding radius. */
-export interface ItemViewPose {
+interface ItemViewPose {
   readonly yaw: number;
   readonly pitch: number;
   readonly framing: number;
