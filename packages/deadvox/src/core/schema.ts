@@ -651,6 +651,8 @@ const FirearmSchema = strictObject({
   recoilKickRadians: Positive,
   /** Half-angle of the firearm's independent per-round cone; pump firearms must set zero because pellet spread owns their cone. */
   dispersionRadians: pipe(NonNegative, maxValue(Math.PI / 2, 'must be at most a right angle')),
+  /** Multiplies an ammunition item's pellet spread, so the firearm owns its choke. */
+  pelletSpreadScale: Positive,
   /** Optional per-gun skill-zero endpoints; absent guns use firearms-combat's shared factors. */
   skillZeroHandling: optional(FirearmsSkillZeroHandlingSchema),
   /** Reload handling times at skill 0, before the firearms skill's reload factor. */
@@ -682,6 +684,8 @@ const FirearmSchema = strictObject({
 const AmmoSchema = strictObject({
   calibre: CalibreId,
   pellets: pipe(Count, minValue(1), maxValue(64)),
+  /** Base half-angle for pellet directions; the firearm's choke scale multiplies it. */
+  spreadDegrees: pipe(NonNegative, maxValue(90, 'must be at most a right angle')),
   diameterMm: Positive,
   /** Region health a projectile takes, before the zombie's per-region pierce resistance. */
   damage: Positive,
