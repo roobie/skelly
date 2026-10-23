@@ -896,7 +896,8 @@ try {
     // Light states are controlled through the hour, the lamp switch and the battery, never through tuning.
     const seekHour = (hour) =>
       page.evaluate(async (seconds) => {
-        const { nextTimeOfDay } = await import('/src/core/clock.ts');
+        const clockModule = '/src/core/clock.ts';
+        const { nextTimeOfDay } = await import(clockModule);
         const { session, saveController } = globalThis.readingWitness;
         session.sim.setDebugCalendarTime(nextTimeOfDay(session.sim.calendar, seconds));
         saveController?.rearmAutosaveAfterTimeSeek?.();
@@ -935,7 +936,8 @@ try {
     );
     await refusedRead(1);
     const lamps = await page.evaluate(async () => {
-      const { chargeOf } = await import('/src/core/lights.ts');
+      const lightsModule = '/src/core/lights.ts';
+      const { chargeOf } = await import(lightsModule);
       const { session, body } = globalThis.readingWitness;
       const { inventory } = session;
       const { registry } = inventory;
@@ -982,7 +984,8 @@ try {
     await switchLamp(lamps.full, false);
     await refusedRead(2);
     const lowLamp = await page.evaluate(async ({ type, full }) => {
-      const { chargeOf } = await import('/src/core/lights.ts');
+      const lightsModule = '/src/core/lights.ts';
+      const { chargeOf } = await import(lightsModule);
       const { session, body } = globalThis.readingWitness;
       const { inventory } = session;
       const { registry } = inventory;
@@ -1033,7 +1036,8 @@ try {
       },
     );
     const drained = await page.evaluate(async (uid) => {
-      const { chargeOf } = await import('/src/core/lights.ts');
+      const lightsModule = '/src/core/lights.ts';
+      const { chargeOf } = await import(lightsModule);
       const { session, reading } = globalThis.readingWitness;
       const { job } = session.sim.actions;
       const lamp = session.inventory.itemByUid(uid);
