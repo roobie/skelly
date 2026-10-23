@@ -349,6 +349,10 @@
       "output": "packages/deadvox/src/content/base/templates.json"
     },
     {
+      "source": "packages/deadvox/src/content/base/test-house-look.jsonnet",
+      "output": "packages/deadvox/src/content/base/test-house-look.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/tutorial.jsonnet",
       "output": "packages/deadvox/src/content/base/tutorial.json"
     },

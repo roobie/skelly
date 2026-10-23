@@ -14,10 +14,18 @@ import type { Scale } from '../core/scale.ts';
 import type { ScenarioKind } from '../core/scenarioKinds.ts';
 import type { ScenarioDef } from '../core/schema.ts';
 import { TEMPLATE_BLOCK_SIZE } from '../core/settlementSpawns.ts';
-import { type ColumnSource, type FurnitureSpawn, fillFurnitureLoot, type Rect, type Site } from '../core/site.ts';
+import {
+  type ColumnSource,
+  type FurnitureSpawn,
+  fillFurnitureLoot,
+  lootSourcesOf,
+  type Rect,
+  type Site,
+} from '../core/site.ts';
 import { sitePalette, terrainShapeOf } from '../core/sitePalette.ts';
 import { type PlacedPowerDevice, placedPowerDevices } from '../core/sitePower.ts';
 import { type BlockBox, rasterize, stampChunk } from '../core/structure.ts';
+import { compileMapPiece, type Placement, placedPieces } from '../core/templates.ts';
 import { World } from '../core/world.ts';
 import { type Surface, terrainHeightMetres, worldGroundAt } from '../core/worldgen.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
@@ -102,6 +110,19 @@ export const testHouseScene = (config: GameConfig, registry: Registry) => {
     scale.blockSize,
   );
   const spawn: Vec3 = [HOUSE_OFFSET[0] + SPAWN_OFFSET[0], floor, HOUSE_OFFSET[1] + SPAWN_OFFSET[2]];
+  let look: Placement | undefined;
+  if (config.site === 'testHouse' && scale.blockSize === TEMPLATE_BLOCK_SIZE) {
+    const piece = registry.mapPieces.get('test_house_look');
+    const anchor = piece?.anchors.spawn;
+    if (!(piece && anchor)) {
+      throw new Error('Test-house look content requires a spawn anchor');
+    }
+    look = {
+      template: compileMapPiece(registry, piece),
+      origin: spawn.map((value, axis) => Math.round(value / scale.blockSize) - anchor.at[axis]!) as Vec3,
+      turn: 0,
+    };
+  }
   // Furniture is authored for half-metre blocks; at others the house stays bare.
   const furniture =
     scale.blockSize === TEMPLATE_BLOCK_SIZE
@@ -129,8 +150,17 @@ export const testHouseScene = (config: GameConfig, registry: Registry) => {
       }),
     ];
   });
+  if (look) {
+    furniture.push(
+      ...placedPieces(look).map(({ furniture: type, pos, size, facing }) => ({ type, pos, size, facing })),
+    );
+    lootSources.push(
+      ...lootSourcesOf(registry, 'test-house', look).map((source) => ({ ...source, fixture: true as const })),
+    );
+  }
   return {
     lootSources,
+    powerDevices: look ? placedPowerDevices(registry, [look]) : [],
     structures: rasterize(house, scale.blockSize),
     spawn: { pos: spawn, yaw: SPAWN_YAW },
     furniture: fillFurnitureLoot(
@@ -328,7 +358,8 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     registry,
     contentErrors,
     scenario: registry.scenarios.get(config.site),
-    powerDevices: built instanceof CitySite ? placedPowerDevices(registry, built.placements) : [],
+    powerDevices:
+      built instanceof CitySite ? placedPowerDevices(registry, built.placements) : (house?.powerDevices ?? []),
     world,
     entities,
     site: built,
