@@ -135,6 +135,7 @@ const HOUSE_FURNITURE: readonly { type: string; at: Vec3; facing: Facing; loot?:
   // Outside, on the grass beside the path.
   { type: 'crate', at: [-2, 0, 4.5], facing: 'n', loot: 'sample_note_loot' },
   { type: 'sample_sign', at: [SPAWN_OFFSET[0] + 2, 0, SPAWN_OFFSET[2] + 1], facing: 'n' },
+  { type: 'wardrobe', at: [SPAWN_OFFSET[0] + 2, 0, SPAWN_OFFSET[2] - 2], facing: 'w' },
   // Kitchen: a fridge in the south-west corner, a cupboard against the south wall.
   { type: 'fridge', at: [1, 0, 5.5], facing: 'n' },
   { type: 'kitchen_cupboard', at: [3, 0, 6], facing: 'n' },

@@ -496,6 +496,7 @@ const blockEntitySchema = obj({
   facing: enumeration(['n', 'e', 's', 'w']),
   tip: opt(enumeration(['back', 'front', 'left', 'right', 'top'])),
   carried: opt(enumeration([true])),
+  floorLocked: opt(enumeration([true])),
   fixed: opt(enumeration([true])),
   searched: bool,
   open: bool,

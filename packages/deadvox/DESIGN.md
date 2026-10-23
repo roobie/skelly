@@ -489,13 +489,12 @@ strength without adding another actor stat. Destructive clearing stays separate
 because rearranging a room should not require destroying its contents. See `src/core/furnitureMove.ts`,
 `liftFurniture`, `placeFurniture` and `slideFurniture`.
 
-- **Oversized pieces.** A piece too large to carry need not make a room a dead
-  end. Floor steps trade time, exertion and a louder scrape for moving it without
-  a second person or a strength stat. They do not claim carry slots: the piece
-  remains an obstacle, not a held item. Each completed step is an ordinary saved
-  position, so stopping between steps needs no persistent drag mode. See
-  `src/core/furnitureMove.ts`, `slideFurniture`, and `src/game/session.ts`,
-  `slidePiece`.
+- **Oversized pieces.** A piece too large to lift need not make a room a dead
+  end. Dragging reuses picking up and holding, constrained to the floor plane:
+  one interaction to learn and one code path to maintain, rather than a separate
+  drag mode. Pushing remains a floor step because it moves an obstacle without
+  holding it. See `src/core/furnitureMove.ts`, `liftFurniture`, `placement` and
+  `slideFurniture`, and `src/game/session.ts`, `liftPiece` and `slidePiece`.
 - **Movement choices.** Movement must not hide a container's search or a bed's
   rest or a freestanding sign's reading. Readability does not fasten a board;
   its ordinary use remains a choice alongside movement. The selector belongs
@@ -574,33 +573,19 @@ because rearranging a room should not require destroying its contents. See `src/
 - **A carried piece carries its contents.** An explosive inside a carried
   piece goes off at its carrier, because the piece is in their hands, not where
   it last stood. See `src/game/session.ts`, `detonationPoint`.
-- **Seen while carried.** The player has to see what they're carrying, so the
-  piece is drawn held low in front of them, clear of the aimed cell's outline
-  so it never hides where it will go. The view reads the carry state rather
-  than a copy of it, so it cannot outlive the carry. It keeps the world heading
-  it will be set down at rather than turning with the view, so whichever way
-  the player looks, the piece in hand, the outline and the placed piece agree,
-  and a turn or tip reads as the change it makes to the placement. Where it
-  sits is content, so it can be tuned by eye. See `src/render/carriedPiece.ts`,
-  `CarriedPiece`.
-- **Turning and tipping.** A carried piece turns a quarter at a time, because
-  a piece that only fits a doorway, a stairwell or a gap along a wall when
-  laid over is otherwise a dead end the player can see a way past. One key
-  tips it about the world's east–west axis and the other turns it about the
-  vertical. The axes belong to the world, not the piece, so a press gives the
-  same pose wherever the player stands, and two keys reach every pose a box
-  can take, any face down. The turned box is the piece: fit, the put-down
-  outline and what it blocks all read it, and it stays turned once placed and
-  through a save, so a barricade stays as it was built. Turning in the hands
-  is free and silent, since lifting and carrying already pay in stamina and
-  noise, and a charge per turn would tax lining up a placement rather than
-  moving furniture. For the same reason the carry shows no aid for what the
-  next press will do: a press costs nothing, and the piece in hand and the
-  outline show its result at once. Contents stay in a tipped piece and it
-  opens as usual, by the same rule as what lies on top. A piece marked
-  upright only turns about the vertical; the mark is content, so a pack
-  decides without code. See `src/core/furnitureMove.ts`, `turnCarried` and
-  `tipCarried`, and `src/core/orientation.ts`, `turnPose`.
+- **Seen while carried.** Carry feedback must agree with where the piece can
+  be put down, without hiding the placement outline. A dragged piece stays
+  visibly on its floor plane rather than floating with the player's view.
+  Presentation reads the hold owner so it cannot outlive the hold. See
+  `src/render/carriedPiece.ts`, `CarriedPiece`.
+- **Turning and tipping.** Lifted pieces can be reoriented because a piece
+  that could fit through a doorway laid over should not become a dead end.
+  World-relative axes make a press predictable wherever the player stands.
+  Rotation feedback needs no separate aid or charge: the piece and placement
+  outline show the result, and lifting and carrying already pay for the move.
+  Dragging retains the floor-step restriction on reorientation rather than
+  introducing a new rotation rule. See `src/core/furnitureMove.ts`,
+  `turnCarried` and `tipCarried`, and `src/core/orientation.ts`, `turnPose`.
 - **Refusals live in content.** Each refusal says why in a short first-person
   line, kept in content with the other UI text so a pack can reword it.
 

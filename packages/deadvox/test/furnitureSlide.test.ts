@@ -1,14 +1,26 @@
+import { Box3, Quaternion } from 'three';
 import { describe, expect, it } from 'vitest';
 import type { Registry } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { type FurnitureMover, slidableFurniture, slideFurniture } from '../src/core/furnitureMove.ts';
+import {
+  type FurnitureMover,
+  liftFurniture,
+  placeFurniture,
+  placement,
+  slidableFurniture,
+  slideFurniture,
+  tipCarried,
+  turnCarried,
+} from '../src/core/furnitureMove.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { CarriedPiece } from '../src/render/carriedPiece.ts';
+import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { encodeFixture, formatVersion } from './snapshotTestSupport.ts';
@@ -99,6 +111,50 @@ const runtime = (restore?: SaveSnapshot) => {
 };
 
 describe('floor furniture steps', () => {
+  it('uses the hold path without changing floor height for any aimed height', () => {
+    for (const [height, aimedHeight] of [
+      [-8, -40],
+      [1, 0],
+      [12, 3],
+      [1, 50],
+    ] as const) {
+      const inventory = new Inventory(registry);
+      const entity = inventory.furnish({ ...spec, pos: [5, height, 5] })!;
+      const mover: FurnitureMover = {
+        ...fixture().mover,
+        inventory,
+        player: { ...player(), pos: [3, height, 6] },
+        terrainSolid: (_x, y) => y === height - 1,
+      };
+      expect(liftFurniture(mover, entity, true)).toBeUndefined();
+      expect(inventory.entities.carrying()).toBe(entity);
+      expect(inventory.liftRefusal()).toBe(messages.handsFull);
+      expect(entity.pos[1]).toBe(height);
+      const aimed: Vec3 = [8, aimedHeight, 6];
+      const spot = placement(mover, aimed);
+      expect(spot).toHaveProperty('pos');
+      if (!('pos' in spot)) {
+        throw new Error(spot.refusal);
+      }
+      expect(spot.pos[1]).toBe(height);
+      const meshes = new FurnitureMeshes(mover.blockSize);
+      const view = new CarriedPiece(
+        inventory.entities,
+        (piece, def) => meshes.pieceMesh(piece, def),
+        registry.inventory.get(CORE_CONTENT_IDS.player)!.furnitureMove.carriedView,
+      );
+      view.update(1, new Quaternion(), { pos: spot.pos, blockSize: mover.blockSize });
+      expect(view.group.children).toHaveLength(0);
+      expect(new Box3().setFromObject(view.floorGroup).min.y).toBeCloseTo(height * mover.blockSize);
+      expect(turnCarried(inventory)).toBe(messages.floorOnly);
+      expect(tipCarried(inventory)).toBe(messages.floorOnly);
+      expect(placeFurniture(mover, aimed)).toBeUndefined();
+      expect(entity.pos[1]).toBe(height);
+      expect(entity.pos[0]).not.toBe(spec.pos[0]);
+      expect(inventory.entities.carrying()).toBeUndefined();
+      expect(entity.floorLocked).toBeUndefined();
+    }
+  });
   it.each(['mount', 'door', 'climbable', 'vehicle', 'scenarioGoal', 'cover'] as const)(
     'keeps oversized content with %s out of the movement selector',
     (field) => {
@@ -118,7 +174,7 @@ describe('floor furniture steps', () => {
     },
   );
 
-  it.each(['push', 'drag'] as const)(
+  it.each(['push'] as const)(
     'finishes one timed %s step with stamina and audible noise, without occupying hands',
     (way) => {
       const { session, advance } = runtime();
@@ -128,14 +184,14 @@ describe('floor furniture steps', () => {
       advance(tuning.stepSimSeconds / 2);
       expect(entity.pos).toEqual(spec.pos);
       advance(tuning.stepSimSeconds / 2);
-      expect(entity.pos).toEqual([way === 'push' ? 6 : 4, 1, 5]);
+      expect(entity.pos).toEqual([6, 1, 5]);
       expect(session.sim.needs.stamina).toBeLessThan(before);
       expect(session.playerAudio.vocalNoise?.radiusMetres).toBeGreaterThan(
         registry.sounds.get('furniture_scrape')!.noise.radiusMetres,
       );
       expect(session.entities.carrying()).toBeUndefined();
       expect(session.entities.isSolid(...entity.pos)).toBe(true);
-      const vacated: Vec3 = [way === 'push' ? 5 : 8, 1, 5];
+      const vacated: Vec3 = [5, 1, 5];
       expect(session.entities.isSolid(...vacated)).toBe(false);
     },
   );
@@ -160,6 +216,12 @@ describe('floor furniture steps', () => {
     expect(slideFurniture({ ...mover, terrainSolid }, entity, 'push')).toBe(
       obstacle === 'hole' ? messages.floorOnly : messages.noRoom,
     );
+    expect(entity.pos).toEqual(spec.pos);
+    expect(liftFurniture(mover, entity, true)).toBeUndefined();
+    expect(placeFurniture({ ...mover, terrainSolid }, [8, 40, 6])).toBe(
+      obstacle === 'hole' ? messages.floorOnly : messages.noRoom,
+    );
+    expect(entity.carried).toBe(true);
     expect(entity.pos).toEqual(spec.pos);
   });
 
@@ -209,7 +271,7 @@ describe('floor furniture steps', () => {
     expect(relocated).toEqual([entity.uid, top.uid]);
   });
 
-  it('round-trips a completed step between actions and can drag the restored piece back', async () => {
+  it('round-trips a completed push and can pick up the restored piece for floor-locked holding', async () => {
     const { session, advance } = runtime();
     const entity = session.inventory.furnish(spec)!;
     expect(session.slideFurniture(entity.uid, 'push')).toBeUndefined();
@@ -230,8 +292,16 @@ describe('floor furniture steps', () => {
       loaded.advance(1 / 60);
     }
     loaded.setWalking(false);
-    expect(loaded.session.slideFurniture(restored.uid, 'drag')).toBeUndefined();
-    loaded.advance(tuning.stepSimSeconds);
-    expect(restored.pos).toEqual(spec.pos);
+    expect(loaded.session.liftFurniture(restored.uid, true)).toBeUndefined();
+    expect(loaded.session.entities.carrying()).toBe(restored);
+    const holding = loaded.session.snapshot({ worldId: 'slide-world', characterId: 'slide-character' });
+    const savedHold = await decodeSave(await encodeFixture(holding), {
+      version: formatVersion,
+      contentLookup: (kind, id) => contentLookup(registry, kind, id),
+    });
+    const resumed = runtime(savedHold.snapshot);
+    expect(resumed.session.entities.carrying()).toMatchObject({ uid: restored.uid, floorLocked: true });
+    expect(resumed.session.placeFurniture([7, 20, 6])).toBeUndefined();
+    expect(resumed.session.entities.byUid(restored.uid)?.pos).toEqual(spec.pos);
   });
 });

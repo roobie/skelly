@@ -1894,9 +1894,9 @@ export const startPlay = (
     },
     pickup: pickupGroundItem,
     interact: interactFurniture,
-    lift: (uid) => {
+    lift: (uid, floorLocked) => {
       const entity = entities.byUid(uid);
-      return entity?.bar ? enqueueDoorBar(entity, false) : session.liftFurniture(uid);
+      return entity?.bar ? enqueueDoorBar(entity, false) : session.liftFurniture(uid, floorLocked);
     },
     useFurniture: (uid): string | undefined => {
       const entity = entities.byUid(uid);
@@ -2608,9 +2608,12 @@ export const startPlay = (
   const furniturePayload = (entity: BlockEntity, mode: 'pocket' | 'wield'): ReplayActionPayload => {
     if (slidableFurniture(inventory, entity, s) && furnitureActionSelection.isOpen(entity)) {
       const selected = furnitureActionSelection.confirm(entity, furnitureActions(entity))!;
-      return selected.id === 'use'
-        ? { kind: 'furniture.use', entityUid: entity.uid }
-        : { kind: 'furniture.slide', entityUid: entity.uid, way: selected.id === 'push' ? 'push' : 'drag' };
+      if (selected.id === 'use') {
+        return { kind: 'furniture.use', entityUid: entity.uid };
+      }
+      return selected.id === 'drag'
+        ? { kind: 'furniture.lift', entityUid: entity.uid, floorLocked: true }
+        : { kind: 'furniture.slide', entityUid: entity.uid, way: 'push' };
     }
     return mode === 'wield' && liftable(entity)
       ? { kind: 'furniture.lift', entityUid: entity.uid }
@@ -3263,6 +3266,10 @@ export const startPlay = (
     const entity = entities.carrying();
     return entity && { entity, spot: session.furniturePlacement(aimedCell()) };
   };
+  const carryFloorPlacement = (): Readonly<Vec3> | undefined => {
+    const carry = carryPreview();
+    return carry && 'pos' in carry.spot ? carry.spot.pos : undefined;
+  };
   /** Outlines the crosshair target, or, while carrying, where the piece would be set down. */
   const markOutline = (
     target: InteractionTarget | undefined,
@@ -3503,6 +3510,7 @@ export const startPlay = (
     const pose = renderMeleePose(action, elapsed, ready, dominantSide(inventory.character));
     const { job: handlingJob, progress: grabProgress } = handlingPresentation();
     view.updateHeld(dt, pose, spectator.enabled ? undefined : survival.lit, {
+      floorPlacement: carryFloorPlacement(),
       firearms: firearms.frames(),
       opticZoom: opticZoom.frame(zoomFirearm(), isAimingDownSights()),
       ...(readiness === undefined ? {} : { readiness }),

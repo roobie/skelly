@@ -37,6 +37,8 @@ export interface BlockEntity {
   tip?: Tip | undefined;
   /** Held in the player's hands, so it covers no cells. */
   carried: boolean;
+  /** Carrying constrained to the height where it was picked up. */
+  floorLocked?: true | undefined;
   /** Fastened where it stands, so it can't be moved. */
   readonly fixed?: true;
   /** One grid per pocket of the furniture's container. */
@@ -73,6 +75,7 @@ export interface BlockEntityState {
   facing: Facing;
   tip?: Tip;
   carried?: true;
+  floorLocked?: true;
   fixed?: true;
   searched: boolean;
   open: boolean;
@@ -354,6 +357,7 @@ export class BlockEntities {
         facing: entity.facing,
         ...(entity.tip ? { tip: entity.tip } : {}),
         ...(entity.carried ? { carried: true as const } : {}),
+        ...(entity.floorLocked ? { floorLocked: true as const } : {}),
         ...(entity.fixed ? { fixed: true as const } : {}),
         searched: entity.searched,
         open: entity.open,
@@ -398,9 +402,7 @@ export class BlockEntities {
         throw new Error(`Invalid or duplicate block entity id ${saved.uid}`);
       }
       ids.add(saved.uid);
-      if (saved.carried && entities.carrying()) {
-        throw new Error('Only one block entity can be carried');
-      }
+      entities.validateCarry(saved);
       entities.restoreEntity(saved);
     }
     const maxUid = [...ids].reduce((max, uid) => Math.max(max, uid), 0);
@@ -446,6 +448,15 @@ export class BlockEntities {
           this.columns.delete(column);
         }
       }
+    }
+  }
+
+  private validateCarry(saved: BlockEntityState): void {
+    if (saved.floorLocked && !saved.carried) {
+      throw new Error('Only a carried block entity can be floor locked');
+    }
+    if (saved.carried && this.carrying()) {
+      throw new Error('Only one block entity can be carried');
     }
   }
 
@@ -528,7 +539,7 @@ export class BlockEntities {
   }
 
   private addWithUid(
-    spec: EntitySpec & { carried?: true },
+    spec: EntitySpec & { carried?: true; floorLocked?: true },
     uid: number,
     originAt: Readonly<Vec3>,
   ): BlockEntity | undefined {
@@ -549,6 +560,7 @@ export class BlockEntities {
       facing: spec.facing,
       ...(spec.tip ? { tip: spec.tip } : {}),
       carried: spec.carried === true,
+      ...(spec.floorLocked ? { floorLocked: true as const } : {}),
       ...(spec.fixed ? { fixed: true as const } : {}),
       searched: false,
       open: false,
@@ -601,12 +613,13 @@ export class BlockEntities {
   }
 
   /** Takes a standing piece out of its cells into the player's hands. */
-  lift(entity: BlockEntity): void {
+  lift(entity: BlockEntity, floorLocked = false): void {
     if (entity.carried || this.carrying()) {
       throw new Error('Already carrying a block entity');
     }
     this.occupy(entity, false);
     entity.carried = true;
+    entity.floorLocked = floorLocked ? true : undefined;
     this.version += 1;
     this.standing += 1;
   }
@@ -645,6 +658,7 @@ export class BlockEntities {
     }
     entity.pos = [...pos];
     entity.carried = false;
+    entity.floorLocked = undefined;
     this.occupy(entity, true);
     this.version += 1;
     this.standing += 1;

@@ -1199,7 +1199,10 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
             .copyInputs()
             .actions.some(
               ({ payload }) =>
-                payload?.kind === 'furniture.slide' && payload.entityUid === uid && payload.way === expectedWay,
+                payload?.entityUid === uid &&
+                (expectedWay === 'push'
+                  ? payload.kind === 'furniture.slide' && payload.way === 'push'
+                  : payload.kind === 'furniture.lift' && payload.floorLocked === true),
             ),
         { uid: fixedUid, way },
       );
