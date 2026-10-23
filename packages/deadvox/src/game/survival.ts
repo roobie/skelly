@@ -23,7 +23,14 @@ import {
   unloadBattery,
 } from '../core/lights.ts';
 import { consume } from '../core/needs.ts';
-import { batteryHandRefusal, batterySlotOption, batterySlotRefusal, consumption, stowTarget, useOption } from '../core/options.ts';
+import {
+  batteryHandRefusal,
+  batterySlotOption,
+  batterySlotRefusal,
+  consumption,
+  stowTarget,
+  useOption,
+} from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { Readable, ReadRequest } from '../core/readable.ts';
 import type { Simulation } from '../core/sim.ts';
@@ -137,7 +144,7 @@ export class Survival {
       if (!(light && battery)) {
         return coreMessage(this.inventory.registry, 'batteryGone');
       }
-      const route = params.route;
+      const { route } = params;
       if (route !== 'hands' && route !== 'slot') {
         throw new Error('Invalid action parameter route');
       }
