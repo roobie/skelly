@@ -341,22 +341,6 @@ const batteryOption = (battery: Item, inv: Inventory): UseOption => {
   return light ? loadOption(inv, light, battery, 'hands') : refuseUse(inv, coreMessage(inv.registry, 'noLightToFit'));
 };
 
-/** A fitting battery with charge in the hand that doesn't hold `light`. */
-const otherHandBattery = (inv: Inventory, light: Item): Item | undefined => {
-  const at = inv.locate(light);
-  const lightHand = at?.kind === 'hand' ? at.side : undefined;
-  return SIDES.filter((side) => side !== lightHand)
-    .map((side) => inv.hands[side])
-    .find(
-      (held): held is Item =>
-        held !== undefined &&
-        held !== light &&
-        defOf(inv.registry, held.type).battery !== undefined &&
-        fitsLight(inv.registry, light, held) &&
-        (chargeOf(inv.registry, held) ?? 0) > 0,
-    );
-};
-
 const swapPlan = (simSeconds: number): UseOption['plan'] => ({ ok: true, time: simSeconds });
 
 const canisterOption = (canister: Item, inv: Inventory): UseOption => {
@@ -390,10 +374,6 @@ const lightOption = (item: Item, view: ReachSnapshot): UseOption => {
     }
     if (!defOf(inv.registry, item.type).light?.power) {
       return refuseUse(inv, coreMessage(inv.registry, 'outOfFuel'));
-    }
-    const battery = otherHandBattery(inv, item);
-    if (battery) {
-      return loadOption(inv, item, battery, 'hands');
     }
     return refuseUse(inv, coreMessage(inv.registry, item.slots?.battery ? 'batteryDeadNoSpare' : 'noBatteryNoSpare'));
   }

@@ -2150,13 +2150,14 @@ only: any light with a fuel rate and a swappable fuel canister behaves the same.
 A battery goes into a light only as the player chooses: dropped onto the battery slot
 on the light's card in the inventory, which shows the battery loaded, or used from one
 hand while the other holds the light. A battery used from a pocket, by the quickbar
-or otherwise, refuses. A dead or empty light used alone
-also loads a charged battery that fits from the other hand; otherwise it refuses and
-loads nothing, even with a charged battery in a bag. The player chooses which battery
-goes in, so a fuller battery hidden in a bag never overrides the one in hand. The card
-slot serves a light with no free hand, such as one fitted to a gun, whose card shows the
-same slot. Both light and battery must be in reach, a fitted light through its gun, and
-the swap rechecks that when it completes. See `src/core/options.ts`,
+or otherwise, refuses. Only using the battery loads it: a dead or empty light used
+refuses and says so, whatever the other hand holds, because one way to load from the
+hands keeps the rule simple and the player acts with the battery on the light, not the
+other way round. The player chooses which battery goes in, so a fuller battery hidden in
+a bag never overrides the one in hand. The card slot serves a light with no free hand,
+such as one fitted to a gun, whose card shows the same slot. A hand load needs both in
+hands and a slot drop needs both in reach, a fitted light through its gun; the swap
+rechecks the route that admitted it when it completes. See `src/core/options.ts`,
 `batterySlotOption` and `batteryOption`, and `src/ui/inventoryScreen.ts`,
 `batterySlotTemplate`.
 

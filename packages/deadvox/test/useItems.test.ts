@@ -467,14 +467,16 @@ describe('using what you hold', () => {
     expect(chargeOf(registry, spent)).toBeCloseTo(0.1, 9);
   });
 
-  it('a dead light used with a battery in the other hand loads that battery', () => {
-    const { queue, survival, hold } = setup();
+  it('a dead light used with a charged battery in the other hand refuses and loads nothing', () => {
+    const { inventory, queue, survival, hold } = setup();
     const light = hold('flashlight');
     const battery = hold('aa_battery', 'left');
-    batteryOf(light).charges = 0;
-    expect(survival.use(light)).toBeUndefined();
-    queue.tick(2.1);
-    expect(light.slots?.battery).toBe(battery);
+    const original = batteryOf(light);
+    original.charges = 0;
+    expect(survival.use(light)).toBe(coreMessage(registry, 'batteryDeadNoSpare'));
+    expect(queue.jobs).toEqual([]);
+    expect(light.slots?.battery).toBe(original);
+    expect(inventory.locate(battery)?.kind).toBe('hand');
   });
 
   it('a hand load refuses once an earlier queued move has put the light down', () => {
