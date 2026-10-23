@@ -16,11 +16,12 @@ import { forestDensityAt, leafLitterAt, placeTree, stampTrees, TreeIndex } from 
 import { World } from '../src/core/world.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
-import { perceivePlayer, ZombieSystem } from '../src/core/zombies.ts';
+import { perceivePlayer } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const scale = makeScale(0.5);
@@ -36,6 +37,7 @@ const senseTuning = {
     eyeDropMetres: 0.6,
     bodyHeightMetres: 1.2,
   },
+  prone: registry.senses.get('player')!.prone,
   wall: soundTuning,
   footsteps: registry.senses.get('player')!.footsteps,
   vocalNoiseLifetimeSimSeconds: registry.senses.get('player')!.vocalNoiseLifetimeSimSeconds,

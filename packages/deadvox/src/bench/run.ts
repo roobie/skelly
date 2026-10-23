@@ -298,6 +298,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
       z = playerBody.pos[2] * s;
       const simulation = new Simulation({
         seed: config.seed,
+        registry: engine.registry,
         bodyTuning: engine.registry.body.get(CORE_CONTENT_IDS.player)!,
         compressionCaps: engine.registry.compression.get(CORE_CONTENT_IDS.player)!.caps,
         clock: { ratio: dayCycle.clockRatio, start: startTime },
@@ -305,6 +306,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
       simulation.godMode = true;
       const lightSeenFrom = engine.registry.items.get('torch')!.light!.seenFrom;
       zombies = new ZombieSystem({
+        activeZombieRadiusMetres: siteGenerationOf(engine.registry).activeZombieRadiusMetres,
         seed: config.seed,
         isSolid: engine.isSolid,
         isOpaque: engine.isOpaque,

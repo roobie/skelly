@@ -15,6 +15,7 @@ import {
 import type { ItemDef, Registry } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
+import { type CoreMessageKey, coreLabel, coreMessage, coreRefusal } from './coreText.ts';
 import type { WorkPlan } from './crafting.ts';
 import {
   disassemblyOutputs,
@@ -47,7 +48,6 @@ import {
   stackRoom,
   weightOf,
 } from './items.ts';
-import { NO_GROUND_ROOM_REFUSAL, NO_LANDING_REFUSAL } from './itemThrow.ts';
 import { itemIds, itemRoots, savedItemTree, type TreeLocation, walkItemTree } from './itemTree.ts';
 import type { Rolled } from './loot.ts';
 import { magazineWellCalibre, slotsReason } from './magazine.ts';
@@ -80,7 +80,13 @@ export const wornSlotOf = (registry: Registry, item: Item): WearSlot | undefined
   return def.wearable?.slot ?? (isLongGun(def) ? 'shoulder' : undefined);
 };
 
-export const WORK_IN_PROGRESS = 'work_in_progress';
+export const workInProgressItem = (registry: Registry): ItemDef => {
+  const definitions = [...registry.items.values()].filter((item) => item.workInProgress);
+  if (definitions.length !== 1) {
+    throw new Error('Expected exactly one work-in-progress item definition');
+  }
+  return definitions[0]!;
+};
 
 /** Ordinary dropping and craft retirement share the same bounded neighborhood. */
 export const dropSpots = (feet: Vec3): Vec3[] => [
@@ -144,7 +150,9 @@ export type Target =
 /** Where in the world an item lies, if it isn't on the player: a pile, or furniture. */
 type Place = { kind: 'pile'; pile: Pile } | { kind: 'furniture'; entity: BlockEntity };
 
-export type Plan = { ok: true; time: number; merge?: Item; at?: Spot; swap?: Item } | { ok: false; reason: string };
+export type Plan =
+  | { ok: true; time: number; merge?: Item; at?: Spot; swap?: Item }
+  | { ok: false; reason: string; key?: CoreMessageKey };
 
 export const SIDES: readonly HandSide[] = ['right', 'left'];
 const other = (side: HandSide): HandSide => (side === 'right' ? 'left' : 'right');
@@ -152,15 +160,15 @@ const pileKey = (pos: Vec3) => pos.join(',');
 const refuse = (reason: string): Plan => ({ ok: false, reason });
 
 /** Why an item can't leave where it is, whatever the target. */
-const heldInPlace = (item: Item, from: Location): string | undefined => {
+const heldInPlace = (registry: Registry, item: Item, from: Location): string | undefined => {
   if (from.kind === 'work') {
-    return 'Inputs are held by the work item';
+    return coreMessage(registry, 'inWork');
   }
   if (from.kind === 'slot') {
-    return 'It is fitted to the firearm';
+    return coreMessage(registry, 'fitted');
   }
   if (item.trap) {
-    return item.trap.state === 'armed' ? 'The trap is set' : 'The trap is shut on a leg';
+    return coreMessage(registry, item.trap.state === 'armed' ? 'trapSet' : 'trapShut');
   }
   return undefined;
 };
@@ -616,7 +624,7 @@ export class Inventory {
     target: Extract<Target, { kind: 'pile' }>,
   ): { ok: true; item: Item } | { ok: false; reason: string } {
     if (this.hands[side] !== item) {
-      return { ok: false, reason: 'It left your hand before the throw began' };
+      return { ok: false, reason: coreMessage(this.registry, 'leftHand') };
     }
     const placement = this.planAdd(item, target);
     if (!placement.ok) {
@@ -637,14 +645,14 @@ export class Inventory {
   plan(item: Item, target: Target, count = item.count): Plan {
     const from = this.locate(item);
     if (!from) {
-      return refuse("It isn't there any more");
+      return coreRefusal(this.registry, 'gone');
     }
-    const held = heldInPlace(item, from);
+    const held = heldInPlace(this.registry, item, from);
     if (held) {
       return refuse(held);
     }
     if (!Number.isInteger(count) || count < 1 || count > item.count) {
-      return refuse(`Can't move ${count} of ${item.count}`);
+      return coreRefusal(this.registry, 'partCount', { count: String(count), total: String(item.count) });
     }
     const handHeld = this.handMoveRefusal(item, from, target);
     if (handHeld) {
@@ -652,12 +660,12 @@ export class Inventory {
     }
     const { light } = defOf(this.registry, item.type);
     if (item.on && light?.burning?.stow === 'refuse' && target.kind !== 'hand' && target.kind !== 'pile') {
-      return refuse('Put it out before stowing it');
+      return coreRefusal(this.registry, 'stillLit');
     }
     const source = this.placeOf(from);
     const destination = this.targetPlace(target);
     if (!(this.reachable(source) && (this.reachable(destination) || this.dropLanding(target)))) {
-      return refuse('Too far away');
+      return coreRefusal(this.registry, 'tooFar');
     }
     const access = this.accessRefusal(source, destination);
     if (access) {
@@ -888,7 +896,7 @@ export class Inventory {
     } else if (repair || !this.validDisassemblyPlan(plan)) {
       return undefined;
     }
-    const work = this.create(WORK_IN_PROGRESS);
+    const work = this.create(workInProgressItem(this.registry).id);
     if (plan.kind === 'craft') {
       this.escrowCraft(plan, work, repair);
     } else {
@@ -907,7 +915,7 @@ export class Inventory {
       return landed ? [landed] : [];
     });
     if (outputs.length > 0 && landings.length === 0) {
-      throw new Error(NO_LANDING_REFUSAL);
+      throw new Error(coreMessage(this.registry, 'noLanding'));
     }
     for (const item of outputs) {
       let found = false;
@@ -925,7 +933,7 @@ export class Inventory {
         }
       }
       if (!found) {
-        throw new Error(NO_GROUND_ROOM_REFUSAL);
+        throw new Error(coreMessage(this.registry, 'noGroundRoom'));
       }
     }
     return drops;
@@ -1094,7 +1102,7 @@ export class Inventory {
   /** Why a move can't reach into the furniture at either end: it is unsearched, or reserved. */
   private accessRefusal(source: Place | undefined, destination: Place | undefined): string | undefined {
     if (!(this.searched(source) && this.searched(destination))) {
-      return 'Search it first';
+      return coreMessage(this.registry, 'notSearched');
     }
     const reserved = (place: Place | undefined) =>
       place?.kind === 'furniture' ? this.entities.useRefusal(place.entity) : undefined;
@@ -1103,7 +1111,7 @@ export class Inventory {
 
   /** The shoulder carries a long gun only by its sling. */
   private shoulderRefusal(slot: WearSlot, item: Item): string | undefined {
-    return slot === 'shoulder' && !slingFitted(item) ? 'It needs a sling to go on your shoulder' : undefined;
+    return slot === 'shoulder' && !slingFitted(item) ? coreMessage(this.registry, 'needsSling') : undefined;
   }
 
   private placement(item: Item, target: Target, count: number, from: Location): Plan {
@@ -1113,26 +1121,26 @@ export class Inventory {
       case 'worn': {
         const slot = wornSlotOf(this.registry, item);
         if (!slot) {
-          return refuse("You can't wear that");
+          return coreRefusal(this.registry, 'cantWear');
         }
         const current = this.worn[slot];
         if (current === item) {
-          return refuse("You're already wearing it");
+          return coreRefusal(this.registry, 'alreadyWearing');
         }
         const shoulder = this.shoulderRefusal(slot, item);
         if (shoulder) {
           return refuse(shoulder);
         }
         return current
-          ? refuse(`You're already wearing the ${this.name(current).toLowerCase()} there`)
+          ? coreRefusal(this.registry, 'wearingOther', { item: this.name(current).toLowerCase() })
           : { ok: true, time: 0 };
       }
       case 'pocket': {
         if (target.owner === item) {
-          return refuse("It can't go inside itself");
+          return coreRefusal(this.registry, 'insideItself');
         }
         if (!this.locate(target.owner)) {
-          return refuse("You can't reach that");
+          return coreRefusal(this.registry, 'cantReach');
         }
         return this.gridPlacement(item, count, this.gridOf(target), target);
       }
@@ -1344,7 +1352,7 @@ export class Inventory {
     const { item, otherItem, from, target, plan } = swap;
     const otherFrom = this.locate(otherItem);
     if (!otherFrom) {
-      return refuse("It isn't there any more");
+      return coreRefusal(this.registry, 'gone');
     }
     const sourceTarget = this.targetForLocation(from);
     const itemOrigin = this.quickbarOriginOf(item, from);
@@ -1389,14 +1397,15 @@ export class Inventory {
 
   private handPlacement(item: Item, side: HandSide, from: Location): Plan {
     if (item.work && side !== dominantSide(this.character)) {
-      return refuse('Work stays in the dominant hand');
+      return coreRefusal(this.registry, 'workHand');
     }
     if (from.kind === 'hand' && from.side === side) {
-      return refuse("It's already in that hand");
+      return coreRefusal(this.registry, 'alreadyInHand');
     }
     const held = this.hands[side];
     if (held && held !== item) {
-      return refuse(`Your ${side} hand is holding the ${this.name(held).toLowerCase()}`);
+      const key = side === 'right' ? 'rightHandHolding' : 'leftHandHolding';
+      return coreRefusal(this.registry, key, { item: this.name(held).toLowerCase() });
     }
     const conflict = this.handPairRefusal(item, this.hands[other(side)]);
     return conflict ? refuse(conflict) : { ok: true, time: 0 };
@@ -1405,10 +1414,10 @@ export class Inventory {
   private handPairRefusal(item: Item, otherHeld: Item | undefined): string | undefined {
     const busy = otherHeld && otherHeld !== item;
     if (busy && defOf(this.registry, otherHeld.type).twoHanded) {
-      return `The ${this.name(otherHeld).toLowerCase()} needs both hands`;
+      return coreMessage(this.registry, 'otherNeedsBothHands', { item: this.name(otherHeld).toLowerCase() });
     }
     if (busy && defOf(this.registry, item.type).twoHanded) {
-      return 'It needs both hands';
+      return coreMessage(this.registry, 'needsBothHands');
     }
     return undefined;
   }
@@ -1443,13 +1452,13 @@ export class Inventory {
   ): string | undefined {
     const hasNestedContents = item.work !== undefined || (item.pockets ?? []).some((pocket) => pocket.length > 0);
     if (target.kind !== 'pile' && hasNestedContents && !defOf(this.registry, item.type).container?.rigid) {
-      return "I can't pack a loaded soft bag inside another container";
+      return coreMessage(this.registry, 'softBagNested');
     }
     if (target.kind !== 'pocket') {
       return undefined;
     }
     if (hasNestedContents && defOf(this.registry, target.owner.type).container?.rigid) {
-      return "I can't put a loaded container inside a hard case";
+      return coreMessage(this.registry, 'loadedInHardCase');
     }
     return this.filledContainerRefusal(target.owner);
   }
@@ -1460,13 +1469,13 @@ export class Inventory {
     let location = this.locate(owner);
     while (location?.kind === 'pocket' || location?.kind === 'furniture') {
       if (!defOf(this.registry, owner.type).container?.rigid) {
-        return "I can't pack a loaded soft bag inside another container";
+        return coreMessage(this.registry, 'softBagNested');
       }
       if (location.kind === 'furniture') {
         break;
       }
       if (defOf(this.registry, location.owner.type).container?.rigid) {
-        return "I can't put a loaded container inside a hard case";
+        return coreMessage(this.registry, 'loadedInHardCase');
       }
       ({ owner } = location);
       location = this.locate(owner);
@@ -1486,7 +1495,7 @@ export class Inventory {
       return refuse(nesting);
     }
     if (!couldFit(this.registry, grid.size, item)) {
-      return refuse('Too big for it');
+      return coreRefusal(this.registry, 'tooBig');
     }
     const joins = (p: Placed | undefined) => p !== undefined && stackRoom(this.registry, p.item, item) >= count;
     // Moving a whole item within its grid frees its own cells; moving part of a stack doesn't.
@@ -1496,14 +1505,16 @@ export class Inventory {
       if (under && joins(under)) {
         return { ok: true, time: 0, merge: under.item };
       }
-      return fitsAt(this.registry, grid, item, { ...at, ignore }) ? { ok: true, time: 0, at } : refuse('No room there');
+      return fitsAt(this.registry, grid, item, { ...at, ignore })
+        ? { ok: true, time: 0, at }
+        : coreRefusal(this.registry, 'noRoomThere');
     }
     const stack = grid.placed.find(joins);
     if (stack) {
       return { ok: true, time: 0, merge: stack.item };
     }
     const spot = findSpot(this.registry, grid, item, ignore);
-    return spot ? { ok: true, time: 0, at: spot } : refuse('No room');
+    return spot ? { ok: true, time: 0, at: spot } : coreRefusal(this.registry, 'noRoom');
   }
 
   transform(item: Item, type: string): void {
@@ -1644,7 +1655,7 @@ const validateInventoryTree = (registry: Registry, state: InventoryState): void 
   };
   for (const { item } of tree) {
     pockets(item.type, item.pockets, defOf(registry, item.type).container?.pockets);
-    if (item.type === WORK_IN_PROGRESS && !item.work) {
+    if (defOf(registry, item.type).workInProgress && !item.work) {
       throw new Error('Missing craft work payload');
     }
     if (item.work) {
@@ -1749,7 +1760,7 @@ const validateDisassemblyWorkItem = (
 export const validateWorkItem = (registry: Registry, item: ItemState): void => {
   const work = item.work!;
   const commonInvalid =
-    item.type !== WORK_IN_PROGRESS ||
+    !defOf(registry, item.type).workInProgress ||
     item.count !== 1 ||
     !Number.isFinite(work.elapsed) ||
     !Number.isFinite(work.duration) ||
@@ -1794,17 +1805,17 @@ export const sameGrid = (at: Location, spot: Spot | undefined): Target | undefin
 export const describeTarget = (inventory: Inventory, target: Target): string => {
   switch (target.kind) {
     case 'hand':
-      return `${target.side} hand`;
+      return coreLabel(inventory.registry, target.side === 'right' ? 'toRightHand' : 'toLeftHand');
     case 'worn':
-      return 'wear it';
+      return coreLabel(inventory.registry, 'toWorn');
     case 'pocket': {
       const pocket = defOf(inventory.registry, target.owner.type).container?.pockets[target.pocket];
       const name = inventory.name(target.owner);
-      return pocket?.name ? `${name} · ${pocket.name}` : name;
+      return pocket?.name ? coreLabel(inventory.registry, 'pocket', { container: name, pocket: pocket.name }) : name;
     }
     case 'furniture':
       return inventory.entities.defOf(target.entity).name.toLowerCase();
     default:
-      return 'the floor';
+      return coreLabel(inventory.registry, 'toFloor');
   }
 };

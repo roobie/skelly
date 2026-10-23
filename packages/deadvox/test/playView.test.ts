@@ -456,7 +456,7 @@ describe('play presentation ownership', () => {
     expect(cases).toHaveBeenCalledTimes(1);
   });
 
-  it('uses the shared stride phase for the rendered walk cycle', () => {
+  it('passes the shared stride phase and the stance to the drawn body', () => {
     const { view } = fixture();
     const body: Body = { pos: [2, 1, 6], vel: [0, 0, -1], halfWidth: 0.6, height: 3.6, onGround: true };
     const sync = vi.spyOn(view.playerMeshes, 'sync');
@@ -470,12 +470,13 @@ describe('play presentation ownership', () => {
         yaw: 0,
         pitch: 0,
         stridePhase: 0.25,
+        stance: 'prone',
         eye: [2, 4.24, 6],
         sightImpaired: false,
       },
       damage,
     );
-    expect(sync).toHaveBeenCalledWith(expect.objectContaining({ gaitPhase: Math.PI / 2 }));
+    expect(sync).toHaveBeenCalledWith(expect.objectContaining({ gaitPhase: Math.PI / 2, stance: 'prone' }));
     view.dispose();
   });
 
@@ -493,6 +494,7 @@ describe('play presentation ownership', () => {
       yaw: 0,
       pitch: 0,
       stridePhase: 0,
+      stance: 'standing' as const,
       eye: [2, 4.24, 6] as Vec3,
       sightImpaired: false,
     };
@@ -531,6 +533,7 @@ describe('play presentation ownership', () => {
         yaw: 0,
         pitch: 0,
         stridePhase: 0,
+        stance: 'standing' as const,
         eye: [2, 4.24, 6],
         thirdPerson: true,
         sightImpaired: false,
@@ -555,6 +558,7 @@ describe('play presentation ownership', () => {
       yaw: 0,
       pitch: 0,
       stridePhase: 0,
+      stance: 'standing' as const,
       eye: [2, 4.24, 6] as Vec3,
       thirdPerson: true,
       sightImpaired: false,
@@ -592,6 +596,7 @@ describe('play presentation ownership', () => {
         yaw: 0,
         pitch: 0,
         stridePhase: 0,
+        stance: 'standing' as const,
         eye: [2, 4.24, 6],
         thirdPerson: true,
         thirdPersonOrbit: { yaw: Math.PI / 2, pitch: 0 },
@@ -619,6 +624,7 @@ describe('play presentation ownership', () => {
         yaw: 0,
         pitch: 0,
         stridePhase: 0,
+        stance: 'standing' as const,
         eye: [2, 4.24, 6],
         sightImpaired: false,
       },
@@ -643,6 +649,7 @@ describe('play presentation ownership', () => {
       yaw: 0,
       pitch: 0,
       stridePhase: 0,
+      stance: 'standing' as const,
       eye: [2, 4.24, 6] as Vec3,
       sightImpaired: false,
       nightVision,

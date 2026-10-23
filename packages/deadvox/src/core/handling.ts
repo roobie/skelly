@@ -3,6 +3,7 @@
 // mutating the running queue.
 
 import { canonicalJson } from './canonicalJson.ts';
+import { type CoreMessageKey, coreLabel, coreMessage, coreRefusal } from './coreText.ts';
 import { describeTarget, type Inventory, type Location, type Target, type TargetState } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 
@@ -127,7 +128,8 @@ export class HandlingQueue {
     target: Target,
     count = item.count,
     later = false,
-  ): { ok: true; job: MoveJob } | { ok: false; reason: string } {
+  ): { ok: true; job: MoveJob } | { ok: false; reason: string; key?: CoreMessageKey } {
+    const { registry } = this.inventory;
     const state = this.inventory.targetState(target);
     if (
       this.jobs.some(
@@ -138,7 +140,7 @@ export class HandlingQueue {
           canonicalJson(pending.target) === canonicalJson(state),
       )
     ) {
-      return { ok: false, reason: 'Already queued' };
+      return coreRefusal(registry, 'alreadyQueued');
     }
     const from = this.inventory.locate(item);
     const plan = this.inventory.plan(item, target, count);
@@ -146,13 +148,17 @@ export class HandlingQueue {
       return plan;
     }
     const duration = plan.ok ? plan.time : this.inventory.handlingTime(item, from!, target);
-    const { name } = defOf(this.inventory.registry, item.type);
+    const { name } = defOf(registry, item.type);
+    const into = describeTarget(this.inventory, target);
     const job: MoveJob = {
       kind: 'move',
       itemUid: item.uid,
       target: state,
       count,
-      label: `${name}${count > 1 ? ` ×${count}` : ''} → ${describeTarget(this.inventory, target)}`,
+      label:
+        count > 1
+          ? coreLabel(registry, 'moveJobCount', { item: name, count: String(count), target: into })
+          : coreLabel(registry, 'moveJob', { item: name, target: into }),
       duration,
       elapsed: 0,
     };
@@ -238,8 +244,9 @@ export class HandlingQueue {
   private prepareMove(job: MoveJob): string | undefined {
     const item = this.inventory.itemByUid(job.itemUid);
     const target = this.inventory.resolveTarget(job.target);
+    const { registry } = this.inventory;
     if (!(item && target)) {
-      return "It isn't there any more";
+      return coreMessage(registry, 'gone');
     }
     const plan = this.inventory.plan(item, target, job.count);
     if (!plan.ok) {
@@ -247,10 +254,10 @@ export class HandlingQueue {
     }
     const from = this.inventory.locate(item)!;
     if (from.kind === 'work') {
-      return 'Inputs are held by the work item';
+      return coreMessage(registry, 'inWork');
     }
     if (from.kind === 'slot') {
-      return 'It is fitted to the firearm';
+      return coreMessage(registry, 'fitted');
     }
     const current = this.inventory.targetState(from.kind === 'pile' ? { kind: 'pile', pos: from.pile.pos } : from);
     // An automatic grid target means this container/pile; an explicit spot still permits rearranging it.
@@ -258,7 +265,7 @@ export class HandlingQueue {
       current.at = { x: from.placed.x, y: from.placed.y, rotated: from.placed.rotated };
     }
     if (job.count === item.count && canonicalJson(current) === canonicalJson(job.target)) {
-      return "It's already there";
+      return coreMessage(registry, 'alreadyThere');
     }
     job.duration = plan.time;
     if (this.announced !== job) {
@@ -304,7 +311,7 @@ export class HandlingQueue {
     const item = this.inventory.itemByUid(job.itemUid);
     const target = this.inventory.resolveTarget(job.target);
     if (!(item && target)) {
-      return "It isn't there any more";
+      return coreMessage(this.inventory.registry, 'gone');
     }
     const from = this.inventory.locate(item);
     const moved = this.inventory.move(item, target, job.count);

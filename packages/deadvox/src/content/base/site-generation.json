@@ -1,6 +1,7 @@
 {
   "siteGeneration": [
     {
+      "activeZombieRadiusMetres": 40,
       "id": "authored",
       "palette": {
         "leafLitter": "leaf_litter",

@@ -5,12 +5,13 @@ import { MapEntityStore } from '../src/core/entities.ts';
 import { stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { figureSeedPool } from '../src/core/zombieFigure.ts';
-import { type PlayerMovement, type PlayerSense, type Zombie, ZombieSystem } from '../src/core/zombies.ts';
+import type { PlayerMovement, PlayerSense, Zombie } from '../src/core/zombies.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { MobActorMeshes } from '../src/render/mobActors.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const RUNNER = registry.zombies.get('runner')!;
@@ -60,7 +61,7 @@ const runEngagement = (seed: number): EngagementResult => {
     lit: false,
     lightSeenFrom: 40,
     eyeHeightMetres: 1.3,
-    crouching: false,
+    stance: 'standing',
   });
   let hits = 0;
   const system = new ZombieSystem({
@@ -192,7 +193,7 @@ const runTierHandoff = (): TierResult => {
     lit: false,
     lightSeenFrom: 40,
     eyeHeightMetres: 1.3,
-    crouching: false,
+    stance: 'standing',
   });
   const system = new ZombieSystem({
     player,

@@ -27,6 +27,15 @@ const fresh = () => ({
 });
 
 describe('static reachability', () => {
+  it('excludes an authored non-loot type without excluding an ordinary unreachable type', () => {
+    const registry = fresh();
+    const fixture = { ...registry.items.values().next().value!, id: 'fixture_not_loot', notLoot: true };
+    registry.items.set(fixture.id, fixture);
+    expect(checkReachability(registry).unreachable).not.toContain(fixture.id);
+    registry.items.set(fixture.id, { ...fixture, notLoot: false });
+    expect(checkReachability(registry).unreachable).toContain(fixture.id);
+  });
+
   it('hard-checks workstation placement and lets its quality ground the recipe', () => {
     const registry = fresh();
     registry.recipes.clear();
@@ -68,6 +77,8 @@ describe('static reachability', () => {
     for (const id of ['fixture_cycle_a', 'fixture_cycle_b']) {
       registry.items.set(id, {
         id,
+        workInProgress: false,
+        notLoot: false,
         economy: fixtureEconomy(),
         name: id,
         category: 'material',
@@ -131,6 +142,8 @@ describe('static reachability', () => {
     registry.recipes.clear();
     registry.items.set('unlearned_tool', {
       id: 'unlearned_tool',
+      workInProgress: false,
+      notLoot: false,
       economy: fixtureEconomy(),
       name: 'Unlearned tool',
       category: 'tool',
@@ -240,6 +253,8 @@ describe('static reachability', () => {
     for (const id of names) {
       registry.items.set(id, {
         id,
+        workInProgress: false,
+        notLoot: false,
         economy: fixtureEconomy(),
         name: id,
         category: 'material',
@@ -320,6 +335,8 @@ describe('static reachability', () => {
     const registry = fresh();
     registry.items.set('fixture_demo_fixed', {
       id: 'fixture_demo_fixed',
+      workInProgress: false,
+      notLoot: false,
       economy: fixtureEconomy(),
       name: 'Fixture fixed item',
       category: 'material',
@@ -328,6 +345,8 @@ describe('static reachability', () => {
     });
     registry.items.set('fixture_demo_table_item', {
       id: 'fixture_demo_table_item',
+      workInProgress: false,
+      notLoot: false,
       economy: fixtureEconomy(),
       name: 'Fixture table item',
       category: 'material',
@@ -396,6 +415,8 @@ describe('static reachability', () => {
     ]) {
       registry.items.set(id, {
         id,
+        workInProgress: false,
+        notLoot: false,
         economy: fixtureEconomy(),
         name: id,
         category: 'material',
@@ -444,6 +465,8 @@ describe('static reachability', () => {
     ] as const) {
       registry.items.set(id, {
         id,
+        workInProgress: false,
+        notLoot: false,
         economy: fixtureEconomy(),
         name: id,
         category: 'material',
@@ -478,6 +501,8 @@ describe('static reachability', () => {
     const registry = fresh();
     registry.items.set('fixture_package_input', {
       id: 'fixture_package_input',
+      workInProgress: false,
+      notLoot: false,
       economy: fixtureEconomy(),
       name: 'Fixture package input',
       category: 'material',
@@ -486,6 +511,8 @@ describe('static reachability', () => {
     });
     registry.items.set('fixture_crafted_package', {
       id: 'fixture_crafted_package',
+      workInProgress: false,
+      notLoot: false,
       economy: fixtureEconomy(),
       name: 'Fixture crafted package',
       category: 'material',
@@ -495,6 +522,8 @@ describe('static reachability', () => {
     });
     registry.items.set('fixture_crafted_payload', {
       id: 'fixture_crafted_payload',
+      workInProgress: false,
+      notLoot: false,
       economy: fixtureEconomy(),
       name: 'Fixture crafted payload',
       category: 'material',
@@ -528,6 +557,8 @@ describe('static reachability', () => {
     const output = 'fixture_zero_yield_output';
     registry.items.set(source, {
       id: source,
+      workInProgress: false,
+      notLoot: false,
       economy: fixtureEconomy(),
       name: source,
       category: 'material',
@@ -541,6 +572,8 @@ describe('static reachability', () => {
     });
     registry.items.set(output, {
       id: output,
+      workInProgress: false,
+      notLoot: false,
       economy: fixtureEconomy(),
       name: output,
       category: 'material',
@@ -582,6 +615,8 @@ describe('static reachability', () => {
     ] as const) {
       registry.items.set(id, {
         id,
+        workInProgress: false,
+        notLoot: false,
         economy: fixtureEconomy(),
         name: id,
         category: 'tool',
@@ -593,6 +628,8 @@ describe('static reachability', () => {
     for (const id of ['middle', 'missing_alternative', 'fixture_product']) {
       registry.items.set(id, {
         id,
+        workInProgress: false,
+        notLoot: false,
         economy: fixtureEconomy(),
         name: id,
         category: 'material',

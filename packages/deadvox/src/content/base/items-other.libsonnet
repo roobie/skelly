@@ -18,6 +18,7 @@ local book(id, name, weight, readingGameMinutes, recipes, text) = {
 // Fired cases and hulls pile up in the thousands and scatter where they land.
 local spentCase(id, name, weight, description, model) = {
   id: id,
+  notLoot: id == 'spent_case_5_d_56x45',
   name: name,
   category: 'material',
   weight: weight,
@@ -45,6 +46,8 @@ local spentCase(id, name, weight, description, model) = {
     },
     {
       id: 'work_in_progress',
+      workInProgress: true,
+      notLoot: true,
       name: 'Work in progress',
       category: 'material',
       weight: 0,
@@ -309,6 +312,7 @@ local spentCase(id, name, weight, description, model) = {
       ammo: {
         calibre: '12-gauge-00-buck',
         pellets: 9,
+        spreadDegrees: 2,
         diameterMm: 8.38,
         damage: 20,
         impulse: 0.35,
@@ -336,6 +340,7 @@ local spentCase(id, name, weight, description, model) = {
     ),
     {
       id: 'shambler_torso',
+      notLoot: true,
       name: 'Severed shambler torso',
       category: 'misc',
       model: 'shambler_torso',
@@ -343,6 +348,7 @@ local spentCase(id, name, weight, description, model) = {
     },
     {
       id: 'shambler_head',
+      notLoot: true,
       name: 'Severed shambler head',
       category: 'misc',
       model: 'shambler_head',
@@ -350,6 +356,7 @@ local spentCase(id, name, weight, description, model) = {
     },
     {
       id: 'shambler_left_arm',
+      notLoot: true,
       name: 'Severed shambler left arm',
       category: 'misc',
       model: 'shambler_left_arm',
@@ -357,6 +364,7 @@ local spentCase(id, name, weight, description, model) = {
     },
     {
       id: 'shambler_right_arm',
+      notLoot: true,
       name: 'Severed shambler right arm',
       category: 'misc',
       model: 'shambler_right_arm',
@@ -364,6 +372,7 @@ local spentCase(id, name, weight, description, model) = {
     },
     {
       id: 'shambler_left_leg',
+      notLoot: true,
       name: 'Severed shambler left leg',
       category: 'misc',
       model: 'shambler_left_leg',
@@ -371,6 +380,7 @@ local spentCase(id, name, weight, description, model) = {
     },
     {
       id: 'shambler_right_leg',
+      notLoot: true,
       name: 'Severed shambler right leg',
       category: 'misc',
       model: 'shambler_right_leg',

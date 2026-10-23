@@ -32,6 +32,8 @@ const fixtureRegistry = (): Registry => {
     size: [1, 1],
     weight: 1,
     economy: fixtureEconomy(),
+    workInProgress: false,
+    notLoot: false,
   });
   for (const [id] of registry.loot) {
     registry.loot.set(id, { id, rolls: [1, 1], entries: [{ item: stock, weight: 1 }] });

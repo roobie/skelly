@@ -102,8 +102,17 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
+        "hesitationSimSeconds": {
+          "max": 5,
+          "min": 5
+        },
         "investigationDistanceMetres": 8,
+        "loudNoiseRadiusMetres": 30,
+        "refusalLean": 0.75,
+        "refusalSuspicionSimSeconds": 20,
         "searchRadiusMetres": 4,
         "searchSimSeconds": {
           "max": 50,
@@ -168,6 +177,14 @@
         "rightLeg": 24,
         "torso": 60
       },
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
+      },
       "sight": 25,
       "sightCone": 60,
       "sounds": {
@@ -313,8 +330,17 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
+        "hesitationSimSeconds": {
+          "max": 5,
+          "min": 5
+        },
         "investigationDistanceMetres": 8,
+        "loudNoiseRadiusMetres": 30,
+        "refusalLean": 0.75,
+        "refusalSuspicionSimSeconds": 20,
         "searchRadiusMetres": 4,
         "searchSimSeconds": {
           "max": 50,
@@ -379,6 +405,14 @@
         "rightLeg": 24,
         "torso": 60
       },
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
+      },
       "sight": 25,
       "sightCone": 60,
       "sounds": {
@@ -524,8 +558,17 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
+        "hesitationSimSeconds": {
+          "max": 5,
+          "min": 5
+        },
         "investigationDistanceMetres": 8,
+        "loudNoiseRadiusMetres": 30,
+        "refusalLean": 0.75,
+        "refusalSuspicionSimSeconds": 20,
         "searchRadiusMetres": 4,
         "searchSimSeconds": {
           "max": 50,
@@ -590,6 +633,14 @@
         "rightLeg": 24,
         "torso": 60
       },
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
+      },
       "sight": 25,
       "sightCone": 60,
       "sounds": {
@@ -735,8 +786,17 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
+        "hesitationSimSeconds": {
+          "max": 5,
+          "min": 5
+        },
         "investigationDistanceMetres": 8,
+        "loudNoiseRadiusMetres": 30,
+        "refusalLean": 0.75,
+        "refusalSuspicionSimSeconds": 20,
         "searchRadiusMetres": 4,
         "searchSimSeconds": {
           "max": 50,
@@ -801,6 +861,14 @@
         "rightLeg": 24,
         "torso": 60
       },
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
+      },
       "sight": 25,
       "sightCone": 60,
       "sounds": {
@@ -946,8 +1014,17 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
+        "hesitationSimSeconds": {
+          "max": 5,
+          "min": 5
+        },
         "investigationDistanceMetres": 8,
+        "loudNoiseRadiusMetres": 30,
+        "refusalLean": 0.75,
+        "refusalSuspicionSimSeconds": 20,
         "searchRadiusMetres": 4,
         "searchSimSeconds": {
           "max": 50,
@@ -1011,6 +1088,14 @@
         "rightArm": 24,
         "rightLeg": 24,
         "torso": 60
+      },
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
       },
       "sight": 25,
       "sightCone": 60,
@@ -1157,8 +1242,17 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
+        "hesitationSimSeconds": {
+          "max": 5,
+          "min": 5
+        },
         "investigationDistanceMetres": 8,
+        "loudNoiseRadiusMetres": 30,
+        "refusalLean": 0.75,
+        "refusalSuspicionSimSeconds": 20,
         "searchRadiusMetres": 4,
         "searchSimSeconds": {
           "max": 50,
@@ -1222,6 +1316,14 @@
         "rightArm": 48,
         "rightLeg": 48,
         "torso": 120
+      },
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
       },
       "sight": 25,
       "sightCone": 60,
@@ -1366,8 +1468,17 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
+        "hesitationSimSeconds": {
+          "max": 5,
+          "min": 5
+        },
         "investigationDistanceMetres": 8,
+        "loudNoiseRadiusMetres": 30,
+        "refusalLean": 0.75,
+        "refusalSuspicionSimSeconds": 20,
         "searchRadiusMetres": 4,
         "searchSimSeconds": {
           "max": 50,
@@ -1399,6 +1510,14 @@
         "rightArm": 18,
         "rightLeg": 18,
         "torso": 38
+      },
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
       },
       "sight": 25,
       "sightCone": 60,
@@ -1510,8 +1629,17 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
+        "hesitationSimSeconds": {
+          "max": 5,
+          "min": 5
+        },
         "investigationDistanceMetres": 8,
+        "loudNoiseRadiusMetres": 30,
+        "refusalLean": 0.75,
+        "refusalSuspicionSimSeconds": 20,
         "searchRadiusMetres": 4,
         "searchSimSeconds": {
           "max": 50,
@@ -1543,6 +1671,14 @@
         "rightArm": 18,
         "rightLeg": 10,
         "torso": 50
+      },
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
       },
       "sight": 16,
       "sightCone": 55,
@@ -1657,8 +1793,17 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
+        "hesitationSimSeconds": {
+          "max": 5,
+          "min": 5
+        },
         "investigationDistanceMetres": 8,
+        "loudNoiseRadiusMetres": 30,
+        "refusalLean": 0.75,
+        "refusalSuspicionSimSeconds": 20,
         "searchRadiusMetres": 4,
         "searchSimSeconds": {
           "max": 50,
@@ -1724,6 +1869,15 @@
         "member.rightArm": 24,
         "member.rightLeg": 24,
         "member.torso": 60
+      },
+      "severedItems": {
+        "core.trunk": null,
+        "member.head": null,
+        "member.leftArm": null,
+        "member.leftLeg": null,
+        "member.rightArm": null,
+        "member.rightLeg": null,
+        "member.torso": null
       },
       "sight": 25,
       "sightCone": 60,
@@ -1921,8 +2075,17 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
+        "hesitationSimSeconds": {
+          "max": 5,
+          "min": 5
+        },
         "investigationDistanceMetres": 8,
+        "loudNoiseRadiusMetres": 30,
+        "refusalLean": 0.75,
+        "refusalSuspicionSimSeconds": 20,
         "searchRadiusMetres": 4,
         "searchSimSeconds": {
           "max": 50,
@@ -1986,6 +2149,14 @@
         "rightArm": 24,
         "rightLeg": 24,
         "torso": 60
+      },
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
       },
       "sight": 25,
       "sightCone": 60,

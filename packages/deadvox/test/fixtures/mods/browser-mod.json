@@ -9,8 +9,10 @@
       },
       "id": "mod_test_token",
       "name": "Mod token",
+      "notLoot": false,
       "size": [1, 1],
-      "weight": 0.10000000000000001
+      "weight": 0.10000000000000001,
+      "workInProgress": false
     }
   ],
   "zombies": [
@@ -116,8 +118,17 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
+        "hesitationSimSeconds": {
+          "max": 5,
+          "min": 5
+        },
         "investigationDistanceMetres": 8,
+        "loudNoiseRadiusMetres": 30,
+        "refusalLean": 0.75,
+        "refusalSuspicionSimSeconds": 20,
         "searchRadiusMetres": 4,
         "searchSimSeconds": {
           "max": 50,
@@ -181,6 +192,14 @@
         "rightArm": 24,
         "rightLeg": 24,
         "torso": 60
+      },
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
       },
       "sight": 25,
       "sightCone": 60,

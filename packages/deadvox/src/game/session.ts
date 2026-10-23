@@ -62,6 +62,7 @@ import { canSprint, spendStamina, stepStamina } from '../core/needs.ts';
 import { freshDropTarget } from '../core/options.ts';
 import { type Body, bodyOverlapsTerrain, CONTACT_SKIN, stepBody } from '../core/physics.ts';
 import { PlayerCombat } from '../core/playerCombat.ts';
+import type { PlayerStance } from '../core/playerStance.ts';
 import { pryPlan } from '../core/prying.ts';
 import { Rng } from '../core/random.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
@@ -74,6 +75,7 @@ import { assertScenarioRun, ScenarioRun } from '../core/scenarioRun.ts';
 import type { EventRuleDef } from '../core/schema.ts';
 import { Simulation } from '../core/sim.ts';
 import type { ColumnSource } from '../core/site.ts';
+import { siteGenerationOf } from '../core/sitePalette.ts';
 import { skillActivityPractice, skillActivityPracticeRate } from '../core/skillTraining.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
 import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
@@ -83,7 +85,6 @@ import { spendFuel } from '../core/torch.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
 import { figureSeedPool, zombieFigure } from '../core/zombieFigure.ts';
-import { SEVERED_ITEM } from '../core/zombieRegionNames.ts';
 import { ZombieSpawner } from '../core/zombieSpawns.ts';
 import {
   type AcidGroundImpact,
@@ -91,6 +92,7 @@ import {
   BACKGROUND_ZOMBIE_SLICE_COUNT,
   BACKGROUND_ZOMBIE_SLICE_RATE,
   type HitImpulse,
+  loweredStanceTuning,
   type MeleeResult,
   type MeleeWeapon,
   PLAYER_ARM_REACH_M,
@@ -120,9 +122,11 @@ import {
   createPlayerBody,
   type MoveIntent,
   movementPace,
+  nextStance,
   PLAYER,
   physicsFor,
   restorePlayer,
+  type StanceToggle,
   snapshotPlayer,
   steer,
 } from './player.ts';
@@ -272,7 +276,7 @@ export interface SessionControls {
   /** Clears edge-triggered intents after the player tick samples them. */
   consumeDominantUse?: () => void;
   consumeOffUse?: () => void;
-  consumeCrouchToggle?: () => boolean;
+  consumeStanceToggle?: () => StanceToggle | undefined;
   /** Runs dominant use on the player-tick boundary, with that tick's aim/state. */
   useDominant?: () => void;
   /** Held-trigger sampling, including release/inactive ticks, for debug firearm cadence. */
@@ -407,52 +411,45 @@ interface RestoredLook {
 const firearmsSkillLevel = (character: Character): number =>
   skillEffectLevel(character.skills.firearms_combat ?? SKILL_LEVEL_MIN);
 
-const nextCrouchState = (togglePressed: boolean, noclip: boolean, crouching: boolean): boolean =>
-  togglePressed && !noclip ? !crouching : crouching;
-
 interface StanceBody {
   readonly body: Body;
-  readonly standingHeight: number;
-  readonly crouchedHeight: number;
+  readonly heights: Readonly<Record<PlayerStance, number>>;
   readonly isSolid: SolidAt;
 }
 
-const setStanceHeight = (stance: StanceBody, crouching: boolean): void => {
-  stance.body.height = crouching ? stance.crouchedHeight : stance.standingHeight;
+const setStanceHeight = (stance: StanceBody, current: PlayerStance): void => {
+  stance.body.height = stance.heights[current];
 };
 
-/** Crouching shrinks the collision body; standing up is refused, keeping the crouch, without room overhead. */
+/** A lower stance shrinks the collision body; rising is refused, keeping the stance, without room overhead. */
 const settleStance = (
   stance: StanceBody,
-  crouching: boolean,
-  wanted: boolean,
+  current: PlayerStance,
+  wanted: PlayerStance,
   refuse: (text: string) => void,
-): boolean => {
-  if (wanted === crouching) {
-    return crouching;
+): PlayerStance => {
+  if (wanted === current) {
+    return current;
   }
-  if (!wanted && bodyOverlapsTerrain({ ...stance.body, height: stance.standingHeight }, stance.isSolid)) {
-    refuse('No room to stand up');
-    return crouching;
+  const height = stance.heights[wanted];
+  if (height > stance.body.height && bodyOverlapsTerrain({ ...stance.body, height }, stance.isSolid)) {
+    refuse(wanted === 'standing' ? 'No room to stand up' : 'No room to crouch');
+    return current;
   }
   setStanceHeight(stance, wanted);
   return wanted;
 };
 
-const resolvePlayerEyeHeight = (
-  unconscious: boolean,
-  proneHeight: number,
-  crouching: boolean,
-  crouchDrop: number,
-): number => (unconscious ? proneHeight : PLAYER.eye - (crouching ? crouchDrop : 0));
+const resolvePlayerEyeHeight = (unconscious: boolean, proneHeight: number, eyeDrop: number | undefined): number =>
+  unconscious ? proneHeight : PLAYER.eye - (eyeDrop ?? 0);
 
 const movementIntent = (refusal: string | undefined, intent: MoveIntent): MoveIntent => (refusal ? IDLE : intent);
 
-const playerMovementForIntent = (moving: MoveIntent, crouching: boolean, sprinting: boolean): PlayerMovement => {
+const playerMovementForIntent = (moving: MoveIntent, stance: PlayerStance, sprinting: boolean): PlayerMovement => {
   if (moving.forward === 0 && moving.right === 0) {
     return 'still';
   }
-  if (crouching) {
+  if (stance !== 'standing') {
     return 'walking';
   }
   if (sprinting) {
@@ -618,21 +615,26 @@ export const createSession = (options: SessionOptions) => {
 
   const restoredPlayer = restored ? restorePlayer(restored.character.player) : undefined;
   const senseTuning = playerSenseTuning(registry);
-  let crouching = restoredPlayer?.crouching ?? false;
+  let playerStance: PlayerStance = restoredPlayer?.stance ?? 'standing';
   const body: Body =
     restoredPlayer?.body ?? createPlayerBody(scale, options.spawn[0], options.spawn[1], options.spawn[2]);
-  // The stance sets the collision height, so a crouched save loads crouched and retuned content applies.
-  const stance: StanceBody = {
+  // The stance sets the collision height, so a lowered save loads lowered and retuned content applies.
+  const stanceBody: StanceBody = {
     body,
-    standingHeight: PLAYER.height / s,
-    crouchedHeight: senseTuning.crouch.bodyHeightMetres / s,
+    heights: {
+      standing: PLAYER.height / s,
+      crouching: senseTuning.crouch.bodyHeightMetres / s,
+      prone: senseTuning.prone.bodyHeightMetres / s,
+    },
     isSolid,
   };
-  setStanceHeight(stance, crouching);
+  setStanceHeight(stanceBody, playerStance);
   const updateStance = (): void => {
-    const wanted = nextCrouchState(controls.consumeCrouchToggle?.() ?? false, debug?.()?.noclip ?? false, crouching);
-    crouching = settleStance(stance, crouching, wanted, options.refusal ?? options.notice);
+    const toggle = controls.consumeStanceToggle?.();
+    const wanted = debug?.()?.noclip ? playerStance : nextStance(playerStance, toggle);
+    playerStance = settleStance(stanceBody, playerStance, wanted, options.refusal ?? options.notice);
   };
+  const loweredStance = () => loweredStanceTuning(senseTuning, playerStance);
   const restoredLook: RestoredLook | undefined = restoredPlayer && {
     yaw: restoredPlayer.yaw,
     pitch: restoredPlayer.pitch,
@@ -733,6 +735,7 @@ export const createSession = (options: SessionOptions) => {
   const bodyTuning = playerBodyTuning(registry, options.scenario?.body);
   const sim = new Simulation({
     seed,
+    registry,
     bodyTuning,
     ...playerWearHooks(inventory, bodyTuning),
     analgesics: (item) => registry.items.get(item)?.analgesic,
@@ -987,12 +990,7 @@ export const createSession = (options: SessionOptions) => {
   let sprinting = restoredSprinting;
   let firearmReadyWalking = restoredFirearmReadyWalking;
   const playerEyeHeightMetres = (): number =>
-    resolvePlayerEyeHeight(
-      sim.body.unconscious,
-      sim.body.tuning.proneEyeHeightMetres,
-      crouching,
-      senseTuning.crouch.eyeDropMetres,
-    );
+    resolvePlayerEyeHeight(sim.body.unconscious, sim.body.tuning.proneEyeHeightMetres, loweredStance()?.eyeDropMetres);
   let footstepClock = savedFootstepClock;
   let rustleClock = restoredRustleClock;
   let airbornePeakY = restoredAirbornePeakY;
@@ -1018,9 +1016,8 @@ export const createSession = (options: SessionOptions) => {
     const input = sampledInput();
     return input.active && !input.inputLocked ? input.intent : IDLE;
   };
-  const playerCrouching = (): boolean => crouching;
   const playerMovement = (): PlayerMovement =>
-    playerMovementForIntent(movementIntent(sim.body.actionRefusal, currentIntent()), crouching, sprinting);
+    playerMovementForIntent(movementIntent(sim.body.actionRefusal, currentIntent()), playerStance, sprinting);
   const updateAim = (dt: number, firing: boolean): void => {
     advanceSessionAim({
       aim,
@@ -1091,7 +1088,7 @@ export const createSession = (options: SessionOptions) => {
       body: debug?.()?.noclip ? undefined : body,
       facing: [-Math.sin(yaw), 0, -Math.cos(yaw)] as Vec3,
       movement: playerMovement(),
-      crouching: playerCrouching(),
+      stance: playerStance,
       vocalNoise:
         playerAudio.vocalNoise && sim.time <= playerAudio.vocalNoise.expiresAt ? playerAudio.vocalNoise : undefined,
       lit: carriedLight !== undefined,
@@ -1140,6 +1137,7 @@ export const createSession = (options: SessionOptions) => {
   };
   const traps = new BearTraps(inventory);
   const zombieSystem = new ZombieSystem({
+    activeZombieRadiusMetres: siteGenerationOf(registry).activeZombieRadiusMetres,
     store: zombieStore,
     restrained: (id) => traps.holds(id),
     seed: sim.seed,
@@ -1222,9 +1220,9 @@ export const createSession = (options: SessionOptions) => {
         Math.floor(zombie.body.pos[1]),
         Math.floor(zombie.body.pos[2]),
       ];
-      const item = SEVERED_ITEM[region as keyof typeof SEVERED_ITEM];
-      if (item) {
-        inventory.add(inventory.create(item), { kind: 'pile', pos });
+      const item = zombie.type.severedItems[region];
+      if (item !== null) {
+        inventory.add(inventory.create(item!), { kind: 'pile', pos });
       }
     },
     onWound: (id, zombie, hit, damage) => options.zombieEffects?.onWound?.(id, zombie, hit, damage),
@@ -1649,7 +1647,7 @@ export const createSession = (options: SessionOptions) => {
   ): void => {
     const carrying = entities.carrying() !== undefined;
     sprinting =
-      !(crouching || ladderHold.on || carrying) &&
+      !(playerStance !== 'standing' || ladderHold.on || carrying) &&
       intent.sprint &&
       (intent.forward !== 0 || intent.right !== 0) &&
       !handling &&
@@ -1675,13 +1673,13 @@ export const createSession = (options: SessionOptions) => {
     const readyMovementFactor =
       readyGait && readyFirearm ? firearms.stanceEffectsFor(readyFirearm.uid).readyMovementFactor : 1;
     const pacedIntent = movementPace(
-      { ...intent, sprint: sprinting, crouch: crouching },
+      { ...intent, sprint: sprinting, jump: intent.jump && playerStance !== 'prone' },
       {
         grams: inventory.carriedWeight(),
         handling,
         readyMovementFactor,
         movementSpeed: sim.body.consequences.movementSpeed,
-        crouchSpeed: senseTuning.crouch.speedMetresPerSimSecond,
+        stanceSpeed: loweredStance()?.speedMetresPerSimSecond,
         directionalSpeed: {
           sideways: senseTuning.movement.sidewaysSpeedScale,
           backward: senseTuning.movement.backwardSpeedScale,
@@ -2043,8 +2041,8 @@ export const createSession = (options: SessionOptions) => {
     get sprinting() {
       return sprinting;
     },
-    get crouching() {
-      return crouching;
+    get stance() {
+      return playerStance;
     },
     /** Whether the player climbs a ladder, so the pick reaches through it, and which hand is on it. */
     ladderHold,
@@ -2170,7 +2168,7 @@ export const createSession = (options: SessionOptions) => {
           yaw: controls.yaw(),
           pitch: controls.pitch(),
           walk: controls.walking(),
-          crouching,
+          stance: playerStance,
           sprinting,
           firearmReadyWalking,
           handlingPausedForKnockout,

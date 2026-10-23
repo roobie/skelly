@@ -27,7 +27,6 @@ import {
   activeAmalgamMembers,
   PLAYER_CHEST_METRES,
   type PlayerSense,
-  ZombieSystem,
   zombieAttackReachMetres,
 } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
@@ -36,6 +35,7 @@ import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { capture, contentLookup, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const BLOCK_SIZE = makeScale(0.5).blockSize;
@@ -498,7 +498,7 @@ describe('amalgam body and combat seam', () => {
     const noisyPlayer: PlayerSense = {
       ...player(),
       pos: [1000, 1, 1000],
-      vocalNoise: { id: 1, pos: [4, 1, 0], radiusMetres: 12, expiresAt: 10 },
+      vocalNoise: { id: 1, pos: [4, 1, 0], radiusMetres: type.hearingModel.loudNoiseRadiusMetres, expiresAt: 10 },
     };
     let heardBody = false;
     const hearingSystem = new ZombieSystem({
@@ -729,6 +729,7 @@ describe('amalgam body and combat seam', () => {
           {
             calibre: 'test',
             pellets: 1,
+            spreadDegrees: 0,
             damage: 1,
             impulse: 0,
             rangeMetres: 50,
@@ -751,8 +752,9 @@ describe('amalgam body and combat seam', () => {
     const id = simulation.add(type, [0, 1, 0]);
     const zombie = simulation.store.get(id)!;
     const ammo = registry.items.get('shell_12_gauge_00_buck')!.ammo!;
+    const firearm = registry.items.get('pump_shotgun')!.firearm!;
     const fire = (origin: Vec3, basis: ReturnType<typeof aimBasis>, key: string): number =>
-      simulation.firePellets(pelletShotFromBasis({ ammo, origin, basis, seed: 73, key }));
+      simulation.firePellets(pelletShotFromBasis({ ammo, firearm, origin, basis, seed: 73, key }));
     const coreBoxes = posedAmalgamRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK_SIZE));
     const coreCenter = coreBoxes['core.trunk']?.[0]?.voxelCentroid;
     expect(coreCenter).toBeDefined();
@@ -1030,6 +1032,7 @@ describe('amalgam flesh carving', () => {
   const carving = amalgam.carving!;
   const { carving: _ignored, ...uncarvedAmalgam } = amalgam;
   const buck = registry.items.get('shell_12_gauge_00_buck')!.ammo!;
+  const firearm = registry.items.get('pump_shotgun')!.firearm!;
   const figure = amalgamFigureForType(amalgam, AMALGAM_FIGURE_SEED);
   const voxelMetres = figure.realized.voxels.size * figure.scale;
 
@@ -1202,7 +1205,14 @@ describe('amalgam flesh carving', () => {
       ['third', -0.15],
     ] as const) {
       simulation.firePellets(
-        pelletShotFromBasis({ ammo: buck, origin: target.origin, basis: aimBasis(yaw, 0, NEUTRAL_AIM), seed: 5, key }),
+        pelletShotFromBasis({
+          ammo: buck,
+          firearm,
+          origin: target.origin,
+          basis: aimBasis(yaw, 0, NEUTRAL_AIM),
+          seed: 5,
+          key,
+        }),
       );
       simulation.shapeOf(zombie.body);
     }
@@ -1299,7 +1309,14 @@ describe('amalgam flesh carving', () => {
       const target = coreTarget();
       for (const key of ['first', 'second', 'third']) {
         target.simulation.firePellets(
-          pelletShotFromBasis({ ammo: buck, origin: target.origin, basis: aimBasis(0, 0, NEUTRAL_AIM), seed: 5, key }),
+          pelletShotFromBasis({
+            ammo: buck,
+            firearm,
+            origin: target.origin,
+            basis: aimBasis(0, 0, NEUTRAL_AIM),
+            seed: 5,
+            key,
+          }),
         );
       }
       return target.zombie.carved;
@@ -1315,6 +1332,7 @@ describe('amalgam flesh carving', () => {
       target.simulation.firePellets(
         pelletShotFromBasis({
           ammo: buck,
+          firearm,
           origin: target.origin,
           basis: aimBasis(0.2, 0.1, NEUTRAL_AIM),
           seed: 9,

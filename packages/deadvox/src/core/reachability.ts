@@ -2,21 +2,10 @@
 import { startingKnownRecipes } from './character.ts';
 import type { FurnitureDef, RecipeDef, Registry } from './content.ts';
 import { disassemblyOutputs } from './disassembly.ts';
-import { WORK_IN_PROGRESS } from './inventory.ts';
 import { scenarioSources } from './scenarioComposition.ts';
 import type { SiteLayoutDef } from './schema.ts';
 import { HORDE_TYPE, ordinarySpawnWeights } from './settlementSpawns.ts';
 import { compileTemplate } from './templates.ts';
-import { SEVERED_ITEM } from './zombieRegionNames.ts';
-
-/** Content types excluded from the content-count check; extend with new debug/case/part definitions. */
-const CONTENT_COUNT_EXCLUSIONS: ReadonlySet<string> = new Set([
-  WORK_IN_PROGRESS, // Runtime-owned escrow, not an acquired content type.
-  'debug_shotgun_pump',
-  'spent_case_5_d_56x45',
-  // Body parts come from cutting shamblers up, not from finding or crafting.
-  ...Object.values(SEVERED_ITEM),
-]);
 
 interface RecipeDiagnostic {
   recipe: string;
@@ -412,7 +401,7 @@ export const checkReachability = (
     knowledge,
     skills,
   });
-  const eligible = [...registry.items.keys()].filter((id) => !CONTENT_COUNT_EXCLUSIONS.has(id));
+  const eligible = [...registry.items.values()].filter((item) => !item.notLoot).map((item) => item.id);
   return {
     found,
     components,

@@ -20,6 +20,7 @@ import {
   BLOCK_PATTERNS,
   CONTENT_SECTION_KEYS,
   type ContentFile,
+  ContentFileSchema,
   DayCycleSchema,
   type TemplateDef,
 } from '../src/core/schema.ts';
@@ -48,6 +49,76 @@ const base = readdirSync(BASE)
   .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown }));
 const baseBuild = buildRegistry(base);
 const baseRegistry = baseBuild.registry;
+
+describe('content-owned item and world policies', () => {
+  it('requires explicit item policies, region drops and world liveness', () => {
+    const item = structuredClone([...baseRegistry.items.values()][0]!) as Record<string, unknown>;
+    expect(safeParse(ContentFileSchema, { items: [item] }).success).toBe(true);
+    for (const field of ['workInProgress', 'notLoot']) {
+      const missing = { ...item };
+      delete missing[field];
+      expect(safeParse(ContentFileSchema, { items: [missing] }).success).toBe(false);
+    }
+    const zombie = { ...[...baseRegistry.zombies.values()][0]! } as Record<string, unknown>;
+    expect(safeParse(ContentFileSchema, { zombies: [zombie] }).success).toBe(true);
+    zombie.severedItems = undefined;
+    expect(safeParse(ContentFileSchema, { zombies: [zombie] }).success).toBe(false);
+    const world = { ...[...baseRegistry.siteGeneration.values()][0]! } as Record<string, unknown>;
+    expect(safeParse(ContentFileSchema, { siteGeneration: [world] }).success).toBe(true);
+    world.activeZombieRadiusMetres = undefined;
+    expect(safeParse(ContentFileSchema, { siteGeneration: [world] }).success).toBe(false);
+  });
+
+  it('validates severed-item references and complete region policy', () => {
+    const zombie = { ...structuredClone(baseRegistry.zombies.get('shambler')!), loot: undefined };
+    zombie.severedItems = Object.fromEntries(Object.keys(zombie.regions).map((key) => [key, null]));
+    const region = Object.keys(zombie.regions)[0]!;
+    const support = {
+      source: 'support.json',
+      data: {
+        sounds: [...new Set(Object.values(zombie.sounds))].map((id) => baseRegistry.sounds.get(id)!),
+        items: [
+          {
+            id: 'fixture_blade',
+            workInProgress: false,
+            notLoot: false,
+            economy: { usage: [], tiers: [] },
+            name: 'Blade',
+            category: 'tool',
+            weight: 1,
+            size: [1, 1],
+            tool: { qualities: { [zombie.downed!.dismember.quality]: 1 } },
+          },
+        ],
+      },
+    };
+    zombie.severedItems[region] = 'fixture_missing_part';
+    const brokenReference = buildRegistry([support, { source: 'parts.json', data: { zombies: [zombie] } }]);
+    expect(brokenReference.issues).toContainEqual({
+      source: 'parts.json',
+      path: `zombies[0].severedItems.${region}`,
+      message: 'no item "fixture_missing_part"',
+    });
+    delete zombie.severedItems[region];
+    const missingRegion = buildRegistry([support, { source: 'parts.json', data: { zombies: [zombie] } }]);
+    expect(missingRegion.issues).toContainEqual({
+      source: 'parts.json',
+      path: 'zombies[0].severedItems',
+      message: 'severed item keys must match region keys',
+    });
+  });
+
+  it('requires exactly one runtime escrow definition without selecting its id', () => {
+    const items = new Map([...baseRegistry.items].map(([id, item]) => [id, { ...item, workInProgress: false }]));
+    const fixture = { ...items.values().next().value!, id: 'fixture_escrow', workInProgress: true };
+    const issues = () => requiredContentIssues({ ...baseRegistry, items }).filter((issue) => issue.path === 'items');
+    expect(issues()).not.toEqual([]);
+    items.set(fixture.id, fixture);
+    expect(issues()).toEqual([]);
+    items.set('fixture_second_escrow', { ...fixture, id: 'fixture_second_escrow' });
+    expect(issues()).not.toEqual([]);
+  });
+});
 const baseSounds = {
   source: 'sounds.json',
   data: {
@@ -602,6 +673,21 @@ describe('content', () => {
     expect(issues.some(({ path }) => path.endsWith('.combat.firearms.shotTraceRangeBlocks'))).toBe(true);
   });
 
+  it('rejects ammunition spread or firearm choke scale that is not authored', () => {
+    const files = structuredClone(base) as {
+      source: string;
+      data: { items?: { ammo?: Record<string, unknown>; firearm?: Record<string, unknown> }[] };
+    }[];
+    const items = files.flatMap(({ data }) => data.items ?? []);
+    const ammunition = items.find((item) => item.ammo !== undefined)!;
+    const firearm = items.find((item) => item.firearm !== undefined)!;
+    Reflect.deleteProperty(ammunition.ammo!, 'spreadDegrees');
+    Reflect.deleteProperty(firearm.firearm!, 'pelletSpreadScale');
+    const { issues } = buildRegistry(files);
+    expect(issues.some(({ path }) => path.endsWith('.ammo.spreadDegrees'))).toBe(true);
+    expect(issues.some(({ path }) => path.endsWith('.firearm.pelletSpreadScale'))).toBe(true);
+  });
+
   it('rejects firearm attachment effects without a per-shot wear', () => {
     const files = (
       structuredClone(base) as { source: string; data: { items?: { firearmAttachmentEffects?: object }[] } }[]
@@ -743,6 +829,7 @@ describe('content', () => {
         pump: true,
         recoilKickRadians: 0.01,
         dispersionRadians: 0.01,
+        pelletSpreadScale: 1,
         shotSound: 'gunshot',
         handling: {},
         roundLoadSimSeconds: 1,
@@ -761,12 +848,14 @@ describe('content', () => {
     const source = 'firearm-dispersion-fixture.json';
     const item = {
       id: 'fixture_firearm',
+      workInProgress: false,
+      notLoot: false,
       economy: { usage: [], tiers: [] },
       name: 'Fixture firearm',
       category: 'weapon',
       weight: 1,
       size: [1, 1],
-      firearm: { recoilKickRadians: 0.01, shotSound: 'gunshot', handling: {} },
+      firearm: { recoilKickRadians: 0.01, pelletSpreadScale: 1, shotSound: 'gunshot', handling: {} },
     };
     const missing = validateContent({ source, data: { items: [item] } });
     expect(missing.map(({ path }) => path)).toContain('items[0].firearm.dispersionRadians');
@@ -789,7 +878,13 @@ describe('content', () => {
           weight: 1,
           size: [1, 1],
           model: 'fixture_gun',
-          firearm: { recoilKickRadians: 0.01, dispersionRadians: 0, shotSound: 'gunshot', handling: {} },
+          firearm: {
+            recoilKickRadians: 0.01,
+            dispersionRadians: 0,
+            pelletSpreadScale: 1,
+            shotSound: 'gunshot',
+            handling: {},
+          },
         },
         {
           id: 'fixture_suppressor',
@@ -799,7 +894,13 @@ describe('content', () => {
           weight: 1,
           size: [1, 2],
           model: 'fixture_suppressor',
-          firearmAttachmentEffects: { kind: 'suppressor', recoilReduction: 0.1, wearPerShot: 0.01 },
+          firearmAttachmentEffects: {
+            kind: 'suppressor',
+            recoilReduction: 0.1,
+            wearPerShot: 0.01,
+            fitSkillLevel: 4,
+            fitRefusal: "I can't fit this suppressor yet",
+          },
         },
       ],
       models: [
@@ -981,6 +1082,8 @@ describe('content', () => {
       items: [
         {
           id: 'fixture_input',
+          workInProgress: false,
+          notLoot: false,
           economy: { usage: [], tiers: [] },
           name: 'Input part',
           category: 'tool',
@@ -994,6 +1097,8 @@ describe('content', () => {
         },
         {
           id: 'fixture_output',
+          workInProgress: false,
+          notLoot: false,
           economy: { usage: [], tiers: [] },
           name: 'Output part',
           category: 'tool',
@@ -1062,6 +1167,8 @@ describe('content', () => {
       items: [
         {
           id: 'book_reference_fixture',
+          workInProgress: false,
+          notLoot: false,
           economy: { usage: [], tiers: [] },
           name: 'Fixture manual',
           category: 'book',
@@ -2346,6 +2453,7 @@ describe('content references', () => {
     };
     const zombie = structuredClone(baseRegistry.zombies.get('shambler')!);
     zombie.id = 'fixture_military_looter';
+    zombie.severedItems = Object.fromEntries(Object.keys(zombie.regions).map((region) => [region, null]));
     zombie.loot = lootId;
     const sounds = [...new Set(Object.values(zombie.sounds))].map((id) => baseRegistry.sounds.get(id)!);
     const { quality, level } = zombie.downed!.dismember;
@@ -2432,6 +2540,7 @@ describe('content references', () => {
             canJumpObstacles: true,
             strength: 1,
             sounds: zombieSounds,
+            severedItems: { head: null, torso: null, leftArm: null, rightArm: null, leftLeg: null, rightLeg: null },
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
             speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5, backgroundStepMetres: 1 },
             stepLength: 0.6,
@@ -2463,6 +2572,12 @@ describe('content references', () => {
               farMultiplier: 2,
               bearingErrorRadians: 0.61,
               investigationDistanceMetres: 8,
+              loudNoiseRadiusMetres: 10,
+              hesitationSimSeconds: { min: 1, max: 1 },
+              refusalSuspicionSimSeconds: 2,
+              refusalLean: 0.75,
+              chainRadiusMetres: 4,
+              chainChance: 0.5,
               searchSimSeconds: { min: 40, max: 50 },
               searchRadiusMetres: 4,
               searchStrollSimSeconds: { min: 1, max: 3 },
@@ -2533,13 +2648,18 @@ describe('content references', () => {
 });
 
 const templateZombieFile = base.find(({ source }) => source === 'zombies.json')!;
-const templateShambler = Object.fromEntries(
-  Object.entries(
-    structuredClone(
-      (templateZombieFile.data as { zombies: { id: string }[] }).zombies.find(({ id }) => id === 'shambler')!,
-    ),
-  ).filter(([key]) => key !== 'loot'),
-);
+const templateShambler = {
+  severedItems: Object.fromEntries(
+    Object.keys(baseRegistry.zombies.get('shambler')!.regions).map((region) => [region, null]),
+  ),
+  ...Object.fromEntries(
+    Object.entries(
+      structuredClone(
+        (templateZombieFile.data as { zombies: { id: string }[] }).zombies.find(({ id }) => id === 'shambler')!,
+      ),
+    ).filter(([key]) => key !== 'loot' && key !== 'severedItems'),
+  ),
+};
 const templateShamblerSoundIds = new Set(
   Object.values((templateShambler as { sounds?: Record<string, string> }).sounds ?? {}),
 );
@@ -2866,6 +2986,8 @@ describe('content', () => {
   it('rejects held-display capabilities without a renderer', () => {
     const items = ['watch', 'map'].map((heldDisplay, index) => ({
       id: `unrendered_display_${index}`,
+      workInProgress: false,
+      notLoot: false,
       economy: { usage: [], tiers: [] },
       name: 'Unrendered display',
       category: 'material',

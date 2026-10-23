@@ -2,6 +2,7 @@
   siteGeneration: [
     {
       id: 'authored',
+      activeZombieRadiusMetres: 40,
       topography: {
         amplitudeMetres: 0.65,
         wavelengthMetres: 28,

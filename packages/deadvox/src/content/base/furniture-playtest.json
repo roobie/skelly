@@ -305,6 +305,25 @@
       },
       "color": "#666c70",
       "door": {
+        "detail": {
+          "fields": [1, 10],
+          "frame": 0,
+          "handle": {
+            "along": 0.080000000000000002,
+            "fromFreeEdge": 1.5,
+            "kind": "bar",
+            "length": 0.29999999999999999,
+            "thickness": 0.029999999999999999
+          },
+          "hardware": "#a9adb0",
+          "hinges": {
+            "count": 0,
+            "length": 0.10000000000000001,
+            "width": 0.059999999999999998
+          },
+          "relief": 0.012,
+          "seam": 0.029999999999999999
+        },
         "handlingSimSeconds": 1.2,
         "methods": {},
         "openNoise": {

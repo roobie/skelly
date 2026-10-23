@@ -14,6 +14,7 @@
         "dispersionRadians": 0.0060000000000000001,
         "dryFireSound": "firearm_dry_click",
         "handling": {},
+        "pelletSpreadScale": 1,
         "recoilKickRadians": 0.025000000000000001,
         "roundLoadSimSeconds": 1.2,
         "shotSound": "gunshot_tikka",
@@ -34,8 +35,10 @@
       "id": "rifle_hunting",
       "model": "rifle_hunting",
       "name": "Hunting rifle",
+      "notLoot": false,
       "size": [2, 11],
-      "twoHanded": true
+      "twoHanded": true,
+      "workInProgress": false
     },
     {
       "category": "weapon",
@@ -48,6 +51,7 @@
         "dispersionRadians": 0,
         "dryFireSound": "shotgun_dry_click",
         "handling": {},
+        "pelletSpreadScale": 1,
         "pump": true,
         "recoilKickRadians": 0.035000000000000003,
         "roundLoadSimSeconds": 0.90000000000000002,
@@ -69,8 +73,10 @@
       "id": "pump_shotgun",
       "model": "shotgun_pump",
       "name": "Pump shotgun",
+      "notLoot": false,
       "size": [2, 10],
-      "twoHanded": true
+      "twoHanded": true,
+      "workInProgress": false
     },
     {
       "category": "weapon",
@@ -82,8 +88,10 @@
       "id": "debug_shotgun_pump",
       "model": "shotgun_pump",
       "name": "Pump shotgun (debug)",
+      "notLoot": true,
       "size": [2, 10],
-      "twoHanded": true
+      "twoHanded": true,
+      "workInProgress": false
     },
     {
       "category": "weapon",
@@ -101,6 +109,7 @@
             "removeSimSeconds": 3
           }
         },
+        "pelletSpreadScale": 1,
         "recoilKickRadians": 0.0060000000000000001,
         "shotSound": "gunshot_m4",
         "skillZeroHandling": {
@@ -120,8 +129,10 @@
       "id": "rifle_assault",
       "model": "rifle_assault",
       "name": "AR-pattern rifle",
+      "notLoot": false,
       "size": [2, 9],
-      "twoHanded": true
+      "twoHanded": true,
+      "workInProgress": false
     },
     {
       "category": "weapon",
@@ -139,6 +150,7 @@
             "removeSimSeconds": 3
           }
         },
+        "pelletSpreadScale": 1,
         "recoilKickRadians": 0.012,
         "shotSound": "gunshot",
         "skillZeroHandling": {
@@ -158,8 +170,10 @@
       "id": "rifle_ak",
       "model": "rifle_ak",
       "name": "AK-pattern rifle",
+      "notLoot": false,
       "size": [2, 9],
-      "twoHanded": true
+      "twoHanded": true,
+      "workInProgress": false
     }
   ],
   "models": [

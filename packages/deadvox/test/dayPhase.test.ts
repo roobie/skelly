@@ -6,9 +6,10 @@ import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { SunExposureCache } from '../src/core/lights.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { skyAt, sunDirection } from '../src/core/sky.ts';
-import { type HordeState, perceivePlayer, ZombieSystem } from '../src/core/zombies.ts';
+import { type HordeState, perceivePlayer } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const cycle = requireDayCycle(registry);

@@ -30,7 +30,6 @@ import {
 } from '../src/core/zombieRegions.ts';
 import { ZombieSpawner } from '../src/core/zombieSpawns.ts';
 import {
-  ACTIVE_ZOMBIE_RADIUS_METRES,
   type HitImpulse,
   hearPlayer,
   hearVocalNoise,
@@ -40,7 +39,6 @@ import {
   pickZombieHitRegion,
   pickZombieMove,
   type Zombie,
-  ZombieSystem,
 } from '../src/core/zombies.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { MobActorMeshes, mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
@@ -51,6 +49,7 @@ import { SnapshotSite } from './fixtures/snapshotSite.ts';
 import { sunExposedAt } from './fixtures/sunOracle.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const SHAMBLER_CPU_BUDGET_MS = 1;
 const registry = baseRegistry();
@@ -78,7 +77,15 @@ const player = (
   movement: PlayerSense['movement'] = 'still',
   lit = false,
   crouching = false,
-): PlayerSense => ({ pos, facing, movement, lit, lightSeenFrom: 40, eyeHeightMetres: 1.3, crouching });
+): PlayerSense => ({
+  pos,
+  facing,
+  movement,
+  lit,
+  lightSeenFrom: 40,
+  eyeHeightMetres: 1.3,
+  stance: crouching ? 'crouching' : 'standing',
+});
 const senses = (
   playerFn: () => PlayerSense,
   isSolid: SolidAt = FLOOR,
@@ -2013,6 +2020,7 @@ describe('shambler scenarios', () => {
     const simulateAttacks = (godMode: boolean) => {
       const sim = new Simulation({
         seed: 9,
+        registry,
         bodyTuning: registry.body.get('player')!,
         compressionCaps: registry.compression.get('player')!.caps,
         clock: BASE_CLOCK,
@@ -2859,8 +2867,14 @@ describe('two-tier shambler hearing', () => {
     expect(hear(noise.pos, wall)?.target).not.toEqual(noise.pos);
   });
 
-  it('makes a still player vocalization alert and investigate once', () => {
+  it('makes a loud still-player vocalization alert and investigate once', () => {
     const noise = { id: 44, pos: [12, 1, 0] as Vec3, radiusMetres: 6, expiresAt: 1 };
+    const type = {
+      ...SHAMBLER,
+      sight: 0.01,
+      nightSight: 0.01,
+      hearingModel: { ...SHAMBLER.hearingModel, loudNoiseRadiusMetres: noise.radiusMetres },
+    };
     const target = { ...player(noise.pos), vocalNoise: noise };
     const heard: string[] = [];
     const system = new ZombieSystem({
@@ -2868,7 +2882,7 @@ describe('two-tier shambler hearing', () => {
       seed: 21,
       onSound: (event) => heard.push(event),
     });
-    const id = system.add({ ...SHAMBLER, sight: 0.01, nightSight: 0.01 }, [0, 1, 0]);
+    const id = system.add(type, [0, 1, 0]);
     const zombie = system.store.get(id)!;
 
     system.tick(1 / 20, 0.05);
@@ -2908,7 +2922,7 @@ describe('two-tier shambler hearing', () => {
     );
     system.tick(1 / 20, 0.1);
 
-    expect(first.mode).toBe('investigate');
+    expect(first.mode).toBe('hesitate');
     expect(first.lastPerceived).toBeDefined();
     expect(second.mode).toBe('idle');
     expect(second.lastPerceived).toBeUndefined();
@@ -3060,11 +3074,23 @@ describe('two-tier shambler hearing', () => {
 });
 
 describe('background zombie tier', () => {
+  it('uses authored liveness radius to classify a loaded actor', () => {
+    for (const [activeZombieRadiusMetres, tier] of [
+      [7, 'background'],
+      [17, 'active'],
+    ] as const) {
+      const system = new ZombieSystem({ ...senses(() => player([0, 1, 0])), activeZombieRadiusMetres });
+      const zombie = system.store.get(system.add(SHAMBLER, [12 / BLOCK_SIZE, 1, 0]))!;
+      system.tickActive(1 / 20, 0);
+      expect(zombie.tier).toBe(tier);
+    }
+  });
+
   it('routes firearm reports into the long-range player-noise channel', () => {
     for (const id of ['gunshot', 'gunshot_pbs1_reference', 'shotgun_blast']) {
       const noise = registry.sounds.get(id)?.noise;
       expect(noise?.enabled).toBe(true);
-      expect(noise?.radiusMetres).toBeGreaterThan(ACTIVE_ZOMBIE_RADIUS_METRES);
+      expect(noise?.radiusMetres).toBeGreaterThan(registry.siteGeneration.get('authored')!.activeZombieRadiusMetres);
     }
   });
 
