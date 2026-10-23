@@ -17,6 +17,8 @@ local palette = {
   k: 'concrete', w: { furniture: 'workbench', fixed: true }, n: { furniture: 'grinding_wheel', fixed: true },
   e: { furniture: 'shelf', facing: 's' }, E: { furniture: 'shelf', facing: 's' },
   o: { furniture: 'crate' }, q: { furniture: 'crate' },
+  // The engine hoist never spawns as loot, so it stands on the floor by the bays by placement.
+  j: { groundLoot: { kind: 'fixed', items: [{ item: 'engine_hoist' }] } },
   I: { furniture: 'gauntlet_lab_fixture', fixed: true }, Y: { furniture: 'ladder', facing: 'w' },
 };
 // The garage's back wall is z 0 and its two bay doors open south onto one shared floor, kept clear for driving
@@ -41,6 +43,12 @@ local garageStock = [
   'b............................b', 'b............................b',
   'b............................b',
   'bb........bb........bbbbbbbbbb',
+];
+// The floor storey of the stock layers, with the hoist standing between the bays and the shelves. Ground loot needs
+// the floor under it, so the storey above carries no mark.
+local garageStockFloor = [
+  if i == 4 then 'b...........j................b' else garageStock[i]
+  for i in std.range(0, std.length(garageStock) - 1)
 ];
 local garageShelves = [
   'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
@@ -253,7 +261,7 @@ local templates = [
   },
   {
     id: 'test_house_garage', size: [30, 9, 17],
-    layers: [garageFloor, garageStock, garageStock, garageShelves, garageShelfWindows,
+    layers: [garageFloor, garageStockFloor, garageStock, garageShelves, garageShelfWindows,
       garageWindows, garageLintel, garageLights, garageRoof],
   },
   {

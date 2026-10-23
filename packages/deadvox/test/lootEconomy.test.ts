@@ -14,8 +14,12 @@ import {
   lootSpawnPoint,
   lootTypeIssue,
   militaryOnlyEconomy,
+  placedTypeIssue,
   rollLoot,
+  selectLootType,
+  type WeightedCandidate,
 } from '../src/core/loot.ts';
+import { Rng } from '../src/core/random.ts';
 import { lootSourcesOf } from '../src/core/site.ts';
 import { compileTemplate, stackTemplate } from '../src/core/templates.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -321,6 +325,54 @@ describe('loot economy descriptions', () => {
     const battery = registry.items.get('fixture_battery')!;
     registry.items.set(battery.id, { ...battery, economy: { usage: ['Military'], tiers: ['Tier2'] } });
     expect(lootTypeIssue(registry, 'fixture_host', context)).toContain('outside');
+  });
+
+  it('admits an item that never spawns when authored content places it, but a loot roll never selects it', () => {
+    const item = (id: string, economy: { usage: string[]; tiers: string[] }) => ({
+      id,
+      name: id,
+      category: 'misc',
+      weight: 1,
+      size: [1, 1],
+      economy,
+      workInProgress: false,
+      notLoot: false,
+    });
+    const { registry, issues } = buildRegistry([
+      {
+        source: 'placed-fixture',
+        data: {
+          items: [
+            item('fixture_bulky', { usage: [], tiers: [] }),
+            item('fixture_common', { usage: ['Medical'], tiers: ['Tier2'] }),
+            item('fixture_military', { usage: ['Military'], tiers: ['Tier2'] }),
+            { ...item('fixture_escrow', { usage: [], tiers: [] }), workInProgress: true },
+          ],
+        },
+      },
+    ]);
+    expect(issues).toEqual([]);
+    expect(lootTypeIssue(registry, 'fixture_bulky', context)).toContain('outside');
+    expect(placedTypeIssue(registry, 'fixture_bulky', context)).toBeUndefined();
+    expect(placedTypeIssue(registry, 'fixture_military', context)).toContain('outside');
+    expect(placedTypeIssue(registry, 'no_such_item', context)).toContain('no item');
+    expect(placedTypeIssue(registry, 'fixture_escrow', context)).toContain('craft');
+
+    const point = lootSpawnPoint({
+      site: 'placed',
+      building: 'fixture',
+      anchor: [0, 0, 0],
+      channel: 'ground',
+      position: [0, 0, 0],
+      destination: [0, 0, 0],
+      context,
+      supply: { kind: 'fixed', items: [{ item: 'fixture_bulky' }] },
+      required: false,
+    });
+    const select = (candidate: WeightedCandidate) => selectLootType(registry, point, [candidate], Rng.stream(1, 'p'));
+    expect(select({ type: 'fixture_bulky', weight: 1 })).toBeUndefined();
+    expect(select({ type: 'fixture_bulky', weight: 1, placed: true })).toBe('fixture_bulky');
+    expect(select({ type: 'fixture_escrow', weight: 1, placed: true })).toBeUndefined();
   });
 
   it('requires authored economy metadata at the registry boundary', () => {

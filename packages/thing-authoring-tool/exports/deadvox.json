@@ -1680,6 +1680,42 @@
     }
   },
   {
+    "id": "scissor_jack",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "scissor_jack",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "bottle_jack",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "bottle_jack",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "engine_hoist",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "engine_hoist",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
     "id": "crowbar",
     "kind": "item",
     "options": {

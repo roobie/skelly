@@ -2,6 +2,7 @@ import type { BlockEntity } from '../core/blockEntities.ts';
 import type { RecipeDef, Registry } from '../core/content.ts';
 import { toChunk, type Vec3 } from '../core/coords.ts';
 import type { Inventory } from '../core/inventory.ts';
+import { neverSpawns } from '../core/loot.ts';
 import type { Site } from '../core/site.ts';
 import { type PlacedPiece, placedPieces } from '../core/templates.ts';
 
@@ -38,10 +39,13 @@ const repairCornerStock = (registry: Registry, recipes: readonly RecipeDef[]) =>
   return { components, qualities };
 };
 
-/** Every item with a tool quality, so a tool content adds reaches the garage without a test-house edit. */
+/**
+ * Every item with a tool quality, so a tool content adds reaches the garage without a test-house edit. A tool that
+ * never spawns is left out: content places it by hand, and a shelf copy would hide it.
+ */
 const garageToolTypes = (registry: Registry): string[] =>
   [...registry.items.values()]
-    .filter(({ tool }) => Object.keys(tool?.qualities ?? {}).length > 0)
+    .filter(({ tool, economy }) => Object.keys(tool?.qualities ?? {}).length > 0 && !neverSpawns(economy))
     .map(({ id }) => id)
     .sort();
 
@@ -114,6 +118,21 @@ const placeRepairCornerItem = ({
   }
 };
 
+/**
+ * The containers nearest a workstation first. Repair targets and components fill them before the rest, so a repair
+ * can be reached beside its station however many tools the shelves hold; the tools' own order is left to the layout.
+ */
+const nearStations = (
+  registry: Registry,
+  pieces: readonly PlacedPiece[],
+  containers: readonly BlockEntity[],
+): BlockEntity[] => {
+  const stations = pieces.filter(({ furniture }) => registry.furniture.get(furniture)?.workstation);
+  const distance = (entity: BlockEntity) =>
+    Math.min(...stations.map(({ pos }) => Math.hypot(...entity.origin.map((value, axis) => value - pos[axis]!))));
+  return stations.length === 0 ? [...containers] : [...containers].sort((a, b) => distance(a) - distance(b));
+};
+
 /** Repairs the stock building can serve: those needing no workstation, or one that stands in it. */
 export const repairStockRecipes = (registry: Registry, pieces: readonly PlacedPiece[]): RecipeDef[] => {
   const stations = new Set(pieces.flatMap(({ furniture }) => registry.furniture.get(furniture)?.workstation?.id ?? []));
@@ -149,17 +168,18 @@ export const populateTestHouseRepairCorner = ({
   for (const type of [...tools].sort()) {
     placeRepairCornerItem({ inventory, registry, containers, type, count: 1, condition: 1 });
   }
+  const beside = nearStations(registry, pieces, containers);
   recipes.forEach((recipe, index) => {
     placeRepairCornerItem({
       inventory,
       registry,
-      containers,
+      containers: beside,
       type: recipe.result.item,
       count: 1,
       condition: 0.25 + (0.5 * (index + 1)) / (recipes.length + 1),
     });
   });
   for (const [type, count] of [...stock.components].sort(([a], [b]) => a.localeCompare(b))) {
-    placeRepairCornerItem({ inventory, registry, containers, type, count, condition: 1 });
+    placeRepairCornerItem({ inventory, registry, containers: beside, type, count, condition: 1 });
   }
 };
