@@ -6,7 +6,17 @@ local part(id, name, size, capabilities, description=null) = {
   category: 'misc',
   model: id,
   size: size,
-  vehicle: { capabilities: capabilities },
+  vehicle: {
+    capabilities: capabilities,
+    obstruction: {
+      // Glazing retains body collision but admits sight and light.
+      sight: !std.member(capabilities, 'glazing'),
+      light: !std.member(capabilities, 'glazing'),
+      // Sound and combat remain explicit rather than inferred from a part name or model.
+      sound: true,
+      combat: true,
+    },
+  },
 } + (if description == null then {} else { description: description });
 local fitting(id, part, at, supportedBy=[]) = { id: id, part: part, at: at, supportedBy: supportedBy };
 // A near-side fitting and its far-side twin, reflected across the centre plane. `0 - z` rather than `-z`

@@ -9,7 +9,7 @@ import { bodyOverlapsTerrain } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { type BrickOut, brickHas, worldBricks } from '../src/core/solidBricks.ts';
 import { spawnOverlappingSolidBlock } from '../src/core/spawnClearance.ts';
-import { projectVehicleParts } from '../src/core/vehicleProjection.ts';
+import { projectVehicleParts, VehicleOccupancy } from '../src/core/vehicleProjection.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -158,6 +158,67 @@ it('wires vehicle occupancy into session furniture placement and landing', () =>
 
   expect(session.furniturePlacement(aimed)).toEqual({ pos: expect.any(Array) });
   expect(inventory.landing(cell)).toBeDefined();
+});
+
+it('keeps glazing out of sight and light channels while applying its authored sound policy', () => {
+  const inventory = new Inventory(registry);
+  const id = inventory.registerVehicle({
+    blueprint: 'hatchback',
+    placementKey: 'vehicle-channel-policy',
+    origin: [0, 0, 0],
+    facing: 'n',
+  });
+  const vehicle = inventory.vehicles.get(id)!;
+  const parts = projectVehicleParts(registry, id, vehicle, scale.blockSize);
+  const glazing = parts.find((part) => registry.items.get(part.item.type)?.vehicle?.capabilities.includes('glazing'));
+  if (!glazing) {
+    throw new Error('Fixture vehicle has no glazing');
+  }
+  const channelCell = glazing.boxes.flatMap(cellsOf).find((cell) => {
+    const others = parts.filter((part) => part !== glazing).flatMap((part) => part.boxes.flatMap(cellsOf));
+    return !others.some((other) => other.every((value, axis) => value === cell[axis]));
+  });
+  if (!channelCell) {
+    throw new Error('Fixture glazing has no independent query cell');
+  }
+  const [x, y, z] = channelCell;
+  const bodies = new VehicleOccupancy(registry, inventory.vehicles, scale.blockSize);
+  const sight = new VehicleOccupancy(registry, inventory.vehicles, scale.blockSize, 'sight');
+  const light = new VehicleOccupancy(registry, inventory.vehicles, scale.blockSize, 'light');
+  const sound = new VehicleOccupancy(registry, inventory.vehicles, scale.blockSize, 'sound');
+
+  expect(bodies.isSolid(x, y, z)).toBe(true);
+  expect(sight.isSolid(x, y, z)).toBe(false);
+  expect(light.isSolid(x, y, z)).toBe(false);
+  expect(sound.isSolid(x, y, z)).toBe(true);
+});
+
+it('invalidates a warmed opaque channel after a fitting disappears', () => {
+  const inventory = new Inventory(registry);
+  const id = inventory.registerVehicle({
+    blueprint: 'hatchback',
+    placementKey: 'vehicle-opaque-invalidation',
+    origin: [0, 0, 0],
+    facing: 'n',
+  });
+  const vehicle = inventory.vehicles.get(id)!;
+  const parts = projectVehicleParts(registry, id, vehicle, scale.blockSize);
+  const opaque = parts.find(
+    (part) =>
+      !registry.items.get(part.item.type)?.vehicle?.capabilities.includes('glazing') &&
+      !vehicle.fittings.some((fitting) => fitting.supportedBy.includes(part.fittingId)),
+  );
+  if (!opaque) {
+    throw new Error('Fixture vehicle has no opaque part');
+  }
+  const cell = opaque.boxes.flatMap(cellsOf)[0]!;
+  const sight = new VehicleOccupancy(registry, inventory.vehicles, scale.blockSize, 'sight');
+  expect(sight.isSolid(...cell)).toBe(true);
+  inventory.vehicles.replace(registry, id, {
+    ...vehicle,
+    fittings: [],
+  });
+  expect(sight.isSolid(...cell)).toBe(false);
 });
 
 it('leaves a player body standing in exported vehicle space with no collision box', () => {
