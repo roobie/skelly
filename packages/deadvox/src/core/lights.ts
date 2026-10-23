@@ -2,7 +2,8 @@
 // as a child item in `slots.battery`, so charge and identity have one owner. A light drains only
 // while it's on, at its rate per game hour, in closed form: a long step drains exactly
 // what ticking every second would, and the light goes out when the charge runs out.
-// Swapping in a fresh battery is handling; the old one comes out with what it had left.
+// Swapping in a fresh battery is handling; the old one comes out with what it had left, as it
+// does when the battery is taken out alone.
 
 import { batteryCharge, batteryEnergy, batteryFields, batteryFits, spentBattery } from './battery.ts';
 import type { BlockEntity } from './blockEntities.ts';
@@ -277,6 +278,9 @@ export const toggleLight = (registry: Registry, light: Item, calendar = 0): stri
       return coreMessage(registry, blocked);
     }
   } else if (chargeOf(registry, light) === 0) {
+    if (spec.power && !light.slots?.battery) {
+      return coreMessage(registry, 'noBattery');
+    }
     return coreMessage(registry, def.igniter || def.tool?.fuel ? 'outOfFuel' : 'batteryDead');
   }
   light.on = true;
@@ -397,5 +401,35 @@ export const swapBattery = (
   if (kept && target) {
     inventory.add(kept, target);
   }
+  return undefined;
+};
+
+/** Whether `light` holds a battery that could be taken out. */
+export const canUnloadBattery = (registry: Registry, light: Item): boolean =>
+  defOf(registry, light.type).light?.power !== undefined && light.slots?.battery !== undefined;
+
+/**
+ * Takes the battery out of `light` and switches it off. The battery keeps its charge and goes
+ * where `stow` puts it; a dead one is thrown away, as in a swap. With nowhere to put it, it stays
+ * fitted. Returns why it couldn't, or undefined.
+ */
+export const unloadBattery = (
+  inventory: Inventory,
+  light: Item,
+  stow: (item: Item) => Target | undefined,
+): string | undefined => {
+  const { registry } = inventory;
+  const removed = inventory.fitSlot(light, 'battery', undefined);
+  if (!removed) {
+    return coreMessage(registry, 'batteryGone');
+  }
+  const kept = spentBattery(registry, removed);
+  const target = kept && stow(kept);
+  if (kept && !(target && inventory.add(kept, target))) {
+    inventory.fitSlot(light, 'battery', kept);
+    return coreMessage(registry, 'cantStow', { item: defOf(registry, kept.type).name.toLowerCase() });
+  }
+  light.on = false;
+  light.litAtGameTimestamp = undefined;
   return undefined;
 };

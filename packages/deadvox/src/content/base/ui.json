@@ -9,6 +9,7 @@
       },
       "coreActionLabels": {
         "batteryIn": "Put a battery in the {item}",
+        "batteryOut": "Take the battery out",
         "cartridgeIn": "Put {fuel} in the {item}",
         "close": "Close",
         "continueWork": "Continue: {item}",
@@ -104,6 +105,7 @@
         "materialsChanged": "My materials have changed",
         "needsBothHands": "It needs both hands",
         "needsSling": "It needs a sling to go on my shoulder",
+        "noBattery": "There's no battery in it",
         "noCartridge": "There's no gas cartridge in it",
         "noGroundRoom": "There's no room on the ground",
         "noHeldDoorBar": "I'm not holding a door bar",
