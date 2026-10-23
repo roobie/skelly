@@ -29,6 +29,7 @@ import { PILE_GRID } from './inventoryScale.ts';
 import {
   cellCount,
   couldFit,
+  craftComponentEligible,
   defOf,
   findSpot,
   fitsAt,
@@ -787,7 +788,7 @@ export class Inventory {
     }
     const seen = new Set<number>();
     for (const { item, count } of plan.components) {
-      if (!this.validCraftComponent(item, count) || seen.has(item.uid)) {
+      if (!this.validCraftComponent(item, count, recipe.consumeFitted) || seen.has(item.uid)) {
         return false;
       }
       seen.add(item.uid);
@@ -795,11 +796,11 @@ export class Inventory {
     return !plan.tools.some((tool) => seen.has(tool.item.uid));
   }
 
-  private validCraftComponent(item: Item, count: number): boolean {
+  private validCraftComponent(item: Item, count: number, consumeFitted = false): boolean {
     return (
       this.itemByUid(item.uid) === item &&
       Boolean(this.locate(item)) &&
-      isEmpty(item) &&
+      craftComponentEligible(item, consumeFitted) &&
       Number.isSafeInteger(count) &&
       count >= 1 &&
       count <= item.count

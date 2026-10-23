@@ -12,6 +12,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       id: 'rifle_hunting', name: 'Hunting rifle', category: 'weapon',
       description: '.308 Winchester bolt-action rifle with an internal magazine.',
       model: 'rifle_hunting', size: [2, 11], twoHanded: true,
+      lightMountSite: { kind: 'strap', at: [0.42, -0.03, 0], turn: [0, 0, 0] },
       firearm: {
         bolt: true, handling: {}, roundLoadSimSeconds: 1.2,
         recoilKickRadians: 0.025, dispersionRadians: 0.006, pelletSpreadScale: 1,
@@ -42,6 +43,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
         }
       },
       "id": "pump_shotgun",
+      "lightMountSite": { "kind": "strap", "at": [0.34, -0.045, 0], "turn": [0, 0, 0] },
       "model": "shotgun_pump",
       "name": "Pump shotgun",
       "size": [2, 10],

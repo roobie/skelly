@@ -1,3 +1,4 @@
+local lights = import 'lights.libsonnet';
 local opticZoom = { step: 1, rememberPerWeapon: true };
 
 {
@@ -96,10 +97,12 @@ local opticZoom = { step: 1, rememberPerWeapon: true };
     {
       "id": "tactical_flashlight_mount",
       "name": "Tactical flashlight rail mount",
-      "category": "misc",
+      "category": "light",
       "weight": 120,
       "size": [1, 1],
-      "model": "tactical_flashlight_mount"
+      "model": "tactical_flashlight_mount",
+      "description": "A rail-clamp flashlight. Fitted to a rail on a long gun, its beam follows the barrel.",
+      "light": lights.flashlight
     },
     {
       "id": "weapon_sling",

@@ -1,7 +1,7 @@
 import { SKILL_LEVEL_MIN, skillEffectLevel, skillSaturation } from '../core/character.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
-import { attachmentIdFor, firearmSlotIds, SLING_SLOT } from '../core/firearmFitting.ts';
+import { attachmentIdFor, firearmSlotIds, LIGHT_MOUNT_SLOT, SLING_SLOT } from '../core/firearmFitting.ts';
 import type { HandlingQueue, Job } from '../core/handling.ts';
 import { handlingWeights, type Inventory, type Location, type Target } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
@@ -75,17 +75,23 @@ export class FirearmAttachmentHandling {
           return false;
         }
         const definition = defOf(this.inventory.registry, item.type);
-        const couldFit =
-          slotId === SLING_SLOT
-            ? definition.sling === true
-            : attachmentIdFor(this.inventory.registry, item) !== undefined;
         return (
-          couldFit &&
+          this.couldFit(slotId, item, definition) &&
           availableAt(this.inventory, location) &&
           this.attachmentFitReason(firearm, slotId, item) === undefined
         );
       })
       .map(({ item }) => item);
+  }
+
+  private couldFit(slotId: string, item: Item, definition: ReturnType<typeof defOf>): boolean {
+    if (slotId === SLING_SLOT) {
+      return definition.sling === true;
+    }
+    if (slotId === LIGHT_MOUNT_SLOT) {
+      return definition.lightMount !== undefined;
+    }
+    return attachmentIdFor(this.inventory.registry, item) !== undefined;
   }
 
   fitReason(firearm: Item, slotId: string, attachment: Item): string | undefined {
@@ -109,8 +115,18 @@ export class FirearmAttachmentHandling {
   }
 
   private attachmentFitReason(firearm: Item, slotId: string, attachment: Item): string | undefined {
-    const reason = slotId === SLING_SLOT ? this.slingReason(attachment) : this.exportedAttachmentReason(attachment);
-    return reason ?? slotsReason(this.inventory.registry, firearm.type, { ...firearm.slots, [slotId]: attachment });
+    return (
+      this.kindReason(slotId, attachment) ??
+      slotsReason(this.inventory.registry, firearm.type, { ...firearm.slots, [slotId]: attachment })
+    );
+  }
+
+  /** The light mount's kind match is `slotsReason`'s; gungen's certificate covers only the exported slots. */
+  private kindReason(slotId: string, attachment: Item): string | undefined {
+    if (slotId === SLING_SLOT) {
+      return this.slingReason(attachment);
+    }
+    return slotId === LIGHT_MOUNT_SLOT ? undefined : this.exportedAttachmentReason(attachment);
   }
 
   private slingReason(attachment: Item): string | undefined {
