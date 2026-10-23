@@ -281,17 +281,22 @@ try {
     };
     const startX = await page.evaluate(() => globalThis.readingWitness.body.pos[0]);
     await walk('movement.forward', startX + 10, true);
-    const aim = async (type) => {
-      const target = await page.evaluate((id) => {
-        const { engine, input, eye } = globalThis.readingWitness;
-        const entity = [...engine.entities.all].find((value) => value.type === id);
-        const at = entity.pos.map((value, axis) => value + entity.size[axis] / 2);
-        const origin = eye();
-        const [dx, dy, dz] = at.map((value, axis) => value - origin[axis]);
-        input.yaw = Math.atan2(-dx, -dz);
-        input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
-        return { pos: entity.pos, size: entity.size, origin, aim: [dx, dy, dz], yaw: input.yaw, pitch: input.pitch };
-      }, type);
+    const aim = async (type, targetUid) => {
+      const target = await page.evaluate(
+        ({ id, uid }) => {
+          const { engine, input, eye } = globalThis.readingWitness;
+          const entity = [...engine.entities.all].find(
+            (value) => value.type === id && (uid === undefined || value.uid === uid),
+          );
+          const at = entity.pos.map((value, axis) => value + entity.size[axis] / 2);
+          const origin = eye();
+          const [dx, dy, dz] = at.map((value, axis) => value - origin[axis]);
+          input.yaw = Math.atan2(-dx, -dz);
+          input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+          return { pos: entity.pos, size: entity.size, origin, aim: [dx, dy, dz], yaw: input.yaw, pitch: input.pitch };
+        },
+        { id: type, uid: targetUid },
+      );
       await record(`aim ${type}`);
       const hit = await page.evaluate(() => globalThis.readingWitness.lookedAt()?.type);
       assert.equal(hit, type, JSON.stringify({ target, hit }));
@@ -530,12 +535,24 @@ try {
     });
     // A walk ends when the stage releases the key, a wall-clock-dependent time after its condition holds, so it
     // overshoots. Stopping abreast of the crate keeps any overshoot inside use reach.
-    const crateX = await page.evaluate(() => {
-      const crate = [...globalThis.readingWitness.engine.entities.all].find((entity) => entity.type === 'crate');
-      return crate.pos[0] + crate.size[0] / 2;
+    // Appliance look pieces also contain crates; select the note source rather than entity insertion order.
+    const noteCrate = await page.evaluate(() => {
+      const { engine, session } = globalThis.readingWitness;
+      const crate = [...engine.entities.all].find(
+        (entity) =>
+          entity.type === 'crate' &&
+          entity.pockets?.flat().some(({ item }) => {
+            const definition = session.inventory.registry.items.get(item.type);
+            return definition.readable && !definition.book;
+          }),
+      );
+      if (!crate) {
+        throw new Error('test house has no plain-readable fixture crate');
+      }
+      return { uid: crate.uid, x: crate.pos[0] + crate.size[0] / 2 };
     });
-    await walk('movement.back', crateX, false);
-    await aim('crate');
+    await walk('movement.back', noteCrate.x, false);
+    await aim('crate', noteCrate.uid);
     const searchStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
     const interactLabel = await page.evaluate(
       "import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.label('world.interact'))",
@@ -544,15 +561,15 @@ try {
     await pressAction(page, 'world.interact');
     await waitForSimulation(
       page,
-      () => {
+      (uid) => {
         const { session } = globalThis.readingWitness;
         return {
           time: session.sim.time,
           paused: session.sim.paused,
-          reached: [...session.inventory.entities.all].some((entity) => entity.type === 'crate' && entity.searched),
+          reached: session.inventory.entities.byUid(uid)?.searched === true,
         };
       },
-      undefined,
+      noteCrate.uid,
       { seconds: 5, from: searchStart, label: 'crate search (2.25 simulated seconds)', record },
     );
     assert.equal(await page.evaluate(() => globalThis.readingWitness.screen.isOpen), true);
