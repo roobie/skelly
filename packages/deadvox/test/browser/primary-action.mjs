@@ -1830,12 +1830,9 @@ try {
   const roundTrip = await page.evaluate(() => {
     const { inventory, session, lightUid } = globalThis.primaryActionTest;
     const snapshot = session.snapshot({ worldId: 'primary-world', characterId: 'primary-actor' });
-    const restored = inventory.constructor.restoreState(
-      inventory.registry,
-      snapshot.character.inventory,
-      undefined,
-      { character: inventory.character },
-    );
+    const restored = inventory.constructor.restoreState(inventory.registry, snapshot.character.inventory, undefined, {
+      character: inventory.character,
+    });
     return {
       uid: snapshot.character.lightUid,
       savedOn: snapshot.character.inventory.hands.right?.on,
