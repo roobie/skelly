@@ -10,6 +10,7 @@ import {
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from './character.ts';
 import { CHUNK, CHUNK_VOLUME } from './coords.ts';
 import { assertFirearmState } from './firearmState.ts';
+import { FOOD_EXPOSURE_DENOMINATOR, foodMillisecondsAt } from './food.ts';
 import type { InventoryState } from './inventory.ts';
 import type { ItemState } from './items.ts';
 import { itemIds as collectItemIds, savedItemTree } from './itemTree.ts';
@@ -64,7 +65,7 @@ export type SaveContentKind =
   | 'recipe'
   | 'scenario'
   | 'vehicleBlueprint';
-type SaveContentLookup = (kind: SaveContentKind, id: string) => boolean;
+type SaveContentLookup = (kind: SaveContentKind, id: string, item?: ItemState) => boolean;
 
 export interface EncodeSaveOptions {
   /** Slot owner supplies a strictly increasing safe-integer generation; the codec has no storage state. */
@@ -155,7 +156,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 57;
+export const SAVE_SCHEMA_VERSION = 58;
 export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -368,6 +369,13 @@ itemSchema = obj({
     ),
   ),
   madeAtGameTimestamp: opt(nonNegative),
+  foodExposure: opt(
+    obj({
+      gameMilliseconds: num({ integer: true, safe: true, min: 0 }),
+      remainder: num({ integer: true, safe: true, min: 0, max: FOOD_EXPOSURE_DENOMINATOR - 1 }),
+      settledAtGameMilliseconds: num({ integer: true, safe: true, min: 0 }),
+    }),
+  ),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
   cartridges: opt(arr(str({ id: true }))),
   paperMap: opt(obj({ x: safeInt, z: safeInt })),
@@ -1602,6 +1610,16 @@ function ownsLongActionItem(
   return true;
 }
 
+function validateFoodWatermarks(snapshot: SaveSnapshot, tree: readonly { item: ItemState }[]): void {
+  const { clock: savedClock, time } = snapshot.character.simulation;
+  const foodTimestamp = foodMillisecondsAt(savedClock.start + time * savedClock.ratio);
+  for (const { item } of tree) {
+    if (item.foodExposure && item.foodExposure.settledAtGameMilliseconds !== foodTimestamp) {
+      throw new Error('Food exposure watermark differs from snapshot');
+    }
+  }
+}
+
 function validateActionReferences(snapshot: SaveSnapshot): void {
   const { job } = snapshot.character.longAction;
   validateLongJob(job, snapshot.character.simulation.time);
@@ -1613,6 +1631,7 @@ function validateActionReferences(snapshot: SaveSnapshot): void {
     throw new Error('Running forcing action cannot use compression');
   }
   const tree = [...savedItemTree(snapshot.character.inventory, snapshot.world.vehicles)];
+  validateFoodWatermarks(snapshot, tree);
   const itemsByUid = new Map(tree.map(({ item }) => [item.uid, item]));
   validateWorkItems(tree, itemsByUid);
   if (!ownsLongActionItem(job, tree)) {
@@ -1654,10 +1673,10 @@ function grabbedLadder(
 function validateItemContentReferences(
   state: SaveSnapshot['character']['inventory'],
   vehicles: VehicleInstancesState,
-  check: (kind: SaveContentKind, id: string, path: string) => void,
+  check: (kind: SaveContentKind, id: string, path: string, item?: ItemState) => void,
 ): void {
   for (const { item, path } of savedItemTree(state, vehicles)) {
-    check('item', item.type, `${path}.type`);
+    check('item', item.type, `${path}.type`, item);
     if (item.firearm?.roundType) {
       check('item', item.firearm.roundType, `${path}.firearm.roundType`);
     }
@@ -1690,8 +1709,8 @@ function validateItemContentReferences(
 }
 
 function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLookup): void {
-  const check = (kind: SaveContentKind, id: string, path: string) => {
-    if (!lookup(kind, id)) {
+  const check = (kind: SaveContentKind, id: string, path: string, item?: ItemState) => {
+    if (!lookup(kind, id, item)) {
       throw new Error(`Unknown ${kind} content id "${id}" at ${path}`);
     }
   };

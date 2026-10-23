@@ -7,6 +7,7 @@ import type { ItemDef, ModelDef, Registry } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { firearmSlotIds } from './firearmFitting.ts';
 import { assertFirearmState, type FirearmState, snapshotFirearm } from './firearmState.ts';
+import { assertFoodExposure, equalFoodExposure, type FoodExposure, initialFoodExposure } from './food.ts';
 import { magazineContentsReason, magazineSpec, magazineWellCalibre, slotsReason } from './magazine.ts';
 import { modelBodyMassKg } from './modelMass.ts';
 import { assertPaperMapItem, type PaperMapCoverage } from './paperMap.ts';
@@ -56,9 +57,10 @@ export interface ItemFields<Node> {
   trap?: TrapState | undefined;
   /**
    * Game-clock timestamp when it was made; absent means before the world began (day 1,
-   * 00:00). Food rots from then (core/food.ts).
+   * 00:00). This is provenance, not the food exposure authority.
    */
-  madeAtGameTimestamp?: number;
+  madeAtGameTimestamp?: number | undefined;
+  foodExposure?: FoodExposure | undefined;
   /** One grid per pocket of the type's container, in the type's pocket order. */
   pockets?: PlacedItem<Node>[][];
   /** Chamber contents and in-flight mechanical action; separate from handling jobs. */
@@ -124,6 +126,7 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
     ...(item.fuseRemainingSimSeconds === undefined ? {} : { fuseRemainingSimSeconds: item.fuseRemainingSimSeconds }),
     ...trapField(item.trap),
     ...(item.madeAtGameTimestamp === undefined ? {} : { madeAtGameTimestamp: item.madeAtGameTimestamp }),
+    ...(item.foodExposure === undefined ? {} : { foodExposure: { ...item.foodExposure } }),
     ...(item.firearm === undefined ? {} : { firearm: snapshotFirearm(item.firearm) }),
     ...(item.cartridges === undefined ? {} : { cartridges: [...item.cartridges] }),
     ...cargoField(item.cargo),
@@ -264,6 +267,7 @@ const restoreWork = (registry: Registry, work: NonNullable<ItemState['work']>): 
 
 export const restoreItem = (registry: Registry, state: ItemState): Item => {
   const def = defOf(registry, state.type);
+  assertFoodExposure(registry, state);
   assertSavedBurnState(def, state);
   assertSavedFuse(def, state);
   assertSavedTrap(def, state);
@@ -293,6 +297,7 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
     ...(state.fuseRemainingSimSeconds === undefined ? {} : { fuseRemainingSimSeconds: state.fuseRemainingSimSeconds }),
     ...trapField(state.trap),
     ...(state.madeAtGameTimestamp === undefined ? {} : { madeAtGameTimestamp: state.madeAtGameTimestamp }),
+    ...(state.foodExposure === undefined ? {} : { foodExposure: { ...state.foodExposure } }),
     ...(firearm === undefined ? {} : { firearm }),
     ...(state.cartridges === undefined ? {} : { cartridges: [...state.cartridges] }),
     ...cargoField(state.cargo),
@@ -395,7 +400,7 @@ export class ItemFactory {
     registry: Registry,
     type: string,
     count = 1,
-    { condition = 1, paperMap }: { condition?: number; paperMap?: PaperMapCoverage } = {},
+    { condition = 1, paperMap, madeAt = 0 }: { condition?: number; paperMap?: PaperMapCoverage; madeAt?: number } = {},
   ): Item {
     const def = defOf(registry, type);
     assertPaperMapItem(def, count, paperMap);
@@ -406,6 +411,11 @@ export class ItemFactory {
       condition,
       ...paperMapField(paperMap),
     };
+    const exposure = initialFoodExposure(registry, def, madeAt);
+    if (exposure) {
+      item.foodExposure = exposure;
+      item.madeAtGameTimestamp = madeAt;
+    }
     this.nextUid += 1;
     if (def.container) {
       item.pockets = def.container.pockets.map(() => []);
@@ -455,6 +465,9 @@ export class ItemFactory {
     }
     if (item.madeAtGameTimestamp !== undefined) {
       part.madeAtGameTimestamp = item.madeAtGameTimestamp;
+    }
+    if (item.foodExposure !== undefined) {
+      part.foodExposure = { ...item.foodExposure };
     }
     if (item.burnRemainingGameSeconds !== undefined) {
       part.burnRemainingGameSeconds = item.burnRemainingGameSeconds;
@@ -583,6 +596,7 @@ export const stackRoom = (registry: Registry, onto: Item, item: Item): number =>
     onto.charges === item.charges &&
     onto.batteryMicrojoules === item.batteryMicrojoules &&
     onto.madeAtGameTimestamp === item.madeAtGameTimestamp &&
+    equalFoodExposure(onto, item) &&
     onto.firearm === undefined &&
     item.firearm === undefined &&
     !def.paperMap &&

@@ -6,7 +6,7 @@
 
 import { canonicalJson } from '../core/canonicalJson.ts';
 import { dominantSide } from '../core/character.ts';
-import { freshnessWord, isRotten } from '../core/food.ts';
+import { freshnessWord, isRotten, servingDef } from '../core/food.ts';
 import type { HandlingQueue, JobParams, JobValue } from '../core/handling.ts';
 import type { HandSide, Inventory, Target, TargetState } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
@@ -365,7 +365,7 @@ export class Survival {
     const { registry } = this.inventory;
     const def = defOf(registry, item.type);
     const lines: string[] = [];
-    const fresh = freshnessWord(def, item, this.sim.calendar);
+    const fresh = freshnessWord(servingDef(registry, def), item, this.sim.calendar);
     if (fresh) {
       lines.push(`It's ${fresh}`);
     }
@@ -387,10 +387,10 @@ export class Survival {
       return 'There is nothing left to eat';
     }
     const foodType = vessel.serving?.food ?? item.type;
-    const def = defOf(this.inventory.registry, foodType);
+    const def = servingDef(this.inventory.registry, vessel);
     const rotten = isRotten(def, item, this.sim.calendar);
     if (vessel.serving) {
-      this.inventory.transform(item, vessel.serving.empty);
+      this.inventory.transform(item, vessel.serving.empty, { kind: 'remove' });
     } else {
       this.inventory.consume(item);
     }

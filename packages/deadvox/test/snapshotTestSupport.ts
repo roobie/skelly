@@ -5,6 +5,7 @@ import type { Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { CHUNK, localIndex, toChunk } from '../src/core/coords.ts';
 import type { MapEntityStore } from '../src/core/entities.ts';
+import { foodMillisecondsAt, projectFoodExposure } from '../src/core/food.ts';
 import {
   encodeSave,
   SAVE_SCHEMA_VERSION,
@@ -329,7 +330,7 @@ export const startRest = (runtime: Runtime, kind: 'rest' | 'sleep') => {
 };
 
 // Test-only inspection reads the live runtime directly; it deliberately does not call a save serializer.
-const inspectItem = (item: import('../src/core/items.ts').Item): unknown => ({
+const inspectItem = (item: import('../src/core/items.ts').Item, at: number): unknown => ({
   uid: item.uid,
   type: item.type,
   count: item.count,
@@ -338,11 +339,13 @@ const inspectItem = (item: import('../src/core/items.ts').Item): unknown => ({
   charges: item.charges,
   on: item.on,
   madeAtGameTimestamp: item.madeAtGameTimestamp,
+  foodExposure: item.foodExposure && projectFoodExposure(item.foodExposure, at),
   pockets: item.pockets?.map((grid) =>
-    grid.map((placed) => ({ x: placed.x, y: placed.y, rotated: placed.rotated, item: inspectItem(placed.item) })),
+    grid.map((placed) => ({ x: placed.x, y: placed.y, rotated: placed.rotated, item: inspectItem(placed.item, at) })),
   ),
 });
 export const inspect = (runtime: Runtime): unknown => {
+  const at = foodMillisecondsAt(runtime.sim.calendar);
   const scheduler = (
     runtime.sim.scheduler as unknown as { entries: { spec: { id: string }; done: number; ticks: number }[] }
   ).entries;
@@ -377,14 +380,14 @@ export const inspect = (runtime: Runtime): unknown => {
     inventory: {
       nextUid: runtime.inventory.factory.next,
       hands: Object.fromEntries(
-        Object.entries(runtime.inventory.hands).map(([side, item]) => [side, item && inspectItem(item)]),
+        Object.entries(runtime.inventory.hands).map(([side, item]) => [side, item && inspectItem(item, at)]),
       ),
       worn: Object.fromEntries(
-        Object.entries(runtime.inventory.worn).map(([slot, item]) => [slot, item && inspectItem(item)]),
+        Object.entries(runtime.inventory.worn).map(([slot, item]) => [slot, item && inspectItem(item, at)]),
       ),
       piles: [...runtime.inventory.piles.values()].map((pile) => ({
         pos: [...pile.pos],
-        items: pile.items.map((placed) => ({ ...placed, item: inspectItem(placed.item) })),
+        items: pile.items.map((placed) => ({ ...placed, item: inspectItem(placed.item, at) })),
       })),
       entitiesNextUid: runtime.entities.next,
       entities: [...runtime.entities.all].map((entity) => ({
@@ -396,7 +399,12 @@ export const inspect = (runtime: Runtime): unknown => {
         searched: entity.searched,
         open: entity.open,
         pockets: entity.pockets?.map((grid) =>
-          grid.map((placed) => ({ x: placed.x, y: placed.y, rotated: placed.rotated, item: inspectItem(placed.item) })),
+          grid.map((placed) => ({
+            x: placed.x,
+            y: placed.y,
+            rotated: placed.rotated,
+            item: inspectItem(placed.item, at),
+          })),
         ),
       })),
       looted: [...runtime.inventory.looted.entries()],
@@ -513,6 +521,10 @@ export const formatVersion: SaveVersionComponents = {
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
 export const formatWorldOptions = { blockSize: 0.5, site: 'forest' as const, storeys: 1, density: 0.75 };
-export const contentLookup = (kind: SaveContentKind, id: string): boolean => lookupSaveContent(registry, kind, id);
+export const contentLookup = (
+  kind: SaveContentKind,
+  id: string,
+  item?: import('../src/core/items.ts').ItemState,
+): boolean => lookupSaveContent(registry, kind, id, item);
 export const encodeFixture = (snapshot: SaveSnapshot, generation = 7) =>
   encodeSave(snapshot, { generation, version: formatVersion, worldOptions: formatWorldOptions });

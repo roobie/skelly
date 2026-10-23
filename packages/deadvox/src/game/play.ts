@@ -1060,6 +1060,7 @@ export const startPlay = (
   });
   const { compression } = sim;
   const unpacking = new Unpacking(inventory, queue, feet, {
+    calendar: () => sim.calendar,
     opened: (type) => tutorial?.opened(type),
     unpacked: (type) => tutorial?.weapons.unpackedAmmo(type),
   });

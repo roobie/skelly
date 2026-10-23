@@ -12,6 +12,7 @@ read_if:
   - you're changing input recording or replay
   - you're tuning landing damage or its seeded outcome spread
   - you're tuning medicine rarity or analgesic relief
+  - you're changing food shelf-life, going-off thresholds or rotten-food penalty tuning
   - you're deciding whether to pin a deferred value, or its pin-when trigger has come
   - a review flags a test for pinning drifting data
   - you're pinning values for the v1.0 beta gate or closing it
@@ -29,6 +30,7 @@ A "Pin when" names an item or an issue, so a merge can tell when its row is due.
 
 | What | Test or code owner | How to check by hand | Pin when |
 |---|---|---|---|
+| Base-pack food shelf lives, going-off thresholds and rotten-food penalties | `packages/deadvox/src/content/base/items-food.libsonnet`, `items`; `packages/deadvox/test/survival.test.ts` and `packages/deadvox/test/useItems.test.ts` | Inspect ordinary food freshness before and after its authored shelf-life boundary, then consume rotten food and compare the consequence with its definition. Owned fixtures retain freshness boundaries, pure queries and the penalty instead of nutrition without freezing shipped food tuning | for v1.0 beta (#1023) |
 | Base-pack beam spill presence | `packages/deadvox/src/content/base/items-tools.libsonnet`, `batteryBeam`; `packages/deadvox/test/flashlightCone.test.ts` | Compare the plain and spill looks with the render-only URL override. Spill presence remains tunable; the shipped spill-off policy is not deferred | when a release lighting specification fixes the beam look |
 | Per-beat building/template membership, item lists, furniture choices and filler-table names | `packages/deadvox/test/authoredFixedLoot.test.ts`, per-beat fixed-loot reachability and starting light-recipe tests | Play through each authored beat and inspect its supplies and containers against the intended progression. Tests retain reachable fixed-loot containers, authored delivery and recipe-component coverage, not complete content lists | for v1.0 beta (#1023) |
 | Base-pack section populations, recipe prerequisites, skill labels and player figure palette | `packages/deadvox/test/content.test.ts` | Run `npm run validate` in `packages/deadvox/` and inspect the authored pack and player appearance for the intended content. The fixture-based descriptor test retains native map allocation without requiring every optional section to be populated | for v1.0 beta (#1023) |

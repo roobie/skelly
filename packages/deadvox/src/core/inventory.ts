@@ -25,6 +25,7 @@ import {
   validDisassemblyToolLevels,
 } from './disassembly.ts';
 import { firearmSlotIds, isLongGun, slingFitted } from './firearmFitting.ts';
+import { initialFoodExposure } from './food.ts';
 import { furnitureSurfacePosition } from './furnitureSurface.ts';
 import { PILE_GRID } from './inventoryScale.ts';
 import {
@@ -543,8 +544,8 @@ export class Inventory {
     }
   }
 
-  create(type: string, count = 1, condition = 1): Item {
-    return this.factory.create(this.registry, type, count, { condition });
+  create(type: string, count = 1, condition = 1, madeAt = 0): Item {
+    return this.factory.create(this.registry, type, count, { condition, madeAt });
   }
 
   /** Fills or empties an owner's slot with a loose, certified item; returns the item displaced. */
@@ -1016,18 +1017,18 @@ export class Inventory {
     return drops;
   }
 
-  private workOutputs(payload: NonNullable<Item['work']>, finish: boolean): Item[] {
+  private workOutputs(payload: NonNullable<Item['work']>, finish: boolean, calendar: number): Item[] {
     if (!finish) {
       return payload.components;
     }
     if (payload.kind === 'disassembly') {
-      return payload.outputs.map(({ item, count }) => this.create(item, count));
+      return payload.outputs.map(({ item, count }) => this.create(item, count, 1, calendar));
     }
     if (payload.repairTargetUid !== undefined) {
       return [];
     }
     const { result } = this.registry.recipes.get(payload.recipe)!;
-    return [this.create(result.item, result.count)];
+    return [this.create(result.item, result.count, 1, calendar)];
   }
 
   private repairTargetForWork(payload: NonNullable<Item['work']>, finish: boolean): Item | undefined {
@@ -1042,7 +1043,7 @@ export class Inventory {
   }
 
   /** Terminal ownership transfer. Exact input UIDs never merge on cancellation. */
-  releaseWork(work: Item, finish: boolean, feet: Vec3): void {
+  releaseWork(work: Item, finish: boolean, feet: Vec3, calendar = 0): void {
     const payload = work.work;
     const at = this.locate(work);
     if (!(payload && at)) {
@@ -1050,7 +1051,7 @@ export class Inventory {
     }
     const repairing = payload.kind === 'craft' && payload.repairTargetUid !== undefined;
     const target = this.repairTargetForWork(payload, finish);
-    const outputs = this.workOutputs(payload, finish);
+    const outputs = this.workOutputs(payload, finish, calendar);
     const resultInHand = finish && !repairing && payload.kind === 'craft' && at.kind === 'hand';
     if (!resultInHand && outputs.some((item) => !couldFit(this.registry, PILE_GRID, item))) {
       throw new Error('An input or result is too large to put down');
@@ -1598,7 +1599,26 @@ export class Inventory {
     return spot ? { ok: true, time: 0, at: spot } : coreRefusal(this.registry, 'noRoom');
   }
 
-  transform(item: Item, type: string): void {
+  transform(item: Item, type: string, food: { kind: 'same' | 'remove' } | { kind: 'new'; calendar: number }): void {
+    const exposure = initialFoodExposure(
+      this.registry,
+      defOf(this.registry, type),
+      food.kind === 'new' ? food.calendar : 0,
+    );
+    if (food.kind === 'same' && Boolean(item.foodExposure) !== Boolean(exposure)) {
+      throw new Error('Same-serving transform cannot change perishability');
+    }
+    if (food.kind === 'remove' && exposure) {
+      throw new Error('Food removal cannot create a perishable serving');
+    }
+    if (food.kind !== 'same') {
+      item.foodExposure = undefined;
+      item.madeAtGameTimestamp = undefined;
+      if (exposure && food.kind === 'new') {
+        item.foodExposure = exposure;
+        item.madeAtGameTimestamp = food.calendar;
+      }
+    }
     item.type = type;
     this.version += 1;
   }

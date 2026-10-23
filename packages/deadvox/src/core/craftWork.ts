@@ -45,7 +45,7 @@ export const craftActionHooks = (
   inventory: Inventory,
   character: Character,
   reach: () => ReachSnapshot,
-  feet: () => Vec3,
+  { feet, calendar }: { feet: () => Vec3; calendar: () => number },
 ): CraftActionHooks => ({
   admit: (plan) => {
     const snapshot = reach();
@@ -114,7 +114,7 @@ export const craftActionHooks = (
             };
           })
         : [];
-      inventory.releaseWork(item, true, feet());
+      inventory.releaseWork(item, true, feet(), calendar());
       for (const entry of practice) {
         character.awardPractice(entry.skill, entry.amount, entry.tier);
       }

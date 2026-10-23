@@ -6,6 +6,7 @@ import type { Survival } from '../game/survival.ts';
 import type { AimSnapshotState } from './aim.ts';
 import type { Character, CharacterState } from './character.ts';
 import type { RustleClock } from './foliageRustle.ts';
+import { assertFoodExposure, foodMillisecondsAt, settleFoodExposure } from './food.ts';
 import type { FootstepClock } from './footsteps.ts';
 import type { HandlingQueue, HandlingQueueState } from './handling.ts';
 import type { Inventory, InventoryState } from './inventory.ts';
@@ -114,6 +115,11 @@ export const snapshotSession = ({
   audio,
 }: SnapshotSessionInput): Readonly<SaveSnapshot> => {
   power?.advance(simTimestamp(simulation.time));
+  const foodTimestamp = foodMillisecondsAt(simulation.calendar);
+  for (const { item } of inventory.items()) {
+    assertFoodExposure(inventory.registry, item);
+    settleFoodExposure(item, foodTimestamp);
+  }
   const lightUid = survival.snapshotState().litUid ?? null;
   // Check non-owning references at the synchronous snapshot barrier, not only during restore.
   for (const uid of [lightUid, ...quickbar]) {
