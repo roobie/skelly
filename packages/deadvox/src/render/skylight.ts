@@ -104,7 +104,7 @@ export class Skylight {
   private readonly regions: { value: DataTexture };
   private readonly heights: { value: DataTexture };
   private readonly heightSize: { value: Vector2 };
-  private readonly runtime: SkyRuntime;
+  private readonly jobs: SkyRuntime;
   private readonly index: ReturnType<typeof regionIndex>;
   private readonly clock: () => number;
   private recordedTerrain = false;
@@ -134,7 +134,7 @@ export class Skylight {
     this.shown = this.fields.map(() => undefined);
     this.blockSize = blockSize;
     this.viewRadiusM = viewRadiusM;
-    this.runtime = runtime;
+    this.jobs = runtime;
     this.clock = runtime.clock ?? (() => performance.now());
     let heightOffset = 0;
     this.heightOffsets = this.fields.map(({ dependency }) => {
@@ -241,8 +241,8 @@ export class Skylight {
     const start = this.clock();
     const sent = this.sky.request(
       index,
-      (input, receive) => !this.inFlight && this.runtime.submit(input, receive),
-      ({ accepted, result, ms }) => {
+      (input, receive) => !this.inFlight && this.jobs.submit(input, receive),
+      ({ accepted, result, workerRealMs }) => {
         this.inFlight = false;
         this.stats.completed += 1;
         if (!accepted) {
@@ -251,7 +251,7 @@ export class Skylight {
           this.stats.accepted += 1;
           this.stats[result.volume ? 'volumes' : 'roofFree'] += 1;
         }
-        this.onJob?.(ms, this.clock() - start);
+        this.onJob?.(workerRealMs, this.clock() - start);
       },
     );
     if (sent) {

@@ -39,7 +39,7 @@ export interface SkySettled {
   /** False when the world changed while the build was out, or a synchronous build got there first. */
   accepted: boolean;
   result: SkyResult;
-  ms: number;
+  workerRealMs: number;
 }
 export interface SkyField {
   /** The sky box grown by its shell: where the field answers. */
@@ -154,7 +154,7 @@ export class SkyFields {
     }
     entry.request ??= { captured: this.capture(entry), submitted: false };
     const { request } = entry;
-    const sent = submit(request.captured.input, (result, ms) => {
+    const sent = submit(request.captured.input, (result, workerRealMs) => {
       if (entry.request === request) {
         entry.request = undefined;
       }
@@ -162,7 +162,7 @@ export class SkyFields {
       if (accepted) {
         this.install(entry, request.captured, result);
       }
-      settle?.({ accepted, result, ms });
+      settle?.({ accepted, result, workerRealMs });
     });
     request.submitted = sent;
     return sent;
