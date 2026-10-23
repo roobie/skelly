@@ -41,6 +41,7 @@ import { FurnitureMeshes } from './furniture.ts';
 import { Gore } from './gore.ts';
 import { type HeldHandlingFrame, HeldItems } from './hands.ts';
 import { ImpactEffects } from './impactEffects.ts';
+import { ItemPictures } from './itemPictures.ts';
 import { ItemThrows } from './itemThrows.ts';
 import { LightPool } from './lightPool.ts';
 import { applyLook } from './look.ts';
@@ -170,8 +171,15 @@ export const createPlayView = (
   const drawCounters = config.debug && renderer ? new DrawCounters(renderer) : undefined;
   const dayCycle = requireDayCycle(registry);
   const s = config.scale.blockSize;
+  const models = new ModelLibrary(registry, report);
+  let pictures: ItemPictures | undefined;
   // Play's look defaults are presentation; benchmark mode never applies them.
   if (renderer) {
+    pictures = new ItemPictures(
+      registry,
+      models,
+      registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!.itemPictureCacheCapacity,
+    );
     if (mood === undefined) {
       throw new Error('rendering resources are incomplete');
     }
@@ -184,7 +192,6 @@ export const createPlayView = (
     shadows.restore(DEFAULT_SHADOWS);
   }
   const weather: Weather = { fogginess: dayCycle.weather.defaultFogginess };
-  const models = new ModelLibrary(registry, report);
   const playerFigure = registry.figures.get(CORE_CONTENT_IDS.player)!;
   const playerPalette = playerFigure.palette;
   const piles = new PileMeshes(s, models, config.seed, meshes);
@@ -220,6 +227,7 @@ export const createPlayView = (
   const held = new HeldItems(inventory, models, playerPalette, engine.sky.light);
   scene.add(caseEffects.mesh, impactEffects.group, itemThrows.group, gore.group, blastFlashes.group, acidEffects.group);
   const dispose = () => {
+    pictures?.dispose();
     piles.dispose();
     caseEffects.dispose();
     gore.dispose();
@@ -339,6 +347,7 @@ export const createPlayView = (
 
   return {
     models,
+    pictures,
     get drawSubmission() {
       return drawCounters?.snapshot ?? null;
     },

@@ -64,7 +64,7 @@ const SHOWN_SLOTS: readonly WearSlot[] = ['shoulder', 'torso', 'vest', 'hands', 
 const WORN_ONLY_SLOTS: readonly WearSlot[] = ['head', 'eyes'];
 
 export interface ScreenHooks {
-  pictures?: { readonly version: number; picture: (item: Item) => string | undefined };
+  pictures?: { readonly version: number; picture: (item: Item) => string | undefined } | undefined;
   /** What each wear slot is called; from the core ui content. */
   slotLabels: Readonly<Record<WearSlot, string>>;
   reach: () => ReachSnapshot;

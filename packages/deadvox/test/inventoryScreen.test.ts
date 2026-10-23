@@ -208,6 +208,8 @@ it('keeps a model-less item as a text tile when pictures are enabled', () => {
         items: [
           {
             id: 'text_tile',
+            workInProgress: false,
+            notLoot: false,
             name: 'Text tile',
             category: 'misc',
             weight: 1,
@@ -231,7 +233,8 @@ it('keeps a model-less item as a text tile when pictures are enabled', () => {
         has: () => true,
         groundLook: () => new Group(),
       },
-      () => 'still',
+      2,
+      { paint: () => 'still', dispose: vi.fn() },
     ),
   });
   test.screen.update();
@@ -702,7 +705,10 @@ describe('inventory screen Lit rendering', () => {
       });
     const paint = vi.fn(() => `data:image/png;base64,${paint.mock.calls.length}`);
     const models = { version: 0, has: () => models.version > 0, groundLook: () => new Group() };
-    const pictures = new ItemPictures(registry, models, paint);
+    const pictures = new ItemPictures(registry, models, registry.graphics.get('core')!.itemPictureCacheCapacity, {
+      paint,
+      dispose: vi.fn(),
+    });
     Object.assign(test.hooks, { pictures });
     test.screen.selected = firearm;
     test.screen.update();

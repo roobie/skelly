@@ -1198,7 +1198,8 @@ try {
     await page.goto(
       browserStageUrl(
         'inventory-scroll',
-        `http://127.0.0.1:${address.port}/?debug=1&seed=73&radius=64&post=0&sunshadow=0&torchshadow=0`,
+        // A compact scene keeps world streaming outside the inventory pixel/fit readiness budget.
+        `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=testHouse&radius=32&post=0&sunshadow=0&torchshadow=0`,
       ),
     );
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {

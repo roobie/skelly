@@ -90,6 +90,14 @@ likeness would claim the item lacks equipment it owns. See
 `src/render/itemPictures.ts`, `ItemPictures`, `src/render/itemLook.ts`, `itemLook`,
 and `src/render/models.ts`, `ModelLibrary`.
 
+Keep still storage bounded: fitted combinations must not accumulate for the
+whole session. Eviction may cost another cold render, but must preserve the
+likeness when requested again. The play view owns picture resources so leaving
+the page releases their GPU context without releasing shared model geometry.
+Render-free play keeps text tiles rather than creating a second rendering path.
+See `src/render/itemPictures.ts`, `ItemPictures`, and `src/render/playView.ts`,
+`createPlayView`.
+
 Use neutral reference lighting so recognition remains stable in darkness and
 pictures can be reused without following world-light changes. The picture is an
 abstract reference, not a claim that the object is illuminated in the world. It

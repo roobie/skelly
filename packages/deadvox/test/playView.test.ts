@@ -440,18 +440,21 @@ describe('play presentation ownership', () => {
     } as unknown as Engine;
     const view = createPlayView(engine, inventory, vi.fn(), new EventTarget());
 
+    expect(view.pictures).toBeUndefined();
     expect(view.render()).toBeNull();
     await expect(view.warmUp()).resolves.toBeUndefined();
     view.dispose();
   });
 
-  it('releases owned pile and case instances on pagehide', () => {
+  it('releases owned pictures, pile and case instances on pagehide', () => {
     const { page, view } = fixture();
+    const pictures = vi.spyOn(view.pictures!, 'dispose');
     const piles = vi.spyOn(view.piles, 'dispose');
     const cases = vi.spyOn(view.caseEffects, 'dispose');
     expect(piles).not.toHaveBeenCalled();
     expect(cases).not.toHaveBeenCalled();
     page.dispatchEvent(new Event('pagehide'));
+    expect(pictures).toHaveBeenCalledTimes(1);
     expect(piles).toHaveBeenCalledTimes(1);
     expect(cases).toHaveBeenCalledTimes(1);
   });

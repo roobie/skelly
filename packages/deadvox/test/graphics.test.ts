@@ -33,7 +33,9 @@ const tuning: GraphicsOptions = {
 };
 const source = (options: GraphicsOptions) => ({
   source: 'fixture-graphics.json',
-  data: { graphics: [{ id: CORE_CONTENT_IDS.coreGraphics, readyRadiusM: 16, ...options }] },
+  data: {
+    graphics: [{ id: CORE_CONTENT_IDS.coreGraphics, readyRadiusM: 16, itemPictureCacheCapacity: 2, ...options }],
+  },
 });
 
 it('validates graphics ranges, defaults and allowed toggle choices before admitting a file', () => {

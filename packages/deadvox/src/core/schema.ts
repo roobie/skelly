@@ -3469,6 +3469,7 @@ const RecipeSchema = strictObject({
 const GraphicsTuningSchema = strictObject({
   id: Id,
   readyRadiusM: pipe(number(), finite(), minValue(0)),
+  itemPictureCacheCapacity: pipe(number(), integer(), minValue(1)),
   ...GraphicsOptionsSchema.entries,
 });
 

@@ -29,6 +29,7 @@
         "options": [false, true]
       },
       "id": "core",
+      "itemPictureCacheCapacity": 128,
       "readyRadiusM": 64,
       "renderScale": {
         "adaptive": {

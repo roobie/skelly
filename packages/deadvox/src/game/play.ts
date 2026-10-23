@@ -44,7 +44,6 @@ import { sightedFirearmModel } from '../render/firearmSight.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { handlingRotation } from '../render/handlingTurn.ts';
 import { markInteractionTarget } from '../render/interactionMarker.ts';
-import { ItemPictures } from '../render/itemPictures.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
 import { createPlayView } from '../render/playView.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
@@ -1210,7 +1209,7 @@ export const startPlay = (
   };
 
   const hooks: ScreenHooks = {
-    pictures: new ItemPictures(registry, view.models),
+    pictures: view.pictures,
     feet,
     reach: session.reach,
     nearby: () => session.reach().piles,
