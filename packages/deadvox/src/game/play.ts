@@ -112,6 +112,7 @@ import { firearmBoreRay, firearmBoreTarget } from './firearmAim.ts';
 import { firearmHandlingFor } from './firearmHandling.ts';
 import { FirearmTrigger } from './firearmTrigger.ts';
 import { advanceLiveFrame, observeRealFrame, realNow, startRealFrames } from './frameDriver.ts';
+import { FurnitureActionSelection } from './furnitureActions.ts';
 import { adjustLookPitch, Input } from './input.ts';
 import {
   type InputCancellationReason,
@@ -138,7 +139,7 @@ import {
 import { createReplayPlayStateBinding, routeDominantUse, toggleWalking } from './inputReplayActions.ts';
 import { InputReplayDriver, type InputReplayDriverPorts, nextReplayInputSample } from './inputReplayDriver.ts';
 import { applyReplayLook, InputReplayPlayer } from './inputReplayPlayer.ts';
-import { type ItemAction, ItemActionSelection } from './itemActions.ts';
+import type { ItemAction } from './itemActions.ts';
 import { startingLoadout } from './loadout.ts';
 import {
   meleeWeaponFromContent,
@@ -708,8 +709,7 @@ export const startPlay = (
   let throwingStance = false;
   const pendingPlayerTickActions = new PlayerTickActions();
   let interactionPressTarget: InteractionTarget | undefined;
-  let furnitureActionUid: number | undefined;
-  const furnitureActionSelection = new ItemActionSelection();
+  const furnitureActionSelection = new FurnitureActionSelection();
   const furnitureUseLabel = (entity: BlockEntity): string | undefined => {
     const def = entities.defOf(entity);
     if (def.door) {
@@ -1677,6 +1677,9 @@ export const startPlay = (
       titleActive: Boolean(options.saveController && !options.saveController.isEntered),
     });
     ({ started, mainMenuOpen } = state);
+    if (state.paused) {
+      furnitureActionSelection.sync(undefined, true);
+    }
     if (pointerLockChanged || state.closeOtherMenus) {
       resumeRequested = false;
     }
@@ -2450,7 +2453,7 @@ export const startPlay = (
     const target = interactionTargetAt();
     return (
       target?.kind === 'furniture' &&
-      furnitureActionUid === target.entity.uid &&
+      furnitureActionSelection.isOpen(target.entity) &&
       furnitureActionSelection.step(target.entity, furnitureActions(target.entity), Math.sign(deltaY))
     );
   };
@@ -2597,8 +2600,8 @@ export const startPlay = (
   };
 
   const furniturePayload = (entity: BlockEntity, mode: 'pocket' | 'wield'): ReplayActionPayload => {
-    if (slidableFurniture(inventory, entity, s) && furnitureActionUid === entity.uid) {
-      const selected = furnitureActionSelection.forItem(entity, furnitureActions(entity))!;
+    if (slidableFurniture(inventory, entity, s) && furnitureActionSelection.isOpen(entity)) {
+      const selected = furnitureActionSelection.confirm(entity, furnitureActions(entity))!;
       return selected.id === 'use'
         ? { kind: 'furniture.use', entityUid: entity.uid }
         : { kind: 'furniture.slide', entityUid: entity.uid, way: selected.id === 'push' ? 'push' : 'drag' };
@@ -2661,8 +2664,7 @@ export const startPlay = (
       return undefined;
     }
     if (slidableFurniture(inventory, entity, s)) {
-      furnitureActionUid = entity.uid;
-      furnitureActionSelection.forItem(entity, furnitureActions(entity));
+      furnitureActionSelection.open(entity, furnitureActions(entity));
     } else {
       useTarget(entity);
     }
@@ -3278,7 +3280,7 @@ export const startPlay = (
   const furnitureInteractionHint = (entity: BlockEntity): HintText => {
     const key = keyCap('world.interact');
     const selected =
-      slidableFurniture(inventory, entity, s) && furnitureActionUid === entity.uid
+      slidableFurniture(inventory, entity, s) && furnitureActionSelection.isOpen(entity)
         ? furnitureActionSelection.forItem(entity, furnitureActions(entity))
         : undefined;
     const actionHint = slidableFurniture(inventory, entity, s)
@@ -3324,12 +3326,10 @@ export const startPlay = (
     target: InteractionTarget | undefined,
     carry: ReturnType<typeof carryPreview>,
   ) => {
-    if (target?.kind !== 'furniture' || target.entity.uid !== furnitureActionUid || carry) {
-      furnitureActionUid = undefined;
-    }
+    furnitureActionSelection.sync(target?.kind === 'furniture' && !carry ? target.entity.uid : undefined, sim.paused);
     const interactionHint = interactionHintFor(target, carry);
     const furnitureList =
-      target?.kind === 'furniture' && furnitureActionUid === target.entity.uid
+      target?.kind === 'furniture' && furnitureActionSelection.isOpen(target.entity)
         ? [
             `${nameOf(target.entity)}:`,
             ...furnitureActions(target.entity).map(

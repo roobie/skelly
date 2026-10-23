@@ -502,9 +502,12 @@ because rearranging a room should not require destroying its contents. See `src/
   to movable kinds: building parts keep direct use
   because offering impossible moves would obstruct their ordinary interaction.
   A fitted placement of a movable kind still offers the choice and explains why
-  it cannot move, so fitting does not silently change that kind's controls. See
-  `src/core/furnitureMove.ts`, `slidableFurniture`, `src/game/play.ts`,
-  `furnitureActions`, and `src/game/itemActions.ts`, `ItemActionSelection`.
+  it cannot move, so fitting does not silently change that kind's controls.
+  An open choice is a single confirmation, not a persistent interaction mode:
+  returning from a pause or another target must not unexpectedly act instead of
+  offering choices. See `src/core/furnitureMove.ts`, `slidableFurniture`,
+  `src/game/play.ts`, `furnitureActions`, and `src/game/furnitureActions.ts`,
+  `FurnitureActionSelection`.
 - **What lifts.** Pieces that are part of the building stay put. Fitted is a
   mark on a placement, not a definition, because the same cupboard is fixed in
   a kitchen and loose in a shed. A moved piece keeps its origin, so generation

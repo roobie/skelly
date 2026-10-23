@@ -1187,6 +1187,10 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
     await pressAction(page, 'world.interact');
     await page.waitForFunction(() => !document.querySelector('#item-action-list').hidden);
     for (const way of ['push', 'drag']) {
+      if (way === 'drag') {
+        await pressAction(page, 'world.interact');
+        await page.waitForFunction(() => !document.querySelector('#item-action-list').hidden);
+      }
       await page.mouse.wheel(0, 100);
       await pressAction(page, 'world.interact');
       await page.waitForFunction(
