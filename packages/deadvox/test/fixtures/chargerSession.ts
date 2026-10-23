@@ -3,7 +3,6 @@ import type { Registry } from '../../src/core/content.ts';
 import { CHUNK } from '../../src/core/coords.ts';
 import type { SaveSnapshot } from '../../src/core/saveState.ts';
 import { makeScale } from '../../src/core/scale.ts';
-import { simTimestamp } from '../../src/core/time.ts';
 import { World } from '../../src/core/world.ts';
 import { createSession, IDLE } from '../../src/game/session.ts';
 
@@ -73,7 +72,7 @@ export const createChargerSession = (base: Registry, restore?: Readonly<SaveSnap
     spawn: [0, 1, 0],
     ready: () => true,
     powerDevices: [
-      { type: 'test_charger_supply', pos: [4, 1, 0] },
+      { type: 'test_charger_supply', pos: [-2, 1, -1] },
       {
         type: charger.id,
         pos: [1, 1, 0],
@@ -93,6 +92,10 @@ export const createChargerSession = (base: Registry, restore?: Readonly<SaveSnap
     onRead: () => undefined,
   });
   session.sim.paused = false;
+  if (!restore) {
+    session.entities.add({ type: 'test_charger_supply', pos: [-2, 1, -1], size: [1, 1, 1], facing: 'n' });
+  }
+  const supply = [...session.entities.records].find((entry) => entry.type === 'test_charger_supply')!;
   const entity = [...session.entities.records].find((entry) => entry.type === charger.id);
   if (entity && !restore) {
     session.entities.markSearched(entity);
@@ -110,8 +113,12 @@ export const createChargerSession = (base: Registry, restore?: Readonly<SaveSnap
         session.frame(1 / 60);
       }
     },
-    blackout: (off: boolean) =>
-      session.power!.network.setEnabled(simTimestamp(session.sim.time), 'test_charger_supply:4,1,0', !off),
+    blackout: (off: boolean) => {
+      const refusal = session.powerControl(supply.uid, !off);
+      if (refusal) {
+        throw new Error(refusal);
+      }
+    },
     snapshot: () => session.snapshot({ worldId: 'charger-world', characterId: 'charger-player' }),
   };
 };

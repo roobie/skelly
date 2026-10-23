@@ -447,6 +447,10 @@
           "hand.use-dominant": "Left click",
           "pointer.look": "Mouse"
         },
+        "powerControl": {
+          "off": "Switch off",
+          "on": "Switch on"
+        },
         "primaryAction": {
           "nothingToDo": "Nothing to do with {item}"
         },

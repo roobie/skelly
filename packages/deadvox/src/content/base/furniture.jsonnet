@@ -121,6 +121,7 @@ breach.breaking(shape.colliding({
     },
     {
       "id": "fridge",
+      power: { device: 'house_fridge', fuelLitres: 0, enabled: true },
       "name": "Fridge",
       "size": [2, 4, 2],
       "color": "#d8dcd8",
@@ -237,12 +238,48 @@ breach.breaking(shape.colliding({
       }
     },
     {
+      id: 'fuel_generator', name: 'Generator', size: [2, 2, 2], color: '#79694b', material: 'steel',
+      power: { device: 'fuel_generator', fuelLitres: 20, enabled: true },
+    },
+    {
+      id: 'storage_battery', name: 'Storage battery', size: [1, 2, 1], color: '#343a45', material: 'steel',
+      power: { device: 'storage_battery', fuelLitres: 0, enabled: true },
+    },
+    {
+      id: 'solar_panel', name: 'Solar panel', size: [4, 1, 2], color: '#233d62', material: 'steel',
+      power: { device: 'solar_panel', fuelLitres: 0, enabled: true },
+    },
+    {
+      id: 'main_breaker', name: 'Main breaker', size: [1, 2, 1], color: '#777b80', material: 'steel',
+      power: { device: 'main_breaker', fuelLitres: 0, enabled: true },
+    },
+    {
+      id: 'electric_lamp', name: 'Electric lamp', size: [1, 3, 1], color: '#dbca99', material: 'steel',
+      power: { device: 'lab_light', fuelLitres: 0, enabled: true,
+        light: { color: '#ffdea5', intensity: 24, radius: 8 } },
+    },
+    {
       id: 'battery_charger',
       name: 'Battery charger',
       size: [1, 1, 1],
-      color: '#55585b',
+      color: '#3a3c3f',
       material: 'steel',
-      shape: [{ position: [0, 0, 0], size: [1, 0.3, 1] }],
+      // Drawn at its real size, a hand's width of plastic on the floor, so it fills too little of its block to stop
+      // anyone and stays walkable like a rug.
+      solid: false,
+      shape: [
+        { position: [0.36, 0, 0.41], size: [0.28, 0.045, 0.18] },
+        { position: [0.4, 0.045, 0.46], size: [0.14, 0.005, 0.06], color: '#141516' },
+        { position: [0.4, 0.05, 0.475], size: [0.008, 0.02, 0.03], color: '#c8b273' },
+        { position: [0.532, 0.05, 0.475], size: [0.008, 0.02, 0.03], color: '#c8b273' },
+        { position: [0.36, 0.045, 0.41], size: [0.28, 0.03, 0.05] },
+        { position: [0.36, 0.045, 0.52], size: [0.28, 0.03, 0.07] },
+        { position: [0.36, 0.045, 0.46], size: [0.04, 0.03, 0.06] },
+        { position: [0.54, 0.045, 0.46], size: [0.1, 0.03, 0.06] },
+        { position: [0.565, 0.075, 0.475], size: [0.05, 0.002, 0.03], color: '#c9c6bc' },
+        { position: [0.6, 0.075, 0.545], size: [0.02, 0.006, 0.02], color: '#6a2a22' },
+        { position: [0.49, 0, 0], size: [0.02, 0.015, 0.41], color: '#1b1b1b' },
+      ],
       container: { pockets: [{ grid: [1, 1], handlingSimSeconds: 1 }] },
       power: { device: 'portable_battery_charger', fuelLitres: 0, enabled: true },
       charger: { batteries: ['rechargeable_aa_battery'], pocket: 0, efficiency: 0.75 },
