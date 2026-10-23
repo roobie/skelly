@@ -11,7 +11,7 @@ import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import { Character, dominantSide, offSide, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
 import { hourOfDay } from '../core/clock.ts';
-import { terrainSolid, worldMeleeBlocker, worldSoundBlocking } from '../core/collision.ts';
+import { terrainSolid, worldMeleeBlocker, worldSolid, worldSoundBlocking } from '../core/collision.ts';
 import { type RecipeDef, type Registry, requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
@@ -568,9 +568,9 @@ const restorePlayerSessionLatches = (player: ReturnType<typeof restorePlayer> | 
 
 const zombieReadinessFor = (options: SessionOptions) => options.zombieReady ?? options.ready;
 
-/** Play's `isSolid` is core/collision.ts `worldSolid` over the world and its entities, so their bricks stand in. */
-const solidBricksFor = ({ world, registry, entities }: SessionOptions): SolidBricks | undefined =>
-  entities ? worldBricks(world, registry, entities) : undefined;
+/** Physical bricks share the parked-vehicle occupancy projection with the cell collision path. */
+const solidBricksFor = (world: World, registry: Registry, inventory: Inventory, blockSize: number): SolidBricks =>
+  worldBricks(world, registry, inventory.entities, { vehicles: inventory.vehicles, blockSize });
 
 const scenarioRunSnapshot = (run: ScenarioRun | undefined) => run?.snapshot() ?? null;
 const scenarioRunWon = (run: ScenarioRun | undefined): boolean => run?.won ?? false;
@@ -656,6 +656,7 @@ export const createSession = (options: SessionOptions) => {
   const restored = options.restore;
   const rolledColumns = new Set(restored?.world.rolledColumns);
 
+  let physicalSolid = isSolid;
   const restoredPlayer = restored ? restorePlayer(restored.character.player) : undefined;
   const senseTuning = playerSenseTuning(registry);
   let playerStance: PlayerStance = restoredPlayer?.stance ?? 'standing';
@@ -668,7 +669,7 @@ export const createSession = (options: SessionOptions) => {
       crouching: Player.crouch.bodyHeightMetres / s,
       prone: Player.prone.bodyHeightMetres / s,
     },
-    isSolid,
+    isSolid: (x, y, z) => physicalSolid(x, y, z),
   };
   setStanceHeight(stanceBody, playerStance);
   const updateStance = (): void => {
@@ -697,6 +698,7 @@ export const createSession = (options: SessionOptions) => {
       })
     : new Inventory(registry, undefined, options.entities, character);
   options.registerVehicles?.(inventory);
+  physicalSolid = worldSolid(world, registry, inventory.entities, { vehicles: inventory.vehicles, blockSize: s });
   const wearPlaced = (piece: BlockEntity | undefined, wear: number | undefined): void => {
     if (piece && wear !== undefined) {
       inventory.entities.wear(piece, wear);
@@ -762,14 +764,14 @@ export const createSession = (options: SessionOptions) => {
       return sim.clock;
     },
     obstacles: {
-      isSolid,
+      isSolid: (x: number, y: number, z: number) => physicalSolid(x, y, z),
       get version() {
-        return world.version;
+        return world.version + inventory.vehicles.version;
       },
     },
   };
   const reach = bindReach(reachPlayer);
-  inventory.landing = (pos) => settleCell(pos, s, scale.minCy * CHUNK, isSolid);
+  inventory.landing = (pos) => settleCell(pos, s, scale.minCy * CHUNK, physicalSolid);
   inventory.dropFeet = feet;
   const pileDistance = (pos: Vec3) => distanceToPile(body.pos, pos, s);
   const chest = (): Vec3 => [
@@ -1197,8 +1199,8 @@ export const createSession = (options: SessionOptions) => {
     seed: sim.seed,
     isLoaded: zombieReadinessFor(options),
     terrainFloor: options.terrainFloor,
-    isSolid,
-    solidBricks: solidBricksFor(options),
+    isSolid: physicalSolid,
+    solidBricks: solidBricksFor(world, registry, inventory, s),
     isOpaque: options.isOpaque,
     isSoundBlocking: worldSoundBlocking(world, registry, inventory.entities, isSolid),
     meleeBlocker,
@@ -1586,7 +1588,7 @@ export const createSession = (options: SessionOptions) => {
         dt,
         strafing: steered.right !== 0,
       });
-    const landingSpeed = stepBody(body, dt, isSolid, {
+    const landingSpeed = stepBody(body, dt, physicalSolid, {
       ...physics,
       // Only a climb up steps up a ledge: one down would step back onto the roof edge it is leaving.
       ...(climbing ? { gravity: 0, braced: body.vel[1] >= 0 } : {}),

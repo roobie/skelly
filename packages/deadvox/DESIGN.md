@@ -2541,13 +2541,13 @@ their state.
 9. **Cheap at scale.** A parked street must not pay continuous driving-physics cost.
    Part-level changes should not require rebuilding unrelated vehicles.
 10. **Obstruction follows the build.** Render, collision and picking derive from the
-    same fittings and poses, so removed parts and animated doors cannot leave invisible
-    walls or selectable empty air. The parked exterior approximation is owned by
-    `src/vehicles/solid.ts`, `solidBlocks`, and `src/core/blockEntities.ts`,
-    `BlockEntities.hasPartAt`; its filled columns are not a cabin-space model.
-    Glazing blocks bodies but transmits sight and light, with explicit sound
-    attenuation, so visible windows agree with perception. Shared furniture reasons
-    are in `docs/content.md`, "Furniture solidity".
+    same fittings and poses, so removed parts cannot leave invisible walls or
+    selectable empty air. `src/core/vehicleProjection.ts`, `VehicleOccupancy`, makes
+    parked body blockers from occupied exported boxes; `src/core/solidBricks.ts`,
+    `worldBricks`, uses the same projection for accelerated physics and navigation.
+    This exterior cell approximation leaves clear exported space unfilled rather than
+    inventing a cabin envelope. Sight, light, sound and combat remain separate channel
+    decisions. Shared furniture reasons are in `docs/content.md`, "Furniture solidity".
 
 **Driving and access.** Road-going arcade handling is sufficient for v1 beta;
 greater realism is the post-beta direction under #322. The physics implementation
