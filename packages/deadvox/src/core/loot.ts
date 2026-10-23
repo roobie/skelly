@@ -6,7 +6,9 @@
 import { array, check, type InferOutput, literal, optional, picklist, pipe, strictObject } from 'valibot';
 import type { ItemDef, LootEntry, Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
+import { type PaperMapCoverage, paperMapAt } from './paperMap.ts';
 import { Rng } from './random.ts';
+import { BLOCK_SIZE } from './scale.ts';
 import type { FixedLootItemDef } from './schema.ts';
 
 const distinct = <T>(values: T[]): boolean => new Set(values).size === values.length;
@@ -175,6 +177,8 @@ export const lootTypeIssue = (
 export interface Rolled {
   type: string;
   count: number;
+  /** Coverage resolved from the immutable loot source, before an item gets a UID. */
+  paperMap?: PaperMapCoverage;
   /** 0 to 1, rounded to hundredths so identical rolls stack. */
   condition: number;
   /** Item types fitted to each one, by slot id; only authored fixed loot sets them. */
@@ -202,13 +206,25 @@ const pick = <T extends { weight: number }>(entries: readonly T[], rng: Rng): T 
  * Items for one count of an entry: a stackable item comes as stacks of up to its
  * limit, anything else as separate items.
  */
-const itemsOf = (registry: Registry, { type, count, condition }: Rolled): Rolled[] => {
+const itemsOf = (registry: Registry, { type, count, condition, paperMap }: Rolled): Rolled[] => {
   const limit = registry.items.get(type)?.stack ?? 1;
   const out: Rolled[] = [];
   for (let left = count; left > 0; left -= limit) {
-    out.push({ type, count: Math.min(left, limit), condition });
+    out.push({ type, count: Math.min(left, limit), condition, ...(paperMap === undefined ? {} : { paperMap }) });
   }
   return out;
+};
+
+const mapCoverage = (
+  item: ItemDef | undefined,
+  point: LootSpawnPoint,
+  blockSize: number,
+): PaperMapCoverage | undefined =>
+  item?.paperMap ? paperMapAt(point.position[0] * blockSize, point.position[2] * blockSize) : undefined;
+
+const withMapCoverage = (registry: Registry, point: LootSpawnPoint, blockSize: number, rolled: Rolled): Rolled => {
+  const paperMap = mapCoverage(registry.items.get(rolled.type), point, blockSize);
+  return { ...rolled, ...(paperMap === undefined ? {} : { paperMap }) };
 };
 
 export interface WeightedCandidate {
@@ -241,21 +257,25 @@ export const selectLootType = (
   return admitted.length === 0 ? undefined : pick(admitted, rng).type;
 };
 
-const fixedItems = (
-  registry: Registry,
-  items: readonly FixedLootItemDef[],
-  point: LootSpawnPoint,
-  rng: Rng,
-): Rolled[] =>
+interface RollContext {
+  readonly point: LootSpawnPoint;
+  readonly rng: Rng;
+  readonly blockSize: number;
+}
+
+const fixedItems = (registry: Registry, items: readonly FixedLootItemDef[], context: RollContext): Rolled[] =>
   items.flatMap(({ item, count = 1, condition = 1, fitted, charge }) => {
-    const type = selectLootType(registry, point, [{ type: item, weight: 1, fitted }], rng);
+    const type = selectLootType(registry, context.point, [{ type: item, weight: 1, fitted }], context.rng);
     if (type === undefined) {
-      if (point.required) {
-        throw new Error(`required loot ${item} is outside source ${point.id}`);
+      if (context.point.required) {
+        throw new Error(`required loot ${item} is outside source ${context.point.id}`);
       }
       return [];
     }
-    return itemsOf(registry, { type, count, condition }).map((rolled) => ({
+    return itemsOf(
+      registry,
+      withMapCoverage(registry, context.point, context.blockSize, { type, count, condition }),
+    ).map((rolled) => ({
       ...rolled,
       ...(fitted ? { fitted } : {}),
       ...(charge === undefined ? {} : { charge }),
@@ -294,21 +314,28 @@ const tableEntry = (
   );
 };
 
-const rollTable = (registry: Registry, tableId: string, point: LootSpawnPoint, rng: Rng): Rolled[] => {
+const rollTable = (registry: Registry, tableId: string, context: RollContext): Rolled[] => {
   const table = registry.loot.get(tableId);
   if (!table) {
     return [];
   }
   const out: Rolled[] = [];
-  const rolls = rng.int(table.rolls[0], table.rolls[1]);
+  const rolls = context.rng.int(table.rolls[0], table.rolls[1]);
   for (let i = 0; i < rolls; i++) {
-    const entry = tableEntry(registry, point, table.entries, rng);
+    const entry = tableEntry(registry, context.point, table.entries, context.rng);
     if (entry?.table !== undefined) {
-      out.push(...rollTable(registry, entry.table, point, rng));
+      out.push(...rollTable(registry, entry.table, context));
     } else if (entry?.item !== undefined) {
-      const count = entry.count ? rng.int(entry.count[0], entry.count[1]) : 1;
-      const condition = entry.condition ? Math.round(rng.range(entry.condition[0], entry.condition[1]) * 100) / 100 : 1;
-      out.push(...itemsOf(registry, { type: entry.item, count, condition }));
+      const count = entry.count ? context.rng.int(entry.count[0], entry.count[1]) : 1;
+      const condition = entry.condition
+        ? Math.round(context.rng.range(entry.condition[0], entry.condition[1]) * 100) / 100
+        : 1;
+      out.push(
+        ...itemsOf(
+          registry,
+          withMapCoverage(registry, context.point, context.blockSize, { type: entry.item, count, condition }),
+        ),
+      );
     }
   }
   return out;
@@ -319,19 +346,21 @@ export const rollLootParts = (
   registry: Registry,
   point: LootSpawnPoint,
   rng: Rng,
+  blockSize = BLOCK_SIZE,
 ): { fixed: Rolled[]; rolled: Rolled[] } => {
+  const context = { point, rng, blockSize };
   switch (point.supply.kind) {
     case 'empty':
       return { fixed: [], rolled: [] };
     case 'table':
-      return { fixed: [], rolled: rollTable(registry, point.supply.table, point, rng) };
+      return { fixed: [], rolled: rollTable(registry, point.supply.table, context) };
     case 'fixed': {
-      const fixed = fixedItems(registry, point.supply.items, point, rng);
+      const fixed = fixedItems(registry, point.supply.items, context);
       return {
         fixed: point.required ? fixed : [],
         rolled: [
           ...(point.required ? [] : fixed),
-          ...(point.supply.table === undefined ? [] : rollTable(registry, point.supply.table, point, rng)),
+          ...(point.supply.table === undefined ? [] : rollTable(registry, point.supply.table, context)),
         ],
       };
     }
@@ -340,8 +369,8 @@ export const rollLootParts = (
   }
 };
 
-export const rollLoot = (registry: Registry, point: LootSpawnPoint, rng: Rng): Rolled[] => {
-  const { fixed, rolled } = rollLootParts(registry, point, rng);
+export const rollLoot = (registry: Registry, point: LootSpawnPoint, rng: Rng, blockSize = BLOCK_SIZE): Rolled[] => {
+  const { fixed, rolled } = rollLootParts(registry, point, rng, blockSize);
   return [...fixed, ...rolled];
 };
 

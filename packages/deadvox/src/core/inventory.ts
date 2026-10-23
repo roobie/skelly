@@ -403,8 +403,11 @@ export class Inventory {
     return entity;
   }
 
-  createRolled({ type, count, condition, fitted, charge }: Rolled): Item {
-    const item = this.create(type, count, condition);
+  createRolled({ type, count, condition, paperMap, fitted, charge }: Rolled): Item {
+    const item = this.factory.create(this.registry, type, count, {
+      condition,
+      ...(paperMap === undefined ? {} : { paperMap }),
+    });
     for (const [slot, child] of Object.entries(fitted ?? {})) {
       this.fitSlot(item, slot, this.create(child));
     }
