@@ -352,6 +352,7 @@ describe('play presentation ownership', () => {
       const receiver = receiverLighting(f, target);
       expect(receiver.shader).toContain('vec2 receiverSky = skyVisibility(receiverSkyUnbuilt);');
       expect(receiver.shader).toContain('float receiverSkyVisibility = receiverSky.x;');
+      expect(receiver.shader).toContain('float receiverSkyFade = receiverSky.y;');
       expect(receiver.shader).toContain('irradiance *= receiverSkyVisibility;');
       expect(f.view.flashlight.daylightScale * receiver.scale).toBeGreaterThan(
         flashlightDaylightScale(f.daylight) * 10,
