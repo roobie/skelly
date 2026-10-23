@@ -88,6 +88,13 @@ describe('bench plan', () => {
     expect(benchRunFromUrl(new URLSearchParams('bench=1&shamblers=7,8'), registry).shamblers).toBeUndefined();
   });
 
+  it('selects a scale-independent default scene for non-template benchmark plans', () => {
+    const registry = { layouts: new Map(), scenarios: new Map() };
+    const run = benchRunFromUrl(new URLSearchParams('bench=1&plan=1:64,0.25:64'), registry);
+    expect(run.site).toBe('forest');
+    expect(benchRunFromUrl(new URLSearchParams(nextUrl(run, 73)), registry).site).toBe(run.site);
+  });
+
   it('runs 0.5 m blocks at 64, 96 and 128 m by default', () => {
     expect(formatPlan(DEFAULT_PLAN)).toBe('0.5:64,0.5:96,0.5:128');
   });

@@ -14,13 +14,14 @@ import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
 import { ammoMatchesCalibre, firearmModelForType } from '../src/game/firearmHandling.ts';
 import { INPUT_BINDINGS } from '../src/game/inputBindings.ts';
-import { GARDEN_GATE, HOUSE_OFFSET } from '../src/game/testHouse.ts';
 import { isTestHouseRangeStockItem, testHouseRangeSupply } from '../src/game/testHouseRange.ts';
-import { buildDebugTestHouseSite, DebugTestHouseSite, testHouseScene } from '../src/game/worldSetup.ts';
+import { buildDebugTestHouseSite, DebugTestHouseSite } from '../src/game/worldSetup.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { content as BUNDLED_CONTENT, makeConfig } from './fixtures/startupContent.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from './playerFixture.ts';
+import { houseScene as testHouseScene } from './testHouseFixture.ts';
 import { buildTestHouseRangeRoute, routeMovementInput } from './testHouseRangeRoute.ts';
+import { GARDEN_GATE, HOUSE_OFFSET } from './testHouseRouteGeometry.ts';
 
 const withRangeStockFixtures = (): { registry: Registry; firearm: string; ammo: string; box: string } => {
   const base = BUNDLED_CONTENT.registry;
@@ -166,7 +167,7 @@ const buildRangeWalkFixture = () => {
     }
   }
   const entities = new BlockEntities(registry);
-  for (const { spec } of [...house.furniture, ...rangeFurniture]) {
+  for (const { spec } of rangeFurniture) {
     entities.add(spec);
   }
   const rack = [...entities.all].find((entity) => entity.type === 'range_rack');
@@ -330,6 +331,7 @@ describe('the debug test-house range', () => {
   it('stocks every firearm and compatible ammunition item discovered from registry data', () => {
     const { registry, firearm, ammo, box } = withRangeStockFixtures();
     const config = makeConfig(13, 64);
+    config.site = 'testHouse';
     const site = new DebugTestHouseSite(config, registry, testHouseScene(config, registry));
     const stock = rangeFurnitureFor(site).find((spawn) => spawn.spec.type === 'range_rack')!.loot;
     const stored = stockedTypes(registry, stock);
