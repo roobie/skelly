@@ -86,6 +86,9 @@ const isAttachmentPayload = (payload: Record<string, unknown>): boolean =>
 const isSlidePayload = (payload: Record<string, unknown>): boolean =>
   isUid(payload.entityUid) && payload.way === 'push';
 
+const isInteractPayload = (payload: Record<string, unknown>): boolean =>
+  isUid(payload.entityUid) && (payload.alternatives === undefined || payload.alternatives === true);
+
 const isLiftPayload = (payload: Record<string, unknown>): boolean =>
   isUid(payload.entityUid) && (payload.floorLocked === undefined || typeof payload.floorLocked === 'boolean');
 
@@ -111,9 +114,10 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
     case 'charger.start':
     case 'charger.stop':
     case 'inventory.search':
-    case 'furniture.interact':
     case 'furniture.use':
       return isUid(payload.entityUid);
+    case 'furniture.interact':
+      return isInteractPayload(payload);
     case 'furniture.lift':
       return isLiftPayload(payload);
     case 'furniture.slide':
