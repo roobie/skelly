@@ -271,6 +271,7 @@ function receiverLighting(f: ReturnType<typeof litWorld>, target: Vec3, patched 
       runInNewContext(expression.replaceAll('float(', 'Number(').replaceAll('pow(', 'Math.pow('), {
         uSkyDaylight: shader.uniforms.uSkyDaylight!.value,
         receiverSkyVisibility: f.sky.at(target),
+        receiverSkyFade: f.sky.at(target, 'unfurnished'),
       }),
     );
     return { scale, shader: shader.fragmentShader };
@@ -349,7 +350,8 @@ describe('play presentation ownership', () => {
       expect(f.owner.knownOpaque(...(target.map((axis) => Math.floor(axis / 0.5)) as Vec3))).toBe(false);
       expect(f.sky.at(target)).toBeLessThan(f.sky.at(cameraPosition));
       const receiver = receiverLighting(f, target);
-      expect(receiver.shader).toContain('float receiverSkyVisibility = skyVisibility(receiverSkyUnbuilt);');
+      expect(receiver.shader).toContain('vec2 receiverSky = skyVisibility(receiverSkyUnbuilt);');
+      expect(receiver.shader).toContain('float receiverSkyVisibility = receiverSky.x;');
       expect(receiver.shader).toContain('irradiance *= receiverSkyVisibility;');
       expect(f.view.flashlight.daylightScale * receiver.scale).toBeGreaterThan(
         flashlightDaylightScale(f.daylight) * 10,

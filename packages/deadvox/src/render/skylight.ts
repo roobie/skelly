@@ -18,7 +18,7 @@ import {
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import type { Sky } from '../core/sky.ts';
 import { type SkyField, type SkyFields, type SkySubmit, skyRoofAt } from '../core/skyField.ts';
-import { skyIndex } from '../core/skylight.ts';
+import { type SkyChannel, skyIndex } from '../core/skylight.ts';
 import { containsSky } from '../core/skySnapshot.ts';
 import { type SkyResult, sampleSky } from '../core/skyTransport.ts';
 import { FADE_SHARPNESS, HALF_BRIGHTNESS } from './flashlight.ts';
@@ -352,7 +352,7 @@ export class Skylight {
     this.daylight.value = sky.lightIntensity + sky.ambientIntensity;
   }
   /** Sky visibility the view draws at a point in metres: no build, so it never stalls a frame. */
-  at(position: Vec3): number {
+  at(position: Vec3, channel: SkyChannel = 'light'): number {
     const point = position.map((value) => value / this.blockSize) as Vec3;
     const covering = this.fields
       .map((field, index) => ({ field, index, result: this.shown[index] }))
@@ -363,7 +363,7 @@ export class Skylight {
     const known = covering.filter(({ result }) => result);
     for (const { index, result } of known) {
       if (this.active.includes(index) && result!.volume && containsSky(result!.volume, point)) {
-        return sampleSky(result!.volume, point);
+        return sampleSky(result!.volume, point, channel);
       }
     }
     if (known.length === 0) {
