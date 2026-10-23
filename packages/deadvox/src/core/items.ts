@@ -8,6 +8,7 @@ import { firearmSlotIds } from './firearmFitting.ts';
 import { assertFirearmState, type FirearmState, snapshotFirearm } from './firearmState.ts';
 import { magazineContentsReason, magazineSpec, magazineWellCalibre, slotsReason } from './magazine.ts';
 import { modelBodyMassKg } from './modelMass.ts';
+import { assertPaperMapItem, type PaperMapCoverage } from './paperMap.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
 /** Craft or disassembly inputs/progress have exactly one owner: this ordinary item subtree. */
@@ -32,6 +33,7 @@ type CraftWork<Node> =
 /** Scalar and pocket fields are shared by live items and their saved tree. */
 export interface ItemFields<Node> {
   count: number;
+  paperMap?: PaperMapCoverage;
   /** Units in this stack already included in the death-screen loot tally. */
   lootedCount?: number;
   /** 0 (ruined) to 1 (pristine). */
@@ -101,6 +103,9 @@ const trapField = (trap: TrapState | undefined): { trap?: TrapState } =>
 const cargoField = (cargo: ItemFields<unknown>['cargo']): Pick<ItemFields<unknown>, 'cargo'> =>
   cargo === undefined ? {} : { cargo: [...cargo] };
 
+const paperMapField = (paperMap: PaperMapCoverage | undefined): { paperMap?: PaperMapCoverage } =>
+  paperMap === undefined ? {} : { paperMap: { ...paperMap } };
+
 /** Immutable, isolated item tree suitable for a save snapshot. */
 export const snapshotItem = (item: Item): Readonly<ItemState> =>
   freezeSnapshot({
@@ -120,6 +125,7 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
     ...(item.firearm === undefined ? {} : { firearm: snapshotFirearm(item.firearm) }),
     ...(item.cartridges === undefined ? {} : { cartridges: [...item.cartridges] }),
     ...cargoField(item.cargo),
+    ...paperMapField(item.paperMap),
     ...(item.slots === undefined
       ? {}
       : {
@@ -261,6 +267,7 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
   assertSavedTrap(def, state);
   assertSavedLootCount(state);
   assertSavedCargo(def, state);
+  assertPaperMapItem(def, state.count, state.paperMap);
   const firearm = restoreFirearmState(registry, def, state);
   const magazineReason =
     magazineContentsReason(registry, state.type, state.cartridges) ?? slotsReason(registry, state.type, state.slots);
@@ -286,6 +293,7 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
     ...(firearm === undefined ? {} : { firearm }),
     ...(state.cartridges === undefined ? {} : { cartridges: [...state.cartridges] }),
     ...cargoField(state.cargo),
+    ...paperMapField(state.paperMap),
     ...(state.slots === undefined
       ? {}
       : {
@@ -380,9 +388,21 @@ export class ItemFactory {
     return this.nextUid;
   }
 
-  create(registry: Registry, type: string, count = 1, { condition = 1 }: { condition?: number } = {}): Item {
+  create(
+    registry: Registry,
+    type: string,
+    count = 1,
+    { condition = 1, paperMap }: { condition?: number; paperMap?: PaperMapCoverage } = {},
+  ): Item {
     const def = defOf(registry, type);
-    const item: Item = { uid: this.nextUid, type, count, condition };
+    assertPaperMapItem(def, count, paperMap);
+    const item: Item = {
+      uid: this.nextUid,
+      type,
+      count,
+      condition,
+      ...paperMapField(paperMap),
+    };
     this.nextUid += 1;
     if (def.container) {
       item.pockets = def.container.pockets.map(() => []);
@@ -413,7 +433,7 @@ export class ItemFactory {
 
   /** Takes `count` off a stack into a new instance. */
   split(item: Item, count: number): Item {
-    if (count <= 0 || count >= item.count) {
+    if (item.paperMap !== undefined || count <= 0 || count >= item.count) {
       throw new Error(`can't split ${count} off a stack of ${item.count}`);
     }
     item.count -= count;
@@ -554,6 +574,9 @@ export const stackRoom = (registry: Registry, onto: Item, item: Item): number =>
     onto.madeAtGameTimestamp === item.madeAtGameTimestamp &&
     onto.firearm === undefined &&
     item.firearm === undefined &&
+    !def.paperMap &&
+    onto.paperMap === undefined &&
+    item.paperMap === undefined &&
     isEmpty(onto) &&
     isEmpty(item);
   return same && def.stack !== undefined ? Math.max(0, def.stack - onto.count) : 0;

@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change regional paper-map coverage, item ownership or persistence
   - you change held sharpening, blade repair entry points or prepared hand pairs
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
   - you change the player figure's look, its authored parts, its clothes or how it is posed
@@ -2811,6 +2812,30 @@ decoration.
 - Web Audio, started by the first click (browsers block sound until then).
   Sounds are content: ids in the pack, checked by the validator. Files are
   small, and follow [Assets and credits](#assets-and-credits).
+
+## Regional paper maps
+
+Paper coverage uses the world's existing grid, not settlement bounds: wilderness
+needs an owner too, and a settlement need not fit on one sheet. A sheet belongs to
+its saved world; its region pair identifies the publication, not the physical
+copy. See `src/core/paperMap.ts`, `paperMapAt` and `paperMapBounds`, and
+`src/core/worldRegion.ts`, `regionIndex`.
+
+Paper is a carried source of knowledge, not a permanent atlas unlock or a live
+camera. Its approved printed geography is baseline terrain and public roads,
+including unvisited places, not actors, possessions, secrets or mutable damage.
+The discovery policy is optional local supply without guaranteed coverage;
+duplicate copies are ordinary possessions, not globally unique collectibles.
+Completing #470 requires a shared reading-light policy for all paper rather than
+a map-only exception.
+
+Region payloads stay with ordinary item ownership so putting down a sheet removes
+access without erasing its identity. Sheets do not stack: stateless merging must
+not discard coverage. Saved coverage must not require visited or edited terrain,
+and render caches are not durable knowledge. See `src/core/schema.ts`,
+`ItemSchema`; `src/core/content.ts`, `checkItems`; `src/core/items.ts`,
+`ItemFields`, `ItemFactory`, `snapshotItem` and `restoreItem`; and
+`src/core/saveFormat.ts`, `itemSchema`.
 
 ## UI principles
 
