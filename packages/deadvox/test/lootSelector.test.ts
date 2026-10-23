@@ -17,6 +17,8 @@ const itemDefinition = (id: string, usage: string[], tiers: string[]) => ({
   weight: 1,
   stack: 10,
   economy: { usage, tiers },
+  workInProgress: false,
+  notLoot: false,
 });
 const fixture = () => {
   const result = buildRegistry([

@@ -136,6 +136,7 @@ export const fixtureScenarioSources = (
         siteGeneration: [
           {
             id: CORE_CONTENT_IDS.authoredSite,
+            activeZombieRadiusMetres: baseSite.activeZombieRadiusMetres,
             topography: {
               amplitudeMetres: 0,
               wavelengthMetres: 1,
@@ -200,6 +201,8 @@ export const fixtureScenarioSources = (
         items: [
           {
             id: 'fixture_token',
+            workInProgress: false,
+            notLoot: false,
             name: 'Fixture token',
             category: 'material',
             weight: 1,
@@ -208,6 +211,8 @@ export const fixtureScenarioSources = (
           },
           {
             id: 'fixture_event_token',
+            workInProgress: false,
+            notLoot: false,
             name: 'Fixture event token',
             category: 'material',
             weight: 1,

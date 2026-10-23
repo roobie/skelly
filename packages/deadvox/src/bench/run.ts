@@ -306,6 +306,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
       simulation.godMode = true;
       const lightSeenFrom = engine.registry.items.get('torch')!.light!.seenFrom;
       zombies = new ZombieSystem({
+        activeZombieRadiusMetres: siteGenerationOf(engine.registry).activeZombieRadiusMetres,
         seed: config.seed,
         isSolid: engine.isSolid,
         isOpaque: engine.isOpaque,
