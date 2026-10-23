@@ -4,7 +4,6 @@ import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { StressCity } from '../src/core/city.ts';
 import type { Registry } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
-import { Hamlet } from '../src/core/hamlet.ts';
 // biome-ignore lint/performance/noNamespaceImport: The spy observes the actual site-to-selector handoff.
 import * as selection from '../src/core/loot.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -88,14 +87,9 @@ const expectRoutedColumn = (site: Site, placements: readonly Placement[]) => {
 };
 
 describe('loot source routing', () => {
-  it('routes hamlet, city and authored-layout sources through their enumerated points', () => {
+  it('routes city and authored-layout sources through their enumerated points', () => {
     const registry = fixtureRegistry();
     const scale = makeScale(0.5);
-    const hamlet = new Hamlet(17, registry, scale);
-    expectRoutedColumn(
-      hamlet,
-      hamlet.lots.map((lot) => lot.placement),
-    );
     const city = new StressCity(17, registry, scale);
     expectRoutedColumn(city, city.placements);
     const authored = new AuthoredSite(17, registry, scale, {

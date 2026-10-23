@@ -1,13 +1,11 @@
 // Static type reachability, not an inventory/quantity/seed or whole-game solver.
 import { startingKnownRecipes } from './character.ts';
 import type { FurnitureDef, RecipeDef, Registry } from './content.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { disassemblyOutputs } from './disassembly.ts';
-import { ordinaryHamletSpawnWeights, possibleHamletZombies } from './hamlet.ts';
 import { scenarioSources } from './scenarioComposition.ts';
 import type { SiteLayoutDef } from './schema.ts';
-import { siteGenerationOf } from './sitePalette.ts';
-import { compileTemplate, type SpawnMarker } from './templates.ts';
+import { HORDE_TYPE, ordinarySpawnWeights } from './settlementSpawns.ts';
+import { compileTemplate } from './templates.ts';
 
 interface RecipeDiagnostic {
   recipe: string;
@@ -159,24 +157,32 @@ const authoredFixedLootItems = (layouts: readonly SiteLayoutDef[]): Set<string> 
   return items;
 };
 
-// Absent site generation is already reported by `requiredContentIssues`.
-const hamletSidesOf = (registry: Registry) =>
-  registry.siteGeneration.has(CORE_CONTENT_IDS.authoredSite)
-    ? siteGenerationOf(registry).hamlet
-    : { northSide: [], southSide: [] };
+const worldZombieTypes = (registry: Registry, layouts: readonly SiteLayoutDef[]): Set<string> => {
+  const types = new Set(layouts.flatMap((layout) => layout.shamblers.map((spawn) => spawn.type)));
+  const populations = [...registry.scenarios.values()].map((scenario) => scenario.population);
+  if (layouts.some((layout) => layout.hordes?.length) || populations.some((population) => population.hordes > 0)) {
+    types.add(HORDE_TYPE);
+  }
+  if (populations.some((population) => population.settlementPressure)) {
+    for (const [type, weight] of ordinarySpawnWeights(registry)) {
+      if (weight > 0) {
+        types.add(type);
+      }
+    }
+  }
+  return types;
+};
 
 const worldSources = (registry: Registry) => {
   const roots = new Set<string>();
   const workstations = new Set<string>();
   const workstationQualities = new Map<string, number>();
-  const markers = new Map<string, readonly SpawnMarker[]>();
   const authoredLayouts = [...registry.layouts.values()].filter((layout) => !layout.demo);
+  const zombieTypes = worldZombieTypes(registry, authoredLayouts);
   const authoredTemplates = authoredLayouts.flatMap((layout) => layout.buildings.map(({ template }) => template));
   const scenario = scenarioSources(registry);
   // Compiling uses the actual marked pieces/spawns, not unused palette declarations.
-  const hamletSides = hamletSidesOf(registry);
-  const hamletTemplates = new Set([...hamletSides.northSide, ...hamletSides.southSide]);
-  for (const id of new Set([...hamletTemplates, ...authoredTemplates, ...scenario.templates])) {
+  for (const id of new Set([...authoredTemplates, ...scenario.templates])) {
     const definition = registry.templates.get(id);
     if (!definition) {
       continue; // A rejected/missing template provides no sources.
@@ -188,12 +194,11 @@ const worldSources = (registry: Registry) => {
       }
       addWorkstationSource(registry.furniture.get(piece.furniture)?.workstation, workstations, workstationQualities);
     }
-    if (hamletTemplates.has(id)) {
-      markers.set(id, template.spawns);
+    for (const marker of template.spawns.filter((spawn) => spawn.chance > 0)) {
+      zombieTypes.add(marker.zombie);
     }
   }
-  const spawnWeights = ordinaryHamletSpawnWeights(registry);
-  for (const id of possibleHamletZombies(markers, hamletSides, spawnWeights)) {
+  for (const id of zombieTypes) {
     const loot = registry.zombies.get(id)?.loot;
     if (loot !== undefined) {
       roots.add(loot);
@@ -288,7 +293,7 @@ const workstationIssues = (recipe: RecipeDef, workstations: ReadonlySet<string>)
     {
       recipe: recipe.id,
       path: '.workstation',
-      message: `workstation "${recipe.workstation}" is not placed in the hamlet`,
+      message: `workstation "${recipe.workstation}" is not placed in a playable world`,
     },
   ];
 };

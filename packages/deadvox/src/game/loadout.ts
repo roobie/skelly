@@ -1,5 +1,5 @@
 // What the player starts with: jeans and a hoodie, and a little in their pockets.
-// Everything else is in the hamlet's furniture.
+// Everything else is in the world's furniture.
 
 import type { Inventory } from '../core/inventory.ts';
 

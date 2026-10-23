@@ -27,7 +27,7 @@
       ],
       "readable": {
         "title": "Placeholder — a wooden sign",
-        "text": "PLACEHOLDER SIGN — NOT A ROUTE TO A REAL LOCATION\n\nThis is a sample of readable furniture. The hamlet signs and actual directions will be authored later."
+        "text": "PLACEHOLDER SIGN — NOT A ROUTE TO A REAL LOCATION"
       }
     }
   ],

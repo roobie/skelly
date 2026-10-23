@@ -1,4 +1,4 @@
-// The shambler mode of the shared ?bench= harness. It loads the hamlet, runs the
+// The shambler mode of the shared ?bench= harness. It loads the forest, runs the
 // real fixed-step ZombieSystem and player physics, and records frame/tick/render costs.
 
 import { hourOfDay, parseTimeOfDay } from '../core/clock.ts';
@@ -101,7 +101,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       ? {
           startedAt: new Date().toISOString(),
           quick: false,
-          site: 'hamlet',
+          site: 'forest',
           time: run.time,
           ...(run.post ? { post: true } : {}),
           env: environment(engine),
@@ -263,7 +263,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       return true;
     }
     if (now - loadStarted > 120_000) {
-      hud.textContent = `Hamlet did not finish loading (${holesAtSpawn} holes remain); benchmark stopped.`;
+      hud.textContent = `Forest did not finish loading (${holesAtSpawn} holes remain); benchmark stopped.`;
       completed = true;
       return false;
     }
@@ -341,7 +341,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
     hud.textContent = [
       `Shambler benchmark ${run.index + 1}/${run.counts.length}: N=${count} (${activeCount} active, ${backgroundCount} background), seed=${run.seed}, ${run.time}, actors=${run.actors}`,
       phase === 'load'
-        ? `loading hamlet (${streamer.unmeshedColumns(engine.spawn.pos[0] / s, engine.spawn.pos[2] / s, config.radiusChunks)} holes)`
+        ? `loading forest (${streamer.unmeshedColumns(engine.spawn.pos[0] / s, engine.spawn.pos[2] / s, config.radiusChunks)} holes)`
         : `${phase} ${Math.min(elapsed, phase === 'warmup' ? duration.warmup : duration.measure).toFixed(1)} s`,
       `zombies ${zombies?.store.size ?? 0}, player god mode on, ${interrupted ? 'tab hidden: unreliable' : 'keep tab visible'}`,
       `chunks ${engine.meshes.count} meshed, ${streamer.pending} pending`,

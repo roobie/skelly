@@ -7,7 +7,6 @@ import { resolveSpawnTime, SECONDS_PER_DAY } from '../src/core/clock.ts';
 import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
-import { Hamlet } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { lightSenseSourceFor, toggleLight } from '../src/core/lights.ts';
 import { type Body, bodyOverlapsBlock, stepBody } from '../src/core/physics.ts';
@@ -46,6 +45,7 @@ import { mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
 import { ZombieMeshes } from '../src/render/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
+import { SnapshotSite } from './fixtures/snapshotSite.ts';
 import { sunExposedAt } from './fixtures/sunOracle.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { MobActorMeshes } from './mobActorsFixture.ts';
@@ -2054,8 +2054,16 @@ describe('shambler scenarios', () => {
     expect(ordinaryRun.health).toBeLessThan(100);
   });
 
-  it('loads the hamlet horde once with its group membership intact', () => {
-    const site = new Hamlet(7, registry, SCALE);
+  it('loads a fixture horde once with its group membership intact', () => {
+    const base = new SnapshotSite(7, registry, SCALE);
+    const site = {
+      ...spawnSite({ type: 'shambler', pos: [0, 41, 0] }),
+      registry,
+      seed: 7,
+      surface: base.surface,
+      hordesIn: (cx: number, cz: number) =>
+        cx === 0 && cz === 0 ? [{ id: 'fixture-horde', type: 'shambler', pos: [0, 41, 0] as Vec3, members: 20 }] : [],
+    };
     let column: [number, number] | undefined;
     for (let cz = -20; cz <= 20 && !column; cz++) {
       for (let cx = -20; cx <= 20 && !column; cx++) {
@@ -2078,8 +2086,8 @@ describe('shambler scenarios', () => {
     expect(system.snapshotState()).toEqual(state);
   });
 
-  it('G: a killed hamlet shambler stays gone when its column reloads', () => {
-    const site = new Hamlet(7, registry, SCALE);
+  it('G: a killed fixture shambler stays gone when its column reloads', () => {
+    const site = new SnapshotSite(7, registry, SCALE);
     let column: [number, number] | undefined;
     for (let cz = -20; cz <= 20 && !column; cz++) {
       for (let cx = -20; cx <= 20 && !column; cx++) {

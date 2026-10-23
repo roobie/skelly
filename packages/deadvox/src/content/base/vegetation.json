@@ -44,23 +44,6 @@
       "weatherable": false
     },
     {
-      "color": "#425b35",
-      "footsteps": {
-        "player": "footstep_leaves",
-        "shambler": "shambler_step_leaves"
-      },
-      "id": "hedge",
-      "name": "Hedge",
-      "opaque": true,
-      "pattern": "noise",
-      "rustle": {
-        "fast": "foliage_rustle_fast",
-        "gentle": "foliage_rustle"
-      },
-      "solid": false,
-      "weatherable": false
-    },
-    {
       "color": "#766047",
       "footsteps": {
         "player": "footstep_leaves",
