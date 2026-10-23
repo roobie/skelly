@@ -2,7 +2,7 @@ import type { Registry } from './content.ts';
 import type { Item } from './items.ts';
 import type { LiquidContents } from './schema.ts';
 
-export type LiquidTransferRefusal =
+type LiquidTransferRefusal =
   | 'missing-endpoint'
   | 'same-endpoint'
   | 'not-vessel'
