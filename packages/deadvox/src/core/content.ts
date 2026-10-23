@@ -335,8 +335,16 @@ const checkVessels = (item: ItemDef, registry: Registry, report: Report): void =
   }
 };
 
+// A door keeps only its bar's item type, and lifting the bar hands back a fresh one.
+const checkDoorBar = (item: ItemDef, registry: Registry, report: Report): void => {
+  if (item.doorBar && (!item.twoHanded || vesselHasState(item, registry))) {
+    report('items', item.id, '.doorBar', 'a door bar is a stateless, unstacked item held in both hands');
+  }
+};
+
 const checkUnpacking = (item: ItemDef, registry: Registry, qualities: ReadonlySet<string>, report: Report): void => {
   checkVessels(item, registry, report);
+  checkDoorBar(item, registry, report);
   if (!item.unpack) {
     return;
   }
@@ -971,10 +979,27 @@ const checkToolFuel = (item: ItemDef, registry: Registry, report: Report) => {
   }
 };
 
+const checkFurniturePower = (registry: Registry, furniture: FurnitureDef, report: Report) => {
+  const { power } = furniture;
+  if (!power) {
+    return;
+  }
+  const device = registry.powerDevices.get(power.device);
+  if (!device) {
+    report('furniture', furniture.id, '.power.device', `no power device "${power.device}"`);
+  } else if (device.kind !== 'generator' && power.fuelLitres !== 0) {
+    report('furniture', furniture.id, '.power.fuelLitres', 'only a generator holds fuel');
+  }
+  if (power.light && device?.kind !== 'consumer') {
+    report('furniture', furniture.id, '.power.light', 'a light must be a consumer');
+  }
+};
+
 const checkFurniture = (registry: Registry, report: Report) => {
   const cellMetres = registry.inventory.get(CORE_CONTENT_IDS.player)?.cellMetres;
   checkMaterialSounds(registry, report);
   for (const furniture of registry.furniture.values()) {
+    checkFurniturePower(registry, furniture, report);
     if (furniture.container) {
       checkContainerWidth({ section: 'furniture', id: furniture.id, container: furniture.container, registry, report });
     }

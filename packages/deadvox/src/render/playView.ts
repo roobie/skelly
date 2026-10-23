@@ -20,6 +20,7 @@ import type { PlayerStance } from '../core/playerStance.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
 import { reachTuning } from '../core/reach.ts';
 import type { BodyTuningDef, NightVision } from '../core/schema.ts';
+import type { PoweredLight } from '../core/sitePower.ts';
 import { firearmsCombatTuning } from '../core/skillTraining.ts';
 import { skyAt, sunShadowStrength } from '../core/sky.ts';
 import { skyInWeather, type Weather } from '../core/weather.ts';
@@ -166,7 +167,13 @@ export const createPlayView = (
   engine: PlayViewEngine,
   inventory: Inventory,
   report: (message: string) => void,
-  page: Pick<EventTarget, 'addEventListener'> = globalThis,
+  {
+    page = globalThis,
+    poweredLights = () => [],
+  }: {
+    page?: Pick<EventTarget, 'addEventListener'>;
+    poweredLights?: () => readonly PoweredLight[];
+  } = {},
 ) => {
   const { config, registry, renderer, meshes, scene, camera, mood, shadows } = engine;
   const drawCounters = config.debug && renderer ? new DrawCounters(renderer) : undefined;
@@ -497,7 +504,14 @@ export const createPlayView = (
       carriedPiece.update(dt, camera.quaternion);
       held.update(camera, pose, recoil, { ...handling, lift });
       flashlight.update({ registry, lit: light, held, camera, inventory });
-      lightPool.update(inventory, { held, piles, camera, blockSize: s, daylightScale: cameraDaylightScale });
+      lightPool.update(inventory, {
+        held,
+        piles,
+        camera,
+        blockSize: s,
+        daylightScale: cameraDaylightScale,
+        fixtures: poweredLights(),
+      });
       updateFlare(nightVision, dt);
     },
     render: (): number | null => {

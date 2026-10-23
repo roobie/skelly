@@ -58,6 +58,13 @@ export interface PowerTransition {
   readonly powered: boolean;
 }
 
+/** Appliance-owned work: zero is idle; undefined leaves an ordinary consumer unmanaged. */
+export interface PowerWork {
+  remainingGameMilliseconds: (consumerId: string) => number | undefined;
+  /** Settle every owner over the same interval, applying tied completions together before returning. */
+  settle: (elapsedGameMilliseconds: number, servedConsumerIds: readonly string[]) => void;
+}
+
 interface PowerEnvironment {
   readonly registry: Pick<Registry, 'powerDevices'>;
   readonly tuning: PowerTuningDef;
@@ -206,8 +213,10 @@ export class PowerNetwork {
   private readonly tickGameMilliseconds: number;
   private readonly startGameMilliseconds: number;
   private readonly clock: ClockSettings;
+  private readonly work: PowerWork | undefined;
 
-  constructor(environment: PowerEnvironment, state: unknown) {
+  constructor(environment: PowerEnvironment, state: unknown, work?: PowerWork) {
+    this.work = work;
     const { registry, tuning, cycle, clock } = environment;
     const start = unitCount(clock.start, POWER_UNITS.gameMillisecondsPerGameSecond);
     if (!(Number.isFinite(clock.ratio) && clock.ratio > 0 && start !== undefined && start >= 0)) {
@@ -272,6 +281,10 @@ export class PowerNetwork {
         .map(({ spec: _, ...entry }) => ({ ...entry })),
       links: this.links.map((link) => ({ ...link })),
     };
+  }
+
+  isPowered(id: string): boolean {
+    return this.device(id).powered;
   }
 
   tick(): readonly PowerTransition[] {
@@ -359,6 +372,14 @@ export class PowerNetwork {
     return !consumer.restartBlocked || stores.every(({ device, spec }) => device.storedMicrojoules === spec.capacity);
   }
 
+  private remainingWork(id: string): number | undefined {
+    const remaining = this.work?.remainingGameMilliseconds(id);
+    if (remaining !== undefined && (!Number.isSafeInteger(remaining) || remaining < 0)) {
+      throw new Error('Power work must have a nonnegative safe integer remaining duration');
+    }
+    return remaining;
+  }
+
   private admit(
     devices: readonly Device[],
     stores: readonly Store[],
@@ -371,11 +392,12 @@ export class PowerNetwork {
         continue;
       }
       const { demand } = consumer.spec;
-      const powered = consumer.enabled && (demand <= remaining || this.storageAllowed(consumer, stores));
+      const active = this.remainingWork(consumer.id) !== 0;
+      const powered = consumer.enabled && active && (demand <= remaining || this.storageAllowed(consumer, stores));
       if (powered) {
         remaining -= demand;
         consumer.restartBlocked = false;
-      } else if (consumer.enabled) {
+      } else if (consumer.enabled && active) {
         consumer.restartBlocked = true;
       }
       if (powered !== consumer.powered) {
@@ -425,8 +447,19 @@ export class PowerNetwork {
       for (const transfer of transfers) {
         elapsed = Math.min(elapsed, transferDuration(transfer));
       }
+      const served = [...this.devices.values()]
+        .filter((device) => device.powered)
+        .map((device) => device.id)
+        .sort(compareId);
+      for (const id of served) {
+        const remaining = this.remainingWork(id);
+        if (remaining !== undefined) {
+          elapsed = Math.min(elapsed, remaining);
+        }
+      }
       this.integrate(transfers, elapsed);
       this.atGameMilliseconds += elapsed;
+      this.work?.settle(elapsed, served);
     }
   }
 }

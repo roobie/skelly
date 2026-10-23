@@ -1,4 +1,5 @@
 export const CORE_CONTENT_IDS = {
+  powerTuning: 'base',
   coreUi: 'core',
   coreGraphics: 'core',
   coreLook: 'core',
