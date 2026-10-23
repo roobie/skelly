@@ -344,6 +344,11 @@ export class PlayerMeshes {
     this.localPosition[1] =
       stepOffset + BODY_HIP_HEIGHT - hipDropMetres + aboveHip * Math.cos(swing) - localZ * Math.sin(swing);
     this.localPosition[2] = aboveHip * Math.sin(swing) + localZ * Math.cos(swing);
+    if (!this.placement.thirdPerson) {
+      // The eye stays over the standing column, so the lean must not carry the head, and the body behind it, ahead of the eye.
+      const headAboveHip = PLAYER_BOXES.head.at[1] - BODY_HIP_HEIGHT;
+      this.localPosition[2] -= headAboveHip * Math.sin((-torsoForwardDegrees * Math.PI) / 180);
+    }
     setPlayerFigurePosition(this.dummy.position, this.placement, this.localPosition);
     this.dummy.rotation.order = 'YXZ';
     this.dummy.rotation.set(footStride + swing, yaw, 0);

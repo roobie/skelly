@@ -9,11 +9,12 @@ export type ReplayActionPayload =
   | { kind: 'inventory.move'; itemUid: number; target: TargetState; count: number }
   | { kind: 'inventory.to-hands'; itemUid: number; feet: [number, number, number] }
   | { kind: 'item.pickup'; itemUid: number; mode: 'pocket' | 'wield'; feet: [number, number, number] }
-  | { kind: 'furniture.interact'; entityUid: number }
-  | { kind: 'furniture.lift'; entityUid: number }
+  | { kind: 'furniture.interact'; entityUid: number; alternatives?: true }
+  | { kind: 'furniture.lift'; entityUid: number; floorLocked?: boolean }
   | { kind: 'furniture.use'; entityUid: number }
-  | { kind: 'furniture.slide'; entityUid: number; way: 'push' | 'drag' }
+  | { kind: 'furniture.slide'; entityUid: number; way: 'push' }
   | { kind: 'furniture.place'; pos: [number, number, number] }
+  | { kind: 'power.set'; entityUid: number; enabled: boolean }
   | { kind: 'charger.start'; entityUid: number }
   | { kind: 'charger.stop'; entityUid: number }
   | { kind: 'furniture.turn' }
@@ -83,8 +84,17 @@ const isAttachmentPayload = (payload: Record<string, unknown>): boolean =>
   typeof payload.slotId === 'string' &&
   (payload.kind !== 'firearm.attachment.fit' || isUid(payload.attachmentUid));
 
+const isPowerPayload = (payload: Record<string, unknown>): boolean =>
+  isUid(payload.entityUid) && typeof payload.enabled === 'boolean';
+
 const isSlidePayload = (payload: Record<string, unknown>): boolean =>
-  isUid(payload.entityUid) && (payload.way === 'push' || payload.way === 'drag');
+  isUid(payload.entityUid) && payload.way === 'push';
+
+const isInteractPayload = (payload: Record<string, unknown>): boolean =>
+  isUid(payload.entityUid) && (payload.alternatives === undefined || payload.alternatives === true);
+
+const isLiftPayload = (payload: Record<string, unknown>): boolean =>
+  isUid(payload.entityUid) && (payload.floorLocked === undefined || typeof payload.floorLocked === 'boolean');
 
 /** An hour of the day, or null to sleep until rested. */
 const isWakeGameHour = (value: unknown): boolean =>
@@ -105,13 +115,17 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
       );
     case 'inventory.to-hands':
       return isUid(payload.itemUid) && isTriple(payload.feet);
+    case 'power.set':
+      return isPowerPayload(payload);
     case 'charger.start':
     case 'charger.stop':
     case 'inventory.search':
-    case 'furniture.interact':
-    case 'furniture.lift':
     case 'furniture.use':
       return isUid(payload.entityUid);
+    case 'furniture.interact':
+      return isInteractPayload(payload);
+    case 'furniture.lift':
+      return isLiftPayload(payload);
     case 'furniture.slide':
       return isSlidePayload(payload);
     case 'furniture.place':
@@ -174,15 +188,16 @@ export interface ReplayCommandOwners {
   quickbar: Pick<Quickbar, 'assign'>;
   search: (entityUid: number) => string | undefined;
   charger?: (entityUid: number, operation: 'start' | 'stop') => string | undefined;
+  power?: (entityUid: number, enabled: boolean) => string | undefined;
   work: (itemUid: number, operation: WorkOperation) => string | undefined;
   fitAttachment?: (firearmUid: number, slotId: string, attachmentUid: number) => string | undefined;
   removeAttachment?: (firearmUid: number, slotId: string) => string | undefined;
   toHands: (itemUid: number, feet: [number, number, number]) => string | undefined;
   pickup: (itemUid: number, mode: 'pocket' | 'wield', feet: [number, number, number]) => string | undefined;
-  interact: (entityUid: number) => string | undefined;
-  lift: (entityUid: number) => string | undefined;
+  interact: (entityUid: number, alternatives?: true) => string | undefined;
+  lift: (entityUid: number, floorLocked?: boolean) => string | undefined;
   useFurniture: (entityUid: number) => string | undefined;
-  slide: (entityUid: number, way: 'push' | 'drag') => string | undefined;
+  slide: (entityUid: number, way: 'push') => string | undefined;
   /** Sets the carried piece down at the aimed cell. */
   place: (pos: [number, number, number]) => string | undefined;
   /** Turns the carried piece a quarter, seen from above. */
@@ -219,9 +234,9 @@ export const applyReplayActionPayload = (
     case 'item.pickup':
       return owners.pickup(payload.itemUid, payload.mode, payload.feet);
     case 'furniture.interact':
-      return owners.interact(payload.entityUid);
+      return owners.interact(payload.entityUid, payload.alternatives);
     case 'furniture.lift':
-      return owners.lift(payload.entityUid);
+      return owners.lift(payload.entityUid, payload.floorLocked);
     case 'furniture.use':
       return owners.useFurniture(payload.entityUid);
     case 'furniture.slide':
@@ -234,6 +249,8 @@ export const applyReplayActionPayload = (
       return owners.tip();
     case 'zombie.downed':
       return owners.clearDownedBody(payload.zombieId, payload.way);
+    case 'power.set':
+      return owners.power?.(payload.entityUid, payload.enabled);
     case 'charger.start':
     case 'charger.stop':
       return owners.charger?.(payload.entityUid, payload.kind === 'charger.start' ? 'start' : 'stop');

@@ -1064,7 +1064,7 @@ export const createSession = (options: SessionOptions) => {
       return Boolean(book?.recipes.every((recipe) => character.knownRecipes.has(recipe)));
     },
   });
-  sim.actions.craft = craftActionHooks(inventory, character, reach, feet);
+  sim.actions.craft = craftActionHooks(inventory, character, reach, { feet, calendar: () => sim.calendar });
   sim.actions.reading = bookReadingHooks(inventory, character);
   sim.actions.treatment = playerTreatmentHooks(inventory, sim);
   sim.actions.vehicleWork = vehicleWorkHooks(inventory, {
@@ -1545,18 +1545,18 @@ export const createSession = (options: SessionOptions) => {
     pos[1] + size[1] / 2,
     pos[2] + size[2] / 2,
   ];
-  const liftPiece = (uid: number): string | undefined => {
+  const liftPiece = (uid: number, floorLocked = false): string | undefined => {
     const entity = entities.byUid(uid);
     if (!entity) {
       return 'It is no longer there';
     }
     const centre = boxCentre(entity.pos, entity.size);
-    const reason = liftFurniture(furnitureMover(), entity);
+    const reason = liftFurniture(furnitureMover(), entity, floorLocked);
     if (reason) {
       return reason;
     }
     spendStamina(sim.needs, reachTuning(registry).furnitureMove.liftStamina, bodyTuning.staminaRegenDelaySimSeconds);
-    playNoisyWorldSound('furniture_scrape', centre);
+    playNoisyWorldSound(floorLocked ? 'furniture_drag' : 'furniture_scrape', centre);
     return undefined;
   };
   queue.registerAction('furniture.slide', (params) => {
@@ -1565,7 +1565,7 @@ export const createSession = (options: SessionOptions) => {
       return coreMessage(registry, 'gone');
     }
     if (
-      (params.way !== 'push' && params.way !== 'drag') ||
+      params.way !== 'push' ||
       !Array.isArray(params.destination) ||
       params.destination.length !== 3 ||
       !params.destination.every(Number.isSafeInteger)
@@ -1595,12 +1595,11 @@ export const createSession = (options: SessionOptions) => {
     if (reason) {
       return reason;
     }
-    queue.enqueueAction(
-      'furniture.slide',
-      way === 'push' ? 'Pushing' : 'Dragging',
-      reachTuning(registry).furnitureMove.slide.stepSimSeconds,
-      { entityUid: uid, way, destination: slideDestination(body, entity, way) },
-    );
+    queue.enqueueAction('furniture.slide', 'Pushing', reachTuning(registry).furnitureMove.slide.stepSimSeconds, {
+      entityUid: uid,
+      way,
+      destination: slideDestination(body, entity),
+    });
     return undefined;
   };
   const placePiece = (aimed: Readonly<Vec3>): string | undefined => {
@@ -1608,9 +1607,10 @@ export const createSession = (options: SessionOptions) => {
     if (!carried) {
       return 'Nothing to set down';
     }
+    const sound = carried.floorLocked ? 'furniture_drag' : 'furniture_scrape';
     const reason = placeFurniture(furnitureMover(), aimed);
     if (!reason) {
-      playNoisyWorldSound('furniture_scrape', boxCentre(carried.pos, carried.size));
+      playNoisyWorldSound(sound, boxCentre(carried.pos, carried.size));
     }
     return reason;
   };
@@ -2084,6 +2084,19 @@ export const createSession = (options: SessionOptions) => {
     },
     power,
     skyFields,
+    powerControl: (uid: number, enabled: boolean): string | undefined => {
+      const entity = entities.byUid(uid);
+      const control = entity && power?.control(entity);
+      if (!(entity && control && power && inventory.canReachEntity(entity))) {
+        return coreMessage(registry, 'tooFar');
+      }
+      const refusal = entities.useRefusal(entity) ?? sim.body.actionRefusal;
+      if (refusal) {
+        return refusal;
+      }
+      power.network.setEnabled(simTimestamp(sim.time), control.id, enabled);
+      return undefined;
+    },
     chargerControl: (uid: number, operation: 'start' | 'stop'): string | undefined => {
       const entity = entities.byUid(uid);
       const id = entity && power?.chargerId(entity);
