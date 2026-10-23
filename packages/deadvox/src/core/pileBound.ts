@@ -175,7 +175,9 @@ const runTable = (search: Search, states: States, tableId: string, depth: number
 const fixedStates = (search: Search, items: Extract<Supply, { kind: 'fixed' }>['items']): States => {
   let states: States = new Map([['', []]]);
   for (const { item, count = 1, fitted } of items) {
-    if (admittedCandidates(search.registry, search.point, [{ type: item, weight: 1, fitted }]).length > 0) {
+    if (
+      admittedCandidates(search.registry, search.point, [{ type: item, weight: 1, fitted, placed: true }]).length > 0
+    ) {
       states = addStacks(search, states, item, [count, count]);
     }
   }

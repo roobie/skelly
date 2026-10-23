@@ -1,4 +1,5 @@
-import type { ExtrudedPolygonSolid, RevolvedSolid, Vec2 } from '@skelly/engine/shapes/solid.ts';
+import type { Vec3 } from '@skelly/engine/foundation/math.ts';
+import type { BoxSolid, ExtrudedPolygonSolid, RevolvedSolid, Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
 import { finite, minValue, pipe, string, transform } from 'valibot';
 
 export const scalar = pipe(string(), transform(Number), finite());
@@ -33,6 +34,49 @@ export const cylinder = (id: string, radius: number, height: number, slot = 'bod
     ],
     slot,
   );
+export const box = (id: string, center: Vec3, size: Vec3, slot = 'body'): BoxSolid => ({
+  id,
+  kind: 'box',
+  box: { center, half: size.map((v) => v / 2) as unknown as Vec3 },
+  slot,
+});
+/** A cylinder of `[radius, length]` from `origin` along `axis`. */
+export const round = (
+  id: string,
+  origin: Vec3,
+  [radius, length]: Vec2,
+  [axis, slot]: readonly ['x' | 'y' | 'z', string],
+): Solid => ({
+  ...cylinder(id, radius, length, slot),
+  origin,
+  axis,
+});
+/** A straight bar between two profile points, `[width, depth]` across. */
+export const link = (
+  id: string,
+  [start, end]: readonly [Vec2, Vec2],
+  [width, depth]: Vec2,
+  slot: string,
+): ExtrudedPolygonSolid => {
+  const length = Math.hypot(end[0] - start[0], end[1] - start[1]);
+  if (length === 0) {
+    throw new Error(`${id} link needs length`);
+  }
+  const dx = (-(end[1] - start[1]) * width) / (2 * length);
+  const dy = ((end[0] - start[0]) * width) / (2 * length);
+  return {
+    id,
+    kind: 'extruded-polygon',
+    slot,
+    profile: [
+      [start[0] + dx, start[1] + dy],
+      [start[0] - dx, start[1] - dy],
+      [end[0] - dx, end[1] - dy],
+      [end[0] + dx, end[1] + dy],
+    ],
+    z: [-depth / 2, depth / 2],
+  };
+};
 export const strip = (id: string, points: readonly Vec2[], [width, depth]: readonly [number, number], slot = 'body') =>
   points.slice(1).map((end, i): ExtrudedPolygonSolid => {
     const start = points[i]!;
