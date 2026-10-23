@@ -572,8 +572,8 @@
           "b............................b",
           "b....................oo......b",
           "b....................oo......b",
-          "b....................OO......b",
-          "b....................OO......b",
+          "b....................qq......b",
+          "b....................qq......b",
           "b............................b",
           "b............................b",
           "b............................b",
@@ -591,8 +591,8 @@
           "b............................b",
           "b....................oo......b",
           "b....................oo......b",
-          "b....................OO......b",
-          "b....................OO......b",
+          "b....................qq......b",
+          "b....................qq......b",
           "b............................b",
           "b............................b",
           "b............................b",
@@ -683,14 +683,14 @@
           "b............................b",
           "b............................b",
           "b............................b",
+          "b......................II....b",
+          "b....II........II............b",
           "b............................b",
           "b............................b",
           "b............................b",
           "b............................b",
           "b............................b",
-          "b............................b",
-          "b............................b",
-          "b............................b",
+          "b....II........II............b",
           "b............................b",
           "b............................b",
           "b............................b",
@@ -861,14 +861,14 @@
             "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
             "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
             "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRRRRRRRSSRRRRS",
+            "SRRRRSSRRRRRRRRSSRRRRRRRRRRRRS",
             "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
             "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
             "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
             "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
             "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
-            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
-            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
-            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRSSRRRRRRRRSSRRRRRRRRRRRRS",
             "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
             "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
             "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
@@ -902,8 +902,9 @@
           "facing": "s",
           "furniture": "shelf"
         },
-        "O": {
-          "furniture": "crate"
+        "I": {
+          "fixed": true,
+          "furniture": "gauntlet_lab_fixture"
         },
         "b": "brick",
         "d": "dressed_stone",
@@ -920,12 +921,54 @@
         "o": {
           "furniture": "crate"
         },
+        "q": {
+          "furniture": "crate"
+        },
         "w": {
           "fixed": true,
           "furniture": "workbench"
         }
       },
       "size": [30, 9, 17]
+    },
+    {
+      "id": "test_house_garage_ladder",
+      "layers": [
+        ["k", "k"],
+        ["Y", "Y"],
+        ["Y", "Y"],
+        ["Y", "Y"],
+        ["Y", "Y"],
+        ["Y", "Y"],
+        ["Y", "Y"],
+        ["Y", "Y"],
+        ["Y", "Y"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["S", "S"],
+          ["S", "S"],
+          ["S", "S"],
+          ["S", "S"],
+          ["S", "S"],
+          ["S", "S"],
+          ["S", "S"],
+          ["S", "S"],
+          ["S", "S"]
+        ]
+      },
+      "palette": {
+        "Y": {
+          "facing": "w",
+          "furniture": "ladder"
+        },
+        "k": "concrete"
+      },
+      "size": [1, 9, 2]
     },
     {
       "id": "test_house_path",

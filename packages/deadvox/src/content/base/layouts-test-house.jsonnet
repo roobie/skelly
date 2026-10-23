@@ -14,6 +14,7 @@ local bays = [
       { template: 'test_house_home', position: [4, 20.5, -4.5], rotation: 0 },
       { template: 'test_house_shed', position: [-5, 20.5, -7], rotation: 0 },
       { template: 'test_house_garage', position: [-22, 20.5, -12], rotation: 0 },
+      { template: 'test_house_garage_ladder', position: [-22.5, 20.5, -8.5], rotation: 0 },
       { template: 'test_house_garden_wall', position: [-2, 20.5, 4.5], rotation: 0 },
       { template: 'test_house_path', position: [-4, 20.5, -1], rotation: 0 },
       { template: 'test_house_step', position: [3, 20.5, -1.5], rotation: 0 },

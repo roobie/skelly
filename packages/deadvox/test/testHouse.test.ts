@@ -105,6 +105,13 @@ describe('authored test house', () => {
   it('keeps furniture clear, supported and disjoint', () => {
     expect(furniture.length).toBeGreaterThan(0);
     const occupied = new Set<string>();
+    const climbable = new Set(
+      furniture
+        .filter(({ spec }) => registry.furniture.get(spec.type)?.climbable)
+        .flatMap(({ spec }) =>
+          [...cellsOf(spec.size)].map(([dx, dy, dz]) => [spec.pos[0] + dx, spec.pos[1] + dy, spec.pos[2] + dz].join()),
+        ),
+    );
     for (const { spec } of furniture) {
       for (const [dx, dy, dz] of cellsOf(spec.size)) {
         const cell: Vec3 = [spec.pos[0] + dx, spec.pos[1] + dy, spec.pos[2] + dz];
@@ -112,10 +119,31 @@ describe('authored test house', () => {
         occupied.add(cell.join());
         expect(solid(...cell), `structure at ${cell}`).toBe(false);
       }
+      const def = registry.furniture.get(spec.type)!;
       for (const [dx, , dz] of cellsOf([spec.size[0], 1, spec.size[2]])) {
         const x = spec.pos[0] + dx;
         const z = spec.pos[2] + dz;
-        expect(solid(x, spec.pos[1] - 1, z)).toBe(true);
+        // A ladder stacks on its own lower piece, and a non-solid fixture may hang from the structure above it.
+        const stacked = def.climbable && climbable.has([x, spec.pos[1] - 1, z].join());
+        const hung = def.solid === false && solid(x, spec.pos[1] + spec.size[1], z);
+        expect(solid(x, spec.pos[1] - 1, z) || stacked || hung, `${spec.type} unsupported at ${x},${z}`).toBe(true);
+      }
+    }
+  });
+
+  it('tops every ladder with a surface to step onto, away from its climbing side', () => {
+    const away = { n: [0, 1], s: [0, -1], e: [-1, 0], w: [1, 0] } as const;
+    const ladders = furniture.filter(({ spec }) => registry.furniture.get(spec.type)?.climbable);
+    expect(ladders.length).toBeGreaterThan(0);
+    const tops = ladders.filter(
+      ({ spec }) =>
+        !ladders.some(({ spec: other }) => other.pos.join() === [spec.pos[0], spec.pos[1] + 1, spec.pos[2]].join()),
+    );
+    for (const { spec } of tops) {
+      const [wx, wz] = away[spec.facing];
+      for (const [dx, , dz] of cellsOf([spec.size[0], 1, spec.size[2]])) {
+        const step: Vec3 = [spec.pos[0] + dx + wx, spec.pos[1] + 1, spec.pos[2] + dz + wz];
+        expect(walkable(...step), `ladder top steps onto ${step}`).toBe(true);
       }
     }
   });

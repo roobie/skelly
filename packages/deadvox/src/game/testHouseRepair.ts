@@ -38,20 +38,24 @@ const repairCornerStock = (registry: Registry, recipes: readonly RecipeDef[]) =>
   return { components, qualities };
 };
 
+/** Every item with a tool quality, so a tool content adds reaches the garage without a test-house edit. */
+export const garageToolTypes = (registry: Registry): string[] =>
+  [...registry.items.values()]
+    .filter(({ tool }) => Object.keys(tool?.qualities ?? {}).length > 0)
+    .map(({ id }) => id)
+    .sort();
+
 const repairCornerToolTypes = (
   registry: Registry,
   recipes: readonly RecipeDef[],
   qualities: ReadonlyMap<string, number>,
   repairBooks: RepairBookHook,
 ): Set<string> => {
-  const itemsById = [...registry.items.values()].sort((a, b) => a.id.localeCompare(b.id));
-  const tools = new Set<string>();
-  for (const [quality, level] of [...qualities].sort(([a], [b]) => a.localeCompare(b))) {
-    const provider = itemsById.find((item) => (item.tool?.qualities[quality] ?? 0) >= level);
-    if (!provider) {
+  const tools = new Set(garageToolTypes(registry));
+  for (const [quality, level] of qualities) {
+    if (![...tools].some((id) => (registry.items.get(id)?.tool?.qualities[quality] ?? 0) >= level)) {
       throw new Error(`No item provides ${quality} quality for the test-house repair corner`);
     }
-    tools.add(provider.id);
   }
   for (const book of repairBooks(registry, recipes)) {
     if (!registry.items.has(book)) {
@@ -118,7 +122,10 @@ export const repairStockRecipes = (registry: Registry, pieces: readonly PlacedPi
     .sort((a, b) => a.id.localeCompare(b.id));
 };
 
-/** Populate the layout's repair stock building with content-derived repair stock. */
+/**
+ * Populate the layout's repair stock building with content-derived repair stock. Tools go in first, so they fill
+ * the building's first containers, its shelves, before the repair targets and components.
+ */
 export const populateTestHouseRepairCorner = ({
   inventory,
   registry,
@@ -134,14 +141,14 @@ export const populateTestHouseRepairCorner = ({
   }
   const pieces = placedPieces(placement);
   const recipes = repairStockRecipes(registry, pieces);
-  if (recipes.length === 0) {
-    return;
-  }
   const containers = pieces
     .filter(({ furniture }) => registry.furniture.get(furniture)?.container)
     .map((piece) => standingContainer(inventory, source, piece));
   const stock = repairCornerStock(registry, recipes);
   const tools = repairCornerToolTypes(registry, recipes, stock.qualities, repairBooks);
+  for (const type of [...tools].sort()) {
+    placeRepairCornerItem({ inventory, registry, containers, type, count: 1, condition: 1 });
+  }
   recipes.forEach((recipe, index) => {
     placeRepairCornerItem({
       inventory,
@@ -152,9 +159,6 @@ export const populateTestHouseRepairCorner = ({
       condition: 0.25 + (0.5 * (index + 1)) / (recipes.length + 1),
     });
   });
-  for (const type of [...tools].sort()) {
-    placeRepairCornerItem({ inventory, registry, containers, type, count: 1, condition: 1 });
-  }
   for (const [type, count] of [...stock.components].sort(([a], [b]) => a.localeCompare(b))) {
     placeRepairCornerItem({ inventory, registry, containers, type, count, condition: 1 });
   }

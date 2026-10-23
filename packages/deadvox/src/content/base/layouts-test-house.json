@@ -39,6 +39,11 @@
           "template": "test_house_garage"
         },
         {
+          "position": [-22.5, 20.5, -8.5],
+          "rotation": 0,
+          "template": "test_house_garage_ladder"
+        },
+        {
           "position": [-2, 20.5, 4.5],
           "rotation": 0,
           "template": "test_house_garden_wall"

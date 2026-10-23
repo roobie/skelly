@@ -65,10 +65,19 @@ vehicles are placed from them, so moving a bay moves everything parked in it. Se
 because a vehicle must be able to drive out of either bay; `test/testHouse.test.ts`
 checks that for every parked blueprint.
 
-The garage building, its workbench, grinding wheel and shelving stay in normal mode as
-ordinary furnishings. The repair stock in its containers is debug-only, as above. The
-layout's `repairStock` names the building that receives it, so the house no longer
-needs piles of its own. See `src/core/authoredLayout.ts`, `repairStock`.
+The garage building, its workbench, grinding wheel, shelving, ceiling lights and roof
+ladder stay in normal mode as ordinary furnishings. The lights are on the house supply
+like the home's lamps, because the site is one grid. The ladder climbs the doorless west
+wall so that roof access never crosses a bay. See
+`src/content/base/templates-test-house.jsonnet`, `test_house_garage_ladder`.
+
+The repair stock in its containers is debug-only, as above. The layout's `repairStock`
+names the building that receives it, so the house no longer needs piles of its own. See
+`src/core/authoredLayout.ts`, `repairStock`. The stock holds every item with a tool
+quality, vehicle service tools included, so that any repair or service can be tried in
+one place. The list is derived from content, so a new tool reaches the shelves without a
+test-house edit; the tools go in first so they fill the shelves. See
+`src/game/testHouseRepair.ts`, `garageToolTypes`.
 
 Debug stock is placed at session start, before the garage's column arrives, so its
 containers are spawned then, from the site's own furniture spawns, so they keep their

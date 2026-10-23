@@ -257,6 +257,25 @@ describe('test-house repair stock', () => {
     }
   });
 
+  it('stocks every item with a tool quality in the stock building', () => {
+    const inventory = new Inventory(scenarioRegistry);
+    addRepairCorner(inventory, 'testHouse');
+    arriveStockBuilding(inventory);
+    const [ox, , oz] = stockBuilding.origin;
+    const [width, depth] = footprint(stockBuilding);
+    const stocked = new Set(
+      [...inventory.items()].flatMap(({ item, location }) => {
+        const [x, , z] = location.kind === 'furniture' ? location.entity.origin : [Number.NaN, 0, Number.NaN];
+        return x >= ox && x < ox + width && z >= oz && z < oz + depth ? [item.type] : [];
+      }),
+    );
+    const tools = [...scenarioRegistry.items.values()].filter(
+      ({ tool }) => Object.keys(tool?.qualities ?? {}).length > 0,
+    );
+    expect(tools.length).toBeGreaterThan(0);
+    expect(tools.filter(({ id }) => !stocked.has(id)).map(({ id }) => id)).toEqual([]);
+  });
+
   it('keeps the stocked containers when their column arrives', () => {
     const inventory = new Inventory(scenarioRegistry);
     addRepairCorner(inventory, 'testHouse');
