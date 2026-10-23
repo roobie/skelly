@@ -52,7 +52,7 @@ const skyAroundPiece = (): SkyVolume => {
       }
     }
   }
-  return { min: [0, 0, 0], max: size, size, light };
+  return { min: [0, 0, 0], max: size, size, light, unfurnished: light };
 };
 
 it('keeps an interior receiver dark until its face ray reaches an opening', () => {
@@ -74,14 +74,10 @@ it('keeps an interior receiver dark until its face ray reaches an opening', () =
     return [anchor.getX(vertex), anchor.getY(vertex) + 0.25, anchor.getZ(vertex)] as Vec3;
   };
   const size: Vec3 = [4, 6, 4];
-  const sky: SkyVolume = {
-    min: [-2, 0, -2],
-    max: [2, 6, 2],
-    size,
-    light: Uint8Array.from({ length: size[0] * size[1] * size[2] }, (_, index) =>
-      index >= 3 * size[0] * size[2] ? 255 : 0,
-    ),
-  };
+  const light = Uint8Array.from({ length: size[0] * size[1] * size[2] }, (_, index) =>
+    index >= 3 * size[0] * size[2] ? 255 : 0,
+  );
+  const sky: SkyVolume = { min: [-2, 0, -2], max: [2, 6, 2], size, light, unfurnished: light };
   const lit = (point: Vec3) => {
     expect(containsSky(sky, point), `sky sample ${point} stays inside the fixture volume`).toBe(true);
     return sampleSky(sky, point) > 0;

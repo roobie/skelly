@@ -8,6 +8,7 @@ import {
   NearestFilter,
   RedFormat,
   RGBAFormat,
+  RGFormat,
   type Scene,
   ShaderChunk,
   UnsignedByteType,
@@ -34,9 +35,10 @@ interface SkyRuntime {
   clock?: () => number;
 }
 const vectors = () => Array.from({ length: RESIDENT_FIELDS }, () => new Vector3());
-const volumeTexture = (light: Uint8Array, [x, y, z]: Vec3): Data3DTexture => {
-  const texture = new Data3DTexture(light, x, z, y);
-  texture.format = RedFormat;
+/** Red holds `SkyVolume`, "light"; green holds its "unfurnished" twin, interleaved per voxel. */
+const volumeTexture = (channels: Uint8Array, [x, y, z]: Vec3): Data3DTexture => {
+  const texture = new Data3DTexture(channels, x, z, y);
+  texture.format = RGFormat;
   texture.type = UnsignedByteType;
   texture.minFilter = LinearFilter;
   texture.magFilter = LinearFilter;
@@ -90,7 +92,7 @@ function regionIndex(fields: readonly SkyField[]) {
  * "Light"); a field being rebuilt keeps its last complete result until the new one lands.
  */
 export class Skylight {
-  private readonly texture = { value: volumeTexture(new Uint8Array([255]), [1, 1, 1]) };
+  private readonly texture = { value: volumeTexture(new Uint8Array([255, 255]), [1, 1, 1]) };
   private readonly patched = new WeakSet<Material>();
   private readonly sky: SkyFields;
   private readonly fields: readonly SkyField[];
@@ -323,13 +325,17 @@ export class Skylight {
       ),
       Math.max(1, ...volumes.map((volume) => volume.size[2])),
     ];
-    const light = new Uint8Array(size[0] * size[1] * size[2]).fill(255);
+    const channels = new Uint8Array(size[0] * size[1] * size[2] * 2).fill(255);
     let offset = 0;
     volumes.forEach((volume, slot) => {
       for (let y = 0; y < volume.size[1]; y++) {
         for (let z = 0; z < volume.size[2]; z++) {
-          const start = skyIndex(volume.size, 0, y, z);
-          light.set(volume.light.subarray(start, start + volume.size[0]), skyIndex(size, 0, offset + y, z));
+          const source = skyIndex(volume.size, 0, y, z);
+          const target = skyIndex(size, 0, offset + y, z) * 2;
+          for (let x = 0; x < volume.size[0]; x++) {
+            channels[target + x * 2] = volume.light[source + x]!;
+            channels[target + x * 2 + 1] = volume.unfurnished[source + x]!;
+          }
         }
       }
       this.minimum.value[slot]!.set(...volume.min).multiplyScalar(this.blockSize);
@@ -340,7 +346,7 @@ export class Skylight {
     });
     this.enabled.value = this.active.length;
     this.texture.value.dispose();
-    this.texture.value = volumeTexture(light, size);
+    this.texture.value = volumeTexture(channels, size);
   }
   setDaylight(sky: Pick<Sky, 'lightIntensity' | 'ambientIntensity'>): void {
     this.daylight.value = sky.lightIntensity + sky.ambientIntensity;
@@ -460,11 +466,11 @@ uniform float uSkyAtlasOffset[${RESIDENT_FIELDS}];
 uniform float uSkyEnabled;
 varying vec3 vSkyWorld;
 varying vec3 vSkyNormal;
-float skyVisibility(out bool unbuilt) {
+vec2 skyVisibility(out bool unbuilt) {
   unbuilt = false;
   vec3 point = vSkyWorld + normalize(vSkyNormal) * float(${this.blockSize * 0.5});
   vec2 gridCell = floor(point.xz / float(${this.blockSize * CHUNK})) - uSkyGridOrigin;
-  if (any(lessThan(gridCell, vec2(0.0))) || any(greaterThanEqual(gridCell, uSkyGridSize))) return 1.0;
+  if (any(lessThan(gridCell, vec2(0.0))) || any(greaterThanEqual(gridCell, uSkyGridSize))) return vec2(1.0);
   vec2 candidates = texture2D(uSkyGrid, (gridCell + 0.5) / uSkyGridSize).xy;
   bool covered = false;
   bool known = false;
@@ -491,17 +497,19 @@ float skyVisibility(out bool unbuilt) {
       vec3 halfCell = vec3(${this.blockSize * 0.5}) / uSkyExtent[i];
       vec3 atlas = clamp(sampleCell, halfCell, vec3(1.0) - halfCell).xzy * uSkyAtlasScale[i];
       atlas.z += uSkyAtlasOffset[i];
-      return texture(uSkyVolume, atlas).r;
+      return texture(uSkyVolume, atlas).rg;
     }
   }
   unbuilt = covered && !known;
-  return covered ? (known ? fallback : float(${this.unbuiltCap})) : 1.0;
+  return vec2(covered ? (known ? fallback : float(${this.unbuiltCap})) : 1.0);
 }`,
         )
         .replace(
           '#include <lights_fragment_begin>',
           `bool receiverSkyUnbuilt;
-float receiverSkyVisibility = skyVisibility(receiverSkyUnbuilt);
+vec2 receiverSky = skyVisibility(receiverSkyUnbuilt);
+float receiverSkyVisibility = receiverSky.x;
+float receiverSkyFade = receiverSky.y;
 ${ShaderChunk.lights_fragment_begin
   .replace(
     DIRECTIONAL_LIGHT_INFO_CALL,
@@ -516,13 +524,13 @@ ${ShaderChunk.lights_fragment_begin
   .replace(
     SPOT_LIGHT_INFO_CALL,
     `$&
-        directLight.color *= 1.0 / (1.0 + pow(uSkyDaylight * receiverSkyVisibility / float(${HALF_BRIGHTNESS}), float(${FADE_SHARPNESS})));`,
+        directLight.color *= 1.0 / (1.0 + pow(uSkyDaylight * receiverSkyFade / float(${HALF_BRIGHTNESS}), float(${FADE_SHARPNESS})));`,
   )
   .replace(
     POINT_LIGHT_INFO_CALL,
     `$&
 #if UNROLLED_LOOP_INDEX >= ${ITEM_POINT_LIGHTS}
-        directLight.color *= 1.0 / (1.0 + pow(uSkyDaylight * receiverSkyVisibility / float(${HALF_BRIGHTNESS}), float(${FADE_SHARPNESS})));
+        directLight.color *= 1.0 / (1.0 + pow(uSkyDaylight * receiverSkyFade /float(${HALF_BRIGHTNESS}), float(${FADE_SHARPNESS})));
 #endif`,
   )}`,
         )
@@ -535,7 +543,7 @@ ${ShaderChunk.lights_fragment_begin
       }
     };
     material.customProgramCacheKey = () =>
-      `${key.call(material)}:receiver-daylight-far-sun-skylight:fixture-fade-${ITEM_POINT_LIGHTS}:${this.blockSize}:${this.unbuiltCap}:${this.fields.length}:${this.index.maximum}:${this.index.length}`;
+      `${key.call(material)}:receiver-daylight-far-sun-skylight:unfurnished-fade:fixture-fade-${ITEM_POINT_LIGHTS}:${this.blockSize}:${this.unbuiltCap}:${this.fields.length}:${this.index.maximum}:${this.index.length}`;
     material.needsUpdate = true;
   }
 }
