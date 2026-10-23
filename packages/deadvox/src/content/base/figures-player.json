@@ -1,16 +1,29 @@
 {
   "figures": [
     {
+      "hipHeightMetres": 0.81999999999999995,
       "id": "player",
       "palette": {
         "shirt": "#52677d",
         "skin": "#c58f70",
         "trousers": "#4a4b55"
       },
+      "parts": [
+        {
+          "draws": ["body", "head"],
+          "joints": {
+            "leftHip": "hip_left",
+            "leftShoulder": "shoulder_left",
+            "rightHip": "hip_right",
+            "rightShoulder": "shoulder_right"
+          },
+          "model": "player_bust"
+        }
+      ],
       "stancePoses": {
         "blendRealSeconds": 0.20000000000000001,
         "crouching": {
-          "hipDropMetres": 0.45000000000000001,
+          "hipDropMetres": 0.46999999999999997,
           "legsForwardDegrees": 70,
           "torsoForwardDegrees": 35
         },

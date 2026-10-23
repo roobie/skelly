@@ -128,8 +128,6 @@ export class Streamer {
   onColumn: (cx: number, cz: number) => void = () => undefined;
   /** Called when a generated column leaves the streaming set. */
   onColumnUnload: (cx: number, cz: number) => void = () => undefined;
-  /** Every added/unloaded data chunk, including all-air chunks that never get meshed. */
-  onDataChange?: (origin: Vec3) => void;
   /** Handles a deterministic generation failure, so a restored save is refused instead of overwritten. */
   onGenerationError: ((error: unknown) => void) | undefined;
 
@@ -224,7 +222,6 @@ export class Streamer {
       meshes.remove(key);
       if (!pinned) {
         world.removeChunk(cx, cy, cz);
-        this.onDataChange?.([cx * CHUNK, cy * CHUNK, cz * CHUNK]);
         this.dirty.delete(key);
         this.versions.delete(key);
       }
@@ -292,7 +289,6 @@ export class Streamer {
       const key = chunkKey(cx, cy, cz);
       this.versions.set(key, (this.versions.get(key) ?? 0) + 1);
       this.dirty.add(key);
-      this.onDataChange?.([cx * CHUNK, cy * CHUNK, cz * CHUNK]);
     }
   }
 
@@ -382,7 +378,6 @@ export class Streamer {
         const key = chunkKey(cx, cy, cz);
         if (!pinned) {
           world.removeChunk(cx, cy, cz);
-          this.onDataChange?.([cx * CHUNK, cy * CHUNK, cz * CHUNK]);
           this.dirty.delete(key);
           this.versions.delete(key);
         }
@@ -422,7 +417,6 @@ export class Streamer {
       const arrived = this.residentTouchedColumn(cx, cz) ?? this.addGenerated(cx, cz);
       this.opts.stats?.genMs.push(performance.now() - start);
       for (const chunk of arrived) {
-        this.onDataChange?.([chunk.cx * CHUNK, chunk.cy * CHUNK, chunk.cz * CHUNK]);
         if (!chunk.isEmpty()) {
           this.dirty.add(chunkKey(chunk.cx, chunk.cy, chunk.cz));
         }

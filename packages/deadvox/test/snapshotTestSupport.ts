@@ -16,6 +16,7 @@ import type { SaveSnapshot, snapshotSession } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { BodyTuningDef } from '../src/core/schema.ts';
 import { terrainShapeOf } from '../src/core/sitePalette.ts';
+import { SkyFields } from '../src/core/skyField.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
 import { createSession, IDLE, type PlayerInputSample } from '../src/game/session.ts';
@@ -195,7 +196,15 @@ export function createRuntime(
   const session = createSession({
     registry: contentRegistry,
     ...(options.powerDevices ? { powerDevices: options.powerDevices } : {}),
-    ...(options.skyBoxes ? { skyBoxes: options.skyBoxes } : {}),
+    ...(options.skyBoxes
+      ? {
+          skyFields: new SkyFields(
+            { world, entities: sharedEntities, registry: contentRegistry },
+            { bottom: scale.minCy * CHUNK, top: (scale.maxCy + 1) * CHUNK - 1 },
+            options.skyBoxes,
+          ),
+        }
+      : {}),
     world,
     isSolid: worldSolid(world, contentRegistry, sharedEntities),
     isOpaque: (x, y, z) => {

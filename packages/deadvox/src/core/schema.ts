@@ -2682,8 +2682,10 @@ const SiteLayoutSchema = strictObject({
       }),
     ),
   ),
-  /** Repair fixture destinations, in metres; stock derivation remains game logic. */
-  fixturePiles: optional(array(tuple([HalfMetres, HalfMetres, HalfMetres]))),
+  /** Vehicle parking bays: a vehicle's origin and facing, whether or not one is parked there. */
+  bays: optional(array(strictObject({ position: MetrePosition, facing: picklist(['n', 'e', 's', 'w']) }))),
+  /** The building template whose containers receive derived repair stock; derivation remains game logic. */
+  repairStock: optional(Id),
   player: strictObject({
     position: MetrePosition,
     /** Clockwise degrees from WORLD_NORTH; converted to camera yaw only at startup. */
@@ -3308,10 +3310,57 @@ const StancePoseSchema = strictObject({
   legsForwardDegrees: Degrees,
 });
 
+/** The player figure's box parts: the figure's look until an authored part draws one in its place. */
+export const FIGURE_BOX_PARTS = [
+  'body',
+  'head',
+  'leftUpperArm',
+  'rightUpperArm',
+  'leftForearm',
+  'rightForearm',
+  'leftHand',
+  'rightHand',
+  'leftLeg',
+  'rightLeg',
+  'leftFoot',
+  'rightFoot',
+] as const;
+export type FigureBoxPart = (typeof FIGURE_BOX_PARTS)[number];
+export type FigureLimb = 'torso' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg';
+/** The limb each box part moves and hides with; one authored part draws parts of one limb. */
+export const FIGURE_BOX_LIMBS: Readonly<Record<FigureBoxPart, FigureLimb>> = {
+  body: 'torso',
+  head: 'torso',
+  leftUpperArm: 'leftArm',
+  leftForearm: 'leftArm',
+  leftHand: 'leftArm',
+  rightUpperArm: 'rightArm',
+  rightForearm: 'rightArm',
+  rightHand: 'rightArm',
+  leftLeg: 'leftLeg',
+  leftFoot: 'leftLeg',
+  rightLeg: 'rightLeg',
+  rightFoot: 'rightLeg',
+};
+/** The pivots the rest of the figure hangs from and is posed about. */
+const FIGURE_JOINTS = ['leftHip', 'rightHip', 'leftShoulder', 'rightShoulder'] as const;
+export type FigureJoint = (typeof FIGURE_JOINTS)[number];
+
+/** An authored part of a figure: a model drawn in place of box parts; `DESIGN.md`, "Models". */
+const FigurePartSchema = strictObject({
+  model: Id,
+  draws: pipe(array(picklist(FIGURE_BOX_PARTS)), nonEmpty('must name a box part')),
+  /** Each joint names the model anchor it sits at. The part stands with its hips at the figure's hip height. */
+  joints: strictObject({ leftHip: Id, rightHip: Id, leftShoulder: optional(Id), rightShoulder: optional(Id) }),
+});
+
 /** Actor palettes and poses are content so appearance doesn't live in renderer code. */
 const FigureSchema = strictObject({
   id: Id,
   palette: strictObject({ skin: Color, shirt: Color, trousers: Color }),
+  /** Where the hips stand above the ground; box legs reach down from them, and stances pivot about them. */
+  hipHeightMetres: Positive,
+  parts: optional(array(FigurePartSchema)),
   stancePoses: strictObject({
     crouching: StancePoseSchema,
     prone: StancePoseSchema,
@@ -4016,6 +4065,8 @@ const GraphicsTuningSchema = strictObject({
   id: Id,
   readyRadiusM: pipe(number(), finite(), minValue(0)),
   itemPictureCacheCapacity: pipe(number(), integer(), minValue(1)),
+  /** Diffuse sky visibility drawn where a sky field has no answer yet (`DESIGN.md`, "Light"). */
+  unbuiltSkyCap: Fraction,
   /** The inventory item viewer: opening pose, drag and wheel response, and zoom range around the opening zoom of 1. */
   itemViewer: pipe(
     strictObject({

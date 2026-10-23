@@ -822,7 +822,7 @@ export const startPlay = (
     start: config.start,
     spawn: playerStart.position,
     entities: engine.entities,
-    skyBoxes: engine.skyBoxes,
+    skyFields: engine.skyFields,
     registerVehicles: (owner) => {
       registerLayoutVehicles(owner, registry, config.site, s);
     },
@@ -1075,7 +1075,7 @@ export const startPlay = (
       registry,
       site: config.site,
       debug: config.debug,
-      blockSize: s,
+      source: engine.site,
     });
   }
   const { load: applyColumnLoad, unload: applyColumnUnload } = columnArrival(session, engine);

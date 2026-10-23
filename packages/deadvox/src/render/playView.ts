@@ -256,7 +256,7 @@ export const createPlayView = (
   );
   held.attach(carriedPiece.group);
   scene.add(carriedPiece.floorGroup);
-  const playerMeshes = new PlayerMeshes(s, playerFigure, models);
+  const playerMeshes = new PlayerMeshes(s, playerFigure, registry.models, models);
   const lightTuning = registry.senses.get(CORE_CONTENT_IDS.player)!.light;
   const flashlight = new Flashlight(
     scene,

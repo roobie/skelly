@@ -62,6 +62,7 @@ import { itemIds, itemRoots, savedItemTree, subtreeItems, type TreeLocation, wal
 import type { Rolled } from './loot.ts';
 import { magazineWellCalibre, slotsReason } from './magazine.ts';
 import type { WearSlot } from './schema.ts';
+import type { FurnitureSpawn } from './site.ts';
 import { inventoryManagementTuning } from './skillTraining.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import {
@@ -537,6 +538,15 @@ export class Inventory {
           throw new Error(`fixed surface item "${rolled.type}" does not fit on its furniture`);
         }
       }
+    }
+    return entity;
+  }
+
+  /** Places a worldgen furniture spawn whole: its piece, its loot and its starting wear. */
+  furnishSpawn({ spec, loot, surfaceLoot, fixedCount, wear }: FurnitureSpawn): BlockEntity | undefined {
+    const entity = this.furnish(spec, loot, surfaceLoot, fixedCount);
+    if (entity && wear !== undefined) {
+      this.entities.wear(entity, wear);
     }
     return entity;
   }
