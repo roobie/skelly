@@ -273,6 +273,8 @@ describe('test-house repair stock', () => {
       ({ tool }) => Object.keys(tool?.qualities ?? {}).length > 0,
     );
     expect(tools.length).toBeGreaterThan(0);
+    // The listing is by tool quality, not by what loot admits, so a tool that never spawns is stocked too.
+    expect(tools.some(({ economy }) => economy?.usage.length === 0)).toBe(true);
     expect(tools.filter(({ id }) => !stocked.has(id)).map(({ id }) => id)).toEqual([]);
   });
 
