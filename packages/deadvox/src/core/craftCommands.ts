@@ -65,7 +65,7 @@ export class CraftCommands {
   }
   preview(recipeId: string, prefer?: CraftPreference): CraftResult | undefined {
     const recipe = this.inventory.registry.recipes.get(recipeId);
-    return recipe && planCraft(recipe, this.reach(), this.character, prefer);
+    return recipe && !recipe.activation ? planCraft(recipe, this.reach(), this.character, prefer) : undefined;
   }
   start(recipeId: string, prefer?: CraftPreference): string | undefined {
     const reason = this.startReason();

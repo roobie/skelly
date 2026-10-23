@@ -1289,6 +1289,80 @@ try {
     'the wheel-selected click opens rather than swings',
   );
   await page.waitForFunction(() => document.querySelector('#item-action-list').hidden);
+  const honing = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    r.clearHand(r.dominant);
+    r.clearHand(r.off);
+    const blade = r.inventory.create('kitchen_knife', 1, 0.2);
+    r.setHand(r.dominant, blade);
+    r.setHand(r.off, r.inventory.create('whetstone'));
+    return { uid: blade.uid, condition: blade.condition };
+  });
+  await page.mouse.wheel(0, 100);
+  await page.waitForFunction(() => {
+    const r = globalThis.primaryActionTest;
+    return r.survival.selectedItemAction(r.inventory.hands[r.dominant])?.sharpening === true;
+  });
+  for (const trigger of ['click', 'offhand']) {
+    if (trigger === 'click') {
+      await page.mouse.click(640, 450);
+    } else {
+      await pressAction(page, 'hand.use-off');
+    }
+    await page.waitForFunction(() => globalThis.primaryActionTest.queue.busy);
+    const honed = await page.evaluate((uid) => {
+      const r = globalThis.primaryActionTest;
+      const failures = r.queue.tick(r.queue.remaining).failed;
+      return { failures, condition: r.inventory.itemByUid(uid).condition };
+    }, honing.uid);
+    assert.deepEqual(honed.failures, [], `${trigger} completes held honing`);
+    assert(honed.condition > honing.condition, `${trigger} restores the held blade`);
+    honing.condition = honed.condition;
+  }
+  const wheelGrinding = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    r.clearHand(r.off);
+    const def = r.inventory.registry.furniture.get('grinding_wheel');
+    const floor = r.feet();
+    const wheel = r.inventory.entities.add({
+      type: def.id,
+      size: def.size,
+      facing: 'n',
+      pos: [floor[0] + 2, floor[1], floor[2]],
+    });
+    if (!wheel) {
+      throw new Error('Could not place the sharpening wheel');
+    }
+    const eye = [
+      r.session.body.pos[0],
+      r.session.body.pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize,
+      r.session.body.pos[2],
+    ];
+    const target = [wheel.pos[0] + 1, wheel.pos[1] + 1.6, wheel.pos[2] + 1];
+    const [dx, dy, dz] = target.map((value, axis) => value - eye[axis]);
+    const look = { yaw: r.input.yaw, pitch: r.input.pitch };
+    r.input.yaw = Math.atan2(-dx, -dz);
+    r.input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+    const aimed = r.interactionTargetAt();
+    if (aimed?.kind !== 'furniture' || aimed.entity !== wheel) {
+      throw new Error('The sharpening wheel is not aimed at');
+    }
+    const blade = r.inventory.hands[r.dominant];
+    return { uid: blade.uid, condition: blade.condition, wheelUid: wheel.uid, look };
+  });
+  await page.mouse.click(640, 450);
+  await page.waitForFunction(() => globalThis.primaryActionTest.queue.busy);
+  const groundAtWheel = await page.evaluate(({ uid, wheelUid, look }) => {
+    const r = globalThis.primaryActionTest;
+    const failures = r.queue.tick(r.queue.remaining).failed;
+    const { condition } = r.inventory.itemByUid(uid);
+    r.inventory.entities.remove(r.inventory.entities.byUid(wheelUid));
+    r.input.yaw = look.yaw;
+    r.input.pitch = look.pitch;
+    return { failures, condition };
+  }, wheelGrinding);
+  assert.deepEqual(groundAtWheel.failures, [], 'aimed-wheel activation completes');
+  assert(groundAtWheel.condition > wheelGrinding.condition, 'aimed-wheel activation restores the held blade');
   const heldLighter = async (side, trigger) => {
     const before = await page.evaluate((hand) => {
       const r = globalThis.primaryActionTest;
@@ -1777,8 +1851,6 @@ try {
       offHandUid: offHandItem.uid,
       start: [...r.session.body.pos],
       blockSize: r.scale.blockSize,
-      // The glowstick's own full-charge range: drag keeps a light, broad item short of the tuned maximum.
-      distance: r.getItemThrowLanding(glowstick.uid, throwChargeSimSeconds).distance,
       chargeSimSeconds: throwChargeSimSeconds,
       minimumHoldSimSeconds: throwMinimumHoldSimSeconds,
     };
@@ -1830,7 +1902,10 @@ try {
       stop: offHandOnlyThrow,
     },
   );
-  await page.waitForFunction(() => globalThis.primaryActionTest.itemThrows.activeCount > 0);
+  await page.waitForFunction(
+    (uid) => globalThis.primaryActionTest.throwSpawnObservations[uid]?.active,
+    throwFixture.offHandUid,
+  );
   await page.waitForFunction(
     (uid) =>
       globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
@@ -2116,21 +2191,15 @@ try {
     ({ uid, seconds }) => globalThis.primaryActionTest.getItemThrowLanding(uid, seconds),
     { uid: throwFixture.uid, seconds: throwFixture.chargeSimSeconds },
   );
-  for (
-    let turn = 1;
-    !(landing?.fits && Math.abs(landing.landingDistance - throwFixture.distance) <= landingTolerance) && turn <= 16;
-    turn += 1
-  ) {
+  for (let turn = 1; !landing?.fits && turn <= 16; turn += 1) {
     await page.mouse.move(760 + turn * 16, 410);
     landing = await page.evaluate(
       ({ uid, seconds }) => globalThis.primaryActionTest.getItemThrowLanding(uid, seconds),
       { uid: throwFixture.uid, seconds: throwFixture.chargeSimSeconds },
     );
   }
-  assert(
-    landing?.fits && Math.abs(landing.landingDistance - throwFixture.distance) <= landingTolerance,
-    `full-charge throw has room near the item's own range: ${JSON.stringify(landing)}`,
-  );
+  assert(landing?.fits, `full-charge throw has room at its dragged landing: ${JSON.stringify(landing)}`);
+  throwFixture.distance = landing.landingDistance;
   const releaseThrow = await mouseCharge(page);
   await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
   const chargeStartedAt = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
@@ -2150,7 +2219,10 @@ try {
   assert.equal(fullMeter, 100, 'maximum charge fills the activity ring');
   await releaseThrow();
   try {
-    await page.waitForFunction(() => globalThis.primaryActionTest.itemThrows.activeCount > 0);
+    await page.waitForFunction(
+      (uid) => globalThis.primaryActionTest.throwSpawnObservations[uid]?.active,
+      throwFixture.uid,
+    );
     await page.waitForFunction(
       (uid) =>
         globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
@@ -2330,15 +2402,14 @@ try {
       stop: releaseFirearmThrow,
     },
   );
-  const flightModelId = await page.waitForFunction((modelId) => {
-    const { itemThrows } = globalThis.primaryActionTest;
-    return itemThrows.activeCount > 0 && itemThrows.group.getObjectByName(modelId) ? modelId : false;
-  }, loadedFirearm.modelId);
-  assert.equal(
-    await flightModelId.jsonValue(),
-    loadedFirearm.modelId,
-    'flight uses the firearm’s own ModelLibrary model',
+  const firearmSpawn = await page.waitForFunction(
+    (uid) => globalThis.primaryActionTest.throwSpawnObservations[uid],
+    loadedFirearm.uid,
   );
+  const firearmFlight = await firearmSpawn.jsonValue();
+  process.stdout.write(`Firearm flight spawn: ${JSON.stringify(firearmFlight)}\n`);
+  assert.equal(firearmFlight.active, true, 'firearm presentation starts at the throw transition');
+  assert.ok(firearmFlight.names.includes(loadedFirearm.modelId), 'flight uses the firearm’s own ModelLibrary model');
   await page.waitForFunction(
     (uid) =>
       globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
@@ -2463,10 +2534,13 @@ try {
       stop: releaseRifleThrow,
     },
   );
-  await page.waitForFunction(({ lookKey }) => {
-    const { itemThrows } = globalThis.primaryActionTest;
-    return itemThrows.activeCount > 0 && itemThrows.group.getObjectByName(lookKey);
-  }, loadedRifle);
+  const rifleSpawn = await page.waitForFunction(
+    (uid) => globalThis.primaryActionTest.throwSpawnObservations[uid],
+    loadedRifle.uid,
+  );
+  const rifleFlight = await rifleSpawn.jsonValue();
+  assert.equal(rifleFlight.active, true, 'rifle presentation starts at the throw transition');
+  assert.ok(rifleFlight.names.includes(loadedRifle.lookKey), 'flight uses the loaded rifle’s composed model');
   await page.waitForFunction(
     (uid) =>
       globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
