@@ -2563,8 +2563,12 @@ their state.
     parked body blockers from occupied exported boxes; `src/core/solidBricks.ts`,
     `worldBricks`, uses the same projection for accelerated physics and navigation.
     This exterior cell approximation leaves clear exported space unfilled rather than
-    inventing a cabin envelope. Sight, light, sound and combat remain separate channel
-    decisions. Shared furniture reasons are in `docs/content.md`, "Furniture solidity".
+    inventing a cabin envelope. `src/core/schema.ts`, `ItemSchema`, validates the
+    per-part obstruction channels, and `src/content/base/vehicles.jsonnet`, `part`,
+    authors their policy. `src/core/collision.ts`, `worldOpaque`, `worldSoundBlocking`
+    and `worldMeleeBlocker`, plus `src/game/session.ts`, `createSession`, route those
+    channels to sight, hearing, combat, light, projectiles and blasts. Shared furniture
+    reasons are in `docs/content.md`, "Furniture solidity".
 
 **Driving and access.** Road-going arcade handling is sufficient for v1 beta;
 greater realism is the post-beta direction under #322. The physics implementation

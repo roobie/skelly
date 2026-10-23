@@ -29,7 +29,7 @@ const fixture = (reachMetres = 2.1, moves?: ZombieDef['attack']['moves']) => {
   const entities = new BlockEntities(registry);
   const solid = worldSolid(world, registry, entities);
   const opaque = worldOpaque(world, registry, entities);
-  const soundBlocking = worldSoundBlocking(world, registry, entities);
+  const soundBlocking = worldSoundBlocking(world, registry, { entities });
   const wire = (block: number) => {
     for (let y = 1; y < 9; y++) {
       for (let z = -3; z < 4; z++) {
@@ -48,7 +48,7 @@ const fixture = (reachMetres = 2.1, moves?: ZombieDef['attack']['moves']) => {
     isSolid: solid,
     isOpaque: opaque,
     isSoundBlocking: soundBlocking,
-    meleeBlocker: worldMeleeBlocker(world, registry, entities),
+    meleeBlocker: worldMeleeBlocker(world, registry, { entities }),
     player: () => ({
       pos: [0.5, 1, 0.5],
       facing: [1, 0, 0],
@@ -183,7 +183,7 @@ it('admits the amalgam tentacle thrust only when its reach clears the wire thres
     const system = new ZombieSystem({
       isSolid: physical,
       isOpaque: worldOpaque(world, registry, entities),
-      meleeBlocker: worldMeleeBlocker(world, registry, entities, physical),
+      meleeBlocker: worldMeleeBlocker(world, registry, { entities, physical }),
       player: () => ({
         pos: playerPos,
         facing: [0, 0, -1],

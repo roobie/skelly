@@ -732,17 +732,7 @@ export const startPlay = (
     const use = furnitureUseLabel(entity);
     return [...(use ? [{ id: 'use', label: use }] : []), { id: 'push', label: 'Push' }, { id: 'drag', label: 'Drag' }];
   };
-  const audio = new GameAudio({
-    registry,
-    blockSize: s,
-    isSolid: engine.isSoundBlocking,
-    tuning: playerSenseTuning,
-    report: (message) => {
-      const errors = $('errors');
-      errors.textContent = [errors.textContent, message].filter(Boolean).join('\n');
-    },
-  });
-  document.addEventListener('pointerdown', () => audio.unlock(), { once: true });
+  let audio: GameAudio;
   const playSessionSound = (sound: Readonly<SoundEmission>): void =>
     audio.play(sound, sound.position.map((v) => v * s) as Vec3);
 
@@ -1013,6 +1003,18 @@ export const startPlay = (
       onMeleeContact: (impulse) => view.recoil(impulse),
     },
   });
+  audio = new GameAudio({
+    registry,
+    blockSize: s,
+    isSolid: session.isSoundBlocking,
+    tuning: playerSenseTuning,
+    report: (message) => {
+      const errors = $('errors');
+      errors.textContent = [errors.textContent, message].filter(Boolean).join('\n');
+    },
+  });
+  document.addEventListener('pointerdown', () => audio.unlock(), { once: true });
+
   const {
     sim,
     inventory,
@@ -2498,8 +2500,8 @@ export const startPlay = (
       maxDistance: reachTuning(registry).useReachMetres / s,
       blockSize: s,
       worldSeed: config.seed,
-      isSolid: engine.isSolid,
-      isOpaque: engine.isOpaque,
+      isSolid: session.physicalSolid,
+      isOpaque: session.isOpaque,
       throughLadders: session.ladderHold.on,
       hasModel: (id) => view.models.has(id),
       downedBodies: [...session.zombieStore.entries()]
@@ -2516,7 +2518,7 @@ export const startPlay = (
     const origin = eye();
     const direction = lookDir();
     const reach = reachTuning(registry).useReachMetres / s;
-    const hit = raycast(origin, direction, reach, engine.isSolid);
+    const hit = raycast(origin, direction, reach, session.physicalSolid);
     const cell = hit
       ? hit.block.map((coordinate, axis) => coordinate + hit.normal[axis]!)
       : origin.map((coordinate, axis) => Math.floor(coordinate + direction[axis]! * reach));
@@ -2855,7 +2857,7 @@ export const startPlay = (
       distanceMetres,
       blockSize: s,
       minY: scale.minCy * CHUNK,
-      isSolid: engine.isSolid,
+      isSolid: session.physicalSolid,
     });
   }
 
@@ -3553,14 +3555,14 @@ export const startPlay = (
       ...viewpoint,
       blockSize: s,
       handlingTurn,
-      isSolid: engine.isSolid,
+      isSolid: session.physicalSolid,
     });
   };
 
   const targetAlongBore = (bore: ReturnType<typeof firearmBoreRay>) => {
     const rangeBlocks = firearmsCombatTuning(registry).shotTraceRangeBlocks;
     const surface = crosshairTarget(
-      { world: engine.world, registry, entities, isSolid: engine.isSolid, blockSize: s },
+      { world: engine.world, registry, entities, isSolid: session.physicalSolid, blockSize: s },
       bore.origin,
       bore.direction,
       rangeBlocks,

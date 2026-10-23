@@ -150,12 +150,7 @@ export class VehicleOccupancy {
   private readonly blockSize: number;
   private readonly channel: VehicleObstructionChannel | undefined;
 
-  constructor(
-    registry: Registry,
-    vehicles: VehicleInstances,
-    blockSize: number,
-    channel?: VehicleObstructionChannel,
-  ) {
+  constructor(registry: Registry, vehicles: VehicleInstances, blockSize: number, channel?: VehicleObstructionChannel) {
     this.registry = registry;
     this.vehicles = vehicles;
     this.blockSize = blockSize;

@@ -190,7 +190,7 @@ it('keeps glazing out of sight and light channels while applying its authored so
   expect(bodies.isSolid(x, y, z)).toBe(true);
   expect(sight.isSolid(x, y, z)).toBe(false);
   expect(light.isSolid(x, y, z)).toBe(false);
-  expect(sound.isSolid(x, y, z)).toBe(true);
+  expect(sound.isSolid(x, y, z)).toBe(registry.items.get(glazing.item.type)!.vehicle!.obstruction.sound);
 });
 
 it('invalidates a warmed opaque channel after a fitting disappears', () => {
@@ -205,8 +205,10 @@ it('invalidates a warmed opaque channel after a fitting disappears', () => {
   const parts = projectVehicleParts(registry, id, vehicle, scale.blockSize);
   const opaque = parts.find(
     (part) =>
-      !registry.items.get(part.item.type)?.vehicle?.capabilities.includes('glazing') &&
-      !vehicle.fittings.some((fitting) => fitting.supportedBy.includes(part.fittingId)),
+      !(
+        registry.items.get(part.item.type)?.vehicle?.capabilities.includes('glazing') ||
+        vehicle.fittings.some((fitting) => fitting.supportedBy.includes(part.fittingId))
+      ),
   );
   if (!opaque) {
     throw new Error('Fixture vehicle has no opaque part');
