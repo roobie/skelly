@@ -8,10 +8,12 @@ import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { labelForAction } from '../src/game/inputBindings.ts';
 import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';
 import { restViewModel } from '../src/ui/rest.ts';
+import { baseScreenText } from './baseRegistry.ts';
 import { Simulation } from './simulationFixture.ts';
 
 const restLabels = { rest: 'fixture rest', sleep: 'fixture sleep' };
-const hiddenMessages = { messagesVisible: false, restLabels };
+const text = baseScreenText();
+const hiddenMessages = { messagesVisible: false, restLabels, text };
 
 describe('restViewModel', () => {
   it('is invisible with no action running', () => {
@@ -86,8 +88,8 @@ describe('restViewModel', () => {
     const action: RestAction = { kind: 'rest', furnitureUid: 1, rate: -15, startFatigue: 40 };
     const messagesVisible = (messages: boolean) =>
       hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages }).messages;
-    const hidden = restViewModel(action, true, sim, { messagesVisible: messagesVisible(false), restLabels });
-    const visible = restViewModel(action, true, sim, { messagesVisible: messagesVisible(true), restLabels });
+    const hidden = restViewModel(action, true, sim, { messagesVisible: messagesVisible(false), restLabels, text });
+    const visible = restViewModel(action, true, sim, { messagesVisible: messagesVisible(true), restLabels, text });
     expect(hidden.prompt).toBeUndefined();
     expect(visible.prompt).toBe(reason);
   });

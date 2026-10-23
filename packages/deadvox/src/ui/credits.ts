@@ -5,6 +5,9 @@
 
 import { html, render, type TemplateResult } from 'lit-html';
 import { type AssetSource, LICENCES, type Manifest } from '../core/assets.ts';
+import type { ScreenText } from '../core/schema.ts';
+import { fillText } from '../core/textTemplate.ts';
+import { fillHint } from './keyCap.ts';
 
 export interface CreditsEntryViewModel {
   readonly title: string;
@@ -38,27 +41,29 @@ export const creditsViewModel = (manifest: Manifest): CreditsViewModel => ({
   entries: manifest.sources.map(entryViewModel),
 });
 
-const entryTemplate = (entry: CreditsEntryViewModel): TemplateResult => html`
+type CreditsText = ScreenText['credits'];
+
+const entryTemplate = (entry: CreditsEntryViewModel, text: CreditsText): TemplateResult => html`
   <li>
     ${
       entry.url === null
         ? html`<strong>${entry.title}</strong>`
         : html`<a href=${entry.url} target="_blank" rel="noopener">${entry.title}</a>`
-    }${entry.author === null ? '' : ` by ${entry.author}`}${entry.host === null ? '' : `, from ${entry.host}`}
+    }${entry.author === null ? '' : ` ${fillText(text.byAuthor, { author: entry.author })}`}${entry.host === null ? '' : `, ${fillText(text.fromHost, { host: entry.host })}`}
     <br />
-    Licence:
-    ${
-      entry.licenceUrl === null
-        ? entry.licenceName
-        : html`<a href=${entry.licenceUrl} target="_blank" rel="noopener">${entry.licenceName}</a>`
-    }${entry.changes === null ? '' : html`<br />Changes: ${entry.changes}`}
+    ${fillHint(text.licence, {
+      licence:
+        entry.licenceUrl === null
+          ? entry.licenceName
+          : html`<a href=${entry.licenceUrl} target="_blank" rel="noopener">${entry.licenceName}</a>`,
+    })}${entry.changes === null ? '' : html`<br />${fillText(text.changes, { changes: entry.changes })}`}
   </li>
 `;
 
-const creditsTemplate = (vm: CreditsViewModel, onBack: (e: Event) => void): TemplateResult => html`
-  <h1>Credits</h1>
-  ${vm.entries.length === 0 ? html`<p>No assets</p>` : html`<ul class="credits">${vm.entries.map(entryTemplate)}</ul>`}
-  <p><a href="#" rel="noopener" @click=${onBack}>Back</a></p>
+const creditsTemplate = (vm: CreditsViewModel, text: CreditsText, onBack: (e: Event) => void): TemplateResult => html`
+  <h1>${text.heading}</h1>
+  ${vm.entries.length === 0 ? html`<p>${text.none}</p>` : html`<ul class="credits">${vm.entries.map((entry) => entryTemplate(entry, text))}</ul>`}
+  <p><a href="#" rel="noopener" @click=${onBack}>${text.back}</a></p>
 `;
 
 export interface CreditsElements {
@@ -70,13 +75,13 @@ export interface CreditsElements {
   show: HTMLElement;
 }
 
-export const mountCredits = ({ about, box, show }: CreditsElements, manifest: Manifest): void => {
+export const mountCredits = ({ about, box, show }: CreditsElements, manifest: Manifest, text: CreditsText): void => {
   const showCredits = (visible: boolean) => {
     about.hidden = visible;
     box.hidden = !visible;
   };
   render(
-    creditsTemplate(creditsViewModel(manifest), (e) => {
+    creditsTemplate(creditsViewModel(manifest), text, (e) => {
       e.preventDefault();
       showCredits(false);
     }),

@@ -805,6 +805,10 @@
           "weight": 2
         },
         {
+          "item": "door_bar",
+          "weight": 1
+        },
+        {
           "count": [5, 20],
           "item": "nails",
           "weight": 4

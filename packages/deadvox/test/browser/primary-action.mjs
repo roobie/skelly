@@ -31,6 +31,22 @@ const throwChargeSample = ({ start, seconds }) => {
   const { session } = globalThis.primaryActionTest;
   return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= seconds };
 };
+const aimThrowAtFreeLanding = async (page, fixture) => {
+  // Different items have different dragged flights; a clear glowstick landing says nothing about a firearm's.
+  const landing = await page.evaluate(({ uid, chargeSimSeconds }) => {
+    const r = globalThis.primaryActionTest;
+    const { yaw } = r.input;
+    for (let turn = 0; turn < 32; turn += 1) {
+      r.input.yaw = yaw + (turn * Math.PI * 2) / 32;
+      const candidate = r.getItemThrowLanding(uid, chargeSimSeconds);
+      if (candidate?.fits) {
+        return candidate;
+      }
+    }
+  }, fixture);
+  assert(landing?.fits, 'the item’s full-charge flight has a landing with room');
+  return landing;
+};
 const searchedContainerSample = ({ uid }) => {
   const { inventory, session } = globalThis.primaryActionTest;
   return {
@@ -1851,8 +1867,6 @@ try {
       offHandUid: offHandItem.uid,
       start: [...r.session.body.pos],
       blockSize: r.scale.blockSize,
-      // The glowstick's own full-charge range: drag keeps a light, broad item short of the tuned maximum.
-      distance: r.getItemThrowLanding(glowstick.uid, throwChargeSimSeconds).distance,
       chargeSimSeconds: throwChargeSimSeconds,
       minimumHoldSimSeconds: throwMinimumHoldSimSeconds,
     };
@@ -1904,7 +1918,10 @@ try {
       stop: offHandOnlyThrow,
     },
   );
-  await page.waitForFunction(() => globalThis.primaryActionTest.itemThrows.activeCount > 0);
+  await page.waitForFunction(
+    (uid) => globalThis.primaryActionTest.throwSpawnObservations[uid]?.active,
+    throwFixture.offHandUid,
+  );
   await page.waitForFunction(
     (uid) =>
       globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
@@ -2186,25 +2203,8 @@ try {
   }, throwFixture.uid);
   assert.equal(glowstickUseRefusal, undefined, 'the fixture glowstick can be lit before throwing');
   const landingTolerance = throwFixture.blockSize * 2;
-  let landing = await page.evaluate(
-    ({ uid, seconds }) => globalThis.primaryActionTest.getItemThrowLanding(uid, seconds),
-    { uid: throwFixture.uid, seconds: throwFixture.chargeSimSeconds },
-  );
-  for (
-    let turn = 1;
-    !(landing?.fits && Math.abs(landing.landingDistance - throwFixture.distance) <= landingTolerance) && turn <= 16;
-    turn += 1
-  ) {
-    await page.mouse.move(760 + turn * 16, 410);
-    landing = await page.evaluate(
-      ({ uid, seconds }) => globalThis.primaryActionTest.getItemThrowLanding(uid, seconds),
-      { uid: throwFixture.uid, seconds: throwFixture.chargeSimSeconds },
-    );
-  }
-  assert(
-    landing?.fits && Math.abs(landing.landingDistance - throwFixture.distance) <= landingTolerance,
-    `full-charge throw has room near the item's own range: ${JSON.stringify(landing)}`,
-  );
+  const landing = await aimThrowAtFreeLanding(page, throwFixture);
+  throwFixture.distance = landing.landingDistance;
   const releaseThrow = await mouseCharge(page);
   await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
   const chargeStartedAt = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
@@ -2224,7 +2224,10 @@ try {
   assert.equal(fullMeter, 100, 'maximum charge fills the activity ring');
   await releaseThrow();
   try {
-    await page.waitForFunction(() => globalThis.primaryActionTest.itemThrows.activeCount > 0);
+    await page.waitForFunction(
+      (uid) => globalThis.primaryActionTest.throwSpawnObservations[uid]?.active,
+      throwFixture.uid,
+    );
     await page.waitForFunction(
       (uid) =>
         globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
@@ -2391,6 +2394,21 @@ try {
   await page.waitForFunction(() => globalThis.primaryActionTest.session.queue.busy);
   await reloadAfterCancel();
   await page.evaluate(() => globalThis.primaryActionTest.clearHand(globalThis.primaryActionTest.off));
+  await page.evaluate(({ uid, chargeSimSeconds }) => {
+    const r = globalThis.primaryActionTest;
+    const item = r.inventory.itemByUid(uid);
+    const obstructed = r.getItemThrowLanding(uid, chargeSimSeconds);
+    if (!obstructed?.target) {
+      throw new Error('The firearm fixture needs a landing to obstruct');
+    }
+    // Force the crowded-landing case instead of depending on generated loot or the preceding mouse pose.
+    while (r.inventory.planAdd(item, obstructed.target).ok) {
+      if (!r.inventory.add(r.inventory.create(item.type), obstructed.target)) {
+        throw new Error('Could not fill the firearm fixture landing');
+      }
+    }
+  }, loadedFirearm);
+  await aimThrowAtFreeLanding(page, loadedFirearm);
   const releaseFirearmThrow = await mouseCharge(page);
   const firearmThrowStartedAt = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
   await waitForSimulation(
@@ -2404,15 +2422,14 @@ try {
       stop: releaseFirearmThrow,
     },
   );
-  const flightModelId = await page.waitForFunction((modelId) => {
-    const { itemThrows } = globalThis.primaryActionTest;
-    return itemThrows.activeCount > 0 && itemThrows.group.getObjectByName(modelId) ? modelId : false;
-  }, loadedFirearm.modelId);
-  assert.equal(
-    await flightModelId.jsonValue(),
-    loadedFirearm.modelId,
-    'flight uses the firearm’s own ModelLibrary model',
+  const firearmSpawn = await page.waitForFunction(
+    (uid) => globalThis.primaryActionTest.throwSpawnObservations[uid],
+    loadedFirearm.uid,
   );
+  const firearmFlight = await firearmSpawn.jsonValue();
+  process.stdout.write(`Firearm flight spawn: ${JSON.stringify(firearmFlight)}\n`);
+  assert.equal(firearmFlight.active, true, 'firearm presentation starts at the throw transition');
+  assert.ok(firearmFlight.names.includes(loadedFirearm.modelId), 'flight uses the firearm’s own ModelLibrary model');
   await page.waitForFunction(
     (uid) =>
       globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
@@ -2526,6 +2543,7 @@ try {
     },
     { ...rifleFixture, itemLookUrl: itemLookModule },
   );
+  await aimThrowAtFreeLanding(page, loadedRifle);
   await waitForSimulation(
     page,
     throwChargeSample,
@@ -2537,10 +2555,13 @@ try {
       stop: releaseRifleThrow,
     },
   );
-  await page.waitForFunction(({ lookKey }) => {
-    const { itemThrows } = globalThis.primaryActionTest;
-    return itemThrows.activeCount > 0 && itemThrows.group.getObjectByName(lookKey);
-  }, loadedRifle);
+  const rifleSpawn = await page.waitForFunction(
+    (uid) => globalThis.primaryActionTest.throwSpawnObservations[uid],
+    loadedRifle.uid,
+  );
+  const rifleFlight = await rifleSpawn.jsonValue();
+  assert.equal(rifleFlight.active, true, 'rifle presentation starts at the throw transition');
+  assert.ok(rifleFlight.names.includes(loadedRifle.lookKey), 'flight uses the loaded rifle’s composed model');
   await page.waitForFunction(
     (uid) =>
       globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===

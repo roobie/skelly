@@ -1,6 +1,10 @@
 import { html, render } from 'lit-html';
+import type { ScreenText } from '../core/schema.ts';
+import { fillText } from '../core/textTemplate.ts';
 import { BROWSER_CHORD_LOCK_CODES } from '../game/inputBindings.ts';
 import { factDetail } from './factDetail.ts';
+
+const KEY_PREFIX = /^Key/;
 
 interface KeyboardLockApi {
   lock?: (codes: string[]) => Promise<void>;
@@ -21,7 +25,10 @@ export const syncKeyboardLock = (
   }
 };
 
-export const mountFullscreenOptions = (root: HTMLElement): void => {
+// The keys the game takes are the lock codes it asks for, so the fact cannot name a stale list.
+const takenShortcuts = BROWSER_CHORD_LOCK_CODES.map((code) => `Ctrl+${code.replace(KEY_PREFIX, '')}`).join(', ');
+
+export const mountFullscreenOptions = (root: HTMLElement, text: ScreenText['options']): void => {
   if (!document.fullscreenEnabled) {
     return;
   }
@@ -32,8 +39,8 @@ export const mountFullscreenOptions = (root: HTMLElement): void => {
         <button type="button" @click=${() => {
           const change = on ? document.exitFullscreen() : document.documentElement.requestFullscreen();
           change.catch(() => undefined);
-        }}>${on ? 'Leave fullscreen' : 'Fullscreen'}</button>
-        ${factDetail('Browser shortcuts', 'In fullscreen, Chromium browsers let the game take Ctrl+W, Ctrl+T, Ctrl+N and Ctrl+Tab during play.')}
+        }}>${on ? text.leaveFullscreen : text.fullscreen}</button>
+        ${factDetail(text.browserShortcutsLabel, fillText(text.browserShortcuts, { shortcuts: takenShortcuts }))}
       </section>`,
       root,
     );

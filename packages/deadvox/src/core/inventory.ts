@@ -1697,7 +1697,6 @@ const validateCraftWorkItem = (
   const recipe = registry.recipes.get(work.recipe);
   if (
     !recipe ||
-    work.duration < recipe.timeGameMinutes ||
     (recipe.kind === 'repair') !== (work.repairTargetUid !== undefined && work.repairAmount !== undefined) ||
     (work.repairTargetUid === undefined) !== (work.repairAmount === undefined) ||
     (work.repairTargetUid !== undefined && (!Number.isSafeInteger(work.repairTargetUid) || work.repairTargetUid < 1)) ||
