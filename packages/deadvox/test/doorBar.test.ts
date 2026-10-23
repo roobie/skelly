@@ -79,7 +79,7 @@ const opensFrom = (inventory: Inventory, door: BlockEntity, point: Vec3) => {
   return doorPlan(inventory, door, 'open').ok;
 };
 
-it('a bar set from one side opens the door only from that side, and only that side lifts it back into the hands', () => {
+it('a bar refuses opening until its side lifts it, and the far side cannot lift it', () => {
   const { inventory, door, standAt, act } = fixture();
   inventory.add(inventory.create('fixture_bar'), { kind: 'hand', side: 'right' });
   expect(act('bar', { barring: true })).toBeUndefined();
@@ -92,13 +92,13 @@ it('a bar set from one side opens the door only from that side, and only that si
   expect(door.bar).toBeDefined();
 
   standAt(FRONT);
-  expect(act('open', { closing: false })).toBeUndefined();
-  expect(door.open).toBe(true);
-  expect(inventory.entities.setOpen(door, false)).toBeUndefined();
+  expect(act('open', { closing: false })).toBe('I need to lift the bar first');
+  expect(door.open).toBe(false);
   expect(act('unbar', { barring: false })).toBeUndefined();
   expect(door.bar).toBeUndefined();
   expect(inventory.hands.right?.type).toBe('fixture_bar');
-  expect(opensFrom(inventory, door, BACK)).toBe(true);
+  expect(act('open', { closing: false })).toBeUndefined();
+  expect(door.open).toBe(true);
 });
 
 it('a save round-trip keeps the barred side of a door', async () => {
@@ -114,7 +114,7 @@ it('a save round-trip keeps the barred side of a door', async () => {
   const restored = loaded.entities.byUid(door.uid)!;
   expect(restored.bar).toEqual({ side: 'back', item: 'fixture_bar' });
   expect(opensFrom(loaded.inventory, restored, FRONT)).toBe(false);
-  expect(opensFrom(loaded.inventory, restored, BACK)).toBe(true);
+  expect(opensFrom(loaded.inventory, restored, BACK)).toBe(false);
 });
 
 it('a save round-trip restores a discounted door-bar craft in progress', async () => {

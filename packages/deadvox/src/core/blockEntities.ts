@@ -822,8 +822,10 @@ export class BlockEntities {
     if (door.barredFrom && from && this.sideOf(entity, from) === door.barredFrom) {
       return "It's boarded up";
     }
-    if (entity.bar && from && this.sideOf(entity, from) !== entity.bar.side) {
-      return "It's barred from the other side";
+    if (entity.bar && from) {
+      return this.sideOf(entity, from) === entity.bar.side
+        ? 'I need to lift the bar first'
+        : "It's barred from the other side";
     }
     if (door.hatch && this.lyingOn(entity)) {
       return this.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.hatchCovered;
