@@ -9,6 +9,8 @@
   --ui-layer-crafting: 21;
   --ui-layer-activity-progress: 22;
   --ui-layer-drag-ghost: 23;
+  /* Inside the inventory panel's own stacking context, above its drop marks. */
+  --ui-layer-item-viewer: 24;
   --ui-layer-reading: 40;
   --ui-layer-debug-ui: 50;
   --ui-layer-debug-overlay: 1000;
@@ -726,6 +728,47 @@ body.unconscious::after {
   scrollbar-gutter: stable;
   visibility: hidden;
   pointer-events: none;
+}
+/* The item viewer covers the whole panel, so no press reaches an item beneath it. */
+#inventory .inv-viewer {
+  position: absolute;
+  inset: 0;
+  z-index: var(--ui-layer-item-viewer);
+  display: grid;
+  place-items: center;
+  padding: calc(var(--ui-spacing) * 1rem);
+  border-radius: inherit;
+  background: rgb(10 11 14 / 92%);
+}
+#inventory .inv-viewer-card {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ui-spacing) * 0.5rem);
+  width: min(40rem, 100%);
+  max-height: 100%;
+  min-height: 0;
+}
+#inventory .inv-viewer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--ui-spacing) * 0.75rem);
+}
+.inv-viewer-head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+#inventory .inv-viewer-canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  max-height: calc(100vh - 10rem);
+  min-height: 0;
+  border: 1px solid var(--line);
+  border-radius: 0.375rem;
+  background: #1a1d22;
+  cursor: grab;
+  touch-action: none;
 }
 /* The side panes' floors are their min-widths too, so the splitter's clamp reads the same values. */
 #inventory .inv-body[data-tab-panel="items"] {

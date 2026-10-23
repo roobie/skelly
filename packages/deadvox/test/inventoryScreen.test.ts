@@ -236,7 +236,7 @@ it('keeps a model-less item as a text tile when pictures are enabled', () => {
         groundLook: () => new Group(),
       },
       2,
-      { paint: () => 'still', dispose: vi.fn() },
+      { paint: () => 'still', view: vi.fn(), dispose: vi.fn() },
     ),
   });
   test.screen.update();
@@ -411,6 +411,42 @@ describe('inventory screen Lit rendering', () => {
     globalThis.window.dispatchEvent(
       new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1, clientX: 30, clientY: 10 }),
     );
+    screen.close();
+  });
+
+  it('opens the view-only item viewer on the view press over a card and closes it with state unchanged', () => {
+    const test = setup();
+    const { root, screen, inv, queue, beans } = test;
+    const model = vi.fn(() => new Group());
+    Object.assign(test.hooks, { itemView: { model, view: vi.fn() } });
+    // Selected, so a drop that leaked past the viewer would move it.
+    screen.selected = beans;
+    screen.update();
+    const viewPress = inputBindings.chords('inventory.view-item')[0]!;
+    const button = Number(viewPress.code.replace('Mouse', ''));
+    const before = { state: inv.snapshotState(), selected: screen.selected, jobs: queue.jobs.length };
+
+    root.querySelector<HTMLElement>(`[data-uid="${beans.uid}"]`)!.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        button,
+        pointerId: 1,
+        shiftKey: viewPress.modifier === 'shift',
+      }),
+    );
+    expect(screen.viewedUid).toBe(beans.uid);
+    expect(model).toHaveBeenLastCalledWith(beans);
+    expect(root.querySelector(`.inv-viewer[data-item-viewer="${beans.uid}"]`)).not.toBeNull();
+
+    // The viewer swallows item keys while open.
+    expect(screen.onAction('inventory.drop')).toBe(true);
+    screen.update();
+    expect(screen.viewedUid).toBe(beans.uid);
+
+    root.querySelector<HTMLButtonElement>('[data-action="viewer.close"]')!.click();
+    expect(screen.viewedUid).toBeUndefined();
+    expect(root.querySelector('.inv-viewer')).toBeNull();
+    expect({ state: inv.snapshotState(), selected: screen.selected, jobs: queue.jobs.length }).toEqual(before);
     screen.close();
   });
 
@@ -711,6 +747,7 @@ describe('inventory screen Lit rendering', () => {
     const models = { version: 0, has: () => models.version > 0, groundLook: () => new Group() };
     const pictures = new ItemPictures(registry, models, registry.graphics.get('core')!.itemPictureCacheCapacity, {
       paint,
+      view: vi.fn(),
       dispose: vi.fn(),
     });
     Object.assign(test.hooks, { pictures });

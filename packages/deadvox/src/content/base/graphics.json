@@ -36,6 +36,16 @@
       },
       "id": "core",
       "itemPictureCacheCapacity": 128,
+      "itemViewer": {
+        "degreesPerPixel": 0.5,
+        "framing": 1.1000000000000001,
+        "pitchLimitDegrees": 85,
+        "startPitchDegrees": 26,
+        "startYawDegrees": 45,
+        "zoomMax": 4,
+        "zoomMin": 0.5,
+        "zoomPerWheelPixel": 0.002
+      },
       "mobActors": {
         "maxCorpses": 16
       },

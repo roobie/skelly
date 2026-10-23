@@ -414,5 +414,6 @@
     noneToTake: 'No {category} items to take',
     secs: '{value} s',
     kg: '{value} kg',
+    viewerClose: 'Close ({key})',
   },
 }
