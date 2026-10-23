@@ -1,0 +1,25 @@
+{
+  player: [{
+    id: 'player',
+    halfWidth: 0.3,
+    height: 1.8,
+    eye: 1.62,
+    walk: 1.8,
+    jog: 4.3,
+    sprint: 6.5,
+    jump: 7.9,
+    reach: 4,
+    stepHeight: 0.5,
+    movement: { sidewaysSpeedScale: 0.7, backwardSpeedScale: 0.5 },
+    crouch: { speedMetresPerSimSecond: 1, eyeDropMetres: 0.7, bodyHeightMetres: 1.2 },
+    prone: { speedMetresPerSimSecond: 0.5, eyeDropMetres: 1.3, bodyHeightMetres: 0.6 },
+    load: { light: 20000, heavy: 40000, slowest: 0.6, handlingScale: 0.5 },
+    aim: {
+      moveYawPerSpeed: 0.0045,
+      lookLagPerRadian: 0.035,
+      lookSettleSimSeconds: 0.22,
+      recoilRecoverySimSeconds: 0.34,
+      maxOffsetRadians: 0.12,
+    },
+  }],
+}

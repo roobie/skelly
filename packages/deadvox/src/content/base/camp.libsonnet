@@ -1,9 +1,9 @@
 local spawnMarker = function(type, chance) { spawn: type, chance: chance };
 local ordinaryDesk = std.filter(function(piece) piece.id == 'desk', (import 'furniture.jsonnet').furniture)[0];
-local senses = import "senses.jsonnet";
-local playerSense = [sense for sense in senses.senses if sense.id == "player"][0];
+local players = import "player.jsonnet";
+local player = [entry for entry in players.player if entry.id == "player"][0];
 local blockSizeMetres = 0.5; // Must match src/core/scale.ts, BLOCK_SIZE.
-local crouchHoleHeight = std.ceil(playerSense.crouch.bodyHeightMetres / blockSizeMetres);
+local crouchHoleHeight = std.ceil(player.crouch.bodyHeightMetres / blockSizeMetres);
 local campWallRunLayers = [
   ["================================", "================================"],
   ["================================", "================================"],

@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you're authoring readable item or furniture content, including plaque mounting height
+  - you're authoring readable item or furniture content, or changing the player tuning used for plaque mounting height
   - you're changing how authored text enters play or how reading owns time
   - you're changing gameplay input while a readable is open
 ---
@@ -13,7 +13,7 @@ Loose notes, manuals and logs are items because their appearance should agree wi
 
 Fixed signage stays furniture: wall plaques must look attached rather than occupy a wall-sized solid cell, while freestanding boards need legs. Shape and mounting are explicit content choices, never inferred from readable text or solidity. The mount and shape contract belongs to `src/core/schema.ts`, `FurnitureSchema`; host admission belongs to `src/core/content.ts`, `checkPaletteThing`. Plaques stay fixed and cannot be pried down. Host destruction is deferred to d334 slice 4; until that item, removing the wall can leave a plaque floating.
 
-Plaques normally hang with their face centred near the standing eye line because they are read standing, not by looking down at the floor. Do not duplicate eye-height tuning: its authority is `src/game/player.ts`, `PLAYER`, with placement scale in `src/core/scale.ts`, `BLOCK_SIZE`. An intentionally unusual height is an authored exception that needs a reason. Keep the face and its host aligned with the occupied cell so presentation, picking and host admission agree. See `test/authoredMedicalSite.test.ts`, "hangs wall mounts across the standing eye line and keeps the notice room accessible".
+Plaques normally hang with their face centred near the standing eye line because they are read standing, not by looking down at the floor. Do not duplicate eye-height tuning: use `src/content/base/player.jsonnet`, `eye`, through `src/game/player.ts`, `playerTuning`, with placement scale in `src/core/scale.ts`, `BLOCK_SIZE`. An intentionally unusual height is an authored exception that needs a reason. Keep the face and its host aligned with the occupied cell so presentation, picking and host admission agree. See `test/authoredMedicalSite.test.ts`, "hangs wall mounts across the standing eye line and keeps the notice room accessible".
 
 A loose note sits on a desk, crate or bench as fixed loot with surface placement: furniture raises the paper into view without adding a ground-placement mechanism. Gauntlet street leads, the maintenance memo and the camp's closing note all work this way. Each lead's text remains independently useful and its location spatially separate. Picking up its readable item counts as clue discovery; possession does not authorize the route. See `src/content/base/scenarios.jsonnet`, `composition`, and `src/core/scenarioDiscovery.ts`, `discoveryForPlan`. A note that belongs to one city building instead rides on that building's furniture as palette stock, so it appears wherever the building is drawn rather than at a site coordinate; it is flavour, not a scenario lead. See `src/core/schema.ts`, `PaletteThingSchema`, and `src/content/base/gauntlet-city-scenes.libsonnet`, `onDesk`.
 

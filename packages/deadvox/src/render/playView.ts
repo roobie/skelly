@@ -29,7 +29,7 @@ import { BACKGROUND_ZOMBIE_RATE, type Zombie } from '../core/zombies.ts';
 import { cameraRotation, DamageFeedback } from '../game/damageFeedback.ts';
 import type { Engine } from '../game/engine.ts';
 import { PainCue } from '../game/painCue.ts';
-import { PLAYER } from '../game/player.ts';
+import { playerTuning } from '../game/player.ts';
 import { THIRD_PERSON_CAMERA } from '../game/thirdPersonOrbit.ts';
 import { AcidEffects } from './acidEffects.ts';
 import { createAvatarStudy } from './avatarStudy.ts';
@@ -279,7 +279,7 @@ export const createPlayView = (
       : new ZombieMeshes(s, undefined, meshes);
   zombieMeshes.setWorld?.(engine.isSolid, s);
   scene.add(zombieMeshes.group);
-  const cameraStepOffset = new StepOffset(PLAYER.stepHeight);
+  const cameraStepOffset = new StepOffset(playerTuning(registry).stepHeight);
   const damageFeedback = new DamageFeedback(look.damageFeedback);
   const painCue = new PainCue(look.painCue);
   let cameraRoll = 0;
@@ -422,7 +422,7 @@ export const createPlayView = (
       const alpha = Math.max(0, Math.min(1, (time - lastZombieStep) * 20));
       const backgroundAlpha = Math.max(0, Math.min(1, (time - lastBackgroundStep) * BACKGROUND_ZOMBIE_RATE));
       zombieMeshes.setCamera?.(camera);
-      zombieMeshes.setPlayerEyePosition?.(playerEye);
+      zombieMeshes.setPlayerEyePosition?.(playerEye, playerTuning(registry).sprint);
       zombieMeshes.setPlayerChestPosition?.(playerChest);
       zombieMeshes.setPerceptionLabels?.(perceptionLabels);
       zombieMeshes.sync(zombies, dt, alpha, frozen, backgroundAlpha, time);

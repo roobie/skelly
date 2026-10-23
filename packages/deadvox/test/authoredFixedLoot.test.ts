@@ -29,13 +29,13 @@ import {
   placedPoint,
   placedSpawns,
 } from '../src/core/templates.ts';
-import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { vehicleInstanceOf, vehicleModel, workshopLift } from '../src/render/workshopVehicle.ts';
 import { CATALOGUE } from '../src/vehicles/catalogue.ts';
 import { PartLibrary, VOXEL } from '../src/vehicles/model.ts';
 import { wheel } from '../src/vehicles/rangeRover.ts';
 import { GLASS, keyVoxel } from '../src/vehicles/voxels.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureLootPoint } from './economyFixtures.ts';
+import { PLAYER, physicsFor } from './playerFixture.ts';
 
 const sources = readdirSync('src/content/base')
   .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))

@@ -17,8 +17,8 @@ import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { MeleeWeapon } from '../src/core/zombies.ts';
 import { meleeWeaponFromContent, startPlayerMelee } from '../src/game/melee.ts';
-import { PLAYER } from '../src/game/player.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
+import { PLAYER } from './playerFixture.ts';
 import { withFixtureBody } from './simulationFixture.ts';
 import {
   advance,

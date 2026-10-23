@@ -5,12 +5,12 @@ import { makeScale } from '../src/core/scale.ts';
 import { figureSeedPool } from '../src/core/zombieFigure.ts';
 import { posedRegionHitDistance, posedShamblerRegionBoxes, type ZombieRegion } from '../src/core/zombieRegions.ts';
 import type { HitImpulse } from '../src/core/zombies.ts';
-import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';
 import { MobActorMeshes } from './mobActorsFixture.ts';
+import { PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ZombieSystem } from './zombieSystemFixture.ts';
 

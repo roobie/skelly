@@ -1641,6 +1641,7 @@ export const REQUIRED_CORE_CONTENT = [
   { section: 'meleeClasses', id: CORE_CONTENT_IDS.fistsMeleeClass },
   { section: 'saves', id: CORE_CONTENT_IDS.autosave },
   { section: 'senses', id: CORE_CONTENT_IDS.player },
+  { section: 'player', id: CORE_CONTENT_IDS.player },
   { section: 'siteGeneration', id: CORE_CONTENT_IDS.authoredSite },
   { section: 'skills', id: CORE_CONTENT_IDS.firearmsCombat },
   { section: 'skills', id: CORE_CONTENT_IDS.meleeCombat },

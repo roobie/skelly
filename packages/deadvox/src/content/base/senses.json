@@ -3,11 +3,8 @@
     {
       "chestEyeFraction": 0.62,
       "crouch": {
-        "bodyHeightMetres": 1.2,
-        "eyeDropMetres": 0.69999999999999996,
         "hearingRangeScale": 0.5,
-        "sightRangeScale": 0.5,
-        "speedMetresPerSimSecond": 1
+        "sightRangeScale": 0.5
       },
       "footsteps": {
         "hardLandingMetres": 2.5,
@@ -32,16 +29,9 @@
         "throwStanceDropHoldRealSeconds": 0.5,
         "wornLightToggleHoldRealSeconds": 0.5
       },
-      "movement": {
-        "backwardSpeedScale": 0.5,
-        "sidewaysSpeedScale": 0.69999999999999996
-      },
       "prone": {
-        "bodyHeightMetres": 0.59999999999999998,
-        "eyeDropMetres": 1.3,
         "hearingRangeScale": 0.5,
-        "sightRangeScale": 0.5,
-        "speedMetresPerSimSecond": 0.5
+        "sightRangeScale": 0.5
       },
       "shamblerVoice": {
         "clampMultiplier": {

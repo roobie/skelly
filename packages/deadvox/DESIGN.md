@@ -12,7 +12,7 @@ read_if:
   - you decide how sunlight, shadows or interior sky should read during discovery and edit revalidation
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance, performance targets or the default render scale
-  - you change the player's collision body, movement pace by direction, or what crouching or lying prone lets the player fit through
+  - you change player movement, load or aim tuning, saved aim admission, or what crouching or lying prone lets the player fit through
   - you're changing world block shapes, wire fences or their supports, sight opacity, reach through obstacles, sound blocking or slab geometry
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry and put down, or how stacks settle
@@ -158,42 +158,36 @@ same view radius and re-authoring building templates. Frame cost is part of the
 chosen scale, so tune view distance against measured play rather than duplicating
 current settings here. See `BLOCK_SIZE` in `src/core/scale.ts`.
 
-Player pace is slower sideways and backward than forward. The tunable
-`sidewaysSpeedScale` and `backwardSpeedScale` fields are authored in
-`src/content/base/senses.jsonnet`, `movement`, and validated by
-`src/core/schema.ts`, `SenseSchema`. `movementPace` and `steer` in
-`src/game/player.ts` carry the authored factors into player intent and blend
-them by axis for diagonals, keeping diagonal pace between its two axis speeds.
-The factors scale speed without changing movement direction and compose with
-other pace factors.
+The player's own movement, load and aim tuning belongs in one content home,
+not split between sensory tuning and code, so mods can retune the player without
+changing mechanisms. See `src/content/base/player.jsonnet`, `player`;
+`src/core/schema.ts`, `PlayerSchema`; `src/game/player.ts`, `playerTuning`,
+`movementPace` and `steer`; and `src/core/aim.ts`, `AimController`.
+Gravity remains physics rather than player tuning. Saved look offsets must obey
+the geometric ceiling shared by all valid player tuning, not the core pack's
+chosen tuning: impossible offsets can overflow on advancement even when the
+saved numbers are finite. See `src/core/aim.ts`, `assertAimState`, and
+`src/core/schema.ts`, `PlayerSchema`.
 
 ### Crouching and lying prone
 
-The player has three stances: standing, crouching and prone. Each lower stance
-lowers the collision body as well as the eye, so it fits openings that reject the
-stance above it, and a low opening becomes a route only for someone willing to
-move slowly. Crouching and prone each have their own body height, eye drop and
-pace in content, and neither can sprint. A prone player can't jump either, since
-lying flat leaves nothing to jump from. The crouch key toggles between standing
-and crouching, the prone key toggles between crouching and prone, and either key
-rises from prone to a crouch, so a player never stands straight up from lying
-flat. Rising is refused, keeping the lower stance, when the taller body would
-intersect a solid overhead block. Only height changes; the body's footprint stays
-the same in every stance.
+Lower stances trade mobility for low routes: collision and eye height must agree,
+and lying flat leaves nothing to jump from. Rising must not put the player inside
+an overhead solid or skip straight from lying flat to standing. Keep stance
+transitions in `src/game/player.ts`, `nextStance`, and clearance in
+`src/game/session.ts`, `settleStance`, rather than duplicating either rule in input
+or rendering.
 
 Hearing and sight treat a prone player as they treat a crouched one, through
 prone's own content fields, because how lying down should affect noticing is
 still open (#550). The camera and the spit's chest target follow the eye height,
 so each stance moves them without stance-specific code.
 
-The drawn body follows the stance, so third person shows the stance the player is
-in (#582): crouched it sinks and leans forward, and prone it lies along the facing.
-Each stance pose stays inside that stance's body height, so the drawn head never
-pokes through a ceiling the body fits under. The body blends into a new stance
-over a short real-time span instead of snapping, which hides the change of shape;
-the eye snaps, because sight and collision use the new height at once. Poses and
-the blend time are figure content. See `src/content/base/figures-player.jsonnet`,
-`stancePoses`, and `src/render/playerFigure.ts`, `PlayerMeshes`.
+The drawn pose must fit its collision height, so a head never pokes through a
+ceiling the body fits under. Visual blending hides the change of shape, but must
+not delay the eye used by sight and collision. See
+`src/content/base/figures-player.jsonnet`, `stancePoses`, and
+`src/render/playerFigure.ts`, `PlayerMeshes`.
 
 The FOB's east-wall passage is sized so a crouched player fits but a standing
 player does not. It is a separate low route from the guarded north entrance and
@@ -204,12 +198,10 @@ the only near-ground exception.
 Zombies use the passage only if their ordinary collision body fits; they do not
 crouch or gain a type-specific exception.
 
-A save keeps the stance; on a restore admitted by `decodeSave` with matching
-content identity, body height is derived from content for that stance. See
-`src/core/saveFormat.ts`, `decodeSave`; `src/content/base/senses.jsonnet`,
-`crouch` and `prone`; `src/game/player.ts`, `nextStance`;
-`src/game/session.ts`, `settleStance`; `src/core/zombies.ts`,
-`loweredStanceTuning`; `src/core/schema.ts`, `SenseSchema`;
+A restored stance must take its height from admitted content rather than saved
+body dimensions. See `src/core/saveFormat.ts`, `decodeSave`;
+`src/game/session.ts`, `setStanceHeight`; `src/core/schema.ts`, `PlayerSchema`
+and `SenseSchema`; `src/core/zombies.ts`, `loweredStanceTuning`;
 `src/content/base/camp.libsonnet`, `camp_wall_run_crouch_hole`; and
 `src/core/spawnClearance.ts`, `zombieBodyDimensions`.
 

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { bodyIsClear, findShamblerBenchPlayer, placeShamblerRing } from '../src/bench/shamblerPlacement.ts';
 import { createHeadlessShamblerWorld } from '../src/bench/shamblerWorld.ts';
-import { createPlayerBody } from '../src/game/player.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { createPlayerBody } from './playerFixture.ts';
 
 const registry = baseRegistry();
 

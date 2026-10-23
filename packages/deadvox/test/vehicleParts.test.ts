@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 import { sizeFits } from '../src/core/items.ts';
-import { PLAYER } from '../src/game/player.ts';
 import { APC } from '../src/vehicles/apc.ts';
 import { pairAcross } from '../src/vehicles/authoring.ts';
 import { BOX_VAN } from '../src/vehicles/boxVan.ts';
@@ -33,8 +32,8 @@ import {
   voxelKey,
 } from '../src/vehicles/voxels.ts';
 import { WEAR_MATERIALS, wearGrid, wearKey } from '../src/vehicles/wear.ts';
-
 import { baseRegistry } from './baseRegistry.ts';
+import { PLAYER } from './playerFixture.ts';
 
 const FACES = [
   [1, 0, 0],
@@ -114,7 +113,7 @@ describe.each(BLUEPRINTS)('$blueprint.id built from parts', ({ blueprint, builds
 
 describe('the APC troop compartment', () => {
   const registry = baseRegistry();
-  const crouched = registry.senses.get('player')!.crouch.bodyHeightMetres;
+  const crouched = registry.player.get('player')!.crouch.bodyHeightMetres;
   const heightVoxels = Math.ceil(crouched / VOXEL);
   const widthVoxels = Math.ceil((2 * PLAYER.halfWidth) / VOXEL);
   const placed = (id: string) => library.placed(newInstance(APC, 'complete').fittings.find((f) => f.id === id)!);
