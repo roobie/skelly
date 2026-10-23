@@ -806,13 +806,13 @@
         "handlingSimSeconds": 0.59999999999999998,
         "methods": {
           "hammer": {
-            "fastestTimeSimSeconds": 2.5,
+            "fastestTimeSimSeconds": 1,
             "level": 3,
             "quality": "hammering",
             "skill": "mechanics",
             "strikeIntervalSimSeconds": 0.80000000000000004,
             "strikeSound": "lock_hammer",
-            "timeSimSeconds": 4
+            "timeSimSeconds": 1.6000000000000001
           },
           "pry": {
             "fastestTimeSimSeconds": 3,
