@@ -115,7 +115,7 @@ local utilities = [
   },
 ];
 breach.breaking(shape.colliding({
-  items: types.items + publicNotes + houseNotes + lab.items,
+  items: [{ workInProgress: false, notLoot: false } + item for item in types.items + publicNotes + houseNotes + lab.items],
   mapPools: kits.mapPools + city.mapPools,
   blocks: types.blocks,
   loot: types.loot + medical.loot + kits.loot + authored.loot + sewer.loot + service.loot + lab.loot,

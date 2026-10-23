@@ -21,9 +21,11 @@
       "id": "cartridge_308_h_winchester",
       "model": "round_308_h_winchester",
       "name": ".308 Winchester cartridge",
+      "notLoot": false,
       "size": [1, 1],
       "stack": 20,
-      "weight": 24
+      "weight": 24,
+      "workInProgress": false
     },
     {
       "category": "ammo",
@@ -34,12 +36,14 @@
       "id": "cartridge_box_308_h_winchester",
       "model": "cartridge_box_308_h_winchester",
       "name": "Sealed .308 Winchester box (20)",
+      "notLoot": false,
       "size": [2, 1],
       "unpack": {
         "count": 20,
         "item": "cartridge_308_h_winchester",
         "simSeconds": 1.2
-      }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -50,9 +54,11 @@
       "id": "spent_case_308_h_winchester",
       "model": "case_308_h_winchester",
       "name": "Spent .308 Winchester case",
+      "notLoot": false,
       "size": [1, 1],
       "stack": 50,
-      "weight": 10
+      "weight": 10,
+      "workInProgress": false
     },
     {
       "ammo": {
@@ -76,9 +82,11 @@
       "id": "cartridge_5_d_56x45",
       "model": "round_5_d_56x45",
       "name": "5.56×45 cartridge",
+      "notLoot": false,
       "size": [1, 1],
       "stack": 30,
-      "weight": 12
+      "weight": 12,
+      "workInProgress": false
     },
     {
       "ammo": {
@@ -102,9 +110,11 @@
       "id": "cartridge_7_d_62x39",
       "model": "round_7_d_62x39",
       "name": "7.62×39 cartridge",
+      "notLoot": false,
       "size": [1, 1],
       "stack": 30,
-      "weight": 16
+      "weight": 16,
+      "workInProgress": false
     },
     {
       "category": "ammo",
@@ -116,12 +126,14 @@
       "id": "cartridge_box_5_d_56x45",
       "model": "cartridge_box_5_d_56x45",
       "name": "Sealed 5.56×45 box (20)",
+      "notLoot": false,
       "size": [2, 1],
       "unpack": {
         "count": 20,
         "item": "cartridge_5_d_56x45",
         "simSeconds": 1.2
-      }
+      },
+      "workInProgress": false
     },
     {
       "category": "ammo",
@@ -133,12 +145,14 @@
       "id": "cartridge_box_7_d_62x39",
       "model": "cartridge_box_7_d_62x39",
       "name": "Sealed 7.62×39 box (20)",
+      "notLoot": false,
       "size": [2, 1],
       "unpack": {
         "count": 20,
         "item": "cartridge_7_d_62x39",
         "simSeconds": 1.2
-      }
+      },
+      "workInProgress": false
     },
     {
       "category": "ammo",
@@ -150,8 +164,10 @@
       "id": "magazine_stanag_30",
       "model": "magazine_stanag_30",
       "name": "STANAG magazine",
+      "notLoot": false,
       "size": [1, 2],
-      "weight": 117
+      "weight": 117,
+      "workInProgress": false
     },
     {
       "category": "ammo",
@@ -163,8 +179,10 @@
       "id": "magazine_stanag_20",
       "model": "magazine_stanag_20",
       "name": "20-round STANAG magazine",
+      "notLoot": false,
       "size": [1, 2],
-      "weight": 79
+      "weight": 79,
+      "workInProgress": false
     },
     {
       "category": "ammo",
@@ -176,8 +194,10 @@
       "id": "magazine_akm_30",
       "model": "magazine_akm_30",
       "name": "AKM magazine",
+      "notLoot": false,
       "size": [1, 2],
-      "weight": 330
+      "weight": 330,
+      "workInProgress": false
     }
   ],
   "models": [

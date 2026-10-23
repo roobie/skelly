@@ -16,7 +16,14 @@ import { Simulation } from './simulationFixture.ts';
 const fixture = (side: HandSide = 'right', quality = 2) => {
   const base = baseRegistry();
   const economy = { usage: [], tiers: [] };
-  const common = { economy, category: 'food' as const, weight: 1, size: [1, 2] as [number, number] };
+  const common = {
+    economy,
+    workInProgress: false,
+    notLoot: false,
+    category: 'food' as const,
+    weight: 1,
+    size: [1, 2] as [number, number],
+  };
   const registry = {
     ...base,
     items: new Map(base.items)

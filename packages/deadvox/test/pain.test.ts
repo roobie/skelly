@@ -186,6 +186,24 @@ describe('pain', () => {
     expect(above.pain.effects.aimSway).toBeGreaterThan(1);
   });
 
+  it('empties shock at the pain knockout threshold without doing so below it', () => {
+    const { knockoutAt, perDamage, perRegionDamage, regionWeight } = BODY_TUNING_FIXTURE.pain;
+    const painPerDamage = perDamage.cut * regionWeight.torso + perRegionDamage;
+    const atThreshold = bodyWith();
+    atThreshold.impact(knockoutAt / painPerDamage, 'torso', { kind: 'cut' });
+    expect(atThreshold.pain.felt).toBeCloseTo(knockoutAt, 9);
+    expect(atThreshold.shock).toBe(0);
+    expect(atThreshold.unconscious).toBe(true);
+    atThreshold.advance(BODY_TUNING_FIXTURE.knockoutSimSeconds);
+    expect(atThreshold.unconscious).toBe(false);
+
+    const belowThreshold = bodyWith();
+    belowThreshold.impact((knockoutAt - 1) / painPerDamage, 'torso', { kind: 'cut' });
+    expect(belowThreshold.pain.felt).toBeLessThan(knockoutAt);
+    expect(belowThreshold.shock).toBeGreaterThan(0);
+    expect(belowThreshold.unconscious).toBe(false);
+  });
+
   it('lowers the tier and effects of the same pain when a modifier raises the knockout threshold', () => {
     const hurt = (modifiers: readonly Modifier[]): Body => {
       const body = bodyWith(modifiers);
