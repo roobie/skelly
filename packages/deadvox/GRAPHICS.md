@@ -22,7 +22,7 @@ Distance fog, the clear background and height mist share the camera's diffuse sk
 
 A flashlight beam fades in full daylight because its pool is not worth drawing or shadowing against the sun. Adapt its strength to the sky where the beam lands, not where the player stands, so a lit player can still illuminate a dark doorway. See `src/render/playView.ts`, `prepareLighting`, and `src/render/flashlight.ts`, `flashlightDaylightScale`.
 
-Powered ceiling fixtures fade by the daylight at each surface they light, never by the camera's position. Walking into or out of a sunlit spot must not brighten or dim a room's lamps. Under the skylight the shader fades each fixture slot per receiver, so the pool feeds those slots at full strength. The held-item scene has no receiver field, so its fixture copies keep the camera's scale. So does the fallback when there is no skylight. See `src/render/skylight.ts`, `ITEM_POINT_LIGHTS`, and `src/render/lightPool.ts`, `LightPoolContext`.
+A powered ceiling fixture's light on a surface fades by that surface's sky exposure, because walking across sunlight must not change how a room is lit. The held-item scene and the fallback without a skylight have no per-surface sky exposure to fade by, so there the camera's daylight scale stands in. See `src/render/skylight.ts`, `ITEM_POINT_LIGHTS`, and `src/render/lightPool.ts`, `LightPoolContext`.
 
 The number of fixtures drawn at once is content, because rooms such as the test house's garage need every strip light lit together. Raising it accepts more per-pixel light work on every lit surface, and any fixed number can be exceeded again by a busier room, so the nearest fixtures win when that happens. See `src/core/schema.ts`, `renderedFixtureLimit`.
 
