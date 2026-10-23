@@ -2,6 +2,7 @@
 // biome-ignore-all lint/style/noProcessEnv: runner may supply the browser executable and artifact destination.
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative consumer/presentation assertions.
 // biome-ignore-all lint/correctness/noUnresolvedImports: page-evaluated imports address Vite URLs, not Node files.
+// biome-ignore-all lint/performance/noAwaitInLoops: the consumer handles each sheet through sequential player actions.
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -29,6 +30,11 @@ const vite = await createServer({
       name: 'reading-observation',
       enforce: 'pre',
       transform(code, id) {
+        if (id.endsWith('/src/game/worldSetup.ts')) {
+          const anchor = "  if (config.site === 'forest') {";
+          assert.equal(code.split(anchor).length, 2);
+          return `import { readingWorld } from '/test/fixtures/readingWorld.ts';\n${code.replace(anchor, `${anchor}\n    return readingWorld(registry, config.seed, config.scale);`)}`;
+        }
         if (!id.endsWith('/src/game/play.ts')) {
           return;
         }
@@ -566,7 +572,6 @@ try {
     await note.waitFor();
     const itemCount = await page.evaluate(() => globalThis.readingWitness.screen.order.length);
     for (let step = 0; step < itemCount; step += 1) {
-      // biome-ignore lint/performance/noAwaitInLoops: selection must advance through the real keyboard action one row at a time.
       const selectedUid = await page.evaluate(() => globalThis.readingWitness.screen.selected?.uid);
       if (selectedUid === noteRowUid) {
         break;
@@ -1010,7 +1015,152 @@ try {
       generationBeforeError,
       'hiding the tab after the error leaves the last committed save unchanged',
     );
-    proof = { before, during, menu, resumed: pageResumed, report: { error: report.error, world: report.world } };
+    await page.goto(
+      browserStageUrl(
+        'reading',
+        `http://127.0.0.1:${port}/?site=forest&seed=1&radius=16&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+      ),
+      { waitUntil: 'domcontentloaded' },
+    );
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    await page.locator('#go').click();
+    await page.locator('#save-replace-confirm').click();
+    await page.waitForFunction(
+      () =>
+        document.querySelector('#world-loading')?.dataset.state === 'ready' &&
+        globalThis.readingWitness?.input.locked &&
+        [...globalThis.readingWitness.engine.entities.all].filter((entity) => entity.type === 'crate').length === 2,
+    );
+    const mapCoverages = [];
+    for (const index of [0, 1]) {
+      const source = await page.evaluate((which) => {
+        const crates = [...globalThis.readingWitness.engine.entities.all]
+          .filter((entity) => entity.type === 'crate')
+          .sort((a, b) => a.pos[0] - b.pos[0]);
+        const crate = crates[which];
+        return { uid: crate.uid, x: crate.pos[0] + crate.size[0] / 2 };
+      }, index);
+      if (index > 0) {
+        await page.evaluate(() => {
+          globalThis.readingWitness.input.yaw = -Math.PI / 2;
+          globalThis.readingWitness.input.pitch = 0;
+        });
+        await walk('movement.forward', source.x, true);
+      }
+      await page.evaluate((uid) => {
+        const { engine, input, eye } = globalThis.readingWitness;
+        const entity = engine.entities.byUid(uid);
+        const origin = eye();
+        const [dx, dy, dz] = entity.pos.map((value, axis) => value + entity.size[axis] / 2 - origin[axis]);
+        input.yaw = Math.atan2(-dx, -dz);
+        input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+      }, source.uid);
+      const aimed = await record('aim at sheet source');
+      assert.equal(
+        await page.evaluate(() => globalThis.readingWitness.lookedAt()?.uid),
+        source.uid,
+        JSON.stringify({ source, aimed }),
+      );
+      const searchFrom = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
+      await pressAction(page, 'world.interact');
+      await waitForSimulation(
+        page,
+        (uid) => {
+          const { session, screen } = globalThis.readingWitness;
+          return {
+            time: session.sim.time,
+            paused: session.sim.paused,
+            reached: session.inventory.entities.byUid(uid)?.searched && screen.isOpen,
+          };
+        },
+        source.uid,
+        { seconds: 5, from: searchFrom, label: 'search map container', record },
+      );
+      const sheet = await page.evaluate(() => {
+        const { screen, session } = globalThis.readingWitness;
+        const item = screen.order.find(
+          (entry) =>
+            session.inventory.registry.items.get(entry.type)?.paperMap &&
+            session.inventory.locate(entry)?.kind === 'furniture',
+        );
+        if (!item) {
+          throw new Error('Searched fixture container has no sheet');
+        }
+        return { uid: item.uid, coverage: `${item.paperMap.x},${item.paperMap.z}` };
+      });
+      await uiClick(page.locator(`.inv-item[data-uid="${sheet.uid}"]`));
+      const handFrom = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
+      await pressAction(page, 'inventory.hands');
+      await waitForSimulation(
+        page,
+        (uid) => {
+          const { session } = globalThis.readingWitness;
+          return {
+            time: session.sim.time,
+            paused: session.sim.paused,
+            reached: Object.values(session.inventory.hands).some((item) => item?.uid === uid),
+          };
+        },
+        sheet.uid,
+        { seconds: 5, from: handFrom, label: 'take sheet into hands', record },
+      );
+      await pressAction(page, 'quickbar.assign.1');
+      await page.waitForFunction((uid) => globalThis.readingWitness.session.quickbar.slots[0] === uid, sheet.uid);
+      await pressAction(page, 'ui.inventory-toggle');
+      await holdAction('quickbar.use.1', () => page.locator('#reading').waitFor({ state: 'visible' }));
+      const surface = page.locator('.reading-map');
+      assert.equal(await surface.getAttribute('data-coverage'), sheet.coverage);
+      mapCoverages.push(await surface.getAttribute('data-coverage'));
+      const openFrom = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
+      await waitForSimulation(
+        page,
+        (from) => {
+          const { session, reading } = globalThis.readingWitness;
+          return {
+            time: session.sim.time,
+            paused: session.sim.paused,
+            reached: reading.isOpen && session.sim.time > from + 0.2,
+          };
+        },
+        openFrom,
+        { seconds: 2, from: openFrom, label: 'simulation advances with a sheet open', record },
+      );
+      if (index === 0) {
+        await pressAction(page, 'reading.close');
+      } else {
+        await uiClick(page.locator('#reading button'));
+      }
+      assert.equal(await page.locator('#reading').isVisible(), false);
+      if (index === 0) {
+        await pressAction(page, 'ui.inventory-toggle');
+        await uiClick(page.locator(`.inv-item[data-uid="${sheet.uid}"]`));
+        const stowFrom = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
+        await pressAction(page, 'inventory.best-pocket');
+        await waitForSimulation(
+          page,
+          (uid) => {
+            const { session } = globalThis.readingWitness;
+            return {
+              time: session.sim.time,
+              paused: session.sim.paused,
+              reached: session.inventory.locate(session.inventory.itemByUid(uid))?.kind === 'pocket',
+            };
+          },
+          sheet.uid,
+          { seconds: 5, from: stowFrom, label: 'stow first sheet', record },
+        );
+        await pressAction(page, 'ui.inventory-toggle');
+      }
+    }
+    assert.notEqual(mapCoverages[0], mapCoverages[1], 'separately found sheets cover different regions');
+    proof = {
+      before,
+      during,
+      menu,
+      resumed: pageResumed,
+      mapCoverages,
+      report: { error: report.error, world: report.world },
+    };
   } else {
     // Pure view fixture: no pickup/handling/movement claimed here.
     const marker = 'END-OF-READING';

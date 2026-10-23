@@ -385,6 +385,10 @@
       "output": "packages/deadvox/test/fixtures/mods/expression-spike.json"
     },
     {
+      "source": "packages/deadvox/test/fixtures/mods/reading-world.jsonnet",
+      "output": "packages/deadvox/test/fixtures/mods/reading-world.json"
+    },
+    {
       "source": "packages/mobgen/src/mob/acidTemplate.jsonnet",
       "output": "packages/mobgen/src/mob/acidTemplate.json"
     },
