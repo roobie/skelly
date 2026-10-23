@@ -386,6 +386,7 @@ const slottedTable = <K extends string>(slots: Readonly<Record<K, readonly strin
 
 /** Labels and messages the screens under `src/ui` draw. */
 const UiScreenTextSchema = strictObject({
+  powerControl: slottedTable({ on: [], off: [] }),
   charger: slottedTable({
     idle: [],
     running: [],

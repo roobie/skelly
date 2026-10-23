@@ -1074,6 +1074,7 @@ export const startPlay = (
   });
   const { compression } = sim;
   const unpacking = new Unpacking(inventory, queue, feet, {
+    calendar: () => sim.calendar,
     opened: (type) => tutorial?.opened(type),
     unpacked: (type) => tutorial?.weapons.unpackedAmmo(type),
   });
@@ -1890,6 +1891,7 @@ export const startPlay = (
 
   const replayCommandOwners: ReplayCommandOwners = {
     charger: session.chargerControl,
+    power: session.powerControl,
     inventory,
     queue,
     quickbar,
@@ -2639,6 +2641,10 @@ export const startPlay = (
   };
 
   const furniturePayload = (entity: BlockEntity, mode: 'pocket' | 'wield'): ReplayActionPayload => {
+    const control = session.power?.control(entity);
+    if (control) {
+      return { kind: 'power.set', entityUid: entity.uid, enabled: !control.enabled };
+    }
     if (slidableFurniture(inventory, entity, s) && furnitureActionSelection.isOpen(entity)) {
       const selected = furnitureActionSelection.confirm(entity, furnitureActions(entity))!;
       return selected.id === 'use'
@@ -3369,6 +3375,12 @@ export const startPlay = (
     }
     return liftable(entity) ? html`${useText(entity)} · ${key} (hold): lift` : useText(entity);
   };
+  const powerControlHint = (entity: BlockEntity): HintText | undefined => {
+    const control = session.power?.control(entity);
+    return control
+      ? html`${keyCap('world.interact')}: ${screenText.powerControl[control.enabled ? 'off' : 'on']} ${nameOf(entity)}`
+      : undefined;
+  };
   const interactionHintFor = (
     target: InteractionTarget | undefined,
     carry: ReturnType<typeof carryPreview>,
@@ -3384,7 +3396,7 @@ export const startPlay = (
       case 'item':
         return html`${key}: pocket ${inventory.name(target.item)} · ${key} (hold): wield`;
       case 'furniture':
-        return furnitureInteractionHint(target.entity);
+        return powerControlHint(target.entity) ?? furnitureInteractionHint(target.entity);
       case 'body':
         return downedBodyHint(target.id);
       case 'vehicle': {

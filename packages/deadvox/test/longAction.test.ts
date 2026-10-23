@@ -68,7 +68,7 @@ const make = (
   const sim = new Simulation({ seed: 1 });
   const character = new Character(contentRegistry);
   const reach = bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK });
-  sim.actions.craft = craftActionHooks(inv, character, reach, () => [0, 0, 0]);
+  sim.actions.craft = craftActionHooks(inv, character, reach, { feet: () => [0, 0, 0], calendar: () => sim.calendar });
   sim.actions.reading = bookReadingHooks(inv, character);
   if (saved) {
     sim.restoreState(saved.simulation);

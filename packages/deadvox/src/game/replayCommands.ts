@@ -14,6 +14,7 @@ export type ReplayActionPayload =
   | { kind: 'furniture.use'; entityUid: number }
   | { kind: 'furniture.slide'; entityUid: number; way: 'push' | 'drag' }
   | { kind: 'furniture.place'; pos: [number, number, number] }
+  | { kind: 'power.set'; entityUid: number; enabled: boolean }
   | { kind: 'charger.start'; entityUid: number }
   | { kind: 'charger.stop'; entityUid: number }
   | { kind: 'furniture.turn' }
@@ -84,6 +85,9 @@ const isAttachmentPayload = (payload: Record<string, unknown>): boolean =>
   typeof payload.slotId === 'string' &&
   (payload.kind !== 'firearm.attachment.fit' || isUid(payload.attachmentUid));
 
+const isPowerPayload = (payload: Record<string, unknown>): boolean =>
+  isUid(payload.entityUid) && typeof payload.enabled === 'boolean';
+
 const isSlidePayload = (payload: Record<string, unknown>): boolean =>
   isUid(payload.entityUid) && (payload.way === 'push' || payload.way === 'drag');
 
@@ -113,6 +117,8 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
       );
     case 'inventory.to-hands':
       return isUid(payload.itemUid) && isTriple(payload.feet);
+    case 'power.set':
+      return isPowerPayload(payload);
     case 'charger.start':
     case 'charger.stop':
     case 'inventory.search':
@@ -184,6 +190,7 @@ export interface ReplayCommandOwners {
   quickbar: Pick<Quickbar, 'assign'>;
   search: (entityUid: number) => string | undefined;
   charger?: (entityUid: number, operation: 'start' | 'stop') => string | undefined;
+  power?: (entityUid: number, enabled: boolean) => string | undefined;
   work: (itemUid: number, operation: WorkOperation) => string | undefined;
   fitAttachment?: (firearmUid: number, slotId: string, attachmentUid: number) => string | undefined;
   removeAttachment?: (firearmUid: number, slotId: string) => string | undefined;
@@ -250,6 +257,8 @@ export const applyReplayActionPayload = (
       return owners.tip();
     case 'zombie.downed':
       return owners.clearDownedBody(payload.zombieId, payload.way);
+    case 'power.set':
+      return owners.power?.(payload.entityUid, payload.enabled);
     case 'charger.start':
     case 'charger.stop':
       return owners.charger?.(payload.entityUid, payload.kind === 'charger.start' ? 'start' : 'stop');
