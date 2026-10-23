@@ -298,7 +298,7 @@ export const otherHandPour = (item: Item, view: ReachSnapshot): UseOption => {
     label: coreLabel(inv.registry, 'pour'),
     operation: 'pour',
     ...(receiver ? { receiver } : {}),
-    plan: refusal ? { ok: false, reason: refusal } : { ok: true, time: 0 },
+    plan: refusal ? { ok: false, reason: refusal } : swapPlan(0),
   };
 };
 
