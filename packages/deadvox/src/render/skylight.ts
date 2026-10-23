@@ -21,10 +21,12 @@ import { skyIndex } from '../core/skylight.ts';
 import { containsSky } from '../core/skySnapshot.ts';
 import { type SkyResult, sampleSky } from '../core/skyTransport.ts';
 import { FADE_SHARPNESS, HALF_BRIGHTNESS } from './flashlight.ts';
+import { ITEM_POINT_LIGHTS } from './lightPool.ts';
 import { SKY_ANCHOR_ATTRIBUTE } from './skyAnchor.ts';
 
 const SPOT_LIGHT_INFO_CALL = /getSpotLightInfo\([^;]+\);/;
 const DIRECTIONAL_LIGHT_INFO_CALL = /getDirectionalLightInfo\([^;]+\);/;
+const POINT_LIGHT_INFO_CALL = /getPointLightInfo\([^;]+\);/;
 const RESIDENT_FIELDS = 4;
 const PREFETCH_M = 16;
 interface SkyRuntime {
@@ -515,6 +517,13 @@ ${ShaderChunk.lights_fragment_begin
     SPOT_LIGHT_INFO_CALL,
     `$&
         directLight.color *= 1.0 / (1.0 + pow(uSkyDaylight * receiverSkyVisibility / float(${HALF_BRIGHTNESS}), float(${FADE_SHARPNESS})));`,
+  )
+  .replace(
+    POINT_LIGHT_INFO_CALL,
+    `$&
+#if UNROLLED_LOOP_INDEX >= ${ITEM_POINT_LIGHTS}
+        directLight.color *= 1.0 / (1.0 + pow(uSkyDaylight * receiverSkyVisibility / float(${HALF_BRIGHTNESS}), float(${FADE_SHARPNESS})));
+#endif`,
   )}`,
         )
         .replace(
@@ -526,7 +535,7 @@ ${ShaderChunk.lights_fragment_begin
       }
     };
     material.customProgramCacheKey = () =>
-      `${key.call(material)}:receiver-daylight-far-sun-skylight:${this.blockSize}:${this.unbuiltCap}:${this.fields.length}:${this.index.maximum}:${this.index.length}`;
+      `${key.call(material)}:receiver-daylight-far-sun-skylight:fixture-fade-${ITEM_POINT_LIGHTS}:${this.blockSize}:${this.unbuiltCap}:${this.fields.length}:${this.index.maximum}:${this.index.length}`;
     material.needsUpdate = true;
   }
 }

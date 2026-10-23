@@ -6,6 +6,7 @@ import { type PlacedPowerDevice, placedPowerDevices, SitePower } from '../src/co
 import { compileAssembly } from '../src/core/templates.ts';
 import { LightPool } from '../src/render/lightPool.ts';
 import { BASE_CLOCK, BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
+import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import {
   advance,
   capture,
@@ -108,7 +109,7 @@ describe('authored facility power', () => {
     const fuel = power.network.snapshot().devices.find(({ type }) => type === 'fixture_supply')!.fuelUnits;
     expect(fuel).toBeGreaterThan(0);
     expect(fuel).toBeLessThan(initialFuel);
-    const pool = new LightPool(new Scene());
+    const pool = new LightPool(new Scene(), TEST_SENSE_TUNING.light.renderedFixtureLimit);
     const context = {
       held: { lightPositionOf: () => false },
       camera: new PerspectiveCamera(),
