@@ -31,7 +31,7 @@ export const NEAR_FIELD_M = 4;
  * The renderer's point-light falloff (three.js `getDistanceAttenuation` as patched by `src/render/lightFalloff.ts`,
  * `installNearFieldFalloff`), so both sides measure alike.
  */
-export const distanceAttenuation = (distanceMetres: number, radiusMetres: number, decay: number): number => {
+const distanceAttenuation = (distanceMetres: number, radiusMetres: number, decay: number): number => {
   const falloff = 1 / Math.max((distanceMetres + NEAR_FIELD_M) ** decay, 0.01);
   const edge = Math.min(Math.max(1 - (distanceMetres / radiusMetres) ** 4, 0), 1);
   return falloff * edge * edge;
