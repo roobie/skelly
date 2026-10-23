@@ -2082,6 +2082,14 @@ restored state. Outside every field the answer is open sky, as `docs/readables.m
 "Darkness remains open" requires, so missing data never reads as darkness. See
 `src/core/skyField.ts`, `SkyFields`, and `src/game/session.ts`, `createSession`.
 
+Rules that ask whether a place is lit enough, such as reading a page or a sign, take the
+renderer's falloff and its content tuning, so light levels for the rules are never tuned
+apart from the light the player sees. A carried beam counts for its holder, because the
+player aims it at what they read; a beam set down points somewhere the rules don't model,
+so it counts for nothing. A lit candle held alone is enough to read by at night. See
+`src/core/illumination.ts`, `illuminationAt`, and `src/render/lightFalloff.ts`,
+`installNearFieldFalloff`.
+
 Mesh-first admission protects the first visible geometry without making it wait for
 lighting readiness. A copied sky request may wait outside the pool capacity;
 a mesh completion admits it before the next mesh refill, preventing persistent

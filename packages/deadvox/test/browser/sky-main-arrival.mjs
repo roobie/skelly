@@ -25,6 +25,9 @@ export const mainSourceOverlays = [
   'render/playView.ts',
   // Keep the view and figure together: their constructor and per-frame pose contracts change together.
   'render/playerFigure.ts',
+  // The view constructs the flashlight, and the flashlight installs the near-field falloff; the three change together.
+  'render/flashlight.ts',
+  'render/lightFalloff.ts',
   'render/acidEffects.ts',
   'render/gore.ts',
   'render/mobActors.ts',

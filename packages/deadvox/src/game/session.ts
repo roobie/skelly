@@ -55,6 +55,7 @@ import {
 } from '../core/furnitureMove.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import { HandlingQueue, type Job, type MoveStart, type TickResult } from '../core/handling.ts';
+import { illuminationAt } from '../core/illumination.ts';
 import { Inventory, type Location } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { settleCell } from '../core/itemThrow.ts';
@@ -2087,6 +2088,21 @@ export const createSession = (options: SessionOptions) => {
     },
     power,
     skyFields,
+    /** Light reaching a point in blocks (`src/core/illumination.ts`, `illuminationAt`). */
+    illuminationAt: (point: Vec3): number =>
+      illuminationAt(
+        {
+          inventory,
+          sky: skyFields,
+          gameHour: hourOfDay(sim.calendar),
+          cycle: dayCycle,
+          fixtures: power?.lights() ?? [],
+          isBlocking: isLightBlocking,
+          blockSize: s,
+          holder: [body.pos[0], body.pos[1] + playerEyeHeightMetres() / s, body.pos[2]],
+        },
+        point,
+      ),
     powerControl: (uid: number, enabled: boolean): string | undefined => {
       const entity = entities.byUid(uid);
       const control = entity && power?.control(entity);
