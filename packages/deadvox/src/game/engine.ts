@@ -96,7 +96,7 @@ export function createEngine(
       ? new Skylight(
           skyFields,
           { blockSize: scale.blockSize, viewRadiusM: radiusM },
-          { submit: (input, receive) => worldSetup.streamer.requestSky(input, receive) },
+          { submit: (input, receive) => worldSetup.streamer.requestSky(input, receive), reveal: meshes },
         )
       : undefined;
   scene.onBeforeRender = (_renderer, _scene, cam) => {

@@ -27,10 +27,25 @@ const SPOT_LIGHT_INFO_CALL = /getSpotLightInfo\([^;]+\);/;
 const DIRECTIONAL_LIGHT_INFO_CALL = /getDirectionalLightInfo\([^;]+\);/;
 const RESIDENT_FIELDS = 4;
 const PREFETCH_M = 16;
+/** The terrain reveal the view gates: column keys are `cx,cz` in chunks. */
+export interface SkyReveal {
+  streamed: (column: string) => boolean;
+  holdColumns: (columns: ReadonlySet<string>) => void;
+}
 interface SkyRuntime {
   submit: SkySubmit;
+  reveal?: SkyReveal;
   clock?: () => number;
 }
+const fieldColumns = ({ bounds }: SkyField): string[] => {
+  const columns: string[] = [];
+  for (let z = Math.floor(bounds.min[2] / CHUNK); z < Math.ceil(bounds.max[2] / CHUNK); z++) {
+    for (let x = Math.floor(bounds.min[0] / CHUNK); x < Math.ceil(bounds.max[0] / CHUNK); x++) {
+      columns.push(`${x},${z}`);
+    }
+  }
+  return columns;
+};
 const vectors = () => Array.from({ length: RESIDENT_FIELDS }, () => new Vector3());
 const volumeTexture = (light: Uint8Array, [x, y, z]: Vec3): Data3DTexture => {
   const texture = new Data3DTexture(light, x, z, y);
@@ -83,9 +98,10 @@ function regionIndex(fields: readonly SkyField[]) {
 }
 /**
  * An upload view over the shared sky field cache: it asks the cache to build fields near the camera off
- * the main thread and draws the results the cache holds. A field with no result to draw yet draws open sky as
- * a presentation fallback, even where the simulation's synchronous build answers dark; one being rebuilt keeps
- * its last complete result until the new one lands.
+ * the main thread and draws the results the cache holds. A field whose terrain streaming has finished but
+ * that has no result yet is finished synchronously, from the simulation's answer, before its columns are
+ * revealed; while it cannot be finished its columns stay hidden. One being rebuilt keeps its last complete
+ * result until the new one lands.
  */
 export class Skylight {
   private readonly texture = { value: volumeTexture(new Uint8Array([255]), [1, 1, 1]) };
@@ -118,8 +134,11 @@ export class Skylight {
   private inFlight = false;
   private metadataDirty = true;
   private atlasDirty = false;
-  readonly stats = { requested: 0, completed: 0, accepted: 0, discarded: 0, volumes: 0, roofFree: 0 };
+  readonly stats = { requested: 0, completed: 0, accepted: 0, discarded: 0, volumes: 0, roofFree: 0, finished: 0 };
   onShader: ((uniforms: Parameters<Material['onBeforeCompile']>[0]['uniforms'], realMs: number) => void) | undefined;
+  /** Each synchronous finish before a reveal, with its blocking real time. */
+  onFinish: ((field: number, realMs: number) => void) | undefined;
+  private readonly columns: string[][];
   onService: ((ms: number) => void) | undefined;
   onJob: ((workerMs: number, latencyMs: number) => void) | undefined;
 
@@ -133,6 +152,7 @@ export class Skylight {
     this.sky = sky;
     this.fields = sky.fields;
     this.shown = this.fields.map(() => undefined);
+    this.columns = this.fields.map(fieldColumns);
     this.blockSize = blockSize;
     this.viewRadiusM = viewRadiusM;
     this.jobs = runtime;
@@ -260,8 +280,37 @@ export class Skylight {
       this.stats.requested += 1;
     }
   }
+  /**
+   * Finishes, from the simulation's answer, every field with streamed columns and no result yet, and holds
+   * the columns of those it cannot finish because their chunks are missing.
+   */
+  private finishRevealed(reveal: SkyReveal): void {
+    const held = new Set<string>();
+    this.fields.forEach((_, index) => {
+      const columns = this.columns[index]!;
+      if (this.sky.latest(index) || !columns.some((column) => reveal.streamed(column))) {
+        return;
+      }
+      if (this.sky.loaded(index)) {
+        const start = this.clock();
+        const { complete } = this.sky.answer(index);
+        this.stats.finished += 1;
+        this.onFinish?.(index, this.clock() - start);
+        if (complete) {
+          return;
+        }
+      }
+      for (const column of columns) {
+        held.add(column);
+      }
+    });
+    reveal.holdColumns(held);
+  }
   update(scene: Scene, position: Vec3): void {
     const start = this.clock();
+    if (this.jobs.reveal) {
+      this.finishRevealed(this.jobs.reveal);
+    }
     this.publish();
     const nearby = this.nearby(position);
     const resident = this.residentCandidates(nearby).sort((a, b) => a - b);
