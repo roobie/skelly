@@ -70,7 +70,13 @@ import type { PlayerStance } from '../core/playerStance.ts';
 import { pryPlan } from '../core/prying.ts';
 import { Rng } from '../core/random.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
-import { bindReach, pileDistance as distanceToPile, furnitureDistance, reachTuning } from '../core/reach.ts';
+import {
+  bindReach,
+  pileDistance as distanceToPile,
+  furnitureDistance,
+  reachTuning,
+  vehicleDistance,
+} from '../core/reach.ts';
 import type { ReadRequest } from '../core/readable.ts';
 import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../core/saveState.ts';
 import type { Scale } from '../core/scale.ts';
@@ -91,6 +97,7 @@ import type { SoundId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
 import { simTimestamp } from '../core/time.ts';
 import { spendFuel } from '../core/torch.ts';
+import { VehicleParts } from '../core/vehicleParts.ts';
 import { VehicleOccupancy } from '../core/vehicleProjection.ts';
 import { vehicleWorkHooks } from '../core/vehicleWork.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
@@ -805,9 +812,8 @@ export const createSession = (options: SessionOptions) => {
       },
     },
   };
-  const reach = bindReach(reachPlayer);
-  inventory.canReachVehicle = (position) =>
-    distanceToPile(body.pos, position, s) <= reachTuning(inventory.registry).reachMetres;
+  const vehicleParts = new VehicleParts(registry, inventory.vehicles, s);
+  const reach = bindReach(reachPlayer, vehicleParts);
   inventory.landing = (pos) => settleCell(pos, s, scale.minCy * CHUNK, physicalSolid);
   inventory.dropFeet = feet;
   const pileDistance = (pos: Vec3) => distanceToPile(body.pos, pos, s);
@@ -2231,6 +2237,10 @@ export const createSession = (options: SessionOptions) => {
     /** Set when the session was restored: the view direction to hand back to the input. */
     restoredLook,
     vehicles: inventory.vehicles,
+    /** Occupied part boxes for picking and reach, rebuilt when a build changes. */
+    vehicleParts,
+    /** Metres from the chest to the vehicle's nearest part, the distance its reach is judged by. */
+    vehicleDistance: (vehicleId: number) => vehicleDistance(reachPlayer, vehicleParts.boxesOf(vehicleId)),
     /** Why the selected part can't be fitted at or removed from the selected site now. */
     vehicleWorkRefusal: (kind: 'install' | 'remove', vehicleId: number, fittingId: string, itemUid: number) =>
       sim.actions.vehicleWork?.validate(kind, vehicleId, fittingId, itemUid),

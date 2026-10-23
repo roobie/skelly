@@ -44,7 +44,7 @@ const sourceRefusal = (
 const reachableSource = (inventory: Inventory, location: Location): boolean => {
   const place = inventory.placeOf(location);
   if (place?.kind === 'vehicle') {
-    return inventory.canReachVehicle(place.origin);
+    return inventory.canReachVehicle(place.vehicleId);
   }
   return place?.kind !== 'pile' || inventory.canReach(place.pile.pos);
 };
@@ -57,7 +57,7 @@ const siteRefusal = (inventory: Inventory, { vehicleId, fittingId, itemUid }: Wo
   if (!(vehicle && site?.service && item)) {
     return coreMessage(inventory.registry, 'gone');
   }
-  if (!inventory.canReachVehicle(vehicle.origin)) {
+  if (!inventory.canReachVehicle(vehicleId)) {
     return coreMessage(inventory.registry, 'tooFar');
   }
   if (inventory.registry.items.get(item.type)?.vehicle?.mount !== site.service.mount) {

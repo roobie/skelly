@@ -40,7 +40,6 @@ import type { SoundEmission } from '../core/soundPicker.ts';
 import { soundVariantKey } from '../core/soundSynth.ts';
 import { fillText } from '../core/textTemplate.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, realTimestamp } from '../core/time.ts';
-import { projectVehicleParts, type VehiclePartProjection } from '../core/vehicleProjection.ts';
 import { type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';
 import { sightedFirearmModel } from '../render/firearmSight.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
@@ -2510,18 +2509,8 @@ export const startPlay = (
     aimDirection(replaySample?.yaw ?? input.yaw, replaySample?.pitch ?? input.pitch, NEUTRAL_AIM);
   const eye = (): Vec3 => [body.pos[0], body.pos[1] + session.playerEyeHeightMetres / s, body.pos[2]];
 
-  let vehiclePartsVersion = -1;
-  let vehicleParts: readonly VehiclePartProjection[] = [];
-  /** Part boxes for picking, rebuilt only when a build changes. */
-  const currentVehicleParts = (): readonly VehiclePartProjection[] => {
-    if (vehiclePartsVersion !== session.vehicles.version) {
-      vehicleParts = [...session.vehicles.records].flatMap(([id, vehicle]) =>
-        projectVehicleParts(registry, id, vehicle, s),
-      );
-      vehiclePartsVersion = session.vehicles.version;
-    }
-    return vehicleParts;
-  };
+  /** Part boxes for picking: the same projection vehicle reach measures to. */
+  const currentVehicleParts = () => session.vehicleParts.all();
 
   /** The nearest visible furniture panel, cell or vehicle part in the crosshair. */
   const interactionTargetAt = (): InteractionTarget | undefined =>
@@ -2688,8 +2677,7 @@ export const startPlay = (
 
   /** The opened vehicle's section; walking out of reach closes it. */
   function openedVehicle(): ReturnType<NonNullable<ScreenHooks['openedVehicle']>> {
-    const vehicle = openedVehicleId === undefined ? undefined : session.vehicles.get(openedVehicleId);
-    if (!(vehicle && openedVehicleId !== undefined && inventory.canReachVehicle(vehicle.origin))) {
+    if (openedVehicleId === undefined || !inventory.canReachVehicle(openedVehicleId)) {
       openedVehicleId = undefined;
       return undefined;
     }
@@ -2697,7 +2685,7 @@ export const startPlay = (
       { inventory, reach: session.reach(), refusal: session.vehicleWorkRefusal },
       openedVehicleId,
     );
-    return inspection && { view: inspection, distanceMetres: session.pileDistance(vehicle.origin) };
+    return inspection && { view: inspection, distanceMetres: session.vehicleDistance(openedVehicleId) };
   }
 
   /** While a piece is carried, either press sets it down wherever the crosshair points. */

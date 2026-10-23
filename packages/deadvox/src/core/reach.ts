@@ -1,6 +1,7 @@
 // Inventory proximity with a physical line to furniture, not gaze, bed quality or
 // debug case collection. Units are explicit: positions are blocks; the admission limit is metres.
 
+import type { ModelBox } from '@skelly/thing-core/schema';
 import type { BlockEntity } from './blockEntities.ts';
 import { dominantSide } from './character.ts';
 import type { ClockSettings } from './clock.ts';
@@ -160,15 +161,36 @@ export const pileInReach = (player: ReachGeometry, position: Vec3): boolean =>
   pileDistance(player.position, position, player.blockSize) <= reachTuning(player.inventory.registry).reachMetres &&
   lineInReach(player, [position, position.map((value) => value + 1) as Vec3]);
 
+/**
+ * Chest to the nearest point of a vehicle's occupied part boxes (world metres), as furniture is measured: a car is
+ * reached at the part beside the player, never at its origin, so whatever F can pick on it is also in reach.
+ * No line test: the vehicle's own rasterized cells, which the obstacle query holds, would hide every part.
+ */
+export const vehicleDistance = (player: ReachGeometry, boxes: readonly ModelBox[]): number => {
+  const chest = chestOf(player).map((value) => value * player.blockSize);
+  return Math.min(
+    ...boxes.map(({ min, max }) =>
+      Math.hypot(...chest.map((value, axis) => value - Math.min(Math.max(value, min[axis]!), max[axis]!))),
+    ),
+  );
+};
+
 /** A downed body is reached as furniture is: within the limit, along a clear line to its box. */
 export const bodyInReach = (player: ReachPlayer, body: BodyBox): boolean =>
   bodyDistance(player, body) <= reachTuning(player.inventory.registry).reachMetres &&
   lineInReach(player, bodyBox(body));
 
 /** Wire the existing move validator to this same live core policy. */
-export const bindReach = (player: ReachPlayer): (() => ReachSnapshot) => {
+export const bindReach = (
+  player: ReachPlayer,
+  vehicleParts?: { readonly boxesOf: (vehicleId: number) => readonly ModelBox[] },
+): (() => ReachSnapshot) => {
   player.inventory.canReach = (position) => pileInReach(player, position);
   player.inventory.canReachEntity = (entity) => furnitureInReach(player, entity);
+  if (vehicleParts) {
+    player.inventory.canReachVehicle = (vehicleId) =>
+      vehicleDistance(player, vehicleParts.boxesOf(vehicleId)) <= reachTuning(player.inventory.registry).reachMetres;
+  }
   player.inventory.actorPosition = () => player.position;
   return () => reach(player);
 };

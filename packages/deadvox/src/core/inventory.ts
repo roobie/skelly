@@ -256,8 +256,8 @@ export class Inventory {
   version = 0;
   /** Whether a pile's block is within reach; the game sets it from the player's position. */
   canReach: (pos: Vec3) => boolean = () => true;
-  /** Whether a vehicle service point is within reach. */
-  canReachVehicle: (pos: Vec3) => boolean = () => true;
+  /** Whether a vehicle is within reach; the game sets it from the player's position and the vehicle's parts. */
+  canReachVehicle: (vehicleId: number) => boolean = () => true;
   /** Whether a piece of furniture is within reach. */
   canReachEntity: (entity: BlockEntity) => boolean = () => true;
   /** Where a pile put down in a block comes to rest, or undefined with nowhere to land; the game sets it. */

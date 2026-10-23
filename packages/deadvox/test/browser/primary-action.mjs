@@ -1294,7 +1294,7 @@ const verifyVehicleService = async (browserInstance, port, renderOverride) => {
         (centre[2] + outward * side[1] * reachOut) / s,
       ];
       r.session.body.vel = [0, 0, 0];
-      if (!r.inventory.canReachVehicle(vehicle.origin)) {
+      if (!r.inventory.canReachVehicle(vehicleId)) {
         throw new Error('The vehicle service fixture stands out of the vehicle’s reach');
       }
       const [tool] = Object.keys(site.service.qualities);

@@ -2542,7 +2542,10 @@ surroundings, because exact service requirements and which loose parts fit an em
 are facts the world geometry cannot show. Fitted parts are ordinary items with their usual
 details; empty service sites show their content names; each operation names the exact
 vehicle, site and part the player selected and shows the core's own refusal, so the surface
-never promises work the action would refuse. See `src/ui/vehicleInspection.ts`,
+never promises work the action would refuse. Vehicle reach is measured from the chest to the
+nearest occupied part box, as furniture reach is, and one predicate decides opening, keeping the
+section open and service admission; measuring to the origin would leave a part the player can
+pick and touch out of reach. See `src/core/reach.ts`, `vehicleDistance`, `src/ui/vehicleInspection.ts`,
 `vehicleInspectionViewModel`, and `src/core/interactionPick.ts`, `pickInteractionTarget`.
 Site names stay in content rather than in the saved build, so a reworded pack relabels saved
 vehicles; see `src/core/vehicleInstances.ts`, `vehicleSiteName`.
