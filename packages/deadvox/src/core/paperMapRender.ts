@@ -6,19 +6,19 @@ export interface PaperMapRenderConfig {
   /** Metres between printed terrain samples. */
   readonly cellMetres: number;
   /** Metres between shared contour levels. */
-  readonly contourIntervalMetres: number;
+  readonly contourSpacingMetres: number;
   /** Changes whenever presentation semantics change. */
   readonly revision: string;
 }
 
 /** Terrain-only presentation settings. Roads are an explicit later cartographic layer. */
-export const PAPER_MAP_RENDER_CONFIG: PaperMapRenderConfig = {
+const PAPER_MAP_RENDER_CONFIG: PaperMapRenderConfig = {
   cellMetres: 4,
-  contourIntervalMetres: 10,
+  contourSpacingMetres: 10,
   revision: 'terrain-v1',
 };
 
-export interface PaperMapContour {
+interface PaperMapContour {
   readonly level: number;
   /** World-space x/z segment endpoints, four numbers per segment. */
   readonly segments: ContourSegments;
@@ -74,7 +74,7 @@ interface ContourInputs {
   readonly haloWidth: number;
   readonly bounds: ReturnType<typeof paperMapBounds>;
   readonly cellMetres: number;
-  readonly interval: number;
+  readonly contourSpacingMetres: number;
 }
 
 const contoursFor = ({
@@ -82,7 +82,7 @@ const contoursFor = ({
   haloWidth,
   bounds,
   cellMetres,
-  interval,
+  contourSpacingMetres,
 }: ContourInputs): readonly PaperMapContour[] => {
   let min = Number.POSITIVE_INFINITY;
   let max = Number.NEGATIVE_INFINITY;
@@ -92,9 +92,9 @@ const contoursFor = ({
   }
   const contours: PaperMapContour[] = [];
   for (
-    let level = Math.ceil(min / interval) * interval;
-    level <= Math.floor(max / interval) * interval;
-    level += interval
+    let level = Math.ceil(min / contourSpacingMetres) * contourSpacingMetres;
+    level <= Math.floor(max / contourSpacingMetres) * contourSpacingMetres;
+    level += contourSpacingMetres
   ) {
     const source = marchingSquares(samples, haloWidth, haloWidth, level);
     const clipped: number[] = [];
@@ -134,7 +134,7 @@ export const samplePaperMapTerrain = (
     span !== bounds.z1 - bounds.z0 ||
     span % config.cellMetres !== 0 ||
     config.cellMetres <= 0 ||
-    config.contourIntervalMetres <= 0
+    config.contourSpacingMetres <= 0
   ) {
     throw new Error('Paper-map render configuration does not divide its region');
   }
@@ -170,7 +170,7 @@ export const samplePaperMapTerrain = (
       haloWidth,
       bounds,
       cellMetres: config.cellMetres,
-      interval: config.contourIntervalMetres,
+      contourSpacingMetres: config.contourSpacingMetres,
     }),
   };
 };

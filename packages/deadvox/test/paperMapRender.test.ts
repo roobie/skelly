@@ -18,7 +18,7 @@ const shape: TerrainShape = {
   octaves: 3,
 };
 const terrain = { seed: 91, shape, scale: makeScale(1), surface: undefined };
-const config: PaperMapRenderConfig = { cellMetres: 8, contourIntervalMetres: 4, revision: 'fixture-v1' };
+const config: PaperMapRenderConfig = { cellMetres: 8, contourSpacingMetres: 4, revision: 'fixture-v1' };
 const samples = (coverage: { x: number; z: number }) => samplePaperMapTerrain(terrain, coverage, config);
 
 const edge = (map: ReturnType<typeof samples>, side: 'left' | 'right') =>
