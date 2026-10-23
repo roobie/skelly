@@ -731,6 +731,25 @@
       },
       "color": "#7a5534",
       "door": {
+        "detail": {
+          "fields": [1, 2],
+          "frame": 0.10000000000000001,
+          "handle": {
+            "along": 0.5,
+            "fromFreeEdge": 0.10000000000000001,
+            "kind": "lever",
+            "length": 0.12,
+            "thickness": 0.02
+          },
+          "hardware": "#c6b98e",
+          "hinges": {
+            "count": 3,
+            "length": 0.16,
+            "width": 0.050000000000000003
+          },
+          "relief": 0.012,
+          "seam": 0.12
+        },
         "handlingSimSeconds": 0.59999999999999998,
         "methods": {
           "hammer": {
@@ -765,16 +784,35 @@
       },
       "color": "#7a5534",
       "door": {
+        "detail": {
+          "fields": [1, 2],
+          "frame": 0.10000000000000001,
+          "handle": {
+            "along": 0.47999999999999998,
+            "fromFreeEdge": 0.080000000000000002,
+            "kind": "knob",
+            "length": 0.059999999999999998,
+            "thickness": 0.02
+          },
+          "hardware": "#c6b98e",
+          "hinges": {
+            "count": 3,
+            "length": 0.16,
+            "width": 0.050000000000000003
+          },
+          "relief": 0.012,
+          "seam": 0.12
+        },
         "handlingSimSeconds": 0.59999999999999998,
         "methods": {
           "hammer": {
-            "fastestTimeSimSeconds": 2.5,
+            "fastestTimeSimSeconds": 1,
             "level": 3,
             "quality": "hammering",
             "skill": "mechanics",
             "strikeIntervalSimSeconds": 0.80000000000000004,
             "strikeSound": "lock_hammer",
-            "timeSimSeconds": 4
+            "timeSimSeconds": 1.6000000000000001
           },
           "pry": {
             "fastestTimeSimSeconds": 3,
@@ -799,6 +837,25 @@
       },
       "color": "#626a70",
       "door": {
+        "detail": {
+          "fields": [1, 1],
+          "frame": 0.050000000000000003,
+          "handle": {
+            "along": 0.5,
+            "fromFreeEdge": 0.10000000000000001,
+            "kind": "lever",
+            "length": 0.14000000000000001,
+            "thickness": 0.025000000000000001
+          },
+          "hardware": "#a9adb0",
+          "hinges": {
+            "count": 3,
+            "length": 0.10000000000000001,
+            "width": 0.059999999999999998
+          },
+          "relief": 0.0080000000000000002,
+          "seam": 0.050000000000000003
+        },
         "handlingSimSeconds": 0.59999999999999998,
         "methods": {
           "cut": {

@@ -27,7 +27,7 @@ export const observationPlugin = {
     const marker = '  const onForwardPress = (e: MouseEvent) => {';
     const throwQueueMarker = `      pendingPlayerTickActions.enqueue(() => {
         applyToHeldItem(inventory.hands, hand, uid, (heldItem) => {
-          throwHeldItem(heldItem, hand, distance, chargeProgress);
+          throwHeldItem(heldItem, hand, distance);
           syncThrowingStance();
         });
       });`;
@@ -119,6 +119,7 @@ export const observationPlugin = {
     quickbarTapCommitObservation: undefined,
     quickbarTapTickObservation: undefined,
     adsToggleObservations: [],
+    throwSpawnObservations: {},
     startInputReplayRecording: () => {
       previousInputRecorder = undefined;
       inputRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns(), {
@@ -131,7 +132,10 @@ export const observationPlugin = {
       const item = inventory.itemByUid(itemUid);
       if (!item) return undefined;
       const distance = throwDistanceForItem(item, registry, itemThrowTuning, heldSimSeconds);
-      const target = itemLandingTarget(distance);
+      const location = inventory.locate(item);
+      const hand = location?.kind === 'hand' ? location.side : session.throwCharge.throwHand();
+      const flight = itemThrowFlight(item, hand, distance);
+      const target = flight.landing ? { kind: 'pile', pos: flight.landing } : undefined;
       const landingDistance = target
         ? Math.hypot(target.pos[0] + 0.5 - body.pos[0], target.pos[2] + 0.5 - body.pos[2]) * s
         : undefined;
@@ -186,6 +190,18 @@ export const observationPlugin = {
     },
   };
   Object.assign(globalThis, { primaryActionTest: proof });
+  const proofThrowSpawn = itemThrows.spawn.bind(itemThrows);
+  itemThrows.spawn = (launch, inventory) => {
+    proofThrowSpawn(launch, inventory);
+    const names = [];
+    itemThrows.group.traverse((node) => { if (node.name) names.push(node.name); });
+    // Capture presentation at its owner; a short flight can retire before Playwright's next poll.
+    proof.throwSpawnObservations[launch.itemUid] = {
+      active: itemThrows.hiddenItemUids.has(launch.itemUid),
+      names,
+      durationSimSeconds: launch.flight.durationSimSeconds,
+    };
+  };
   const proofFrame = session.frame.bind(session);
   session.frame = (...args) => { const result = proofFrame(...args); proof.frames++; return result; };
   const proofSwing = session.playerCombat.beginMeleeSwing.bind(session.playerCombat);

@@ -14,7 +14,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       model: 'rifle_hunting', size: [2, 11], twoHanded: true,
       firearm: {
         bolt: true, handling: {}, roundLoadSimSeconds: 1.2,
-        recoilKickRadians: 0.025, dispersionRadians: 0.006,
+        recoilKickRadians: 0.025, dispersionRadians: 0.006, pelletSpreadScale: 1,
         shotSound: 'gunshot_tikka', suppressedShotSound: 'gunshot_m4_suppressed',
         dryFireSound: 'firearm_dry_click', boltOpenSound: 'rifle_bolt_open', boltCloseSound: 'rifle_bolt_close',
         skillZeroHandling: {
@@ -30,6 +30,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
         "handling": {},
         "roundLoadSimSeconds": 0.9,
         "dispersionRadians": 0,
+        "pelletSpreadScale": 1,
         "pump": true,
         "recoilKickRadians": 0.035,
         "shotSound": "shotgun_blast",
@@ -50,6 +51,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       "category": "weapon",
       "description": "Curated 12-gauge hunting-cabin pump from gungen, with a hand-racked action and four-shell tube. No loot table has it; it is available only in debug mode. Runtime pumping/loading is not implemented yet.",
       "id": "debug_shotgun_pump",
+      "notLoot": true,
       "model": "shotgun_pump",
       "name": "Pump shotgun (debug)",
       "size": [2, 10],
@@ -60,6 +62,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       "description": "5.56×45 rifle fed from STANAG magazines.",
       "firearm": magazineHandling {
         "dispersionRadians": 0.012,
+        "pelletSpreadScale": 1,
         "recoilKickRadians": 0.006,
         "shotSound": "gunshot_m4",
         "suppressedShotSound": "gunshot_m4_suppressed",
@@ -80,6 +83,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       "description": "7.62×39 rifle fed from AKM magazines.",
       "firearm": magazineHandling {
         "dispersionRadians": 0.017999999999999999,
+        "pelletSpreadScale": 1,
         "recoilKickRadians": 0.012,
         "shotSound": "gunshot",
         "suppressedShotSound": "gunshot_m4_suppressed",

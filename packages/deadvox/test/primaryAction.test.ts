@@ -49,7 +49,13 @@ const capabilities = [
   {
     id: 'held_gun',
     kind: 'firearm',
-    firearm: { recoilKickRadians: 0.02, dispersionRadians: 0.01, shotSound: 'gunshot', handling: {} },
+    firearm: {
+      recoilKickRadians: 0.02,
+      dispersionRadians: 0.01,
+      pelletSpreadScale: 1,
+      shotSound: 'gunshot',
+      handling: {},
+    },
     twoHanded: true,
   },
   {
@@ -95,6 +101,7 @@ const { registry, issues } = buildRegistry([
     source: '../content/base/sounds.json',
     data: JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')) as unknown,
   },
+  { source: '../content/base/ui.json', data: JSON.parse(readFileSync('src/content/base/ui.json', 'utf8')) as unknown },
   {
     source: 'hand-action-fixture',
     data: {

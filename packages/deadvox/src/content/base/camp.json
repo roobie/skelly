@@ -7,6 +7,25 @@
       },
       "color": "#718087",
       "door": {
+        "detail": {
+          "fields": [5, 1],
+          "frame": 0.059999999999999998,
+          "handle": {
+            "along": 0.45000000000000001,
+            "fromFreeEdge": 0.12,
+            "kind": "pull",
+            "length": 0.5,
+            "thickness": 0.029999999999999999
+          },
+          "hardware": "#a9adb0",
+          "hinges": {
+            "count": 4,
+            "length": 0.080000000000000002,
+            "width": 0.059999999999999998
+          },
+          "relief": 0.014999999999999999,
+          "seam": 0.050000000000000003
+        },
         "handlingSimSeconds": 0.59999999999999998,
         "methods": {
           "pry": {
@@ -534,6 +553,25 @@
       },
       "color": "#666c70",
       "door": {
+        "detail": {
+          "fields": [8, 1],
+          "frame": 0.059999999999999998,
+          "handle": {
+            "along": 0.45000000000000001,
+            "fromFreeEdge": 0.14999999999999999,
+            "kind": "pull",
+            "length": 0.29999999999999999,
+            "thickness": 0.029999999999999999
+          },
+          "hardware": "#a9adb0",
+          "hinges": {
+            "count": 2,
+            "length": 0.29999999999999999,
+            "width": 0.080000000000000002
+          },
+          "relief": 0.014999999999999999,
+          "seam": 0.050000000000000003
+        },
         "handlingSimSeconds": 1.2,
         "methods": {}
       },
@@ -557,7 +595,9 @@
       },
       "model": "camp_armoury_key",
       "name": "Military armoury key",
-      "size": [1, 1]
+      "notLoot": false,
+      "size": [1, 1],
+      "workInProgress": false
     },
     {
       "category": "book",
@@ -568,12 +608,14 @@
       "id": "camp_supply_manifest",
       "model": "notebook",
       "name": "Military supply manifest",
+      "notLoot": false,
       "readable": {
         "text": "SUPPLY RECORD — COMMUNITY HEALTH SITE\n\nAntibiotics, sampling kits and dressings were sent to the clinic. Keep the ward stocked and the pharmacy secured. The road remains under military protection.",
         "title": "Clinic supply manifest"
       },
       "size": [1, 1],
-      "weight": 5
+      "weight": 5,
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -588,7 +630,9 @@
       },
       "model": "camp_hq_safe_key",
       "name": "HQ reserve key",
-      "size": [1, 1]
+      "notLoot": false,
+      "size": [1, 1],
+      "workInProgress": false
     },
     {
       "category": "note",
@@ -599,12 +643,14 @@
       "id": "camp_hq_safe_note",
       "model": "paper_sheet",
       "name": "Officer's note",
+      "notLoot": false,
       "readable": {
         "text": "The reserve safe is locked. Its key is in the radio desk drawer downstairs. The suppressor in the safe is for the next patrol taking the north road.",
         "title": "Note to the relief officer"
       },
       "size": [1, 1],
-      "weight": 5
+      "weight": 5,
+      "workInProgress": false
     },
     {
       "category": "note",
@@ -615,12 +661,14 @@
       "id": "camp_closing_note",
       "model": "folded_note",
       "name": "Playtest closing note",
+      "notLoot": false,
       "readable": {
         "text": "Thank you for playtesting Deadvox. This is the end of the authored military-camp playtest. To share feedback or reach the project home, press F9 and use Project home. You can stop here or continue playing.",
         "title": "A note for the next visitor"
       },
       "size": [1, 1],
-      "weight": 5
+      "weight": 5,
+      "workInProgress": false
     }
   ],
   "loot": [

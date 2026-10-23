@@ -1,5 +1,7 @@
 ---
 read_if:
+  - you change regional paper-map coverage, item ownership or persistence
+  - you change held sharpening, blade repair entry points or prepared hand pairs
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
   - you change the player figure's look, its authored parts, its clothes or how it is posed
   - you change worn head gear seen from inside or on the player figure
@@ -10,7 +12,7 @@ read_if:
   - you decide how sunlight, shadows or interior sky should read during discovery and edit revalidation
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance, performance targets or the default render scale
-  - you change the player's collision body, movement pace by direction, or what crouching lets the player fit through
+  - you change the player's collision body, movement pace by direction, or what crouching or lying prone lets the player fit through
   - you're changing world block shapes, wire fences or their supports, sight opacity, reach through obstacles, sound blocking or slab geometry
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry and put down, or how stacks settle
@@ -67,7 +69,7 @@ read_if:
   - you author the police armoury's roof key or its view from the start
   - you change what vehicles are for, how their parts fit, come off and behave, or what a parked vehicle blocks
   - you're changing where a dropped, crafted, unpacked or swapped-out item lands, whether a drop checks reach, or what happens with no ground nearby
-  - you're changing held-item throwing or its range tuning
+  - you're changing held-item throwing, its dragged path and duration, range tuning or replay strength
   - you're changing thrown explosives (fuse, blast, fragments, their noise) or where the playtest horde stands
   - you're choosing or changing the building-weathering look and its dilapidation direction
   - you're authoring dilapidated structures or breached perimeters
@@ -164,20 +166,49 @@ them by axis for diagonals, keeping diagonal pace between its two axis speeds.
 The factors scale speed without changing movement direction and compose with
 other pace factors.
 
-Crouching lowers the collision body as well as the eye, so a crouched player
-fits openings that reject a standing body. The FOB's east-wall passage is sized
-so a crouched player fits but a standing player does not. It is a separate low
-route from the guarded north entrance and southern breach, with its floor level
-to the approach; it must not expose any part of the finale from near-ground
-viewpoints, leaving the southern breach as the only near-ground exception.
+### Crouching and lying prone
+
+The player has three stances: standing, crouching and prone. Each lower stance
+lowers the collision body as well as the eye, so it fits openings that reject the
+stance above it, and a low opening becomes a route only for someone willing to
+move slowly. Crouching and prone each have their own body height, eye drop and
+pace in content, and neither can sprint. A prone player can't jump either, since
+lying flat leaves nothing to jump from. The crouch key toggles between standing
+and crouching, the prone key toggles between crouching and prone, and either key
+rises from prone to a crouch, so a player never stands straight up from lying
+flat. Rising is refused, keeping the lower stance, when the taller body would
+intersect a solid overhead block. Only height changes; the body's footprint stays
+the same in every stance.
+
+Hearing and sight treat a prone player as they treat a crouched one, through
+prone's own content fields, because how lying down should affect noticing is
+still open (#550). The camera and the spit's chest target follow the eye height,
+so each stance moves them without stance-specific code.
+
+The drawn body follows the stance, so third person shows the stance the player is
+in (#582): crouched it sinks and leans forward, and prone it lies along the facing.
+Each stance pose stays inside that stance's body height, so the drawn head never
+pokes through a ceiling the body fits under. The body blends into a new stance
+over a short real-time span instead of snapping, which hides the change of shape;
+the eye snaps, because sight and collision use the new height at once. Poses and
+the blend time are figure content. See `src/content/base/figures-player.jsonnet`,
+`stancePoses`, and `src/render/playerFigure.ts`, `PlayerMeshes`.
+
+The FOB's east-wall passage is sized so a crouched player fits but a standing
+player does not. It is a separate low route from the guarded north entrance and
+southern breach, with its floor level to the approach; it must not expose any
+part of the finale from near-ground viewpoints, leaving the southern breach as
+the only near-ground exception.
 `test/campGate.test.ts`, "hides the finale from approach tracks and near ground except through the southern breach", checks from the amalgam's feet to its top.
 Zombies use the passage only if their ordinary collision body fits; they do not
-crouch or gain a type-specific exception. Standing up is refused when the body
-would intersect a solid overhead block. On a restore admitted by
-`decodeSave` with matching content identity, the saved stance is preserved and
-body height is derived from content. See `src/core/saveFormat.ts`, `decodeSave`;
-`src/content/base/senses.jsonnet`, `crouch.bodyHeightMetres`;
-`src/game/session.ts`, `settleStance`; `src/core/schema.ts`, `SenseSchema`;
+crouch or gain a type-specific exception.
+
+A save keeps the stance; on a restore admitted by `decodeSave` with matching
+content identity, body height is derived from content for that stance. See
+`src/core/saveFormat.ts`, `decodeSave`; `src/content/base/senses.jsonnet`,
+`crouch` and `prone`; `src/game/player.ts`, `nextStance`;
+`src/game/session.ts`, `settleStance`; `src/core/zombies.ts`,
+`loweredStanceTuning`; `src/core/schema.ts`, `SenseSchema`;
 `src/content/base/camp.libsonnet`, `camp_wall_run_crouch_hole`; and
 `src/core/spawnClearance.ts`, `zombieBodyDimensions`.
 
@@ -206,7 +237,7 @@ passage, where small objects fit through openings and large ones stop, is the
 expected direction rather than a promise that visible holes already simulate size.
 Firearm aiming must not offer a target behind a physical blocker; opacity still
 hides targets in foliage. See `src/core/zombies.ts`, `ZombieSystem.aimAt` and
-`ZombieSystem.firePellets`; and `src/core/itemThrow.ts`, `traceItemLanding`.
+`ZombieSystem.firePellets`; and `src/core/itemThrow.ts`, `steppedItemFlight`.
 
 Wire passes only thrusting melee: a directed strike can reach through an opening,
 while a swing or wrestle needs space the fence denies. This gives fence defence a
@@ -849,9 +880,9 @@ lidded shaft remains an alternate return route. Each level's stair and shaft lea
 different places than the ways that arrive on it, so the next way down is something to
 find and retreat by the other route is a real choice. The lowest rebuilt level joins
 the grid below through a temporary landing named in one place, which each rebuild moves
-down a storey. Threat may drop down a shaft but never climb up, so deep threat cannot
-reach the top and depth ordering holds. A lid then defends only against threat above.
-Threat moving between levels is not built; until it is, threat stays on its own level. See
+down a storey. Threat is allowed to move between levels; that behaviour is not built.
+Depth ordering is not a promise of isolation. Floors damp sound like walls rather than
+silencing it between storeys; see `src/core/soundOcclusion.ts`, `soundOcclusion`. See
 `src/content/base/gauntlet-lab-administration.libsonnet`, `stair`;
 `src/content/base/gauntlet-lab.libsonnet`, `join`; and
 `src/content/base/gauntlet-lab-equipment.libsonnet`, `mapPieces`.
@@ -951,15 +982,14 @@ Readable furniture does not confer objective authority; the live interaction mus
 reach the terminal button. See `src/core/scenarioCertificate.ts`, `scenarioCertificate`,
 and `src/game/session.ts`, `activateGoal`.
 
-Darkness uses world-derived sky transport and an ordinary carried light. The lab's
-fixtures are intended to light only after power is restored, so light is earned,
-not given. Rebuilt levels' working and broken fixtures are inert set dressing. Entry's breaker
-belongs in the security post. Level two's is in a plant room off its circulation, so
-power is found by exploring. The breaker interaction and its saved per-level power state
-are not built; until they are, the room and its marking are enough. Deeper levels' switch positions are decided at their own reviews. The
-lab has no lighting category until its light round. See
-`src/content/base/gauntlet-lab-entry.libsonnet`, `rooms`, and
-`src/content/base/gauntlet-lab-administration.libsonnet`, `rooms`. Finished site placements
+The whole lab shares one grid, fed by a generator on its first subterranean level.
+Its small fuel reserve makes working lights temporary rather than a permanent escape
+from darkness. Lights and machinery declare their electrical roles in content; there
+are no per-level breakers or player refuelling interaction. See
+`src/content/base/gauntlet-lab.libsonnet`, `furniture`;
+`src/content/base/gauntlet-lab-entry.libsonnet`, `rooms`;
+`src/core/sitePower.ts`, `SitePower`; and `src/game/session.ts`, `createSession`.
+Darkness also uses world-derived sky transport and ordinary carried light. Finished site placements
 expose the same sky eligibility contract across authored layouts, hamlets and
 scenario composition. Benchmark city plans do not opt into scenario
 sky work, preserving their stress policy. Demo stock stays outside ordinary
@@ -1230,10 +1260,20 @@ See `packages/thing-authoring-tool/cans.libsonnet`, `items`, and
 `packages/thing-authoring-tool/src/families/openTin.ts`, `openTin`, and
 `packages/thing-authoring-tool/src/families/handOpener.ts`, `handOpener`.
 
-Crafting, repair, disassembly, and reading gather required items from reachable
-hands, worn storage, piles, and furniture when the action starts. Gathering is
-part of the compressed action and keeps both hands busy. Inspecting an item
-shows exact weight, condition, qualities, and handling times.
+Sharpening is held-item work rather than a craft-list repair: the prepared
+blade-and-stone pair makes carried equipment matter, and the wheel rewards a
+trip to furniture. Like can opening, a blade's competing action remains a player
+choice so sharpening does not cause a surprise swing. Aimed wheel activation
+uses the held blade. Repair recipes retain the shared content-owned restoration,
+skill and work-rate contract; their activation selector keeps held work out of
+the craft list. See `src/game/sharpening.ts`, `Sharpening`,
+`src/game/itemActions.ts`, `ItemActionSelection`, `src/core/schema.ts`,
+`RecipeSchema`, and `src/ui/craftReadout.ts`, `craftRows`.
+
+Craft-list repairs, crafting and disassembly gather reachable supplies because
+retrieving materials is part of the work, not free access to distant storage.
+See `src/core/reach.ts`, `bindReach`, and `src/core/craftCommands.ts`,
+`CraftCommands`.
 
 ### Shoulder and sling
 
@@ -1368,9 +1408,12 @@ item the player actually owns. See `itemLook` in `src/render/itemLook.ts` and
   what it says. If the library ever falls short, the fallback is a fork, which
   becomes our own code. The renderer is `src/core/soundSynth.ts`,
   `renderSoundRecipe`.
-- Keep the curated `/sounds.html` sheet with sound-event variants and status.
-  A change that adds, replaces, or re-levels a sound updates the sheet in the
-  same change. The sheet marks a synthesised variant as such.
+- **The listening sheet.** `/sounds.html` lists every loaded sound with its
+  settings, variants and credits, and marks a synthesised variant as such. What
+  makes a sound play is the required description on its content entry, so a
+  pack's sounds reach the sheet without a code edit. The sheet keeps no approval
+  status: a verdict is history, which belongs in the commit that changes the
+  sound. See `src/ui/soundGuide.ts`, `buildSoundGuide`.
 
 ## Crafting
 
@@ -1578,13 +1621,14 @@ for minor wounds to close. See `Body.advance` in `src/core/body.ts`.
 
 Under normal play, blood loss progresses with simulation time; a stalled browser
 slows the whole simulation rather than skipping ahead. Content sets when
-bleeding refuses compression. Rest, sleep, and waiting are refused, and an
-already-running player long action returns to real-time pace. Debug time controls
-may advance bleeding, but real emitted interruptions still apply. Treatment,
-crafting, and reading remain available at real-time pace, leaving movement free;
-crafting stays available because it may let a player make what stops the wound.
-See `Body.compressionRefusal` and `Simulation.checkInterruptions` in
-`src/core/sim.ts`.
+bleeding refuses compression. Rest, sleep, and waiting must stop or stay refused:
+the player must stay conscious enough to act. Doable long actions remain available
+at real-time pace because making or using treatment may be the player's remaining
+chance to stop the wound. Harming exposure instead refuses every long action:
+leave the fire first, then treat. Unconsciousness permits no action. Debug time
+controls do not bypass real emitted interruptions. See `src/core/body.ts`, `Body.compressionRefusal`;
+`src/core/sim.ts`, `Simulation.actionRefusal` and `Simulation.checkInterruptions`;
+and `src/core/longAction.ts`, `LongActions.runsUncompressed`.
 
 Treatments declare bleeding strength, infection stages, or both. Treatment
 strength is spent progressively across severity bands, and applications stack;
@@ -1597,10 +1641,9 @@ wound severity. See `Body.treat` in `src/core/body.ts` and `bodyWound` in
 
 Pain is its own body state, apart from health and wounds, so a painkiller can ease
 what hurts without healing anything. Felt pain is acute plus background pain,
-less analgesia; it has no top. The threshold is a balance point for tiers and
-effects, not an implemented knockout: only shock knocks out (`src/core/body.ts`,
-`Body.unconscious`), and felt pain reaching the threshold is meant to knock out through
-that same mechanism once it is built. Acute pain comes from each
+less analgesia; it has no top. Reaching the threshold empties shock, so shock owns
+knockout, recovery and save state (`src/core/body.ts`, `Body.impact` and
+`Body.unconscious`). Acute pain comes from each
 hit by damage kind and region,
 then fades. Background pain is derived from region damage, bleeding and infection,
 so treatment and healing change it without saved derived state. Pain tiers drive
@@ -1772,7 +1815,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
 
   A fitted optic owns the aiming sight line because its mount can obstruct the irons. Visible placement and aiming must share the connector transform so the view and shot remain aligned; see `src/render/firearmSight.ts`, `sightedFirearmModel`. Magnification changes the local sight picture, not the weapon or its ballistics, so zoom selection stays outside saved item and replay state. Content-controlled per-weapon memory lasts for the play session; a fresh session starts at the authored power rather than making a camera preference authoritative simulation state. See `src/game/opticZoom.ts`, `OpticZoom`; `src/core/opticView.ts`, `mountedOptic`, `opticViewSettings` and `projectLensAperture`; and `src/render/opticLens.ts`, `OpticLensRenderer`. The digital thermal optic stays out of loot, fitting and ADS until its thermal view exists; exposing an optic without its defining view would mislead the player. See `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`.
 
-  An attachment is an atom, so its mass is the mass authored for its item, and a fitted gun weighs the sum of its own parts and its fitted items; see `things/README.md`, "Rules". Every atom's item `weight` is authoritative even when atoms share a visual model. Assemblies author no competing item total: their model carries authored body-part masses, with replaceable geometry owned by the fitted child item instead. See `src/core/items.ts`, `typeWeightGrams`, and `src/core/modelMass.ts`, `modelBodyMassKg`. `muzzleLoad` combines fitted attachment mass with mount distance from the grip to feed the existing handling response. Runtime skill-zero tuning remains separate from attachment response so editing a debug endpoint cannot apply the attachment effect twice. Suppressors affect recoil, noise and wear, and foregrips affect aim, stance and wear. Effects are tagged with their model's attachment kind, each kind authors every effect it has, wear included as zero for none, and a suppressor model always exports its noise factor: a missing value is a content error rather than a silent neutral default, so an unfinished attachment cannot ship as one that does nothing (see `src/core/schema.ts`, `FirearmAttachmentEffectsSchema` and `AttachmentSchema`; `src/core/content.ts`, `checkItemAttachmentEffects`); a powered light nested under a held firearm remains exposed to carried-light and sense behavior and drains its owned battery on simulation time. Effect estimates remain tunable until attachment behavior has been playtested. See `src/core/firearmAttachments.ts`, `muzzleLoad`, `firearmAttachmentResponse` and `wearFirearmAttachments`; `src/game/firearmHandling.ts`, `skillZeroHandlingSettingFor` and `skillZeroHandlingFor`; `src/core/items.ts`, `weightOf`; and `src/core/lights.ts`, `lightExposureFor`. Heat (#366), improvised accuracy, fouling and smoke (#365, all in #367) are deferred until after the playtest.
+  An attachment is an atom, so its mass is the mass authored for its item, and a fitted gun weighs the sum of its own parts and its fitted items; see `things/README.md`, "Rules". Every atom's item `weight` is authoritative even when atoms share a visual model. Assemblies author no competing item total: their model carries authored body-part masses, with replaceable geometry owned by the fitted child item instead. See `src/core/items.ts`, `typeWeightGrams`, and `src/core/modelMass.ts`, `modelBodyMassKg`. `muzzleLoad` combines fitted attachment mass with mount distance from the grip to feed the existing handling response. Runtime skill-zero tuning remains separate from attachment response so editing a debug endpoint cannot apply the attachment effect twice. Suppressors affect recoil, noise and wear, and foregrips affect aim, stance and wear. Effects are tagged with their model's attachment kind, each kind authors every effect it has, wear included as zero for none, and a suppressor model always exports its noise factor: a missing value is a content error rather than a silent neutral default, so an unfinished attachment cannot ship as one that does nothing. Fitting either suppressor requires Firearms Combat 4; removing one has no skill gate. See `src/core/schema.ts`, `FirearmAttachmentEffectsSchema` and `AttachmentSchema`; `src/core/content.ts`, `checkItemAttachmentEffects`; and `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`. A powered light nested under a held firearm remains exposed to carried-light and sense behavior and drains its owned battery on simulation time. Effect estimates remain tunable until attachment behavior has been playtested. See `src/core/firearmAttachments.ts`, `muzzleLoad`, `firearmAttachmentResponse` and `wearFirearmAttachments`; `src/game/firearmHandling.ts`, `skillZeroHandlingSettingFor` and `skillZeroHandlingFor`; `src/core/items.ts`, `weightOf`; and `src/core/lights.ts`, `lightExposureFor`. Heat (#366), improvised accuracy, fouling and smoke (#365, all in #367) are deferred until after the playtest.
 
 - **Military loot (3.2):** Authored Military-only usage protects military progression without inferring admission from calibre or furniture type. Shared supplies remain craftable even when military sources can carry them; ordinary crafting, salvage and unpacking cannot manufacture Military-only supplies. Fixed stock and its installed descendants must match their resolved source context. Tables supply weights, not a second geography authority. See `src/core/loot.ts`, `economyEligible` and `lootTypeIssue`, `src/core/magazine.ts`, `militaryLootItems`, and `src/core/content.ts`, `checkMilitaryLoot`.
 - **Spent cases per block:** Cases must never end inside terrain; use only clear,
@@ -2094,27 +2137,23 @@ See `src/core/inventory.ts`, `Inventory.landing` and `Inventory.dropLanding`;
 
 ## Held-item throws
 
-A released item joins its target pile immediately, keeping inventory as its
-sole owner and preserving ordinary fuse and save behavior. The flight is
-presentation only: the pile renderer hides the item while its arc plays, and the
-arc follows the pile's visible pose so the landing does not jump. No second owner
-exists while an item is in flight, so saves and fuses see only the pile; behavior
-during flight is new work on a new issue. A throw adds no hit damage or landing
-lure; explosive effects belong to the grenade.
-See `src/game/throwCharge.ts`, `ThrowCharge.place`;
+Inventory remains the sole owner during flight so saves and fuses do not need a
+second ownership model. The arc ends at the pile's visible pose to avoid a landing
+jump. A throw adds no hit damage or landing lure; explosive effects belong to the
+grenade. See `src/game/throwCharge.ts`, `ThrowCharge.place`;
 `src/render/itemThrows.ts`, `ItemThrows.update`; and `src/render/piles.ts`,
 `PileMeshes.sync`.
 
-Mass and air both limit range. Mass caps the speed the arm can give; drag then
-takes a share of that range by how much air the item pushes for its mass, so a
-flimsy glowstick falls shorter than a dense grenade thrown with the same effort.
-Drag derives from the item's footprint and mass, so no item needs its own row.
-The footprint is a cell-rounded outline, not the face that meets the air, so one
-coefficient against it stands in for shape and tumbling. The range comes from
-stepping a level 45-degree flight with drag at a fixed step, so the same throw
-always lands at the same place, and a replay records that range. The arc's
-height and flight time do not depend on drag. See `src/core/itemThrow.ts`,
-`throwDistanceForItem` and `dragRangeShare`, and
+Landing, presentation and duration share a stepped flight so drag cannot shorten
+the range while leaving a light item floating through an undragged arc. The launch
+follows the player's pitch, rather than borrowing the range of a different angle.
+Replay records launch strength rather than a drag-adjusted distance so it can
+reproduce the same flight with the recorded aim. See `src/core/itemThrow.ts`,
+`throwDistanceForItem`, `flightForItem` and `steppedItemFlight`.
+
+Drag derives from footprint and mass so items need no individual drag rows. The
+footprint is a cell-rounded outline, not the face that meets the air, so one
+coefficient stands in for shape and tumbling. See
 `src/content/base/inventory.jsonnet`, `throwDrag`.
 
 ## Hand grenade
@@ -2128,7 +2167,7 @@ A grenade thrown into the horde is meant to be the playtest's climax: the one mo
 - **Fragments are seeded shots.** They are rays through the same hit test as shotgun pellets, so walls and bodies stop them and fewer reach a farther body. One fragment severs a shambler's limb, and they reach past the blast, so a crowd around the landing point comes apart. A full-strength throw carries the player beyond fragment reach; shorter throws can still expose the player to fragments. Each ray is traced against every body in range, so the count sets the cost of the moment; the schema caps it. See `src/core/explosive.ts`, `fragmentDirections`; `ZombieSystem.firePellets`; and `src/core/schema.ts`, `ExplosiveSchema`.
 - **The player takes the same falloff, line of sight and fragments** in a simpler model: one blast hit to the torso, and fragments traced against a body box, which zombie bodies do not shield. A short throw hurts the thrower. See `src/core/explosive.ts`, `fragmentHitsOnBody`.
 - **The blast is the player's noise, heard from where it went off.** It carries further than any other sound, so it draws zombies from far around to the blast rather than to the thrower.
-- **The blast sounds like an explosion; the flash is a placeholder.** The sound is a recorded explosion, because a pitched-down gunshot read as a gun rather than the climax the grenade is for. See `src/content/base/sounds.json`, `grenade_blast`, and `src/render/blastFlashes.ts`, `BlastFlashes`.
+- **The blast sounds like an explosion; the flash is a placeholder.** The sound is a recorded explosion, because a pitched-down gunshot read as a gun rather than the climax the grenade is for. See `src/content/base/sounds.jsonnet`, `grenade_blast`, and `src/render/blastFlashes.ts`, `BlastFlashes`.
 
 `?debug=1&loadout=grenade` starts with one in hand and more packed (`src/debug/debugLoadout.ts`, `equipDebugLoadout`).
 
@@ -2383,6 +2422,7 @@ cannot be authored, blended or added to without a code change per animation.
   disassembly.
 - **Doors and locks.** A matching key is the quiet route. The noisy fallback needs the door's forcing tool, not always a crowbar, so finding that tool is part of the trade. How a door yields follows from its material and its own resistance; flimsy and burglary-safe leaves need not yield alike. Forced entry destroys the lock so the breach is one-way. A leaf shows its state, because the player has to see which doors no longer hold, and how close the rest are to giving way, before trusting one: damage repaints it in steps as it grows toward breaking, and a broken leaf has its own look. The leaf's material in the shared furniture material table authors both, so a mod retunes them; the steps and redraws work as for any piece (`DESIGN.md`, "Block entities").
 - **Breach by strength.** A door leaf yields to blows by its piece's breach, so flimsy and burglary-safe leaves yield differently. A blow below the minimum strength does nothing, so a weak attacker cannot grind through by waiting; stronger blows add up until they reach the durability. Zombie strength and a melee weapon's impulse share one scale, so a zombie's bash and a player's strike meet the same gate; a swing that meets no zombie strikes the standing piece, leaf or furniture, in its reach, and the blow is heard in the sound its material names. Every blow makes a noise zombies hear. A broken leaf stands open with its lock gone and cannot be shut, so the breach is one-way, as forcing is, and movement, sight and sound treat it as an open doorway. Damage short of breaking leaves a boarded leaf's opening sides as they were. A container's front is its body, so a blow on it damages the whole piece; on a piece that is no door leaf, the breach sets the durability its condition is measured against, and reaching it ruins the piece (`DESIGN.md`, "Damage, destruction and dismemberment"). See `src/core/blockEntities.ts`, `BlockEntities.bash`, `src/game/session.ts`, `bashPiece` and `strikePiece`, and `src/core/schema.ts`, `FurnitureSchema`.
+- **Door bar.** Barring holds a door shut at the player's choice, so where to bar is a decision about which side to be on. A bar set on a shut door lies on the setter's side: that side must lift it before opening, and the far side is refused. Setting and lifting take time and both hands. The barred side is door state beside the lock, not item state, so a bar on a door survives a save and a bar item is just the thing that sets it; setting spends the item and lifting gives one back. A broken leaf loses its bar with its lock, and boarded doors take no bar. See `src/core/blockEntities.ts`, `BlockEntities.setBar` and `BlockEntities.liftBar`, `src/core/options.ts`, `heldDoorBar`, and `src/core/schema.ts`, `ItemSchema`.
 - **Forcing routes trade time against noise.** A door offers more than one forcing method so the player chooses how to pay: the crowbar's prying is slow and the quieter route, the sledgehammer's hammering is fast and the louder one, and it is heavy and two-handed to carry. Each method names its own strike sound and times, so the choice is content, and the noise reaches zombies through the same hearing as any sound. Forcing by method and destroying a leaf by damage stay separate, so boarded doors and bashing leave this choice alone. See `src/core/prying.ts`, `pryPlan`, and `src/core/zombies.ts`, `hearPlayer`.
 - **Cutting.** Cutting a wooden door will start a fire, so wood offers no cut method until a fire model exists. Cutting steel is a flame-cutting quality apart from a knife's `cutting`, and a finished cut spends gas from the torch's swappable cartridge, so one torch does not settle every cut door; a cut without enough gas won't start. Refilling a cartridge is direction only, with no source yet. See `src/core/prying.ts`, `pryPlan`, `src/core/torch.ts`, `spendFuel`, `src/core/longAction.ts`, `LongActions.beginForcing`, and `src/core/schema.ts`, `FurnitureMaterialSchema` and `DoorForcingSchema`.
 - **Electricity** keeps topology separate from energy balance so rate changes
@@ -2771,6 +2811,30 @@ decoration.
 - Web Audio, started by the first click (browsers block sound until then).
   Sounds are content: ids in the pack, checked by the validator. Files are
   small, and follow [Assets and credits](#assets-and-credits).
+
+## Regional paper maps
+
+Paper coverage uses the world's existing grid, not settlement bounds: wilderness
+needs an owner too, and a settlement need not fit on one sheet. A sheet belongs to
+its saved world; its region pair identifies the publication, not the physical
+copy. See `src/core/paperMap.ts`, `paperMapAt` and `paperMapBounds`, and
+`src/core/worldRegion.ts`, `regionIndex`.
+
+Paper is a carried source of knowledge, not a permanent atlas unlock or a live
+camera. Its approved printed geography is baseline terrain and public roads,
+including unvisited places, not actors, possessions, secrets or mutable damage.
+The discovery policy is optional local supply without guaranteed coverage;
+duplicate copies are ordinary possessions, not globally unique collectibles.
+Completing #470 requires a shared reading-light policy for all paper rather than
+a map-only exception.
+
+Region payloads stay with ordinary item ownership so putting down a sheet removes
+access without erasing its identity. Sheets do not stack: stateless merging must
+not discard coverage. Saved coverage must not require visited or edited terrain,
+and render caches are not durable knowledge. See `src/core/schema.ts`,
+`ItemSchema`; `src/core/content.ts`, `checkItems`; `src/core/items.ts`,
+`ItemFields`, `ItemFactory`, `snapshotItem` and `restoreItem`; and
+`src/core/saveFormat.ts`, `itemSchema`.
 
 ## UI principles
 

@@ -276,14 +276,14 @@ describe('pointer input', () => {
     windowListeners.get('mouseup')!({ button: 2, timeStamp: 6 } as MouseEvent);
     expect([input.rightMouseHeld, input.aimingDownSights]).toEqual([false, false]);
   });
-  it('delivers a crouch-toggle request once to the simulation consumer', () => {
+  it('delivers a stance-toggle request once to the simulation consumer', () => {
     const { input } = fixture();
-    input.requestCrouchToggle();
-    expect(input.consumeCrouchToggle()).toBe(true);
-    expect(input.consumeCrouchToggle()).toBe(false);
-    input.requestCrouchToggle();
+    input.requestStanceToggle('prone');
+    expect(input.consumeStanceToggle()).toBe('prone');
+    expect(input.consumeStanceToggle()).toBeUndefined();
+    input.requestStanceToggle('crouch');
     input.cancel();
-    expect(input.consumeCrouchToggle()).toBe(false);
+    expect(input.consumeStanceToggle()).toBeUndefined();
   });
   it('clamps the virtual menu cursor to its viewport', () => {
     const { input } = fixture();

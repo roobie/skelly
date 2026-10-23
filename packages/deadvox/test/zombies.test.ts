@@ -31,7 +31,6 @@ import {
 } from '../src/core/zombieRegions.ts';
 import { ZombieSpawner } from '../src/core/zombieSpawns.ts';
 import {
-  ACTIVE_ZOMBIE_RADIUS_METRES,
   type HitImpulse,
   hearPlayer,
   hearVocalNoise,
@@ -41,7 +40,6 @@ import {
   pickZombieHitRegion,
   pickZombieMove,
   type Zombie,
-  ZombieSystem,
 } from '../src/core/zombies.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { MobActorMeshes, mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
@@ -51,6 +49,7 @@ import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { sunExposedAt } from './fixtures/sunOracle.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const SHAMBLER_CPU_BUDGET_MS = 1;
 const registry = baseRegistry();
@@ -78,7 +77,15 @@ const player = (
   movement: PlayerSense['movement'] = 'still',
   lit = false,
   crouching = false,
-): PlayerSense => ({ pos, facing, movement, lit, lightSeenFrom: 40, eyeHeightMetres: 1.3, crouching });
+): PlayerSense => ({
+  pos,
+  facing,
+  movement,
+  lit,
+  lightSeenFrom: 40,
+  eyeHeightMetres: 1.3,
+  stance: crouching ? 'crouching' : 'standing',
+});
 const senses = (
   playerFn: () => PlayerSense,
   isSolid: SolidAt = FLOOR,
@@ -3059,11 +3066,23 @@ describe('two-tier shambler hearing', () => {
 });
 
 describe('background zombie tier', () => {
+  it('uses authored liveness radius to classify a loaded actor', () => {
+    for (const [activeZombieRadiusMetres, tier] of [
+      [7, 'background'],
+      [17, 'active'],
+    ] as const) {
+      const system = new ZombieSystem({ ...senses(() => player([0, 1, 0])), activeZombieRadiusMetres });
+      const zombie = system.store.get(system.add(SHAMBLER, [12 / BLOCK_SIZE, 1, 0]))!;
+      system.tickActive(1 / 20, 0);
+      expect(zombie.tier).toBe(tier);
+    }
+  });
+
   it('routes firearm reports into the long-range player-noise channel', () => {
     for (const id of ['gunshot', 'gunshot_pbs1_reference', 'shotgun_blast']) {
       const noise = registry.sounds.get(id)?.noise;
       expect(noise?.enabled).toBe(true);
-      expect(noise?.radiusMetres).toBeGreaterThan(ACTIVE_ZOMBIE_RADIUS_METRES);
+      expect(noise?.radiusMetres).toBeGreaterThan(registry.siteGeneration.get('authored')!.activeZombieRadiusMetres);
     }
   });
 

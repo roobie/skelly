@@ -1,6 +1,7 @@
 {
   "siteGeneration": [
     {
+      "activeZombieRadiusMetres": 40,
       "hamlet": {
         "hedge": "hedge",
         "northSide": ["small_house", "bungalow", "corner_store", "hardware_store"],

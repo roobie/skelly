@@ -65,6 +65,10 @@
       "output": "packages/deadvox/src/config/bundled-mods.json"
     },
     {
+      "source": "packages/deadvox/src/config/bundled/beginner.jsonnet",
+      "output": "packages/deadvox/src/config/bundled/beginner.json"
+    },
+    {
       "source": "packages/deadvox/src/config/perf-baseline.jsonnet",
       "output": "packages/deadvox/src/config/perf-baseline.json"
     },
@@ -107,6 +111,10 @@
     {
       "source": "packages/deadvox/src/content/base/crisis-hq.jsonnet",
       "output": "packages/deadvox/src/content/base/crisis-hq.json"
+    },
+    {
+      "source": "packages/deadvox/src/content/base/figures-player.jsonnet",
+      "output": "packages/deadvox/src/content/base/figures-player.json"
     },
     {
       "source": "packages/deadvox/src/content/base/furniture-cabins.jsonnet",
@@ -307,6 +315,10 @@
     {
       "source": "packages/deadvox/src/content/base/sounds-weapons.jsonnet",
       "output": "packages/deadvox/src/content/base/sounds-weapons.json"
+    },
+    {
+      "source": "packages/deadvox/src/content/base/sounds.jsonnet",
+      "output": "packages/deadvox/src/content/base/sounds.json"
     },
     {
       "source": "packages/deadvox/src/content/base/templates-cabins.jsonnet",

@@ -36,6 +36,7 @@ const refusalSound = {
       blowSoundDefinition,
       {
         id: 'player_nope',
+        description: 'fixture refusal',
         variants: ['assets/audio/nope.ogg'],
         gain: 0.5,
         pitchJitter: [1, 1],
@@ -101,7 +102,7 @@ const content = [
         { id: 'scroll_token', name: 'Scroll token', category: 'tool', weight: 1, size: [1, 1] },
         { id: 'scroll_wide_token', name: 'Scroll wide token', category: 'tool', weight: 1, size: [3, 1] },
         { id: 'rag', name: 'Rag', category: 'material', weight: 1, size: [1, 1] },
-      ].map((item) => ({ economy: { usage: [], tiers: [] }, ...item })),
+      ].map((item) => ({ economy: { usage: [], tiers: [] }, workInProgress: false, notLoot: false, ...item })),
     },
   },
 ];

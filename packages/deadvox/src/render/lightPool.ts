@@ -3,13 +3,16 @@ import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Inventory, Location } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { lightExposureFor } from '../core/lights.ts';
+import type { PoweredLight } from '../core/sitePower.ts';
 import type { HeldItems } from './hands.ts';
 import type { PileMeshes } from './piles.ts';
 
 /** Fixed shader-light budget: carried sources and dropped sources have stable partitions. */
 const CARRIED_POINT_LIGHTS = 4;
 const DROPPED_POINT_LIGHTS = 4;
-export const POINT_LIGHT_POOL_SIZE = CARRIED_POINT_LIGHTS + DROPPED_POINT_LIGHTS;
+const FIXTURE_POINT_LIGHTS = 4;
+const ITEM_POINT_LIGHTS = CARRIED_POINT_LIGHTS + DROPPED_POINT_LIGHTS;
+export const POINT_LIGHT_POOL_SIZE = ITEM_POINT_LIGHTS + FIXTURE_POINT_LIGHTS;
 /** Fixed shader budget for the night-vision flare's halos at once (`src/render/nightVisionFlare.ts`). */
 export const NIGHT_VISION_HALOS = 4;
 
@@ -20,6 +23,7 @@ interface LightPoolContext {
   camera: PerspectiveCamera;
   blockSize: number;
   daylightScale: number;
+  fixtures?: readonly PoweredLight[];
 }
 
 function handPriority(location: Location): number {
@@ -121,7 +125,28 @@ export class LightPool {
       })
       .slice(0, DROPPED_POINT_LIGHTS);
 
+    const fixtures = [...(context.fixtures ?? [])]
+      .sort((a, b) => {
+        const distance = ({ pos }: PoweredLight) =>
+          (pos[0] * blockSize - camera.position.x) ** 2 +
+          (pos[1] * blockSize - camera.position.y) ** 2 +
+          (pos[2] * blockSize - camera.position.z) ** 2;
+        return distance(a) - distance(b);
+      })
+      .slice(0, FIXTURE_POINT_LIGHTS);
     for (const [index, light] of this.lights.entries()) {
+      if (index >= ITEM_POINT_LIGHTS) {
+        const fixture = fixtures[index - ITEM_POINT_LIGHTS];
+        light.intensity = fixture ? fixture.intensity * daylightScale : 0;
+        this.flareSkipped[index] = false;
+        if (fixture) {
+          light.position.set(...(fixture.pos.map((value) => value * blockSize) as [number, number, number]));
+          light.color.set(fixture.color);
+          light.distance = fixture.radius;
+        }
+        this.syncHandLight(index, light);
+        continue;
+      }
       const entry = index < CARRIED_POINT_LIGHTS ? carried[index] : dropped[index - CARRIED_POINT_LIGHTS];
       if (!entry) {
         light.intensity = 0;

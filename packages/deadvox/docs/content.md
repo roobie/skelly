@@ -4,6 +4,7 @@ read_if:
   - you change content schemas, validation, registry merging, browser-mod identity or content-loading test fixtures
   - you add or change a bundled mod such as beginner mode, or how `?mods=` selects one
   - you add code that reads a content row by a fixed id
+  - you change runtime escrow roles, severed-part item policy or world liveness tuning
   - you add or change a refusal, notice or option label that core code shows the player
   - you change recipe, skill, workstation or book content, content references, static reachability or disassembly-output contracts
   - you change item economy metadata, source contexts, loot selection, loot-point descriptions or fixed loot
@@ -71,10 +72,9 @@ The panel remains opt-in pending BR's decision about making it the default entry
 A bundled mod ships with the game but is applied only when asked, with `?mods=` and
 a comma-separated list of ids; `?mods=1` is the separate mods panel. Each one goes through
 the same intake as a player mod, so an unknown id is refused at startup with the usual
-diagnostics instead of being ignored. A bundled mod is derived from the base sources when
-it is selected, never written out as a second set of numbers, so it follows base tuning.
-That derivation is the seam player mods lack: they replace whole rows and cannot scale a
-base value. See `src/game/bundledMods.ts`, `selectBundledMods`.
+diagnostics instead of being ignored. A bundled mod's Jsonnet source derives its compiled
+rows from core content at build time, so its transformation remains beside its content.
+See `src/config/bundled/beginner.jsonnet` and `src/game/bundledMods.ts`, `selectBundledMods`.
 
 The game and the site launcher must offer the same mods, and the launcher is a static page
 that cannot import game modules, so the list is one schema-checked content file rather than
@@ -82,13 +82,13 @@ two copies. The launcher is a developer entry point, so a missing or invalid lis
 its control instead of breaking it. See `src/core/bundledModCatalogue.ts`,
 `bundledModCatalogue`, and `site/launcher.js`, `loadBundledMods`.
 
-Beginner mode (`?mods=beginner`) scales every hostile kind, not a list of ids. Damage, movement
-speed (wander and chase), detection and health each have one factor, `BEGINNER_FACTORS`.
-Detection covers sight, night sight, the hearing multiplier (footsteps and noise alike) and
-light spotting, the zombie stat `lightSightScale` that multiplies the range at which a carried
-or placed light is spotted. Light is included so a beginner carrying a torch or flashlight at
-night does not draw enemies from full range. The mode exists so a new player can learn the
-game against slower, weaker enemies that notice less.
+Beginner mode (`?mods=beginner`) scales every hostile kind, not a list of ids. Its Jsonnet source
+owns the damage, movement speed (wander and chase), detection and health factors. Detection
+covers sight, night sight, the hearing multiplier (footsteps and noise alike) and light spotting,
+the zombie stat `lightSightScale` that multiplies the range at which a carried or placed light is
+spotted. Light is included so a beginner carrying a torch or flashlight at night does not draw
+enemies from full range. The mode exists so a new player can learn the game against slower,
+weaker enemies that notice less.
 
 A save records each active bundled mod as a content pack in its version identity, so a
 beginner-mode world is stored apart from a normal one. The URL alone decides the mode, because
@@ -425,7 +425,7 @@ Content acceptance checks that authored world sources can provide declared item 
 
 Reachability is a type-source contract, not a quantity, seed, or whole-game solver. A recipe cycle without a found source cannot make itself reachable. Disassembly reachability assumes the required skill is attainable, while recipe requirements must have a reachable practice source; workstation qualities must be placed and reachable. Showcase and demo layouts are fixtures, not sources for playable-world reachability. Preserve these distinctions when changing the checker. See `checkReachability` and its source-closure helpers in `src/core/reachability.ts`, and `SiteLayoutSchema.demo` in `src/core/schema.ts`.
 
-Debug fixtures, runtime escrow, spent cases, and body-part policy stay out of acquired-content totals. Keep their exclusions with `CONTENT_COUNT_EXCLUSIONS` in `src/core/reachability.ts`. Reachability stores no runtime state; progression, crafting, and disassembly remain separate owners. Winning-override diagnostics retain source-file provenance so a broken effective definition can be traced to its authoring source.
+Acquired-content totals exclude types by their authored policy, not their identity, so adding a debug fixture or a creature part needs no checker edit. See `ItemSchema.notLoot` in `src/core/schema.ts` and `checkReachability` in `src/core/reachability.ts`. Runtime escrow selects its definition through `ItemSchema.workInProgress`; exactly one definition must own that role. Creature kinds own their severed-region item policy through `ZombieSchema.severedItems`, including an explicit null for a region that leaves nothing. World liveness belongs to site-generation tuning, not creature identity; see `SiteGenerationSchema.activeZombieRadiusMetres` in `src/core/schema.ts` and `ZombieSystem.tierAt` in `src/core/zombies.ts`. Reachability stores no runtime state; progression, crafting, and disassembly remain separate owners. Winning-override diagnostics retain source-file provenance so a broken effective definition can be traced to its authoring source.
 
 ## Loot economy descriptions
 
@@ -461,9 +461,15 @@ Survey the fixture's real-world construction and its authored role before choosi
 
 Choose the structural appearance in content through `src/core/schema.ts`, `FurnitureSchema`, rather than a renderer ID exception. Follow `../../../docs/jsonnet.md`, "Jsonnet authoring", for the source boundary. Derive procedural parts from the definition's dimensions in `src/render/furnitureDetail.ts`, `furnitureDetail`, so the same construction works for differently sized definitions. Keep front relief within the occupied envelope and check rotated facings: protruding decoration would advertise interaction space the picker cannot reach.
 
-Use `packages/deadvox/tools/furniture-detail-probe.mjs` to inspect the appearance-bearing definitions together in an isolated lit scene, each intact beside its look at every damage step its material authors, so a material's steps can be judged on the furniture that wears them. The tool starts its own development server and takes a screenshot destination as its argument, then optionally the pieces to narrow to; its compare flag stands the plain block each piece drew before its detail at the head of its row, so a look review sees what the detail bought. Its draw report separates geometry cost from the rest of the game. Compare the screenshot for recognition and the report for the single-draw-per-fixture budget, then inspect the actual game lighting before requesting look approval. An isolated screenshot cannot establish in-world readability or real-GPU performance.
+Use `packages/deadvox/tools/furniture-detail-probe.mjs` to inspect the definitions with appearance or door detail together in an isolated lit scene, each intact beside its look at every damage step its material authors, so a material's steps can be judged on the furniture that wears them; a door stands once more open, so its detail is seen to swing with it. The tool starts its own development server and takes a screenshot destination as its argument, then optionally the pieces to narrow to; its compare flag stands the plain block each piece drew before its detail at the head of its row, so a look review sees what the detail bought. Its draw report separates geometry cost from the rest of the game. Compare the screenshot for recognition and the report for the single-draw-per-fixture budget, then inspect the actual game lighting before requesting look approval. An isolated screenshot cannot establish in-world readability or real-GPU performance.
 
 Keep the cache, facing and envelope evidence in `test/furnitureDetail.test.ts`, and follow the tiered checks in `../../../AGENTS.md`, "Before pushing: tiered checks". Do not pin content counts, colours or triangle totals: those may change while the one-object and interaction-envelope contracts remain. The agent workflow is `docs/furniture-detail-skill.md`.
+
+### Door detail
+
+Doorway leaves and hatches show how they open through their own `door.detail`, not an `appearance` kind: an appearance kind draws a fixed body from the definition's size, while a door's panel is posed per placement, swinging on its hinge or standing up on a hatch's hinge edge. A detail names raised fields, strap hinges on the hinge edge and a handle by the free edge, so a player can tell a door, which side it hangs on and where to take hold of it. Looks are named by how a door is built in `src/content/base/door-detail.libsonnet`; a door picks one and overrides only what its size or build needs, so no renderer code knows a door id. Both faces carry the same detail, because either face of a leaf may be the one a player meets.
+
+The detail replaces the plain panel inside the hinge group, so it swings with the leaf, and a doorway stays one draw. Geometry is cached per definition and panel size, so opening, closing and further copies build nothing. A shut hatch sits down in its frame so its ring and hinges stay within its cells; an open leaf or hatch reaches past them anyway. A body door keeps the handle drawn on its body and takes no detail. A shaped leaf's shape is its look: the detail is optional there, and the lab bulkhead carries its hinges in its shape because its panel lies inside its slab. A decal attached to a detailed door sits on the raised field, not the panel under it. See `src/core/schema.ts`, `DoorDetailSchema`; `src/render/doorDetail.ts`, `doorDetail`; `src/render/furniture.ts`, `FurnitureMeshes`; and `test/doorDetail.test.ts`, "door detail".
 
 ## Furniture solidity
 

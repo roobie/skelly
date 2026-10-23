@@ -2,6 +2,7 @@
   "sounds": [
     {
       "id": "player_hurt_light",
+      "description": "fixture hurt",
       "variants": ["assets/audio/missing.ogg"],
       "gain": 0.8,
       "pitchJitter": [0.95, 1.05],

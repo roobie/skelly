@@ -2,6 +2,8 @@
   "items": [
     {
       "id": "fixture_unselected_gun",
+      "workInProgress": false,
+      "notLoot": false,
       "economy": { "usage": [], "tiers": [] },
       "name": "Unselected gun",
       "category": "weapon",

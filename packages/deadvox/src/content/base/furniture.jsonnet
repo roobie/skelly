@@ -1,5 +1,6 @@
 local shape = import 'furniture-shape.libsonnet';
 local breach = import 'furniture-breach.libsonnet';
+local detail = import 'door-detail.libsonnet';
 local woodDoor = {
   id: 'wood_door',
   name: 'Burglary-safe wooden door',
@@ -21,8 +22,13 @@ local woodDoor = {
         strikeIntervalSimSeconds: 0.8, strikeSound: 'lock_hammer',
       },
     },
+    detail: detail.panelled,
   },
 };
+local flimsyPry = woodDoor.door.methods.pry + {
+  level: 1, timeSimSeconds: 6, fastestTimeSimSeconds: 3,
+};
+local flimsyToWoodPryRatio = flimsyPry.timeSimSeconds / woodDoor.door.methods.pry.timeSimSeconds;
 breach.breaking(shape.colliding({
   furnitureMaterials: [
     {
@@ -372,9 +378,15 @@ breach.breaking(shape.colliding({
       breach: { minimumStrength: 3.5, durability: 60 },
       door: woodDoor.door + {
         methods: woodDoor.door.methods + {
-          pry: woodDoor.door.methods.pry + {
-            level: 1, timeSimSeconds: 6, fastestTimeSimSeconds: 3,
+          pry: flimsyPry,
+          hammer: woodDoor.door.methods.hammer + {
+            timeSimSeconds: woodDoor.door.methods.hammer.timeSimSeconds * flimsyToWoodPryRatio,
+            fastestTimeSimSeconds: woodDoor.door.methods.hammer.fastestTimeSimSeconds * flimsyToWoodPryRatio,
           },
+        },
+        // An interior door turns on a knob rather than a lever.
+        detail: detail.panelled + {
+          handle: { kind: 'knob', fromFreeEdge: 0.08, along: 0.48, length: 0.06, thickness: 0.02 },
         },
       },
     },
@@ -390,6 +402,7 @@ breach.breaking(shape.colliding({
             strikeIntervalSimSeconds: 1, strikeSound: 'lock_pry', fuel: 1,
           },
         },
+        detail: detail.flush,
       },
     }
   ]

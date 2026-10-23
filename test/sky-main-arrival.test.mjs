@@ -9,6 +9,7 @@ import {
   adaptMainInteractionPick,
   mainArrivalGit,
   mainOverlayPath,
+  mainOverlaySources,
   mainSourceOverlays,
   removedExports,
   workspaceDirectory,
@@ -19,10 +20,27 @@ it('main rendering overlays retain branch core API owners', () => {
   assert.ok(mainSourceOverlays.every((path) => !path.startsWith('core/')));
 });
 
-it('main overlays keep the play frame producer, consumer and acid effect contract on the same revision', () => {
+it('main overlays keep play, view and their figure and acid effect contracts on the same revision', () => {
   assert.ok(mainSourceOverlays.includes('game/play.ts'));
   assert.ok(mainSourceOverlays.includes('render/playView.ts'));
+  assert.ok(mainSourceOverlays.includes('render/playerFigure.ts'));
   assert.ok(mainSourceOverlays.includes('render/acidEffects.ts'));
+});
+
+it('main play overlays keep the entire UI boundary on the base even when export names survive signature changes', () => {
+  const basePaths = new Set([
+    'ui/options.ts',
+    'ui/nested/readout.ts',
+    'ui/style.css',
+    'core/rules.ts',
+    'game/unrelated.ts',
+  ]);
+  const sources = mainOverlaySources(basePaths);
+  assert.ok(sources.includes('ui/options.ts'));
+  assert.ok(sources.includes('ui/nested/readout.ts'));
+  assert.ok(!sources.includes('core/rules.ts'));
+  assert.ok(!sources.includes('game/unrelated.ts'));
+  assert.ok(!sources.includes('ui/style.css'));
 });
 
 it('main picker callers supply both branch reach predicates without changing an already-current caller', () => {

@@ -22,6 +22,8 @@ export interface ComboBoxProps {
   readonly options: readonly ComboBoxOption[];
   /** The chosen option's value. */
   readonly value: string;
+  /** What the list says when the typed filter matches no option. */
+  readonly emptyLabel: string;
   /** Receives a newly chosen value; the owner renders it back as `value`. */
   readonly choose: (value: string) => void;
 }
@@ -131,7 +133,7 @@ class ComboBoxDirective extends AsyncDirective {
                   class=${option.value === props.value ? 'combo-box-option combo-box-chosen' : 'combo-box-option'}
                   @pointermove=${() => this.highlight(index)} @click=${() => this.pick(option)}>${option.label}</li>`,
               )
-            : html`<li class="combo-box-option combo-box-empty" role="presentation">No matches</li>`
+            : html`<li class="combo-box-option combo-box-empty" role="presentation">${props.emptyLabel}</li>`
         }
       </ul>
     </span>`;

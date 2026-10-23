@@ -33,7 +33,7 @@ local commonItems = [
   'fuse', 'nylon_cord', 'wire_strippers', 'adjustable_pliers', 'sewing_kit', 'broken_toaster', 'dead_desk_lamp', 'oil_lamp',
   'broken_table_fan', 'cracked_phone', 'broken_clock', 'sewing_repair_kit', 'electrical_repair_kit',
   'taped_flashlight_mount', 'scrap_foregrip', 'hinge_set', 'glass_bulb', 'hand_saw', 'screwdriver', 'wrench',
-  'improvised_suppressor', 'compass', 'crowbar', 'sledgehammer', 'blowtorch', 'gas_canister', 'hammer', 'kitchen_knife', 'kabar', 'machete', 'can_opener', 'whetstone',
+  'improvised_suppressor', 'compass', 'crowbar', 'sledgehammer', 'blowtorch', 'gas_canister', 'hammer', 'kitchen_knife', 'kabar', 'machete', 'can_opener', 'whetstone', 'door_bar',
   'baseball_bat', 'steel_pipe', 'flashlight', 'headlamp', 'torch', 'candle', 'glowstick', 'road_flare', 'lighter', 'matches',
   'jeans', 'cargo_pants', 'rubber_boots', 'hoodie', 'jacket', 'utility_vest', 'fanny_pack', 'school_backpack', 'hiking_backpack',
   'shed_key', 'pump_shotgun', 'sample_note', 'stick', 'wax', 'wooden_plank', 'repair_kit', 'copper_wire', 'field_patch',
@@ -79,7 +79,7 @@ local authorTemplate(template) = template + {
 local spawnsLoose(item) = !(std.objectHas(item, 'vehicle') || std.member(notSpawnable, item.id));
 local authorItem(item) =
   assert !spawnsLoose(item) || std.member(commonItems + militaryItems + medicalItems + policeItems + huntingItems, item.id) : 'author economy metadata for ' + item.id;
-  item + {
+  { workInProgress: false, notLoot: false } + item + {
     economy:
       if !spawnsLoose(item) then { usage: [], tiers: [] }
       else if std.member(militaryItems, item.id) then { usage: ['Military'], tiers: ['Tier2', 'Tier3'] }

@@ -9,8 +9,10 @@
       "id": "stick",
       "model": "stick",
       "name": "Stick",
+      "notLoot": false,
       "size": [1, 4],
-      "stack": 6
+      "stack": 6,
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -21,8 +23,10 @@
       "id": "wax",
       "model": "wax",
       "name": "Wax lump",
+      "notLoot": false,
       "size": [1, 1],
-      "stack": 10
+      "stack": 10,
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -45,7 +49,9 @@
       "id": "wooden_plank",
       "model": "wooden_plank",
       "name": "Wooden plank",
-      "size": [2, 4]
+      "notLoot": false,
+      "size": [2, 4],
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -81,12 +87,14 @@
       "id": "repair_kit",
       "model": "repair_kit",
       "name": "Repair kit",
+      "notLoot": false,
       "size": [2, 2],
       "tool": {
         "qualities": {
           "repairing": 1
         }
-      }
+      },
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -109,8 +117,10 @@
       "id": "copper_wire",
       "model": "wire_spool",
       "name": "Salvaged wire",
+      "notLoot": false,
       "size": [1, 2],
-      "weight": 80
+      "weight": 80,
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -139,7 +149,9 @@
       "id": "field_patch",
       "model": "field_patch",
       "name": "Field repair patch",
-      "size": [1, 2]
+      "notLoot": false,
+      "size": [1, 2],
+      "workInProgress": false
     }
   ],
   "recipes": [
@@ -346,6 +358,30 @@
       "workstation": "workbench"
     },
     {
+      "components": [
+        [
+          {
+            "count": 2,
+            "item": "wooden_plank"
+          }
+        ]
+      ],
+      "id": "door_bar",
+      "qualities": {
+        "sawing": 1
+      },
+      "result": {
+        "count": 1,
+        "item": "door_bar"
+      },
+      "skills": {
+        "crafting": 0
+      },
+      "timeGameMinutes": 10,
+      "workstation": "workbench"
+    },
+    {
+      "activation": "sharpen",
       "components": [],
       "id": "grind_kitchen_knife",
       "kind": "repair",
@@ -366,6 +402,7 @@
       "workstation": "grinding_wheel"
     },
     {
+      "activation": "sharpen",
       "components": [],
       "id": "hone_kitchen_knife",
       "kind": "repair",
@@ -388,6 +425,7 @@
       "workstation": null
     },
     {
+      "activation": "sharpen",
       "components": [],
       "id": "grind_kabar",
       "kind": "repair",
@@ -408,6 +446,7 @@
       "workstation": "grinding_wheel"
     },
     {
+      "activation": "sharpen",
       "components": [],
       "id": "hone_kabar",
       "kind": "repair",
@@ -430,6 +469,7 @@
       "workstation": null
     },
     {
+      "activation": "sharpen",
       "components": [],
       "id": "grind_machete",
       "kind": "repair",
@@ -450,6 +490,7 @@
       "workstation": "grinding_wheel"
     },
     {
+      "activation": "sharpen",
       "components": [],
       "id": "hone_machete",
       "kind": "repair",
@@ -492,6 +533,7 @@
         "repair_kit",
         "repair_crowbar",
         "sawn_plank",
+        "door_bar",
         "grind_kitchen_knife",
         "hone_kitchen_knife",
         "grind_kabar",

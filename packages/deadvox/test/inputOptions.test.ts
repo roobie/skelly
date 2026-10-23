@@ -10,6 +10,7 @@ import {
   inputBindings,
   keyboardInput,
 } from '../src/game/inputBindings.ts';
+import { baseScreenText } from './baseRegistry.ts';
 
 const contextWordSeparator = /[^a-z0-9-]+/;
 const dom = new Window();
@@ -29,6 +30,7 @@ for (const key of [
 }
 Object.defineProperty(globalThis, 'window', { configurable: true, value: dom });
 const { mountInputOptions } = await import('../src/ui/inputOptions.ts');
+const inputOptionsText = baseScreenText().inputOptions;
 
 afterAll(() => dom.happyDOM.abort());
 
@@ -95,7 +97,7 @@ describe('input options context visibility', () => {
     expect(debugOnly.length).toBeGreaterThan(0);
     expect(shared.length).toBeGreaterThan(0);
 
-    mountInputOptions(ordinaryRoot);
+    mountInputOptions(ordinaryRoot, inputOptionsText);
     const headings = [...ordinaryRoot.querySelectorAll('section h3')].map(
       (heading) => heading.textContent?.trim() ?? '',
     );
@@ -110,7 +112,7 @@ describe('input options context visibility', () => {
       expect(labels.every((context) => binding.contexts.includes(context as InputContext))).toBe(true);
     }
 
-    mountInputOptions(debugRoot, true);
+    mountInputOptions(debugRoot, inputOptionsText, true);
     expect(debugOnly.every(({ id }) => rowFor(debugRoot, id) !== undefined)).toBe(true);
     expect(
       INPUT_BINDINGS.every((binding) => {
@@ -139,7 +141,7 @@ describe('input options context visibility', () => {
     expect(pair).toBeDefined();
     const root = document.createElement('div');
     document.body.append(root);
-    mountInputOptions(root);
+    mountInputOptions(root, inputOptionsText);
     const button = rowFor(root, pair!.first.id)?.querySelector<HTMLButtonElement>(
       'button[data-binding-alternative="0"]',
     );
@@ -162,7 +164,7 @@ describe('input options context visibility', () => {
     expect(pair).toBeDefined();
     const root = document.createElement('div');
     document.body.append(root);
-    mountInputOptions(root);
+    mountInputOptions(root, inputOptionsText);
     const button = rowFor(root, pair!.ordinary.id)?.querySelector<HTMLButtonElement>(
       'button[data-binding-alternative="0"]',
     );

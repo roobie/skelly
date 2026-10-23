@@ -18,7 +18,7 @@ import type { BodyTuningDef } from '../src/core/schema.ts';
 import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
-import type { MoveIntent } from '../src/game/player.ts';
+import type { MoveIntent, StanceToggle } from '../src/game/player.ts';
 import { createSession, IDLE, type PlayerInputSample } from '../src/game/session.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -144,6 +144,7 @@ export function createRuntime(
     ) => PlayerInputSample;
     onOpaque?: () => void;
     registry?: Registry;
+    powerDevices?: import('../src/core/sitePower.ts').PlacedPowerDevice[];
   } = {},
 ) {
   const { sampleAtPlayerTick } = options;
@@ -169,7 +170,7 @@ export function createRuntime(
     yaw: options.yaw ?? hamlet.spawn.yaw,
     pitch: 0.03,
     walk: false,
-    crouchToggle: false,
+    stanceToggle: undefined as StanceToggle | undefined,
     intent: { ...IDLE },
   };
   const heardSounds: { event: string; file: string; time: number; position: [number, number, number] }[] = [];
@@ -194,6 +195,7 @@ export function createRuntime(
   }
   const session = createSession({
     registry: contentRegistry,
+    ...(options.powerDevices ? { powerDevices: options.powerDevices } : {}),
     world,
     isSolid: worldSolid(world, contentRegistry, sharedEntities),
     isOpaque: (x, y, z) => {
@@ -215,9 +217,9 @@ export function createRuntime(
       ...(sampleAtPlayerTick ? { sampleAtPlayerTick } : {}),
       ...(options.readyHeld ? { readyHeld: options.readyHeld } : {}),
       ...(options.useDominant ? { useDominant: options.useDominant } : {}),
-      consumeCrouchToggle: () => {
-        const pressed = view.crouchToggle;
-        view.crouchToggle = false;
+      consumeStanceToggle: () => {
+        const pressed = view.stanceToggle;
+        view.stanceToggle = undefined;
         return pressed;
       },
       yaw: () => view.yaw,
@@ -314,8 +316,8 @@ export function createRuntime(
     playerAudio,
     heardSounds,
     emitPlayerSound: session.playPlayerSound,
-    toggleCrouch: () => {
-      view.crouchToggle = true;
+    toggleStance: (toggle: StanceToggle) => {
+      view.stanceToggle = toggle;
     },
   };
 }
@@ -372,7 +374,7 @@ export const inspect = (runtime: Runtime): unknown => {
       yaw: runtime.player.yaw,
       pitch: runtime.player.pitch,
       walk: runtime.player.walk,
-      crouching: runtime.session.crouching,
+      stance: runtime.session.stance,
       sprinting: runtime.session.sprinting,
     },
     inventory: {

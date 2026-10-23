@@ -10,12 +10,13 @@ import {
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from './character.ts';
 import { CHUNK, CHUNK_VOLUME } from './coords.ts';
 import { assertFirearmState } from './firearmState.ts';
-import { type InventoryState, WORK_IN_PROGRESS } from './inventory.ts';
+import type { InventoryState } from './inventory.ts';
 import type { ItemState } from './items.ts';
 import { itemIds as collectItemIds, savedItemTree } from './itemTree.ts';
 import { validateLongJob } from './longAction.ts';
 import { MELEE_MOTIONS } from './meleeMotion.ts';
 import type { PlayerCombatState } from './playerCombat.ts';
+import { PLAYER_STANCES } from './playerStance.ts';
 import type { SaveSnapshot } from './saveState.ts';
 import { assertScenarioRun } from './scenarioRun.ts';
 import { freezeSnapshot } from './snapshotData.ts';
@@ -108,6 +109,7 @@ interface WirePayload {
   world: {
     id: string;
     options: SaveWorldIdentity;
+    power?: SaveSnapshot['world']['power'];
     regions: Record<string, Region>;
     zombieSystem: {
       nextEntityId: number;
@@ -149,7 +151,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 54;
+export const SAVE_SCHEMA_VERSION = 56;
 export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -363,6 +365,7 @@ itemSchema = obj({
   madeAtGameTimestamp: opt(nonNegative),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
   cartridges: opt(arr(str({ id: true }))),
+  paperMap: opt(obj({ x: safeInt, z: safeInt })),
   cargo: opt(arr(positiveInt)),
   slots: opt(record(lazy(() => itemSchema))),
   firearm: opt(
@@ -494,6 +497,7 @@ const blockEntitySchema = obj({
   damage: opt(positive),
   broken: opt(enumeration([true])),
   lock: opt(obj({ id: str({ id: true }), locked: bool })),
+  bar: opt(obj({ side: enumeration(['front', 'back']), item: str({ id: true }) })),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
 });
 const pileSchema = obj({ pos: tuple(safeInt, safeInt, safeInt), items: placedGrid });
@@ -648,7 +652,7 @@ const playerState = obj({
   yaw: finite,
   pitch: finite,
   walk: bool,
-  crouching: bool,
+  stance: enumeration(PLAYER_STANCES),
   sprinting: bool,
   firearmReadyWalking: bool,
   handlingPausedForKnockout: bool,
@@ -750,10 +754,27 @@ const scenarioRun = nullable(
 
 const savedRun = obj({ start: nonNegativeInt, length: positiveInt, id: nonNegativeInt });
 
+const powerState = obj({
+  atGameMilliseconds: nonNegativeInt,
+  devices: arr(
+    obj({
+      id: str({ nonEmpty: true }),
+      type: str({ nonEmpty: true }),
+      enabled: bool,
+      fuelUnits: nonNegativeInt,
+      storedMicrojoules: nonNegativeInt,
+      powered: bool,
+      restartBlocked: bool,
+    }),
+  ),
+  links: arr(obj({ from: str({ nonEmpty: true }), to: str({ nonEmpty: true }), itemUid: positiveInt })),
+});
+
 const wirePayloadSchema = obj({
   world: obj({
     id: str({ nonEmpty: true }),
     options: worldIdentitySchema,
+    power: opt(powerState),
     regions: record(
       obj({
         chunks: arr(
@@ -1171,6 +1192,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
   const wire: WirePayload = {
     world: {
       id: snapshot.world.id,
+      ...(snapshot.world.power ? { power: structuredClone(snapshot.world.power) } : {}),
       options: {
         ...worldOptions,
         seed: snapshot.character.simulation.seed,
@@ -1250,6 +1272,7 @@ function restoreWirePayload(wire: WirePayload): SaveSnapshot {
   const snapshot: SaveSnapshot = {
     world: {
       id: wire.world.id,
+      ...(wire.world.power ? { power: structuredClone(wire.world.power) } : {}),
       columns,
       zombies: { ...wire.world.zombieSystem, zombies: ordered(zombies).map(({ order: _order, ...entry }) => entry) },
       spawned: [...wire.world.spawned],
@@ -1487,7 +1510,7 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
 
 function validateWorkItems(tree: readonly { item: ItemState }[], itemsByUid: ReadonlyMap<number, ItemState>): void {
   for (const { item } of tree) {
-    if (item.work && (item.type !== WORK_IN_PROGRESS || item.work.elapsed > item.work.duration)) {
+    if (item.work && item.work.elapsed > item.work.duration) {
       throw new Error('Invalid craft work payload');
     }
     if (item.work?.repairTargetUid !== undefined) {
@@ -1507,10 +1530,10 @@ function ownsLongActionItem(
     return tree.some(({ item }) => item.uid === job.workUid && item.work !== undefined);
   }
   if (job?.jobType === 'reading') {
-    return tree.some(({ item }) => item.uid === job.bookUid && item.type !== WORK_IN_PROGRESS);
+    return tree.some(({ item }) => item.uid === job.bookUid && item.work === undefined);
   }
   if (job?.jobType === 'forceDoor') {
-    return tree.some(({ item }) => item.uid === job.toolUid && item.type !== WORK_IN_PROGRESS);
+    return tree.some(({ item }) => item.uid === job.toolUid && item.work === undefined);
   }
   if (job?.jobType === 'treatment') {
     return tree.some(({ item }) => item.uid === job.itemUid && item.type === job.itemType);
@@ -1677,6 +1700,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
     obj({
       world: obj({
         id: str({ nonEmpty: true }),
+        power: opt(powerState),
         columns: arr(
           obj({
             cx: safeInt,

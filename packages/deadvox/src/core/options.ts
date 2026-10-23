@@ -21,6 +21,31 @@ export const heldKeyLocks = (inventory: Inventory): string[] =>
     return lock === undefined ? [] : [lock];
   });
 
+/** A door bar the player holds; a bar is two-handed, so the other hand is empty. */
+export const heldDoorBar = (inventory: Inventory): Item | undefined =>
+  [inventory.hands.right, inventory.hands.left].find(
+    (held) => held !== undefined && defOf(inventory.registry, held.type).doorBar !== undefined,
+  );
+
+/** Setting a bar takes it from both hands; lifting one needs both hands free. */
+const barHandsRefusal = (inventory: Inventory, operation: DoorOperation): string | undefined => {
+  if (operation === 'unbar') {
+    return inventory.liftRefusal();
+  }
+  return operation !== 'bar' || heldDoorBar(inventory) ? undefined : coreMessage(inventory.registry, 'noHeldDoorBar');
+};
+
+const doorSimSeconds = (inventory: Inventory, entity: BlockEntity, operation: DoorOperation): number => {
+  switch (operation) {
+    case 'bar':
+      return defOf(inventory.registry, heldDoorBar(inventory)!.type).doorBar!.setSimSeconds;
+    case 'unbar':
+      return defOf(inventory.registry, entity.bar!.item).doorBar!.liftSimSeconds;
+    default:
+      return inventory.entities.defOf(entity).door!.handlingSimSeconds;
+  }
+};
+
 export const doorPlan = (
   inventory: Inventory,
   entity: BlockEntity,
@@ -28,12 +53,12 @@ export const doorPlan = (
   keyLocks = heldKeyLocks(inventory),
 ): Plan => {
   const refusal = inventory.entities.doorRefusal(entity, operation, keyLocks, inventory.actorPosition());
+  const handled = operation !== 'open' && operation !== 'close';
   const reason =
     refusal ??
-    ((operation === 'lock' || operation === 'unlock') && !inventory.canReachEntity(entity)
-      ? coreMessage(inventory.registry, 'tooFar')
-      : undefined);
-  return reason ? { ok: false, reason } : { ok: true, time: inventory.entities.defOf(entity).door!.handlingSimSeconds };
+    (handled && !inventory.canReachEntity(entity) ? coreMessage(inventory.registry, 'tooFar') : undefined) ??
+    barHandsRefusal(inventory, operation);
+  return reason ? { ok: false, reason } : { ok: true, time: doorSimSeconds(inventory, entity, operation) };
 };
 
 export const doorOptions = (

@@ -34,6 +34,7 @@ const senseTuning = {
     eyeDropMetres: 0.6,
     bodyHeightMetres: 1.2,
   },
+  prone: baseRegistry.senses.get('player')!.prone,
   wall: { hearingRangeScale: 0.5, gain: 0.5, cutoffHz: 1200, clearGain: 1, clearCutoffHz: 18_000 },
   footsteps: baseRegistry.senses.get('player')!.footsteps,
   vocalNoiseLifetimeSimSeconds: baseRegistry.senses.get('player')!.vocalNoiseLifetimeSimSeconds,
@@ -191,6 +192,7 @@ describe('game audio playback', () => {
   it.each([true, false])('applies authored bass shaping before spatial routing (headLocked=%s)', async (headLocked) => {
     const profile = {
       id: 'fixture_bass_report',
+      description: 'fixture bass report',
       variants: ['assets/audio/gunshot-akm-01.ogg'],
       gain: 0.7,
       lowShelf: { frequencyHz: 175, gainDb: 4 },

@@ -25,6 +25,7 @@ import { PLAYER } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { presentationFlight } from './itemFlightFixture.ts';
 import { chargedRifle, rifleAmmunition, rifleInHand, settle } from './rifleFixture.ts';
 
 const registry = baseRegistry();
@@ -259,10 +260,29 @@ it('a codec save restores the immediate aim frame, recoil and next pellet rays',
   const resumedWithoutWobbleState = session([], withoutWobbleState);
   expect(resumedWithoutWobbleState.aim.advance(next)).not.toEqual(originalFrame);
   const ammo = registry.items.get('shell_12_gauge_00_buck')!.ammo!;
+  const firearm = registry.items.get('pump_shotgun')!.firearm!;
   expect(
-    pelletShot({ ammo, origin: [1, 2, 3], yaw: 0.2, pitch: -0.1, aimFrame: resumedFrame, seed: 83, key: 'resume' }),
+    pelletShot({
+      ammo,
+      firearm,
+      origin: [1, 2, 3],
+      yaw: 0.2,
+      pitch: -0.1,
+      aimFrame: resumedFrame,
+      seed: 83,
+      key: 'resume',
+    }),
   ).toEqual(
-    pelletShot({ ammo, origin: [1, 2, 3], yaw: 0.2, pitch: -0.1, aimFrame: originalFrame, seed: 83, key: 'resume' }),
+    pelletShot({
+      ammo,
+      firearm,
+      origin: [1, 2, 3],
+      yaw: 0.2,
+      pitch: -0.1,
+      aimFrame: originalFrame,
+      seed: 83,
+      key: 'resume',
+    }),
   );
 });
 
@@ -697,7 +717,14 @@ it('hides a committed pile item during its arc and lands at its current model po
   const flightSimSeconds = reachTuning(registry).throwFlightSimSeconds;
   const landingAt = startedAtSimSeconds + flightSimSeconds;
   throws.spawn(
-    { item: rifle, itemUid: placed.item.uid, origin: [0, 1, 0], startedAtSimSeconds, landingAt },
+    {
+      item: rifle,
+      itemUid: placed.item.uid,
+      flight: presentationFlight,
+      origin: [0, 1, 0],
+      startedAtSimSeconds,
+      landingAt,
+    },
     runtime.inventory,
   );
 

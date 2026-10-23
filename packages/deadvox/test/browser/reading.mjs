@@ -235,16 +235,16 @@ try {
     } finally {
       await showHud();
     }
-    const crouchBeforeToggle = await page.evaluate(() => globalThis.readingWitness.session.crouching);
+    const stanceBeforeToggle = await page.evaluate(() => globalThis.readingWitness.session.stance);
     await pressAction(page, 'player.crouch-toggle');
     await page.waitForFunction(
-      (crouchingAtDispatch) => globalThis.readingWitness.session.crouching !== crouchingAtDispatch,
-      crouchBeforeToggle,
+      (stanceAtDispatch) => globalThis.readingWitness.session.stance !== stanceAtDispatch,
+      stanceBeforeToggle,
     );
     await pressAction(page, 'player.crouch-toggle');
     await page.waitForFunction(
-      (crouchingAtDispatch) => globalThis.readingWitness.session.crouching === crouchingAtDispatch,
-      crouchBeforeToggle,
+      (stanceAtDispatch) => globalThis.readingWitness.session.stance === stanceAtDispatch,
+      stanceBeforeToggle,
     );
     const walk = async (actionId, targetX, increasing) => {
       const from = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
@@ -325,7 +325,7 @@ try {
       return session.rest.action?.kind === 'rest' && session.rest.action.furnitureUid === uid;
     }, chairUid);
     assert.equal(await page.evaluate(() => globalThis.readingWitness.session.sim.compression.active), true);
-    const crouchingDuringRest = await page.evaluate(() => globalThis.readingWitness.session.crouching);
+    const stanceDuringRest = await page.evaluate(() => globalThis.readingWitness.session.stance);
     const crouchGuardStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
     await pressAction(page, 'player.crouch-toggle');
     await waitForSimulation(
@@ -343,8 +343,8 @@ try {
       },
     );
     assert.equal(
-      await page.evaluate(() => globalThis.readingWitness.session.crouching),
-      crouchingDuringRest,
+      await page.evaluate(() => globalThis.readingWitness.session.stance),
+      stanceDuringRest,
       'long-action lock suppresses the crouch action',
     );
     await interruptRest('rest stop interruption');
@@ -411,6 +411,7 @@ try {
       const vm = restViewModel(session.rest.action, true, session.sim, {
         messagesVisible: true,
         restLabels: { rest: 'fixture rest', sleep: 'fixture sleep' },
+        text: session.inventory.registry.ui.get('core').screenText,
       });
       if (
         !(gauge && session.rest.action?.sleepOnset) ||

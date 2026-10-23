@@ -2259,6 +2259,25 @@
       "color": "#7a5534",
       "door": {
         "barredFrom": "front",
+        "detail": {
+          "fields": [1, 2],
+          "frame": 0.10000000000000001,
+          "handle": {
+            "along": 0.5,
+            "fromFreeEdge": 0.10000000000000001,
+            "kind": "lever",
+            "length": 0.12,
+            "thickness": 0.02
+          },
+          "hardware": "#c6b98e",
+          "hinges": {
+            "count": 3,
+            "length": 0.16,
+            "width": 0.050000000000000003
+          },
+          "relief": 0.012,
+          "seam": 0.12
+        },
         "handlingSimSeconds": 0.59999999999999998,
         "methods": {
           "hammer": {
@@ -2453,6 +2472,25 @@
       },
       "color": "#626d70",
       "door": {
+        "detail": {
+          "fields": [1, 1],
+          "frame": 0.050000000000000003,
+          "handle": {
+            "along": 0.34999999999999998,
+            "fromFreeEdge": 0.12,
+            "kind": "pull",
+            "length": 0.14999999999999999,
+            "thickness": 0.025000000000000001
+          },
+          "hardware": "#a9adb0",
+          "hinges": {
+            "count": 3,
+            "length": 0.10000000000000001,
+            "width": 0.059999999999999998
+          },
+          "relief": 0.0080000000000000002,
+          "seam": 0.050000000000000003
+        },
         "handlingSimSeconds": 0.59999999999999998,
         "methods": {
           "hammer": {
@@ -2724,12 +2762,14 @@
       "id": "gauntlet_public_memo",
       "model": "paper_sheet",
       "name": "Maintenance route",
+      "notLoot": false,
       "readable": {
         "text": "The service store is on the block with the square raised water tank. Go around the low brick building to the rear apron. The two tall, narrow exhausts stand together there; the inspection hatch beside them opens onto the maintenance ladder. The office is not the basement access.\n\nSquare raised water tank → low brick store\n                           rear apron → paired exhausts → hatch\n",
         "title": "Maintenance route"
       },
       "size": [1, 1],
-      "weight": 5
+      "weight": 5,
+      "workInProgress": false
     },
     {
       "category": "note",
@@ -2740,12 +2780,14 @@
       "id": "gauntlet_public_directions",
       "model": "folded_note",
       "name": "Delivery instructions",
+      "notLoot": false,
       "readable": {
         "text": "Deliver instruments to the low brick service store beside the yellow loading frame. Do not leave them at a utility cabinet or a lone duct riser. Walk around to the rear apron, find the pair of narrow exhausts, and use the inspection hatch beside them. The lid is unlocked; the ladder below reaches the intake floor. Return by the same hatch when the shift ends.\n",
         "title": "Delivery instructions"
       },
       "size": [1, 1],
-      "weight": 5
+      "weight": 5,
+      "workInProgress": false
     },
     {
       "category": "note",
@@ -2756,12 +2798,14 @@
       "id": "gauntlet_maintenance_memo",
       "model": "paper_sheet",
       "name": "Ventilation invoice",
+      "notLoot": false,
       "readable": {
         "text": "Accounts queried the extra ducting again. The low brick service building beside the square water tank and yellow delivery frame has paired narrow exhausts on its rear apron, rather more ventilation than a stores room needs. The inspection hatch beside them has a ladder under the lid. Please use that access, not the office door.\n\nStreet → service building → rear apron\n                           paired exhausts → hatch\n",
         "title": "Ventilation invoice"
       },
       "size": [1, 1],
-      "weight": 5
+      "weight": 5,
+      "workInProgress": false
     },
     {
       "category": "note",
@@ -2772,12 +2816,14 @@
       "id": "gauntlet_cellar_note",
       "model": "folded_note",
       "name": "Note for Ray",
+      "notLoot": false,
       "readable": {
         "text": "Ray, I've taken the kids to my sister's. You won't come, I know. You've barely been up from the cellar since the radio started, and at night I hear you under the house, deeper than any cellar goes. Whatever you're keeping down there, I hope it's worth more to you than we were. Don't come after us until that bite has healed.\n\nM.\n",
         "title": "Note for Ray"
       },
       "size": [1, 1],
-      "weight": 5
+      "weight": 5,
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -2791,7 +2837,9 @@
       },
       "model": "gauntlet_lab_entry_card",
       "name": "Security keycard",
-      "size": [1, 1]
+      "notLoot": false,
+      "size": [1, 1],
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -2805,8 +2853,10 @@
       },
       "model": "folded_note",
       "name": "Clearance keycard",
+      "notLoot": false,
       "size": [1, 1],
-      "weight": 5
+      "weight": 5,
+      "workInProgress": false
     }
   ],
   "loot": [
@@ -5403,13 +5453,13 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_entry_bay_technical_pump",
+                "id": "gauntlet_lab_entry_bay_technical_generator",
                 "kind": "piece"
               },
               "weight": 1
             }
           ],
-          "id": "technical_pump",
+          "id": "technical_generator",
           "size": [4, 7, 4],
           "turn": 0
         },
@@ -30295,12 +30345,12 @@
     },
     {
       "anchors": {},
-      "id": "gauntlet_lab_entry_bay_technical_pump",
+      "id": "gauntlet_lab_entry_bay_technical_generator",
       "layers": [
         ["FFFF", "FFFF", "FFFF", "...."],
         ["FFFF", "FFFF", "FFFF", "...."],
         ["FFFF", "FFFF", "FFFF", "...."],
-        ["FFFF", "FFFF", "FFFF", "...."],
+        ["....", "....", "....", "...."],
         ["LL..", "....", "....", "...."],
         ["====", "====", "====", "===="],
         ["====", "====", "====", "===="]
@@ -30314,7 +30364,7 @@
           ["SSSS", "SSSS", "SSSS", "AAAA"],
           ["SSSS", "SSSS", "SSSS", "AAAA"],
           ["SSSS", "SSSS", "SSSS", "AAAA"],
-          ["SSSS", "SSSS", "SSSS", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
           ["SSAA", "AAAA", "AAAA", "AAAA"],
           ["SSSS", "SSSS", "SSSS", "SSSS"],
           ["SSSS", "SSSS", "SSSS", "SSSS"]
@@ -30330,7 +30380,7 @@
           "role": "shell"
         },
         "F": {
-          "furniture": "gauntlet_look_pump",
+          "furniture": "gauntlet_lab_generator",
           "loot": "d41_empty"
         },
         "L": {
@@ -32531,7 +32581,7 @@
           "role": "shell"
         },
         "F": {
-          "furniture": "fridge",
+          "furniture": "gauntlet_lab_fridge",
           "loot": "gauntlet_lab_administration_canteen",
           "lootUsage": ["Residential"]
         },
@@ -34146,7 +34196,7 @@
           ]
         },
         {
-          "at": [12, 2.3999999999999999, 0.44],
+          "at": [12, 2.3999999999999999, 0.40999999999999998],
           "door": [11, 0, 0],
           "kind": "paint",
           "normal": "n",
