@@ -1380,13 +1380,10 @@ quickbar use.
 
 The view-item binding over an item card, or as a key on the selected item, opens
 the item viewer: that instance's own model, with its fitted magazine and
-attachments, turned by dragging and zoomed by the wheel. A grid card is too small
-to judge an item's shape or what is fitted to it, and a close look must not cost
-a move, so the viewer is view-only. It changes neither the item, the selection
-nor the queue, item keys wait until it closes, and the clock runs as it does with
-the inventory open. It is modal: it takes focus and the inventory it covers is
-inert until it closes, so no key or press reaches a hidden control. It draws with the item pictures' renderer rather than a
-second WebGL context. See `src/ui/itemViewer.ts`, `ItemViewer`, and
+attachments. A grid card hides the detail that tells items apart, and inspecting
+must not cost a move, so the viewer is view-only. It is modal because a covered
+control must not activate. It fills the inventory panel because a larger panel
+shows more detail. See `src/ui/itemViewer.ts`, `ItemViewer`, and
 `src/render/itemPictures.ts`, `ItemPictures`.
 
 ### Piles and item models
