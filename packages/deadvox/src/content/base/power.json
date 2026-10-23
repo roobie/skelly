@@ -2,6 +2,25 @@
   "powerDevices": [
     {
       "burnLitresPerGameHour": 1,
+      "id": "lab_generator",
+      "kind": "generator",
+      "outputWatts": 20000,
+      "priority": 0
+    },
+    {
+      "demandWatts": 10,
+      "id": "lab_light",
+      "kind": "consumer",
+      "priority": 1
+    },
+    {
+      "demandWatts": 100,
+      "id": "lab_machine",
+      "kind": "consumer",
+      "priority": 2
+    },
+    {
+      "burnLitresPerGameHour": 1,
       "id": "fuel_generator",
       "kind": "generator",
       "outputWatts": 1000,

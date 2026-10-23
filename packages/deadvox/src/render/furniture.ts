@@ -16,6 +16,7 @@ import {
   type BlockEntities,
   type BlockEntity,
   type DoorPanelBox,
+  doorBarBox,
   isBodyDoor,
   panelFor,
   poseKey,
@@ -305,6 +306,7 @@ export class FurnitureMeshes {
       panel.position.set(...box.center);
       pivot.add(panel);
     }
+    this.addDoorBar(pivot, entity, box);
     if (bodyDoor) {
       pivot.add(this.bodyDoorHandle(entity, box));
     }
@@ -326,6 +328,18 @@ export class FurnitureMeshes {
     assembly.add(shaped);
     assembly.add(pivot);
     return assembly;
+  }
+
+  private addDoorBar(pivot: Group, entity: BlockEntity, box: ReturnType<typeof panelFor>): void {
+    const look = entity.bar && this.entities?.registry.items.get(entity.bar.item)?.doorBar?.look;
+    if (!look) {
+      return;
+    }
+    const bar = new Mesh(this.geometry, this.material(look.color));
+    const { center, size } = doorBarBox(entity, box, look.thickness);
+    bar.scale.set(...size);
+    bar.position.set(...center);
+    pivot.add(bar);
   }
 
   private bodyDoorHandle(entity: BlockEntity, box: DoorPanelBox): Mesh {

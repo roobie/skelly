@@ -364,6 +364,17 @@ local items = [
     igniter: { capacity: 10, perIgnition: 1 },
     model: 'matches',
   },
+  {
+    id: 'door_bar',
+    name: 'Door bar',
+    category: 'tool',
+    weight: 3000,
+    size: [1, 6],
+    twoHanded: true,
+    description: 'A length of timber that drops across a shut door and bars it from the other side.',
+    doorBar: { setSimSeconds: 3, liftSimSeconds: 2, look: { color: '#7a5532', thickness: 0.09 } },
+    disassembly: disassembly(5, [yield('wooden_plank', 2)]),
+  },
 ];
 
 local itemIds = [item.id for item in items];
