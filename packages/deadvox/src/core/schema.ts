@@ -3211,10 +3211,20 @@ const FigureSchema = strictObject({
 
 // ---- skills and recipes ----
 
+const SkillCurveSchema = strictObject({
+  saturationFloor: Fraction,
+  saturationHalfLifeLevels: Positive,
+});
+const SkillProgressionSchema = strictObject({
+  id: Id,
+  practicePerLevel: Positive,
+});
+
 const SkillSchema = pipe(
   strictObject({
     id: Id,
     name: Name,
+    curve: optional(SkillCurveSchema),
     /** Recipes a new character knows from the start. */
     startingRecipes: optional(array(Id)),
     training: optional(
@@ -3281,6 +3291,8 @@ const SkillSchema = pipe(
               landingLiftMetres: NonNegative,
             }),
             shotTraceRangeBlocks: Positive,
+            /** The owning skill's curve is attached by the registry, not authored here. */
+            curve: optional(SkillCurveSchema),
           }),
         ),
         melee: optional(
@@ -3964,6 +3976,7 @@ const SECTION_DESCRIPTOR = {
   models: { schema: optional(array(ModelSchema)), label: 'models', order: 7 },
   sounds: { schema: optional(array(SoundSchema)), label: 'sound events', order: 8 },
   skills: { schema: optional(array(SkillSchema)), label: 'skills', order: 9 },
+  skillProgression: { schema: optional(array(SkillProgressionSchema)), label: 'skill progression', order: 9 },
   recipes: { schema: optional(array(RecipeSchema)), label: 'recipes', order: 10 },
   layouts: { schema: optional(array(SiteLayoutSchema)), label: 'site layouts', order: 11 },
   body: { schema: optional(array(BodyTuningSchema)), label: 'body tuning', order: 12 },

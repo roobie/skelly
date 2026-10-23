@@ -481,7 +481,11 @@ const createCraftReplayFixture = () => {
   for (const [skill, required] of Object.entries(recipe.skills)) {
     while ((runtime.session.character.skills[skill] ?? 0) < required) {
       const level = runtime.session.character.skills[skill] ?? 0;
-      runtime.session.character.awardPractice(skill, practiceForNextLevel(level), SKILL_LEVEL_LEGENDARY);
+      runtime.session.character.awardPractice(
+        skill,
+        practiceForNextLevel(runtime.inventory.registry, level),
+        SKILL_LEVEL_LEGENDARY,
+      );
     }
   }
   for (const group of recipe.components) {
