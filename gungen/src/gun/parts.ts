@@ -211,6 +211,7 @@ const PUMP_RECEIVER_FORWARD_EXTENSION_U = 3.5;
 const PUMP_FOREND_MOUNT_X = PUMP_FOREND_PROPORTIONS.mountX;
 const PUMP_FOREND_WALL = 0.25;
 const PUMP_TUBE_LENGTH_PERCENTAGES = ['50', '75', '100'] as const;
+const PUMP_TUBE_MAX_LENGTH_PERCENT = Math.max(...PUMP_TUBE_LENGTH_PERCENTAGES.map(Number));
 
 // A box magazine's section: front to back, and side to side. 1.8× the first
 // 3 × 2 box, snapped so each half-extent stays on the 0.25u grid.
@@ -3782,6 +3783,10 @@ const tubeMagazine: PartFamily = {
     // The barrel's bore sets how far its underside sits above the tube.
     bore: { ...size, from: [{ port: 'cap', param: 'bore' }] },
   },
+  validateParams: (params) =>
+    Number(params.lengthPercent ?? '75') > PUMP_TUBE_MAX_LENGTH_PERCENT
+      ? 'Tube magazines cannot be longer than their barrels.'
+      : undefined,
   build(params): PartDef {
     const barrelLengthClass = (params.barrelLength ?? size.default) as SizeClass;
     const barrelEnd = barrelLength({ length: barrelLengthClass });

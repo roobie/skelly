@@ -40,6 +40,7 @@ import {
   type ScenarioDef,
   type SiteLayoutDef,
   type TemplateDef,
+  type ZombieDef,
 } from './schema.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
 import { ownershipShapeIssues } from './templateOwnership.ts';
@@ -970,10 +971,27 @@ const checkToolFuel = (item: ItemDef, registry: Registry, report: Report) => {
   }
 };
 
+const checkFurniturePower = (registry: Registry, furniture: FurnitureDef, report: Report) => {
+  const { power } = furniture;
+  if (!power) {
+    return;
+  }
+  const device = registry.powerDevices.get(power.device);
+  if (!device) {
+    report('furniture', furniture.id, '.power.device', `no power device "${power.device}"`);
+  } else if (device.kind !== 'generator' && power.fuelLitres !== 0) {
+    report('furniture', furniture.id, '.power.fuelLitres', 'only a generator holds fuel');
+  }
+  if (power.light && device?.kind !== 'consumer') {
+    report('furniture', furniture.id, '.power.light', 'a light must be a consumer');
+  }
+};
+
 const checkFurniture = (registry: Registry, report: Report) => {
   const cellMetres = registry.inventory.get(CORE_CONTENT_IDS.player)?.cellMetres;
   checkMaterialSounds(registry, report);
   for (const furniture of registry.furniture.values()) {
+    checkFurniturePower(registry, furniture, report);
     if (furniture.container) {
       checkContainerWidth({ section: 'furniture', id: furniture.id, container: furniture.container, registry, report });
     }
@@ -1260,9 +1278,25 @@ const checkHandlingRanges = (registry: Registry, report: Report) => {
   }
 };
 
+const checkSeveredItems = (registry: Registry, zombie: ZombieDef, report: Report) => {
+  const regions = Object.keys(zombie.regions);
+  if (
+    regions.length !== Object.keys(zombie.severedItems).length ||
+    regions.some((region) => !Object.hasOwn(zombie.severedItems, region))
+  ) {
+    report('zombies', zombie.id, '.severedItems', 'severed item keys must match region keys');
+  }
+  for (const [region, item] of Object.entries(zombie.severedItems)) {
+    if (item !== null && !registry.items.has(item)) {
+      report('zombies', zombie.id, `.severedItems.${region}`, `no item "${item}"`);
+    }
+  }
+};
+
 const checkZombies = (registry: Registry, report: Report) => {
   const qualities = new Set([...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
   for (const zombie of registry.zombies.values()) {
+    checkSeveredItems(registry, zombie, report);
     if (zombie.loot !== undefined && !registry.loot.has(zombie.loot)) {
       report('zombies', zombie.id, '.loot', `no loot table "${zombie.loot}"`);
     }
@@ -1280,6 +1314,9 @@ const checkZombies = (registry: Registry, report: Report) => {
 };
 
 const checkRecipeRepair = (registry: Registry, recipe: RecipeDef, report: Report): void => {
+  if (recipe.activation && (recipe.kind !== 'repair' || recipe.components.length > 0)) {
+    report('recipes', recipe.id, '.activation', 'held sharpening needs a repair effect and no components');
+  }
   if (recipe.kind === 'repair') {
     if (!recipe.repair) {
       report('recipes', recipe.id, '.repair', 'repair recipes need a repair effect');
@@ -1611,6 +1648,13 @@ export const requiredContentIssues = (registry: Registry): ContentIssue[] => {
       return { source: 'core content', path: section, message };
     },
   );
+  if ([...registry.items.values()].filter((item) => item.workInProgress).length !== 1) {
+    issues.push({
+      source: 'core content',
+      path: 'items',
+      message: 'expected exactly one work-in-progress item definition',
+    });
+  }
   if (registry.dayCycle === undefined) {
     issues.push({ source: 'core content', path: 'dayCycle', message: 'missing required day cycle' });
   }

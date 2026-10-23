@@ -59,7 +59,7 @@ import { GraphicsOptionsSchema } from './graphics.ts';
 import { ItemEconomySchema, LootContextSchema, UsageSchema } from './loot.ts';
 import { MELEE_MOTIONS } from './meleeMotion.ts';
 import { MAX_EXPOSURE, MIN_EXPOSURE, TONE_KEYS } from './mood.ts';
-import { PowerDeviceSchema, PowerTuningSchema } from './powerContent.ts';
+import { POWER_UNITS, PowerDeviceSchema, PowerTuningSchema, unitCount } from './powerContent.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SCENARIO_KINDS } from './scenarioKinds.ts';
 import { shapeBlocks } from './shapeSolid.ts';
@@ -833,6 +833,10 @@ const FirearmAttachmentEffectsSchema = variant('kind', [
     recoilReduction: Fraction,
     /** Condition lost per committed shot; zero means the attachment does not wear. */
     wearPerShot: Fraction,
+    /** Firearms Combat level required to fit this suppressor; removing it remains open. */
+    fitSkillLevel: SkillLevel,
+    /** Player-facing refusal when the character lacks the fitting skill. */
+    fitRefusal: Name,
   }),
   strictObject({
     kind: literal('foregrip'),
@@ -950,6 +954,8 @@ const TreatmentSchema = pipe(
 const ItemSchema = strictObject({
   id: Id,
   economy: ItemEconomySchema,
+  workInProgress: vBoolean(),
+  notLoot: vBoolean(),
   name: Name,
   category: picklist(ITEM_CATEGORIES),
   weight: optional(NonNegative),
@@ -1657,6 +1663,17 @@ const FurnitureSchema = pipe(
           'removed names a fitting the blueprint lacks',
         ),
       ),
+    ),
+    power: optional(
+      strictObject({
+        device: Id,
+        fuelLitres: pipe(
+          NonNegative,
+          check((value) => unitCount(value, POWER_UNITS.amount) !== undefined, 'fuel must be exact in power units'),
+        ),
+        enabled: vBoolean(),
+        light: optional(strictObject({ color: Color, intensity: Positive, radius: Positive })),
+      }),
     ),
     /** Comfort scales fatigue recovery; sleepable pieces also enable the sleep rate. */
     rest: optional(strictObject({ quality: Fraction, sleep: optional(literal(true)) })),
@@ -2583,6 +2600,8 @@ const ZombieSchema = strictObject({
   soundPitchMultiplier: optional(Positive),
   /** Health keyed by hit-region id; ordinary shamblers use six anatomy keys, amalgams use manifest ids. */
   regions: record(pipe(string(), nonEmpty('must not be empty')), Positive),
+  /** Explicitly null when this region leaves no item. */
+  severedItems: record(pipe(string(), nonEmpty('must not be empty')), nullable(Id)),
   /** Relative chance that an ordinary hamlet spawn chooses this type; 1 is the common baseline. */
   spawnWeight: pipe(Positive, maxValue(1, 'must be at most 1')),
   /** Excludes this kind from ordinary hamlet selection while keeping authored/debug spawns available. */
@@ -2954,6 +2973,7 @@ const TreesSchema = strictObject({
 
 const SiteGenerationSchema = strictObject({
   id: Id,
+  activeZombieRadiusMetres: PositiveMetres,
   topography: strictObject({
     amplitudeMetres: NonNegative,
     wavelengthMetres: PositiveMetres,
@@ -3449,6 +3469,7 @@ const RecipeSchema = strictObject({
   /** Omitted means an ordinary craft. A repair recipe's result identifies its target type. */
   kind: optional(picklist(['craft', 'repair'])),
   repair: optional(strictObject({ skill: Id, amount: Fraction, perSkill: Fraction })),
+  activation: optional(literal('sharpen')),
   /** Game minutes. */
   timeGameMinutes: PositiveGameMinutes,
   skills: record(Id, SkillLevel),

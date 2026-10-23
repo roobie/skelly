@@ -5,10 +5,11 @@ import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ZombieDef } from '../src/core/schema.ts';
 import { simSeconds } from '../src/core/time.ts';
-import { type PlayerSense, ZombieSystem } from '../src/core/zombies.ts';
+import type { PlayerSense } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const base = registry.zombies.get('shambler')!;

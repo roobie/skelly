@@ -26,6 +26,8 @@ const sealedCanRegistry = (): Registry => {
   const items = new Map(registry.items);
   items.set('fixture_opened_can_contents', {
     id: 'fixture_opened_can_contents',
+    workInProgress: false,
+    notLoot: false,
     economy: { usage: [], tiers: [] },
     name: 'Fixture can contents',
     category: 'food',
@@ -35,6 +37,8 @@ const sealedCanRegistry = (): Registry => {
   });
   items.set('fixture_sealed_can', {
     id: 'fixture_sealed_can',
+    workInProgress: false,
+    notLoot: false,
     economy: { usage: [], tiers: [] },
     name: 'Fixture sealed can',
     category: 'food',
@@ -49,6 +53,8 @@ const sealedCanRegistry = (): Registry => {
   });
   items.set('fixture_can_tool', {
     id: 'fixture_can_tool',
+    workInProgress: false,
+    notLoot: false,
     economy: { usage: [], tiers: [] },
     name: 'Fixture can tool',
     category: 'tool',
@@ -58,6 +64,8 @@ const sealedCanRegistry = (): Registry => {
   });
   items.set('fixture_tool_belt', {
     id: 'fixture_tool_belt',
+    workInProgress: false,
+    notLoot: false,
     economy: { usage: [], tiers: [] },
     name: 'Fixture tool belt',
     category: 'clothing',

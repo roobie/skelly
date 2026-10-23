@@ -3,7 +3,7 @@ import { dominantSide } from '../src/core/character.ts';
 import { worldSolid } from '../src/core/collision.ts';
 import { CHUNK, type Vec3 } from '../src/core/coords.ts';
 import { planDisassembly } from '../src/core/disassembly.ts';
-import { type Target, WORK_IN_PROGRESS } from '../src/core/inventory.ts';
+import type { Target } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
 import { dropTarget, playerPockets, quickMove, toHands } from '../src/core/options.ts';
 import type { MoveIntent } from '../src/game/player.ts';
@@ -111,9 +111,7 @@ describe('airborne drop', () => {
   it('lands what a two-handed wield made mid-jump puts down on the ground', () => {
     let gun: Item | undefined;
     const runtime = midJump((standing) => {
-      const def = [...registry.items.values()].find(
-        (candidate) => candidate.twoHanded && candidate.id !== WORK_IN_PROGRESS,
-      )!;
+      const def = [...registry.items.values()].find((candidate) => candidate.twoHanded && !candidate.workInProgress)!;
       gun = standing.inventory.create(def.id);
       if (!standing.inventory.add(gun, { kind: 'pile', pos: standing.session.feet() })) {
         throw new Error('Could not lay the two-handed item at the feet');
