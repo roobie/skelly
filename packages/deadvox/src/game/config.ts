@@ -35,8 +35,7 @@ export interface GameConfig {
   /** Debug-only fresh-session start in metres (`?at=x,z[,yawDegrees]`). */
   debugStart?: DebugStart;
   /**
-   * What stands near spawn: the hamlet, milestone 1.0's test house (the benchmark's
-   * scene), or the stress-test city.
+   * The selected scenario, authored layout or debug world.
    */
   site: SiteName;
   authoredDecals: boolean;
@@ -99,7 +98,7 @@ export const makeConfig = (
     readyRadiusChunks: chunksFor(scale, Math.min(radiusM, graphics.readyRadiusM)),
     start: defaultStart(content),
     debug: false,
-    site: 'hamlet',
+    site: 'gauntlet',
     authoredDecals: true,
     storeys: 1,
     density: null,
@@ -202,7 +201,6 @@ export const siteFromUrl = (
       requested === 'city' ||
       requested === 'testHouse' ||
       requested === 'forest' ||
-      requested === 'hamlet' ||
       (debug && requested === 'weatheringTest') ||
       (requested !== null && (registry.layouts.has(requested) || registry.scenarios.has(requested)))
         ? requested
@@ -235,7 +233,7 @@ export const configFromUrl = (params: URLSearchParams, content: StartupContent):
     radius >= MIN_RADIUS_M && radius <= MAX_RADIUS_M ? radius : DEFAULT_RADIUS_M,
     content,
   );
-  Object.assign(config, siteFromUrl(params, 'hamlet', content.registry));
+  Object.assign(config, siteFromUrl(params, 'gauntlet', content.registry));
   config.authoredDecals = params.get('decals') !== '0';
   const layoutTime = content.registry.layouts.get(config.site)?.startTimeGameTimeOfDay;
   const requestedTime = params.get('time');

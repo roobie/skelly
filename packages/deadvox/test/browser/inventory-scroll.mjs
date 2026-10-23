@@ -140,7 +140,7 @@ if (handlingSkills.length !== 1) throw Error('Base content lacks the inventory s
 const { registry, issues } = buildRegistry([
   ...${JSON.stringify(content)},
   { source: 'ui.json', data: uiFile },
-  { source: 'inventory-skill-fixture', data: { skills: handlingSkills } },
+  { source: 'inventory-skill-fixture', data: { skills: handlingSkills, skillProgression: recipesFile.skillProgression } },
 ]);
 if (issues.length) throw Error('Invalid scroll fixture: ' + JSON.stringify(issues));
 applyUiTokens(registry, document.documentElement);

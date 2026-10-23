@@ -28,8 +28,17 @@
         "label": "Fast camouflage pattern",
         "options": [false, true]
       },
+      "gore": {
+        "dripSourceCap": 6,
+        "dropletCap": 128,
+        "dropletSpawnsPerFrame": 48,
+        "splatCap": 256
+      },
       "id": "core",
       "itemPictureCacheCapacity": 128,
+      "mobActors": {
+        "maxCorpses": 16
+      },
       "readyRadiusM": 64,
       "renderScale": {
         "adaptive": {

@@ -6,6 +6,13 @@ local toggle(label, default=false) = { label: label, default: default, options: 
     id: 'core',
     readyRadiusM: 64,
     itemPictureCacheCapacity: 128,
+    mobActors: { maxCorpses: 16 },
+    gore: {
+      dropletCap: 128,
+      splatCap: 256,
+      dropletSpawnsPerFrame: 48,
+      dripSourceCap: 6,
+    },
     renderScale: scale('Scene render scale', 0.5) + {
       adaptive: {
         enabled: true,

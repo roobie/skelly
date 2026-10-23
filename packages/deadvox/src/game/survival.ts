@@ -11,7 +11,15 @@ import type { HandlingQueue, JobParams, JobValue } from '../core/handling.ts';
 import type { HandSide, Inventory, Target, TargetState } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { isInHeldItemSlotTree } from '../core/itemTree.ts';
-import { chargeOf, chargeShare, drainBurnLight, drainLight, swapBattery, toggleLight } from '../core/lights.ts';
+import {
+  chargeOf,
+  chargeShare,
+  drainBurnLight,
+  drainLight,
+  lightInHands,
+  swapBattery,
+  toggleLight,
+} from '../core/lights.ts';
 import { consume } from '../core/needs.ts';
 import { consumption, useOption } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
@@ -125,8 +133,8 @@ export class Survival {
     this.queue.registerAction('survival.battery', (params) => {
       const light = this.inventory.itemByUid(numberParam(params, 'lightUid'));
       const battery = this.inventory.itemByUid(numberParam(params, 'batteryUid'));
-      if (!light || this.handOf(light) === undefined) {
-        return "The light isn't in your hands";
+      if (!(light && lightInHands(this.inventory, light))) {
+        return "I haven't got the light in hand";
       }
       if (!battery) {
         return "The battery isn't there any more";
@@ -523,7 +531,8 @@ export class Survival {
     if (!(spec && item.on)) {
       return;
     }
-    if (shouldDouse(spec, location, path, this.sprinting)) {
+    const fittedPoweredLight = spec.power && location.kind === 'slot' && defOf(registry, location.owner.type).firearm;
+    if (!fittedPoweredLight && shouldDouse(spec, location, path, this.sprinting)) {
       this.douseLight(item, spec);
       return;
     }

@@ -13,12 +13,12 @@ it('selects only admitted scenario ids from the URL', () => {
   const admitted = buildRegistry(sources);
   expect(admitted.issues).toEqual([]);
   const params = new URLSearchParams({ site: profile.id });
-  expect(siteFromUrl(params, 'hamlet', admitted.registry).site).toBe(profile.id);
+  expect(siteFromUrl(params, 'gauntlet', admitted.registry).site).toBe(profile.id);
   const data = sources[0]!.data as { scenarios: (typeof profile)[] };
   data.scenarios[0]!.body = 'missing_fixture_body';
   const rejected = buildRegistry(sources);
   expect(rejected.issues.length).toBeGreaterThan(0);
-  expect(siteFromUrl(params, 'hamlet', rejected.registry).site).toBe('hamlet');
+  expect(siteFromUrl(params, 'gauntlet', rejected.registry).site).toBe('gauntlet');
 });
 
 it('uses the selected scenario body and wait cap through the ordinary session owners', () => {

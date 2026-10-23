@@ -14,13 +14,33 @@ import type { DayCycle } from './dayPhase.ts';
 import type { Inventory, Location, Pile, Target } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { putDownRefusal } from './itemThrow.ts';
-import { isInHeldItemSlotTree, itemRoots } from './itemTree.ts';
+import { isInHeldItemSlotTree, itemRoots, walkItemTree } from './itemTree.ts';
 import type { SolidAt } from './raycast.ts';
 import type { NightVision, SenseDef, WearSlot } from './schema.ts';
 import { sunDirection } from './sky.ts';
 import { type GameRate, type GameSeconds, gameSeconds } from './time.ts';
 
 export type LightExposure = 'carried' | 'world';
+const WORN_SLOT_TREE_PATH = /^inventory\.worn\.[^.]+\.slots\./;
+const PILE_SLOT_TREE_PATH = /^inventory\.piles\[\d+\]\.items\[\d+\]\.item(?:\.slots\.[^.]+)+$/;
+
+/** Exposed world attachments use their root's pile location, never a container's contents. */
+export function* inventoryLightEntries(inventory: Inventory) {
+  yield* inventory.carriedTree();
+  for (const root of itemRoots<Item, Pile, BlockEntity>({
+    hands: {},
+    worn: {},
+    piles: inventory.piles.values(),
+    entities: [],
+  })) {
+    yield root;
+    for (const entry of walkItemTree([root])) {
+      if (entry.location.kind === 'slot' && PILE_SLOT_TREE_PATH.test(entry.path)) {
+        yield { ...entry, location: root.location };
+      }
+    }
+  }
+}
 
 export interface LightSenseSource {
   pos: Vec3;
@@ -40,14 +60,17 @@ export const lightExposureFor = (
   if (!(item.on && definition?.light) || (definition.light.power && chargeOf(registry, item) === 0)) {
     return undefined;
   }
-  const inHeldItemSlotTree = location.kind === 'slot' && isInHeldItemSlotTree(path);
-  if (location.kind === 'hand' || location.kind === 'worn' || inHeldItemSlotTree) {
+  const inCarriedSlotTree =
+    location.kind === 'slot' &&
+    (isInHeldItemSlotTree(path) || WORN_SLOT_TREE_PATH.test(path)) &&
+    !path.includes('.pockets[');
+  if (location.kind === 'hand' || location.kind === 'worn' || inCarriedSlotTree) {
     return 'carried';
   }
   if (location.kind === 'pocket' && (path.startsWith('inventory.hands.') || path.startsWith('inventory.worn.'))) {
     return 'carried';
   }
-  if (location.kind === 'pile' && definition.light.burning?.drop === 'stay') {
+  if (location.kind === 'pile' && (definition.light.burning?.drop === 'stay' || PILE_SLOT_TREE_PATH.test(path))) {
     return 'world';
   }
   return undefined;
@@ -106,24 +129,19 @@ export const inventoryLightSources = (
   eyeHeightMetres: number,
 ): LightSenseSource[] => {
   const sources: LightSenseSource[] = [];
-  const collect = (entries: ReturnType<Inventory['items']> | ReturnType<typeof itemRoots<Item, Pile, BlockEntity>>) => {
-    for (const { item, location, path } of entries) {
-      const source = lightSenseSourceFor({
-        registry: inventory.registry,
-        item,
-        location,
-        path,
-        playerPosition,
-        eyeHeightMetres,
-      });
-      if (source) {
-        sources.push(source);
-      }
+  for (const { item, location, path } of inventoryLightEntries(inventory)) {
+    const source = lightSenseSourceFor({
+      registry: inventory.registry,
+      item,
+      location,
+      path,
+      playerPosition,
+      eyeHeightMetres,
+    });
+    if (source) {
+      sources.push(source);
     }
-  };
-  // Only carried trees and pile roots can be exposed; furniture and pile descendants cannot emit.
-  collect(inventory.carriedTree());
-  collect(itemRoots<Item, Pile, BlockEntity>({ hands: {}, worn: {}, piles: inventory.piles.values(), entities: [] }));
+  }
   return sources;
 };
 
@@ -316,6 +334,17 @@ export const drainLight = (
 export const offHandUse = (registry: Registry, inventory: Inventory): Item | undefined => {
   const item = inventory.hands[offSide(inventory.character)];
   return item && defOf(registry, item.type).light ? item : undefined;
+};
+
+/** A fitted light is serviced with its gun in hand, without detaching it. */
+export const lightInHands = (inventory: Inventory, light: Item): boolean => {
+  const at = inventory.locate(light);
+  return (
+    at?.kind === 'hand' ||
+    (at?.kind === 'slot' &&
+      defOf(inventory.registry, at.owner.type).firearm !== undefined &&
+      inventory.locate(at.owner)?.kind === 'hand')
+  );
 };
 
 /** Whether a battery fits a light. */

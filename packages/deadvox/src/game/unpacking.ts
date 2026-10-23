@@ -8,16 +8,20 @@ import { unpackingTool } from './canOpening.ts';
 
 export const UNPACK_ACTION = 'item.unpack';
 
+export interface UnpackingDone {
+  opened?: (type: string) => void;
+  unpacked?: (type: string) => void;
+}
+
 /** Activation only: deliberately not an inventory Use option. */
 export class Unpacking {
   private readonly inventory: Inventory;
   private readonly queue: HandlingQueue;
   private readonly feet: () => Vec3;
+  private readonly done: UnpackingDone;
 
-  private readonly opened: ((type: string) => void) | undefined;
-
-  constructor(inventory: Inventory, queue: HandlingQueue, feet: () => Vec3, opened?: (type: string) => void) {
-    this.opened = opened;
+  constructor(inventory: Inventory, queue: HandlingQueue, feet: () => Vec3, done: UnpackingDone = {}) {
+    this.done = done;
     this.inventory = inventory;
     this.queue = queue;
     this.feet = feet;
@@ -68,7 +72,7 @@ export class Unpacking {
     if (payload.inPlace) {
       const { type } = box;
       this.inventory.transform(box, payload.item);
-      this.opened?.(type);
+      this.done.opened?.(type);
       return undefined;
     }
     const shell = this.inventory.create(payload.item, payload.count, 1);
@@ -85,6 +89,7 @@ export class Unpacking {
       return 'Package is no longer held';
     }
     this.deliver(shell, { pocket, spill });
+    this.done.unpacked?.(payload.item);
     return undefined;
   }
 

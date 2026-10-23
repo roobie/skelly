@@ -8,6 +8,7 @@ import { requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityStore } from '../core/entities.ts';
+import { graphicsTuningOf } from '../core/graphicsTuning.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { lookDefaultsOf } from '../core/lookDefaults.ts';
@@ -41,6 +42,7 @@ import { Flashlight, flashlightDaylightScale, spillSwitchFromSearch } from './fl
 import { FurnitureMeshes } from './furniture.ts';
 import { Gore } from './gore.ts';
 import { type HeldHandlingFrame, HeldItems } from './hands.ts';
+import { setHeightFogTuning } from './heightFog.ts';
 import { ImpactEffects } from './impactEffects.ts';
 import { ItemPictures } from './itemPictures.ts';
 import { ItemThrows } from './itemThrows.ts';
@@ -177,6 +179,8 @@ export const createPlayView = (
   const { config, registry, renderer, meshes, scene, camera, mood, shadows } = engine;
   const drawCounters = config.debug && renderer ? new DrawCounters(renderer) : undefined;
   const dayCycle = requireDayCycle(registry);
+  const look = lookDefaultsOf(registry);
+  const graphics = graphicsTuningOf(registry);
   const s = config.scale.blockSize;
   const models = new ModelLibrary(registry, report);
   let pictures: ItemPictures | undefined;
@@ -193,8 +197,8 @@ export const createPlayView = (
     if (shadows === undefined) {
       throw new Error('rendering resources are incomplete');
     }
-    const look = lookDefaultsOf(registry);
     applyLook(renderer, meshes, lookOf(look));
+    setHeightFogTuning(look.heightFog);
     mood.restore(moodOf(look));
     shadows.restore(DEFAULT_SHADOWS);
   }
@@ -203,7 +207,7 @@ export const createPlayView = (
   const playerPalette = playerFigure.palette;
   const piles = new PileMeshes(s, models, config.seed, meshes);
   const caseEffects = new CaseEffects(s, models);
-  const gore = new Gore(s, config.seed);
+  const gore = new Gore(s, graphics.gore, config.seed);
   const decals =
     engine.scenario && config.authoredDecals
       ? new AuthoredDecals(engine.site?.authoredPlacements ?? [], {
@@ -270,6 +274,8 @@ export const createPlayView = (
   const zombieMeshes: ZombieRenderer =
     config.actors === 'detailed'
       ? new MobActorMeshes(s, undefined, {
+          look: look.mobActors,
+          maxCorpses: graphics.mobActors.maxCorpses,
           canvas: engine.renderer?.domElement,
           reveal: meshes,
           figureSeeds: figureSeedPool(registry.zombies),
@@ -282,8 +288,8 @@ export const createPlayView = (
   zombieMeshes.setWorld?.(engine.isSolid, s);
   scene.add(zombieMeshes.group);
   const cameraStepOffset = new StepOffset(PLAYER.stepHeight);
-  const damageFeedback = new DamageFeedback();
-  const painCue = new PainCue();
+  const damageFeedback = new DamageFeedback(look.damageFeedback);
+  const painCue = new PainCue(look.painCue);
   let cameraRoll = 0;
   let thirdPerson = false;
   /** The spectator camera leaves the player's own view (arms, held item, vignettes) with the avatar. */
@@ -506,7 +512,7 @@ export const createPlayView = (
           : 0;
       carriedPiece.update(dt, camera.quaternion);
       held.update(camera, pose, recoil, { ...handling, lift });
-      flashlight.update({ registry, lit: light, held, camera, inventory });
+      flashlight.update({ registry, lit: light, held, camera, inventory, piles });
       lightPool.update(inventory, {
         held,
         piles,

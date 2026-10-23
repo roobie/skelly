@@ -17,6 +17,7 @@ local authored = [
     import 'things/crackers.model.json',
     import 'things/chocolate_bar.model.json',
     import 'things/soda_can.model.json',
+    import 'things/empty_soda_can.model.json',
     import 'things/water_bottle.model.json',
     import 'things/juice_carton.model.json',
     import 'things/cartridge_box_308_h_winchester.model.json',

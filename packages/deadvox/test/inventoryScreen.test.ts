@@ -634,7 +634,7 @@ describe('inventory screen Lit rendering', () => {
     const row = () => root.querySelector<HTMLElement>(`[data-skill="${skill.id}"]`);
     expect(row()?.dataset.level).toBe(String(initialLevel));
 
-    character.awardPractice(skill.id, practiceForNextLevel(initialLevel), SKILL_LEVEL_LEGENDARY);
+    character.awardPractice(skill.id, practiceForNextLevel(registry, initialLevel), SKILL_LEVEL_LEGENDARY);
     screen.update();
 
     expect(character.skills[skill.id]).toBeGreaterThan(initialLevel);

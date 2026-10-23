@@ -22,7 +22,7 @@ import { startPlay } from './game/play.ts';
 import { renderFreeFromUrl } from './game/renderMode.ts';
 import type { SaveBackendPreference } from './game/saveStorage.ts';
 import type { StreamerStats } from './game/streamer.ts';
-import { tutorialRequested, tutorialUrl } from './game/tutorial.ts';
+import { tutorialRequested, tutorialUrl } from './game/tutorialUrl.ts';
 import { WorldLoading } from './game/worldLoading.ts';
 import { mountCredits } from './ui/credits.ts';
 import { installErrorReportHandler } from './ui/errorReport.ts';
@@ -293,6 +293,7 @@ if (bench === 'report') {
   const run = shamblerRunFromUrl(params);
   if (run) {
     const config = makeConfig(run.seed, DEFAULT_RADIUS_M, content);
+    config.site = 'forest';
     config.start = parseTimeOfDay(run.time)!;
     applyBenchWeathering(config);
     startShamblerBench(createEngine(config, view, undefined, { graphicsSource: 'mod' }), run);

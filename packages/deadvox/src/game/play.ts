@@ -184,7 +184,8 @@ import {
   type ThirdPersonOrbitAngle,
 } from './thirdPersonOrbit.ts';
 import { TierNotice } from './tierNotice.ts';
-import { Tutorial, tutorialUrl } from './tutorial.ts';
+import { Tutorial } from './tutorial.ts';
+import { tutorialUrl } from './tutorialUrl.ts';
 import { Unpacking } from './unpacking.ts';
 import { WorldLoading } from './worldLoading.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
@@ -930,6 +931,13 @@ export const startPlay = (
     },
     onHandlingOutcomes: (result) => playtestObserver?.handlingOutcomes(result),
     onConsumed: (type) => tutorial?.consumed(type),
+    onHandlingOutcome: (item, outcome) => tutorial?.weapons.handling(item, outcome, registry),
+    onDischarge: (item, sighted) => tutorial?.weapons.discharged(item, sighted, registry),
+    onCompletedSwing: (isFist) => {
+      if (tutorial?.stage === 'melee' && isFist) {
+        tutorial.weapons.melee = true;
+      }
+    },
     onBatterySwapped: (lightType) => tutorial?.batterySwapped(lightType),
     onFirearmEjection: (effect) =>
       caseEffects.spawn({
@@ -1020,7 +1028,10 @@ export const startPlay = (
     return action.kind === 'firearm' && isFirearmReady(action.item.uid) && !session.sprinting;
   });
   const { compression } = sim;
-  const unpacking = new Unpacking(inventory, queue, feet, (type) => tutorial?.opened(type));
+  const unpacking = new Unpacking(inventory, queue, feet, {
+    opened: (type) => tutorial?.opened(type),
+    unpacked: (type) => tutorial?.weapons.unpackedAmmo(type),
+  });
   const sharpening = new Sharpening(inventory, queue, {
     character: session.character,
     reach: () => session.reach(),
@@ -1275,12 +1286,15 @@ export const startPlay = (
     searching: session.searching,
     notice: showNotice,
     refusal: (text) => showRefusal(text, sim.time),
-    describe: (item) => [
-      ...survival.describe(item),
-      ...firearms.describe(item),
-      ...magazines.describe(item),
-      ...pinDescription(session.fuses.state(item)),
-    ],
+    describe: (item) => {
+      tutorial?.weapons.inspected(item, registry);
+      return [
+        ...survival.describe(item),
+        ...firearms.describe(item),
+        ...magazines.describe(item),
+        ...pinDescription(session.fuses.state(item)),
+      ];
+    },
     workOptions: (uid) => session.crafting.options(uid),
     character: () => session.character,
     body: () => sim.body,
@@ -3724,6 +3738,11 @@ export const startPlay = (
   };
 
   const updateTutorial = () => {
+    for (const item of Object.values(inventory.hands)) {
+      if (item) {
+        tutorial?.weapons.wielded(item, registry);
+      }
+    }
     tutorial?.observe({
       position: body.pos,
       yaw: input.yaw,

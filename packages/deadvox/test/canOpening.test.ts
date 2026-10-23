@@ -57,7 +57,7 @@ const fixture = (side: HandSide = 'right', quality = 2) => {
   }
   const queue = new HandlingQueue(inventory);
   const opened = vi.fn();
-  const unpacking = new Unpacking(inventory, queue, () => [0, 0, 0], opened);
+  const unpacking = new Unpacking(inventory, queue, () => [0, 0, 0], { opened });
   const sim = new Simulation({ seed: 1 });
   const survival = new Survival(sim, inventory, queue, {
     reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 1, clock: BASE_CLOCK }),
@@ -96,6 +96,20 @@ describe('held can opening', () => {
     expect(f.can.type).toBe('test_opened');
     expect(f.registry.items.get(f.can.type)?.serving?.food).toBe('test_food');
     expect(f.opened).toHaveBeenCalledExactlyOnceWith('test_sealed');
+  });
+
+  it('a sealed can with no tool quality opens bare-handed and cannot be consumed before', () => {
+    const f = fixture();
+    const sealed = f.registry.items.get('test_sealed')!;
+    f.registry.items.set('test_sealed', { ...sealed, unpack: { ...sealed.unpack!, qualities: undefined } });
+    expect(f.inventory.move(f.tool, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    expect(f.survival.use(f.can)).toBeDefined();
+    expect(f.queue.busy).toBe(false);
+    expect(selectPrimaryAction(f.inventory, 'right').kind).toBe('unpack');
+    expect(f.unpacking.activate(f.can)).toBeUndefined();
+    expect(f.queue.tick(f.queue.remaining).failed).toEqual([]);
+    expect(f.can.type).toBe('test_opened');
+    expect(f.survival.use(f.can)).toBeUndefined();
   });
 
   it('a lower opening quality takes longer and a changed tool cannot complete the admitted work', () => {

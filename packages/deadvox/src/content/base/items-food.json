@@ -199,16 +199,68 @@
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
-      "food": {
-        "calories": 140,
-        "consumeSimSeconds": 2,
-        "water": 300
-      },
       "id": "soda_can",
       "model": "soda_can",
       "name": "Can of soda",
       "notLoot": false,
       "size": [1, 2],
+      "unpack": {
+        "count": 1,
+        "inPlace": true,
+        "item": "opened_soda",
+        "simSeconds": 2
+      },
+      "weight": 360,
+      "workInProgress": false
+    },
+    {
+      "category": "drink",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "opened_soda",
+      "model": "soda_can",
+      "name": "Opened can of soda",
+      "notLoot": false,
+      "serving": {
+        "empty": "empty_soda_can",
+        "food": "soda"
+      },
+      "size": [1, 2],
+      "weight": 15,
+      "workInProgress": false
+    },
+    {
+      "category": "tool",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "empty_soda_can",
+      "model": "empty_soda_can",
+      "name": "Empty soda can",
+      "notLoot": false,
+      "size": [1, 2],
+      "weight": 15,
+      "workInProgress": false
+    },
+    {
+      "category": "drink",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "food": {
+        "calories": 140,
+        "consumeSimSeconds": 2,
+        "water": 300
+      },
+      "id": "soda",
+      "name": "Soda",
+      "notLoot": false,
+      "size": [1, 2],
+      "weight": 345,
       "workInProgress": false
     },
     {
