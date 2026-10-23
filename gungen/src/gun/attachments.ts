@@ -88,6 +88,18 @@ export const ATTACHMENT_IDS = [
   'foregrip',
 ] as const;
 
+const looks: Readonly<Record<string, { readonly appearance?: PartAppearance; readonly voxelGrain?: number }>> =
+  appearanceContent.attachments;
+
+/**
+ * The attachment's authored finish with an instance's own finish over it slot by slot, so an instance that varies one
+ * slot (an optic's lens coating, say) keeps the product's other defaults.
+ */
+const withDefaultLook = (id: string, appearance: PartAppearance | undefined): PartAppearance => {
+  const finish = { ...(Object.hasOwn(looks, id) ? looks[id]!.appearance?.finish : undefined), ...appearance?.finish };
+  return Object.keys(finish).length === 0 ? {} : { finish };
+};
+
 export const attachmentInstanceForId = (
   id: string,
   appearance?: PartAppearance,
@@ -95,9 +107,7 @@ export const attachmentInstanceForId = (
   if (!ATTACHMENT_IDS.includes(id as (typeof ATTACHMENT_IDS)[number])) {
     throw new Error(`Unknown attachment id: ${id}`);
   }
-  const looks: Readonly<Record<string, { readonly appearance?: PartAppearance; readonly voxelGrain?: number }>> =
-    appearanceContent.attachments;
-  const instanceAppearance = appearance ?? looks[id]?.appearance ?? {};
+  const instanceAppearance = withDefaultLook(id, appearance);
   if (id.startsWith('optic-')) {
     return { family: 'sight', params: { type: id.slice('optic-'.length) }, appearance: instanceAppearance };
   }
@@ -361,7 +371,7 @@ export const withAttachmentInstanceAppearances = (resolved: Resolved): Resolved 
   let parts: Record<string, PartInstance> | undefined;
   for (const [id, definition] of resolved.defs) {
     const instance = resolved.assembly.parts[id];
-    if (!instance || instance.appearance) {
+    if (!instance) {
       continue;
     }
     const params = resolved.params.get(id);
@@ -375,7 +385,7 @@ export const withAttachmentInstanceAppearances = (resolved: Resolved): Resolved 
       continue;
     }
     parts ??= { ...resolved.assembly.parts };
-    parts[id] = { ...instance, appearance: attachmentInstanceForId(metadata.id).appearance ?? {} };
+    parts[id] = { ...instance, appearance: withDefaultLook(metadata.id, instance.appearance) };
   }
   return parts ? { ...resolved, assembly: { ...resolved.assembly, parts } } : resolved;
 };

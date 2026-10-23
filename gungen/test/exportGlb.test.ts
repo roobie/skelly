@@ -486,7 +486,10 @@ describe('glb export: meshes', () => {
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: this contract walks exported primitives and compares full material metadata against each source solid.
   it('colours each solid with the palette converted from sRGB to linear', () => {
+    const painted = withAttachmentInstanceAppearances(ar.resolved).assembly.parts;
     for (const [id, inst] of Object.entries(ar.resolved.assembly.parts)) {
+      // An instance's own appearance replaces the gun's, as the exporter applies it.
+      const own = painted[id]?.appearance;
       const role = ar.resolved.defs.get(id)!.family;
       const node = json.nodes.find((n) => n.extras?.part === id)!;
       for (const prim of json.meshes[node.mesh!]!.primitives) {
@@ -499,10 +502,11 @@ describe('glb export: meshes', () => {
         const solid = [...(ar.resolved.defs.get(id)!.displaySolids ?? ar.resolved.defs.get(id)!.solids)].find(
           (candidate) => candidate.id === solidId,
         );
+        const slot = solid?.slot ?? ar.resolved.defs.get(id)!.slot;
         const appearance = resolveAppearance(GUN_PALETTE, role, solidId, {
-          archetype: 'ar',
+          ...(own ? { ...(own.finish ? { finish: own.finish } : {}) } : { archetype: 'ar' }),
           ...(ar.resolved.defs.get(id)!.material ? { material: ar.resolved.defs.get(id)!.material } : {}),
-          ...(ar.resolved.defs.get(id)!.slot ? { slot: ar.resolved.defs.get(id)!.slot } : {}),
+          ...(slot ? { slot } : {}),
         });
         if (solid?.material) {
           expect(extras?.material).toBe(solid.material);
@@ -513,7 +517,7 @@ describe('glb export: meshes', () => {
         near(factor.slice(0, 3), appearance.color.map(srgbToLinear));
         expect(extras?.material).toBe(appearance.material);
         expect(extras?.slot).toBe(appearance.slot);
-        expect(factor[3]).toBe(1);
+        expect(factor[3]).toBe(appearance.finish.opacity ?? 1);
       }
       expect(inst.family).toBeTruthy();
     }

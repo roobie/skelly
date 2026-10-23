@@ -1,7 +1,6 @@
 import type { KeepOut } from '@skelly/engine/assembly/schema.ts';
 import type { Vec3 } from '@skelly/engine/foundation/math.ts';
-import type { Solid, SolidFinish, Vec2 } from '@skelly/engine/shapes/solid.ts';
-import { MATERIALS } from '@skelly/thing-core/materials';
+import type { RevolvedSolid, Solid, SolidFinish, Vec2 } from '@skelly/engine/shapes/solid.ts';
 import appearance from './appearance.json' with { type: 'json' };
 import type { MountRequirement } from './mounts.ts';
 
@@ -59,19 +58,16 @@ const box = (id: string, min: Vec3, max: Vec3, finish: SolidFinish = { slot: 'me
   };
 };
 
-const LENS_MATERIALS: Readonly<Record<string, string>> = appearance.opticLenses;
-
-/** Lens glass is no gun finish slot, so a gun's finish never repaints it. */
+/**
+ * Lens glass takes its coating from this finish slot, so a product or an instance can vary it; an optic's default
+ * coating is its attachment's default appearance in appearance content.
+ */
 export const LENS_SLOT = 'lens';
 
-/** An optic's lens glass is content, so a missing or unknown choice fails here instead of drawing the body finish. */
-const lensGlass = (optic: OpticTypeId): SolidFinish => {
-  const material = Object.hasOwn(LENS_MATERIALS, optic) ? LENS_MATERIALS[optic] : undefined;
-  if (material === undefined || !Object.hasOwn(MATERIALS, material)) {
-    throw new Error(`Optic ${optic} needs a known lens material in appearance content opticLenses`);
-  }
-  return { material, slot: LENS_SLOT };
-};
+const lensGlass: SolidFinish = { slot: LENS_SLOT };
+
+/** Sides of every round optic body's section, which the lenses seated in it share. */
+const OPTIC_BODY_SIDES: number = appearance.opticBodySides;
 
 const prism = (id: string, profile: readonly Vec2[], widthU: number): Solid => {
   const halfWidth = grid(widthU / 2);
@@ -85,7 +81,7 @@ const prism = (id: string, profile: readonly Vec2[], widthU: number): Solid => {
   };
 };
 
-const turned = (id: string, axis: 'x' | 'y' | 'z', origin: Vec3, profile: readonly Vec2[]): Solid => ({
+const turned = (id: string, axis: 'x' | 'y' | 'z', origin: Vec3, profile: readonly Vec2[]): RevolvedSolid => ({
   id,
   kind: 'revolved',
   axis,
@@ -110,13 +106,15 @@ const cylinder = (
 /** One hollow turned body: ocular flare, main tube and objective flare share their axis. */
 const SCOPE_WALL_U = 0.125;
 
-const scopeBody = (id: string, centerY: number, outside: readonly Vec2[], wall = SCOPE_WALL_U): Solid =>
-  turned(
+const scopeBody = (id: string, centerY: number, outside: readonly Vec2[], wall = SCOPE_WALL_U): Solid => ({
+  ...turned(
     id,
     'x',
     [0, centerY, 0],
     [...outside, ...outside.toReversed().map(([axial, radius]): Vec2 => [axial, radius - wall]), outside[0]!],
-  );
+  ),
+  sides: OPTIC_BODY_SIDES,
+});
 
 const ringBand = (id: string, centerX: number, centerY: number, radius: number): Solid =>
   scopeBody(
@@ -134,9 +132,10 @@ const LENS_THICKNESS_U = 0.25;
 
 /**
  * Glass seated flush in a hollow body's open ocular and objective ends, each given as its (axial, outside
- * radius) point. Listed before the body, so the wall voxels the rim shares paint over the glass.
+ * radius) point. It shares the body's sides, so it fills the opening's inside flats. Listed before the body, so the
+ * wall voxels the rim shares paint over the glass.
  */
-const scopeLenses = (optic: OpticTypeId, centerY: number, ocular: Vec2, objective: Vec2): Solid[] =>
+const scopeLenses = (centerY: number, ocular: Vec2, objective: Vec2): Solid[] =>
   [
     { id: 'ocular-lens', from: ocular[0], to: ocular[0] + LENS_THICKNESS_U, radius: ocular[1] - SCOPE_WALL_U },
     {
@@ -156,12 +155,13 @@ const scopeLenses = (optic: OpticTypeId, centerY: number, ocular: Vec2, objectiv
       [to, radius],
       [to, 0],
     ],
-    ...lensGlass(optic),
+    sides: OPTIC_BODY_SIDES,
+    ...lensGlass,
   }));
 
 /** A single-bodied scope with its lenses at both ends of the body's outside profile. */
-const lensedScope = (optic: OpticTypeId, id: string, centerY: number, outside: readonly Vec2[]): Solid[] => [
-  ...scopeLenses(optic, centerY, outside[0]!, outside.at(-1)!),
+const lensedScope = (id: string, centerY: number, outside: readonly Vec2[]): Solid[] => [
+  ...scopeLenses(centerY, outside[0]!, outside.at(-1)!),
   scopeBody(id, centerY, outside),
 ];
 
@@ -244,8 +244,8 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     sightlineStartX: 2.25,
     solids: [
       // The tunnel's two windows, between the floor, walls and hood listed after them.
-      box('ocular-lens', [-2.25, 1, -0.75], [-2, 2.25, 0.75], lensGlass('mini-reflex')),
-      box('objective-lens', [2, 1, -0.75], [2.25, 2.25, 0.75], lensGlass('mini-reflex')),
+      box('ocular-lens', [-2.25, 1, -0.75], [-2, 2.25, 0.75], lensGlass),
+      box('objective-lens', [2, 1, -0.75], [2.25, 2.25, 0.75], lensGlass),
       box('mount-foot', [-1.75, 0, -0.75], [1.75, 0.5, 0.75]),
       { ...box('housing-floor', [-2.25, 0.5, -1.25], [2.25, 1, 1.25]), display: MICRO_HOUSING_DISPLAY },
       // The side walls and roof form a single closed-emitter silhouette, with a tunnel, not a filled prism.
@@ -319,7 +319,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     sightlineStartX: 3,
     solids: [
       box('mount-foot', [-2, 0, -0.8], [2, 0.75, 0.8]),
-      ...lensedScope('tube-dot', 'tube-body', 2, [
+      ...lensedScope('tube-body', 2, [
         [-3, 1.5],
         [3, 1.5],
       ]),
@@ -348,8 +348,8 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     sightlineStartX: 4,
     solids: [
       // The window's rear and front panes, between the side walls and roof listed after them.
-      box('ocular-lens', [-3.75, 1.5, -1.5], [-3.5, 4.25, 1.5], lensGlass('holographic')),
-      box('objective-lens', [0, 1.5, -1.5], [0.25, 4.25, 1.5], lensGlass('holographic')),
+      box('ocular-lens', [-3.75, 1.5, -1.5], [-3.5, 4.25, 1.5], lensGlass),
+      box('objective-lens', [0, 1.5, -1.5], [0.25, 4.25, 1.5], lensGlass),
       box('mount-foot', [-2.75, 0, -0.75], [2.75, 0.5, 0.75]),
       box('lower-battery-section', [-3.75, 0.5, -2.25], [4, 1.5, 2.25]),
       box('forward-battery-cap', [0.25, 1.5, -2.25], [4, 2, 2.25]),
@@ -413,7 +413,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
         ],
         slot: 'metal',
       },
-      ...scopeLenses('fixed-prism-4x', 2.25, [-6.5, 1], [6.5, 1.25]),
+      ...scopeLenses(2.25, [-6.5, 1], [6.5, 1.25]),
       scopeBody('objective-bell', 2.25, [
         [2, 0.875],
         [3, 1.125],
@@ -467,7 +467,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     sightlineStartX: 11.25,
     solids: [
       ...pairedFeet(1),
-      ...lensedScope('lpvo-1-6x', 'tube-with-flared-bells', 2, [
+      ...lensedScope('tube-with-flared-bells', 2, [
         [-10, 1.5],
         [-7.5, 1.5],
         [-6.75, 1.25],
@@ -507,7 +507,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     sightlineStartX: 13.25,
     solids: [
       ...pairedFeet(1.25),
-      ...scopeLenses('hunting-3-9x', 2.25, [-13, 1.75], [13.25, 2.25]),
+      ...scopeLenses(2.25, [-13, 1.75], [13.25, 2.25]),
       // Separate convex proxies preserve the narrow tube clearance instead of bridging the two bells.
       scopeBody('hunting-ocular', 2.25, [
         [-13, 1.75],
@@ -555,7 +555,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     sightlineStartX: 15.75,
     solids: [
       ...pairedFeet(1.75),
-      ...lensedScope('high-mag-5-25x', 'tube-with-flared-bells', 3, [
+      ...lensedScope('tube-with-flared-bells', 3, [
         [-15.75, 1.75],
         [-11.5, 1.75],
         [-10.75, 1.5],
@@ -595,7 +595,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     sightlineStartX: 15,
     solids: [
       ...pairedFeet(3),
-      ...lensedScope('digital-thermal', 'sensor-tube-with-flared-bells', 4.25, [
+      ...lensedScope('sensor-tube-with-flared-bells', 4.25, [
         [-15, 2],
         [-10, 2],
         [-8, 1.5],

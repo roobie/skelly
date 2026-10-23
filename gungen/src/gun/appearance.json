@@ -20,6 +20,62 @@
       },
       "voxelGrain": 0.0040000000000000001
     },
+    "optic-digital-thermal": {
+      "appearance": {
+        "finish": {
+          "lens": "glass-lens-amber"
+        }
+      }
+    },
+    "optic-fixed-prism-4x": {
+      "appearance": {
+        "finish": {
+          "lens": "glass-lens-green"
+        }
+      }
+    },
+    "optic-high-mag-5-25x": {
+      "appearance": {
+        "finish": {
+          "lens": "glass-lens-amber"
+        }
+      }
+    },
+    "optic-holographic": {
+      "appearance": {
+        "finish": {
+          "lens": "glass-lens-amber"
+        }
+      }
+    },
+    "optic-hunting-3-9x": {
+      "appearance": {
+        "finish": {
+          "lens": "glass-lens-green"
+        }
+      }
+    },
+    "optic-lpvo-1-6x": {
+      "appearance": {
+        "finish": {
+          "lens": "glass-lens-green"
+        }
+      }
+    },
+    "optic-mini-reflex": {
+      "appearance": {
+        "finish": {
+          "lens": "glass-lens-amber"
+        }
+      }
+    },
+    "optic-tube-dot": {
+      "appearance": {
+        "finish": {
+          "lens": "glass-lens-amber"
+        }
+      }
+    },
     "real-suppressor": {
       "appearance": {
         "finish": {
@@ -351,16 +407,7 @@
     "white": "plastic-white",
     "yellow": "plastic-yellow"
   },
-  "opticLenses": {
-    "digital-thermal": "glass-lens-amber",
-    "fixed-prism-4x": "glass-lens-green",
-    "high-mag-5-25x": "glass-lens-amber",
-    "holographic": "glass-lens-amber",
-    "hunting-3-9x": "glass-lens-green",
-    "lpvo-1-6x": "glass-lens-green",
-    "mini-reflex": "glass-lens-amber",
-    "tube-dot": "glass-lens-amber"
-  },
+  "opticBodySides": 8,
   "slotMaterials": {
     "accent": "rubber-black",
     "furniture": "polymer-black",
