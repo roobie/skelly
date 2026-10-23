@@ -3359,7 +3359,10 @@ export const startPlay = (
       const lift = doorPlan(inventory, entity, 'unbar');
       const action = lift.ok
         ? screenText.interaction.liftBar
-        : fillScreenText(screenText.interaction.blocked, { action: screenText.interaction.liftBar, reason: lift.reason });
+        : fillScreenText(screenText.interaction.blocked, {
+            action: screenText.interaction.liftBar,
+            reason: lift.reason,
+          });
       return html`${useText(entity)} · ${fillHint(screenText.interaction.hold, { key, action })}`;
     }
     if (slidableFurniture(inventory, entity, s)) {
