@@ -11,7 +11,9 @@
       "id": "compass",
       "model": "compass",
       "name": "Compass",
-      "size": [1, 2]
+      "notLoot": false,
+      "size": [1, 2],
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -23,6 +25,7 @@
       "id": "crowbar",
       "model": "crowbar",
       "name": "Crowbar",
+      "notLoot": false,
       "size": [2, 6],
       "tool": {
         "qualities": {
@@ -45,7 +48,8 @@
           "wearPerHit": 0.014999999999999999,
           "windupCapSimSeconds": 0.25
         }
-      }
+      },
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -57,6 +61,7 @@
       "id": "blowtorch",
       "model": "blowtorch",
       "name": "Blowtorch",
+      "notLoot": false,
       "size": [2, 3],
       "tool": {
         "fuel": {
@@ -66,7 +71,8 @@
         "qualities": {
           "flame_cutting": 1
         }
-      }
+      },
+      "workInProgress": false
     },
     {
       "canister": {
@@ -81,8 +87,10 @@
       "id": "gas_canister",
       "model": "gas_canister",
       "name": "Gas cartridge",
+      "notLoot": false,
       "size": [1, 2],
-      "stack": 2
+      "stack": 2,
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -93,6 +101,7 @@
       "id": "hammer",
       "model": "hammer",
       "name": "Hammer",
+      "notLoot": false,
       "size": [2, 4],
       "tool": {
         "qualities": {
@@ -113,7 +122,8 @@
           "wearPerHit": 0.012,
           "windupCapSimSeconds": 0.25
         }
-      }
+      },
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -125,6 +135,7 @@
       "id": "sledgehammer",
       "model": "sledgehammer",
       "name": "Sledgehammer",
+      "notLoot": false,
       "size": [2, 7],
       "tool": {
         "qualities": {
@@ -147,7 +158,8 @@
           "wearPerHit": 0.01,
           "windupCapSimSeconds": 0.25
         }
-      }
+      },
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -158,6 +170,7 @@
       "id": "kitchen_knife",
       "model": "kitchen_knife",
       "name": "Kitchen knife",
+      "notLoot": false,
       "size": [1, 4],
       "tool": {
         "qualities": {
@@ -179,7 +192,8 @@
           "wearPerHit": 0.025000000000000001,
           "windupCapSimSeconds": 0.25
         }
-      }
+      },
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -190,6 +204,7 @@
       "id": "kabar",
       "model": "kabar",
       "name": "Kabar",
+      "notLoot": false,
       "size": [1, 3],
       "tool": {
         "qualities": {
@@ -211,7 +226,8 @@
           "wearPerHit": 0.025000000000000001,
           "windupCapSimSeconds": 0.25
         }
-      }
+      },
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -222,6 +238,7 @@
       "id": "machete",
       "model": "machete",
       "name": "Machete",
+      "notLoot": false,
       "size": [1, 6],
       "tool": {
         "qualities": {
@@ -243,7 +260,8 @@
           "wearPerHit": 0.02,
           "windupCapSimSeconds": 0.25
         }
-      }
+      },
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -254,12 +272,14 @@
       "id": "can_opener",
       "model": "can_opener",
       "name": "Can opener",
+      "notLoot": false,
       "size": [1, 1],
       "tool": {
         "qualities": {
           "opening": 5
         }
-      }
+      },
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -271,12 +291,14 @@
       "id": "whetstone",
       "model": "whetstone",
       "name": "Whetstone",
+      "notLoot": false,
       "size": [1, 2],
       "tool": {
         "qualities": {
           "sharpening": 1
         }
-      }
+      },
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -288,6 +310,7 @@
       "id": "bear_trap",
       "model": "bear_trap",
       "name": "Bear trap",
+      "notLoot": false,
       "size": [5, 5],
       "trap": {
         "disarmSimSeconds": 6,
@@ -299,7 +322,8 @@
         },
         "setSimSeconds": 4,
         "zombieLegDamage": 60
-      }
+      },
+      "workInProgress": false
     },
     {
       "category": "weapon",
@@ -310,6 +334,7 @@
       "id": "baseball_bat",
       "model": "baseball_bat",
       "name": "Baseball bat",
+      "notLoot": false,
       "size": [1, 9],
       "twoHanded": true,
       "weapon": {
@@ -326,7 +351,8 @@
           "wearPerHit": 0.01,
           "windupCapSimSeconds": 0.25
         }
-      }
+      },
+      "workInProgress": false
     },
     {
       "category": "weapon",
@@ -337,6 +363,7 @@
       "id": "steel_pipe",
       "model": "steel_pipe",
       "name": "Steel pipe",
+      "notLoot": false,
       "size": [1, 10],
       "weapon": {
         "melee": {
@@ -353,7 +380,8 @@
           "wearPerHit": 0.014999999999999999,
           "windupCapSimSeconds": 0.25
         }
-      }
+      },
+      "workInProgress": false
     },
     {
       "category": "light",
@@ -386,7 +414,9 @@
       },
       "model": "flashlight",
       "name": "Flashlight",
-      "size": [1, 2]
+      "notLoot": false,
+      "size": [1, 2],
+      "workInProgress": false
     },
     {
       "category": "light",
@@ -420,11 +450,13 @@
       },
       "model": "headlamp",
       "name": "Headlamp",
+      "notLoot": false,
       "size": [1, 2],
       "wearable": {
         "encumbrance": 0,
         "slot": "head"
-      }
+      },
+      "workInProgress": false
     },
     {
       "category": "light",
@@ -465,6 +497,7 @@
       },
       "model": "night_vision_goggles",
       "name": "Night-vision goggles",
+      "notLoot": false,
       "size": [2, 2],
       "wearable": {
         "encumbrance": 0,
@@ -475,7 +508,8 @@
         },
         "slot": "eyes"
       },
-      "weight": 550
+      "weight": 550,
+      "workInProgress": false
     },
     {
       "category": "light",
@@ -531,8 +565,10 @@
       },
       "model": "torch",
       "name": "Torch",
+      "notLoot": false,
       "size": [1, 4],
-      "weight": 350
+      "weight": 350,
+      "workInProgress": false
     },
     {
       "category": "light",
@@ -581,8 +617,10 @@
       },
       "model": "candle",
       "name": "Candle",
+      "notLoot": false,
       "size": [1, 1],
-      "weight": 150
+      "weight": 150,
+      "workInProgress": false
     },
     {
       "category": "light",
@@ -613,6 +651,7 @@
       },
       "model": "oil_lamp",
       "name": "Oil lamp",
+      "notLoot": false,
       "size": [2, 3],
       "tool": {
         "fuel": {
@@ -620,7 +659,8 @@
           "swapSimSeconds": 3
         },
         "qualities": {}
-      }
+      },
+      "workInProgress": false
     },
     {
       "category": "light",
@@ -648,8 +688,10 @@
       },
       "model": "glowstick",
       "name": "Glowstick",
+      "notLoot": false,
       "size": [1, 2],
-      "weight": 30
+      "weight": 30,
+      "workInProgress": false
     },
     {
       "category": "light",
@@ -677,8 +719,10 @@
       },
       "model": "road_flare",
       "name": "Road flare",
+      "notLoot": false,
       "size": [1, 2],
-      "weight": 200
+      "weight": 200,
+      "workInProgress": false
     },
     {
       "category": "light",
@@ -700,7 +744,9 @@
       },
       "model": "lighter",
       "name": "Lighter",
-      "size": [1, 1]
+      "notLoot": false,
+      "size": [1, 1],
+      "workInProgress": false
     },
     {
       "category": "light",
@@ -715,7 +761,9 @@
       },
       "model": "matches",
       "name": "Box of matches",
-      "size": [1, 1]
+      "notLoot": false,
+      "size": [1, 1],
+      "workInProgress": false
     },
     {
       "category": "tool",
@@ -746,9 +794,11 @@
       },
       "id": "door_bar",
       "name": "Door bar",
+      "notLoot": false,
       "size": [1, 6],
       "twoHanded": true,
-      "weight": 3000
+      "weight": 3000,
+      "workInProgress": false
     }
   ],
   "meleeClasses": [

@@ -79,7 +79,7 @@ local authorTemplate(template) = template + {
 local spawnsLoose(item) = !(std.objectHas(item, 'vehicle') || std.member(notSpawnable, item.id));
 local authorItem(item) =
   assert !spawnsLoose(item) || std.member(commonItems + militaryItems + medicalItems + policeItems + huntingItems, item.id) : 'author economy metadata for ' + item.id;
-  item + {
+  { workInProgress: false, notLoot: false } + item + {
     economy:
       if !spawnsLoose(item) then { usage: [], tiers: [] }
       else if std.member(militaryItems, item.id) then { usage: ['Military'], tiers: ['Tier2', 'Tier3'] }

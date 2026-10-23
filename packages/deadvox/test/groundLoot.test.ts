@@ -33,6 +33,8 @@ const fixtureData = (): ContentFile => ({
       weight: 1,
       size: [1, 1],
       economy: { usage: ['Medical'], tiers: ['Tier1'] },
+      workInProgress: false,
+      notLoot: false,
     },
     {
       id: 'fixture_wrong_usage',
@@ -41,6 +43,8 @@ const fixtureData = (): ContentFile => ({
       weight: 1,
       size: [1, 1],
       economy: { usage: ['Industrial'], tiers: ['Tier1'] },
+      workInProgress: false,
+      notLoot: false,
     },
     {
       id: 'fixture_wrong_tier',
@@ -49,6 +53,8 @@ const fixtureData = (): ContentFile => ({
       weight: 1,
       size: [1, 1],
       economy: { usage: ['Medical'], tiers: ['Tier3'] },
+      workInProgress: false,
+      notLoot: false,
     },
   ],
   loot: [

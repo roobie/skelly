@@ -1289,6 +1289,80 @@ try {
     'the wheel-selected click opens rather than swings',
   );
   await page.waitForFunction(() => document.querySelector('#item-action-list').hidden);
+  const honing = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    r.clearHand(r.dominant);
+    r.clearHand(r.off);
+    const blade = r.inventory.create('kitchen_knife', 1, 0.2);
+    r.setHand(r.dominant, blade);
+    r.setHand(r.off, r.inventory.create('whetstone'));
+    return { uid: blade.uid, condition: blade.condition };
+  });
+  await page.mouse.wheel(0, 100);
+  await page.waitForFunction(() => {
+    const r = globalThis.primaryActionTest;
+    return r.survival.selectedItemAction(r.inventory.hands[r.dominant])?.sharpening === true;
+  });
+  for (const trigger of ['click', 'offhand']) {
+    if (trigger === 'click') {
+      await page.mouse.click(640, 450);
+    } else {
+      await pressAction(page, 'hand.use-off');
+    }
+    await page.waitForFunction(() => globalThis.primaryActionTest.queue.busy);
+    const honed = await page.evaluate((uid) => {
+      const r = globalThis.primaryActionTest;
+      const failures = r.queue.tick(r.queue.remaining).failed;
+      return { failures, condition: r.inventory.itemByUid(uid).condition };
+    }, honing.uid);
+    assert.deepEqual(honed.failures, [], `${trigger} completes held honing`);
+    assert(honed.condition > honing.condition, `${trigger} restores the held blade`);
+    honing.condition = honed.condition;
+  }
+  const wheelGrinding = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    r.clearHand(r.off);
+    const def = r.inventory.registry.furniture.get('grinding_wheel');
+    const floor = r.feet();
+    const wheel = r.inventory.entities.add({
+      type: def.id,
+      size: def.size,
+      facing: 'n',
+      pos: [floor[0] + 2, floor[1], floor[2]],
+    });
+    if (!wheel) {
+      throw new Error('Could not place the sharpening wheel');
+    }
+    const eye = [
+      r.session.body.pos[0],
+      r.session.body.pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize,
+      r.session.body.pos[2],
+    ];
+    const target = [wheel.pos[0] + 1, wheel.pos[1] + 1.6, wheel.pos[2] + 1];
+    const [dx, dy, dz] = target.map((value, axis) => value - eye[axis]);
+    const look = { yaw: r.input.yaw, pitch: r.input.pitch };
+    r.input.yaw = Math.atan2(-dx, -dz);
+    r.input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+    const aimed = r.interactionTargetAt();
+    if (aimed?.kind !== 'furniture' || aimed.entity !== wheel) {
+      throw new Error('The sharpening wheel is not aimed at');
+    }
+    const blade = r.inventory.hands[r.dominant];
+    return { uid: blade.uid, condition: blade.condition, wheelUid: wheel.uid, look };
+  });
+  await page.mouse.click(640, 450);
+  await page.waitForFunction(() => globalThis.primaryActionTest.queue.busy);
+  const groundAtWheel = await page.evaluate(({ uid, wheelUid, look }) => {
+    const r = globalThis.primaryActionTest;
+    const failures = r.queue.tick(r.queue.remaining).failed;
+    const { condition } = r.inventory.itemByUid(uid);
+    r.inventory.entities.remove(r.inventory.entities.byUid(wheelUid));
+    r.input.yaw = look.yaw;
+    r.input.pitch = look.pitch;
+    return { failures, condition };
+  }, wheelGrinding);
+  assert.deepEqual(groundAtWheel.failures, [], 'aimed-wheel activation completes');
+  assert(groundAtWheel.condition > wheelGrinding.condition, 'aimed-wheel activation restores the held blade');
   const heldLighter = async (side, trigger) => {
     const before = await page.evaluate((hand) => {
       const r = globalThis.primaryActionTest;
