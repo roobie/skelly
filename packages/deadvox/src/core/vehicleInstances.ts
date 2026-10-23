@@ -141,6 +141,22 @@ export class VehicleInstances {
     return this.store.add(vehicle);
   }
 
+  /** Replaces one validated build without disturbing other instance identities or projections. */
+  replace(registry: Registry, id: number, vehicle: VehicleInstance): void {
+    if (!this.store.get(id)) {
+      throw new Error(`Unknown vehicle ${id}`);
+    }
+    const sameKey = this.idForPlacementKey(vehicle.placementKey);
+    if (sameKey !== undefined && sameKey !== id) {
+      throw new Error('Duplicate vehicle placement key');
+    }
+    validateBuild(registry, vehicle);
+    assertVehicleState({ nextId: 2, instances: [{ id: 1, vehicle }] });
+    if (!this.store.replace(id, vehicle)) {
+      throw new Error(`Unknown vehicle ${id}`);
+    }
+  }
+
   snapshotState(): Readonly<VehicleInstancesState> {
     return freezeSnapshot({
       nextId: this.store.nextId,

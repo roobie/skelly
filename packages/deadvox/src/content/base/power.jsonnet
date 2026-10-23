@@ -13,6 +13,7 @@
       id: 'storage_battery', kind: 'battery', priority: 0, capacityWh: 1000,
       chargeEfficiency: 0.9, dischargeEfficiency: 0.9,
     },
+    { id: 'portable_battery_charger', kind: 'consumer', priority: 2, demandWatts: 4 },
     { id: 'electrical_load', kind: 'consumer', priority: 0, demandWatts: 100 },
   ],
 }

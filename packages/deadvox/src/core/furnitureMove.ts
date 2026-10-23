@@ -24,6 +24,7 @@ export interface FurnitureMover {
   /** Every other body that a piece could land on or be stood in. */
   readonly others: Iterable<Body>;
   readonly stamina: number;
+  readonly beforeRelocate?: (entity: BlockEntity) => void;
 }
 
 interface PileMove {
@@ -388,6 +389,7 @@ export const removeFurniture = (mover: FurnitureMover, entity: BlockEntity): str
   if (refusal) {
     return refusal;
   }
+  mover.beforeRelocate?.(entity);
   mover.inventory.entities.remove(entity);
   return undefined;
 };
@@ -447,6 +449,9 @@ export const ruinFurniture = (mover: FurnitureMover, entity: BlockEntity): Block
   for (const placed of standIns) {
     placed.item = inventory.create(placed.item.type, placed.item.count);
   }
+  for (const piece of [...destroyed, ...falls.map((fall) => fall.entity)]) {
+    mover.beforeRelocate?.(piece);
+  }
   for (const piece of destroyed) {
     inventory.entities.destroy(piece);
   }
@@ -497,6 +502,9 @@ export const liftFurniture = (mover: FurnitureMover, entity: BlockEntity): strin
   const moves = resettlePiles(mover, shadow, pilesOver(inventory, [...left, ...landed]));
   if (!moves) {
     return messages.nowhereToLand;
+  }
+  for (const piece of [entity, ...falls.map((fall) => fall.entity)]) {
+    mover.beforeRelocate?.(piece);
   }
   inventory.entities.lift(entity);
   for (const { entity: fallen, y } of falls) {
@@ -598,6 +606,9 @@ export const slideFurniture = (
     return messages.nowhereToLand;
   }
   if (commit) {
+    for (const piece of [entity, ...falls.map((fall) => fall.entity)]) {
+      mover.beforeRelocate?.(piece);
+    }
     inventory.entities.slide(entity, pos);
     for (const { entity: fallen, y } of falls) {
       inventory.entities.drop(fallen, y);

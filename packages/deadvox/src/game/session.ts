@@ -620,7 +620,7 @@ const observeScenarioMovement = (
   }
 };
 
-const createSessionPower = (options: SessionOptions, sim: Simulation): SitePower | undefined => {
+const createSessionPower = (options: SessionOptions, sim: Simulation, inventory: Inventory): SitePower | undefined => {
   const saved = options.restore?.world.power;
   if (!options.powerDevices?.length) {
     if (saved) {
@@ -633,6 +633,7 @@ const createSessionPower = (options: SessionOptions, sim: Simulation): SitePower
   }
   const power = new SitePower({
     registry: options.registry,
+    inventory,
     devices: options.powerDevices,
     clock: sim.clock,
     cycle: requireDayCycle(options.registry),
@@ -714,7 +715,7 @@ export const createSession = (options: SessionOptions) => {
       if (point.channel !== 'ground') {
         continue;
       }
-      for (const rolled of rollLoot(registry, point, lootPointStream(seed, point))) {
+      for (const rolled of rollLoot(registry, point, lootPointStream(seed, point), scale.blockSize)) {
         if (!inventory.add(inventory.createRolled(rolled), { kind: 'pile', pos: point.destination })) {
           throw new Error(`ground item "${rolled.type}" does not fit in its pile`);
         }
@@ -1477,6 +1478,7 @@ export const createSession = (options: SessionOptions) => {
     player: body,
     others: standingZombieBodies(),
     stamina: sim.needs.stamina,
+    beforeRelocate: (entity) => power?.beforeRemove(simTimestamp(sim.time), entity),
   });
   const boxCentre = (pos: Readonly<Vec3>, size: Readonly<Vec3>): Vec3 => [
     pos[0] + size[0] / 2,
@@ -1977,7 +1979,7 @@ export const createSession = (options: SessionOptions) => {
     },
   };
 
-  const power = createSessionPower(options, sim);
+  const power = createSessionPower(options, sim, inventory);
 
   if (restored) {
     world.restoreColumns(restored.world.columns, (id) => {
@@ -2021,6 +2023,28 @@ export const createSession = (options: SessionOptions) => {
       return scenarioRunWon(scenarioRun);
     },
     power,
+    chargerControl: (uid: number, operation: 'start' | 'stop'): string | undefined => {
+      const entity = entities.byUid(uid);
+      const id = entity && power?.chargerId(entity);
+      const spec = entity && registry.furniture.get(entity.type)?.charger;
+      if (!(entity && id && spec && power?.chargers && inventory.canReachEntity(entity))) {
+        return coreMessage(registry, 'tooFar');
+      }
+      const refusal = entities.useRefusal(entity) ?? sim.body.actionRefusal;
+      if (refusal) {
+        return refusal;
+      }
+      if (operation === 'stop') {
+        power.chargers.stop(simTimestamp(sim.time), id);
+        return undefined;
+      }
+      const battery = entity.pockets?.[spec.pocket]?.[0]?.item;
+      if (!battery) {
+        return coreMessage(registry, 'wrongBattery');
+      }
+      const result = power.chargers.start(simTimestamp(sim.time), id, battery);
+      return result.ok ? undefined : result.reason;
+    },
     isObjective,
     activateGoal: (entity: BlockEntity): string | undefined => {
       if (sim.dead) {

@@ -39,6 +39,27 @@
     },
     {
       "battery": {
+        "capacity": 1,
+        "rechargeable": {
+          "microjoulesPerCharge": 7200000000
+        }
+      },
+      "category": "battery",
+      "description": "A rechargeable AA cell.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+      },
+      "id": "rechargeable_aa_battery",
+      "model": "aa_battery",
+      "name": "Rechargeable AA battery",
+      "notLoot": false,
+      "size": [1, 1],
+      "stack": 10,
+      "workInProgress": false
+    },
+    {
+      "battery": {
         "capacity": 1
       },
       "category": "battery",

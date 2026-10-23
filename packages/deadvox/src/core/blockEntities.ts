@@ -17,6 +17,11 @@ import { shapeBlocks } from './shapeSolid.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { cellsOf, type Facing } from './templates.ts';
 
+interface ChargingState {
+  batteryUid: number;
+  atGameMilliseconds: number;
+}
+
 export interface BlockEntity {
   readonly uid: number;
   /** Furniture id. */
@@ -36,6 +41,7 @@ export interface BlockEntity {
   readonly fixed?: true;
   /** One grid per pocket of the furniture's container. */
   pockets?: Placed[][];
+  charging?: ChargingState | undefined;
   /** A container's contents show once it's been searched. */
   searched: boolean;
   /** Doors only. */
@@ -75,6 +81,7 @@ export interface BlockEntityState {
   damage?: number;
   broken?: true;
   pockets?: PlacedState[][];
+  charging?: ChargingState;
 }
 
 export type DoorOperation = 'open' | 'close' | 'lock' | 'unlock' | 'bar' | 'unbar';
@@ -351,6 +358,7 @@ export class BlockEntities {
         searched: entity.searched,
         open: entity.open,
         ...leafState(entity),
+        ...(entity.charging ? { charging: { ...entity.charging } } : {}),
         ...(entity.pockets === undefined ? {} : { pockets: entity.pockets.map((grid) => grid.map(snapshotPlaced)) }),
       })),
       ...(this.reservedUids.size === 0 ? {} : { reserved: [...this.reservedUids].sort((a, b) => a - b) }),
@@ -460,6 +468,23 @@ export class BlockEntities {
     }
     if (saved.pockets) {
       entity.pockets = saved.pockets.map((grid) => grid.map((placed) => restorePlaced(this.registry, placed)));
+    }
+    if (saved.charging) {
+      entity.charging = { ...saved.charging };
+      const spec = this.registry.furniture.get(entity.type)?.charger;
+      const grid = spec && entity.pockets?.[spec.pocket];
+      if (
+        !(spec && grid) ||
+        grid.length !== 1 ||
+        grid[0]!.item.uid !== saved.charging.batteryUid ||
+        grid[0]!.item.count !== 1 ||
+        !spec.batteries.includes(grid[0]!.item.type) ||
+        !Number.isSafeInteger(saved.charging.atGameMilliseconds) ||
+        saved.charging.atGameMilliseconds < 0 ||
+        entity.carried
+      ) {
+        throw new Error('Invalid saved charger ownership');
+      }
     }
   }
 

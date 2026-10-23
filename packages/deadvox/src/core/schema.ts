@@ -27,6 +27,7 @@ import {
   rawCheck,
   record,
   regex,
+  safeInteger,
   strictObject,
   string,
   transform,
@@ -385,6 +386,17 @@ const slottedTable = <K extends string>(slots: Readonly<Record<K, readonly strin
 
 /** Labels and messages the screens under `src/ui` draw. */
 const UiScreenTextSchema = strictObject({
+  charger: slottedTable({
+    idle: [],
+    running: [],
+    noPower: [],
+    ready: [],
+    start: [],
+    stop: [],
+    collect: [],
+    load: ['name'],
+    remaining: ['gameSeconds'],
+  }),
   /** What the HUD options call each element they switch. */
   hudOptionLabels: strictObject({
     stats: Name,
@@ -1205,7 +1217,14 @@ const LightSchema = strictObject({
   /** Size of the drawn flame, in metres, standing on the model's `flame` anchor while lit. */
   flame: optional(strictObject({ heightMetres: Positive, radiusMetres: Positive })),
   /** What powers it: an item with a battery component, and charge used per Game hour. */
-  power: optional(strictObject({ battery: Id, chargePerGameHour: GamePerHour, swapSimSeconds: PositiveSimSeconds })),
+  power: optional(
+    strictObject({
+      battery: Id,
+      compatibleBatteries: optional(array(Id)),
+      chargePerGameHour: GamePerHour,
+      swapSimSeconds: PositiveSimSeconds,
+    }),
+  ),
   /** Stays lit while worn and answers the worn-light control, so a source not in the hand needs no new key. */
   wornSwitch: optional(vBoolean()),
   /** How the view looks through it while worn, on and charged (`DESIGN.md`, "Light"). */
@@ -1277,6 +1296,7 @@ const FirearmAttachmentEffectsSchema = variant('kind', [
 const BatterySchema = strictObject({
   /** Charge when full, in the units lights use per hour. */
   capacity: Positive,
+  rechargeable: optional(strictObject({ microjoulesPerCharge: pipe(number(), safeInteger(), minValue(1)) })),
 });
 
 export const HELD_DISPLAY_KIND = { compass: 'compass' } as const;
@@ -2124,6 +2144,13 @@ const FurnitureSchema = pipe(
         ),
         enabled: vBoolean(),
         light: optional(strictObject({ color: Color, intensity: Positive, radius: Positive })),
+      }),
+    ),
+    charger: optional(
+      strictObject({
+        batteries: pipe(array(Id), nonEmpty('needs a compatible battery')),
+        pocket: pipe(number(), safeInteger(), minValue(0)),
+        efficiency: pipe(Positive, maxValue(1)),
       }),
     ),
     /** Comfort scales fatigue recovery; sleepable pieces also enable the sleep rate. */

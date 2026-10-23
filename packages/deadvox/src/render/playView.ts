@@ -56,6 +56,7 @@ import { PileMeshes } from './piles.ts';
 import { PlayerMeshes } from './playerFigure.ts';
 import { applySky } from './sky.ts';
 import { StepOffset } from './stepOffset.ts';
+import { VehicleMeshes } from './vehicles.ts';
 import { ZombieMeshes } from './zombies.ts';
 
 export interface PlayCameraFrame {
@@ -206,6 +207,7 @@ export const createPlayView = (
   const playerFigure = registry.figures.get(CORE_CONTENT_IDS.player)!;
   const playerPalette = playerFigure.palette;
   const piles = new PileMeshes(s, models, config.seed, meshes);
+  const vehicles = new VehicleMeshes(registry, models, s);
   const caseEffects = new CaseEffects(s, models);
   const gore = new Gore(s, graphics.gore, config.seed);
   const decals =
@@ -240,6 +242,7 @@ export const createPlayView = (
   const dispose = () => {
     pictures?.dispose();
     piles.dispose();
+    vehicles.dispose();
     caseEffects.dispose();
     gore.dispose();
     decals?.dispose();
@@ -267,7 +270,7 @@ export const createPlayView = (
   let cameraDaylightScale = 1;
   const lightPool = new LightPool(scene, held.warmUpTarget.scene);
   engine.shadows?.attachTorches(flashlight.lights);
-  scene.add(piles.group, furniture.group, playerMeshes.group, modelMaterialWarmUp(true));
+  scene.add(piles.group, vehicles.group, furniture.group, playerMeshes.group, modelMaterialWarmUp(true));
   const avatarStudy = createAvatarStudy(scene, config.debug, s, models);
   // Both actors implement the same presentation contract. Gameplay keeps synchronous
   // death/sever callbacks so an actor is removed before a subsequent sync/prune.
@@ -365,6 +368,7 @@ export const createPlayView = (
       return drawCounters?.snapshot ?? null;
     },
     piles,
+    vehicles,
     caseEffects,
     gore,
     itemThrows,
@@ -426,6 +430,7 @@ export const createPlayView = (
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour, dayCycle), weather, dayCycle.weather);
       piles.sync(inventory, itemThrows.hiddenItemUids);
+      vehicles.sync(inventory.vehicles);
       furniture.sync(entities);
       decals?.sync(entities);
       const alpha = Math.max(0, Math.min(1, (time - lastZombieStep) * 20));

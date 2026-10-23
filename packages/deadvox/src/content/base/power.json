@@ -46,6 +46,12 @@
       "priority": 0
     },
     {
+      "demandWatts": 4,
+      "id": "portable_battery_charger",
+      "kind": "consumer",
+      "priority": 2
+    },
+    {
       "demandWatts": 100,
       "id": "electrical_load",
       "kind": "consumer",

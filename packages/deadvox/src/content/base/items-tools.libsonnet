@@ -230,7 +230,7 @@ local items = [
       seenFrom: 8,
       color: '#7dff86',
       intensity: 0.8,
-      power: { battery: 'aa_battery', chargePerGameHour: 0.15, swapSimSeconds: 2 },
+      power: { battery: 'aa_battery', compatibleBatteries: ['rechargeable_aa_battery'], chargePerGameHour: 0.15, swapSimSeconds: 2 },
       wornSwitch: true,
       nightVision: {
         gain: 6,

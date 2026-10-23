@@ -190,6 +190,25 @@ describe('floor furniture steps', () => {
     expect(inventory.pileAt([5, 2, 5])?.items.some((placed) => placed.item === item)).toBe(true);
   });
 
+  it('notifies relocation owners before a committed slide and stack fall, never for a preview or refusal', () => {
+    const { inventory, entity, mover } = fixture();
+    const top = inventory.furnish({ ...spec, pos: [5, 5, 5], size: [1, 1, 1] })!;
+    const relocated: number[] = [];
+    const moving = {
+      ...mover,
+      beforeRelocate: (piece: typeof entity) => {
+        expect(entity.pos).toEqual(spec.pos);
+        expect(top.pos).toEqual([5, 5, 5]);
+        relocated.push(piece.uid);
+      },
+    };
+    expect(slideFurniture(moving, entity, 'push', { commit: false })).toBeUndefined();
+    expect(slideFurniture({ ...moving, stamina: 0 }, entity, 'push')).toBe(messages.slideTired);
+    expect(relocated).toEqual([]);
+    expect(slideFurniture(moving, entity, 'push')).toBeUndefined();
+    expect(relocated).toEqual([entity.uid, top.uid]);
+  });
+
   it('round-trips a completed step between actions and can drag the restored piece back', async () => {
     const { session, advance } = runtime();
     const entity = session.inventory.furnish(spec)!;

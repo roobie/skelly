@@ -206,6 +206,17 @@
           "ui": "UI",
           "world": "World"
         },
+        "charger": {
+          "collect": "Collect",
+          "idle": "Idle",
+          "load": "Load {name}",
+          "noPower": "No power",
+          "ready": "Ready",
+          "remaining": "{gameSeconds} powered seconds remaining",
+          "running": "Charging",
+          "start": "Start",
+          "stop": "Stop"
+        },
         "crafting": {
           "cheapestAvailable": "Cheapest available",
           "continue": "Continue ({key})",

@@ -25,7 +25,7 @@ local commonItems = [
   'optic_lpvo_1_6x', 'optic_mini_reflex', 'optic_tube_dot', 'rail_front_sight', 'real_suppressor',
   'tactical_flashlight_mount', 'weapon_sling', 'foregrip', 'frag_grenade',
   'canned_beans', 'canned_soup', 'crackers', 'apple', 'chocolate_bar', 'soda_can', 'water_bottle', 'juice_carton',
-  'aa_battery', 'bandage', 'antiseptic', 'antibiotics', 'painkillers', 'rag', 'duct_tape', 'nails', 'scrap_metal',
+  'aa_battery', 'rechargeable_aa_battery', 'bandage', 'antiseptic', 'antibiotics', 'painkillers', 'rag', 'duct_tape', 'nails', 'scrap_metal',
   'field_manual', 'camp_craft_book', 'home_repair_book', 'workshop_notes', 'paperback', 'portable_radio', 'jerry_can',
   'ammo_can', 'shell_12_gauge_00_buck', 'shotshell_box', 'dad_cabin_key', 'baseball_cap', 'evacuation_note', 'hunter_logbook',
   'pharmacy_key', 'medical_research_log', 'lamp_oil', 'glass_shards', 'electrical_tape', 'fastener_pack',
@@ -36,7 +36,7 @@ local commonItems = [
   'improvised_suppressor', 'compass', 'crowbar', 'sledgehammer', 'blowtorch', 'gas_canister', 'hammer', 'kitchen_knife', 'kabar', 'machete', 'can_opener', 'whetstone', 'door_bar',
   'baseball_bat', 'steel_pipe', 'flashlight', 'headlamp', 'torch', 'candle', 'glowstick', 'road_flare', 'lighter', 'matches',
   'jeans', 'cargo_pants', 'rubber_boots', 'hoodie', 'jacket', 'utility_vest', 'fanny_pack', 'school_backpack', 'hiking_backpack',
-  'shed_key', 'pump_shotgun', 'sample_note', 'stick', 'wax', 'wooden_plank', 'repair_kit', 'copper_wire', 'field_patch',
+  'shed_key', 'pump_shotgun', 'sample_note', 'regional_map', 'stick', 'wax', 'wooden_plank', 'repair_kit', 'copper_wire', 'field_patch',
 ];
 local residential = [
   'small_house', 'bungalow', 'corner_store', 'dads_cabin', 'hunter_cabin',

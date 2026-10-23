@@ -17,6 +17,7 @@ import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { CHUNK, toChunk, type Vec3, yawFromBearing } from './coords.ts';
 import { type LootSpawnPoint, lootPointsByColumn } from './loot.ts';
 import { placementKeyLoot } from './placementLoot.ts';
+import type { PublicCartographicFeature } from './publicCartography.ts';
 import { Rng, simplexNoise2 } from './random.ts';
 import type { Scale } from './scale.ts';
 import type { LightPracticeDef, SiteLayoutDef } from './schema.ts';
@@ -47,6 +48,7 @@ export class AuthoredSite implements Site {
   readonly spawn: Site['spawn'];
   readonly surface: Surface;
   readonly placements: readonly Placement[];
+  readonly publicCartography: readonly PublicCartographicFeature[];
   get authoredPlacements(): readonly Placement[] {
     return this.placements;
   }
@@ -78,6 +80,7 @@ export class AuthoredSite implements Site {
       return { ...lotOf(building, rect), apron: grow(rectBlocks(rect), LOT_APRON_M / s) };
     });
     this.placements = layout.buildings.map((building) => placementOf(registry, building, layout.lootContext));
+    this.publicCartography = layout.tracks.map(({ points, width }) => ({ kind: 'track', points, width }));
     this.lootColumns = lootPointsByColumn(
       this.placements.flatMap((placement, i) => {
         const sources = lootSourcesOf(registry, layout.id, placement, layout.buildings[i]!.fixedLoot);

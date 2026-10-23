@@ -44,6 +44,8 @@ export const FEASIBILITY_ENTRIES = ['src/vehicles/feasibility/runner.ts'] as con
 
 export const SIMULATION_ENTRIES = [
   'src/core/sim.ts',
+  // Independently constructed appliance owners also determine saved simulation results.
+  'src/core/batteryChargers.ts',
   'src/core/worldgen.ts',
   'src/core/saveState.ts',
   'src/core/saveFormat.ts',
@@ -94,6 +96,10 @@ export const SIMULATION_EXCLUSIONS = [
   'src/core/skyTransport.ts',
   'src/core/shell.ts',
   'src/core/pileLayout.ts',
+  // Paper-map terrain sampling is disposable presentation; it changes neither simulation nor saves.
+  'src/core/paperMapRender.ts',
+  // Its public-cartography types describe printable features, not simulation or saved state.
+  'src/core/publicCartography.ts',
   // WebAudio output/voice allocation and body-sized pitch law are presentation; admission and saved SoundPicker stay fingerprinted.
   'src/game/audio.ts',
   'src/game/audioPresentation.ts',
@@ -136,6 +142,8 @@ export const SIMULATION_EXCLUSIONS = [
   // Read-only debug readout formatting and byte-count estimates.
   'src/ui/playReadout.ts',
   'src/ui/inventoryScreen.ts',
+  // Read-only appliance projection; command admission and effects stay in session and core.
+  'src/ui/chargerPanel.ts',
   // Craft views/readouts and UI preference/event forwarding only. Native intents/admission
   // remain fingerprinted through session -> core/craftCommands and core/longAction.
   'src/ui/craftController.ts',

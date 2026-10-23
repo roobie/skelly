@@ -17,7 +17,7 @@ read_if:
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry, push or drag, or how stacks settle
   - you're changing the rules for time, survival, light or zombies
-  - you're implementing electricity networks, energy balance or appliance power history
+  - you're implementing electricity networks, portable charging, energy balance or appliance power history
   - you're implementing the authored gauntlet arrangement, scenario admission, composed route certificates, shared city planning, portal proofs, underground lab depth, the sewer route or its visual approval gate
   - you author lab equipment bays, curated storeys or supported descent lids
   - you change sleep onset, its tuning or cancellation
@@ -2473,6 +2473,19 @@ cannot be authored, blended or added to without a code change per animation.
   storage, solar and link rules and their reasons are in
   `docs/electricity.md`, "Electricity"; see `src/core/power.ts`, `PowerNetwork`,
   and `src/core/powerGraph.ts`, `PowerGraph`.
+- **Portable charging.** Charging returns the same battery rather than replacing
+  it, because stopping or destroying a charger must not erase condition or energy
+  already paid for. Rechargeability and light compatibility are explicit content
+  choices; primary cells must not become rechargeable by category or naming.
+  Integer microjoules retain the fraction of a light charge across advances,
+  stops and saves, so partitioning time cannot mint energy. Conversion losses and
+  the unused fraction of the final served millisecond dissipate rather than
+  charging network storage as well. An empty rechargeable cell remains worth
+  keeping. See `src/core/batteryChargers.ts`, `BatteryChargers`,
+  `src/core/battery.ts`, `batteryEnergy`, and `src/core/lights.ts`, `swapBattery`.
+  Unattended work must not reserve the player's hands or depend on an open panel;
+  local controls project the world owner instead of driving it. See
+  `src/ui/chargerPanel.ts`, `chargerPanel`, and `src/core/sitePower.ts`, `SitePower`.
 - **Fire** is a world system: burn rate per material, spread to neighbouring
   flammable blocks, smoke and light. Hot zombies and molotovs use the same
   system.
@@ -2863,8 +2876,16 @@ copy. See `src/core/paperMap.ts`, `paperMapAt` and `paperMapBounds`, and
 `src/core/worldRegion.ts`, `regionIndex`.
 
 Paper is a carried source of knowledge, not a permanent atlas unlock or a live
-camera. Its approved printed geography is baseline terrain and public roads,
-including unvisited places, not actors, possessions, secrets or mutable damage.
+camera. Its terrain layer samples the baseline generation surface, including
+unvisited places, rather than visited columns or mutable world blocks. Roads need
+a separate public-cartography export from each generation owner, so that neither
+layer shows actors, possessions, secrets or mutable damage. See
+`src/core/publicCartography.ts`, `PublicCartographicFeature`, and
+`src/core/site.ts`, `Site.publicCartography`. A one-cell sampling halo preserves hillshade and
+contours at the cut, and shared contour levels keep neighbouring sheets aligned.
+A bounded session cache deduplicates renders by world identity, region and render
+configuration; it is disposable presentation work, not saved knowledge. See
+`src/core/paperMapRender.ts`, `samplePaperMapTerrain` and `PaperMapRenderCache`.
 The discovery policy is optional local supply without guaranteed coverage;
 duplicate copies are ordinary possessions, not globally unique collectibles.
 Completing #470 requires a shared reading-light policy for all paper rather than

@@ -407,6 +407,7 @@
         "power": {
           "battery": "aa_battery",
           "chargePerGameHour": 0.25,
+          "compatibleBatteries": ["rechargeable_aa_battery"],
           "swapSimSeconds": 2
         },
         "radius": 20,
@@ -442,6 +443,7 @@
         "power": {
           "battery": "aa_battery",
           "chargePerGameHour": 0.20000000000000001,
+          "compatibleBatteries": ["rechargeable_aa_battery"],
           "swapSimSeconds": 2
         },
         "radius": 12,
@@ -489,6 +491,7 @@
         "power": {
           "battery": "aa_battery",
           "chargePerGameHour": 0.14999999999999999,
+          "compatibleBatteries": ["rechargeable_aa_battery"],
           "swapSimSeconds": 2
         },
         "radius": 14,
