@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you decide how realism should trade off against tedium
   - you change food exposure ownership or ambient catch-up
   - you change the test-house normal or debug-only boundary
   - you change regional paper-map coverage, item ownership or persistence
@@ -124,6 +125,11 @@ place the authorities gave up on.
    laptop. Each player's machine runs the whole world. Multiplayer, after
    version 1, is lockstep, so peers exchange only inputs; see
    [ADR 0008](docs/decisions/0008-deterministic-world.md).
+
+7. **Realism without tedium.** Model the real physical constraints of an action,
+   but omit repeated procedure that adds no meaningful choice or consequence.
+   Physical consistency lets players reason from the world; needless repetition
+   does not add survival depth.
 
 ## Performance and scale
 
