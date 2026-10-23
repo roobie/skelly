@@ -12,13 +12,13 @@ import {
   Vector3,
 } from 'three';
 import type { BodyRegion } from '../core/body.ts';
-import type { FigureDef } from '../core/content.ts';
+import type { FigureDef, ModelDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf } from '../core/items.ts';
 import type { Body } from '../core/physics.ts';
 import type { PlayerStance } from '../core/playerStance.ts';
-import type { WearSlot } from '../core/schema.ts';
+import { FIGURE_BOX_PARTS, type FigureBoxPart, type FigureJoint, type WearSlot } from '../core/schema.ts';
 import { FIGURE_BOXES, type FigureBox } from '../core/zombieRegions.ts';
 import { PLAYER_ARM_BOXES } from './figure.ts';
 import { withHeightFog } from './heightFog.ts';
@@ -27,7 +27,6 @@ import { castsAndReceives, PLAYER_FIGURE_LAYER } from './shadowFlags.ts';
 
 /** Metres behind the eye; leaves the torso's front face 5 cm behind the eye. */
 export const PLAYER_BODY_REAR_OFFSET = 0.19;
-const BODY_HIP_HEIGHT = 0.62;
 
 export interface PlayerFigurePlacement {
   bodyPosition: Vec3;
@@ -53,23 +52,8 @@ export const setPlayerFigurePosition = (
     bodyPosition[2] * blockSize + cos * rearOffset - localX * sin + localZ * cos,
   );
 };
-export const PLAYER_ARM_PARTS = [
-  'body',
-  'head',
-  'leftUpperArm',
-  'rightUpperArm',
-  'leftForearm',
-  'rightForearm',
-  'leftHand',
-  'rightHand',
-  'leftLeg',
-  'rightLeg',
-  'leftFoot',
-  'rightFoot',
-] as const;
-export type PlayerArmPart = (typeof PLAYER_ARM_PARTS)[number];
-
-const PLAYER_BOXES: Readonly<Record<PlayerArmPart, FigureBox>> = {
+/** The box layout before any joint moves a box; hit regions keep it, so gore lands where it always has. */
+const PLAYER_BOXES: Readonly<Record<FigureBoxPart, FigureBox>> = {
   body: FIGURE_BOXES.body,
   head: FIGURE_BOXES.head,
   leftUpperArm: PLAYER_ARM_BOXES.leftUpperArm,
@@ -84,9 +68,89 @@ const PLAYER_BOXES: Readonly<Record<PlayerArmPart, FigureBox>> = {
   rightFoot: { size: [0.18, 0.12, 0.28], at: [0.12, 0.06, -0.16] },
 };
 
-const WORN_ATTACHMENTS: Partial<Record<WearSlot, PlayerArmPart>> = { head: 'head', eyes: 'head' };
+const WORN_ATTACHMENTS: Partial<Record<WearSlot, FigureBoxPart>> = { head: 'head', eyes: 'head' };
 
-const regionBox = (part: PlayerArmPart, anchoredLeg = false): FigureBox => {
+/** An authored part placed in the figure frame: its model's origin, the model turned to face -z as the boxes do. */
+export interface AuthoredFigurePart {
+  model: string;
+  draws: readonly FigureBoxPart[];
+  at: Vec3;
+}
+
+/** The figure's drawn layout: boxes hung from the joints, and the authored parts that draw in place of some. */
+export interface PlayerFigureLayout {
+  hipHeight: number;
+  joints: Readonly<Record<FigureJoint, Vec3>>;
+  boxes: Readonly<Record<FigureBoxPart, FigureBox>>;
+  authored: readonly AuthoredFigurePart[];
+}
+
+const ARM_CHAINS: Readonly<Record<'leftShoulder' | 'rightShoulder', readonly FigureBoxPart[]>> = {
+  leftShoulder: ['leftUpperArm', 'leftForearm', 'leftHand'],
+  rightShoulder: ['rightUpperArm', 'rightForearm', 'rightHand'],
+};
+const LEGS: Readonly<Record<'leftHip' | 'rightHip', readonly FigureBoxPart[]>> = {
+  leftHip: ['leftLeg', 'leftFoot'],
+  rightHip: ['rightLeg', 'rightFoot'],
+};
+
+/**
+ * Resolves a figure row against its models' anchors. A model faces +z with its left at +x; turned half round it
+ * faces -z, the boxes' way, so an anchor's x and z flip. Each part stands with its hip joints' midpoint at the
+ * figure's hip height on the centre line.
+ */
+export const playerFigureLayout = (
+  figure: FigureDef,
+  models: ReadonlyMap<string, Pick<ModelDef, 'anchors'>>,
+): PlayerFigureLayout => {
+  const hipHeight = figure.hipHeightMetres;
+  const upperArmTop = (part: FigureBoxPart): Vec3 => {
+    const { at, size } = PLAYER_BOXES[part];
+    return [at[0], at[1] + size[1] / 2, at[2]];
+  };
+  const joints: Record<FigureJoint, Vec3> = {
+    leftHip: [PLAYER_BOXES.leftLeg.at[0], hipHeight, 0],
+    rightHip: [PLAYER_BOXES.rightLeg.at[0], hipHeight, 0],
+    leftShoulder: upperArmTop('leftUpperArm'),
+    rightShoulder: upperArmTop('rightUpperArm'),
+  };
+  const authored = (figure.parts ?? []).flatMap((part) => {
+    const anchors = models.get(part.model)?.anchors;
+    const left = anchors?.[part.joints.leftHip];
+    const right = anchors?.[part.joints.rightHip];
+    if (!(anchors && left && right)) {
+      return [];
+    }
+    const at: Vec3 = [(left[0] + right[0]) / 2, hipHeight - (left[1] + right[1]) / 2, (left[2] + right[2]) / 2];
+    for (const [joint, anchor] of Object.entries(part.joints) as [FigureJoint, string | undefined][]) {
+      const point = anchor === undefined ? undefined : anchors[anchor];
+      if (point) {
+        joints[joint] = [at[0] - point[0], at[1] + point[1], at[2] - point[2]];
+      }
+    }
+    return [{ model: part.model, draws: part.draws, at }];
+  });
+  const boxes = { ...PLAYER_BOXES };
+  for (const [joint, chain] of Object.entries(ARM_CHAINS) as ['leftShoulder' | 'rightShoulder', FigureBoxPart[]][]) {
+    const top = upperArmTop(chain[0]!);
+    const shift = joints[joint].map((value, axis) => value - top[axis]!);
+    for (const part of chain) {
+      const { at, size } = PLAYER_BOXES[part];
+      boxes[part] = { size, at: [at[0] + shift[0]!, at[1] + shift[1]!, at[2] + shift[2]!] };
+    }
+  }
+  // A box leg's `at` is its top, at the hip; it reaches the ground, and its foot sits under it.
+  for (const [joint, [leg, foot]] of Object.entries(LEGS) as ['leftHip' | 'rightHip', FigureBoxPart[]][]) {
+    const [x, y, z] = joints[joint];
+    const { size } = PLAYER_BOXES[leg!];
+    boxes[leg!] = { size: [size[0], y, size[2]], at: [x, y, z] };
+    const footBox = PLAYER_BOXES[foot!];
+    boxes[foot!] = { size: footBox.size, at: [x, footBox.at[1], footBox.at[2] + z] };
+  }
+  return { hipHeight, joints, boxes, authored };
+};
+
+const regionBox = (part: FigureBoxPart, anchoredLeg = false): FigureBox => {
   const box = PLAYER_BOXES[part];
   return {
     size: box.size,
@@ -103,7 +167,7 @@ export const PLAYER_REGION_BOXES: Readonly<Record<BodyRegion, FigureBox>> = {
   rightLeg: regionBox('rightLeg', true),
 };
 
-const PLAYER_COLORS: Readonly<Record<PlayerArmPart, keyof FigureDef['palette']>> = {
+const PLAYER_COLORS: Readonly<Record<FigureBoxPart, keyof FigureDef['palette']>> = {
   body: 'shirt',
   head: 'skin',
   leftUpperArm: 'shirt',
@@ -127,7 +191,7 @@ export const FIRST_PERSON_PALM: Vec3 = [0.09, 0.08, 0.09];
 const SEGMENT_UP = new Vector3(0, 1, 0);
 const segmentDirection = new Vector3();
 
-const armSideOf = (part: PlayerArmPart): HandSide | undefined => {
+const armSideOf = (part: FigureBoxPart): HandSide | undefined => {
   if (part.startsWith('left')) {
     return 'left';
   }
@@ -137,7 +201,11 @@ const armSideOf = (part: PlayerArmPart): HandSide | undefined => {
   return undefined;
 };
 
-const isArmPart = (part: PlayerArmPart): boolean =>
+/** A leg's walking swing about its hip, in radians; the two sides swing opposite ways. */
+const strideOf = (part: FigureBoxPart, gaitPhase: number): number =>
+  (part.startsWith('left') ? 1 : -1) * Math.sin(gaitPhase) * 0.22;
+
+const isArmPart = (part: FigureBoxPart): boolean =>
   part.includes('UpperArm') || part.includes('Forearm') || part.includes('Hand');
 
 const hiddenWorldArms = (inventory?: Inventory): Record<HandSide, boolean> => {
@@ -215,11 +283,17 @@ type StancePose = FigureDef['stancePoses']['prone'];
 const STANDING_POSE: StancePose = { hipDropMetres: 0, torsoForwardDegrees: 0, legsForwardDegrees: 0 };
 const STANCE_POSE_KEYS = Object.keys(STANDING_POSE) as (keyof StancePose)[];
 
-/** A coloured world figure whose head is visible only in third person. */
+/**
+ * The player's world body from its figure row: authored parts once their models load, boxes for the rest. The box
+ * head shows only in third person; an authored head stays drawn behind the first-person eye.
+ */
 export class PlayerMeshes {
   readonly group = new Group();
-  private readonly meshes = new Map<PlayerArmPart, InstancedMesh>();
-  private readonly attachments = new Map<PlayerArmPart, Group[]>();
+  readonly layout: PlayerFigureLayout;
+  private readonly meshes = new Map<FigureBoxPart, InstancedMesh>();
+  private readonly attachments = new Map<FigureBoxPart, Group[]>();
+  /** Each authored part's drawn model, once it has loaded. */
+  private readonly authored = new Map<AuthoredFigurePart, Group>();
   private wornVersion = '';
   private readonly models: ModelLibrary | undefined;
   private readonly dummy = new Object3D();
@@ -232,12 +306,18 @@ export class PlayerMeshes {
   private blendProgress = 1;
   private readonly shownPose: StancePose = { ...STANDING_POSE };
 
-  constructor(blockSize: number, figure: FigureDef, models?: ModelLibrary) {
+  constructor(
+    blockSize: number,
+    figure: FigureDef,
+    modelDefs: ReadonlyMap<string, Pick<ModelDef, 'anchors'>>,
+    models?: ModelLibrary,
+  ) {
     const { palette } = figure;
+    this.layout = playerFigureLayout(figure, modelDefs);
     this.stancePoses = figure.stancePoses;
     this.models = models;
     this.placement = { bodyPosition: [0, 0, 0], yaw: 0, blockSize, thirdPerson: false };
-    for (const part of PLAYER_ARM_PARTS) {
+    for (const part of FIGURE_BOX_PARTS) {
       const mesh = new InstancedMesh(
         new BoxGeometry(1, 1, 1),
         withHeightFog(new MeshLambertMaterial({ color: palette[PLAYER_COLORS[part]] }), 'player'),
@@ -259,24 +339,58 @@ export class PlayerMeshes {
     this.placement.yaw = pose.yaw;
     this.placement.thirdPerson = thirdPerson;
     const hidden = thirdPerson ? { right: false, left: false } : hiddenWorldArms(inventory);
-    for (const part of PLAYER_ARM_PARTS) {
-      const mesh = this.meshes.get(part)!;
+    const modelDrawn = this.syncAuthored();
+    for (const part of FIGURE_BOX_PARTS) {
       const side = armSideOf(part);
       const hiddenHeldArm = isArmPart(part) && side !== undefined && hidden[side];
-      const hiddenInFirstPerson = part === 'head' && !thirdPerson;
-      mesh.count = hiddenHeldArm || hiddenInFirstPerson ? 0 : 1;
-      const attachments = this.attachments.get(part) ?? [];
+      const hiddenInFirstPerson = part === 'head' && !thirdPerson && !modelDrawn.has(part);
+      this.syncPart(part, pose, !(hiddenHeldArm || hiddenInFirstPerson), modelDrawn.has(part));
+    }
+    for (const [part, drawn] of this.authored) {
+      this.posePoint(part.at, part.draws[0]!, pose);
+      drawn.position.copy(this.dummy.position);
+      drawn.quaternion.copy(this.dummy.quaternion);
+      drawn.rotateY(Math.PI); // Models face +z and the figure faces -z.
+    }
+  }
+
+  /** Poses a shown box part and its worn gear; the box itself draws only while no model draws it. */
+  private syncPart(part: FigureBoxPart, pose: PlayerFigurePose, shown: boolean, modelDrawn: boolean): void {
+    const mesh = this.meshes.get(part)!;
+    mesh.count = shown && !modelDrawn ? 1 : 0;
+    const attachments = this.attachments.get(part) ?? [];
+    for (const attachment of attachments) {
+      // Worn head gear is drawn from inside in first person, so the body copy shows only in third person.
+      attachment.visible = shown && (pose.thirdPerson === true || part !== 'head');
+    }
+    if (shown) {
+      this.updatePart(part, mesh, pose);
       for (const attachment of attachments) {
-        attachment.visible = mesh.count > 0;
+        attachment.position.copy(this.dummy.position);
+        attachment.quaternion.copy(this.dummy.quaternion);
       }
-      if (mesh.count > 0) {
-        this.updatePart(part, mesh, pose);
-        for (const attachment of attachments) {
-          attachment.position.copy(this.dummy.position);
-          attachment.quaternion.copy(this.dummy.quaternion);
+    }
+  }
+
+  /** Adds each authored part whose model has loaded; returns the box parts those models now draw. */
+  private syncAuthored(): Set<FigureBoxPart> {
+    const drawn = new Set<FigureBoxPart>();
+    for (const part of this.layout.authored) {
+      if (!this.authored.has(part) && this.models?.has(part.model)) {
+        const model = new Group();
+        model.name = `figure-${part.model}`;
+        model.add(this.models.part(part.model)!);
+        model.traverse((object) => object.layers.set(PLAYER_FIGURE_LAYER));
+        this.authored.set(part, model);
+        this.group.add(castsAndReceives(model));
+      }
+      if (this.authored.has(part)) {
+        for (const box of part.draws) {
+          drawn.add(box);
         }
       }
     }
+    return drawn;
   }
 
   private blendStance(stance: PlayerStance, dt: number): void {
@@ -323,37 +437,12 @@ export class PlayerMeshes {
     }
   }
 
-  private updatePart(part: PlayerArmPart, mesh: InstancedMesh, pose: PlayerFigurePose): void {
-    const { yaw, stepOffset, gaitPhase, moving } = pose;
-    const box = PLAYER_BOXES[part];
+  private updatePart(part: FigureBoxPart, mesh: InstancedMesh, pose: PlayerFigurePose): void {
+    const box = this.layout.boxes[part];
     const isLeg = part === 'leftLeg' || part === 'rightLeg';
-    const isFoot = part === 'leftFoot' || part === 'rightFoot';
-    const stride = (part.startsWith('left') ? 1 : -1) * Math.sin(gaitPhase) * 0.22;
-    const footStride = isFoot && moving ? stride : 0;
-    const localY = isFoot
-      ? BODY_HIP_HEIGHT + (box.at[1] - BODY_HIP_HEIGHT) * Math.cos(footStride) - box.at[2] * Math.sin(footStride)
-      : box.at[1];
-    const localZ = isFoot
-      ? (box.at[1] - BODY_HIP_HEIGHT) * Math.sin(footStride) + box.at[2] * Math.cos(footStride)
-      : box.at[2];
-    // The stance swings the legs and the upper body about the hip, then lowers the hip.
-    const { hipDropMetres, torsoForwardDegrees, legsForwardDegrees } = this.shownPose;
-    const swing = ((isLeg || isFoot ? legsForwardDegrees : -torsoForwardDegrees) * Math.PI) / 180;
-    const aboveHip = localY - BODY_HIP_HEIGHT;
-    this.localPosition[0] = box.at[0];
-    this.localPosition[1] =
-      stepOffset + BODY_HIP_HEIGHT - hipDropMetres + aboveHip * Math.cos(swing) - localZ * Math.sin(swing);
-    this.localPosition[2] = aboveHip * Math.sin(swing) + localZ * Math.cos(swing);
-    if (!this.placement.thirdPerson) {
-      // The eye stays over the standing column, so the lean must not carry the head, and the body behind it, ahead of the eye.
-      const headAboveHip = PLAYER_BOXES.head.at[1] - BODY_HIP_HEIGHT;
-      this.localPosition[2] -= headAboveHip * Math.sin((-torsoForwardDegrees * Math.PI) / 180);
-    }
-    setPlayerFigurePosition(this.dummy.position, this.placement, this.localPosition);
-    this.dummy.rotation.order = 'YXZ';
-    this.dummy.rotation.set(footStride + swing, yaw, 0);
-    if (isLeg && moving) {
-      this.dummy.rotateX(stride);
+    this.posePoint(box.at, part, pose);
+    if (isLeg && pose.moving) {
+      this.dummy.rotateX(strideOf(part, pose.gaitPhase));
     }
     if (isLeg) {
       this.dummy.translateY(-box.size[1] / 2);
@@ -363,5 +452,31 @@ export class PlayerMeshes {
     mesh.setMatrixAt(0, this.dummy.matrix);
     mesh.instanceMatrix.needsUpdate = true;
     mesh.boundingSphere = null;
+  }
+
+  /** Puts `dummy` at figure-frame point `at`, posed as `part` is: legs and feet about the hips, the rest leaning. */
+  private posePoint(at: Vec3, part: FigureBoxPart, pose: PlayerFigurePose): void {
+    const { yaw, stepOffset, gaitPhase, moving } = pose;
+    const hip = this.layout.hipHeight;
+    const isLeg = part === 'leftLeg' || part === 'rightLeg';
+    const isFoot = part === 'leftFoot' || part === 'rightFoot';
+    const footStride = isFoot && moving ? strideOf(part, gaitPhase) : 0;
+    const localY = hip + (at[1] - hip) * Math.cos(footStride) - at[2] * Math.sin(footStride);
+    const localZ = (at[1] - hip) * Math.sin(footStride) + at[2] * Math.cos(footStride);
+    // The stance swings the legs and the upper body about the hip, then lowers the hip.
+    const { hipDropMetres, torsoForwardDegrees, legsForwardDegrees } = this.shownPose;
+    const swing = ((isLeg || isFoot ? legsForwardDegrees : -torsoForwardDegrees) * Math.PI) / 180;
+    const aboveHip = localY - hip;
+    this.localPosition[0] = at[0];
+    this.localPosition[1] = stepOffset + hip - hipDropMetres + aboveHip * Math.cos(swing) - localZ * Math.sin(swing);
+    this.localPosition[2] = aboveHip * Math.sin(swing) + localZ * Math.cos(swing);
+    if (!this.placement.thirdPerson) {
+      // The eye stays over the standing column, so the lean must not carry the head, and the body behind it, ahead of the eye.
+      const headAboveHip = PLAYER_BOXES.head.at[1] - hip;
+      this.localPosition[2] -= headAboveHip * Math.sin((-torsoForwardDegrees * Math.PI) / 180);
+    }
+    setPlayerFigurePosition(this.dummy.position, this.placement, this.localPosition);
+    this.dummy.rotation.order = 'YXZ';
+    this.dummy.rotation.set(footStride + swing, yaw, 0);
   }
 }
