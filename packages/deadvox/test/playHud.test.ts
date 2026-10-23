@@ -5,6 +5,7 @@ import { BlockEntities } from '../src/core/blockEntities.ts';
 import { bodyRegionLabel } from '../src/core/body.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { damageWord } from '../src/core/items.ts';
+import { fillText } from '../src/core/textTemplate.ts';
 import { inputBindings, labelForAction } from '../src/game/inputBindings.ts';
 import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';
 import {
@@ -17,7 +18,9 @@ import {
   renderPlayHud,
 } from '../src/ui/playHud.ts';
 import { playReadout } from '../src/ui/playReadout.ts';
-import { baseRegistry } from './baseRegistry.ts';
+import { baseRegistry, baseScreenText } from './baseRegistry.ts';
+
+const text = baseScreenText();
 
 it('projects debug positions in metres and counts only existing chunk/geometry attribute bytes', () => {
   const geometry = new BufferGeometry();
@@ -106,7 +109,7 @@ it('shows every pain component on two adjacent lines after needs', () => {
     lightCharge: undefined,
   } as const;
 
-  const lines = playNeedsText(status).split('\n');
+  const lines = playNeedsText(status, text.stats).split('\n');
   const values = {
     felt: status.pain.felt.toFixed(0),
     acute: status.pain.acute.toFixed(0),
@@ -160,11 +163,11 @@ it("projects blood level and affected regions, with their tier's label, only whi
     sprinting: false,
     lightCharge: undefined,
   } as const;
-  const bleeding = playNeedsText(base);
+  const bleeding = playNeedsText(base, text.stats);
   expect(bleeding).toContain('67%');
   expect(bleeding).toContain(regionLabel);
   expect(bleeding).toContain(tierLabel);
-  const treated = playNeedsText({ ...base, bleeding: [] });
+  const treated = playNeedsText({ ...base, bleeding: [] }, text.stats);
   expect(treated).toContain('67%');
   expect(treated).not.toContain(regionLabel);
   const bleedingLines = bleeding.split('\n');
@@ -195,8 +198,8 @@ it('gives only a tier content marks to warn the warning sign, while naming every
     sprinting: false,
     lightCharge: undefined,
   };
-  const warned = playNeedsText({ ...status, bleeding: [{ region, label: 'Warned', warn: true }] });
-  const quiet = playNeedsText({ ...status, bleeding: [{ region, label: 'Quiet', warn: false }] });
+  const warned = playNeedsText({ ...status, bleeding: [{ region, label: 'Warned', warn: true }] }, text.stats);
+  const quiet = playNeedsText({ ...status, bleeding: [{ region, label: 'Quiet', warn: false }] }, text.stats);
   const warningLine = warned.split('\n').find((line) => line.includes(region));
   if (!warningLine) {
     throw new Error('Warned bleeding status did not include its region');
@@ -210,19 +213,22 @@ it('gives only a tier content marks to warn the warning sign, while naming every
 it('uses a rebound registry label for restable furniture interactions', () => {
   expect(inputBindings.rebind('world.interact', [{ code: 'KeyJ' }])).toBeUndefined();
   try {
-    const hint = playInteractionText({
-      door: false,
-      open: false,
-      doorReason: undefined,
-      lock: undefined,
-      container: false,
-      readable: false,
-      climbable: false,
-      restAction: 'rest',
-      searched: false,
-      name: 'fixture',
-      fullName: 'Fixture',
-    });
+    const hint = playInteractionText(
+      {
+        door: false,
+        open: false,
+        doorReason: undefined,
+        lock: undefined,
+        container: false,
+        readable: false,
+        climbable: false,
+        restAction: 'rest',
+        searched: false,
+        name: 'fixture',
+        fullName: 'Fixture',
+      },
+      text.interaction,
+    );
     const prompt = drawn(hint);
     expect(prompt.querySelector('.keycap')?.textContent).toBe(labelForAction('world.interact'));
     expect(prompt.textContent).not.toContain('F:');
@@ -250,30 +256,36 @@ it("names a damaged piece's band from the shared band table below the top band, 
     });
     const piece = entities.byUid(uid)!;
     const damageText = damageWord(registry, entities.conditionOf(piece));
-    const hint = playInteractionText({
-      door: false,
-      open: false,
-      container: true,
-      readable: false,
-      climbable: false,
-      restAction: undefined,
-      searched: false,
-      name,
-      fullName: def.name,
-      damage: damageText,
-    });
-    return { word: damageText, text: drawn(hint).textContent };
+    const hint = playInteractionText(
+      {
+        door: false,
+        open: false,
+        container: true,
+        readable: false,
+        climbable: false,
+        restAction: undefined,
+        searched: false,
+        name,
+        fullName: def.name,
+        damage: damageText,
+      },
+      text.interaction,
+    );
+    return { word: damageText, shown: drawn(hint).textContent };
   };
   const [top, ...below] = [...bands].reverse();
   for (const [index, band] of below.entries()) {
     const ceiling = (index === 0 ? top : below[index - 1])!.from;
-    const { word, text } = hintAt((band.from + ceiling) / 2);
+    const { word, shown } = hintAt((band.from + ceiling) / 2);
     expect(word).toBe(band.word);
-    expect(text).toContain(`${band.word} ${name}`);
+    expect(shown).toContain(fillText(text.interaction.damaged, { damage: band.word, name }));
   }
   const intact = hintAt(1);
   expect(intact.word).toBeUndefined();
-  expect(intact.text).toContain(`the ${name}`);
+  expect(intact.shown).toContain(name);
+  for (const band of below) {
+    expect(intact.shown).not.toContain(band.word);
+  }
   expect(hintAt((top!.from + 1) / 2)).toEqual(intact);
 });
 
@@ -368,11 +380,11 @@ it('omits expired notices and the duplicated rest interruption but retains the s
     interruption: 'Hurt',
     resting: true,
   });
-  const restingPrompt = drawn(playPromptText(state, visible)).textContent;
+  const restingPrompt = drawn(playPromptText(state, visible, text.prompt)).textContent;
   expect(restingPrompt).toContain(state.interactionHint);
   expect(restingPrompt).toContain(state.itemActionHint);
   expect(restingPrompt).not.toContain(state.interruption);
-  const interruptedPrompt = drawn(playPromptText({ ...state, resting: false }, visible)).textContent;
+  const interruptedPrompt = drawn(playPromptText({ ...state, resting: false }, visible, text.prompt)).textContent;
   expect(interruptedPrompt).toContain(state.interactionHint);
   expect(interruptedPrompt).toContain(state.interruption);
 });
@@ -385,12 +397,13 @@ it('draws the live turn and tip keys as key caps in the carry hint, follows a re
           now: 1,
           notice: '',
           noticeUntil: 0,
-          interactionHint: playCarryText('fixture set down'),
+          interactionHint: playCarryText('fixture set down', text.interaction),
           itemActionHint: undefined,
           interruption: undefined,
           resting: false,
         },
         hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, interaction }),
+        text.prompt,
       ),
     );
   const caps = (prompt: HTMLElement): string[] =>
@@ -420,8 +433,11 @@ it('shows a refusal reason only when the messages option is on', () => {
     interruption: undefined,
     resting: false,
   });
-  expect(playPromptText(state, hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: false }))).toBe('');
   expect(
-    drawn(playPromptText(state, hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: true }))).textContent,
+    playPromptText(state, hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: false }), text.prompt),
+  ).toBe('');
+  expect(
+    drawn(playPromptText(state, hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: true }), text.prompt))
+      .textContent,
   ).toContain(reason);
 });

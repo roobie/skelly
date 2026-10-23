@@ -39,6 +39,8 @@ export interface MenuStateInput {
   /** Resume intent is applied only while the pointer is locked, whether newly acquired or already held. */
   resumeRequested?: boolean;
   titleNewWorldLabel?: string;
+  /** What the play button says before a world starts and once it runs; from the core ui content. */
+  goLabels: { readonly play: string; readonly continue: string };
   /** Keeps the title screen modal until the player explicitly enters a world. */
   titleActive?: boolean;
   saveMenu?: SaveMenuInput;
@@ -75,7 +77,7 @@ const titleMenuState = (input: MenuStateInput): MenuState => ({
   menuPointer: true,
   overlayHidden: false,
   paused: true,
-  goLabel: input.titleNewWorldLabel ?? 'Play',
+  goLabel: input.titleNewWorldLabel ?? input.goLabels.play,
   ...saveState(input),
 });
 
@@ -111,7 +113,7 @@ const activeMenuState = (input: MenuStateInput): MenuState => {
     menuPointer: mainMenuOpen || inventoryOpen || readingOpen || debugMenuOpen || Boolean(input.reviewMapOpen),
     overlayHidden,
     paused: !overlayHidden,
-    goLabel: started ? 'Continue' : (input.titleNewWorldLabel ?? 'Play'),
+    goLabel: started ? input.goLabels.continue : (input.titleNewWorldLabel ?? input.goLabels.play),
     ...goVisibility(input.dead),
     ...saveState(input),
   };

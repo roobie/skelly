@@ -188,6 +188,7 @@ describe('authored readable text', () => {
     expect(session.queue.jobs).toHaveLength(0);
   });
   it('uses inventory-style live time and menu-pointer admission for the reading surface', () => {
+    const goLabels = { play: 'fixture play', continue: 'fixture continue' };
     const menu = computeMenuState({
       started: true,
       mainMenuOpen: false,
@@ -196,6 +197,7 @@ describe('authored readable text', () => {
       debugMenuOpen: false,
       pointerLocked: true,
       dead: false,
+      goLabels,
     });
     expect(menu).toMatchObject({ paused: false, overlayHidden: true, menuPointer: true });
     const escaped = computeMenuState({
@@ -207,6 +209,7 @@ describe('authored readable text', () => {
       pointerLocked: false,
       pointerLockChanged: true,
       dead: false,
+      goLabels,
     });
     expect(escaped).toMatchObject({ paused: true, closeOtherMenus: true });
   });

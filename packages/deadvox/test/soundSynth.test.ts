@@ -18,6 +18,7 @@ const duration = preset.attack + preset.sustain + preset.decay;
 
 const soundRow = (jfxr: Record<string, unknown>) => ({
   id: 'door_knock_jfxr',
+  description: 'fixture knock',
   category: 'world',
   gain: 0.7,
   pitchJitter: [0.95, 1.05],
