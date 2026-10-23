@@ -113,6 +113,8 @@ export interface UseOption {
   label: string;
   plan: Plan;
   operation?: 'consume' | 'switch' | 'battery' | 'canister' | 'read' | 'trap';
+  /** How a battery load was admitted; completion rechecks the same route. */
+  route?: BatteryRoute;
   light?: Item;
   battery?: Item;
   tool?: Item;
@@ -268,22 +270,75 @@ const refuseUse = (inv: Inventory, reason: string): UseOption => ({
   plan: { ok: false, reason },
 });
 
-const batteryOption = (battery: Item, inv: Inventory, selectedLight?: Item): UseOption => {
-  const light =
-    selectedLight ??
-    [...inv.carriedTree()]
-      .map(({ item }) => item)
-      .find((item) => lightInHands(inv, item) && fitsLight(inv.registry, item, battery));
-  return light
-    ? {
-        kind: 'use',
-        label: coreLabel(inv.registry, 'batteryIn', { item: inv.name(light).toLowerCase() }),
-        operation: 'battery',
-        light,
-        battery,
-        plan: swapPlan(defOf(inv.registry, light.type).light!.power!.swapSimSeconds),
-      }
-    : refuseUse(inv, coreMessage(inv.registry, 'noLightToFit'));
+type BatteryRoute = 'hands' | 'slot';
+
+const loadOption = (inv: Inventory, light: Item, battery: Item, route: BatteryRoute): UseOption => ({
+  kind: 'use',
+  label: coreLabel(inv.registry, 'batteryIn', { item: inv.name(light).toLowerCase() }),
+  operation: 'battery',
+  route,
+  light,
+  battery,
+  plan: swapPlan(defOf(inv.registry, light.type).light!.power!.swapSimSeconds),
+});
+
+/** The item at the top of `item`'s slot chain, as a light fitted to a gun answers to the gun. */
+const slotRoot = (inv: Inventory, item: Item): Item => {
+  const at = inv.locate(item);
+  return at?.kind === 'slot' ? slotRoot(inv, at.owner) : item;
+};
+
+/**
+ * Whether `battery` can go into `light` from the light's battery slot on its item card: both within reach,
+ * a fitted light through the item it is fitted to. Returns why not, or undefined.
+ */
+export const batterySlotRefusal = (view: ReachSnapshot, light: Item, battery: Item): string | undefined => {
+  const inv = view.player.inventory;
+  const reachable = (item: Item) => view.entries.some((entry) => entry.item === item);
+  if (!(inv.locate(light) && inv.locate(battery))) {
+    return coreMessage(inv.registry, 'gone');
+  }
+  if (!(reachable(slotRoot(inv, light)) && reachable(battery))) {
+    return coreMessage(inv.registry, 'tooFar');
+  }
+  if (inv.locate(light)?.kind === 'worn') {
+    return coreMessage(inv.registry, 'headlampOnHead');
+  }
+  return fitsLight(inv.registry, light, battery) ? undefined : coreMessage(inv.registry, 'wrongBattery');
+};
+
+/** Loading from the item card's battery slot (`DESIGN.md`, "Light"). */
+export const batterySlotOption = (view: ReachSnapshot, light: Item, battery: Item): UseOption => {
+  const inv = view.player.inventory;
+  const refusal = batterySlotRefusal(view, light, battery);
+  return refusal ? refuseUse(inv, refusal) : loadOption(inv, light, battery, 'slot');
+};
+
+/**
+ * Whether a battery in one hand can go into a light held, or fitted to a gun held, in the other.
+ * Returns why not, or undefined.
+ */
+export const batteryHandRefusal = (inv: Inventory, light: Item, battery: Item): string | undefined => {
+  if (!(inv.locate(light) && inv.locate(battery))) {
+    return coreMessage(inv.registry, 'gone');
+  }
+  if (inv.locate(battery)?.kind !== 'hand') {
+    return coreMessage(inv.registry, 'notInHands', { item: inv.name(battery).toLowerCase() });
+  }
+  return lightInHands(inv, light) && fitsLight(inv.registry, light, battery)
+    ? undefined
+    : coreMessage(inv.registry, 'noLightToFit');
+};
+
+/** A battery used from one hand goes into the light held, or fitted to the gun held, in the other. */
+const batteryOption = (battery: Item, inv: Inventory): UseOption => {
+  if (inv.locate(battery)?.kind !== 'hand') {
+    return refuseUse(inv, coreMessage(inv.registry, 'notInHands', { item: inv.name(battery).toLowerCase() }));
+  }
+  const light = [...inv.carriedTree()]
+    .map(({ item }) => item)
+    .find((item) => batteryHandRefusal(inv, item, battery) === undefined);
+  return light ? loadOption(inv, light, battery, 'hands') : refuseUse(inv, coreMessage(inv.registry, 'noLightToFit'));
 };
 
 const swapPlan = (simSeconds: number): UseOption['plan'] => ({ ok: true, time: simSeconds });
@@ -320,14 +375,7 @@ const lightOption = (item: Item, view: ReachSnapshot): UseOption => {
     if (!defOf(inv.registry, item.type).light?.power) {
       return refuseUse(inv, coreMessage(inv.registry, 'outOfFuel'));
     }
-    const [battery] = view.entries
-      .map((entry) => entry.item)
-      .filter((candidate) => fitsLight(inv.registry, item, candidate) && (chargeOf(inv.registry, candidate) ?? 0) > 0)
-      .sort((a, b) => (chargeOf(inv.registry, b) ?? 0) - (chargeOf(inv.registry, a) ?? 0));
-    if (battery) {
-      return batteryOption(battery, inv, item);
-    }
-    return refuseUse(inv, coreMessage(inv.registry, item.slots?.battery ? 'batteryDeadNoSpare' : 'noBattery'));
+    return refuseUse(inv, coreMessage(inv.registry, item.slots?.battery ? 'batteryDeadNoSpare' : 'noBatteryNoSpare'));
   }
   return {
     kind: 'use',
@@ -453,7 +501,13 @@ export const options = (item: Item, view: ReachSnapshot): Option[] => {
 
 const quickbarHand = (inv: Inventory, item: Item): HandSide => {
   const def = defOf(inv.registry, item.type);
-  return def.light && !def.twoHanded ? offSide(inv.character) : dominantSide(inv.character);
+  if (def.light && !def.twoHanded) {
+    return offSide(inv.character);
+  }
+  const dominant = dominantSide(inv.character);
+  const held = inv.hands[dominant];
+  // A battery goes beside the light it fits, so using it puts it in (`DESIGN.md`, "Light").
+  return def.battery && held && fitsLight(inv.registry, held, item) ? otherHand(dominant) : dominant;
 };
 
 /** Where a displaced held item goes without being dropped: a free shoulder, else the best pocket's planned spot. */

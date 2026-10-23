@@ -4083,7 +4083,7 @@ const GraphicsTuningSchema = strictObject({
   /** The inventory item viewer: opening pose, drag and wheel response, and zoom range around the opening zoom of 1. */
   itemViewer: pipe(
     strictObject({
-      /** Half the view's height per bounding radius at zoom 1. */
+      /** Half the view's shorter side per bounding radius at zoom 1. */
       framing: Positive,
       startYawDegrees: Degrees,
       startPitchDegrees: Degrees,

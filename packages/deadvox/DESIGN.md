@@ -1380,13 +1380,10 @@ quickbar use.
 
 The view-item binding over an item card, or as a key on the selected item, opens
 the item viewer: that instance's own model, with its fitted magazine and
-attachments, turned by dragging and zoomed by the wheel. A grid card is too small
-to judge an item's shape or what is fitted to it, and a close look must not cost
-a move, so the viewer is view-only. It changes neither the item, the selection
-nor the queue, item keys wait until it closes, and the clock runs as it does with
-the inventory open. It is modal: it takes focus and the inventory it covers is
-inert until it closes, so no key or press reaches a hidden control. It draws with the item pictures' renderer rather than a
-second WebGL context. See `src/ui/itemViewer.ts`, `ItemViewer`, and
+attachments. A grid card hides the detail that tells items apart, and inspecting
+must not cost a move, so the viewer is view-only. It is modal because a covered
+control must not activate. It fills the inventory panel because a larger panel
+shows more detail. See `src/ui/itemViewer.ts`, `ItemViewer`, and
 `src/render/itemPictures.ts`, `ItemPictures`.
 
 ### Piles and item models
@@ -2160,6 +2157,20 @@ and it is refilled by swapping the oil in, not pouring, because refilling a cart
 is direction only; pouring and partial refills stay open (#536). The lamp is content
 only: any light with a fuel rate and a swappable fuel canister behaves the same. See
 `src/core/lights.ts`, `drainLight`, and `src/core/torch.ts`, `swapCanister`.
+
+A battery goes into a light only as the player chooses: dropped onto the battery slot
+on the light's card in the inventory, which shows the battery loaded, or used from one
+hand while the other holds the light. A battery used from a pocket, by the quickbar
+or otherwise, refuses. Only using the battery loads it: a dead or empty light used
+refuses and says so, whatever the other hand holds, because one way to load from the
+hands keeps the rule simple and the player acts with the battery on the light, not the
+other way round. The player chooses which battery goes in, so a fuller battery hidden in
+a bag never overrides the one in hand. The card slot serves a light with no free hand,
+such as one fitted to a gun, whose card shows the same slot. A hand load needs both in
+hands and a slot drop needs both in reach, a fitted light through its gun; the swap
+rechecks the route that admitted it when it completes. See `src/core/options.ts`,
+`batterySlotOption` and `batteryOption`, and `src/ui/inventoryScreen.ts`,
+`batterySlotTemplate`.
 
 A held light's battery can be taken out on its own, as an action chosen on the wheel
 and then activated, because a swap needs a spare: without one a player could not move

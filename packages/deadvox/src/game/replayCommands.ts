@@ -27,6 +27,7 @@ export type ReplayActionPayload =
   | { kind: 'firearm.attachment.fit'; firearmUid: number; slotId: string; attachmentUid: number }
   | { kind: 'firearm.attachment.remove'; firearmUid: number; slotId: string }
   | { kind: 'vehicle.work'; work: 'install' | 'remove'; vehicleId: number; fittingId: string; itemUid: number }
+  | { kind: 'light.battery.load'; lightUid: number; batteryUid: number }
   | { kind: 'craft.start'; recipeId: string; preference?: CraftPreference }
   | { kind: 'craft.continue' }
   | { kind: 'craft.stop' }
@@ -108,6 +109,16 @@ const isVehicleWorkPayload = (payload: Record<string, unknown>): boolean =>
 const isWakeGameHour = (value: unknown): boolean =>
   value === null || (Number.isSafeInteger(value) && (value as number) >= 0 && (value as number) < 24);
 
+const isCraftStartPayload = (payload: Record<string, unknown>): boolean =>
+  typeof payload.recipeId === 'string' &&
+  (payload.preference === undefined ||
+    (payload.preference !== null &&
+      typeof payload.preference === 'object' &&
+      !Array.isArray(payload.preference) &&
+      Object.entries(payload.preference).every(
+        ([group, item]) => Number.isSafeInteger(Number(group)) && Number(group) >= 0 && typeof item === 'string',
+      )));
+
 export const isReplayActionPayload = (value: unknown): value is ReplayActionPayload => {
   if (!(value && typeof value === 'object' && !Array.isArray(value))) {
     return false;
@@ -158,6 +169,8 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
       return isAttachmentPayload(payload);
     case 'vehicle.work':
       return isVehicleWorkPayload(payload);
+    case 'light.battery.load':
+      return isUid(payload.lightUid) && isUid(payload.batteryUid);
     case 'inventory.cancel-handling':
     case 'furniture.turn':
     case 'furniture.tip':
@@ -177,16 +190,7 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
         (payload.distance as number) <= 10_000
       );
     case 'craft.start':
-      return (
-        typeof payload.recipeId === 'string' &&
-        (payload.preference === undefined ||
-          (payload.preference !== null &&
-            typeof payload.preference === 'object' &&
-            !Array.isArray(payload.preference) &&
-            Object.entries(payload.preference).every(
-              ([group, item]) => Number.isSafeInteger(Number(group)) && Number(group) >= 0 && typeof item === 'string',
-            )))
-      );
+      return isCraftStartPayload(payload);
     default:
       return false;
   }
@@ -208,6 +212,8 @@ export interface ReplayCommandOwners {
     fittingId: string,
     itemUid: number,
   ) => string | undefined;
+  /** Puts a battery into a light from the light's battery slot on its item card. */
+  loadBattery: (lightUid: number, batteryUid: number) => string | undefined;
   toHands: (itemUid: number, feet: [number, number, number]) => string | undefined;
   pickup: (itemUid: number, mode: 'pocket' | 'wield', feet: [number, number, number]) => string | undefined;
   interact: (entityUid: number, alternatives?: true) => string | undefined;
@@ -292,6 +298,8 @@ export const applyReplayActionPayload = (
         : 'Attachment handling is unavailable';
     case 'vehicle.work':
       return owners.vehicleWork(payload.work, payload.vehicleId, payload.fittingId, payload.itemUid);
+    case 'light.battery.load':
+      return owners.loadBattery(payload.lightUid, payload.batteryUid);
     case 'inventory.cancel-handling':
       owners.queue.cancel();
       return undefined;

@@ -1,4 +1,4 @@
-import { BoxGeometry, Group, Mesh, MeshBasicMaterial } from 'three';
+import { Box3, BoxGeometry, Group, Mesh, MeshBasicMaterial, type OrthographicCamera, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it, vi } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
@@ -114,6 +114,38 @@ it('lazily owns and releases the renderer and context without disposing shared m
   expect(() => painter.paint(model)).toThrow('disposed');
   geometry.dispose();
   material.dispose();
+});
+
+it.each([
+  ['tall', 100, 400],
+  ['square', 200, 200],
+  ['wide', 400, 100],
+])('keeps the whole model inside a %s view surface', (_shape, width, height) => {
+  const model = new Mesh(new BoxGeometry(2, 1, 0.5), new MeshBasicMaterial());
+  let camera: OrthographicCamera | undefined;
+  const renderer = {
+    setSize: vi.fn(),
+    setClearColor: vi.fn(),
+    render: vi.fn((_scene: unknown, captured: OrthographicCamera) => {
+      camera = captured;
+    }),
+    domElement: {} as HTMLCanvasElement,
+    dispose: vi.fn(),
+    forceContextLoss: vi.fn(),
+  };
+  referencePainter(() => renderer).view(model, { yaw: 0.8, pitch: 0.45, framing: 1.1 }, width, height);
+  expect(camera).toBeDefined();
+  camera!.updateMatrixWorld();
+  const box = new Box3().setFromObject(model);
+  for (const x of [box.min.x, box.max.x]) {
+    for (const y of [box.min.y, box.max.y]) {
+      for (const z of [box.min.z, box.max.z]) {
+        const ndc = new Vector3(x, y, z).project(camera!);
+        expect(Math.abs(ndc.x)).toBeLessThanOrEqual(1);
+        expect(Math.abs(ndc.y)).toBeLessThanOrEqual(1);
+      }
+    }
+  }
 });
 
 it('reports a declared model load failure rather than treating it as absent authored art', () => {

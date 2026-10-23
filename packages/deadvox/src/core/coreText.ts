@@ -25,6 +25,7 @@ export const CORE_MESSAGE_SLOTS = {
   batteryDead: [],
   batteryDeadNoSpare: [],
   noBattery: [],
+  noBatteryNoSpare: [],
   headlampOnHead: [],
   notInHands: ['item'],
   batteryGone: [],
