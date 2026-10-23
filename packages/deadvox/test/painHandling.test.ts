@@ -38,7 +38,7 @@ const handlingTimes = (painful: boolean) => {
   const { sim, inventory, survival, queue, firearms } = session;
   sim.body.impact(1, 'leftArm', { bleeding: 0 });
   if (painful) {
-    sim.body.impact(40, 'torso', { kind: 'cut' });
+    sim.body.impact(10, 'torso', { kind: 'cut' });
   }
   const equipped = equipDebugLoadout(inventory, true, true, '?loadout=pump');
   const gun = inventory.hands[dominantSide(inventory.character)]!;

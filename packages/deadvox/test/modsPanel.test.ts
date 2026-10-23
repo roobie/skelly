@@ -1,25 +1,27 @@
 import { expect, test, vi } from 'vitest';
 import { MAX_MOD_BYTES } from '../src/game/browserMods.ts';
 import { readPaste } from '../src/ui/modsPanel.ts';
+import { baseScreenText } from './baseRegistry.ts';
 import fixture from './fixtures/mods/browser-mod.json' with { type: 'json' };
 
+const messages = baseScreenText().mods;
 const url = 'https://example.test/mod.json';
 const text = JSON.stringify(fixture);
 
 test('URL and pasted JSON reach mod admission as unchanged payloads', async () => {
   const fetchMod = vi.fn<typeof fetch>().mockResolvedValueOnce(new Response(text));
-  const result = await readPaste(` ${url} `, fetchMod);
+  const result = await readPaste(` ${url} `, messages, fetchMod);
   expect(fetchMod).toHaveBeenCalledWith(url, { credentials: 'omit' });
   expect(result).toEqual({ name: url, text });
-  expect(await readPaste(text, fetchMod)).toEqual({ name: 'pasted.json', text });
+  expect(await readPaste(text, messages, fetchMod)).toEqual({ name: 'pasted.json', text });
   expect(fetchMod).toHaveBeenCalledOnce();
 });
 
 test('URL intake reports HTTP and network failures', async () => {
   const fetchMod = vi.fn<typeof fetch>().mockResolvedValueOnce(new Response(text, { status: 403 }));
-  expect((await readPaste(url, fetchMod)).issue).toBeDefined();
+  expect((await readPaste(url, messages, fetchMod)).issue).toBeDefined();
   fetchMod.mockRejectedValueOnce(new TypeError('Failed to fetch'));
-  expect((await readPaste(url, fetchMod)).issue).toBeDefined();
+  expect((await readPaste(url, messages, fetchMod)).issue).toBeDefined();
 });
 
 test('URL intake cancels streamed overflow before requesting another chunk', async () => {
@@ -45,12 +47,12 @@ test('URL intake cancels streamed overflow before requesting another chunk', asy
       ),
     ),
   );
-  expect((await readPaste(url, fetchMod)).issue).toBeDefined();
+  expect((await readPaste(url, messages, fetchMod)).issue).toBeDefined();
   expect(cancel).toHaveBeenCalledOnce();
   expect(pulls).toBe(2);
 });
 
 test('malformed URL content passes intake unchanged for mod admission to refuse', async () => {
   const fetchMod = vi.fn<typeof fetch>().mockResolvedValueOnce(new Response('{'));
-  expect(await readPaste(url, fetchMod)).toEqual({ name: url, text: '{' });
+  expect(await readPaste(url, messages, fetchMod)).toEqual({ name: url, text: '{' });
 });

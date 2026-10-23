@@ -10,7 +10,6 @@ import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { parseTimeOfDay, resolveSpawnTime } from '../src/core/clock.ts';
 import { blockColors, requiredContentIssues, validateContent } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
-import { ordinaryHamletSpawnWeights } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { corpseLootPoint, lootTypeIssue } from '../src/core/loot.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
@@ -21,9 +20,11 @@ import {
   BLOCK_PATTERNS,
   CONTENT_SECTION_KEYS,
   type ContentFile,
+  ContentFileSchema,
   DayCycleSchema,
   type TemplateDef,
 } from '../src/core/schema.ts';
+import { ordinarySpawnWeights } from '../src/core/settlementSpawns.ts';
 import { furnitureOf, lootPointsOf } from '../src/core/site.ts';
 import { sitePalette } from '../src/core/sitePalette.ts';
 import { SOUND_EVENT_IDS } from '../src/core/soundEvents.ts';
@@ -31,7 +32,7 @@ import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
 import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_RANGES } from '../src/core/weather.ts';
-import { INPUT_BINDINGS, inputBindings, POINTER_ACTIONS } from '../src/game/inputBindings.ts';
+import { INPUT_BINDINGS, inputBindings } from '../src/game/inputBindings.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { camoShaderConfig } from '../src/render/surfacePatterns.ts';
 import { buildFixtureRegistry as buildRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
@@ -48,6 +49,76 @@ const base = readdirSync(BASE)
   .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown }));
 const baseBuild = buildRegistry(base);
 const baseRegistry = baseBuild.registry;
+
+describe('content-owned item and world policies', () => {
+  it('requires explicit item policies, region drops and world liveness', () => {
+    const item = structuredClone([...baseRegistry.items.values()][0]!) as Record<string, unknown>;
+    expect(safeParse(ContentFileSchema, { items: [item] }).success).toBe(true);
+    for (const field of ['workInProgress', 'notLoot']) {
+      const missing = { ...item };
+      delete missing[field];
+      expect(safeParse(ContentFileSchema, { items: [missing] }).success).toBe(false);
+    }
+    const zombie = { ...[...baseRegistry.zombies.values()][0]! } as Record<string, unknown>;
+    expect(safeParse(ContentFileSchema, { zombies: [zombie] }).success).toBe(true);
+    zombie.severedItems = undefined;
+    expect(safeParse(ContentFileSchema, { zombies: [zombie] }).success).toBe(false);
+    const world = { ...[...baseRegistry.siteGeneration.values()][0]! } as Record<string, unknown>;
+    expect(safeParse(ContentFileSchema, { siteGeneration: [world] }).success).toBe(true);
+    world.activeZombieRadiusMetres = undefined;
+    expect(safeParse(ContentFileSchema, { siteGeneration: [world] }).success).toBe(false);
+  });
+
+  it('validates severed-item references and complete region policy', () => {
+    const zombie = { ...structuredClone(baseRegistry.zombies.get('shambler')!), loot: undefined };
+    zombie.severedItems = Object.fromEntries(Object.keys(zombie.regions).map((key) => [key, null]));
+    const region = Object.keys(zombie.regions)[0]!;
+    const support = {
+      source: 'support.json',
+      data: {
+        sounds: [...new Set(Object.values(zombie.sounds))].map((id) => baseRegistry.sounds.get(id)!),
+        items: [
+          {
+            id: 'fixture_blade',
+            workInProgress: false,
+            notLoot: false,
+            economy: { usage: [], tiers: [] },
+            name: 'Blade',
+            category: 'tool',
+            weight: 1,
+            size: [1, 1],
+            tool: { qualities: { [zombie.downed!.dismember.quality]: 1 } },
+          },
+        ],
+      },
+    };
+    zombie.severedItems[region] = 'fixture_missing_part';
+    const brokenReference = buildRegistry([support, { source: 'parts.json', data: { zombies: [zombie] } }]);
+    expect(brokenReference.issues).toContainEqual({
+      source: 'parts.json',
+      path: `zombies[0].severedItems.${region}`,
+      message: 'no item "fixture_missing_part"',
+    });
+    delete zombie.severedItems[region];
+    const missingRegion = buildRegistry([support, { source: 'parts.json', data: { zombies: [zombie] } }]);
+    expect(missingRegion.issues).toContainEqual({
+      source: 'parts.json',
+      path: 'zombies[0].severedItems',
+      message: 'severed item keys must match region keys',
+    });
+  });
+
+  it('requires exactly one runtime escrow definition without selecting its id', () => {
+    const items = new Map([...baseRegistry.items].map(([id, item]) => [id, { ...item, workInProgress: false }]));
+    const fixture = { ...items.values().next().value!, id: 'fixture_escrow', workInProgress: true };
+    const issues = () => requiredContentIssues({ ...baseRegistry, items }).filter((issue) => issue.path === 'items');
+    expect(issues()).not.toEqual([]);
+    items.set(fixture.id, fixture);
+    expect(issues()).toEqual([]);
+    items.set('fixture_second_escrow', { ...fixture, id: 'fixture_second_escrow' });
+    expect(issues()).not.toEqual([]);
+  });
+});
 const baseSounds = {
   source: 'sounds.json',
   data: {
@@ -303,9 +374,9 @@ describe('content', () => {
     expect(soldier.loot).not.toBe(shambler.loot);
   });
 
-  it('excludes authored-only kinds from ordinary hamlet spawn weights', () => {
+  it('excludes authored-only kinds from ordinary settlement spawn weights', () => {
     const soldier = baseRegistry.zombies.get('military_shambler')!;
-    expect(ordinaryHamletSpawnWeights(baseRegistry).has(soldier.id)).toBe(false);
+    expect(ordinarySpawnWeights(baseRegistry).has(soldier.id)).toBe(false);
   });
 
   it('gives every zombie kind only kit items its corpse can drop', () => {
@@ -347,7 +418,7 @@ describe('content', () => {
       ...INPUT_BINDINGS.flatMap((binding) =>
         binding.defaults.map((_, index) => inputBindings.alternativeLabel(binding.id, index).split(' + ').at(-1)!),
       ),
-      ...POINTER_ACTIONS.map(({ label }) => label),
+      ...Object.values(baseRegistry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.pointerButtonLabels),
     ];
     const controlPatterns = [...new Set(bindingLabels)].map((label) => {
       const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replaceAll(' ', '\\s+');
@@ -356,15 +427,7 @@ describe('content', () => {
       }
       return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, 'iu');
     });
-    const buttonAliases = POINTER_ACTIONS.flatMap(({ id }) => {
-      if (id === 'hand.use-dominant') {
-        return [LMB_ALIAS];
-      }
-      if (id === 'stance.ready') {
-        return [RMB_ALIAS];
-      }
-      return [];
-    });
+    const buttonAliases = [LMB_ALIAS, RMB_ALIAS];
     const namesInput = (description: string) =>
       [...controlPatterns, ...buttonAliases].some((pattern) => pattern.test(description)) ||
       INPUT_GESTURE.test(description);
@@ -777,6 +840,8 @@ describe('content', () => {
     const source = 'firearm-dispersion-fixture.json';
     const item = {
       id: 'fixture_firearm',
+      workInProgress: false,
+      notLoot: false,
       economy: { usage: [], tiers: [] },
       name: 'Fixture firearm',
       category: 'weapon',
@@ -821,7 +886,13 @@ describe('content', () => {
           weight: 1,
           size: [1, 2],
           model: 'fixture_suppressor',
-          firearmAttachmentEffects: { kind: 'suppressor', recoilReduction: 0.1, wearPerShot: 0.01 },
+          firearmAttachmentEffects: {
+            kind: 'suppressor',
+            recoilReduction: 0.1,
+            wearPerShot: 0.01,
+            fitSkillLevel: 4,
+            fitRefusal: "I can't fit this suppressor yet",
+          },
         },
       ],
       models: [
@@ -1003,6 +1074,8 @@ describe('content', () => {
       items: [
         {
           id: 'fixture_input',
+          workInProgress: false,
+          notLoot: false,
           economy: { usage: [], tiers: [] },
           name: 'Input part',
           category: 'tool',
@@ -1016,6 +1089,8 @@ describe('content', () => {
         },
         {
           id: 'fixture_output',
+          workInProgress: false,
+          notLoot: false,
           economy: { usage: [], tiers: [] },
           name: 'Output part',
           category: 'tool',
@@ -1084,6 +1159,8 @@ describe('content', () => {
       items: [
         {
           id: 'book_reference_fixture',
+          workInProgress: false,
+          notLoot: false,
           economy: { usage: [], tiers: [] },
           name: 'Fixture manual',
           category: 'book',
@@ -1112,18 +1189,14 @@ describe('content', () => {
     expect(result.registry.items.has('book_reference_fixture')).toBe(false);
   });
 
-  it('rejects a site palette that names a missing block or template', () => {
+  it('rejects a site palette that names a missing block', () => {
     const source = 'site-generation-fixture.json';
     const data = structuredClone(base.find((file) => file.source === 'site-generation.json')!.data) as ContentFile;
     const entry = data.siteGeneration![0]!;
     entry.palette.terrain.rock = 'no_such_block';
-    entry.hamlet.northSide = ['no_such_template'];
     const { issues } = buildRegistry([{ source, data }]);
     expect(issues.map(({ path, message }) => `${path}: ${message}`)).toEqual(
-      expect.arrayContaining([
-        'siteGeneration[0].palette.terrain.rock: no block "no_such_block"',
-        'siteGeneration[0].hamlet.northSide: no template "no_such_template"',
-      ]),
+      expect.arrayContaining(['siteGeneration[0].palette.terrain.rock: no block "no_such_block"']),
     );
   });
 
@@ -1146,18 +1219,18 @@ describe('content', () => {
     // Only the container changes: shape/references and actual marked placement stay identical.
     const control = structuredClone(data);
     control.furniture![0]!.container = { pockets: [{ grid: [1, 1], handlingSimSeconds: simSeconds(1) }] };
-    // Reachability reads the hamlet template pools from site generation, so the fixture supplies them.
-    control.blocks = [{ id: 'fixture_block', name: 'Fixture block', color: '#888888', solid: true }];
-    control.siteGeneration = [
+    control.layouts = [
       {
-        ...(base.find((file) => file.source === 'site-generation.json')!.data as ContentFile).siteGeneration![0]!,
-        palette: {
-          terrain: { grass: 'fixture_block', dirt: 'fixture_block', rock: 'fixture_block', sand: 'fixture_block' },
-          paving: 'fixture_block',
-          trees: { trunk: 'fixture_block', branch: 'fixture_block', leaves: 'fixture_block' },
-          leafLitter: 'fixture_block',
-        },
-        hamlet: { hedge: 'fixture_block', northSide: ['shed'], southSide: ['shed'] },
+        id: 'loot_fixture',
+        lootContext,
+        bounds: { x0: 0, z0: 0, x1: 16, z1: 16 },
+        ground: 0,
+        terrain: [],
+        buildings: [{ template: 'shed', position: [0, 0, 0], rotation: 0 }],
+        player: { position: [8, 0.5, 8], bearing: 0 },
+        shamblers: [],
+        woodlands: [],
+        tracks: [],
       },
     ];
     const { registry, issues } = buildRegistry([{ source, data: control }]);
@@ -1220,6 +1293,7 @@ describe('content', () => {
   it('validates optional per-sound wall tuning', () => {
     const sound = {
       id: 'fixture_wall_tuning',
+      description: 'fixture wall tuning',
       variants: ['assets/audio/fixture.ogg'],
       gain: 0.7,
       pitchJitter: [1, 1],
@@ -2372,6 +2446,7 @@ describe('content references', () => {
     };
     const zombie = structuredClone(baseRegistry.zombies.get('shambler')!);
     zombie.id = 'fixture_military_looter';
+    zombie.severedItems = Object.fromEntries(Object.keys(zombie.regions).map((region) => [region, null]));
     zombie.loot = lootId;
     const sounds = [...new Set(Object.values(zombie.sounds))].map((id) => baseRegistry.sounds.get(id)!);
     const { quality, level } = zombie.downed!.dismember;
@@ -2458,6 +2533,7 @@ describe('content references', () => {
             canJumpObstacles: true,
             strength: 1,
             sounds: zombieSounds,
+            severedItems: { head: null, torso: null, leftArm: null, rightArm: null, leftLeg: null, rightLeg: null },
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
             speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5, backgroundStepMetres: 1 },
             stepLength: 0.6,
@@ -2565,13 +2641,18 @@ describe('content references', () => {
 });
 
 const templateZombieFile = base.find(({ source }) => source === 'zombies.json')!;
-const templateShambler = Object.fromEntries(
-  Object.entries(
-    structuredClone(
-      (templateZombieFile.data as { zombies: { id: string }[] }).zombies.find(({ id }) => id === 'shambler')!,
-    ),
-  ).filter(([key]) => key !== 'loot'),
-);
+const templateShambler = {
+  severedItems: Object.fromEntries(
+    Object.keys(baseRegistry.zombies.get('shambler')!.regions).map((region) => [region, null]),
+  ),
+  ...Object.fromEntries(
+    Object.entries(
+      structuredClone(
+        (templateZombieFile.data as { zombies: { id: string }[] }).zombies.find(({ id }) => id === 'shambler')!,
+      ),
+    ).filter(([key]) => key !== 'loot' && key !== 'severedItems'),
+  ),
+};
 const templateShamblerSoundIds = new Set(
   Object.values((templateShambler as { sounds?: Record<string, string> }).sounds ?? {}),
 );
@@ -2898,6 +2979,8 @@ describe('content', () => {
   it('rejects held-display capabilities without a renderer', () => {
     const items = ['watch', 'map'].map((heldDisplay, index) => ({
       id: `unrendered_display_${index}`,
+      workInProgress: false,
+      notLoot: false,
       economy: { usage: [], tiers: [] },
       name: 'Unrendered display',
       category: 'material',

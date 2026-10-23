@@ -3,6 +3,7 @@
 
 import type { Registry } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
+import { fillText as fill } from './textTemplate.ts';
 
 /** Each core message key, with the named slots its template fills. */
 export const CORE_MESSAGE_SLOTS = {
@@ -32,6 +33,13 @@ export const CORE_MESSAGE_SLOTS = {
   alreadyOpen: [],
   alreadyClosed: [],
   boardedUp: [],
+  barDoorOpen: [],
+  alreadyBarred: [],
+  liftBarFirst: [],
+  barredOtherSide: [],
+  notBarred: [],
+  cantBar: [],
+  noHeldDoorBar: [],
   locked: [],
   broken: [],
   noLock: [],
@@ -155,12 +163,6 @@ export type CoreMessageKey = keyof typeof CORE_MESSAGE_SLOTS;
 export type CoreLabelKey = keyof typeof CORE_LABEL_SLOTS;
 
 type SlotValues<S extends readonly string[]> = S extends readonly [] ? [] : [Readonly<Record<S[number], string>>];
-
-/** Matches a `{slot}` in a template. */
-export const SLOT_PATTERN = /\{(\w+)\}/g;
-
-const fill = (template: string, values: Readonly<Record<string, string>> = {}): string =>
-  template.replace(SLOT_PATTERN, (_, slot: string) => values[slot]!);
 
 const coreUi = (registry: Pick<Registry, 'ui'>) => registry.ui.get(CORE_CONTENT_IDS.coreUi)!;
 

@@ -5,7 +5,7 @@ import type { RecipeDef, Registry } from './content.ts';
 import { coreMessage } from './coreText.ts';
 import type { DisassemblyPlan } from './disassembly.ts';
 import type { Location } from './inventory.ts';
-import { type Item, isEmpty } from './items.ts';
+import { craftComponentEligible, type Item, isEmpty } from './items.ts';
 import type { ReachEntry, ReachSnapshot } from './reach.ts';
 
 interface CraftComponent {
@@ -42,7 +42,7 @@ interface ReachIndex {
   byType: Map<string, ReachEntry[]>;
   qualities: Map<string, { entry: ReachEntry; level: number }[]>;
 }
-const indexes = new WeakMap<ReachSnapshot, ReachIndex>();
+const indexes = new WeakMap<ReachSnapshot, Map<boolean, ReachIndex>>();
 const plans = new WeakMap<ReachSnapshot, WeakMap<RecipeDef, Map<string, CraftPlan | null>>>();
 const cachedPlans = (snapshot: ReachSnapshot, recipe: RecipeDef): Map<string, CraftPlan | null> => {
   let recipes = plans.get(snapshot);
@@ -64,8 +64,8 @@ const copyPlan = (plan: CraftPlan): CraftPlan => ({
   tools: plan.tools.map((tool) => ({ ...tool })),
 });
 /** Derived per-snapshot index, not an owning UID lookup or a global item registry. */
-export const indexCraftReach = (snapshot: ReachSnapshot): ReachIndex => {
-  const cached = indexes.get(snapshot);
+export const indexCraftReach = (snapshot: ReachSnapshot, consumeFitted = false): ReachIndex => {
+  const cached = indexes.get(snapshot)?.get(consumeFitted);
   if (cached) {
     return cached;
   }
@@ -73,7 +73,7 @@ export const indexCraftReach = (snapshot: ReachSnapshot): ReachIndex => {
   const qualities = new Map<string, { entry: ReachEntry; level: number }[]>();
   for (const entry of snapshot.entries) {
     const { item } = entry;
-    if (isEmpty(item)) {
+    if (craftComponentEligible(item, consumeFitted)) {
       const candidates = byType.get(item.type) ?? [];
       candidates.push(entry);
       byType.set(item.type, candidates);
@@ -93,7 +93,9 @@ export const indexCraftReach = (snapshot: ReachSnapshot): ReachIndex => {
     entries.sort((a, b) => a.handlingTime - b.handlingTime || stackTie(a.item, b.item));
   }
   const index = { byType, qualities };
-  indexes.set(snapshot, index);
+  const variants = indexes.get(snapshot) ?? new Map<boolean, ReachIndex>();
+  variants.set(consumeFitted, index);
+  indexes.set(snapshot, variants);
   return index;
 };
 
@@ -153,7 +155,7 @@ export const requirementStatus = (
   snapshot: ReachSnapshot,
   character: CraftCharacter,
 ): CraftRequirements => {
-  const index = indexCraftReach(snapshot);
+  const index = indexCraftReach(snapshot, recipe.consumeFitted);
   return {
     knowledge: !character.knownRecipes.has(recipe.id),
     skills: Object.entries(recipe.skills).map(([skill, required]) => ({
@@ -283,6 +285,14 @@ const allocateCombination = (
   return allocation;
 };
 
+export const craftWorkDuration = (recipe: RecipeDef, character: CraftCharacter, workFactorBonus = 0): number => {
+  const skillLevel = Math.max(
+    SKILL_LEVEL_MIN,
+    ...Object.keys(recipe.skills).map((skill) => skillEffectLevel(character.skills[skill] ?? SKILL_LEVEL_MIN)),
+  );
+  return (recipe.timeGameMinutes * (1 - workFactorBonus)) / (1 + skillLevel * 0.1);
+};
+
 const craftPlan = (
   recipe: RecipeDef,
   snapshot: ReachSnapshot,
@@ -293,11 +303,7 @@ const craftPlan = (
         .filter((station) => stationMatches(recipe, station))
         .sort((a, b) => b.workFactorBonus - a.workFactorBonus || a.entity.uid - b.entity.uid)[0]
     : undefined;
-  const skillLevel = Math.max(
-    SKILL_LEVEL_MIN,
-    ...Object.keys(recipe.skills).map((skill) => skillEffectLevel(character.skills[skill] ?? SKILL_LEVEL_MIN)),
-  );
-  const work = (recipe.timeGameMinutes * (1 - (workstation?.workFactorBonus ?? 0))) / (1 + skillLevel * 0.1);
+  const work = craftWorkDuration(recipe, character, workstation?.workFactorBonus);
   return {
     kind: 'craft',
     recipe: recipe.id,
@@ -374,7 +380,7 @@ export const planCraft = (
   character: CraftCharacter,
   prefer: CraftPreference = {},
 ): CraftResult => {
-  const index = indexCraftReach(snapshot);
+  const index = indexCraftReach(snapshot, recipe.consumeFitted);
   const status = requirementStatus(recipe, snapshot, character);
   const missing: CraftMissing = {
     ...status,

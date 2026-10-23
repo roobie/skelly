@@ -1,20 +1,22 @@
 import { AuthoredSite } from '../core/authoredSite.ts';
 import { BlockEntities, type EntitySpec } from '../core/blockEntities.ts';
 import { StressCity } from '../core/city.ts';
+import { CitySite } from '../core/citySite.ts';
 import { worldOpaque, worldSolid, worldSoundBlocking } from '../core/collision.ts';
 import { blockColors, blockId, type Registry } from '../core/content.ts';
 import { toChunk, type Vec3 } from '../core/coords.ts';
 import { Forest } from '../core/forest.ts';
 import { GauntletSite } from '../core/gauntlet.ts';
-import { HAMLET_BLOCK_SIZE, Hamlet } from '../core/hamlet.ts';
 import { type LootPointSource, type LootSpawnPoint, lootPointsByColumn } from '../core/loot.ts';
 import { blockPatterns, blockWeatherability } from '../core/meshInput.ts';
 import { HandlingRange } from '../core/range.ts';
 import type { Scale } from '../core/scale.ts';
 import type { ScenarioKind } from '../core/scenarioKinds.ts';
 import type { ScenarioDef } from '../core/schema.ts';
+import { TEMPLATE_BLOCK_SIZE } from '../core/settlementSpawns.ts';
 import { type ColumnSource, type FurnitureSpawn, fillFurnitureLoot, type Rect, type Site } from '../core/site.ts';
 import { sitePalette, terrainShapeOf } from '../core/sitePalette.ts';
+import { type PlacedPowerDevice, placedPowerDevices } from '../core/sitePower.ts';
 import { type BlockBox, rasterize, stampChunk } from '../core/structure.ts';
 import { World } from '../core/world.ts';
 import { type Surface, terrainHeightMetres, worldGroundAt } from '../core/worldgen.ts';
@@ -31,6 +33,7 @@ export interface WorldSetup extends ColumnSource {
   /** Content problems, one per line; empty when all content loaded. */
   contentErrors: string;
   scenario: ScenarioDef | undefined;
+  powerDevices: readonly PlacedPowerDevice[];
   world: World;
   /** Furniture and doors. The game adds them as their columns generate. */
   entities: BlockEntities;
@@ -43,7 +46,7 @@ export interface WorldSetup extends ColumnSource {
   isOpaque: (x: number, y: number, z: number) => boolean;
   isSoundBlocking: (x: number, y: number, z: number) => boolean;
   streamer: Streamer;
-  /** Player start in metres (feet), and the yaw that faces the hamlet or the test house. */
+  /** Player start in metres (feet), and the yaw facing into the selected world. */
   spawn: { pos: Vec3; yaw: number };
 }
 
@@ -99,9 +102,9 @@ export const testHouseScene = (config: GameConfig, registry: Registry) => {
     scale.blockSize,
   );
   const spawn: Vec3 = [HOUSE_OFFSET[0] + SPAWN_OFFSET[0], floor, HOUSE_OFFSET[1] + SPAWN_OFFSET[2]];
-  // Furniture is authored for the hamlet's block size; at others the house stays bare.
+  // Furniture is authored for half-metre blocks; at others the house stays bare.
   const furniture =
-    scale.blockSize === HAMLET_BLOCK_SIZE
+    scale.blockSize === TEMPLATE_BLOCK_SIZE
       ? testHouseFurniture([HOUSE_OFFSET[0], floor, HOUSE_OFFSET[1]], scale.blockSize, (type) => {
           const def = registry.furniture.get(type);
           if (!def) {
@@ -252,8 +255,7 @@ const SCENARIO_SITES: Record<ScenarioKind, (options: ConstructorParameters<typeo
 };
 
 /**
- * The hamlet or the city, if the config asks for one and content has what it needs.
- * Otherwise (other block sizes, broken content) the world has the test house.
+ * Select a content-defined world or a built-in debug world.
  */
 const buildSite = (config: GameConfig, registry: Registry): Site | undefined => {
   const scenario = registry.scenarios.get(config.site);
@@ -264,18 +266,16 @@ const buildSite = (config: GameConfig, registry: Registry): Site | undefined => 
   if (layout) {
     return new AuthoredSite(config.seed, registry, config.scale, layout);
   }
-  if (!['hamlet', 'city', 'forest', 'testHouse'].includes(config.site)) {
+  if (!['city', 'forest', 'testHouse'].includes(config.site)) {
     throw new Error(`Content does not define site "${config.site}"`);
   }
   if (config.site === 'forest') {
     return new Forest(config.seed, registry, config.scale, config.density);
   }
-  if (config.scale.blockSize !== HAMLET_BLOCK_SIZE || config.site === 'testHouse') {
+  if (config.scale.blockSize !== TEMPLATE_BLOCK_SIZE || config.site === 'testHouse') {
     return undefined;
   }
-  return config.site === 'city'
-    ? new StressCity(config.seed, registry, config.scale, config.storeys)
-    : new Hamlet(config.seed, registry, config.scale);
+  return new StressCity(config.seed, registry, config.scale, config.storeys);
 };
 
 export const siteForReviewMap = (
@@ -328,6 +328,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     registry,
     contentErrors,
     scenario: registry.scenarios.get(config.site),
+    powerDevices: built instanceof CitySite ? placedPowerDevices(registry, built.placements) : [],
     world,
     entities,
     site: built,

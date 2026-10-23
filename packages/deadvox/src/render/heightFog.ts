@@ -11,17 +11,20 @@ import {
   Vector3,
   type WebGLProgramParametersWithUniforms,
 } from 'three';
+import type { LookDefaultsDef } from '../core/schema.ts';
 import { type HotCategory, patchHotCheck } from './hotCheck.ts';
 
-/** Mist is at full density at and below this height (metres); terrain spans about 8 to 56 m. */
-const HEIGHT_FOG_BASE_M = 16;
-/** Metres of climb over which the mist thins by a factor e. */
-const HEIGHT_FOG_SCALE_M = 14;
+export type HeightFogTuning = LookDefaultsDef['heightFog'];
 
 /** `uHeightFog` = (density per metre at the base, 1 / scale, base height); density 0 turns it off. */
 export const heightFogUniforms: { uHeightFog: IUniform<Vector3>; uHeightFogColor: IUniform<Color> } = {
-  uHeightFog: { value: new Vector3(0, 1 / HEIGHT_FOG_SCALE_M, HEIGHT_FOG_BASE_M) },
+  uHeightFog: { value: new Vector3() },
   uHeightFogColor: { value: new Color() },
+};
+
+/** Sets the authored height-fog shape before scene materials compile. */
+export const setHeightFogTuning = ({ baseMetres, scaleMetres }: HeightFogTuning): void => {
+  heightFogUniforms.uHeightFog.value.set(0, 1 / scaleMetres, baseMetres);
 };
 
 // The fragment's world height comes from its view-space position (a varying that three's own

@@ -4,7 +4,7 @@ import battery from '../src/content/base/things/car_battery.model.json' with { t
 import { buildRegistry, type ContentSource, type Registry } from '../src/core/content.ts';
 import { loadVehicleBlueprint, type PlacedFitting } from '../src/core/vehicleBlueprint.ts';
 import { baseSources } from '../src/game/bundledContent.ts';
-import { PLAYER } from '../src/game/player.ts';
+import { PLAYER } from './playerFixture.ts';
 
 const HOSTS = ['hatchback', 'pickup', 'hoist'];
 const MOD = 'mods/vehicle-fixture.json';
@@ -27,6 +27,8 @@ const modPart = (
     {
       id,
       name: 'Fixture part',
+      workInProgress: false,
+      notLoot: false,
       category: 'misc',
       model: id,
       size: [3, 2],
@@ -82,6 +84,8 @@ describe('vehicle export contract', () => {
         items: [
           {
             id: 'fixture_plain',
+            workInProgress: false,
+            notLoot: false,
             name: 'Fixture plain item',
             category: 'misc',
             model: 'fixture_plain',

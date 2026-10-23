@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { Character, practiceForNextLevel, SKILL_LEVEL_MAX } from '../src/core/character.ts';
+import { Character, practiceForNextLevel, SKILL_LEVEL_MAX, skillSaturation } from '../src/core/character.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { doorOptions } from '../src/core/options.ts';
 import { pryPlan } from '../src/core/prying.ts';
@@ -18,11 +18,11 @@ import {
 } from './snapshotTestSupport.ts';
 
 const doorDef = registry.furniture.get('wood_door')!;
-const makeDoor = (runtime: ReturnType<typeof createRuntime>) => {
+const makeDoor = (runtime: ReturnType<typeof createRuntime>, definition = doorDef) => {
   const door = runtime.inventory.furnish({
-    type: doorDef.id,
+    type: definition.id,
     pos: [0, 1, 1],
-    size: doorDef.size,
+    size: definition.size,
     facing: 'n',
     lock: { id: 'test_shed', locked: true },
   });
@@ -108,7 +108,7 @@ it('higher mechanics skill shortens prying and preserves its strike count', () =
   const tuning = definition.door!.methods.pry!;
   expect(slow.time).toBe(tuning.timeSimSeconds);
   while (character.skills.mechanics! < SKILL_LEVEL_MAX) {
-    character.awardPractice('mechanics', practiceForNextLevel(character.skills.mechanics!), SKILL_LEVEL_MAX);
+    character.awardPractice('mechanics', practiceForNextLevel(registry, character.skills.mechanics!), SKILL_LEVEL_MAX);
   }
   const fast = pryPlan(inventory, door, { toolUid: crowbar.uid }, character);
   if (!fast.ok) {
@@ -117,6 +117,49 @@ it('higher mechanics skill shortens prying and preserves its strike count', () =
   expect(fast.time).toBe(tuning.fastestTimeSimSeconds);
   expect(fast.time).toBeLessThan(slow.time);
   expect(Math.floor(fast.time / fast.strikeInterval)).toBe(Math.floor(slow.time / slow.strikeInterval));
+});
+
+it('scales prying by the authored skill curve, not a code constant', () => {
+  const steepCurve = { saturationFloor: 0.9, saturationHalfLifeLevels: 1 };
+  const curveRegistry = baseRegistryWith(
+    fixtureSources([
+      {
+        source: 'steep-mechanics-curve.json',
+        data: {
+          skills: [{ id: 'mechanics', name: 'Mechanics', curve: steepCurve }],
+        },
+      },
+    ]),
+  );
+  const definition = curveRegistry.furniture.get('wood_door')!;
+  const tuning = definition.door!.methods.pry!;
+  const inventory = new Inventory(curveRegistry);
+  const door = inventory.furnish({
+    type: definition.id,
+    pos: [0, 1, 1],
+    size: definition.size,
+    facing: 'n',
+    lock: { id: 'test_shed', locked: true },
+  })!;
+  const crowbar = inventory.create('crowbar');
+  expect(inventory.add(crowbar, { kind: 'hand', side: 'right' })).toBe(true);
+  const character = new Character(curveRegistry);
+  const midLevel = 5;
+  while (character.skills.mechanics! < midLevel) {
+    character.awardPractice('mechanics', practiceForNextLevel(curveRegistry, character.skills.mechanics!), midLevel);
+  }
+
+  const plan = pryPlan(inventory, door, { toolUid: crowbar.uid }, character);
+
+  if (!plan.ok) {
+    throw new Error(plan.reason);
+  }
+  const curve = { floor: steepCurve.saturationFloor, halfLifeLevels: steepCurve.saturationHalfLifeLevels };
+  const slowEffect = skillSaturation(0, curve);
+  const fastEffect = skillSaturation(SKILL_LEVEL_MAX, curve);
+  const effect = skillSaturation(midLevel, curve);
+  const progress = (slowEffect - effect) / (slowEffect - fastEffect);
+  expect(plan.time).toBe(tuning.timeSimSeconds + (tuning.fastestTimeSimSeconds - tuning.timeSimSeconds) * progress);
 });
 
 it('prying advances at normal simulation speed without compression', () => {
@@ -310,6 +353,29 @@ it('a sledgehammer forces a door by hammering and its blows reach the sound-hear
 
   expect(runtime.heardSounds.some(({ event }) => event === hammer.strikeSound)).toBe(true);
   expect(shambler.mode).toBe('investigate');
+});
+
+it('a sledgehammer breaks a flimsy wood door faster than a wood door', () => {
+  const flimsyDef = registry.furniture.get('flimsy_wood_door');
+  if (!flimsyDef) {
+    throw new Error('Missing flimsy wood door fixture');
+  }
+  const woodRuntime = makePryRuntime();
+  const flimsyRuntime = makePryRuntime();
+  const woodDoor = makeDoor(woodRuntime);
+  const flimsyDoor = makeDoor(flimsyRuntime, flimsyDef);
+  const woodSledgehammer = carryTool(woodRuntime, 'sledgehammer');
+  const flimsySledgehammer = carryTool(flimsyRuntime, 'sledgehammer');
+
+  expect(woodRuntime.session.forceDoor(woodDoor, woodSledgehammer.uid)).toBeUndefined();
+  expect(flimsyRuntime.session.forceDoor(flimsyDoor, flimsySledgehammer.uid)).toBeUndefined();
+
+  const woodJob = woodRuntime.sim.actions.job;
+  const flimsyJob = flimsyRuntime.sim.actions.job;
+  if (woodJob?.jobType !== 'forceDoor' || flimsyJob?.jobType !== 'forceDoor') {
+    throw new Error('The sledgehammer forcing jobs did not start');
+  }
+  expect(flimsyJob.duration).toBeLessThan(woodJob.duration);
 });
 
 it('saves a running pry just before a long-action tick and completes on the same frame after load', async () => {

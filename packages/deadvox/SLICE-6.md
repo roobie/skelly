@@ -81,11 +81,14 @@ interior visibility. A passing debug route or export tool is not that exit.
 
 ### Things, not a second item universe
 
-A removed vehicle part remains the same item: condition, finish, charge, liquid and
-contents must survive fitting and removal. Fitting adds placement, supports and
-joint state; it must not create another independently mutable copy of the item.
-Vehicle membership and ordinary inventory ownership are exclusive. A failed or
-interrupted transfer must not duplicate the part or consume it without a destination.
+Vehicle membership and ordinary inventory ownership are exclusive so salvage can
+retain the item's condition, resources and contents without reconciling two mutable
+copies. The production owner is `src/core/vehicleInstances.ts`, `VehicleInstances`;
+its parts join ordinary lookup and UID validation through `src/core/itemTree.ts`,
+`itemRoots` and `savedItemTree`. Factory service suggestions remain distinct from
+occupied fittings so an absent part does not erase its reinstall location or seal
+the build to blueprint sockets. Failed or interrupted transfers must retain the
+original owner until a destination has been admitted.
 
 VAT assembles things; the thing tool authors their shapes. The VAT export carries
 baked per-part collision geometry beside render geometry so simulation never
@@ -213,7 +216,11 @@ resource amounts, vehicle pose and motion, occupants, lifted loads and any resum
 work. These are intended state obligations, not a parallel field schema. Extend
 owning types and `src/core/saveState.ts`, `SaveSnapshot`, as each obligation lands.
 Derived mass, capabilities, geometry caches and world occupancy are rebuilt from
-that truth, never restored as independent editable totals.
+that truth, never restored as independent editable totals. The parked owner crosses
+the durable boundary through `src/core/saveFormat.ts`, `makeWirePayload` and
+`restoreWirePayload`, rather than relying on a snapshot-only copy. Scenario
+registration must preserve saved builds instead of regenerating missing parts;
+see `src/game/testHouseVehicles.ts`, `registerTestHouseVehicles`.
 
 Saving in motion, during work or across detachment must be equivalent to continuing
 without a load; parking is not permission to erase momentum at save time. Settled

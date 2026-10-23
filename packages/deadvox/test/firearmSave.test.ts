@@ -21,10 +21,11 @@ import {
   spentCaseItemId,
 } from '../src/game/firearmHandling.ts';
 import { adjustLookPitch, LOOK_PITCH_LIMIT } from '../src/game/input.ts';
-import { PLAYER } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { presentationFlight } from './itemFlightFixture.ts';
+import { PLAYER } from './playerFixture.ts';
 import { chargedRifle, rifleAmmunition, rifleInHand, settle } from './rifleFixture.ts';
 
 const registry = baseRegistry();
@@ -141,7 +142,7 @@ it('saves and restores fitted attachment identity and a nested light battery', a
   const bytes = await encodeSave(original.snapshot({ worldId: 'world', characterId: 'character' }), {
     generation: 1,
     version,
-    worldOptions: { blockSize: 0.5, site: 'hamlet', storeys: 1, density: null },
+    worldOptions: { blockSize: 0.5, site: 'gauntlet', storeys: 1, density: null },
   });
   const decoded = await decodeSave(bytes, { version, contentLookup });
   const restored = session([], decoded.snapshot);
@@ -237,7 +238,7 @@ it('a codec save restores the immediate aim frame, recoil and next pellet rays',
   const bytes = await encodeSave(snapshot, {
     generation: 1,
     version,
-    worldOptions: { blockSize: 0.5, site: 'hamlet', storeys: 1, density: null },
+    worldOptions: { blockSize: 0.5, site: 'gauntlet', storeys: 1, density: null },
   });
   const decoded = await decodeSave(bytes, { version, contentLookup });
   const resumed = session([], decoded.snapshot);
@@ -253,7 +254,7 @@ it('a codec save restores the immediate aim frame, recoil and next pellet rays',
     encodeSave(withoutWobbleState, {
       generation: 1,
       version,
-      worldOptions: { blockSize: 0.5, site: 'hamlet', storeys: 1, density: null },
+      worldOptions: { blockSize: 0.5, site: 'gauntlet', storeys: 1, density: null },
     }),
   ).rejects.toThrow();
   const resumedWithoutWobbleState = session([], withoutWobbleState);
@@ -371,7 +372,7 @@ it('keeps a ready pump shotgun ready through racking and loading, then fires wit
   const rackBytes = await encodeSave(rackSnapshot, {
     generation: 1,
     version,
-    worldOptions: { blockSize: 0.5, site: 'hamlet', storeys: 1, density: null },
+    worldOptions: { blockSize: 0.5, site: 'gauntlet', storeys: 1, density: null },
   });
   const rackDecoded = await decodeSave(rackBytes, { version, contentLookup });
   const resumed = session([], rackDecoded.snapshot, undefined, { readyHeld: true, active: true });
@@ -491,7 +492,7 @@ it('a codec save resumes firearm ready progress', async () => {
   const bytes = await encodeSave(original.snapshot({ worldId: 'world', characterId: 'character' }), {
     generation: 1,
     version,
-    worldOptions: { blockSize: 0.5, site: 'hamlet', storeys: 1, density: null },
+    worldOptions: { blockSize: 0.5, site: 'gauntlet', storeys: 1, density: null },
   });
   const decoded = await decodeSave(bytes, { version, contentLookup });
   const resumed = session([], decoded.snapshot, undefined, { readyHeld: true });
@@ -716,7 +717,14 @@ it('hides a committed pile item during its arc and lands at its current model po
   const flightSimSeconds = reachTuning(registry).throwFlightSimSeconds;
   const landingAt = startedAtSimSeconds + flightSimSeconds;
   throws.spawn(
-    { item: rifle, itemUid: placed.item.uid, origin: [0, 1, 0], startedAtSimSeconds, landingAt },
+    {
+      item: rifle,
+      itemUid: placed.item.uid,
+      flight: presentationFlight,
+      origin: [0, 1, 0],
+      startedAtSimSeconds,
+      landingAt,
+    },
     runtime.inventory,
   );
 

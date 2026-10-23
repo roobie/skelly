@@ -8,6 +8,7 @@ import { requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityStore } from '../core/entities.ts';
+import { graphicsTuningOf } from '../core/graphicsTuning.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { lookDefaultsOf } from '../core/lookDefaults.ts';
@@ -19,6 +20,7 @@ import type { PlayerStance } from '../core/playerStance.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
 import { reachTuning } from '../core/reach.ts';
 import type { BodyTuningDef, NightVision } from '../core/schema.ts';
+import type { PoweredLight } from '../core/sitePower.ts';
 import { firearmsCombatTuning } from '../core/skillTraining.ts';
 import { skyAt, sunShadowStrength } from '../core/sky.ts';
 import { skyInWeather, type Weather } from '../core/weather.ts';
@@ -27,7 +29,7 @@ import { BACKGROUND_ZOMBIE_RATE, type Zombie } from '../core/zombies.ts';
 import { cameraRotation, DamageFeedback } from '../game/damageFeedback.ts';
 import type { Engine } from '../game/engine.ts';
 import { PainCue } from '../game/painCue.ts';
-import { PLAYER } from '../game/player.ts';
+import { playerTuning } from '../game/player.ts';
 import { THIRD_PERSON_CAMERA } from '../game/thirdPersonOrbit.ts';
 import { AcidEffects } from './acidEffects.ts';
 import { createAvatarStudy } from './avatarStudy.ts';
@@ -40,7 +42,9 @@ import { Flashlight, flashlightDaylightScale, spillSwitchFromSearch } from './fl
 import { FurnitureMeshes } from './furniture.ts';
 import { Gore } from './gore.ts';
 import { type HeldHandlingFrame, HeldItems } from './hands.ts';
+import { setHeightFogTuning } from './heightFog.ts';
 import { ImpactEffects } from './impactEffects.ts';
+import { ItemPictures } from './itemPictures.ts';
 import { ItemThrows } from './itemThrows.ts';
 import { LightPool } from './lightPool.ts';
 import { applyLook } from './look.ts';
@@ -164,32 +168,46 @@ export const createPlayView = (
   engine: PlayViewEngine,
   inventory: Inventory,
   report: (message: string) => void,
-  page: Pick<EventTarget, 'addEventListener'> = globalThis,
+  {
+    page = globalThis,
+    poweredLights = () => [],
+  }: {
+    page?: Pick<EventTarget, 'addEventListener'>;
+    poweredLights?: () => readonly PoweredLight[];
+  } = {},
 ) => {
   const { config, registry, renderer, meshes, scene, camera, mood, shadows } = engine;
   const drawCounters = config.debug && renderer ? new DrawCounters(renderer) : undefined;
   const dayCycle = requireDayCycle(registry);
+  const look = lookDefaultsOf(registry);
+  const graphics = graphicsTuningOf(registry);
   const s = config.scale.blockSize;
+  const models = new ModelLibrary(registry, report);
+  let pictures: ItemPictures | undefined;
   // Play's look defaults are presentation; benchmark mode never applies them.
   if (renderer) {
+    pictures = new ItemPictures(
+      registry,
+      models,
+      registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!.itemPictureCacheCapacity,
+    );
     if (mood === undefined) {
       throw new Error('rendering resources are incomplete');
     }
     if (shadows === undefined) {
       throw new Error('rendering resources are incomplete');
     }
-    const look = lookDefaultsOf(registry);
     applyLook(renderer, meshes, lookOf(look));
+    setHeightFogTuning(look.heightFog);
     mood.restore(moodOf(look));
     shadows.restore(DEFAULT_SHADOWS);
   }
   const weather: Weather = { fogginess: dayCycle.weather.defaultFogginess };
-  const models = new ModelLibrary(registry, report);
   const playerFigure = registry.figures.get(CORE_CONTENT_IDS.player)!;
   const playerPalette = playerFigure.palette;
   const piles = new PileMeshes(s, models, config.seed, meshes);
   const caseEffects = new CaseEffects(s, models);
-  const gore = new Gore(s, config.seed);
+  const gore = new Gore(s, graphics.gore, config.seed);
   const decals =
     engine.scenario && config.authoredDecals
       ? new AuthoredDecals(engine.site?.authoredPlacements ?? [], {
@@ -220,6 +238,7 @@ export const createPlayView = (
   const held = new HeldItems(inventory, models, playerPalette, engine.sky.light);
   scene.add(caseEffects.mesh, impactEffects.group, itemThrows.group, gore.group, blastFlashes.group, acidEffects.group);
   const dispose = () => {
+    pictures?.dispose();
     piles.dispose();
     caseEffects.dispose();
     gore.dispose();
@@ -255,6 +274,8 @@ export const createPlayView = (
   const zombieMeshes: ZombieRenderer =
     config.actors === 'detailed'
       ? new MobActorMeshes(s, undefined, {
+          look: look.mobActors,
+          maxCorpses: graphics.mobActors.maxCorpses,
           canvas: engine.renderer?.domElement,
           reveal: meshes,
           figureSeeds: figureSeedPool(registry.zombies),
@@ -266,9 +287,9 @@ export const createPlayView = (
       : new ZombieMeshes(s, undefined, meshes);
   zombieMeshes.setWorld?.(engine.isSolid, s);
   scene.add(zombieMeshes.group);
-  const cameraStepOffset = new StepOffset(PLAYER.stepHeight);
-  const damageFeedback = new DamageFeedback();
-  const painCue = new PainCue();
+  const cameraStepOffset = new StepOffset(playerTuning(registry).stepHeight);
+  const damageFeedback = new DamageFeedback(look.damageFeedback);
+  const painCue = new PainCue(look.painCue);
   let cameraRoll = 0;
   let thirdPerson = false;
   /** The spectator camera leaves the player's own view (arms, held item, vignettes) with the avatar. */
@@ -339,6 +360,7 @@ export const createPlayView = (
 
   return {
     models,
+    pictures,
     get drawSubmission() {
       return drawCounters?.snapshot ?? null;
     },
@@ -409,7 +431,7 @@ export const createPlayView = (
       const alpha = Math.max(0, Math.min(1, (time - lastZombieStep) * 20));
       const backgroundAlpha = Math.max(0, Math.min(1, (time - lastBackgroundStep) * BACKGROUND_ZOMBIE_RATE));
       zombieMeshes.setCamera?.(camera);
-      zombieMeshes.setPlayerEyePosition?.(playerEye);
+      zombieMeshes.setPlayerEyePosition?.(playerEye, playerTuning(registry).sprint);
       zombieMeshes.setPlayerChestPosition?.(playerChest);
       zombieMeshes.setPerceptionLabels?.(perceptionLabels);
       zombieMeshes.sync(zombies, dt, alpha, frozen, backgroundAlpha, time);
@@ -490,8 +512,15 @@ export const createPlayView = (
           : 0;
       carriedPiece.update(dt, camera.quaternion);
       held.update(camera, pose, recoil, { ...handling, lift });
-      flashlight.update({ registry, lit: light, held, camera, inventory });
-      lightPool.update(inventory, { held, piles, camera, blockSize: s, daylightScale: cameraDaylightScale });
+      flashlight.update({ registry, lit: light, held, camera, inventory, piles });
+      lightPool.update(inventory, {
+        held,
+        piles,
+        camera,
+        blockSize: s,
+        daylightScale: cameraDaylightScale,
+        fixtures: poweredLights(),
+      });
       updateFlare(nightVision, dt);
     },
     render: (): number | null => {

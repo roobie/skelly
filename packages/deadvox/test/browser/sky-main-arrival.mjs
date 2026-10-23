@@ -12,23 +12,38 @@ export const mainSourceOverlays = [
   'main.ts',
   'game/melee.ts',
   'bench/run.ts',
+  'bench/post.ts',
   'game/bundledContent.ts',
   'game/config.ts',
   'game/worldSetup.ts',
   'game/engine.ts',
   'game/graphicsControls.ts',
   'game/play.ts',
+  'game/controls.ts',
+  'game/inputBindings.ts',
+  'debug/index.ts',
   'render/playView.ts',
   // Keep the view and figure together: their constructor and per-frame pose contracts change together.
   'render/playerFigure.ts',
   'render/acidEffects.ts',
+  'render/gore.ts',
+  'render/mobActors.ts',
+  'render/heightFog.ts',
+  'game/damageFeedback.ts',
+  'game/painCue.ts',
   'game/worldLoading.ts',
-  'ui/worldLoading.ts',
   'render/skylight.ts',
   'render/mood.ts',
   'game/streamer.ts',
   'worker/mesh.worker.ts',
   'worker/protocol.ts',
+];
+
+// UI callees can keep their exports while changing arguments; export shims cannot pair those contracts.
+// Keep the whole presentation boundary with base play/main, including UI-to-UI calls, but retain branch core.
+export const mainOverlaySources = (basePaths) => [
+  ...mainSourceOverlays,
+  ...[...basePaths].filter((path) => path.startsWith('ui/') && SCRIPT_MODULE.test(path)),
 ];
 
 // A base view that still reads the look from core/mood.ts constants meets a branch whose content owns them
@@ -149,12 +164,13 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
   const basePaths = treeSources(git, base, baseSource);
   const branchPaths = treeSources(git, 'HEAD', `${workspaceDirectory(git, 'HEAD', name)}/src`);
   const showBase = (relative) => git(['show', `${base}:${baseSource}/${relative}`]);
-  for (const path of mainSourceOverlays) {
+  const sourceOverlays = mainOverlaySources(basePaths);
+  for (const path of sourceOverlays) {
     if (!basePaths.has(path)) {
       throw new Error(`Main source overlay missing at ${base}: ${baseSource}/${path}; update mainSourceOverlays`);
     }
   }
-  const overlays = new Map(mainSourceOverlays.map((path) => [path, showBase(path)]));
+  const overlays = new Map(sourceOverlays.map((path) => [path, showBase(path)]));
   // A main startup source may import a file the branch deleted; serve that file from the base
   // too, so the overlay never fails to resolve a module main still owns.
   const baseOnlyOverlay = (relative) => relative !== null && basePaths.has(relative) && !branchPaths.has(relative);
@@ -305,7 +321,7 @@ if(msg.mesh.indices.length>0 && globalThis.mainArrival.firstMeshRealMs===null) {
     }));
     Object.assign(evidence, {
       base,
-      sourceOverlays: mainSourceOverlays,
+      sourceOverlays,
       appliedSources: [...appliedSources],
       shimmedExports: shimmedExports(),
       errors,
@@ -323,6 +339,10 @@ if(msg.mesh.indices.length>0 && globalThis.mainArrival.firstMeshRealMs===null) {
         arrival: globalThis.mainArrival,
         goDisabled: document.querySelector('#go')?.getAttribute('aria-disabled'),
         errorReport: document.querySelector('[data-error-text]')?.textContent,
+        worldLoadingState: document.querySelector('#world-loading')?.getAttribute('data-state'),
+        worldLoadingMessage: document.querySelector('#world-loading-message')?.textContent,
+        saveStatus: document.querySelector('#save-status')?.textContent,
+        startupErrors: document.querySelector('#errors')?.textContent,
       }))
       .catch(() => null);
     const failure = {

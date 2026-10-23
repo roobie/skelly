@@ -1,6 +1,7 @@
 import type { Body } from '../core/physics.ts';
 import type { Scale } from '../core/scale.ts';
-import { type MoveIntent, PLAYER } from '../game/player.ts';
+import type { PlayerDef } from '../core/schema.ts';
+import type { MoveIntent } from '../game/player.ts';
 
 export interface NoclipStep {
   body: Body;
@@ -13,7 +14,7 @@ export interface NoclipStep {
 }
 
 /** Moves directly in view space without gravity or collision while noclip is enabled. */
-export const stepNoclip = ({ body, scale, yaw, pitch, intent, descend, dt }: NoclipStep): void => {
+export const stepNoclip = ({ body, scale, yaw, pitch, intent, descend, dt }: NoclipStep, Player: PlayerDef): void => {
   let { forward, right } = intent;
   let vertical = Number(intent.jump) - Number(descend);
   const length = Math.hypot(forward, right, vertical);
@@ -22,12 +23,12 @@ export const stepNoclip = ({ body, scale, yaw, pitch, intent, descend, dt }: Noc
     right /= length;
     vertical /= length;
   }
-  let pace: number = PLAYER.jog;
+  let pace: number = Player.jog;
   if (intent.walk) {
-    pace = PLAYER.walk;
+    pace = Player.walk;
   }
   if (intent.sprint) {
-    pace = PLAYER.sprint;
+    pace = Player.sprint;
   }
   const speed = (pace * (intent.pace ?? 1)) / scale.blockSize;
   const sinYaw = Math.sin(yaw);

@@ -1,6 +1,7 @@
 import type { Vec3 } from '../core/coords.ts';
 import type { LightPracticeDef } from '../core/schema.ts';
 import type { Rect } from '../core/site.ts';
+import { TutorialWeapons } from './tutorialWeapons.ts';
 
 export interface TutorialObservation {
   position: Vec3;
@@ -26,6 +27,14 @@ export class Tutorial {
   private lightWasOn = false;
   private essentialsDone = false;
   private lightStarted = false;
+  private weaponsChosen = false;
+  readonly weapons = new TutorialWeapons();
+
+  chooseWeapons(): void {
+    if (this.stage === 'finish') {
+      this.weaponsChosen = true;
+    }
+  }
 
   private readonly spawn: Vec3;
   private readonly startingYaw: number;
@@ -41,11 +50,11 @@ export class Tutorial {
 
   /** The essentials route is finished and the optional light module can be chosen. */
   get canStartLight(): boolean {
-    return this.essentialsDone && !this.lightStarted;
+    return this.essentialsDone && !this.lightStarted && (this.stage === 'finish' || this.stage === 'complete');
   }
 
   startLight(): void {
-    if (this.essentialsDone) {
+    if (this.canStartLight) {
       this.lightStarted = true;
     }
   }
@@ -96,12 +105,27 @@ export class Tutorial {
     }
   }
 
-  get stage(): EssentialsStage | 'finish' | (typeof LIGHT_STAGES)[number] {
+  get stage(): EssentialsStage | 'finish' | 'revolver' | 'pump' | 'melee' | 'complete' | (typeof LIGHT_STAGES)[number] {
     const essentials = this.essentialsStage;
     if (essentials !== 'pause' || !this.essentialsDone) {
       return essentials;
     }
-    return this.lightStarted ? (LIGHT_STAGES.find((id) => !this.achieved.has(id)) ?? 'finish') : 'finish';
+    if (this.lightStarted) {
+      const light = LIGHT_STAGES.find((id) => !this.achieved.has(id));
+      if (light) {
+        return light;
+      }
+    }
+    if (!this.weaponsChosen) {
+      return 'finish';
+    }
+    if (this.weapons.lesson('revolver')) {
+      return 'revolver';
+    }
+    if (this.weapons.lesson('pump')) {
+      return 'pump';
+    }
+    return this.weapons.melee ? 'complete' : 'melee';
   }
 
   private get essentialsStage(): EssentialsStage {
@@ -119,27 +143,3 @@ export class Tutorial {
     return outcomes.find(([, achieved]) => !achieved)?.[0] ?? 'pause';
   }
 }
-
-export const tutorialRequested = (params: URLSearchParams): boolean =>
-  params.get('tutorial') === '1' || params.get('site') === 'tutorial';
-
-export const tutorialUrl = (href: string, practice: boolean): string => {
-  const url = new URL(href);
-  const presentation = new URLSearchParams();
-  for (const name of ['render', 'radius', 'actors', 'save-backend', 'mods']) {
-    const value = url.searchParams.get(name);
-    if (value !== null) {
-      presentation.set(name, value);
-    }
-  }
-  const site = url.searchParams.get('site');
-  if (site !== null && site !== 'tutorial') {
-    presentation.set('site', site);
-  }
-  url.search = presentation.toString();
-  url.hash = '';
-  if (practice) {
-    url.searchParams.set('tutorial', '1');
-  }
-  return url.href;
-};

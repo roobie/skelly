@@ -51,9 +51,21 @@
     "id": "soda_can",
     "kind": "item",
     "options": {
-      "mass": "parts"
+      "mass": "inventory-atom"
     },
     "source": "soda_can",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "empty_soda_can",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "empty_soda_can",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.01

@@ -8,7 +8,7 @@ import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SoundId } from '../src/core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../src/core/soundPicker.ts';
-import { simRate, simSeconds } from '../src/core/time.ts';
+import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { hearVocalNoise } from '../src/core/zombies.ts';
 import { GameAudio } from '../src/game/audio.ts';
@@ -25,14 +25,10 @@ const GUNSHOT_CAP = baseRegistry.sounds.get('gunshot')!.voiceCap!;
 const SHOT_BURST = GUNSHOT_CAP + 1;
 const senseTuning = {
   id: 'fixture_player',
-  movement: { sidewaysSpeedScale: 0.7, backwardSpeedScale: 0.5 },
   chestEyeFraction: 0.62,
   crouch: {
-    speedMetresPerSimSecond: simRate(0.8),
     hearingRangeScale: 0.5,
     sightRangeScale: 0.5,
-    eyeDropMetres: 0.6,
-    bodyHeightMetres: 1.2,
   },
   prone: baseRegistry.senses.get('player')!.prone,
   wall: { hearingRangeScale: 0.5, gain: 0.5, cutoffHz: 1200, clearGain: 1, clearCutoffHz: 18_000 },
@@ -192,6 +188,7 @@ describe('game audio playback', () => {
   it.each([true, false])('applies authored bass shaping before spatial routing (headLocked=%s)', async (headLocked) => {
     const profile = {
       id: 'fixture_bass_report',
+      description: 'fixture bass report',
       variants: ['assets/audio/gunshot-akm-01.ogg'],
       gain: 0.7,
       lowShelf: { frequencyHz: 175, gainDb: 4 },

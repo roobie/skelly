@@ -39,17 +39,6 @@ local box(position, size) = { position: position, size: size };
       footsteps: leaves,
     },
     {
-      id: 'hedge',
-      name: 'Hedge',
-      color: '#425b35',
-      solid: false,
-      opaque: true,
-      rustle: rustle,
-      pattern: 'noise',
-      weatherable: false,
-      footsteps: leaves,
-    },
-    {
       id: 'leaf_litter',
       name: 'Leaf litter',
       color: '#766047',
@@ -71,7 +60,7 @@ local box(position, size) = { position: position, size: size };
       footsteps: leaves,
     },
   ],
-  // Overgrowth furniture is passable and does not hide anyone; the dense, sight-blocking kind is the `hedge` block.
+  // Overgrowth furniture is passable and does not hide anyone; the dense, sight-blocking kind is the `leaves` block.
   furniture: [
     {
       id: 'shrub_small', name: 'Small shrub', size: [2, 1, 2], color: '#5a7040', solid: false,
@@ -97,6 +86,7 @@ local box(position, size) = { position: position, size: size };
   sounds: [
     {
       id: 'foliage_rustle',
+      description: 'Walk through bushes or other foliage that rustles.',
       variants: ['assets/audio/footstep-leaves-01.ogg'],
       gain: 0.4,
       pitchJitter: [0.96, 1.04],
@@ -107,6 +97,7 @@ local box(position, size) = { position: position, size: size };
     },
     {
       id: 'foliage_rustle_fast',
+      description: 'Jog or sprint through bushes or other foliage that rustles.',
       variants: ['assets/audio/footstep-leaves-01.ogg'],
       gain: 0.75,
       pitchJitter: [0.96, 1.04],

@@ -14,6 +14,8 @@ const validate = (wearable: unknown) =>
           weight: 1,
           size: [1, 1],
           economy: fixtureEconomy(),
+          workInProgress: false,
+          notLoot: false,
           wearable,
         },
       ],

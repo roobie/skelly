@@ -10,8 +10,8 @@ import { templateSpatialIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, placedPoint, type Turn } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn } from '../src/core/worldgen.ts';
-import { createPlayerBody, physicsFor } from '../src/game/player.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { createPlayerBody, physicsFor } from './playerFixture.ts';
 
 const base = baseRegistry();
 const definition = (): TemplateDef => ({

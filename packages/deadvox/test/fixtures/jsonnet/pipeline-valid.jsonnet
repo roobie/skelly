@@ -4,6 +4,8 @@ local rows = import 'tools/jsonnet/lib/rows.libsonnet';
   items: rows.repeat({
     id: 'jsonnet_pipeline_fixture',
     economy: { usage: [], tiers: [] },
+    workInProgress: false,
+    notLoot: false,
     name: 'Pipeline fixture',
     category: 'tool',
     weight: 1,

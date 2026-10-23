@@ -1,4 +1,6 @@
 import { html, render } from 'lit-html';
+import type { ScreenText } from '../core/schema.ts';
+import { fillText } from '../core/textTemplate.ts';
 import {
   bindingIsDebugOnly,
   contextsForRun,
@@ -9,7 +11,7 @@ import {
 } from '../game/inputBindings.ts';
 import { factDetail } from './factDetail.ts';
 
-export const mountInputOptions = (root: HTMLElement, debugRun = false): void => {
+export const mountInputOptions = (root: HTMLElement, text: ScreenText['inputOptions'], debugRun = false): void => {
   let capture: { id: string; alternative: number } | undefined;
   let status = '';
   const stop = () => {
@@ -37,7 +39,7 @@ export const mountInputOptions = (root: HTMLElement, debugRun = false): void => 
       const chords = [...inputBindings.chords(capture.id)];
       chords[capture.alternative] = chord;
       const issue = inputBindings.rebind(capture.id, chords, debugRun);
-      status = issue ?? 'Binding saved';
+      status = issue ?? text.saved;
       if (issue) {
         draw();
       } else {
@@ -51,10 +53,10 @@ export const mountInputOptions = (root: HTMLElement, debugRun = false): void => 
   const draw = () => {
     render(
       html`
-      <details class="input-options"><summary>Input bindings</summary>
-        <p>${factDetail('Browser controls', NATIVE_EDITING)}</p>
-        <p>${factDetail('Binding storage', 'Bindings are preferences for this browser, not part of a saved character.')}</p>
-        ${capture ? html`<p>Binding: ${inputBindings.binding(capture.id)!.description} <button type="button" @click=${stop}>Cancel</button></p>` : ''}
+      <details class="input-options"><summary>${text.heading}</summary>
+        <p>${factDetail(text.browserControlsLabel, NATIVE_EDITING)}</p>
+        <p>${factDetail(text.storageLabel, text.storage)}</p>
+        ${capture ? html`<p>${fillText(text.capturing, { action: inputBindings.binding(capture.id)!.description })} <button type="button" @click=${stop}>${text.cancel}</button></p>` : ''}
         <p class="input-binding-status" role="status">${status || inputBindings.diagnostics.at(-1) || ''}</p>
         ${contexts.map(
           (context) => html`<section><h3>${context}</h3>
@@ -75,13 +77,13 @@ export const mountInputOptions = (root: HTMLElement, debugRun = false): void => 
             )}
         </section>`,
         )}
-        <section><h3>Fixed browser controls</h3>${NATIVE_INPUTS.map((native) => html`<p>${native.code}: ${native.description}</p>`)}</section>
+        <section><h3>${text.fixedHeading}</h3>${NATIVE_INPUTS.map((native) => html`<p>${fillText(text.fixedControl, { code: native.code, action: native.description })}</p>`)}</section>
         <button type="button" @click=${() => {
           stop();
           inputBindings.reset();
-          status = 'Defaults restored';
+          status = text.restored;
           draw();
-        }}>Reset to defaults</button>
+        }}>${text.reset}</button>
       </details>`,
       root,
     );

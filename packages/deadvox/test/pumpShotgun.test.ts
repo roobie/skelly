@@ -25,10 +25,10 @@ import {
   type FirearmTrajectory,
   firearmHandlingFor,
 } from '../src/game/firearmHandling.ts';
-import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { RELOAD_GESTURE_MS, type ReloadBinding, ReloadInput, reloadTarget } from '../src/game/reloadInput.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { createPlayerBody, PLAYER, physicsFor, steer } from './playerFixture.ts';
 
 const registry = baseRegistry();
 const SHELL_LOAD_SECONDS = registry.items.get('pump_shotgun')!.firearm!.roundLoadSimSeconds!;

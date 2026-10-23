@@ -1,9 +1,9 @@
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
-import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
 import { ladderOutward } from './ladders.ts';
 import { reachTuning } from './reach.ts';
 import type { ScenarioDef } from './schema.ts';
+import { TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
 import { STAIR_BODY_HALF_WIDTH } from './stairFlight.ts';
 import { templateBodySpace, templateReachableStandingPositions } from './templateSpatial.ts';
 import type { CompiledTemplate } from './templates.ts';
@@ -88,7 +88,7 @@ const landingConnected = (
     entrance: landing,
     within: (position) =>
       Math.abs(position[1] - landing[1]) <= 1 &&
-      Math.hypot(position[0] - centre[0], position[2] - centre[2]) * HAMLET_BLOCK_SIZE <=
+      Math.hypot(position[0] - centre[0], position[2] - centre[2]) * TEMPLATE_BLOCK_SIZE <=
         reachTuning(registry).reachMetres,
   });
   const target: Vec3 = [centre[0], landing[1], centre[2]];
@@ -178,7 +178,7 @@ export const scenarioPortalIssues = (
   ] as const) {
     if (
       !space.standing(position) ||
-      Math.hypot(position[0] - centre[0], position[2] - centre[2]) * HAMLET_BLOCK_SIZE >
+      Math.hypot(position[0] - centre[0], position[2] - centre[2]) * TEMPLATE_BLOCK_SIZE >
         reachTuning(registry).reachMetres
     ) {
       return [[`.portal.${name}`, 'landing needs support, standing clearance and a nearby ladder approach']];

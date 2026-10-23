@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { expect, it } from 'vitest';
+import baseUi from '../src/content/base/ui.json' with { type: 'json' };
 import { buildRegistry, requiredContentIssues, validateContent } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS } from '../src/core/coreText.ts';
@@ -7,6 +8,7 @@ import { applyUiTokens } from '../src/ui/uiTokens.ts';
 
 const refusalSound = {
   id: 'player_nope',
+  description: 'fixture refusal',
   variants: ['assets/audio/nope.ogg'],
   gain: 0.5,
   pitchJitter: [1, 1],
@@ -41,6 +43,7 @@ const tuning = {
   coreMessages,
   coreActionLabels: slottedFixture(CORE_LABEL_SLOTS),
   wearSlotLabels,
+  screenText: baseUi.ui[0]!.screenText,
   furnitureMoveMessages: Object.fromEntries(
     [
       'tooBig',
@@ -115,10 +118,12 @@ it('rejects UI tuning missing any player-facing text field, with no code default
     coreActionLabels: _a,
     wearSlotLabels: _w,
     furnitureMoveMessages: _f,
+    screenText: _s,
     ...bare
   } = tuning;
   const missing = validateContent({ source: 'no-text.json', data: { ui: [bare] } });
   expect(missing.map(({ path }) => path)).toEqual([
+    'ui[0].screenText',
     'ui[0].restLabels',
     'ui[0].doorCloseBlockedMessages',
     'ui[0].furnitureMoveMessages',
@@ -133,6 +138,31 @@ it('rejects UI tuning missing any player-facing text field, with no code default
     data: { ui: [{ ...tuning, wearSlotLabels: partialSlots }] },
   });
   expect(partial.map(({ path }) => path)).toEqual(['ui[0].wearSlotLabels.head']);
+  const { noRoom: _n, ...partialInventory } = tuning.screenText.inventory;
+  const partialScreen = validateContent({
+    source: 'partial-screen-text.json',
+    data: { ui: [{ ...tuning, screenText: { ...tuning.screenText, inventory: partialInventory } }] },
+  });
+  expect(partialScreen.map(({ path }) => path)).toEqual(['ui[0].screenText.inventory.noRoom']);
+});
+
+it('rejects a screen text line that drops a slot its code fills, or names one its code never fills', () => {
+  const { options } = tuning.screenText;
+  const issues = validateContent({
+    source: 'slot-mismatch.json',
+    data: {
+      ui: [
+        {
+          ...tuning,
+          screenText: {
+            ...tuning.screenText,
+            options: { ...options, showHud: 'fixture without a key', on: 'fixture {key}' },
+          },
+        },
+      ],
+    },
+  });
+  expect(issues.map(({ path }) => path)).toEqual(['ui[0].screenText.options.showHud', 'ui[0].screenText.options.on']);
 });
 
 it('rejects core text missing a key code asks for, so a lost message fails validation, not play', () => {

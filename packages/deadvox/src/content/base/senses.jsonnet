@@ -1,28 +1,18 @@
 local crouch = {
-  speedMetresPerSimSecond: 1,
   hearingRangeScale: 0.5,
   sightRangeScale: 0.5,
-  eyeDropMetres: 0.7,
-  bodyHeightMetres: 1.2,
 };
 
 {
   senses: [
     {
       id: 'player',
-      movement: {
-        sidewaysSpeedScale: 0.7,
-        backwardSpeedScale: 0.5,
-      },
       chestEyeFraction: 0.62,
       crouch: crouch,
       // Hearing and sight copy crouch's until BR rules on lying down (#550).
       prone: {
-        speedMetresPerSimSecond: 0.5,
         hearingRangeScale: crouch.hearingRangeScale,
         sightRangeScale: crouch.sightRangeScale,
-        eyeDropMetres: 1.3,
-        bodyHeightMetres: 0.6,
       },
       wall: {
         hearingRangeScale: 0.5,

@@ -13,8 +13,8 @@ import {
   placedPieces,
   type Placement as WorldPlacement,
 } from '../src/core/templates.ts';
-import { PLAYER } from '../src/game/player.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { PLAYER } from './playerFixture.ts';
 
 const registry = baseRegistry();
 

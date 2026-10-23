@@ -1,14 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { possibleHamletZombies } from '../src/core/hamlet.ts';
 import { checkReachability } from '../src/core/reachability.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
-import type { SpawnMarker } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureEconomy, fixtureLootContext } from './economyFixtures.ts';
 
 const baseline = baseRegistry();
-const mutableSections = ['items', 'furniture', 'loot', 'zombies', 'templates', 'recipes', 'layouts'] as const;
+const mutableSections = [
+  'items',
+  'furniture',
+  'loot',
+  'zombies',
+  'templates',
+  'recipes',
+  'layouts',
+  'scenarios',
+] as const;
 const fresh = () => ({
   ...baseline,
   ...Object.fromEntries(
@@ -18,9 +25,17 @@ const fresh = () => ({
     ]),
   ),
 });
-const marker = (zombie: string, chance = 1): SpawnMarker => ({ zombie, chance, pos: [0, 0, 0] });
 
 describe('static reachability', () => {
+  it('excludes an authored non-loot type without excluding an ordinary unreachable type', () => {
+    const registry = fresh();
+    const fixture = { ...registry.items.values().next().value!, id: 'fixture_not_loot', notLoot: true };
+    registry.items.set(fixture.id, fixture);
+    expect(checkReachability(registry).unreachable).not.toContain(fixture.id);
+    registry.items.set(fixture.id, { ...fixture, notLoot: false });
+    expect(checkReachability(registry).unreachable).toContain(fixture.id);
+  });
+
   it('hard-checks workstation placement and lets its quality ground the recipe', () => {
     const registry = fresh();
     registry.recipes.clear();
@@ -42,7 +57,7 @@ describe('static reachability', () => {
     expect(unplaced.issues).toContainEqual({
       recipe: 'fixture_recipe',
       path: '.workstation',
-      message: 'workstation "fixture_station" is not placed in the hamlet',
+      message: 'workstation "fixture_station" is not placed in a playable world',
     });
 
     registry.furniture.get('crate')!.workstation = {
@@ -62,6 +77,8 @@ describe('static reachability', () => {
     for (const id of ['fixture_cycle_a', 'fixture_cycle_b']) {
       registry.items.set(id, {
         id,
+        workInProgress: false,
+        notLoot: false,
         economy: fixtureEconomy(),
         name: id,
         category: 'material',
@@ -125,6 +142,8 @@ describe('static reachability', () => {
     registry.recipes.clear();
     registry.items.set('unlearned_tool', {
       id: 'unlearned_tool',
+      workInProgress: false,
+      notLoot: false,
       economy: fixtureEconomy(),
       name: 'Unlearned tool',
       category: 'tool',
@@ -203,7 +222,23 @@ describe('static reachability', () => {
     const registry = fresh();
     registry.templates.clear();
     registry.recipes.clear();
+    registry.layouts.clear();
+    registry.scenarios.clear();
+    registry.layouts.set('fixture_sources', {
+      id: 'fixture_sources',
+      lootContext: fixtureLootContext(),
+      bounds: { x0: 0, z0: 0, x1: 16, z1: 16 },
+      ground: 0,
+      terrain: [],
+      buildings: [{ template: 'shed', position: [0, 0, 0], rotation: 0 }],
+      player: { position: [0, 0, 0], bearing: 0 },
+      shamblers: [{ type: 'fixture_direct', position: [8, 0, 8] }],
+      hordes: [{ id: 'fixture_horde', position: [12, 0, 12] }],
+      woodlands: [],
+      tracks: [],
+    });
     const names = [
+      'direct',
       'override',
       'nested',
       'spawned',
@@ -218,6 +253,8 @@ describe('static reachability', () => {
     for (const id of names) {
       registry.items.set(id, {
         id,
+        workInProgress: false,
+        notLoot: false,
         economy: fixtureEconomy(),
         name: id,
         category: 'material',
@@ -262,7 +299,8 @@ describe('static reachability', () => {
     });
     const shambler = registry.zombies.get('shambler')!;
     registry.zombies.set('shambler', { ...shambler, loot: 'wanderer' });
-    registry.zombies.set('fixture_spawn', { ...shambler, id: 'fixture_spawn', loot: 'spawned' });
+    registry.zombies.set('fixture_spawn', { ...shambler, id: 'fixture_spawn', loot: 'spawned', authoredOnly: true });
+    registry.zombies.set('fixture_direct', { ...shambler, id: 'fixture_direct', loot: 'direct', authoredOnly: true });
     registry.zombies.set('fixture_zero', { ...shambler, id: 'fixture_zero', loot: 'zero_spawn', spawnWeight: 0 });
     registry.templates.set('shed', {
       id: 'shed',
@@ -284,7 +322,7 @@ describe('static reachability', () => {
       palette: Object.fromEntries([['F', { furniture: 'fixture_crate', loot: 'unplaced' }]]),
     });
     const result = checkReachability(registry);
-    for (const item of ['nested', 'override', 'spawned', 'wanderer']) {
+    for (const item of ['nested', 'override', 'spawned', 'wanderer', 'direct']) {
       expect(result.found.has(item)).toBe(true);
     }
     for (const item of ['zero_spawn', 'unused', 'unplaced']) {
@@ -297,6 +335,8 @@ describe('static reachability', () => {
     const registry = fresh();
     registry.items.set('fixture_demo_fixed', {
       id: 'fixture_demo_fixed',
+      workInProgress: false,
+      notLoot: false,
       economy: fixtureEconomy(),
       name: 'Fixture fixed item',
       category: 'material',
@@ -305,6 +345,8 @@ describe('static reachability', () => {
     });
     registry.items.set('fixture_demo_table_item', {
       id: 'fixture_demo_table_item',
+      workInProgress: false,
+      notLoot: false,
       economy: fixtureEconomy(),
       name: 'Fixture table item',
       category: 'material',
@@ -373,6 +415,8 @@ describe('static reachability', () => {
     ]) {
       registry.items.set(id, {
         id,
+        workInProgress: false,
+        notLoot: false,
         economy: fixtureEconomy(),
         name: id,
         category: 'material',
@@ -421,6 +465,8 @@ describe('static reachability', () => {
     ] as const) {
       registry.items.set(id, {
         id,
+        workInProgress: false,
+        notLoot: false,
         economy: fixtureEconomy(),
         name: id,
         category: 'material',
@@ -455,6 +501,8 @@ describe('static reachability', () => {
     const registry = fresh();
     registry.items.set('fixture_package_input', {
       id: 'fixture_package_input',
+      workInProgress: false,
+      notLoot: false,
       economy: fixtureEconomy(),
       name: 'Fixture package input',
       category: 'material',
@@ -463,6 +511,8 @@ describe('static reachability', () => {
     });
     registry.items.set('fixture_crafted_package', {
       id: 'fixture_crafted_package',
+      workInProgress: false,
+      notLoot: false,
       economy: fixtureEconomy(),
       name: 'Fixture crafted package',
       category: 'material',
@@ -472,6 +522,8 @@ describe('static reachability', () => {
     });
     registry.items.set('fixture_crafted_payload', {
       id: 'fixture_crafted_payload',
+      workInProgress: false,
+      notLoot: false,
       economy: fixtureEconomy(),
       name: 'Fixture crafted payload',
       category: 'material',
@@ -505,6 +557,8 @@ describe('static reachability', () => {
     const output = 'fixture_zero_yield_output';
     registry.items.set(source, {
       id: source,
+      workInProgress: false,
+      notLoot: false,
       economy: fixtureEconomy(),
       name: source,
       category: 'material',
@@ -518,6 +572,8 @@ describe('static reachability', () => {
     });
     registry.items.set(output, {
       id: output,
+      workInProgress: false,
+      notLoot: false,
       economy: fixtureEconomy(),
       name: output,
       category: 'material',
@@ -531,27 +587,6 @@ describe('static reachability', () => {
     expect(result.found.has(source)).toBe(true);
     expect(result.components.has(output)).toBe(false);
     expect(result.toolReachable.has(output)).toBe(false);
-  });
-
-  it('excludes capped markers and wanderers, but allows shuffled north templates to be first', () => {
-    const ten = Array.from({ length: 10 }, () => marker('certain'));
-    const sides = { northSide: ['small_house', 'bungalow'], southSide: ['shed'] };
-    expect(
-      [
-        ...possibleHamletZombies(
-          new Map([
-            ['small_house', [...ten, marker('too_late')]],
-            ['bungalow', [marker('shuffled_first')]],
-            ['shed', [marker('south_capped')]],
-          ]),
-          sides,
-        ),
-      ].sort(),
-    ).toEqual(['certain', 'shuffled_first']);
-    // Nine certain markers leave a possible tenth wanderer; a chance-0 marker consumes no slot.
-    expect(
-      [...possibleHamletZombies(new Map([['small_house', [...ten.slice(0, 9), marker('never', 0)]]]), sides)].sort(),
-    ).toEqual(['certain', 'shambler']);
   });
 
   it('requires the quality level, while allowing an independently found result to supply its own tool', () => {
@@ -580,6 +615,8 @@ describe('static reachability', () => {
     ] as const) {
       registry.items.set(id, {
         id,
+        workInProgress: false,
+        notLoot: false,
         economy: fixtureEconomy(),
         name: id,
         category: 'tool',
@@ -591,6 +628,8 @@ describe('static reachability', () => {
     for (const id of ['middle', 'missing_alternative', 'fixture_product']) {
       registry.items.set(id, {
         id,
+        workInProgress: false,
+        notLoot: false,
         economy: fixtureEconomy(),
         name: id,
         category: 'material',

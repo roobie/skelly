@@ -7,7 +7,6 @@ import { resolveSpawnTime, SECONDS_PER_DAY } from '../src/core/clock.ts';
 import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
-import { Hamlet } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { lightSenseSourceFor, toggleLight } from '../src/core/lights.ts';
 import { type Body, bodyOverlapsBlock, stepBody } from '../src/core/physics.ts';
@@ -31,7 +30,6 @@ import {
 } from '../src/core/zombieRegions.ts';
 import { ZombieSpawner } from '../src/core/zombieSpawns.ts';
 import {
-  ACTIVE_ZOMBIE_RADIUS_METRES,
   type HitImpulse,
   hearPlayer,
   hearVocalNoise,
@@ -41,16 +39,18 @@ import {
   pickZombieHitRegion,
   pickZombieMove,
   type Zombie,
-  ZombieSystem,
 } from '../src/core/zombies.ts';
-import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
-import { MobActorMeshes, mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
+import { mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
 import { ZombieMeshes } from '../src/render/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
+import { SnapshotSite } from './fixtures/snapshotSite.ts';
 import { sunExposedAt } from './fixtures/sunOracle.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
+import { MobActorMeshes } from './mobActorsFixture.ts';
+import { createPlayerBody, PLAYER, physicsFor, steer } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const SHAMBLER_CPU_BUDGET_MS = 1;
 const registry = baseRegistry();
@@ -699,13 +699,14 @@ describe('shambler perception', () => {
     const crouchSightRange = lightSeenFrom * SENSE_TUNING.crouch.sightRangeScale;
     const distanceMetres = (crouchSightRange + lightSeenFrom) / 2;
     const distanceBlocks = distanceMetres / BLOCK_SIZE;
-    const crouchedEye = PLAYER.eye - SENSE_TUNING.crouch.eyeDropMetres;
+    const eyeDropMetres = 0.8;
+    const crouchedEye = PLAYER.eye - eyeDropMetres;
     const zombieEye = SHAMBLER.eyeHeightMetres;
     const wallFraction = (zombieEye - 0.9) / (zombieEye - crouchedEye);
     const wallX = Math.floor(distanceBlocks * wallFraction);
     const isSolid: SolidAt = (x, y) => x === wallX && y >= 0 && y < 2;
     const visible = (crouching: boolean, blocked: boolean) => {
-      const eyeHeightMetres = PLAYER.eye - (crouching ? SENSE_TUNING.crouch.eyeDropMetres : 0);
+      const eyeHeightMetres = PLAYER.eye - (crouching ? eyeDropMetres : 0);
       return perceivePlayer({
         zombie: { ...SHAMBLER, sight: 0.1, nightSight: 0.1 },
         from: [0, 0, 0],
@@ -2054,8 +2055,16 @@ describe('shambler scenarios', () => {
     expect(ordinaryRun.health).toBeLessThan(100);
   });
 
-  it('loads the hamlet horde once with its group membership intact', () => {
-    const site = new Hamlet(7, registry, SCALE);
+  it('loads a fixture horde once with its group membership intact', () => {
+    const base = new SnapshotSite(7, registry, SCALE);
+    const site = {
+      ...spawnSite({ type: 'shambler', pos: [0, 41, 0] }),
+      registry,
+      seed: 7,
+      surface: base.surface,
+      hordesIn: (cx: number, cz: number) =>
+        cx === 0 && cz === 0 ? [{ id: 'fixture-horde', type: 'shambler', pos: [0, 41, 0] as Vec3, members: 20 }] : [],
+    };
     let column: [number, number] | undefined;
     for (let cz = -20; cz <= 20 && !column; cz++) {
       for (let cx = -20; cx <= 20 && !column; cx++) {
@@ -2078,8 +2087,8 @@ describe('shambler scenarios', () => {
     expect(system.snapshotState()).toEqual(state);
   });
 
-  it('G: a killed hamlet shambler stays gone when its column reloads', () => {
-    const site = new Hamlet(7, registry, SCALE);
+  it('G: a killed fixture shambler stays gone when its column reloads', () => {
+    const site = new SnapshotSite(7, registry, SCALE);
     let column: [number, number] | undefined;
     for (let cz = -20; cz <= 20 && !column; cz++) {
       for (let cx = -20; cx <= 20 && !column; cx++) {
@@ -3067,11 +3076,23 @@ describe('two-tier shambler hearing', () => {
 });
 
 describe('background zombie tier', () => {
+  it('uses authored liveness radius to classify a loaded actor', () => {
+    for (const [activeZombieRadiusMetres, tier] of [
+      [7, 'background'],
+      [17, 'active'],
+    ] as const) {
+      const system = new ZombieSystem({ ...senses(() => player([0, 1, 0])), activeZombieRadiusMetres });
+      const zombie = system.store.get(system.add(SHAMBLER, [12 / BLOCK_SIZE, 1, 0]))!;
+      system.tickActive(1 / 20, 0);
+      expect(zombie.tier).toBe(tier);
+    }
+  });
+
   it('routes firearm reports into the long-range player-noise channel', () => {
     for (const id of ['gunshot', 'gunshot_pbs1_reference', 'shotgun_blast']) {
       const noise = registry.sounds.get(id)?.noise;
       expect(noise?.enabled).toBe(true);
-      expect(noise?.radiusMetres).toBeGreaterThan(ACTIVE_ZOMBIE_RADIUS_METRES);
+      expect(noise?.radiusMetres).toBeGreaterThan(registry.siteGeneration.get('authored')!.activeZombieRadiusMetres);
     }
   });
 

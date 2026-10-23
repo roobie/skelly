@@ -53,7 +53,7 @@ import {
   contentLookup,
   createRuntime,
   fixtureColumns,
-  fixtureHamlet,
+  fixtureSite,
   fixtureZombieColumn,
   formatVersion,
   formatWorldOptions,
@@ -286,7 +286,7 @@ const recordActiveSession = (
         for (const [cx, cz, generated] of updates) {
           if (generated) {
             addFixtureColumn(source, cx, cz);
-            source.session.onColumn(cx, cz, options.initialColumnSite ?? fixtureHamlet);
+            source.session.onColumn(cx, cz, options.initialColumnSite ?? fixtureSite);
           } else {
             removeFixtureColumn(source, cx, cz);
             source.session.onColumnUnload(cx, cz);
@@ -303,7 +303,7 @@ const recordActiveSession = (
     },
   );
   for (const [cx, cz] of columns?.initial ?? []) {
-    source.session.onColumn(cx, cz, options.initialColumnSite ?? fixtureHamlet);
+    source.session.onColumn(cx, cz, options.initialColumnSite ?? fixtureSite);
   }
   source.sim.paused = false;
   source.view.intent.forward = forward;
@@ -424,7 +424,7 @@ const playSession = (
       },
       isReady: () => true,
     },
-    onColumnLoad: (cx, cz) => replay.session.onColumn(cx, cz, options.initialColumnSite ?? fixtureHamlet),
+    onColumnLoad: (cx, cz) => replay.session.onColumn(cx, cz, options.initialColumnSite ?? fixtureSite),
     onColumnUnload: (cx, cz) => replay.session.onColumnUnload(cx, cz),
     simulation: {
       currentSimSeconds: () => replay.sim.time,
@@ -483,7 +483,11 @@ const createCraftReplayFixture = () => {
   for (const [skill, required] of Object.entries(recipe.skills)) {
     while ((runtime.session.character.skills[skill] ?? 0) < required) {
       const level = runtime.session.character.skills[skill] ?? 0;
-      runtime.session.character.awardPractice(skill, practiceForNextLevel(level), SKILL_LEVEL_LEGENDARY);
+      runtime.session.character.awardPractice(
+        skill,
+        practiceForNextLevel(runtime.inventory.registry, level),
+        SKILL_LEVEL_LEGENDARY,
+      );
     }
   }
   for (const group of recipe.components) {
@@ -728,13 +732,13 @@ describe('input replay', () => {
     expect.soft(status).not.toBe(idleStatus);
   });
 
-  it('rejects a replay from another schema version', async () => {
+  it('rejects recordings from before drag-free throw strength', async () => {
     const start = capture(createRuntime());
     const recorder = new InputReplayRecorder(start);
     recorder.recordTick(replaySample);
     const current = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
     const differentSchema = JSON.parse(new TextDecoder().decode(current)) as Record<string, unknown>;
-    differentSchema.schemaVersion = Number(differentSchema.schemaVersion) - 1;
+    differentSchema.schemaVersion = 20;
 
     await expect(decodeInputReplay(canonicalJsonBytes(differentSchema), { contentLookup })).rejects.toThrow(
       'Unsupported replay format',
@@ -867,22 +871,20 @@ describe('input replay', () => {
   });
 
   it('replays a same-tick column load and unload in order, preserving its marker and furniture', async () => {
-    const [cx, cz] = fixtureColumns.find(
-      ([columnX, columnZ]) => fixtureHamlet.furnitureIn(columnX, columnZ).length > 0,
-    )!;
+    const [cx, cz] = fixtureColumns.find(([columnX, columnZ]) => fixtureSite.furnitureIn(columnX, columnZ).length > 0)!;
     const marker: ZombieSpawn = {
       type: 'shambler',
       pos: [cx * CHUNK + 7.25, 1, cz * CHUNK + 7.25],
     };
     const site: Site = {
-      surface: fixtureHamlet.surface,
-      spawn: fixtureHamlet.spawn,
-      stamp: (chunk) => fixtureHamlet.stamp(chunk),
-      lootPointsIn: (columnX, columnZ) => fixtureHamlet.lootPointsIn(columnX, columnZ),
-      furnitureIn: (columnX, columnZ) => fixtureHamlet.furnitureIn(columnX, columnZ),
+      surface: fixtureSite.surface,
+      spawn: fixtureSite.spawn,
+      stamp: (chunk) => fixtureSite.stamp(chunk),
+      lootPointsIn: (columnX, columnZ) => fixtureSite.lootPointsIn(columnX, columnZ),
+      furnitureIn: (columnX, columnZ) => fixtureSite.furnitureIn(columnX, columnZ),
       zombiesIn: (columnX, columnZ) =>
-        columnX === cx && columnZ === cz ? [marker] : fixtureHamlet.zombiesIn(columnX, columnZ),
-      hordesIn: (columnX, columnZ) => fixtureHamlet.hordesIn(columnX, columnZ),
+        columnX === cx && columnZ === cz ? [marker] : fixtureSite.zombiesIn(columnX, columnZ),
+      hordesIn: (columnX, columnZ) => fixtureSite.hordesIn(columnX, columnZ),
     };
     const initialColumns: ReplayGeneratedColumn[] = [[cx + 10, cz + 10]];
     const start = capture(
@@ -1152,16 +1154,16 @@ describe('input replay', () => {
       window: { fromGameTimeOfDay: gameTimeOfDay(BASE_CLOCK.start + 1) },
     };
     const site: Site = {
-      surface: fixtureHamlet.surface,
-      spawn: fixtureHamlet.spawn,
-      stamp: (chunk) => fixtureHamlet.stamp(chunk),
-      lootPointsIn: (columnX, columnZ) => fixtureHamlet.lootPointsIn(columnX, columnZ),
-      furnitureIn: (columnX, columnZ) => fixtureHamlet.furnitureIn(columnX, columnZ),
+      surface: fixtureSite.surface,
+      spawn: fixtureSite.spawn,
+      stamp: (chunk) => fixtureSite.stamp(chunk),
+      lootPointsIn: (columnX, columnZ) => fixtureSite.lootPointsIn(columnX, columnZ),
+      furnitureIn: (columnX, columnZ) => fixtureSite.furnitureIn(columnX, columnZ),
       zombiesIn: (columnX, columnZ) =>
         columnX === cx && columnZ === cz
-          ? [...fixtureHamlet.zombiesIn(columnX, columnZ), marker]
-          : fixtureHamlet.zombiesIn(columnX, columnZ),
-      hordesIn: (columnX, columnZ) => fixtureHamlet.hordesIn(columnX, columnZ),
+          ? [...fixtureSite.zombiesIn(columnX, columnZ), marker]
+          : fixtureSite.zombiesIn(columnX, columnZ),
+      hordesIn: (columnX, columnZ) => fixtureSite.hordesIn(columnX, columnZ),
     };
     const loadedSource = createRuntime(
       undefined,
@@ -1218,12 +1220,11 @@ describe('input replay', () => {
       }
     }
     const spawnColumn = generatedAroundZombie.find(
-      ([columnX, columnZ]) =>
-        (columnX !== cx || columnZ !== cz) && fixtureHamlet.zombiesIn(columnX, columnZ).length > 0,
+      ([columnX, columnZ]) => (columnX !== cx || columnZ !== cz) && fixtureSite.zombiesIn(columnX, columnZ).length > 0,
     );
     const furnitureColumn = generatedAroundZombie.find(
       ([columnX, columnZ]) =>
-        (columnX !== cx || columnZ !== cz) && fixtureHamlet.furnitureIn(columnX, columnZ).length > 0,
+        (columnX !== cx || columnZ !== cz) && fixtureSite.furnitureIn(columnX, columnZ).length > 0,
     );
     expect(spawnColumn).toBeDefined();
     expect(furnitureColumn).toBeDefined();
@@ -1883,7 +1884,7 @@ describe('input replay', () => {
 
     recorder.queueColumnChange(loadedColumn[0], loadedColumn[1], true);
     addFixtureColumn(source, ...loadedColumn);
-    source.session.onColumn(loadedColumn[0], loadedColumn[1], fixtureHamlet);
+    source.session.onColumn(loadedColumn[0], loadedColumn[1], fixtureSite);
     recorder.queueColumnChange(loadedColumn[0], loadedColumn[1], false);
     removeFixtureColumn(source, ...loadedColumn);
     source.session.onColumnUnload(...loadedColumn);

@@ -13,7 +13,7 @@ base + {
   }],
   furnitureMaterials: [{ id: 'fixture_material', blowSound: 'fixture_blow' }],
   sounds: [{
-    id: 'fixture_blow', variants: ['assets/audio/fixture-blow.ogg'], gain: 1,
+    id: 'fixture_blow', description: 'fixture blow', variants: ['assets/audio/fixture-blow.ogg'], gain: 1,
     pitchJitter: [1, 1], gainJitter: [1, 1], minIntervalSimSeconds: 0, category: 'world',
     noise: { enabled: true, radiusMetres: 10 },
   }],

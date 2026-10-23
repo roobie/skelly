@@ -1,7 +1,9 @@
 import { Window } from 'happy-dom';
+import { Group } from 'three';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { Body } from '../src/core/body.ts';
 import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
+import { buildRegistry } from '../src/core/content.ts';
 import type { WorkOperation, WorkOption } from '../src/core/craftCommands.ts';
 import { planCraft } from '../src/core/crafting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -25,6 +27,7 @@ import {
   type ReplayCommandOwners,
 } from '../src/game/replayCommands.ts';
 import { createScreenCommandDispatcher } from '../src/game/screenCommandDispatcher.ts';
+import { ItemPictures } from '../src/render/itemPictures.ts';
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
@@ -199,6 +202,49 @@ function setup(contentRegistry = registry) {
   };
 }
 
+it('keeps a model-less item as a text tile when pictures are enabled', () => {
+  const fixture = buildRegistry([
+    {
+      source: 'text-tile',
+      data: {
+        items: [
+          {
+            id: 'text_tile',
+            workInProgress: false,
+            notLoot: false,
+            name: 'Text tile',
+            category: 'misc',
+            weight: 1,
+            size: [1, 1],
+            economy: { usage: [], tiers: [] },
+          },
+        ],
+      },
+    },
+  ]);
+  expect(fixture.issues).toEqual([]);
+  const merged = { ...registry, items: new Map([...registry.items, ...fixture.registry.items]) };
+  const test = setup(merged);
+  const item = test.inv.create('text_tile');
+  expect(test.inv.add(item, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+  Object.assign(test.hooks, {
+    pictures: new ItemPictures(
+      merged,
+      {
+        version: 1,
+        has: () => true,
+        groundLook: () => new Group(),
+      },
+      2,
+      { paint: () => 'still', dispose: vi.fn() },
+    ),
+  });
+  test.screen.update();
+  const tile = test.root.querySelector(`[data-uid="${item.uid}"]`)!;
+  expect(tile.querySelector('.inv-item-name')!.textContent).toBe('Text tile');
+  expect(tile.querySelector('img')).toBeNull();
+});
+
 const holdQuickGate = () => {
   const previous = { context: keyboardInput.context, command: keyboardInput.command };
   keyboardInput.cancel();
@@ -225,6 +271,8 @@ describe('inventory screen Lit rendering', () => {
     const items = new Map(registry.items);
     items.set('fixture_floor_stack', {
       id: 'fixture_floor_stack',
+      workInProgress: false,
+      notLoot: false,
       economy: { usage: [], tiers: [] },
       name: 'Fixture floor stack',
       category: 'material',
@@ -263,6 +311,8 @@ describe('inventory screen Lit rendering', () => {
     const items = new Map(registry.items);
     items.set('fixture_floor_dragged', {
       id: 'fixture_floor_dragged',
+      workInProgress: false,
+      notLoot: false,
       economy: { usage: [], tiers: [] },
       name: 'Fixture dragged item',
       category: 'material',
@@ -271,6 +321,8 @@ describe('inventory screen Lit rendering', () => {
     });
     items.set('fixture_floor_target', {
       id: 'fixture_floor_target',
+      workInProgress: false,
+      notLoot: false,
       economy: { usage: [], tiers: [] },
       name: 'Fixture target item',
       category: 'material',
@@ -306,6 +358,8 @@ describe('inventory screen Lit rendering', () => {
     const betaName = 'Box of matches';
     items.set('fixture_inventory_alpha', {
       id: 'fixture_inventory_alpha',
+      workInProgress: false,
+      notLoot: false,
       economy: { usage: [], tiers: [] },
       name: alphaName,
       category: 'medical',
@@ -314,6 +368,8 @@ describe('inventory screen Lit rendering', () => {
     });
     items.set('fixture_inventory_beta', {
       id: 'fixture_inventory_beta',
+      workInProgress: false,
+      notLoot: false,
       economy: { usage: [], tiers: [] },
       name: betaName,
       category: 'medical',
@@ -372,6 +428,8 @@ describe('inventory screen Lit rendering', () => {
     for (const fixture of fixtures) {
       items.set(fixture.id, {
         id: fixture.id,
+        workInProgress: false,
+        notLoot: false,
         economy: { usage: [], tiers: [] },
         name: fixture.name,
         category: 'misc',
@@ -578,7 +636,7 @@ describe('inventory screen Lit rendering', () => {
     const row = () => root.querySelector<HTMLElement>(`[data-skill="${skill.id}"]`);
     expect(row()?.dataset.level).toBe(String(initialLevel));
 
-    character.awardPractice(skill.id, practiceForNextLevel(initialLevel), SKILL_LEVEL_LEGENDARY);
+    character.awardPractice(skill.id, practiceForNextLevel(registry, initialLevel), SKILL_LEVEL_LEGENDARY);
     screen.update();
 
     expect(character.skills[skill.id]).toBeGreaterThan(initialLevel);
@@ -649,8 +707,25 @@ describe('inventory screen Lit rendering', () => {
         cancelItemThrow: () => undefined,
         throwItem: () => undefined,
       });
+    const paint = vi.fn(() => `data:image/png;base64,${paint.mock.calls.length}`);
+    const models = { version: 0, has: () => models.version > 0, groundLook: () => new Group() };
+    const pictures = new ItemPictures(registry, models, registry.graphics.get('core')!.itemPictureCacheCapacity, {
+      paint,
+      dispose: vi.fn(),
+    });
+    Object.assign(test.hooks, { pictures });
     test.screen.selected = firearm;
     test.screen.update();
+    expect(test.root.querySelector(`[data-uid="${firearm.uid}"] .inv-item-picture`)).toBeNull();
+    models.version += 1;
+    test.screen.update();
+    const picture = () =>
+      test.root.querySelector<HTMLImageElement>(`[data-uid="${firearm.uid}"] .inv-item-picture`)!.src;
+    const before = picture();
+    expect(pictures.picture(firearm)).toBe(before);
+    const coldPaints = paint.mock.calls.length;
+    expect(pictures.picture(firearm)).toBe(before);
+    expect(paint).toHaveBeenCalledTimes(coldPaints);
 
     expect(test.inv.hands.right).toBe(firearm);
     expect(test.inv.locate(foregrip)?.kind).toBe('pocket');
@@ -662,6 +737,12 @@ describe('inventory screen Lit rendering', () => {
     expect(firearm.slots?.[slot.id]).toBeUndefined();
     test.queue.tick(test.queue.remaining);
     expect(firearm.slots?.[slot.id]).toBe(foregrip);
+    test.screen.update();
+    expect(picture()).not.toBe(before);
+    expect(handling.remove(firearm.uid, slot.id)).toBeUndefined();
+    test.queue.tick(test.queue.remaining);
+    test.screen.update();
+    expect(picture()).toBe(before);
   });
 
   it('shows exported slots and dispatches fitting and removal for held and ground firearms', () => {

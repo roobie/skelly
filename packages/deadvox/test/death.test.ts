@@ -1,11 +1,15 @@
 // @vitest-environment happy-dom
 
 import { describe, expect, it } from 'vitest';
+import baseSounds from '../src/content/base/sounds.json' with { type: 'json' };
+import baseUi from '../src/content/base/ui.json' with { type: 'json' };
 import { defOf } from '../src/core/items.ts';
 import { type DeathSummary, deathViewModel, lootedText, newWorldQuery, showDeath } from '../src/ui/death.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
 const { registry } = buildRegistry([
+  { source: '../content/base/ui.json', data: baseUi },
+  { source: '../content/base/sounds.json', data: baseSounds },
   {
     source: 'fixture.json',
     data: {

@@ -1,18 +1,21 @@
-// The shambler mode of the shared ?bench= harness. It loads the hamlet, runs the
+// The shambler mode of the shared ?bench= harness. It loads the forest, runs the
 // real fixed-step ZombieSystem and player physics, and records frame/tick/render costs.
 
 import { hourOfDay, parseTimeOfDay } from '../core/clock.ts';
 import { requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
+import { graphicsTuningOf } from '../core/graphicsTuning.ts';
+import { lookDefaultsOf } from '../core/lookDefaults.ts';
 import { type Body, stepBody } from '../core/physics.ts';
 import { Simulation } from '../core/sim.ts';
+import { siteGenerationOf } from '../core/sitePalette.ts';
 import { skyAt } from '../core/sky.ts';
 import { figureSeedPool } from '../core/zombieFigure.ts';
 import { BACKGROUND_ZOMBIE_RATE, ZombieSystem } from '../core/zombies.ts';
 import { type ActorRenderer, actorRendererFromUrl } from '../game/config.ts';
 import type { RenderedEngine } from '../game/engine.ts';
-import { PLAYER, physicsFor } from '../game/player.ts';
+import { physicsFor, playerTuning } from '../game/player.ts';
 import { MobActorMeshes, type ZombieRenderer } from '../render/mobActors.ts';
 import { applySky } from '../render/sky.ts';
 import { ZombieMeshes } from '../render/zombies.ts';
@@ -70,6 +73,7 @@ const playerFacing = (yaw: number): [number, number, number] => [-Math.sin(yaw),
 
 export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun): void => {
   const { camera, scene, streamer, config } = engine;
+  const Player = playerTuning(engine.registry);
   const hud = document.getElementById('hud')!;
   document.body.classList.add('bench');
   document.getElementById('overlay')!.hidden = true;
@@ -98,7 +102,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       ? {
           startedAt: new Date().toISOString(),
           quick: false,
-          site: 'hamlet',
+          site: 'forest',
           time: run.time,
           ...(run.post ? { post: true } : {}),
           env: environment(engine),
@@ -133,14 +137,15 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
     });
     simulation.godMode = true;
     zombies = new ZombieSystem({
+      activeZombieRadiusMetres: siteGenerationOf(engine.registry).activeZombieRadiusMetres,
       seed: run.seed,
       isSolid: engine.isSolid,
       isOpaque: engine.isOpaque,
       blockSize: s,
       tuning: engine.registry.senses.get(CORE_CONTENT_IDS.player)!,
       terrainFloor: (x, z) => engine.groundAt(x * s, z * s) / s,
-      physics: physicsFor(scale),
-      jumpSpeed: PLAYER.jump,
+      physics: physicsFor(scale, Player),
+      jumpSpeed: Player.jump,
       player: () => ({
         pos: [...playerBody.pos] as [number, number, number],
         body: playerBody,
@@ -149,7 +154,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
         // A visible flashlight lets the entire 8–20 m ring remain aware at 23:30.
         lit: true,
         lightSeenFrom: 40,
-        eyeHeightMetres: PLAYER.eye,
+        eyeHeightMetres: Player.eye,
       }),
       dayPhase: () => dayPhaseAt(dayCycle, startTime),
       hurtPlayer: (amount) => simulation.hurt(amount, 'a shambler'),
@@ -174,9 +179,14 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
         tier: 'background',
       });
     }
+    const graphics = graphicsTuningOf(engine.registry);
     zombieMeshes =
       run.actors === 'detailed'
-        ? new MobActorMeshes(s, count, { figureSeeds: figureSeedPool(engine.registry.zombies) })
+        ? new MobActorMeshes(s, count, {
+            figureSeeds: figureSeedPool(engine.registry.zombies),
+            look: lookDefaultsOf(engine.registry).mobActors,
+            maxCorpses: graphics.mobActors.maxCorpses,
+          })
         : new ZombieMeshes(s, count);
     scene.add(zombieMeshes.group);
   };
@@ -254,7 +264,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       return true;
     }
     if (now - loadStarted > 120_000) {
-      hud.textContent = `Hamlet did not finish loading (${holesAtSpawn} holes remain); benchmark stopped.`;
+      hud.textContent = `Forest did not finish loading (${holesAtSpawn} holes remain); benchmark stopped.`;
       completed = true;
       return false;
     }
@@ -285,7 +295,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       playerBody.vel[0] = 0;
       playerBody.vel[2] = 0;
       stepBody(playerBody, 1 / 60, engine.isSolid, {
-        ...physicsFor(scale),
+        ...physicsFor(scale, Player),
         obstacles: [...zombies.store.entries()].map(([, zombie]) => zombie.body),
       });
       physicsFrame += 1;
@@ -319,11 +329,11 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
 
   const updateCamera = (elapsed: number, measuring: boolean): void => {
     if (!playerBody) {
-      camera.position.set(engine.spawn.pos[0], engine.spawn.pos[1] + PLAYER.eye, engine.spawn.pos[2]);
+      camera.position.set(engine.spawn.pos[0], engine.spawn.pos[1] + Player.eye, engine.spawn.pos[2]);
       camera.rotation.set(-0.1, baseYaw, 0);
       return;
     }
-    camera.position.set(playerBody.pos[0] * s, playerBody.pos[1] * s + PLAYER.eye, playerBody.pos[2] * s);
+    camera.position.set(playerBody.pos[0] * s, playerBody.pos[1] * s + Player.eye, playerBody.pos[2] * s);
     camera.rotation.set(-0.1, baseYaw + (measuring ? (2 * Math.PI * elapsed) / duration.measure : 0), 0);
     streamer.update(playerBody.pos[0], playerBody.pos[2]);
   };
@@ -332,7 +342,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
     hud.textContent = [
       `Shambler benchmark ${run.index + 1}/${run.counts.length}: N=${count} (${activeCount} active, ${backgroundCount} background), seed=${run.seed}, ${run.time}, actors=${run.actors}`,
       phase === 'load'
-        ? `loading hamlet (${streamer.unmeshedColumns(engine.spawn.pos[0] / s, engine.spawn.pos[2] / s, config.radiusChunks)} holes)`
+        ? `loading forest (${streamer.unmeshedColumns(engine.spawn.pos[0] / s, engine.spawn.pos[2] / s, config.radiusChunks)} holes)`
         : `${phase} ${Math.min(elapsed, phase === 'warmup' ? duration.warmup : duration.measure).toFixed(1)} s`,
       `zombies ${zombies?.store.size ?? 0}, player god mode on, ${interrupted ? 'tab hidden: unreliable' : 'keep tab visible'}`,
       `chunks ${engine.meshes.count} meshed, ${streamer.pending} pending`,

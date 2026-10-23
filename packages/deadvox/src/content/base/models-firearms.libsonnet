@@ -12,6 +12,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       id: 'rifle_hunting', name: 'Hunting rifle', category: 'weapon',
       description: '.308 Winchester bolt-action rifle with an internal magazine.',
       model: 'rifle_hunting', size: [2, 11], twoHanded: true,
+      lightMountSite: { kind: 'strap', at: [0.42, -0.03, 0], turn: [0, 0, 0] },
       firearm: {
         bolt: true, handling: {}, roundLoadSimSeconds: 1.2,
         recoilKickRadians: 0.025, dispersionRadians: 0.006, pelletSpreadScale: 1,
@@ -42,6 +43,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
         }
       },
       "id": "pump_shotgun",
+      "lightMountSite": { "kind": "strap", "at": [0.34, -0.045, 0], "turn": [0, 0, 0] },
       "model": "shotgun_pump",
       "name": "Pump shotgun",
       "size": [2, 10],
@@ -51,6 +53,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       "category": "weapon",
       "description": "Curated 12-gauge hunting-cabin pump from gungen, with a hand-racked action and four-shell tube. No loot table has it; it is available only in debug mode. Runtime pumping/loading is not implemented yet.",
       "id": "debug_shotgun_pump",
+      "notLoot": true,
       "model": "shotgun_pump",
       "name": "Pump shotgun (debug)",
       "size": [2, 10],

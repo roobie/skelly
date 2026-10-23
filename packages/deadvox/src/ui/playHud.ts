@@ -6,9 +6,12 @@ import { formatClock } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Needs } from '../core/needs.ts';
 import type { PainReading } from '../core/pain.ts';
+import type { ScreenText } from '../core/schema.ts';
+import { fillText } from '../core/textTemplate.ts';
 import { type HandlingPresentationSource, renderHandling } from './hud.ts';
 import type { HudOptionsState } from './hudOptions.ts';
-import { type HintText, hintLines, keyCap } from './keyCap.ts';
+import { fillHint, type HintText, hintLines, keyCap } from './keyCap.ts';
+import { interruptionPrompt } from './rest.ts';
 
 export interface PlayHudRoots {
   readonly hud: HTMLElement;
@@ -85,12 +88,17 @@ export const renderPlayHud = (roots: PlayHudRoots, frame: PlayHudFrame): void =>
   roots.prompt.hidden = frame.prompt === '';
 };
 
-export const renderPlayHandling = (root: HTMLElement, queue: HandlingPresentationSource, visible: boolean): void => {
+export const renderPlayHandling = (
+  root: HTMLElement,
+  queue: HandlingPresentationSource,
+  visible: boolean,
+  text: ScreenText['handling'],
+): void => {
   if (!visible) {
     root.hidden = true;
     return;
   }
-  renderHandling(root, queue);
+  renderHandling(root, queue, text);
 };
 
 export interface PlayStatus {
@@ -121,48 +129,66 @@ export interface PlayHudState extends PlayStatus {
   readonly looking: string;
 }
 
-export const playNeedsText = ({
-  needs,
-  pain,
-  painTier,
-  health,
-  blood,
-  bleeding,
-  sprinting,
-  lightCharge,
-}: PlayStatus): string => {
+type StatsText = ScreenText['stats'];
+/** Readout entries on one line are spaced apart rather than punctuated. */
+const GAP = '   ';
+const whole = (template: string, value: number): string => fillText(template, { value: value.toFixed(0) });
+
+export const playNeedsText = (
+  { needs, pain, painTier, health, blood, bleeding, sprinting, lightCharge }: PlayStatus,
+  text: StatsText,
+): string => {
   const { calories, hydration, fatigue, stamina } = needs;
-  const light = lightCharge === undefined ? '' : `   light ${Math.round(lightCharge * 100)}%`;
   return [
-    `health ${health.toFixed(0)}%   blood ${blood.toFixed(0)}%   stamina ${stamina.toFixed(0)}%${sprinting ? ' (sprinting)' : ''}${light}`,
+    [
+      whole(text.health, health),
+      whole(text.blood, blood),
+      sprinting ? `${whole(text.stamina, stamina)} ${text.sprinting}` : whole(text.stamina, stamina),
+      ...(lightCharge === undefined ? [] : [whole(text.light, lightCharge * 100)]),
+    ].join(GAP),
     // Fatigue is sleep debt, not a share: 100 is a normal night's sleep and it can go past it.
-    `food ${calories.toFixed(0)}%   water ${hydration.toFixed(0)}%   fatigue ${fatigue.toFixed(0)}`,
-    `pain ${pain.felt.toFixed(0)}${painTier ? ` · ${painTier}` : ''}`,
-    `acute ${pain.acute.toFixed(0)} + injuries ${pain.injuries.toFixed(0)} − relief ${pain.relief.toFixed(0)}`,
+    [whole(text.food, calories), whole(text.water, hydration), whole(text.fatigue, fatigue)].join(GAP),
+    painTier ? fillText(text.painTier, { value: pain.felt.toFixed(0), tier: painTier }) : whole(text.pain, pain.felt),
+    fillText(text.painParts, {
+      acute: pain.acute.toFixed(0),
+      injuries: pain.injuries.toFixed(0),
+      relief: pain.relief.toFixed(0),
+    }),
     // Only a tier content marks `warn` gets the warning sign (`DESIGN.md`, "Bleeding").
-    ...bleeding.map(({ region, label, warn }) => `${warn ? '⚠ ' : ''}${label} — ${region}`),
+    ...bleeding.map(({ region, label, warn }) =>
+      fillText(warn ? text.bleedingWarning : text.bleeding, { tier: label, region }),
+    ),
   ].join('\n');
 };
 
 const optionalLine = (visible: boolean, text: HintText): HintText => (visible ? text : '');
 
-export const playHudText = (state: PlayHudState, visible: Readonly<HudOptionsState>): TemplateResult | '' => {
+export const playHudText = (
+  state: PlayHudState,
+  visible: Readonly<HudOptionsState>,
+  text: StatsText,
+): TemplateResult | '' => {
   const { calendar, speed, paused, carriedGrams, fps, seed, radiusMetres, walking, meshed, pending, looking } = state;
   const [x, y, z] = state.positionMetres.map((v) => v.toFixed(1));
-  const acceleration = speed > 1.05 ? `   ×${speed.toFixed(0)}` : '';
+  const clock = [
+    formatClock(calendar),
+    ...(speed > 1.05 ? [fillText(text.speed, { speed: speed.toFixed(0) })] : []),
+    ...(paused ? [text.paused] : []),
+  ].join(GAP);
+  const gait = fillHint(walking ? text.walking : text.jogging, { key: keyCap('movement.walk-toggle') });
   return hintLines(
     [
-      optionalLine(visible.clock, `${formatClock(calendar)}${acceleration}${paused ? '   paused' : ''}`),
-      optionalLine(visible.stats, playNeedsText(state)),
-      optionalLine(visible.stats, `carrying ${(carriedGrams / 1000).toFixed(1)} kg`),
-      optionalLine(visible.details, `${fps.toFixed(0)} fps   seed ${seed}`),
+      optionalLine(visible.clock, clock),
+      optionalLine(visible.stats, playNeedsText(state, text)),
+      optionalLine(visible.stats, fillText(text.carrying, { kg: (carriedGrams / 1000).toFixed(1) })),
       optionalLine(
         visible.details,
-        html`radius ${radiusMetres} m   ${walking ? 'walking' : 'jogging'} (${keyCap('movement.walk-toggle')})`,
+        [fillText(text.fps, { fps: fps.toFixed(0) }), fillText(text.seed, { seed })].join(GAP),
       ),
-      optionalLine(visible.details, `pos ${x} ${y} ${z} m`),
-      optionalLine(visible.details, `chunks ${meshed} meshed, ${pending} pending`),
-      optionalLine(visible.interaction && Boolean(looking), `looking at ${looking}`),
+      optionalLine(visible.details, html`${fillText(text.radius, { radius: radiusMetres })}${GAP}${gait}`),
+      optionalLine(visible.details, fillText(text.position, { x: x!, y: y!, z: z! })),
+      optionalLine(visible.details, fillText(text.chunks, { meshed, pending })),
+      optionalLine(visible.interaction && Boolean(looking), fillText(text.looking, { name: looking })),
     ].filter((line) => line !== ''),
   );
 };
@@ -177,7 +203,11 @@ export interface PlayPromptState {
   readonly resting: boolean;
 }
 
-export const playPromptText = (state: PlayPromptState, visible: Readonly<HudOptionsState>): TemplateResult | '' => {
+export const playPromptText = (
+  state: PlayPromptState,
+  visible: Readonly<HudOptionsState>,
+  text: ScreenText['prompt'],
+): TemplateResult | '' => {
   const { now, notice, noticeUntil, interactionHint, itemActionHint, interruption, resting } = state;
   const lines: HintText[] = visible.messages && now < noticeUntil ? [notice] : [];
   if (visible.interaction && interactionHint !== undefined) {
@@ -188,7 +218,7 @@ export const playPromptText = (state: PlayPromptState, visible: Readonly<HudOpti
   }
   // Rest has its own Continue/Stop prompt; don't duplicate it in the world prompt.
   if (visible.messages && interruption !== undefined && !resting) {
-    lines.push(html`${interruption}.   ${keyCap('compression.continue')}: continue   ${keyCap('handling.stop')}: stop`);
+    lines.push(interruptionPrompt(text, interruption, true));
   }
   return hintLines(lines);
 };
@@ -210,52 +240,61 @@ export interface InteractionHint {
   readonly damage?: string | undefined;
 }
 
-const doorInteractionText = ({
-  open,
-  doorReason,
-  lock,
-  prying,
-  name,
-}: Pick<InteractionHint, 'open' | 'doorReason' | 'lock' | 'prying' | 'name'>): TemplateResult => {
-  const action = prying ? `force the ${name} ${prying}` : `${open ? 'close' : 'open'} the ${name}`;
-  return html`${keyCap('world.interact')}: ${action}${doorReason ? ` — ${doorReason}` : ''}${lock ? `   Activate: ${lock}` : ''}`;
+type InteractionText = ScreenText['interaction'];
+
+/** The interact key cap and what pressing it does. */
+const interactLine = (text: InteractionText, action: string): TemplateResult =>
+  fillHint(text.action, { key: keyCap('world.interact'), action });
+
+const doorInteractionText = (
+  { open, doorReason, lock, prying, name }: Pick<InteractionHint, 'open' | 'doorReason' | 'lock' | 'prying' | 'name'>,
+  text: InteractionText,
+): TemplateResult => {
+  const verb = prying
+    ? fillText(text.force, { name, method: prying })
+    : fillText(open ? text.close : text.open, { name });
+  const action = doorReason ? fillText(text.blocked, { action: verb, reason: doorReason }) : verb;
+  return html`${interactLine(text, action)}${lock ? `   ${fillText(text.lock, { lock })}` : ''}`;
 };
 
 /** The carried piece's set-down line with its turn and tip actions, keys read from the live bindings. */
-export const playCarryText = (setDown: HintText): TemplateResult =>
-  html`${setDown} · ${keyCap('carry.turn')}: turn · ${keyCap('carry.tip')}: tip`;
+export const playCarryText = (setDown: HintText, text: InteractionText): TemplateResult =>
+  html`${setDown} · ${fillHint(text.turn, { key: keyCap('carry.turn') })} · ${fillHint(text.tip, { key: keyCap('carry.tip') })}`;
 
 /** Describes an already selected target; never selects/executes the interaction. */
-export const playInteractionText = ({
-  door,
-  open,
-  doorReason,
-  lock,
-  prying,
-  container,
-  readable,
-  climbable,
-  restAction,
-  searched,
-  name: plainName,
-  fullName,
-  damage,
-}: InteractionHint): HintText => {
-  const name = damage ? `${damage} ${plainName}` : plainName;
+export const playInteractionText = (
+  {
+    door,
+    open,
+    doorReason,
+    lock,
+    prying,
+    container,
+    readable,
+    climbable,
+    restAction,
+    searched,
+    name: plainName,
+    fullName,
+    damage,
+  }: InteractionHint,
+  text: InteractionText,
+): HintText => {
+  const name = damage ? fillText(text.damaged, { damage, name: plainName }) : plainName;
   if (door) {
-    return doorInteractionText({ open, doorReason, lock, prying, name });
+    return doorInteractionText({ open, doorReason, lock, prying, name }, text);
   }
   if (climbable) {
-    return html`${keyCap('world.interact')}: climb the ${name}`;
+    return interactLine(text, fillText(text.climb, { name }));
   }
   if (readable) {
-    return html`${keyCap('world.interact')}: read the ${name}`;
+    return interactLine(text, fillText(text.read, { name }));
   }
   if (restAction) {
-    return html`${keyCap('world.interact')}: ${restAction === 'sleep' ? 'Sleep' : 'Rest'} on the ${name}`;
+    return interactLine(text, fillText(restAction === 'sleep' ? text.sleep : text.rest, { name }));
   }
   if (container) {
-    return html`${keyCap('world.interact')}: ${searched ? 'look in' : 'search'} the ${name}`;
+    return interactLine(text, fillText(searched ? text.lookIn : text.search, { name }));
   }
   return damage ? `${name.charAt(0).toUpperCase()}${name.slice(1)}` : fullName;
 };

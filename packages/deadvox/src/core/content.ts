@@ -40,6 +40,7 @@ import {
   type ScenarioDef,
   type SiteLayoutDef,
   type TemplateDef,
+  type ZombieDef,
 } from './schema.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
 import { ownershipShapeIssues } from './templateOwnership.ts';
@@ -280,6 +281,16 @@ const merge = (files: readonly { source: string; file: ContentFile }[]) => {
       }
       const map = registry[section];
       (file[section] ?? []).forEach((def, i) => {
+        if (section === 'skills') {
+          const skill = def as NonNullable<ContentFile['skills']>[number];
+          const entry =
+            skill.combat?.firearms === undefined
+              ? skill
+              : { ...skill, combat: { ...skill.combat, firearms: { ...skill.combat.firearms, curve: skill.curve } } };
+          registry.skills.set(entry.id, entry);
+          note(section, entry.id, source, i);
+          return;
+        }
         (map as Map<string, typeof def>).set(def.id, def);
         note(section, def.id, source, i);
       });
@@ -334,8 +345,16 @@ const checkVessels = (item: ItemDef, registry: Registry, report: Report): void =
   }
 };
 
+// A door keeps only its bar's item type, and lifting the bar hands back a fresh one.
+const checkDoorBar = (item: ItemDef, registry: Registry, report: Report): void => {
+  if (item.doorBar && (!item.twoHanded || vesselHasState(item, registry))) {
+    report('items', item.id, '.doorBar', 'a door bar is a stateless, unstacked item held in both hands');
+  }
+};
+
 const checkUnpacking = (item: ItemDef, registry: Registry, qualities: ReadonlySet<string>, report: Report): void => {
   checkVessels(item, registry, report);
+  checkDoorBar(item, registry, report);
   if (!item.unpack) {
     return;
   }
@@ -768,6 +787,12 @@ const checkItemMass = (item: ItemDef, registry: Registry, report: Report): void 
   }
 };
 
+const checkPaperMap = (item: ItemDef, report: Report): void => {
+  if (item.paperMap && (item.stack !== undefined || item.book !== undefined || item.readable !== undefined)) {
+    report('items', item.id, '.paperMap', 'paper maps cannot stack or declare another reading capability');
+  }
+};
+
 const checkItems = (registry: Registry, report: Report) => {
   const items = [...registry.items.values()];
   checkInventoryNameCollisions(items, report);
@@ -794,6 +819,7 @@ const checkItems = (registry: Registry, report: Report) => {
     checkUnpacking(item, registry, qualities, report);
     checkDisassembly(item, registry, qualities, report);
     checkBook(item, registry, report);
+    checkPaperMap(item, report);
     checkToolFuel(item, registry, report);
     checkWearableModels(item, registry, report);
     if (item.model !== undefined && !registry.models.has(item.model)) {
@@ -970,10 +996,27 @@ const checkToolFuel = (item: ItemDef, registry: Registry, report: Report) => {
   }
 };
 
+const checkFurniturePower = (registry: Registry, furniture: FurnitureDef, report: Report) => {
+  const { power } = furniture;
+  if (!power) {
+    return;
+  }
+  const device = registry.powerDevices.get(power.device);
+  if (!device) {
+    report('furniture', furniture.id, '.power.device', `no power device "${power.device}"`);
+  } else if (device.kind !== 'generator' && power.fuelLitres !== 0) {
+    report('furniture', furniture.id, '.power.fuelLitres', 'only a generator holds fuel');
+  }
+  if (power.light && device?.kind !== 'consumer') {
+    report('furniture', furniture.id, '.power.light', 'a light must be a consumer');
+  }
+};
+
 const checkFurniture = (registry: Registry, report: Report) => {
   const cellMetres = registry.inventory.get(CORE_CONTENT_IDS.player)?.cellMetres;
   checkMaterialSounds(registry, report);
   for (const furniture of registry.furniture.values()) {
+    checkFurniturePower(registry, furniture, report);
     if (furniture.container) {
       checkContainerWidth({ section: 'furniture', id: furniture.id, container: furniture.container, registry, report });
     }
@@ -1235,18 +1278,10 @@ const checkSiteGeneration = (registry: Registry, report: Report) => {
       ...Object.entries(terrain).map(([key, name]): [string, string] => [`.palette.terrain.${key}`, name]),
       ...Object.entries(trees).map(([key, name]): [string, string] => [`.palette.trees.${key}`, name]),
       ...Object.entries(single).map(([key, name]): [string, string] => [`.palette.${key}`, name]),
-      ['.hamlet.hedge', entry.hamlet.hedge],
     ];
     for (const [path, name] of blocks) {
       if (!registry.blockIds.has(name)) {
         report('siteGeneration', entry.id, path, `no block "${name}"`);
-      }
-    }
-    for (const side of ['northSide', 'southSide'] as const) {
-      for (const id of entry.hamlet[side]) {
-        if (!registry.templates.has(id)) {
-          report('siteGeneration', entry.id, `.hamlet.${side}`, `no template "${id}"`);
-        }
       }
     }
   }
@@ -1260,9 +1295,25 @@ const checkHandlingRanges = (registry: Registry, report: Report) => {
   }
 };
 
+const checkSeveredItems = (registry: Registry, zombie: ZombieDef, report: Report) => {
+  const regions = Object.keys(zombie.regions);
+  if (
+    regions.length !== Object.keys(zombie.severedItems).length ||
+    regions.some((region) => !Object.hasOwn(zombie.severedItems, region))
+  ) {
+    report('zombies', zombie.id, '.severedItems', 'severed item keys must match region keys');
+  }
+  for (const [region, item] of Object.entries(zombie.severedItems)) {
+    if (item !== null && !registry.items.has(item)) {
+      report('zombies', zombie.id, `.severedItems.${region}`, `no item "${item}"`);
+    }
+  }
+};
+
 const checkZombies = (registry: Registry, report: Report) => {
   const qualities = new Set([...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
   for (const zombie of registry.zombies.values()) {
+    checkSeveredItems(registry, zombie, report);
     if (zombie.loot !== undefined && !registry.loot.has(zombie.loot)) {
       report('zombies', zombie.id, '.loot', `no loot table "${zombie.loot}"`);
     }
@@ -1280,6 +1331,9 @@ const checkZombies = (registry: Registry, report: Report) => {
 };
 
 const checkRecipeRepair = (registry: Registry, recipe: RecipeDef, report: Report): void => {
+  if (recipe.activation && (recipe.kind !== 'repair' || recipe.components.length > 0)) {
+    report('recipes', recipe.id, '.activation', 'held sharpening needs a repair effect and no components');
+  }
   if (recipe.kind === 'repair') {
     if (!recipe.repair) {
       report('recipes', recipe.id, '.repair', 'repair recipes need a repair effect');
@@ -1481,10 +1535,7 @@ const checkScenarios = (registry: Registry, report: Report): void => {
       report('scenarios', scenario.id, '.compression', `no compression tuning "${scenario.compression}"`);
     }
     checkEventRules(registry, scenario, report);
-    if (
-      registry.layouts.has(scenario.id) ||
-      ['hamlet', 'city', 'forest', 'testHouse', 'weatheringTest'].includes(scenario.id)
-    ) {
+    if (registry.layouts.has(scenario.id) || ['city', 'forest', 'testHouse', 'weatheringTest'].includes(scenario.id)) {
       report('scenarios', scenario.id, '.id', 'scenario id collides with another site selector');
     }
   }
@@ -1585,10 +1636,12 @@ export const REQUIRED_CORE_CONTENT = [
   { section: 'compression', id: CORE_CONTENT_IDS.player },
   { section: 'figures', id: CORE_CONTENT_IDS.player },
   { section: 'handlingRange', id: CORE_CONTENT_IDS.testRange },
+  { section: 'skillProgression', id: 'core' },
   { section: 'inventory', id: CORE_CONTENT_IDS.player },
   { section: 'meleeClasses', id: CORE_CONTENT_IDS.fistsMeleeClass },
   { section: 'saves', id: CORE_CONTENT_IDS.autosave },
   { section: 'senses', id: CORE_CONTENT_IDS.player },
+  { section: 'player', id: CORE_CONTENT_IDS.player },
   { section: 'siteGeneration', id: CORE_CONTENT_IDS.authoredSite },
   { section: 'skills', id: CORE_CONTENT_IDS.firearmsCombat },
   { section: 'skills', id: CORE_CONTENT_IDS.meleeCombat },
@@ -1611,6 +1664,13 @@ export const requiredContentIssues = (registry: Registry): ContentIssue[] => {
       return { source: 'core content', path: section, message };
     },
   );
+  if ([...registry.items.values()].filter((item) => item.workInProgress).length !== 1) {
+    issues.push({
+      source: 'core content',
+      path: 'items',
+      message: 'expected exactly one work-in-progress item definition',
+    });
+  }
   if (registry.dayCycle === undefined) {
     issues.push({ source: 'core content', path: 'dayCycle', message: 'missing required day cycle' });
   }

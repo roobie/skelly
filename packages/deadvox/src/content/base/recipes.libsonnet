@@ -12,6 +12,7 @@ local blades = [
 local sharpen(blade, method) = {
   id: method.prefix + blade,
   kind: 'repair',
+  activation: 'sharpen',
   result: { item: blade, count: 1 },
   repair: { skill: 'crafting', amount: method.amount, perSkill: 0.05 },
   timeGameMinutes: method.timeGameMinutes,
@@ -21,12 +22,13 @@ local sharpen(blade, method) = {
   workstation: method.workstation,
 };
 local sharpenRecipes = [sharpen(blade, method) for blade in blades for method in sharpening];
+local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
 {
-  "skills": [
+  "skills": [skill + { curve: skillCurve } for skill in [
     {
       "id": "crafting",
       "name": "Crafting",
-      "startingRecipes": ["torch", "candle", "repair_kit", "repair_crowbar", "sawn_plank"] + [recipe.id for recipe in sharpenRecipes],
+      "startingRecipes": ["torch", "candle", "repair_kit", "repair_crowbar", "sawn_plank", "door_bar"] + [recipe.id for recipe in sharpenRecipes],
       "training": { "craftingTierOffset": 1 },
     },
     { "id": "mechanics", "name": "Mechanics" },
@@ -115,7 +117,8 @@ local sharpenRecipes = [sharpen(blade, method) for blade in blades for method in
         }
       }
     }
-  ],
+  ]],
+  "skillProgression": [{ "id": "core", "practicePerLevel": 10 }],
   "items": [
     { "id": "stick", "name": "Stick", "category": "material", "model": "stick", "size": [1, 4], "stack": 6 },
     { "id": "wax", "name": "Wax lump", "category": "material", "model": "wax", "size": [1, 1], "stack": 10 },
@@ -245,6 +248,15 @@ local sharpenRecipes = [sharpen(blade, method) for blade in blades for method in
       "skills": { "crafting": 0 },
       "qualities": { "sawing": 1 },
       "components": [[{ "item": "stick", "count": 2 }]],
+      "workstation": "workbench"
+    },
+    {
+      "id": "door_bar",
+      "result": { "item": "door_bar", "count": 1 },
+      "timeGameMinutes": 10,
+      "skills": { "crafting": 0 },
+      "qualities": { "sawing": 1 },
+      "components": [[{ "item": "wooden_plank", "count": 2 }]],
       "workstation": "workbench"
     }
   ] + sharpenRecipes

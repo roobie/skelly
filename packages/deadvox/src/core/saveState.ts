@@ -11,10 +11,12 @@ import type { HandlingQueue, HandlingQueueState } from './handling.ts';
 import type { Inventory, InventoryState } from './inventory.ts';
 import type { LongActionState } from './longAction.ts';
 import type { PlayerCombat, PlayerCombatState } from './playerCombat.ts';
+import type { PowerNetwork, PowerState } from './power.ts';
 import type { ScenarioRunState } from './scenarioRun.ts';
 import type { Simulation, SimulationState } from './sim.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundPickerState } from './soundPicker.ts';
+import type { VehicleInstancesState } from './vehicleInstances.ts';
 import type { SavedColumn, World } from './world.ts';
 import type { ZombieSpawner } from './zombieSpawns.ts';
 import type { VocalNoise, ZombieSystem, ZombieSystemState } from './zombies.ts';
@@ -23,6 +25,8 @@ export interface SaveSnapshot {
   world: {
     id: string;
     columns: SavedColumn[];
+    vehicles: VehicleInstancesState;
+    power?: PowerState;
     zombies: ZombieSystemState;
     spawned: readonly string[];
     rolledColumns: readonly string[];
@@ -55,6 +59,7 @@ export interface PlayerAudioSnapshot {
 
 export interface SnapshotSessionInput {
   worldId: string;
+  power?: PowerNetwork;
   characterId: string;
   scenarioRun: Readonly<ScenarioRunState> | null;
   world: World;
@@ -83,6 +88,7 @@ export interface SnapshotSessionInput {
 /** Takes isolated component copies synchronously; pending handling jobs are omitted only in this copy. */
 export const snapshotSession = ({
   worldId,
+  power,
   characterId,
   scenarioRun,
   world,
@@ -116,7 +122,9 @@ export const snapshotSession = ({
   return freezeSnapshot({
     world: {
       id: worldId,
+      ...(power ? { power: power.snapshot() } : {}),
       columns: world.snapshotColumns(blockContentId) as SavedColumn[],
+      vehicles: inventory.vehicles.snapshotState() as VehicleInstancesState,
       zombies: zombies.snapshotState() as ZombieSystemState,
       spawned: [...spawner.snapshotState()],
       rolledColumns: [...rolledColumns],

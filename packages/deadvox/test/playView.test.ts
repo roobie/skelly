@@ -73,7 +73,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
     },
     isSolid,
   } as unknown as Engine;
-  const view = createPlayView(engine, inventory, vi.fn(), page);
+  const view = createPlayView(engine, inventory, vi.fn(), { page });
   return {
     engine,
     inventory,
@@ -191,7 +191,7 @@ function litWorld(geometry: 'doorway' | 'near-wall') {
     },
     shadows: { torchOn: true, restore: vi.fn(), attachTorches: vi.fn() },
   } as unknown as Engine;
-  const view = createPlayView(engine, inventory, vi.fn(), new EventTarget());
+  const view = createPlayView(engine, inventory, vi.fn(), { page: new EventTarget() });
   const daylight = skyAt(12, BASE_DAY_CYCLE);
   const updateFrame = () => {
     view.updateHeld(0, restingHands, flashlight);
@@ -438,20 +438,23 @@ describe('play presentation ownership', () => {
       sky: {},
       isSolid: () => false,
     } as unknown as Engine;
-    const view = createPlayView(engine, inventory, vi.fn(), new EventTarget());
+    const view = createPlayView(engine, inventory, vi.fn(), { page: new EventTarget() });
 
+    expect(view.pictures).toBeUndefined();
     expect(view.render()).toBeNull();
     await expect(view.warmUp()).resolves.toBeUndefined();
     view.dispose();
   });
 
-  it('releases owned pile and case instances on pagehide', () => {
+  it('releases owned pictures, pile and case instances on pagehide', () => {
     const { page, view } = fixture();
+    const pictures = vi.spyOn(view.pictures!, 'dispose');
     const piles = vi.spyOn(view.piles, 'dispose');
     const cases = vi.spyOn(view.caseEffects, 'dispose');
     expect(piles).not.toHaveBeenCalled();
     expect(cases).not.toHaveBeenCalled();
     page.dispatchEvent(new Event('pagehide'));
+    expect(pictures).toHaveBeenCalledTimes(1);
     expect(piles).toHaveBeenCalledTimes(1);
     expect(cases).toHaveBeenCalledTimes(1);
   });

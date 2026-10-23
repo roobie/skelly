@@ -13,14 +13,14 @@ import { slotsReason } from '../src/core/magazine.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { gameSeconds } from '../src/core/time.ts';
-import { ZombieSystem } from '../src/core/zombies.ts';
-import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { LightPool, POINT_LIGHT_POOL_SIZE } from '../src/render/lightPool.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_DAY_CYCLE, dayStateAtHour } from './dayPhaseFixture.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
+import { PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const SHAMBLER = registry.zombies.get('shambler')!;
@@ -375,13 +375,9 @@ describe('made-light point pool', () => {
       .map(({ item }) => fixtureRegistry.items.get(item.type)!.light!.intensity);
     const handIntensities = [right, left].map((item) => fixtureRegistry.items.get(item.type)!.light!.intensity);
     expect(pocketIntensities).toHaveLength(3);
-    expect(pool.lights.map((light) => light.intensity)).toEqual([
+    expect(pool.lights.filter((light) => light.intensity > 0).map((light) => light.intensity)).toEqual([
       ...handIntensities,
       ...pocketIntensities.slice(0, 2),
-      0,
-      0,
-      0,
-      0,
     ]);
   });
 

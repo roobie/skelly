@@ -18,6 +18,7 @@ import { Survival } from '../src/game/survival.ts';
 import { computeMenuState } from '../src/ui/menuState.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
+import { PLAYER } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, Simulation } from './simulationFixture.ts';
 
@@ -47,6 +48,7 @@ const admit = (value: Readable) =>
         ),
         compression: [{ id: 'player', caps: COMPRESSION_CAPS_FIXTURE }],
         senses: [TEST_SENSE_TUNING],
+        player: [PLAYER],
         skills: [structuredClone(BUNDLED_CONTENT.registry.skills.get('firearms_combat')!)],
       },
     },
@@ -125,6 +127,7 @@ describe('authored readable text', () => {
       registry: {
         ...registry,
         zombies: BUNDLED_CONTENT.registry.zombies,
+        siteGeneration: BUNDLED_CONTENT.registry.siteGeneration,
         dayCycle: BUNDLED_CONTENT.registry.dayCycle,
         ui: BUNDLED_CONTENT.registry.ui,
       },
@@ -187,6 +190,7 @@ describe('authored readable text', () => {
     expect(session.queue.jobs).toHaveLength(0);
   });
   it('uses inventory-style live time and menu-pointer admission for the reading surface', () => {
+    const goLabels = { play: 'fixture play', continue: 'fixture continue' };
     const menu = computeMenuState({
       started: true,
       mainMenuOpen: false,
@@ -195,6 +199,7 @@ describe('authored readable text', () => {
       debugMenuOpen: false,
       pointerLocked: true,
       dead: false,
+      goLabels,
     });
     expect(menu).toMatchObject({ paused: false, overlayHidden: true, menuPointer: true });
     const escaped = computeMenuState({
@@ -206,6 +211,7 @@ describe('authored readable text', () => {
       pointerLocked: false,
       pointerLockChanged: true,
       dead: false,
+      goLabels,
     });
     expect(escaped).toMatchObject({ paused: true, closeOtherMenus: true });
   });

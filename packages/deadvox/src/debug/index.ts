@@ -32,6 +32,7 @@ import { firearmBoreTarget } from '../game/firearmAim.ts';
 import { inputBindings, keyboardInput, labelForAction } from '../game/inputBindings.ts';
 import { INPUT_REPLAY_MAX_BYTES } from '../game/inputReplay.ts';
 import { unarmedMeleeWeapon } from '../game/melee.ts';
+import { playerTuning } from '../game/player.ts';
 import { replayFile, type SnapshotMeasurement } from '../game/playtestTools.ts';
 import { HOT_CATEGORIES, HOT_KINDS } from '../render/hotCheck.ts';
 import { comboBox } from '../ui/comboBox.ts';
@@ -433,6 +434,7 @@ const panelTemplate = ({
             label: 'Weathering profile',
             options: weatheringProfiles.map(({ id }) => ({ value: id, label: id })),
             value: weatheringState.profileId,
+            emptyLabel: 'No matches',
             choose: selectWeatheringProfile,
           })}
           ${Object.keys(WEATHERING_RANGES).map((field) =>
@@ -1896,7 +1898,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     updateTransientDraw: (nowMs) => transientDraw.update(nowMs),
     click: (button, eye, dir) => build.click(button, eye, dir),
     wheel: (delta) => build.wheel(delta),
-    stepNoclip: (step: DebugNoclipStep) => stepNoclip(step),
+    stepNoclip: (step: DebugNoclipStep) => stepNoclip(step, playerTuning(hooks.engine.registry)),
     update(next: DebugReadout) {
       readout = next;
       syncCamUrl();

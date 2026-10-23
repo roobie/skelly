@@ -256,7 +256,7 @@ export class HandlingQueue {
     if (from.kind === 'work') {
       return coreMessage(registry, 'inWork');
     }
-    if (from.kind === 'slot') {
+    if (from.kind === 'slot' || from.kind === 'vehicle') {
       return coreMessage(registry, 'fitted');
     }
     const current = this.inventory.targetState(from.kind === 'pile' ? { kind: 'pile', pos: from.pile.pos } : from);
