@@ -32,6 +32,34 @@ it('reproduces terrain-only semantic output from restored generation inputs', ()
   expect(restored.contours).toEqual(original.contours);
 });
 
+it('prints only explicit public roads and tracks, independently of generation order', () => {
+  const coverage = { x: 0, z: 0 };
+  const bounds = paperMapBounds(coverage);
+  const printable = [
+    {
+      kind: 'track' as const,
+      points: [
+        [bounds.x0 - 1, bounds.z0 + 4],
+        [bounds.x1 + 1, bounds.z0 + 4],
+      ] as const,
+      width: 3,
+    },
+    {
+      kind: 'road' as const,
+      bounds: { x0: bounds.x0 + 8, z0: bounds.z0 + 8, x1: bounds.x0 + 16, z1: bounds.z0 + 16 },
+    },
+  ];
+  const hiddenUnderground = { points: [[bounds.x0 + 2, bounds.z0 + 2]] };
+  const first = samplePaperMapTerrain(terrain, coverage, config, printable);
+  const second = samplePaperMapTerrain(terrain, coverage, config, [...printable].reverse());
+
+  expect(first.publicFeatures).toEqual(second.publicFeatures);
+  expect(first.publicFeatures).toEqual(
+    expect.arrayContaining([expect.objectContaining({ kind: 'road' }), expect.objectContaining({ kind: 'track' })]),
+  );
+  expect(JSON.stringify(first.publicFeatures)).not.toContain(JSON.stringify(hiddenUnderground.points));
+});
+
 it('shares exact terrain and clipped contour endpoints at an adjacent cut', () => {
   const left = samples({ x: 0, z: 0 });
   const right = samples({ x: 1, z: 0 });

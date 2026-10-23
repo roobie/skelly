@@ -98,6 +98,8 @@ export const SIMULATION_EXCLUSIONS = [
   'src/core/pileLayout.ts',
   // Paper-map terrain sampling is disposable presentation; it changes neither simulation nor saves.
   'src/core/paperMapRender.ts',
+  // Its public-cartography types describe printable features, not simulation or saved state.
+  'src/core/publicCartography.ts',
   // WebAudio output/voice allocation and body-sized pitch law are presentation; admission and saved SoundPicker stay fingerprinted.
   'src/game/audio.ts',
   'src/game/audioPresentation.ts',
