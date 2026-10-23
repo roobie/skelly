@@ -342,7 +342,7 @@ export class BlockEntities {
     return [...this.byOrigin.values()].find((entity) => entity.carried);
   }
 
-  snapshotState(): Readonly<BlockEntitiesState> {
+  snapshotState(foodAt?: number): Readonly<BlockEntitiesState> {
     return freezeSnapshot({
       nextUid: this.nextUid,
       entities: [...this.byOrigin.values()].map((entity) => ({
@@ -359,7 +359,9 @@ export class BlockEntities {
         open: entity.open,
         ...leafState(entity),
         ...(entity.charging ? { charging: { ...entity.charging } } : {}),
-        ...(entity.pockets === undefined ? {} : { pockets: entity.pockets.map((grid) => grid.map(snapshotPlaced)) }),
+        ...(entity.pockets === undefined
+          ? {}
+          : { pockets: entity.pockets.map((grid) => grid.map((placed) => snapshotPlaced(placed, foodAt))) }),
       })),
       ...(this.reservedUids.size === 0 ? {} : { reserved: [...this.reservedUids].sort((a, b) => a - b) }),
     });

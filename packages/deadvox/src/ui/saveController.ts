@@ -1,6 +1,8 @@
 import { html, render } from 'lit-html';
 import type { HandedCharacter } from '../core/character.ts';
 import { type Registry, requireDayCycle } from '../core/content.ts';
+import { assertFoodExposure } from '../core/food.ts';
+import type { ItemState } from '../core/items.ts';
 import {
   type ActiveBrowserMod,
   type ActiveBundledMod,
@@ -34,11 +36,14 @@ const CONTINUE_KEY = 'deadvox.continue-namespace';
 const RESTORE_REFUSAL_KEY = 'deadvox.restore-refusal';
 const DEAD_WORLD_KEY = 'deadvox.dead-world';
 
-export const contentLookup = (registry: Registry, kind: SaveContentKind, id: string): boolean => {
+export const contentLookup = (registry: Registry, kind: SaveContentKind, id: string, item?: ItemState): boolean => {
   switch (kind) {
     case 'block':
       return registry.blockIds.has(id);
     case 'item':
+      if (item && registry.items.has(id)) {
+        assertFoodExposure(registry, item);
+      }
       return registry.items.has(id);
     case 'furniture':
       return registry.furniture.has(id);
@@ -404,7 +409,7 @@ export class SaveController {
     try {
       const decoded = await decodeSave(candidate.payload, {
         version: this.identityValue!.components,
-        contentLookup: (kind, id) => contentLookup(registry, kind, id),
+        contentLookup: (kind, id, item) => contentLookup(registry, kind, id, item),
       });
       const { ratio } = decoded.snapshot.character.simulation.clock;
       if (ratio !== requireDayCycle(registry).clockRatio) {
