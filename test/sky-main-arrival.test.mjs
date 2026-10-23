@@ -19,9 +19,10 @@ it('main rendering overlays retain branch core API owners', () => {
   assert.ok(mainSourceOverlays.every((path) => !path.startsWith('core/')));
 });
 
-it('main overlays keep the play frame producer, consumer and acid effect contract on the same revision', () => {
+it('main overlays keep play, view and their figure and acid effect contracts on the same revision', () => {
   assert.ok(mainSourceOverlays.includes('game/play.ts'));
   assert.ok(mainSourceOverlays.includes('render/playView.ts'));
+  assert.ok(mainSourceOverlays.includes('render/playerFigure.ts'));
   assert.ok(mainSourceOverlays.includes('render/acidEffects.ts'));
 });
 

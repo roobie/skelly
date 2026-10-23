@@ -36,6 +36,13 @@
         "backwardSpeedScale": 0.5,
         "sidewaysSpeedScale": 0.69999999999999996
       },
+      "prone": {
+        "bodyHeightMetres": 0.59999999999999998,
+        "eyeDropMetres": 1.3,
+        "hearingRangeScale": 0.5,
+        "sightRangeScale": 0.5,
+        "speedMetresPerSimSecond": 0.5
+      },
       "shamblerVoice": {
         "clampMultiplier": {
           "max": 1.3,

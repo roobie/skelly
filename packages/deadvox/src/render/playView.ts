@@ -15,6 +15,7 @@ import type { BlockJolt } from '../core/meleeCombat.ts';
 import type { MeleePoseFrame } from '../core/meleePose.ts';
 import { DEFAULT_SHADOWS, lookOf, moodOf } from '../core/mood.ts';
 import type { Body } from '../core/physics.ts';
+import type { PlayerStance } from '../core/playerStance.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
 import { reachTuning } from '../core/reach.ts';
 import type { BodyTuningDef, NightVision } from '../core/schema.ts';
@@ -61,6 +62,7 @@ export interface PlayCameraFrame {
   readonly yaw: number;
   readonly pitch: number;
   readonly stridePhase: number;
+  readonly stance: PlayerStance;
   readonly eye: Vec3;
   readonly spectator?: { readonly position: Vec3; readonly yaw: number; readonly pitch: number };
   readonly thirdPerson?: boolean;
@@ -183,7 +185,8 @@ export const createPlayView = (
   }
   const weather: Weather = { fogginess: dayCycle.weather.defaultFogginess };
   const models = new ModelLibrary(registry, report);
-  const playerPalette = registry.figures.get(CORE_CONTENT_IDS.player)!.palette;
+  const playerFigure = registry.figures.get(CORE_CONTENT_IDS.player)!;
+  const playerPalette = playerFigure.palette;
   const piles = new PileMeshes(s, models, config.seed, meshes);
   const caseEffects = new CaseEffects(s, models);
   const gore = new Gore(s, config.seed);
@@ -236,7 +239,7 @@ export const createPlayView = (
     reachTuning(registry).furnitureMove.carriedView,
   );
   held.attach(carriedPiece.group);
-  const playerMeshes = new PlayerMeshes(s, playerPalette, models);
+  const playerMeshes = new PlayerMeshes(s, playerFigure, models);
   const flashlight = new Flashlight(
     scene,
     registry.senses.get(CORE_CONTENT_IDS.player)!.light.renderedBeamLimit,
@@ -427,7 +430,7 @@ export const createPlayView = (
       engine.shadows?.update(sunShadowStrength(sky.lightIntensity), camera.position);
     },
     updateCamera: (frame: PlayCameraFrame, damage: HTMLElement) => {
-      const { dt, body, paused, noclip, yaw, pitch, stridePhase, eye, spectator, sightImpaired } = frame;
+      const { dt, body, paused, noclip, yaw, pitch, stridePhase, stance, eye, spectator, sightImpaired } = frame;
       thirdPerson = frame.thirdPerson === true && spectator === undefined;
       const offset = cameraStepOffset.update(
         [body.pos[0] * s, body.pos[1] * s, body.pos[2] * s],
@@ -445,6 +448,8 @@ export const createPlayView = (
         stepOffset: offset,
         gaitPhase,
         moving,
+        stance,
+        dt,
         inventory,
         thirdPerson: thirdPerson || detached,
       });

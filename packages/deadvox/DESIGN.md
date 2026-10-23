@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change zombie hesitation, refusal, interest chaining or attention phase ordering
   - you change the player figure's look, its authored parts, its clothes or how it is posed
   - you change worn head gear seen from inside or on the player figure
   - you add a wear slot or change what night-vision goggles do to the view
@@ -9,7 +10,7 @@ read_if:
   - you decide how sunlight, shadows or interior sky should read during discovery and edit revalidation
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance, performance targets or the default render scale
-  - you change the player's collision body, movement pace by direction, or what crouching lets the player fit through
+  - you change the player's collision body, movement pace by direction, or what crouching or lying prone lets the player fit through
   - you're changing world block shapes, wire fences or their supports, sight opacity, reach through obstacles, sound blocking or slab geometry
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry and put down, or how stacks settle
@@ -163,20 +164,49 @@ them by axis for diagonals, keeping diagonal pace between its two axis speeds.
 The factors scale speed without changing movement direction and compose with
 other pace factors.
 
-Crouching lowers the collision body as well as the eye, so a crouched player
-fits openings that reject a standing body. The FOB's east-wall passage is sized
-so a crouched player fits but a standing player does not. It is a separate low
-route from the guarded north entrance and southern breach, with its floor level
-to the approach; it must not expose any part of the finale from near-ground
-viewpoints, leaving the southern breach as the only near-ground exception.
+### Crouching and lying prone
+
+The player has three stances: standing, crouching and prone. Each lower stance
+lowers the collision body as well as the eye, so it fits openings that reject the
+stance above it, and a low opening becomes a route only for someone willing to
+move slowly. Crouching and prone each have their own body height, eye drop and
+pace in content, and neither can sprint. A prone player can't jump either, since
+lying flat leaves nothing to jump from. The crouch key toggles between standing
+and crouching, the prone key toggles between crouching and prone, and either key
+rises from prone to a crouch, so a player never stands straight up from lying
+flat. Rising is refused, keeping the lower stance, when the taller body would
+intersect a solid overhead block. Only height changes; the body's footprint stays
+the same in every stance.
+
+Hearing and sight treat a prone player as they treat a crouched one, through
+prone's own content fields, because how lying down should affect noticing is
+still open (#550). The camera and the spit's chest target follow the eye height,
+so each stance moves them without stance-specific code.
+
+The drawn body follows the stance, so third person shows the stance the player is
+in (#582): crouched it sinks and leans forward, and prone it lies along the facing.
+Each stance pose stays inside that stance's body height, so the drawn head never
+pokes through a ceiling the body fits under. The body blends into a new stance
+over a short real-time span instead of snapping, which hides the change of shape;
+the eye snaps, because sight and collision use the new height at once. Poses and
+the blend time are figure content. See `src/content/base/figures-player.jsonnet`,
+`stancePoses`, and `src/render/playerFigure.ts`, `PlayerMeshes`.
+
+The FOB's east-wall passage is sized so a crouched player fits but a standing
+player does not. It is a separate low route from the guarded north entrance and
+southern breach, with its floor level to the approach; it must not expose any
+part of the finale from near-ground viewpoints, leaving the southern breach as
+the only near-ground exception.
 `test/campGate.test.ts`, "hides the finale from approach tracks and near ground except through the southern breach", checks from the amalgam's feet to its top.
 Zombies use the passage only if their ordinary collision body fits; they do not
-crouch or gain a type-specific exception. Standing up is refused when the body
-would intersect a solid overhead block. On a restore admitted by
-`decodeSave` with matching content identity, the saved stance is preserved and
-body height is derived from content. See `src/core/saveFormat.ts`, `decodeSave`;
-`src/content/base/senses.jsonnet`, `crouch.bodyHeightMetres`;
-`src/game/session.ts`, `settleStance`; `src/core/schema.ts`, `SenseSchema`;
+crouch or gain a type-specific exception.
+
+A save keeps the stance; on a restore admitted by `decodeSave` with matching
+content identity, body height is derived from content for that stance. See
+`src/core/saveFormat.ts`, `decodeSave`; `src/content/base/senses.jsonnet`,
+`crouch` and `prone`; `src/game/player.ts`, `nextStance`;
+`src/game/session.ts`, `settleStance`; `src/core/zombies.ts`,
+`loweredStanceTuning`; `src/core/schema.ts`, `SenseSchema`;
 `src/content/base/camp.libsonnet`, `camp_wall_run_crouch_hole`; and
 `src/core/spawnClearance.ts`, `zombieBodyDimensions`.
 
@@ -2318,7 +2348,9 @@ crouch rules. See `src/core/zombies.ts`, `hearingTier`, `hearVocalNoise` and
 - Shamblers do not gain stair knowledge from an attention target on another floor.
 - For #281, visible prey suppresses obstacle wandering; an active wander ends when the prey becomes visible, and the shambler resumes beelining while retaining its slide. Unseen targets and idle strolling can still wander. See `packages/deadvox/src/core/zombies.ts`, `seesPlayer` and `ZombieSystem.tick`.
 - The named phases in `src/core/zombies.ts`, `ZombieSystem.tick`, make the established order reviewable because later steps consume state produced by earlier simulation steps; keep that order when changing the per-tick behavior. See `ZombieSystem.updateAttention`, `ZombieSystem.stepZombieBody`, `ZombieSystem.updateObstacleContact`, `ZombieSystem.resolveZombieAttack` and `ZombieSystem.emitFootsteps`.
-- **Attention and attacks:** Sight, hearing, `lastPerceived`, chase/investigate transitions and `withinAttackReach` remain the authorities for choosing and acting on targets. Far-hearing direction stays uncertain: a grounded listener projects it onto known terrain rather than learning the source's height. See `src/core/zombies.ts`, `seesPlayer`, `farBearingTarget` and `withinAttackReach`.
+- **Quiet-sound hesitation:** An uncommitted individual pauses and turns toward a quiet noise before deciding; loudness, not a sound category, makes a noise urgent. Idle listeners refuse, while listeners already strolling pursue after the pause: movement expresses existing interest without a heard-noise history or a random pursue roll. Refusal biases the next stroll toward the sound and briefly makes another noise urgent. Searchers and pursuing bodies retain their existing attention rules; sight and light can interrupt the pause. Hordes beeline because their group response should remain decisive. Player movement hearing remains continuous rather than restarting a discrete-noise pause. See `src/core/zombies.ts`, `ZombieSystem.updateAttention` and `ZombieSystem.beginStroll`; tuning belongs to `src/content/base/zombies.jsonnet`, `hearingModel`.
+- **Shared interest:** A pursuing body's alert can recruit nearby listeners to its target point, including its bearing uncertainty, rather than sending them to the caller. Each call offers a flat chance inside its radius. Cascades deliberately have no damping so crowd behaviour can be evaluated before imposing a limit. The transient stimulus queue drains after player perception and before movement, including calls from recruited bodies; no pending queue crosses a save boundary. This prevents entity iteration order from giving one listener an extra movement tick. A future damping decision belongs at this queue's recruitment boundary, not in player noise. See `src/core/zombies.ts`, `ZombieSystem.announcePursuit` and `ZombieSystem.processChainStimuli`; tuning belongs to `src/content/base/zombies.jsonnet`, `hearingModel`.
+- **Attention and attacks:** Sight and hearing remain the authorities for choosing targets, so interest chaining must not replace visible prey. Far-hearing direction stays uncertain: a grounded listener projects it onto known terrain rather than learning the source's height. See `src/core/zombies.ts`, `seesPlayer`, `farBearingTarget` and `withinAttackReach`.
 - **Background steps:** Background zombies beeline in big, cheap steps. Each type's content caps how far one step moves it, because that cap, not the chase speed, sets how fast a fast type closes in while unseen. The background tick rate stays in code: it is the scheduler's cadence, saved with its phase, so it is engine timing rather than tuning. See `src/core/schema.ts`, `ZombieSchema`, and `src/core/zombies.ts`, `ZombieSystem.tickBackground`.
 - **Distant attention and noise persistence:** A horde retains a heard noise target until it arrives or forgets it; its sun-derived preference for home or roaming does not replace an active noise target. Once the target ends, the horde roams only from sunset to sunrise. A background zombie with no horde or stimulus uses idle behavior instead of treating the player as an implicit target, because distance alone must not make an unseen zombie pursue. See `src/core/zombies.ts`, `ZombieSystem.updateHordes` and `ZombieSystem.tickBackground`.
 - **Stimulus memory:** Individual zombies and hordes forget unreachable stimuli after the shared content duration. The stimulus timestamp is saved so loading does not restart the wait. Whether this duration should use real time or game time remains open for BR's decision; the current simulation-seconds behavior is not a settled design choice. A horde resumes the sun-derived roam or home behavior after forgetting. See `ZombieSchema` in `src/core/schema.ts` and `ZombieSystem.updateHordes` in `src/core/zombies.ts`.

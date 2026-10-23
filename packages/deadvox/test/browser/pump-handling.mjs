@@ -501,6 +501,39 @@ try {
     lockerGeometry.lockerGridOverflowY === 'visible',
     `the locker's grid has no scrollport of its own: ${JSON.stringify(lockerGeometry)}`,
   );
+  const stowedUid = await page.evaluate((lockerUid) => {
+    const { screen, session } = globalThis.pumpHandlingTest;
+    const entity = [...session.entities.all].find((candidate) => candidate.uid === lockerUid);
+    const stowed = [...session.inventory.items()].find(
+      ({ item }) =>
+        session.inventory.locate(item)?.kind === 'pocket' &&
+        session.inventory.plan(item, { kind: 'furniture', entity, pocket: 0 }).ok,
+    )?.item;
+    if (!stowed) {
+      throw new Error('No carried item fits the open locker');
+    }
+    screen.selected = stowed;
+    return stowed.uid;
+  }, routeLockerUid);
+  await pressAction(page, 'inventory.cycle-target');
+  await pressAction(page, 'inventory.put-target');
+  await page.waitForFunction(
+    (uid) => {
+      const { session } = globalThis.pumpHandlingTest;
+      return session.inventory.locate(session.inventory.itemByUid(uid))?.kind === 'furniture';
+    },
+    stowedUid,
+    { timeout: 10_000 },
+  );
+  await pressAction(page, 'inventory.best-pocket');
+  await page.waitForFunction(
+    (uid) => {
+      const { session } = globalThis.pumpHandlingTest;
+      return session.inventory.locate(session.inventory.itemByUid(uid))?.kind === 'pocket';
+    },
+    stowedUid,
+    { timeout: 10_000 },
+  );
   const selectInventoryTab = async (tab) => {
     const tabButton = page.locator(`#inventory .inv-tab[data-tab="${tab}"]`);
     const tabBox = await tabButton.boundingBox();

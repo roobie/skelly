@@ -77,7 +77,15 @@ const player = (
   movement: PlayerSense['movement'] = 'still',
   lit = false,
   crouching = false,
-): PlayerSense => ({ pos, facing, movement, lit, lightSeenFrom: 40, eyeHeightMetres: 1.3, crouching });
+): PlayerSense => ({
+  pos,
+  facing,
+  movement,
+  lit,
+  lightSeenFrom: 40,
+  eyeHeightMetres: 1.3,
+  stance: crouching ? 'crouching' : 'standing',
+});
 const senses = (
   playerFn: () => PlayerSense,
   isSolid: SolidAt = FLOOR,
@@ -2012,6 +2020,7 @@ describe('shambler scenarios', () => {
     const simulateAttacks = (godMode: boolean) => {
       const sim = new Simulation({
         seed: 9,
+        registry,
         bodyTuning: registry.body.get('player')!,
         compressionCaps: registry.compression.get('player')!.caps,
         clock: BASE_CLOCK,
@@ -2850,8 +2859,14 @@ describe('two-tier shambler hearing', () => {
     expect(hear(noise.pos, wall)?.target).not.toEqual(noise.pos);
   });
 
-  it('makes a still player vocalization alert and investigate once', () => {
+  it('makes a loud still-player vocalization alert and investigate once', () => {
     const noise = { id: 44, pos: [12, 1, 0] as Vec3, radiusMetres: 6, expiresAt: 1 };
+    const type = {
+      ...SHAMBLER,
+      sight: 0.01,
+      nightSight: 0.01,
+      hearingModel: { ...SHAMBLER.hearingModel, loudNoiseRadiusMetres: noise.radiusMetres },
+    };
     const target = { ...player(noise.pos), vocalNoise: noise };
     const heard: string[] = [];
     const system = new ZombieSystem({
@@ -2859,7 +2874,7 @@ describe('two-tier shambler hearing', () => {
       seed: 21,
       onSound: (event) => heard.push(event),
     });
-    const id = system.add({ ...SHAMBLER, sight: 0.01, nightSight: 0.01 }, [0, 1, 0]);
+    const id = system.add(type, [0, 1, 0]);
     const zombie = system.store.get(id)!;
 
     system.tick(1 / 20, 0.05);
@@ -2899,7 +2914,7 @@ describe('two-tier shambler hearing', () => {
     );
     system.tick(1 / 20, 0.1);
 
-    expect(first.mode).toBe('investigate');
+    expect(first.mode).toBe('hesitate');
     expect(first.lastPerceived).toBeDefined();
     expect(second.mode).toBe('idle');
     expect(second.lastPerceived).toBeUndefined();

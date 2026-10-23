@@ -303,7 +303,7 @@ it('lets a player climb to the matching key on the roof corpse in the base stati
           active: () => true,
           intent: () => ({ ...IDLE, forward: 1, walk: true }),
           readyHeld: () => false,
-          consumeCrouchToggle: () => false,
+          consumeStanceToggle: () => undefined,
           yaw: () => Math.atan2(ox, oz),
           pitch: () => 0,
           walking: () => true,

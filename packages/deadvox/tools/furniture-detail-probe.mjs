@@ -61,15 +61,24 @@ try {
       const gather = (key) => files.flatMap((file) => file[key] ?? []);
       // Rows run away from the camera, so the short pieces stand in front where tall ones cannot hide them.
       const definitions = gather('furniture')
-        .filter((definition) => definition.appearance && (ids.length === 0 || ids.includes(definition.id)))
-        .map(({ loot, ...definition }) => definition)
+        .filter(
+          (definition) =>
+            (definition.appearance || definition.door?.detail) && (ids.length === 0 || ids.includes(definition.id)),
+        )
+        // Forcing methods name skills and tools the look registry lacks, and draw nothing.
+        .map(({ loot, ...definition }) =>
+          definition.door ? { ...definition, door: { ...definition.door, methods: {} } } : definition,
+        )
         .sort((a, b) => a.size[1] - b.size[1]);
       if (definitions.length === 0) {
-        throw new Error('no appearance fixtures to inspect');
+        throw new Error('no detailed fixtures to inspect');
       }
-      // A compare run stands the plain block each fixture drew before its detail at the head of its row.
+      // A compare run stands the plain block or leaf each fixture drew before its detail at the head of its row.
       const plain = withPlain
-        ? definitions.map(({ appearance, ...definition }) => ({ ...definition, id: `${definition.id}_plain` }))
+        ? definitions.map(({ appearance, ...definition }) => {
+            const { detail, ...door } = definition.door ?? {};
+            return { ...definition, ...(definition.door ? { door } : {}), id: `${definition.id}_plain` };
+          })
         : [];
       const { registry, issues } = buildRegistry([
         {
@@ -84,10 +93,12 @@ try {
       if (issues.length > 0) {
         throw new Error(JSON.stringify(issues));
       }
-      // Each fixture stands intact at the left of its row, then once at the start of each of its material's damage steps;
-      // the camera looks along +z, so a row runs toward -x to read left to right.
+      // Each fixture stands intact at the left of its row, then once at the start of each of its material's damage steps,
+      // and a door once more open, so its detail is seen to swing with it; the camera looks along +z, so a row runs
+      // toward -x to read left to right.
       const entities = new BlockEntities(registry);
       const damage = new Map();
+      const opened = new Set();
       const place = (definition, pos) => {
         const piece = entities.add({ type: definition.id, size: definition.size, pos, facing: 'n' });
         if (!piece) {
@@ -109,6 +120,9 @@ try {
           }
           x -= definition.size[0] + 1;
         }
+        if (definition.door) {
+          opened.add(place(definition, [x, 0, row]).uid);
+        }
       };
       let z = 0;
       for (const [index, definition] of definitions.entries()) {
@@ -118,9 +132,11 @@ try {
       const state = entities.snapshotState();
       entities.restoreState({
         ...state,
-        entities: state.entities.map((saved) =>
-          damage.has(saved.uid) ? { ...saved, damage: damage.get(saved.uid) } : saved,
-        ),
+        entities: state.entities.map((saved) => ({
+          ...saved,
+          ...(damage.has(saved.uid) ? { damage: damage.get(saved.uid) } : {}),
+          ...(opened.has(saved.uid) ? { open: true } : {}),
+        })),
       });
       const furniture = new FurnitureMeshes(0.5);
       furniture.sync(entities);

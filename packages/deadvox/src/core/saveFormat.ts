@@ -16,6 +16,7 @@ import { itemIds as collectItemIds, savedItemTree } from './itemTree.ts';
 import { validateLongJob } from './longAction.ts';
 import { MELEE_MOTIONS } from './meleeMotion.ts';
 import type { PlayerCombatState } from './playerCombat.ts';
+import { PLAYER_STANCES } from './playerStance.ts';
 import type { SaveSnapshot } from './saveState.ts';
 import { assertScenarioRun } from './scenarioRun.ts';
 import { freezeSnapshot } from './snapshotData.ts';
@@ -585,8 +586,11 @@ const zombie = obj({
   body,
   facing: vec3,
   home: vec3,
-  mode: enumeration(['idle', 'stroll', 'search', 'chase', 'investigate', 'return']),
+  mode: enumeration(['idle', 'stroll', 'hesitate', 'search', 'chase', 'investigate', 'return']),
   investigationTier: opt(enumeration(['near', 'far'])),
+  hesitationFrom: opt(enumeration(['idle', 'stroll'])),
+  refusedAt: opt(nonNegative),
+  leanTarget: opt(vec3),
   behaviorRng: tuple(safeInt, safeInt, safeInt, safeInt),
   soundRng: tuple(safeInt, safeInt, safeInt, safeInt),
   dismemberRng: tuple(safeInt, safeInt, safeInt, safeInt),
@@ -645,7 +649,7 @@ const playerState = obj({
   yaw: finite,
   pitch: finite,
   walk: bool,
-  crouching: bool,
+  stance: enumeration(PLAYER_STANCES),
   sprinting: bool,
   firearmReadyWalking: bool,
   handlingPausedForKnockout: bool,

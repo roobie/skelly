@@ -127,6 +127,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
     playerBody = findShamblerBenchPlayer(engine);
     const simulation = new Simulation({
       seed: run.seed,
+      registry: engine.registry,
       bodyTuning: engine.registry.body.get(CORE_CONTENT_IDS.player)!,
       compressionCaps: engine.registry.compression.get(CORE_CONTENT_IDS.player)!.caps,
       clock: { ratio: dayCycle.clockRatio, start: startTime },

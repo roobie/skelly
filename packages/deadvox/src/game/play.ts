@@ -12,6 +12,7 @@ import { formatClock, nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
+import { coreMessage } from '../core/coreText.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
 import { crosshairTarget } from '../core/crosshairTarget.ts';
 import type { EntityId } from '../core/entities.ts';
@@ -22,12 +23,7 @@ import { interactionAffordance } from '../core/interactionAffordance.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
 import type { HandSide, Inventory, Pile, Target } from '../core/inventory.ts';
 import { damageWord, type Item } from '../core/items.ts';
-import {
-  hasMetThrowMinimumHold,
-  NO_LANDING_REFUSAL,
-  throwDistanceForItem,
-  traceItemLanding,
-} from '../core/itemThrow.ts';
+import { hasMetThrowMinimumHold, throwDistanceForItem, traceItemLanding } from '../core/itemThrow.ts';
 import { chargeShare, offHandUse, wornNightVision } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
 import { doorOptions, doorPlan, dropTarget, pocketGroundItem, toHands } from '../core/options.ts';
@@ -831,7 +827,7 @@ export const startPlay = (
       blocking: () => shouldPlayerBlock(),
       consumeDominantUse: () => input.consumeDominantUse(),
       consumeOffUse: () => input.consumeOffUse(),
-      consumeCrouchToggle: () => input.consumeCrouchToggle(),
+      consumeStanceToggle: () => input.consumeStanceToggle(),
       useDominant: () =>
         routeDominantUse(throwingStance, beginItemThrow, () => {
           // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
@@ -2117,7 +2113,10 @@ export const startPlay = (
         input.walking = toggleWalking(input.walking, replayPlayer ? undefined : inputRecorder, inputContext());
         break;
       case 'player.crouch-toggle':
-        withUnlockedInput(() => input.requestCrouchToggle());
+        withUnlockedInput(() => input.requestStanceToggle('crouch'));
+        break;
+      case 'player.prone-toggle':
+        withUnlockedInput(() => input.requestStanceToggle('prone'));
         break;
       case 'player.throw':
         withUnlockedInput(() => throwStanceInput.keyDown(action, at));
@@ -2692,7 +2691,7 @@ export const startPlay = (
     }
     const target = itemLandingTarget(distanceMetres);
     if (!target) {
-      showRefusal(NO_LANDING_REFUSAL, sim.time);
+      showRefusal(coreMessage(registry, 'noLanding'), sim.time);
       return;
     }
     const throwOffset: Vec3 = throwingStance
@@ -3179,6 +3178,7 @@ export const startPlay = (
         yaw: spectator.avatarYaw(input.yaw),
         pitch: input.pitch,
         stridePhase: session.playerStridePhase,
+        stance: session.stance,
         eye: eye(),
         ...(spectator.body
           ? { spectator: { position: [...spectator.body.pos], yaw: input.yaw, pitch: input.pitch } }
@@ -3621,7 +3621,7 @@ export const startPlay = (
     tutorial?.observe({
       position: body.pos,
       yaw: input.yaw,
-      crouching: session.crouching,
+      crouching: session.stance === 'crouching',
       doorOpen: [...entities.all].some((entity) => entity.type === 'wood_door' && entity.open),
       searched: [...entities.all].some((entity) => entity.type === 'tutorial_cabinet' && entity.searched),
       looted: inventory.looted.size > 0,

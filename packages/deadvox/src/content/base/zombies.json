@@ -102,8 +102,17 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
+        "hesitationSimSeconds": {
+          "max": 5,
+          "min": 5
+        },
         "investigationDistanceMetres": 8,
+        "loudNoiseRadiusMetres": 30,
+        "refusalLean": 0.75,
+        "refusalSuspicionSimSeconds": 20,
         "searchRadiusMetres": 4,
         "searchSimSeconds": {
           "max": 50,
@@ -321,8 +330,17 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
+        "hesitationSimSeconds": {
+          "max": 5,
+          "min": 5
+        },
         "investigationDistanceMetres": 8,
+        "loudNoiseRadiusMetres": 30,
+        "refusalLean": 0.75,
+        "refusalSuspicionSimSeconds": 20,
         "searchRadiusMetres": 4,
         "searchSimSeconds": {
           "max": 50,
@@ -540,8 +558,17 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
+        "hesitationSimSeconds": {
+          "max": 5,
+          "min": 5
+        },
         "investigationDistanceMetres": 8,
+        "loudNoiseRadiusMetres": 30,
+        "refusalLean": 0.75,
+        "refusalSuspicionSimSeconds": 20,
         "searchRadiusMetres": 4,
         "searchSimSeconds": {
           "max": 50,
@@ -759,8 +786,17 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
+        "hesitationSimSeconds": {
+          "max": 5,
+          "min": 5
+        },
         "investigationDistanceMetres": 8,
+        "loudNoiseRadiusMetres": 30,
+        "refusalLean": 0.75,
+        "refusalSuspicionSimSeconds": 20,
         "searchRadiusMetres": 4,
         "searchSimSeconds": {
           "max": 50,
@@ -978,8 +1014,17 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
+        "hesitationSimSeconds": {
+          "max": 5,
+          "min": 5
+        },
         "investigationDistanceMetres": 8,
+        "loudNoiseRadiusMetres": 30,
+        "refusalLean": 0.75,
+        "refusalSuspicionSimSeconds": 20,
         "searchRadiusMetres": 4,
         "searchSimSeconds": {
           "max": 50,
@@ -1197,8 +1242,17 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
+        "hesitationSimSeconds": {
+          "max": 5,
+          "min": 5
+        },
         "investigationDistanceMetres": 8,
+        "loudNoiseRadiusMetres": 30,
+        "refusalLean": 0.75,
+        "refusalSuspicionSimSeconds": 20,
         "searchRadiusMetres": 4,
         "searchSimSeconds": {
           "max": 50,
@@ -1414,8 +1468,17 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
+        "hesitationSimSeconds": {
+          "max": 5,
+          "min": 5
+        },
         "investigationDistanceMetres": 8,
+        "loudNoiseRadiusMetres": 30,
+        "refusalLean": 0.75,
+        "refusalSuspicionSimSeconds": 20,
         "searchRadiusMetres": 4,
         "searchSimSeconds": {
           "max": 50,
@@ -1566,8 +1629,17 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
+        "hesitationSimSeconds": {
+          "max": 5,
+          "min": 5
+        },
         "investigationDistanceMetres": 8,
+        "loudNoiseRadiusMetres": 30,
+        "refusalLean": 0.75,
+        "refusalSuspicionSimSeconds": 20,
         "searchRadiusMetres": 4,
         "searchSimSeconds": {
           "max": 50,
@@ -1721,8 +1793,17 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
+        "hesitationSimSeconds": {
+          "max": 5,
+          "min": 5
+        },
         "investigationDistanceMetres": 8,
+        "loudNoiseRadiusMetres": 30,
+        "refusalLean": 0.75,
+        "refusalSuspicionSimSeconds": 20,
         "searchRadiusMetres": 4,
         "searchSimSeconds": {
           "max": 50,
@@ -1994,8 +2075,17 @@
       "hearing": 1,
       "hearingModel": {
         "bearingErrorRadians": 0.60999999999999999,
+        "chainChance": 0.34999999999999998,
+        "chainRadiusMetres": 8,
         "farMultiplier": 2,
+        "hesitationSimSeconds": {
+          "max": 5,
+          "min": 5
+        },
         "investigationDistanceMetres": 8,
+        "loudNoiseRadiusMetres": 30,
+        "refusalLean": 0.75,
+        "refusalSuspicionSimSeconds": 20,
         "searchRadiusMetres": 4,
         "searchSimSeconds": {
           "max": 50,

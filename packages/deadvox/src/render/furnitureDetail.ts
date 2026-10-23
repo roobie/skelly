@@ -3,7 +3,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { Vec3 } from '../core/coords.ts';
 import type { FurnitureDef } from '../core/schema.ts';
 
-function colouredBox(parts: BoxGeometry[], position: Vec3, size: Vec3, color: Color): void {
+export function colouredBox(parts: BoxGeometry[], position: Vec3, size: Vec3, color: Color): void {
   const geometry = new BoxGeometry(...size).translate(...position);
   const colors = new Float32Array(geometry.getAttribute('position').count * 3);
   for (let i = 0; i < colors.length; i += 3) {
@@ -15,7 +15,21 @@ function colouredBox(parts: BoxGeometry[], position: Vec3, size: Vec3, color: Co
   parts.push(geometry);
 }
 
-type Box = (position: Vec3, size: Vec3, color: Color) => void;
+export type Box = (position: Vec3, size: Vec3, color: Color) => void;
+
+/** One draw object from the coloured parts, which it disposes. */
+export function mergedDetail(parts: BoxGeometry[]): BufferGeometry {
+  const geometry = mergeGeometries(parts, false);
+  for (const part of parts) {
+    part.dispose();
+  }
+  if (!geometry) {
+    throw new Error('could not merge detail');
+  }
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
 
 /** An open frame on a thin back board: hooks hold the barrels, rests on the shelf take the butts. */
 function rackFrame(
@@ -158,14 +172,5 @@ export function furnitureDetail(def: FurnitureDef): BufferGeometry {
     default:
       throw new Error(`unsupported furniture detail: ${kind satisfies never}`);
   }
-  const geometry = mergeGeometries(parts, false);
-  for (const part of parts) {
-    part.dispose();
-  }
-  if (!geometry) {
-    throw new Error('could not merge furniture detail');
-  }
-  geometry.computeBoundingBox();
-  geometry.computeBoundingSphere();
-  return geometry;
+  return mergedDetail(parts);
 }
