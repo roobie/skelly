@@ -56,6 +56,36 @@ const validationLayout = (id: string): SiteLayoutDef => ({
   woodlands: [],
   tracks: [],
 });
+it('admits layout-selected vehicles and rejects missing blueprints or duplicate placement keys', () => {
+  const data = validationLayout('fixture_parking');
+  const blueprint = registry.vehicleBlueprints.keys().next().value!;
+  data.vehicles = [{ blueprint, placementKey: 'fixture.parked', position: [1, 0.5, 1], facing: 'e' }];
+  const vehicleSources = base.filter(({ source }) =>
+    ['vehicles.json', 'models-items.json', 'inventory.json'].includes(source),
+  );
+  const admit = () => buildRegistry([...vehicleSources, { source: 'fixture-parking.json', data: { layouts: [data] } }]);
+  expect(admit().issues).toEqual([]);
+  data.vehicles[0]!.blueprint = 'fixture_missing_blueprint';
+  expect(admit().issues.some(({ path, message }) => path.includes('vehicles') && message.includes('blueprint'))).toBe(
+    true,
+  );
+  data.vehicles[0]!.blueprint = blueprint;
+  data.vehicles.push(structuredClone(data.vehicles[0]!));
+  expect(admit().issues.some(({ message }) => message.includes('duplicate vehicle placement key'))).toBe(true);
+});
+
+it('refuses unsupported repair fixture destinations', () => {
+  const data = validationLayout('fixture_repair_stock');
+  data.fixturePiles = [[2, data.player.position[1], 2]];
+  expect(authoredLayoutIssues(data, registry)).toEqual([]);
+  data.fixturePiles[0]![1] += 1;
+  expect(
+    authoredLayoutIssues(data, registry).some(
+      ([path, message]) => path.includes('fixturePiles') && message.includes('supported'),
+    ),
+  ).toBe(true);
+});
+
 const layoutTemplateIds = new Set(layout.buildings.map(({ template }) => template));
 const layoutZombieIds = new Set(layout.shamblers.map(({ type }) => type));
 const layoutValidationBase = [

@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change the test-house normal or debug-only boundary
   - you change regional paper-map coverage, item ownership or persistence
   - you change held sharpening, blade repair entry points or prepared hand pairs
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
@@ -1007,9 +1008,10 @@ specific sites and their rewards.
 
 Keep the firearm-handling range in the debug test house, not ordinary world
 sites, so test stock cannot become a playable-world loot source. Derive rack
-contents from firearm and ammunition compatibility. The range layout is content, see
-`packages/deadvox/docs/content.md`. See `HandlingRange` in `src/core/range.ts` and
-`testHouseRangeSupply` in `src/game/testHouseRange.ts`.
+contents from firearm and ammunition compatibility rather than maintaining a catalogue.
+See `src/core/range.ts`, `HandlingRange`, and `src/game/testHouseRange.ts`,
+`testHouseRangeSupply`. Every addition must decide its normal or debug-only scope;
+see `docs/test-house.md`, "Normal and debug additions".
 
 ### Loot
 

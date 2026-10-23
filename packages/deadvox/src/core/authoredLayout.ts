@@ -139,6 +139,11 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
       issues.push([path, 'spawn must stand on a supported surface']);
     }
   };
+  layout.fixturePiles?.forEach((position, i) => {
+    const path = `.fixturePiles[${i}]`;
+    checkSpawn([position[0], position[2]], path);
+    supported(position, path);
+  });
   supported(layout.player.position, '.player.position');
   checkSpawn([layout.player.position[0], layout.player.position[2]], '.player.position');
   const authoredHordes = layout.hordes ?? [];

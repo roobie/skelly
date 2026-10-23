@@ -7,7 +7,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { gameMinutes } from '../src/core/time.ts';
 import { startingLoadout } from '../src/game/loadout.ts';
-import { populateTestHouseRepairCorner } from '../src/game/testHouse.ts';
+import { populateTestHouseRepairCorner } from '../src/game/testHouseRepair.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 
@@ -42,12 +42,12 @@ const repairRecipes = [...scenarioRegistry.recipes.values()].filter(
   (recipe) => recipe.kind === 'repair' && !recipe.workstation,
 );
 
-const addRepairCorner = (inventory: Inventory, site: string): void => {
+const addRepairCorner = (inventory: Inventory, site: string, debug = true): void => {
   populateTestHouseRepairCorner({
     inventory,
     registry: scenarioRegistry,
     site,
-    spawn: [-4, 0, -0.5],
+    debug,
     blockSize: 0.5,
   });
 };
@@ -171,8 +171,14 @@ describe('test-house repair corner', () => {
     }
   });
 
+  it('keeps derived repair stock out of normal mode', () => {
+    const inventory = new Inventory(scenarioRegistry);
+    addRepairCorner(inventory, 'testHouse', false);
+    expect(inventory.piles.size).toBe(0);
+  });
+
   it('adds no corner piles to the default or authored sites', () => {
-    const authoredSite = [...scenarioRegistry.layouts.keys()].sort()[0]!;
+    const authoredSite = [...scenarioRegistry.layouts.values()].find((layout) => !layout.fixturePiles?.length)!.id;
     for (const site of ['gauntlet', authoredSite]) {
       const inventory = new Inventory(scenarioRegistry);
       startingLoadout(inventory);
