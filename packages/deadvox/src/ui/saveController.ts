@@ -54,6 +54,8 @@ export const contentLookup = (registry: Registry, kind: SaveContentKind, id: str
       return registry.recipes.has(id);
     case 'scenario':
       return registry.scenarios.has(id);
+    case 'vehicleBlueprint':
+      return registry.vehicleBlueprints.has(id);
     default:
       return false;
   }

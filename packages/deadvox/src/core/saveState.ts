@@ -15,6 +15,7 @@ import type { ScenarioRunState } from './scenarioRun.ts';
 import type { Simulation, SimulationState } from './sim.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundPickerState } from './soundPicker.ts';
+import type { VehicleInstancesState } from './vehicleInstances.ts';
 import type { SavedColumn, World } from './world.ts';
 import type { ZombieSpawner } from './zombieSpawns.ts';
 import type { VocalNoise, ZombieSystem, ZombieSystemState } from './zombies.ts';
@@ -23,6 +24,7 @@ export interface SaveSnapshot {
   world: {
     id: string;
     columns: SavedColumn[];
+    vehicles: VehicleInstancesState;
     zombies: ZombieSystemState;
     spawned: readonly string[];
     rolledColumns: readonly string[];
@@ -117,6 +119,7 @@ export const snapshotSession = ({
     world: {
       id: worldId,
       columns: world.snapshotColumns(blockContentId) as SavedColumn[],
+      vehicles: inventory.vehicles.snapshotState() as VehicleInstancesState,
       zombies: zombies.snapshotState() as ZombieSystemState,
       spawned: [...spawner.snapshotState()],
       rolledColumns: [...rolledColumns],

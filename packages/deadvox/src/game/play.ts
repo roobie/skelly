@@ -175,6 +175,7 @@ import { createSession, type PlayerInputSample } from './session.ts';
 import { Sharpening } from './sharpening.ts';
 import { SpectatorCamera } from './spectatorCamera.ts';
 import { populateTestHouseRepairCorner } from './testHouse.ts';
+import { registerTestHouseVehicles } from './testHouseVehicles.ts';
 import {
   isOrbitResetMovementAction,
   isPlayerFigureWhole,
@@ -816,6 +817,9 @@ export const startPlay = (
     start: config.start,
     spawn: playerStart.position,
     entities: engine.entities,
+    registerVehicles: (owner) => {
+      registerTestHouseVehicles(owner, config.site, engine.spawn.pos[1], s);
+    },
     terrainFloor: (x, z) => engine.groundAt(x * s, z * s) / s,
     ...(options.restore ? { restore: options.restore } : {}),
     ready: (x, z) => streamer.isReady(x, z),
