@@ -74,8 +74,8 @@
       "elapsed": 1
     },
     "core/longAction.ts": {
-      "duration": 4,
-      "elapsed": 6,
+      "duration": 6,
+      "elapsed": 7,
       "strikeInterval": 1
     },
     "core/meleePose.ts": {

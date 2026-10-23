@@ -92,6 +92,7 @@ import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core
 import { simTimestamp } from '../core/time.ts';
 import { spendFuel } from '../core/torch.ts';
 import { VehicleOccupancy } from '../core/vehicleProjection.ts';
+import { vehicleWorkHooks } from '../core/vehicleWork.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
 import { figureSeedPool, zombieFigure } from '../core/zombieFigure.ts';
@@ -805,6 +806,8 @@ export const createSession = (options: SessionOptions) => {
     },
   };
   const reach = bindReach(reachPlayer);
+  inventory.canReachVehicle = (position) =>
+    distanceToPile(body.pos, position, s) <= reachTuning(inventory.registry).reachMetres;
   inventory.landing = (pos) => settleCell(pos, s, scale.minCy * CHUNK, physicalSolid);
   inventory.dropFeet = feet;
   const pileDistance = (pos: Vec3) => distanceToPile(body.pos, pos, s);
@@ -1065,6 +1068,11 @@ export const createSession = (options: SessionOptions) => {
   sim.actions.craft = craftActionHooks(inventory, character, reach, feet);
   sim.actions.reading = bookReadingHooks(inventory, character);
   sim.actions.treatment = playerTreatmentHooks(inventory, sim);
+  sim.actions.vehicleWork = vehicleWorkHooks(inventory, {
+    output: () => ({ kind: 'pile', pos: feet() }),
+    quality: (quality) =>
+      Math.max(0, ...reach().entries.map(({ item }) => registry.items.get(item.type)?.tool?.qualities[quality] ?? 0)),
+  });
   const rest = new RestController(sim, {
     furniture: (uid) => {
       const entity = entities.byUid(uid);
