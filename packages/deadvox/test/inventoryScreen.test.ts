@@ -4,7 +4,7 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 import { Body } from '../src/core/body.ts';
 import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
-import { coreLabel } from '../src/core/coreText.ts';
+import { coreLabel, coreMessage } from '../src/core/coreText.ts';
 import type { WorkOperation, WorkOption } from '../src/core/craftCommands.ts';
 import { planCraft } from '../src/core/crafting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -761,12 +761,31 @@ describe('inventory screen Lit rendering', () => {
             economy: { usage: [], tiers: [] },
             workInProgress: false,
             notLoot: false,
+            ...(role === 'receiver'
+              ? {
+                  light: {
+                    radius: 1,
+                    seenFrom: 1,
+                    color: '#ffffff',
+                    intensity: 1,
+                    liquidFuel: { accepts: ['card_liquid'], microlitresPerGameSecond: 1 },
+                    burning: {
+                      ignition: 'manual',
+                      douse: true,
+                      sprint: 'douse',
+                      stow: 'douse',
+                      drop: 'stay',
+                      relight: true,
+                    },
+                  },
+                }
+              : {}),
             vessel: {
-              capacityMicrolitres: 12,
+              capacityMicrolitres: role === 'source' ? 24 : 12,
               accepts: ['card_liquid'],
               initialContents:
                 role === 'source'
-                  ? { kind: 'filled', liquid: 'card_liquid', volumeMicrolitres: 12 }
+                  ? { kind: 'filled', liquid: 'card_liquid', volumeMicrolitres: 24 }
                   : { kind: 'empty' },
               pour: { incrementMicrolitres: 2, microlitresPerSimSecond: 4 },
             },
@@ -807,7 +826,7 @@ describe('inventory screen Lit rendering', () => {
       const slot = t.root.querySelector<HTMLElement>(`[data-target="reservoir:${receiver.uid}"]`)!;
       const hit = vi.spyOn(document, 'elementsFromPoint').mockImplementation(() => [slot]);
       t.root
-        .querySelector<HTMLElement>(`.inv-item-slot[data-uid="${source.uid}"]`)!
+        .querySelector<HTMLElement>(`.inv-item-slot[data-uid="${source.uid}"], .inv-item[data-uid="${source.uid}"]`)!
         .dispatchEvent(
           new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, clientX: 10, clientY: 10 }),
         );
@@ -826,14 +845,21 @@ describe('inventory screen Lit rendering', () => {
     drag();
     expect(pours).toHaveBeenCalledExactlyOnceWith(source.uid, receiver.uid);
     finish();
-    expect(source.liquidContents).toEqual({ kind: 'empty' });
+    expect(source.liquidContents?.kind).toBe('filled');
     expect(receiver.liquidContents?.kind).toBe('filled');
     expect(readout()).not.toBe(before);
     const filled = t.inv.snapshotState();
     drag();
     expect(pours).toHaveBeenCalledTimes(1);
-    expect(t.refusals).toHaveLength(1);
+    expect(t.refusals).toEqual([coreMessage(t.inv.registry, 'liquidReceiverFull')]);
     expect(t.inv.snapshotState()).toEqual(filled);
+    expect(survival.use(receiver)).toBeUndefined();
+    drag();
+    expect(pours).toHaveBeenCalledTimes(1);
+    expect(t.refusals.at(-1)).toBe(coreMessage(t.inv.registry, 'stillLit'));
+    expect(survival.use(receiver)).toBeUndefined();
+    t.screen.update();
+    expect(t.root.querySelector<HTMLButtonElement>('.inv-pour')!.disabled).toBe(false);
     t.root.querySelector<HTMLButtonElement>('.inv-pour')!.click();
     expect(pours).toHaveBeenLastCalledWith(receiver.uid, source.uid);
     expect(pours).toHaveBeenCalledTimes(2);
@@ -842,6 +868,11 @@ describe('inventory screen Lit rendering', () => {
     expect(source.liquidContents?.kind).toBe('filled');
     expect([t.inv.locate(source), t.inv.locate(receiver)]).toEqual(owners);
     expect(t.inv.move(source, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    drag();
+    expect(pours).toHaveBeenCalledTimes(2);
+    expect(t.refusals.at(-1)).toBe(
+      coreMessage(t.inv.registry, 'notInHands', { item: t.inv.name(source).toLowerCase() }),
+    );
     expect(t.inv.add(t.inv.create(t.beans.type), { kind: 'hand', side: 'left' })).toBe(true);
     t.screen.update();
     const unavailable = t.root.querySelector<HTMLButtonElement>('.inv-pour')!;

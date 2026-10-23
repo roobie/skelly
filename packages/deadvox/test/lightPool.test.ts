@@ -43,6 +43,37 @@ const registryWithTestLights = () => {
 };
 
 describe('made-light point pool', () => {
+  it('renders a fuelled oil lamp in hand and set down, then removes its exhausted source', () => {
+    const inventory = new Inventory(registry);
+    const lamp = inventory.create('oil_lamp');
+    expect(inventory.add(lamp, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(toggleLight(registry, lamp, 0)).toBeUndefined();
+    const pool = new LightPool(new Scene(), FIXTURE_LIMIT);
+    const camera = new PerspectiveCamera();
+    const held = {
+      lightPositionOf: (_item: unknown, out: Vector3) => {
+        out.set(0, 1, 0);
+        return true;
+      },
+    };
+    const update = () => pool.update(inventory, { held, camera, blockSize: 1, daylightScale: 1 });
+    update();
+    expect(pool.lights.some((light) => light.intensity > 0)).toBe(true);
+    expect(inventoryLightSources(inventory, [0, 0, 0], 1.3)).toHaveLength(1);
+    expect(inventory.move(lamp, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    update();
+    expect(pool.lights.some((light) => light.intensity > 0)).toBe(true);
+    expect(inventoryLightSources(inventory, [0, 0, 0], 1.3)).toHaveLength(1);
+    const lasts = Math.ceil(
+      chargeOf(registry, lamp)! / registry.items.get(lamp.type)!.light!.liquidFuel!.microlitresPerGameSecond,
+    );
+    expect(drainLight(registry, lamp, gameSeconds(lasts), lasts)).toBeDefined();
+    expect(lamp.liquidContents).toEqual({ kind: 'empty' });
+    update();
+    expect(pool.lights.every((light) => light.intensity === 0)).toBe(true);
+    expect(inventoryLightSources(inventory, [0, 0, 0], 1.3)).toEqual([]);
+  });
+
   it('pruned sense sources match the full tree after moving, switching and draining lights', () => {
     const fixtureRegistry = { ...registry, items: new Map(registry.items) };
     const base = registry.items.get('glowstick')!;

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Registry } from '../src/core/content.ts';
-import { coreMessage } from '../src/core/coreText.ts';
+import { coreLabel, coreMessage } from '../src/core/coreText.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { type Item, typeWeightGrams } from '../src/core/items.ts';
@@ -154,6 +154,17 @@ const setup = (
 };
 
 describe('using what you hold', () => {
+  it('describes a reservoir lamp by its switch state, not a second battery balance', () => {
+    const t = setup();
+    const lamp = t.hold('oil_lamp', 'right');
+    expect(lamp.slots?.battery).toBeUndefined();
+    expect(registry.items.get(lamp.type)!.light!.power).toBeUndefined();
+    expect(t.survival.describe(lamp)).toEqual([coreLabel(registry, 'lightOffStatus')]);
+    t.hold('matches', 'left');
+    expect(t.survival.use(lamp)).toBeUndefined();
+    expect(t.survival.describe(lamp)).toEqual([coreLabel(registry, 'lightOnStatus')]);
+  });
+
   it('refuses held and quickbar actions while unconscious and permits them after wake', () => {
     const t = setup();
     t.sim.body.impact(1, 'torso', { bleeding: fixtureTier('serious'), shockDamage: 100 });

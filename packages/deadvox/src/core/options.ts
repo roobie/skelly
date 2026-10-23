@@ -276,14 +276,28 @@ export const pourRefusal = (view: ReachSnapshot, sourceUid: number, receiverUid:
   const source = inv.itemByUid(sourceUid);
   const receiver = inv.itemByUid(receiverUid);
   const to = receiver && inv.locate(receiver);
-  return source &&
-    inv.locate(source)?.kind === 'hand' &&
-    defOf(inv.registry, source.type).vessel?.pour &&
-    view.entries.some((entry) => entry.item === receiver) &&
-    (to?.kind === 'hand' || to?.kind === 'pile' || to?.kind === 'furniture') &&
-    inv.planLiquidTransfer(sourceUid, receiverUid).ok
-    ? undefined
-    : coreMessage(inv.registry, 'liquidTransferRefused');
+  if (!(source && receiver && defOf(inv.registry, source.type).vessel?.pour)) {
+    return coreMessage(inv.registry, 'liquidTransferRefused');
+  }
+  if (inv.locate(source)?.kind !== 'hand') {
+    return coreMessage(inv.registry, 'notInHands', { item: inv.name(source).toLowerCase() });
+  }
+  if (
+    !(
+      view.entries.some((entry) => entry.item === receiver) &&
+      (to?.kind === 'hand' || to?.kind === 'pile' || to?.kind === 'furniture')
+    )
+  ) {
+    return coreMessage(inv.registry, 'liquidTransferRefused');
+  }
+  const plan = inv.planLiquidTransfer(sourceUid, receiverUid);
+  if (plan.ok) {
+    return undefined;
+  }
+  if (plan.reason === 'unserviceable' && (source.on || receiver.on)) {
+    return coreMessage(inv.registry, 'stillLit');
+  }
+  return coreMessage(inv.registry, plan.reason === 'full-receiver' ? 'liquidReceiverFull' : 'liquidTransferRefused');
 };
 
 export const otherHandPour = (item: Item, view: ReachSnapshot): UseOption => {

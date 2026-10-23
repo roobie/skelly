@@ -2165,6 +2165,9 @@ to model, and a lamp-only heat system would invent procedure without a meaningfu
 choice. See
 `src/core/liquids.ts`, `planLiquidTransfer`, `src/core/inventory.ts`, `Inventory.transferLiquid`,
 and `src/core/lights.ts`, `drainLight`.
+The reservoir readout owns the measured balance; the lamp's status reports only
+its switch state so the same oil cannot appear to be a second battery supply.
+See `src/game/survival.ts`, `Survival.describe`.
 
 A battery goes into a light only as the player chooses: dropped onto the battery slot
 on the light's card in the inventory, which shows the battery loaded, or used from one

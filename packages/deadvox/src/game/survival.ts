@@ -487,7 +487,9 @@ export class Survival {
       lines.push(`It's ${fresh}`);
     }
     const share = chargeShare(registry, item);
-    if (share !== undefined) {
+    if (def.light?.liquidFuel) {
+      lines.push(coreLabel(registry, item.on ? 'lightOnStatus' : 'lightOffStatus'));
+    } else if (share !== undefined) {
       const state = item.on ? 'on' : 'off';
       lines.push(`${def.igniter ? 'Fuel' : 'Battery'} ${Math.round(share * 100)}%${def.light ? ` · ${state}` : ''}`);
     }
