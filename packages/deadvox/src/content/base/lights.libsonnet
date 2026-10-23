@@ -7,7 +7,7 @@ local batteryBeam(radius, seenFrom, intensity, beam, chargePerGameHour) = {
   color: '#fff1d8',
   intensity: intensity,
   beam: beam,
-  power: { battery: 'aa_battery', chargePerGameHour: chargePerGameHour, swapSimSeconds: 2 },
+  power: { battery: 'aa_battery', compatibleBatteries: ['rechargeable_aa_battery'], chargePerGameHour: chargePerGameHour, swapSimSeconds: 2 },
 };
 
 {

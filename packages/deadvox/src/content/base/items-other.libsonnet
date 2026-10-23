@@ -55,6 +55,16 @@ local spentCase(id, name, weight, description, model) = {
       twoHanded: true,
     },
     {
+      id: 'rechargeable_aa_battery',
+      name: 'Rechargeable AA battery',
+      description: 'A rechargeable AA cell.',
+      category: 'battery',
+      model: 'aa_battery',
+      size: [1, 1],
+      stack: 10,
+      battery: { capacity: 1, rechargeable: { microjoulesPerCharge: 7200000000 } },
+    },
+    {
       id: 'aa_battery',
       name: 'AA battery',
       category: 'battery',

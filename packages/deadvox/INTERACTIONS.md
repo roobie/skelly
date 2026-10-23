@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you change item, recipe, appliance or handling ownership
+  - you change item, recipe, appliance, charging or handling ownership
   - you change compressed long actions, interruption, reading or save behavior
   - you change work-item escrow, salvage or reachability
   - you change how a trap is set, springs, holds or is disarmed
@@ -56,8 +56,21 @@ Only traps inside the block of nine regions around the player spring, and the te
 
 ## Appliances
 
-An appliance is a block entity whose behavior comes from components, not its id. Containers own pockets; controls issue commands; workstations provide recipe qualities; processes run without the player; power joins the electricity graph.
+Appliance processes belong to block entities, not the character's hands or long
+action. Inputs stay in ordinary pockets so cancellation and destruction need no
+second item store. The charging owner uses inventory admission and splitting;
+active ownership prevents withdrawal until stopped or complete. See
+`src/core/batteryChargers.ts`, `BatteryChargers`, and `src/core/inventory.ts`,
+`Inventory.plan`.
 
-A process runs while its chunk is loaded and catches up when it loads again. Settle its state at every rate change before applying the new rate; otherwise unloaded time can disagree with live ticking. Inside the block around the player, test catch-up against ordinary ticking, including a rate change; beyond it, test that the coarse result is deterministic. See [ADR 0008](docs/decisions/0008-deterministic-world.md). The electricity graph is built (`src/core/power.ts`, `PowerNetwork`); appliance controls and unattended processes are still open, so these are their rules, not a description of code.
+Settle old service before changing controls, wiring or ownership so a command
+cannot rewrite past work. Rendering residency must not affect an initialized
+process. Pause on loss of power; completion releases demand at its boundary,
+not at the end of an absence. See `src/core/power.ts`, `PowerWork`, and
+`docs/electricity.md`, "Solar and elapsed time".
 
-Cooking uses a lit workstation when its recipe requires heat. A player craft stops if that requirement is lost; a process owned by an appliance does not occupy the player's hands or require compression.
+Session controls and the appliance panel remain unconnected to the charging
+owner; `src/core/sitePower.ts`, `SitePower`, owns authored building service.
+The core lifecycle boundary is `src/core/batteryChargers.ts`,
+`BatteryChargers.beforeRemove`: callers settle before using the existing
+ruin/drop path so reserved contents are neither lost nor duplicated.

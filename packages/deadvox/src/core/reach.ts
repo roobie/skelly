@@ -216,7 +216,11 @@ export const reach = (player: ReachPlayer): ReachSnapshot => {
     entities: furniture.filter((entity) => entity.searched),
   });
   for (const { item, location } of walkItemTree(roots)) {
-    if (location.kind === 'work' || location.kind === 'slot') {
+    if (
+      location.kind === 'work' ||
+      location.kind === 'slot' ||
+      (location.kind === 'furniture' && location.entity.charging?.batteryUid === item.uid)
+    ) {
       continue;
     }
     entries.push({

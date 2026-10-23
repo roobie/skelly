@@ -237,6 +237,17 @@ breach.breaking(shape.colliding({
       }
     },
     {
+      id: 'battery_charger',
+      name: 'Battery charger',
+      size: [1, 1, 1],
+      color: '#55585b',
+      material: 'steel',
+      shape: [{ position: [0, 0, 0], size: [1, 0.3, 1] }],
+      container: { pockets: [{ grid: [1, 1], handlingSimSeconds: 1 }] },
+      power: { device: 'portable_battery_charger', fuelLitres: 0, enabled: true },
+      charger: { batteries: ['rechargeable_aa_battery'], pocket: 0, efficiency: 0.75 },
+    },
+    {
       "id": "workbench",
       "name": "Workbench",
       "size": [3, 2, 2],

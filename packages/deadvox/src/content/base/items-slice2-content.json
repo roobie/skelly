@@ -618,6 +618,7 @@
         "power": {
           "battery": "aa_battery",
           "chargePerGameHour": 0.25,
+          "compatibleBatteries": ["rechargeable_aa_battery"],
           "swapSimSeconds": 2
         },
         "radius": 20,

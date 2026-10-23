@@ -4,6 +4,7 @@
 // what ticking every second would, and the light goes out when the charge runs out.
 // Swapping in a fresh battery is handling; the old one comes out with what it had left.
 
+import { batteryCharge, batteryEnergy, batteryFields, batteryFits, spentBattery } from './battery.ts';
 import type { BlockEntity } from './blockEntities.ts';
 import { offSide } from './character.ts';
 import type { Registry } from './content.ts';
@@ -197,8 +198,6 @@ const capacityOf = (registry: Registry, batteryType: string): number =>
   defOf(registry, batteryType).battery?.capacity ?? 0;
 
 /** Battery power, if this source takes replaceable batteries. */
-const batteryPowerOf = (registry: Registry, light: Item) => defOf(registry, light.type).light?.power;
-
 /** Charge used per game second by a battery- or self-fuelled light. */
 const drainRateOf = (registry: Registry, light: Item): GameRate | undefined => {
   const spec = defOf(registry, light.type).light;
@@ -209,14 +208,14 @@ const drainRateOf = (registry: Registry, light: Item): GameRate | undefined => {
 export const chargeOf = (registry: Registry, item: Item): number | undefined => {
   const def = defOf(registry, item.type);
   if (def.battery) {
-    return item.charges ?? def.battery.capacity;
+    return batteryCharge(registry, item);
   }
   if (def.canister) {
     return item.charges ?? def.canister.capacity;
   }
   if (def.light?.power) {
     const battery = item.slots?.battery;
-    return battery ? (battery.charges ?? capacityOf(registry, battery.type)) : 0;
+    return battery ? chargeOf(registry, battery) : 0;
   }
   if (def.tool?.fuel) {
     const canister = item.slots?.canister;
@@ -319,12 +318,27 @@ export const drainLight = (
   const lasts = charge / ratePerGameSecond;
   if (lasts > elapsedGameSeconds) {
     if (cell) {
-      cell.charges = charge - ratePerGameSecond * elapsedGameSeconds;
+      const mapping = defOf(registry, cell.type).battery?.rechargeable;
+      if (mapping) {
+        cell.batteryMicrojoules = Math.max(
+          0,
+          batteryEnergy(registry, cell) -
+            Math.ceil(ratePerGameSecond * elapsedGameSeconds * mapping.microjoulesPerCharge),
+        );
+        cell.charges = undefined;
+      } else {
+        cell.charges = charge - ratePerGameSecond * elapsedGameSeconds;
+      }
     }
     return undefined;
   }
   if (cell) {
-    cell.charges = 0;
+    if (defOf(registry, cell.type).battery?.rechargeable) {
+      cell.batteryMicrojoules = 0;
+      cell.charges = undefined;
+    } else {
+      cell.charges = 0;
+    }
   }
   light.on = false;
   return gameSeconds(lasts);
@@ -349,7 +363,7 @@ export const lightInHands = (inventory: Inventory, light: Item): boolean => {
 
 /** Whether a battery fits a light. */
 export const fitsLight = (registry: Registry, light: Item, battery: Item): boolean =>
-  batteryPowerOf(registry, light)?.battery === battery.type;
+  batteryFits(registry, light.type, battery.type);
 
 /**
  * Puts one of `battery` into `light`, in place. The old battery comes out with its
@@ -366,12 +380,7 @@ export const swapBattery = (
   if (!fitsLight(registry, light, battery)) {
     return coreMessage(registry, 'wrongBattery');
   }
-  const oldBattery = light.slots?.battery;
-  const old = oldBattery ? (chargeOf(registry, oldBattery) ?? 0) : 0;
-  const kept = oldBattery && old > 0 ? oldBattery : undefined;
-  if (kept) {
-    kept.charges = old;
-  }
+  const kept = spentBattery(registry, light.slots?.battery);
   const target = kept && spent(kept);
   if (kept) {
     const refusal = putDownRefusal(inventory, kept, target);
@@ -380,9 +389,7 @@ export const swapBattery = (
     }
   }
   const replacement = battery.count > 1 ? inventory.create(battery.type, 1, battery.condition) : battery;
-  if (battery.charges !== undefined) {
-    replacement.charges = battery.charges;
-  }
+  Object.assign(replacement, batteryFields(battery));
   if (!inventory.consume(battery)) {
     return coreMessage(registry, 'batteryGone');
   }

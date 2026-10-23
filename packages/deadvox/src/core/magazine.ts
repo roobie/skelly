@@ -1,5 +1,6 @@
 // A detachable box magazine (`SLICE-3.md`, "Firearms for real"): an item whose model carries gungen's fitted round column.
 // Its cartridges are item state in feed order: index 0 is the top round, the next one fed or stripped.
+import { batteryFits } from './battery.ts';
 import type { ItemDef, ModelDef, Registry } from './content.ts';
 import {
   attachmentIdFor,
@@ -142,11 +143,13 @@ const attachmentSlotsReason = (
 
 const batterySlotReason = (
   registry: Registry,
-  batteryType: string | undefined,
+  lightType: string,
   slots: Readonly<Record<string, { readonly type: string } | undefined>>,
 ): string | undefined => {
-  if (batteryType !== undefined) {
-    return slots.battery?.type === batteryType && registry.items.get(batteryType)?.battery
+  if (registry.items.get(lightType)?.light?.power) {
+    return slots.battery &&
+      batteryFits(registry, lightType, slots.battery.type) &&
+      registry.items.get(slots.battery.type)?.battery
       ? undefined
       : 'A powered light needs its matching battery';
   }
@@ -231,7 +234,7 @@ export const slotsReason = (
     return 'Only a magazine-fed firearm has a magazine slot';
   }
   return (
-    batterySlotReason(registry, batteryType, slots) ??
+    batterySlotReason(registry, type, slots) ??
     canisterSlotReason(registry, canisterType, slots) ??
     slingSlotReason(registry, definition, slots) ??
     lightMountSlotReason(registry, definition, slots) ??
