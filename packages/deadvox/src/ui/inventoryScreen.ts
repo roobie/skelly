@@ -64,7 +64,11 @@ const SHOWN_SLOTS: readonly WearSlot[] = ['shoulder', 'torso', 'vest', 'hands', 
 /** Head-worn slots show only while something is worn there, at the top of the worn panel. */
 const WORN_ONLY_SLOTS: readonly WearSlot[] = ['head', 'eyes'];
 
+import type { ChargerPanel } from './chargerPanel.ts';
+
 export interface ScreenHooks {
+  charger?: (entity: BlockEntity) => ChargerPanel | undefined;
+  chargerRevision?: () => number;
   pictures?: { readonly version: number; picture: (item: Item) => string | undefined } | undefined;
   /** What each wear slot is called; from the core ui content. */
   slotLabels: Readonly<Record<WearSlot, string>>;
@@ -151,6 +155,7 @@ interface PileViewModel {
 }
 
 interface FurnitureViewModel {
+  readonly charger?: ChargerPanel | undefined;
   readonly uid: number;
   readonly label: string;
   readonly searching: boolean;
@@ -548,6 +553,15 @@ const inventoryTemplate = (
           <div class="inv-around-section inv-around-container inv-pile${furniture.targeted ? ' inv-target' : ''}" data-around-section="container" data-entity-uid=${furniture.uid} data-target=${furniture.targeted ? 'true' : 'false'}>
             <div class="inv-pile-label">${furniture.targeted ? '▸ ' : ''}${furniture.label}</div>
             ${furnitureBodyTemplate(furniture, search, text)}
+            ${
+              furniture.charger
+                ? html`<div class="inv-charger" data-charger=${furniture.uid}>
+              <div data-charger-status>${furniture.charger.status}</div>
+              <div>${furniture.charger.remaining}</div>
+              ${furniture.charger.actions.map((action) => html`<button type="button" class="inv-option" data-charger-action=${action.payload.kind} @click=${() => attachmentAction(action.payload)}>${action.label}</button>`)}
+            </div>`
+                : nothing
+            }
           </div>
         `,
         )}
@@ -827,7 +841,7 @@ export class InventoryScreen {
     const characterKey = JSON.stringify(this.hooks.character());
     const needsKey = this.hooks.needs();
     const wakeKey = JSON.stringify(this.hooks.wakeGameHour?.() ?? null);
-    const key = `${this.hooks.pictures?.version}|${this.findQuery}|${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${this.targetUid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}|${wakeKey}`;
+    const key = `${this.hooks.chargerRevision?.()}|${this.hooks.pictures?.version}|${this.findQuery}|${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${this.targetUid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}|${wakeKey}`;
     if (key !== this.drawn) {
       this.drawn = key;
       this.render();
@@ -1260,6 +1274,7 @@ export class InventoryScreen {
         : [];
       return {
         uid: entity.uid,
+        charger: this.hooks.charger?.(entity),
         label: fillText(text.furniture, { name: def.name, distance: this.hooks.entityDistance(entity).toFixed(1) }),
         searching: !entity.searched && this.hooks.searching(entity),
         targeted: entity.uid === this.targetEntity()?.uid,

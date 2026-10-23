@@ -381,6 +381,17 @@ const slottedTable = <K extends string>(slots: Readonly<Record<K, readonly strin
 
 /** Labels and messages the screens under `src/ui` draw. */
 const UiScreenTextSchema = strictObject({
+  charger: slottedTable({
+    idle: [],
+    running: [],
+    noPower: [],
+    ready: [],
+    start: [],
+    stop: [],
+    collect: [],
+    load: ['name'],
+    remaining: ['gameSeconds'],
+  }),
   /** What the HUD options call each element they switch. */
   hudOptionLabels: strictObject({
     stats: Name,

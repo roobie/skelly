@@ -2467,8 +2467,9 @@ cannot be authored, blended or added to without a code change per animation.
   charging network storage as well. An empty rechargeable cell remains worth
   keeping. See `src/core/batteryChargers.ts`, `BatteryChargers`,
   `src/core/battery.ts`, `batteryEnergy`, and `src/core/lights.ts`, `swapBattery`.
-  The core owner is separate from session controls and presentation so electrical
-  conservation can be reviewed without claiming a playable appliance panel.
+  Unattended work must not reserve the player's hands or depend on an open panel;
+  local controls project the world owner instead of driving it. See
+  `src/ui/chargerPanel.ts`, `chargerPanel`, and `src/core/sitePower.ts`, `SitePower`.
 - **Fire** is a world system: burn rate per material, spread to neighbouring
   flammable blocks, smoke and light. Hot zombies and molotovs use the same
   system.

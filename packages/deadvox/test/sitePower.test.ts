@@ -1,5 +1,6 @@
 import { PerspectiveCamera, Scene } from 'three';
 import { describe, expect, it } from 'vitest';
+import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { type PlacedPowerDevice, placedPowerDevices, SitePower } from '../src/core/sitePower.ts';
 import { compileAssembly } from '../src/core/templates.ts';
@@ -74,7 +75,13 @@ describe('authored facility power', () => {
     expect(storeys.length).toBeGreaterThan(1);
     const entry = Math.max(...storeys.map(({ at }) => at[1]));
     expect(supply[0]!.pos[1]).toBeGreaterThan(entry);
-    const grid = new SitePower({ registry, devices: placed, clock: BASE_CLOCK, cycle: BASE_DAY_CYCLE });
+    const grid = new SitePower({
+      registry,
+      inventory: new Inventory(registry),
+      devices: placed,
+      clock: BASE_CLOCK,
+      cycle: BASE_DAY_CYCLE,
+    });
     for (const storey of storeys) {
       const consumers = placed.filter(({ type, pos }) => {
         const spec = registry.furniture.get(type)!.power!;
@@ -82,6 +89,7 @@ describe('authored facility power', () => {
           pos[1] >= storey.at[1] &&
           pos[1] < storey.at[1] + storey.size[1] &&
           spec.enabled &&
+          !registry.furniture.get(type)!.charger &&
           registry.powerDevices.get(spec.device)!.kind === 'consumer'
         );
       });

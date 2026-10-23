@@ -140,7 +140,7 @@ jobs:
         if: ${{ inputs.shard == 'firefox' }}
         timeout-minutes: 2
         run: xvfb-run -a node test/browser/firefox-ui.mjs
-      - name: Firefox inventory-scroll browser contract
+      - name: Firefox inventory-scroll and charger browser contract
         if: ${{ inputs.shard == 'firefox' }}
         timeout-minutes: 1
         run: xvfb-run -a node test/browser/inventory-scroll.mjs firefox
@@ -166,7 +166,7 @@ jobs:
           SAVE_AUTOSAVE_BACKEND: indexeddb
           SAVE_AUTOSAVE_SCENARIO: replacement
         run: xvfb-run -a node test/browser/save-storage.mjs firefox
-      - name: Inventory scroll browser contract (Chromium)
+      - name: Inventory scroll and charger browser contract (Chromium)
         if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 1
         run: node test/browser/inventory-scroll.mjs chromium

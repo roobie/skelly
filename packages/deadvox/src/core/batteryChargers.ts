@@ -160,6 +160,7 @@ export class BatteryChargers implements PowerWork {
     owned.batteryMicrojoules = energy;
     owned.charges = undefined;
     entity.charging = { batteryUid: owned.uid, atGameMilliseconds: this.atGameMilliseconds };
+    this.inventory.version += 1;
     this.network.advance(at);
     return { ok: true };
   }

@@ -48,6 +48,7 @@ import { markInteractionTarget } from '../render/interactionMarker.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
 import { createPlayView } from '../render/playView.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
+import { chargerPanel } from '../ui/chargerPanel.ts';
 import { mountCraftPanel } from '../ui/craftController.ts';
 import { newWorldQuery, showDeath } from '../ui/death.ts';
 import { type ErrorReportContext, setErrorReportContext } from '../ui/errorReport.ts';
@@ -1278,6 +1279,8 @@ export const startPlay = (
   };
 
   const hooks: ScreenHooks = {
+    charger: (entity) => chargerPanel(entity, session.power, session.reach()),
+    chargerRevision: () => Math.floor(sim.time),
     pictures: view.pictures,
     feet,
     reach: session.reach,
@@ -1840,6 +1843,7 @@ export const startPlay = (
   stopReadingOnClose = () => stopReadingPageOnClose(sim);
 
   const replayCommandOwners: ReplayCommandOwners = {
+    charger: session.chargerControl,
     inventory,
     queue,
     quickbar,

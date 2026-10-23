@@ -3456,6 +3456,10 @@
           "weight": 2
         },
         {
+          "item": "rechargeable_aa_battery",
+          "weight": 2
+        },
+        {
           "item": "duct_tape",
           "weight": 1
         },
@@ -27839,7 +27843,7 @@
       "layers": [
         ["FFFF", "FFFF", "...."],
         ["FFFF", "FFFF", "...."],
-        ["....", "....", "...."],
+        ["C...", "....", "...."],
         ["....", "....", "...."],
         ["....", "....", "...."]
       ],
@@ -27851,7 +27855,7 @@
         "layers": [
           ["SSSS", "SSSS", "AAAA"],
           ["SSSS", "SSSS", "AAAA"],
-          ["AAAA", "AAAA", "AAAA"],
+          ["SAAA", "AAAA", "AAAA"],
           ["AAAA", "AAAA", "AAAA"],
           ["AAAA", "AAAA", "AAAA"]
         ]
@@ -27860,6 +27864,9 @@
         ".": {
           "material": "air",
           "role": "opening"
+        },
+        "C": {
+          "furniture": "battery_charger"
         },
         "F": {
           "furniture": "gauntlet_look_bench"
