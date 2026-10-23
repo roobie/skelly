@@ -2849,8 +2849,10 @@ copy. See `src/core/paperMap.ts`, `paperMapAt` and `paperMapBounds`, and
 Paper is a carried source of knowledge, not a permanent atlas unlock or a live
 camera. Its terrain layer samples the baseline generation surface, including
 unvisited places, rather than visited columns or mutable world blocks. Roads need
-a separate public-cartography export; neither layer may show actors, possessions,
-secrets or mutable damage. A one-cell sampling halo preserves hillshade and
+a separate public-cartography export from each generation owner, so that neither
+layer shows actors, possessions, secrets or mutable damage. See
+`src/core/publicCartography.ts`, `PublicCartographicFeature`, and
+`src/core/site.ts`, `Site.publicCartography`. A one-cell sampling halo preserves hillshade and
 contours at the cut, and shared contour levels keep neighbouring sheets aligned.
 A bounded session cache deduplicates renders by world identity, region and render
 configuration; it is disposable presentation work, not saved knowledge. See

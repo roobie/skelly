@@ -1,5 +1,6 @@
 import { type ContourSegments, hillshade as calculateHillshade, marchingSquares } from '../render/siteMap.ts';
 import { type PaperMapCoverage, paperMapBounds } from './paperMap.ts';
+import type { PublicCartographicFeature } from './publicCartography.ts';
 import { type Terrain, worldGroundAt } from './worldgen.ts';
 
 export interface PaperMapRenderConfig {
@@ -24,9 +25,15 @@ interface PaperMapContour {
   readonly segments: ContourSegments;
 }
 
+type PrintedPublicFeature =
+  | Readonly<{ kind: 'road'; bounds: { x0: number; z0: number; x1: number; z1: number } }>
+  | Readonly<{ kind: 'track'; width: number; segments: readonly (readonly [number, number, number, number])[] }>;
+
 export interface PaperMapTerrain {
   readonly coverage: PaperMapCoverage;
   readonly cellMetres: number;
+  /** Explicit public geography, clipped to this sheet; private structures never enter this layer. */
+  readonly publicFeatures: readonly PrintedPublicFeature[];
   /** Exact sheet-boundary samples, in row-major order. */
   readonly heights: Float64Array;
   readonly hillshade: Float32Array;
@@ -68,6 +75,30 @@ const clipSegment = (
   }
   return [x0 + (x1 - x0) * start, z0 + (z1 - z0) * start, x0 + (x1 - x0) * end, z0 + (z1 - z0) * end];
 };
+
+const publicFeaturesFor = (
+  features: readonly PublicCartographicFeature[],
+  bounds: ReturnType<typeof paperMapBounds>,
+): readonly PrintedPublicFeature[] =>
+  features
+    .flatMap((feature): PrintedPublicFeature[] => {
+      if (feature.kind === 'road') {
+        const clipped = {
+          x0: Math.max(feature.bounds.x0, bounds.x0),
+          z0: Math.max(feature.bounds.z0, bounds.z0),
+          x1: Math.min(feature.bounds.x1, bounds.x1),
+          z1: Math.min(feature.bounds.z1, bounds.z1),
+        };
+        return clipped.x0 < clipped.x1 && clipped.z0 < clipped.z1 ? [{ kind: 'road', bounds: clipped }] : [];
+      }
+      const segments = feature.points.slice(1).flatMap((point, index) => {
+        const start = feature.points[index]!;
+        const clipped = clipSegment({ x0: start[0], z0: start[1], x1: point[0], z1: point[1] }, bounds);
+        return clipped ? [[clipped[0]!, clipped[1]!, clipped[2]!, clipped[3]!] as const] : [];
+      });
+      return segments.length === 0 ? [] : [{ kind: 'track', width: feature.width, segments }];
+    })
+    .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
 
 interface ContourInputs {
   readonly samples: Float64Array;
@@ -127,6 +158,7 @@ export const samplePaperMapTerrain = (
   terrain: Pick<Terrain, 'seed' | 'shape' | 'scale' | 'surface'>,
   coverage: PaperMapCoverage,
   config: PaperMapRenderConfig = PAPER_MAP_RENDER_CONFIG,
+  publicCartography: readonly PublicCartographicFeature[] = [],
 ): PaperMapTerrain => {
   const bounds = paperMapBounds(coverage);
   const span = bounds.x1 - bounds.x0;
@@ -162,6 +194,7 @@ export const samplePaperMapTerrain = (
   return {
     coverage: { ...coverage },
     cellMetres: config.cellMetres,
+    publicFeatures: publicFeaturesFor(publicCartography, bounds),
     heights,
     hillshade: shades,
     width: visibleWidth,
