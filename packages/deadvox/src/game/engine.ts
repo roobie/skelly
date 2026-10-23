@@ -7,10 +7,11 @@
 import { DirectionalLight, Group, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
-import { CHUNK, type Vec3 } from '../core/coords.ts';
+import { CHUNK } from '../core/coords.ts';
 import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { skyAt } from '../core/sky.ts';
-import { footprint } from '../core/templates.ts';
+import { authoredSkyBoxes } from '../core/skyField.ts';
+import type { SkyBounds } from '../core/skylight.ts';
 import { ChunkMeshes } from '../render/chunks.ts';
 import { Mood } from '../render/mood.ts';
 import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
@@ -24,6 +25,8 @@ import { createWorldSetup, type WorldSetup } from './worldSetup.ts';
 
 export interface Engine extends WorldSetup {
   skylight?: Skylight;
+  /** The site's sky boxes, which the renderer and the simulation enumerate alike. */
+  skyBoxes: readonly SkyBounds[];
   renderer?: WebGLRenderer;
   scene: Scene;
   camera: PerspectiveCamera;
@@ -93,18 +96,7 @@ export function createEngine(
   scene.add(meshes.group);
   // Chunk meshes are culled against their tight boxes, after three.js has updated the camera.
   const { site } = worldSetup;
-  const placements = site?.authoredPlacements ?? [];
-  const boxes = placements.map((placement) => {
-    const [width, depth] = footprint(placement);
-    return {
-      min: [...placement.origin] as Vec3,
-      max: [
-        placement.origin[0] + width,
-        placement.origin[1] + placement.template.size[1],
-        placement.origin[2] + depth,
-      ] as Vec3,
-    };
-  });
+  const boxes = authoredSkyBoxes(site?.authoredPlacements ?? []);
   const skylight =
     boxes.length > 0
       ? new Skylight(
@@ -155,6 +147,7 @@ export function createEngine(
   return {
     ...worldSetup,
     ...(skylight ? { skylight } : {}),
+    skyBoxes: boxes,
     ...(renderer ? { renderer } : {}),
     scene,
     camera,
