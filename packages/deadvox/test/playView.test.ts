@@ -17,6 +17,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import { inventoryLightSources, toggleLight } from '../src/core/lights.ts';
 import type { Body } from '../src/core/physics.ts';
 import { raycast } from '../src/core/raycast.ts';
+import type { PoweredLight } from '../src/core/sitePower.ts';
 import { skyAt } from '../src/core/sky.ts';
 import { SkyFields } from '../src/core/skyField.ts';
 import type { SkyBounds } from '../src/core/skylight.ts';
@@ -25,6 +26,7 @@ import { buildSkyResult, type SkyResult } from '../src/core/skyTransport.ts';
 import type { Engine } from '../src/game/engine.ts';
 import { ThirdPersonOrbit } from '../src/game/thirdPersonOrbit.ts';
 import { flashlightDaylightScale } from '../src/render/flashlight.ts';
+import { ITEM_POINT_LIGHTS } from '../src/render/lightPool.ts';
 import { createPlayView } from '../src/render/playView.ts';
 import { Skylight } from '../src/render/skylight.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -130,7 +132,7 @@ function populateNearWall(owner: ReturnType<typeof skyWorldFixture>): void {
   }
 }
 
-function litWorld(geometry: 'doorway' | 'near-wall') {
+function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readonly PoweredLight[] = () => []) {
   const box = litBounds[geometry];
   const owner = skyWorldFixture([box]);
   if (geometry === 'doorway') {
@@ -191,7 +193,7 @@ function litWorld(geometry: 'doorway' | 'near-wall') {
     },
     shadows: { torchOn: true, restore: vi.fn(), attachTorches: vi.fn() },
   } as unknown as Engine;
-  const view = createPlayView(engine, inventory, vi.fn(), { page: new EventTarget() });
+  const view = createPlayView(engine, inventory, vi.fn(), { page: new EventTarget(), poweredLights });
   const daylight = skyAt(12, BASE_DAY_CYCLE);
   const updateFrame = () => {
     view.updateHeld(0, restingHands, flashlight);
@@ -244,8 +246,10 @@ it('renders a hand beam and a worn beam together while both contribute to zombie
 });
 
 const RECEIVER_SCALE = /getSpotLightInfo\([^;]+\);\s*directLight.color \*= ([^;]+);/;
+const FIXTURE_RECEIVER_SCALE =
+  /getPointLightInfo\([^;]+\);\s*#if UNROLLED_LOOP_INDEX >= \d+\s*directLight.color \*= ([^;]+);/;
 
-function receiverLighting(f: ReturnType<typeof litWorld>, target: Vec3) {
+function receiverLighting(f: ReturnType<typeof litWorld>, target: Vec3, patched = RECEIVER_SCALE) {
   const material = new MeshLambertMaterial();
   const geometry = new BoxGeometry();
   const mesh = new Mesh(geometry, material);
@@ -258,15 +262,16 @@ function receiverLighting(f: ReturnType<typeof litWorld>, target: Vec3) {
   };
   material.onBeforeCompile(shader as never, null as never);
   try {
-    const expression = RECEIVER_SCALE.exec(shader.fragmentShader)?.[1];
+    const expression = patched.exec(shader.fragmentShader)?.[1];
     if (!expression) {
-      throw new Error('Skylight did not patch spotlight receiver attenuation');
+      throw new Error('Skylight did not patch receiver attenuation');
     }
     // Execute the emitted scalar GLSL with the CPU sample of the same published field.
     const scale = Number(
       runInNewContext(expression.replaceAll('float(', 'Number(').replaceAll('pow(', 'Math.pow('), {
         uSkyDaylight: shader.uniforms.uSkyDaylight!.value,
         receiverSkyVisibility: f.sky.at(target),
+        receiverSkyFade: f.sky.at(target, 'unfurnished'),
       }),
     );
     return { scale, shader: shader.fragmentShader };
@@ -345,7 +350,9 @@ describe('play presentation ownership', () => {
       expect(f.owner.knownOpaque(...(target.map((axis) => Math.floor(axis / 0.5)) as Vec3))).toBe(false);
       expect(f.sky.at(target)).toBeLessThan(f.sky.at(cameraPosition));
       const receiver = receiverLighting(f, target);
-      expect(receiver.shader).toContain('float receiverSkyVisibility = skyVisibility(receiverSkyUnbuilt);');
+      expect(receiver.shader).toContain('vec2 receiverSky = skyVisibility(receiverSkyUnbuilt);');
+      expect(receiver.shader).toContain('float receiverSkyVisibility = receiverSky.x;');
+      expect(receiver.shader).toContain('float receiverSkyFade = receiverSky.y;');
       expect(receiver.shader).toContain('irradiance *= receiverSkyVisibility;');
       expect(f.view.flashlight.daylightScale * receiver.scale).toBeGreaterThan(
         flashlightDaylightScale(f.daylight) * 10,
@@ -396,6 +403,45 @@ describe('play presentation ownership', () => {
 
       expect(first.pointLights).toHaveLength(1);
       expect(second.pointLights).toEqual(first.pointLights);
+    } finally {
+      f.cleanup();
+    }
+  });
+
+  it("keeps a ceiling fixture's light on a fixed surface unchanged when only the camera moves", () => {
+    let fixtureBlock: Vec3 = [0, 0, 0];
+    const f = litWorld('doorway', () => [{ pos: fixtureBlock, color: '#ffffff', intensity: 10, radius: 8 }]);
+    try {
+      const sunlit = f.engine.camera.position.toArray() as Vec3;
+      const direction = f.engine.camera.getWorldDirection(new Vector3()).toArray() as Vec3;
+      const hit = raycast(
+        sunlit.map((axis) => axis / 0.5) as Vec3,
+        direction,
+        f.view.flashlight.light.distance / 0.5,
+        f.owner.knownOpaque,
+      );
+      expect(hit).toBeDefined();
+      const shaded = new Vector3(...sunlit)
+        .addScaledVector(new Vector3(...direction), hit!.distance * 0.5)
+        .addScaledVector(new Vector3(...hit!.normal), 0.25)
+        .toArray() as Vec3;
+      // The fixture hangs just above the receiving spot, which is also where the camera moves to.
+      fixtureBlock = shaded.map((axis, i) => axis / 0.5 + (i === 1 ? 1 : 0)) as Vec3;
+      const target = shaded;
+      // Without a daylight difference between the two camera spots, the test would pass vacuously.
+      const cameraScale = (at: Vec3) => flashlightDaylightScale(f.daylight, f.sky.at(at));
+      expect(cameraScale(shaded) / cameraScale(sunlit)).toBeGreaterThan(2);
+      const fixtureOnTarget = () => {
+        f.updateFrame();
+        const slots = f.view.lightPool.lights.slice(ITEM_POINT_LIGHTS).filter((light) => light.intensity > 0);
+        expect(slots).toHaveLength(1);
+        return slots[0]!.intensity * receiverLighting(f, target, FIXTURE_RECEIVER_SCALE).scale;
+      };
+      const fromSunlit = fixtureOnTarget();
+      f.engine.camera.position.set(...shaded);
+      const fromShaded = fixtureOnTarget();
+      expect(fromSunlit).toBeGreaterThan(0);
+      expect(fromShaded / fromSunlit).toBeCloseTo(1);
     } finally {
       f.cleanup();
     }

@@ -43,6 +43,9 @@ local crouch = {
         throwStanceDropHoldRealSeconds: 0.5,
         wornLightToggleHoldRealSeconds: 0.5,
         renderedBeamLimit: 2,
+        // Lights a room the size of the test-house garage, with its strip lights and lamp, all at once, so walking
+        // around never swaps which fixture is dark. Each slot adds light work to every lit pixel.
+        renderedFixtureLimit: 8,
         throwArmSpeedMetresPerRealSecond: 9,
         throwArmEnergyJoules: 60,
         groundLight: { senseHeightMetres: 0.075, renderLiftMetres: 0.4 },

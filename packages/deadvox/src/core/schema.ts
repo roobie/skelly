@@ -3711,6 +3711,8 @@ const SenseSchema = strictObject({
     throwStanceDropHoldRealSeconds: Positive,
     wornLightToggleHoldRealSeconds: Positive,
     renderedBeamLimit: pipe(Count, minValue(2)),
+    /** Powered fixtures drawn as lights at once, nearest the camera first; the rest stay dark. */
+    renderedFixtureLimit: pipe(Count, minValue(1)),
     throwArmSpeedMetresPerRealSecond: Positive,
     throwArmEnergyJoules: Positive,
     /**

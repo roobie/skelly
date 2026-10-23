@@ -268,7 +268,7 @@ export const createPlayView = (
     spillSwitchFromSearch(globalThis.location?.search ?? ''),
   );
   let cameraDaylightScale = 1;
-  const lightPool = new LightPool(scene, held.warmUpTarget.scene);
+  const lightPool = new LightPool(scene, lightTuning.renderedFixtureLimit, held.warmUpTarget.scene);
   engine.shadows?.attachTorches(flashlight.lights);
   scene.add(piles.group, vehicles.group, furniture.group, playerMeshes.group, modelMaterialWarmUp(true));
   const avatarStudy = createAvatarStudy(scene, config.debug, s, models);
@@ -529,6 +529,7 @@ export const createPlayView = (
         camera,
         blockSize: s,
         daylightScale: cameraDaylightScale,
+        fixtureDaylightScale: engine.skylight ? 1 : cameraDaylightScale,
         fixtures: poweredLights(),
       });
       updateFlare(nightVision, dt);

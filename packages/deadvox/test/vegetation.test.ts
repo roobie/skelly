@@ -47,6 +47,7 @@ const senseTuning = {
     throwStanceDropHoldRealSeconds: 1,
     wornLightToggleHoldRealSeconds: 1,
     renderedBeamLimit: 3,
+    renderedFixtureLimit: 4,
     throwArmSpeedMetresPerRealSecond: 6,
     throwArmEnergyJoules: 20,
     groundLight: { senseHeightMetres: 0.075, renderLiftMetres: 0.4 },

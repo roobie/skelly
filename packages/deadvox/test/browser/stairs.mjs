@@ -128,15 +128,15 @@ const vite = await createServer({
         if (hasSkyControl && id.endsWith('/src/render/skylight.ts')) {
           // Test-only reference: identical scene with diffuse sky visibility forced to one.
           assert.ok(code.includes('shader.uniforms.uSkyVolume = this.texture;'));
-          assert.ok(code.includes('float skyVisibility(out bool unbuilt) {'));
+          assert.ok(code.includes('vec2 skyVisibility(out bool unbuilt) {'));
           return code
             .replace(
               'shader.uniforms.uSkyVolume = this.texture;',
               'shader.uniforms.uSkyVolume = this.texture;\nshader.uniforms.uSkyProofControl = (globalThis.skyProofControl ??= {value:0});',
             )
             .replace(
-              'float skyVisibility(out bool unbuilt) {',
-              'uniform float uSkyProofControl;\nfloat skyVisibility(out bool unbuilt) {\n  if (uSkyProofControl > 0.5) { unbuilt = false; return 1.0; }',
+              'vec2 skyVisibility(out bool unbuilt) {',
+              'uniform float uSkyProofControl;\nvec2 skyVisibility(out bool unbuilt) {\n  if (uSkyProofControl > 0.5) { unbuilt = false; return vec2(1.0); }',
             );
         }
         if (!id.endsWith('/src/game/play.ts')) {
