@@ -1418,6 +1418,12 @@ const VesselSchema = strictObject({
   capacityMicrolitres: pipe(LiquidVolumeMicrolitres, minValue(1)),
   accepts: pipe(array(Id), nonEmpty()),
   initialContents: LiquidContentsSchema,
+  pour: optional(
+    strictObject({
+      incrementMicrolitres: pipe(LiquidVolumeMicrolitres, minValue(1)),
+      microlitresPerSimSecond: pipe(Positive, finite()),
+    }),
+  ),
 });
 
 export type LiquidContents = InferOutput<typeof LiquidContentsSchema>;

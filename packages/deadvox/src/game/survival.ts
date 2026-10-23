@@ -180,7 +180,69 @@ export class Survival {
       }
       return swapCanister(this.inventory, tool, canister, this.hooks.feet);
     });
+    this.queue.registerAction('survival.pour', (params): string | undefined => {
+      const sourceUid = numberParam(params, 'sourceUid');
+      const receiverUid = numberParam(params, 'receiverUid');
+      const reason = this.pourRefusal(sourceUid, receiverUid);
+      if (reason) {
+        return reason;
+      }
+      const result = this.inventory.transferLiquid(sourceUid, receiverUid, numberParam(params, 'limitMicrolitres'));
+      if (!result.ok) {
+        return coreMessage(this.inventory.registry, 'liquidTransferRefused');
+      }
+      if (!this.pourRefusal(sourceUid, receiverUid)) {
+        this.enqueuePour(sourceUid, receiverUid, 'next');
+      }
+      return undefined;
+    });
     sim.scheduler.register({ id: 'lights', rate: 1, maxStep: 30, tick: (dt) => this.tickLights(dt) });
+  }
+
+  pourRefusal(sourceUid: number, receiverUid: number): string | undefined {
+    if (this.sim.body.actionRefusal) {
+      return this.sim.body.actionRefusal;
+    }
+    const source = this.inventory.itemByUid(sourceUid);
+    const receiver = this.inventory.itemByUid(receiverUid);
+    const to = receiver && this.inventory.locate(receiver);
+    const reachable = receiver && this.hooks.reach().entries.some((entry) => entry.item === receiver);
+    if (
+      !source ||
+      this.handOf(source) === undefined ||
+      !defOf(this.inventory.registry, source.type).vessel?.pour ||
+      !reachable ||
+      !(to?.kind === 'hand' || to?.kind === 'pile' || to?.kind === 'furniture') ||
+      !this.inventory.planLiquidTransfer(sourceUid, receiverUid).ok
+    ) {
+      return coreMessage(this.inventory.registry, 'liquidTransferRefused');
+    }
+    return undefined;
+  }
+
+  pour(sourceUid: number, receiverUid: number): string | undefined {
+    const reason = this.pourRefusal(sourceUid, receiverUid);
+    if (reason) {
+      return reason;
+    }
+    this.enqueuePour(sourceUid, receiverUid, 'last');
+    return undefined;
+  }
+
+  private enqueuePour(sourceUid: number, receiverUid: number, position: 'last' | 'next'): void {
+    const source = this.inventory.itemByUid(sourceUid)!;
+    const tuning = defOf(this.inventory.registry, source.type).vessel!.pour!;
+    const plan = this.inventory.planLiquidTransfer(sourceUid, receiverUid, tuning.incrementMicrolitres);
+    if (!plan.ok) {
+      return;
+    }
+    const enqueue = position === 'next' ? 'enqueueNextAction' : 'enqueueAction';
+    this.queue[enqueue](
+      'survival.pour',
+      coreLabel(this.inventory.registry, 'pour'),
+      plan.volumeMicrolitres / tuning.microlitresPerSimSecond,
+      { sourceUid, receiverUid, limitMicrolitres: plan.volumeMicrolitres },
+    );
   }
 
   snapshotState(): Readonly<{ litUid?: number }> {

@@ -13,6 +13,7 @@ local lights = import 'lights.libsonnet';
       "model": "lamp_oil_bottle",
       vessel: {
         capacityMicrolitres: 500000,
+        pour: { incrementMicrolitres: 10000, microlitresPerSimSecond: 50000 },
         accepts: ['lamp_fuel'],
         initialContents: { kind: 'filled', liquid: 'lamp_fuel', volumeMicrolitres: 500000 },
       }

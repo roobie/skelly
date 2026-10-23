@@ -6,6 +6,7 @@ import { type DownedBodyWay, isDownedBodyWay } from './downedBody.ts';
 import { QUICKBAR_SLOTS, type Quickbar } from './quickbar.ts';
 
 export type ReplayActionPayload =
+  | { kind: 'liquid.pour'; sourceUid: number; receiverUid: number }
   | { kind: 'inventory.move'; itemUid: number; target: TargetState; count: number }
   | { kind: 'inventory.to-hands'; itemUid: number; feet: [number, number, number] }
   | { kind: 'item.pickup'; itemUid: number; mode: 'pocket' | 'wield'; feet: [number, number, number] }
@@ -84,6 +85,9 @@ const isAttachmentPayload = (payload: Record<string, unknown>): boolean =>
   typeof payload.slotId === 'string' &&
   (payload.kind !== 'firearm.attachment.fit' || isUid(payload.attachmentUid));
 
+const isPourPayload = (payload: Record<string, unknown>): boolean =>
+  isUid(payload.sourceUid) && isUid(payload.receiverUid);
+
 const isPowerPayload = (payload: Record<string, unknown>): boolean =>
   isUid(payload.entityUid) && typeof payload.enabled === 'boolean';
 
@@ -106,6 +110,8 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
   }
   const payload = value as Record<string, unknown>;
   switch (payload.kind) {
+    case 'liquid.pour':
+      return isPourPayload(payload);
     case 'inventory.move':
       return (
         isUid(payload.itemUid) &&
@@ -190,6 +196,7 @@ export interface ReplayCommandOwners {
   charger?: (entityUid: number, operation: 'start' | 'stop') => string | undefined;
   power?: (entityUid: number, enabled: boolean) => string | undefined;
   work: (itemUid: number, operation: WorkOperation) => string | undefined;
+  pour?: (sourceUid: number, receiverUid: number) => string | undefined;
   fitAttachment?: (firearmUid: number, slotId: string, attachmentUid: number) => string | undefined;
   removeAttachment?: (firearmUid: number, slotId: string) => string | undefined;
   toHands: (itemUid: number, feet: [number, number, number]) => string | undefined;
@@ -220,6 +227,8 @@ export const applyReplayActionPayload = (
   owners: ReplayCommandOwners,
 ): string | undefined => {
   switch (payload.kind) {
+    case 'liquid.pour':
+      return owners.pour?.(payload.sourceUid, payload.receiverUid);
     case 'inventory.move': {
       const item = owners.inventory.itemByUid(payload.itemUid);
       const target = owners.inventory.resolveTarget(payload.target);

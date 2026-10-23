@@ -19,6 +19,10 @@
           "kind": "filled",
           "liquid": "lamp_fuel",
           "volumeMicrolitres": 500000
+        },
+        "pour": {
+          "incrementMicrolitres": 10000,
+          "microlitresPerSimSecond": 50000
         }
       },
       "weight": 100,
