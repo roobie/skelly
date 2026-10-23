@@ -128,7 +128,7 @@ export interface VehicleWorkStart {
   vehicleId: number;
   fittingId: string;
   itemUid: number;
-  duration: number;
+  durationSimSeconds: number;
 }
 export interface LongActionState {
   job: LongJob | null;
@@ -565,7 +565,13 @@ export class LongActions {
     };
     return undefined;
   }
-  beginVehicleWork({ kind, vehicleId, fittingId, itemUid, duration }: VehicleWorkStart): string | undefined {
+  beginVehicleWork({
+    kind,
+    vehicleId,
+    fittingId,
+    itemUid,
+    durationSimSeconds: duration,
+  }: VehicleWorkStart): string | undefined {
     const actionRefusal = this.bodyActionRefusal();
     if (actionRefusal) {
       return actionRefusal;

@@ -171,9 +171,12 @@ export const createPlayView = (
   {
     page = globalThis,
     poweredLights = () => [],
+    physicalSolid = engine.isSolid,
   }: {
     page?: Pick<EventTarget, 'addEventListener'>;
     poweredLights?: () => readonly PoweredLight[];
+    /** The session's physical query, with parked vehicles, for corpses, the camera and flare occlusion. */
+    physicalSolid?: (x: number, y: number, z: number) => boolean;
   } = {},
 ) => {
   const { config, registry, renderer, meshes, scene, camera, mood, shadows } = engine;
@@ -265,7 +268,7 @@ export const createPlayView = (
     spillSwitchFromSearch(globalThis.location?.search ?? ''),
   );
   let cameraDaylightScale = 1;
-  const lightPool = new LightPool(scene, held.warmUpTarget.scene);
+  const lightPool = new LightPool(scene, lightTuning.renderedFixtureLimit, held.warmUpTarget.scene);
   engine.shadows?.attachTorches(flashlight.lights);
   scene.add(piles.group, vehicles.group, furniture.group, playerMeshes.group, modelMaterialWarmUp(true));
   const avatarStudy = createAvatarStudy(scene, config.debug, s, models);
@@ -285,7 +288,7 @@ export const createPlayView = (
           bloodiness: (zombie) => gore.severity(zombie),
         })
       : new ZombieMeshes(s, undefined, meshes);
-  zombieMeshes.setWorld?.(engine.isSolid, s);
+  zombieMeshes.setWorld?.(physicalSolid, s);
   scene.add(zombieMeshes.group);
   const cameraStepOffset = new StepOffset(playerTuning(registry).stepHeight);
   const damageFeedback = new DamageFeedback(look.damageFeedback);
@@ -318,7 +321,7 @@ export const createPlayView = (
       eye: steppedEye,
       yaw,
       blockSize: s,
-      isSolid: engine.isSolid,
+      isSolid: physicalSolid,
       ...(orbit ? { orbit } : {}),
     });
     camera.position.set(cx * s, cy * s, cz * s);
@@ -347,7 +350,7 @@ export const createPlayView = (
     pool: lightPool,
     fireballs: () => blastFlashes.fireballs(),
     camera,
-    isSolid: engine.isSolid,
+    isSolid: physicalSolid,
     blockSize: s,
   });
 
@@ -526,6 +529,7 @@ export const createPlayView = (
         camera,
         blockSize: s,
         daylightScale: cameraDaylightScale,
+        fixtureDaylightScale: engine.skylight ? 1 : cameraDaylightScale,
         fixtures: poweredLights(),
       });
       updateFlare(nightVision, dt);

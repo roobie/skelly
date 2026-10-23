@@ -10,6 +10,7 @@ import { type DisplayItem, displayItems } from '@skelly/engine/shapes/display.ts
 import { type Obb, worldBox } from '@skelly/engine/shapes/geometry.ts';
 import { displayBevel, meshForSolid, meshForSolidGroup } from '@skelly/engine/shapes/mesh.ts';
 import type { Solid } from '@skelly/engine/shapes/solid.ts';
+import { type MaterialDef, surfaceOf } from '@skelly/thing-core/materials';
 import { resolveAppearance, solidColor, srgbToHex } from '@skelly/thing-export/appearance.ts';
 import type { AppearanceContext, Palette } from '@skelly/thing-export/exportTypes.ts';
 import type * as Three from 'three';
@@ -42,7 +43,9 @@ type ThreeRuntime = Pick<
   | 'Matrix4'
   | 'Mesh'
   | 'MeshBasicMaterial'
+  | 'MeshPhysicalMaterial'
   | 'MeshStandardMaterial'
+  | 'SRGBColorSpace'
   | 'Vector3'
 >;
 
@@ -123,6 +126,29 @@ const renderedItems = ({
   });
 };
 
+/**
+ * A finish-mode surface draws its material's see-through and sheen as deadvox does, so glass reads as glass where
+ * it is authored. Diagnostic colouring stays opaque, because it shows roles and failures, not the finish.
+ */
+const surfaceMaterial = (
+  three: ThreeRuntime,
+  finish: MaterialDef['finish'],
+  asFinished: boolean,
+  base: Three.MeshStandardMaterialParameters,
+): Three.MeshStandardMaterial => {
+  if (!asFinished) {
+    return new three.MeshStandardMaterial(base);
+  }
+  const { opacity, transparent, depthWrite, sheen } = surfaceOf(finish);
+  const surface = { ...base, opacity, transparent, depthWrite };
+  if (!sheen) {
+    return new three.MeshStandardMaterial(surface);
+  }
+  const material = new three.MeshPhysicalMaterial({ ...surface, sheen: 1, sheenRoughness: sheen.roughness });
+  material.sheenColor.setRGB(...sheen.colour, three.SRGBColorSpace);
+  return material;
+};
+
 /** Which parts, ports and keep-outs the given issues point at. */
 const highlights = (issues: readonly Issue[]) => ({
   parts: new Set(issues.flatMap((i) => i.parts)),
@@ -193,7 +219,7 @@ export function buildLayers(
       const smooth = s.kind === 'revolved';
       const mesh = new three.Mesh(
         geometry,
-        new three.MeshStandardMaterial({
+        surfaceMaterial(three, appearance.finish, colorMode === 'finish' && !failing, {
           color,
           flatShading: !smooth,
           roughness: appearance.finish.roughness,

@@ -398,6 +398,17 @@ const UiScreenTextSchema = strictObject({
     load: ['name'],
     remaining: ['gameSeconds'],
   }),
+  /** The opened vehicle: its parts, empty service sites and service work. */
+  vehicle: slottedTable({
+    inspect: ['key', 'vehicle'],
+    heading: ['vehicle', 'distance'],
+    empty: ['site'],
+    remove: [],
+    install: ['part'],
+    noPart: [],
+    removing: ['part'],
+    installing: ['part'],
+  }),
   /** What the HUD options call each element they switch. */
   hudOptionLabels: strictObject({
     stats: Name,
@@ -1570,6 +1581,8 @@ const VehicleFittingSchema = strictObject({
   /** Requirements for servicing this site; omitted sites are not player-serviceable. */
   service: optional(
     strictObject({
+      /** What the opened vehicle calls this site while it is empty. */
+      name: Name,
       mount: Id,
       durationSimSeconds: PositiveSimSeconds,
       qualities: record(Id, QualityLevel),
@@ -3729,6 +3742,8 @@ const SenseSchema = strictObject({
     throwStanceDropHoldRealSeconds: Positive,
     wornLightToggleHoldRealSeconds: Positive,
     renderedBeamLimit: pipe(Count, minValue(2)),
+    /** Powered fixtures drawn as lights at once, nearest the camera first; the rest stay dark. */
+    renderedFixtureLimit: pipe(Count, minValue(1)),
     throwArmSpeedMetresPerRealSecond: Positive,
     throwArmEnergyJoules: Positive,
     /**

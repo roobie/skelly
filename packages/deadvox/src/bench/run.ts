@@ -25,7 +25,7 @@ import type { StreamerStats } from '../game/streamer.ts';
 import { flashlightDaylightScale } from '../render/flashlight.ts';
 import { MobActorMeshes } from '../render/mobActors.ts';
 import { applySky } from '../render/sky.ts';
-import { BENCH_LIGHT_COUNTS, benchFlareSourcesFromUrl, createBenchLightFixture } from './lightFixture.ts';
+import { benchFlareSourcesFromUrl, createBenchLightFixture } from './lightFixture.ts';
 import {
   type BenchConfig,
   type BenchRecord,
@@ -220,7 +220,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
             active: lightFixture.activeCount(),
             carried: lightFixture.carried,
             dropped: lightFixture.dropped,
-            pointLightSlots: BENCH_LIGHT_COUNTS.pointLights,
+            pointLightSlots: lightFixture.lightPool.size,
             shamblers: shamblerCount,
             actors: 'detailed',
             settings: Object.fromEntries(

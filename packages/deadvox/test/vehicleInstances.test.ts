@@ -71,7 +71,7 @@ const wheelWork = (runtime: ReturnType<typeof createRuntime>, placementKey: stri
     vehicleId: id,
     fittingId: fitting.id,
     itemUid: item.uid,
-    duration: service.durationSimSeconds,
+    durationSimSeconds: service.durationSimSeconds,
   });
   if (refusal) {
     throw new Error(refusal);
@@ -350,6 +350,17 @@ describe('production vehicle ownership', () => {
         ({ item }) => item.uid === work.item.uid,
       ),
     ).toHaveLength(1);
+  });
+
+  it('refuses to start removing a fitting another part rests on, spending no work time', () => {
+    const runtime = createRuntime();
+    const work = wheelWork(runtime, 'fixture.loaded-strut', 'remove');
+    runtime.sim.actions.cancel();
+    const strut = runtime.inventory.vehicles.get(work.id)!.fittings.find(({ id }) => id === 'front_strut_near')!;
+
+    expect(runtime.session.beginVehicleWork('remove', work.id, strut.id, strut.item.uid)).toBeDefined();
+    expect(runtime.sim.actions.snapshotState().job).toBeNull();
+    expect(runtime.inventory.locate(strut.item)).toMatchObject({ kind: 'vehicle', fittingId: strut.id });
   });
 
   it('repeated testHouse registration after restore preserves saved missing parts and placement identity', async () => {

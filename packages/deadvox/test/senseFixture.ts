@@ -19,6 +19,7 @@ export const TEST_SENSE_TUNING: SenseDef = {
     throwStanceDropHoldRealSeconds: 1,
     wornLightToggleHoldRealSeconds: 1,
     renderedBeamLimit: 3,
+    renderedFixtureLimit: 4,
     throwArmSpeedMetresPerRealSecond: 6,
     throwArmEnergyJoules: 20,
   },

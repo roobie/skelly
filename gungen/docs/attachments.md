@@ -4,6 +4,7 @@ read_if:
   - you add a muzzle device or change what a muzzle accepts
   - you change authored attachment mass or its ownership
   - you preview fitted attachments in the viewer
+  - you change an attachment's default look or how an instance's finish overrides it
 ---
 
 # Attachment exports
@@ -21,10 +22,25 @@ See `src/gun/physical.ts`, `gunModelParts`; `src/gun/physical.jsonnet`, `partMas
 `packages/deadvox/src/core/items.ts`, `typeWeightGrams`. Geometric centres are estimates,
 not a source of mass; see `packages/thing-export/src/physical.ts`, `partProperties`.
 
+## Looks
+
 Item appearance belongs to the attachment instance rather than its host so the same item
 can keep its own finish across firearms without changing its physical inputs; see
 `src/gun/attachments.ts`, `attachmentInstanceForId`, and
 `packages/thing-export/src/glb.ts`, `exportGlb`.
+
+Every attachment's default look is its product's authored finish in `src/gun/appearance.jsonnet`,
+`attachments`, and an instance's own finish sits over it slot by slot, so an instance that sets
+nothing, or varies one slot, keeps the product's other slots: a suppressor instance with an empty
+finish wears the product's black metal, not the suppressor role's stainless, and an optic instance
+that varies its metal keeps its lens coating. A slot neither sets falls to the role's finish in the
+gun palette. See `src/gun/attachments.ts`, `withDefaultLook`.
+
+A slot the role's finish cannot stand in for, an optic's lens coating, must be selected by the
+product look, because the role's opaque metal would otherwise fill a lens without a word
+(`PILLARS.md`, "Content forward compatibility"). Content that leaves such a slot unselected, and a
+look whose material does not exist, fail when content loads and when an instance is built, with
+no fallback coating in code. See `src/gun/attachments.ts`, `attachmentLookIssue`.
 
 ## Muzzle devices
 

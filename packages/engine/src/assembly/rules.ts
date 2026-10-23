@@ -299,7 +299,12 @@ const keepOutIssue = ({
     return undefined;
   }
   let worst = Number.NEGATIVE_INFINITY;
-  for (const solid of solids.get(other)!) {
+  const sources = r.defs.get(other)!.solids;
+  for (const [index, solid] of solids.get(other)!.entries()) {
+    const slot = sources[index]?.slot;
+    if (slot !== undefined && ko.allowSlots?.includes(slot)) {
+      continue;
+    }
     if (lowerBoundDistanceWorld(koShape, solid) <= TOLERANCE.contact) {
       worst = Math.max(worst, penetrationWorld(koShape, solid));
     }

@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@skelly/engine": "*",
+    "@skelly/thing-core": "^0.0.0",
     "@skelly/thing-export": "*"
   },
   "devDependencies": {

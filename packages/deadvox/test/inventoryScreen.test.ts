@@ -112,6 +112,7 @@ function setup(contentRegistry = registry) {
     inventory: inv,
     queue,
     quickbar,
+    vehicleWork: () => undefined,
     search: (uid) => {
       if (uid !== entity.uid || entity.searched || searching.has(entity)) {
         return;
@@ -919,6 +920,7 @@ describe('inventory screen Lit rendering', () => {
         work: () => undefined,
         fitAttachment: (uid, targetSlot, attachmentUid) => handling.fit(uid, targetSlot, attachmentUid),
         removeAttachment: (uid, targetSlot) => handling.remove(uid, targetSlot),
+        vehicleWork: () => undefined,
         loadBattery: () => undefined,
         toHands: () => undefined,
         pickup: () => undefined,

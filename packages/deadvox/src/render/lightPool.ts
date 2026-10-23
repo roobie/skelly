@@ -10,9 +10,8 @@ import type { PileMeshes } from './piles.ts';
 /** Fixed shader-light budget: carried sources and dropped sources have stable partitions. */
 const CARRIED_POINT_LIGHTS = 4;
 const DROPPED_POINT_LIGHTS = 4;
-const FIXTURE_POINT_LIGHTS = 4;
-const ITEM_POINT_LIGHTS = CARRIED_POINT_LIGHTS + DROPPED_POINT_LIGHTS;
-export const POINT_LIGHT_POOL_SIZE = ITEM_POINT_LIGHTS + FIXTURE_POINT_LIGHTS;
+/** Point-light slots before the fixtures; the skylight patch fades only the slots from here on. */
+export const ITEM_POINT_LIGHTS = CARRIED_POINT_LIGHTS + DROPPED_POINT_LIGHTS;
 /** Fixed shader budget for the night-vision flare's halos at once (`src/render/nightVisionFlare.ts`). */
 export const NIGHT_VISION_HALOS = 4;
 
@@ -23,6 +22,11 @@ interface LightPoolContext {
   camera: PerspectiveCamera;
   blockSize: number;
   daylightScale: number;
+  /**
+   * Scale for fixtures in the main scene. Under the skylight it is 1, because the shader fades each fixture by
+   * the daylight at the lit surface; the hand scene has no such patch and keeps `daylightScale`.
+   */
+  fixtureDaylightScale?: number;
   fixtures?: readonly PoweredLight[];
 }
 
@@ -57,12 +61,19 @@ export class LightPool {
   readonly group = new Group();
   readonly lights: readonly PointLight[];
   /** Per slot: the goggles' own lamp, which they see by rather than look into, so it never flares them. */
-  readonly flareSkipped: boolean[] = Array.from({ length: POINT_LIGHT_POOL_SIZE }, () => false);
+  readonly flareSkipped: boolean[];
+  /** Shader point-light slots: the item partitions plus the content's fixture limit. */
+  readonly size: number;
+  private readonly fixtureLimit: number;
   private readonly handLights: readonly PointLight[];
-  private readonly positions = Array.from({ length: POINT_LIGHT_POOL_SIZE }, () => new Vector3());
+  private readonly positions: readonly Vector3[];
 
-  constructor(scene: Scene, handScene?: Scene) {
-    this.lights = Array.from({ length: POINT_LIGHT_POOL_SIZE }, () => {
+  constructor(scene: Scene, fixtureLimit: number, handScene?: Scene) {
+    this.fixtureLimit = fixtureLimit;
+    this.size = ITEM_POINT_LIGHTS + fixtureLimit;
+    this.flareSkipped = Array.from({ length: this.size }, () => false);
+    this.positions = Array.from({ length: this.size }, () => new Vector3());
+    this.lights = Array.from({ length: this.size }, () => {
       const light = new PointLight(0xff_ff_ff, 0, 0);
       light.castShadow = false;
       this.group.add(light);
@@ -79,7 +90,7 @@ export class LightPool {
     scene.add(this.group);
   }
 
-  private syncHandLight(index: number, source: PointLight): void {
+  private syncHandLight(index: number, source: PointLight, intensity = source.intensity): void {
     const handLight = this.handLights[index];
     if (!handLight) {
       return;
@@ -87,8 +98,24 @@ export class LightPool {
     handLight.position.copy(source.position);
     handLight.color.copy(source.color);
     handLight.distance = source.distance;
-    handLight.intensity = source.intensity;
+    handLight.intensity = intensity;
     handLight.decay = source.decay;
+  }
+
+  private updateFixtureSlot(index: number, fixture: PoweredLight | undefined, context: LightPoolContext): void {
+    const light = this.lights[index]!;
+    const { blockSize, daylightScale } = context;
+    this.flareSkipped[index] = false;
+    if (!fixture) {
+      light.intensity = 0;
+      this.syncHandLight(index, light);
+      return;
+    }
+    light.intensity = fixture.intensity * (context.fixtureDaylightScale ?? daylightScale);
+    light.position.set(...(fixture.pos.map((value) => value * blockSize) as [number, number, number]));
+    light.color.set(fixture.color);
+    light.distance = fixture.radius;
+    this.syncHandLight(index, light, fixture.intensity * daylightScale);
   }
 
   update(inventory: Inventory, context: LightPoolContext): void {
@@ -135,19 +162,11 @@ export class LightPool {
           (pos[2] * blockSize - camera.position.z) ** 2;
         return distance(a) - distance(b);
       })
-      .slice(0, FIXTURE_POINT_LIGHTS);
+      .slice(0, this.fixtureLimit);
     for (const [index, light] of this.lights.entries()) {
       light.decay = pointDecay;
       if (index >= ITEM_POINT_LIGHTS) {
-        const fixture = fixtures[index - ITEM_POINT_LIGHTS];
-        light.intensity = fixture ? fixture.intensity * daylightScale : 0;
-        this.flareSkipped[index] = false;
-        if (fixture) {
-          light.position.set(...(fixture.pos.map((value) => value * blockSize) as [number, number, number]));
-          light.color.set(fixture.color);
-          light.distance = fixture.radius;
-        }
-        this.syncHandLight(index, light);
+        this.updateFixtureSlot(index, fixtures[index - ITEM_POINT_LIGHTS], context);
         continue;
       }
       const entry = index < CARRIED_POINT_LIGHTS ? carried[index] : dropped[index - CARRIED_POINT_LIGHTS];

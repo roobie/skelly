@@ -11,11 +11,18 @@ import { PILE_BUNDLE_WIDTH, pileBundleHeight, pileLayout } from './pileLayout.ts
 import type { SolidAt } from './raycast.ts';
 import { pileScatterPlacements } from './scatterPile.ts';
 import { PILE_DISPLAY_KIND } from './schema.ts';
+import type { VehiclePartProjection } from './vehicleProjection.ts';
 
 export type InteractionTarget =
   | { readonly kind: 'furniture'; readonly entity: BlockEntity; readonly distanceBlocks: number }
   | { readonly kind: 'item'; readonly item: Item; readonly distanceBlocks: number }
-  | { readonly kind: 'body'; readonly id: EntityId; readonly distanceBlocks: number };
+  | { readonly kind: 'body'; readonly id: EntityId; readonly distanceBlocks: number }
+  | {
+      readonly kind: 'vehicle';
+      readonly vehicleId: number;
+      readonly fittingId: string;
+      readonly distanceBlocks: number;
+    };
 
 interface ItemHit {
   readonly item: Item;
@@ -45,6 +52,11 @@ interface InteractionPickOptions extends FurniturePickOptions {
     readonly id: EntityId;
     readonly body: Pick<Body, 'pos' | 'halfWidth' | 'height'>;
   }>;
+  /**
+   * Occupied vehicle parts, picked by their own boxes. When given, `isSolid` and `isOpaque` must leave vehicle
+   * cells out: the cells round each box outward, so they would hide the part behind its own rasterized cells.
+   */
+  readonly vehicleParts?: Iterable<Pick<VehiclePartProjection, 'vehicleId' | 'fittingId' | 'boxes'>>;
 }
 
 const rayBoxDistance = ({ origin, direction, low, high, maxDistance }: RayBox): number | undefined => {
@@ -223,7 +235,29 @@ const nearestDownedBody = (options: InteractionPickOptions, direction: Vec3): Bo
   return nearest;
 };
 
-/** Picks the nearest target for F, using its furniture ray and reach for loose ground items and downed bodies too. */
+const nearestVehiclePart = (
+  options: InteractionPickOptions,
+  direction: Vec3,
+): Extract<InteractionTarget, { kind: 'vehicle' }> | undefined => {
+  let nearest: Extract<InteractionTarget, { kind: 'vehicle' }> | undefined;
+  for (const { vehicleId, fittingId, boxes } of options.vehicleParts ?? []) {
+    for (const { min, max } of boxes) {
+      const distanceBlocks = rayBoxDistance({
+        origin: options.origin,
+        direction,
+        low: min.map((metres) => metres / options.blockSize) as Vec3,
+        high: max.map((metres) => metres / options.blockSize) as Vec3,
+        maxDistance: options.maxDistance,
+      });
+      if (distanceBlocks !== undefined && (!nearest || distanceBlocks < nearest.distanceBlocks)) {
+        nearest = { kind: 'vehicle', vehicleId, fittingId, distanceBlocks };
+      }
+    }
+  }
+  return nearest;
+};
+
+/** Picks the nearest target for F, using its furniture ray and reach for loose ground items, downed bodies and vehicle parts too. */
 export const pickInteractionTarget = (options: InteractionPickOptions): InteractionTarget | undefined => {
   const { furniture, obstructionDistanceBlocks } = pickFurnitureAndObstruction({
     ...options,
@@ -236,8 +270,9 @@ export const pickInteractionTarget = (options: InteractionPickOptions): Interact
   const direction = options.direction.map((component) => component / magnitude) as Vec3;
   const item = nearestGroundItem(options, direction);
   const body = nearestDownedBody(options, direction);
-  // A stable sort: an item wins a tie with a body.
-  const [loose] = [item && ({ kind: 'item', ...item } as const), body && ({ kind: 'body', ...body } as const)]
+  const vehicle = nearestVehiclePart(options, direction);
+  // A stable sort: an item wins a tie with a body, and both win a tie with a vehicle part they rest against.
+  const [loose] = [item && ({ kind: 'item', ...item } as const), body && ({ kind: 'body', ...body } as const), vehicle]
     .filter((target) => target !== undefined)
     .filter((target) => obstructionDistanceBlocks === undefined || target.distanceBlocks <= obstructionDistanceBlocks)
     .sort((a, b) => a.distanceBlocks - b.distanceBlocks);

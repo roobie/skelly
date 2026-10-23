@@ -22,7 +22,12 @@ globalThis.onmessage = ({ data: msg }: MessageEvent<ToMesher>) => {
     const start = performance.now();
     const result = buildSkyResult(msg.input);
     const reply: FromMesher = { type: 'sky', result, workerRealMs: performance.now() - start };
-    postMessage(reply, { transfer: [result.heights.buffer, ...(result.volume ? [result.volume.light.buffer] : [])] });
+    postMessage(reply, {
+      transfer: [
+        result.heights.buffer,
+        ...(result.volume ? [result.volume.light.buffer, result.volume.unfurnished.buffer] : []),
+      ],
+    });
     return;
   }
   const { key, version, padded, wide } = msg;

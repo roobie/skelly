@@ -88,7 +88,9 @@ export const buildSkylight = (
   skyAbove?: Map<string, boolean>,
 ): SkyVolume => {
   const size = bounds.max.map((value, i) => value - bounds.min[i]!) as Vec3;
-  const volume = { ...bounds, size, light: new Uint8Array(size[0] * size[1] * size[2]) };
+  // The oracle floods without furniture, so both channels are one flood.
+  const light = new Uint8Array(size[0] * size[1] * size[2]);
+  const volume = { ...bounds, size, light, unfurnished: light };
   const flood: Flood = { volume, blocked: new Uint8Array(volume.light.length), queue: [] };
   for (let z = 0; z < size[2]; z++) {
     for (let x = 0; x < size[0]; x++) {

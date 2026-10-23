@@ -2601,7 +2601,22 @@ quality and duration requirements. `src/core/vehicleWork.ts`, `vehicleWorkHooks`
 the exact UID with its original owner until `src/core/inventory.ts`, `Inventory.vehicleTransfer`
 preflights and commits the transfer, so a stopped or refused action cannot orphan it.
 `src/core/longAction.ts`, `LongActions.beginVehicleWork`, saves references rather than a
-copied part or an interaction closure.
+copied part or an interaction closure. Removing a part another part rests on is refused
+before work starts, so no work time is spent on a part that cannot come off.
+Interacting with a parked vehicle part opens the vehicle in the inventory screen's
+surroundings, because exact service requirements and which loose parts fit an empty site
+are facts the world geometry cannot show. Fitted parts are ordinary items with their usual
+details; empty service sites show their content names; each operation names the exact
+vehicle, site and part the player selected and shows the core's own refusal, so the surface
+never promises work the action would refuse. Vehicle reach is measured from the chest to the
+nearest occupied part box, as furniture reach is, and one predicate decides opening, keeping the
+section open and service admission; measuring to the origin would leave a part the player can
+pick and touch out of reach. The reach also needs a clear line to a part box, the same rule as
+furniture, so a wall can't be worked through; the line ignores vehicle cells because the car's
+own body would otherwise hide every part. See `src/core/reach.ts`, `vehicleInReach`, `src/ui/vehicleInspection.ts`,
+`vehicleInspectionViewModel`, and `src/core/interactionPick.ts`, `pickInteractionTarget`.
+Site names stay in content rather than in the saved build, so a reworded pack relabels saved
+vehicles; see `src/core/vehicleInstances.ts`, `vehicleSiteName`.
 
 3. **Condition is not attachment or appearance.** Part types are immutable content;
    fittings own instance state. A fitting places an item on a vehicle without changing

@@ -32,7 +32,7 @@ export function runSkySelectionProof() {
     uniforms: { ...compiled.uniforms, point: { value: new Vector3() } },
     vertexShader:
       'uniform vec3 point; varying vec3 vSkyWorld; varying vec3 vSkyNormal; void main(){ vSkyWorld=point-vec3(0.0,0.5,0.0); vSkyNormal=vec3(0.0,1.0,0.0); gl_Position=vec4(position.xy,0.0,1.0); }',
-    fragmentShader: `${declarations}\nvoid main(){ bool unbuilt; gl_FragColor=vec4(vec3(skyVisibility(unbuilt)),1.0); }`,
+    fragmentShader: `${declarations}\nvoid main(){ bool unbuilt; gl_FragColor=vec4(vec3(skyVisibility(unbuilt).x),1.0); }`,
   });
   const geometry = new PlaneGeometry(2, 2);
   witness.add(new Mesh(geometry, material));

@@ -27,6 +27,7 @@ export type ReplayActionPayload =
   | { kind: 'inventory.cancel-handling' }
   | { kind: 'firearm.attachment.fit'; firearmUid: number; slotId: string; attachmentUid: number }
   | { kind: 'firearm.attachment.remove'; firearmUid: number; slotId: string }
+  | { kind: 'vehicle.work'; work: 'install' | 'remove'; vehicleId: number; fittingId: string; itemUid: number }
   | { kind: 'light.battery.load'; lightUid: number; batteryUid: number }
   | { kind: 'craft.start'; recipeId: string; preference?: CraftPreference }
   | { kind: 'craft.continue' }
@@ -101,6 +102,13 @@ const isInteractPayload = (payload: Record<string, unknown>): boolean =>
 const isLiftPayload = (payload: Record<string, unknown>): boolean =>
   isUid(payload.entityUid) && (payload.floorLocked === undefined || typeof payload.floorLocked === 'boolean');
 
+const isVehicleWorkPayload = (payload: Record<string, unknown>): boolean =>
+  (payload.work === 'install' || payload.work === 'remove') &&
+  isUid(payload.vehicleId) &&
+  typeof payload.fittingId === 'string' &&
+  payload.fittingId !== '' &&
+  isUid(payload.itemUid);
+
 /** An hour of the day, or null to sleep until rested. */
 const isWakeGameHour = (value: unknown): boolean =>
   value === null || (Number.isSafeInteger(value) && (value as number) >= 0 && (value as number) < 24);
@@ -165,6 +173,8 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
     case 'firearm.attachment.fit':
     case 'firearm.attachment.remove':
       return isAttachmentPayload(payload);
+    case 'vehicle.work':
+      return isVehicleWorkPayload(payload);
     case 'light.battery.load':
       return isUid(payload.lightUid) && isUid(payload.batteryUid);
     case 'inventory.cancel-handling':
@@ -203,6 +213,12 @@ export interface ReplayCommandOwners {
   pour?: (sourceUid: number, receiverUid: number) => string | undefined;
   fitAttachment?: (firearmUid: number, slotId: string, attachmentUid: number) => string | undefined;
   removeAttachment?: (firearmUid: number, slotId: string) => string | undefined;
+  vehicleWork: (
+    work: 'install' | 'remove',
+    vehicleId: number,
+    fittingId: string,
+    itemUid: number,
+  ) => string | undefined;
   /** Puts a battery into a light from the light's battery slot on its item card. */
   loadBattery: (lightUid: number, batteryUid: number) => string | undefined;
   toHands: (itemUid: number, feet: [number, number, number]) => string | undefined;
@@ -289,6 +305,8 @@ export const applyReplayActionPayload = (
       return owners.removeAttachment
         ? owners.removeAttachment(payload.firearmUid, payload.slotId)
         : 'Attachment handling is unavailable';
+    case 'vehicle.work':
+      return owners.vehicleWork(payload.work, payload.vehicleId, payload.fittingId, payload.itemUid);
     case 'light.battery.load':
       return owners.loadBattery(payload.lightUid, payload.batteryUid);
     case 'inventory.cancel-handling':

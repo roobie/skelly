@@ -6,9 +6,12 @@ import { fixtureBox } from './fixtures/skyWorld.ts';
 
 const inside: Vec3 = [8.5, 4.5, 8.5];
 
-/** The bytes the view uploaded for its resident volumes. */
-const uploaded = (fixture: ReturnType<typeof skyFixture>) =>
-  fixture.shader().uniforms.uSkyVolume!.value.image.data as Uint8Array;
+/** The two channels the view uploaded for its resident volume, split back out of the interleaved texture. */
+const uploaded = (fixture: ReturnType<typeof skyFixture>) => {
+  const data = fixture.shader().uniforms.uSkyVolume!.value.image.data as Uint8Array;
+  const channel = (offset: number) => Uint8Array.from({ length: data.length / 2 }, (_, i) => data[i * 2 + offset]!);
+  return { light: channel(0), unfurnished: channel(1) };
+};
 
 it('draws the simulation field for a box: the same result object and its volume bytes', () => {
   const fixture = skyFixture();
@@ -18,7 +21,8 @@ it('draws the simulation field for a box: the same result object and its volume 
   const result = fixture.fields.current(0);
   expect(result?.volume).toBeDefined();
   expect(fixture.sky.inspect()[0]!.current).toBe(true);
-  expect(uploaded(fixture)).toEqual(result!.volume!.light);
+  const { light, unfurnished } = result!.volume!;
+  expect(uploaded(fixture)).toEqual({ light, unfurnished });
   expect(fixture.sky.at(inside)).toBe(fixture.fields.visibilityAt(inside));
   expect(fixture.fields.current(0)).toBe(result);
 });
@@ -29,7 +33,8 @@ it('draws a field the simulation built first without asking for another build', 
   fixture.update();
   expect(fixture.pending).toHaveLength(0);
   expect(fixture.sky.stats.requested).toBe(0);
-  expect(uploaded(fixture)).toEqual(fixture.fields.current(0)!.volume!.light);
+  const { light, unfurnished } = fixture.fields.current(0)!.volume!;
+  expect(uploaded(fixture)).toEqual({ light, unfurnished });
   expect(fixture.sky.at(inside)).toBe(answer);
 });
 

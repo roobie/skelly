@@ -48,6 +48,8 @@ export interface KeepOut {
   readonly allowPort?: string;
   /** Parts from these families may occupy the volume (e.g. an attached part inside a designated clearance volume). */
   readonly allowFamilies?: readonly string[];
+  /** Any part's solids in these slots may occupy the volume (e.g. see-through glass on a sightline). */
+  readonly allowSlots?: readonly string[];
 }
 
 /** A named axis on a part for domain-defined rules. */

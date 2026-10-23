@@ -7,6 +7,16 @@
     start: 'Start', stop: 'Stop', collect: 'Collect', load: 'Load {name}',
     remaining: '{gameSeconds} powered seconds remaining',
   },
+  vehicle: {
+    inspect: '{key}: open {vehicle}',
+    heading: '{vehicle} · {distance} m',
+    empty: '{site}: empty',
+    remove: 'Remove',
+    install: 'Fit {part}',
+    noPart: 'No part in reach fits',
+    removing: 'Removing {part}',
+    installing: 'Fitting {part}',
+  },
   hudOptionLabels: {
     stats: 'Health, blood, bleeding, food, water, fatigue, pain, stamina and carrying weight',
     clock: 'Clock and time compression',

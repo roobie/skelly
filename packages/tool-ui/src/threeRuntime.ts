@@ -13,7 +13,9 @@ import {
   Matrix4,
   Mesh,
   MeshBasicMaterial,
+  MeshPhysicalMaterial,
   MeshStandardMaterial,
+  SRGBColorSpace,
   Vector3,
 } from 'three';
 
@@ -31,6 +33,8 @@ export const threeRuntime = {
   Matrix4,
   Mesh,
   MeshBasicMaterial,
+  MeshPhysicalMaterial,
   MeshStandardMaterial,
+  SRGBColorSpace,
   Vector3,
 };
