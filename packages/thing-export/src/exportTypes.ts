@@ -4,6 +4,7 @@
 import type { Gender, Resolved } from '@skelly/engine/assembly/schema.ts';
 import type { Issue } from '@skelly/engine/foundation/issue.ts';
 import type { Vec3 } from '@skelly/engine/foundation/math.ts';
+import type { MaterialDef } from '@skelly/thing-core/materials';
 
 /**
  * An sRGB colour as normalized red, green, blue channels in [0, 1]. TypeScript cannot enforce finiteness or range;
@@ -22,7 +23,7 @@ export interface AppearanceContext {
 
 export interface MaterialAppearance {
   readonly colour: SrgbColor;
-  readonly finish: { readonly metallic: number; readonly roughness: number; readonly opacity?: number | undefined };
+  readonly finish: MaterialDef['finish'];
 }
 
 export interface Palette {
