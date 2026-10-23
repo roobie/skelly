@@ -1489,6 +1489,8 @@ const ItemSchema = strictObject({
   /** A vehicle part: blueprints may fit it, and its model must export parts with baked collision. */
   vehicle: optional(
     strictObject({
+      /** Content identity of the service interface this loose part can occupy. */
+      mount: optional(Id),
       capabilities: pipe(
         array(picklist(VEHICLE_CAPABILITIES)),
         check((list) => new Set(list).size === list.length, 'capabilities must be distinct'),
@@ -1532,6 +1534,14 @@ const VehicleFittingSchema = strictObject({
   supportedBy: array(Id),
   /** A factory cargo space's size in inventory cells along x, y and z; its pocket is x by z. */
   cargo: optional(tuple([Cells, Cells, Cells])),
+  /** Requirements for servicing this site; omitted sites are not player-serviceable. */
+  service: optional(
+    strictObject({
+      mount: Id,
+      durationSimSeconds: PositiveSimSeconds,
+      qualities: record(Id, QualityLevel),
+    }),
+  ),
 });
 
 /** A factory build, as a vehicle authoring export: parts by item id, placed and supported. */

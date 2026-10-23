@@ -983,7 +983,7 @@ export const startPlay = (
         caseEffects.retarget(seed, placement.position);
       }
     },
-    onFirearmTrajectory: (trajectory) => view.impactEffects.fire(trajectory, config.debug && debugLaserEnabled),
+    onFirearmTrajectory: ({ traces }) => view.impactEffects.fire(traces, config.debug && debugLaserEnabled),
     onDetonation: (at, radiusMetres) => view.blastFlashes.spawn(at, radiusMetres),
     onBlock: (jolt) => view.block(jolt),
     onAcidImpact: (position, type) => view.acidEffects.splash(position, type.acidSpit!.presentation),

@@ -105,6 +105,7 @@
       "size": [6, 6],
       "vehicle": {
         "capabilities": ["wheel"],
+        "mount": "hatchback_wheel",
         "obstruction": {
           "combat": true,
           "light": true,
@@ -435,6 +436,7 @@
       "size": [4, 6],
       "vehicle": {
         "capabilities": ["structure"],
+        "mount": "hatchback_front_strut",
         "obstruction": {
           "combat": true,
           "light": true,
@@ -3922,6 +3924,13 @@
           "at": [0, 0, 0],
           "id": "front_strut_near",
           "part": "hatchback_front_strut",
+          "service": {
+            "durationSimSeconds": 30,
+            "mount": "hatchback_front_strut",
+            "qualities": {
+              "wrenching": 1
+            }
+          },
           "supportedBy": ["shell"]
         },
         {
@@ -3929,12 +3938,26 @@
           "id": "front_strut_far",
           "mirror": true,
           "part": "hatchback_front_strut",
+          "service": {
+            "durationSimSeconds": 30,
+            "mount": "hatchback_front_strut",
+            "qualities": {
+              "wrenching": 1
+            }
+          },
           "supportedBy": ["shell"]
         },
         {
           "at": [1.24, 0.316, 0.75],
           "id": "front_wheel_near",
           "part": "wheel_205_55r16",
+          "service": {
+            "durationSimSeconds": 30,
+            "mount": "hatchback_wheel",
+            "qualities": {
+              "wrenching": 1
+            }
+          },
           "supportedBy": ["front_strut_near"]
         },
         {
@@ -3942,6 +3965,13 @@
           "id": "front_wheel_far",
           "mirror": true,
           "part": "wheel_205_55r16",
+          "service": {
+            "durationSimSeconds": 30,
+            "mount": "hatchback_wheel",
+            "qualities": {
+              "wrenching": 1
+            }
+          },
           "supportedBy": ["front_strut_far"]
         },
         {
