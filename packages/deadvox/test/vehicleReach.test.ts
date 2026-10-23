@@ -4,7 +4,7 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { coreMessage } from '../src/core/coreText.ts';
 import { pickInteractionTarget } from '../src/core/interactionPick.ts';
 import { reachTuning } from '../src/core/reach.ts';
-import { createRuntime, registry, scale } from './snapshotTestSupport.ts';
+import { blockId, createRuntime, registry, scale } from './snapshotTestSupport.ts';
 
 const s = scale.blockSize;
 
@@ -75,4 +75,38 @@ it('keeps every exterior vehicle pick within the reach its surface and service s
   runtime.player.body.pos = [far / s, origin[1], origin[2]];
   expect(runtime.inventory.canReachVehicle(vehicleId)).toBe(false);
   expect(runtime.session.vehicleWorkRefusal('remove', vehicleId, wheel.id, wheel.item.uid)).toBe(tooFar);
+});
+
+it('refuses vehicle service through a wall and allows it again once the wall is gone', () => {
+  const runtime = createRuntime();
+  const origin = [...runtime.player.body.pos] as Vec3;
+  const vehicleId = runtime.inventory.registerVehicle({
+    placementKey: 'wall-fixture',
+    blueprint: 'hatchback',
+    origin,
+    facing: 'n',
+  });
+  const boxes = runtime.session.vehicleParts.boxesOf(vehicleId);
+  const faceMetres = Math.max(...boxes.map(({ max }) => max[0]));
+  const centreZ = boxes.reduce((sum, { min, max }) => sum + (min[2] + max[2]) / 2, 0) / boxes.length;
+  const standMetres = faceMetres + reachTuning(registry).reachMetres / 4;
+  runtime.player.body.pos = [standMetres / s, origin[1], centreZ / s];
+  expect(runtime.inventory.canReachVehicle(vehicleId), 'in reach with open ground between').toBe(true);
+
+  const wallX = Math.floor((faceMetres + (standMetres - faceMetres) / 2) / s);
+  const cells: Vec3[] = [];
+  for (let y = Math.floor(origin[1]); y < Math.floor(origin[1]) + 4; y++) {
+    for (let z = Math.floor(centreZ / s) - 6; z <= Math.floor(centreZ / s) + 6; z++) {
+      cells.push([wallX, y, z]);
+    }
+  }
+  for (const [x, y, z] of cells) {
+    runtime.world.setBlock(x, y, z, blockId('planks'));
+  }
+  expect(runtime.inventory.canReachVehicle(vehicleId), 'a wall between player and car').toBe(false);
+
+  for (const [x, y, z] of cells) {
+    runtime.world.setBlock(x, y, z, 0);
+  }
+  expect(runtime.inventory.canReachVehicle(vehicleId), 'the same position without the wall').toBe(true);
 });

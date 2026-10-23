@@ -459,6 +459,7 @@
       "size": [12, 4],
       "vehicle": {
         "capabilities": ["structure"],
+        "mount": "hatchback_rear_axle",
         "obstruction": {
           "combat": true,
           "light": true,
@@ -3812,6 +3813,14 @@
           "at": [0, 0, 0],
           "id": "rear_axle",
           "part": "hatchback_rear_axle",
+          "service": {
+            "durationSimSeconds": 45,
+            "mount": "hatchback_rear_axle",
+            "name": "Rear axle",
+            "qualities": {
+              "wrenching": 1
+            }
+          },
           "supportedBy": ["shell"]
         },
         {
@@ -3982,6 +3991,14 @@
           "at": [-1.27, 0.316, 0.75],
           "id": "rear_wheel_near",
           "part": "wheel_205_55r16",
+          "service": {
+            "durationSimSeconds": 30,
+            "mount": "hatchback_wheel",
+            "name": "Near rear wheel",
+            "qualities": {
+              "wrenching": 1
+            }
+          },
           "supportedBy": ["rear_axle"]
         },
         {
@@ -3989,6 +4006,14 @@
           "id": "rear_wheel_far",
           "mirror": true,
           "part": "wheel_205_55r16",
+          "service": {
+            "durationSimSeconds": 30,
+            "mount": "hatchback_wheel",
+            "name": "Far rear wheel",
+            "qualities": {
+              "wrenching": 1
+            }
+          },
           "supportedBy": ["rear_axle"]
         },
         {

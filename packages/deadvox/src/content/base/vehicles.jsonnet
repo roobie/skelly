@@ -58,7 +58,8 @@ local hatchback = [
   fitting('bonnet', 'hatchback_bonnet', origin, ['shell']),
   fitting('front_bumper', 'hatchback_front_bumper', origin, ['shell']),
   fitting('rear_bumper', 'hatchback_rear_bumper', origin, ['shell']),
-  fitting('rear_axle', 'hatchback_rear_axle', origin, ['shell']),
+  // The rear has no struts: one beam axle carries both wheels, so it is the rear's serviceable suspension part.
+  fitting('rear_axle', 'hatchback_rear_axle', origin, ['shell'], { mount: 'hatchback_rear_axle', durationSimSeconds: 45, qualities: { wrenching: 1 }, name: 'Rear axle' }),
   fitting('engine', 'hatchback_engine', origin, ['shell']),
   fitting('gearbox', 'hatchback_gearbox', origin, ['engine']),
   fitting('radiator', 'hatchback_radiator', origin, ['shell']),
@@ -74,7 +75,7 @@ local hatchback = [
   + pair('tail_lamp', 'hatchback_tail_lamp', origin, on(['shell']))
   + pair('front_strut', 'hatchback_front_strut', origin, on(['shell']), service('hatchback_front_strut', 30, { wrenching: 1 }, 'Near front strut', 'Far front strut'))
   + pair('front_wheel', 'wheel_205_55r16', [1.24, 0.316, 0.75], on(paired=['front_strut']), service('hatchback_wheel', 30, { wrenching: 1 }, 'Near front wheel', 'Far front wheel'))
-  + pair('rear_wheel', 'wheel_205_55r16', [-1.27, 0.316, 0.75], on(['rear_axle']))
+  + pair('rear_wheel', 'wheel_205_55r16', [-1.27, 0.316, 0.75], on(['rear_axle']), service('hatchback_wheel', 30, { wrenching: 1 }, 'Near rear wheel', 'Far rear wheel'))
   + pair('front_seat', 'front_seat', [0, 0.3, 0.37], on(['shell']))
   + pair('door_mirror', 'door_mirror', [0.66, 0.98, 0.8675], on(['shell']))
   + headlamps(1.95, 0.64, 0.56, ['shell'])
@@ -238,7 +239,7 @@ local boxVan = [
     part('hatchback_rear_bumper', 'Hatchback rear bumper', pileSize, ['protection']),
     part('hatchback_tail_lamp', 'Hatchback tail lamp', [3, 2], ['light']),
     part('hatchback_front_strut', 'Hatchback front strut', [4, 6], ['structure']) + { vehicle+: { mount: 'hatchback_front_strut' } },
-    part('hatchback_rear_axle', 'Hatchback rear axle', [12, 4], ['structure']),
+    part('hatchback_rear_axle', 'Hatchback rear axle', [12, 4], ['structure']) + { vehicle+: { mount: 'hatchback_rear_axle' } },
     part('hatchback_engine', 'Hatchback engine', [6, 5], ['power']),
     part('hatchback_gearbox', 'Hatchback gearbox', [3, 3], ['driven']),
     part('hatchback_radiator', 'Hatchback radiator', [10, 4], []),

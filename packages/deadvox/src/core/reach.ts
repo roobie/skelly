@@ -32,6 +32,8 @@ export interface ReachPlayer {
 interface ReachObstacles {
   /** Cells holding furniture defer to it: only a closed door blocks, so a table never hides the shelf behind it. */
   readonly isSolid: SolidAt;
+  /** The same cells without any vehicle's rasterized body, so a car's own parts never hide themselves; absent, `isSolid`. */
+  readonly isSolidIgnoringVehicles?: SolidAt;
   /** Changes on every block edit, so a cached snapshot follows broken and built walls. */
   readonly version: number;
 }
@@ -164,13 +166,35 @@ export const pileInReach = (player: ReachGeometry, position: Vec3): boolean =>
 /**
  * Chest to the nearest point of a vehicle's occupied part boxes (world metres), as furniture is measured: a car is
  * reached at the part beside the player, never at its origin, so whatever F can pick on it is also in reach.
- * No line test: the vehicle's own rasterized cells, which the obstacle query holds, would hide every part.
+ * Distance only; `vehicleInReach` adds the line.
  */
 export const vehicleDistance = (player: ReachGeometry, boxes: readonly ModelBox[]): number => {
   const chest = chestOf(player).map((value) => value * player.blockSize);
   return Math.min(
     ...boxes.map(({ min, max }) =>
       Math.hypot(...chest.map((value, axis) => value - Math.min(Math.max(value, min[axis]!), max[axis]!))),
+    ),
+  );
+};
+
+/**
+ * Within the limit and along a clear line to some part box, as furniture is, so a wall can't be worked through. The
+ * line ignores vehicle cells: the car's own rasterized body would hide every part it is reached at.
+ */
+export const vehicleInReach = (player: ReachGeometry, boxes: readonly ModelBox[]): boolean => {
+  if (boxes.length === 0 || vehicleDistance(player, boxes) > reachTuning(player.inventory.registry).reachMetres) {
+    return false;
+  }
+  const { obstacles } = player;
+  if (obstacles === undefined) {
+    return true;
+  }
+  const blind = { ...obstacles, isSolid: obstacles.isSolidIgnoringVehicles ?? obstacles.isSolid };
+  return boxes.some(({ min, max }) =>
+    clearLine(
+      player,
+      blind,
+      [min.map((value) => value / player.blockSize) as Vec3, max.map((value) => value / player.blockSize) as Vec3],
     ),
   );
 };
@@ -188,8 +212,7 @@ export const bindReach = (
   player.inventory.canReach = (position) => pileInReach(player, position);
   player.inventory.canReachEntity = (entity) => furnitureInReach(player, entity);
   if (vehicleParts) {
-    player.inventory.canReachVehicle = (vehicleId) =>
-      vehicleDistance(player, vehicleParts.boxesOf(vehicleId)) <= reachTuning(player.inventory.registry).reachMetres;
+    player.inventory.canReachVehicle = (vehicleId) => vehicleInReach(player, vehicleParts.boxesOf(vehicleId));
   }
   player.inventory.actorPosition = () => player.position;
   return () => reach(player);
