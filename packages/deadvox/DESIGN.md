@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change held sharpening, blade repair entry points or prepared hand pairs
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
   - you change the player figure's look, its authored parts, its clothes or how it is posed
   - you change worn head gear seen from inside or on the player figure
@@ -1259,10 +1260,20 @@ See `packages/thing-authoring-tool/cans.libsonnet`, `items`, and
 `packages/thing-authoring-tool/src/families/openTin.ts`, `openTin`, and
 `packages/thing-authoring-tool/src/families/handOpener.ts`, `handOpener`.
 
-Crafting, repair, disassembly, and reading gather required items from reachable
-hands, worn storage, piles, and furniture when the action starts. Gathering is
-part of the compressed action and keeps both hands busy. Inspecting an item
-shows exact weight, condition, qualities, and handling times.
+Sharpening is held-item work rather than a craft-list repair: the prepared
+blade-and-stone pair makes carried equipment matter, and the wheel rewards a
+trip to furniture. Like can opening, a blade's competing action remains a player
+choice so sharpening does not cause a surprise swing. Aimed wheel activation
+uses the held blade. Repair recipes retain the shared content-owned restoration,
+skill and work-rate contract; their activation selector keeps held work out of
+the craft list. See `src/game/sharpening.ts`, `Sharpening`,
+`src/game/itemActions.ts`, `ItemActionSelection`, `src/core/schema.ts`,
+`RecipeSchema`, and `src/ui/craftReadout.ts`, `craftRows`.
+
+Craft-list repairs, crafting and disassembly gather reachable supplies because
+retrieving materials is part of the work, not free access to distant storage.
+See `src/core/reach.ts`, `bindReach`, and `src/core/craftCommands.ts`,
+`CraftCommands`.
 
 ### Shoulder and sling
 
