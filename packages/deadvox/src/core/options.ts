@@ -270,7 +270,7 @@ const refuseUse = (inv: Inventory, reason: string): UseOption => ({
   plan: { ok: false, reason },
 });
 
-export type BatteryRoute = 'hands' | 'slot';
+type BatteryRoute = 'hands' | 'slot';
 
 const loadOption = (inv: Inventory, light: Item, battery: Item, route: BatteryRoute): UseOption => ({
   kind: 'use',
