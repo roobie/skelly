@@ -764,6 +764,41 @@
       "notLoot": false,
       "size": [1, 1],
       "workInProgress": false
+    },
+    {
+      "category": "tool",
+      "description": "A length of timber that drops across a shut door and bars it from the other side.",
+      "disassembly": {
+        "skill": "crafting",
+        "timeGameMinutes": 5,
+        "yields": [
+          {
+            "count": 2,
+            "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+            "item": "wooden_plank",
+            "rounding": "floor"
+          }
+        ]
+      },
+      "doorBar": {
+        "liftSimSeconds": 2,
+        "look": {
+          "color": "#7a5532",
+          "thickness": 0.089999999999999997
+        },
+        "setSimSeconds": 3
+      },
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+      },
+      "id": "door_bar",
+      "name": "Door bar",
+      "notLoot": false,
+      "size": [1, 6],
+      "twoHanded": true,
+      "weight": 3000,
+      "workInProgress": false
     }
   ],
   "meleeClasses": [

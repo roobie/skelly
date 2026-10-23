@@ -335,8 +335,16 @@ const checkVessels = (item: ItemDef, registry: Registry, report: Report): void =
   }
 };
 
+// A door keeps only its bar's item type, and lifting the bar hands back a fresh one.
+const checkDoorBar = (item: ItemDef, registry: Registry, report: Report): void => {
+  if (item.doorBar && (!item.twoHanded || vesselHasState(item, registry))) {
+    report('items', item.id, '.doorBar', 'a door bar is a stateless, unstacked item held in both hands');
+  }
+};
+
 const checkUnpacking = (item: ItemDef, registry: Registry, qualities: ReadonlySet<string>, report: Report): void => {
   checkVessels(item, registry, report);
+  checkDoorBar(item, registry, report);
   if (!item.unpack) {
     return;
   }
