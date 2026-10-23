@@ -146,6 +146,16 @@ const installedLootTypes = (
 /** An item no loot context admits: it exists only where content places it by hand. */
 export const neverSpawns = (economy: ItemEconomy): boolean => economy.tiers.length === 0 || economy.usage.length === 0;
 
+/** Why one item is refused; authored placement also admits an item that never spawns, but not craft escrow. */
+const admissionIssue = (item: ItemDef, context: LootContext, placed: boolean): string | undefined => {
+  if (placed && item.workInProgress) {
+    return `"${item.id}" is craft escrow, which only a craft creates`;
+  }
+  return economyEligible(item.economy, context) || (placed && neverSpawns(item.economy))
+    ? undefined
+    : `"${item.id}" is outside the source loot context`;
+};
+
 const typeIssue = (
   registry: Registry,
   root: { readonly type: string; readonly fitted: Readonly<Record<string, string>> },
@@ -164,8 +174,9 @@ const typeIssue = (
     if (!item) {
       return `no item "${candidate.type}"`;
     }
-    if (!(economyEligible(item.economy, context) || (placed && neverSpawns(item.economy)))) {
-      return `"${candidate.type}" is outside the source loot context`;
+    const refused = admissionIssue(item, context, placed);
+    if (refused !== undefined) {
+      return refused;
     }
     for (const child of installedLootTypes(registry, item, candidate.fitted)) {
       if (child === undefined) {

@@ -346,6 +346,7 @@ describe('loot economy descriptions', () => {
             item('fixture_bulky', { usage: [], tiers: [] }),
             item('fixture_common', { usage: ['Medical'], tiers: ['Tier2'] }),
             item('fixture_military', { usage: ['Military'], tiers: ['Tier2'] }),
+            { ...item('fixture_escrow', { usage: [], tiers: [] }), workInProgress: true },
           ],
         },
       },
@@ -355,6 +356,7 @@ describe('loot economy descriptions', () => {
     expect(placedTypeIssue(registry, 'fixture_bulky', context)).toBeUndefined();
     expect(placedTypeIssue(registry, 'fixture_military', context)).toContain('outside');
     expect(placedTypeIssue(registry, 'no_such_item', context)).toContain('no item');
+    expect(placedTypeIssue(registry, 'fixture_escrow', context)).toContain('craft');
 
     const point = lootSpawnPoint({
       site: 'placed',
@@ -370,6 +372,7 @@ describe('loot economy descriptions', () => {
     const select = (candidate: WeightedCandidate) => selectLootType(registry, point, [candidate], Rng.stream(1, 'p'));
     expect(select({ type: 'fixture_bulky', weight: 1 })).toBeUndefined();
     expect(select({ type: 'fixture_bulky', weight: 1, placed: true })).toBe('fixture_bulky');
+    expect(select({ type: 'fixture_escrow', weight: 1, placed: true })).toBeUndefined();
   });
 
   it('requires authored economy metadata at the registry boundary', () => {

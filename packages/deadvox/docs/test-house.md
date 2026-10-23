@@ -73,19 +73,22 @@ wall so that roof access never crosses a bay. See
 
 The repair stock in its containers is debug-only, as above. The layout's `repairStock`
 names the building that receives it, so the house no longer needs piles of its own. See
-`src/core/authoredLayout.ts`, `repairStock`. The stock holds every item with a tool
-quality, vehicle service tools included, so that any repair or service can be tried in
-one place. The list is derived from content, so a new tool reaches the shelves without a
-test-house edit; the tools go in first so they fill the shelves. A tool that never
-spawns, such as the engine hoist, is left off the shelves: it is floor-standing, and a
-pocket would hide it, so the garage template places it on the floor between the bays and
-the shelves, where it reads at a glance. Placement by hand is allowed for an item loot
-never rolls; see `docs/content.md`. The floor mark sits in the ground storey only,
-because ground loot needs the floor under it. See `src/content/base/templates-test-house.jsonnet`,
-`garageStockFloor`. Repair targets and components fill the containers nearest a workstation
-first, because a repair needs its target and its station in reach together and a bulky
-tool must not push the targets out of reach. See `src/game/testHouseRepair.ts`,
-`garageToolTypes` and `nearStations`.
+`src/core/authoredLayout.ts`, `repairStock`.
+
+The shelves hold the spawnable tools, vehicle service tools included, so that any repair
+or service can be tried in one place. The list is derived from content, so a new
+spawnable tool reaches the shelves without a test-house edit. A tool that never spawns is
+not derived: content places it by hand, so it stands where an author chose rather than
+wherever the next pocket is free. See `src/game/testHouseRepair.ts`, `garageToolTypes`.
+
+The engine hoist is such a tool. It is floor-standing, and a shelf pocket hid it, so the
+garage template stands it on the floor by the bays, where it reads at a glance. Hand
+placement of an item loot never rolls is allowed by the rule in `docs/content.md`. See
+`src/content/base/templates-test-house.jsonnet`, `test_house_garage`.
+
+A repair needs its target and its station in reach together, so repair targets and
+components go in the containers nearest a workstation. See `src/game/testHouseRepair.ts`,
+`nearStations`.
 
 Debug stock is placed at session start, before the garage's column arrives, so its
 containers are spawned then, from the site's own furniture spawns, so they keep their
