@@ -2827,8 +2827,14 @@ copy. See `src/core/paperMap.ts`, `paperMapAt` and `paperMapBounds`, and
 `src/core/worldRegion.ts`, `regionIndex`.
 
 Paper is a carried source of knowledge, not a permanent atlas unlock or a live
-camera. Its approved printed geography is baseline terrain and public roads,
-including unvisited places, not actors, possessions, secrets or mutable damage.
+camera. Its terrain layer samples the baseline generation surface, including
+unvisited places, rather than visited columns or mutable world blocks. Roads need
+a separate public-cartography export; neither layer may show actors, possessions,
+secrets or mutable damage. A one-cell sampling halo preserves hillshade and
+contours at the cut, and shared contour levels keep neighbouring sheets aligned.
+A bounded session cache deduplicates renders by world identity, region and render
+configuration; it is disposable presentation work, not saved knowledge. See
+`src/core/paperMapRender.ts`, `samplePaperMapTerrain` and `PaperMapRenderCache`.
 The discovery policy is optional local supply without guaranteed coverage;
 duplicate copies are ordinary possessions, not globally unique collectibles.
 Completing #470 requires a shared reading-light policy for all paper rather than
