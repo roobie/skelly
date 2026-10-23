@@ -112,37 +112,40 @@ export const craftRows = ({
   preferences: Readonly<Record<string, CraftPreference>>;
   startReason: string | undefined;
 }): CraftRow[] =>
-  [...character.knownRecipes].sort().map((id) => {
-    const recipe = registry.recipes.get(id)!;
-    const prefer = preferences[id];
-    const result = planCraft(recipe, reach, character, prefer);
-    const status = requirementStatus(recipe, reach, character);
-    return {
-      id,
-      name: `${recipe.kind === 'repair' ? 'Repair: ' : ''}${registry.items.get(recipe.result.item)!.name}`,
-      kind: recipe.kind === 'repair' ? 'repair' : 'craft',
-      time: craftTime('plan' in result ? result.plan.gather + result.plan.work : recipe.timeGameMinutes),
-      reason: recipeStartReason(recipe, result, reach, startReason),
-      components: status.components.map(({ alternatives, group }) => ({
-        group,
-        preferred: prefer?.[group] ?? '',
-        alternatives: alternatives.map((a) => ({
-          id: a.item,
-          name: registry.items.get(a.item)!.name,
-          needed: a.needed,
-          found: a.available,
+  [...character.knownRecipes]
+    .filter((id) => !registry.recipes.get(id)!.activation)
+    .sort()
+    .map((id) => {
+      const recipe = registry.recipes.get(id)!;
+      const prefer = preferences[id];
+      const result = planCraft(recipe, reach, character, prefer);
+      const status = requirementStatus(recipe, reach, character);
+      return {
+        id,
+        name: `${recipe.kind === 'repair' ? 'Repair: ' : ''}${registry.items.get(recipe.result.item)!.name}`,
+        kind: recipe.kind === 'repair' ? 'repair' : 'craft',
+        time: craftTime('plan' in result ? result.plan.gather + result.plan.work : recipe.timeGameMinutes),
+        reason: recipeStartReason(recipe, result, reach, startReason),
+        components: status.components.map(({ alternatives, group }) => ({
+          group,
+          preferred: prefer?.[group] ?? '',
+          alternatives: alternatives.map((a) => ({
+            id: a.item,
+            name: registry.items.get(a.item)!.name,
+            needed: a.needed,
+            found: a.available,
+          })),
         })),
-      })),
-      qualities: status.qualities.map(({ quality, required, available }) => ({
-        name: quality,
-        required,
-        best: available,
-      })),
-      skills: status.skills.map(({ skill, required, available }) => ({
-        name: registry.skills.get(skill)!.name,
-        required,
-        available,
-      })),
-      workstation: recipe.workstation ?? null,
-    };
-  });
+        qualities: status.qualities.map(({ quality, required, available }) => ({
+          name: quality,
+          required,
+          best: available,
+        })),
+        skills: status.skills.map(({ skill, required, available }) => ({
+          name: registry.skills.get(skill)!.name,
+          required,
+          available,
+        })),
+        workstation: recipe.workstation ?? null,
+      };
+    });

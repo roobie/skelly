@@ -1297,6 +1297,9 @@ const checkZombies = (registry: Registry, report: Report) => {
 };
 
 const checkRecipeRepair = (registry: Registry, recipe: RecipeDef, report: Report): void => {
+  if (recipe.activation && (recipe.kind !== 'repair' || recipe.components.length > 0)) {
+    report('recipes', recipe.id, '.activation', 'held sharpening needs a repair effect and no components');
+  }
   if (recipe.kind === 'repair') {
     if (!recipe.repair) {
       report('recipes', recipe.id, '.repair', 'repair recipes need a repair effect');

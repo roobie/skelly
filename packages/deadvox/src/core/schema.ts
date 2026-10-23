@@ -3458,6 +3458,7 @@ const RecipeSchema = strictObject({
   /** Omitted means an ordinary craft. A repair recipe's result identifies its target type. */
   kind: optional(picklist(['craft', 'repair'])),
   repair: optional(strictObject({ skill: Id, amount: Fraction, perSkill: Fraction })),
+  activation: optional(literal('sharpen')),
   /** Game minutes. */
   timeGameMinutes: PositiveGameMinutes,
   skills: record(Id, SkillLevel),
