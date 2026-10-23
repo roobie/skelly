@@ -58,10 +58,14 @@ jobs:
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 1
         run: node test/browser/melee-build-click.mjs
-      - name: Primary-action interaction and replay contract
+      - name: Primary-action interaction flow contract
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 2
-        run: node test/browser/primary-action.mjs
+        run: node test/browser/primary-action.mjs flow
+      - name: Primary-action replay contract
+        if: ${{ inputs.shard == 'input' }}
+        timeout-minutes: 2
+        run: node test/browser/primary-action.mjs replays
       - name: Primary-action glowstick pixel contract
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 2
