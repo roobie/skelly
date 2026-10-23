@@ -1,11 +1,14 @@
 import { Window } from 'happy-dom';
+import { Group } from 'three';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { Body } from '../src/core/body.ts';
 import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
+import { buildRegistry } from '../src/core/content.ts';
 import type { WorkOperation, WorkOption } from '../src/core/craftCommands.ts';
 import { planCraft } from '../src/core/crafting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { swapBattery } from '../src/core/lights.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import {
@@ -25,6 +28,7 @@ import {
   type ReplayCommandOwners,
 } from '../src/game/replayCommands.ts';
 import { createScreenCommandDispatcher } from '../src/game/screenCommandDispatcher.ts';
+import { ItemPictures } from '../src/render/itemPictures.ts';
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
@@ -100,11 +104,13 @@ function setup(contentRegistry = registry) {
   let needs = 'health 100% · stamina 100% · food 100% · water 100% · fatigue 0';
   let lastPayload: ReplayActionPayload | undefined;
   let workHandler = (_uid: number, _operation: WorkOperation): string | undefined => undefined;
+  let loadHandler = (_lightUid: number, _batteryUid: number): string | undefined => undefined;
   let alarm: { gameHour: number | undefined } | undefined;
   const commandOwners: ReplayCommandOwners = {
     inventory: inv,
     queue,
     quickbar,
+    vehicleWork: () => undefined,
     search: (uid) => {
       if (uid !== entity.uid || entity.searched || searching.has(entity)) {
         return;
@@ -113,10 +119,13 @@ function setup(contentRegistry = registry) {
       queue.enqueueAction('furniture.search', 'Search furniture', 5);
     },
     work: (uid, operation) => workHandler(uid, operation),
+    loadBattery: (lightUid, batteryUid) => loadHandler(lightUid, batteryUid),
     toHands: () => undefined,
     pickup: () => undefined,
     interact: () => undefined,
     lift: () => undefined,
+    useFurniture: () => undefined,
+    slide: () => undefined,
     place: () => undefined,
     turn: () => undefined,
     tip: () => undefined,
@@ -188,6 +197,9 @@ function setup(contentRegistry = registry) {
     setWorkHandler: (handler: typeof workHandler) => {
       workHandler = handler;
     },
+    setLoadHandler: (handler: typeof loadHandler) => {
+      loadHandler = handler;
+    },
     setNeeds: (value: string) => {
       needs = value;
     },
@@ -196,6 +208,49 @@ function setup(contentRegistry = registry) {
     },
   };
 }
+
+it('keeps a model-less item as a text tile when pictures are enabled', () => {
+  const fixture = buildRegistry([
+    {
+      source: 'text-tile',
+      data: {
+        items: [
+          {
+            id: 'text_tile',
+            workInProgress: false,
+            notLoot: false,
+            name: 'Text tile',
+            category: 'misc',
+            weight: 1,
+            size: [1, 1],
+            economy: { usage: [], tiers: [] },
+          },
+        ],
+      },
+    },
+  ]);
+  expect(fixture.issues).toEqual([]);
+  const merged = { ...registry, items: new Map([...registry.items, ...fixture.registry.items]) };
+  const test = setup(merged);
+  const item = test.inv.create('text_tile');
+  expect(test.inv.add(item, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+  Object.assign(test.hooks, {
+    pictures: new ItemPictures(
+      merged,
+      {
+        version: 1,
+        has: () => true,
+        groundLook: () => new Group(),
+      },
+      2,
+      { paint: () => 'still', view: vi.fn(), dispose: vi.fn() },
+    ),
+  });
+  test.screen.update();
+  const tile = test.root.querySelector(`[data-uid="${item.uid}"]`)!;
+  expect(tile.querySelector('.inv-item-name')!.textContent).toBe('Text tile');
+  expect(tile.querySelector('img')).toBeNull();
+});
 
 const holdQuickGate = () => {
   const previous = { context: keyboardInput.context, command: keyboardInput.command };
@@ -223,6 +278,8 @@ describe('inventory screen Lit rendering', () => {
     const items = new Map(registry.items);
     items.set('fixture_floor_stack', {
       id: 'fixture_floor_stack',
+      workInProgress: false,
+      notLoot: false,
       economy: { usage: [], tiers: [] },
       name: 'Fixture floor stack',
       category: 'material',
@@ -261,6 +318,8 @@ describe('inventory screen Lit rendering', () => {
     const items = new Map(registry.items);
     items.set('fixture_floor_dragged', {
       id: 'fixture_floor_dragged',
+      workInProgress: false,
+      notLoot: false,
       economy: { usage: [], tiers: [] },
       name: 'Fixture dragged item',
       category: 'material',
@@ -269,6 +328,8 @@ describe('inventory screen Lit rendering', () => {
     });
     items.set('fixture_floor_target', {
       id: 'fixture_floor_target',
+      workInProgress: false,
+      notLoot: false,
       economy: { usage: [], tiers: [] },
       name: 'Fixture target item',
       category: 'material',
@@ -304,6 +365,8 @@ describe('inventory screen Lit rendering', () => {
     const betaName = 'Box of matches';
     items.set('fixture_inventory_alpha', {
       id: 'fixture_inventory_alpha',
+      workInProgress: false,
+      notLoot: false,
       economy: { usage: [], tiers: [] },
       name: alphaName,
       category: 'medical',
@@ -312,6 +375,8 @@ describe('inventory screen Lit rendering', () => {
     });
     items.set('fixture_inventory_beta', {
       id: 'fixture_inventory_beta',
+      workInProgress: false,
+      notLoot: false,
       economy: { usage: [], tiers: [] },
       name: betaName,
       category: 'medical',
@@ -356,6 +421,85 @@ describe('inventory screen Lit rendering', () => {
     screen.close();
   });
 
+  it('opens the view-only item viewer on the view press over a card and closes it with state unchanged', () => {
+    const test = setup();
+    const { root, screen, inv, queue, beans } = test;
+    const model = vi.fn(() => new Group());
+    Object.assign(test.hooks, { itemView: { model, view: vi.fn() } });
+    // Selected, so a drop that leaked past the viewer would move it.
+    screen.selected = beans;
+    screen.update();
+    const viewPress = inputBindings.chords('inventory.view-item')[0]!;
+    const button = Number(viewPress.code.replace('Mouse', ''));
+    const before = { state: inv.snapshotState(), selected: screen.selected, jobs: queue.jobs.length };
+    const covered = root.querySelector<HTMLButtonElement>('button.inv-option')!;
+    covered.focus();
+    expect(document.activeElement).toBe(covered);
+
+    root.querySelector<HTMLElement>(`[data-uid="${beans.uid}"]`)!.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        button,
+        pointerId: 1,
+        shiftKey: viewPress.modifier === 'shift',
+      }),
+    );
+    expect(screen.viewedUid).toBe(beans.uid);
+    expect(model).toHaveBeenLastCalledWith(beans);
+    const viewer = root.querySelector(`.inv-viewer[data-item-viewer="${beans.uid}"]`);
+    expect(viewer).not.toBeNull();
+    // Focus leaves the covered button, which stays out of reach through a redraw.
+    expect(document.activeElement).toBe(viewer);
+    screen.update();
+    expect(covered.closest('[inert]')).not.toBeNull();
+    expect(viewer!.closest('[inert]')).toBeNull();
+
+    // The viewer swallows item keys while open.
+    expect(screen.onAction('inventory.drop')).toBe(true);
+    screen.update();
+    expect(screen.viewedUid).toBe(beans.uid);
+
+    root.querySelector<HTMLButtonElement>('[data-action="viewer.close"]')!.click();
+    expect(screen.viewedUid).toBeUndefined();
+    expect(root.querySelector('.inv-viewer')).toBeNull();
+    expect(root.querySelector('[inert]')).toBeNull();
+    expect(document.activeElement).toBe(covered);
+    expect({ state: inv.snapshotState(), selected: screen.selected, jobs: queue.jobs.length }).toEqual(before);
+    screen.close();
+  });
+
+  it('turns the model on a left drag even when the view binding is the left button', () => {
+    const test = setup();
+    const { root, screen, beans } = test;
+    const view = vi.fn();
+    Object.assign(test.hooks, { itemView: { model: () => new Group(), view } });
+    screen.update();
+    const issue = inputBindings.rebind('inventory.view-item', [{ code: 'Mouse0' }]);
+    try {
+      expect(issue).toBeUndefined();
+      root
+        .querySelector<HTMLElement>(`[data-uid="${beans.uid}"]`)!
+        .dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1 }));
+      globalThis.window.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1 }));
+      expect(screen.viewedUid).toBe(beans.uid);
+      const yaw = () => view.mock.lastCall![1].yaw;
+      const opened = yaw();
+      root
+        .querySelector('.inv-viewer-canvas')!
+        .dispatchEvent(
+          new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, clientX: 10, clientY: 10 }),
+        );
+      globalThis.window.dispatchEvent(
+        new PointerEvent('pointermove', { bubbles: true, pointerId: 1, clientX: 40, clientY: 10 }),
+      );
+      expect(screen.viewedUid).toBe(beans.uid);
+      expect(yaw()).not.toBe(opened);
+    } finally {
+      inputBindings.reset();
+      screen.close();
+    }
+  });
+
   // The browser breaks and clips a grid name (style.css, `.inv-item-name`), so the screen hands it the whole name.
   it('renders whole grid names and runs tall items along the long edge', () => {
     const items = new Map(registry.items);
@@ -370,6 +514,8 @@ describe('inventory screen Lit rendering', () => {
     for (const fixture of fixtures) {
       items.set(fixture.id, {
         id: fixture.id,
+        workInProgress: false,
+        notLoot: false,
         economy: { usage: [], tiers: [] },
         name: fixture.name,
         category: 'misc',
@@ -576,7 +722,7 @@ describe('inventory screen Lit rendering', () => {
     const row = () => root.querySelector<HTMLElement>(`[data-skill="${skill.id}"]`);
     expect(row()?.dataset.level).toBe(String(initialLevel));
 
-    character.awardPractice(skill.id, practiceForNextLevel(initialLevel), SKILL_LEVEL_LEGENDARY);
+    character.awardPractice(skill.id, practiceForNextLevel(registry, initialLevel), SKILL_LEVEL_LEGENDARY);
     screen.update();
 
     expect(character.skills[skill.id]).toBeGreaterThan(initialLevel);
@@ -593,8 +739,47 @@ describe('inventory screen Lit rendering', () => {
     screen.selected = firearm;
     screen.update();
 
-    const battery = root.querySelector<HTMLElement>(`[data-attachment-slot="${mounted.fitted.mountedAt}.battery"]`);
+    const light = firearm.slots![mounted.fitted.mountedAt]!;
+    const battery = root.querySelector<HTMLElement>(`[data-target="battery:${light.uid}"]`);
     expect(battery?.dataset.occupied).toBe('true');
+  });
+
+  it('loads a battery dragged onto the battery slot of a light card', () => {
+    const t = setup();
+    const light = t.inv.create('flashlight');
+    const spare = t.inv.create('aa_battery');
+    if (!(t.inv.add(light, { kind: 'pile', pos: [0, 0, 0] }) && t.inv.add(spare, { kind: 'hand', side: 'left' }))) {
+      throw new Error('Fixture could not place the light on the ground and the battery in hand');
+    }
+    const fitted = light.slots!.battery!;
+    t.setLoadHandler((lightUid, batteryUid) =>
+      swapBattery(t.inv, t.inv.itemByUid(lightUid)!, t.inv.itemByUid(batteryUid)!, () => ({
+        kind: 'pile',
+        pos: [0, 0, 0],
+      })),
+    );
+    t.screen.selected = light;
+    t.screen.update();
+    const slot = t.root.querySelector<HTMLElement>(`[data-target="battery:${light.uid}"]`)!;
+    const hitTest = vi.spyOn(document, 'elementsFromPoint').mockImplementation(() => [slot]);
+
+    t.root
+      .querySelector<HTMLElement>(`.inv-item-slot[data-uid="${spare.uid}"]`)!
+      .dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, clientX: 10, clientY: 10 }),
+      );
+    globalThis.window.dispatchEvent(
+      new PointerEvent('pointermove', { bubbles: true, pointerId: 1, clientX: 30, clientY: 10 }),
+    );
+    globalThis.window.dispatchEvent(
+      new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1, clientX: 30, clientY: 10 }),
+    );
+    hitTest.mockRestore();
+
+    expect(t.lastPayload()).toEqual({ kind: 'light.battery.load', lightUid: light.uid, batteryUid: spare.uid });
+    expect(light.slots?.battery).toBe(spare);
+    expect(t.inv.locate(fitted)?.kind).toBe('pile');
+    t.screen.close();
   });
 
   it('fits a foregrip from an inventory pocket onto the held AR through the inventory control', () => {
@@ -629,10 +814,14 @@ describe('inventory screen Lit rendering', () => {
         work: () => undefined,
         fitAttachment: (uid, targetSlot, attachmentUid) => handling.fit(uid, targetSlot, attachmentUid),
         removeAttachment: (uid, targetSlot) => handling.remove(uid, targetSlot),
+        vehicleWork: () => undefined,
+        loadBattery: () => undefined,
         toHands: () => undefined,
         pickup: () => undefined,
         interact: () => undefined,
         lift: () => undefined,
+        useFurniture: () => undefined,
+        slide: () => undefined,
         place: () => undefined,
         turn: () => undefined,
         tip: () => undefined,
@@ -645,8 +834,26 @@ describe('inventory screen Lit rendering', () => {
         cancelItemThrow: () => undefined,
         throwItem: () => undefined,
       });
+    const paint = vi.fn(() => `data:image/png;base64,${paint.mock.calls.length}`);
+    const models = { version: 0, has: () => models.version > 0, groundLook: () => new Group() };
+    const pictures = new ItemPictures(registry, models, registry.graphics.get('core')!.itemPictureCacheCapacity, {
+      paint,
+      view: vi.fn(),
+      dispose: vi.fn(),
+    });
+    Object.assign(test.hooks, { pictures });
     test.screen.selected = firearm;
     test.screen.update();
+    expect(test.root.querySelector(`[data-uid="${firearm.uid}"] .inv-item-picture`)).toBeNull();
+    models.version += 1;
+    test.screen.update();
+    const picture = () =>
+      test.root.querySelector<HTMLImageElement>(`[data-uid="${firearm.uid}"] .inv-item-picture`)!.src;
+    const before = picture();
+    expect(pictures.picture(firearm)).toBe(before);
+    const coldPaints = paint.mock.calls.length;
+    expect(pictures.picture(firearm)).toBe(before);
+    expect(paint).toHaveBeenCalledTimes(coldPaints);
 
     expect(test.inv.hands.right).toBe(firearm);
     expect(test.inv.locate(foregrip)?.kind).toBe('pocket');
@@ -658,6 +865,12 @@ describe('inventory screen Lit rendering', () => {
     expect(firearm.slots?.[slot.id]).toBeUndefined();
     test.queue.tick(test.queue.remaining);
     expect(firearm.slots?.[slot.id]).toBe(foregrip);
+    test.screen.update();
+    expect(picture()).not.toBe(before);
+    expect(handling.remove(firearm.uid, slot.id)).toBeUndefined();
+    test.queue.tick(test.queue.remaining);
+    test.screen.update();
+    expect(picture()).toBe(before);
   });
 
   it('shows exported slots and dispatches fitting and removal for held and ground firearms', () => {
@@ -841,6 +1054,41 @@ describe('inventory screen Lit rendering', () => {
     buttons.find((button) => button.textContent!.includes('Take apart'))!.click();
     expect(calls).toEqual([[item.uid, 'apart']]);
   });
+  it('cycles the container target and puts the selected item into it through the move path', () => {
+    const t = setup();
+    const second = t.inv.entities.add({ type: t.entity.type, pos: [0, 0, 1], size: [1, 1, 1], facing: 'n' })!;
+    t.hooks.containers = () => [t.entity, second];
+    t.inv.entities.markSearched(t.entity);
+    t.inv.entities.markSearched(second);
+    const targeted = () =>
+      [...t.root.querySelectorAll<HTMLElement>('[data-target="true"]')].map((node) => Number(node.dataset.entityUid));
+    t.screen.update();
+    t.screen.selected = t.beans;
+
+    expect(targeted()).toEqual([t.entity.uid]);
+    expect(t.screen.onAction('inventory.cycle-target')).toBe(true);
+    t.screen.update();
+    expect(targeted()).toEqual([second.uid]);
+
+    expect(t.screen.onAction('inventory.put-target')).toBe(true);
+    t.queue.tick(t.queue.remaining);
+    expect(t.inv.locate(t.beans)).toMatchObject({ kind: 'furniture', entity: second });
+
+    expect(t.screen.onAction('inventory.cycle-target')).toBe(true);
+    t.screen.update();
+    expect(targeted()).toEqual([t.entity.uid]);
+  });
+
+  it('refuses to cycle or put when no container is in reach', () => {
+    const t = setup();
+    t.hooks.containers = () => [];
+    t.screen.selected = t.beans;
+    expect(t.screen.onAction('inventory.cycle-target')).toBe(true);
+    expect(t.screen.onAction('inventory.put-target')).toBe(true);
+    expect(t.refusals).toHaveLength(2);
+    expect(t.inv.locate(t.beans)?.kind).toBe('hand');
+  });
+
   it('redraws the body when a furniture search is queued without a version bump', () => {
     const test = setup();
     const versions = [test.inv.version, test.inv.entities.version];

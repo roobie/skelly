@@ -12,22 +12,24 @@ import { practiceForNextLevel } from '../core/character.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { WorkOperation, WorkOption } from '../core/craftCommands.ts';
-import { firearmSlotIds } from '../core/firearmFitting.ts';
+import { firearmSlotIds, LIGHT_MOUNT_SLOT } from '../core/firearmFitting.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import { type Inventory, type Pile, sameGrid, spotOf, type Target, wornSlotOf } from '../core/inventory.ts';
 import { GRID_CELL_REM as CELL_REM } from '../core/inventoryGridName.ts';
 import { PILE_GRID } from '../core/inventoryScale.ts';
 import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed, weightOf } from '../core/items.ts';
-import { bestPocket, dropTarget, type Option, options, quickMove } from '../core/options.ts';
+import { batterySlotRefusal, bestPocket, dropTarget, type Option, options, quickMove } from '../core/options.ts';
 import { type ReachSnapshot, reachTuning } from '../core/reach.ts';
-import type { WearSlot } from '../core/schema.ts';
+import type { ScreenText, WearSlot } from '../core/schema.ts';
+import { fillText } from '../core/textTemplate.ts';
 import { clearsFindField, inputBindings, keyboardInput } from '../game/inputBindings.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
-import { craftTime, workName } from './craftReadout.ts';
+import { craftingText, craftTime, workName } from './craftReadout.ts';
 import { factDetail } from './factDetail.ts';
 import { matchesFind, queryWords } from './inventoryFind.ts';
 import { type InventoryTab, InventoryTabState } from './inventoryTabs.ts';
-import { keyCap } from './keyCap.ts';
+import { ItemViewer, type ItemViewSource, isViewItemPress } from './itemViewer.ts';
+import { fillHint, keyCap } from './keyCap.ts';
 
 /** One cell's rendered size in a node's document, for maths against pointer coordinates. */
 const cellPx = (node: Element): number => {
@@ -63,7 +65,17 @@ const SHOWN_SLOTS: readonly WearSlot[] = ['shoulder', 'torso', 'vest', 'hands', 
 /** Head-worn slots show only while something is worn there, at the top of the worn panel. */
 const WORN_ONLY_SLOTS: readonly WearSlot[] = ['head', 'eyes'];
 
+import type { ChargerPanel } from './chargerPanel.ts';
+import type { VehicleInspectionViewModel, VehicleServiceAction, VehicleWorkPayload } from './vehicleInspection.ts';
+
 export interface ScreenHooks {
+  charger?: (entity: BlockEntity) => ChargerPanel | undefined;
+  chargerRevision?: () => number;
+  /** The vehicle the player opened by interacting with it, while it stays in reach. */
+  openedVehicle?: () => { readonly view: VehicleInspectionViewModel; readonly distanceMetres: number } | undefined;
+  pictures?: { readonly version: number; picture: (item: Item) => string | undefined } | undefined;
+  /** Draws an item's model for the item viewer; without it the viewer does not open. */
+  itemView?: ItemViewSource | undefined;
   /** What each wear slot is called; from the core ui content. */
   slotLabels: Readonly<Record<WearSlot, string>>;
   reach: () => ReachSnapshot;
@@ -106,9 +118,15 @@ interface Drag {
   rotated: boolean;
   start: [number, number];
   moved: boolean;
+  /** The item the details card showed at the press: the card keeps it so its battery slot stays a drop zone. */
+  card: Item | undefined;
   position?: [number, number];
-  hover?: { target: Target; ok: boolean; reason: string } | undefined;
+  /** A move to `target`, or a load into `light` from its battery slot. */
+  hover?: (({ target: Target } | { light: Item }) & { ok: boolean; reason: string }) | undefined;
 }
+
+/** The drop zone of a light's battery slot on its card. */
+const batterySlotTarget = (lightUid: number): string => `battery:${lightUid}`;
 
 interface ItemViewModel {
   readonly item: Item;
@@ -117,6 +135,7 @@ interface ItemViewModel {
   readonly title: string;
   readonly name: string;
   readonly count?: string | undefined;
+  readonly picture?: string | undefined;
   readonly style?: string | undefined;
 }
 
@@ -148,11 +167,37 @@ interface PileViewModel {
 }
 
 interface FurnitureViewModel {
+  readonly charger?: ChargerPanel | undefined;
   readonly uid: number;
   readonly label: string;
   readonly searching: boolean;
+  readonly targeted: boolean;
   readonly searchLabel?: string | undefined;
   readonly grids: readonly { readonly label?: string | undefined; readonly grid: GridViewModel }[];
+}
+
+interface VehicleOptionViewModel {
+  readonly label: string;
+  /** The work's length, already worded. */
+  readonly span?: string;
+  readonly reason?: string;
+  readonly payload: VehicleWorkPayload;
+}
+
+interface VehicleSiteViewModel {
+  readonly id: string;
+  readonly item?: ItemViewModel | undefined;
+  readonly label: string;
+  readonly site?: string | undefined;
+  readonly condition?: string | undefined;
+  readonly options: readonly VehicleOptionViewModel[];
+  readonly noPart?: string | undefined;
+}
+
+interface VehicleViewModel {
+  readonly vehicleId: number;
+  readonly label: string;
+  readonly sites: readonly VehicleSiteViewModel[];
 }
 
 interface OptionViewModel {
@@ -169,8 +214,16 @@ interface AttachmentSlotViewModel {
   readonly label: string;
   readonly occupied?: string;
   readonly attachmentUid?: number;
-  readonly battery?: string;
+  readonly battery?: BatterySlotViewModel;
   readonly candidates: readonly { readonly uid: number; readonly name: string }[];
+}
+
+/** A powered light's battery slot, which takes a dragged battery. */
+interface BatterySlotViewModel {
+  readonly lightUid: number;
+  /** The fitted battery's name, or the open-slot word. */
+  readonly name: string;
+  readonly fitted: boolean;
 }
 
 interface DetailsViewModel {
@@ -182,8 +235,14 @@ interface DetailsViewModel {
   readonly description?: string | undefined;
   readonly lines: readonly string[];
   readonly options: readonly OptionViewModel[];
+  /** A fitted vehicle part goes only where its service work takes it. */
+  readonly vehicleOptions?: readonly VehicleOptionViewModel[];
   readonly attachmentSlots?: readonly AttachmentSlotViewModel[];
+  readonly battery?: BatterySlotViewModel;
 }
+
+const batterySlotTemplate = (slot: BatterySlotViewModel, text: InventoryText): TemplateResult =>
+  html`<div class="inv-line inv-battery-slot" data-target=${batterySlotTarget(slot.lightUid)} data-occupied=${slot.fitted}>${fillText(text.battery, { battery: slot.name })}</div>`;
 
 /** Only a tier content marks `warn` gets the warning style (`DESIGN.md`, "Bleeding"). */
 const bleedingTemplate = (bleeding: BodyRegionViewModel['bleeding']) => {
@@ -230,11 +289,14 @@ interface InventoryScreenViewModel {
   readonly hasFeetPile: boolean;
   readonly feetTarget: string;
   readonly furniture: readonly FurnitureViewModel[];
+  readonly vehicle?: VehicleViewModel | undefined;
   readonly details: DetailsViewModel;
 }
 
-const secs = (s: number) => `${s.toFixed(1)} s`;
-const kg = (g: number) => `${(g / 1000).toFixed(2)} kg`;
+type InventoryText = ScreenText['inventory'];
+
+const secs = (text: InventoryText, s: number) => fillText(text.secs, { value: s.toFixed(1) });
+const kg = (text: InventoryText, g: number) => fillText(text.kg, { value: (g / 1000).toFixed(2) });
 const occupiedHand = (inv: Pick<Inventory, 'hands' | 'registry'>, side: 'right' | 'left'): string | undefined => {
   const other = inv.hands[side === 'right' ? 'left' : 'right'];
   return !inv.hands[side] && other && defOf(inv.registry, other.type).twoHanded
@@ -242,11 +304,13 @@ const occupiedHand = (inv: Pick<Inventory, 'hands' | 'registry'>, side: 'right' 
     : undefined;
 };
 
-const handContents = (slot: SlotViewModel): TemplateResult | typeof nothing => {
+const handContents = (slot: SlotViewModel, text: InventoryText): TemplateResult | typeof nothing => {
   if (slot.item) {
     return itemTemplate(slot.item);
   }
-  return slot.occupied ? html`<span class="inv-occupied-hand">Reserved: ${slot.occupied}</span>` : nothing;
+  return slot.occupied
+    ? html`<span class="inv-occupied-hand">${fillText(text.reserved, { item: slot.occupied })}</span>`
+    : nothing;
 };
 const optionAction = (option: Option | WorkOption): Pick<OptionViewModel, 'target' | 'operation'> => {
   if ('kind' in option) {
@@ -290,6 +354,7 @@ const scrollItemWithinAncestor = (row: HTMLElement, parent: HTMLElement, axis: '
 
 const itemTemplate = (vm: ItemViewModel): TemplateResult => html`
   <div class=${vm.className} data-uid=${vm.uid} title=${vm.title} style=${vm.style ?? ''}>
+    ${vm.picture ? html`<img class="inv-item-picture" src=${vm.picture} alt="" draggable="false" />` : nothing}
     <span class="inv-item-name">${vm.name}</span>
     ${vm.count ? html`<span class="inv-item-count">${vm.count}</span>` : nothing}
   </div>
@@ -329,36 +394,70 @@ const optionTemplate = (
         </div>
       `;
 
+const vehicleOptionTemplate = (
+  option: VehicleOptionViewModel,
+  dispatch: (payload: ReplayActionPayload) => void,
+): TemplateResult =>
+  option.reason === undefined
+    ? html`
+        <button class="inv-option" type="button" data-vehicle-work=${option.payload.work} data-item-uid=${option.payload.itemUid} @click=${() => dispatch(option.payload)}>
+          <span>${option.label}</span><span class="inv-time">${option.span}</span>
+        </button>
+      `
+    : html`
+        <div class="inv-option inv-option-no" data-vehicle-work=${option.payload.work} data-item-uid=${option.payload.itemUid}>
+          <span>${option.label}</span><span class="inv-reason">${option.reason}</span>
+        </div>
+      `;
+
+const vehicleTemplate = (
+  vehicle: VehicleViewModel,
+  dispatch: (payload: ReplayActionPayload) => void,
+): TemplateResult => html`
+  <div class="inv-around-section inv-around-vehicle" data-around-section="vehicle" data-vehicle-id=${vehicle.vehicleId}>
+    <div class="inv-pile-label">${vehicle.label}</div>
+    ${vehicle.sites.map(
+      (site) => html`
+        <div class="inv-vehicle-site" data-vehicle-site=${site.id} data-occupied=${site.item !== undefined}>
+          ${site.item ? itemTemplate(site.item) : html`<span class="inv-muted">${site.label}</span>`}
+          ${site.site ? html`<span class="inv-muted">${site.site}</span>` : nothing}
+          ${site.condition ? html`<span class="inv-condition">${site.condition}</span>` : nothing}
+          ${site.options.map((option) => vehicleOptionTemplate(option, dispatch))}
+          ${site.noPart ? html`<span class="inv-muted">${site.noPart}</span>` : nothing}
+        </div>
+      `,
+    )}
+  </div>
+`;
+
 const attachmentSlotTemplate = (
   firearm: Item,
   slot: AttachmentSlotViewModel,
   attachmentAction: (payload: ReplayActionPayload) => void,
+  text: InventoryText,
 ): TemplateResult => html`
   <div class="inv-line" data-attachment-slot=${slot.id} data-occupied=${slot.attachmentUid !== undefined}>
-    <span>${slot.label}: ${slot.occupied ?? 'Open'}</span>
+    <span>${fillText(text.slot, { slot: slot.label, item: slot.occupied ?? text.open })}</span>
     ${
       slot.attachmentUid === undefined
         ? slot.candidates.map(
             (candidate) =>
-              html`<button class="inv-option" type="button" @click=${() => attachmentAction({ kind: 'firearm.attachment.fit', firearmUid: firearm.uid, slotId: slot.id, attachmentUid: candidate.uid })}>Fit ${candidate.name}</button>`,
+              html`<button class="inv-option" type="button" @click=${() => attachmentAction({ kind: 'firearm.attachment.fit', firearmUid: firearm.uid, slotId: slot.id, attachmentUid: candidate.uid })}>${fillText(text.fit, { item: candidate.name })}</button>`,
           )
-        : html`<button class="inv-option" type="button" @click=${() => attachmentAction({ kind: 'firearm.attachment.remove', firearmUid: firearm.uid, slotId: slot.id })}>Remove</button>`
+        : html`<button class="inv-option" type="button" @click=${() => attachmentAction({ kind: 'firearm.attachment.remove', firearmUid: firearm.uid, slotId: slot.id })}>${text.remove}</button>`
     }
   </div>
-  ${
-    slot.battery === undefined
-      ? nothing
-      : html`<div class="inv-line" data-attachment-slot=${`${slot.id}.battery`} data-occupied=${slot.battery !== 'Open'}>Battery: ${slot.battery}</div>`
-  }
+  ${slot.battery === undefined ? nothing : batterySlotTemplate(slot.battery, text)}
 `;
 
 const detailsTemplate = (
   vm: DetailsViewModel,
   queue: (item: Item, target?: Target, operation?: WorkOperation) => void,
   attachmentAction: (payload: ReplayActionPayload) => void,
+  text: InventoryText,
 ): TemplateResult => {
   if (vm.empty) {
-    return html`<aside class="inv-details" data-pane="details" data-selected-uid=""><p class="inv-muted">No item selected</p></aside>`;
+    return html`<aside class="inv-details" data-pane="details" data-selected-uid=""><p class="inv-muted">${text.noSelection}</p></aside>`;
   }
   const item = vm.item!;
   return html`
@@ -367,13 +466,18 @@ const detailsTemplate = (
       <h3>${vm.name}</h3>
       <div class="inv-condition">${vm.condition}</div>
       ${vm.description ? html`<p class="inv-muted">${vm.description}</p>` : nothing}
-      <div class="inv-kicker">Inspect</div>
+      <div class="inv-kicker">${text.inspect}</div>
       ${vm.lines.map((line) => html`<div class="inv-line">${line}</div>`)}
-      <div class="inv-kicker">Where it can go</div>
-      ${vm.options.map((option) => optionTemplate(option, item, queue))}
+      ${vm.battery ? batterySlotTemplate(vm.battery, text) : nothing}
+      <div class="inv-kicker">${text.whereItCanGo}</div>
+      ${
+        vm.vehicleOptions
+          ? vm.vehicleOptions.map((option) => vehicleOptionTemplate(option, attachmentAction))
+          : vm.options.map((option) => optionTemplate(option, item, queue))
+      }
       ${
         vm.attachmentSlots?.length
-          ? html`<div class="inv-kicker">Firearm slots</div>${vm.attachmentSlots.map((slot) => attachmentSlotTemplate(item, slot, attachmentAction))}`
+          ? html`<div class="inv-kicker">${text.firearmSlots}</div>${vm.attachmentSlots.map((slot) => attachmentSlotTemplate(item, slot, attachmentAction, text))}`
           : nothing
       }
     </aside>
@@ -386,18 +490,19 @@ const stepWakeGameHour = (gameHour: number | undefined, step: 1 | -1): number | 
   return next === 0 ? undefined : next - 1;
 };
 
-const wakeLabel = (gameHour: number | undefined): string =>
-  gameHour === undefined ? 'when rested' : `${String(gameHour).padStart(2, '0')}:00`;
+const wakeLabel = (gameHour: number | undefined, text: InventoryText): string =>
+  gameHour === undefined ? text.whenRested : `${String(gameHour).padStart(2, '0')}:00`;
 
 const furnitureBodyTemplate = (
   furniture: FurnitureViewModel,
   search: (uid: number) => void,
+  text: InventoryText,
 ): TemplateResult | TemplateResult[] => {
   if (furniture.searching) {
-    return html`<p class="inv-muted">Searching…</p>`;
+    return html`<p class="inv-muted">${text.searching}</p>`;
   }
   if (furniture.searchLabel) {
-    return html`<button class="inv-option" type="button" data-action="furniture.search" @click=${() => search(furniture.uid)}><span>Search it (${keyCap('inventory.search')})</span><span class="inv-time">${furniture.searchLabel}</span></button>`;
+    return html`<button class="inv-option" type="button" data-action="furniture.search" @click=${() => search(furniture.uid)}><span>${fillHint(text.searchIt, { key: keyCap('inventory.search') })}</span><span class="inv-time">${furniture.searchLabel}</span></button>`;
   }
   return furniture.grids.map(
     (pocket) => html`
@@ -409,7 +514,7 @@ const furnitureBodyTemplate = (
 
 const inventoryTemplate = (
   vm: InventoryScreenViewModel,
-  { tab, splitRatio }: { tab: InventoryTab; splitRatio: number },
+  { tab, splitRatio, text }: { tab: InventoryTab; splitRatio: number; text: InventoryText },
   selectTab: (tab: InventoryTab) => void,
   {
     find,
@@ -428,12 +533,12 @@ const inventoryTemplate = (
   },
 ): TemplateResult => html`
   <header class="inv-head">
-    <div class="inv-title"><h2>${factDetail('Inventory', 'The world continues while inventory is open.')}</h2><span class="inv-weight">Carrying ${vm.weight}</span></div>
-    <nav class="inv-tabs" aria-label="Character screen">
+    <div class="inv-title"><h2>${factDetail(text.heading, text.headingFact)}</h2><span class="inv-weight">${fillText(text.carrying, { weight: vm.weight })}</span></div>
+    <nav class="inv-tabs" aria-label=${text.tabsLabel}>
       ${(['items', 'skills', 'crafting', 'actions'] as const).map(
         (name) => html`
         <button type="button" class="inv-tab" data-tab=${name} aria-selected=${tab === name} @click=${() => selectTab(name)}>
-          ${({ items: 'Items', skills: 'Skills', crafting: 'Crafting', actions: 'Actions' } satisfies Record<InventoryTab, string>)[name]}
+          ${({ items: text.tabItems, skills: text.tabSkills, crafting: text.tabCrafting, actions: text.tabActions } satisfies Record<InventoryTab, string>)[name]}
         </button>
       `,
       )}
@@ -442,17 +547,17 @@ const inventoryTemplate = (
       class="inv-find"
       type="search"
       data-inventory-find
-      placeholder="Find"
-      aria-label="Find items"
+      placeholder=${text.find}
+      aria-label=${text.findLabel}
       autocomplete="off"
       .value=${live(find.query)}
       @input=${(e: Event) => find.change((e.target as HTMLInputElement).value)}
       @keydown=${find.key}
     />
-    <div class="inv-needs" aria-label="Needs">${vm.needs}</div>
+    <div class="inv-needs" aria-label=${text.needsLabel}>${vm.needs}</div>
     <details class="inv-help">
-      <summary>Controls</summary>
-      <span>${['inventory.find', 'inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.search', 'handling.stop', 'ui.inventory-toggle'].map((id) => html`${keyCap(id)}: ${inputBindings.binding(id)!.description}`).flatMap((line, i) => (i === 0 ? [line] : [' · ', line]))} · ${Array.from({ length: 5 }, (_, i) => keyCap(`quickbar.assign.${i + 1}`)).flatMap((cap, i) => (i === 0 ? [cap] : [' / ', cap]))}: assign quickbar</span>
+      <summary>${text.controls}</summary>
+      <span>${['inventory.find', 'inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.view-item', 'inventory.search', 'inventory.cycle-target', 'inventory.put-target', 'handling.stop', 'ui.inventory-toggle'].map((id) => fillHint(text.controlLine, { key: keyCap(id), action: inputBindings.binding(id)!.description })).flatMap((line, i) => (i === 0 ? [line] : [' · ', line]))} · ${fillHint(text.assignQuickbar, { keys: html`${Array.from({ length: 5 }, (_, i) => keyCap(`quickbar.assign.${i + 1}`)).flatMap((cap, i) => (i === 0 ? [cap] : [' / ', cap]))}` })}</span>
     </details>
   </header>
   <div
@@ -470,12 +575,12 @@ const inventoryTemplate = (
     ?hidden=${tab !== 'items'}
   >
     <section class="inv-pane" data-pane="you">
-      <h3>You</h3>
+      <h3>${text.you}</h3>
       <div class="inv-hands">
         ${vm.hands.map(
           (slot) => html`
           <div class="inv-slot" data-target=${slot.target}>
-            <span class="inv-slot-label">${slot.label}</span>${handContents(slot)}
+            <span class="inv-slot-label">${slot.label}</span>${handContents(slot, text)}
           </div>
         `,
         )}
@@ -495,14 +600,14 @@ const inventoryTemplate = (
       class="inv-splitter"
       data-inventory-splitter
       role="separator"
-      aria-label="Resize player and vicinity columns"
+      aria-label=${text.splitterLabel}
       aria-orientation="vertical"
       aria-valuemin="0"
       aria-valuemax="100"
       aria-valuenow=${Math.round(splitRatio * 100)}
     ></div>
     <section class="inv-pane" data-pane="around">
-      <h3>Around you</h3>
+      <h3>${text.around}</h3>
       <div class="inv-around-sections">
         ${vm.piles.map(
           (pile) => html`
@@ -513,7 +618,7 @@ const inventoryTemplate = (
           ${pile.bags.map(
             (bag) => html`
             <div class="inv-around-section inv-around-container" data-around-section="container">
-              <div class="inv-pile-label">${bag.name}, on the floor</div>
+              <div class="inv-pile-label">${fillText(text.bagOnFloor, { bag: bag.name })}</div>
               <div class="inv-pockets">${bag.pockets.map(pocketTemplate)}</div>
             </div>
           `,
@@ -525,52 +630,62 @@ const inventoryTemplate = (
             ? nothing
             : html`
           <div class="inv-around-section inv-around-floor" data-around-section="floor">
-            <div class="inv-pile-label">At your feet</div>${gridTemplate({ target: `pile:${vm.feetTarget}`, width: EMPTY_DROP_GRID.w * CELL_REM, height: EMPTY_DROP_GRID.h * CELL_REM, items: [] })}
+            <div class="inv-pile-label">${text.atFeet}</div>${gridTemplate({ target: `pile:${vm.feetTarget}`, width: EMPTY_DROP_GRID.w * CELL_REM, height: EMPTY_DROP_GRID.h * CELL_REM, items: [] })}
           </div>
         `
         }
         ${vm.furniture.map(
           (furniture) => html`
-          <div class="inv-around-section inv-around-container inv-pile" data-around-section="container" data-entity-uid=${furniture.uid}>
-            <div class="inv-pile-label">${furniture.label}</div>
-            ${furnitureBodyTemplate(furniture, search)}
+          <div class="inv-around-section inv-around-container inv-pile${furniture.targeted ? ' inv-target' : ''}" data-around-section="container" data-entity-uid=${furniture.uid} data-target=${furniture.targeted ? 'true' : 'false'}>
+            <div class="inv-pile-label">${furniture.targeted ? '▸ ' : ''}${furniture.label}</div>
+            ${furnitureBodyTemplate(furniture, search, text)}
+            ${
+              furniture.charger
+                ? html`<div class="inv-charger" data-charger=${furniture.uid}>
+              <div data-charger-status>${furniture.charger.status}</div>
+              <div>${furniture.charger.remaining}</div>
+              ${furniture.charger.actions.map((action) => html`<button type="button" class="inv-option" data-charger-action=${action.payload.kind} @click=${() => attachmentAction(action.payload)}>${action.label}</button>`)}
+            </div>`
+                : nothing
+            }
           </div>
         `,
         )}
+        ${vm.vehicle ? vehicleTemplate(vm.vehicle, attachmentAction) : nothing}
       </div>
     </section>
-    ${detailsTemplate(vm.details, queue, attachmentAction)}
+    ${detailsTemplate(vm.details, queue, attachmentAction, text)}
   </div>
   <div class="inv-body inv-skills" data-tab-panel="skills" ?hidden=${tab !== 'skills'}>
     <section class="inv-pane inv-body-panel" data-pane="body">
-      <h3>Body</h3>
-      <div class="inv-body-vitals">Health ${vm.body.health} · Blood ${vm.body.blood} · Shock ${vm.body.shock}</div>
+      <h3>${text.body}</h3>
+      <div class="inv-body-vitals">${fillText(text.vitals, { health: vm.body.health, blood: vm.body.blood, shock: vm.body.shock })}</div>
       ${vm.body.regions.map(
         (region) => html`
         <div class="inv-body-region" data-body-region=${region.region}>
           <span class="inv-body-region-name">${bodyRegionLabel(region.region)}</span>
-          <span>${region.damage} damage</span>
+          <span>${fillText(text.regionDamage, { damage: region.damage })}</span>
           ${bleedingTemplate(region.bleeding)}
-          ${region.infection !== 'none' && region.infection !== 'resolved' ? html`<span class="inv-body-warning">${region.infection} infection</span>` : nothing}
+          ${region.infection !== 'none' && region.infection !== 'resolved' ? html`<span class="inv-body-warning">${fillText(text.infection, { infection: region.infection })}</span>` : nothing}
         </div>
       `,
       )}
     </section>
-    <section class="inv-pane inv-skill-list" aria-label="Skills">
-      <h3>Skills</h3>
+    <section class="inv-pane inv-skill-list" aria-label=${text.skillsHeading}>
+      <h3>${text.skillsHeading}</h3>
       ${vm.skills.map(
         (skill) => html`
         <div class="inv-skill" data-skill=${skill.id} data-level=${skill.level}>
-          <div class="inv-skill-heading"><strong>${skill.name}</strong><span>Level ${skill.level}</span></div>
+          <div class="inv-skill-heading"><strong>${skill.name}</strong><span>${fillText(text.level, { level: skill.level })}</span></div>
           <div class="inv-skill-practice">${
             Number.isFinite(skill.nextLevelPractice)
-              ? `${skill.practice} / ${skill.nextLevelPractice} practice`
-              : `${skill.practice} practice · no next level`
+              ? fillText(text.practice, { practice: skill.practice, next: skill.nextLevelPractice })
+              : fillText(text.practiceMax, { practice: skill.practice })
           }</div>
           ${
             Number.isFinite(skill.nextLevelPractice)
               ? html`
-            <div class="inv-skill-progress" role="progressbar" aria-label=${`${skill.name} progress`} aria-valuemin="0" aria-valuemax=${skill.nextLevelPractice} aria-valuenow=${skill.practice}>
+            <div class="inv-skill-progress" role="progressbar" aria-label=${fillText(text.skillProgress, { skill: skill.name })} aria-valuemin="0" aria-valuemax=${skill.nextLevelPractice} aria-valuenow=${skill.practice}>
               <span style=${`width:${skill.progress}%`}></span>
             </div>
           `
@@ -582,19 +697,19 @@ const inventoryTemplate = (
     </section>
   </div>
   <div class="inv-body inv-actions" data-tab-panel="actions" ?hidden=${tab !== 'actions'}>
-    <section class="inv-pane inv-body-panel" aria-label="Actions">
-      <h3>Actions</h3>
-      <button class="inv-option" type="button" data-action="wait" @click=${wait}>Wait</button>
+    <section class="inv-pane inv-body-panel" aria-label=${text.actionsHeading}>
+      <h3>${text.actionsHeading}</h3>
+      <button class="inv-option" type="button" data-action="wait" @click=${wait}>${text.wait}</button>
       ${
         vm.wakeAt === undefined
           ? nothing
           : html`
-        <div class="inv-option" role="group" aria-label="Wake at">
-          <span>Wake at</span>
+        <div class="inv-option" role="group" aria-label=${text.wakeAt}>
+          <span>${text.wakeAt}</span>
           <span class="inv-wake-step">
-            <button class="inv-option" type="button" data-action="wake-earlier" aria-label="Earlier" @click=${() => stepWake(-1)}>−</button>
+            <button class="inv-option" type="button" data-action="wake-earlier" aria-label=${text.earlier} @click=${() => stepWake(-1)}>−</button>
             <span class="inv-time" data-wake-at>${vm.wakeAt}</span>
-            <button class="inv-option" type="button" data-action="wake-later" aria-label="Later" @click=${() => stepWake(1)}>+</button>
+            <button class="inv-option" type="button" data-action="wake-later" aria-label=${text.later} @click=${() => stepWake(1)}>+</button>
           </span>
         </div>
       `
@@ -603,19 +718,23 @@ const inventoryTemplate = (
   </div>
   <footer class="inv-queue"></footer>
   <div class="inv-gutter-probe" aria-hidden="true"></div>
+  <div class="inv-viewer-host"></div>
 `;
 
-const queueTemplate = (queue: Pick<HandlingQueue, 'jobs' | 'busy' | 'remaining'>): TemplateResult => {
+const queueTemplate = (
+  queue: Pick<HandlingQueue, 'jobs' | 'busy' | 'remaining'>,
+  text: InventoryText,
+): TemplateResult => {
   const rows = queue.jobs.map((job, i) => ({
     n: String(i + 1),
     label: job.label,
     percent: Math.round((job.elapsed / Math.max(job.duration, 1e-6)) * 100),
-    duration: secs(job.duration),
+    duration: secs(text, job.duration),
   }));
   return html`
     <div class="inv-queue-title">
-      <strong>${factDetail('Doing next', 'Handling halves movement speed and prevents sprinting.')}</strong>
-      <span class="inv-muted">${queue.busy ? html`${secs(queue.remaining)} left · Cancel (${keyCap('handling.stop')})` : 'Nothing queued'}</span>
+      <strong>${factDetail(text.doingNext, text.doingNextFact)}</strong>
+      <span class="inv-muted">${queue.busy ? fillHint(text.queueLeft, { span: secs(text, queue.remaining), key: keyCap('handling.stop') }) : text.nothingQueued}</span>
     </div>
     ${rows.map(
       (row) => html`
@@ -669,6 +788,24 @@ const splitFactors = (ratio: number): { readonly you: string; readonly around: s
  * layout floors can reserve exactly one per gutter. The probe has a stable gutter like the panes, not
  * `overflow: scroll`: a browser can hide scrollbars yet still reserve a stable gutter. Undefined while hidden.
  */
+/** What the opened vehicle section draws from; refusals change with reach and tools, not only with the build. */
+const openedVehicleKey = (opened: ReturnType<NonNullable<ScreenHooks['openedVehicle']>>): string =>
+  opened
+    ? `${opened.view.vehicleId}@${opened.distanceMetres.toFixed(1)}:${opened.view.sites
+        .map(
+          (site) =>
+            `${site.id}=${site.item?.uid ?? ''}/${site.condition ?? ''}/${site.actions
+              .map((action) => `${action.payload.itemUid}${action.refusal ?? ''}`)
+              .join(',')}`,
+        )
+        .join(';')}`
+    : '';
+
+const vehicleOptionViewModel = (action: VehicleServiceAction, text: InventoryText): VehicleOptionViewModel =>
+  action.refusal === undefined
+    ? { label: action.label, span: secs(text, action.durationSimSeconds), payload: action.payload }
+    : { label: action.label, reason: action.refusal.toLowerCase(), payload: action.payload };
+
 const scrollbarWidth = (root: HTMLElement): number | undefined => {
   const probe = root.querySelector<HTMLElement>('.inv-gutter-probe');
   return probe && probe.offsetWidth > 0 ? probe.offsetWidth - probe.clientWidth : undefined;
@@ -676,6 +813,8 @@ const scrollbarWidth = (root: HTMLElement): number | undefined => {
 
 export class InventoryScreen {
   selected: Item | undefined;
+  /** The container keyboard puts go to; not kept across a reload of the screen. */
+  private targetUid: number | undefined;
   private readonly root: HTMLElement;
   private readonly dragRoot: HTMLElement;
   private readonly inv: Pick<
@@ -700,6 +839,8 @@ export class InventoryScreen {
   private readonly tabs = new InventoryTabState();
   private readonly byUid = new Map<number, Item>();
   private readonly entityByUid = new Map<number, BlockEntity>();
+  /** The opened vehicle's service options for each fitted part, for that part's details. */
+  private readonly vehicleOptionsByUid = new Map<number, readonly VehicleOptionViewModel[]>();
   private order: Item[] = [];
   private drawn = '';
   private revealedSelectionUid: number | undefined;
@@ -709,6 +850,7 @@ export class InventoryScreen {
   private drag: Drag | undefined;
   /** What the player typed into the find field; items it doesn't match are dimmed, not hidden. */
   private findQuery = '';
+  private readonly viewer: ItemViewer;
 
   constructor(
     root: HTMLElement,
@@ -737,7 +879,19 @@ export class InventoryScreen {
     this.inv = inv;
     this.queue = queue;
     this.hooks = hooks;
+    this.viewer = new ItemViewer(
+      () => root.querySelector<HTMLElement>('.inv-viewer-host'),
+      () => this.hooks.itemView,
+      () => inv.registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!.itemViewer,
+      () => this.text().viewerClose,
+    );
     root.addEventListener('pointerdown', (e) => this.pointerDown(e));
+    // A middle press would otherwise start the browser's autoscroll while the pointer is free.
+    root.addEventListener('mousedown', (e) => {
+      if (e.button !== 0 && isViewItemPress(e)) {
+        e.preventDefault();
+      }
+    });
     globalThis.addEventListener('resize', () => this.syncSplitterToLayout());
     globalThis.addEventListener('pointermove', (e) => this.pointerMove(e));
     globalThis.addEventListener('pointerup', (e) => this.pointerUp(e));
@@ -769,6 +923,17 @@ export class InventoryScreen {
     document.body.classList.remove('inventory-open', 'inventory-tab-crafting');
     this.splitDrag = undefined;
     this.endDrag();
+    this.viewer.close();
+  }
+
+  /** The item the viewer shows, or undefined while it is closed. */
+  get viewedUid(): number | undefined {
+    return this.viewer.viewedUid;
+  }
+
+  private viewItem(item: Item): void {
+    this.endDrag();
+    this.viewer.open(item, workName(this.inv.registry, item));
   }
 
   openOnTab(tab: InventoryTab): void {
@@ -808,7 +973,7 @@ export class InventoryScreen {
     const characterKey = JSON.stringify(this.hooks.character());
     const needsKey = this.hooks.needs();
     const wakeKey = JSON.stringify(this.hooks.wakeGameHour?.() ?? null);
-    const key = `${this.findQuery}|${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}|${wakeKey}`;
+    const key = `${openedVehicleKey(this.hooks.openedVehicle?.())}|${this.hooks.chargerRevision?.()}|${this.hooks.pictures?.version}|${this.findQuery}|${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${this.drag ? `card${this.drag.card?.uid}` : ''}|${this.targetUid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}|${wakeKey}`;
     if (key !== this.drawn) {
       this.drawn = key;
       this.render();
@@ -847,9 +1012,23 @@ export class InventoryScreen {
     return action.startsWith('quickbar.assign.') ? Number(action.slice('quickbar.assign.'.length)) - 1 : undefined;
   }
 
+  /** The viewer covers the items, so their keys wait until it closes; its own binding closes it. */
+  private viewerHoldsAction(action: string): boolean {
+    if (
+      this.viewer.viewedUid === undefined ||
+      !(action.startsWith('inventory.') || this.quickbarDigit(action) !== undefined)
+    ) {
+      return false;
+    }
+    if (action === 'inventory.view-item') {
+      this.viewer.close();
+    }
+    return true;
+  }
+
   /** The shared input owner has already selected an inventory command. */
   onAction(action: string): boolean {
-    if (this.refuseUnconsciousAction(action) || this.rotateDraggedItem(action)) {
+    if (this.refuseUnconsciousAction(action) || this.rotateDraggedItem(action) || this.viewerHoldsAction(action)) {
       return true;
     }
     const digit = this.quickbarDigit(action);
@@ -869,8 +1048,12 @@ export class InventoryScreen {
     if (action === 'inventory.search') {
       const next = this.hooks.containers().find((c) => !(c.searched || this.hooks.searching(c)));
       this.report(
-        next ? this.hooks.dispatch({ kind: 'inventory.search', entityUid: next.uid }) : 'Nothing here to search',
+        next ? this.hooks.dispatch({ kind: 'inventory.search', entityUid: next.uid }) : this.text().nothingToSearch,
       );
+      return true;
+    }
+    if (action === 'inventory.cycle-target') {
+      this.cycleTarget();
       return true;
     }
     if (!item) {
@@ -901,11 +1084,17 @@ export class InventoryScreen {
         return true;
       case 'inventory.best-pocket': {
         const best = bestPocket(this.inv, item);
-        this.report(best ? this.tryQueue(item, best.target) : 'No room on you');
+        this.report(best ? this.tryQueue(item, best.target) : this.text().noRoom);
         return true;
       }
+      case 'inventory.put-target':
+        this.putInTarget(item);
+        return true;
       case 'inventory.take-all-like':
         this.takeAllLike(item);
+        return true;
+      case 'inventory.view-item':
+        this.viewItem(item);
         return true;
       default:
         return false;
@@ -925,6 +1114,13 @@ export class InventoryScreen {
       target: this.inv.targetState(target),
       count,
     });
+  }
+
+  private loadBattery(light: Item, battery: Item): string | undefined {
+    return (
+      this.hooks.actionRefusal?.() ??
+      this.hooks.dispatch({ kind: 'light.battery.load', lightUid: light.uid, batteryUid: battery.uid })
+    );
   }
 
   private refuse(text: string): void {
@@ -954,6 +1150,43 @@ export class InventoryScreen {
     }
   }
 
+  /** The chosen container if it is still within reach, else the nearest one. */
+  private targetEntity(): BlockEntity | undefined {
+    const containers = this.hooks.containers();
+    return containers.find((c) => c.uid === this.targetUid) ?? containers[0];
+  }
+
+  private cycleTarget(): void {
+    const containers = this.hooks.containers();
+    if (containers.length === 0) {
+      this.refuse('No container in reach');
+      return;
+    }
+    const at = containers.findIndex((c) => c.uid === this.targetEntity()?.uid);
+    this.targetUid = containers[(at + 1) % containers.length]!.uid;
+  }
+
+  /** The mouse path's move into a container pocket, with the whole stack going to the first pocket that takes it. */
+  private putInTarget(item: Item): void {
+    const entity = this.targetEntity();
+    if (!entity) {
+      this.refuse('No container in reach');
+      return;
+    }
+    const pockets = this.inv.entities.defOf(entity).container?.pockets ?? [];
+    let refusal: string | undefined;
+    for (let pocket = 0; pocket < pockets.length; pocket += 1) {
+      const target: Target = { kind: 'furniture', entity, pocket };
+      const plan = this.inv.plan(item, target);
+      if (plan.ok) {
+        this.report(this.tryQueue(item, target));
+        return;
+      }
+      refusal ??= plan.reason;
+    }
+    this.refuse(refusal ?? 'No room there');
+  }
+
   /** Takes every item of the same category from the piles within reach. */
   private takeAllLike(item: Item): void {
     const { category } = defOf(this.inv.registry, item.type);
@@ -977,9 +1210,9 @@ export class InventoryScreen {
       }
     }
     if (queued > 0) {
-      this.hooks.notice(`Taking ${queued} ${category} items`);
+      this.hooks.notice(fillText(this.text().taking, { count: queued, category }));
     } else {
-      this.refuse(`No ${category} items to take`);
+      this.refuse(fillText(this.text().noneToTake, { category }));
     }
   }
 
@@ -1003,71 +1236,77 @@ export class InventoryScreen {
   private render(): void {
     this.byUid.clear();
     this.entityByUid.clear();
+    this.vehicleOptionsByUid.clear();
     this.order = [];
     const vm = this.viewModel();
     render(
-      inventoryTemplate(vm, { tab: this.tabs.active, splitRatio: this.splitRatio }, (tab) => this.selectTab(tab), {
-        find: {
-          query: this.findQuery,
-          change: (query) => {
-            this.findQuery = query;
-            this.drawn = '';
-            this.update();
+      inventoryTemplate(
+        vm,
+        { tab: this.tabs.active, splitRatio: this.splitRatio, text: this.text() },
+        (tab) => this.selectTab(tab),
+        {
+          find: {
+            query: this.findQuery,
+            change: (query) => {
+              this.findQuery = query;
+              this.drawn = '';
+              this.update();
+            },
+            key: (e) => {
+              if (clearsFindField(e)) {
+                this.clearFind();
+                e.preventDefault();
+                e.stopPropagation();
+              }
+            },
           },
-          key: (e) => {
-            if (clearsFindField(e)) {
-              this.clearFind();
-              e.preventDefault();
-              e.stopPropagation();
+          queue: (item, target, operation) => {
+            const refusal = this.hooks.actionRefusal?.();
+            if (refusal) {
+              this.refuse(refusal);
+            } else if (operation) {
+              this.report(this.hooks.dispatch({ kind: 'inventory.work', itemUid: item.uid, operation }));
+            } else if (target) {
+              this.report(this.tryQueue(item, target));
+            }
+          },
+          search: (uid) => {
+            const refusal = this.hooks.actionRefusal?.();
+            const entity = this.entityByUid.get(uid);
+            if (refusal) {
+              this.refuse(refusal);
+            } else if (entity) {
+              this.report(this.hooks.dispatch({ kind: 'inventory.search', entityUid: entity.uid }));
+            }
+          },
+          attachmentAction: (payload) => {
+            const refusal = this.hooks.actionRefusal?.();
+            if (refusal) {
+              this.refuse(refusal);
+            } else {
+              this.report(this.hooks.dispatch(payload));
+            }
+          },
+          wait: () => {
+            const refusal = this.hooks.actionRefusal?.();
+            if (refusal) {
+              this.refuse(refusal);
+            } else {
+              this.report(this.hooks.dispatch({ kind: 'action.wait' }));
+            }
+          },
+          stepWake: (step) => {
+            const alarm = this.hooks.wakeGameHour?.();
+            const refusal = this.hooks.actionRefusal?.();
+            if (refusal) {
+              this.refuse(refusal);
+            } else if (alarm) {
+              const gameHour = stepWakeGameHour(alarm.gameHour, step) ?? null;
+              this.report(this.hooks.dispatch({ kind: 'action.wake-hour', gameHour }));
             }
           },
         },
-        queue: (item, target, operation) => {
-          const refusal = this.hooks.actionRefusal?.();
-          if (refusal) {
-            this.refuse(refusal);
-          } else if (operation) {
-            this.report(this.hooks.dispatch({ kind: 'inventory.work', itemUid: item.uid, operation }));
-          } else if (target) {
-            this.report(this.tryQueue(item, target));
-          }
-        },
-        search: (uid) => {
-          const refusal = this.hooks.actionRefusal?.();
-          const entity = this.entityByUid.get(uid);
-          if (refusal) {
-            this.refuse(refusal);
-          } else if (entity) {
-            this.report(this.hooks.dispatch({ kind: 'inventory.search', entityUid: entity.uid }));
-          }
-        },
-        attachmentAction: (payload) => {
-          const refusal = this.hooks.actionRefusal?.();
-          if (refusal) {
-            this.refuse(refusal);
-          } else {
-            this.report(this.hooks.dispatch(payload));
-          }
-        },
-        wait: () => {
-          const refusal = this.hooks.actionRefusal?.();
-          if (refusal) {
-            this.refuse(refusal);
-          } else {
-            this.report(this.hooks.dispatch({ kind: 'action.wait' }));
-          }
-        },
-        stepWake: (step) => {
-          const alarm = this.hooks.wakeGameHour?.();
-          const refusal = this.hooks.actionRefusal?.();
-          if (refusal) {
-            this.refuse(refusal);
-          } else if (alarm) {
-            const gameHour = stepWakeGameHour(alarm.gameHour, step) ?? null;
-            this.report(this.hooks.dispatch({ kind: 'action.wake-hour', gameHour }));
-          }
-        },
-      }),
+      ),
       this.root,
     );
     this.renderQueue();
@@ -1078,6 +1317,10 @@ export class InventoryScreen {
       this.revealedSelectionUid = selectedUid;
     }
     this.syncSplitterToLayout();
+    this.viewer.sync(
+      (uid) => this.byUid.get(uid),
+      (item) => workName(this.inv.registry, item),
+    );
   }
 
   private syncSplitterToLayout(): void {
@@ -1122,6 +1365,7 @@ export class InventoryScreen {
   }
 
   private viewModel(): InventoryScreenViewModel {
+    const text = this.text();
     const body = this.hooks.body();
     const character = this.hooks.character();
     const alarm = this.hooks.wakeGameHour?.();
@@ -1139,7 +1383,7 @@ export class InventoryScreen {
     const hands = (['right', 'left'] as const).map(
       (side): SlotViewModel => ({
         target: `hand:${side}`,
-        label: `${side === 'right' ? 'Right' : 'Left'} hand`,
+        label: side === 'right' ? text.rightHand : text.leftHand,
         item: this.inv.hands[side] ? this.itemViewModel(this.inv.hands[side]!, 'inv-item inv-item-slot') : undefined,
         occupied: occupiedHand(this.inv, side),
       }),
@@ -1161,7 +1405,7 @@ export class InventoryScreen {
 
     const piles = this.hooks.nearby().map(
       (pile): PileViewModel => ({
-        label: `On the floor · ${this.hooks.distance(pile).toFixed(1)} m`,
+        label: fillText(text.onFloor, { distance: this.hooks.distance(pile).toFixed(1) }),
         grids: [this.gridViewModel(PILE_GRID, pile.items, `pile:${pile.pos.join(',')}`, true)],
         bags: pile.items
           .filter(({ item }) => item.pockets)
@@ -1177,7 +1421,10 @@ export class InventoryScreen {
         ? (def.container?.pockets ?? []).map((spec, i) => ({
             label:
               def.container!.pockets.length > 1 || spec.name
-                ? `${spec.name ?? `pocket ${i + 1}`} · ${secs(spec.handlingSimSeconds)}`
+                ? fillText(text.pocketReach, {
+                    pocket: spec.name ?? fillText(text.pocket, { number: i + 1 }),
+                    span: secs(text, spec.handlingSimSeconds),
+                  })
                 : undefined,
             grid: this.gridViewModel(
               { w: spec.grid[0], h: spec.grid[1] },
@@ -1188,19 +1435,22 @@ export class InventoryScreen {
         : [];
       return {
         uid: entity.uid,
-        label: `${def.name} · ${this.hooks.entityDistance(entity).toFixed(1)} m`,
+        charger: this.hooks.charger?.(entity),
+        label: fillText(text.furniture, { name: def.name, distance: this.hooks.entityDistance(entity).toFixed(1) }),
         searching: !entity.searched && this.hooks.searching(entity),
+        targeted: entity.uid === this.targetEntity()?.uid,
         searchLabel:
           entity.searched || this.hooks.searching(entity)
             ? undefined
-            : secs(this.inv.scaleHandlingTime(searchTime(def, reachTuning(this.inv.registry)))),
+            : secs(text, this.inv.scaleHandlingTime(searchTime(def, reachTuning(this.inv.registry)))),
         grids: searchedGrids,
       };
     });
+    const vehicle = this.vehicleViewModel();
     const skills = [...this.inv.registry.skills.values()].map((definition): SkillViewModel => {
       const level = character.skills[definition.id] ?? 0;
       const practice = character.practice[definition.id] ?? 0;
-      const nextLevelPractice = practiceForNextLevel(level);
+      const nextLevelPractice = practiceForNextLevel(this.inv.registry, level);
       return {
         id: definition.id,
         name: definition.name,
@@ -1214,23 +1464,59 @@ export class InventoryScreen {
       body: bodyView,
       skills,
       needs: this.hooks.needs(),
-      wakeAt: alarm && wakeLabel(alarm.gameHour),
+      wakeAt: alarm && wakeLabel(alarm.gameHour, text),
       containerMaxWidthCells: this.inv.registry.inventory.get(CORE_CONTENT_IDS.player)?.containerMaxWidthCells,
-      weight: kg(this.inv.carriedWeight()),
+      weight: kg(text, this.inv.carriedWeight()),
       hands,
       worn,
       piles,
       hasFeetPile,
       feetTarget: feet.join(','),
       furniture,
+      vehicle,
       details: this.detailsViewModel(),
+    };
+  }
+
+  private vehicleViewModel(): VehicleViewModel | undefined {
+    const opened = this.hooks.openedVehicle?.();
+    if (!opened) {
+      return undefined;
+    }
+    const text = this.text();
+    const { view } = opened;
+    return {
+      vehicleId: view.vehicleId,
+      label: fillText(this.inv.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.vehicle.heading, {
+        vehicle: view.name,
+        distance: opened.distanceMetres.toFixed(1),
+      }),
+      sites: view.sites.map((site): VehicleSiteViewModel => {
+        const siteOptions = site.actions.map((action) => vehicleOptionViewModel(action, text));
+        if (site.item) {
+          this.vehicleOptionsByUid.set(site.item.uid, siteOptions);
+        }
+        return {
+          id: site.id,
+          item: site.item && this.itemViewModel(site.item, 'inv-item inv-item-slot'),
+          label: site.label,
+          site: site.site,
+          condition: site.condition,
+          options: siteOptions,
+          noPart: site.noPart,
+        };
+      }),
     };
   }
 
   private pocketsViewModel(owner: Item): PocketViewModel[] {
     const specs = defOf(this.inv.registry, owner.type).container?.pockets ?? [];
+    const text = this.text();
     return specs.map((spec, i) => ({
-      label: `${spec.name ?? 'pocket'} · ${secs(spec.handlingSimSeconds)}`,
+      label: fillText(text.pocketReach, {
+        pocket: spec.name ?? text.pocketName,
+        span: secs(text, spec.handlingSimSeconds),
+      }),
       grid: this.gridViewModel(
         { w: spec.grid[0], h: spec.grid[1] },
         owner.pockets?.[i] ?? [],
@@ -1265,6 +1551,7 @@ export class InventoryScreen {
 
   private itemViewModel(item: Item, className: string, style?: Record<string, string>): ItemViewModel {
     const def = defOf(this.inv.registry, item.type);
+    const text = this.text();
     const itemStyle = style ?? {};
     this.byUid.set(item.uid, item);
     this.order.push(item);
@@ -1274,9 +1561,13 @@ export class InventoryScreen {
       item,
       uid: String(item.uid),
       className: `${className} cat-${def.category}${item === this.selected ? ' selected' : ''}${unmatched ? ' inv-item-unmatched' : ''}`,
-      title: `${def.name}${item.count > 1 ? ` ×${item.count}` : ''}, ${conditionWord(this.inv.registry, item.condition)}`,
+      title: fillText(text.itemTitle, {
+        item: item.count > 1 ? fillText(text.count, { item: def.name, count: item.count }) : def.name,
+        condition: conditionWord(this.inv.registry, item.condition),
+      }),
       name: workName(this.inv.registry, item),
-      count: item.count > 1 ? `×${item.count}` : undefined,
+      picture: this.hooks.pictures?.picture(item),
+      count: item.count > 1 ? fillText(text.countBadge, { count: item.count }) : undefined,
       style:
         Object.keys(itemStyle).length > 0
           ? Object.entries(itemStyle)
@@ -1287,7 +1578,8 @@ export class InventoryScreen {
   }
 
   private detailsViewModel(): DetailsViewModel {
-    const item = this.selected && this.inv.locate(this.selected) ? this.selected : undefined;
+    const shown = this.drag ? this.drag.card : this.selected;
+    const item = shown && this.inv.locate(shown) ? shown : undefined;
     if (!item) {
       return { empty: true, lines: [], options: [] };
     }
@@ -1295,17 +1587,12 @@ export class InventoryScreen {
     const slotIds = def.firearm ? firearmSlotIds(this.inv.registry, def) : [];
     const attachmentSlots = slotIds.map((slotId): AttachmentSlotViewModel => {
       const fitted = item.slots?.[slotId];
-      const batteryDef = fitted && defOf(this.inv.registry, fitted.type);
-      let battery: string | undefined;
-      if (batteryDef?.light?.power) {
-        const batteryItem = fitted?.slots?.battery;
-        battery = batteryItem ? workName(this.inv.registry, batteryItem) : 'Open';
-      }
+      const battery = fitted && this.batterySlot(fitted);
       return {
         id: slotId,
-        label: slotId,
+        label: slotId === LIGHT_MOUNT_SLOT ? 'Light mount' : slotId,
         ...(fitted ? { occupied: workName(this.inv.registry, fitted), attachmentUid: fitted.uid } : {}),
-        ...(battery === undefined ? {} : { battery }),
+        ...(battery ? { battery } : {}),
         candidates: fitted
           ? []
           : (this.hooks.attachmentCandidates?.(item.uid, slotId) ?? []).map((candidate) => ({
@@ -1314,15 +1601,22 @@ export class InventoryScreen {
             })),
       };
     });
+    const text = this.text();
+    const name = workName(this.inv.registry, item);
+    const battery = this.batterySlot(item);
     return {
       item,
       empty: false,
+      ...(battery ? { battery } : {}),
       category: def.category,
-      name: `${workName(this.inv.registry, item)}${item.count > 1 ? ` ×${item.count}` : ''}`,
+      name: item.count > 1 ? fillText(text.count, { item: name, count: item.count }) : name,
       condition: conditionWord(this.inv.registry, item.condition),
       description: def.description,
       lines: this.inspect(item),
       ...(attachmentSlots.length > 0 ? { attachmentSlots } : {}),
+      ...(this.inv.locate(item)?.kind === 'vehicle'
+        ? { vehicleOptions: this.vehicleOptionsByUid.get(item.uid) ?? [] }
+        : {}),
       options: [
         ...options(item, this.hooks.reach()).filter((option) => option.kind !== 'use'),
         ...this.hooks.workOptions(item.uid),
@@ -1334,8 +1628,8 @@ export class InventoryScreen {
                 button: true,
                 time:
                   'duration' in option && option.duration !== undefined
-                    ? craftTime(option.duration)
-                    : secs(option.plan.time),
+                    ? craftTime(option.duration, craftingText(this.inv.registry))
+                    : secs(text, option.plan.time),
                 ...optionAction(option),
               }
             : { label: option.label, button: false, reason: option.plan.reason.toLowerCase() },
@@ -1343,56 +1637,86 @@ export class InventoryScreen {
     };
   }
 
+  private batterySlot(light: Item): BatterySlotViewModel | undefined {
+    if (!defOf(this.inv.registry, light.type).light?.power) {
+      return undefined;
+    }
+    const fitted = light.slots?.battery;
+    return {
+      lightUid: light.uid,
+      name: fitted ? workName(this.inv.registry, fitted) : this.text().open,
+      fitted: fitted !== undefined,
+    };
+  }
+
   private inspect(item: Item): string[] {
     const def = defOf(this.inv.registry, item.type);
+    const text = this.text();
     const lines = [
-      `${kg(weightOf(this.inv.registry, item))} · ${def.size[0]} × ${def.size[1]} cells · condition ${Math.round(item.condition * 100)}%`,
+      fillText(text.weightSize, {
+        weight: kg(text, weightOf(this.inv.registry, item)),
+        width: def.size[0],
+        height: def.size[1],
+        condition: Math.round(item.condition * 100),
+      }),
     ];
     if (item.work) {
       lines.push(
         item.work.kind === 'craft'
-          ? `Recipe: ${item.work.recipe}`
-          : `Taking apart: ${defOf(this.inv.registry, item.work.source).name}`,
-        `Progress: ${item.work.elapsed.toFixed(1)} / ${item.work.duration.toFixed(1)} game seconds`,
+          ? fillText(text.recipe, { recipe: item.work.recipe })
+          : fillText(text.takingApart, { item: defOf(this.inv.registry, item.work.source).name }),
+        fillText(text.progress, {
+          done: item.work.elapsed.toFixed(1),
+          total: item.work.duration.toFixed(1),
+        }),
       );
     }
     if (def.stack) {
-      lines.push(`Stacks up to ${def.stack}`);
+      lines.push(fillText(text.stacks, { count: def.stack }));
     }
     if (def.twoHanded) {
-      lines.push('Needs both hands');
+      lines.push(text.twoHanded);
     }
     if (def.food) {
-      lines.push(`${def.food.calories} kcal · ${def.food.water} ml water`);
+      lines.push(fillText(text.food, { calories: def.food.calories, water: def.food.water }));
     }
     if (def.tool) {
       lines.push(
         Object.entries(def.tool.qualities)
-          .map(([q, level]) => `${q} ${level}`)
+          .map(([quality, level]) => fillText(text.quality, { quality, level }))
           .join(' · '),
       );
     }
     if (def.weapon) {
       const m = def.weapon.melee;
-      lines.push(`Melee ${m.damage} ${m.type} · reach ${m.reach} m beyond hand · ${m.cooldownSimSeconds} s a swing`);
+      lines.push(
+        fillText(text.melee, { damage: m.damage, type: m.type, reach: m.reach, recovery: m.cooldownSimSeconds }),
+      );
     }
     if (def.light) {
-      lines.push(`Lights ${def.light.radius} m · seen from ${def.light.seenFrom} m`);
+      lines.push(fillText(text.light, { radius: def.light.radius, seenFrom: def.light.seenFrom }));
     }
     if (def.wearable) {
-      lines.push(`Worn on the ${def.wearable.slot} · encumbrance ${def.wearable.encumbrance}`);
+      lines.push(fillText(text.worn, { slot: def.wearable.slot, encumbrance: def.wearable.encumbrance }));
     }
     lines.push(...this.hooks.describe(item));
     if (def.container) {
-      lines.push(`Pockets: ${def.container.pockets.map((p) => `${p.grid[0]} × ${p.grid[1]}`).join(', ')}`);
+      const sizes = def.container.pockets.map((p) =>
+        fillText(text.pocketSize, { width: p.grid[0], height: p.grid[1] }),
+      );
+      lines.push(fillText(text.pockets, { sizes: sizes.join(', ') }));
     }
     return lines;
+  }
+
+  private text(): InventoryText {
+    return this.inv.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.inventory;
   }
 
   private renderQueue(): void {
     const queueRoot = this.root.querySelector<HTMLElement>('.inv-queue');
     if (queueRoot) {
-      render(queueTemplate(this.queue), queueRoot);
+      render(queueTemplate(this.queue, this.text()), queueRoot);
     }
   }
 
@@ -1424,10 +1748,16 @@ export class InventoryScreen {
     }
     const node = (e.target as HTMLElement).closest<HTMLElement>('[data-uid]');
     const item = node ? this.byUid.get(Number(node.dataset.uid)) : undefined;
+    if (node && item && isViewItemPress(e)) {
+      e.preventDefault();
+      this.viewItem(item);
+      return;
+    }
     if (!(node && item) || e.button !== 0) {
       return;
     }
     e.preventDefault();
+    const card = this.selected;
     this.selected = item;
     if (keyboardInput.held('inventory.quick-action-gate')) {
       const option = quickMove(item, this.hooks.reach());
@@ -1446,6 +1776,7 @@ export class InventoryScreen {
       rotated,
       start: [e.clientX, e.clientY],
       moved: false,
+      card,
     };
     this.drawn = '';
     this.update();
@@ -1488,13 +1819,19 @@ export class InventoryScreen {
     if (drag.moved) {
       this.hover(e.clientX, e.clientY, e.clientX - drag.grab[0], e.clientY - drag.grab[1]);
       const { hover } = drag;
+      if (hover && 'light' in hover) {
+        this.selected = drag.card;
+      }
       if (hover?.ok) {
-        this.report(this.tryQueue(drag.item, hover.target));
+        this.report(
+          'light' in hover ? this.loadBattery(hover.light, drag.item) : this.tryQueue(drag.item, hover.target),
+        );
       } else if (hover) {
         this.refuse(hover.reason);
       }
     }
     this.endDrag();
+    this.update();
   }
 
   private endDrag(): void {
@@ -1538,7 +1875,7 @@ export class InventoryScreen {
     target: Target,
   ): { ok: boolean; reason: string; at?: { x: number; y: number; rotated: boolean } } {
     if (spec.startsWith('worn:') && wornSlotOf(this.inv.registry, item) !== spec.slice(5)) {
-      return { ok: false, reason: "It isn't worn there" };
+      return { ok: false, reason: this.text().notWornThere };
     }
     const plan = this.inv.plan(item, target);
     return plan.ok ? { ok: true, reason: '', ...(plan.at ? { at: plan.at } : {}) } : { ok: false, reason: plan.reason };
@@ -1557,6 +1894,10 @@ export class InventoryScreen {
       return;
     }
     const spec = zone.dataset.target!;
+    if (spec.startsWith('battery:')) {
+      this.hoverBatterySlot(drag, zone, Number(spec.slice('battery:'.length)));
+      return;
+    }
     const rect = zone.getBoundingClientRect();
     const cell = cellPx(zone);
     const spot = {
@@ -1597,6 +1938,19 @@ export class InventoryScreen {
       zone.style.setProperty('--preview-width', `${w * CELL_REM}rem`);
       zone.style.setProperty('--preview-height', `${h * CELL_REM}rem`);
     }
+  }
+
+  private hoverBatterySlot(drag: Drag, zone: HTMLElement, lightUid: number): void {
+    const view = this.hooks.reach();
+    const light = view.player.inventory.itemByUid(lightUid);
+    if (!light) {
+      return;
+    }
+    const reason = batterySlotRefusal(view, light, drag.item);
+    drag.hover = { light, ok: reason === undefined, reason: reason ?? '' };
+    zone.classList.add(reason ? 'drop-no' : 'drop-ok');
+    zone.dataset.dropShape = reason ? 'blocked' : 'will-land';
+    zone.dataset.dropMark = reason ? '×' : '✓';
   }
 
   private targetFrom(spec: string, at: { x: number; y: number; rotated: boolean }): Target | undefined {

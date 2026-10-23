@@ -1,7 +1,12 @@
+local lights = import 'lights.libsonnet';
 local opticZoom = { step: 1, rememberPerWeapon: true };
 
 {
   "items": [
+    {
+      id: 'ak_slant_compensator', name: 'Slant compensator', category: 'misc',
+      weight: 80, size: [1, 1], model: 'ak_slant_compensator',
+    },
     {
       id: 'optic_hunting_3_9x', name: '3–9× hunting scope', category: 'misc',
       weight: 400, size: [2, 2], model: 'optic_hunting_3_9x', opticMagnification: 6, opticZoom: opticZoom,
@@ -81,15 +86,23 @@ local opticZoom = { step: 1, rememberPerWeapon: true };
       "weight": 300,
       "size": [1, 2],
       "model": "real_suppressor",
-      "firearmAttachmentEffects": { "kind": "suppressor", "recoilReduction": 0.15, "wearPerShot": 0.001 }
+      "firearmAttachmentEffects": {
+        "kind": "suppressor",
+        "recoilReduction": 0.15,
+        "wearPerShot": 0.001,
+        "fitSkillLevel": 4,
+        "fitRefusal": "I can't fit this suppressor yet"
+      }
     },
     {
       "id": "tactical_flashlight_mount",
       "name": "Tactical flashlight rail mount",
-      "category": "misc",
+      "category": "light",
       "weight": 120,
       "size": [1, 1],
-      "model": "tactical_flashlight_mount"
+      "model": "tactical_flashlight_mount",
+      "description": "A rail-clamp flashlight. Fitted to a rail on a long gun, its beam follows the barrel.",
+      "light": lights.flashlight
     },
     {
       "id": "weapon_sling",

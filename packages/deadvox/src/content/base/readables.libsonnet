@@ -12,6 +12,15 @@
         "title": "Placeholder — a folded note",
         "text": "PLACEHOLDER TEXT — NOT PLAYTEST LORE\n\nThis paper demonstrates reading an authored note. The evacuation message, Dad's cabin directions and hunter's logbook will be written separately.\n\nYou can put the paper away with Esc or Tab. The world keeps moving while you read."
       }
+    },
+    {
+      "id": "regional_map",
+      "name": "Regional map",
+      "category": "note",
+      "model": "paper_sheet",
+      "weight": 5,
+      "size": [1, 1],
+      "paperMap": true
     }
   ],
   "furniture": [
@@ -27,7 +36,7 @@
       ],
       "readable": {
         "title": "Placeholder — a wooden sign",
-        "text": "PLACEHOLDER SIGN — NOT A ROUTE TO A REAL LOCATION\n\nThis is a sample of readable furniture. The hamlet signs and actual directions will be authored later."
+        "text": "PLACEHOLDER SIGN — NOT A ROUTE TO A REAL LOCATION"
       }
     }
   ],

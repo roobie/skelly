@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { bodyIsClear, findShamblerBenchPlayer, placeShamblerRing } from '../src/bench/shamblerPlacement.ts';
 import { createHeadlessShamblerWorld } from '../src/bench/shamblerWorld.ts';
-import { createPlayerBody } from '../src/game/player.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { createPlayerBody } from './playerFixture.ts';
 
 const registry = baseRegistry();
 
 describe('shared shambler benchmark placement', () => {
-  it('uses the browser placement path for seed 1 N=10 and clears hamlet terrain and furniture', () => {
+  it('uses the browser placement path for seed 1 N=10 and clears forest terrain and foliage', () => {
     const engine = createHeadlessShamblerWorld(1, registry);
     const player = findShamblerBenchPlayer(engine);
     const ring = { minRadiusMetres: 8, maxRadiusMetres: 20 };

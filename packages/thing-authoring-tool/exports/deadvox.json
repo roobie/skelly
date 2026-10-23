@@ -51,9 +51,21 @@
     "id": "soda_can",
     "kind": "item",
     "options": {
-      "mass": "parts"
+      "mass": "inventory-atom"
     },
     "source": "soda_can",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "empty_soda_can",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "empty_soda_can",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.01
@@ -1668,6 +1680,42 @@
     }
   },
   {
+    "id": "scissor_jack",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "scissor_jack",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "bottle_jack",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "bottle_jack",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "engine_hoist",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "engine_hoist",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
     "id": "crowbar",
     "kind": "item",
     "options": {
@@ -1686,6 +1734,18 @@
       "mass": "parts"
     },
     "source": "hammer",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "sledgehammer",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "sledgehammer",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.0040000000000000001

@@ -3,10 +3,10 @@ import { blocks, placementOf } from './authoredPlacement.ts';
 import { buildingBounds, lotOf, profileHeight, standingHeight, surfaceFoundation } from './authoredTerrain.mjs';
 import type { Registry, TemplateDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
-import { HAMLET_BLOCK_SIZE, HAMLET_HORDE_TYPE } from './hamlet.ts';
 import { placementLootIssues } from './placementLoot.ts';
 import { WORLD_BOTTOM_M } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
+import { HORDE_TYPE, TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
 import { type Rect, rectsOverlap } from './site.ts';
 import { spawnOverlappingSolidBlock, zombieBodyDimensions } from './spawnClearance.ts';
 import { type Placement, placedBlockAt, placedPieces, templateLockIds, templateResolves } from './templates.ts';
@@ -30,7 +30,7 @@ const foundationFits = (layout: SiteLayoutDef, building: SiteLayoutDef['building
 
 export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry): [string, string][] => {
   const issues: [string, string][] = [];
-  if (['hamlet', 'city', 'forest'].includes(layout.id)) {
+  if (['city', 'forest'].includes(layout.id)) {
     issues.push(['.id', 'reserved built-in site id']);
   }
   const check = (p: LayoutPoint, path: string, inset = 0) => {
@@ -98,7 +98,7 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
         `.buildings[${i}].fixedLoot`,
       ),
     );
-    if (placement.origin[1] * HAMLET_BLOCK_SIZE < WORLD_BOTTOM_M) {
+    if (placement.origin[1] * TEMPLATE_BLOCK_SIZE < WORLD_BOTTOM_M) {
       issues.push([`.buildings[${i}].position`, 'cellar extends below the world floor']);
     }
     placements.push(placement);
@@ -139,12 +139,25 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
       issues.push([path, 'spawn must stand on a supported surface']);
     }
   };
+  layout.bays?.forEach(({ position }, i) => {
+    const path = `.bays[${i}].position`;
+    checkSpawn([position[0], position[2]], path);
+    supported(position, path);
+  });
+  if (layout.repairStock !== undefined) {
+    const stock = placements.filter(({ template }) => template.id === layout.repairStock);
+    if (stock.length !== 1) {
+      issues.push(['.repairStock', `"${layout.repairStock}" must name exactly one building in this site`]);
+    } else if (!placedPieces(stock[0]!).some(({ furniture }) => registry.furniture.get(furniture)?.container)) {
+      issues.push(['.repairStock', `"${layout.repairStock}" has no container furniture`]);
+    }
+  }
   supported(layout.player.position, '.player.position');
   checkSpawn([layout.player.position[0], layout.player.position[2]], '.player.position');
   const authoredHordes = layout.hordes ?? [];
-  const hordeType = registry.zombies.get(HAMLET_HORDE_TYPE);
+  const hordeType = registry.zombies.get(HORDE_TYPE);
   if (authoredHordes.length > 0 && !hordeType) {
-    issues.push(['.hordes', `no zombie type "${HAMLET_HORDE_TYPE}"`]);
+    issues.push(['.hordes', `no zombie type "${HORDE_TYPE}"`]);
   }
   const hordeIds = new Set<string>();
   authoredHordes.forEach(({ id, position }, i) => {
@@ -158,7 +171,7 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     if (hordeType) {
       const blocked = spawnOverlappingSolidBlock(
         blocks(position),
-        zombieBodyDimensions(hordeType, HAMLET_BLOCK_SIZE),
+        zombieBodyDimensions(hordeType, TEMPLATE_BLOCK_SIZE),
         solidAt,
       );
       if (blocked) {
@@ -176,7 +189,7 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     if (type) {
       const blocked = spawnOverlappingSolidBlock(
         blocks(spawn.position),
-        zombieBodyDimensions(type, HAMLET_BLOCK_SIZE),
+        zombieBodyDimensions(type, TEMPLATE_BLOCK_SIZE),
         solidAt,
       );
       if (blocked) {

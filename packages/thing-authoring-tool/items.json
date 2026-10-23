@@ -156,7 +156,7 @@
     },
     {
       "connections": [],
-      "exportMass": "parts",
+      "exportMass": "inventory-atom",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -176,6 +176,44 @@
           },
           "id": "package",
           "massKg": 0.35999999999999999,
+          "params": {
+            "bandHeight": "0.074750000000000011",
+            "bandInset": "0.00029999999999999997",
+            "capHeight": "0.001",
+            "capRadius": "0.029999999999999999",
+            "height": "0.115",
+            "neckHeight": "0.001",
+            "neckRadius": "0.029000000000000001",
+            "radius": "0.033000000000000002",
+            "rimHeight": "0.001",
+            "shoulderHeight": "0.0050000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "package",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "empty_soda_can",
+      "parts": [
+        {
+          "family": "vessel",
+          "finish": {
+            "body": "steel-grey",
+            "cap": "steel-grey",
+            "label": "plastic-red"
+          },
+          "id": "package",
+          "massKg": 0.014999999999999999,
           "params": {
             "bandHeight": "0.074750000000000011",
             "bandInset": "0.00029999999999999997",
@@ -4915,6 +4953,113 @@
     {
       "connections": [],
       "exportMass": "parts",
+      "id": "scissor_jack",
+      "parts": [
+        {
+          "family": "scissorJack",
+          "finish": {
+            "frame": "steel-parkerized",
+            "link": "steel-grey",
+            "screw": "paint-terracotta"
+          },
+          "id": "jack",
+          "massKg": 3.2000000000000002,
+          "params": {
+            "baseLength": "0.20000000000000001",
+            "baseThickness": "0.0060000000000000001",
+            "baseWidth": "0.089999999999999997",
+            "crankLength": "0.040000000000000001",
+            "crankRadius": "0.0080000000000000002",
+            "halfHeight": "0.044999999999999998",
+            "halfSpan": "0.095000000000000001",
+            "linkDepth": "0.0060000000000000001",
+            "linkOffset": "0.029999999999999999",
+            "linkWidth": "0.02",
+            "saddleLength": "0.089999999999999997",
+            "saddleThickness": "0.0080000000000000002",
+            "saddleWidth": "0.059999999999999998",
+            "screwRadius": "0.0060000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "bottle_jack",
+      "parts": [
+        {
+          "family": "bottleJack",
+          "finish": {
+            "body": "plastic-red",
+            "frame": "steel-parkerized",
+            "ram": "steel-grey"
+          },
+          "id": "jack",
+          "massKg": 5.5,
+          "params": {
+            "baseLength": "0.14999999999999999",
+            "baseThickness": "0.012",
+            "baseWidth": "0.12",
+            "bodyHeight": "0.12",
+            "bodyRadius": "0.050000000000000003",
+            "ramHeight": "0.070000000000000007",
+            "ramRadius": "0.021999999999999999",
+            "saddleRadius": "0.029999999999999999",
+            "saddleThickness": "0.01",
+            "shoulderHeight": "0.02",
+            "shoulderRadius": "0.035000000000000003",
+            "socketLength": "0.029999999999999999",
+            "socketRadius": "0.0089999999999999993"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "engine_hoist",
+      "parts": [
+        {
+          "family": "engineHoist",
+          "finish": {
+            "boom": "plastic-blue",
+            "caster": "paint-charcoal",
+            "chain": "steel-grey",
+            "frame": "paint-charcoal",
+            "ram": "steel-grey"
+          },
+          "id": "jack",
+          "massKg": 48,
+          "params": {
+            "boomReach": "1.1000000000000001",
+            "boomRise": "0.25",
+            "boomWidth": "0.070000000000000007",
+            "casterRadius": "0.050000000000000003",
+            "casterWidth": "0.040000000000000001",
+            "chainLength": "0.45000000000000001",
+            "chainWidth": "0.012",
+            "hookHeight": "0.059999999999999998",
+            "hookWidth": "0.040000000000000001",
+            "legHeight": "0.070000000000000007",
+            "legLength": "1",
+            "legSpread": "0.69999999999999996",
+            "legWidth": "0.059999999999999998",
+            "mastHeight": "1.3",
+            "mastWidth": "0.089999999999999997",
+            "ramFoot": "0.25",
+            "ramJoin": "0.45000000000000001",
+            "ramWidth": "0.050000000000000003"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
       "id": "crowbar",
       "parts": [
         {
@@ -4959,6 +5104,31 @@
             "headBottom": "0.024",
             "headDepth": "0.043999999999999997",
             "headTop": "0.094"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "sledgehammer",
+      "parts": [
+        {
+          "family": "sledgehammer",
+          "finish": {
+            "handle": "wood-walnut",
+            "head": "steel-grey"
+          },
+          "id": "sledgehammer",
+          "massKg": 4.5,
+          "params": {
+            "faceReach": "0.095000000000000001",
+            "handleBack": "0.83999999999999997",
+            "handleRadius": "0.016",
+            "headBottom": "0.0050000000000000001",
+            "headDepth": "0.057000000000000002",
+            "headTop": "0.062"
           },
           "ports": []
         }

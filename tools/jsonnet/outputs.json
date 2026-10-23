@@ -65,6 +65,10 @@
       "output": "packages/deadvox/src/config/bundled-mods.json"
     },
     {
+      "source": "packages/deadvox/src/config/bundled/beginner.jsonnet",
+      "output": "packages/deadvox/src/config/bundled/beginner.json"
+    },
+    {
       "source": "packages/deadvox/src/config/perf-baseline.jsonnet",
       "output": "packages/deadvox/src/config/perf-baseline.json"
     },
@@ -107,6 +111,10 @@
     {
       "source": "packages/deadvox/src/content/base/crisis-hq.jsonnet",
       "output": "packages/deadvox/src/content/base/crisis-hq.json"
+    },
+    {
+      "source": "packages/deadvox/src/content/base/figures-player.jsonnet",
+      "output": "packages/deadvox/src/content/base/figures-player.json"
     },
     {
       "source": "packages/deadvox/src/content/base/furniture-cabins.jsonnet",
@@ -193,6 +201,10 @@
       "output": "packages/deadvox/src/content/base/layouts-stairs.json"
     },
     {
+      "source": "packages/deadvox/src/content/base/layouts-test-house.jsonnet",
+      "output": "packages/deadvox/src/content/base/layouts-test-house.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/layouts-voice-size.jsonnet",
       "output": "packages/deadvox/src/content/base/layouts-voice-size.json"
     },
@@ -227,6 +239,10 @@
     {
       "source": "packages/deadvox/src/content/base/models-melee.jsonnet",
       "output": "packages/deadvox/src/content/base/models-melee.json"
+    },
+    {
+      "source": "packages/deadvox/src/content/base/player.jsonnet",
+      "output": "packages/deadvox/src/content/base/player.json"
     },
     {
       "source": "packages/deadvox/src/content/base/power.jsonnet",
@@ -309,6 +325,10 @@
       "output": "packages/deadvox/src/content/base/sounds-weapons.json"
     },
     {
+      "source": "packages/deadvox/src/content/base/sounds.jsonnet",
+      "output": "packages/deadvox/src/content/base/sounds.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/templates-cabins.jsonnet",
       "output": "packages/deadvox/src/content/base/templates-cabins.json"
     },
@@ -323,6 +343,10 @@
     {
       "source": "packages/deadvox/src/content/base/templates-stairs.jsonnet",
       "output": "packages/deadvox/src/content/base/templates-stairs.json"
+    },
+    {
+      "source": "packages/deadvox/src/content/base/templates-test-house.jsonnet",
+      "output": "packages/deadvox/src/content/base/templates-test-house.json"
     },
     {
       "source": "packages/deadvox/src/content/base/templates-workshop.jsonnet",
@@ -367,6 +391,10 @@
     {
       "source": "packages/deadvox/test/fixtures/mods/expression-spike.jsonnet",
       "output": "packages/deadvox/test/fixtures/mods/expression-spike.json"
+    },
+    {
+      "source": "packages/deadvox/test/fixtures/mods/reading-world.jsonnet",
+      "output": "packages/deadvox/test/fixtures/mods/reading-world.json"
     },
     {
       "source": "packages/mobgen/src/mob/acidTemplate.jsonnet",

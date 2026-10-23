@@ -23,6 +23,8 @@ import { Color, type DataTexture, type InstancedBufferAttribute, type InstancedM
 import { describe, expect, it } from 'vitest';
 import { carveAround, missingFlesh } from '../src/core/amalgamCarving.ts';
 import { amalgamFigureForType } from '../src/core/amalgamFigure.ts';
+import { buildRegistry, validateContent } from '../src/core/content.ts';
+import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import { initialShamblerFootstepClock } from '../src/core/footsteps.ts';
@@ -31,24 +33,29 @@ import { makeScale } from '../src/core/scale.ts';
 import { amalgamTypeOf, figureSeedPool } from '../src/core/zombieFigure.ts';
 import { flinchSideForId, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes, shamblerRegionBoxes } from '../src/core/zombieRegions.ts';
-import { type Zombie, type ZombieMode, ZombieSystem } from '../src/core/zombies.ts';
-import { PLAYER, physicsFor } from '../src/game/player.ts';
+import type { Zombie, ZombieMode } from '../src/core/zombies.ts';
 import { ZOMBIE_RATE } from '../src/game/simulationRates.ts';
 import { CARVED_NEIGHBOUR } from '../src/render/amalgamFlesh.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
+import { Gore } from '../src/render/gore.ts';
 import {
-  CORPSE_LIFECYCLE,
   fallDirectionAwayFromPlayer,
-  HEARING_GAZE_JITTER,
-  hearingGazeTarget,
-  MobActorMeshes,
   perceptionLabelFor,
+  MobActorMeshes as RenderMobActorMeshes,
+  hearingGazeTarget as renderHearingGazeTarget,
 } from '../src/render/mobActors.ts';
 import { ZombieMeshes } from '../src/render/zombies.ts';
-
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { LOOK_FIXTURE } from './lookFixture.ts';
+import { CORPSE_LIFECYCLE, HEARING_GAZE_JITTER, MobActorMeshes } from './mobActorsFixture.ts';
+import { PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+
+const hearingGazeTarget = (target: Vec3, id: number, time: number): Vec3 =>
+  renderHearingGazeTarget(target, id, time, LOOK_FIXTURE.mobActors.hearingGazeJitter);
+
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 interface TestDebris {
   elapsed: number;
@@ -780,7 +787,7 @@ describe('MobActorMeshes', () => {
       camera.lookAt(0, 1, -2);
       camera.updateMatrixWorld(true);
       renderer.setCamera(camera);
-      renderer.setPlayerEyePosition([2, 0, -2]);
+      renderer.setPlayerEyePosition([2, 0, -2], PLAYER.sprint);
       const zombie = makeZombie([0, 0, -4]);
       zombie.mode = 'chase';
       const store = new MapEntityStore<Zombie>();
@@ -804,25 +811,27 @@ describe('MobActorMeshes', () => {
     const blockSize = 0.5;
     const playerEye: Vec3 = [1.5, 1.6, -2];
     zombie.mode = 'chase';
-    const chase = perceptionLabelFor(zombie, false, playerEye, blockSize);
+    const chase = perceptionLabelFor(zombie, false, playerEye, { blockSize, maxSpeed: PLAYER.sprint });
     zombie.mode = 'investigate';
     zombie.investigationTier = 'near';
     zombie.lastPerceived = [playerEye[0] / blockSize, 0, playerEye[2] / blockSize];
-    const playerNoise = perceptionLabelFor(zombie, true, playerEye, blockSize);
+    const playerNoise = perceptionLabelFor(zombie, true, playerEye, { blockSize, maxSpeed: PLAYER.sprint });
     const oneSprintStepLater: Vec3 = [
       playerEye[0] + (PLAYER.sprint / ZOMBIE_RATE) * (1 - 1e-6),
       playerEye[1],
       playerEye[2],
     ];
-    expect(perceptionLabelFor(zombie, true, oneSprintStepLater, blockSize)).toBe(playerNoise);
+    expect(perceptionLabelFor(zombie, true, oneSprintStepLater, { blockSize, maxSpeed: PLAYER.sprint })).toBe(
+      playerNoise,
+    );
     const lureLightPosition: Vec3 = [playerEye[0] + blockSize, playerEye[1], playerEye[2]];
     zombie.lastPerceived = [lureLightPosition[0] / blockSize, 0, lureLightPosition[2] / blockSize];
-    const lure = perceptionLabelFor(zombie, true, playerEye, blockSize);
-    const stale = perceptionLabelFor(zombie, false, playerEye, blockSize);
+    const lure = perceptionLabelFor(zombie, true, playerEye, { blockSize, maxSpeed: PLAYER.sprint });
+    const stale = perceptionLabelFor(zombie, false, playerEye, { blockSize, maxSpeed: PLAYER.sprint });
     zombie.mode = 'idle';
     zombie.investigationTier = undefined;
     zombie.lastPerceived = undefined;
-    const unaware = perceptionLabelFor(zombie, false, playerEye, blockSize);
+    const unaware = perceptionLabelFor(zombie, false, playerEye, { blockSize, maxSpeed: PLAYER.sprint });
     expect(new Set([chase, playerNoise, lure, stale, unaware])).toHaveLength(5);
   });
 
@@ -1154,6 +1163,49 @@ describe('fallDirectionAwayFromPlayer', () => {
 });
 
 describe('MobActorMeshes reactions', () => {
+  it('honours validated zero drip and dead-thing budgets while retaining live downed bodies', () => {
+    const graphics = {
+      ...registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!,
+      mobActors: { maxCorpses: 0 },
+      gore: { dropletCap: 3, splatCap: 3, dropletSpawnsPerFrame: 3, dripSourceCap: 0 },
+    };
+    const source = { source: 'zero-budget-fixture', data: { graphics: [graphics] } };
+    expect(validateContent(source)).toEqual([]);
+    const row = buildRegistry([source]).registry.graphics.get(graphics.id)!;
+    const renderer = new RenderMobActorMeshes(0.5, 3, {
+      figureSeeds: figureSeedPool(registry.zombies),
+      poolSize: 1,
+      look: LOOK_FIXTURE.mobActors,
+      maxCorpses: row.mobActors.maxCorpses,
+    });
+    const gore = new Gore(0.5, row.gore);
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const zombie = makeZombie([0, 0, 0]);
+      const id = store.add(zombie);
+      renderer.sync(store, 0, 1);
+      gore.update(1, () => false, { zombies: store, listener: [0, 0, 0] });
+      expect(gore.activeDroplets).toBe(0);
+      renderer.zombieSevered(id, 'hand.L');
+      expect(debrisEntries(renderer).size).toBe(0);
+      renderer.zombieDied(id, zombie);
+      store.remove(id);
+      expect(renderer.isTracked(id)).toBe(false);
+      const downed = makeZombie([0, 0, 0]);
+      const downedId = store.add(downed);
+      renderer.sync(store, 0, 1);
+      const damage = incapacitate(downed);
+      renderer.sync(store, 0, 1);
+      expect(renderer.isTracked(downedId)).toBe(true);
+      damage.system.finishDowned(damage.id, false);
+      renderer.zombieDied(downedId, downed);
+      store.remove(downedId);
+      expect(renderer.isTracked(downedId)).toBe(false);
+    } finally {
+      gore.dispose();
+      renderer.dispose();
+    }
+  });
   it('keeps a corpse (its slot) until it has lain and sunk, then frees it — unlike a plain vanish', () => {
     const renderer = new MobActorMeshes(0.5, 2, { figureSeeds: figureSeedPool(registry.zombies), poolSize: 1 });
     try {

@@ -23,6 +23,9 @@ local melee(id, family, massKg, dimensions, finish) = {
   melee('hammer', 'hammer', 0.7, {
     handleBack: 0.273, handleRadius: 0.017, headBottom: 0.024, headTop: 0.094, faceReach: 0.1, clawReach: 0.1, headDepth: 0.044,
   }, { handle: 'wood-walnut', head: 'steel-grey' }),
+  melee('sledgehammer', 'sledgehammer', 4.5, {
+    handleBack: 0.84, handleRadius: 0.016, headBottom: 0.005, headTop: 0.062, faceReach: 0.095, headDepth: 0.057,
+  }, { handle: 'wood-walnut', head: 'steel-grey' }),
   melee('baseball_bat', 'bat', 0.9, {
     back: 0.352, front: 0.427, handleRadius: 0.0165, barrelRadius: 0.035, knobRadius: 0.019,
   }, { body: 'wood-birch' }),

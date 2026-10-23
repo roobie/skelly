@@ -1,7 +1,7 @@
 // One mode assignment per browser stage, including the production-bundle save scenario. Launchers
 // use this for both URL opt-in and Chromium graphics flags, so mode and launch cannot silently diverge.
 const modes = Object.freeze({
-  'inventory-scroll': 'render-free',
+  'inventory-scroll': 'pixel',
   'ui-browser-contract': 'render-free',
   'melee-build-click': 'render-free',
   'primary-action': 'render-free',

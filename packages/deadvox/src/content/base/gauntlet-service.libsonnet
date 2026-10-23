@@ -54,7 +54,8 @@ local scavengers = [[36, 41, 47], [45, 41, 44], [49, 41, 39]];
         decals.blood([12.1, 0, 0.5], 0.25),
         decals.blood([11.8, 0, 2], -0.1),
         decals.blood([12.3, 0, 3.5], 0.3),
-        decals.searched([12, 2.4, 0.44]) + { door: [11, 0, 0] },
+        // On the face of the door's raised field (`door-detail.libsonnet`, `panelled`), not the leaf under it.
+        decals.searched([12, 2.4, 0.41]) + { door: [11, 0, 0] },
       ],
       layers: [doorway, doorway, doorway, doorway, walls, walls, walls, roof],
       ownership: { layers: [doorwayClaims, doorwayClaims, doorwayClaims, doorwayClaims, doorwayClaims, doorwayClaims, doorwayClaims, roofClaims] }, anchors: {}, ports: [],

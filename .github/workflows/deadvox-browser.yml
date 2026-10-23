@@ -58,13 +58,17 @@ jobs:
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 1
         run: node test/browser/melee-build-click.mjs
-      - name: Primary-action interaction and replay contract
+      - name: Primary-action interaction flow contract
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 2
-        run: node test/browser/primary-action.mjs
+        run: node test/browser/primary-action.mjs flow
+      - name: Primary-action replay contract
+        if: ${{ inputs.shard == 'input' }}
+        timeout-minutes: 2
+        run: node test/browser/primary-action.mjs replays
       - name: Primary-action glowstick pixel contract
         if: ${{ inputs.shard == 'input' }}
-        timeout-minutes: 1
+        timeout-minutes: 2
         run: node test/browser/primary-action-pixel.mjs
       - name: Save-controller browser regressions
         if: ${{ inputs.shard == 'save-other' }}
@@ -140,7 +144,7 @@ jobs:
         if: ${{ inputs.shard == 'firefox' }}
         timeout-minutes: 2
         run: xvfb-run -a node test/browser/firefox-ui.mjs
-      - name: Firefox inventory-scroll browser contract
+      - name: Firefox inventory-scroll and charger browser contract
         if: ${{ inputs.shard == 'firefox' }}
         timeout-minutes: 1
         run: xvfb-run -a node test/browser/inventory-scroll.mjs firefox
@@ -166,7 +170,7 @@ jobs:
           SAVE_AUTOSAVE_BACKEND: indexeddb
           SAVE_AUTOSAVE_SCENARIO: replacement
         run: xvfb-run -a node test/browser/save-storage.mjs firefox
-      - name: Inventory scroll browser contract (Chromium)
+      - name: Inventory scroll and charger browser contract (Chromium)
         if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 1
         run: node test/browser/inventory-scroll.mjs chromium

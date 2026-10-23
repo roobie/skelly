@@ -6,12 +6,12 @@ import {
   practiceForNextLevel,
   SKILL_LEVEL_LEGENDARY,
 } from '../src/core/character.ts';
+import { coreMessage } from '../src/core/coreText.ts';
 import { CraftCommands } from '../src/core/craftCommands.ts';
 import { craftActionHooks } from '../src/core/craftWork.ts';
 import { disassemblyOutputs } from '../src/core/disassembly.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { type HandSide, Inventory } from '../src/core/inventory.ts';
-import { NO_LANDING_REFUSAL } from '../src/core/itemThrow.ts';
 import { options } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -50,7 +50,10 @@ const make = (handedness?: HandSide) => {
   const sim = new Simulation({ seed: 1 });
   const position: [number, number, number] = [0, 0, 0];
   const reach = bindReach({ inventory, position, blockSize: 0.5, clock: BASE_CLOCK });
-  sim.actions.craft = craftActionHooks(inventory, character, reach, () => position);
+  sim.actions.craft = craftActionHooks(inventory, character, reach, {
+    feet: () => position,
+    calendar: () => sim.calendar,
+  });
   const commands = new CraftCommands({ inventory, character, sim, queue, reach });
   for (const [type, count] of stockFor(CRAFT)) {
     if (!inventory.add(inventory.create(type, count), { kind: 'pile', pos: [0, 0, 0] })) {
@@ -96,7 +99,7 @@ describe('live craft commands', () => {
 
   it('starts repair in the shared craft owner using the target and live skill-scaled effect', () => {
     const r = make();
-    r.character.awardPractice('crafting', practiceForNextLevel(0), SKILL_LEVEL_LEGENDARY);
+    r.character.awardPractice('crafting', practiceForNextLevel(registry, 0), SKILL_LEVEL_LEGENDARY);
     const target = stockRepair(r);
     expect(r.commands.start(REPAIR)).toBeUndefined();
     const work = workOf(r);
@@ -157,6 +160,27 @@ describe('live craft commands', () => {
       expect(r.commands.act(item.uid, 'continue')).toBeUndefined();
     },
   );
+  it('refuses an understocked door bar before starting, then completes it at a workbench', () => {
+    const r = make();
+    r.inventory.entities.add({ type: 'workbench', pos: [0, 0, 0], size: [3, 2, 2], facing: 'n' });
+    const recipe = r.inventory.registry.recipes.get('door_bar')!;
+    const [component] = recipe.components[0]!;
+    expect(
+      r.inventory.add(r.inventory.create(component!.item, component!.count - 1), { kind: 'pile', pos: [0, 0, 0] }),
+    ).toBe(true);
+
+    expect(r.commands.start(recipe.id)).toBeTruthy();
+    expect(r.sim.actions.job).toBeUndefined();
+
+    expect(r.inventory.add(r.inventory.create(component!.item), { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    expect(r.commands.start(recipe.id)).toBeUndefined();
+    const work = workOf(r);
+    r.sim.scheduler.advance(Math.ceil(work.duration / r.sim.clock.ratio) + 1);
+
+    expect(r.sim.actions.job).toBeUndefined();
+    expect(r.inventory.hands.right?.type).toBe(recipe.result.item);
+  });
+
   it('native begin rechecks knowledge after planning before any escrow or compression', () => {
     const r = make();
     const result = r.commands.preview(CRAFT)!;
@@ -217,7 +241,7 @@ describe('live craft commands', () => {
     }
     const work = r.inventory.beginWork(result.plan)!;
     r.inventory.landing = () => undefined;
-    expect(r.sim.actions.cancelCraft(work.uid)).toBe(NO_LANDING_REFUSAL);
+    expect(r.sim.actions.cancelCraft(work.uid)).toBe(coreMessage(registry, 'noLanding'));
     expect(r.inventory.hands.right).toBe(work);
     expect(work.work).toBeDefined();
   });
@@ -321,7 +345,11 @@ describe('live craft commands', () => {
     const work = r.inventory.hands.right!;
     r.sim.actions.stop();
     for (let level = 0; level < topSkill; level += 1) {
-      r.character.awardPractice(definition.disassembly!.skill, practiceForNextLevel(level), SKILL_LEVEL_LEGENDARY);
+      r.character.awardPractice(
+        definition.disassembly!.skill,
+        practiceForNextLevel(registry, level),
+        SKILL_LEVEL_LEGENDARY,
+      );
     }
     expect(r.character.skills[definition.disassembly!.skill]).toBe(topSkill);
     expect(r.commands.act(work.uid, 'continue')).toBeUndefined();

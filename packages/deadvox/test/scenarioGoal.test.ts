@@ -33,6 +33,8 @@ const own = buildRegistry([
           weight: 5,
           size: [1, 1],
           economy: { usage: ['Residential'], tiers: ['Tier1'] },
+          workInProgress: false,
+          notLoot: false,
           readable: { title: 'Fixture lead', text: 'Fixture destination' },
         },
       ],

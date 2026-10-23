@@ -7,8 +7,10 @@ import {
   type Loader,
   type Material,
   Mesh,
+  MeshPhysicalMaterial,
   MeshStandardMaterial,
   NormalBlending,
+  SRGBColorSpace,
   type Texture,
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -53,6 +55,26 @@ it('prepares exported material references from shared content without losing the
   expect(material.color).toEqual(before);
 });
 
+it('draws a sheened material with its sheen, keeping one prepared copy per shared loaded material', () => {
+  const sheened = {
+    coated: {
+      colour: [0.2, 0.2, 0.2] as [number, number, number],
+      finish: { ...table.fixture.finish, sheen: { colour: [1, 0.5, 0] as [number, number, number], roughness: 0.4 } },
+    },
+  };
+  const loaded = new MeshStandardMaterial();
+  loaded.userData = { materialId: 'coated', colourMultiplier: [1, 1, 1] };
+  const meshes = [new Mesh(new BoxGeometry(), loaded), new Mesh(new BoxGeometry(), loaded)];
+  applyModelMaterials(new Group().add(...meshes), sheened);
+  const [first, second] = meshes.map((mesh) => mesh.material);
+  expect(first).toBeInstanceOf(MeshPhysicalMaterial);
+  expect(second).toBe(first);
+  const coated = first as MeshPhysicalMaterial;
+  expect(coated.sheen).toBeGreaterThan(0);
+  expect(coated.sheenRoughness).toBe(0.4);
+  expect(coated.sheenColor.getHex(SRGBColorSpace)).toBe(0xff_80_00);
+});
+
 const MAP_KEY = /map$/i;
 
 // What three.js keys a mesh's program on, short of scene-wide state (lights, fog, target, tone mapper).
@@ -75,6 +97,7 @@ const programKey = (mesh: Mesh, material: Material): string => {
     material.dithering,
     fields.flatShading,
     fields.fog,
+    Number(fields.sheen ?? 0) > 0,
     maps,
     mesh instanceof InstancedMesh && mesh.instanceColor !== null,
     mesh.constructor.name,

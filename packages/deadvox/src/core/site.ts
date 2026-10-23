@@ -1,4 +1,4 @@
-// What stands near spawn: the hamlet, or the stress-test city. A site shapes the
+// A scenario, authored layout or debug world. A site shapes the
 // ground, writes its buildings into chunks and says what furniture each column has.
 // Everything is a pure function of the seed and position, so chunks can generate in
 // any order.
@@ -19,6 +19,7 @@ import {
   rollLootParts,
   withLootDepth,
 } from './loot.ts';
+import type { PublicCartographicFeature } from './publicCartography.ts';
 import { Rng } from './random.ts';
 import type { FixedLootItemDef, FixedLootOverrideDef, LightPracticeDef } from './schema.ts';
 import { type Placement, placedGroundLoot, placedPieces } from './templates.ts';
@@ -89,6 +90,8 @@ export interface Site {
   readonly playtestMarks?: PlaytestMarks;
   /** The ground under the site, blended into the natural ground around it. */
   readonly surface: Surface;
+  /** Deliberately published roads and tracks, separate from generated blocks and private structures. */
+  readonly publicCartography?: readonly PublicCartographicFeature[];
   /** Where the player starts: feet in metres, and a yaw. */
   readonly spawn: { pos: Vec3; yaw: number };
   /** Writes the site's blocks that fall inside a chunk. */

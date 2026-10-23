@@ -14,6 +14,7 @@ import { type RealSeconds, realSeconds, simSeconds } from '../src/core/time.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { QuickbarActions } from '../src/game/quickbarActions.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
+import { baseRegistryWith } from './baseRegistry.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 import {
@@ -56,6 +57,51 @@ const registryWithSleepScenario = (sleepCap: number) => {
 // Compile the shared immutable scenario once; each runtime still owns fresh session state.
 const SLEEP_SCENARIO_CAP = 64;
 const bedSleepScenario = registryWithSleepScenario(SLEEP_SCENARIO_CAP);
+const discountedCraftRegistry = baseRegistryWith([
+  {
+    source: 'discounted-craft-fixture.json',
+    data: {
+      recipes: [
+        {
+          id: 'discounted_craft_fixture',
+          result: { item: 'torch', count: 1 },
+          timeGameMinutes: 20,
+          skills: {},
+          qualities: {},
+          components: [[{ item: 'rag', count: 1 }]],
+          workstation: 'workbench',
+        },
+      ],
+    },
+  },
+]);
+
+const startDiscountedCraft = () => {
+  const runtime = createRuntime(undefined, false, undefined, { registry: discountedCraftRegistry });
+  const pos = runtime.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
+  for (const item of Object.values(runtime.inventory.hands)) {
+    if (!runtime.inventory.move(item!, { kind: 'pile', pos }).ok) {
+      throw new Error('Cannot clear a hand for fixture work');
+    }
+  }
+  const bench = runtime.entities.add({ type: 'workbench', pos, size: [1, 3, 1], facing: 'n' });
+  if (!bench) {
+    throw new Error('Cannot place fixture workbench');
+  }
+  runtime.session.character.knownRecipes.add('discounted_craft_fixture');
+  if (!runtime.inventory.add(runtime.inventory.create('rag'), { kind: 'pile', pos })) {
+    throw new Error('Cannot place fixture craft input');
+  }
+  const planned = runtime.session.planCraft(discountedCraftRegistry.recipes.get('discounted_craft_fixture')!);
+  if (!('plan' in planned)) {
+    throw new Error(planned.missing.reason);
+  }
+  const work = runtime.inventory.beginWork(planned.plan);
+  if (!work) {
+    throw new Error('Cannot begin discounted craft');
+  }
+  return { runtime, work, startRefusal: runtime.sim.actions.startCraft(work.uid) };
+};
 
 describe('snapshot state components', () => {
   it('round-trips an active Wait through the save codec', async () => {
@@ -174,28 +220,28 @@ describe('snapshot state components', () => {
     expect(restored.inventory.looted.get(shells.type)).toBe(2);
   });
 
-  it('keeps a crouch toggle and its body height through an inactive long action and deterministic save continuation', () => {
+  it('keeps a prone stance and its body height through an inactive long action and deterministic save continuation', () => {
     const uninterrupted = createRuntime(undefined, true);
     expect(startRest(uninterrupted, 'rest')).toBeUndefined();
-    uninterrupted.toggleCrouch();
+    uninterrupted.toggleStance('prone');
     uninterrupted.session.frame(1 / 60);
-    expect(uninterrupted.session.crouching).toBe(true);
+    expect(uninterrupted.session.stance).toBe('prone');
 
     const restored = createRuntime(capture(uninterrupted), true);
-    expect(restored.session.crouching).toBe(true);
+    expect(restored.session.stance).toBe('prone');
     expect(restored.session.body.height).toBe(uninterrupted.session.body.height);
     for (let frame = 0; frame < 30; frame++) {
       uninterrupted.session.frame(1 / 60);
       restored.session.frame(1 / 60);
-      expect(restored.session.crouching).toBe(uninterrupted.session.crouching);
+      expect(restored.session.stance).toBe(uninterrupted.session.stance);
     }
-    uninterrupted.toggleCrouch();
-    restored.toggleCrouch();
+    uninterrupted.toggleStance('prone');
+    restored.toggleStance('prone');
     uninterrupted.session.frame(1 / 60);
     restored.session.frame(1 / 60);
-    expect(uninterrupted.session.crouching).toBe(false);
-    expect(restored.session.crouching).toBe(false);
-    expect(capture(restored).character.player.crouching).toBe(false);
+    expect(uninterrupted.session.stance).toBe('crouching');
+    expect(restored.session.stance).toBe('crouching');
+    expect(capture(restored).character.player.stance).toBe('crouching');
   });
   it('persists zero-start skills and changed recipe knowledge without reseeding or mutating live state', async () => {
     const runtime = createRuntime();
@@ -206,14 +252,14 @@ describe('snapshot state components', () => {
     if (removedRecipe === undefined) {
       throw new Error('starter character has no known recipe');
     }
-    const firstThreshold = practiceForNextLevel(actor.skills.crafting!);
-    const award = firstThreshold + practiceForNextLevel(actor.skills.crafting! + 1) / 2;
+    const firstThreshold = practiceForNextLevel(registry, actor.skills.crafting!);
+    const award = firstThreshold + practiceForNextLevel(registry, actor.skills.crafting! + 1) / 2;
     actor.awardPractice('crafting', award, SKILL_LEVEL_LEGENDARY);
     const savedLevel = actor.skills.crafting!;
     const savedPractice = actor.practice.crafting;
     actor.knownRecipes.delete(removedRecipe);
     const snapshot = capture(runtime);
-    actor.awardPractice('crafting', practiceForNextLevel(savedLevel), SKILL_LEVEL_LEGENDARY);
+    actor.awardPractice('crafting', practiceForNextLevel(registry, savedLevel), SKILL_LEVEL_LEGENDARY);
     const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
     const loadedRuntime = createRuntime(decoded.snapshot);
     const loaded = loadedRuntime.session.character;
@@ -226,7 +272,7 @@ describe('snapshot state components', () => {
 
   it('advances a skill only when its accumulated practice reaches the next-level threshold', () => {
     const actor = new Character(registry);
-    const threshold = practiceForNextLevel(actor.skills.crafting!);
+    const threshold = practiceForNextLevel(registry, actor.skills.crafting!);
     actor.awardPractice('crafting', threshold / 2, SKILL_LEVEL_LEGENDARY);
     expect(actor.skills.crafting).toBe(0);
     expect(actor.practice.crafting).toBe(threshold / 2);
@@ -655,6 +701,38 @@ describe('snapshot state components', () => {
 });
 
 describe('craft job codec and ownership', () => {
+  it('completes a craft at a discounting station', () => {
+    const { runtime, work, startRefusal } = startDiscountedCraft();
+    expect(work.work!.duration).toBeLessThan(
+      discountedCraftRegistry.recipes.get('discounted_craft_fixture')!.timeGameMinutes,
+    );
+    expect(startRefusal).toBeUndefined();
+    expect(runtime.sim.actions.craft!.advance(work.uid, work.work!.duration)).toBe(true);
+    runtime.sim.actions.craft!.finish(work.uid);
+
+    expect(runtime.inventory.itemByUid(work.uid)).toBeUndefined();
+  });
+
+  it('round-trips a discounted craft mid-progress and then completes it', async () => {
+    const { runtime, work, startRefusal } = startDiscountedCraft();
+    expect(startRefusal).toBeUndefined();
+    runtime.sim.actions.craft!.advance(work.uid, work.work!.duration / 2);
+    const snapshot = capture(runtime);
+
+    const decoded = await decodeSave(await encodeFixture(snapshot), {
+      version: formatVersion,
+      contentLookup: (kind, id) => lookupSaveContent(discountedCraftRegistry, kind, id),
+    });
+    const loaded = createRuntime(decoded.snapshot, false, undefined, { registry: discountedCraftRegistry });
+    const loadedWork = loaded.inventory.itemByUid(work.uid)!;
+    expect(
+      loaded.sim.actions.craft!.advance(loadedWork.uid, loadedWork.work!.duration - loadedWork.work!.elapsed),
+    ).toBe(true);
+    loaded.sim.actions.craft!.finish(loadedWork.uid);
+
+    expect(loaded.inventory.itemByUid(work.uid)).toBeUndefined();
+  });
+
   it.each([false, true])(
     'encodes/restores stopped=%s work with one owned subtree and validated references',
     async (stopped) => {
@@ -817,14 +895,14 @@ describe('restored session world state', () => {
 
     const countsBefore = [...loaded.entities.all].map((entity) => [entity.uid, entity.pockets?.map((p) => p.length)]);
     for (const [cx, cz] of loaded.columns) {
-      loaded.session.onColumn(cx, cz, loaded.hamlet);
+      loaded.session.onColumn(cx, cz, loaded.site);
     }
     expect([...loaded.entities.all].map((entity) => [entity.uid, entity.pockets?.map((p) => p.length)])).toEqual(
       countsBefore,
     );
     expect(loaded.zombies.store.size).toBe(snapshot.world.zombies.zombies.length);
 
-    const fresh = loaded.hamlet.furnitureIn(...loaded.columns[0]!)[0]!;
+    const fresh = loaded.site.furnitureIn(...loaded.columns[0]!)[0]!;
     const freshSpec = {
       ...fresh.spec,
       pos: [fresh.spec.pos[0] + CHUNK * 100, ...fresh.spec.pos.slice(1)] as [number, number, number],

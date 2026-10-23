@@ -9,11 +9,12 @@ import type { SolidAt } from '../src/core/raycast.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { pieceSize } from '../src/core/templates.ts';
+import { projectVehicleParts } from '../src/core/vehicleProjection.ts';
 import { World } from '../src/core/world.ts';
-import { type MoveIntent, PLAYER } from '../src/game/player.ts';
 import { applyToHeldItem, PlayerTickActions } from '../src/game/playerTickActions.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { type MoveIntent, PLAYER } from './playerFixture.ts';
 import { BASE_SENSE_TUNING } from './senseFixture.ts';
 
 const registry = baseRegistry();
@@ -59,7 +60,7 @@ const makeRuntime = (terrain: SolidAt, spawn: Vec3, entities: BlockEntities, res
       active: () => true,
       intent: () => intent,
       readyHeld: () => false,
-      consumeCrouchToggle: () => false,
+      consumeStanceToggle: () => undefined,
       yaw: () => yaw,
       pitch: () => 0,
       walking: () => intent.walk,
@@ -160,6 +161,40 @@ const resume = (original: Runtime): Runtime => {
 };
 
 describe('ladders', () => {
+  it('keeps caller terrain solid while adding and removing vehicle occupancy', () => {
+    const runtime = houseWithLadder([-3, 1, 1]);
+    const id = runtime.session.inventory.registerVehicle({
+      blueprint: 'hatchback',
+      placementKey: 'session-vehicle-collision',
+      origin: [20, 0, 0],
+      facing: 'n',
+    });
+    const vehicle = runtime.session.inventory.vehicles.get(id)!;
+    const box = projectVehicleParts(registry, id, vehicle, scale.blockSize)
+      .flatMap((part) => part.boxes)
+      .sort((a, b) => b.max[1] - a.max[1])[0]!;
+    const cell: Vec3 = [
+      Math.floor(box.min[0] / scale.blockSize),
+      Math.ceil(box.max[1] / scale.blockSize) - 1,
+      Math.floor(box.min[2] / scale.blockSize),
+    ];
+    const { body } = runtime.session;
+    body.pos = [cell[0] + 0.5, cell[1] + 5, cell[2] + 0.5];
+    body.vel = [0, 0, 0];
+    body.onGround = false;
+    runtime.advance(600);
+    expect(body.onGround).toBe(true);
+    expect(body.pos[1]).toBeGreaterThan(1);
+
+    runtime.session.inventory.vehicles.replace(registry, id, { ...vehicle, fittings: [] });
+    body.pos = [cell[0] + 0.5, cell[1] + 5, cell[2] + 0.5];
+    body.vel = [0, 0, 0];
+    body.onGround = false;
+    runtime.advance(600);
+    expect(body.onGround).toBe(true);
+    expect(body.pos[1]).toBeCloseTo(1, 3);
+  });
+
   it('is climbed once grabbed, not when walked into, and stepped off at its top onto the roof', () => {
     const runtime = houseWithLadder([-3, 1, 1]);
     const { session } = runtime;

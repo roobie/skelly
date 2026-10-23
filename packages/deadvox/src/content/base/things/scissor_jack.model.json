@@ -1,0 +1,11 @@
+{
+  "id": "scissor_jack",
+  "file": "assets/models/scissor_jack.glb",
+  "parts": {
+    "jack": {
+      "node": "jack:scissorJack",
+      "massKg": 3.2,
+      "centreOfMass": [0.0034969939879759527, 0.0385871743486974, 0.00015030060120240483]
+    }
+  }
+}

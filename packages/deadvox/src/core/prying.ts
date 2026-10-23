@@ -1,6 +1,7 @@
 import type { BlockEntity } from './blockEntities.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN, skillEffectLevel, skillSaturation } from './character.ts';
-import type { FurnitureDef } from './content.ts';
+import type { FurnitureDef, Registry } from './content.ts';
+import { coreMessage } from './coreText.ts';
 import type { Inventory } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { chargeOf } from './lights.ts';
@@ -23,11 +24,16 @@ export type PryPlan =
     }
   | { ok: false; reason: string; toolNames: string[] };
 
-const durationForSkill = (time: number, fastestTime: number, skillLevel: number): number => {
+const durationForSkill = (
+  time: number,
+  fastestTime: number,
+  skillLevel: number,
+  curve: { floor: number; halfLifeLevels: number },
+): number => {
   const effectLevel = skillEffectLevel(skillLevel);
-  const slowEffect = skillSaturation(SKILL_LEVEL_MIN, 0.42, 4);
-  const fastEffect = skillSaturation(SKILL_LEVEL_MAX, 0.42, 4);
-  const effect = skillSaturation(effectLevel, 0.42, 4);
+  const slowEffect = skillSaturation(SKILL_LEVEL_MIN, curve);
+  const fastEffect = skillSaturation(SKILL_LEVEL_MAX, curve);
+  const effect = skillSaturation(effectLevel, curve);
   const progress = (slowEffect - effect) / (slowEffect - fastEffect);
   return time + (fastestTime - time) * progress;
 };
@@ -49,18 +55,19 @@ export const pryPlan = (
     .filter((definition) => methods.some(([, method]) => meets(definition.id, method)))
     .map((definition) => definition.name)
     .sort((a, b) => a.localeCompare(b));
+  const { registry } = inventory;
   const refuse = (reason: string): PryPlan => ({ ok: false, reason, toolNames });
   if (!(furniture.door && entity.lock?.locked)) {
-    return refuse("There's no locked padlock to force");
+    return refuse(coreMessage(registry, 'noPadlock'));
   }
   if (entity.open) {
-    return refuse('Close the door first');
+    return refuse(coreMessage(registry, 'doorOpen'));
   }
   if (!inventory.canReachEntity(entity)) {
-    return refuse('Too far away');
+    return refuse(coreMessage(registry, 'tooFar'));
   }
   if (methods.length === 0) {
-    return refuse("There's no way to force this lock");
+    return refuse(coreMessage(registry, 'cantForce'));
   }
   const carried = [...inventory.items()]
     .filter(({ path }) => path.startsWith('inventory.hands.') || path.startsWith('inventory.worn.'))
@@ -72,24 +79,41 @@ export const pryPlan = (
     const capable = carried.filter((item) => meets(item.type, tuning));
     const tool = capable.find((item) => (chargeOf(inventory.registry, item) ?? 0) >= (tuning.fuel ?? 0));
     if (tool) {
-      return planFor(method, tuning, tool, character);
+      return planFor({ inventory, method, tuning, tool, character });
     }
-    fuelRefusal = capable.length > 0 ? dryRefusal(capable) : fuelRefusal;
+    fuelRefusal = capable.length > 0 ? dryRefusal(registry, capable) : fuelRefusal;
   }
-  return refuse(fuelRefusal ?? 'I have nothing that will force it');
+  return refuse(fuelRefusal ?? coreMessage(registry, 'nothingToForce'));
 };
 
 type Tuning = NonNullable<FurnitureDef['door']>['methods'][string];
 
 /** Why tools that meet the method can't start it: they hold too little gas. */
-const dryRefusal = (capable: Item[]): string =>
-  capable.some((item) => item.slots?.canister)
-    ? "There isn't enough gas left for that"
-    : "There's no gas cartridge in it";
+const dryRefusal = (registry: Registry, capable: Item[]): string =>
+  coreMessage(registry, capable.some((item) => item.slots?.canister) ? 'notEnoughGas' : 'noCartridge');
 
-const planFor = (method: string, tuning: Tuning, tool: Item, character?: PryCharacter): PryPlan => {
+const planFor = ({
+  inventory,
+  method,
+  tuning,
+  tool,
+  character,
+}: {
+  inventory: Inventory;
+  method: string;
+  tuning: Tuning;
+  tool: Item;
+  character?: PryCharacter | undefined;
+}): PryPlan => {
   const skillLevel = character?.skills[tuning.skill] ?? SKILL_LEVEL_MIN;
-  const time = durationForSkill(tuning.timeSimSeconds, tuning.fastestTimeSimSeconds, skillLevel);
+  const curve = inventory.registry.skills.get(tuning.skill)?.curve;
+  if (curve === undefined) {
+    throw new Error(`Missing skill curve content for ${tuning.skill}`);
+  }
+  const time = durationForSkill(tuning.timeSimSeconds, tuning.fastestTimeSimSeconds, skillLevel, {
+    floor: curve.saturationFloor,
+    halfLifeLevels: curve.saturationHalfLifeLevels,
+  });
   const strikeInterval = tuning.strikeIntervalSimSeconds * (time / tuning.timeSimSeconds);
   return {
     ok: true,

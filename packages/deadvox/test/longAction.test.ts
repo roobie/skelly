@@ -68,7 +68,7 @@ const make = (
   const sim = new Simulation({ seed: 1 });
   const character = new Character(contentRegistry);
   const reach = bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK });
-  sim.actions.craft = craftActionHooks(inv, character, reach, () => [0, 0, 0]);
+  sim.actions.craft = craftActionHooks(inv, character, reach, { feet: () => [0, 0, 0], calendar: () => sim.calendar });
   sim.actions.reading = bookReadingHooks(inv, character);
   if (saved) {
     sim.restoreState(saved.simulation);
@@ -77,8 +77,8 @@ const make = (
   }
   return { inv, sim, character, reach };
 };
-const start = () => {
-  const runtime = make();
+const start = (contentRegistry: Registry = registry) => {
+  const runtime = make(undefined, contentRegistry);
   for (const [type, count] of [
     ['stick', 1],
     ['rag', 2],
@@ -89,7 +89,7 @@ const start = () => {
       throw new Error('Cannot place fixture input');
     }
   }
-  const result = planCraft(registry.recipes.get('torch')!, runtime.reach(), runtime.character);
+  const result = planCraft(contentRegistry.recipes.get('torch')!, runtime.reach(), runtime.character);
   if (!('plan' in result)) {
     throw new Error(result.missing.reason);
   }
@@ -141,6 +141,44 @@ const startRepair = () => {
 };
 
 describe('core long actions', () => {
+  it('saves a native vehicle-work descriptor and revalidates it before finishing', () => {
+    const { sim } = make();
+    let reachable = true;
+    let finished = 0;
+    sim.actions.vehicleWork = {
+      validate: () => (reachable ? undefined : 'Vehicle service target is unavailable'),
+      finish: () => {
+        finished += 1;
+      },
+    };
+    expect(
+      sim.actions.beginVehicleWork({
+        kind: 'install',
+        vehicleId: 1,
+        fittingId: 'fixture_site',
+        itemUid: 7,
+        durationSimSeconds: 10,
+      }),
+    ).toBeUndefined();
+    sim.scheduler.advance(4);
+    const state = sim.actions.snapshotState();
+    expect(state.job).toMatchObject({
+      jobType: 'vehicleWork',
+      kind: 'install',
+      vehicleId: 1,
+      fittingId: 'fixture_site',
+      itemUid: 7,
+    });
+    const restored = new Simulation({ seed: 1 });
+    restored.actions.vehicleWork = sim.actions.vehicleWork;
+    restored.restoreState(sim.snapshotState());
+    restored.actions.restoreState(state);
+    reachable = false;
+    restored.scheduler.advance(20);
+    expect(restored.actions.job).toMatchObject({ jobType: 'vehicleWork', stopped: true });
+    expect(finished).toBe(0);
+  });
+
   it('wait advances the simulation, saves its progress, and stops cleanly', () => {
     const runtime = make();
     const startTime = runtime.sim.time;
@@ -377,6 +415,17 @@ describe('core long actions', () => {
       bookUid: book.uid,
       elapsed: 10,
     });
+  });
+
+  it('selects renamed escrow by content role and restores its work payload', () => {
+    const content = baseRegistry();
+    const escrow = [...content.items.values()].find((item) => item.workInProgress)!;
+    content.items.delete(escrow.id);
+    content.items.set('fixture_escrow', { ...escrow, id: 'fixture_escrow' });
+    const runtime = start(content);
+    expect(runtime.item.type).toBe('fixture_escrow');
+    const restored = make(snapshot(runtime), content);
+    expect(restored.inv.itemByUid(runtime.item.uid)?.work).toEqual(runtime.item.work);
   });
 
   it('crafts at 1× while bleeding refuses compression, and compresses again once the wound is dressed', () => {

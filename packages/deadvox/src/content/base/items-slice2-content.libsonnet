@@ -1,3 +1,5 @@
+local lights = import 'lights.libsonnet';
+
 {
   "items": [
     {
@@ -7,7 +9,9 @@
       "weight": 500,
       "size": [1, 2],
       "description": "A small sealed bottle of fuel for lamps and improvised lighting.",
-      "model": "lamp_oil_bottle"
+      "model": "lamp_oil_bottle",
+      "stack": 2,
+      "canister": { "capacity": 8 }
     },
     {
       "id": "glass_shards",
@@ -284,11 +288,13 @@
     {
       "id": "taped_flashlight_mount",
       "name": "Taped-on flashlight mount",
-      "category": "weapon",
+      "category": "light",
       "weight": 120,
       "size": [1, 2],
       "model": "flashlight_mount",
-      "description": "A loose strap-and-bracket assembly.",
+      "description": "A flashlight strapped to a bracket. Taped under the barrel of a long gun, its beam follows the barrel.",
+      "lightMount": { "kind": "strap" },
+      "light": lights.flashlight,
       "disassembly": {
         "timeGameMinutes": 7,
         "skill": "mechanics",
@@ -379,7 +385,13 @@
         "skill": "mechanics",
         "yields": [{ "item": "scrap_metal", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }]
       },
-      "firearmAttachmentEffects": { "kind": "suppressor", "recoilReduction": 0.05, "wearPerShot": 0.02 }
+      "firearmAttachmentEffects": {
+        "kind": "suppressor",
+        "recoilReduction": 0.05,
+        "wearPerShot": 0.02,
+        "fitSkillLevel": 4,
+        "fitRefusal": "I can't fit this suppressor yet"
+      }
     }
   ],
   "recipes": [
@@ -473,11 +485,13 @@
     },
     {
       "id": "make_taped_flashlight_mount",
+      "consumeFitted": true,
       "result": { "item": "taped_flashlight_mount", "count": 1 },
       "timeGameMinutes": 18,
       "skills": { "mechanics": 0 },
       "qualities": { "screwing": 1 },
       "components": [
+        [{ "item": "flashlight", "count": 1 }],
         [{ "item": "scrap_metal", "count": 1 }],
         [{ "item": "electrical_tape", "count": 1 }],
         [{ "item": "fastener_pack", "count": 1 }]

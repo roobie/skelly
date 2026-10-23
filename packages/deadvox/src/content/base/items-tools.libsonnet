@@ -25,15 +25,8 @@ local lightSwing = { melee+: { swingSound: 'melee_swing_light' } };
 local heavySwing = { melee+: { swingSound: 'melee_swing_heavy' } };
 local metalRing = { melee+: { hitLayerSound: 'melee_hit_metal' } };
 
-// A battery beam: an LED light whose cone is shaped by `beam` and which drains AA batteries.
-local batteryBeam(radius, seenFrom, intensity, beam, chargePerGameHour) = {
-  radius: radius,
-  seenFrom: seenFrom,
-  color: '#fff1d8',
-  intensity: intensity,
-  beam: beam,
-  power: { battery: 'aa_battery', chargePerGameHour: chargePerGameHour, swapSimSeconds: 2 },
-};
+local lights = import 'lights.libsonnet';
+local batteryBeam = lights.batteryBeam;
 
 local burns(ignition, douse, sprint, stow, drop, relight) = {
   ignition: ignition,
@@ -88,6 +81,33 @@ local items = [
     tool: { qualities: { flame_cutting: 1 }, fuel: { canister: 'gas_canister', swapSimSeconds: 3 } },
   },
   {
+    id: 'scissor_jack',
+    name: 'Scissor jack',
+    category: 'tool',
+    model: 'scissor_jack',
+    size: [3, 2],
+    description: 'A light screw jack from a car boot. It raises little, slowly.',
+    tool: { qualities: { jacking: 1 } },
+  },
+  {
+    id: 'bottle_jack',
+    name: 'Bottle jack',
+    category: 'tool',
+    model: 'bottle_jack',
+    size: [2, 3],
+    description: 'A hydraulic jack with a short, strong ram.',
+    tool: { qualities: { jacking: 2 } },
+  },
+  {
+    id: 'engine_hoist',
+    name: 'Engine hoist',
+    category: 'tool',
+    model: 'engine_hoist',
+    size: [4, 6],
+    description: 'A wheeled floor crane with a hydraulic boom. It takes two hands and a lot of room.',
+    tool: { qualities: { jacking: 3 } },
+  },
+  {
     id: 'gas_canister',
     name: 'Gas cartridge',
     category: 'misc',
@@ -105,6 +125,17 @@ local items = [
     model: 'hammer',
     tool: { qualities: { hammering: 2 } },
     weapon: melee('blunt', 'swing', damage=10, reach=0.4, cooldownSimSeconds=0.8, stamina=5, impulse=6, wearPerHit=0.012) + metalRing,
+  },
+  {
+    id: 'sledgehammer',
+    name: 'Sledgehammer',
+    category: 'tool',
+    size: [2, 7],
+    description: 'Breaks a locked door open in a few loud blows. Also a heavy weapon.',
+    model: 'sledgehammer',
+    twoHanded: true,
+    tool: { qualities: { hammering: 3 } },
+    weapon: melee('blunt', 'swing', damage=24, reach=0.7, cooldownSimSeconds=1.6, stamina=16, impulse=14, wearPerHit=0.01) + heavySwing + metalRing,
   },
   {
     id: 'kitchen_knife',
@@ -189,13 +220,7 @@ local items = [
     size: [1, 2],
     description: 'A battery-powered flashlight. Its light is visible to nearby zombies.',
     model: 'flashlight',
-    light: batteryBeam(
-      radius=20,
-      seenFrom=40,
-      intensity=5,
-      beam={ angleDegrees: 60, penumbra: 0.6, decay: 1, spill: { enabled: false, radiusRatio: 1.5, intensity: 0.18 } },
-      chargePerGameHour=0.25,
-    ),
+    light: lights.flashlight,
   },
   {
     id: 'headlamp',
@@ -232,7 +257,7 @@ local items = [
       seenFrom: 8,
       color: '#7dff86',
       intensity: 0.8,
-      power: { battery: 'aa_battery', chargePerGameHour: 0.15, swapSimSeconds: 2 },
+      power: { battery: 'aa_battery', compatibleBatteries: ['rechargeable_aa_battery'], chargePerGameHour: 0.15, swapSimSeconds: 2 },
       wornSwitch: true,
       nightVision: {
         gain: 6,
@@ -276,9 +301,28 @@ local items = [
       radius: 3,
       seenFrom: 15,
       color: '#ffd28a',
-      intensity: 1,
+      // Enough that the candle alone, held, lights a page at night (senses `illumination`, `readingThreshold`).
+      intensity: 3,
       flame: { heightMetres: 0.03, radiusMetres: 0.007 },
       burnTimeGameHours: 6,
+      burning: burns('firestarter', douse=true, sprint='douse', stow='douse', drop='stay', relight=true),
+    },
+  },
+  {
+    id: 'oil_lamp',
+    name: 'Oil lamp',
+    category: 'light',
+    size: [2, 3],
+    description: 'A table lamp that burns lamp oil. It keeps burning where it is set down.',
+    model: 'oil_lamp',
+    tool: { qualities: {}, fuel: { canister: 'lamp_oil', swapSimSeconds: 3 } },
+    light: {
+      radius: 8,
+      seenFrom: 80,
+      color: '#ffc477',
+      intensity: 3,
+      flame: { heightMetres: 0.05, radiusMetres: 0.02 },
+      fuelPerGameHour: 1,
       burning: burns('firestarter', douse=true, sprint='douse', stow='douse', drop='stay', relight=true),
     },
   },
@@ -334,6 +378,17 @@ local items = [
     size: [1, 1],
     igniter: { capacity: 10, perIgnition: 1 },
     model: 'matches',
+  },
+  {
+    id: 'door_bar',
+    name: 'Door bar',
+    category: 'tool',
+    weight: 3000,
+    size: [1, 6],
+    twoHanded: true,
+    description: 'A length of timber that drops across a shut door and bars it from the other side.',
+    doorBar: { setSimSeconds: 3, liftSimSeconds: 2, look: { color: '#7a5532', thickness: 0.09 } },
+    disassembly: disassembly(5, [yield('wooden_plank', 2)]),
   },
 ];
 

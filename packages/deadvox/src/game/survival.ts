@@ -1,22 +1,39 @@
 // Using what's in your hands (`DESIGN.md`, "Hands"): eating, drinking and taking a painkiller
 // are short actions in the handling queue, a light switches on and off, and a battery goes into
-// the light you're holding. A light whose content sets `wornSwitch` also stays lit while worn and answers the
+// a light as the player chooses (`DESIGN.md`, "Light"), or comes out of it. A light whose content sets `wornSwitch` also stays lit while worn and answers the
 // worn-light control (`toggleWornLights`).
 // The needs themselves are in the simulation (core/needs.ts).
 
 import { type ActionText, actionText, fillText } from '../core/actionText.ts';
 import { canonicalJson } from '../core/canonicalJson.ts';
 import { dominantSide } from '../core/character.ts';
-import { freshnessWord, isRotten } from '../core/food.ts';
+import { coreLabel, coreMessage } from '../core/coreText.ts';
+import { freshnessWord, isRotten, servingDef } from '../core/food.ts';
 import type { HandlingQueue, JobParams, JobValue } from '../core/handling.ts';
 import type { HandSide, Inventory, Target, TargetState } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { isInHeldItemSlotTree } from '../core/itemTree.ts';
-import { chargeOf, chargeShare, drainBurnLight, drainLight, swapBattery, toggleLight } from '../core/lights.ts';
+import {
+  chargeOf,
+  chargeShare,
+  drainBurnLight,
+  drainLight,
+  lightInHands,
+  swapBattery,
+  toggleLight,
+  unloadBattery,
+} from '../core/lights.ts';
 import { consume } from '../core/needs.ts';
-import { consumption, useOption } from '../core/options.ts';
+import {
+  batteryHandRefusal,
+  batterySlotOption,
+  batterySlotRefusal,
+  consumption,
+  stowTarget,
+  useOption,
+} from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
-import type { Readable } from '../core/readable.ts';
+import type { Readable, ReadRequest } from '../core/readable.ts';
 import type { Simulation } from '../core/sim.ts';
 import { simSeconds, simToGameSeconds } from '../core/time.ts';
 import { swapCanister } from '../core/torch.ts';
@@ -50,9 +67,8 @@ export interface SurvivalHooks {
   feet: (item: Item) => Target | undefined;
   notice: (text: string) => void;
   reach: () => ReachSnapshot;
-  /** Presents validated authored text and, for books, its action owner. */
-  /** `itemType` names the read item; a readable fixture has none. */
-  read: (readable: Readonly<Readable>, bookUid?: number, itemType?: string) => void;
+  /** Presents a validated authored text or generated paper surface. */
+  read: (request: ReadRequest) => void;
   /** Whether the book has already taught every recipe it owns. */
   bookRead?: (bookUid: number) => boolean;
   consumed?: ((type: string) => void) | undefined;
@@ -130,18 +146,37 @@ export class Survival {
     this.queue.registerAction('survival.battery', (params) => {
       const light = this.inventory.itemByUid(numberParam(params, 'lightUid'));
       const battery = this.inventory.itemByUid(numberParam(params, 'batteryUid'));
-      if (!light || this.handOf(light) === undefined) {
-        return text.survival.lightNotInHands;
+      if (!(light && battery)) {
+        return coreMessage(this.inventory.registry, 'batteryGone');
       }
-      if (!battery) {
-        return text.survival.batteryGone;
+      const { route } = params;
+      if (route !== 'hands' && route !== 'slot') {
+        throw new Error('Invalid action parameter route');
       }
-      if (!this.hooks.reach().entries.some((entry) => entry.item === battery)) {
-        return text.survival.batteryOutOfReach;
-      }
-      const reason = swapBattery(this.inventory, light, battery, this.hooks.feet);
+      const reason =
+        (route === 'hands'
+          ? batteryHandRefusal(this.inventory, light, battery)
+          : batterySlotRefusal(this.hooks.reach(), light, battery)) ??
+        swapBattery(this.inventory, light, battery, this.hooks.feet);
       if (reason === undefined) {
         this.hooks.batterySwapped?.(light.type);
+      }
+      return reason;
+    });
+    this.queue.registerAction('survival.batteryOut', (params) => {
+      const { registry } = this.inventory;
+      const light = this.inventory.itemByUid(numberParam(params, 'lightUid'));
+      if (!light) {
+        return coreMessage(registry, 'gone');
+      }
+      if (!lightInHands(this.inventory, light)) {
+        return coreMessage(registry, 'notInHands', { item: defOf(registry, light.type).name.toLowerCase() });
+      }
+      const { feet } = this.hooks.reach();
+      const reason = unloadBattery(this.inventory, light, (battery) => stowTarget(this.inventory, battery, feet));
+      if (reason === undefined && this.lit === light) {
+        this.lit = undefined;
+        this.fallBackToWornBeam();
       }
       return reason;
     });
@@ -225,16 +260,50 @@ export class Survival {
   }
 
   private readItem(item: Item, readable: Readonly<Readable> | undefined): string | undefined {
-    const hasBook = defOf(this.inventory.registry, item.type).book !== undefined;
+    const definition = defOf(this.inventory.registry, item.type);
+    const hasBook = definition.book !== undefined;
     if (hasBook && this.hooks.bookRead?.(item.uid) !== true) {
       const reason = this.sim.actions.beginReading(item.uid);
       if (reason) {
         return reason;
       }
     }
-    if (readable) {
-      this.hooks.read(readable, hasBook ? item.uid : undefined, item.type);
+    if (definition.paperMap && item.paperMap) {
+      this.hooks.read({
+        kind: 'paperMap',
+        ownerUid: item.uid,
+        coverage: item.paperMap,
+        title: definition.name,
+        itemType: item.type,
+      });
+    } else if (readable) {
+      this.hooks.read({ kind: 'text', readable, ...(hasBook ? { bookUid: item.uid } : {}), itemType: item.type });
     }
+    return undefined;
+  }
+
+  /** Queues a battery into a light from the light's battery slot on its item card. */
+  loadBattery(lightUid: number, batteryUid: number): string | undefined {
+    if (this.sim.body.actionRefusal) {
+      return this.sim.body.actionRefusal;
+    }
+    const light = this.inventory.itemByUid(lightUid);
+    const battery = this.inventory.itemByUid(batteryUid);
+    if (!(light && battery)) {
+      return coreMessage(this.inventory.registry, 'batteryGone');
+    }
+    return this.enqueueBattery(batterySlotOption(this.hooks.reach(), light, battery));
+  }
+
+  private enqueueBattery(option: ReturnType<typeof useOption>): string | undefined {
+    if (!option.plan.ok) {
+      return option.plan.reason;
+    }
+    this.queue.enqueueAction('survival.battery', option.label, option.plan.time, {
+      lightUid: option.light!.uid,
+      batteryUid: option.battery!.uid,
+      route: option.route!,
+    });
     return undefined;
   }
 
@@ -250,6 +319,15 @@ export class Survival {
       }
       return this.applyItemAction(item, this.selectedItemAction(item));
     }
+    if (this.selectedItemAction(item)?.battery === 'unload') {
+      this.queue.enqueueAction(
+        'survival.batteryOut',
+        coreLabel(this.inventory.registry, 'batteryOut'),
+        definition.light!.power!.swapSimSeconds,
+        { lightUid: item.uid },
+      );
+      return undefined;
+    }
     const option = useOption(item, this.hooks.reach());
     if (!option.plan.ok) {
       return option.plan.reason;
@@ -259,11 +337,7 @@ export class Survival {
         this.queue.enqueueAction('survival.consume', option.label, option.plan.time, { itemUid: item.uid });
         return undefined;
       case 'battery':
-        this.queue.enqueueAction('survival.battery', option.label, option.plan.time, {
-          lightUid: option.light!.uid,
-          batteryUid: option.battery!.uid,
-        });
-        return undefined;
+        return this.enqueueBattery(option);
       case 'canister':
         this.queue.enqueueAction('survival.canister', option.label, option.plan.time, {
           toolUid: option.tool!.uid,
@@ -364,7 +438,7 @@ export class Survival {
     const def = defOf(registry, item.type);
     const text = this.text.survival;
     const lines: string[] = [];
-    const fresh = freshnessWord(def, item, this.sim.calendar);
+    const fresh = freshnessWord(servingDef(registry, def), item, this.sim.calendar);
     if (fresh) {
       lines.push(fillText(text.freshnessDetail, { freshness: fresh }));
     }
@@ -386,10 +460,10 @@ export class Survival {
       return this.text.survival.nothingLeft;
     }
     const foodType = vessel.serving?.food ?? item.type;
-    const def = defOf(this.inventory.registry, foodType);
+    const def = servingDef(this.inventory.registry, vessel);
     const rotten = isRotten(def, item, this.sim.calendar);
     if (vessel.serving) {
-      this.inventory.transform(item, vessel.serving.empty);
+      this.inventory.transform(item, vessel.serving.empty, { kind: 'remove' });
     } else {
       this.inventory.consume(item);
     }
@@ -531,7 +605,8 @@ export class Survival {
     if (!(spec && item.on)) {
       return;
     }
-    if (shouldDouse(spec, location, path, this.sprinting)) {
+    const fittedPoweredLight = spec.power && location.kind === 'slot' && defOf(registry, location.owner.type).firearm;
+    if (!fittedPoweredLight && shouldDouse(spec, location, path, this.sprinting)) {
       this.douseLight(item, spec);
       return;
     }

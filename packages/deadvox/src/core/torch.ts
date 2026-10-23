@@ -1,3 +1,4 @@
+import { coreMessage } from './coreText.ts';
 import type { Inventory, Target } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { putDownRefusal } from './itemThrow.ts';
@@ -40,7 +41,7 @@ export const swapCanister = (
   spent: (item: Item) => Target | undefined,
 ): string | undefined => {
   if (!fitsFuelledTool(inventory, tool, canister)) {
-    return "It doesn't take that cartridge";
+    return coreMessage(inventory.registry, 'wrongCartridge');
   }
   const old = tool.slots?.canister;
   const landing = old && planOldLanding(inventory, old, spent);
@@ -53,7 +54,7 @@ export const swapCanister = (
     replacement.charges = canister.charges;
   }
   if (!inventory.consume(canister)) {
-    return 'The cartridge is gone';
+    return coreMessage(inventory.registry, 'cartridgeGone');
   }
   inventory.fitSlot(tool, 'canister', replacement);
   if (old && target) {

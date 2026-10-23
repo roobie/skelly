@@ -112,6 +112,11 @@ export const fixtureScenarioSources = (
   const {
     body: [body],
   } = JSON.parse(readFileSync('src/content/base/body.json', 'utf8'));
+  // The base body's heartbeat names base sound events, so they come along with it.
+  const heartbeatSounds = new Set(Object.values(body.heartbeat.sounds));
+  const bodySounds = (
+    JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')).sounds as { id: string }[]
+  ).filter(({ id }) => heartbeatSounds.has(id));
   const {
     compression: [compression],
   } = JSON.parse(readFileSync('src/content/base/compression.json', 'utf8'));
@@ -123,7 +128,7 @@ export const fixtureScenarioSources = (
       source: 'scenario-fixture.json',
       data: {
         furnitureMaterials: fixtureMaterials(),
-        sounds: fixtureSounds(),
+        sounds: [...fixtureSounds(), ...bodySounds],
         blocks: [
           { id: 'fixture_solid', name: 'Fixture solid', solid: true, color: '#808080' },
           { id: 'asphalt', name: 'Fixture asphalt', solid: true, color: '#404040' },
@@ -131,6 +136,7 @@ export const fixtureScenarioSources = (
         siteGeneration: [
           {
             id: CORE_CONTENT_IDS.authoredSite,
+            activeZombieRadiusMetres: baseSite.activeZombieRadiusMetres,
             topography: {
               amplitudeMetres: 0,
               wavelengthMetres: 1,
@@ -153,8 +159,6 @@ export const fixtureScenarioSources = (
               trees: { trunk: 'fixture_solid', branch: 'fixture_solid', leaves: 'fixture_solid' },
               leafLitter: 'fixture_solid',
             },
-            hamlet: { hedge: 'fixture_solid', northSide: ['fixture_house'], southSide: ['fixture_house'] },
-            placement: baseSite.placement,
           },
         ],
         furniture: [
@@ -195,6 +199,8 @@ export const fixtureScenarioSources = (
         items: [
           {
             id: 'fixture_token',
+            workInProgress: false,
+            notLoot: false,
             name: 'Fixture token',
             category: 'material',
             weight: 1,
@@ -203,6 +209,8 @@ export const fixtureScenarioSources = (
           },
           {
             id: 'fixture_event_token',
+            workInProgress: false,
+            notLoot: false,
             name: 'Fixture event token',
             category: 'material',
             weight: 1,

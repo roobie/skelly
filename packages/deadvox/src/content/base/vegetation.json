@@ -44,23 +44,6 @@
       "weatherable": false
     },
     {
-      "color": "#425b35",
-      "footsteps": {
-        "player": "footstep_leaves",
-        "shambler": "shambler_step_leaves"
-      },
-      "id": "hedge",
-      "name": "Hedge",
-      "opaque": true,
-      "pattern": "noise",
-      "rustle": {
-        "fast": "foliage_rustle_fast",
-        "gentle": "foliage_rustle"
-      },
-      "solid": false,
-      "weatherable": false
-    },
-    {
       "color": "#766047",
       "footsteps": {
         "player": "footstep_leaves",
@@ -208,6 +191,7 @@
   "sounds": [
     {
       "category": "world",
+      "description": "Walk through bushes or other foliage that rustles.",
       "gain": 0.40000000000000002,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "foliage_rustle",
@@ -221,6 +205,7 @@
     },
     {
       "category": "world",
+      "description": "Jog or sprint through bushes or other foliage that rustles.",
       "gain": 0.75,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "foliage_rustle_fast",

@@ -165,6 +165,10 @@
           "weight": 3
         },
         {
+          "item": "regional_map",
+          "weight": 1
+        },
+        {
           "item": "field_manual",
           "weight": 1
         },
@@ -176,6 +180,11 @@
           "count": [1, 4],
           "item": "aa_battery",
           "weight": 3
+        },
+        {
+          "count": [1, 2],
+          "item": "rechargeable_aa_battery",
+          "weight": 1
         },
         {
           "condition": [0.5, 1],
@@ -333,6 +342,10 @@
         },
         {
           "item": "lamp_oil",
+          "weight": 2
+        },
+        {
+          "item": "oil_lamp",
           "weight": 1
         },
         {
@@ -353,6 +366,11 @@
         {
           "condition": [0.40000000000000002, 1],
           "item": "crowbar",
+          "weight": 1
+        },
+        {
+          "condition": [0.40000000000000002, 1],
+          "item": "sledgehammer",
           "weight": 1
         },
         {
@@ -724,6 +742,11 @@
           "weight": 3
         },
         {
+          "condition": [0.40000000000000002, 1],
+          "item": "sledgehammer",
+          "weight": 1
+        },
+        {
           "item": "gas_canister",
           "weight": 1
         },
@@ -789,6 +812,10 @@
         {
           "item": "wooden_plank",
           "weight": 2
+        },
+        {
+          "item": "door_bar",
+          "weight": 1
         },
         {
           "count": [5, 20],

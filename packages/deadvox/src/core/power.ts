@@ -58,7 +58,14 @@ export interface PowerTransition {
   readonly powered: boolean;
 }
 
-interface PowerEnvironment {
+/** Appliance-owned work: zero is idle; undefined leaves an ordinary consumer unmanaged. */
+export interface PowerWork {
+  remainingGameMilliseconds: (consumerId: string) => number | undefined;
+  /** Settle every owner over the same interval, applying tied completions together before returning. */
+  settle: (elapsedGameMilliseconds: number, servedConsumerIds: readonly string[]) => void;
+}
+
+export interface PowerEnvironment {
   readonly registry: Pick<Registry, 'powerDevices'>;
   readonly tuning: PowerTuningDef;
   readonly cycle: DayCycle;
@@ -71,6 +78,7 @@ type Spec = { readonly priority: number } & (
   | { readonly kind: 'solar'; readonly output: Readonly<Record<DayPhase, number>> }
   | { readonly kind: 'battery'; readonly capacity: number; readonly charge: number; readonly discharge: number }
   | { readonly kind: 'consumer'; readonly demand: number }
+  | { readonly kind: 'switch' }
 );
 type Device = PowerDeviceState & { readonly spec: Spec };
 interface Store {
@@ -117,6 +125,8 @@ const specOf = (def: PowerDeviceDef): Spec => {
       };
     case 'consumer':
       return { kind: def.kind, priority: def.priority, demand: exactUnits(def.demandWatts, rate) };
+    case 'switch':
+      return { kind: def.kind, priority: def.priority };
     default:
       throw new Error('Unknown power device kind');
   }
@@ -206,8 +216,10 @@ export class PowerNetwork {
   private readonly tickGameMilliseconds: number;
   private readonly startGameMilliseconds: number;
   private readonly clock: ClockSettings;
+  private readonly work: PowerWork | undefined;
 
-  constructor(environment: PowerEnvironment, state: unknown) {
+  constructor(environment: PowerEnvironment, state: unknown, work?: PowerWork) {
+    this.work = work;
     const { registry, tuning, cycle, clock } = environment;
     const start = unitCount(clock.start, POWER_UNITS.gameMillisecondsPerGameSecond);
     if (!(Number.isFinite(clock.ratio) && clock.ratio > 0 && start !== undefined && start >= 0)) {
@@ -261,7 +273,16 @@ export class PowerNetwork {
   }
 
   private wiring(links: readonly PowerLink[]) {
-    return { nodes: [...this.devices.keys()], wires: links.map(({ from, to }) => [from, to] as const) };
+    const connected = (id: string): boolean => {
+      const device = this.device(id);
+      return device.spec.kind !== 'switch' || device.enabled;
+    };
+    return {
+      nodes: [...this.devices.keys()],
+      wires: links
+        .filter(({ from, to }) => connected(from) && connected(to))
+        .map(({ from, to }) => [from, to] as const),
+    };
   }
 
   snapshot(): PowerState {
@@ -274,6 +295,14 @@ export class PowerNetwork {
     };
   }
 
+  enabled(id: string): boolean | undefined {
+    return this.devices.get(id)?.enabled;
+  }
+
+  isPowered(id: string): boolean {
+    return this.device(id).powered;
+  }
+
   tick(): readonly PowerTransition[] {
     return this.run(safe(this.atGameMilliseconds + this.tickGameMilliseconds));
   }
@@ -282,6 +311,19 @@ export class PowerNetwork {
     const device = this.device(id);
     const changes = [...this.advance(at)];
     device.enabled = enabled;
+    this.graph.replaceWiring(this.wiring(this.links));
+    changes.push(...this.advance(at));
+    return changes;
+  }
+
+  removeConsumer(at: SimTimestamp, id: string): readonly PowerTransition[] {
+    if (this.device(id).spec.kind !== 'consumer') {
+      throw new Error('Only consumers can be removed without transferring resources');
+    }
+    const changes = [...this.setEnabled(at, id, false)];
+    this.devices.delete(id);
+    this.links = this.links.filter((link) => link.from !== id && link.to !== id);
+    this.graph.replaceWiring(this.wiring(this.links));
     changes.push(...this.advance(at));
     return changes;
   }
@@ -359,6 +401,14 @@ export class PowerNetwork {
     return !consumer.restartBlocked || stores.every(({ device, spec }) => device.storedMicrojoules === spec.capacity);
   }
 
+  private remainingWork(id: string): number | undefined {
+    const remaining = this.work?.remainingGameMilliseconds(id);
+    if (remaining !== undefined && (!Number.isSafeInteger(remaining) || remaining < 0)) {
+      throw new Error('Power work must have a nonnegative safe integer remaining duration');
+    }
+    return remaining;
+  }
+
   private admit(
     devices: readonly Device[],
     stores: readonly Store[],
@@ -371,11 +421,12 @@ export class PowerNetwork {
         continue;
       }
       const { demand } = consumer.spec;
-      const powered = consumer.enabled && (demand <= remaining || this.storageAllowed(consumer, stores));
+      const active = this.remainingWork(consumer.id) !== 0;
+      const powered = consumer.enabled && active && (demand <= remaining || this.storageAllowed(consumer, stores));
       if (powered) {
         remaining -= demand;
         consumer.restartBlocked = false;
-      } else if (consumer.enabled) {
+      } else if (consumer.enabled && active) {
         consumer.restartBlocked = true;
       }
       if (powered !== consumer.powered) {
@@ -425,8 +476,19 @@ export class PowerNetwork {
       for (const transfer of transfers) {
         elapsed = Math.min(elapsed, transferDuration(transfer));
       }
+      const served = [...this.devices.values()]
+        .filter((device) => device.powered)
+        .map((device) => device.id)
+        .sort(compareId);
+      for (const id of served) {
+        const remaining = this.remainingWork(id);
+        if (remaining !== undefined) {
+          elapsed = Math.min(elapsed, remaining);
+        }
+      }
       this.integrate(transfers, elapsed);
       this.atGameMilliseconds += elapsed;
+      this.work?.settle(elapsed, served);
     }
   }
 }

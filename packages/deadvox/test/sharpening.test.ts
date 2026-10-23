@@ -33,7 +33,7 @@ describe('blade sharpening content', () => {
     expect(blades.length).toBeGreaterThan(0);
     for (const blade of blades) {
       const repairs = [...registry.recipes.values()].filter(
-        (recipe) => recipe.kind === 'repair' && recipe.result.item === blade.id,
+        (recipe) => recipe.activation === 'sharpen' && recipe.result.item === blade.id,
       );
       const atStation = repairs.filter((recipe) =>
         placed.some((station) => station.id === recipe.workstation && meets(recipe, (q) => station.qualities[q] ?? 0)),

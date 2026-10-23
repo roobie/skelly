@@ -1,22 +1,23 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { simRate, simSeconds } from '../src/core/time.ts';
+import { simSeconds } from '../src/core/time.ts';
 import { GameAudio } from '../src/game/audio.ts';
+import { startupContent } from './baseRegistry.ts';
 import { BASE_SENSE_TUNING } from './senseFixture.ts';
+
+const base = startupContent().registry;
 
 const senseTuning = {
   id: 'fixture_player',
-  movement: { sidewaysSpeedScale: 0.7, backwardSpeedScale: 0.5 },
   chestEyeFraction: 0.62,
   crouch: {
-    speedMetresPerSimSecond: simRate(0.8),
     hearingRangeScale: 0.5,
     sightRangeScale: 0.5,
-    eyeDropMetres: 0.6,
-    bodyHeightMetres: 1.2,
   },
+  prone: BASE_SENSE_TUNING.prone,
   wall: { hearingRangeScale: 0.5, gain: 0.5, cutoffHz: 1200, clearGain: 1, clearCutoffHz: 18_000 },
   footsteps: BASE_SENSE_TUNING.footsteps,
   vocalNoiseLifetimeSimSeconds: BASE_SENSE_TUNING.vocalNoiseLifetimeSimSeconds,
+  shamblerVoice: BASE_SENSE_TUNING.shamblerVoice,
   light: {
     playerDaySightScale: 0,
     lureRangeScale: 0,
@@ -26,9 +27,11 @@ const senseTuning = {
     throwStanceDropHoldRealSeconds: 1,
     wornLightToggleHoldRealSeconds: 1,
     renderedBeamLimit: 3,
+    renderedFixtureLimit: 4,
     throwArmSpeedMetresPerRealSecond: 6,
     throwArmEnergyJoules: 20,
     groundLight: { senseHeightMetres: 0.075, renderLiftMetres: 0.4 },
+    illumination: { pointDecay: 1, nearFieldMetres: 4, readingThreshold: 0.6 },
   },
 } as const;
 
@@ -54,7 +57,7 @@ describe('GameAudio Web Audio compatibility', () => {
     }
     vi.stubGlobal('AudioContext', LegacyAudioContext);
     const audio = new GameAudio({
-      registry: { sounds: new Map(), soundOrigins: new Map() } as never,
+      registry: { sounds: new Map(), soundOrigins: new Map(), ui: base.ui, body: base.body } as never,
       blockSize: 1,
       isSolid: () => false,
       tuning: senseTuning,

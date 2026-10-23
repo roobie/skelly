@@ -3,6 +3,8 @@
   "items": [
     {
       "id": "fixture_unfound",
+      "workInProgress": false,
+      "notLoot": false,
       "economy": { "usage": [], "tiers": [] },
       "name": "Unfound",
       "category": "material",
@@ -16,6 +18,8 @@
     },
     {
       "id": "fixture_result",
+      "workInProgress": false,
+      "notLoot": false,
       "economy": { "usage": [], "tiers": [] },
       "name": "Result",
       "category": "material",
@@ -29,6 +33,8 @@
     },
     {
       "id": "rag",
+      "workInProgress": false,
+      "notLoot": false,
       "economy": { "usage": [], "tiers": [] },
       "name": "Rag",
       "category": "material",

@@ -8,6 +8,7 @@ import { solidBlocks } from '../vehicles/solid.ts';
 import type { FurnitureDef, Registry } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { toChunk, type Vec3 } from './coords.ts';
+import { coreMessage } from './coreText.ts';
 import { type Placed, type PlacedState, restorePlaced, snapshotPlaced } from './items.ts';
 import { type Pose, rotatedSize, rotationOf, type Tip } from './orientation.ts';
 import { type Body, bodyOverlapsBlock } from './physics.ts';
@@ -15,6 +16,11 @@ import type { DoorLockDef, InventoryTuningDef } from './schema.ts';
 import { shapeBlocks } from './shapeSolid.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { cellsOf, type Facing } from './templates.ts';
+
+interface ChargingState {
+  batteryUid: number;
+  atGameMilliseconds: number;
+}
 
 export interface BlockEntity {
   readonly uid: number;
@@ -31,19 +37,32 @@ export interface BlockEntity {
   tip?: Tip | undefined;
   /** Held in the player's hands, so it covers no cells. */
   carried: boolean;
+  /** Carrying constrained to the height where it was picked up. */
+  floorLocked?: true | undefined;
   /** Fastened where it stands, so it can't be moved. */
   readonly fixed?: true;
   /** One grid per pocket of the furniture's container. */
   pockets?: Placed[][];
+  charging?: ChargingState | undefined;
   /** A container's contents show once it's been searched. */
   searched: boolean;
   /** Doors only. */
   open: boolean;
   lock?: DoorLockDef | undefined;
+  bar?: DoorBar | undefined;
   /** Strength of the blows the piece has taken toward its breach durability; absent while intact. */
   damage?: number | undefined;
   /** A door beaten in: it stands open with no lock and can't be shut again. */
   broken?: true;
+}
+
+/** A door's face: the facing side is the front. */
+type DoorSide = 'front' | 'back';
+
+/** A bar across a door: the side it lies on, which alone opens the door and lifts the bar, and the item it is. */
+interface DoorBar {
+  side: DoorSide;
+  item: string;
 }
 
 /** What worldgen asks for: a piece of furniture at a place. */
@@ -56,16 +75,19 @@ export interface BlockEntityState {
   facing: Facing;
   tip?: Tip;
   carried?: true;
+  floorLocked?: true;
   fixed?: true;
   searched: boolean;
   open: boolean;
   lock?: DoorLockDef;
+  bar?: DoorBar;
   damage?: number;
   broken?: true;
   pockets?: PlacedState[][];
+  charging?: ChargingState;
 }
 
-export type DoorOperation = 'open' | 'close' | 'lock' | 'unlock';
+export type DoorOperation = 'open' | 'close' | 'lock' | 'unlock' | 'bar' | 'unbar';
 
 /**
  * What one blow did: nothing below the piece's minimum strength, else damage that may break a door leaf or ruin any
@@ -159,6 +181,23 @@ const hatchPanel = (entity: BlockEntity, blockSize: number): DoorPanelBox => {
   return { pivot, ...upright[entity.facing], rotationY: 0 };
 };
 
+/** A bar lying across a door's panel on its barred side, in the panel's frame (`doorPanel`), in metres. */
+export const doorBarBox = (
+  entity: BlockEntity,
+  panel: DoorPanelBox,
+  thickness: number,
+): Pick<DoorPanelBox, 'center' | 'size'> => {
+  const alongX = entity.facing === 'n' || entity.facing === 's';
+  const across = alongX ? 2 : 0;
+  const outward = FACE_OUTWARD[entity.facing] * (entity.bar?.side === 'back' ? -1 : 1);
+  const center: Vec3 = [...panel.center];
+  center[across] += (outward * (DOOR_PANEL_THICKNESS + thickness)) / 2;
+  const size: Vec3 = [...panel.size];
+  size[1] = thickness;
+  size[across] = thickness;
+  return { center, size };
+};
+
 /** The panel a door shows and is picked by: a hatch's, or an upright door's. */
 export const panelFor = (entity: BlockEntity, definition: FurnitureDef, blockSize: number): DoorPanelBox =>
   definition.door?.hatch ? hatchPanel(entity, blockSize) : doorPanel(entity, blockSize, isBodyDoor(definition));
@@ -180,7 +219,7 @@ const columnKey = (cx: number, cz: number) => `${cx},${cz}`;
 
 /** Everything a piece's drawn look and blocking cells follow from, so a view can skip pieces that didn't change. */
 export const poseKey = (entity: BlockEntity, wear = 0): string =>
-  `${entity.pos}|${entity.size}|${entity.facing}|${entity.tip ?? ''}|${entity.open}|${entity.broken ?? false}|${wear}`;
+  `${entity.pos}|${entity.size}|${entity.facing}|${entity.tip ?? ''}|${entity.open}|${entity.broken ?? false}|${wear}|${entity.bar?.side ?? ''}`;
 
 export interface BlockingBox {
   readonly pos: Readonly<Vec3>;
@@ -227,6 +266,13 @@ const drawnBlocks = (def: FurnitureDef): readonly Readonly<Vec3>[] | undefined =
 /** Whether a body's box overlaps any cell of a box of cells at a corner. */
 export const boxIntersectsBody = (pos: Readonly<Vec3>, size: Readonly<Vec3>, body: Body): boolean =>
   [...cellsOf(size)].some(([x, y, z]) => bodyOverlapsBlock(body, [pos[0] + x, pos[1] + y, pos[2] + z]));
+
+const leafState = (entity: BlockEntity): Pick<BlockEntityState, 'lock' | 'bar' | 'damage' | 'broken'> => ({
+  ...(entity.lock ? { lock: { ...entity.lock } } : {}),
+  ...(entity.bar ? { bar: { ...entity.bar } } : {}),
+  ...(entity.damage === undefined ? {} : { damage: entity.damage }),
+  ...(entity.broken ? { broken: true as const } : {}),
+});
 
 export class BlockEntities {
   readonly registry: Registry;
@@ -299,7 +345,7 @@ export class BlockEntities {
     return [...this.byOrigin.values()].find((entity) => entity.carried);
   }
 
-  snapshotState(): Readonly<BlockEntitiesState> {
+  snapshotState(foodAt?: number): Readonly<BlockEntitiesState> {
     return freezeSnapshot({
       nextUid: this.nextUid,
       entities: [...this.byOrigin.values()].map((entity) => ({
@@ -311,13 +357,15 @@ export class BlockEntities {
         facing: entity.facing,
         ...(entity.tip ? { tip: entity.tip } : {}),
         ...(entity.carried ? { carried: true as const } : {}),
+        ...(entity.floorLocked ? { floorLocked: true as const } : {}),
         ...(entity.fixed ? { fixed: true as const } : {}),
         searched: entity.searched,
         open: entity.open,
-        ...(entity.lock ? { lock: { ...entity.lock } } : {}),
-        ...(entity.damage === undefined ? {} : { damage: entity.damage }),
-        ...(entity.broken ? { broken: true as const } : {}),
-        ...(entity.pockets === undefined ? {} : { pockets: entity.pockets.map((grid) => grid.map(snapshotPlaced)) }),
+        ...leafState(entity),
+        ...(entity.charging ? { charging: { ...entity.charging } } : {}),
+        ...(entity.pockets === undefined
+          ? {}
+          : { pockets: entity.pockets.map((grid) => grid.map((placed) => snapshotPlaced(placed, foodAt))) }),
       })),
       ...(this.reservedUids.size === 0 ? {} : { reserved: [...this.reservedUids].sort((a, b) => a - b) }),
     });
@@ -356,9 +404,7 @@ export class BlockEntities {
         throw new Error(`Invalid or duplicate block entity id ${saved.uid}`);
       }
       ids.add(saved.uid);
-      if (saved.carried && entities.carrying()) {
-        throw new Error('Only one block entity can be carried');
-      }
+      entities.validateCarry(saved);
       entities.restoreEntity(saved);
     }
     const maxUid = [...ids].reduce((max, uid) => Math.max(max, uid), 0);
@@ -407,6 +453,15 @@ export class BlockEntities {
     }
   }
 
+  private validateCarry(saved: BlockEntityState): void {
+    if (saved.floorLocked && !saved.carried) {
+      throw new Error('Only a carried block entity can be floor locked');
+    }
+    if (saved.carried && this.carrying()) {
+      throw new Error('Only one block entity can be carried');
+    }
+  }
+
   private restoreEntity(saved: BlockEntityState): void {
     const entity = this.addWithUid(saved, saved.uid, saved.origin);
     if (!entity) {
@@ -418,8 +473,31 @@ export class BlockEntities {
     }
     entity.open = saved.open;
     this.restoreDamage(entity, saved);
+    if (saved.bar) {
+      if (this.barRefusal(entity) || !this.registry.items.get(saved.bar.item)?.doorBar) {
+        throw new Error('Invalid door bar');
+      }
+      entity.bar = { side: saved.bar.side, item: saved.bar.item };
+    }
     if (saved.pockets) {
       entity.pockets = saved.pockets.map((grid) => grid.map((placed) => restorePlaced(this.registry, placed)));
+    }
+    if (saved.charging) {
+      entity.charging = { ...saved.charging };
+      const spec = this.registry.furniture.get(entity.type)?.charger;
+      const grid = spec && entity.pockets?.[spec.pocket];
+      if (
+        !(spec && grid) ||
+        grid.length !== 1 ||
+        grid[0]!.item.uid !== saved.charging.batteryUid ||
+        grid[0]!.item.count !== 1 ||
+        !spec.batteries.includes(grid[0]!.item.type) ||
+        !Number.isSafeInteger(saved.charging.atGameMilliseconds) ||
+        saved.charging.atGameMilliseconds < 0 ||
+        entity.carried
+      ) {
+        throw new Error('Invalid saved charger ownership');
+      }
     }
   }
 
@@ -463,7 +541,7 @@ export class BlockEntities {
   }
 
   private addWithUid(
-    spec: EntitySpec & { carried?: true },
+    spec: EntitySpec & { carried?: true; floorLocked?: true },
     uid: number,
     originAt: Readonly<Vec3>,
   ): BlockEntity | undefined {
@@ -484,6 +562,7 @@ export class BlockEntities {
       facing: spec.facing,
       ...(spec.tip ? { tip: spec.tip } : {}),
       carried: spec.carried === true,
+      ...(spec.floorLocked ? { floorLocked: true as const } : {}),
       ...(spec.fixed ? { fixed: true as const } : {}),
       searched: false,
       open: false,
@@ -536,12 +615,13 @@ export class BlockEntities {
   }
 
   /** Takes a standing piece out of its cells into the player's hands. */
-  lift(entity: BlockEntity): void {
+  lift(entity: BlockEntity, floorLocked = false): void {
     if (entity.carried || this.carrying()) {
       throw new Error('Already carrying a block entity');
     }
     this.occupy(entity, false);
     entity.carried = true;
+    entity.floorLocked = floorLocked ? true : undefined;
     this.version += 1;
     this.standing += 1;
   }
@@ -580,6 +660,16 @@ export class BlockEntities {
     }
     entity.pos = [...pos];
     entity.carried = false;
+    entity.floorLocked = undefined;
+    this.occupy(entity, true);
+    this.version += 1;
+    this.standing += 1;
+  }
+
+  /** Reindexes a standing floor step without ever claiming the player's hands. */
+  slide(entity: BlockEntity, pos: Readonly<Vec3>): void {
+    this.occupy(entity, false);
+    entity.pos = [...pos];
     this.occupy(entity, true);
     this.version += 1;
     this.standing += 1;
@@ -755,31 +845,75 @@ export class BlockEntities {
   doorRefusal(entity: BlockEntity, operation: DoorOperation, keys: readonly string[], from?: Vec3): string | undefined {
     const { door } = this.defOf(entity);
     if (!door) {
-      return "It isn't a door";
+      return coreMessage(this.registry, 'notDoor');
     }
-    if (operation === 'open') {
-      if (entity.open) {
-        return "It's already open";
-      }
-      if (door.barredFrom && from && this.sideOf(entity, from) === door.barredFrom) {
-        return "It's boarded up";
-      }
-      if (door.hatch && this.lyingOn(entity)) {
-        return this.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.hatchCovered;
-      }
-      return entity.lock?.locked ? "It's locked" : undefined;
+    switch (operation) {
+      case 'open':
+        return this.openRefusal(entity, door, from);
+      case 'close':
+        return this.closeRefusal(entity);
+      case 'bar':
+        return (
+          this.barRefusal(entity) ??
+          (entity.open
+            ? coreMessage(this.registry, 'barDoorOpen')
+            : entity.bar && coreMessage(this.registry, 'alreadyBarred'))
+        );
+      case 'unbar':
+        return this.unbarRefusal(entity, from);
+      default:
+        return this.lockRefusal(entity, operation === 'lock', keys);
     }
-    if (operation === 'close') {
-      return this.closeRefusal(entity);
+  }
+
+  private openRefusal(
+    entity: BlockEntity,
+    door: NonNullable<FurnitureDef['door']>,
+    from: Vec3 | undefined,
+  ): string | undefined {
+    if (entity.open) {
+      return coreMessage(this.registry, 'alreadyOpen');
     }
-    return this.lockRefusal(entity, operation === 'lock', keys);
+    if (door.barredFrom && from && this.sideOf(entity, from) === door.barredFrom) {
+      return coreMessage(this.registry, 'boardedUp');
+    }
+    if (entity.bar && from) {
+      return this.sideOf(entity, from) === entity.bar.side
+        ? coreMessage(this.registry, 'liftBarFirst')
+        : coreMessage(this.registry, 'barredOtherSide');
+    }
+    if (door.hatch && this.lyingOn(entity)) {
+      return this.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.hatchCovered;
+    }
+    return entity.lock?.locked ? coreMessage(this.registry, 'locked') : undefined;
+  }
+
+  private unbarRefusal(entity: BlockEntity, from: Vec3 | undefined): string | undefined {
+    if (!entity.bar) {
+      return coreMessage(this.registry, 'notBarred');
+    }
+    return from && this.sideOf(entity, from) === entity.bar.side
+      ? undefined
+      : coreMessage(this.registry, 'barredOtherSide');
+  }
+
+  /** Why a door can't hold a bar at all, open or shut: a hatch, a cabinet's front, a broken or boarded-up leaf. */
+  private barRefusal(entity: BlockEntity): string | undefined {
+    const def = this.defOf(entity);
+    if (!def.door || def.door.hatch || isBodyDoor(def)) {
+      return coreMessage(this.registry, 'cantBar');
+    }
+    if (entity.broken) {
+      return coreMessage(this.registry, 'broken');
+    }
+    return def.door.barredFrom ? coreMessage(this.registry, 'boardedUp') : undefined;
   }
 
   private closeRefusal(entity: BlockEntity): string | undefined {
     if (entity.broken) {
-      return "It's broken";
+      return coreMessage(this.registry, 'broken');
     }
-    return entity.open ? undefined : "It's already closed";
+    return entity.open ? undefined : coreMessage(this.registry, 'alreadyClosed');
   }
 
   /** Whether a piece lies on the cells just above a hatch, where its lid would swing. */
@@ -798,18 +932,20 @@ export class BlockEntities {
 
   private lockRefusal(entity: BlockEntity, locked: boolean, keys: readonly string[]): string | undefined {
     if (!entity.lock) {
-      return 'The door has no lock';
+      return coreMessage(this.registry, 'noLock');
     }
     if (entity.open) {
-      return 'Close the door first';
+      return coreMessage(this.registry, 'doorOpen');
     }
     if (keys.length === 0) {
-      return 'Hold the key in your hands';
+      return coreMessage(this.registry, 'noKey');
     }
     if (!keys.includes(entity.lock.id)) {
-      return "The key doesn't fit";
+      return coreMessage(this.registry, 'wrongKey');
     }
-    return entity.lock.locked === locked ? `It's already ${locked ? 'locked' : 'unlocked'}` : undefined;
+    return entity.lock.locked === locked
+      ? coreMessage(this.registry, locked ? 'alreadyLocked' : 'alreadyUnlocked')
+      : undefined;
   }
 
   /** Use closeDoor for a gameplay close, which also checks occupying bodies. */
@@ -834,13 +970,38 @@ export class BlockEntities {
     return undefined;
   }
 
+  /** Drops a bar of item type `item` across a shut door on the side `from` stands on. */
+  setBar(entity: BlockEntity, from: Vec3, item: string): string | undefined {
+    const reason = this.doorRefusal(entity, 'bar', [], from);
+    if (reason) {
+      return reason;
+    }
+    entity.bar = { side: this.sideOf(entity, from), item };
+    this.version += 1;
+    this.standing += 1;
+    return undefined;
+  }
+
+  /** Lifts the bar from its own side; returns the bar's item type, or why not. */
+  liftBar(entity: BlockEntity, from: Vec3): { item: string } | { reason: string } {
+    const reason = this.doorRefusal(entity, 'unbar', [], from);
+    if (reason) {
+      return { reason };
+    }
+    const { item } = entity.bar!;
+    entity.bar = undefined;
+    this.version += 1;
+    this.standing += 1;
+    return { item };
+  }
+
   /** Prying destroys a closed padlock; the door remains unlocked and cannot be relocked. */
   breakLock(entity: BlockEntity): string | undefined {
     if (!(this.defOf(entity).door && entity.lock?.locked)) {
-      return "There's no locked padlock to pry";
+      return coreMessage(this.registry, 'noPadlock');
     }
     if (entity.open) {
-      return 'Close the door first';
+      return coreMessage(this.registry, 'doorOpen');
     }
     entity.lock = undefined;
     this.version += 1;
@@ -907,8 +1068,8 @@ export class BlockEntities {
   /**
    * One blow against a standing piece, a zombie's bash or a player's strike alike; an open leaf is a gap, not a
    * target. A blow below the piece's minimum strength leaves no mark, so waiting never lets a weak attacker through;
-   * stronger blows add their strength until it reaches the durability. A broken leaf stands open and its lock is
-   * gone, so the breach is one-way, as forcing is. Any other piece is ruined, its damage set to its durability, and
+   * stronger blows add their strength until it reaches the durability. A broken leaf stands open and its lock and
+   * bar are gone, so the breach is one-way, as forcing is. Any other piece is ruined, its damage set to its durability, and
    * the caller destroys it at once (`src/core/furnitureMove.ts`, `ruinFurniture`). Where that finds no room the piece
    * stands at full damage, and the next blow that lands ruins it again.
    */
@@ -934,6 +1095,7 @@ export class BlockEntities {
     entity.damage = undefined;
     entity.broken = true;
     entity.lock = undefined;
+    entity.bar = undefined;
     entity.open = true;
     this.standing += 1;
     return 'broken';

@@ -32,7 +32,7 @@ export function runSkySelectionProof() {
     uniforms: { ...compiled.uniforms, point: { value: new Vector3() } },
     vertexShader:
       'uniform vec3 point; varying vec3 vSkyWorld; varying vec3 vSkyNormal; void main(){ vSkyWorld=point-vec3(0.0,0.5,0.0); vSkyNormal=vec3(0.0,1.0,0.0); gl_Position=vec4(position.xy,0.0,1.0); }',
-    fragmentShader: `${declarations}\nvoid main(){ bool unknown; gl_FragColor=vec4(vec3(skyVisibility(unknown)),1.0); }`,
+    fragmentShader: `${declarations}\nvoid main(){ bool unbuilt; gl_FragColor=vec4(vec3(skyVisibility(unbuilt).x),1.0); }`,
   });
   const geometry = new PlaneGeometry(2, 2);
   witness.add(new Mesh(geometry, material));
@@ -65,7 +65,6 @@ export function runSkySelectionProof() {
       above: sample([room[0], fixtureBox.max[1] + 0.5, room[2]]),
     };
     fixture.world.setBlock(4, 5, 8, 0);
-    fixture.sky.chunkChanged([0, 0, 0]);
     fixture.update();
     const editedPending = sample([5.5, 5.5, 8.5]);
     while (fixture.pending.length > 0) {
@@ -88,7 +87,6 @@ export function runSkySelectionProof() {
         }
       }
     }
-    fixture.sky.chunkChanged([0, 0, 0]);
     fixture.update();
     while (fixture.pending.length > 0) {
       fixture.complete();
@@ -103,6 +101,7 @@ export function runSkySelectionProof() {
       requested: fixture.sky.stats.requested,
       completed: fixture.sky.stats.completed,
       oracleCanopy: sampleSky(oracle, canopy),
+      unbuiltSkyCap: fixture.unbuiltSkyCap,
       pending,
       ready,
       evicted,

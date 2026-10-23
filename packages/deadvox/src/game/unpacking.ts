@@ -9,16 +9,23 @@ import { unpackingTool } from './canOpening.ts';
 
 export const UNPACK_ACTION = 'item.unpack';
 
+export interface UnpackingDone {
+  calendar?: () => number;
+  opened?: (type: string) => void;
+  unpacked?: (type: string) => void;
+}
+
 /** Activation only: deliberately not an inventory Use option. */
 export class Unpacking {
   private readonly inventory: Inventory;
   private readonly queue: HandlingQueue;
   private readonly feet: () => Vec3;
+  private readonly done: UnpackingDone;
+  private readonly calendar: () => number;
 
-  private readonly opened: ((type: string) => void) | undefined;
-
-  constructor(inventory: Inventory, queue: HandlingQueue, feet: () => Vec3, opened?: (type: string) => void) {
-    this.opened = opened;
+  constructor(inventory: Inventory, queue: HandlingQueue, feet: () => Vec3, done: UnpackingDone = {}) {
+    this.calendar = done.calendar ?? (() => 0);
+    this.done = done;
     this.inventory = inventory;
     this.queue = queue;
     this.feet = feet;
@@ -70,11 +77,15 @@ export class Unpacking {
     }
     if (payload.inPlace) {
       const { type } = box;
-      this.inventory.transform(box, payload.item);
-      this.opened?.(type);
+      this.inventory.transform(
+        box,
+        payload.item,
+        box.foodExposure ? { kind: 'same' } : { kind: 'new', calendar: this.calendar() },
+      );
+      this.done.opened?.(type);
       return undefined;
     }
-    const shell = this.inventory.create(payload.item, payload.count, 1);
+    const shell = this.createOutput(payload.item, payload.count, box);
     // Admission guarantees one stack. Reserve enough ordinary spill capacity for the entire
     // payload before consuming the package; filling pockets can only reduce that spill.
     const landed = freshDropTarget(this.inventory, shell, this.feet());
@@ -88,7 +99,17 @@ export class Unpacking {
       return text.common.notHeld;
     }
     this.deliver(shell, { pocket, spill });
+    this.done.unpacked?.(payload.item);
     return undefined;
+  }
+
+  private createOutput(type: string, count: number, source: Item): Item {
+    const output = this.inventory.create(type, count, 1, this.calendar());
+    if (source.foodExposure && output.foodExposure) {
+      output.foodExposure = this.inventory.currentFood(source);
+      output.madeAtGameTimestamp = source.madeAtGameTimestamp;
+    }
+    return output;
   }
 
   private deliver(shell: Item, { pocket, spill }: { pocket: Target | undefined; spill: Target | undefined }): void {
@@ -101,7 +122,7 @@ export class Unpacking {
     const { count } = shell;
     shell.count = 1;
     for (let i = 0; i < count; i++) {
-      const next = i === 0 ? shell : this.inventory.create(shell.type, 1, 1);
+      const next = i === 0 ? shell : this.createOutput(shell.type, 1, shell);
       const target = this.pocketFor(next) ?? spill!;
       if (!this.inventory.add(next, target)) {
         throw new Error('Reserved unpack spill capacity changed during synchronous commit');

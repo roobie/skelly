@@ -2,6 +2,7 @@
   "sounds": [
     {
       "category": "body",
+      "description": "Preview only; no game event plays it.",
       "gain": 0.5,
       "gainJitter": [0.90000000000000002, 1.05],
       "id": "breath_inhale",
@@ -58,6 +59,7 @@
     },
     {
       "category": "body",
+      "description": "Preview only; no game event plays it.",
       "gain": 0.5,
       "gainJitter": [0.90000000000000002, 1.05],
       "id": "breath_exhale",
@@ -114,6 +116,7 @@
     },
     {
       "category": "body",
+      "description": "Preview only; no game event plays it.",
       "gain": 0.59999999999999998,
       "gainJitter": [0.90000000000000002, 1.05],
       "id": "breath_gasp",
@@ -170,6 +173,7 @@
     },
     {
       "category": "world",
+      "description": "Preview only; no game event plays it.",
       "gain": 0.69999999999999996,
       "gainJitter": [0.90000000000000002, 1.05],
       "id": "door_knock_jfxr",

@@ -3,11 +3,12 @@ import { canonicalJsonBytes } from '../src/core/canonicalJson.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { type PlayerSense, type VocalNoise, ZombieSystem } from '../src/core/zombies.ts';
-import { PLAYER, physicsFor } from '../src/game/player.ts';
+import type { PlayerSense, VocalNoise } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const SHAMBLER = registry.zombies.get('shambler')!;
@@ -21,7 +22,7 @@ const player = (pos: Vec3): PlayerSense => ({
   lit: false,
   lightSeenFrom: 40,
   eyeHeightMetres: 1.3,
-  crouching: false,
+  stance: 'standing',
 });
 const senses = (playerFn: () => PlayerSense, isSolid: SolidAt = FLOOR, hour = 12) => ({
   player: playerFn,

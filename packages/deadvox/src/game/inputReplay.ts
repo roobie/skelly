@@ -9,7 +9,7 @@ import { isReplayActionPayload, type ReplayActionPayload } from './replayCommand
 import { PHYSICS_RATE } from './session.ts';
 
 // Recordings from older schemas don't resolve identically.
-export const INPUT_REPLAY_SCHEMA_VERSION = 20;
+export const INPUT_REPLAY_SCHEMA_VERSION = 22;
 
 export const withReplayExportGuard = <T>(hasOverrides: boolean, exportReplay: () => T): T => {
   if (hasOverrides) {
@@ -33,6 +33,11 @@ const INPUT_REPLAY_MAX_ACTION_PAYLOAD_BYTES = 256 * 1024;
 const MAGIC = 'DEADVOX_REPLAY';
 const PENDING_REPLAY_KEY = 'deadvox.pending-replay';
 const REPLAY_PAYLOAD_ACTIONS = new Set<ReplayActionPayload['kind']>([
+  'power.set',
+  'furniture.use',
+  'furniture.slide',
+  'charger.start',
+  'charger.stop',
   'inventory.move',
   'inventory.to-hands',
   'item.pickup',
@@ -48,6 +53,7 @@ const REPLAY_PAYLOAD_ACTIONS = new Set<ReplayActionPayload['kind']>([
   'inventory.cancel-handling',
   'firearm.attachment.fit',
   'firearm.attachment.remove',
+  'vehicle.work',
   'craft.start',
   'action.wait',
   'action.wake-hour',
@@ -55,8 +61,14 @@ const REPLAY_PAYLOAD_ACTIONS = new Set<ReplayActionPayload['kind']>([
   'craft.stop',
   'item.throw.cancel',
   'item.throw',
+  'light.battery.load',
 ]);
 const REPLAY_SEMANTIC_ACTIONS = [
+  'power.set',
+  'furniture.use',
+  'furniture.slide',
+  'charger.start',
+  'charger.stop',
   'item.throw',
   'item.throw.cancel',
   'throw.stance.toggle',
@@ -76,11 +88,13 @@ const REPLAY_SEMANTIC_ACTIONS = [
   'inventory.cancel-handling',
   'firearm.attachment.fit',
   'firearm.attachment.remove',
+  'vehicle.work',
   'craft.start',
   'action.wait',
   'action.wake-hour',
   'craft.continue',
   'craft.stop',
+  'light.battery.load',
   ...Array.from({ length: QUICKBAR_SLOTS }, (_, index) => [
     `quickbar.tap.${index + 1}`,
     `quickbar.hold.${index + 1}`,

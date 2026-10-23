@@ -1,3 +1,4 @@
+import type { ModelBox } from '@skelly/thing-core/schema';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import type { InteractionTarget } from '../core/interactionPick.ts';
 import type { Body } from '../core/physics.ts';
@@ -14,6 +15,8 @@ export const markInteractionTarget = (
     readonly piles: PileMeshes;
     readonly definition: (entity: BlockEntity) => FurnitureDef;
     readonly body: (id: number) => Pick<Body, 'pos' | 'halfWidth' | 'height'> | undefined;
+    /** A fitted part's pick boxes in world metres, the same boxes the pick used. */
+    readonly vehiclePart?: (vehicleId: number, fittingId: string) => readonly ModelBox[] | undefined;
     readonly blockSize: number;
   },
 ): void => {
@@ -45,6 +48,17 @@ export const markInteractionTarget = (
       );
       return;
     }
+  }
+  const boxes = target?.kind === 'vehicle' ? services.vehiclePart?.(target.vehicleId, target.fittingId) : undefined;
+  if (target?.kind === 'vehicle' && boxes?.length) {
+    const min = [0, 1, 2].map((axis) => Math.min(...boxes.map((box) => box.min[axis]!)));
+    const max = [0, 1, 2].map((axis) => Math.max(...boxes.map((box) => box.max[axis]!)));
+    furniture.markBounds(
+      `vehicle:${target.vehicleId}:${target.fittingId}`,
+      [0, 1, 2].map((axis) => (min[axis]! + max[axis]!) / 2) as [number, number, number],
+      [0, 1, 2].map((axis) => max[axis]! - min[axis]!) as [number, number, number],
+    );
+    return;
   }
   furniture.mark(undefined);
 };

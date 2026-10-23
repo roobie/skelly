@@ -83,6 +83,23 @@ describe('ground pile bound', () => {
     expect(issue({ kind: 'fixed', items: stock.slice(1) })).toBeUndefined();
   });
 
+  it('counts hand-placed fixed stock that never spawns, alone and beside a table roll', () => {
+    const never = { ...item('pile_fixture_never', [1, 1]), economy: { usage: [], tiers: [] } } as ItemDef;
+    const withNever: Registry = { ...registry, items: new Map([...registry.items, [never.id, never]]) };
+    const stocked = (count: number, rolled?: string) =>
+      groundPileIssue(
+        withNever,
+        { kind: 'fixed', items: [{ item: never.id, count }], ...(rolled === undefined ? {} : { table: rolled }) },
+        context,
+        CAP,
+      );
+    expect(stocked(cells)).toBeUndefined();
+    expect(stocked(cells + 1)).toContain('overfill');
+    // The table's three units no longer fit beside stock that already fills all but two cells.
+    expect(stocked(cells - 3, 'pile_fixture_few_units')).toBeUndefined();
+    expect(stocked(cells - 2, 'pile_fixture_few_units')).toContain('overfill');
+  });
+
   it('reports an overfilling ground anchor through template validation', () => {
     const anchored = (tableId: string) =>
       groundLootSupplyIssues(registry, {

@@ -25,6 +25,11 @@ local slots = [['metal', 'steel-parkerized'], ['furniture', 'polymer-black'], ['
 local slotMaterials = { [slot[0]]: slot[1] for slot in slots };
 local roleMaterials = { sight: 'alu-anodized-black', 'tactical-flashlight-mount': 'alu-anodized-black', suppressor: 'steel-stainless' };
 local materials = import '../../../packages/thing-core/src/materials.jsonnet';
+local opticLenses = {
+  'mini-reflex': 'glass-lens-amber', 'tube-dot': 'glass-lens-amber', holographic: 'glass-lens-amber',
+  'fixed-prism-4x': 'glass-lens-green', 'lpvo-1-6x': 'glass-lens-green', 'hunting-3-9x': 'glass-lens-green',
+  'high-mag-5-25x': 'glass-lens-amber', 'digital-thermal': 'glass-lens-amber',
+};
 local specialHex = { grip: '46ac8f', 'stock-joint': 'ce9d52', 'fore-stock': 'ce9d52', 'cut-stub': 'ce9d52', 'stock-comb': '648bc4', 'stock-wrist': 'a97cc8' };
 local familyHex = {
   receiver: '8d939c', 'bolt-carrier': '6d737c', 'ar-charging-handle': '6d737c', 'bolt-handle': '6d737c',
@@ -48,14 +53,20 @@ local familyHex = {
   },
   slotMaterials: slotMaterials,
   // Each attachment's authored look: its default appearance and, where its item class grain does not fit it, the voxel
-  // grain its export takes.
+  // grain its export takes. An instance's own finish overrides these slot by slot.
   attachments: {
     // The gun grain, to match the receivers it mounts on; the item grain draws a plain square bar.
     'real-suppressor': { appearance: { finish: { metal: 'alu-anodized-black' } }, voxelGrain: 0.004 },
     'improvised-suppressor': { appearance: { finish: { metal: 'alu-anodized-black' } }, voxelGrain: 0.004 },
     // A 20 mm mount is two item voxels across; the fine grain keeps its clamp and lamp apart.
     'tactical-flashlight-mount': { voxelGrain: 0.002 },
+  } + {
+    // Each optic's default lens coating fills its lens slot; the tint is the glass material's sheen.
+    ['optic-' + optic]: { appearance: { finish: { lens: opticLenses[optic] } } }
+    for optic in std.objectFields(opticLenses)
   },
+  // Sides of every round optic body and the lenses seated in it.
+  opticBodySides: 8,
   gun: {
     familyColors: { [role]: rgb(familyHex[role]) for role in std.objectFields(familyHex) },
     specialColors: { [role]: rgb(specialHex[role]) for role in std.objectFields(specialHex) },

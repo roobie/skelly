@@ -1,16 +1,14 @@
 // Builds the renderer and scene shared by play and benchmark modes. World and
 // content setup lives in worldSetup.ts. The voxel grid and physics are in blocks; the scene is in
 // metres, so chunk meshes are scaled by the block size. The game's world has the
-// hamlet near spawn; the benchmark's has milestone 1.0's test house. Either can have
+// selected scenario; the benchmark's has the test house. Either can have
 // the stress-test city instead (`?site=city`).
 
 import { DirectionalLight, Group, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
-import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { skyAt } from '../core/sky.ts';
-import { footprint } from '../core/templates.ts';
 import { ChunkMeshes } from '../render/chunks.ts';
 import { Mood } from '../render/mood.ts';
 import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
@@ -92,36 +90,19 @@ export function createEngine(
   const worldSetup = createWorldSetup(config, meshes, stats);
   scene.add(meshes.group);
   // Chunk meshes are culled against their tight boxes, after three.js has updated the camera.
-  const { site } = worldSetup;
-  const placements = site?.authoredPlacements ?? [];
-  const boxes = placements.map((placement) => {
-    const [width, depth] = footprint(placement);
-    return {
-      min: [...placement.origin] as Vec3,
-      max: [
-        placement.origin[0] + width,
-        placement.origin[1] + placement.template.size[1],
-        placement.origin[2] + depth,
-      ] as Vec3,
-    };
-  });
+  const { skyFields } = worldSetup;
+  const graphicsTuning = worldSetup.registry.graphics.get(CORE_CONTENT_IDS.coreGraphics);
+  if (!graphicsTuning) {
+    throw new Error('Missing core graphics policy');
+  }
   const skylight =
-    boxes.length > 0
+    skyFields.fields.length > 0
       ? new Skylight(
-          boxes,
-          { blockSize: scale.blockSize, top: (scale.maxCy + 1) * CHUNK - 1, viewRadiusM: radiusM },
-          {
-            world: worldSetup.world,
-            entities: worldSetup.entities,
-            registry: worldSetup.registry,
-            bottom: scale.minCy * CHUNK,
-            submit: (input, receive) => worldSetup.streamer.requestSky(input, receive),
-          },
+          skyFields,
+          { blockSize: scale.blockSize, viewRadiusM: radiusM, unbuiltCap: graphicsTuning.unbuiltSkyCap },
+          { submit: (input, receive) => worldSetup.streamer.requestSky(input, receive) },
         )
       : undefined;
-  if (skylight) {
-    worldSetup.streamer.onDataChange = (origin) => skylight.chunkChanged(origin);
-  }
   scene.onBeforeRender = (_renderer, _scene, cam) => {
     skylight?.update(scene, [
       camera.position.x / scale.blockSize,
@@ -131,10 +112,6 @@ export function createEngine(
     meshes.cull(cam);
   };
 
-  const graphicsTuning = worldSetup.registry.graphics.get(CORE_CONTENT_IDS.coreGraphics);
-  if (!graphicsTuning) {
-    throw new Error('Missing core graphics policy');
-  }
   const mood = renderer ? new Mood(renderer, scene, camera, graphicsTuning) : undefined;
   const shadows = renderer ? new Shadows(renderer, scene, { light: sky.light, rig: sunRig }, meshes) : undefined;
   const graphics = new GraphicsControls(

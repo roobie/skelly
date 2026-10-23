@@ -460,6 +460,25 @@
       },
       "color": "#596562",
       "door": {
+        "detail": {
+          "fields": [1, 1],
+          "frame": 0.050000000000000003,
+          "handle": {
+            "along": 0.5,
+            "fromFreeEdge": 0.10000000000000001,
+            "kind": "pull",
+            "length": 0.14999999999999999,
+            "thickness": 0.025000000000000001
+          },
+          "hardware": "#a9adb0",
+          "hinges": {
+            "count": 2,
+            "length": 0.17999999999999999,
+            "width": 0.050000000000000003
+          },
+          "relief": 0.0080000000000000002,
+          "seam": 0.050000000000000003
+        },
         "handlingSimSeconds": 0.59999999999999998,
         "methods": {}
       },
@@ -533,6 +552,25 @@
       },
       "color": "#8c9b91",
       "door": {
+        "detail": {
+          "fields": [1, 2],
+          "frame": 0.050000000000000003,
+          "handle": {
+            "along": 0.5,
+            "fromFreeEdge": 0.34999999999999998,
+            "kind": "bar",
+            "length": 0.59999999999999998,
+            "thickness": 0.029999999999999999
+          },
+          "hardware": "#a9adb0",
+          "hinges": {
+            "count": 3,
+            "length": 0.10000000000000001,
+            "width": 0.059999999999999998
+          },
+          "relief": 0.0080000000000000002,
+          "seam": 0.050000000000000003
+        },
         "handlingSimSeconds": 0.59999999999999998,
         "methods": {}
       },

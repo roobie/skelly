@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you change item, recipe, appliance or handling ownership
+  - you change item, recipe, appliance, charging or handling ownership
   - you change compressed long actions, interruption, reading or save behavior
   - you change work-item escrow, salvage or reachability
   - you change how a trap is set, springs, holds or is disarmed
@@ -13,6 +13,8 @@ This document keeps the reasons and ownership rules behind item use, crafting an
 ## Ownership
 
 The core decides admission and effects; the UI projects queries and sends commands. Queries change nothing. Delayed commands revalidate when they complete because reach, tools and world state may have changed. Item ownership stays in item trees; quickbar and light selections are non-owning UID references. The quickbar shows only what the player carries, so a binding clears when its item leaves the person by any route, and a saved binding to an item not carried restores empty. See `src/game/quickbar.ts`, `Quickbar.resolve`, and `src/core/inventory.ts`, `Inventory.carriedByUid`. UI selection, drag state and open panels are not saved game state.
+
+An ownership change is where food can change environment, so it is also where food settles. A leaving subtree first takes its old environment's aging, so a new place changes only later aging and no command can rewrite the past. A refused or cancelled move leaves ownership as it was; aging that is already due is not undone. Relocated, fallen and destroyed furniture settles its pockets before they move. Plans stay pure: merge admission compares projected exposure without settling. See `src/core/inventory.ts`, `Inventory.settleFood` and `Inventory.currentFood`, and `src/core/furnitureMove.ts`, `beforeRelocating`.
 
 Moves, crafting, appliances and quickbar actions share the reach query so they cannot disagree about accessible items. Keep one inventory counter per store; only add per-place counters if Slice 5 profiling shows view-model rebuilding cost needs them, and BR decides whether that evidence warrants the change. See `src/core/reach.ts`, `reach`, and `src/core/options.ts`, `options`.
 
@@ -56,8 +58,33 @@ Only traps inside the block of nine regions around the player spring, and the te
 
 ## Appliances
 
-An appliance is a block entity whose behavior comes from components, not its id. Containers own pockets; controls issue commands; workstations provide recipe qualities; processes run without the player; power joins the electricity graph.
+Appliance processes belong to block entities, not the character's hands or long
+action. Inputs stay in ordinary pockets so cancellation and destruction need no
+second item store. The charging owner uses inventory admission and splitting;
+active ownership prevents withdrawal until stopped or complete. See
+`src/core/batteryChargers.ts`, `BatteryChargers`, and `src/core/inventory.ts`,
+`Inventory.plan`.
 
-A process runs while its chunk is loaded and catches up when it loads again. Settle its state at every rate change before applying the new rate; otherwise unloaded time can disagree with live ticking. Inside the block around the player, test catch-up against ordinary ticking, including a rate change; beyond it, test that the coarse result is deterministic. See [ADR 0008](docs/decisions/0008-deterministic-world.md). The electricity graph is built (`src/core/power.ts`, `PowerNetwork`); appliance controls and unattended processes are still open, so these are their rules, not a description of code.
+Settle old service before changing controls, wiring or ownership so a command
+cannot rewrite past work. Rendering residency must not affect an initialized
+process. Pause on loss of power; completion releases demand at its boundary,
+not at the end of an absence. See `src/core/power.ts`, `PowerWork`, and
+`docs/electricity.md`, "Solar and elapsed time".
 
-Cooking uses a lit workstation when its recipe requires heat. A player craft stops if that requirement is lost; a process owned by an appliance does not occupy the player's hands or require compression.
+Authored appliance identity must survive streaming and reload rather than depend
+on whichever mesh is visible. See `src/core/sitePower.ts`, `SitePower`, and
+`src/game/session.ts`, `createSessionPower`. Settlement at the snapshot barrier
+prevents a save from keeping power at one time and cell energy at another; see
+`src/core/saveState.ts`, `snapshotSession`.
+
+Loading and collecting use ordinary handling so the same reach and ownership
+checks apply at admission and completion. Starting and stopping do not occupy
+hands; an opened inventory surface keeps machine diagnosis local without a
+permanent HUD. See `src/ui/chargerPanel.ts`, `chargerPanel`, and
+`src/game/session.ts`, `chargerControl`.
+
+Relocation and destruction settle before ownership changes, including pieces
+that fall when their support moves, so reserved contents are neither lost nor
+duplicated. A relocated charger loses its authored connection rather than carrying
+service with it. See `src/core/furnitureMove.ts`, `FurnitureMover`, and
+`src/core/batteryChargers.ts`, `BatteryChargers.beforeRemove`.

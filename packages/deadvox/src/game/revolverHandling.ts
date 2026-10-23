@@ -16,6 +16,7 @@ interface RevolverHooks {
   readonly sound: (event: SoundEventId, time: number) => void;
   readonly eject: (gun: Item, chamber: number, type: string, time: number) => void;
   readonly caseType: (gun: Item) => string;
+  readonly completed?: (gun: Item, step: RevolverStep) => void;
 }
 // The trigger pull's click is the gun's content-selected dry-fire sound.
 const sounds: Record<Exclude<RevolverStep, 'pull'>, SoundEventId> = {
@@ -65,6 +66,7 @@ export class RevolverHandling {
     if (step !== 'open' && !params.cuePlayed) {
       this.hooks.sound(sounds[step], step === 'eject' ? Number(params.cueAt) : time);
     }
+    this.hooks.completed?.(gun, step);
     this.afterStep(gun, step, time);
     return undefined;
   }

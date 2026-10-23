@@ -2,6 +2,7 @@
   "sounds": [
     {
       "category": "world",
+      "description": "Lift a crate or other small piece, or set it down.",
       "gain": 0.69999999999999996,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "furniture_scrape",
@@ -15,6 +16,21 @@
     },
     {
       "category": "world",
+      "description": "Push or drag an oversized piece of furniture across the floor.",
+      "gain": 1,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "furniture_drag",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 30
+      },
+      "pitchJitter": [0.55000000000000004, 0.65000000000000002],
+      "variants": ["assets/audio/door_blocked_close-01.ogg"]
+    },
+    {
+      "category": "world",
+      "description": "Strike a door or any piece of furniture in melee, or let a chasing zombie bash one in its way.",
       "gain": 0.90000000000000002,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "door_bash",

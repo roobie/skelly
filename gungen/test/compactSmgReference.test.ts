@@ -102,10 +102,22 @@ it.each(variants)('threads the eye line through the rear aperture and the front 
   }
 });
 
-it.each(variants)('puts the muzzle anchor at the tip of the muzzle variant: $muzzle', ({ file, muzzle }) => {
+it('derives the threaded breech from the cited barrel span', () => {
+  const { breechU, citedLengthU, tipU } = COMPACT_SMG_PROPORTIONS.barrel;
+  expect(tipU.threaded - breechU).toBe(citedLengthU);
+});
+
+it.each(variants)('spans the breech and tip for the muzzle variant: $muzzle', ({ file, muzzle }) => {
   const resolved = load(file);
   const barrel = owner(resolved, 'barrel');
-  const anchor = GUN_ANCHORS.barrel!.anchors({}, resolved.defs.get(barrel)!).muzzle!;
-  const tip: Vec3 = applyPoint(resolved.placed.get(barrel)!, anchor.position);
-  expect(tip[0]).toBeCloseTo(COMPACT_SMG_PROPORTIONS.barrel.tipU[muzzle], 6);
+  const definition = resolved.defs.get(barrel)!;
+  const transform = resolved.placed.get(barrel)!;
+  const anchor = GUN_ANCHORS.barrel!.anchors({}, definition).muzzle!;
+  const tip: Vec3 = applyPoint(transform, anchor.position);
+  const breech = applyPoint(transform, definition.ports.find(({ id }) => id === 'rear')!.pos);
+  const expectedTip = COMPACT_SMG_PROPORTIONS.barrel.tipU[muzzle];
+  const expectedBreech = COMPACT_SMG_PROPORTIONS.barrel.breechU;
+  expect(breech[0]).toBeCloseTo(expectedBreech, 6);
+  expect(tip[0]).toBeCloseTo(expectedTip, 6);
+  expect(tip[0] - breech[0]).toBeCloseTo(expectedTip - expectedBreech, 6);
 });

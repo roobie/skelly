@@ -74,8 +74,8 @@ const OTHER_ANCHORS = [
 /**
  * Resolves every declared anchor into assembly space (core), then applies the gun policy. The `hold` comes
  * from the best-ranked candidates; two candidates of that rank are ambiguous and no `hold` is an error.
- * The `muzzle` is the frontmost candidate along its own forward, so a muzzle device threaded on a barrel
- * outranks the barrel. Other names take the candidate on the lowest part id, so the choice is deterministic.
+ * The `muzzle` is the frontmost candidate along its own forward, so a built-in muzzle device threaded on a
+ * barrel outranks the barrel. Other names take the candidate on the lowest part id, so the choice is deterministic.
  */
 export const selectGunAnchors: SelectGunAnchors = (resolved, declarations, policy) => {
   const frames = resolveAnchors(

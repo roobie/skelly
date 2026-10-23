@@ -109,7 +109,9 @@ local furnished = function(id, shellId, first, second) {
     shell + { id: 'gauntlet_lab_shell_incoming_east', ownership: { layers: [room.ownership.layers[0], punch(incomingEastClaims), incomingEastClaims, incomingEastClaims, incomingEastClaims, incomingEastClaims, incomingEastTop, incomingEastTop] } },
     shell + { id: 'gauntlet_lab_shell_outgoing', layers: [outgoingFloor, walls, walls, walls, walls, walls, walls, walls], ownership: { layers: [outgoingClaims, punch(bayClaims), bayClaims, bayClaims, bayClaims, bayClaims, room.ownership.layers[3], room.ownership.layers[3]] } },
     shell + { id: 'gauntlet_lab_shell_outgoing_east', layers: [outgoingEastFloor, walls, walls, walls, walls, walls, walls, walls], ownership: { layers: [outgoingEastClaims, punch(bayClaims), bayClaims, bayClaims, bayClaims, bayClaims, room.ownership.layers[3], room.ownership.layers[3]] } },
-    equipment('bench', 'gauntlet_look_bench', [two, two, empty, empty, empty], [twoClaims, twoClaims, emptyClaims, emptyClaims, emptyClaims]),
+    equipment('bench', 'gauntlet_look_bench', [two, two, ['C...', '....', '....'], empty, empty], [twoClaims, twoClaims, ['SAAA', 'AAAA', 'AAAA'], emptyClaims, emptyClaims]) + {
+      palette+: { C: { furniture: 'battery_charger' } },
+    },
     equipment('console', 'gauntlet_look_console', [two, two, empty, empty, empty], [twoClaims, twoClaims, emptyClaims, emptyClaims, emptyClaims]),
     equipment('archive', 'gauntlet_look_archive', [two, two, two, two, two], [twoClaims, twoClaims, twoClaims, twoClaims, twoClaims]),
     equipment('exam', 'gauntlet_look_exam', [two, two, empty, empty, empty], [twoClaims, twoClaims, emptyClaims, emptyClaims, emptyClaims]),

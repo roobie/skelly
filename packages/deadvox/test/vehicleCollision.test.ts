@@ -7,10 +7,10 @@ import { type Pose, rotatedSize, rotationOf } from '../src/core/orientation.ts';
 import { stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ContentFile } from '../src/core/schema.ts';
-import { createPlayerBody, physicsFor, steer } from '../src/game/player.ts';
 import { BLUEPRINTS } from '../src/vehicles/catalogue.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
+import { createPlayerBody, physicsFor, steer } from './playerFixture.ts';
 
 const half = makeScale(0.5);
 const base = baseRegistry();

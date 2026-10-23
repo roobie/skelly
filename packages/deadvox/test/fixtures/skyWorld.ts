@@ -37,6 +37,7 @@ export function skyWorldFixture(boxes: SkyBounds[] = [fixtureBox]) {
         siteGeneration: [
           {
             id: CORE_CONTENT_IDS.authoredSite,
+            activeZombieRadiusMetres: baseSite.activeZombieRadiusMetres,
             topography: {
               amplitudeMetres: 0,
               wavelengthMetres: 1,
@@ -59,8 +60,6 @@ export function skyWorldFixture(boxes: SkyBounds[] = [fixtureBox]) {
               trees: { trunk: 'fixture_wall', branch: 'fixture_wall', leaves: 'fixture_leaves' },
               leafLitter: 'fixture_leaves',
             },
-            hamlet: { hedge: 'fixture_leaves', northSide: ['fixture_shell'], southSide: ['fixture_shell'] },
-            placement: baseSite.placement,
           },
         ],
         templates: [

@@ -10,10 +10,18 @@
       "id": "car_battery",
       "model": "car_battery",
       "name": "Car battery",
+      "notLoot": false,
       "size": [3, 2],
       "vehicle": {
-        "capabilities": ["electricity"]
-      }
+        "capabilities": ["electricity"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -25,10 +33,18 @@
       "id": "car_headlamp",
       "model": "car_headlamp",
       "name": "Headlamp unit",
+      "notLoot": false,
       "size": [2, 2],
       "vehicle": {
-        "capabilities": ["light", "glazing"]
-      }
+        "capabilities": ["light", "glazing"],
+        "obstruction": {
+          "combat": true,
+          "light": false,
+          "sight": false,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -40,10 +56,18 @@
       "id": "hatchback_battery_tray",
       "model": "hatchback_battery_tray",
       "name": "Hatchback battery tray",
+      "notLoot": false,
       "size": [3, 2],
       "vehicle": {
-        "capabilities": ["structure"]
-      }
+        "capabilities": ["structure"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -55,10 +79,18 @@
       "id": "pickup_battery_tray",
       "model": "pickup_battery_tray",
       "name": "Pickup battery tray",
+      "notLoot": false,
       "size": [4, 3],
       "vehicle": {
-        "capabilities": ["structure"]
-      }
+        "capabilities": ["structure"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -69,10 +101,19 @@
       "id": "wheel_205_55r16",
       "model": "wheel_205_55r16",
       "name": "Wheel 205/55 R16",
+      "notLoot": false,
       "size": [6, 6],
       "vehicle": {
-        "capabilities": ["wheel"]
-      }
+        "capabilities": ["wheel"],
+        "mount": "hatchback_wheel",
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -83,10 +124,18 @@
       "id": "front_seat",
       "model": "front_seat",
       "name": "Front seat",
+      "notLoot": false,
       "size": [5, 10],
       "vehicle": {
-        "capabilities": ["seat"]
-      }
+        "capabilities": ["seat"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -97,10 +146,18 @@
       "id": "door_mirror",
       "model": "door_mirror",
       "name": "Door mirror",
+      "notLoot": false,
       "size": [2, 2],
       "vehicle": {
-        "capabilities": []
-      }
+        "capabilities": [],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -111,10 +168,18 @@
       "id": "steering_wheel",
       "model": "steering_wheel",
       "name": "Steering wheel",
+      "notLoot": false,
       "size": [4, 4],
       "vehicle": {
-        "capabilities": ["steered"]
-      }
+        "capabilities": ["steered"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -125,10 +190,18 @@
       "id": "gear_lever",
       "model": "gear_lever",
       "name": "Gear lever",
+      "notLoot": false,
       "size": [1, 3],
       "vehicle": {
-        "capabilities": []
-      }
+        "capabilities": [],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -139,10 +212,18 @@
       "id": "hatchback_shell",
       "model": "hatchback_shell",
       "name": "Hatchback body shell",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["structure", "protection", "storage"]
-      }
+        "capabilities": ["structure", "protection", "storage"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -153,10 +234,18 @@
       "id": "hatchback_front_door",
       "model": "hatchback_front_door",
       "name": "Hatchback front door",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["entry", "glazing", "protection"]
-      }
+        "capabilities": ["entry", "glazing", "protection"],
+        "obstruction": {
+          "combat": true,
+          "light": false,
+          "sight": false,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -167,10 +256,18 @@
       "id": "hatchback_rear_door",
       "model": "hatchback_rear_door",
       "name": "Hatchback rear door",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["entry", "glazing", "protection"]
-      }
+        "capabilities": ["entry", "glazing", "protection"],
+        "obstruction": {
+          "combat": true,
+          "light": false,
+          "sight": false,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -181,10 +278,18 @@
       "id": "hatchback_tailgate",
       "model": "hatchback_tailgate",
       "name": "Hatchback tailgate",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["entry", "glazing"]
-      }
+        "capabilities": ["entry", "glazing"],
+        "obstruction": {
+          "combat": true,
+          "light": false,
+          "sight": false,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -195,10 +300,18 @@
       "id": "hatchback_windscreen",
       "model": "hatchback_windscreen",
       "name": "Hatchback windscreen",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["glazing"]
-      }
+        "capabilities": ["glazing"],
+        "obstruction": {
+          "combat": true,
+          "light": false,
+          "sight": false,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -209,10 +322,18 @@
       "id": "hatchback_bonnet",
       "model": "hatchback_bonnet",
       "name": "Hatchback bonnet",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["protection"]
-      }
+        "capabilities": ["protection"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -223,10 +344,18 @@
       "id": "hatchback_front_wing",
       "model": "hatchback_front_wing",
       "name": "Hatchback front wing",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["protection"]
-      }
+        "capabilities": ["protection"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -237,10 +366,18 @@
       "id": "hatchback_front_bumper",
       "model": "hatchback_front_bumper",
       "name": "Hatchback front bumper",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["protection"]
-      }
+        "capabilities": ["protection"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -251,10 +388,18 @@
       "id": "hatchback_rear_bumper",
       "model": "hatchback_rear_bumper",
       "name": "Hatchback rear bumper",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["protection"]
-      }
+        "capabilities": ["protection"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -265,10 +410,18 @@
       "id": "hatchback_tail_lamp",
       "model": "hatchback_tail_lamp",
       "name": "Hatchback tail lamp",
+      "notLoot": false,
       "size": [3, 2],
       "vehicle": {
-        "capabilities": ["light"]
-      }
+        "capabilities": ["light"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -279,10 +432,19 @@
       "id": "hatchback_front_strut",
       "model": "hatchback_front_strut",
       "name": "Hatchback front strut",
+      "notLoot": false,
       "size": [4, 6],
       "vehicle": {
-        "capabilities": ["structure"]
-      }
+        "capabilities": ["structure"],
+        "mount": "hatchback_front_strut",
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -293,10 +455,19 @@
       "id": "hatchback_rear_axle",
       "model": "hatchback_rear_axle",
       "name": "Hatchback rear axle",
+      "notLoot": false,
       "size": [12, 4],
       "vehicle": {
-        "capabilities": ["structure"]
-      }
+        "capabilities": ["structure"],
+        "mount": "hatchback_rear_axle",
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -307,10 +478,18 @@
       "id": "hatchback_engine",
       "model": "hatchback_engine",
       "name": "Hatchback engine",
+      "notLoot": false,
       "size": [6, 5],
       "vehicle": {
-        "capabilities": ["power"]
-      }
+        "capabilities": ["power"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -321,10 +500,18 @@
       "id": "hatchback_gearbox",
       "model": "hatchback_gearbox",
       "name": "Hatchback gearbox",
+      "notLoot": false,
       "size": [3, 3],
       "vehicle": {
-        "capabilities": ["driven"]
-      }
+        "capabilities": ["driven"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -335,10 +522,18 @@
       "id": "hatchback_radiator",
       "model": "hatchback_radiator",
       "name": "Hatchback radiator",
+      "notLoot": false,
       "size": [10, 4],
       "vehicle": {
-        "capabilities": []
-      }
+        "capabilities": [],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -349,10 +544,18 @@
       "id": "hatchback_fuel_tank",
       "model": "hatchback_fuel_tank",
       "name": "Hatchback fuel tank",
+      "notLoot": false,
       "size": [5, 4],
       "vehicle": {
-        "capabilities": ["fuel"]
-      }
+        "capabilities": ["fuel"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -363,10 +566,18 @@
       "id": "hatchback_exhaust",
       "model": "hatchback_exhaust",
       "name": "Hatchback exhaust",
+      "notLoot": false,
       "size": [12, 2],
       "vehicle": {
-        "capabilities": []
-      }
+        "capabilities": [],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -377,10 +588,18 @@
       "id": "hatchback_dashboard",
       "model": "hatchback_dashboard",
       "name": "Hatchback dashboard",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["structure"]
-      }
+        "capabilities": ["structure"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -391,10 +610,18 @@
       "id": "hatchback_rear_seat",
       "model": "hatchback_rear_seat",
       "name": "Hatchback rear seat",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["seat"]
-      }
+        "capabilities": ["seat"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -405,10 +632,18 @@
       "id": "hoist_frame_rail",
       "model": "hoist_frame_rail",
       "name": "Truck frame rail",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["structure"]
-      }
+        "capabilities": ["structure"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -419,10 +654,18 @@
       "id": "hoist_crossmember",
       "model": "hoist_crossmember",
       "name": "Truck crossmember",
+      "notLoot": false,
       "size": [4, 2],
       "vehicle": {
-        "capabilities": ["structure"]
-      }
+        "capabilities": ["structure"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -433,10 +676,18 @@
       "id": "hoist_wheel",
       "model": "hoist_wheel",
       "name": "Truck wheel",
+      "notLoot": false,
       "size": [6, 6],
       "vehicle": {
-        "capabilities": ["wheel"]
-      }
+        "capabilities": ["wheel"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -447,10 +698,18 @@
       "id": "hoist_front_axle",
       "model": "hoist_front_axle",
       "name": "Truck front axle",
+      "notLoot": false,
       "size": [12, 4],
       "vehicle": {
-        "capabilities": ["steered", "structure"]
-      }
+        "capabilities": ["steered", "structure"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -461,10 +720,18 @@
       "id": "hoist_rear_axle",
       "model": "hoist_rear_axle",
       "name": "Truck rear axle",
+      "notLoot": false,
       "size": [12, 4],
       "vehicle": {
-        "capabilities": ["driven", "structure"]
-      }
+        "capabilities": ["driven", "structure"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -475,10 +742,18 @@
       "id": "hoist_engine",
       "model": "hoist_engine",
       "name": "Truck diesel engine",
+      "notLoot": false,
       "size": [8, 6],
       "vehicle": {
-        "capabilities": ["power"]
-      }
+        "capabilities": ["power"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -489,10 +764,18 @@
       "id": "hoist_gearbox",
       "model": "hoist_gearbox",
       "name": "Truck gearbox",
+      "notLoot": false,
       "size": [4, 3],
       "vehicle": {
-        "capabilities": ["driven"]
-      }
+        "capabilities": ["driven"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -503,10 +786,18 @@
       "id": "hoist_prop_shaft",
       "model": "hoist_prop_shaft",
       "name": "Truck prop shaft",
+      "notLoot": false,
       "size": [12, 1],
       "vehicle": {
-        "capabilities": []
-      }
+        "capabilities": [],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -517,10 +808,18 @@
       "id": "hoist_fuel_tank",
       "model": "hoist_fuel_tank",
       "name": "Truck fuel tank",
+      "notLoot": false,
       "size": [8, 4],
       "vehicle": {
-        "capabilities": ["fuel"]
-      }
+        "capabilities": ["fuel"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -531,10 +830,18 @@
       "id": "hoist_exhaust",
       "model": "hoist_exhaust",
       "name": "Truck exhaust",
+      "notLoot": false,
       "size": [8, 2],
       "vehicle": {
-        "capabilities": []
-      }
+        "capabilities": [],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -545,10 +852,18 @@
       "id": "hoist_radiator",
       "model": "hoist_radiator",
       "name": "Truck radiator",
+      "notLoot": false,
       "size": [6, 6],
       "vehicle": {
-        "capabilities": []
-      }
+        "capabilities": [],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -559,10 +874,18 @@
       "id": "hoist_cab_floor",
       "model": "hoist_cab_floor",
       "name": "Truck cab floor",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["structure"]
-      }
+        "capabilities": ["structure"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -573,10 +896,18 @@
       "id": "hoist_cab_skirt",
       "model": "hoist_cab_skirt",
       "name": "Truck cab skirt",
+      "notLoot": false,
       "size": [8, 2],
       "vehicle": {
-        "capabilities": ["protection"]
-      }
+        "capabilities": ["protection"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -587,10 +918,18 @@
       "id": "hoist_cab_back",
       "model": "hoist_cab_back",
       "name": "Truck cab back",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["structure"]
-      }
+        "capabilities": ["structure"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -601,10 +940,18 @@
       "id": "hoist_front_panel",
       "model": "hoist_front_panel",
       "name": "Truck front panel",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["structure"]
-      }
+        "capabilities": ["structure"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -615,10 +962,18 @@
       "id": "hoist_a_post",
       "model": "hoist_a_post",
       "name": "Truck A-post",
+      "notLoot": false,
       "size": [2, 6],
       "vehicle": {
-        "capabilities": ["structure"]
-      }
+        "capabilities": ["structure"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -629,10 +984,18 @@
       "id": "hoist_windscreen",
       "model": "hoist_windscreen",
       "name": "Truck windscreen",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["glazing"]
-      }
+        "capabilities": ["glazing"],
+        "obstruction": {
+          "combat": true,
+          "light": false,
+          "sight": false,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -643,10 +1006,18 @@
       "id": "hoist_roof",
       "model": "hoist_roof",
       "name": "Truck cab roof",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["protection"]
-      }
+        "capabilities": ["protection"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -657,10 +1028,18 @@
       "id": "hoist_door",
       "model": "hoist_door",
       "name": "Truck cab door",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["entry", "glazing", "protection"]
-      }
+        "capabilities": ["entry", "glazing", "protection"],
+        "obstruction": {
+          "combat": true,
+          "light": false,
+          "sight": false,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -671,10 +1050,18 @@
       "id": "hoist_front_bumper",
       "model": "hoist_front_bumper",
       "name": "Truck front bumper",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["protection"]
-      }
+        "capabilities": ["protection"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -685,10 +1072,18 @@
       "id": "hoist_dashboard",
       "model": "hoist_dashboard",
       "name": "Truck dashboard",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["structure"]
-      }
+        "capabilities": ["structure"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -699,10 +1094,18 @@
       "id": "hoist_engine_cover",
       "model": "hoist_engine_cover",
       "name": "Truck engine cover",
+      "notLoot": false,
       "size": [6, 3],
       "vehicle": {
-        "capabilities": []
-      }
+        "capabilities": [],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -713,10 +1116,18 @@
       "id": "hoist_bench",
       "model": "hoist_bench",
       "name": "Truck bench seat",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["seat"]
-      }
+        "capabilities": ["seat"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -727,10 +1138,18 @@
       "id": "hoist_deck_floor",
       "model": "hoist_deck_floor",
       "name": "Truck flat deck",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["structure"]
-      }
+        "capabilities": ["structure"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -741,10 +1160,18 @@
       "id": "hoist_headboard",
       "model": "hoist_headboard",
       "name": "Truck headboard",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["protection"]
-      }
+        "capabilities": ["protection"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -755,10 +1182,18 @@
       "id": "hoist_mudguard",
       "model": "hoist_mudguard",
       "name": "Truck mudguard",
+      "notLoot": false,
       "size": [4, 3],
       "vehicle": {
-        "capabilities": ["protection"]
-      }
+        "capabilities": ["protection"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -769,10 +1204,18 @@
       "id": "hoist_rear_underrun",
       "model": "hoist_rear_underrun",
       "name": "Truck rear underrun bar",
+      "notLoot": false,
       "size": [12, 2],
       "vehicle": {
-        "capabilities": ["structure"]
-      }
+        "capabilities": ["structure"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -783,10 +1226,18 @@
       "id": "hoist_tail_lamp",
       "model": "hoist_tail_lamp",
       "name": "Truck tail lamp",
+      "notLoot": false,
       "size": [3, 2],
       "vehicle": {
-        "capabilities": ["light"]
-      }
+        "capabilities": ["light"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -797,10 +1248,18 @@
       "id": "hoist_crane_base",
       "model": "hoist_crane_base",
       "name": "Crane base",
+      "notLoot": false,
       "size": [8, 6],
       "vehicle": {
-        "capabilities": ["structure"]
-      }
+        "capabilities": ["structure"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -811,10 +1270,18 @@
       "id": "hoist_stabiliser",
       "model": "hoist_stabiliser",
       "name": "Crane stabiliser leg",
+      "notLoot": false,
       "size": [4, 8],
       "vehicle": {
-        "capabilities": ["stabiliser"]
-      }
+        "capabilities": ["stabiliser"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -825,11 +1292,19 @@
       "id": "hoist_crane_column",
       "model": "hoist_crane_column",
       "name": "Crane column",
+      "notLoot": false,
       "size": [4, 8],
       "vehicle": {
         "capabilities": ["lift"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        },
         "ratedLoadKg": 850
-      }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -840,10 +1315,18 @@
       "id": "hoist_boom",
       "model": "hoist_boom",
       "name": "Crane boom",
+      "notLoot": false,
       "size": [12, 2],
       "vehicle": {
-        "capabilities": ["structure"]
-      }
+        "capabilities": ["structure"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -854,10 +1337,18 @@
       "id": "hoist_boom_extension",
       "model": "hoist_boom_extension",
       "name": "Crane boom extension",
+      "notLoot": false,
       "size": [12, 2],
       "vehicle": {
-        "capabilities": ["structure"]
-      }
+        "capabilities": ["structure"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -868,10 +1359,18 @@
       "id": "hoist_luff_ram",
       "model": "hoist_luff_ram",
       "name": "Crane luffing ram",
+      "notLoot": false,
       "size": [6, 2],
       "vehicle": {
-        "capabilities": []
-      }
+        "capabilities": [],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -882,10 +1381,18 @@
       "id": "hoist_winch",
       "model": "hoist_winch",
       "name": "Crane winch",
+      "notLoot": false,
       "size": [4, 3],
       "vehicle": {
-        "capabilities": []
-      }
+        "capabilities": [],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -896,10 +1403,18 @@
       "id": "hoist_hook_block",
       "model": "hoist_hook_block",
       "name": "Crane hook block",
+      "notLoot": false,
       "size": [2, 3],
       "vehicle": {
-        "capabilities": []
-      }
+        "capabilities": [],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -910,10 +1425,18 @@
       "id": "hoist_boom_rest",
       "model": "hoist_boom_rest",
       "name": "Crane boom rest",
+      "notLoot": false,
       "size": [3, 4],
       "vehicle": {
-        "capabilities": ["structure"]
-      }
+        "capabilities": ["structure"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -925,6 +1448,7 @@
       "id": "cargo_space",
       "model": "cargo_space",
       "name": "Cargo space",
+      "notLoot": false,
       "size": [1, 1],
       "vehicle": {
         "capabilities": ["storage"],
@@ -932,8 +1456,15 @@
           "handlingSimSeconds": 1.2,
           "openClearanceCells": 20,
           "wideReason": "A cargo space is as wide as the floor it covers, not a carried bag."
+        },
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
         }
-      }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -944,10 +1475,18 @@
       "id": "pickup_bed_floor",
       "model": "pickup_bed_floor",
       "name": "Pickup bed floor",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["structure", "load_floor"]
-      }
+        "capabilities": ["structure", "load_floor"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -958,10 +1497,18 @@
       "id": "pickup_bed_side",
       "model": "pickup_bed_side",
       "name": "Pickup bed side",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["protection"]
-      }
+        "capabilities": ["protection"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -972,10 +1519,18 @@
       "id": "pickup_bed_front",
       "model": "pickup_bed_front",
       "name": "Pickup headboard",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["protection"]
-      }
+        "capabilities": ["protection"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -986,10 +1541,18 @@
       "id": "box_van_floor",
       "model": "box_van_floor",
       "name": "Box van floor",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["structure", "load_floor"]
-      }
+        "capabilities": ["structure", "load_floor"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -1000,10 +1563,18 @@
       "id": "box_van_side",
       "model": "box_van_side",
       "name": "Box van side wall",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["protection"]
-      }
+        "capabilities": ["protection"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -1014,10 +1585,18 @@
       "id": "box_van_front",
       "model": "box_van_front",
       "name": "Box van front wall",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["protection"]
-      }
+        "capabilities": ["protection"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -1028,10 +1607,18 @@
       "id": "box_van_roof",
       "model": "box_van_roof",
       "name": "Box van roof",
+      "notLoot": false,
       "size": [12, 6],
       "vehicle": {
-        "capabilities": ["protection"]
-      }
+        "capabilities": ["protection"],
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
     }
   ],
   "models": [
@@ -1278,7 +1865,7 @@
       "id": "hatchback_shell",
       "parts": {
         "body": {
-          "centreOfMass": [-0.4474143693527568, 0.61026818642817626, 0],
+          "centreOfMass": [-0.4474143693527568, 0.61026674580490503, 0],
           "collision": [
             {
               "max": [0.6875, 0.3125, 0.8125],
@@ -1334,7 +1921,7 @@
             },
             {
               "max": [0.8125, 1.40625, 0.8125],
-              "min": [0, 0.96875, 0.71875]
+              "min": [0, 0.9375, 0.71875]
             },
             {
               "max": [-0.25, 1.375, 0.84375],
@@ -1382,7 +1969,7 @@
             },
             {
               "max": [0.8125, 1.40625, -0.71875],
-              "min": [0, 0.96875, -0.8125]
+              "min": [0, 0.9375, -0.8125]
             },
             {
               "max": [-0.25, 1.375, -0.78125],
@@ -1428,7 +2015,7 @@
       "id": "hatchback_front_door",
       "parts": {
         "body": {
-          "centreOfMass": [0.20264061766087366, 0.69860409816815405, 0.82479303663691883],
+          "centreOfMass": [0.20264061766087366, 0.69860409816815405, 0.82473432362611554],
           "collision": [
             {
               "max": [0.6875, 0.96875, 0.875],
@@ -1443,8 +2030,8 @@
               "min": [-0.25, 0.96875, 0.78125]
             },
             {
-              "max": [-0.0625, 0.875, 0.90625],
-              "min": [-0.1875, 0.84375, 0.875]
+              "max": [-0.0625, 0.875, 0.875],
+              "min": [-0.1875, 0.84375, 0.84375]
             }
           ],
           "massKg": 24,
@@ -1462,7 +2049,7 @@
       "id": "hatchback_rear_door",
       "parts": {
         "body": {
-          "centreOfMass": [-0.7129830441640379, 0.74003351735015777, 0.82248619873817042],
+          "centreOfMass": [-0.7129830441640379, 0.74003351735015777, 0.82240733438485814],
           "collision": [
             {
               "max": [-0.375, 0.96875, 0.875],
@@ -1481,8 +2068,8 @@
               "min": [-1.09375, 0.96875, 0.78125]
             },
             {
-              "max": [-0.90625, 0.875, 0.90625],
-              "min": [-1.03125, 0.84375, 0.875]
+              "max": [-0.90625, 0.875, 0.875],
+              "min": [-1.03125, 0.84375, 0.84375]
             }
           ],
           "massKg": 20,
@@ -1500,7 +2087,7 @@
       "id": "hatchback_tailgate",
       "parts": {
         "body": {
-          "centreOfMass": [-1.9205230222496907, 0.96625849814585896, 0],
+          "centreOfMass": [-1.9205230222496907, 0.96552456736711978, 0],
           "collision": [
             {
               "max": [-1.96875, 0.96875, 0.625],
@@ -1508,7 +2095,7 @@
             },
             {
               "max": [-1.65625, 1.40625, 0.59375],
-              "min": [-2, 0.96875, -0.59375]
+              "min": [-2, 0.9375, -0.59375]
             },
             {
               "max": [-2, 0.8125, 0.125],
@@ -2402,7 +2989,7 @@
       "id": "hoist_front_panel",
       "parts": {
         "body": {
-          "centreOfMass": [2.8272629310344826, 1.217198275862069, 0],
+          "centreOfMass": [2.8247306034482755, 1.217198275862069, 0],
           "collision": [
             {
               "max": [2.875, 1.4375, 0.78125],
@@ -2418,11 +3005,11 @@
             },
             {
               "max": [2.90625, 1.3125, 0.4375],
-              "min": [2.875, 1.0625, -0.4375]
+              "min": [2.84375, 1.0625, -0.4375]
             },
             {
-              "max": [2.90625, 1.40625, 0.125],
-              "min": [2.875, 1.34375, -0.125]
+              "max": [2.875, 1.40625, 0.125],
+              "min": [2.84375, 1.34375, -0.125]
             }
           ],
           "massKg": 20,
@@ -2579,7 +3166,7 @@
       "id": "hoist_dashboard",
       "parts": {
         "body": {
-          "centreOfMass": [2.6688636141516811, 1.245339376465989, 0.041524139953088353],
+          "centreOfMass": [2.6688458813758063, 1.2454105188587061, 0.0415984707836623],
           "collision": [
             {
               "max": [2.78125, 1.4375, 0.75],
@@ -2590,7 +3177,7 @@
               "min": [2.5625, 1.4375, 0.34375]
             },
             {
-              "max": [2.5625, 1.625, 0.65625],
+              "max": [2.59375, 1.625, 0.65625],
               "min": [2.53125, 1.53125, 0.375]
             }
           ],
@@ -2696,7 +3283,7 @@
       "id": "hoist_mudguard",
       "parts": {
         "body": {
-          "centreOfMass": [-1.5021952479338843, 0.72352789256198347, 0.71875],
+          "centreOfMass": [-1.5069867886178863, 0.72370426829268297, 0.71875000000000011],
           "collision": [
             {
               "max": [-1, 0.6875, 0.84375],
@@ -3226,6 +3813,14 @@
           "at": [0, 0, 0],
           "id": "rear_axle",
           "part": "hatchback_rear_axle",
+          "service": {
+            "durationSimSeconds": 45,
+            "mount": "hatchback_rear_axle",
+            "name": "Rear axle",
+            "qualities": {
+              "wrenching": 1
+            }
+          },
           "supportedBy": ["shell"]
         },
         {
@@ -3338,6 +3933,14 @@
           "at": [0, 0, 0],
           "id": "front_strut_near",
           "part": "hatchback_front_strut",
+          "service": {
+            "durationSimSeconds": 30,
+            "mount": "hatchback_front_strut",
+            "name": "Near front strut",
+            "qualities": {
+              "wrenching": 1
+            }
+          },
           "supportedBy": ["shell"]
         },
         {
@@ -3345,12 +3948,28 @@
           "id": "front_strut_far",
           "mirror": true,
           "part": "hatchback_front_strut",
+          "service": {
+            "durationSimSeconds": 30,
+            "mount": "hatchback_front_strut",
+            "name": "Far front strut",
+            "qualities": {
+              "wrenching": 1
+            }
+          },
           "supportedBy": ["shell"]
         },
         {
           "at": [1.24, 0.316, 0.75],
           "id": "front_wheel_near",
           "part": "wheel_205_55r16",
+          "service": {
+            "durationSimSeconds": 30,
+            "mount": "hatchback_wheel",
+            "name": "Near front wheel",
+            "qualities": {
+              "wrenching": 1
+            }
+          },
           "supportedBy": ["front_strut_near"]
         },
         {
@@ -3358,12 +3977,28 @@
           "id": "front_wheel_far",
           "mirror": true,
           "part": "wheel_205_55r16",
+          "service": {
+            "durationSimSeconds": 30,
+            "mount": "hatchback_wheel",
+            "name": "Far front wheel",
+            "qualities": {
+              "wrenching": 1
+            }
+          },
           "supportedBy": ["front_strut_far"]
         },
         {
           "at": [-1.27, 0.316, 0.75],
           "id": "rear_wheel_near",
           "part": "wheel_205_55r16",
+          "service": {
+            "durationSimSeconds": 30,
+            "mount": "hatchback_wheel",
+            "name": "Near rear wheel",
+            "qualities": {
+              "wrenching": 1
+            }
+          },
           "supportedBy": ["rear_axle"]
         },
         {
@@ -3371,6 +4006,14 @@
           "id": "rear_wheel_far",
           "mirror": true,
           "part": "wheel_205_55r16",
+          "service": {
+            "durationSimSeconds": 30,
+            "mount": "hatchback_wheel",
+            "name": "Far rear wheel",
+            "qualities": {
+              "wrenching": 1
+            }
+          },
           "supportedBy": ["rear_axle"]
         },
         {

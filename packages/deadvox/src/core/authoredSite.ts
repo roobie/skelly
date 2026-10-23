@@ -15,12 +15,13 @@ import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { CHUNK, toChunk, type Vec3, yawFromBearing } from './coords.ts';
-import { HAMLET_BLOCK_SIZE, HAMLET_HORDE_MEMBERS, HAMLET_HORDE_TYPE } from './hamlet.ts';
 import { type LootSpawnPoint, lootPointsByColumn } from './loot.ts';
 import { placementKeyLoot } from './placementLoot.ts';
+import type { PublicCartographicFeature } from './publicCartography.ts';
 import { Rng, simplexNoise2 } from './random.ts';
 import type { Scale } from './scale.ts';
 import type { LightPracticeDef, SiteLayoutDef } from './schema.ts';
+import { HORDE_MEMBERS, HORDE_TYPE, TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
 import {
   furnitureOf,
   grow,
@@ -47,6 +48,7 @@ export class AuthoredSite implements Site {
   readonly spawn: Site['spawn'];
   readonly surface: Surface;
   readonly placements: readonly Placement[];
+  readonly publicCartography: readonly PublicCartographicFeature[];
   get authoredPlacements(): readonly Placement[] {
     return this.placements;
   }
@@ -63,7 +65,7 @@ export class AuthoredSite implements Site {
   constructor(seed: number, registry: Registry, scale: Scale, layout: SiteLayoutDef) {
     this.seed = seed;
     this.registry = registry;
-    if (scale.blockSize !== HAMLET_BLOCK_SIZE) {
+    if (scale.blockSize !== TEMPLATE_BLOCK_SIZE) {
       throw new Error('Authored ASCII sites require 0.5 m blocks');
     }
     const s = scale.blockSize;
@@ -78,6 +80,7 @@ export class AuthoredSite implements Site {
       return { ...lotOf(building, rect), apron: grow(rectBlocks(rect), LOT_APRON_M / s) };
     });
     this.placements = layout.buildings.map((building) => placementOf(registry, building, layout.lootContext));
+    this.publicCartography = layout.tracks.map(({ points, width }) => ({ kind: 'track', points, width }));
     this.lootColumns = lootPointsByColumn(
       this.placements.flatMap((placement, i) => {
         const sources = lootSourcesOf(registry, layout.id, placement, layout.buildings[i]!.fixedLoot);
@@ -346,9 +349,9 @@ export class AuthoredSite implements Site {
       }));
     this.hordes = (layout.hordes ?? []).map(({ id, position }) => ({
       id: `${layout.id}_${id}`,
-      type: HAMLET_HORDE_TYPE,
+      type: HORDE_TYPE,
       pos: blocks(position),
-      members: Rng.stream(seed, `authored-horde:${layout.id}:${id}`).int(...HAMLET_HORDE_MEMBERS),
+      members: Rng.stream(seed, `authored-horde:${layout.id}:${id}`).int(...HORDE_MEMBERS),
     }));
   }
 

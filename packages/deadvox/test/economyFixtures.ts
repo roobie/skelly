@@ -20,6 +20,7 @@ export const FIXTURE_BLOW_SOUND = 'fixture_blow';
 export const fixtureSounds = () => [
   {
     id: FIXTURE_BLOW_SOUND,
+    description: 'fixture blow',
     variants: ['assets/audio/fixture-blow.ogg'],
     gain: 1,
     pitchJitter: [1, 1] as [number, number],
@@ -69,7 +70,7 @@ const fixtureEntry = (entry: unknown, section: string): unknown => {
     return entry;
   }
   if (section === 'items') {
-    return { economy: fixtureEconomy(), ...entry };
+    return { economy: fixtureEconomy(), workInProgress: false, notLoot: false, ...entry };
   }
   if (section === 'templates') {
     return { lootContext: fixtureLootContext(), ...entry };

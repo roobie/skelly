@@ -76,6 +76,14 @@
       ]
     },
     {
+      "id": "player.prone-toggle",
+      "keys": [
+        {
+          "code": "KeyN"
+        }
+      ]
+    },
+    {
       "id": "player.throw",
       "keys": [
         {
@@ -346,6 +354,22 @@
       ]
     },
     {
+      "id": "inventory.cycle-target",
+      "keys": [
+        {
+          "code": "KeyC"
+        }
+      ]
+    },
+    {
+      "id": "inventory.put-target",
+      "keys": [
+        {
+          "code": "KeyP"
+        }
+      ]
+    },
+    {
       "id": "inventory.find",
       "keys": [
         {
@@ -406,6 +430,14 @@
       "keys": [
         {
           "code": "KeyT"
+        }
+      ]
+    },
+    {
+      "id": "inventory.view-item",
+      "keys": [
+        {
+          "code": "Mouse1"
         }
       ]
     },

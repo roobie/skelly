@@ -3,11 +3,8 @@
     {
       "chestEyeFraction": 0.62,
       "crouch": {
-        "bodyHeightMetres": 1.2,
-        "eyeDropMetres": 0.69999999999999996,
         "hearingRangeScale": 0.5,
-        "sightRangeScale": 0.5,
-        "speedMetresPerSimSecond": 1
+        "sightRangeScale": 0.5
       },
       "footsteps": {
         "hardLandingMetres": 2.5,
@@ -21,9 +18,15 @@
           "renderLiftMetres": 0.40000000000000002,
           "senseHeightMetres": 0.074999999999999997
         },
+        "illumination": {
+          "nearFieldMetres": 4,
+          "pointDecay": 1,
+          "readingThreshold": 0.59999999999999998
+        },
         "lureRangeScale": 0.5,
         "playerDaySightScale": 0,
         "renderedBeamLimit": 2,
+        "renderedFixtureLimit": 8,
         "throwArmEnergyJoules": 60,
         "throwArmSpeedMetresPerRealSecond": 9,
         "throwChargeSimSeconds": 1.25,
@@ -32,9 +35,17 @@
         "throwStanceDropHoldRealSeconds": 0.5,
         "wornLightToggleHoldRealSeconds": 0.5
       },
-      "movement": {
-        "backwardSpeedScale": 0.5,
-        "sidewaysSpeedScale": 0.69999999999999996
+      "prone": {
+        "hearingRangeScale": 0.5,
+        "sightRangeScale": 0.5
+      },
+      "shamblerVoice": {
+        "clampMultiplier": {
+          "max": 1.3,
+          "min": 0.5
+        },
+        "oldLawReferenceHeightMetres": 1.7,
+        "smallestAnchorMultiplier": 1.2
       },
       "vocalNoiseLifetimeSimSeconds": 0.5,
       "wall": {

@@ -11,9 +11,21 @@ import { pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
+const stageStarted = performance.now();
+let phaseStarted = stageStarted;
+const logPhase = (name) => {
+  const now = performance.now();
+  process.stdout.write(
+    `inventory-scroll: ${name} ${(now - phaseStarted).toFixed(0)}ms; total ${(now - stageStarted).toFixed(0)}ms\n`,
+  );
+  phaseStarted = now;
+};
 const { firefox } = await loadPlaywright();
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
+const itemPicturesModule = '/src/render/itemPictures.ts';
+const modelsModule = '/src/render/models.ts';
+const itemLookModule = '/src/render/itemLook.ts';
 // argv[3], when given, is a PNG path for a debugging screenshot of the around pane; CI never passes it.
 const engine = process.argv[2] ?? 'chromium';
 assert.ok(['chromium', 'firefox'].includes(engine));
@@ -36,6 +48,7 @@ const refusalSound = {
       blowSoundDefinition,
       {
         id: 'player_nope',
+        description: 'fixture refusal',
         variants: ['assets/audio/nope.ogg'],
         gain: 0.5,
         pitchJitter: [1, 1],
@@ -101,7 +114,7 @@ const content = [
         { id: 'scroll_token', name: 'Scroll token', category: 'tool', weight: 1, size: [1, 1] },
         { id: 'scroll_wide_token', name: 'Scroll wide token', category: 'tool', weight: 1, size: [3, 1] },
         { id: 'rag', name: 'Rag', category: 'material', weight: 1, size: [1, 1] },
-      ].map((item) => ({ economy: { usage: [], tiers: [] }, ...item })),
+      ].map((item) => ({ economy: { usage: [], tiers: [] }, workInProgress: false, notLoot: false, ...item })),
     },
   },
 ];
@@ -127,7 +140,7 @@ if (handlingSkills.length !== 1) throw Error('Base content lacks the inventory s
 const { registry, issues } = buildRegistry([
   ...${JSON.stringify(content)},
   { source: 'ui.json', data: uiFile },
-  { source: 'inventory-skill-fixture', data: { skills: handlingSkills } },
+  { source: 'inventory-skill-fixture', data: { skills: handlingSkills, skillProgression: recipesFile.skillProgression } },
 ]);
 if (issues.length) throw Error('Invalid scroll fixture: ' + JSON.stringify(issues));
 applyUiTokens(registry, document.documentElement);
@@ -347,6 +360,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 480 } });
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
+  logPhase('server and browser startup');
   await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);
   try {
     await page.waitForFunction(() => Boolean(globalThis.scrollFixture));
@@ -1180,6 +1194,7 @@ try {
     cursor.visible && Math.abs(cursor.tip.x - cursor.cursorX) <= 0.5 && Math.abs(cursor.tip.y - cursor.cursorY) <= 0.5,
     `the drawn cursor sits at the menu cursor position: ${JSON.stringify(cursor)}`,
   );
+  logPhase('render-free scroll contracts');
   if (engine === 'chromium') {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.addInitScript(() => {
@@ -1198,7 +1213,9 @@ try {
     await page.goto(
       browserStageUrl(
         'inventory-scroll',
-        `http://127.0.0.1:${address.port}/?debug=1&seed=73&radius=64&post=0&sunshadow=0&torchshadow=0`,
+        `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=testHouse&radius=32`,
+        // Only the isolated item still needs WebGL, not the world or attachment handling.
+        'render-free',
       ),
     );
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
@@ -1214,7 +1231,8 @@ try {
       null,
       { timeout: 20_000 },
     );
-    const clickThroughMenuCursor = async (selector) => {
+    logPhase('render-free live game readiness');
+    const moveMenuCursorTo = async (selector) => {
       const targetLocator = typeof selector === 'string' ? page.locator(selector) : selector;
       const bounds = await targetLocator.boundingBox();
       assert.ok(bounds, `visible target: ${selector}`);
@@ -1233,7 +1251,11 @@ try {
           alsoDispatchMouseMove: true,
         });
       }
-      await page.mouse.click(target.x, target.y);
+      return target;
+    };
+    const clickThroughMenuCursor = async (selector, options) => {
+      const target = await moveMenuCursorTo(selector);
+      await page.mouse.click(target.x, target.y, options);
     };
     const spawn = async (type) => {
       await pressAction(page, 'debug.spawn-menu-toggle');
@@ -1278,6 +1300,154 @@ try {
       { timeout: 10_000 },
     );
     await clickThroughMenuCursor(`#inventory [data-uid="${rifleUid}"]`);
+    logPhase('spawn and inventory handling');
+    await page.evaluate(
+      async ({ uid, moduleUrls }) => {
+        const { ItemPictures } = await import(moduleUrls.itemPictures);
+        const { ModelLibrary } = await import(moduleUrls.models);
+        const { itemLook } = await import(moduleUrls.itemLook);
+        const { session, screen } = globalThis.foregripFitTest;
+        if (screen.hooks.pictures) {
+          throw new Error('Live handling must remain render-free');
+        }
+        const { registry } = session.inventory;
+        const look = itemLook(registry, session.inventory.itemByUid(uid));
+        if (!look) {
+          throw new Error('Pixel fixture needs a declared model');
+        }
+        const ids = new Set([look.model, ...look.slots.map((slot) => slot.model).filter(Boolean)]);
+        const models = new ModelLibrary(
+          { ...registry, models: new Map([...registry.models].filter(([id]) => ids.has(id))) },
+          (message) => {
+            throw new Error(message);
+          },
+        );
+        screen.hooks.pictures = new ItemPictures(registry, models, 1);
+      },
+      {
+        uid: rifleUid,
+        moduleUrls: { itemPictures: itemPicturesModule, models: modelsModule, itemLook: itemLookModule },
+      },
+    );
+    await page.waitForFunction((uid) => {
+      globalThis.foregripFitTest.screen.update();
+      return Boolean(document.querySelector(`#inventory [data-uid="${uid}"] .inv-item-picture`));
+    }, rifleUid);
+    const tilePicture = page.locator(`#inventory [data-uid="${rifleUid}"] .inv-item-picture`);
+    await tilePicture.waitFor({ state: 'visible' });
+    const picturePixels = await tilePicture.evaluate(async (image) => {
+      await image.decode();
+      const canvas = document.createElement('canvas');
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext('2d');
+      context.drawImage(image, 0, 0);
+      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+      let opaque = 0;
+      const colors = new Set();
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (pixels[i + 3] > 0) {
+          opaque += 1;
+          colors.add(`${pixels[i]},${pixels[i + 1]},${pixels[i + 2]}`);
+        }
+      }
+      return { opaque, colors: colors.size, total: canvas.width * canvas.height };
+    });
+    assert.ok(
+      picturePixels.opaque > 0 && picturePixels.opaque < picturePixels.total,
+      'tile still contains model pixels on transparency',
+    );
+    assert.ok(picturePixels.colors > 1, 'reference-lit model has surface detail rather than a flat placeholder');
+    logPhase('isolated item picture pixels');
+
+    // The item viewer shares the pictures' renderer; the view press over a card opens it and nothing else changes.
+    const viewState = () =>
+      page.evaluate(() => {
+        const { session, screen, dispatches } = globalThis.foregripFitTest;
+        return {
+          inventory: JSON.stringify(session.inventory.snapshotState()),
+          selected: screen.selected?.uid,
+          jobs: session.queue.jobs.length,
+          dispatches: dispatches.length,
+        };
+      });
+    const viewerPixels = () =>
+      page.locator('#inventory .inv-viewer-canvas').evaluate((canvas) => {
+        const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+        let opaque = 0;
+        let sum = 0;
+        for (let i = 0; i < pixels.length; i += 4) {
+          if (pixels[i + 3] > 0) {
+            opaque += 1;
+            sum = (sum * 31 + pixels[i] + pixels[i + 1] * 7 + pixels[i + 2] * 13 + i) % 1_000_000_007;
+          }
+        }
+        return { opaque, sum, total: canvas.width * canvas.height };
+      });
+    await page.evaluate(() => {
+      const { screen } = globalThis.foregripFitTest;
+      screen.hooks.itemView = screen.hooks.pictures;
+    });
+    const beforeView = await viewState();
+    const viewButton = await page.evaluate(async (bindingsModule) => {
+      const { inputBindings } = await import(bindingsModule);
+      const [chord] = inputBindings.chords('inventory.view-item');
+      const mouse = chord.code.startsWith('Mouse') && !chord.modifier;
+      return mouse ? ['left', 'middle', 'right'][Number(chord.code.slice('Mouse'.length))] : undefined;
+    }, '/src/game/inputBindings.ts');
+    assert.ok(viewButton, 'the default view binding is a mouse button Playwright can press');
+    // A focused covered control must not take keys while the viewer is open: the fit button dispatches on activation.
+    const coveredFit = page
+      .locator('#inventory .inv-details button.inv-option')
+      .filter({ hasText: /Fit .*foregrip/i })
+      .first();
+    await coveredFit.focus();
+    const isFocused = (locator) => locator.evaluate((element) => document.activeElement === element);
+    assert.ok(await isFocused(coveredFit), 'the fit button holds focus before the viewer opens');
+    await clickThroughMenuCursor(`#inventory [data-uid="${rifleUid}"]`, { button: viewButton });
+    const viewerLocator = page.locator(`#inventory .inv-viewer[data-item-viewer="${rifleUid}"]`);
+    await viewerLocator.waitFor({ state: 'visible' });
+    assert.ok(await isFocused(viewerLocator), 'opening moves focus into the viewer');
+    await page.keyboard.press('Space');
+    await page.keyboard.press('Enter');
+    assert.equal(await viewerLocator.count(), 1, 'keys while open leave the viewer open');
+    assert.equal(
+      await page.evaluate(() => globalThis.foregripFitTest.dispatches.length),
+      beforeView.dispatches,
+      'keys while open activate no covered inventory control',
+    );
+    const viewerFill = await page.evaluate(() => {
+      const panel = document.querySelector('#inventory').getBoundingClientRect();
+      const canvas = document.querySelector('#inventory .inv-viewer-canvas').getBoundingClientRect();
+      return { width: canvas.width / panel.width, height: canvas.height / panel.height };
+    });
+    assert.ok(
+      viewerFill.width > 0.8 && viewerFill.height > 0.6,
+      `the viewer fills most of the inventory panel: ${JSON.stringify(viewerFill)}`,
+    );
+    const opened = await viewerPixels();
+    assert.ok(opened.opaque > 0 && opened.opaque < opened.total, 'the viewer draws the clicked item on transparency');
+    const dragFrom = await moveMenuCursorTo('#inventory .inv-viewer-canvas');
+    await page.mouse.down();
+    await page.mouse.move(dragFrom.x + 80, dragFrom.y + 20, { steps: 4 });
+    await page.mouse.up();
+    const turned = await viewerPixels();
+    assert.notEqual(turned.sum, opened.sum, 'dragging turns the model');
+    await page.mouse.wheel(0, -400);
+    const zoomed = await viewerPixels();
+    assert.ok(zoomed.opaque > turned.opaque, 'wheeling up zooms in');
+    await clickThroughMenuCursor('#inventory [data-action="viewer.close"]');
+    await page.locator('#inventory .inv-viewer').waitFor({ state: 'detached' });
+    assert.ok(await isFocused(coveredFit), 'closing gives focus back to the control that had it');
+    assert.deepEqual(await viewState(), beforeView, 'viewing and closing leave the inventory as it was');
+    logPhase('item viewer');
+    await page.evaluate(() => {
+      const { screen } = globalThis.foregripFitTest;
+      screen.hooks.itemView = undefined;
+      screen.hooks.pictures.dispose();
+      screen.hooks.pictures = undefined;
+      screen.update();
+    });
     const fitButtons = page.locator('#inventory .inv-details button.inv-option').filter({ hasText: /Fit .*foregrip/i });
     assert.ok((await fitButtons.count()) > 0, 'held AR offers the pocketed foregrip as a fit action');
     const fitButton = fitButtons.first();
@@ -1358,6 +1528,7 @@ try {
     assert.deepEqual(fitSettled.gripLocation, { kind: 'slot', ownerUid: rifleUid, slot: slotId });
     assert.deepEqual(errors.slice(pageErrorsBeforeFit), [], 'fitting does not raise a page error');
 
+    logPhase('render-free attachment fit');
     const removeButton = page.locator(`#inventory [data-attachment-slot="${slotId}"] button.inv-option`).filter({
       hasText: /^Remove\b/,
     });
@@ -1406,12 +1577,129 @@ try {
     assert.equal(removalSettled.queueJobs, 0, 'simulation frames finish the removal handling job');
     assert.equal(removalSettled.attachedUid, undefined, 'the production removal control empties the clicked slot');
     assert.deepEqual(errors.slice(pageErrorsBeforeRemove), [], 'removal does not raise a page error');
+    logPhase('render-free attachment removal');
+
+    // A battery dragged onto the battery slot on a light's card goes into that light.
+    await pressAction(page, 'ui.inventory-toggle');
+    await page.waitForFunction(() => document.querySelector('#inventory')?.hidden);
+    await spawn('flashlight');
+    await spawn('aa_battery');
+    await pressAction(page, 'ui.inventory-toggle');
+    await page.waitForFunction(() => !document.querySelector('#inventory')?.hidden);
+    const { lightUid, spareUid } = await page.evaluate(() => {
+      const { inventory } = globalThis.foregripFitTest.session;
+      // The world has its own lights and batteries; the spawned ones are the newest.
+      const loose = (type) =>
+        Math.max(
+          ...[...inventory.items()]
+            .filter(({ item }) => item.type === type && inventory.locate(item)?.kind !== 'slot')
+            .map(({ item }) => item.uid),
+        );
+      return { lightUid: loose('flashlight'), spareUid: loose('aa_battery') };
+    });
+    assert.ok(Number.isSafeInteger(lightUid) && Number.isSafeInteger(spareUid), 'the light and a loose battery spawn');
+    await page.locator(`#inventory [data-uid="${lightUid}"]`).scrollIntoViewIfNeeded();
+    await clickThroughMenuCursor(`#inventory [data-uid="${lightUid}"]`);
+    const batterySlot = page.locator(`#inventory .inv-details [data-target="battery:${lightUid}"]`);
+    await batterySlot.waitFor({ state: 'visible', timeout: 5000 });
+    await batterySlot.scrollIntoViewIfNeeded();
+    await page.locator(`#inventory [data-uid="${spareUid}"]`).scrollIntoViewIfNeeded();
+    const pageErrorsBeforeLoad = errors.length;
+    await moveMenuCursorTo(`#inventory [data-uid="${spareUid}"]`);
+    await page.mouse.down();
+    await moveMenuCursorTo(batterySlot);
+    assert.equal(
+      await batterySlot.getAttribute('data-drop-shape'),
+      'will-land',
+      'the card keeps the light while the battery is dragged, and its slot accepts the battery',
+    );
+    await page.mouse.up();
+    const loaded = await page.evaluate(
+      ({ light, spare }) => {
+        const { session, dispatches } = globalThis.foregripFitTest;
+        // The command is applied on the next player tick.
+        session.frame(0.1);
+        const maxFrames = Math.ceil(session.queue.remaining / 0.1) + 2;
+        let frames = 0;
+        while (session.queue.jobs.length > 0 && frames < maxFrames) {
+          session.frame(0.1);
+          frames += 1;
+        }
+        return {
+          loads: dispatches.filter((action) => action.kind === 'light.battery.load').length,
+          fittedUid: session.inventory.itemByUid(light)?.slots?.battery?.uid,
+          expected: spare,
+        };
+      },
+      { light: lightUid, spare: spareUid },
+    );
+    assert.equal(loaded.loads, 1, 'the drop dispatches one battery load');
+    assert.equal(loaded.fittedUid, loaded.expected, 'the dragged battery is in the light');
+    assert.deepEqual(errors.slice(pageErrorsBeforeLoad), [], 'loading does not raise a page error');
+    logPhase('battery slot drag');
     process.stdout.write(
       `${engine}: live held-AR pocketed-foregrip fit/removal via locked menu click ${JSON.stringify({ fitSettled, removalSettled })}\n`,
     );
   }
+  await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);
+  await page.waitForFunction(() => Boolean(globalThis.scrollFixture));
+  await page.evaluate(
+    async ({ chargerModule, contentModule }) => {
+      globalThis.scrollFixture.screen.close();
+      const { mountChargerFlow } = await import(chargerModule);
+      const { buildBundledContent } = await import(contentModule);
+      globalThis.chargerFlow = mountChargerFlow(buildBundledContent().registry, document.querySelector('#inventory'));
+    },
+    { chargerModule: '/test/browser/charger-flow.ts', contentModule: '/src/game/bundledContent.ts' },
+  );
+  const chargerButton = (kind) => page.locator(`[data-charger-action="${kind}"]`);
+  await chargerButton('inventory.move').click();
+  await page.evaluate(() => globalThis.chargerFlow.advance(3));
+  assert.equal(await page.evaluate(() => globalThis.chargerFlow.inspect().jobs), 0);
+  await chargerButton('charger.start').click();
+  const started = await page.evaluate(() => {
+    const flow = globalThis.chargerFlow;
+    flow.advance(0.5);
+    flow.blackout(true);
+    return flow.inspect();
+  });
+  assert.ok(started.active && started.energy > 0, 'a started cell has partial powered work');
+  const blackout = await page.evaluate(() => {
+    const flow = globalThis.chargerFlow;
+    flow.move(1);
+    flow.advance(0.5);
+    flow.move(0);
+    return flow.inspect();
+  });
+  assert.notDeepEqual(blackout.pos, started.pos, 'charging does not take movement');
+  assert.ok(
+    blackout.hands.every((uid) => uid === undefined),
+    'loading leaves both hands available',
+  );
+  assert.equal(blackout.energy, started.energy, 'blackout pauses delivered charge');
+  await page.evaluate(() => globalThis.chargerFlow.reload());
+  const reloaded = await page.evaluate(() => globalThis.chargerFlow.inspect());
+  assert.equal(reloaded.uid, started.uid, 'reload retains the same cell');
+  assert.equal(reloaded.energy, started.energy, 'reload preserves partial energy without offline progress');
+  await page.evaluate(() => {
+    const flow = globalThis.chargerFlow;
+    flow.move(-1);
+    flow.advance(0.5);
+    flow.move(0);
+    flow.blackout(false);
+    flow.advance(20);
+  });
+  assert.equal(await chargerButton('charger.start').count(), 0, 'capacity completion removes running demand');
+  await chargerButton('inventory.to-hands').click();
+  await page.evaluate(() => globalThis.chargerFlow.advance(3));
+  const collected = await page.evaluate(() => globalThis.chargerFlow.inspect());
+  assert.ok(collected.hands.includes(started.uid), 'collection returns the exact charged cell');
+  assert.deepEqual(collected.owned, [], 'collection empties appliance ownership');
+  assert.equal(await chargerButton('inventory.to-hands').count(), 0, 'the cell cannot be collected twice');
+  assert.deepEqual(collected.refusals, [], 'every offered charger operation succeeds');
+  logPhase('charger leave, blackout, save/reload and collect');
   process.stdout.write(
-    `${engine}: inventory/vicinity/details wheel and redraw contract passed (free pointer + synthetic locked cursor)\n`,
+    `${engine}: inventory/vicinity/details wheel, redraw and charger contracts passed (free pointer + synthetic locked cursor)\n`,
   );
 } finally {
   await browser?.close();

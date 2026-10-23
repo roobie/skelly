@@ -27,6 +27,7 @@ import {
   rawCheck,
   record,
   regex,
+  safeInteger,
   strictObject,
   string,
   transform,
@@ -52,6 +53,7 @@ import {
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { SPAWN_TIME_NAMES } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
+import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS } from './coreText.ts';
 import { DAY_PHASES } from './dayPhase.ts';
 import { DECAL_KINDS, type DecalKind } from './decalKinds.ts';
 import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
@@ -59,12 +61,13 @@ import { GraphicsOptionsSchema } from './graphics.ts';
 import { ItemEconomySchema, LootContextSchema, UsageSchema } from './loot.ts';
 import { MELEE_MOTIONS } from './meleeMotion.ts';
 import { MAX_EXPOSURE, MIN_EXPOSURE, TONE_KEYS } from './mood.ts';
-import { PowerDeviceSchema, PowerTuningSchema } from './powerContent.ts';
+import { POWER_UNITS, PowerDeviceSchema, PowerTuningSchema, unitCount } from './powerContent.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SCENARIO_KINDS } from './scenarioKinds.ts';
 import { shapeBlocks } from './shapeSolid.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
 import { jfxrPresetIssues } from './soundSynth.ts';
+import { SLOT_PATTERN } from './textTemplate.ts';
 import {
   gameHours,
   gameMinutes,
@@ -340,6 +343,11 @@ const InventoryTuningSchema = strictObject({
     maxSizeMetres: Positive,
     /** Stamina spent to lift a piece. */
     liftStamina: NonNegative,
+    slide: strictObject({
+      reachMetres: Positive,
+      stepSimSeconds: PositiveSimSeconds,
+      stamina: NonNegative,
+    }),
     /** Stamina spent per Sim second of carrying; running out drops the piece. */
     carryStaminaPerSimSecond: SimRate,
     /** How the carried piece shows in first person, in view metres (x right, y up, z back from the eye). */
@@ -354,14 +362,479 @@ const InventoryTuningSchema = strictObject({
   }),
 });
 
+/** Text whose `{slot}` names are exactly `slots`, so a template can't drop or invent what code fills in. */
+const slotted = (slots: readonly string[]) =>
+  pipe(
+    Name,
+    check(
+      (text) => {
+        const named = new Set([...text.matchAll(SLOT_PATTERN)].map(([, slot]) => slot));
+        return named.size === slots.length && slots.every((slot) => named.has(slot));
+      },
+      slots.length === 0
+        ? 'must not name a {slot}'
+        : `must name exactly ${slots.map((slot) => `{${slot}}`).join(', ')}`,
+    ),
+  );
+
+const slottedTable = <K extends string>(slots: Readonly<Record<K, readonly string[]>>) =>
+  strictObject(
+    Object.fromEntries(Object.entries<readonly string[]>(slots).map(([key, names]) => [key, slotted(names)])) as Record<
+      K,
+      ReturnType<typeof slotted>
+    >,
+  );
+
+/** Labels and messages the screens under `src/ui` draw. */
+const UiScreenTextSchema = strictObject({
+  powerControl: slottedTable({ on: [], off: [] }),
+  charger: slottedTable({
+    idle: [],
+    running: [],
+    noPower: [],
+    ready: [],
+    start: [],
+    stop: [],
+    collect: [],
+    load: ['name'],
+    remaining: ['gameSeconds'],
+  }),
+  /** The opened vehicle: its parts, empty service sites and service work. */
+  vehicle: slottedTable({
+    inspect: ['key', 'vehicle'],
+    heading: ['vehicle', 'distance'],
+    empty: ['site'],
+    remove: [],
+    install: ['part'],
+    noPart: [],
+    removing: ['part'],
+    installing: ['part'],
+  }),
+  /** What the HUD options call each element they switch. */
+  hudOptionLabels: strictObject({
+    stats: Name,
+    clock: Name,
+    details: Name,
+    crosshair: Name,
+    interaction: Name,
+    interactionOutline: Name,
+    quickbar: Name,
+    handling: Name,
+    messages: Name,
+  }),
+  /** What the audio options call each volume. */
+  audioVolumeLabels: strictObject({ master: Name, world: Name, body: Name, ui: Name }),
+  /** The fixed pointer input each unbindable pointer action names. */
+  pointerButtonLabels: strictObject({ 'hand.use-dominant': Name, 'hand.off-instant': Name, 'pointer.look': Name }),
+  /** What the win card says about saving the completed attempt. */
+  winCheckpointMessages: strictObject({ saved: Name, pending: Name, failed: Name, unavailable: Name }),
+  /** The HUD, audio, graphics and fullscreen options in the menu. */
+  options: slottedTable({
+    hudHeading: [],
+    showHud: ['key'],
+    audioHeading: [],
+    volume: ['category'],
+    graphicsHeading: [],
+    on: [],
+    off: [],
+    modDefault: [],
+    urlOverride: [],
+    fullscreen: [],
+    leaveFullscreen: [],
+    browserShortcutsLabel: [],
+    browserShortcuts: ['shortcuts'],
+  }),
+  inputOptions: slottedTable({
+    heading: [],
+    browserControlsLabel: [],
+    storageLabel: [],
+    storage: [],
+    capturing: ['action'],
+    cancel: [],
+    saved: [],
+    fixedHeading: [],
+    fixedControl: ['code', 'action'],
+    reset: [],
+    restored: [],
+  }),
+  worldLoading: slottedTable({ loading: [], failed: ['error'], reload: [] }),
+  /** The main menu's play button before and after the world starts. */
+  menu: slottedTable({ play: [], continue: [] }),
+  credits: slottedTable({
+    heading: [],
+    none: [],
+    back: [],
+    byAuthor: ['author'],
+    fromHost: ['host'],
+    licence: ['licence'],
+    changes: ['changes'],
+  }),
+  death: slottedTable({
+    heading: [],
+    cause: ['cause', 'span'],
+    seed: ['seed'],
+    summary: ['searched', 'loot'],
+    noLoot: [],
+    lootCount: ['count', 'item'],
+    feedback: [],
+    newWorld: [],
+    spanLong: ['hrs', 'mins'],
+    spanShort: ['mins'],
+  }),
+  win: slottedTable({ heading: [], seed: ['seed'], played: ['hrs'], export: [], newWorld: [], freshAttempt: [] }),
+  rest: slottedTable({ waiting: [], fallingAsleep: [], until: ['rest', 'clock'], stop: ['key'] }),
+  /** The continue-or-stop prompt an interruption raises, on the rest card and in the world prompt. */
+  prompt: slottedTable({ interruption: ['reason'], continue: ['key'], stop: ['key'] }),
+  reading: slottedTable({ putAway: [], putAwayLabel: [], progress: [], text: [] }),
+  crafting: slottedTable({
+    heading: [],
+    headingFact: [],
+    length: ['span'],
+    found: ['item', 'found', 'needed'],
+    use: ['choice'],
+    group: ['recipe', 'group'],
+    quality: ['quality', 'best', 'required'],
+    skill: ['skill', 'level', 'required'],
+    station: ['station'],
+    craft: ['item'],
+    repair: ['item'],
+    repairName: ['item'],
+    stopped: [],
+    continue: ['key'],
+    stop: ['key'],
+    cheapestAvailable: [],
+    noMatches: [],
+    noRepairTarget: [],
+    repairing: ['item'],
+    inProgress: ['item'],
+    disassembly: ['item'],
+    gathering: ['done', 'total'],
+    work: ['done', 'total'],
+    mins: ['value'],
+    secs: ['value'],
+  }),
+  /** The handling meter and quickbar while the inventory is closed. */
+  handling: slottedTable({
+    throwForce: [],
+    pause: ['key'],
+    next: ['job'],
+    progress: ['done', 'total'],
+    minimumRelease: ['percent'],
+  }),
+  quickbar: slottedTable({
+    empty: [],
+    inRightHand: [],
+    inLeftHand: [],
+    worn: [],
+    pocket: ['container', 'secs'],
+    count: ['item', 'count'],
+  }),
+  /** The optional stats, clock and details readout lines. */
+  stats: slottedTable({
+    health: ['value'],
+    blood: ['value'],
+    stamina: ['value'],
+    sprinting: [],
+    light: ['value'],
+    food: ['value'],
+    water: ['value'],
+    fatigue: ['value'],
+    pain: ['value'],
+    painTier: ['value', 'tier'],
+    painParts: ['acute', 'injuries', 'relief'],
+    bleeding: ['tier', 'region'],
+    bleedingWarning: ['tier', 'region'],
+    speed: ['speed'],
+    paused: [],
+    carrying: ['kg'],
+    fps: ['fps'],
+    seed: ['seed'],
+    radius: ['radius'],
+    walking: ['key'],
+    jogging: ['key'],
+    position: ['x', 'y', 'z'],
+    chunks: ['meshed', 'pending'],
+    looking: ['name'],
+  }),
+  /** The interaction hint for the looked-at target and the carried piece. */
+  interaction: slottedTable({
+    action: ['key', 'action'],
+    open: ['name'],
+    close: ['name'],
+    force: ['name', 'method'],
+    blocked: ['action', 'reason'],
+    lock: ['lock'],
+    bar: [],
+    barDoor: ['name'],
+    liftBar: [],
+    hold: ['key', 'action'],
+    climb: ['name'],
+    read: ['name'],
+    rest: ['name'],
+    sleep: ['name'],
+    search: ['name'],
+    lookIn: ['name'],
+    damaged: ['damage', 'name'],
+    turn: ['key'],
+    tip: ['key'],
+  }),
+  primaryAction: slottedTable({ nothingToDo: ['item'] }),
+  mods: slottedTable({
+    heading: [],
+    jsonLabel: [],
+    jsonFact: ['maxBytes'],
+    storageFailed: [],
+    input: [],
+    inputLabel: [],
+    add: [],
+    upload: [],
+    up: [],
+    down: [],
+    remove: [],
+    moveUp: ['mod'],
+    moveDown: ['mod'],
+    removeLabel: ['mod'],
+    valid: [],
+    start: [],
+    httpOnly: [],
+    httpStatus: ['status'],
+    emptyResponse: [],
+    tooLarge: ['maxBytes'],
+    fetchFailed: [],
+    jsonOnly: [],
+  }),
+  /** The practice run's objective lines and buttons; each label sits beside its action's key cap. */
+  tutorial: slottedTable({
+    inventory: [],
+    closeInventory: [],
+    quickAction: [],
+    wieldSelectedItem: [],
+    eatBeans: [],
+    openedBeans: [],
+    openCan: [],
+    canOfBeans: [],
+    forward: [],
+    back: [],
+    left: [],
+    right: [],
+    look: [],
+    openDoor: [],
+    selectPrevious: [],
+    selectNext: [],
+    takeSelected: [],
+    wieldSelected: [],
+    wearOrRemove: [],
+    searchSupplies: [],
+    beansAndOpener: [],
+    drink: [],
+    waterBottle: [],
+    switchOff: [],
+    switchOn: [],
+    flashlight: [],
+    crouch: [],
+    exitPath: [],
+    mainMenu: [],
+    revolver: [],
+    pumpShotgun: [],
+    ammunitionDetails: [],
+    wieldAmmunitionBox: [],
+    carryLooseAmmunition: [],
+    wearBackpack: [],
+    ready: [],
+    fireDominant: [],
+    fireOff: [],
+    load: [],
+    pump: [],
+    closeCylinder: [],
+    boxedAmmunition: [],
+    unpackDominant: [],
+    unpackOff: [],
+    partialLoad: [],
+    readyFire: [],
+    sightsOff: [],
+    reloadAfterFiring: [],
+    sightedFire: [],
+    sights: [],
+    unloadLiveRounds: [],
+    unload: [],
+    emptyHands: [],
+    putDownSelected: [],
+    stowSelected: [],
+    enGarde: [],
+    punch: [],
+    weaponsComplete: [],
+    weaponsPractice: [],
+    finishPractice: [],
+    rangeSupplies: [],
+    loadingDetail: [],
+    pumpingDetail: [],
+    unsaved: [],
+    practiceControls: [],
+    restart: [],
+    exit: [],
+  }),
+  /** Save discovery, checkpoint and recovery status on the title and pause card. */
+  save: slottedTable({
+    insecurePage: [],
+    apisUnavailable: [],
+    noSavedWorld: [],
+    checkingSaves: [],
+    checkingCompatibility: [],
+    checkingStorage: [],
+    scanning: [],
+    storageUnavailable: ['error'],
+    storageUnavailableFallback: [],
+    continueUnavailable: [],
+    corrupt: ['error'],
+    survivorDied: [],
+    available: ['version'],
+    availableCorruptSlots: ['version', 'slots'],
+    cannotLoad: ['error'],
+    version: ['build', 'digest'],
+    unreadableVersion: [],
+    unknownBuild: [],
+    unknownVersion: [],
+    olderPreserved: ['namespace', 'version'],
+    damagedPreserved: ['namespace'],
+    persistentStorage: ['backend', 'bytes'],
+    bestEffortStorage: ['backend'],
+    validCorruptSlots: ['slots'],
+    continued: [],
+    clockRatioMismatch: [],
+    incompatible: ['error'],
+    newWorld: [],
+    replaceSaved: [],
+    needsRecoveryLabel: [],
+    needsRecovery: [],
+    playWithoutSaving: [],
+    unreadable: ['error'],
+    failure: ['what', 'error'],
+    storageRequestFailed: [],
+    exportFailed: [],
+    saveFailed: [],
+    saved: ['generation', 'reason'],
+    saveFailedFor: ['reason', 'error'],
+    couldNotStart: ['error'],
+    chooseHand: [],
+    newWorldReady: [],
+    newWorldReadyUnsaved: ['problem'],
+    noSnapshot: [],
+    snapshotExported: [],
+    snapshotExportFailed: ['error'],
+    persistGranted: [],
+    persistRefused: [],
+    persistUnsupported: [],
+    persistFailed: ['error'],
+    recordsExported: [],
+    recordsExportFailed: ['error'],
+    storageLabel: [],
+    storageFact: [],
+    reasonWon: [],
+    reasonHidden: [],
+    reasonClosed: [],
+    reasonPeriodic: [],
+    reasonSleep: [],
+    reasonDeath: [],
+    reasonRetry: [],
+  }),
+  inventory: slottedTable({
+    heading: [],
+    headingFact: [],
+    carrying: ['weight'],
+    tabsLabel: [],
+    tabItems: [],
+    tabSkills: [],
+    tabCrafting: [],
+    tabActions: [],
+    find: [],
+    findLabel: [],
+    needsLabel: [],
+    controls: [],
+    controlLine: ['key', 'action'],
+    assignQuickbar: ['keys'],
+    you: [],
+    rightHand: [],
+    leftHand: [],
+    reserved: ['item'],
+    splitterLabel: [],
+    around: [],
+    onFloor: ['distance'],
+    bagOnFloor: ['bag'],
+    atFeet: [],
+    furniture: ['name', 'distance'],
+    pocket: ['number'],
+    pocketName: [],
+    pocketReach: ['pocket', 'span'],
+    searching: [],
+    searchIt: ['key'],
+    noSelection: [],
+    inspect: [],
+    whereItCanGo: [],
+    firearmSlots: [],
+    slot: ['slot', 'item'],
+    open: [],
+    fit: ['item'],
+    remove: [],
+    battery: ['battery'],
+    count: ['item', 'count'],
+    countBadge: ['count'],
+    itemTitle: ['item', 'condition'],
+    weightSize: ['weight', 'width', 'height', 'condition'],
+    recipe: ['recipe'],
+    takingApart: ['item'],
+    progress: ['done', 'total'],
+    stacks: ['count'],
+    twoHanded: [],
+    food: ['calories', 'water'],
+    quality: ['quality', 'level'],
+    melee: ['damage', 'type', 'reach', 'recovery'],
+    light: ['radius', 'seenFrom'],
+    worn: ['slot', 'encumbrance'],
+    pockets: ['sizes'],
+    pocketSize: ['width', 'height'],
+    notWornThere: [],
+    body: [],
+    vitals: ['health', 'blood', 'shock'],
+    regionDamage: ['damage'],
+    infection: ['infection'],
+    skillsHeading: [],
+    level: ['level'],
+    practice: ['practice', 'next'],
+    practiceMax: ['practice'],
+    skillProgress: ['skill'],
+    actionsHeading: [],
+    wait: [],
+    wakeAt: [],
+    whenRested: [],
+    earlier: [],
+    later: [],
+    doingNext: [],
+    doingNextFact: [],
+    queueLeft: ['span', 'key'],
+    nothingQueued: [],
+    nothingToSearch: [],
+    noRoom: [],
+    taking: ['count', 'category'],
+    noneToTake: ['category'],
+    secs: ['value'],
+    kg: ['value'],
+    viewerClose: ['key'],
+  }),
+});
+
+export type ScreenText = InferOutput<typeof UiScreenTextSchema>;
+
 const UiTuningSchema = strictObject({
   id: Id,
+  screenText: UiScreenTextSchema,
   /** Multiplies every UI margin, padding and gap; below 1 packs the UI for smaller screens. */
   spacing: Positive,
   /** Multiplies the root font size the UI is measured in; the world canvas is not scaled. */
   hudScale: Positive,
   /** The sound event played when the player tries an action that cannot be completed. */
   refusalSound: picklist(SOUND_EVENT_IDS),
+  /** The audio options' volumes before the player saves any. */
+  audioVolumes: strictObject({ master: Fraction, world: Fraction, body: Fraction, ui: Fraction }),
   /** What the rest card calls each kind of rest. */
   restLabels: strictObject({ rest: Name, sleep: Name }),
   /** Why a door will not close: the player, or something else, is standing in its way. */
@@ -372,6 +845,9 @@ const UiTuningSchema = strictObject({
    */
   furnitureMoveMessages: strictObject({
     tooBig: Name,
+    carryInstead: Name,
+    floorOnly: Name,
+    slideTired: Name,
     fastened: Name,
     handsFull: Name,
     tired: Name,
@@ -396,6 +872,10 @@ const UiTuningSchema = strictObject({
     staysUpright: Name,
   }),
   actionText: ActionTextSchema,
+  /** Core's refusals and notices, by the key code asks for. */
+  coreMessages: slottedTable(CORE_MESSAGE_SLOTS),
+  /** What core's item, door and work options are called, by the key code asks for. */
+  coreActionLabels: slottedTable(CORE_LABEL_SLOTS),
   /** What the inventory screen calls each wear slot. */
   wearSlotLabels: strictObject({
     head: Name,
@@ -608,6 +1088,8 @@ const FirearmSchema = strictObject({
   shotSound: Id,
   /** Shot event while a suppressor is fitted; required when the model can mount one. */
   suppressedShotSound: optional(Id),
+  /** Low-frequency layer played with the shot, for a gun whose report needs more body than one recording has; skipped while suppressed. */
+  shotBodySound: optional(Id),
   /** Trigger pulled on an empty chamber; absent stays silent. */
   dryFireSound: optional(Id),
   /** The trigger pull cocks the hammer itself (double action), so every empty pull clicks; otherwise only working the action re-cocks it. */
@@ -619,6 +1101,8 @@ const FirearmSchema = strictObject({
   recoilKickRadians: Positive,
   /** Half-angle of the firearm's independent per-round cone; pump firearms must set zero because pellet spread owns their cone. */
   dispersionRadians: pipe(NonNegative, maxValue(Math.PI / 2, 'must be at most a right angle')),
+  /** Multiplies an ammunition item's pellet spread, so the firearm owns its choke. */
+  pelletSpreadScale: Positive,
   /** Optional per-gun skill-zero endpoints; absent guns use firearms-combat's shared factors. */
   skillZeroHandling: optional(FirearmsSkillZeroHandlingSchema),
   /** Reload handling times at skill 0, before the firearms skill's reload factor. */
@@ -650,6 +1134,8 @@ const FirearmSchema = strictObject({
 const AmmoSchema = strictObject({
   calibre: CalibreId,
   pellets: pipe(Count, minValue(1), maxValue(64)),
+  /** Base half-angle for pellet directions; the firearm's choke scale multiplies it. */
+  spreadDegrees: pipe(NonNegative, maxValue(90, 'must be at most a right angle')),
   diameterMm: Positive,
   /** Region health a projectile takes, before the zombie's per-region pierce resistance. */
   damage: Positive,
@@ -711,7 +1197,7 @@ const LightSchema = strictObject({
   radius: Positive,
   /** Metres from which others can see it (`DESIGN.md`, "Light"). */
   seenFrom: Positive,
-  /** Point-light colour and candela; both are presentation-owned content. */
+  /** Point-light colour, and intensity in the light units the renderer draws and the simulation measures. */
   color: Color,
   intensity: Positive,
   /** Material glow for sources that remain visible when outside the point-light pool. */
@@ -744,7 +1230,14 @@ const LightSchema = strictObject({
   /** Size of the drawn flame, in metres, standing on the model's `flame` anchor while lit. */
   flame: optional(strictObject({ heightMetres: Positive, radiusMetres: Positive })),
   /** What powers it: an item with a battery component, and charge used per Game hour. */
-  power: optional(strictObject({ battery: Id, chargePerGameHour: GamePerHour, swapSimSeconds: PositiveSimSeconds })),
+  power: optional(
+    strictObject({
+      battery: Id,
+      compatibleBatteries: optional(array(Id)),
+      chargePerGameHour: GamePerHour,
+      swapSimSeconds: PositiveSimSeconds,
+    }),
+  ),
   /** Stays lit while worn and answers the worn-light control, so a source not in the hand needs no new key. */
   wornSwitch: optional(vBoolean()),
   /** How the view looks through it while worn, on and charged (`DESIGN.md`, "Light"). */
@@ -797,6 +1290,10 @@ const FirearmAttachmentEffectsSchema = variant('kind', [
     recoilReduction: Fraction,
     /** Condition lost per committed shot; zero means the attachment does not wear. */
     wearPerShot: Fraction,
+    /** Firearms Combat level required to fit this suppressor; removing it remains open. */
+    fitSkillLevel: SkillLevel,
+    /** Player-facing refusal when the character lacks the fitting skill. */
+    fitRefusal: Name,
   }),
   strictObject({
     kind: literal('foregrip'),
@@ -812,6 +1309,7 @@ const FirearmAttachmentEffectsSchema = variant('kind', [
 const BatterySchema = strictObject({
   /** Charge when full, in the units lights use per hour. */
   capacity: Positive,
+  rechargeable: optional(strictObject({ microjoulesPerCharge: pipe(number(), safeInteger(), minValue(1)) })),
 });
 
 export const HELD_DISPLAY_KIND = { compass: 'compass' } as const;
@@ -914,6 +1412,8 @@ const TreatmentSchema = pipe(
 const ItemSchema = strictObject({
   id: Id,
   economy: ItemEconomySchema,
+  workInProgress: vBoolean(),
+  notLoot: vBoolean(),
   name: Name,
   category: picklist(ITEM_CATEGORIES),
   weight: optional(NonNegative),
@@ -957,6 +1457,7 @@ const ItemSchema = strictObject({
   explosive: optional(ExplosiveSchema),
   trap: optional(TrapSchema),
   readable: optional(ReadableSchema),
+  paperMap: optional(literal(true)),
   /** Display capability shown in first person; later devices can share this rendering seam. */
   heldDisplay: optional(picklist(HELD_DISPLAY_KINDS)),
   /** How the item appears when it is in a ground pile. */
@@ -973,17 +1474,47 @@ const ItemSchema = strictObject({
   firearmAttachmentEffects: optional(FirearmAttachmentEffectsSchema),
   /** Fits a long gun's sling mount, so the gun can be carried on the shoulder. */
   sling: optional(vBoolean()),
+  /** A light mount: fits a long gun whose `lightMountSite` has the same kind, where gungen exports no rail for it. */
+  lightMount: optional(strictObject({ kind: Id })),
+  /** Where a long gun takes a `lightMount` of the same kind: a frame in the gun model's metres and XYZ degrees. */
+  lightMountSite: optional(
+    strictObject({
+      kind: Id,
+      at: tuple([number(), number(), number()]),
+      turn: tuple([number(), number(), number()]),
+    }),
+  ),
   /** One authored/global lock id; no per-placement key payload. */
   key: optional(strictObject({ lock: Id })),
+  /**
+   * Dropped across a closed door from the side the player stands on, it bars the door from the other side
+   * (`DESIGN.md`, "Door bar"). Held in both hands to set; `look` draws it on the door.
+   */
+  doorBar: optional(
+    strictObject({
+      setSimSeconds: PositiveSimSeconds,
+      liftSimSeconds: PositiveSimSeconds,
+      look: strictObject({ color: Color, thickness: Positive }),
+    }),
+  ),
   /** Its model (the `models` section); without one it's a bundle in a pile and a box in the hand. */
   model: optional(Id),
   /** A vehicle part: blueprints may fit it, and its model must export parts with baked collision. */
   vehicle: optional(
     strictObject({
+      /** Content identity of the service interface this loose part can occupy. */
+      mount: optional(Id),
       capabilities: pipe(
         array(picklist(VEHICLE_CAPABILITIES)),
         check((list) => new Set(list).size === list.length, 'capabilities must be distinct'),
       ),
+      /** Channel-specific blockers; a physical fitting need not hide, shade, hear or stop a strike. */
+      obstruction: strictObject({
+        sight: vBoolean(),
+        light: vBoolean(),
+        sound: vBoolean(),
+        combat: vBoolean(),
+      }),
       /** The heaviest load a `lift` part raises; one rating, not a chart over reach. */
       ratedLoadKg: optional(Positive),
       /**
@@ -1016,6 +1547,16 @@ const VehicleFittingSchema = strictObject({
   supportedBy: array(Id),
   /** A factory cargo space's size in inventory cells along x, y and z; its pocket is x by z. */
   cargo: optional(tuple([Cells, Cells, Cells])),
+  /** Requirements for servicing this site; omitted sites are not player-serviceable. */
+  service: optional(
+    strictObject({
+      /** What the opened vehicle calls this site while it is empty. */
+      name: Name,
+      mount: Id,
+      durationSimSeconds: PositiveSimSeconds,
+      qualities: record(Id, QualityLevel),
+    }),
+  ),
 });
 
 /** A factory build, as a vehicle authoring export: parts by item id, placed and supported. */
@@ -1060,6 +1601,10 @@ const SoundRecipeSchema = strictObject({
 
 const SoundSchema = strictObject({
   id: Id,
+  /** What makes the sound play, as the listening sheet tells a tester how to hear it. */
+  description: Name,
+  /** A `?debug=1` shortcut that makes the sound easier to reach on the listening sheet. */
+  debugHint: optional(Name),
   variants: pipe(
     array(
       union([
@@ -1267,7 +1812,7 @@ const AttachmentSightSchema = strictObject({
 });
 const AttachmentFieldsSchema = strictObject({
   id: pipe(string(), nonEmpty('must not be empty')),
-  kind: picklist(['optic', 'iron-sight', 'suppressor', 'flashlight-mount', 'foregrip']),
+  kind: picklist(['optic', 'iron-sight', 'suppressor', 'flashlight-mount', 'foregrip', 'muzzle-device']),
   mount: picklist(['rail-top', 'rail-side', 'rail-bottom', 'muzzle']),
   mountFrame: strictObject({ normal: UnitVector, up: UnitVector }),
   properties: AttachmentPropertiesSchema,
@@ -1493,6 +2038,29 @@ const DoorForcingSchema = pipe(
   ),
 );
 
+/** How a doorway leaf or hatch reads as one that opens; lengths are in metres (`docs/content.md`, "Door detail"). */
+const DoorDetailSchema = strictObject({
+  /** Colour of the handle and hinges. */
+  hardware: Color,
+  /** How far the fields stand off each face of the leaf. */
+  relief: Positive,
+  /** Bare border round the fields, and the gap between them; both show the leaf's darker core. */
+  frame: NonNegative,
+  seam: NonNegative,
+  /** Raised fields across the leaf from its hinge edge, and along that edge. */
+  fields: tuple([pipe(Count, minValue(1, 'must be at least 1')), pipe(Count, minValue(1, 'must be at least 1'))]),
+  /** Strap hinges lying on both faces from the hinge edge. */
+  hinges: strictObject({ count: Count, length: Positive, width: Positive }),
+  /** On both faces: its grip centre lies `fromFreeEdge` in from the free edge and `along` the length of the hinge edge. */
+  handle: strictObject({
+    kind: picklist(['knob', 'lever', 'pull', 'bar', 'ring']),
+    fromFreeEdge: Positive,
+    along: Fraction,
+    length: Positive,
+    thickness: Positive,
+  }),
+});
+
 const FurnitureShapeBoxSchema = strictObject({
   /** Lower corner in the furniture's cell coordinates. */
   position: tuple([NonNegative, NonNegative, NonNegative]),
@@ -1534,6 +2102,7 @@ const FurnitureSchema = pipe(
         hatch: optional(literal(true)),
         /** Barricaded from this side, the facing side (`front`) or its opposite (`back`): it opens only from the other. */
         barredFrom: optional(picklist(['front', 'back'])),
+        detail: optional(DoorDetailSchema),
       }),
     ),
     /**
@@ -1598,6 +2167,24 @@ const FurnitureSchema = pipe(
         ),
       ),
     ),
+    power: optional(
+      strictObject({
+        device: Id,
+        fuelLitres: pipe(
+          NonNegative,
+          check((value) => unitCount(value, POWER_UNITS.amount) !== undefined, 'fuel must be exact in power units'),
+        ),
+        enabled: vBoolean(),
+        light: optional(strictObject({ color: Color, intensity: Positive, radius: Positive })),
+      }),
+    ),
+    charger: optional(
+      strictObject({
+        batteries: pipe(array(Id), nonEmpty('needs a compatible battery')),
+        pocket: pipe(number(), safeInteger(), minValue(0)),
+        efficiency: pipe(Positive, maxValue(1)),
+      }),
+    ),
     /** Comfort scales fatigue recovery; sleepable pieces also enable the sleep rate. */
     rest: optional(strictObject({ quality: Fraction, sleep: optional(literal(true)) })),
     /** A station available to matching recipes within reach; bonus is the fraction removed from work time. */
@@ -1644,6 +2231,11 @@ const FurnitureSchema = pipe(
     'appearance needs a plain container without a shape, door or readable',
   ),
   check(({ door, shape }) => !(door?.hatch && shape), 'a hatch is its own panel and cannot have a shape'),
+  // The same reading as `src/core/blockEntities.ts`, `isBodyDoor`: a body door is the front of its own drawn body.
+  check(
+    ({ door, shape, container }) => !door?.detail || shape === undefined || container === undefined,
+    'a body door draws its handle on its body, so door detail belongs only on doorway leaves and hatches',
+  ),
   // The same reading as `src/core/blockEntities.ts`, `isBodyDoor`: any other door breaks instead of being ruined.
   check(
     ({ ruin, door, shape, container }) => !(ruin && door) || (shape !== undefined && container !== undefined),
@@ -2079,7 +2671,8 @@ const LayoutRect = pipe(
 );
 
 const SiteLayoutSchema = strictObject({
-  id: Id,
+  /** Layout keys are URL scene names, including camel-case names. */
+  id: pipe(string(), regex(/^[a-zA-Z][a-zA-Z0-9_]*$/, 'must be a URL scene name')),
   lootContext: LootContextSchema,
   /** Fixture and showcase layouts are not world sources; unmarked authored layouts contribute building containers and fixed loot. */
   demo: optional(vBoolean()),
@@ -2092,6 +2685,20 @@ const SiteLayoutSchema = strictObject({
   startTimeGameTimeOfDay: optional(GameTimeOfDay),
   terrain: array(TerrainPrimitive),
   buildings: array(LayoutBuilding),
+  vehicles: optional(
+    array(
+      strictObject({
+        blueprint: Id,
+        placementKey: pipe(string(), nonEmpty()),
+        position: MetrePosition,
+        facing: picklist(['n', 'e', 's', 'w']),
+      }),
+    ),
+  ),
+  /** Vehicle parking bays: a vehicle's origin and facing, whether or not one is parked there. */
+  bays: optional(array(strictObject({ position: MetrePosition, facing: picklist(['n', 'e', 's', 'w']) }))),
+  /** The building template whose containers receive derived repair stock; derivation remains game logic. */
+  repairStock: optional(Id),
   player: strictObject({
     position: MetrePosition,
     /** Clockwise degrees from WORLD_NORTH; converted to camera yaw only at startup. */
@@ -2379,7 +2986,7 @@ const ScenarioSchema = strictObject({
     hordeAreas: optional(array(LayoutRect)),
     /** Metres each side of a street's centreline where stragglers stand. */
     roadsideOffset: pipe(Count, minValue(1), maxValue(32)),
-    /** Stragglers added to each group on top of its hamlet-sized count. */
+    /** Stragglers added to each group on top of its baseline settlement count. */
     extraStragglers: pipe(Count, maxValue(16)),
   }),
   city: strictObject({
@@ -2518,9 +3125,11 @@ const ZombieSchema = strictObject({
   soundPitchMultiplier: optional(Positive),
   /** Health keyed by hit-region id; ordinary shamblers use six anatomy keys, amalgams use manifest ids. */
   regions: record(pipe(string(), nonEmpty('must not be empty')), Positive),
-  /** Relative chance that an ordinary hamlet spawn chooses this type; 1 is the common baseline. */
+  /** Explicitly null when this region leaves no item. */
+  severedItems: record(pipe(string(), nonEmpty('must not be empty')), nullable(Id)),
+  /** Relative chance that an ordinary settlement spawn chooses this type; 1 is the common baseline. */
   spawnWeight: pipe(Positive, maxValue(1, 'must be at most 1')),
-  /** Excludes this kind from ordinary hamlet selection while keeping authored/debug spawns available. */
+  /** Excludes this kind from ordinary settlement selection while keeping authored/debug spawns available. */
   authoredOnly: optional(vBoolean()),
   sounds: strictObject({
     idle: picklist(SOUND_EVENT_IDS),
@@ -2603,10 +3212,20 @@ const ZombieSchema = strictObject({
       farMultiplier: pipe(Positive, minValue(1, 'must be at least 1')),
       bearingErrorRadians: pipe(Positive, maxValue(Math.PI, 'must be at most pi')),
       investigationDistanceMetres: Positive,
+      loudNoiseRadiusMetres: Positive,
+      hesitationSimSeconds: SimDurationRange,
+      refusalSuspicionSimSeconds: PositiveSimSeconds,
+      refusalLean: Fraction,
+      chainRadiusMetres: NonNegative,
+      chainChance: Fraction,
       searchSimSeconds: SimDurationRange,
       searchRadiusMetres: Positive,
       searchStrollSimSeconds: SimDurationRange,
     }),
+    check(
+      (model) => model.hesitationSimSeconds.min <= model.hesitationSimSeconds.max,
+      'minimum hesitation must not exceed maximum',
+    ),
     check(
       (model) => model.searchSimSeconds.min <= model.searchSimSeconds.max,
       'minimum search duration must not exceed maximum',
@@ -2695,18 +3314,90 @@ const zombieRegionsMatchModel = (zombie: InferOutput<typeof ZombieSchema>): bool
   return keys.length === expected.length && expected.every((key) => Object.hasOwn(zombie.regions, key));
 };
 
-/** Actor palettes are content so appearance doesn't live in renderer code. */
+/** A lowered stance's drawn pose, pivoting about the hip; `DESIGN.md`, "Crouching and lying prone". */
+const StancePoseSchema = strictObject({
+  hipDropMetres: NonNegative,
+  /** Torso, head and arms pitch forward about the hip. */
+  torsoForwardDegrees: Degrees,
+  /** Legs and feet swing forward about the hip; negative swings them back. */
+  legsForwardDegrees: Degrees,
+});
+
+/** The player figure's box parts: the figure's look until an authored part draws one in its place. */
+export const FIGURE_BOX_PARTS = [
+  'body',
+  'head',
+  'leftUpperArm',
+  'rightUpperArm',
+  'leftForearm',
+  'rightForearm',
+  'leftHand',
+  'rightHand',
+  'leftLeg',
+  'rightLeg',
+  'leftFoot',
+  'rightFoot',
+] as const;
+export type FigureBoxPart = (typeof FIGURE_BOX_PARTS)[number];
+export type FigureLimb = 'torso' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg';
+/** The limb each box part moves and hides with; one authored part draws parts of one limb. */
+export const FIGURE_BOX_LIMBS: Readonly<Record<FigureBoxPart, FigureLimb>> = {
+  body: 'torso',
+  head: 'torso',
+  leftUpperArm: 'leftArm',
+  leftForearm: 'leftArm',
+  leftHand: 'leftArm',
+  rightUpperArm: 'rightArm',
+  rightForearm: 'rightArm',
+  rightHand: 'rightArm',
+  leftLeg: 'leftLeg',
+  leftFoot: 'leftLeg',
+  rightLeg: 'rightLeg',
+  rightFoot: 'rightLeg',
+};
+/** The pivots the rest of the figure hangs from and is posed about. */
+const FIGURE_JOINTS = ['leftHip', 'rightHip', 'leftShoulder', 'rightShoulder'] as const;
+export type FigureJoint = (typeof FIGURE_JOINTS)[number];
+
+/** An authored part of a figure: a model drawn in place of box parts; `DESIGN.md`, "Models". */
+const FigurePartSchema = strictObject({
+  model: Id,
+  draws: pipe(array(picklist(FIGURE_BOX_PARTS)), nonEmpty('must name a box part')),
+  /** Each joint names the model anchor it sits at. The part stands with its hips at the figure's hip height. */
+  joints: strictObject({ leftHip: Id, rightHip: Id, leftShoulder: optional(Id), rightShoulder: optional(Id) }),
+});
+
+/** Actor palettes and poses are content so appearance doesn't live in renderer code. */
 const FigureSchema = strictObject({
   id: Id,
   palette: strictObject({ skin: Color, shirt: Color, trousers: Color }),
+  /** Where the hips stand above the ground; box legs reach down from them, and stances pivot about them. */
+  hipHeightMetres: Positive,
+  parts: optional(array(FigurePartSchema)),
+  stancePoses: strictObject({
+    crouching: StancePoseSchema,
+    prone: StancePoseSchema,
+    /** How long the drawn body takes to settle into a new stance. */
+    blendRealSeconds: PositiveRealSeconds,
+  }),
 });
 
 // ---- skills and recipes ----
+
+const SkillCurveSchema = strictObject({
+  saturationFloor: Fraction,
+  saturationHalfLifeLevels: Positive,
+});
+const SkillProgressionSchema = strictObject({
+  id: Id,
+  practicePerLevel: Positive,
+});
 
 const SkillSchema = pipe(
   strictObject({
     id: Id,
     name: Name,
+    curve: optional(SkillCurveSchema),
     /** Recipes a new character knows from the start. */
     startingRecipes: optional(array(Id)),
     training: optional(
@@ -2773,6 +3464,8 @@ const SkillSchema = pipe(
               landingLiftMetres: NonNegative,
             }),
             shotTraceRangeBlocks: Positive,
+            /** The owning skill's curve is attached by the registry, not authored here. */
+            curve: optional(SkillCurveSchema),
           }),
         ),
         melee: optional(
@@ -2864,6 +3557,7 @@ const TreesSchema = strictObject({
 
 const SiteGenerationSchema = strictObject({
   id: Id,
+  activeZombieRadiusMetres: PositiveMetres,
   topography: strictObject({
     amplitudeMetres: NonNegative,
     wavelengthMetres: PositiveMetres,
@@ -2894,7 +3588,6 @@ const SiteGenerationSchema = strictObject({
     /** How far a tree may stray from its cell's centre on each axis. */
     treeJitterMetres: NonNegative,
     trees: TreesSchema,
-    hamletDensity: Fraction,
     forestHalfExtentMetres: PositiveMetres,
     forestDensityField: strictObject({
       wavelengthMetres: PositiveMetres,
@@ -2911,25 +3604,6 @@ const SiteGenerationSchema = strictObject({
     trees: strictObject({ trunk: Id, branch: Id, leaves: Id }),
     leafLitter: Id,
   }),
-  hamlet: strictObject({
-    hedge: Id,
-    northSide: pipe(array(Id), minLength(1)),
-    southSide: pipe(array(Id), minLength(1)),
-  }),
-  // Where the hamlet may stand: a square grid of candidate sites around the world origin, scored on flatness.
-  placement: pipe(
-    strictObject({
-      gridStepMetres: PositiveMetres,
-      reachMetres: NonNegative,
-      sampleMetres: PositiveMetres,
-      lowestMetres: NonNegative,
-    }),
-    // The search walks whole grid steps out to the reach, so a fractional count would silently shrink it.
-    check(
-      ({ gridStepMetres, reachMetres }) => Number.isInteger(reachMetres / gridStepMetres),
-      'reach must be a whole number of grid steps',
-    ),
-  ),
 });
 
 const BlockCount = pipe(number(), integer('must be a whole number'), minValue(1, 'must be at least 1'));
@@ -2954,21 +3628,51 @@ const HandlingRangeSchema = strictObject({
   table: strictObject({ offset: Count, lateral: BlockOffset }),
 });
 
+const LoweredStanceSchema = strictObject({
+  hearingRangeScale: Fraction,
+  sightRangeScale: Fraction,
+});
+
+const PlayerStanceTuningSchema = strictObject({
+  speedMetresPerSimSecond: SimRate,
+  eyeDropMetres: Positive,
+  bodyHeightMetres: Positive,
+});
+
+const PlayerSchema = strictObject({
+  id: Id,
+  halfWidth: Positive,
+  height: Positive,
+  eye: Positive,
+  walk: SimRate,
+  jog: SimRate,
+  sprint: SimRate,
+  jump: SimRate,
+  reach: Positive,
+  stepHeight: Positive,
+  movement: strictObject({ sidewaysSpeedScale: Fraction, backwardSpeedScale: Fraction }),
+  crouch: PlayerStanceTuningSchema,
+  prone: PlayerStanceTuningSchema,
+  load: pipe(
+    strictObject({ light: NonNegative, heavy: Positive, slowest: Fraction, handlingScale: Fraction }),
+    check(({ light, heavy }) => heavy > light, 'heavy load must exceed light load'),
+  ),
+  aim: strictObject({
+    moveYawPerSpeed: NonNegative,
+    lookLagPerRadian: NonNegative,
+    lookSettleSimSeconds: PositiveSimSeconds,
+    recoilRecoverySimSeconds: PositiveSimSeconds,
+    maxOffsetRadians: pipe(Positive, maxValue(Math.PI / 2)),
+  }),
+});
+
 const SenseSchema = strictObject({
   id: Id,
-  movement: strictObject({
-    sidewaysSpeedScale: Fraction,
-    backwardSpeedScale: Fraction,
-  }),
   /** Chest height as a fraction of the eye height, so a stance that lowers the eyes lowers the chest. */
   chestEyeFraction: Fraction,
-  crouch: strictObject({
-    speedMetresPerSimSecond: SimRate,
-    hearingRangeScale: Fraction,
-    sightRangeScale: Fraction,
-    eyeDropMetres: Positive,
-    bodyHeightMetres: Positive,
-  }),
+  crouch: LoweredStanceSchema,
+  /** Below crouch: the player lies down and crawls. */
+  prone: LoweredStanceSchema,
   wall: strictObject({
     hearingRangeScale: Fraction,
     gain: Fraction,
@@ -2985,6 +3689,18 @@ const SenseSchema = strictObject({
   }),
   /** How long a player vocal noise stays audible to shamblers after it is emitted. */
   vocalNoiseLifetimeSimSeconds: PositiveSimSeconds,
+  /**
+   * The shambler voice-pitch law (`DESIGN.md`, "Audio"), as multiples of the old law's pitch √(reference height ÷ body
+   * height) at the smallest pooled body. One law covers the whole figure pool, so it lives here, not on a zombie type.
+   */
+  shamblerVoice: strictObject({
+    oldLawReferenceHeightMetres: Positive,
+    smallestAnchorMultiplier: Positive,
+    clampMultiplier: pipe(
+      strictObject({ min: Positive, max: Positive }),
+      check(({ min, max }) => min <= max, 'min must not exceed max'),
+    ),
+  }),
   light: strictObject({
     playerDaySightScale: Fraction,
     /** Reduce how far shamblers investigate non-player light sources. */
@@ -2995,6 +3711,8 @@ const SenseSchema = strictObject({
     throwStanceDropHoldRealSeconds: Positive,
     wornLightToggleHoldRealSeconds: Positive,
     renderedBeamLimit: pipe(Count, minValue(2)),
+    /** Powered fixtures drawn as lights at once, nearest the camera first; the rest stay dark. */
+    renderedFixtureLimit: pipe(Count, minValue(1)),
     throwArmSpeedMetresPerRealSecond: Positive,
     throwArmEnergyJoules: Positive,
     /**
@@ -3002,6 +3720,11 @@ const SenseSchema = strictObject({
      * has no flame to shine from, high enough that the near-field falloff reaches nearby surfaces.
      */
     groundLight: strictObject({ senseHeightMetres: Positive, renderLiftMetres: Positive }),
+    /**
+     * Light at a point, in the renderer's light units (`DESIGN.md`, "Light"): the distance decay and near-field
+     * offset every punctual light is drawn and measured with, and the least light a page or sign needs to be read.
+     */
+    illumination: strictObject({ pointDecay: NonNegative, nearFieldMetres: NonNegative, readingThreshold: Positive }),
   }),
 });
 /** Counts are whole items, never millilitres; no partial-liquid storage contract exists yet. */
@@ -3183,6 +3906,8 @@ const BodyTuningSchema = pipe(
     infectionChance: Fraction,
     /** Sim seconds that the player remains unconscious. */
     knockoutSimSeconds: PositiveSimSeconds,
+    /** Why the player can't act while unconscious. */
+    knockoutRefusal: Name,
     /** Sim seconds to wait after stamina reaches zero before recovery begins. */
     staminaRegenDelaySimSeconds: PositiveSimSeconds,
     /** Player eye height in metres while unconscious and prone. */
@@ -3270,6 +3995,17 @@ const BodyTuningSchema = pipe(
     /** Health lost per Sim second while infection is advanced. */
     advancedInfectionHealthLossPerSimSecond: SimRate,
     needs: NeedsTuningSchema,
+    /** The stamina heartbeat, a presentation cue only (`DESIGN.md`, "Audio"). */
+    heartbeat: strictObject({
+      /** One beat each: the slow recording, and the shorter one used once a beat is too quick for the slow one. */
+      sounds: strictObject({ slow: Id, fast: Id }),
+      /** Silent above this stamina; rate and loudness rise linearly from here to exhaustion. */
+      startStamina: NeedPercent,
+      startHz: Positive,
+      exhaustedHz: Positive,
+      startGain: Fraction,
+      exhaustedGain: Fraction,
+    }),
     /** Fatigue is sleep debt with no upper cap; this much accrues per Game hour awake. */
     fatigueRisePerGameHour: GamePerHour,
     /** Fatigue cleared per Game hour resting, scaled by the furniture's rest quality. */
@@ -3330,17 +4066,48 @@ const RecipeSchema = strictObject({
   /** Omitted means an ordinary craft. A repair recipe's result identifies its target type. */
   kind: optional(picklist(['craft', 'repair'])),
   repair: optional(strictObject({ skill: Id, amount: Fraction, perSkill: Fraction })),
+  activation: optional(literal('sharpen')),
   /** Game minutes. */
   timeGameMinutes: PositiveGameMinutes,
   skills: record(Id, SkillLevel),
   qualities: record(Id, pipe(Count, minValue(1), maxValue(5))),
   components: array(pipe(array(RecipeItemSchema), nonEmpty('needs at least one alternative'))),
+  consumeFitted: optional(vBoolean()),
   workstation: optional(nullable(Id)),
 });
 
 const GraphicsTuningSchema = strictObject({
   id: Id,
   readyRadiusM: pipe(number(), finite(), minValue(0)),
+  itemPictureCacheCapacity: pipe(number(), integer(), minValue(1)),
+  /** Diffuse sky visibility drawn where a sky field has no answer yet (`DESIGN.md`, "Light"). */
+  unbuiltSkyCap: Fraction,
+  /** The inventory item viewer: opening pose, drag and wheel response, and zoom range around the opening zoom of 1. */
+  itemViewer: pipe(
+    strictObject({
+      /** Half the view's shorter side per bounding radius at zoom 1. */
+      framing: Positive,
+      startYawDegrees: Degrees,
+      startPitchDegrees: Degrees,
+      pitchLimitDegrees: pipe(number(), minValue(0), maxValue(90)),
+      degreesPerPixel: Positive,
+      zoomPerWheelPixel: Positive,
+      zoomMin: Positive,
+      zoomMax: Positive,
+    }),
+    check(({ zoomMin, zoomMax }) => zoomMin <= 1 && zoomMax >= 1, 'zoom range must include 1'),
+    check(
+      ({ startPitchDegrees, pitchLimitDegrees }) => Math.abs(startPitchDegrees) <= pitchLimitDegrees,
+      'start pitch must be within the pitch limit',
+    ),
+  ),
+  mobActors: strictObject({ maxCorpses: Count }),
+  gore: strictObject({
+    dropletCap: Count,
+    splatCap: Count,
+    dropletSpawnsPerFrame: Count,
+    dripSourceCap: Count,
+  }),
   ...GraphicsOptionsSchema.entries,
 });
 
@@ -3361,6 +4128,31 @@ const LookDefaultsSchema = strictObject({
   bloom: vBoolean(),
   film: vBoolean(),
   grade: Fraction,
+  heightFog: strictObject({ baseMetres: NonNegative, scaleMetres: Positive }),
+  painCue: strictObject({
+    pulseRiseRealSeconds: PositiveRealSeconds,
+    pulseFallRealSeconds: PositiveRealSeconds,
+    settleStretch: NonNegative,
+  }),
+  damageFeedback: strictObject({
+    vignetteMax: Fraction,
+    damageForFullStrength: Positive,
+    vignetteFadeRealSeconds: PositiveRealSeconds,
+    rollPeakDegrees: Positive,
+    rollRiseRealSeconds: PositiveRealSeconds,
+    rollSettleRealSeconds: PositiveRealSeconds,
+  }),
+  mobActors: strictObject({
+    corpseLieSimSeconds: PositiveSimSeconds,
+    corpseSinkSimSeconds: PositiveSimSeconds,
+    corpseSinkDepthMetres: Positive,
+    launchSpinRadiansPerSimSecond: Positive,
+    hearingGazeJitter: strictObject({
+      yawDegrees: NonNegative,
+      pitchDegrees: NonNegative,
+      cyclesPerSimSecond: NonNegative,
+    }),
+  }),
 });
 
 // ---- files ----
@@ -3413,10 +4205,12 @@ const SECTION_DESCRIPTOR = {
   models: { schema: optional(array(ModelSchema)), label: 'models', order: 7 },
   sounds: { schema: optional(array(SoundSchema)), label: 'sound events', order: 8 },
   skills: { schema: optional(array(SkillSchema)), label: 'skills', order: 9 },
+  skillProgression: { schema: optional(array(SkillProgressionSchema)), label: 'skill progression', order: 9 },
   recipes: { schema: optional(array(RecipeSchema)), label: 'recipes', order: 10 },
   layouts: { schema: optional(array(SiteLayoutSchema)), label: 'site layouts', order: 11 },
   body: { schema: optional(array(BodyTuningSchema)), label: 'body tuning', order: 12 },
   senses: { schema: optional(array(SenseSchema)), label: 'sense tuning', order: 13 },
+  player: { schema: optional(array(PlayerSchema)), label: 'player tuning', order: 13.5 },
   meleeClasses: { schema: optional(array(MeleeClassSchema)), label: 'melee classes', order: 14 },
   siteGeneration: { schema: optional(array(SiteGenerationSchema)), label: 'site generation', order: 15 },
   handlingRange: { schema: optional(array(HandlingRangeSchema)), label: 'handling range', order: 29 },
@@ -3485,6 +4279,9 @@ export type CompressionCaps = InferOutput<typeof CompressionTuningSchema>['caps'
 export type HandlingRangeDef = InferOutput<typeof HandlingRangeSchema>;
 export type WeatheringDef = InferOutput<typeof WeatheringSchema>;
 export type SenseDef = InferOutput<typeof SenseSchema>;
+export type PlayerDef = InferOutput<typeof PlayerSchema>;
+export type GraphicsTuningDef = InferOutput<typeof GraphicsTuningSchema>;
+export type LookDefaultsDef = InferOutput<typeof LookDefaultsSchema>;
 export type TreeConeCrown = Extract<InferOutput<typeof TreeCrownSchema>, { kind: 'cone' }>;
 export type DayCycleDef = InferOutput<typeof DayCycleSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;

@@ -101,7 +101,7 @@ const around = (scene: Object3D, origin: Vector3, lens?: Vector3): Group => {
 };
 
 /** Bounds of what is drawn: hidden slot geometry doesn't hold a model off the ground. */
-const visibleBounds = (object: Object3D): Box3 => {
+export const visibleBounds = (object: Object3D): Box3 => {
   object.updateMatrixWorld(true);
   const box = new Box3();
   object.traverseVisible((child) => {

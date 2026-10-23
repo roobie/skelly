@@ -78,9 +78,11 @@ local pills(weight, least, parts, of) =
       rolls: [1, 3],
       entries: [
         item('paperback', 3),
+        item('regional_map', 1),
         item('field_manual', 1),
         item('home_repair_book', 1),
         item('aa_battery', 3, count=[1, 4]),
+        item('rechargeable_aa_battery', 1, count=[1, 2]),
         item('flashlight', 1, condition=[0.5, 1]),
         item('headlamp', 1, condition=[0.5, 1]),
         pills(1, 2, 1, 3),
@@ -131,7 +133,8 @@ local pills(weight, least, parts, of) =
         item('rubber_strip', 1),
         item('sewing_thread', 1),
         item('nylon_cord', 1),
-        item('lamp_oil', 1),
+        item('lamp_oil', 2),
+        item('oil_lamp', 1),
         nothing(3),
       ],
     },
@@ -141,6 +144,7 @@ local pills(weight, least, parts, of) =
       entries: [
         item('hammer', 3, condition=[0.4, 1]),
         item('crowbar', 1, condition=[0.4, 1]),
+        item('sledgehammer', 1, condition=[0.4, 1]),
         item('baseball_bat', 1, condition=[0.4, 1]),
         item('machete', 1, condition=[0.4, 1]),
         item('kabar', 1, condition=[0.4, 1]),
@@ -269,6 +273,7 @@ local pills(weight, least, parts, of) =
       entries: [
         item('hammer', 3, condition=[0.4, 1]),
         item('crowbar', 3, condition=[0.4, 1]),
+        item('sledgehammer', 1, condition=[0.4, 1]),
         item('gas_canister', 1),
         item('baseball_bat', 1, condition=[0.4, 1]),
         item('hand_saw', 2, condition=[0.4, 1]),
@@ -288,6 +293,7 @@ local pills(weight, least, parts, of) =
       rolls: [1, 1],
       entries: [
         item('wooden_plank', 2),
+        item('door_bar', 1),
         item('nails', 4, count=[5, 20]),
         item('scrap_metal', 3, count=[1, 2]),
         item('rag', 2, count=[1, 3]),

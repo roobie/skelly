@@ -2,12 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { type Body, bodyOverlapsBlock, bodyOverlapsTerrain, stepBody } from '../src/core/physics.ts';
 import { raycast } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { startupContent } from './baseRegistry.ts';
-
-const BUNDLED_CONTENT = startupContent();
-
-import { createPlayerBody, movementPace, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { StepOffset } from '../src/render/stepOffset.ts';
+import { createPlayerBody, movementPace, PLAYER, physicsFor, steer } from './playerFixture.ts';
 
 const metre = makeScale(1);
 const half = makeScale(0.5);
@@ -275,18 +271,17 @@ describe('steer', () => {
   });
 
   it('scales sideways and backward speeds by their factors and blends diagonals', () => {
-    const { crouch } = BUNDLED_CONTENT.registry.senses.get('player')!;
     const factors = { sideways: 0.8, backward: 0.4 };
     const measureSpeed = (forward: number, right: number) => {
       const body = groundedBody();
       const paced = movementPace(
-        { forward, right, jump: false, sprint: false, walk: false, crouch: false },
+        { forward, right, jump: false, sprint: false, walk: false },
         {
           grams: 0,
           handling: false,
           readyMovementFactor: 1,
           movementSpeed: 1,
-          crouchSpeed: crouch.speedMetresPerSimSecond,
+          stanceSpeed: undefined,
           directionalSpeed: factors,
         },
       );
@@ -313,13 +308,13 @@ describe('steer', () => {
     const speeds = (crouch: boolean) => {
       const body = groundedBody();
       const intent = movementPace(
-        { forward: 0, right: 1, jump: false, sprint: false, walk: false, crouch },
+        { forward: 0, right: 1, jump: false, sprint: false, walk: false },
         {
           grams: 0,
           handling: false,
           readyMovementFactor: 1,
           movementSpeed: 1,
-          crouchSpeed,
+          stanceSpeed: crouch ? crouchSpeed : undefined,
           directionalSpeed,
         },
       );
@@ -336,17 +331,18 @@ describe('steer', () => {
   it('stacks crouch, injury and ready movement factors', () => {
     const readyFactor = 0.6;
     const crouchSpeed = 0.8;
-    const intent = { forward: 1, right: 0, jump: false, sprint: false, walk: false, crouch: true };
+    const intent = { forward: 1, right: 0, jump: false, sprint: false, walk: false };
     const paceOptions = {
       grams: 0,
       handling: false,
       movementSpeed: 1,
-      crouchSpeed,
+      stanceSpeed: crouchSpeed,
       directionalSpeed: { sideways: 0.73, backward: 0.41 },
     };
+    const standing = { ...paceOptions, stanceSpeed: undefined };
     const speeds = [
-      movementPace({ ...intent, crouch: false }, { ...paceOptions, readyMovementFactor: 1 }),
-      movementPace({ ...intent, crouch: false }, { ...paceOptions, readyMovementFactor: readyFactor }),
+      movementPace(intent, { ...standing, readyMovementFactor: 1 }),
+      movementPace(intent, { ...standing, readyMovementFactor: readyFactor }),
       movementPace(intent, { ...paceOptions, readyMovementFactor: 1 }),
       movementPace(intent, { ...paceOptions, readyMovementFactor: readyFactor }),
       movementPace(intent, { ...paceOptions, movementSpeed: 0.5, readyMovementFactor: readyFactor }),
@@ -364,7 +360,7 @@ describe('steer', () => {
   it('slows the same sprint intent while crouching', () => {
     const intent = { forward: 1, right: 0, jump: false, sprint: true, walk: false };
     const crouched = groundedBody();
-    steer(crouched, half, 0, { ...intent, crouch: true, crouchSpeed: 0.8 });
+    steer(crouched, half, 0, { ...intent, stanceSpeed: 0.8 });
     const crouchSpeed = Math.hypot(crouched.vel[0], crouched.vel[2]) * half.blockSize;
     const standing = groundedBody();
     steer(standing, half, 0, intent);

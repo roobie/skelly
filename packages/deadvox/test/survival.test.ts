@@ -1,17 +1,18 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { Body } from '../src/core/body.ts';
-import { SECONDS_PER_HOUR, simSecondsPerHour } from '../src/core/clock.ts';
+import { simSecondsPerHour } from '../src/core/clock.ts';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
+import { coreMessage } from '../src/core/coreText.ts';
 import { freshnessWord, isRotten, spoilage } from '../src/core/food.ts';
 import { Inventory, type Target } from '../src/core/inventory.ts';
-import type { Item } from '../src/core/items.ts';
-import { NO_GROUND_ROOM_REFUSAL, NO_LANDING_REFUSAL } from '../src/core/itemThrow.ts';
+import { type Item, ItemFactory } from '../src/core/items.ts';
 import { chargeOf, drainLight, swapBattery, toggleLight } from '../src/core/lights.ts';
 import { canSprint, consume, type Needs, stepNeeds, stepStamina } from '../src/core/needs.ts';
 import { freshDropTarget } from '../src/core/options.ts';
 import { gameHours, gameSeconds } from '../src/core/time.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
+import { fixtureFood, foodFixtureRegistry } from './foodFixture.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const HOUR = simSecondsPerHour(BASE_CLOCK); // 450 simulation seconds
@@ -22,12 +23,15 @@ const base = (file: string): ContentSource => {
   const source = `src/content/base/${file}`;
   const data = JSON.parse(readFileSync(source, 'utf8'));
   if (file === 'items-tools.json') {
-    data.items = data.items.filter((item: { id: string }) => !['torch', 'candle'].includes(item.id));
+    data.items = data.items.filter(
+      (item: { id: string }) => !['torch', 'candle', 'door_bar', 'oil_lamp'].includes(item.id),
+    );
   }
   return { source, data };
 };
 const { registry } = buildRegistry(
   [
+    'ui.json',
     'sounds.json',
     'sounds-pump.json',
     'sounds-weapons.json',
@@ -145,34 +149,21 @@ describe('catch-up', () => {
 });
 
 describe('food', () => {
-  const apple = registry.items.get('apple')!; // rots after 240 game hours
-  const beans = registry.items.get('beans')!;
+  const foods = foodFixtureRegistry(registry);
+  const beans = foods.items.get('fixture_keeps')!;
 
-  it('rots on the clock, the same whether checked every game minute or once', () => {
-    const item = { uid: 1, type: 'apple', count: 1, condition: 1 };
-    let firstRotten: number | undefined;
-    let firstGoingOff: number | undefined;
-    for (let minute = 0; minute <= 12 * 24 * 60; minute++) {
-      const word = freshnessWord(apple, item, minute * 60);
-      firstGoingOff ??= word === 'going off' ? minute : undefined;
-      firstRotten ??= word === 'rotten' ? minute : undefined;
-    }
-    expect(firstGoingOff).toBe(120 * 60);
-    expect(firstRotten).toBe(240 * 60);
-    expect(isRotten(apple, item, 240 * SECONDS_PER_HOUR)).toBe(true);
-    expect(isRotten(apple, item, 240 * SECONDS_PER_HOUR - 1)).toBe(false);
-  });
-
-  it('counts from when it was made, and canned food keeps', () => {
-    const picked = {
-      uid: 1,
-      type: 'apple',
-      count: 1,
-      condition: 1,
-      madeAtGameTimestamp: 100 * SECONDS_PER_HOUR,
-    };
-    expect(spoilage(apple, picked, 220 * SECONDS_PER_HOUR)).toBeCloseTo(0.5, 9);
-    expect(spoilage(beans, { uid: 2, type: 'beans', count: 1, condition: 1 }, 1e9)).toBeUndefined();
+  it('projects freshness purely across the fixture shelf-life boundaries', () => {
+    const item = new ItemFactory().create(foods, fixtureFood.id, 1, { madeAt: 100 });
+    const before = structuredClone(item);
+    expect(freshnessWord(fixtureFood, item, 109)).toBe('fresh');
+    expect(freshnessWord(fixtureFood, item, 110)).toBe('going off');
+    expect(isRotten(fixtureFood, item, 119.999)).toBe(false);
+    expect(isRotten(fixtureFood, item, 120)).toBe(true);
+    expect(spoilage(fixtureFood, item, 140)).toBeGreaterThan(1);
+    expect(item).toEqual(before);
+    const keeps = new ItemFactory().create(foods, beans.id);
+    expect(spoilage(beans, keeps, 1e9)).toBeUndefined();
+    expect(keeps.foodExposure).toBeUndefined();
   });
 
   it('feeds you', () => {
@@ -241,7 +232,7 @@ describe('flashlight', () => {
     const { inventory, light, old, batteries } = halfSpent();
     inventory.landing = () => undefined;
     const spent = (item: Item) => freshDropTarget(inventory, item, [0, 0, 0]);
-    expect(swapBattery(inventory, light, batteries, spent)).toBe(NO_LANDING_REFUSAL);
+    expect(swapBattery(inventory, light, batteries, spent)).toBe(coreMessage(inventory.registry, 'noLanding'));
     expect(light.slots!.battery).toBe(old);
     expect(batteries.count).toBe(3);
   });
@@ -274,7 +265,7 @@ describe('flashlight', () => {
     while (inventory.add(inventory.create('flashlight'), pile)) {
       // Fill the pile until it refuses.
     }
-    expect(swapBattery(inventory, light, batteries, () => pile)).toBe(NO_GROUND_ROOM_REFUSAL);
+    expect(swapBattery(inventory, light, batteries, () => pile)).toBe(coreMessage(inventory.registry, 'noGroundRoom'));
     expect(light.slots!.battery).toBe(old);
     expect(batteries.count).toBe(3);
   });
@@ -336,8 +327,9 @@ describe('death', () => {
     const events = live.events.reader();
     expect(untilDeath(live, false)).toBeCloseTo(expected, -1);
     expect(untilDeath(fast, true)).toBeCloseTo(expected, -2);
-    expect(live.dead!.cause).toBe('thirst and hunger');
-    expect(fast.dead!.cause).toBe('thirst and hunger');
+    const cause = coreMessage(live.registry, 'causeThirstAndHunger');
+    expect(live.dead!.cause).toBe(cause);
+    expect(fast.dead!.cause).toBe(cause);
     // Nothing moves after death.
     const at = live.time;
     expect(live.frame(1)).toBe(0);

@@ -1,4 +1,4 @@
-import { meshForRevolved } from '@skelly/engine/shapes/revolve.ts';
+import { meshForRevolved, revolvedLocalPolyhedron } from '@skelly/engine/shapes/revolve.ts';
 import type { RevolvedSolid } from '@skelly/engine/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 
@@ -67,5 +67,39 @@ describe('revolved solid mesh', () => {
     for (let k = 0; k < 3; k++) {
       expect(gentle[0]![k]).toBeCloseTo(gentle[1]![k]!, 6);
     }
+  });
+
+  it('turns a sided solid with flat sides at the profile radius, the same at every facet count and in its hull', () => {
+    const sided: RevolvedSolid = {
+      ...solid([
+        [0, 0],
+        [0, 1],
+        [2, 1],
+        [2, 0],
+      ]),
+      sides: 8,
+    };
+    const corners = (positions: ArrayLike<number>) =>
+      new Set(
+        Array.from({ length: positions.length / 3 }, (_, i) =>
+          [0, 1, 2].map((k) => (positions[i * 3 + k]! + 0).toFixed(6)).join(','),
+        ),
+      );
+    const mesh = meshForRevolved(sided, 6);
+    let side = 0;
+    for (let i = 0; i < mesh.positions.length; i += 3) {
+      const radial = Math.hypot(mesh.normals[i]!, mesh.normals[i + 1]!);
+      if (radial > 0.99) {
+        // A side vertex lies on its flat: its distance along the flat's normal is the profile radius there.
+        const along = (mesh.positions[i]! * mesh.normals[i]! + mesh.positions[i + 1]! * mesh.normals[i + 1]!) / radial;
+        expect(along).toBeCloseTo(1, 5);
+        side += 1;
+      }
+    }
+    expect(side).toBeGreaterThan(0);
+    expect(corners(meshForRevolved(sided, 24).positions)).toEqual(corners(mesh.positions));
+    const hull = revolvedLocalPolyhedron(sided).vertices.flat();
+    const drawn = corners(mesh.positions);
+    expect([...corners(hull)].filter((corner) => !drawn.has(corner))).toEqual([]);
   });
 });

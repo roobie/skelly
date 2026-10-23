@@ -4,6 +4,7 @@ read_if:
   - you add a muzzle device or change what a muzzle accepts
   - you change authored attachment mass or its ownership
   - you preview fitted attachments in the viewer
+  - you change an attachment's default look or how an instance's finish overrides it
 ---
 
 # Attachment exports
@@ -21,14 +22,33 @@ See `src/gun/physical.ts`, `gunModelParts`; `src/gun/physical.jsonnet`, `partMas
 `packages/deadvox/src/core/items.ts`, `typeWeightGrams`. Geometric centres are estimates,
 not a source of mass; see `packages/thing-export/src/physical.ts`, `partProperties`.
 
+## Looks
+
 Item appearance belongs to the attachment instance rather than its host so the same item
 can keep its own finish across firearms without changing its physical inputs; see
 `src/gun/attachments.ts`, `attachmentInstanceForId`, and
 `packages/thing-export/src/glb.ts`, `exportGlb`.
 
+Every attachment's default look is its product's authored finish in `src/gun/appearance.jsonnet`,
+`attachments`, and an instance's own finish sits over it slot by slot, so an instance that sets
+nothing, or varies one slot, keeps the product's other slots: a suppressor instance with an empty
+finish wears the product's black metal, not the suppressor role's stainless, and an optic instance
+that varies its metal keeps its lens coating. A slot neither sets falls to the role's finish in the
+gun palette. See `src/gun/attachments.ts`, `withDefaultLook`.
+
+A slot the role's finish cannot stand in for, an optic's lens coating, must be selected by the
+product look, because the role's opaque metal would otherwise fill a lens without a word
+(`PILLARS.md`, "Content forward compatibility"). Content that leaves such a slot unselected, and a
+look whose material does not exist, fail when content loads and when an instance is built, with
+no fallback coating in code. See `src/gun/attachments.ts`, `attachmentLookIssue`.
+
 ## Muzzle devices
 
 A muzzle device fits only a muzzle cut for the bore it was built for, because fit is a property of both the gun and the device: shotguns take muzzle devices, but not rifle suppressors. Both muzzle ports declare that bore as their port `standard` (`src/gun/mounts.ts`, `MuzzleBore`). The engine's `portCompat` (`packages/engine/src/assembly/rules.ts`) requires both sides of a connection to declare the same standard or neither, so the rule holds for designs and certificates alike, and an undeclared side fits nothing that declares one. The pump's smoothbore muzzle keeps its slot, and a device built for smoothbores certifies there without a rule change.
+
+A removable muzzle device, such as the AK's compensator, is an attachment fitted at the barrel's muzzle rather than part of the gun. The player can fit or remove it like any other muzzle attachment, so the rifle and the device are separate items, and a suppressor can take its place. The device offers no muzzle of its own because the export lists only hosts that validate, and a suppressor threaded on the device would cross the barrel's keep-out. The gun therefore fires from its barrel whichever device is fitted.
+
+A port's `size` names its thread pattern, which the engine matches only when both sides declare one. A device cut for one pattern declares it and threads only on that barrel, while a suppressor that declares none fits any muzzle of its bore. See `src/gun/parts.ts`, `akMuzzleDevice`, and `src/gun/attachments.ts`, `akMuzzleDevices`.
 
 ## Viewer previews
 
