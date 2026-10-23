@@ -5453,13 +5453,13 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_entry_bay_technical_pump",
+                "id": "gauntlet_lab_entry_bay_technical_generator",
                 "kind": "piece"
               },
               "weight": 1
             }
           ],
-          "id": "technical_pump",
+          "id": "technical_generator",
           "size": [4, 7, 4],
           "turn": 0
         },
@@ -30345,12 +30345,12 @@
     },
     {
       "anchors": {},
-      "id": "gauntlet_lab_entry_bay_technical_pump",
+      "id": "gauntlet_lab_entry_bay_technical_generator",
       "layers": [
         ["FFFF", "FFFF", "FFFF", "...."],
         ["FFFF", "FFFF", "FFFF", "...."],
         ["FFFF", "FFFF", "FFFF", "...."],
-        ["FFFF", "FFFF", "FFFF", "...."],
+        ["....", "....", "....", "...."],
         ["LL..", "....", "....", "...."],
         ["====", "====", "====", "===="],
         ["====", "====", "====", "===="]
@@ -30364,7 +30364,7 @@
           ["SSSS", "SSSS", "SSSS", "AAAA"],
           ["SSSS", "SSSS", "SSSS", "AAAA"],
           ["SSSS", "SSSS", "SSSS", "AAAA"],
-          ["SSSS", "SSSS", "SSSS", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
           ["SSAA", "AAAA", "AAAA", "AAAA"],
           ["SSSS", "SSSS", "SSSS", "SSSS"],
           ["SSSS", "SSSS", "SSSS", "SSSS"]
@@ -30380,7 +30380,7 @@
           "role": "shell"
         },
         "F": {
-          "furniture": "gauntlet_look_pump",
+          "furniture": "gauntlet_lab_generator",
           "loot": "d41_empty"
         },
         "L": {
@@ -32581,7 +32581,7 @@
           "role": "shell"
         },
         "F": {
-          "furniture": "fridge",
+          "furniture": "gauntlet_lab_fridge",
           "loot": "gauntlet_lab_administration_canteen",
           "lootUsage": ["Residential"]
         },

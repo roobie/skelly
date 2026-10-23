@@ -802,6 +802,7 @@ export const startPlay = (
   const session = createSession({
     registry,
     scenario: engine.scenario,
+    powerDevices: engine.powerDevices,
     objective: scenarioObjective(engine.site),
     discovery: scenarioDiscovery(engine.site),
     handedness: config.debugHandedness ?? options.handedness,
@@ -1076,10 +1077,15 @@ export const startPlay = (
       inputRecorder.queueColumnChange(cx, cz, false);
     }
   };
-  const view = createPlayView(engine, inventory, (message) => {
-    const box = $('errors');
-    box.textContent = [box.textContent, message].filter(Boolean).join('\n');
-  });
+  const view = createPlayView(
+    engine,
+    inventory,
+    (message) => {
+      const box = $('errors');
+      box.textContent = [box.textContent, message].filter(Boolean).join('\n');
+    },
+    { poweredLights: () => session.power?.lights() ?? [] },
+  );
   input.setMouseLookOverride((movementX, movementY) =>
     thirdPersonOrbit.rotate(movementX, movementY, isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled)),
   );

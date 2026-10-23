@@ -274,6 +274,10 @@ export class PowerNetwork {
     };
   }
 
+  isPowered(id: string): boolean {
+    return this.device(id).powered;
+  }
+
   tick(): readonly PowerTransition[] {
     return this.run(safe(this.atGameMilliseconds + this.tickGameMilliseconds));
   }

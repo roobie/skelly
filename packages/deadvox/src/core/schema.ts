@@ -59,7 +59,7 @@ import { GraphicsOptionsSchema } from './graphics.ts';
 import { ItemEconomySchema, LootContextSchema, UsageSchema } from './loot.ts';
 import { MELEE_MOTIONS } from './meleeMotion.ts';
 import { MAX_EXPOSURE, MIN_EXPOSURE, TONE_KEYS } from './mood.ts';
-import { PowerDeviceSchema, PowerTuningSchema } from './powerContent.ts';
+import { POWER_UNITS, PowerDeviceSchema, PowerTuningSchema, unitCount } from './powerContent.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SCENARIO_KINDS } from './scenarioKinds.ts';
 import { shapeBlocks } from './shapeSolid.ts';
@@ -1663,6 +1663,17 @@ const FurnitureSchema = pipe(
           'removed names a fitting the blueprint lacks',
         ),
       ),
+    ),
+    power: optional(
+      strictObject({
+        device: Id,
+        fuelLitres: pipe(
+          NonNegative,
+          check((value) => unitCount(value, POWER_UNITS.amount) !== undefined, 'fuel must be exact in power units'),
+        ),
+        enabled: vBoolean(),
+        light: optional(strictObject({ color: Color, intensity: Positive, radius: Positive })),
+      }),
     ),
     /** Comfort scales fatigue recovery; sleepable pieces also enable the sleep rate. */
     rest: optional(strictObject({ quality: Fraction, sleep: optional(literal(true)) })),
