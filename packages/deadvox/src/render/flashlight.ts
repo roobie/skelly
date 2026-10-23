@@ -12,6 +12,7 @@ import type { Sky } from '../core/sky.ts';
 import { installFlashlightSpill, setFlashlightSpill, spillHalfAngle } from './flashlightCone.ts';
 import type { HeldItems } from './hands.ts';
 import { installNearFieldFalloff } from './lightFalloff.ts';
+import { FIRST_PERSON_SHOULDER } from './playerFigure.ts';
 
 /** Sun plus ambient intensity at which the beam is at half strength. */
 export const HALF_BRIGHTNESS = 0.9;
@@ -105,6 +106,22 @@ export class Flashlight {
    */
   shadowsAllowed = false;
 
+  private aim(item: Item, wornMount: boolean, held: HeldItems, camera: PerspectiveCamera): void {
+    if (wornMount) {
+      // Slung guns have no first-person model; use the body's shoulder, not the eye or held lens.
+      this.at
+        .set(...FIRST_PERSON_SHOULDER.right)
+        .applyQuaternion(camera.quaternion)
+        .add(camera.position);
+      this.ahead.set(0, -1, 0);
+      return;
+    }
+    if (!held.lensOf(item, this.at)) {
+      this.at.copy(camera.position);
+    }
+    camera.getWorldDirection(this.ahead);
+  }
+
   /** Points the beam of the light that's on, or turns it off. Call after `held.update`. */
   update({
     registry,
@@ -124,7 +141,9 @@ export class Flashlight {
         ({ item, location, path }) =>
           defOf(registry, item.type).light?.beam !== undefined &&
           lightExposureFor(registry, item, location, path) === 'carried' &&
-          (held.lensOf(item, this.at) || (location.kind === 'worn' && location.slot === 'head')),
+          (held.lensOf(item, this.at) ||
+            (location.kind === 'worn' && location.slot === 'head') ||
+            (location.kind === 'slot' && path.startsWith('inventory.worn.'))),
       )
       .sort(
         (a, b) =>
@@ -141,9 +160,8 @@ export class Flashlight {
       }
       const def = defOf(registry, source.item.type).light!;
       const beam = def.beam!;
-      if (!held.lensOf(source.item, this.at)) {
-        this.at.copy(camera.position);
-      }
+      const wornMount = source.location.kind === 'slot' && source.path.startsWith('inventory.worn.');
+      this.aim(source.item, wornMount, held, camera);
       light.color.set(def.color);
       light.intensity = def.intensity * this.daylightScale * this.strength;
       light.distance = def.radius;
@@ -157,7 +175,6 @@ export class Flashlight {
       light.angle = angle;
       light.penumbra = beam.penumbra;
       light.position.copy(this.at);
-      camera.getWorldDirection(this.ahead);
       light.target.position.copy(this.at).addScaledVector(this.ahead, 10);
       light.target.updateMatrixWorld();
     }

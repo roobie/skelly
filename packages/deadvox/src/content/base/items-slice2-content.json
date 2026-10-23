@@ -1011,6 +1011,12 @@
         [
           {
             "count": 1,
+            "item": "flashlight"
+          }
+        ],
+        [
+          {
+            "count": 1,
             "item": "scrap_metal"
           }
         ],
@@ -1027,6 +1033,7 @@
           }
         ]
       ],
+      "consumeFitted": true,
       "id": "make_taped_flashlight_mount",
       "qualities": {
         "screwing": 1

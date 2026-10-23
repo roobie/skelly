@@ -3464,6 +3464,7 @@ const RecipeSchema = strictObject({
   skills: record(Id, SkillLevel),
   qualities: record(Id, pipe(Count, minValue(1), maxValue(5))),
   components: array(pipe(array(RecipeItemSchema), nonEmpty('needs at least one alternative'))),
+  consumeFitted: optional(vBoolean()),
   workstation: optional(nullable(Id)),
 });
 

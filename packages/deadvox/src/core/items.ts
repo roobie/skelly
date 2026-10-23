@@ -531,6 +531,10 @@ export const isEmpty = (item: Item): boolean =>
   Object.values(item.slots ?? {}).every((child) => child === undefined) &&
   (item.pockets ?? []).every((grid) => grid.length === 0);
 
+/** Recipes may explicitly consume fitted parts, but never hidden pocket contents or unfinished work. */
+export const craftComponentEligible = (item: Item, consumeFitted = false): boolean =>
+  isEmpty(item) || (consumeFitted && !item.work && (item.pockets ?? []).every((grid) => grid.length === 0));
+
 /** Condition as a word, from the content band table (`DESIGN.md`, "The item model"). */
 export const conditionWord = (registry: Registry, condition: number): string => {
   const bands = registry.inventory.get(CORE_CONTENT_IDS.player)!.conditionBands;

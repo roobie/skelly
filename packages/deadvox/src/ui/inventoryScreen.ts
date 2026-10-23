@@ -12,7 +12,7 @@ import { practiceForNextLevel } from '../core/character.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { WorkOperation, WorkOption } from '../core/craftCommands.ts';
-import { firearmSlotIds } from '../core/firearmFitting.ts';
+import { firearmSlotIds, LIGHT_MOUNT_SLOT } from '../core/firearmFitting.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import { type Inventory, type Pile, sameGrid, spotOf, type Target, wornSlotOf } from '../core/inventory.ts';
 import { GRID_CELL_REM as CELL_REM } from '../core/inventoryGridName.ts';
@@ -1351,7 +1351,7 @@ export class InventoryScreen {
       }
       return {
         id: slotId,
-        label: slotId,
+        label: slotId === LIGHT_MOUNT_SLOT ? 'Light mount' : slotId,
         ...(fitted ? { occupied: workName(this.inv.registry, fitted), attachmentUid: fitted.uid } : {}),
         ...(battery === undefined ? {} : { battery }),
         candidates: fitted

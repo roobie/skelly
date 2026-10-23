@@ -1281,17 +1281,29 @@ guns make this carrying option discoverable. See `SLING_SLOT` in
 
 ### Light mount on a long gun
 
-A long gun without a rail can still carry a flashlight, because players tape
-lights to guns and gungen exports a mount only where a rail exists. Deadvox
-therefore owns a second mount beside the sling, matched by content: a gun names
-where a mount of some kind sits, and a mount names its kind, so which guns take
-which light is a content decision and no code names an item. Fitting is the
-ordinary timed attachment work. The fitted light stays a whole item with its
-own battery, so removing it returns it intact. Its beam follows the held gun's
-aim because the gun's own lens carries it, and it uses the flashlight's
-switch and battery drain, so there is one drain model. A slung or stowed gun is
-out of a hand, so its light gives no beam. See `LIGHT_MOUNT_SLOT` in
-`src/core/firearmFitting.ts` and `lightMountSlotReason` in `src/core/magazine.ts`.
+Players tape lights to guns, but gungen exports mounts only where a rail exists.
+Deadvox owns the rail-less mount so content can choose compatible guns without
+pretending they have exported rails. See `src/core/firearmFitting.ts`,
+`LIGHT_MOUNT_SLOT`, and `src/core/magazine.ts`, `lightMountSlotReason`.
+
+Crafting the taped light consumes a handheld flashlight rather than creating a
+light from mounting hardware. Recipes must explicitly permit consuming fitted
+parts so a flashlight with a battery is usable stock without making ordinary
+crafts swallow filled items. Pocket contents and unfinished work remain excluded.
+See `src/content/base/items-slice2-content.libsonnet`, `make_taped_flashlight_mount`;
+`src/core/crafting.ts`, `indexCraftReach`; and `src/core/items.ts`, `craftComponentEligible`.
+
+The mount remains a complete light item because removing it or servicing its
+battery must not erase its identity. Battery replacement with the gun in hand
+uses the same work as a handheld light rather than requiring removal of the
+mount. See `src/core/lights.ts`, `lightInHands` and `swapBattery`.
+
+Putting a switched-on gun light away does not turn its switch off. A slung gun
+still illuminates and drains; a bag conceals the beam but not the battery cost.
+Without a first-person slung-gun model, the shoulder is its beam origin and the
+beam points down rather than following the held gun's aim. See
+`src/game/survival.ts`, `Survival.tickLight`; `src/core/lights.ts`, `lightExposureFor`;
+and `src/render/flashlight.ts`, `Flashlight.update`.
 
 ### Handling time
 

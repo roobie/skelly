@@ -194,11 +194,11 @@ const lightMountSlotReason = (
   }
   const site = isLongGun(definition) ? definition?.lightMountSite : undefined;
   if (!site) {
-    return 'This gun has no place for a light';
+    return "I can't fit a light to this gun";
   }
   return registry.items.get(mount.type)?.lightMount?.kind === site.kind
     ? undefined
-    : 'That does not mount a light on this gun';
+    : "I can't fit this light mount to this gun";
 };
 
 /** Why `slots` can't be fitted to this item, or undefined when they can. */

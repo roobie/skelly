@@ -479,11 +479,13 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "make_taped_flashlight_mount",
+      "consumeFitted": true,
       "result": { "item": "taped_flashlight_mount", "count": 1 },
       "timeGameMinutes": 18,
       "skills": { "mechanics": 0 },
       "qualities": { "screwing": 1 },
       "components": [
+        [{ "item": "flashlight", "count": 1 }],
         [{ "item": "scrap_metal", "count": 1 }],
         [{ "item": "electrical_tape", "count": 1 }],
         [{ "item": "fastener_pack", "count": 1 }]

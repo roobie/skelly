@@ -21,6 +21,7 @@ import { sunDirection } from './sky.ts';
 import { type GameRate, type GameSeconds, gameSeconds } from './time.ts';
 
 export type LightExposure = 'carried' | 'world';
+const WORN_SLOT_TREE_PATH = /^inventory\.worn\.[^.]+\.slots\./;
 
 export interface LightSenseSource {
   pos: Vec3;
@@ -40,8 +41,11 @@ export const lightExposureFor = (
   if (!(item.on && definition?.light) || (definition.light.power && chargeOf(registry, item) === 0)) {
     return undefined;
   }
-  const inHeldItemSlotTree = location.kind === 'slot' && isInHeldItemSlotTree(path);
-  if (location.kind === 'hand' || location.kind === 'worn' || inHeldItemSlotTree) {
+  const inCarriedSlotTree =
+    location.kind === 'slot' &&
+    (isInHeldItemSlotTree(path) || WORN_SLOT_TREE_PATH.test(path)) &&
+    !path.includes('.pockets[');
+  if (location.kind === 'hand' || location.kind === 'worn' || inCarriedSlotTree) {
     return 'carried';
   }
   if (location.kind === 'pocket' && (path.startsWith('inventory.hands.') || path.startsWith('inventory.worn.'))) {
@@ -316,6 +320,17 @@ export const drainLight = (
 export const offHandUse = (registry: Registry, inventory: Inventory): Item | undefined => {
   const item = inventory.hands[offSide(inventory.character)];
   return item && defOf(registry, item.type).light ? item : undefined;
+};
+
+/** A fitted light is serviced with its gun in hand, without detaching it. */
+export const lightInHands = (inventory: Inventory, light: Item): boolean => {
+  const at = inventory.locate(light);
+  return (
+    at?.kind === 'hand' ||
+    (at?.kind === 'slot' &&
+      defOf(inventory.registry, at.owner.type).firearm !== undefined &&
+      inventory.locate(at.owner)?.kind === 'hand')
+  );
 };
 
 /** Whether a battery fits a light. */
