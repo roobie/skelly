@@ -17,6 +17,7 @@ import {
 import { magazineContentsReason, magazineSpec, magazineWellCalibre, slotsReason } from './magazine.ts';
 import { modelBodyMassKg } from './modelMass.ts';
 import { assertPaperMapItem, type PaperMapCoverage } from './paperMap.ts';
+import type { LiquidContents } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
 /** Craft or disassembly inputs/progress have exactly one owner: this ordinary item subtree. */
@@ -49,6 +50,7 @@ export interface ItemFields<Node> {
   /** Battery charge, fuel and the like; absent means full (as found). */
   charges?: number | undefined;
   batteryMicrojoules?: number;
+  liquidContents?: LiquidContents;
   /** A light that's switched on. */
   on?: boolean;
   /** Remaining consumable-light burn in Game seconds; absent until first ignition. */
@@ -423,6 +425,9 @@ export class ItemFactory {
   ): Item {
     const def = defOf(registry, type);
     assertPaperMapItem(def, count, paperMap);
+    if (def.vessel && count !== 1) {
+      throw new Error('Liquid vessels require one instance per item');
+    }
     const item: Item = {
       uid: this.nextUid,
       type,
@@ -430,6 +435,9 @@ export class ItemFactory {
       condition,
       ...paperMapField(paperMap),
     };
+    if (def.vessel) {
+      item.liquidContents = { ...def.vessel.initialContents };
+    }
     const exposure = initialFoodExposure(registry, def, madeAt);
     if (exposure) {
       item.foodExposure = exposure;
@@ -465,7 +473,7 @@ export class ItemFactory {
 
   /** Takes `count` off a stack into a new instance. */
   split(item: Item, count: number): Item {
-    if (item.paperMap !== undefined || count <= 0 || count >= item.count) {
+    if (item.liquidContents !== undefined || item.paperMap !== undefined || count <= 0 || count >= item.count) {
       throw new Error(`can't split ${count} off a stack of ${item.count}`);
     }
     item.count -= count;
@@ -583,15 +591,19 @@ export const footprint = (def: ItemDef, rotated: boolean): [number, number] =>
 
 export const cellCount = (def: ItemDef): number => def.size[0] * def.size[1];
 
-/** True when the item has no pockets, or they're all empty. */
 export const isEmpty = (item: Item): boolean =>
+  item.liquidContents?.kind !== 'filled' &&
   !item.work &&
   Object.values(item.slots ?? {}).every((child) => child === undefined) &&
   (item.pockets ?? []).every((grid) => grid.length === 0);
 
-/** Recipes may explicitly consume fitted parts, but never hidden pocket contents or unfinished work. */
+/** Recipes may consume fitted parts, but never silently discard liquid, pocket contents or unfinished work. */
 export const craftComponentEligible = (item: Item, consumeFitted = false): boolean =>
-  isEmpty(item) || (consumeFitted && !item.work && (item.pockets ?? []).every((grid) => grid.length === 0));
+  isEmpty(item) ||
+  (consumeFitted &&
+    item.liquidContents?.kind !== 'filled' &&
+    !item.work &&
+    (item.pockets ?? []).every((grid) => grid.length === 0));
 
 /** Condition as a word, from the content band table (`DESIGN.md`, "The item model"). */
 export const conditionWord = (registry: Registry, condition: number): string => {
@@ -624,6 +636,9 @@ export const stackRoom = (
     onto.firearm === undefined &&
     item.firearm === undefined &&
     !def.paperMap &&
+    !def.vessel &&
+    onto.liquidContents === undefined &&
+    item.liquidContents === undefined &&
     onto.paperMap === undefined &&
     item.paperMap === undefined &&
     isEmpty(onto) &&
@@ -709,11 +724,24 @@ export const weightOf = (registry: Registry, item: Item): number =>
   (typeWeightGrams(registry, item.type) +
     (defOf(registry, item.type).serving ? typeWeightGrams(registry, defOf(registry, item.type).serving!.food) : 0)) *
     item.count +
+  liquidWeightGrams(registry, item) +
   ammunitionWeight(registry, item) +
   (item.cartridges ?? []).reduce((sum, round) => sum + typeWeightGrams(registry, round), 0) +
   Object.values(item.slots ?? {}).reduce((sum, child) => sum + (child ? weightOf(registry, child) : 0), 0) +
   (item.pockets ?? []).flat().reduce((sum, p) => sum + weightOf(registry, p.item), 0) +
   (item.work?.components ?? []).reduce((sum, component) => sum + weightOf(registry, component), 0);
+
+const liquidWeightGrams = (registry: Registry, item: Item): number => {
+  const contents = item.liquidContents;
+  if (!contents || contents.kind === 'empty') {
+    return 0;
+  }
+  const liquid = registry.liquids.get(contents.liquid);
+  if (!liquid) {
+    throw new Error(`Missing liquid ${contents.liquid}`);
+  }
+  return (contents.volumeMicrolitres / 1000) * liquid.densityGramsPerMillilitre;
+};
 
 const ammunitionWeight = (registry: Registry, item: Item): number => {
   const state = item.firearm;

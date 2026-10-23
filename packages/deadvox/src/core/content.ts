@@ -808,6 +808,44 @@ const checkPaperMap = (item: ItemDef, report: Report): void => {
   }
 };
 
+const checkVessel = (item: ItemDef, registry: Registry, report: Report): void => {
+  const { vessel } = item;
+  if (!vessel) {
+    return;
+  }
+  if (item.stack !== undefined) {
+    report('items', item.id, '.stack', 'liquid vessels cannot stack');
+  }
+  if (
+    item.canister ||
+    item.battery ||
+    item.igniter ||
+    item.tool?.fuel ||
+    item.light?.power ||
+    item.light?.burnTimeGameHours !== undefined ||
+    item.light?.fuelPerGameHour !== undefined ||
+    item.serving ||
+    item.food ||
+    item.unpack
+  ) {
+    report('items', item.id, '.vessel', 'liquid vessels cannot declare another consumable balance or unpacking');
+  }
+  for (const liquid of vessel.accepts) {
+    if (!registry.liquids.has(liquid)) {
+      report('items', item.id, '.vessel.accepts', `no liquid "${liquid}"`);
+    }
+  }
+  const initial = vessel.initialContents;
+  if (initial.kind === 'filled') {
+    if (!(vessel.accepts.includes(initial.liquid) && registry.liquids.has(initial.liquid))) {
+      report('items', item.id, '.vessel.initialContents', 'initial liquid must be registered and accepted');
+    }
+    if (initial.volumeMicrolitres > vessel.capacityMicrolitres) {
+      report('items', item.id, '.vessel.initialContents', 'initial volume exceeds capacity');
+    }
+  }
+};
+
 const checkItems = (registry: Registry, report: Report) => {
   const items = [...registry.items.values()];
   checkInventoryNameCollisions(items, report);
@@ -824,6 +862,7 @@ const checkItems = (registry: Registry, report: Report) => {
       }
     }
     checkItemMass(item, registry, report);
+    checkVessel(item, registry, report);
     checkItemLight(item, hasIgniter, registry, report);
     checkItemLightModel(item, registry, report);
     checkItemHeldDisplay(item, registry, report);
