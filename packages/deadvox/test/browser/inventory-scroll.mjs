@@ -11,6 +11,15 @@ import { pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
+const stageStarted = performance.now();
+let phaseStarted = stageStarted;
+const logPhase = (name) => {
+  const now = performance.now();
+  process.stdout.write(
+    `inventory-scroll: ${name} ${(now - phaseStarted).toFixed(0)}ms; total ${(now - stageStarted).toFixed(0)}ms\n`,
+  );
+  phaseStarted = now;
+};
 const { firefox } = await loadPlaywright();
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
@@ -348,6 +357,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 480 } });
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
+  logPhase('server and browser startup');
   await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);
   try {
     await page.waitForFunction(() => Boolean(globalThis.scrollFixture));
@@ -1181,6 +1191,7 @@ try {
     cursor.visible && Math.abs(cursor.tip.x - cursor.cursorX) <= 0.5 && Math.abs(cursor.tip.y - cursor.cursorY) <= 0.5,
     `the drawn cursor sits at the menu cursor position: ${JSON.stringify(cursor)}`,
   );
+  logPhase('render-free scroll contracts');
   if (engine === 'chromium') {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.addInitScript(() => {
@@ -1199,8 +1210,9 @@ try {
     await page.goto(
       browserStageUrl(
         'inventory-scroll',
-        // A compact scene keeps world streaming outside the inventory pixel/fit readiness budget.
-        `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=testHouse&radius=32&post=0&sunshadow=0&torchshadow=0`,
+        `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=testHouse&radius=32`,
+        // Only the isolated item still needs WebGL, not the world or attachment handling.
+        'render-free',
       ),
     );
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
@@ -1216,6 +1228,7 @@ try {
       null,
       { timeout: 20_000 },
     );
+    logPhase('render-free live game readiness');
     const clickThroughMenuCursor = async (selector) => {
       const targetLocator = typeof selector === 'string' ? page.locator(selector) : selector;
       const bounds = await targetLocator.boundingBox();
@@ -1280,6 +1293,36 @@ try {
       { timeout: 10_000 },
     );
     await clickThroughMenuCursor(`#inventory [data-uid="${rifleUid}"]`);
+    logPhase('spawn and inventory handling');
+    await page.evaluate(async (uid) => {
+      // biome-ignore lint/correctness/noUnresolvedImports: served by Vite inside the browser
+      const { ItemPictures } = await import('/src/render/itemPictures.ts');
+      // biome-ignore lint/correctness/noUnresolvedImports: served by Vite inside the browser
+      const { ModelLibrary } = await import('/src/render/models.ts');
+      // biome-ignore lint/correctness/noUnresolvedImports: served by Vite inside the browser
+      const { itemLook } = await import('/src/render/itemLook.ts');
+      const { session, screen } = globalThis.foregripFitTest;
+      if (screen.hooks.pictures) {
+        throw new Error('Live handling must remain render-free');
+      }
+      const { registry } = session.inventory;
+      const look = itemLook(registry, session.inventory.itemByUid(uid));
+      if (!look) {
+        throw new Error('Pixel fixture needs a declared model');
+      }
+      const ids = new Set([look.model, ...look.slots.map((slot) => slot.model).filter(Boolean)]);
+      const models = new ModelLibrary(
+        { ...registry, models: new Map([...registry.models].filter(([id]) => ids.has(id))) },
+        (message) => {
+          throw new Error(message);
+        },
+      );
+      screen.hooks.pictures = new ItemPictures(registry, models, 1);
+    }, rifleUid);
+    await page.waitForFunction((uid) => {
+      globalThis.foregripFitTest.screen.update();
+      return Boolean(document.querySelector(`#inventory [data-uid="${uid}"] .inv-item-picture`));
+    }, rifleUid);
     const tilePicture = page.locator(`#inventory [data-uid="${rifleUid}"] .inv-item-picture`);
     await tilePicture.waitFor({ state: 'visible' });
     const picturePixels = await tilePicture.evaluate(async (image) => {
@@ -1305,6 +1348,13 @@ try {
       'tile still contains model pixels on transparency',
     );
     assert.ok(picturePixels.colors > 1, 'reference-lit model has surface detail rather than a flat placeholder');
+    await page.evaluate(() => {
+      const { screen } = globalThis.foregripFitTest;
+      screen.hooks.pictures.dispose();
+      screen.hooks.pictures = undefined;
+      screen.update();
+    });
+    logPhase('isolated item picture pixels');
     const fitButtons = page.locator('#inventory .inv-details button.inv-option').filter({ hasText: /Fit .*foregrip/i });
     assert.ok((await fitButtons.count()) > 0, 'held AR offers the pocketed foregrip as a fit action');
     const fitButton = fitButtons.first();
@@ -1385,6 +1435,7 @@ try {
     assert.deepEqual(fitSettled.gripLocation, { kind: 'slot', ownerUid: rifleUid, slot: slotId });
     assert.deepEqual(errors.slice(pageErrorsBeforeFit), [], 'fitting does not raise a page error');
 
+    logPhase('render-free attachment fit');
     const removeButton = page.locator(`#inventory [data-attachment-slot="${slotId}"] button.inv-option`).filter({
       hasText: /^Remove\b/,
     });
@@ -1433,6 +1484,7 @@ try {
     assert.equal(removalSettled.queueJobs, 0, 'simulation frames finish the removal handling job');
     assert.equal(removalSettled.attachedUid, undefined, 'the production removal control empties the clicked slot');
     assert.deepEqual(errors.slice(pageErrorsBeforeRemove), [], 'removal does not raise a page error');
+    logPhase('render-free attachment removal');
     process.stdout.write(
       `${engine}: live held-AR pocketed-foregrip fit/removal via locked menu click ${JSON.stringify({ fitSettled, removalSettled })}\n`,
     );

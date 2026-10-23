@@ -100,6 +100,10 @@ Render-free play keeps text tiles rather than creating a second rendering path.
 See `src/render/itemPictures.ts`, `ItemPictures`, and `src/render/playView.ts`,
 `createPlayView`.
 
+Keep browser pixel proof isolated from world rendering: a still needs a model,
+not a continuously drawn world. This preserves graphics budget for the assertion
+rather than unrelated gameplay frames; see `test/browser/inventory-scroll.mjs`.
+
 Use neutral reference lighting so recognition remains stable in darkness and
 pictures can be reused without following world-light changes. The picture is an
 abstract reference, not a claim that the object is illuminated in the world. It
