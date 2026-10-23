@@ -1184,7 +1184,7 @@ const LightSchema = strictObject({
   radius: Positive,
   /** Metres from which others can see it (`DESIGN.md`, "Light"). */
   seenFrom: Positive,
-  /** Point-light colour and candela; both are presentation-owned content. */
+  /** Point-light colour, and intensity in the light units the renderer draws and the simulation measures. */
   color: Color,
   intensity: Positive,
   /** Material glow for sources that remain visible when outside the point-light pool. */
@@ -3644,6 +3644,11 @@ const SenseSchema = strictObject({
      * has no flame to shine from, high enough that the near-field falloff reaches nearby surfaces.
      */
     groundLight: strictObject({ senseHeightMetres: Positive, renderLiftMetres: Positive }),
+    /**
+     * Light at a point, in the renderer's light units (`DESIGN.md`, "Light"): the distance decay every point light
+     * is drawn and measured with, and the least light a page or sign needs to be read.
+     */
+    illumination: strictObject({ pointDecay: NonNegative, readingThreshold: Positive }),
   }),
 });
 /** Counts are whole items, never millilitres; no partial-liquid storage contract exists yet. */
