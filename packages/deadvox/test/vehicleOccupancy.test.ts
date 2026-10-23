@@ -3,15 +3,15 @@ import { BlockEntities } from '../src/core/blockEntities.ts';
 import { worldSolid } from '../src/core/collision.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { type FurnitureMover, placement } from '../src/core/furnitureMove.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { settleCell } from '../src/core/itemThrow.ts';
 import { bodyOverlapsTerrain } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { type BrickOut, brickHas, worldBricks } from '../src/core/solidBricks.ts';
 import { spawnOverlappingSolidBlock } from '../src/core/spawnClearance.ts';
-import { projectVehicleParts, VehicleOccupancy } from '../src/core/vehicleProjection.ts';
+import { projectVehicleParts } from '../src/core/vehicleProjection.ts';
 import { World } from '../src/core/world.ts';
+import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { createPlayerBody } from './playerFixture.ts';
 
@@ -84,18 +84,61 @@ it('updates physical cells, bricks, navigation clearance and landing after an oc
   expect(settleCell(cell, scale.blockSize, -10, solid)).toEqual(cell);
 });
 
-it('refuses furniture placement in an occupied fitting and permits it after the fitting is removed', () => {
-  const inventory = new Inventory(registry);
+it('wires vehicle occupancy into session furniture placement and landing', () => {
+  const world = new World();
+  const floor = registry.blockIds.get('planks')!;
+  for (let x = -8; x <= 8; x += 1) {
+    for (let z = -8; z <= 8; z += 1) {
+      world.setBlock(x, 0, z, floor);
+    }
+  }
+  const session = createSession({
+    registry,
+    world,
+    isSolid: (_x, y, _z) => y === 0,
+    isOpaque: () => false,
+    scale,
+    seed: 73,
+    start: 43_200,
+    spawn: [-20, 1, -20],
+    ready: () => true,
+    controls: {
+      active: () => true,
+      intent: () => IDLE,
+      yaw: () => 0,
+      pitch: () => 0,
+      walking: () => false,
+      descending: () => false,
+    },
+    audio: { play: () => undefined },
+    notice: () => undefined,
+    onRead: () => undefined,
+  });
+  const { inventory } = session;
   const id = inventory.registerVehicle({
     blueprint: 'hatchback',
-    placementKey: 'vehicle-placement',
+    placementKey: 'session-vehicle-placement',
     origin: [0, 0, 0],
     facing: 'n',
   });
   const vehicle = inventory.vehicles.get(id)!;
-  const cell = projectVehicleParts(registry, id, vehicle, scale.blockSize).flatMap((part) =>
-    part.boxes.flatMap(cellsOf),
-  )[0]!;
+  const parts = projectVehicleParts(registry, id, vehicle, scale.blockSize);
+  const occupancy = new Map<string, number>();
+  for (const part of parts) {
+    for (const box of part.boxes) {
+      for (const candidate of cellsOf(box)) {
+        const key = candidate.join(',');
+        occupancy.set(key, (occupancy.get(key) ?? 0) + 1);
+      }
+    }
+  }
+  const removed = parts.find((part) =>
+    part.boxes.some((box) => cellsOf(box).some((candidate) => occupancy.get(candidate.join(',')) === 1)),
+  );
+  if (!removed) {
+    throw new Error('Fixture vehicle has no independently occupied fitting cell');
+  }
+  const cell = removed.boxes.flatMap(cellsOf).find((candidate) => occupancy.get(candidate.join(',')) === 1)!;
   const crate = inventory.furnish({
     type: 'crate',
     pos: [-10, 1, -10],
@@ -103,24 +146,18 @@ it('refuses furniture placement in an occupied fitting and permits it after the 
     facing: 'n',
   })!;
   inventory.entities.lift(crate);
-  const occupancy = new VehicleOccupancy(registry, inventory.vehicles, scale.blockSize);
-  const mover: FurnitureMover = {
-    inventory,
-    terrainSolid: (x, y, z) => y < 0 || occupancy.isSolid(x, y, z),
-    blockSize: scale.blockSize,
-    player: { pos: [-20, 1, -20], vel: [0, 0, 0], halfWidth: 0.4, height: 1.8, onGround: true },
-    others: [],
-    stamina: 100,
-  };
+  inventory.canReach = () => true;
   const aimed: Vec3 = [cell[0] + Math.floor(crate.size[0] / 2), cell[1], cell[2] + Math.floor(crate.size[2] / 2)];
 
-  expect(placement(mover, aimed)).toEqual({
+  expect(session.furniturePlacement(aimed)).toEqual({
     refusal: registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.noRoom,
   });
+  expect(inventory.landing(cell)).toBeUndefined();
 
   inventory.vehicles.replace(registry, id, { ...vehicle, fittings: [] });
 
-  expect(placement(mover, aimed)).toEqual({ pos: expect.any(Array) });
+  expect(session.furniturePlacement(aimed)).toEqual({ pos: expect.any(Array) });
+  expect(inventory.landing(cell)).toBeDefined();
 });
 
 it('leaves a player body standing in exported vehicle space with no collision box', () => {
