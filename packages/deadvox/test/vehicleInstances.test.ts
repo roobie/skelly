@@ -91,6 +91,17 @@ describe('production vehicle ownership', () => {
     expect(inventory.vehicles.snapshotState()).toEqual(before.world.vehicles);
   });
 
+  it('rejects an invalid replacement without making the session unsavable', async () => {
+    const { runtime, inventory, id } = fixture();
+    const before = inventory.vehicles.snapshotState();
+    const replacement = structuredClone(inventory.vehicles.get(id)!);
+    replacement.origin[0] = Number.NaN;
+
+    expect(() => inventory.vehicles.replace(registry, id, replacement)).toThrow('Invalid vehicle identity or pose');
+    expect(inventory.vehicles.snapshotState()).toEqual(before);
+    await expect(encodeFixture(capture(runtime))).resolves.toBeInstanceOf(Uint8Array);
+  });
+
   it('rejects cross-owner duplicate UIDs before restoring any live owners', async () => {
     const { runtime } = fixture();
     const invalid = structuredClone(capture(runtime));

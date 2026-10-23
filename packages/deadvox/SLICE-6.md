@@ -170,11 +170,12 @@ Bullet interaction uses the combat material rules, not an inference from movemen
 blocking. Gas sealing is a separate question.
 
 Fitted parts and their poses own both appearance and obstruction. Keep parked
-world collision and picking derived, not hand-authored per wreck. See
-`src/vehicles/solid.ts`, `solidBlocks`, and `src/core/blockEntities.ts`,
-`BlockEntities.hasPartAt`. The filled-column approximation is not an enterable-cabin
-or transparent-window model. Extend the consumers without treating that approximation
-as the cabin's authoritative empty space.
+world collision and picking derived, not hand-authored per wreck. The shared pose and
+part boxes are projected by `src/core/vehicleProjection.ts`, `projectVehicleParts`,
+and presentation groups each instance through `src/render/vehicles.ts`,
+`VehicleMeshes`. The filled-column approximation is not an enterable-cabin or
+transparent-window model. Extend the consumers without treating that approximation as
+the cabin's authoritative empty space.
 
 A moving body needs swept collision and a defined handoff to parked occupancy.
 Both representations derive from the same build and pose; neither may leave stale
