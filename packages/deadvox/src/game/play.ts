@@ -711,27 +711,10 @@ export const startPlay = (
   const pendingPlayerTickActions = new PlayerTickActions();
   let interactionPressTarget: InteractionTarget | undefined;
   const furnitureActionSelection = new FurnitureActionSelection();
-  const furnitureUseLabel = (entity: BlockEntity): string | undefined => {
-    const def = entities.defOf(entity);
-    if (def.door) {
-      return entity.open ? 'Close' : 'Open';
-    }
-    if (def.climbable) {
-      return 'Climb';
-    }
-    if (def.readable) {
-      return 'Read';
-    }
-    const restKind = restKindForFurniture(def);
-    if (restKind) {
-      return { sleep: 'Sleep', rest: 'Rest' }[restKind];
-    }
-    return entity.pockets ? 'Search' : undefined;
-  };
-  const furnitureActions = (entity: BlockEntity): ItemAction[] => {
-    const use = furnitureUseLabel(entity);
-    return [...(use ? [{ id: 'use', label: use }] : []), { id: 'push', label: 'Push' }, { id: 'drag', label: 'Drag' }];
-  };
+  const furnitureActions = (): ItemAction[] => [
+    { id: 'push', label: 'Push' },
+    { id: 'drag', label: 'Drag' },
+  ];
   let audio: GameAudio;
   const playSessionSound = (sound: Readonly<SoundEmission>): void =>
     audio.play(sound, sound.position.map((v) => v * s) as Vec3);
@@ -1897,9 +1880,9 @@ export const startPlay = (
     },
     pickup: pickupGroundItem,
     interact: interactFurniture,
-    lift: (uid) => {
+    lift: (uid, floorLocked) => {
       const entity = entities.byUid(uid);
-      return entity?.bar ? enqueueDoorBar(entity, false) : session.liftFurniture(uid);
+      return entity?.bar ? enqueueDoorBar(entity, false) : session.liftFurniture(uid, floorLocked);
     },
     useFurniture: (uid): string | undefined => {
       const entity = entities.byUid(uid);
@@ -2463,7 +2446,7 @@ export const startPlay = (
     return (
       target?.kind === 'furniture' &&
       furnitureActionSelection.isOpen(target.entity) &&
-      furnitureActionSelection.step(target.entity, furnitureActions(target.entity), Math.sign(deltaY))
+      furnitureActionSelection.step(target.entity, furnitureActions(), Math.sign(deltaY))
     );
   };
   const cycleWieldedAction = (deltaY: number): boolean => {
@@ -2614,10 +2597,13 @@ export const startPlay = (
       return { kind: 'power.set', entityUid: entity.uid, enabled: !control.enabled };
     }
     if (slidableFurniture(inventory, entity, s) && furnitureActionSelection.isOpen(entity)) {
-      const selected = furnitureActionSelection.confirm(entity, furnitureActions(entity))!;
-      return selected.id === 'use'
-        ? { kind: 'furniture.use', entityUid: entity.uid }
-        : { kind: 'furniture.slide', entityUid: entity.uid, way: selected.id === 'push' ? 'push' : 'drag' };
+      const selected = furnitureActionSelection.confirm(entity, furnitureActions())!;
+      return selected.id === 'drag'
+        ? { kind: 'furniture.lift', entityUid: entity.uid, floorLocked: true }
+        : { kind: 'furniture.slide', entityUid: entity.uid, way: 'push' };
+    }
+    if (mode === 'wield' && slidableFurniture(inventory, entity, s)) {
+      return { kind: 'furniture.interact', entityUid: entity.uid, alternatives: true };
     }
     return mode === 'wield' && liftable(entity)
       ? { kind: 'furniture.lift', entityUid: entity.uid }
@@ -2665,7 +2651,7 @@ export const startPlay = (
     return mode === 'wield' ? toHands(inventory, queue, item, feetPosition) : pocketGroundItem(inventory, queue, item);
   }
 
-  function interactFurniture(uid: number): string | undefined {
+  function interactFurniture(uid: number, alternatives?: true): string | undefined {
     const entity = entities.byUid(uid);
     if (!entity) {
       return 'The target is no longer available';
@@ -2676,8 +2662,8 @@ export const startPlay = (
     if (compression.locksInput && rest.action?.furnitureUid !== entity.uid) {
       return undefined;
     }
-    if (slidableFurniture(inventory, entity, s)) {
-      furnitureActionSelection.open(entity, furnitureActions(entity));
+    if (alternatives && slidableFurniture(inventory, entity, s)) {
+      furnitureActionSelection.open(entity, furnitureActions());
     } else {
       useTarget(entity);
     }
@@ -3270,6 +3256,10 @@ export const startPlay = (
     const entity = entities.carrying();
     return entity && { entity, spot: session.furniturePlacement(aimedCell()) };
   };
+  const carryFloorPlacement = (): Readonly<Vec3> | undefined => {
+    const carry = carryPreview();
+    return carry && 'pos' in carry.spot ? carry.spot.pos : undefined;
+  };
   /** Outlines the crosshair target, or, while carrying, where the piece would be set down. */
   const markOutline = (
     target: InteractionTarget | undefined,
@@ -3292,22 +3282,18 @@ export const startPlay = (
   };
   const furnitureInteractionHint = (entity: BlockEntity): HintText => {
     const key = keyCap('world.interact');
-    const selected =
-      slidableFurniture(inventory, entity, s) && furnitureActionSelection.isOpen(entity)
-        ? furnitureActionSelection.forItem(entity, furnitureActions(entity))
-        : undefined;
-    const actionHint = slidableFurniture(inventory, entity, s)
-      ? html`${key}: ${selected?.label ?? 'Actions'} ${nameOf(entity)}`
-      : useText(entity);
+    if (furnitureActionSelection.isOpen(entity)) {
+      return html`${key}: ${furnitureActionSelection.forItem(entity, furnitureActions())?.label} ${nameOf(entity)}`;
+    }
     if (entity.bar) {
       const lift = doorPlan(inventory, entity, 'unbar');
       const action = lift.ok
         ? screenText.interaction.liftBar
         : fillText(screenText.interaction.blocked, { action: screenText.interaction.liftBar, reason: lift.reason });
-      return html`${actionHint} · ${fillHint(screenText.interaction.hold, { key, action })}`;
+      return html`${useText(entity)} · ${fillHint(screenText.interaction.hold, { key, action })}`;
     }
     if (slidableFurniture(inventory, entity, s)) {
-      return actionHint;
+      return html`${useText(entity)} · ${key} (hold): actions`;
     }
     return liftable(entity) ? html`${useText(entity)} · ${key} (hold): lift` : useText(entity);
   };
@@ -3351,9 +3337,9 @@ export const startPlay = (
       target?.kind === 'furniture' && furnitureActionSelection.isOpen(target.entity)
         ? [
             `${nameOf(target.entity)}:`,
-            ...furnitureActions(target.entity).map(
+            ...furnitureActions().map(
               (action) =>
-                `${action.id === furnitureActionSelection.forItem(target.entity, furnitureActions(target.entity))?.id ? '›' : ' '} ${action.label}`,
+                `${action.id === furnitureActionSelection.forItem(target.entity, furnitureActions())?.id ? '›' : ' '} ${action.label}`,
             ),
           ].join('\n')
         : undefined;
@@ -3516,6 +3502,7 @@ export const startPlay = (
     const pose = renderMeleePose(action, elapsed, ready, dominantSide(inventory.character));
     const { job: handlingJob, progress: grabProgress } = handlingPresentation();
     view.updateHeld(dt, pose, spectator.enabled ? undefined : survival.lit, {
+      floorPlacement: carryFloorPlacement(),
       firearms: firearms.frames(),
       opticZoom: opticZoom.frame(zoomFirearm(), isAimingDownSights()),
       ...(readiness === undefined ? {} : { readiness }),
