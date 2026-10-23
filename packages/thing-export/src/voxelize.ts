@@ -337,37 +337,44 @@ const bodiesOf = (grid: Grid): Set<number>[] => {
 };
 
 /**
- * The shortest walk from the joined cells, through cells the sources meet, to a grid cell outside them: each cell's
- * step back towards the joined cells, and the cell it ends on. Undefined when no walk reaches one.
+ * Cells by their distance from the joined cells, popped nearest first. A cell may be pushed again when a shorter walk
+ * reaches it; the entry at its old distance is then stale and skipped.
  */
-const walkOut = (
-  grid: Grid,
-  reach: Grid,
-  joined: ReadonlySet<number>,
-): { readonly from: ReadonlyMap<number, number>; readonly end: number } | undefined => {
-  const from = new Map<number, number>([...joined].map((key) => [key, key]));
-  const open = (cell: number): boolean => !from.has(cell) && (reach.has(cell) || grid.has(cell));
-  let frontier = [...joined];
-  while (frontier.length > 0) {
-    const next: number[] = [];
-    for (const key of frontier) {
-      for (const cell of NEIGHBOURS.map((step) => key + step).filter(open)) {
-        from.set(cell, key);
-        if (grid.has(cell)) {
-          return { from, end: cell };
+const walkQueue = () => {
+  const distance = new Map<number, number>();
+  const buckets: number[][] = [];
+  let lowest = 0;
+  return {
+    distance,
+    push: (cell: number, steps: number): void => {
+      distance.set(cell, steps);
+      const bucket = buckets[steps] ?? [];
+      buckets[steps] = bucket;
+      bucket.push(cell);
+      lowest = Math.min(lowest, steps);
+    },
+    pop: (): number | undefined => {
+      while (lowest < buckets.length) {
+        const cell = buckets[lowest]?.pop();
+        if (cell === undefined) {
+          lowest += 1;
+        } else if (distance.get(cell) === lowest) {
+          return cell;
         }
-        next.push(cell);
       }
-    }
-    frontier = next;
-  }
-  return undefined;
+      return undefined;
+    },
+  };
 };
 
 /**
- * Joins the grid's bodies that the sources connect, to each other and to the neighbours' voxels in `anchor`: each pass
- * walks out from what is joined through cells the sources meet, and the shortest walk that reaches another body is
- * filled. When no walk reaches one, the largest body left starts a new joined set. Sources that do not meet stay apart.
+ * Joins the grid's bodies that the sources connect, to each other and to the neighbours' voxels in `anchor`: the
+ * joined cells walk out through cells the sources meet, and the shortest walk that reaches another body is filled,
+ * which joins that body. When no walk reaches one, the largest body left joins. Sources that do not meet stay apart.
+ *
+ * One search serves every join: a cell that joins enters at distance zero and the search carries on from the shortest
+ * walks left, so a part that samples into many bodies, like a thin turned wall whose slanted flats fall apart into
+ * single voxels, costs about one pass over the cells instead of one pass per body.
  */
 const bridge = (grid: Grid, reach: Grid, anchor: Grid): void => {
   const bodies = bodiesOf(grid);
@@ -377,25 +384,64 @@ const bridge = (grid: Grid, reach: Grid, anchor: Grid): void => {
       bodyOf.set(key, index);
     }
   });
-  const joined = new Set(anchor.keys());
+  const queue = walkQueue();
+  const { distance } = queue;
+  const from = new Map<number, number>();
+  /** Walks one step out from `cell` through cells the sources meet; the first cell of a body beside it, if any. */
+  const stepOut = (cell: number): number | undefined => {
+    const steps = distance.get(cell)! + 1;
+    let end: number | undefined;
+    for (const step of NEIGHBOURS) {
+      const next = cell + step;
+      if (distance.get(next) === 0) {
+        continue;
+      }
+      if (grid.has(next)) {
+        end ??= next;
+      } else if (reach.has(next) && (distance.get(next) ?? Number.POSITIVE_INFINITY) > steps) {
+        from.set(next, cell);
+        queue.push(next, steps);
+      }
+    }
+    return end;
+  };
+  /**
+   * Fills the walk back from `cell` to the joined cells. The walk's cells join, and `cell` itself walks out again for
+   * any other body beside it.
+   */
+  const fillWalk = (cell: number): void => {
+    const walk = [cell];
+    while (distance.get(walk.at(-1)!) !== 0) {
+      walk.push(from.get(walk.at(-1)!)!);
+    }
+    for (const filled of walk.slice(0, -1)) {
+      grid.set(filled, reach.get(filled)!);
+    }
+    for (const joined of walk) {
+      queue.push(joined, 0);
+    }
+  };
   const merged = new Set<number>();
   const join = (index: number): void => {
     merged.add(index);
     for (const key of bodies[index]!) {
-      joined.add(key);
+      queue.push(key, 0);
     }
   };
+  for (const key of anchor.keys()) {
+    queue.push(key, 0);
+  }
   while (merged.size < bodies.length) {
-    const walk = walkOut(grid, reach, joined);
-    if (walk === undefined) {
+    const cell = queue.pop();
+    if (cell === undefined) {
       join(bodies.findIndex((_, index) => !merged.has(index)));
       continue;
     }
-    for (let cell = walk.from.get(walk.end)!; !joined.has(cell); cell = walk.from.get(cell)!) {
-      grid.set(cell, reach.get(cell)!);
-      joined.add(cell);
+    const end = stepOut(cell);
+    if (end !== undefined) {
+      fillWalk(cell);
+      join(bodyOf.get(end)!);
     }
-    join(bodyOf.get(walk.end)!);
   }
 };
 
