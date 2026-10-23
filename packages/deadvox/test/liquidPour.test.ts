@@ -108,7 +108,7 @@ describe('progressive explicit pouring', () => {
     const spareBefore = structuredClone(spare.liquidContents);
     const locations = [inventory.locate(source), inventory.locate(receiver)];
     const total = volume(source) + volume(receiver);
-    expect(survival.pour(source.uid, receiver.uid)).toBeUndefined();
+    expect(held ? survival.use(source) : survival.pour(source.uid, receiver.uid)).toBeUndefined();
     increment(queue);
     expect(volume(receiver)).toBeGreaterThan(0);
     expect(volume(source)).toBeGreaterThan(0);

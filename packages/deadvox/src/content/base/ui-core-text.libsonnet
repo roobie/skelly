@@ -133,6 +133,8 @@
     batteryIn: 'Put a battery in the {item}',
     batteryOut: 'Take the battery out',
     pour: 'Pour',
+    reservoir: 'Reservoir: {volume} / {capacity} ml',
+    pourInto: 'Pour into {item}',
     cartridgeIn: 'Put {fuel} in the {item}',
     switchOn: 'Switch on',
     switchOff: 'Switch off',

@@ -142,6 +142,8 @@ export const CORE_LABEL_SLOTS = {
   batteryIn: ['item'],
   batteryOut: [],
   pour: [],
+  reservoir: ['volume', 'capacity'],
+  pourInto: ['item'],
   cartridgeIn: ['fuel', 'item'],
   switchOn: [],
   switchOff: [],

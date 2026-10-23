@@ -28,6 +28,7 @@ import {
   batterySlotOption,
   batterySlotRefusal,
   consumption,
+  pourRefusal,
   stowTarget,
   useOption,
 } from '../core/options.ts';
@@ -212,21 +213,7 @@ export class Survival {
     if (this.sim.body.actionRefusal) {
       return this.sim.body.actionRefusal;
     }
-    const source = this.inventory.itemByUid(sourceUid);
-    const receiver = this.inventory.itemByUid(receiverUid);
-    const to = receiver && this.inventory.locate(receiver);
-    const reachable = receiver && this.hooks.reach().entries.some((entry) => entry.item === receiver);
-    if (
-      !source ||
-      this.handOf(source) === undefined ||
-      !defOf(this.inventory.registry, source.type).vessel?.pour ||
-      !reachable ||
-      !(to?.kind === 'hand' || to?.kind === 'pile' || to?.kind === 'furniture') ||
-      !this.inventory.planLiquidTransfer(sourceUid, receiverUid).ok
-    ) {
-      return coreMessage(this.inventory.registry, 'liquidTransferRefused');
-    }
-    return undefined;
+    return pourRefusal(this.hooks.reach(), sourceUid, receiverUid);
   }
 
   pour(sourceUid: number, receiverUid: number): string | undefined {
@@ -390,6 +377,8 @@ export class Survival {
       case 'consume':
         this.queue.enqueueAction('survival.consume', option.label, option.plan.time, { itemUid: item.uid });
         return undefined;
+      case 'pour':
+        return this.pour(item.uid, option.receiver!.uid);
       case 'battery':
         return this.enqueueBattery(option);
       case 'canister':
