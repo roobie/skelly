@@ -68,7 +68,7 @@ import { pryPlan } from '../core/prying.ts';
 import { Rng } from '../core/random.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
 import { bindReach, pileDistance as distanceToPile, furnitureDistance, reachTuning } from '../core/reach.ts';
-import type { Readable } from '../core/readable.ts';
+import type { ReadRequest } from '../core/readable.ts';
 import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../core/saveState.ts';
 import type { Scale } from '../core/scale.ts';
 import { nearDiscoveryBox, type ScenarioDiscovery } from '../core/scenarioDiscovery.ts';
@@ -357,8 +357,8 @@ export interface SessionOptions {
   notice: (text: string) => void;
   /** Presentation cue for an action the handling queue refused. */
   refusal?: ((text: string) => void) | undefined;
-  /** Authored text selected by a live domain command; presentation owns its view. */
-  onRead: (readable: Readonly<Readable>, bookUid?: number, itemType?: string) => void;
+  /** A held paper request selected by a live domain command; presentation owns its view. */
+  onRead: (request: ReadRequest) => void;
   /** Observational hook for actual handling completion/failure outcomes. */
   onHandlingOutcomes?: (result: TickResult) => void;
   onConsumed?: ((type: string) => void) | undefined;
@@ -2198,7 +2198,7 @@ export const createSession = (options: SessionOptions) => {
       if (options.discovery?.clues.some((at) => at.every((value, axis) => value === entity.pos[axis]))) {
         scenarioRun?.discover('clueRead', sim.calendar);
       }
-      options.onRead(readable);
+      options.onRead({ kind: 'text', readable });
       return undefined;
     },
     searching: (entity: BlockEntity): boolean => searching.has(entity),

@@ -5,7 +5,7 @@ import { pickInteractionTarget } from '../src/core/interactionPick.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { useOption } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
-import { READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT, type Readable } from '../src/core/readable.ts';
+import { READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT, type ReadRequest, type Readable } from '../src/core/readable.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { startupContent } from './baseRegistry.ts';
@@ -91,7 +91,7 @@ describe('authored readable text', () => {
     const reach = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK });
     const sim = new Simulation({ seed: 1 });
     const queue = new HandlingQueue(inventory);
-    const shown: Readonly<Readable>[] = [];
+    const shown: ReadRequest[] = [];
     const owner = new Survival(sim, inventory, queue, {
       reach,
       feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
@@ -112,17 +112,42 @@ describe('authored readable text', () => {
     });
     const before = { time: sim.time, count: note.count, version: inventory.version };
     expect(owner.use(note)).toBeUndefined();
-    expect(shown).toEqual([readable]);
+    expect(shown).toEqual([{ kind: 'text', readable, itemType: 'note' }]);
     expect({ time: sim.time, count: note.count, version: inventory.version }).toEqual(before);
     expect(queue.jobs).toHaveLength(0);
     inventory.move(note, { kind: 'pile', pos: [0, 0, 0] });
     expect(owner.use(note)).toBe(notHeld);
     expect(shown).toHaveLength(1);
   });
+  it('requests a held regional map by its instance owner and coverage', () => {
+    const inventory = new Inventory(BUNDLED_CONTENT.registry);
+    const reach = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK });
+    const shown: ReadRequest[] = [];
+    const map = inventory.createRolled({ type: 'regional_map', count: 1, condition: 1, paperMap: { x: -1, z: 2 } });
+    expect(inventory.add(map, { kind: 'hand', side: 'right' })).toBe(true);
+    const owner = new Survival(new Simulation({ seed: 1 }), inventory, new HandlingQueue(inventory), {
+      reach,
+      feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
+      notice: () => undefined,
+      read: (request) => shown.push(request),
+    });
+
+    expect(owner.use(map)).toBeUndefined();
+    expect(shown).toEqual([
+      {
+        kind: 'paperMap',
+        ownerUid: map.uid,
+        coverage: { x: -1, z: 2 },
+        title: BUNDLED_CONTENT.registry.items.get('regional_map')!.name,
+        itemType: 'regional_map',
+      },
+    ]);
+  });
+
   it('picks a wall-face plaque for reading and admits only its live in-reach owner', () => {
     const { registry, issues } = admit(readable);
     expect(issues).toEqual([]);
-    const shown: Readonly<Readable>[] = [];
+    const shown: ReadRequest[] = [];
     const session = createSession({
       registry: {
         ...registry,
@@ -176,7 +201,7 @@ describe('authored readable text', () => {
     const goneReason = session.readFurniture({ ...sign });
     expect(goneReason).toBeTruthy();
     expect(session.readFurniture(target.entity)).toBeUndefined();
-    expect(shown).toEqual([readable]);
+    expect(shown).toEqual([{ kind: 'text', readable }]);
     expect({
       time: session.sim.time,
       version: session.inventory.version,

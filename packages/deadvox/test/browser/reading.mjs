@@ -1017,12 +1017,15 @@ try {
     await page.evaluate(
       (end) =>
         globalThis.readingWitness.reading.open({
-          title: 'T'.repeat(120),
-          text:
+          kind: 'text',
+          readable: {
+            title: 'T'.repeat(120),
+            text:
             ('long'.repeat(1000) + '\n\nPaper paragraph & literal entity &copy;.\n\n'.repeat(400)).slice(
               0,
               12_000 - end.length,
             ) + end,
+          },
         }),
       marker,
     );
@@ -1093,15 +1096,64 @@ try {
     assert.equal(endVisible, true);
     await uiClick(page.getByRole('button', { name: 'Put away reading' }));
     assert.equal(await page.locator('#reading').isVisible(), false);
+    await page.evaluate(() => {
+      const { session } = globalThis.readingWitness;
+      const map = session.inventory.createRolled({
+        type: 'regional_map',
+        count: 1,
+        condition: 1,
+        paperMap: { x: -1, z: 2 },
+      });
+      if (!session.inventory.add(map, { kind: 'hand', side: 'right' })) {
+        throw new Error('Could not place pending map owner in hand');
+      }
+      let resolve;
+      const pending = new Promise((done) => {
+        resolve = done;
+      });
+      Object.assign(globalThis, { resolvePendingMap: resolve, pendingMapOwner: map.uid });
+      globalThis.readingWitness.reading.open(
+        { kind: 'paperMap', ownerUid: map.uid, coverage: { x: -1, z: 2 }, title: 'Map A', itemType: 'regional_map' },
+        pending,
+      );
+    });
+    assert.equal(await page.locator('.reading-map[data-coverage="-1,2"]').count(), 1);
+    assert.equal(await page.locator('.reading-map').getAttribute('aria-busy'), 'true');
+    await page.evaluate(() => globalThis.readingWitness.reading.revalidate(() => false));
+    assert.equal(await page.locator('#reading').isVisible(), false, 'losing the held map closes a pending surface');
+    await page.evaluate(() => globalThis.resolvePendingMap());
+    assert.equal(await page.locator('#reading').isVisible(), false, 'a late map completion cannot reopen its owner');
+    await page.evaluate(() => {
+      let resolve;
+      const pending = new Promise((done) => {
+        resolve = done;
+      });
+      Object.assign(globalThis, { resolveReplacedMap: resolve });
+      globalThis.readingWitness.reading.open(
+        {
+          kind: 'paperMap',
+          ownerUid: globalThis.pendingMapOwner,
+          coverage: { x: 4, z: -3 },
+          title: 'Map B',
+          itemType: 'regional_map',
+        },
+        pending,
+      );
+    });
+    assert.equal(await page.locator('.reading-map[data-coverage="4,-3"]').count(), 1);
+    await page.evaluate(() => globalThis.resolveReplacedMap());
+    await page.waitForFunction(() => document.querySelector('.reading-map')?.getAttribute('aria-busy') === 'false');
+    assert.equal(await page.locator('.reading-map').getAttribute('data-coverage'), '4,-3');
+    await pressAction(page, 'reading.close');
     await page.evaluate(() =>
-      globalThis.readingWitness.reading.open({ title: 'Main menu close', text: 'Placeholder' }),
+      globalThis.readingWitness.reading.open({ kind: 'text', readable: { title: 'Main menu close', text: 'Placeholder' } }),
     );
     await pressAction(page, 'ui.main-menu-toggle');
     assert.equal(await page.locator('#reading').isVisible(), false);
     assert.equal(await page.locator('#overlay').isVisible(), true);
     await pressAction(page, 'ui.main-menu-toggle');
     await page.waitForFunction(() => globalThis.readingWitness.input.locked);
-    await page.evaluate(() => globalThis.readingWitness.reading.open({ title: 'Pointer loss', text: 'Placeholder' }));
+    await page.evaluate(() => globalThis.readingWitness.reading.open({ kind: 'text', readable: { title: 'Pointer loss', text: 'Placeholder' } }));
     await page.evaluate(() => document.exitPointerLock());
     await page.waitForFunction(
       () => !(globalThis.readingWitness.input.locked || globalThis.readingWitness.reading.isOpen),
@@ -1123,7 +1175,21 @@ try {
     );
     const generationBeforeDeath = await page.evaluate(() => globalThis.readingWitness.saveController.savedGeneration);
     await page.evaluate(() => {
-      globalThis.readingWitness.reading.open({ title: 'Death closes paper', text: 'Placeholder' });
+      let resolve;
+      const pending = new Promise((done) => {
+        resolve = done;
+      });
+      Object.assign(globalThis, { resolveWorldReplacedMap: resolve });
+      globalThis.readingWitness.reading.open(
+        {
+          kind: 'paperMap',
+          ownerUid: globalThis.pendingMapOwner,
+          coverage: { x: 4, z: -3 },
+          title: 'Map replaced by death',
+          itemType: 'regional_map',
+        },
+        pending,
+      );
       globalThis.readingWitness.session.sim.hurt(9999, 'reading browser fixture');
     });
     await page.locator('#death').waitFor({ state: 'visible' });
@@ -1191,6 +1257,7 @@ try {
     const playtestUrl = page.url();
     await page.getByRole('button', { name: 'New world', exact: true }).click();
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    assert.equal(await page.locator('#reading').isVisible(), false, 'a replaced world has no old-map reading surface');
     assert.equal(await page.locator('#continue').isVisible(), false);
     await page.goto(playtestUrl, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');

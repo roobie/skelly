@@ -928,10 +928,10 @@ export const startPlay = (
     },
     notice: (text) => showNotice(text),
     refusal: (text) => showRefusal(text, sim.time),
-    onRead: (readable, bookUid, itemType) => {
-      reading.open(readable, bookUid);
-      if (itemType) {
-        playtestObserver?.readItem(itemType, sim.calendar);
+    onRead: (request) => {
+      reading.open(request);
+      if (request.itemType) {
+        playtestObserver?.readItem(request.itemType, sim.calendar);
       }
     },
     onHandlingOutcomes: (result) => playtestObserver?.handlingOutcomes(result),
@@ -3916,6 +3916,7 @@ export const startPlay = (
             },
     });
     screen.update();
+    reading.revalidate((ownerUid) => Object.values(inventory.hands).some((item) => item?.uid === ownerUid));
     syncReadingProgress(reading.bookUid, currentPresentation.longAction, reading.setProgress, isBookComplete);
     craftPanel.update(screen.isOpen && !sim.dead, visible.messages);
     drawQuickbar();
