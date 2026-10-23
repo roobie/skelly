@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change food exposure ownership or ambient catch-up
   - you change the test-house normal or debug-only boundary
   - you change regional paper-map coverage, item ownership or persistence
   - you change held sharpening, blade repair entry points or prepared hand pairs
@@ -346,8 +347,10 @@ should behave as though the player is there. Inside that block, catch-up
 agrees with ordinary ticking within each system's tolerance, because a player
 can compare a short absence with what they saw; once a region leaves the block,
 the coarse model is canonical. See
-[ADR 0008](docs/decisions/0008-deterministic-world.md). Food age derives from its creation time, so unloaded food
-needs no decay pass. Unloaded zombies are represented by regional hordes, which
+[ADR 0008](docs/decisions/0008-deterministic-world.md). Food owns its exposure history so
+storage changes cannot rewrite its past; ambient absence can be projected without
+periodic decay work. See `src/core/food.ts`, `projectFoodExposure`, and
+[food ownership](docs/food.md). Unloaded zombies are represented by regional hordes, which
 become individual actors when the area returns. See [Zombies](#zombies).
 
 ## Simulation architecture

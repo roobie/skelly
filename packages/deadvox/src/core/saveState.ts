@@ -6,6 +6,7 @@ import type { Survival } from '../game/survival.ts';
 import type { AimSnapshotState } from './aim.ts';
 import type { Character, CharacterState } from './character.ts';
 import type { RustleClock } from './foliageRustle.ts';
+import { assertFoodExposure, foodMillisecondsAt } from './food.ts';
 import type { FootstepClock } from './footsteps.ts';
 import type { HandlingQueue, HandlingQueueState } from './handling.ts';
 import type { Inventory, InventoryState } from './inventory.ts';
@@ -114,6 +115,10 @@ export const snapshotSession = ({
   audio,
 }: SnapshotSessionInput): Readonly<SaveSnapshot> => {
   power?.advance(simTimestamp(simulation.time));
+  const foodTimestamp = foodMillisecondsAt(simulation.calendar);
+  for (const { item } of inventory.items()) {
+    assertFoodExposure(inventory.registry, item);
+  }
   const lightUid = survival.snapshotState().litUid ?? null;
   // Check non-owning references at the synchronous snapshot barrier, not only during restore.
   for (const uid of [lightUid, ...quickbar]) {
@@ -126,7 +131,7 @@ export const snapshotSession = ({
       id: worldId,
       ...(power ? { power: power.snapshot() } : {}),
       columns: world.snapshotColumns(blockContentId) as SavedColumn[],
-      vehicles: inventory.vehicles.snapshotState() as VehicleInstancesState,
+      vehicles: inventory.vehicles.snapshotState(foodTimestamp) as VehicleInstancesState,
       zombies: zombies.snapshotState() as ZombieSystemState,
       spawned: [...spawner.snapshotState()],
       rolledColumns: [...rolledColumns],
@@ -138,7 +143,7 @@ export const snapshotSession = ({
       simulation: simulation.snapshotState() as SimulationState,
       player: structuredClone(player),
       aim: structuredClone(aim.snapshotState()) as AimSnapshotState,
-      inventory: inventory.snapshotState() as InventoryState,
+      inventory: inventory.snapshotState(foodTimestamp) as InventoryState,
       longAction: simulation.actions.snapshotState(),
       playerCombat: playerCombat.snapshotState(),
       lightUid,

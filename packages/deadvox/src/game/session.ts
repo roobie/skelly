@@ -1066,7 +1066,7 @@ export const createSession = (options: SessionOptions) => {
       return Boolean(book?.recipes.every((recipe) => character.knownRecipes.has(recipe)));
     },
   });
-  sim.actions.craft = craftActionHooks(inventory, character, reach, feet);
+  sim.actions.craft = craftActionHooks(inventory, character, reach, { feet, calendar: () => sim.calendar });
   sim.actions.reading = bookReadingHooks(inventory, character);
   sim.actions.treatment = playerTreatmentHooks(inventory, sim);
   sim.actions.vehicleWork = vehicleWorkHooks(inventory, {
