@@ -15,6 +15,11 @@ house in `src/content/base/templates-test-house.jsonnet`, `templates`, and the l
 `src/content/base/layouts-test-house.jsonnet`, `layouts`. Derivation of repair stock
 and range supply remains logic, not a second copy of the place.
 
+The charging corner belongs to the same template and layout sources, rather than a
+separate runtime look-piece overlay, so furniture, fixture loot and power share one
+authored placement owner. Site power reads finished authored placements independently
+of streaming; see `src/core/sitePower.ts`, `placedPowerDevices`.
+
 Keep fixture layouts marked as demos so their containers do not contribute world
 loot supply. The demo flag is an economy boundary, not a save policy; see
 `src/core/authoredSite.ts`, `AuthoredSite`.
@@ -27,8 +32,10 @@ addition must explicitly decide whether it belongs in normal mode or only debug 
 and record its reason here. Re-evaluate this choice whenever the house gains something;
 there is no blanket permission based on where an earlier prop was placed.
 
-The ordinary furnishings, reading sample and parked vehicle remain in normal mode:
-they demonstrate ordinary interactions without the derived supply catalogue. Derived
+The ordinary furnishings, reading sample, parked vehicle and charging corner remain in
+normal mode: they demonstrate ordinary interactions without the derived supply catalogue.
+The charging corner offers a working power source and nearby portable equipment so a
+player can try charging without debug inventory edits or travel. Derived
 repair stock and the handling range are debug-only because their purpose is repeatable
 system evaluation. See `src/game/play.ts`, `populateTestHouseRepairCorner`, and
 `src/game/worldSetup.ts`, `DebugTestHouseSite`. The range's owning rule remains in

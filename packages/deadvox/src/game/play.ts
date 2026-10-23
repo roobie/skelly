@@ -822,6 +822,7 @@ export const startPlay = (
     start: config.start,
     spawn: playerStart.position,
     entities: engine.entities,
+    skyBoxes: engine.skyBoxes,
     registerVehicles: (owner) => {
       registerLayoutVehicles(owner, registry, config.site, s);
     },

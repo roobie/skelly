@@ -2056,6 +2056,15 @@ allocating, because a stall on first sight of each look would cost frame rate on
 GPUs (#680). A cabin with no window stays dark. See `src/core/skyTransport.ts`, `buildSkyResult`, `src/render/skylight.ts`, `Skylight`,
 and `src/render/skyAnchor.ts`, `addSkyAnchors` and `addSkyOpeningAnchors`.
 
+Gameplay that reads sky light cannot use the renderer's estimate: that is scheduled by
+camera residency and wall-clock budgets, so two machines, a reload or a different camera
+would read differently (`docs/decisions/0008-deterministic-world.md`). The session
+therefore answers from world state alone, so when an answer is computed never changes it.
+That visibility is derived, so it is not saved: a reload recomputes the same answer from
+restored state. Outside every field the answer is open sky, as `docs/readables.md`,
+"Darkness remains open" requires, so missing data never reads as darkness. See
+`src/core/skyField.ts`, `SkyFields`, and `src/game/session.ts`, `createSession`.
+
 Mesh-first admission protects the first visible geometry without making it wait for
 lighting readiness. A copied sky request may wait outside the pool capacity;
 a mesh completion admits it before the next mesh refill, preventing persistent

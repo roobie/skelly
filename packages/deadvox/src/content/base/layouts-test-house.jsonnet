@@ -5,6 +5,7 @@
     bounds: { x0: -6, z0: -7, x1: 17, z1: 6 },
     ground: 20.5, terrain: [],
     buildings: [
+      { template: 'test_house_charging', position: [-4.5, 20.5, -2.5], rotation: 0 },
       { template: 'test_house_home', position: [4, 20.5, -4.5], rotation: 0 },
       { template: 'test_house_shed', position: [-5, 20.5, -7], rotation: 0 },
       { template: 'test_house_garden_wall', position: [-2, 20.5, 4.5], rotation: 0 },
