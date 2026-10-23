@@ -262,6 +262,57 @@ describe('player figure', () => {
     }
   });
 
+  it('keeps the world body out of a level or upward first-person view in every stance', () => {
+    const body = createPlayerBody(scale, 4, 1, 4);
+    const senses = registry.player.get('player')!;
+    const eyeDrop: Record<PlayerStance, number> = {
+      standing: 0,
+      crouching: senses.crouch.eyeDropMetres,
+      prone: senses.prone.eyeDropMetres,
+    };
+    for (const stance of ['standing', 'crouching', 'prone'] as const) {
+      const meshes = new PlayerMeshes(scale.blockSize, playerFigure);
+      const parts = meshes.group.children as InstancedMesh[];
+      meshes.sync({
+        body,
+        yaw: 0,
+        stepOffset: 0,
+        gaitPhase: 0,
+        moving: false,
+        stance,
+        dt: playerFigure.stancePoses.blendRealSeconds,
+      });
+      meshes.group.updateMatrixWorld(true);
+      for (const pitch of [0, 0.25, 0.5, Math.PI / 3]) {
+        const camera = new PerspectiveCamera(75, 16 / 9, 0.05, 128);
+        camera.rotation.order = 'YXZ';
+        camera.position.set(
+          body.pos[0] * scale.blockSize,
+          body.pos[1] * scale.blockSize + PLAYER.eye - eyeDrop[stance],
+          body.pos[2] * scale.blockSize,
+        );
+        camera.rotation.set(pitch, 0, 0);
+        camera.updateMatrixWorld(true);
+        const frustum = new Frustum().setFromProjectionMatrix(
+          new Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse),
+        );
+        const visible = parts.flatMap((mesh, index) => {
+          if (mesh.count === 0) {
+            return [];
+          }
+          const instance = new Matrix4();
+          mesh.getMatrixAt(0, instance);
+          const worldMatrix = new Matrix4().multiplyMatrices(mesh.matrixWorld, instance);
+          const inView = [-0.5, 0.5]
+            .flatMap((x) => [-0.5, 0.5].flatMap((y) => [-0.5, 0.5].map((z) => new Vector3(x, y, z))))
+            .some((corner) => frustum.containsPoint(corner.applyMatrix4(worldMatrix)));
+          return inView ? [PLAYER_ARM_PARTS[index]] : [];
+        });
+        expect(visible, `${stance} at pitch ${pitch}`).toEqual([]);
+      }
+    }
+  });
+
   it('keeps a foot front-top corner visible past the torso at -60 and -80 degrees', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
     const meshes = new PlayerMeshes(scale.blockSize, playerFigure);
