@@ -26,7 +26,7 @@ const READER: Vec3 = [0.5, 1.5, 0.5];
 const sceneWith = (inventory: Inventory, over: Partial<IlluminationScene> = {}): IlluminationScene => ({
   inventory,
   sky: { visibilityAt: () => 0 },
-  hour: MIDNIGHT,
+  gameHour: MIDNIGHT,
   cycle,
   fixtures: [],
   isBlocking: () => false,
@@ -67,7 +67,7 @@ describe('illumination', () => {
   it('open sky reads at noon and not at midnight', () => {
     const inventory = new Inventory(registry);
     const openSky = { visibilityAt: () => 1 };
-    expect(litEnoughToRead(sceneWith(inventory, { sky: openSky, hour: NOON }), READER)).toBe(true);
-    expect(litEnoughToRead(sceneWith(inventory, { sky: openSky, hour: MIDNIGHT }), READER)).toBe(false);
+    expect(litEnoughToRead(sceneWith(inventory, { sky: openSky, gameHour: NOON }), READER)).toBe(true);
+    expect(litEnoughToRead(sceneWith(inventory, { sky: openSky, gameHour: MIDNIGHT }), READER)).toBe(false);
   });
 });

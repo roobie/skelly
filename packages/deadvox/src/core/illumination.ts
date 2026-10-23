@@ -15,7 +15,7 @@ export interface IlluminationScene {
   inventory: Inventory;
   sky: Pick<SkyFields, 'visibilityAt'>;
   /** Local solar hour in [0, 24). */
-  hour: number;
+  gameHour: number;
   cycle: DayCycleDef;
   fixtures: readonly PoweredLight[];
   isBlocking: SolidAt;
@@ -92,7 +92,7 @@ function* pointSources(scene: IlluminationScene, pointDecay: number, renderLiftM
 /** Light reaching a point in blocks, in the renderer's light units. */
 export const illuminationAt = (scene: IlluminationScene, point: Vec3): number => {
   const tuning = scene.inventory.registry.senses.get(CORE_CONTENT_IDS.player)!.light;
-  const sky = skyAt(scene.hour, scene.cycle);
+  const sky = skyAt(scene.gameHour, scene.cycle);
   let total = scene.sky.visibilityAt(point) * (sky.lightIntensity + sky.ambientIntensity);
   for (const source of pointSources(scene, tuning.illumination.pointDecay, tuning.groundLight.renderLiftMetres)) {
     const metres = Math.hypot(...source.pos.map((value, axis) => (value - point[axis]!) * scene.blockSize));

@@ -2066,7 +2066,7 @@ export const createSession = (options: SessionOptions) => {
         {
           inventory,
           sky: skyFields,
-          hour: hourOfDay(sim.calendar),
+          gameHour: hourOfDay(sim.calendar),
           cycle: dayCycle,
           fixtures: power?.lights() ?? [],
           isBlocking: isLightBlocking,
