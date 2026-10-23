@@ -2,6 +2,7 @@ import type { BlockEntity } from '../core/blockEntities.ts';
 import type { RecipeDef, Registry } from '../core/content.ts';
 import { toChunk, type Vec3 } from '../core/coords.ts';
 import type { Inventory } from '../core/inventory.ts';
+import { neverSpawns } from '../core/loot.ts';
 import type { Site } from '../core/site.ts';
 import { type PlacedPiece, placedPieces } from '../core/templates.ts';
 
@@ -38,10 +39,13 @@ const repairCornerStock = (registry: Registry, recipes: readonly RecipeDef[]) =>
   return { components, qualities };
 };
 
-/** Every item with a tool quality, so a tool content adds reaches the garage without a test-house edit. */
+/**
+ * Every item with a tool quality, so a tool content adds reaches the garage without a test-house edit. A tool that
+ * never spawns is left out: content places it by hand, and a shelf copy would hide it.
+ */
 const garageToolTypes = (registry: Registry): string[] =>
   [...registry.items.values()]
-    .filter(({ tool }) => Object.keys(tool?.qualities ?? {}).length > 0)
+    .filter(({ tool, economy }) => Object.keys(tool?.qualities ?? {}).length > 0 && !neverSpawns(economy))
     .map(({ id }) => id)
     .sort();
 

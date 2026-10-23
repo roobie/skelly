@@ -1,6 +1,6 @@
 import type { Registry } from './content.ts';
 import { couldFit, ItemFactory } from './items.ts';
-import { type LootContext, lootTypeIssue, withLootDepth } from './loot.ts';
+import { type LootContext, placedTypeIssue, withLootDepth } from './loot.ts';
 import { slotsReason } from './magazine.ts';
 import { groundPileIssue } from './pileBound.ts';
 import { reachTuning } from './reach.ts';
@@ -33,7 +33,7 @@ const fixedItemIssue = (registry: Registry, fixed: FixedLootItemDef, context: Lo
       return `"${fixed.item}" has no battery to charge`;
     }
   }
-  return lootTypeIssue(registry, fixed.item, context, fixed.fitted);
+  return placedTypeIssue(registry, fixed.item, context, fixed.fitted);
 };
 
 // Furnishing leaves out an item that fits no pocket, so a fixed item that can't fit even an empty one would vanish.

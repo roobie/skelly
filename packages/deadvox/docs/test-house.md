@@ -76,9 +76,13 @@ names the building that receives it, so the house no longer needs piles of its o
 `src/core/authoredLayout.ts`, `repairStock`. The stock holds every item with a tool
 quality, vehicle service tools included, so that any repair or service can be tried in
 one place. The list is derived from content, so a new tool reaches the shelves without a
-test-house edit; the tools go in first so they fill the shelves. The listing is by tool
-quality, not loot admission, so a tool that never spawns, such as the engine hoist, is
-stocked too. Repair targets and components fill the containers nearest a workstation
+test-house edit; the tools go in first so they fill the shelves. A tool that never
+spawns, such as the engine hoist, is left off the shelves: it is floor-standing, and a
+pocket would hide it, so the garage template places it on the floor between the bays and
+the shelves, where it reads at a glance. Placement by hand is allowed for an item loot
+never rolls; see `docs/content.md`. The floor mark sits in the ground storey only,
+because ground loot needs the floor under it. See `src/content/base/templates-test-house.jsonnet`,
+`garageStockFloor`. Repair targets and components fill the containers nearest a workstation
 first, because a repair needs its target and its station in reach together and a bulky
 tool must not push the targets out of reach. See `src/game/testHouseRepair.ts`,
 `garageToolTypes` and `nearStations`.

@@ -4,6 +4,7 @@ import type { RecipeDef, Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { planCraft } from '../src/core/crafting.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { neverSpawns } from '../src/core/loot.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { cellsOf, footprint, placedPieces } from '../src/core/templates.ts';
 import { gameMinutes } from '../src/core/time.ts';
@@ -270,11 +271,9 @@ describe('test-house repair stock', () => {
       }),
     );
     const tools = [...scenarioRegistry.items.values()].filter(
-      ({ tool }) => Object.keys(tool?.qualities ?? {}).length > 0,
+      ({ tool, economy }) => Object.keys(tool?.qualities ?? {}).length > 0 && !neverSpawns(economy),
     );
     expect(tools.length).toBeGreaterThan(0);
-    // The listing is by tool quality, not by what loot admits, so a tool that never spawns is stocked too.
-    expect(tools.some(({ economy }) => economy?.usage.length === 0)).toBe(true);
     expect(tools.filter(({ id }) => !stocked.has(id)).map(({ id }) => id)).toEqual([]);
   });
 
