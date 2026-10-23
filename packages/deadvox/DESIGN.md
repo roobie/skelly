@@ -2158,6 +2158,20 @@ is direction only; pouring and partial refills stay open (#536). The lamp is con
 only: any light with a fuel rate and a swappable fuel canister behaves the same. See
 `src/core/lights.ts`, `drainLight`, and `src/core/torch.ts`, `swapCanister`.
 
+A battery goes into a light only as the player chooses: dropped onto the battery slot
+on the light's card in the inventory, which shows the battery loaded, or used from one
+hand while the other holds the light. A battery used from a pocket, by the quickbar
+or otherwise, refuses. Only using the battery loads it: a dead or empty light used
+refuses and says so, whatever the other hand holds, because one way to load from the
+hands keeps the rule simple and the player acts with the battery on the light, not the
+other way round. The player chooses which battery goes in, so a fuller battery hidden in
+a bag never overrides the one in hand. The card slot serves a light with no free hand,
+such as one fitted to a gun, whose card shows the same slot. A hand load needs both in
+hands and a slot drop needs both in reach, a fitted light through its gun; the swap
+rechecks the route that admitted it when it completes. See `src/core/options.ts`,
+`batterySlotOption` and `batteryOption`, and `src/ui/inventoryScreen.ts`,
+`batterySlotTemplate`.
+
 A held light's battery can be taken out on its own, as an action chosen on the wheel
 and then activated, because a swap needs a spare: without one a player could not move
 a cell to a charger, another light or a pocket. It follows magazine removal: the light

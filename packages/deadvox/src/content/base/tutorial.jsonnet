@@ -130,7 +130,7 @@ breach.breaking(shape.colliding({
         start: 'Light and power (optional)',
         on: 'Switch on',
         assign: 'Assign quickbar 1',
-        swap: 'Hold to put in the battery',
+        swap: 'Tap to take the battery, hold to put it in',
         relight: 'Switch on',
       },
     } },
