@@ -409,7 +409,7 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   if (locationRefusal) {
     return refuseUse(inv, locationRefusal);
   }
-  if (def.book || def.readable) {
+  if (def.book || def.readable || def.paperMap) {
     return {
       kind: 'use',
       label: coreLabel(inv.registry, 'read'),
