@@ -119,6 +119,7 @@ export const observationPlugin = {
     quickbarTapCommitObservation: undefined,
     quickbarTapTickObservation: undefined,
     adsToggleObservations: [],
+    throwSpawnObservations: {},
     startInputReplayRecording: () => {
       previousInputRecorder = undefined;
       inputRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns(), {
@@ -189,6 +190,18 @@ export const observationPlugin = {
     },
   };
   Object.assign(globalThis, { primaryActionTest: proof });
+  const proofThrowSpawn = itemThrows.spawn.bind(itemThrows);
+  itemThrows.spawn = (launch, inventory) => {
+    proofThrowSpawn(launch, inventory);
+    const names = [];
+    itemThrows.group.traverse((node) => { if (node.name) names.push(node.name); });
+    // Capture presentation at its owner; a short flight can retire before Playwright's next poll.
+    proof.throwSpawnObservations[launch.itemUid] = {
+      active: itemThrows.hiddenItemUids.has(launch.itemUid),
+      names,
+      durationSimSeconds: launch.flight.durationSimSeconds,
+    };
+  };
   const proofFrame = session.frame.bind(session);
   session.frame = (...args) => { const result = proofFrame(...args); proof.frames++; return result; };
   const proofSwing = session.playerCombat.beginMeleeSwing.bind(session.playerCombat);
