@@ -184,6 +184,34 @@ it.each(['right', 'left'] as const)('keeps the %s arm out of every sight line to
   held.dispose();
 });
 
+it.each(['right', 'left'] as const)('keeps the held oil lamp flame visible beyond the %s palm', async (side) => {
+  const definition = registry.models.get(registry.items.get('oil_lamp')!.model!)!;
+  const { scene } = await parseGlb(readFileSync(`${BASE}/${definition.file}`));
+  const inventory = new Inventory(registry);
+  const lamp = inventory.create('oil_lamp');
+  expect(inventory.add(lamp, { kind: 'hand', side })).toBe(true);
+  expect(toggleLight(registry, lamp, 0)).toBeUndefined();
+  const models = {
+    version: 0,
+    has: () => true,
+    heldLook: () => ({ root: prepareModel(definition, scene.clone()).held, parts: [], slots: {} }),
+  } as unknown as ModelLibrary;
+  const held = new HeldItems(inventory, models, registry.figures.get('player')!.palette);
+  try {
+    held.update(new PerspectiveCamera());
+    const { scene: view, camera } = held.warmUpTarget;
+    view.updateMatrixWorld(true);
+    const flame = view.getObjectByName('held-light-flame')!;
+    expect(flame).toBeDefined();
+    const eye = camera.getWorldPosition(new Vector3());
+    const target = flame.localToWorld(new Vector3(0, 0.35, 0));
+    const ray = new Raycaster(eye, target.clone().sub(eye).normalize());
+    expect(ray.intersectObjects(view.children, true)[0]?.object === flame).toBe(true);
+  } finally {
+    held.dispose();
+  }
+});
+
 describe('piles with models', () => {
   const inventory = new Inventory(registry);
   const S = 0.5;

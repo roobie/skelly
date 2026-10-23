@@ -1223,6 +1223,9 @@ hand. Getting it into hand has its own handling time; using it is separate, and
 a two-handed item occupies both hands. What is held appears in first person,
 what is dropped appears in a pile, and furniture shows its contained items. A
 held light needs both its world illumination and a self-lit held presentation.
+A flame hidden inside the palm cannot communicate ignition, even when its world
+source is working. The lamp's authored grip must leave the flame visible; see
+`src/content/base/models-items.jsonnet`, `oil_lamp`, and `src/render/modelFlame.ts`, `ModelFlames`.
 
 **Held screens.** An item with a screen is held at a raised spot with the screen
 facing the eye and the palm on the item's back, the way a person holds a compass
@@ -2058,6 +2061,13 @@ surface, using the same diffuse sky estimate that lights that surface. This keep
 bright outdoor surfaces washed out without making dark targets inherit the user's
 outdoor lighting. See `src/render/playView.ts`, `prepareLighting`, and
 `src/render/skylight.ts`, `Skylight`.
+
+Small omnidirectional item lights must not inherit their holder's daylight washout:
+a bright doorway can otherwise extinguish their contribution throughout a dim room.
+Keep their authored world output rather than compensating with brighter fuel-light
+content, which would also change nighttime illumination. The separate held layer may
+still adapt to the viewer's sky. See `src/render/lightPool.ts`, `LightPool.update`,
+and `src/render/playView.ts`, `updateHeld`.
 
 Dark interiors make carried light useful without an authored indoor flag.
 For authored worlds, live opaque blocks and blocking furniture determine

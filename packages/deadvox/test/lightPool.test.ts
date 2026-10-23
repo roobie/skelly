@@ -150,6 +150,10 @@ describe('made-light point pool', () => {
     expect(handLights[0]!.intensity).toBeGreaterThan(0);
     expect(handLights[0]!.position).toEqual(pool.lights[0]!.position);
     expect(handLights.every((light) => !light.castShadow)).toBe(true);
+    const daylightScale = 0.2;
+    pool.update(inventory, { held, camera, blockSize: 1, daylightScale, worldDaylightScale: 1 });
+    expect(pool.lights[0]!.intensity).toBe(inventory.registry.items.get(glowstick.type)!.light!.intensity);
+    expect(handLights[0]!.intensity).toBeCloseTo(pool.lights[0]!.intensity * daylightScale);
     inventory.consume(glowstick);
     pool.update(inventory, { held, camera, blockSize: 1, daylightScale: 1 });
     expect(handLights.every((light) => light.intensity === 0)).toBe(true);
