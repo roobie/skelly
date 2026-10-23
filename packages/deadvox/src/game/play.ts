@@ -2597,9 +2597,6 @@ export const startPlay = (
   };
 
   const furniturePayload = (entity: BlockEntity, mode: 'pocket' | 'wield'): ReplayActionPayload => {
-    if (mode === 'wield' && entity.bar) {
-      return { kind: 'furniture.lift', entityUid: entity.uid };
-    }
     if (oversizedFurniture(inventory, entity, s) && furnitureActionUid === entity.uid) {
       const selected = furnitureActionSelection.forItem(entity, furnitureActions(entity))!;
       return selected.id === 'use'
@@ -2622,7 +2619,9 @@ export const startPlay = (
       case 'body':
         return { kind: 'zombie.downed', zombieId: target.id, way: mode === 'pocket' ? 'finish-off' : 'dismember' };
       default:
-        return furniturePayload(target.entity, mode);
+        return mode === 'wield' && target.entity.bar
+          ? { kind: 'furniture.lift', entityUid: target.entity.uid }
+          : furniturePayload(target.entity, mode);
     }
   }
 
