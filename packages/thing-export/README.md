@@ -105,8 +105,11 @@ whole sheet, a guard's bar or a tube's wall, keeps one voxel of thickness, and a
 no sample line crosses keeps the cells its surface meets, because glass, blades, sheet
 parts and small rounds are thin or small by design and losing them breaks the item; the
 cost is that they draw thicker or blockier than authored. A solid's size says nothing about
-how thin its stretches are, so every solid is sampled along all three axes. See
-`src/voxelize.ts`, `fillSource`.
+how thin its stretches are, so every solid is sampled along all three axes. Thinness is
+judged on the shape the solids make together: a stretch cut short only where one solid meets
+the next, such as a curve facet's corner, keeps its voxel inside that shape, because a voxel
+at its own middle would stick out as a sliver. See `src/voxelize.ts`, `fillSource` and
+`fillAlong`.
 
 A voxelized model keeps every part that connects to another part connected, because a
 model whose joining parts drop out reads as floating pieces, not as one object. Voxels
