@@ -17,7 +17,7 @@ export const skyDependencyBounds = (bounds: SkyBounds, top: number): SkyBounds =
   ...growSky(bounds, SKY_HALO),
   max: [bounds.max[0] + SKY_HALO, top + 1, bounds.max[2] + SKY_HALO],
 });
-export const overlapsSky = (a: SkyBounds, b: SkyBounds): boolean =>
+const overlapsSky = (a: SkyBounds, b: SkyBounds): boolean =>
   a.min.every((value, axis) => value < b.max[axis]! && a.max[axis]! > b.min[axis]!);
 export interface SkyChunk {
   cx: number;
@@ -37,7 +37,8 @@ export interface SkySnapshot {
 }
 export interface CapturedSky {
   input: SkySnapshot;
-  current: () => boolean;
+  /** Pass `furnitureBounds` when several captures are checked against one standing state. */
+  current: (furniture?: readonly SkyBounds[]) => boolean;
 }
 /** Every standing piece's light-blocking boxes. */
 export const furnitureBounds = (entities: BlockEntities): SkyBounds[] =>
@@ -47,19 +48,19 @@ export const furnitureBounds = (entities: BlockEntities): SkyBounds[] =>
       min: [...pos] as Vec3,
       max: pos.map((value, axis) => value + size[axis]!) as Vec3,
     }));
-const skyFurniture = (entities: BlockEntities, bounds: SkyBounds): SkyBounds[] =>
-  furnitureBounds(entities).filter((box) => overlapsSky(bounds, box));
 
 /** Each continuation copies at most one chunk; transfers never own live chunk storage. */
 export function* captureSky(
   { world, entities, registry }: { world: World; entities: BlockEntities; registry: Registry },
   bounds: SkyBounds,
   { bottom, top }: { bottom: number; top: number },
+  standing: readonly SkyBounds[] = furnitureBounds(entities),
 ): Generator<void, CapturedSky> {
   const dependency = skyDependencyBounds(bounds, top);
   const chunks: SkyChunk[] = [];
   const versions: { coords: Vec3; chunk: Chunk | undefined; revision: number | undefined }[] = [];
-  const furniture = skyFurniture(entities, dependency);
+  const nearby = (all: readonly SkyBounds[]) => all.filter((box) => overlapsSky(dependency, box));
+  const furniture = nearby(standing);
   const furnitureKey = JSON.stringify(furniture);
   const opacity = Uint8Array.from(registry.blocks, (definition, id) =>
     Number(id !== 0 && Boolean(definition?.opaque ?? definition?.solid)),
@@ -84,10 +85,10 @@ export function* captureSky(
       opacity,
       complete: versions.every((entry) => entry.chunk !== undefined),
     },
-    current: () =>
+    current: (all = furnitureBounds(entities)) =>
       versions.every(
         ({ coords, chunk, revision }) => world.getChunk(...coords) === chunk && chunk?.revision === revision,
-      ) && JSON.stringify(skyFurniture(entities, dependency)) === furnitureKey,
+      ) && JSON.stringify(nearby(all)) === furnitureKey,
   };
 }
 export const skyChunkMap = (snapshot: SkySnapshot): Map<string, SkyChunk> =>

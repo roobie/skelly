@@ -3,7 +3,7 @@ import { BlockEntities, type EntitySpec } from '../core/blockEntities.ts';
 import { StressCity } from '../core/city.ts';
 import { worldOpaque, worldSolid, worldSoundBlocking } from '../core/collision.ts';
 import { blockColors, type Registry } from '../core/content.ts';
-import { toChunk, type Vec3 } from '../core/coords.ts';
+import { CHUNK, toChunk, type Vec3 } from '../core/coords.ts';
 import { Forest } from '../core/forest.ts';
 import { GauntletSite } from '../core/gauntlet.ts';
 import { type LootPointSource, type LootSpawnPoint, lootPointsByColumn } from '../core/loot.ts';
@@ -16,6 +16,7 @@ import { TEMPLATE_BLOCK_SIZE } from '../core/settlementSpawns.ts';
 import { type ColumnSource, type FurnitureSpawn, fillFurnitureLoot, type Site } from '../core/site.ts';
 import { sitePalette, terrainShapeOf } from '../core/sitePalette.ts';
 import { type PlacedPowerDevice, placedPowerDevices } from '../core/sitePower.ts';
+import { authoredSkyBoxes, SkyFields } from '../core/skyField.ts';
 import { World } from '../core/world.ts';
 import { type Surface, worldGroundAt } from '../core/worldgen.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
@@ -32,6 +33,8 @@ export interface WorldSetup extends ColumnSource {
   powerDevices: readonly PlacedPowerDevice[];
   world: World;
   entities: BlockEntities;
+  /** The site's sky field cache: the session answers from it and the renderer draws it. */
+  skyFields: SkyFields;
   site: Site | undefined;
   groundAt: (xm: number, zm: number) => number;
   isSolid: (x: number, y: number, z: number) => boolean;
@@ -214,6 +217,11 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     powerDevices: placedPowerDevices(registry, built?.authoredPlacements ?? []),
     world,
     entities,
+    skyFields: new SkyFields(
+      { world, entities, registry },
+      { bottom: scale.minCy * CHUNK, top: (scale.maxCy + 1) * CHUNK - 1 },
+      authoredSkyBoxes(built?.authoredPlacements ?? []),
+    ),
     site: built,
     groundAt,
     isSolid,

@@ -356,8 +356,9 @@ try {
           requestAnimationFrame(() =>
             requestAnimationFrame(() =>
               resolve(
-                globalThis.firefoxUiTest.view.playerMeshes.group.children.map((mesh) => [
-                  ...mesh.instanceMatrix.array.slice(0, 16),
+                // Box parts are instances; an authored part is a model group with its own matrix.
+                globalThis.firefoxUiTest.view.playerMeshes.group.children.map((part) => [
+                  ...(part.instanceMatrix?.array.slice(0, 16) ?? part.matrix.elements),
                 ]),
               ),
             ),
