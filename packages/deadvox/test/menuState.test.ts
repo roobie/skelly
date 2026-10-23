@@ -8,6 +8,7 @@ const base: MenuStateInput = {
   debugMenuOpen: false,
   pointerLocked: false,
   dead: false,
+  goLabels: { play: 'fixture play', continue: 'fixture continue' },
 };
 
 type TransitionInput = MenuStateInput & { pointerLockChanged?: boolean; resumeRequested?: boolean };

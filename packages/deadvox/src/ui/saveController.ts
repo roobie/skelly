@@ -15,6 +15,8 @@ import {
 } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { KNOWN_SCHEDULER_IDS } from '../core/schedulerIds.ts';
+import type { ScreenText } from '../core/schema.ts';
+import { fillText } from '../core/textTemplate.ts';
 import { type RealTimestamp, realTimestamp } from '../core/time.ts';
 import {
   type SaveBackendPreference,
@@ -62,11 +64,11 @@ export const contentLookup = (registry: Registry, kind: SaveContentKind, id: str
 };
 
 const errorMessage = (error: unknown): string => (error instanceof Error ? error.message : String(error));
-const INSECURE_CONTEXT_MESSAGE = "Saves need a secure (https) page; this session won't be saved";
+type SaveText = ScreenText['save'];
 
-const saveEnvironmentProblem = (): string | undefined => {
+const saveEnvironmentProblem = (messages: SaveText): string | undefined => {
   if (!globalThis.isSecureContext) {
-    return INSECURE_CONTEXT_MESSAGE;
+    return messages.insecurePage;
   }
   if (
     typeof globalThis.crypto?.randomUUID !== 'function' ||
@@ -74,15 +76,18 @@ const saveEnvironmentProblem = (): string | undefined => {
     !navigator.storage ||
     !globalThis.indexedDB
   ) {
-    return 'Required save APIs are unavailable; this session will not be saved.';
+    return messages.apisUnavailable;
   }
   return undefined;
 };
 
-const versionLabel = (saved: Partial<SaveVersionIdentity> | undefined | null): string =>
+const versionLabel = (saved: Partial<SaveVersionIdentity> | undefined | null, text: SaveText): string =>
   saved === null
-    ? 'unreadable version metadata'
-    : `${saved?.buildRevision ?? 'unknown build'} · ${saved?.digest?.slice(0, 12) ?? 'unknown version'}`;
+    ? text.unreadableVersion
+    : fillText(text.version, {
+        build: saved?.buildRevision ?? text.unknownBuild,
+        digest: saved?.digest?.slice(0, 12) ?? text.unknownVersion,
+      });
 
 /** Title-screen discovery, checkpoint scheduling and lifecycle save triggers. */
 export class SaveController {
@@ -107,14 +112,16 @@ export class SaveController {
   private entered = false;
   private ready = false;
   private newWorldLauncher: ((creation: HandedCharacter) => Promise<{ enter: () => void }>) | undefined;
-  private newWorldGoLabel = 'New world';
-  private statusText = 'Checking saved worlds…';
+  private newWorldGoLabel: string;
+  private statusText: string;
   private snapshot: (() => Readonly<SaveSnapshot>) | undefined;
   private simTime: (() => number) | undefined;
   private worldOptions: SaveWorldOptions | undefined;
   private recordSnapshotDuration: ((durationMs: number) => void) | undefined;
   private worldId = '';
   private characterId = '';
+  private readonly text: SaveText;
+  private readonly goLabels: ScreenText['menu'];
   private readonly environmentProblem: string | undefined;
   private checkpoints: CheckpointSchedule | undefined;
   private queued: { snapshot: Readonly<SaveSnapshot>; reason: string } | undefined;
@@ -135,15 +142,20 @@ export class SaveController {
   }
 
   finishWin(): void {
-    this.capture('scenario won');
+    this.capture(this.text.reasonWon);
   }
 
   constructor(
+    text: Pick<ScreenText, 'save' | 'menu'>,
     backend: SaveBackendPreference = 'auto',
     bundledMods: readonly ActiveBundledMod[] = [],
     browserMods: readonly ActiveBrowserMod[] = [],
   ) {
-    this.environmentProblem = saveEnvironmentProblem();
+    this.text = text.save;
+    this.goLabels = text.menu;
+    this.newWorldGoLabel = text.save.newWorld;
+    this.statusText = text.save.checkingSaves;
+    this.environmentProblem = saveEnvironmentProblem(text.save);
     if (!this.environmentProblem) {
       this.identity = currentSaveVersionIdentity(bundledMods, browserMods);
       this.worldId = globalThis.crypto.randomUUID();
@@ -162,10 +174,10 @@ export class SaveController {
       { capture: true },
     );
     $('save-persist')?.addEventListener('click', () =>
-      this.requestPersistence().catch((error: unknown) => this.reportFailure('Save storage request failed', error)),
+      this.requestPersistence().catch((error: unknown) => this.reportFailure(this.text.storageRequestFailed, error)),
     );
     $('save-export')?.addEventListener('click', () =>
-      this.exportCurrentRecords().catch((error: unknown) => this.reportFailure('Save export failed', error)),
+      this.exportCurrentRecords().catch((error: unknown) => this.reportFailure(this.text.exportFailed, error)),
     );
     $('save-replace-confirm').addEventListener('click', (event) => {
       event.preventDefault();
@@ -177,20 +189,20 @@ export class SaveController {
     $('save-retry').addEventListener('click', () => this.retrySave());
     $('save-rescan').addEventListener('click', () => location.reload());
     $('save-export-current').addEventListener('click', () =>
-      this.exportCurrentSnapshot().catch((error: unknown) => this.reportFailure('Save export failed', error)),
+      this.exportCurrentSnapshot().catch((error: unknown) => this.reportFailure(this.text.exportFailed, error)),
     );
     $('save-replace-cancel').addEventListener('click', () => {
       $('save-confirmation').hidden = true;
     });
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden' && !this.pageIsLeaving) {
-        this.capture('visibilitychange');
+        this.capture(this.text.reasonHidden);
       }
     });
     globalThis.addEventListener('pagehide', (event) => {
       this.pageIsLeaving = true;
       if (!event.persisted) {
-        this.capture('pagehide');
+        this.capture(this.text.reasonClosed);
       }
     });
     globalThis.addEventListener('pageshow', (event) => {
@@ -213,7 +225,7 @@ export class SaveController {
       await this.discoverSaves();
     } catch (error) {
       this.storageUnavailable = true;
-      this.failure = `Save storage unavailable: ${errorMessage(error)} This session will not be saved.`;
+      this.failure = fillText(this.text.storageUnavailable, { error: errorMessage(error) });
       this.statusText = this.failure;
     }
     this.render();
@@ -221,14 +233,14 @@ export class SaveController {
   }
 
   private async discoverSaves(): Promise<void> {
-    this.statusText = 'Checking save compatibility…';
+    this.statusText = this.text.checkingCompatibility;
     this.render();
     this.identityValue = await this.identity!;
     this.namespace = this.identityValue.digest;
-    this.statusText = 'Checking browser save storage…';
+    this.statusText = this.text.checkingStorage;
     this.render();
     this.storageStatus = await this.storage.status();
-    this.statusText = 'Scanning saved-world versions…';
+    this.statusText = this.text.scanning;
     this.render();
     const namespaces = await this.storage.listNamespaces();
     await this.inspectCurrentNamespace();
@@ -259,7 +271,7 @@ export class SaveController {
     }
     sessionStorage.removeItem(CONTINUE_KEY);
     this.requestedContinue = false;
-    this.failure = 'Continue was requested, but no compatible saved world is available.';
+    this.failure = this.text.continueUnavailable;
     this.render();
     return undefined;
   }
@@ -274,11 +286,11 @@ export class SaveController {
       this.protectedCurrent = true;
       this.corruptRecords = true;
       this.failure = error.message;
-      this.statusText = `${error.message}; raw records are available for export.`;
+      this.statusText = fillText(this.text.corrupt, { error: error.message });
       return;
     }
     if (!this.currentRecord) {
-      this.statusText = 'No saved world found.';
+      this.statusText = this.text.noSavedWorld;
       return;
     }
     this.candidate = this.currentRecord;
@@ -296,17 +308,22 @@ export class SaveController {
         this.candidate = undefined;
         this.restoreWorldOptions = undefined;
         this.restored = undefined;
-        this.statusText = 'The saved survivor died.';
+        this.statusText = this.text.survivorDied;
         return;
       }
       if (markedDeadWorld) {
         this.clearDeadWorldMarker();
       }
       this.restoreWorldOptions = decoded.worldOptions;
-      this.statusText = `Saved world available · ${versionLabel(decoded.versionIdentity)}${this.currentRecord.corruptSlots.length > 0 ? ` · inactive slot(s) ${this.currentRecord.corruptSlots.join(', ')} are corrupt but retained` : ''}`;
+      const version = versionLabel(decoded.versionIdentity, this.text);
+      const { corruptSlots } = this.currentRecord;
+      this.statusText =
+        corruptSlots.length > 0
+          ? fillText(this.text.availableCorruptSlots, { version, slots: corruptSlots.join(', ') })
+          : fillText(this.text.available, { version });
     } catch (error) {
       this.protectedCurrent = true;
-      this.statusText = `Saved world cannot be loaded and was left untouched: ${errorMessage(error)}`;
+      this.statusText = fillText(this.text.cannotLoad, { error: errorMessage(error) });
     }
   }
 
@@ -342,7 +359,10 @@ export class SaveController {
       const record = await this.storage.load(namespace);
       if (record) {
         const saved = await readSaveVersionMetadata(record.payload).catch(() => null);
-        this.oldVersionLabel = `An older or different-version save is preserved · ${namespace.slice(0, 12)} · ${versionLabel(saved)}`;
+        this.oldVersionLabel = fillText(this.text.olderPreserved, {
+          namespace: namespace.slice(0, 12),
+          version: versionLabel(saved, this.text),
+        });
         try {
           const differences = contentPackDifferences(
             saved!.components!.contentPacks,
@@ -356,7 +376,7 @@ export class SaveController {
         }
       }
     } catch {
-      this.oldVersionLabel = `A damaged older-version save is preserved · ${namespace.slice(0, 12)}`;
+      this.oldVersionLabel = fillText(this.text.damagedPreserved, { namespace: namespace.slice(0, 12) });
     }
   }
 
@@ -365,9 +385,12 @@ export class SaveController {
       return '';
     }
     if (this.storageStatus.persistent === true) {
-      return `Persistent ${this.storageStatus.backend} storage · ${this.storageStatus.quota.availableBytes ?? 0} bytes available.`;
+      return fillText(this.text.persistentStorage, {
+        backend: this.storageStatus.backend,
+        bytes: this.storageStatus.quota.availableBytes ?? 0,
+      });
     }
-    return `Best-effort ${this.storageStatus.backend} storage · saves may be evicted by the browser.`;
+    return fillText(this.text.bestEffortStorage, { backend: this.storageStatus.backend });
   }
 
   /** Runs full content-reference validation after the running registry has been built. */
@@ -385,7 +408,7 @@ export class SaveController {
       });
       const { ratio } = decoded.snapshot.character.simulation.clock;
       if (ratio !== requireDayCycle(registry).clockRatio) {
-        throw new Error('the save was made under a different clock ratio');
+        throw new Error(this.text.clockRatioMismatch);
       }
       this.restored = decoded.snapshot;
       this.acknowledgedWin = Boolean(
@@ -393,7 +416,7 @@ export class SaveController {
           decoded.snapshot.character.scenarioRun.completedAtGameTimestamp !== null,
       );
       if (candidate.corruptSlots.length > 0) {
-        this.statusText = `A valid generation is available; corrupt inactive slot(s) ${candidate.corruptSlots.join(', ')} are retained.`;
+        this.statusText = fillText(this.text.validCorruptSlots, { slots: candidate.corruptSlots.join(', ') });
       }
       if (this.requestedContinue) {
         sessionStorage.removeItem(CONTINUE_KEY);
@@ -401,11 +424,11 @@ export class SaveController {
         this.lastSaveCompletedAtRealTimestamp = realTimestamp(performance.now() / 1000);
         this.worldId = decoded.snapshot.world.id;
         this.characterId = decoded.snapshot.character.id;
-        this.statusText = 'Saved world continued.';
+        this.statusText = this.text.continued;
       }
     } catch (error) {
       this.protectedCurrent = true;
-      this.failure = `Saved world is incompatible with the running content and was left untouched: ${errorMessage(error)}`;
+      this.failure = fillText(this.text.incompatible, { error: errorMessage(error) });
       this.statusText = this.failure;
       if (this.requestedContinue) {
         sessionStorage.removeItem(CONTINUE_KEY);
@@ -453,9 +476,9 @@ export class SaveController {
   }
 
   private renderGoLabel(): void {
-    let label = this.titleNewWorldLabel === 'New world' ? this.newWorldGoLabel : this.titleNewWorldLabel;
+    let label = this.titleNewWorldLabel === this.text.newWorld ? this.newWorldGoLabel : this.titleNewWorldLabel;
     if (this.restored) {
-      label = 'New character — replace saved world';
+      label = this.text.replaceSaved;
     }
     render(html`${label}`, $('go'));
   }
@@ -465,7 +488,7 @@ export class SaveController {
     if (!(this.isRestored && this.namespace)) {
       return false;
     }
-    const refusal = `Saved world unreadable and left untouched: ${errorMessage(error)}`;
+    const refusal = fillText(this.text.unreadable, { error: errorMessage(error) });
     this.protectedCurrent = true;
     this.entered = false;
     this.requestedContinue = false;
@@ -487,9 +510,9 @@ export class SaveController {
 
   get titleNewWorldLabel(): string {
     if (this.protectedCurrent) {
-      return 'Saved world needs recovery';
+      return this.text.needsRecoveryLabel;
     }
-    return this.storageUnavailable ? 'Play without saving' : 'New world';
+    return this.storageUnavailable ? this.text.playWithoutSaving : this.text.newWorld;
   }
 
   bindSession(
@@ -524,13 +547,13 @@ export class SaveController {
   afterFrame(): void {
     const time = this.simTime?.();
     if (time !== undefined && this.checkpoints?.due(time)) {
-      this.capture('periodic checkpoint');
+      this.capture(this.text.reasonPeriodic);
     }
   }
 
   /** Called synchronously before beginning a sleep action. */
   beforeSleep(): void {
-    this.capture('before sleep');
+    this.capture(this.text.reasonSleep);
   }
 
   private capture(reason: string): void {
@@ -555,13 +578,13 @@ export class SaveController {
     this.flush().catch((error: unknown) => {
       // A throw past the save's own handler (presentation) must not leave `writing` set and block every later save.
       this.writing = false;
-      this.reportFailure('Save failed', error);
+      this.reportFailure(this.text.saveFailed, error);
     });
   }
 
   /** Puts a failure no handler owned in the status line, the way a failed save is shown. */
   private reportFailure(what: string, error: unknown): void {
-    this.failure = `${what}: ${errorMessage(error)}`;
+    this.failure = fillText(this.text.failure, { what, error: errorMessage(error) });
     this.statusText = this.failure;
     try {
       this.render();
@@ -604,10 +627,10 @@ export class SaveController {
       if (this.readDeadWorldId() && this.readDeadWorldId() !== task.snapshot.world.id) {
         this.clearDeadWorldMarker();
       }
-      this.statusText = `Saved generation ${result.generation} · ${task.reason}`;
+      this.statusText = fillText(this.text.saved, { generation: result.generation, reason: task.reason });
       this.failure = '';
     } catch (error) {
-      this.failure = `Save failed (${task.reason}): ${errorMessage(error)}`;
+      this.failure = fillText(this.text.saveFailedFor, { reason: task.reason, error: errorMessage(error) });
       this.statusText = this.failure;
     }
     this.writing = false;
@@ -629,7 +652,7 @@ export class SaveController {
     if (this.protectedCurrent) {
       event.preventDefault();
       event.stopImmediatePropagation();
-      this.statusText = 'Saved world needs recovery.';
+      this.statusText = this.text.needsRecovery;
       this.render();
       return;
     }
@@ -655,7 +678,7 @@ export class SaveController {
     this.snapshot = undefined;
     this.simTime = undefined;
     this.worldOptions = undefined;
-    this.failure = `Could not start the world: ${errorMessage(error)}`;
+    this.failure = fillText(this.text.couldNotStart, { error: errorMessage(error) });
     this.statusText = this.failure;
     this.render();
   }
@@ -666,7 +689,7 @@ export class SaveController {
     }
     const handedness = ($('dominant-hand') as HTMLSelectElement).value;
     if (handedness !== 'right' && handedness !== 'left') {
-      this.statusText = 'Choose a valid dominant hand before starting a new character.';
+      this.statusText = this.text.chooseHand;
       this.render();
       return;
     }
@@ -681,8 +704,10 @@ export class SaveController {
     $('save-confirmation').hidden = true;
     $('continue').hidden = true;
     this.statusText = this.storageUnavailable
-      ? `New world ready. ${this.environmentProblem ?? 'Save storage is unavailable; this session will not be saved.'}`
-      : 'New world ready.';
+      ? fillText(this.text.newWorldReadyUnsaved, {
+          problem: this.environmentProblem ?? this.text.storageUnavailableFallback,
+        })
+      : this.text.newWorldReady;
     this.render();
     entry.enter();
   }
@@ -697,7 +722,7 @@ export class SaveController {
         // The final checkpoint below still records death when local storage is unavailable.
       }
     }
-    this.capture('death');
+    this.capture(this.text.reasonDeath);
     this.render();
   }
 
@@ -715,7 +740,7 @@ export class SaveController {
     if (this.playHalted || !(this.entered && this.snapshot) || this.protectedCurrent || this.storageUnavailable) {
       return;
     }
-    this.queued = { snapshot: this.snapshot(), reason: 'manual retry' };
+    this.queued = { snapshot: this.snapshot(), reason: this.text.reasonRetry };
     this.failure = '';
     if (!this.writing) {
       this.startFlush();
@@ -727,7 +752,7 @@ export class SaveController {
   private async exportCurrentSnapshot(): Promise<void> {
     try {
       if (!(this.snapshot && this.identityValue && this.worldOptions)) {
-        throw new Error('No live world snapshot is available');
+        throw new Error(this.text.noSnapshot);
       }
       const payload = await this.storage.encodeSnapshot(
         this.snapshot(),
@@ -746,9 +771,9 @@ export class SaveController {
       link.download = `deadvox-current-${this.namespace}.bin`;
       link.click();
       URL.revokeObjectURL(url);
-      this.statusText = 'Current world snapshot exported.';
+      this.statusText = this.text.snapshotExported;
     } catch (error) {
-      this.statusText = `Could not export current snapshot: ${errorMessage(error)}`;
+      this.statusText = fillText(this.text.snapshotExportFailed, { error: errorMessage(error) });
     }
     this.render();
   }
@@ -763,14 +788,14 @@ export class SaveController {
       const persistent = await this.storage.requestPersistence();
       this.storageStatus = await this.storage.status();
       if (persistent === true) {
-        this.statusText = 'Persistent storage granted.';
+        this.statusText = this.text.persistGranted;
       } else if (persistent === false) {
-        this.statusText = 'Persistent storage was refused; saves remain best-effort and may be evicted.';
+        this.statusText = this.text.persistRefused;
       } else {
-        this.statusText = 'This browser does not support persistent storage.';
+        this.statusText = this.text.persistUnsupported;
       }
     } catch (error) {
-      this.statusText = `Could not request persistent storage: ${errorMessage(error)}`;
+      this.statusText = fillText(this.text.persistFailed, { error: errorMessage(error) });
     } finally {
       this.requestingPersistence = false;
       this.render();
@@ -794,9 +819,9 @@ export class SaveController {
         link.click();
         URL.revokeObjectURL(url);
       }
-      this.statusText = 'Raw save records exported for recovery.';
+      this.statusText = this.text.recordsExported;
     } catch (error) {
-      this.statusText = `Could not export save records: ${errorMessage(error)}`;
+      this.statusText = fillText(this.text.recordsExportFailed, { error: errorMessage(error) });
     }
     this.render();
   }
@@ -825,6 +850,7 @@ export class SaveController {
       debugMenuOpen: false,
       pointerLocked: false,
       dead: false,
+      goLabels: this.goLabels,
       saveMenu: {
         action: this.menuAction(),
         hasCompatibleSave: this.restored !== undefined,
@@ -834,13 +860,7 @@ export class SaveController {
     }).saveMenu!;
     render(html`${[this.statusText, this.oldVersionLabel, this.failure].filter(Boolean).join('\n')}`, status);
     // Title and pause reuse the same card, so this copy has one rendering site.
-    render(
-      factDetail(
-        'Save storage',
-        'Saves are kept in this browser. When two tabs play the same world, the last one to save wins.',
-      ),
-      $('save-note'),
-    );
+    render(factDetail(this.text.storageLabel, this.text.storageFact), $('save-note'));
     const savedChoice = this.showSavedChoice;
     $('overlay').classList.toggle('saved-choice', savedChoice);
     $('title-choice-heading').hidden = !savedChoice;

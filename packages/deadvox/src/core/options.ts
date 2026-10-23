@@ -32,7 +32,7 @@ const barHandsRefusal = (inventory: Inventory, operation: DoorOperation): string
   if (operation === 'unbar') {
     return inventory.liftRefusal();
   }
-  return operation !== 'bar' || heldDoorBar(inventory) ? undefined : 'Hold a door bar';
+  return operation !== 'bar' || heldDoorBar(inventory) ? undefined : coreMessage(inventory.registry, 'noHeldDoorBar');
 };
 
 const doorSimSeconds = (inventory: Inventory, entity: BlockEntity, operation: DoorOperation): number => {
