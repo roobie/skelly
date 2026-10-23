@@ -75,6 +75,63 @@
       "workInProgress": false
     },
     {
+      "category": "tool",
+      "description": "A light screw jack from a car boot. It raises little, slowly.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+      },
+      "id": "scissor_jack",
+      "model": "scissor_jack",
+      "name": "Scissor jack",
+      "notLoot": false,
+      "size": [3, 2],
+      "tool": {
+        "qualities": {
+          "jacking": 1
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "tool",
+      "description": "A hydraulic jack with a short, strong ram.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+      },
+      "id": "bottle_jack",
+      "model": "bottle_jack",
+      "name": "Bottle jack",
+      "notLoot": false,
+      "size": [2, 3],
+      "tool": {
+        "qualities": {
+          "jacking": 2
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "tool",
+      "description": "A wheeled floor crane with a hydraulic boom. It takes two hands and a lot of room.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+      },
+      "id": "engine_hoist",
+      "model": "engine_hoist",
+      "name": "Engine hoist",
+      "notLoot": false,
+      "size": [4, 6],
+      "tool": {
+        "qualities": {
+          "jacking": 3
+        }
+      },
+      "workInProgress": false
+    },
+    {
       "canister": {
         "capacity": 3
       },

@@ -81,6 +81,17 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
       }
     }
   });
+  it('registers each jack and hoist as an ordinary tool item on a nonempty model', () => {
+    for (const id of ['scissor_jack', 'bottle_jack', 'engine_hoist']) {
+      const item = registry.items.get(id);
+      assert.ok(item, `${id}: missing item`);
+      assert.equal(item.category, 'tool');
+      assert.equal(item.vehicle, undefined, `${id}: a jack is carried, not fitted`);
+      assert.ok((item.tool?.qualities?.jacking ?? 0) >= 1, `${id}: missing jacking quality`);
+      const model = registry.models.get(item.model);
+      assert.ok(model && Object.keys(model.parts ?? {}).length > 0, `${id}: empty model`);
+    }
+  });
   it('loads every part node through the Deadvox GLTF association', async () => {
     await Promise.all(
       exported.map(async ({ modelEntry }) => {
