@@ -41,7 +41,7 @@
     "stock": {
       "node": "stock:stock",
       "massKg": 0.4,
-      "centreOfMass": [-0.3954145199063232, -0.03862763466042155, -4.8124789082090054e-17]
+      "centreOfMass": [-0.395506432748538, -0.03869707602339182, -4.813604515889194e-17]
     },
     "rear-sight": {
       "node": "rear-sight:ak-rear-sight",
