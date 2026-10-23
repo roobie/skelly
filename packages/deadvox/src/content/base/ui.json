@@ -209,7 +209,7 @@
           "load": "Load {name}",
           "noPower": "No power",
           "ready": "Ready",
-          "remaining": "{seconds} powered seconds remaining",
+          "remaining": "{gameSeconds} powered seconds remaining",
           "running": "Charging",
           "start": "Start",
           "stop": "Stop"

@@ -73,7 +73,7 @@ export const chargerPanel = (
     kind: 'meta',
     status: active ? workingStatus : idleStatus,
     ...(active && remaining !== undefined
-      ? { remaining: fillText(text.remaining, { seconds: (remaining / 1000).toFixed(1) }) }
+      ? { remaining: fillText(text.remaining, { gameSeconds: (remaining / 1000).toFixed(1) }) }
       : {}),
     actions,
   };

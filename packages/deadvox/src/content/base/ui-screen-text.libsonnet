@@ -4,7 +4,7 @@
   charger: {
     idle: 'Idle', running: 'Charging', noPower: 'No power', ready: 'Ready',
     start: 'Start', stop: 'Stop', collect: 'Collect', load: 'Load {name}',
-    remaining: '{seconds} powered seconds remaining',
+    remaining: '{gameSeconds} powered seconds remaining',
   },
   hudOptionLabels: {
     stats: 'Health, blood, bleeding, food, water, fatigue, pain, stamina and carrying weight',

@@ -390,7 +390,7 @@ const UiScreenTextSchema = strictObject({
     stop: [],
     collect: [],
     load: ['name'],
-    remaining: ['seconds'],
+    remaining: ['gameSeconds'],
   }),
   /** What the HUD options call each element they switch. */
   hudOptionLabels: strictObject({
