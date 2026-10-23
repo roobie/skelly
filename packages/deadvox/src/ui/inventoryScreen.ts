@@ -28,6 +28,7 @@ import { craftingText, craftTime, workName } from './craftReadout.ts';
 import { factDetail } from './factDetail.ts';
 import { matchesFind, queryWords } from './inventoryFind.ts';
 import { type InventoryTab, InventoryTabState } from './inventoryTabs.ts';
+import { ItemViewer, type ItemViewSource, isViewItemPress } from './itemViewer.ts';
 import { fillHint, keyCap } from './keyCap.ts';
 
 /** One cell's rendered size in a node's document, for maths against pointer coordinates. */
@@ -70,6 +71,8 @@ export interface ScreenHooks {
   charger?: (entity: BlockEntity) => ChargerPanel | undefined;
   chargerRevision?: () => number;
   pictures?: { readonly version: number; picture: (item: Item) => string | undefined } | undefined;
+  /** Draws an item's model for the item viewer; without it the viewer does not open. */
+  itemView?: ItemViewSource | undefined;
   /** What each wear slot is called; from the core ui content. */
   slotLabels: Readonly<Record<WearSlot, string>>;
   reach: () => ReachSnapshot;
@@ -471,7 +474,7 @@ const inventoryTemplate = (
     <div class="inv-needs" aria-label=${text.needsLabel}>${vm.needs}</div>
     <details class="inv-help">
       <summary>${text.controls}</summary>
-      <span>${['inventory.find', 'inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.search', 'inventory.cycle-target', 'inventory.put-target', 'handling.stop', 'ui.inventory-toggle'].map((id) => fillHint(text.controlLine, { key: keyCap(id), action: inputBindings.binding(id)!.description })).flatMap((line, i) => (i === 0 ? [line] : [' · ', line]))} · ${fillHint(text.assignQuickbar, { keys: html`${Array.from({ length: 5 }, (_, i) => keyCap(`quickbar.assign.${i + 1}`)).flatMap((cap, i) => (i === 0 ? [cap] : [' / ', cap]))}` })}</span>
+      <span>${['inventory.find', 'inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.view-item', 'inventory.search', 'inventory.cycle-target', 'inventory.put-target', 'handling.stop', 'ui.inventory-toggle'].map((id) => fillHint(text.controlLine, { key: keyCap(id), action: inputBindings.binding(id)!.description })).flatMap((line, i) => (i === 0 ? [line] : [' · ', line]))} · ${fillHint(text.assignQuickbar, { keys: html`${Array.from({ length: 5 }, (_, i) => keyCap(`quickbar.assign.${i + 1}`)).flatMap((cap, i) => (i === 0 ? [cap] : [' / ', cap]))}` })}</span>
     </details>
   </header>
   <div
@@ -631,6 +634,7 @@ const inventoryTemplate = (
   </div>
   <footer class="inv-queue"></footer>
   <div class="inv-gutter-probe" aria-hidden="true"></div>
+  <div class="inv-viewer-host"></div>
 `;
 
 const queueTemplate = (
@@ -742,6 +746,7 @@ export class InventoryScreen {
   private drag: Drag | undefined;
   /** What the player typed into the find field; items it doesn't match are dimmed, not hidden. */
   private findQuery = '';
+  private readonly viewer: ItemViewer;
 
   constructor(
     root: HTMLElement,
@@ -770,7 +775,19 @@ export class InventoryScreen {
     this.inv = inv;
     this.queue = queue;
     this.hooks = hooks;
+    this.viewer = new ItemViewer(
+      () => root.querySelector<HTMLElement>('.inv-viewer-host'),
+      () => this.hooks.itemView,
+      () => inv.registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!.itemViewer,
+      () => this.text().viewerClose,
+    );
     root.addEventListener('pointerdown', (e) => this.pointerDown(e));
+    // A middle press would otherwise start the browser's autoscroll while the pointer is free.
+    root.addEventListener('mousedown', (e) => {
+      if (e.button !== 0 && isViewItemPress(e)) {
+        e.preventDefault();
+      }
+    });
     globalThis.addEventListener('resize', () => this.syncSplitterToLayout());
     globalThis.addEventListener('pointermove', (e) => this.pointerMove(e));
     globalThis.addEventListener('pointerup', (e) => this.pointerUp(e));
@@ -802,6 +819,17 @@ export class InventoryScreen {
     document.body.classList.remove('inventory-open', 'inventory-tab-crafting');
     this.splitDrag = undefined;
     this.endDrag();
+    this.viewer.close();
+  }
+
+  /** The item the viewer shows, or undefined while it is closed. */
+  get viewedUid(): number | undefined {
+    return this.viewer.viewedUid;
+  }
+
+  private viewItem(item: Item): void {
+    this.endDrag();
+    this.viewer.open(item, workName(this.inv.registry, item));
   }
 
   openOnTab(tab: InventoryTab): void {
@@ -880,9 +908,23 @@ export class InventoryScreen {
     return action.startsWith('quickbar.assign.') ? Number(action.slice('quickbar.assign.'.length)) - 1 : undefined;
   }
 
+  /** The viewer covers the items, so their keys wait until it closes; its own binding closes it. */
+  private viewerHoldsAction(action: string): boolean {
+    if (
+      this.viewer.viewedUid === undefined ||
+      !(action.startsWith('inventory.') || this.quickbarDigit(action) !== undefined)
+    ) {
+      return false;
+    }
+    if (action === 'inventory.view-item') {
+      this.viewer.close();
+    }
+    return true;
+  }
+
   /** The shared input owner has already selected an inventory command. */
   onAction(action: string): boolean {
-    if (this.refuseUnconsciousAction(action) || this.rotateDraggedItem(action)) {
+    if (this.refuseUnconsciousAction(action) || this.rotateDraggedItem(action) || this.viewerHoldsAction(action)) {
       return true;
     }
     const digit = this.quickbarDigit(action);
@@ -946,6 +988,9 @@ export class InventoryScreen {
         return true;
       case 'inventory.take-all-like':
         this.takeAllLike(item);
+        return true;
+      case 'inventory.view-item':
+        this.viewItem(item);
         return true;
       default:
         return false;
@@ -1160,6 +1205,10 @@ export class InventoryScreen {
       this.revealedSelectionUid = selectedUid;
     }
     this.syncSplitterToLayout();
+    this.viewer.sync(
+      (uid) => this.byUid.get(uid),
+      (item) => workName(this.inv.registry, item),
+    );
   }
 
   private syncSplitterToLayout(): void {
@@ -1543,6 +1592,11 @@ export class InventoryScreen {
     }
     const node = (e.target as HTMLElement).closest<HTMLElement>('[data-uid]');
     const item = node ? this.byUid.get(Number(node.dataset.uid)) : undefined;
+    if (node && item && isViewItemPress(e)) {
+      e.preventDefault();
+      this.viewItem(item);
+      return;
+    }
     if (!(node && item) || e.button !== 0) {
       return;
     }

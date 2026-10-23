@@ -156,7 +156,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 59;
+export const SAVE_SCHEMA_VERSION = 60;
 export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -504,6 +504,7 @@ const blockEntitySchema = obj({
   facing: enumeration(['n', 'e', 's', 'w']),
   tip: opt(enumeration(['back', 'front', 'left', 'right', 'top'])),
   carried: opt(enumeration([true])),
+  floorLocked: opt(enumeration([true])),
   fixed: opt(enumeration([true])),
   searched: bool,
   open: bool,

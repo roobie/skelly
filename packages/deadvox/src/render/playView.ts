@@ -255,6 +255,7 @@ export const createPlayView = (
     reachTuning(registry).furnitureMove.carriedView,
   );
   held.attach(carriedPiece.group);
+  scene.add(carriedPiece.floorGroup);
   const playerMeshes = new PlayerMeshes(s, playerFigure, registry.models, models);
   const flashlight = new Flashlight(
     scene,
@@ -497,7 +498,7 @@ export const createPlayView = (
       dt: number,
       pose: MeleePoseFrame,
       light: Item | undefined,
-      handling: HeldHandlingFrame = { firearms: [] },
+      handling: HeldHandlingFrame & { floorPlacement?: Readonly<Vec3> | undefined } = { firearms: [] },
     ) => {
       meleeRecoilTime = Math.max(0, meleeRecoilTime - dt);
       const recoil =
@@ -509,7 +510,12 @@ export const createPlayView = (
         deflectDuration > 0 && deflectTime > 0
           ? deflectRise * Math.sin(Math.PI * (1 - deflectTime / deflectDuration))
           : 0;
-      carriedPiece.update(dt, camera.quaternion);
+      const carried = inventory.entities.carrying();
+      carriedPiece.update(
+        dt,
+        camera.quaternion,
+        carried?.floorLocked ? { pos: handling.floorPlacement ?? carried.pos, blockSize: s } : undefined,
+      );
       held.update(camera, pose, recoil, { ...handling, lift });
       flashlight.update({ registry, lit: light, held, camera, inventory, piles });
       lightPool.update(inventory, {

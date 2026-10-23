@@ -1,12 +1,12 @@
 import { Box3, Group, type Mesh, type Object3D, type Quaternion, Vector3 } from 'three';
 import type { BlockEntities, BlockEntity } from '../core/blockEntities.ts';
+import type { Vec3 } from '../core/coords.ts';
 import type { FurnitureDef, InventoryTuningDef } from '../core/schema.ts';
 
 export type CarriedViewTuning = InventoryTuningDef['furnitureMove']['carriedView'];
 
 /**
- * The piece the player carries, held in front of the first-person view (`DESIGN.md`, "Moving furniture"). It reads
- * the carry state each frame rather than keeping its own, so it is gone as soon as the piece is no longer carried.
+ * The held piece reads the carry owner so its presentation cannot outlive the hold (`DESIGN.md`, "Moving furniture").
  */
 export class CarriedPiece {
   /**
@@ -14,6 +14,7 @@ export class CarriedPiece {
    * piece keeps the world heading it will be set down at (`DESIGN.md`, "Moving furniture").
    */
   readonly group = new Group();
+  readonly floorGroup = new Group();
   private readonly entities: BlockEntities;
   private readonly build: (entity: BlockEntity, def: FurnitureDef) => Object3D;
   private readonly tuning: CarriedViewTuning;
@@ -36,22 +37,33 @@ export class CarriedPiece {
 
   /** Whether a carried piece is drawn. */
   get shown(): boolean {
-    return this.group.children.length > 0;
+    return this.group.children.length > 0 || this.floorGroup.children.length > 0;
   }
 
   /** Catches up with the carry state and bobs the piece; `dt` is real seconds, `camera` the view's world turn. */
-  update(dt: number, camera: Quaternion): void {
+  update(dt: number, camera: Quaternion, floor?: { pos: Readonly<Vec3>; blockSize: number }): void {
     const carried = this.entities.carrying();
     const key = carried ? `${carried.uid}:${this.entities.version}` : '';
     if (key !== this.drawn) {
       this.drawn = key;
       this.group.clear();
+      this.floorGroup.clear();
       this.bobRealSeconds = 0;
       if (carried) {
-        this.group.add(this.fitted(carried));
+        (carried.floorLocked ? this.floorGroup : this.group).add(this.fitted(carried));
       }
     }
     if (!carried) {
+      return;
+    }
+    if (carried.floorLocked) {
+      if (floor) {
+        this.floorGroup.position.set(
+          (floor.pos[0] - carried.pos[0]) * floor.blockSize,
+          0,
+          (floor.pos[2] - carried.pos[2]) * floor.blockSize,
+        );
+      }
       return;
     }
     this.bobRealSeconds += dt;
@@ -61,9 +73,12 @@ export class CarriedPiece {
     this.group.quaternion.copy(camera).invert();
   }
 
-  /** The piece centred on the group and shrunk to the tuned size. Like held items, it takes shadow but casts none. */
+  /** Floor-locked pieces retain their world geometry so the hold cannot visually lift them. */
   private fitted(entity: BlockEntity): Object3D {
     const piece = this.build(entity, this.entities.defOf(entity));
+    if (entity.floorLocked) {
+      return piece;
+    }
     piece.updateMatrixWorld(true);
     this.bounds.setFromObject(piece);
     this.bounds.getCenter(this.centre);

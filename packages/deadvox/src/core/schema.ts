@@ -806,6 +806,7 @@ const UiScreenTextSchema = strictObject({
     noneToTake: ['category'],
     secs: ['value'],
     kg: ['value'],
+    viewerClose: ['key'],
   }),
 });
 
@@ -4057,6 +4058,25 @@ const GraphicsTuningSchema = strictObject({
   id: Id,
   readyRadiusM: pipe(number(), finite(), minValue(0)),
   itemPictureCacheCapacity: pipe(number(), integer(), minValue(1)),
+  /** The inventory item viewer: opening pose, drag and wheel response, and zoom range around the opening zoom of 1. */
+  itemViewer: pipe(
+    strictObject({
+      /** Half the view's height per bounding radius at zoom 1. */
+      framing: Positive,
+      startYawDegrees: Degrees,
+      startPitchDegrees: Degrees,
+      pitchLimitDegrees: pipe(number(), minValue(0), maxValue(90)),
+      degreesPerPixel: Positive,
+      zoomPerWheelPixel: Positive,
+      zoomMin: Positive,
+      zoomMax: Positive,
+    }),
+    check(({ zoomMin, zoomMax }) => zoomMin <= 1 && zoomMax >= 1, 'zoom range must include 1'),
+    check(
+      ({ startPitchDegrees, pitchLimitDegrees }) => Math.abs(startPitchDegrees) <= pitchLimitDegrees,
+      'start pitch must be within the pitch limit',
+    ),
+  ),
   mobActors: strictObject({ maxCorpses: Count }),
   gore: strictObject({
     dropletCap: Count,
