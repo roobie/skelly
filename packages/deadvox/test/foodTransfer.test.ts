@@ -1,12 +1,16 @@
 import { describe, expect, it } from 'vitest';
+import type { RecipeDef } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import { planCraft } from '../src/core/crafting.ts';
 import { FOOD_EXPOSURE_DENOMINATOR } from '../src/core/food.ts';
 import { ruinFurniture } from '../src/core/furnitureMove.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory, type Location, type Target } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
-import { simSeconds } from '../src/core/time.ts';
+import { bindReach } from '../src/core/reach.ts';
+import { gameMinutes, simSeconds } from '../src/core/time.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { fixtureFood, foodFixtureRegistry } from './foodFixture.ts';
 
 const food = foodFixtureRegistry(baseRegistry());
@@ -18,12 +22,22 @@ const container = (id: string, grid: [number, number], rigid = false) => ({
   stack: undefined,
   container: { pockets: [{ grid, handlingSimSeconds: simSeconds(0) }], rigid },
 });
+/** A test-owned recipe that consumes the fixture food, so escrow follows a plan a player could start. */
+const FOOD_RECIPE: RecipeDef = {
+  id: 'transfer_recipe',
+  result: { item: 'fixture_keeps', count: 1 },
+  timeGameMinutes: gameMinutes(1),
+  skills: {},
+  qualities: {},
+  components: [[{ item: fixtureFood.id, count: 2 }]],
+};
 const registry = {
   ...food,
   items: new Map(food.items)
     .set('transfer_bag', container('transfer_bag', [2, 2]))
     .set('transfer_pouch', container('transfer_pouch', [1, 1]))
     .set('transfer_case', container('transfer_case', [2, 2], true)),
+  recipes: new Map(food.recipes).set(FOOD_RECIPE.id, FOOD_RECIPE),
 };
 
 /** A synthetic environment: no powered fridge exists yet, so these roots are cold by fixture rule alone. */
@@ -143,16 +157,14 @@ describe('food exposure across ownership changes', () => {
   it('craft escrow and cancellation return the exact input with its aging intact', () => {
     const { inventory, clock, put, exposure } = world();
     const stack = put(fixtureFood.id, pile(COLD), 3);
-    const recipe = [...registry.recipes.values()].find(({ kind }) => kind !== 'repair')!.id;
     clock.now = 2000;
-    const work = inventory.beginWork({
-      kind: 'craft',
-      recipe,
-      components: [{ item: stack, count: 2, from: inventory.locate(stack)! }],
-      tools: [],
-      gather: 1,
-      work: 1,
-    });
+    const reach = bindReach({ inventory, position: COLD, blockSize: 0.5, clock: BASE_CLOCK })();
+    const planned = planCraft(FOOD_RECIPE, reach, { skills: {}, knownRecipes: new Set([FOOD_RECIPE.id]) });
+    if (!('plan' in planned)) {
+      throw new Error(planned.missing.reason);
+    }
+    expect(planned.plan.components.map(({ item, count }) => [item, count])).toEqual([[stack, 2]]);
+    const work = inventory.beginWork(planned.plan);
     const input = work!.work!.components[0]!;
     expect([stack.count, input.count]).toEqual([1, 2]);
     expect(input.foodExposure).toMatchObject({ gameMilliseconds: 500, settledAtGameMilliseconds: 2000 });
