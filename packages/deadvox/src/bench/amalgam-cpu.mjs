@@ -11,6 +11,7 @@ import { buildRegistry, requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
 import { makeScale } from '../core/scale.ts';
+import { siteGenerationOf } from '../core/sitePalette.ts';
 import { worldBricks } from '../core/solidBricks.ts';
 import { World } from '../core/world.ts';
 import { amalgamTypeOf } from '../core/zombieFigure.ts';
@@ -128,6 +129,7 @@ for (const { name, corridor } of scenarios) {
   };
   const createSystem = () =>
     new ZombieSystem({
+      activeZombieRadiusMetres: siteGenerationOf(registry).activeZombieRadiusMetres,
       player: () => sense,
       isSolid,
       solidBricks: terrain,

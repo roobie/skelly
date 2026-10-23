@@ -8,12 +8,13 @@ import {
   posedShamblerRegionBoxes,
   type ZombieRegion,
 } from '../src/core/zombieRegions.ts';
-import { PLAYER_ARM_REACH_M, ZombieSystem } from '../src/core/zombies.ts';
+import { PLAYER_ARM_REACH_M } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const runtimeWeapon = <T extends { cooldownSimSeconds: number }>(weapon: T) => ({

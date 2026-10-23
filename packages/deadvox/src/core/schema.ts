@@ -833,6 +833,10 @@ const FirearmAttachmentEffectsSchema = variant('kind', [
     recoilReduction: Fraction,
     /** Condition lost per committed shot; zero means the attachment does not wear. */
     wearPerShot: Fraction,
+    /** Firearms Combat level required to fit this suppressor; removing it remains open. */
+    fitSkillLevel: SkillLevel,
+    /** Player-facing refusal when the character lacks the fitting skill. */
+    fitRefusal: Name,
   }),
   strictObject({
     kind: literal('foregrip'),
@@ -950,6 +954,8 @@ const TreatmentSchema = pipe(
 const ItemSchema = strictObject({
   id: Id,
   economy: ItemEconomySchema,
+  workInProgress: vBoolean(),
+  notLoot: vBoolean(),
   name: Name,
   category: picklist(ITEM_CATEGORIES),
   weight: optional(NonNegative),
@@ -2583,6 +2589,8 @@ const ZombieSchema = strictObject({
   soundPitchMultiplier: optional(Positive),
   /** Health keyed by hit-region id; ordinary shamblers use six anatomy keys, amalgams use manifest ids. */
   regions: record(pipe(string(), nonEmpty('must not be empty')), Positive),
+  /** Explicitly null when this region leaves no item. */
+  severedItems: record(pipe(string(), nonEmpty('must not be empty')), nullable(Id)),
   /** Relative chance that an ordinary hamlet spawn chooses this type; 1 is the common baseline. */
   spawnWeight: pipe(Positive, maxValue(1, 'must be at most 1')),
   /** Excludes this kind from ordinary hamlet selection while keeping authored/debug spawns available. */
@@ -2954,6 +2962,7 @@ const TreesSchema = strictObject({
 
 const SiteGenerationSchema = strictObject({
   id: Id,
+  activeZombieRadiusMetres: PositiveMetres,
   topography: strictObject({
     amplitudeMetres: NonNegative,
     wavelengthMetres: PositiveMetres,

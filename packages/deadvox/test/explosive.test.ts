@@ -15,7 +15,7 @@ import {
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
-import { SEVERED_ITEM, ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
+import { ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
 import type { ZombieRegions } from '../src/core/zombieRegions.ts';
 import type { Detonation } from '../src/core/zombies.ts';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
@@ -293,11 +293,19 @@ describe('hand grenade', () => {
 
   it('tears every limb off a shambler before a lethal blast drops it', () => {
     const session = runtime();
-    const id = session.zombies.add(SHAMBLER, [1, 0, 0]);
+    const type = {
+      ...SHAMBLER,
+      id: 'fixture_parts',
+      severedItems: { ...SHAMBLER.severedItems, leftArm: 'rag', rightLeg: null } as typeof SHAMBLER.severedItems,
+    };
+    const id = session.zombies.add(type, [1, 0, 0]);
     session.zombies.detonate(detonation([0, 1, 0], { radiusMetres: 6, damage: 1000, impulse: 1 }));
     expect(session.zombieStore.get(id)).toBeUndefined();
     const dropped = [...session.inventory.piles.values()].flatMap(({ items }) => items.map(({ item }) => item.type));
-    const limbs = (['leftArm', 'rightArm', 'leftLeg', 'rightLeg'] as const).map((region) => SEVERED_ITEM[region]);
-    expect(limbs.filter((limb) => !dropped.includes(limb))).toEqual([]);
+    const limbs = (['leftArm', 'rightArm', 'leftLeg', 'rightLeg'] as const)
+      .map((region) => type.severedItems[region])
+      .filter((item) => item !== null);
+    expect(limbs.filter((limb) => !dropped.includes(limb!))).toEqual([]);
+    expect(dropped).not.toContain(SHAMBLER.severedItems.rightLeg);
   });
 });

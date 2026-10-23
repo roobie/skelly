@@ -3,13 +3,14 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { figureSeedPool } from '../src/core/zombieFigure.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
-import { type Zombie, ZombieSystem } from '../src/core/zombies.ts';
+import type { Zombie } from '../src/core/zombies.ts';
 import { MobActorMeshes } from '../src/render/mobActors.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const SHAMBLER = registry.zombies.get('shambler')!;

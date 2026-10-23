@@ -9,7 +9,8 @@ import type { Simulation } from './sim.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
 export type RestKind = 'rest' | 'sleep';
-const RUN_WHILE_REFUSED: ReadonlySet<string> = new Set(['treatment', 'craft', 'reading']);
+/** Doable jobs run at 1× while bleeding refuses time compression, never while action itself is refused. */
+const RUN_AT_1X_WHILE_COMPRESSION_REFUSED: ReadonlySet<string> = new Set(['treatment', 'craft', 'reading']);
 export interface RestAction {
   kind: RestKind;
   furnitureUid: number;
@@ -278,7 +279,8 @@ export class LongActions {
    */
   runsUncompressed(jobType: LongJob['jobType']): boolean {
     return (
-      jobType === 'forceDoor' || (RUN_WHILE_REFUSED.has(jobType) && this.sim.body.compressionRefusal !== undefined)
+      jobType === 'forceDoor' ||
+      (RUN_AT_1X_WHILE_COMPRESSION_REFUSED.has(jobType) && this.sim.body.compressionRefusal !== undefined)
     );
   }
   /** Drops to 1× for an uncompressed job, or asks for compression; returns why compression was refused. */
@@ -750,7 +752,7 @@ export class LongActions {
     if (
       reason === undefined &&
       !job.stopped &&
-      RUN_WHILE_REFUSED.has(job.jobType) &&
+      RUN_AT_1X_WHILE_COMPRESSION_REFUSED.has(job.jobType) &&
       this.sim.compressLongAction(job.jobType).ok
     ) {
       return;

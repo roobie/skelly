@@ -27,6 +27,8 @@ const modPart = (
     {
       id,
       name: 'Fixture part',
+      workInProgress: false,
+      notLoot: false,
       category: 'misc',
       model: id,
       size: [3, 2],
@@ -82,6 +84,8 @@ describe('vehicle export contract', () => {
         items: [
           {
             id: 'fixture_plain',
+            workInProgress: false,
+            notLoot: false,
             name: 'Fixture plain item',
             category: 'misc',
             model: 'fixture_plain',

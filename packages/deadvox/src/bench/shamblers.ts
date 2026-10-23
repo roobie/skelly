@@ -7,6 +7,7 @@ import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
 import { type Body, stepBody } from '../core/physics.ts';
 import { Simulation } from '../core/sim.ts';
+import { siteGenerationOf } from '../core/sitePalette.ts';
 import { skyAt } from '../core/sky.ts';
 import { figureSeedPool } from '../core/zombieFigure.ts';
 import { BACKGROUND_ZOMBIE_RATE, ZombieSystem } from '../core/zombies.ts';
@@ -134,6 +135,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
     });
     simulation.godMode = true;
     zombies = new ZombieSystem({
+      activeZombieRadiusMetres: siteGenerationOf(engine.registry).activeZombieRadiusMetres,
       seed: run.seed,
       isSolid: engine.isSolid,
       isOpaque: engine.isOpaque,

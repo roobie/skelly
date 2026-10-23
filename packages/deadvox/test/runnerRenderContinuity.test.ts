@@ -5,12 +5,13 @@ import { MapEntityStore } from '../src/core/entities.ts';
 import { stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { figureSeedPool } from '../src/core/zombieFigure.ts';
-import { type PlayerMovement, type PlayerSense, type Zombie, ZombieSystem } from '../src/core/zombies.ts';
+import type { PlayerMovement, PlayerSense, Zombie } from '../src/core/zombies.ts';
 import { MobActorMeshes } from '../src/render/mobActors.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const RUNNER = registry.zombies.get('runner')!;

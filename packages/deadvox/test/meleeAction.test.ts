@@ -9,7 +9,7 @@ import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
-import { type MeleeWeapon, type Zombie, ZombieSystem } from '../src/core/zombies.ts';
+import type { MeleeWeapon, Zombie } from '../src/core/zombies.ts';
 import {
   resolveMeleeWeapon,
   resolvePlayerMeleeWeapon,
@@ -22,6 +22,7 @@ import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const SHAMBLER = registry.zombies.get('shambler')!;

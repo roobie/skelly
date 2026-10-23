@@ -1294,6 +1294,8 @@ describe('authored fixed loot', () => {
             weight: 1,
             size: [1, 1] as [number, number],
             economy: { usage: ['Military' as const], tiers: ['Tier1' as const] },
+            workInProgress: false,
+            notLoot: false,
           },
         ],
       ]),

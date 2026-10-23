@@ -9,12 +9,13 @@ import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SoundEmission } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
-import { type PlayerSense, ZombieSystem } from '../src/core/zombies.ts';
+import type { PlayerSense } from '../src/core/zombies.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { buildFixtureRegistry, FIXTURE_BLOW_SOUND } from './economyFixtures.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const MINIMUM = 5;
 const DURABILITY = 4 * MINIMUM;

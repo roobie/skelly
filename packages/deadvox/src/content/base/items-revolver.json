@@ -53,8 +53,10 @@
       "id": "revolver_357",
       "model": "revolver",
       "name": ".357 revolver",
+      "notLoot": false,
       "size": [2, 3],
-      "twoHanded": false
+      "twoHanded": false,
+      "workInProgress": false
     },
     {
       "ammo": {
@@ -76,9 +78,11 @@
       "id": "cartridge_357_h_magnum",
       "model": "round_357_h_magnum",
       "name": ".357 Magnum round",
+      "notLoot": false,
       "size": [1, 1],
       "stack": 50,
-      "weight": 16
+      "weight": 16,
+      "workInProgress": false
     },
     {
       "category": "ammo",
@@ -89,12 +93,14 @@
       "id": "cartridge_box_357_h_magnum",
       "model": "cartridge_box_357_h_magnum",
       "name": ".357 Magnum box",
+      "notLoot": false,
       "size": [2, 2],
       "unpack": {
         "count": 50,
         "item": "cartridge_357_h_magnum",
         "simSeconds": 1.5
-      }
+      },
+      "workInProgress": false
     },
     {
       "category": "material",
@@ -106,10 +112,12 @@
       "id": "spent_case_357_h_magnum",
       "model": "case_357_h_magnum",
       "name": ".357 Magnum case",
+      "notLoot": false,
       "pileDisplay": "scatter",
       "size": [1, 1],
       "stack": 10000,
-      "weight": 6
+      "weight": 6,
+      "workInProgress": false
     }
   ]
 }

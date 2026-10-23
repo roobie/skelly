@@ -76,6 +76,7 @@ const layoutValidationBase = [
       zombies: [...layoutZombieIds].map((id) => {
         const zombie = structuredClone(registry.zombies.get(id)!);
         zombie.loot = undefined;
+        zombie.severedItems = Object.fromEntries(Object.keys(zombie.regions).map((region) => [region, null]));
         return zombie;
       }),
       // The zombies name the tool quality that dismembers them, so one tool has to have it.
