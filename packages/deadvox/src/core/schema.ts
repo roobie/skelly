@@ -2701,8 +2701,10 @@ const SiteLayoutSchema = strictObject({
       }),
     ),
   ),
-  /** Repair fixture destinations, in metres; stock derivation remains game logic. */
-  fixturePiles: optional(array(tuple([HalfMetres, HalfMetres, HalfMetres]))),
+  /** Vehicle parking bays: a vehicle's origin and facing, whether or not one is parked there. */
+  bays: optional(array(strictObject({ position: MetrePosition, facing: picklist(['n', 'e', 's', 'w']) }))),
+  /** The building template whose containers receive derived repair stock; derivation remains game logic. */
+  repairStock: optional(Id),
   player: strictObject({
     position: MetrePosition,
     /** Clockwise degrees from WORLD_NORTH; converted to camera yaw only at startup. */
