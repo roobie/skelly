@@ -909,12 +909,11 @@ try {
     });
     await walk('movement.back', signFixture.x, false);
     await aim(signFixture.type);
+    // A tap on furniture does its ordinary use, so one press reads the sign; only a hold opens the action list.
     const readSign = async () => {
       await pressAction(page, 'world.interact');
-      await page.locator('#item-action-list').waitFor({ state: 'visible' });
-      assert.equal(await page.locator('#reading').isVisible(), false);
-      await pressAction(page, 'world.interact');
       await page.locator('#reading').waitFor({ state: 'visible' });
+      assert.equal(await page.locator('#item-action-list').isVisible(), false);
     };
     await readSign();
     assert.equal(await page.locator('#reading h1').innerText(), signFixture.readable.title);

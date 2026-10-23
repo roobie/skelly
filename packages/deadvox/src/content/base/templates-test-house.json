@@ -997,6 +997,27 @@
         }
       },
       "size": [2, 4, 1]
+    },
+    {
+      "id": "test_house_loose_wardrobe",
+      "layers": [["GG"], ["OO"], ["OO"], ["OO"], ["OO"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [[".."], ["SS"], ["SS"], ["SS"], ["SS"]]
+      },
+      "palette": {
+        "G": {
+          "ground": true
+        },
+        "O": {
+          "facing": "n",
+          "furniture": "wardrobe"
+        }
+      },
+      "size": [2, 5, 1]
     }
   ]
 }

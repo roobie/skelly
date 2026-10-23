@@ -9,7 +9,7 @@ local palette = {
   L: { furniture: 'electric_lamp', fixed: true }, X: { furniture: 'battery_charger', fixed: true },
   F: { furniture: 'fridge', fixed: true }, C: { furniture: 'kitchen_cupboard' },
   H: { furniture: 'chair' }, W: { furniture: 'wardrobe', facing: 'w' },
-  Q: { furniture: 'crate', loot: 'sample_note_loot' }, N: { furniture: 'sample_sign' },
+  Q: { furniture: 'crate', loot: 'sample_note_loot' }, N: { furniture: 'sample_sign' }, O: { furniture: 'wardrobe', facing: 'n' },
   K: { furniture: 'crate', items: [
     { item: 'rechargeable_aa_battery', count: 1, charge: 0.25, placement: 'surface' },
     { item: 'flashlight', count: 1, charge: 0, placement: 'surface' },
@@ -251,6 +251,10 @@ local templates = [
   {
     id: 'test_house_sign', size: [2, 4, 1],
     layers: [['GG'], ['NN'], ['NN'], ['NN']],
+  },
+  {
+    id: 'test_house_loose_wardrobe', size: [2, 5, 1],
+    layers: [['GG'], ['OO'], ['OO'], ['OO'], ['OO']],
   },
 ];
 {

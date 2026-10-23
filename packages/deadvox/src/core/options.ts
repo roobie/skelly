@@ -324,9 +324,10 @@ const lightOption = (item: Item, view: ReachSnapshot): UseOption => {
       .map((entry) => entry.item)
       .filter((candidate) => fitsLight(inv.registry, item, candidate) && (chargeOf(inv.registry, candidate) ?? 0) > 0)
       .sort((a, b) => (chargeOf(inv.registry, b) ?? 0) - (chargeOf(inv.registry, a) ?? 0));
-    return battery
-      ? batteryOption(battery, inv, item)
-      : refuseUse(inv, coreMessage(inv.registry, 'batteryDeadNoSpare'));
+    if (battery) {
+      return batteryOption(battery, inv, item);
+    }
+    return refuseUse(inv, coreMessage(inv.registry, item.slots?.battery ? 'batteryDeadNoSpare' : 'noBattery'));
   }
   return {
     kind: 'use',

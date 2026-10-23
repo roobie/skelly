@@ -493,25 +493,29 @@ strength without adding another actor stat. Destructive clearing stays separate
 because rearranging a room should not require destroying its contents. See `src/core/furnitureMove.ts`,
 `liftFurniture`, `placeFurniture` and `slideFurniture`.
 
-- **Oversized pieces.** A piece too large to carry need not make a room a dead
-  end. Floor steps trade time, exertion and a louder scrape for moving it without
-  a second person or a strength stat. They do not claim carry slots: the piece
-  remains an obstacle, not a held item. Each completed step is an ordinary saved
-  position, so stopping between steps needs no persistent drag mode. See
-  `src/core/furnitureMove.ts`, `slideFurniture`, and `src/game/session.ts`,
-  `slidePiece`.
-- **Movement choices.** Movement must not hide a container's search or a bed's
-  rest or a freestanding sign's reading. Readability does not fasten a board;
-  its ordinary use remains a choice alongside movement. The selector belongs
-  to movable kinds: building parts keep direct use
+- **Oversized pieces.** A piece too large to lift need not make a room a dead
+  end. Dragging reuses picking up and holding, constrained to the floor plane:
+  one interaction to learn and one code path to maintain, rather than a separate
+  drag mode. Pushing remains a floor step because it moves an obstacle without
+  holding it. See `src/core/furnitureMove.ts`, `liftFurniture`, `placement` and
+  `slideFurniture`, and `src/game/session.ts`, `liftPiece` and `slidePiece`.
+- **Movement choices.** A tap on movable furniture does its ordinary use (open,
+  search, rest, read), so the common action stays one tap. A tap-and-hold opens
+  the list of other actions, push and drag, with disassembly joining it later, because rarer actions that move or break the piece sit behind a
+  deliberate hold. Readability does not fasten a board; its ordinary use stays
+  on the tap. The list belongs to movable kinds: building parts keep direct use
   because offering impossible moves would obstruct their ordinary interaction.
-  A fitted placement of a movable kind still offers the choice and explains why
+  A fitted placement of a movable kind still offers the list and explains why
   it cannot move, so fitting does not silently change that kind's controls.
-  An open choice is a single confirmation, not a persistent interaction mode:
+  An open list is a single confirmation, not a persistent interaction mode:
   returning from a pause or another target must not unexpectedly act instead of
   offering choices. See `src/core/furnitureMove.ts`, `slidableFurniture`,
   `src/game/play.ts`, `furnitureActions`, and `src/game/furnitureActions.ts`,
   `FurnitureActionSelection`.
+- **Held pieces turn and tip.** A dragged piece is a held piece with its floor
+  height fixed, so it turns and tips like any held piece; only setting down
+  needs the level floor. See `src/core/furnitureMove.ts`, `turnCarried`,
+  `tipCarried` and `placement`.
 - **What lifts.** Pieces that are part of the building stay put. Fitted is a
   mark on a placement, not a definition, because the same cupboard is fixed in
   a kitchen and loose in a shed. A moved piece keeps its origin, so generation
@@ -578,33 +582,19 @@ because rearranging a room should not require destroying its contents. See `src/
 - **A carried piece carries its contents.** An explosive inside a carried
   piece goes off at its carrier, because the piece is in their hands, not where
   it last stood. See `src/game/session.ts`, `detonationPoint`.
-- **Seen while carried.** The player has to see what they're carrying, so the
-  piece is drawn held low in front of them, clear of the aimed cell's outline
-  so it never hides where it will go. The view reads the carry state rather
-  than a copy of it, so it cannot outlive the carry. It keeps the world heading
-  it will be set down at rather than turning with the view, so whichever way
-  the player looks, the piece in hand, the outline and the placed piece agree,
-  and a turn or tip reads as the change it makes to the placement. Where it
-  sits is content, so it can be tuned by eye. See `src/render/carriedPiece.ts`,
-  `CarriedPiece`.
-- **Turning and tipping.** A carried piece turns a quarter at a time, because
-  a piece that only fits a doorway, a stairwell or a gap along a wall when
-  laid over is otherwise a dead end the player can see a way past. One key
-  tips it about the world's east–west axis and the other turns it about the
-  vertical. The axes belong to the world, not the piece, so a press gives the
-  same pose wherever the player stands, and two keys reach every pose a box
-  can take, any face down. The turned box is the piece: fit, the put-down
-  outline and what it blocks all read it, and it stays turned once placed and
-  through a save, so a barricade stays as it was built. Turning in the hands
-  is free and silent, since lifting and carrying already pay in stamina and
-  noise, and a charge per turn would tax lining up a placement rather than
-  moving furniture. For the same reason the carry shows no aid for what the
-  next press will do: a press costs nothing, and the piece in hand and the
-  outline show its result at once. Contents stay in a tipped piece and it
-  opens as usual, by the same rule as what lies on top. A piece marked
-  upright only turns about the vertical; the mark is content, so a pack
-  decides without code. See `src/core/furnitureMove.ts`, `turnCarried` and
-  `tipCarried`, and `src/core/orientation.ts`, `turnPose`.
+- **Seen while carried.** Carry feedback must agree with where the piece can
+  be put down, without hiding the placement outline. A dragged piece stays
+  visibly on its floor plane rather than floating with the player's view.
+  Presentation reads the hold owner so it cannot outlive the hold. See
+  `src/render/carriedPiece.ts`, `CarriedPiece`.
+- **Turning and tipping.** Lifted pieces can be reoriented because a piece
+  that could fit through a doorway laid over should not become a dead end.
+  World-relative axes make a press predictable wherever the player stands.
+  Rotation feedback needs no separate aid or charge: the piece and placement
+  outline show the result, and lifting and carrying already pay for the move.
+  Dragging retains the floor-step restriction on reorientation rather than
+  introducing a new rotation rule. See `src/core/furnitureMove.ts`,
+  `turnCarried` and `tipCarried`, and `src/core/orientation.ts`, `turnPose`.
 - **Refusals live in content.** Each refusal says why in a short first-person
   line, kept in content with the other UI text so a pack can reword it.
 
@@ -1388,6 +1378,17 @@ Separating deliberate use from a tap prevents accidental activation. See
 `src/core/inventory.ts`. `QuickbarActions` in `src/game/quickbarActions.ts` owns
 quickbar use.
 
+The view-item binding over an item card, or as a key on the selected item, opens
+the item viewer: that instance's own model, with its fitted magazine and
+attachments, turned by dragging and zoomed by the wheel. A grid card is too small
+to judge an item's shape or what is fitted to it, and a close look must not cost
+a move, so the viewer is view-only. It changes neither the item, the selection
+nor the queue, item keys wait until it closes, and the clock runs as it does with
+the inventory open. It is modal: it takes focus and the inventory it covers is
+inert until it closes, so no key or press reaches a hidden control. It draws with the item pictures' renderer rather than a
+second WebGL context. See `src/ui/itemViewer.ts`, `ItemViewer`, and
+`src/render/itemPictures.ts`, `ItemPictures`.
+
 ### Piles and item models
 
 Ground presentation preserves an item's identity rather than making distinct
@@ -2137,6 +2138,16 @@ and it is refilled by swapping the oil in, not pouring, because refilling a cart
 is direction only; pouring and partial refills stay open (#536). The lamp is content
 only: any light with a fuel rate and a swappable fuel canister behaves the same. See
 `src/core/lights.ts`, `drainLight`, and `src/core/torch.ts`, `swapCanister`.
+
+A held light's battery can be taken out on its own, as an action chosen on the wheel
+and then activated, because a swap needs a spare: without one a player could not move
+a cell to a charger, another light or a pocket. It follows magazine removal: the light
+must be in hand, the battery keeps its charge and goes to the first pocket with room,
+else the ground, and with nowhere to put it, it stays fitted. A dead primary cell is
+thrown away, as in a swap. Taking the battery out switches the light off, and an empty
+light is a valid item that takes a battery back as a dead one does. See
+`src/core/lights.ts`, `unloadBattery`; `src/game/itemActions.ts`, `itemActionsFor`;
+and `src/core/options.ts`, `stowTarget`.
 
 Zombies see light farther than they see a player in darkness, and see a player
 lit by any source. Aimed-down or covered flashlights shorten that reach. Light

@@ -467,15 +467,20 @@ export const ruinFurniture = (mover: FurnitureMover, entity: BlockEntity): Block
  * Lifts a piece into both hands, letting what stood on it settle; returns why not,
  * leaving everything as it was. The caller charges the stamina.
  */
-export const liftFurniture = (mover: FurnitureMover, entity: BlockEntity): string | undefined => {
+export const liftFurniture = (mover: FurnitureMover, entity: BlockEntity, floorLocked = false): string | undefined => {
   const { inventory } = mover;
   const messages = messagesOf(inventory);
-  const refusal = inventory.entities.useRefusal(entity) ?? movableRefusal(inventory, entity, mover.blockSize);
+  const refusal = floorLocked
+    ? slideRefusal(mover, entity)
+    : (inventory.entities.useRefusal(entity) ?? movableRefusal(inventory, entity, mover.blockSize));
   if (refusal) {
     return refusal;
   }
   if (!inventory.canReachEntity(entity)) {
     return messages.outOfReach;
+  }
+  if (floorLocked && !footprint(entity.pos, entity.size).every(([x, y, z]) => mover.terrainSolid(x, y - 1, z))) {
+    return messages.floorOnly;
   }
   const handsRefusal = inventory.liftRefusal();
   if (handsRefusal) {
@@ -506,7 +511,7 @@ export const liftFurniture = (mover: FurnitureMover, entity: BlockEntity): strin
   for (const piece of [entity, ...falls.map((fall) => fall.entity)]) {
     mover.beforeRelocate?.(piece);
   }
-  inventory.entities.lift(entity);
+  inventory.entities.lift(entity, floorLocked);
   for (const { entity: fallen, y } of falls) {
     inventory.entities.drop(fallen, y);
   }
@@ -514,7 +519,7 @@ export const liftFurniture = (mover: FurnitureMover, entity: BlockEntity): strin
   return undefined;
 };
 
-export type FurnitureSlideWay = 'push' | 'drag';
+export type FurnitureSlideWay = 'push';
 
 export const slidableFurniture = (inventory: Inventory, entity: BlockEntity, blockSize: number): boolean =>
   !fastenedKind(inventory, entity) && oversizedFurniture(inventory, entity, blockSize);
@@ -568,7 +573,10 @@ export const slideFurniture = (
   if (refusal) {
     return refusal;
   }
-  const pos = slideDestination(mover.player, entity, way);
+  if (way !== 'push') {
+    throw new Error('Invalid furniture slide');
+  }
+  const pos = slideDestination(mover.player, entity);
   if (destination && pos.some((value, axis) => value !== destination[axis])) {
     return messages.outOfReach;
   }
@@ -618,14 +626,13 @@ export const slideFurniture = (
   return undefined;
 };
 
-export const slideDestination = (player: Body, entity: BlockEntity, way: FurnitureSlideWay): Vec3 => {
+export const slideDestination = (player: Body, entity: BlockEntity): Vec3 => {
   const dx = entity.pos[0] + entity.size[0] / 2 - player.pos[0];
   const dz = entity.pos[2] + entity.size[2] / 2 - player.pos[2];
-  const sign = way === 'push' ? 1 : -1;
   return [
-    entity.pos[0] + (Math.abs(dx) >= Math.abs(dz) ? Math.sign(dx) * sign : 0),
+    entity.pos[0] + (Math.abs(dx) >= Math.abs(dz) ? Math.sign(dx) : 0),
     entity.pos[1],
-    entity.pos[2] + (Math.abs(dx) < Math.abs(dz) ? Math.sign(dz) * sign : 0),
+    entity.pos[2] + (Math.abs(dx) < Math.abs(dz) ? Math.sign(dz) : 0),
   ];
 };
 
@@ -644,16 +651,23 @@ export const placement = (mover: FurnitureMover, aimed: Readonly<Vec3>): { pos: 
   if (!entity) {
     throw new Error('Not carrying a block entity');
   }
-  if (!inventory.canReach(aimed as Vec3)) {
+  const target: Vec3 = [aimed[0], entity.floorLocked ? entity.pos[1] : aimed[1], aimed[2]];
+  if (!inventory.canReach(target)) {
     return { refusal: messages.outOfReach };
   }
   const shadow = new Shadow(mover.terrainSolid, inventory.entities);
-  const base = placementBase(entity, aimed);
-  const y = shadow.free(base, entity.size) ? shadow.landing(base, entity.size) : undefined;
-  if (y === undefined) {
+  const base = placementBase(entity, target);
+  if (entity.floorLocked && !footprint(base, entity.size).every(([x, y, z]) => mover.terrainSolid(x, y - 1, z))) {
+    return { refusal: messages.floorOnly };
+  }
+  if (!shadow.free(base, entity.size)) {
     return { refusal: messages.noRoom };
   }
-  const pos: Vec3 = [base[0], y, base[2]];
+  const landingY = entity.floorLocked ? entity.pos[1] : shadow.landing(base, entity.size);
+  if (landingY === undefined) {
+    return { refusal: messages.noRoom };
+  }
+  const pos: Vec3 = [base[0], landingY, base[2]];
   const refusal = standRefusal(mover, shadow, pos, entity);
   return refusal ? { refusal } : { pos };
 };
