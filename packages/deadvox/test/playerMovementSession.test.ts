@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import { actionText } from '../src/core/actionText.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import type { EntityId } from '../src/core/entities.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
@@ -562,7 +563,7 @@ describe('crouching under a low ceiling', () => {
     runtime.toggleCrouch();
     runtime.advance(1);
     expect(session.stance).toBe('crouching');
-    expect(runtime.refusals).toHaveLength(1);
+    expect(runtime.refusals).toEqual([actionText(registry).play.noRoomToStand]);
 
     runtime.setIntent({ ...IDLE, forward: 1, walk: true });
     walkPast(runtime, SlabFar, 600);
@@ -651,7 +652,10 @@ describe('lying prone', () => {
     runtime.toggleProne();
     runtime.advance(1);
     expect(session.stance).toBe('prone');
-    expect(runtime.refusals).toHaveLength(2);
+    expect(runtime.refusals).toEqual([
+      actionText(registry).play.noRoomToCrouch,
+      actionText(registry).play.noRoomToCrouch,
+    ]);
 
     runtime.setIntent({ ...IDLE, forward: 1 });
     crawlPast(runtime, SlabFar);

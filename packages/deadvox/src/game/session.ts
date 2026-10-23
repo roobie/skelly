@@ -452,6 +452,7 @@ interface StanceBody {
   readonly body: Body;
   readonly heights: Readonly<Record<PlayerStance, number>>;
   readonly isSolid: SolidAt;
+  readonly text: Pick<ReturnType<typeof actionText>, 'play'>;
 }
 
 const setStanceHeight = (stance: StanceBody, current: PlayerStance): void => {
@@ -470,7 +471,7 @@ const settleStance = (
   }
   const height = stance.heights[wanted];
   if (height > stance.body.height && bodyOverlapsTerrain({ ...stance.body, height }, stance.isSolid)) {
-    refuse(wanted === 'standing' ? 'No room to stand up' : 'No room to crouch');
+    refuse(wanted === 'standing' ? stance.text.play.noRoomToStand : stance.text.play.noRoomToCrouch);
     return current;
   }
   setStanceHeight(stance, wanted);
@@ -703,6 +704,7 @@ export const createSession = (options: SessionOptions) => {
       prone: Player.prone.bodyHeightMetres / s,
     },
     isSolid: (x, y, z) => physicalSolid(x, y, z),
+    text,
   };
   setStanceHeight(stanceBody, playerStance);
   const updateStance = (): void => {

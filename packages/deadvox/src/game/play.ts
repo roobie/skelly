@@ -3146,7 +3146,7 @@ export const startPlay = (
   };
   const openHeldCan = (hand: HandSide): void => {
     const target = openingTargetForHand(inventory, hand);
-    refusalReason(target ? unpacking.activate(target) : 'I have no can to open');
+    refusalReason(target ? unpacking.activate(target) : lines.unpacking.noCan);
   };
   const sharpenAtWheel = (hand: HandSide): boolean => {
     const held = inventory.hands[hand];
@@ -3383,7 +3383,9 @@ export const startPlay = (
     const key = keyCap('world.interact');
     if (carry) {
       return playCarryText(
-        'refusal' in carry.spot ? carry.spot.refusal : html`${key}: set down ${nameOf(carry.entity)}`,
+        'refusal' in carry.spot
+          ? carry.spot.refusal
+          : html`${fillParts(lines.hints.setDown, { key, name: nameOf(carry.entity) })}`,
         screenText.interaction,
       );
     }

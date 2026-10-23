@@ -79,7 +79,6 @@
           "downedBody": "{key}: {finish} · {key} (hold): dismember",
           "downedBodyRefused": "{key}: {finish} · {key} (hold): dismember — {reason}",
           "groundItem": "{key}: pocket {item} · {key} (hold): wield",
-          "lift": "{use} · {key} (hold): lift",
           "setDown": "{key}: set down {name}"
         },
         "infection": {
@@ -111,8 +110,7 @@
           "reading": "Reading {item}",
           "readingUnnamed": "Reading",
           "treating": "Treating {item}",
-          "treatingUnnamed": "Treating wound",
-          "waiting": "Waiting"
+          "treatingUnnamed": "Treating wound"
         },
         "magazine": {
           "cartridgesDetail": "Cartridges: {count}/{capacity}",
@@ -132,6 +130,7 @@
           "dropRefused": "Can't drop it: {reason}",
           "fuseBurning": "The fuse is already burning",
           "gunNotReady": "The gun isn't ready",
+          "noRoomToCrouch": "No room to crouch",
           "noRoomToStand": "No room to stand up",
           "notHoldingGun": "I'm not holding a gun",
           "onQuickbar": "{item} on quickbar {slot}",
@@ -159,8 +158,6 @@
         "survival": {
           "actionListHeading": "{item}:",
           "batteryDetail": "Battery {percent}%",
-          "batteryGone": "The battery isn't there any more",
-          "batteryOutOfReach": "The battery is out of reach",
           "burnedOut": "It has burned out",
           "cantUseFromHere": "I can't use the {item} from here",
           "cartridgeGone": "The cartridge isn't there any more",

@@ -29,6 +29,7 @@
     pinIn: 'Pin back in',
     fuseBurning: 'The fuse is already burning',
     noRoomToStand: 'No room to stand up',
+    noRoomToCrouch: 'No room to crouch',
     search: 'Search the {furniture}',
   },
   doors: {
@@ -48,7 +49,6 @@
     activate: '{key}: activate {name}',
     setDown: '{key}: set down {name}',
     groundItem: '{key}: pocket {item} · {key} (hold): wield',
-    lift: '{use} · {key} (hold): lift',
     downedBody: '{key}: {finish} · {key} (hold): dismember',
     downedBodyRefused: '{key}: {finish} · {key} (hold): dismember — {reason}',
   },
@@ -146,8 +146,6 @@
     itemMoved: 'The {item} moved before I could use it',
     itemOutOfReach: 'The {item} is out of reach',
     lightNotInHands: "The light isn't in my hands",
-    batteryGone: "The battery isn't there any more",
-    batteryOutOfReach: 'The battery is out of reach',
     toolNotInHands: "The tool isn't in my hands",
     cartridgeGone: "The cartridge isn't there any more",
     cartridgeOutOfReach: 'The cartridge is out of reach',
@@ -188,7 +186,6 @@
     forcingPadlock: 'Forcing padlock',
     treating: 'Treating {item}',
     treatingUnnamed: 'Treating wound',
-    waiting: 'Waiting',
   },
   treatment: {
     gone: "I don't have it any more",
