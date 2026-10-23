@@ -1,6 +1,7 @@
 import { AuthoredSite } from '../core/authoredSite.ts';
 import { BlockEntities, type EntitySpec } from '../core/blockEntities.ts';
 import { StressCity } from '../core/city.ts';
+import { CitySite } from '../core/citySite.ts';
 import { worldOpaque, worldSolid, worldSoundBlocking } from '../core/collision.ts';
 import { blockColors, blockId, type Registry } from '../core/content.ts';
 import { toChunk, type Vec3 } from '../core/coords.ts';
@@ -15,6 +16,7 @@ import type { ScenarioKind } from '../core/scenarioKinds.ts';
 import type { ScenarioDef } from '../core/schema.ts';
 import { type ColumnSource, type FurnitureSpawn, fillFurnitureLoot, type Rect, type Site } from '../core/site.ts';
 import { sitePalette, terrainShapeOf } from '../core/sitePalette.ts';
+import { type PlacedPowerDevice, placedPowerDevices } from '../core/sitePower.ts';
 import { type BlockBox, rasterize, stampChunk } from '../core/structure.ts';
 import { World } from '../core/world.ts';
 import { type Surface, terrainHeightMetres, worldGroundAt } from '../core/worldgen.ts';
@@ -31,6 +33,7 @@ export interface WorldSetup extends ColumnSource {
   /** Content problems, one per line; empty when all content loaded. */
   contentErrors: string;
   scenario: ScenarioDef | undefined;
+  powerDevices: readonly PlacedPowerDevice[];
   world: World;
   /** Furniture and doors. The game adds them as their columns generate. */
   entities: BlockEntities;
@@ -328,6 +331,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     registry,
     contentErrors,
     scenario: registry.scenarios.get(config.site),
+    powerDevices: built instanceof CitySite ? placedPowerDevices(registry, built.placements) : [],
     world,
     entities,
     site: built,

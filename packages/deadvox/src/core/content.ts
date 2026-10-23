@@ -971,10 +971,27 @@ const checkToolFuel = (item: ItemDef, registry: Registry, report: Report) => {
   }
 };
 
+const checkFurniturePower = (registry: Registry, furniture: FurnitureDef, report: Report) => {
+  const { power } = furniture;
+  if (!power) {
+    return;
+  }
+  const device = registry.powerDevices.get(power.device);
+  if (!device) {
+    report('furniture', furniture.id, '.power.device', `no power device "${power.device}"`);
+  } else if (device.kind !== 'generator' && power.fuelLitres !== 0) {
+    report('furniture', furniture.id, '.power.fuelLitres', 'only a generator holds fuel');
+  }
+  if (power.light && device?.kind !== 'consumer') {
+    report('furniture', furniture.id, '.power.light', 'a light must be a consumer');
+  }
+};
+
 const checkFurniture = (registry: Registry, report: Report) => {
   const cellMetres = registry.inventory.get(CORE_CONTENT_IDS.player)?.cellMetres;
   checkMaterialSounds(registry, report);
   for (const furniture of registry.furniture.values()) {
+    checkFurniturePower(registry, furniture, report);
     if (furniture.container) {
       checkContainerWidth({ section: 'furniture', id: furniture.id, container: furniture.container, registry, report });
     }

@@ -57,6 +57,13 @@ local cabinetShape = [
   loot: entry.loot + administration.loot,
   items: entry.items + administration.items,
   furniture: [
+    [f for f in (import 'furniture.jsonnet').furniture if f.id == 'fridge'][0] + {
+      id: 'gauntlet_lab_fridge', power: { device: 'lab_machine', fuelLitres: 0, enabled: true },
+    },
+    [f for f in (import 'crisis-hq-fixtures.jsonnet').furniture if f.id == 'hq_generator'][0] + {
+      id: 'gauntlet_lab_generator',
+      power: { device: 'lab_generator', fuelLitres: 0.25, enabled: true },
+    },
     { id: 'gauntlet_lab_bulkhead', name: 'Steel bulkhead door', size: [4, 5, 2], color: '#68767b', material: 'steel',
       breach: { minimumStrength: 9, durability: 300 },
       door: { methods: {}, handlingSimSeconds: 1.2 },
@@ -73,20 +80,20 @@ local cabinetShape = [
         { position: [0, 0.8, 1.4], size: [0.8, 0.3, 0.3], color: '#3f474b' },
         { position: [0, 3.9, 1.4], size: [0.8, 0.3, 0.3], color: '#3f474b' },
       ] },
-    { id: 'gauntlet_lab_dead_lift', name: 'Freight lift', size: [4, 5, 2], color: '#62696c', shape: [
+    { id: 'gauntlet_lab_dead_lift', name: 'Freight lift', power: { device: 'lab_machine', fuelLitres: 0, enabled: false }, size: [4, 5, 2], color: '#62696c', shape: [
       { position: [0, 0, 0], size: [4, 0.3, 2] }, { position: [0, 0, 0], size: [0.3, 5, 2] },
       { position: [3.7, 0, 0], size: [0.3, 5, 2] }, { position: [0, 4.7, 0], size: [4, 0.3, 2] },
       { position: [1.8, 0, 0], size: [0.4, 5, 0.3] },
     ] },
-    { id: 'gauntlet_lab_fixture', name: 'Strip light', size: [2, 1, 1], color: '#a5b8ba', solid: false,
+    { id: 'gauntlet_lab_fixture', name: 'Strip light', power: { device: 'lab_light', fuelLitres: 0, enabled: true, light: { color: '#d9eee8', intensity: 60, radius: 8 } }, size: [2, 1, 1], color: '#a5b8ba', solid: false,
       shape: [{ position: [0, 0.7, 0], size: [2, 0.3, 1] }] },
-    { id: 'gauntlet_lab_fixture_broken', name: 'Broken strip light', size: [2, 1, 1], color: '#555c61', solid: false,
+    { id: 'gauntlet_lab_fixture_broken', name: 'Broken strip light', power: { device: 'lab_light', fuelLitres: 0, enabled: false, light: { color: '#d9eee8', intensity: 60, radius: 8 } }, size: [2, 1, 1], color: '#555c61', solid: false,
       shape: [{ position: [0, 0.7, 0], size: [2, 0.3, 1] }, { position: [0.2, 0, 0.3], size: [0.2, 0.7, 0.2] }] },
     { id: 'gauntlet_look_archive', name: 'Prototype archive shelves', size: [4, 5, 2], color: '#a0a6a0', shape: cabinetShape + [{ position: [0.3, 2.3, 0], size: [3.4, 0.3, 2] }] },
-    { id: 'gauntlet_look_cold_store', name: 'Prototype cold specimen bank', size: [4, 5, 2], color: '#90b0b5', shape: [{ position: [0, 0, 0], size: [4, 5, 2] }] },
+    { id: 'gauntlet_look_cold_store', name: 'Prototype cold specimen bank', power: { device: 'lab_machine', fuelLitres: 0, enabled: true }, size: [4, 5, 2], color: '#90b0b5', shape: [{ position: [0, 0, 0], size: [4, 5, 2] }] },
     { id: 'gauntlet_look_exam', name: 'Prototype examination slab', size: [4, 2, 2], color: '#c7cfc7', shape: [{ position: [0, 1.5, 0], size: [4, 0.5, 2] }, { position: [0.5, 0, 0.5], size: [3, 1.5, 1] }] },
-    { id: 'gauntlet_look_pump', name: 'Prototype pressure plant', size: [4, 4, 3], color: '#738981', shape: [{ position: [0, 0, 0], size: [4, 0.4, 3] }, { position: [0.3, 0.4, 0.3], size: [1.2, 3.6, 2.4] }, { position: [2.5, 0.4, 0.3], size: [1.2, 3.6, 2.4] }] },
-    { id: 'gauntlet_look_culture', name: 'Prototype culture apparatus', size: [4, 4, 2], color: '#91a978', shape: [{ position: [0, 0, 0], size: [4, 0.4, 2] }, { position: [0.2, 0.4, 0.2], size: [0.6, 3.6, 1.6] }, { position: [1.7, 0.4, 0.2], size: [0.6, 3.6, 1.6] }, { position: [3.2, 0.4, 0.2], size: [0.6, 3.6, 1.6] }] },
+    { id: 'gauntlet_look_pump', name: 'Prototype pressure plant', power: { device: 'lab_machine', fuelLitres: 0, enabled: true }, size: [4, 4, 3], color: '#738981', shape: [{ position: [0, 0, 0], size: [4, 0.4, 3] }, { position: [0.3, 0.4, 0.3], size: [1.2, 3.6, 2.4] }, { position: [2.5, 0.4, 0.3], size: [1.2, 3.6, 2.4] }] },
+    { id: 'gauntlet_look_culture', name: 'Prototype culture apparatus', power: { device: 'lab_machine', fuelLitres: 0, enabled: true }, size: [4, 4, 2], color: '#91a978', shape: [{ position: [0, 0, 0], size: [4, 0.4, 2] }, { position: [0.2, 0.4, 0.2], size: [0.6, 3.6, 1.6] }, { position: [1.7, 0.4, 0.2], size: [0.6, 3.6, 1.6] }, { position: [3.2, 0.4, 0.2], size: [0.6, 3.6, 1.6] }] },
   ],
   mapPieces: circulation.mapPieces + equipment.mapPieces + threat.mapPieces + [level.stair] + entry.mapPieces + administration.mapPieces,
   mapAssemblies: entry.mapAssemblies + administration.mapAssemblies + [

@@ -109,6 +109,7 @@ interface WirePayload {
   world: {
     id: string;
     options: SaveWorldIdentity;
+    power?: SaveSnapshot['world']['power'];
     regions: Record<string, Region>;
     zombieSystem: {
       nextEntityId: number;
@@ -751,10 +752,27 @@ const scenarioRun = nullable(
 
 const savedRun = obj({ start: nonNegativeInt, length: positiveInt, id: nonNegativeInt });
 
+const powerState = obj({
+  atGameMilliseconds: nonNegativeInt,
+  devices: arr(
+    obj({
+      id: str({ nonEmpty: true }),
+      type: str({ nonEmpty: true }),
+      enabled: bool,
+      fuelUnits: nonNegativeInt,
+      storedMicrojoules: nonNegativeInt,
+      powered: bool,
+      restartBlocked: bool,
+    }),
+  ),
+  links: arr(obj({ from: str({ nonEmpty: true }), to: str({ nonEmpty: true }), itemUid: positiveInt })),
+});
+
 const wirePayloadSchema = obj({
   world: obj({
     id: str({ nonEmpty: true }),
     options: worldIdentitySchema,
+    power: opt(powerState),
     regions: record(
       obj({
         chunks: arr(
@@ -1172,6 +1190,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
   const wire: WirePayload = {
     world: {
       id: snapshot.world.id,
+      ...(snapshot.world.power ? { power: structuredClone(snapshot.world.power) } : {}),
       options: {
         ...worldOptions,
         seed: snapshot.character.simulation.seed,
@@ -1251,6 +1270,7 @@ function restoreWirePayload(wire: WirePayload): SaveSnapshot {
   const snapshot: SaveSnapshot = {
     world: {
       id: wire.world.id,
+      ...(wire.world.power ? { power: structuredClone(wire.world.power) } : {}),
       columns,
       zombies: { ...wire.world.zombieSystem, zombies: ordered(zombies).map(({ order: _order, ...entry }) => entry) },
       spawned: [...wire.world.spawned],
@@ -1678,6 +1698,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
     obj({
       world: obj({
         id: str({ nonEmpty: true }),
+        power: opt(powerState),
         columns: arr(
           obj({
             cx: safeInt,

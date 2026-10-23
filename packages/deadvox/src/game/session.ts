@@ -76,11 +76,13 @@ import type { EventRuleDef } from '../core/schema.ts';
 import { Simulation } from '../core/sim.ts';
 import type { ColumnSource } from '../core/site.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
+import { type PlacedPowerDevice, SitePower } from '../core/sitePower.ts';
 import { skillActivityPractice, skillActivityPracticeRate } from '../core/skillTraining.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
 import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
 import type { SoundId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
+import { simTimestamp } from '../core/time.ts';
 import { spendFuel } from '../core/torch.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
@@ -316,6 +318,7 @@ interface SessionDebug {
 }
 
 export interface SessionOptions {
+  powerDevices?: readonly PlacedPowerDevice[];
   registry: Registry;
   scenario?:
     | Readonly<{ id: string; body: string; compression: string; eventRules?: readonly EventRuleDef[] }>
@@ -598,6 +601,32 @@ const observeScenarioMovement = (
   if (climbing) {
     run?.entered(calendar);
   }
+};
+
+const createSessionPower = (options: SessionOptions, sim: Simulation): SitePower | undefined => {
+  const saved = options.restore?.world.power;
+  if (!options.powerDevices?.length) {
+    if (saved) {
+      throw new Error('Saved power has no authored devices');
+    }
+    return undefined;
+  }
+  if (options.restore && !saved) {
+    throw new Error('Save is missing authored power state');
+  }
+  const power = new SitePower({
+    registry: options.registry,
+    devices: options.powerDevices,
+    clock: sim.clock,
+    cycle: requireDayCycle(options.registry),
+    ...(saved ? { saved } : {}),
+  });
+  sim.scheduler.register({
+    id: 'power',
+    rate: 1 / options.registry.powerTuning.get(CORE_CONTENT_IDS.powerTuning)!.tickSimSeconds,
+    tick: (_dt, time) => power.advance(simTimestamp(time)),
+  });
+  return power;
 };
 
 export const createSession = (options: SessionOptions) => {
@@ -1872,6 +1901,8 @@ export const createSession = (options: SessionOptions) => {
     },
   };
 
+  const power = createSessionPower(options, sim);
+
   if (restored) {
     world.restoreColumns(restored.world.columns, (id) => {
       const found = registry.blockIds.get(id);
@@ -1913,6 +1944,7 @@ export const createSession = (options: SessionOptions) => {
     get won() {
       return scenarioRunWon(scenarioRun);
     },
+    power,
     isObjective,
     activateGoal: (entity: BlockEntity): string | undefined => {
       if (sim.dead) {
@@ -2158,6 +2190,7 @@ export const createSession = (options: SessionOptions) => {
       snapshotSession({
         worldId,
         characterId,
+        ...(power ? { power: power.network } : {}),
         scenarioRun: scenarioRunSnapshot(scenarioRun),
         world,
         blockContentId: (id) => registry.blocks[id]!.id,

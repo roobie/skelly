@@ -879,9 +879,9 @@ lidded shaft remains an alternate return route. Each level's stair and shaft lea
 different places than the ways that arrive on it, so the next way down is something to
 find and retreat by the other route is a real choice. The lowest rebuilt level joins
 the grid below through a temporary landing named in one place, which each rebuild moves
-down a storey. Threat may drop down a shaft but never climb up, so deep threat cannot
-reach the top and depth ordering holds. A lid then defends only against threat above.
-Threat moving between levels is not built; until it is, threat stays on its own level. See
+down a storey. Threat is allowed to move between levels; that behaviour is not built.
+Depth ordering is not a promise of isolation. Floors damp sound like walls rather than
+silencing it between storeys; see `src/core/soundOcclusion.ts`, `soundOcclusion`. See
 `src/content/base/gauntlet-lab-administration.libsonnet`, `stair`;
 `src/content/base/gauntlet-lab.libsonnet`, `join`; and
 `src/content/base/gauntlet-lab-equipment.libsonnet`, `mapPieces`.
@@ -981,15 +981,14 @@ Readable furniture does not confer objective authority; the live interaction mus
 reach the terminal button. See `src/core/scenarioCertificate.ts`, `scenarioCertificate`,
 and `src/game/session.ts`, `activateGoal`.
 
-Darkness uses world-derived sky transport and an ordinary carried light. The lab's
-fixtures are intended to light only after power is restored, so light is earned,
-not given. Rebuilt levels' working and broken fixtures are inert set dressing. Entry's breaker
-belongs in the security post. Level two's is in a plant room off its circulation, so
-power is found by exploring. The breaker interaction and its saved per-level power state
-are not built; until they are, the room and its marking are enough. Deeper levels' switch positions are decided at their own reviews. The
-lab has no lighting category until its light round. See
-`src/content/base/gauntlet-lab-entry.libsonnet`, `rooms`, and
-`src/content/base/gauntlet-lab-administration.libsonnet`, `rooms`. Finished site placements
+The whole lab shares one grid, fed by a generator on its first subterranean level.
+Its small fuel reserve makes working lights temporary rather than a permanent escape
+from darkness. Lights and machinery declare their electrical roles in content; there
+are no per-level breakers or player refuelling interaction. See
+`src/content/base/gauntlet-lab.libsonnet`, `furniture`;
+`src/content/base/gauntlet-lab-entry.libsonnet`, `rooms`;
+`src/core/sitePower.ts`, `SitePower`; and `src/game/session.ts`, `createSession`.
+Darkness also uses world-derived sky transport and ordinary carried light. Finished site placements
 expose the same sky eligibility contract across authored layouts, hamlets and
 scenario composition. Benchmark city plans do not opt into scenario
 sky work, preserving their stress policy. Demo stock stays outside ordinary
