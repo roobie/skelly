@@ -140,6 +140,8 @@ export const SIMULATION_EXCLUSIONS = [
   // Read-only debug readout formatting and byte-count estimates.
   'src/ui/playReadout.ts',
   'src/ui/inventoryScreen.ts',
+  // Read-only appliance projection; command admission and effects stay in session and core.
+  'src/ui/chargerPanel.ts',
   // Craft views/readouts and UI preference/event forwarding only. Native intents/admission
   // remain fingerprinted through session -> core/craftCommands and core/longAction.
   'src/ui/craftController.ts',

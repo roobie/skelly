@@ -8,7 +8,13 @@ it('lists every registered scheduler system as one the decoder accepts, and noth
     throw new Error('Scheduler fixture needs powered furniture');
   }
   const registered = createRuntime(undefined, false, undefined, {
-    powerDevices: [{ type: device.id, pos: [0, 0, 0] }],
+    powerDevices: [
+      {
+        type: device.id,
+        pos: [0, 0, 0],
+        entitySpec: { type: device.id, pos: [0, 0, 0], size: device.size, facing: 'n' },
+      },
+    ],
   }).sim.scheduler.persistedIds();
   expect(registered.size).toBeGreaterThan(0);
   expect([...registered].filter((id) => !KNOWN_SCHEDULER_IDS.has(id))).toEqual([]);
