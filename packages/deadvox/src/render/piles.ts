@@ -27,7 +27,7 @@ import { withHeightFog } from './heightFog.ts';
 import { applyItemEmissive, disposeItemEmissiveMaterials } from './itemEmissive.ts';
 import { itemLook } from './itemLook.ts';
 import { ModelFlames } from './modelFlame.ts';
-import { type GroundModelPart, groundModelFrame, type ModelLibrary } from './models.ts';
+import { type GroundModelPart, groundModelFrame, LENS, type ModelLibrary } from './models.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 
 interface CasePose {
@@ -64,6 +64,18 @@ export class PileMeshes {
   private readonly flames = new ModelFlames('pile-light-flame');
   /** Where each drawn flame burns, in world metres. */
   private readonly flamePositions = new Map<number, Vector3>();
+
+  private readonly beamLenses = new Map<number, Object3D>();
+
+  beamPoseOf(item: Item, position: Vector3, direction: Vector3): boolean {
+    const lens = this.beamLenses.get(item.uid);
+    if (!lens) {
+      return false;
+    }
+    lens.getWorldPosition(position);
+    direction.set(0, 0, -1).transformDirection(lens.matrixWorld);
+    return true;
+  }
 
   /** Sets `out` to where a lit item on the ground burns, if it is drawn with a flame. */
   lightPositionOf(item: Item, out: Vector3): boolean {
@@ -103,6 +115,7 @@ export class PileMeshes {
       return;
     }
     this.drawn = version;
+    this.beamLenses.clear();
     this.itemBounds.clear();
     this.flamePositions.clear();
     disposeItemEmissiveMaterials(this.group);
@@ -143,6 +156,7 @@ export class PileMeshes {
       this.releaseCaseVisual(visual);
     }
     this.caseVisuals.clear();
+    this.beamLenses.clear();
     this.itemBounds.clear();
     this.flamePositions.clear();
     disposeItemEmissiveMaterials(this.group);
@@ -184,6 +198,20 @@ export class PileMeshes {
       model.rotation.y = yaw;
       this.group.add(castsAndReceives(model));
       this.itemBounds.set(item.uid, new Box3().setFromObject(model));
+      const lens = model.getObjectByName(LENS);
+      if (lens) {
+        const remember = (part: Item): void => {
+          if (defOf(inventory.registry, part.type).light?.beam) {
+            this.beamLenses.set(part.uid, lens);
+          }
+          for (const child of Object.values(part.slots ?? {})) {
+            if (child) {
+              remember(child);
+            }
+          }
+        };
+        remember(item);
+      }
       const flame = this.flames.onModel(inventory.registry, item, model, groundModelFrame);
       if (flame) {
         this.flamePositions.set(item.uid, flame);

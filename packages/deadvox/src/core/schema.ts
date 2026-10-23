@@ -604,6 +604,40 @@ const UiScreenTextSchema = strictObject({
     crouch: [],
     exitPath: [],
     mainMenu: [],
+    revolver: [],
+    pumpShotgun: [],
+    ammunitionDetails: [],
+    wieldAmmunitionBox: [],
+    carryLooseAmmunition: [],
+    wearBackpack: [],
+    ready: [],
+    fireDominant: [],
+    fireOff: [],
+    load: [],
+    pump: [],
+    closeCylinder: [],
+    boxedAmmunition: [],
+    unpackDominant: [],
+    unpackOff: [],
+    partialLoad: [],
+    readyFire: [],
+    sightsOff: [],
+    reloadAfterFiring: [],
+    sightedFire: [],
+    sights: [],
+    unloadLiveRounds: [],
+    unload: [],
+    emptyHands: [],
+    putDownSelected: [],
+    stowSelected: [],
+    enGarde: [],
+    punch: [],
+    weaponsComplete: [],
+    weaponsPractice: [],
+    finishPractice: [],
+    rangeSupplies: [],
+    loadingDetail: [],
+    pumpingDetail: [],
     unsaved: [],
     practiceControls: [],
     restart: [],
@@ -1399,6 +1433,16 @@ const ItemSchema = strictObject({
   firearmAttachmentEffects: optional(FirearmAttachmentEffectsSchema),
   /** Fits a long gun's sling mount, so the gun can be carried on the shoulder. */
   sling: optional(vBoolean()),
+  /** A light mount: fits a long gun whose `lightMountSite` has the same kind, where gungen exports no rail for it. */
+  lightMount: optional(strictObject({ kind: Id })),
+  /** Where a long gun takes a `lightMount` of the same kind: a frame in the gun model's metres and XYZ degrees. */
+  lightMountSite: optional(
+    strictObject({
+      kind: Id,
+      at: tuple([number(), number(), number()]),
+      turn: tuple([number(), number(), number()]),
+    }),
+  ),
   /** One authored/global lock id; no per-placement key payload. */
   key: optional(strictObject({ lock: Id })),
   /**
@@ -3211,10 +3255,20 @@ const FigureSchema = strictObject({
 
 // ---- skills and recipes ----
 
+const SkillCurveSchema = strictObject({
+  saturationFloor: Fraction,
+  saturationHalfLifeLevels: Positive,
+});
+const SkillProgressionSchema = strictObject({
+  id: Id,
+  practicePerLevel: Positive,
+});
+
 const SkillSchema = pipe(
   strictObject({
     id: Id,
     name: Name,
+    curve: optional(SkillCurveSchema),
     /** Recipes a new character knows from the start. */
     startingRecipes: optional(array(Id)),
     training: optional(
@@ -3281,6 +3335,8 @@ const SkillSchema = pipe(
               landingLiftMetres: NonNegative,
             }),
             shotTraceRangeBlocks: Positive,
+            /** The owning skill's curve is attached by the registry, not authored here. */
+            curve: optional(SkillCurveSchema),
           }),
         ),
         melee: optional(
@@ -3854,6 +3910,7 @@ const RecipeSchema = strictObject({
   skills: record(Id, SkillLevel),
   qualities: record(Id, pipe(Count, minValue(1), maxValue(5))),
   components: array(pipe(array(RecipeItemSchema), nonEmpty('needs at least one alternative'))),
+  consumeFitted: optional(vBoolean()),
   workstation: optional(nullable(Id)),
 });
 
@@ -3964,6 +4021,7 @@ const SECTION_DESCRIPTOR = {
   models: { schema: optional(array(ModelSchema)), label: 'models', order: 7 },
   sounds: { schema: optional(array(SoundSchema)), label: 'sound events', order: 8 },
   skills: { schema: optional(array(SkillSchema)), label: 'skills', order: 9 },
+  skillProgression: { schema: optional(array(SkillProgressionSchema)), label: 'skill progression', order: 9 },
   recipes: { schema: optional(array(RecipeSchema)), label: 'recipes', order: 10 },
   layouts: { schema: optional(array(SiteLayoutSchema)), label: 'site layouts', order: 11 },
   body: { schema: optional(array(BodyTuningSchema)), label: 'body tuning', order: 12 },

@@ -513,8 +513,18 @@
       "workstation": null
     }
   ],
+  "skillProgression": [
+    {
+      "id": "core",
+      "practicePerLevel": 10
+    }
+  ],
   "skills": [
     {
+      "curve": {
+        "saturationFloor": 0.41999999999999998,
+        "saturationHalfLifeLevels": 4
+      },
       "id": "crafting",
       "name": "Crafting",
       "startingRecipes": [
@@ -536,10 +546,18 @@
       }
     },
     {
+      "curve": {
+        "saturationFloor": 0.41999999999999998,
+        "saturationHalfLifeLevels": 4
+      },
       "id": "mechanics",
       "name": "Mechanics"
     },
     {
+      "curve": {
+        "saturationFloor": 0.41999999999999998,
+        "saturationHalfLifeLevels": 4
+      },
       "id": "inventory_management",
       "inventory": {
         "handlingFactorFloor": 0,
@@ -602,6 +620,10 @@
           "wobbleVerticalToHorizontalRatio": 0.22500000000000001
         }
       },
+      "curve": {
+        "saturationFloor": 0.41999999999999998,
+        "saturationHalfLifeLevels": 4
+      },
       "id": "firearms_combat",
       "name": "Firearms Combat (FC)",
       "training": {
@@ -647,6 +669,10 @@
           "staminaCostHalfLifeLevels": 3,
           "staminaPerAbsorbedPoint": 2
         }
+      },
+      "curve": {
+        "saturationFloor": 0.41999999999999998,
+        "saturationHalfLifeLevels": 4
       },
       "id": "melee_combat",
       "name": "Melee Combat (MC)",

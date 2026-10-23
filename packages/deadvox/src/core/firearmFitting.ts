@@ -1,5 +1,6 @@
 // Dynamic attachment admission uses only gungen's certificates and exported rail-notch footprints. The sling mount
-// is the one exception: deadvox owns it, because gungen exports no sling (`DESIGN.md`, "Shoulder and sling").
+// and the light mount on a rail-less long gun are the exceptions: deadvox owns them, because gungen exports no sling
+// (`DESIGN.md`, "Shoulder and sling") and no strap-on light site.
 import type { ItemDef, ModelDef, Registry } from './content.ts';
 import type { Item } from './items.ts';
 
@@ -10,10 +11,16 @@ export const SLING_SLOT = 'sling';
 /** A two-handed firearm: the guns a sling can carry on the shoulder. */
 export const isLongGun = (def: ItemDef | undefined): boolean => Boolean(def?.firearm && def.twoHanded);
 
-/** The firearm's attachment slots: its exported mounts, then the sling mount on a long gun. */
+export const LIGHT_MOUNT_SLOT = 'light-mount';
+
+/** The firearm's attachment slots: its exported mounts, then the sling and light mounts a long gun has. */
 export const firearmSlotIds = (registry: Registry, def: ItemDef): string[] => {
   const model = def.model === undefined ? undefined : registry.models.get(def.model);
-  return [...(model?.gun?.attachmentSlots?.map(({ id }) => id) ?? []), ...(isLongGun(def) ? [SLING_SLOT] : [])];
+  return [
+    ...(model?.gun?.attachmentSlots?.map(({ id }) => id) ?? []),
+    ...(isLongGun(def) ? [SLING_SLOT] : []),
+    ...(isLongGun(def) && def.lightMountSite ? [LIGHT_MOUNT_SLOT] : []),
+  ];
 };
 
 export const slingFitted = (item: { readonly slots?: Readonly<Record<string, unknown>> | undefined }): boolean =>

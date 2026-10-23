@@ -8,7 +8,8 @@ import { BASE_CLOCK } from './dayPhaseFixture.ts';
 const BUNDLED_CONTENT = startupContent();
 
 import { Survival } from '../src/game/survival.ts';
-import { Tutorial, type TutorialObservation, tutorialRequested, tutorialUrl } from '../src/game/tutorial.ts';
+import { Tutorial, type TutorialObservation } from '../src/game/tutorial.ts';
+import { tutorialRequested, tutorialUrl } from '../src/game/tutorialUrl.ts';
 import { Simulation } from './simulationFixture.ts';
 
 const observation = (): TutorialObservation => ({
@@ -81,6 +82,11 @@ describe('practice objectives', () => {
     observe();
     expect(tutorial.stage).toBe('finish');
     expect(tutorial.canStartLight).toBe(true);
+    tutorial.chooseWeapons();
+    expect(tutorial.stage).toBe('revolver');
+    tutorial.startLight();
+    observe();
+    expect(tutorial.stage).toBe('revolver');
     expect(new URL(tutorialUrl('https://example.org/deadvox/?tutorial=1', false)).search).toBe('');
   });
 
@@ -139,6 +145,8 @@ describe('practice objectives', () => {
     state.litType = lightKit.light;
     observe();
     expect(tutorial.stage).toBe('finish');
+    tutorial.chooseWeapons();
+    expect(tutorial.stage).toBe('revolver');
   });
 
   it('remembers out-of-order supplies instead of requiring already consumed items again', () => {
