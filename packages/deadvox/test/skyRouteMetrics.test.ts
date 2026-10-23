@@ -25,7 +25,7 @@ const frame = (realMs: number, phase: 'cold' | 'warm', eligible: SkyRouteField[]
   position: [0, 0, 0],
   estimate: 1,
   eligible,
-  stats: { requested: 0, completed: 0, accepted: 0, discarded: 0, volumes: 0, roofFree: 0, finished: 0 },
+  stats: { requested: 0, completed: 0, accepted: 0, discarded: 0, volumes: 0, roofFree: 0 },
 });
 it('fallback episodes keep region-exit and route-end censoring separate from readiness and from a warm revisit', () => {
   const frames = [

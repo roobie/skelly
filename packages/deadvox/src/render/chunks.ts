@@ -281,25 +281,8 @@ export class ChunkMeshes implements ColumnReveal {
     return this.revealChanges;
   }
 
-  private held: ReadonlySet<string> = new Set();
-
   isRevealed(x: number, z: number): boolean {
-    const key = `${toChunk(Math.floor(x))},${toChunk(Math.floor(z))}`;
-    return this.streamed(key) && !this.held.has(key);
-  }
-
-  /** Whether streaming has finished a column, before any hold; keys are `cx,cz`. */
-  streamed(column: string): boolean {
-    return this.revealed?.has(column) ?? true;
-  }
-
-  /** Keeps streamed columns hidden until their lighting can be drawn; keys are `cx,cz`. */
-  holdColumns(columns: ReadonlySet<string>): void {
-    if (this.held.size === columns.size && [...columns].every((key) => this.held.has(key))) {
-      return;
-    }
-    this.held = columns;
-    this.hideUnrevealed();
+    return this.revealed?.has(`${toChunk(Math.floor(x))},${toChunk(Math.floor(z))}`) ?? true;
   }
 
   setRevealedColumns(columns: ReadonlySet<string>): void {
@@ -307,10 +290,6 @@ export class ChunkMeshes implements ColumnReveal {
       return;
     }
     this.revealed = columns;
-    this.hideUnrevealed();
-  }
-
-  private hideUnrevealed(): void {
     this.revealChanges += 1;
     this.changes += 1;
     for (const mesh of this.meshes.values()) {

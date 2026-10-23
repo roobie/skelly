@@ -116,11 +116,6 @@ export class SkyFields {
     return entry.built?.result;
   }
 
-  /** A field's current result, built synchronously now if it has none: the answer `visibilityAt` uses. */
-  answer(index: number): SkyResult {
-    return this.build(this.entries[index]!);
-  }
-
   /** A field's last complete result, current or not. */
   latest(index: number): SkyResult | undefined {
     return this.entries[index]!.latest;
