@@ -35,7 +35,7 @@ const aimThrowAtFreeLanding = async (page, fixture) => {
   // Different items have different dragged flights; a clear glowstick landing says nothing about a firearm's.
   const landing = await page.evaluate(({ uid, chargeSimSeconds }) => {
     const r = globalThis.primaryActionTest;
-    const yaw = r.input.yaw;
+    const { yaw } = r.input;
     for (let turn = 0; turn < 32; turn += 1) {
       r.input.yaw = yaw + (turn * Math.PI * 2) / 32;
       const candidate = r.getItemThrowLanding(uid, chargeSimSeconds);
@@ -43,7 +43,6 @@ const aimThrowAtFreeLanding = async (page, fixture) => {
         return candidate;
       }
     }
-    return undefined;
   }, fixture);
   assert(landing?.fits, 'the item’s full-charge flight has a landing with room');
   return landing;
@@ -2398,13 +2397,13 @@ try {
   await page.evaluate(({ uid, chargeSimSeconds }) => {
     const r = globalThis.primaryActionTest;
     const item = r.inventory.itemByUid(uid);
-    const landing = r.getItemThrowLanding(uid, chargeSimSeconds);
-    if (!landing?.target) {
+    const obstructed = r.getItemThrowLanding(uid, chargeSimSeconds);
+    if (!obstructed?.target) {
       throw new Error('The firearm fixture needs a landing to obstruct');
     }
     // Force the crowded-landing case instead of depending on generated loot or the preceding mouse pose.
-    while (r.inventory.planAdd(item, landing.target).ok) {
-      if (!r.inventory.add(r.inventory.create(item.type), landing.target)) {
+    while (r.inventory.planAdd(item, obstructed.target).ok) {
+      if (!r.inventory.add(r.inventory.create(item.type), obstructed.target)) {
         throw new Error('Could not fill the firearm fixture landing');
       }
     }
