@@ -7,12 +7,13 @@ import type { Item } from '../src/core/items.ts';
 import { type PelletShot, projectileShot } from '../src/core/pellets.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ItemDef } from '../src/core/schema.ts';
+import { projectVehicleParts, VehicleOccupancy } from '../src/core/vehicleProjection.ts';
 import { World } from '../src/core/world.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
 import { posedShamblerRegionBoxes, type ZombieRegion, type ZombieRegions } from '../src/core/zombieRegions.ts';
 import { FirearmMechanics, type FirearmShotInput, type FirearmTrajectory } from '../src/game/firearmHandling.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
+import { createSession, IDLE, type ResolvedFirearmTrajectory } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { PLAYER } from './playerFixture.ts';
 import { chargedRifle, rifleAmmunition } from './rifleFixture.ts';
@@ -37,7 +38,7 @@ const shotInput = (item: Item): FirearmShotInput => ({
   aimingDownSights: true,
 });
 
-const runtime = (onTrajectory?: (trajectory: FirearmTrajectory) => void) =>
+const runtime = (onTrajectory?: (trajectory: ResolvedFirearmTrajectory) => void) =>
   createSession({
     registry,
     world: new World(),
@@ -198,5 +199,33 @@ describe('rifle hits', () => {
       }
     });
     expect(scrambled).toEqual(damageWith());
+  });
+
+  it('a session shot at a parked vehicle stops at the vehicle', () => {
+    const traces: ResolvedFirearmTrajectory['traces'][number][] = [];
+    const session = runtime(({ traces: shot }) => traces.push(...shot));
+    const id = session.inventory.registerVehicle({
+      blueprint: 'hatchback',
+      placementKey: 'rifle-vehicle-target',
+      origin: [0, 0, -12],
+      facing: 'e',
+    });
+    // Aim at the middle of the parked body's collision boxes; open ground lies behind it.
+    const centres = projectVehicleParts(registry, id, session.inventory.vehicles.get(id)!, BLOCK).flatMap((part) =>
+      part.boxes.map(({ min, max }) => min.map((value, axis) => (value + max[axis]!) / 2 / BLOCK)),
+    );
+    const aim = [0, 1, 2].map((axis) => centres.reduce((sum, centre) => sum + centre[axis]!, 0) / centres.length);
+    const { eye } = shotInput(session.inventory.create('rifle_assault'));
+    const [dx, dy, dz] = aim.map((value, axis) => value - eye[axis]!) as Vec3;
+    const yaw = Math.atan2(-dx, -dz);
+    const pitch = Math.atan2(dy, Math.hypot(dx, dz));
+    const { rifle } = chargedRifle(session.inventory, session.queue, session.firearms, {
+      rounds: 1,
+      magazines: session.magazines,
+    });
+    expect(session.firearms.fire({ ...shotInput(rifle), yaw, pitch, aimFrame: { yaw, pitch } })).toBe(true);
+    const body = new VehicleOccupancy(registry, session.inventory.vehicles, BLOCK);
+    expect(traces).toHaveLength(1);
+    expect(traces[0]!.hit && body.isSolid(...traces[0]!.hit.block)).toBe(true);
   });
 });
