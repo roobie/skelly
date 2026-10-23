@@ -16,7 +16,7 @@ import {
 import { surfaceOf } from '@skelly/thing-core/materials';
 import { describe, expect, it } from 'vitest';
 import appearance from '../src/gun/appearance.json' with { type: 'json' };
-import { attachmentInstanceForId } from '../src/gun/attachments.ts';
+import { attachmentInstanceForId, attachmentLookIssue } from '../src/gun/attachments.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { MOUNT_KINDS, MOUNT_STANDARDS, mountCanAccept } from '../src/gun/mounts.ts';
@@ -97,6 +97,15 @@ describe('optic catalog', () => {
     for (const { material } of coating({ finish: { lens: other! } })) {
       expect(material).toBe(other);
     }
+  });
+
+  it.each(OPTIC_TYPE_IDS)('%s refuses a lens left without a known coating instead of drawing it in metal', (id) => {
+    // A product look that selects no coating, or an instance whose coating is no material, fails at the boundary.
+    expect(attachmentLookIssue(`optic-${id}`, {})).toMatch(LENS_SLOT);
+    expect(attachmentLookIssue(`optic-${id}`, { metal: 'steel-blued' })).toMatch(LENS_SLOT);
+    expect(() => attachmentInstanceForId(`optic-${id}`, { finish: { lens: 'no-such-coating' } })).toThrow(
+      'no-such-coating',
+    );
   });
 
   it('gives the closed micro dot a rear-to-front tunnel and two rear-left adjustment dials', () => {
