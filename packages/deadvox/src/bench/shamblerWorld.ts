@@ -37,6 +37,7 @@ export const createHeadlessShamblerWorld = (seed: number, registry: Registry): H
   const shape = terrainShapeOf(registry);
   const stamp = (chunk: Parameters<Hamlet['stamp']>[0]) => site.stamp(chunk);
   const engineWorld: HeadlessShamblerWorld = {
+    registry,
     config: { scale },
     spawn: site.spawn,
     groundAt: (xm, zm) => worldGroundAt({ seed, shape, scale, surface, xm, zm }),

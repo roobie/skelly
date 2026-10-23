@@ -1,4 +1,5 @@
 // A rifle as the player sees it: drawn with the magazine it really has in every view (`DESIGN.md`, "Piles and item models"), and its handling played on it from the job alone.
+
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
@@ -31,6 +32,7 @@ import { itemLook } from '../src/render/itemLook.ts';
 import { ModelLibrary } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { PLAYER } from './playerFixture.ts';
 import { rifleAmmunition, rifleInHand, settle } from './rifleFixture.ts';
 
 const BASE = 'src/content/base';
@@ -377,6 +379,7 @@ it('keeps over-limit view pitch changes in ADS while the held pose takes the rec
   const { mechanics, gun, camera, heldFrame, dispose } = await heldGun(RIFLE);
   const tuning = registry.skills.get('firearms_combat')!.combat!.firearms!;
   const aim = new AimController({
+    tuning: PLAYER.aim,
     wobbleLimitRadians: tuning.wobbleLimitRadians,
     wobbleShape: {
       verticalToHorizontalRatio: tuning.wobbleVerticalToHorizontalRatio,

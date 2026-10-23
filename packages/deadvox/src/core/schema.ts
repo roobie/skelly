@@ -3041,19 +3041,45 @@ const HandlingRangeSchema = strictObject({
 });
 
 const LoweredStanceSchema = strictObject({
-  speedMetresPerSimSecond: SimRate,
   hearingRangeScale: Fraction,
   sightRangeScale: Fraction,
+});
+
+const PlayerStanceTuningSchema = strictObject({
+  speedMetresPerSimSecond: SimRate,
   eyeDropMetres: Positive,
   bodyHeightMetres: Positive,
 });
 
+const PlayerSchema = strictObject({
+  id: Id,
+  halfWidth: Positive,
+  height: Positive,
+  eye: Positive,
+  walk: SimRate,
+  jog: SimRate,
+  sprint: SimRate,
+  jump: SimRate,
+  reach: Positive,
+  stepHeight: Positive,
+  movement: strictObject({ sidewaysSpeedScale: Fraction, backwardSpeedScale: Fraction }),
+  crouch: PlayerStanceTuningSchema,
+  prone: PlayerStanceTuningSchema,
+  load: pipe(
+    strictObject({ light: NonNegative, heavy: Positive, slowest: Fraction, handlingScale: Fraction }),
+    check(({ light, heavy }) => heavy > light, 'heavy load must exceed light load'),
+  ),
+  aim: strictObject({
+    moveYawPerSpeed: NonNegative,
+    lookLagPerRadian: NonNegative,
+    lookSettleSimSeconds: PositiveSimSeconds,
+    recoilRecoverySimSeconds: PositiveSimSeconds,
+    maxOffsetRadians: pipe(Positive, maxValue(Math.PI / 2)),
+  }),
+});
+
 const SenseSchema = strictObject({
   id: Id,
-  movement: strictObject({
-    sidewaysSpeedScale: Fraction,
-    backwardSpeedScale: Fraction,
-  }),
   /** Chest height as a fraction of the eye height, so a stance that lowers the eyes lowers the chest. */
   chestEyeFraction: Fraction,
   crouch: LoweredStanceSchema,
@@ -3532,6 +3558,7 @@ const SECTION_DESCRIPTOR = {
   layouts: { schema: optional(array(SiteLayoutSchema)), label: 'site layouts', order: 11 },
   body: { schema: optional(array(BodyTuningSchema)), label: 'body tuning', order: 12 },
   senses: { schema: optional(array(SenseSchema)), label: 'sense tuning', order: 13 },
+  player: { schema: optional(array(PlayerSchema)), label: 'player tuning', order: 13.5 },
   meleeClasses: { schema: optional(array(MeleeClassSchema)), label: 'melee classes', order: 14 },
   siteGeneration: { schema: optional(array(SiteGenerationSchema)), label: 'site generation', order: 15 },
   handlingRange: { schema: optional(array(HandlingRangeSchema)), label: 'handling range', order: 29 },
@@ -3600,6 +3627,7 @@ export type CompressionCaps = InferOutput<typeof CompressionTuningSchema>['caps'
 export type HandlingRangeDef = InferOutput<typeof HandlingRangeSchema>;
 export type WeatheringDef = InferOutput<typeof WeatheringSchema>;
 export type SenseDef = InferOutput<typeof SenseSchema>;
+export type PlayerDef = InferOutput<typeof PlayerSchema>;
 export type TreeConeCrown = Extract<InferOutput<typeof TreeCrownSchema>, { kind: 'cone' }>;
 export type DayCycleDef = InferOutput<typeof DayCycleSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;

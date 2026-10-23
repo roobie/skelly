@@ -6,8 +6,8 @@ import { planDisassembly } from '../src/core/disassembly.ts';
 import { type Target, WORK_IN_PROGRESS } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
 import { dropTarget, playerPockets, quickMove, toHands } from '../src/core/options.ts';
-import type { MoveIntent } from '../src/game/player.ts';
 import { IDLE } from '../src/game/session.ts';
+import type { MoveIntent } from './playerFixture.ts';
 import { advance, createRuntime, fixtureZombieColumn, type Runtime, registry, scale } from './snapshotTestSupport.ts';
 
 const column: [number, number] = [fixtureZombieColumn[0] + 10, fixtureZombieColumn[1] + 10];

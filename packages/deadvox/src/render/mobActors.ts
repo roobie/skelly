@@ -117,7 +117,6 @@ import {
 import { type ZombieFigureType, zombieFigure } from '../core/zombieFigure.ts';
 import { posedShambler, zombiePoseInputFor } from '../core/zombiePose.ts';
 import { BACKGROUND_ZOMBIE_RATE, type HitImpulse, type Zombie, zombieAttackReachMetres } from '../core/zombies.ts';
-import { PLAYER } from '../game/player.ts';
 import { ZOMBIE_RATE } from '../game/simulationRates.ts';
 import { buildCarvedGeometry, FleshChunks, mergeBoneMeshes } from './amalgamFlesh.ts';
 import { amalgamCoreInteriorAnchor, amalgamTentaclePose } from './amalgamTentaclePose.ts';
@@ -146,7 +145,7 @@ export interface ZombieRenderer {
   ) => void;
   dispose?: () => void;
   setCamera?: (camera: Camera) => void;
-  setPlayerEyePosition?: (position: Vec3) => void;
+  setPlayerEyePosition?: (position: Vec3, maxSpeed: number) => void;
   setPlayerChestPosition?: (position: Vec3) => void;
   setPerceptionLabels?: (enabled: boolean) => void;
   zombieDied?: (id: EntityId, zombie: Zombie, playerPos?: Vec3) => void;
@@ -297,13 +296,13 @@ export const HEARING_GAZE_JITTER = {
 
 export type PerceptionLabel = 'sees you' | 'hears you' | 'notices something' | 'remembers' | 'unaware';
 
-const perceivedAtPlayer = (target: Vec3, playerEye: Vec3 | undefined, blockSize: number): boolean => {
+const perceivedAtPlayer = (target: Vec3, playerEye: Vec3 | undefined, blockSize: number, maxSpeed: number): boolean => {
   if (!playerEye) {
     return false;
   }
   // The stored point and eye position differ vertically; horizontal equality identifies a player source without source state.
   // Allow one maximum-speed step between attention samples and the next render frame.
-  const tolerance = Math.max(blockSize / 1000, PLAYER.sprint / ZOMBIE_RATE);
+  const tolerance = Math.max(blockSize / 1000, maxSpeed / ZOMBIE_RATE);
   return Math.hypot(target[0] * blockSize - playerEye[0], target[2] * blockSize - playerEye[2]) <= tolerance;
 };
 
@@ -311,13 +310,13 @@ export const perceptionLabelFor = (
   zombie: Zombie,
   recentNearStimulus: boolean,
   playerEye: Vec3 | undefined,
-  blockSize: number,
+  { blockSize, maxSpeed }: { blockSize: number; maxSpeed: number },
 ): PerceptionLabel => {
   if (zombie.mode === 'chase') {
     return 'sees you';
   }
   if (recentNearStimulus) {
-    return zombie.lastPerceived && perceivedAtPlayer(zombie.lastPerceived, playerEye, blockSize)
+    return zombie.lastPerceived && perceivedAtPlayer(zombie.lastPerceived, playerEye, blockSize, maxSpeed)
       ? 'hears you'
       : 'notices something';
   }
@@ -558,6 +557,7 @@ export class MobActorMeshes implements ZombieRenderer {
   private backgroundBlend = 1;
   private camera: Camera | undefined;
   private playerEyePosition: Vec3 | undefined;
+  private playerMaxSpeed = 0;
   private playerChestPosition: Vec3 | undefined;
   private perceptionLabelsEnabled = false;
   private perceptionLabelRoot: HTMLDivElement | undefined;
@@ -743,8 +743,9 @@ export class MobActorMeshes implements ZombieRenderer {
     this.camera = camera;
   }
 
-  setPlayerEyePosition(position: Vec3): void {
+  setPlayerEyePosition(position: Vec3, maxSpeed: number): void {
     this.playerEyePosition = [...position];
+    this.playerMaxSpeed = maxSpeed;
   }
 
   setPlayerChestPosition(position: Vec3): void {
@@ -811,12 +812,10 @@ export class MobActorMeshes implements ZombieRenderer {
       perceptionLabelRoot.append(label);
       this.perceptionLabels.set(id, label);
     }
-    const perception = perceptionLabelFor(
-      zombie,
-      this.hasRecentNearStimulus(state, zombie),
-      this.playerEyePosition,
-      this.blockSize,
-    );
+    const perception = perceptionLabelFor(zombie, this.hasRecentNearStimulus(state, zombie), this.playerEyePosition, {
+      blockSize: this.blockSize,
+      maxSpeed: this.playerMaxSpeed,
+    });
     label.textContent = perception;
     label.dataset.perceptionLabel = perception;
     this.labelProjection.set(placement.worldPos[0], placement.worldPos[1] + 1.8, placement.worldPos[2]).project(camera);

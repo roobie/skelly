@@ -43,13 +43,13 @@ import {
   type Zombie,
   ZombieSystem,
 } from '../src/core/zombies.ts';
-import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { MobActorMeshes, mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
 import { ZombieMeshes } from '../src/render/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { sunExposedAt } from './fixtures/sunOracle.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
+import { createPlayerBody, PLAYER, physicsFor, steer } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const SHAMBLER_CPU_BUDGET_MS = 1;
@@ -699,13 +699,14 @@ describe('shambler perception', () => {
     const crouchSightRange = lightSeenFrom * SENSE_TUNING.crouch.sightRangeScale;
     const distanceMetres = (crouchSightRange + lightSeenFrom) / 2;
     const distanceBlocks = distanceMetres / BLOCK_SIZE;
-    const crouchedEye = PLAYER.eye - SENSE_TUNING.crouch.eyeDropMetres;
+    const eyeDropMetres = 0.8;
+    const crouchedEye = PLAYER.eye - eyeDropMetres;
     const zombieEye = SHAMBLER.eyeHeightMetres;
     const wallFraction = (zombieEye - 0.9) / (zombieEye - crouchedEye);
     const wallX = Math.floor(distanceBlocks * wallFraction);
     const isSolid: SolidAt = (x, y) => x === wallX && y >= 0 && y < 2;
     const visible = (crouching: boolean, blocked: boolean) => {
-      const eyeHeightMetres = PLAYER.eye - (crouching ? SENSE_TUNING.crouch.eyeDropMetres : 0);
+      const eyeHeightMetres = PLAYER.eye - (crouching ? eyeDropMetres : 0);
       return perceivePlayer({
         zombie: { ...SHAMBLER, sight: 0.1, nightSight: 0.1 },
         from: [0, 0, 0],

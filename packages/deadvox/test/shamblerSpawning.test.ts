@@ -10,9 +10,9 @@ import {
 } from '../src/core/zombies.ts';
 import { spawnShamblers, spawnZombieType } from '../src/debug/shamblerSpawning.ts';
 import type { Engine } from '../src/game/engine.ts';
-import { createPlayerBody, PLAYER, physicsFor } from '../src/game/player.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { createPlayerBody, PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const registry = baseRegistry();

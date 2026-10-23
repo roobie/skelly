@@ -12,7 +12,7 @@ import { figureSeedPool } from '../core/zombieFigure.ts';
 import { BACKGROUND_ZOMBIE_RATE, ZombieSystem } from '../core/zombies.ts';
 import { type ActorRenderer, actorRendererFromUrl } from '../game/config.ts';
 import type { RenderedEngine } from '../game/engine.ts';
-import { PLAYER, physicsFor } from '../game/player.ts';
+import { physicsFor, playerTuning } from '../game/player.ts';
 import { MobActorMeshes, type ZombieRenderer } from '../render/mobActors.ts';
 import { applySky } from '../render/sky.ts';
 import { ZombieMeshes } from '../render/zombies.ts';
@@ -70,6 +70,7 @@ const playerFacing = (yaw: number): [number, number, number] => [-Math.sin(yaw),
 
 export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun): void => {
   const { camera, scene, streamer, config } = engine;
+  const Player = playerTuning(engine.registry);
   const hud = document.getElementById('hud')!;
   document.body.classList.add('bench');
   document.getElementById('overlay')!.hidden = true;
@@ -139,8 +140,8 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       blockSize: s,
       tuning: engine.registry.senses.get(CORE_CONTENT_IDS.player)!,
       terrainFloor: (x, z) => engine.groundAt(x * s, z * s) / s,
-      physics: physicsFor(scale),
-      jumpSpeed: PLAYER.jump,
+      physics: physicsFor(scale, Player),
+      jumpSpeed: Player.jump,
       player: () => ({
         pos: [...playerBody.pos] as [number, number, number],
         body: playerBody,
@@ -149,7 +150,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
         // A visible flashlight lets the entire 8–20 m ring remain aware at 23:30.
         lit: true,
         lightSeenFrom: 40,
-        eyeHeightMetres: PLAYER.eye,
+        eyeHeightMetres: Player.eye,
       }),
       dayPhase: () => dayPhaseAt(dayCycle, startTime),
       hurtPlayer: (amount) => simulation.hurt(amount, 'a shambler'),
@@ -285,7 +286,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       playerBody.vel[0] = 0;
       playerBody.vel[2] = 0;
       stepBody(playerBody, 1 / 60, engine.isSolid, {
-        ...physicsFor(scale),
+        ...physicsFor(scale, Player),
         obstacles: [...zombies.store.entries()].map(([, zombie]) => zombie.body),
       });
       physicsFrame += 1;
@@ -319,11 +320,11 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
 
   const updateCamera = (elapsed: number, measuring: boolean): void => {
     if (!playerBody) {
-      camera.position.set(engine.spawn.pos[0], engine.spawn.pos[1] + PLAYER.eye, engine.spawn.pos[2]);
+      camera.position.set(engine.spawn.pos[0], engine.spawn.pos[1] + Player.eye, engine.spawn.pos[2]);
       camera.rotation.set(-0.1, baseYaw, 0);
       return;
     }
-    camera.position.set(playerBody.pos[0] * s, playerBody.pos[1] * s + PLAYER.eye, playerBody.pos[2] * s);
+    camera.position.set(playerBody.pos[0] * s, playerBody.pos[1] * s + Player.eye, playerBody.pos[2] * s);
     camera.rotation.set(-0.1, baseYaw + (measuring ? (2 * Math.PI * elapsed) / duration.measure : 0), 0);
     streamer.update(playerBody.pos[0], playerBody.pos[2]);
   };

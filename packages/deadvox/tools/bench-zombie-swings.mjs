@@ -13,7 +13,7 @@ const server = await createServer({
 try {
   const { buildRegistry } = await server.ssrLoadModule('/src/core/content.ts');
   const { ZombieSystem } = await server.ssrLoadModule('/src/core/zombies.ts');
-  const { PLAYER, physicsFor } = await server.ssrLoadModule('/src/game/player.ts');
+  const { playerTuning, physicsFor } = await server.ssrLoadModule('/src/game/player.ts');
   const { makeScale } = await server.ssrLoadModule('/src/core/scale.ts');
   const contentDirectory = resolve(projectRoot, 'src/content/base');
   const { registry } = buildRegistry(
@@ -22,6 +22,7 @@ try {
       .sort()
       .map((file) => ({ source: file, data: JSON.parse(readFileSync(resolve(contentDirectory, file), 'utf8')) })),
   );
+  const PLAYER = playerTuning(registry);
   const type = { ...registry.zombies.get('shambler'), dismember: { chance: 0, headOnKillChance: 0 } };
   const player = {
     pos: [100, 2, 100],
@@ -36,7 +37,7 @@ try {
     seed: 41,
     isSolid: () => false,
     blockSize: 0.5,
-    physics: physicsFor(makeScale(0.5)),
+    physics: physicsFor(makeScale(0.5), PLAYER),
     jumpSpeed: 0,
     player: () => player,
     hour: () => 12,

@@ -14,7 +14,7 @@ import { makeScale } from '../core/scale.ts';
 import { worldBricks } from '../core/solidBricks.ts';
 import { World } from '../core/world.ts';
 import { amalgamTypeOf } from '../core/zombieFigure.ts';
-import { PLAYER, physicsFor } from '../game/player.ts';
+import { physicsFor, playerTuning } from '../game/player.ts';
 
 const args = process.argv.slice(2);
 if (args.length > 0 && (args.length !== 2 || args[0] !== '--shape-ref' || !/^[0-9a-f]{7,40}$/.test(args[1]))) {
@@ -51,6 +51,7 @@ const { registry } = buildRegistry(
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) })),
 );
 const scale = makeScale(0.5);
+const PLAYER = playerTuning(registry);
 const type = amalgamTypeOf(registry.zombies);
 const envelope = amalgamCollisionEnvelope(amalgamFigureForType(type, AMALGAM_FIGURE_SEED), scale.blockSize);
 const dt = 1 / 60;
@@ -133,7 +134,7 @@ for (const { name, corridor } of scenarios) {
       isOpaque: () => false,
       dayPhase: () => dayPhaseAt(requireDayCycle(registry), 12 * 3600),
       blockSize: scale.blockSize,
-      physics: physicsFor(scale),
+      physics: physicsFor(scale, PLAYER),
       jumpSpeed: PLAYER.jump,
       tuning: registry.senses.get(CORE_CONTENT_IDS.player),
       hurtPlayer: () => undefined,

@@ -14,10 +14,10 @@ import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { Zombie } from '../src/core/zombies.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
-import { type MoveIntent, PLAYER, physicsFor, type StanceToggle } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
-import { baseRegistry } from './baseRegistry.ts';
+import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
+import { type MoveIntent, PLAYER, physicsFor, type StanceToggle } from './playerFixture.ts';
 
 const BASE = 'src/content/base';
 const registry = baseRegistry();
@@ -286,6 +286,40 @@ describe('landing injuries', () => {
 });
 
 describe('session movement consequences', () => {
+  it('uses a player content override for body, directional pace, lowered stance and aim', () => {
+    const tuning = {
+      ...PLAYER,
+      halfWidth: 0.2,
+      height: 2,
+      eye: 1.7,
+      walk: 2.4,
+      movement: { sidewaysSpeedScale: 0.3, backwardSpeedScale: 0.2 },
+      crouch: { speedMetresPerSimSecond: 0.8, eyeDropMetres: 0.8, bodyHeightMetres: 1.1 },
+      aim: { ...PLAYER.aim, maxOffsetRadians: 0.03 },
+    };
+    const content = baseRegistryWith([{ source: 'fixture-player', data: { player: [tuning] } }]);
+    const runtime = makeRuntime({ content });
+    const { session } = runtime;
+    const { blockSize } = makeScale(0.5);
+    runtime.advance(1);
+    expect(session.body.halfWidth * blockSize).toBeCloseTo(tuning.halfWidth);
+    expect(session.body.height * blockSize).toBeCloseTo(tuning.height);
+    expect(session.playerEyeHeightMetres).toBeCloseTo(tuning.eye);
+    runtime.setIntent({ ...IDLE, right: 1, walk: true });
+    runtime.advance(1);
+    expect(session.body.vel[0] * blockSize).toBeCloseTo(tuning.walk * tuning.movement.sidewaysSpeedScale);
+    runtime.toggleCrouch();
+    runtime.advance(1);
+    expect(session.body.height * blockSize).toBeCloseTo(tuning.crouch.bodyHeightMetres);
+    expect(session.playerEyeHeightMetres).toBeCloseTo(tuning.eye - tuning.crouch.eyeDropMetres);
+    expect(session.body.vel[0] * blockSize).toBeCloseTo(
+      tuning.crouch.speedMetresPerSimSecond * tuning.movement.sidewaysSpeedScale,
+    );
+    session.aim.recordShot(0, 0.2);
+    expect(Math.abs(session.aim.snapshotState().recoilYaw)).toBeCloseTo(tuning.aim.maxOffsetRadians);
+    expect(session.aim.pendingViewPitchShift).toBeGreaterThan(0);
+  });
+
   it('slows the same walking intent after leg damage', () => {
     const healthy = makeRuntime();
     const injured = makeRuntime();
@@ -384,7 +418,7 @@ describe('session movement consequences', () => {
 
 describe('crouching under a low ceiling', () => {
   const { blockSize } = makeScale(0.5);
-  const crouchedBlocks = registry.senses.get('player')!.crouch.bodyHeightMetres / blockSize;
+  const crouchedBlocks = registry.player.get('player')!.crouch.bodyHeightMetres / blockSize;
   // The lowest whole-block opening above the crouched body.
   const gapBlocks = Math.floor(crouchedBlocks) + 1;
   // A slab over z = -4..-2 leaves that opening above the floor; the player starts south of it, facing it.
@@ -505,7 +539,7 @@ describe('crouching under a low ceiling', () => {
     expect(standing.passed).toBe(false);
     expect(standing.position[0]! - standing.halfWidth).toBeGreaterThanOrEqual(wall.origin[0] + wallWidth - 0.05);
 
-    const crouchedHeight = registry.senses.get('player')!.crouch.bodyHeightMetres;
+    const crouchedHeight = registry.player.get('player')!.crouch.bodyHeightMetres;
     expect(openingHeightBlocks * BLOCK_SIZE).toBeGreaterThanOrEqual(crouchedHeight);
     expect(
       openingZ.every((z) =>
@@ -541,7 +575,7 @@ describe('crouching under a low ceiling', () => {
 
 describe('lying prone', () => {
   const { blockSize } = makeScale(0.5);
-  const senses = registry.senses.get('player')!;
+  const senses = registry.player.get('player')!;
   const heightOf = {
     standing: PLAYER.height / blockSize,
     crouching: senses.crouch.bodyHeightMetres / blockSize,

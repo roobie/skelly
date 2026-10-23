@@ -12,30 +12,26 @@ import { makeScale } from '../src/core/scale.ts';
 import { grow, rectsOverlap } from '../src/core/site.ts';
 import { siteGenerationOf } from '../src/core/sitePalette.ts';
 import { soundOcclusion } from '../src/core/soundOcclusion.ts';
-import { simRate, simSeconds } from '../src/core/time.ts';
+import { simSeconds } from '../src/core/time.ts';
 import { forestDensityAt, leafLitterAt, placeTree, stampTrees, TreeIndex } from '../src/core/vegetation.ts';
 import { World } from '../src/core/world.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { perceivePlayer, ZombieSystem } from '../src/core/zombies.ts';
-import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { PLAYER, physicsFor } from './playerFixture.ts';
 
 const registry = baseRegistry();
 const scale = makeScale(0.5);
 const soundTuning = { hearingRangeScale: 0.5, gain: 0.5, cutoffHz: 1200, clearGain: 1, clearCutoffHz: 18_000 };
 const senseTuning = {
   id: 'fixture_player',
-  movement: { sidewaysSpeedScale: 0.7, backwardSpeedScale: 0.5 },
   chestEyeFraction: 0.62,
   crouch: {
-    speedMetresPerSimSecond: simRate(0.8),
     hearingRangeScale: 0.5,
     sightRangeScale: 0.5,
-    eyeDropMetres: 0.6,
-    bodyHeightMetres: 1.2,
   },
   prone: registry.senses.get('player')!.prone,
   wall: soundTuning,

@@ -123,8 +123,8 @@ import {
   type MoveIntent,
   movementPace,
   nextStance,
-  PLAYER,
   physicsFor,
+  playerTuning,
   restorePlayer,
   type StanceToggle,
   snapshotPlayer,
@@ -163,6 +163,7 @@ const sessionFirearmTargetName = (registry: Registry, firearmType: string | unde
 const isInventoryPracticeAction = (job: Job): boolean =>
   job.kind === 'action' && (job.jobType === UNPACK_ACTION || job.jobType === 'furniture.search');
 const createSessionAim = ({
+  player,
   tuning,
   seed,
   restored,
@@ -170,6 +171,7 @@ const createSessionAim = ({
   wobbleFlatOverride,
   wobbleNoiseScaleOverride,
 }: {
+  player: ReturnType<typeof playerTuning>;
   tuning: FirearmsCombatTuning;
   seed: number;
   restored: SaveSnapshot | undefined;
@@ -180,6 +182,7 @@ const createSessionAim = ({
   const footstepClock = restored?.character.playerAudio.footstepClock ?? initialFootstepClock();
   const wobbleSeed = Rng.stream(restored?.character.simulation.seed ?? seed, 'player-aim-wobble').int(0, 0xff_ff_ff_ff);
   return new AimController({
+    tuning: player.aim,
     wobbleLimitRadians: tuning.wobbleLimitRadians,
     wobbleShape: {
       verticalToHorizontalRatio: wobbleFlatOverride ?? tuning.wobbleVerticalToHorizontalRatio,
@@ -440,8 +443,12 @@ const settleStance = (
   return wanted;
 };
 
-const resolvePlayerEyeHeight = (unconscious: boolean, proneHeight: number, eyeDrop: number | undefined): number =>
-  unconscious ? proneHeight : PLAYER.eye - (eyeDrop ?? 0);
+const resolvePlayerEyeHeight = (
+  unconscious: boolean,
+  proneHeight: number,
+  eyeDrop: number | undefined,
+  eye: number,
+): number => (unconscious ? proneHeight : eye - (eyeDrop ?? 0));
 
 const movementIntent = (refusal: string | undefined, intent: MoveIntent): MoveIntent => (refusal ? IDLE : intent);
 
@@ -609,22 +616,22 @@ export const createSession = (options: SessionOptions) => {
   );
   const s = scale.blockSize;
   const skyTop = (scale.maxCy + 1) * CHUNK - 1;
-  const physics = physicsFor(scale);
+  const Player = playerTuning(registry);
+  const physics = physicsFor(scale, Player);
   const restored = options.restore;
   const rolledColumns = new Set(restored?.world.rolledColumns);
 
   const restoredPlayer = restored ? restorePlayer(restored.character.player) : undefined;
   const senseTuning = playerSenseTuning(registry);
   let playerStance: PlayerStance = restoredPlayer?.stance ?? 'standing';
-  const body: Body =
-    restoredPlayer?.body ?? createPlayerBody(scale, options.spawn[0], options.spawn[1], options.spawn[2]);
+  const body: Body = restoredPlayer?.body ?? createPlayerBody(scale, options.spawn, Player);
   // The stance sets the collision height, so a lowered save loads lowered and retuned content applies.
   const stanceBody: StanceBody = {
     body,
     heights: {
-      standing: PLAYER.height / s,
-      crouching: senseTuning.crouch.bodyHeightMetres / s,
-      prone: senseTuning.prone.bodyHeightMetres / s,
+      standing: Player.height / s,
+      crouching: Player.crouch.bodyHeightMetres / s,
+      prone: Player.prone.bodyHeightMetres / s,
     },
     isSolid,
   };
@@ -634,7 +641,7 @@ export const createSession = (options: SessionOptions) => {
     const wanted = debug?.()?.noclip ? playerStance : nextStance(playerStance, toggle);
     playerStance = settleStance(stanceBody, playerStance, wanted, options.refusal ?? options.notice);
   };
-  const loweredStance = () => loweredStanceTuning(senseTuning, playerStance);
+  const loweredStance = () => loweredStanceTuning(Player, playerStance);
   const restoredLook: RestoredLook | undefined = restoredPlayer && {
     yaw: restoredPlayer.yaw,
     pitch: restoredPlayer.pitch,
@@ -676,6 +683,7 @@ export const createSession = (options: SessionOptions) => {
     Array.from(inventory.items(), ({ item }) => item),
   );
   const aim = createSessionAim({
+    player: Player,
     tuning: currentFirearmsCombatTuning(),
     seed,
     restored,
@@ -990,7 +998,12 @@ export const createSession = (options: SessionOptions) => {
   let sprinting = restoredSprinting;
   let firearmReadyWalking = restoredFirearmReadyWalking;
   const playerEyeHeightMetres = (): number =>
-    resolvePlayerEyeHeight(sim.body.unconscious, sim.body.tuning.proneEyeHeightMetres, loweredStance()?.eyeDropMetres);
+    resolvePlayerEyeHeight(
+      sim.body.unconscious,
+      sim.body.tuning.proneEyeHeightMetres,
+      loweredStance()?.eyeDropMetres,
+      Player.eye,
+    );
   let footstepClock = savedFootstepClock;
   let rustleClock = restoredRustleClock;
   let airbornePeakY = restoredAirbornePeakY;
@@ -1000,7 +1013,7 @@ export const createSession = (options: SessionOptions) => {
     body,
     inventory,
     reachBelow: physics.stepHeight,
-    reach: PLAYER.reach / s,
+    reach: Player.reach / s,
     restored: restoredPlayer?.ladder,
   });
   inventory.handHold = ladderHold;
@@ -1150,8 +1163,7 @@ export const createSession = (options: SessionOptions) => {
     bashObstacle: (ahead, strength) => bashPiece(entities.pieceTouching(ahead), strength),
     blockSize: s,
     physics,
-    // Metres per second, as PLAYER.jump is: the system divides by blockSize itself.
-    jumpSpeed: PLAYER.jump,
+    jumpSpeed: Player.jump,
     tuning: senseTuning,
     player: playerSense,
     dayPhase: () => dayPhaseAt(dayCycle, sim.calendar),
@@ -1517,7 +1529,7 @@ export const createSession = (options: SessionOptions) => {
     const acting = queue.busy || firearms.busy || playerCombat.activeMeleeAction !== undefined || throwCharge.active;
     const steered = ladderHold.on && acting ? { ...pacedIntent, forward: 0, right: 0 } : pacedIntent;
     const ladder = ladderHold.piece(pacedIntent.jump || sim.body.actionRefusal !== undefined);
-    steer(body, scale, sampledInput().yaw, { ...steered, onLadder: ladder !== undefined });
+    steer(body, scale, { yaw: sampledInput().yaw, intent: { ...steered, onLadder: ladder !== undefined } }, Player);
     if (jumpStarted) {
       playPlayerSound('player_strain', time);
     }
@@ -1680,10 +1692,11 @@ export const createSession = (options: SessionOptions) => {
         movementSpeed: sim.body.consequences.movementSpeed,
         stanceSpeed: loweredStance()?.speedMetresPerSimSecond,
         directionalSpeed: {
-          sideways: senseTuning.movement.sidewaysSpeedScale,
-          backward: senseTuning.movement.backwardSpeedScale,
+          sideways: Player.movement.sidewaysSpeedScale,
+          backward: Player.movement.backwardSpeedScale,
         },
       },
+      Player,
     );
     const tools = debug?.();
     if (tools?.noclip) {

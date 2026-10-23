@@ -1,39 +1,37 @@
 // The player's body and movement, specified in metres and converted to blocks.
 
+import type { Registry } from '../core/content.ts';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
+import type { Vec3 } from '../core/coords.ts';
 import type { LadderHoldState } from '../core/ladders.ts';
 import type { Body, PhysicsParams } from '../core/physics.ts';
 import type { PlayerStance } from '../core/playerStance.ts';
 import type { Scale } from '../core/scale.ts';
+import type { PlayerDef } from '../core/schema.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
 
-/** Player constants in metres and metres per second (`DESIGN.md`, "Performance and scale"). */
-export const PLAYER = {
-  halfWidth: 0.3,
-  height: 1.8,
-  eye: 1.62,
-  walk: 1.8,
-  jog: 4.3,
-  sprint: 6.5,
-  /** Take-off speed; with GRAVITY it clears about 1.1 m. */
-  jump: 7.9,
-  reach: 4,
-  stepHeight: 0.5,
-} as const;
+export const playerTuning = (registry: Registry): PlayerDef => {
+  const tuning = registry.player.get(CORE_CONTENT_IDS.player);
+  if (!tuning) {
+    throw new Error('Missing player tuning');
+  }
+  return tuning;
+};
 
 /** m/s². Heavier than Earth's; it makes jumps feel snappy. */
 const GRAVITY = 28;
 
-export const physicsFor = (scale: Scale): PhysicsParams => ({
+export const physicsFor = (scale: Scale, tuning: PlayerDef): PhysicsParams => ({
   gravity: GRAVITY / scale.blockSize,
-  stepHeight: PLAYER.stepHeight / scale.blockSize,
+  stepHeight: tuning.stepHeight / scale.blockSize,
 });
 
 /** A player body at (x, y, z) in blocks, sized for the block size. */
-export const createPlayerBody = (scale: Scale, x: number, y: number, z: number): Body => ({
-  pos: [x, y, z],
+export const createPlayerBody = (scale: Scale, pos: Vec3, tuning: PlayerDef): Body => ({
+  pos: [...pos],
   vel: [0, 0, 0],
-  halfWidth: PLAYER.halfWidth / scale.blockSize,
-  height: PLAYER.height / scale.blockSize,
+  halfWidth: tuning.halfWidth / scale.blockSize,
+  height: tuning.height / scale.blockSize,
   onGround: false,
 });
 
@@ -119,14 +117,10 @@ export interface MoveIntent {
   onLadder?: boolean;
 }
 
-/** Grams: carrying more than `light` slows you, down to `slowest` at `heavy`. */
-const LOAD = { light: 20_000, heavy: 40_000, slowest: 0.6 } as const;
-
-/** Handling an item halves your pace (`DESIGN.md`, "Handling time"). */
-const paceFactor = (grams: number, handling: boolean): number => {
-  const over = Math.max(0, grams - LOAD.light) / (LOAD.heavy - LOAD.light);
-  const load = Math.max(LOAD.slowest, 1 - (1 - LOAD.slowest) * over);
-  return handling ? load * 0.5 : load;
+const paceFactor = (grams: number, handling: boolean, tuning: PlayerDef['load']): number => {
+  const over = Math.max(0, grams - tuning.light) / (tuning.heavy - tuning.light);
+  const load = Math.max(tuning.slowest, 1 - (1 - tuning.slowest) * over);
+  return handling ? load * tuning.handlingScale : load;
 };
 
 export const movementPace = (
@@ -146,18 +140,24 @@ export const movementPace = (
     stanceSpeed: number | undefined;
     directionalSpeed: { sideways: number; backward: number };
   },
+  tuning: PlayerDef,
 ): MoveIntent => ({
   ...intent,
   stanceSpeed,
   directionalSpeed,
-  pace: paceFactor(grams, handling) * movementSpeed * readyMovementFactor,
+  pace: paceFactor(grams, handling, tuning.load) * movementSpeed * readyMovementFactor,
 });
 
 /**
  * Sets the body's horizontal velocity from the intent and view yaw; starts a jump if grounded. An airborne body keeps
  * the velocity it left the ground with (`DESIGN.md`, "Moving in the air"); a ladder climber is not airborne.
  */
-export const steer = (body: Body, scale: Scale, yaw: number, intent: MoveIntent): void => {
+export const steer = (
+  body: Body,
+  scale: Scale,
+  { yaw, intent }: { yaw: number; intent: MoveIntent },
+  tuning: PlayerDef,
+): void => {
   if (!(body.onGround || intent.onLadder)) {
     return;
   }
@@ -173,14 +173,14 @@ export const steer = (body: Body, scale: Scale, yaw: number, intent: MoveIntent)
     forward /= len;
     right /= len;
   }
-  let pace: number = PLAYER.jog;
+  let pace: number = tuning.jog;
   if (intent.walk) {
-    pace = PLAYER.walk;
+    pace = tuning.walk;
   }
   if (intent.stanceSpeed !== undefined) {
     pace = intent.stanceSpeed;
   } else if (intent.sprint) {
-    pace = PLAYER.sprint;
+    pace = tuning.sprint;
   }
   const speed = (pace * (intent.pace ?? 1) * directionFactor) / scale.blockSize;
   const sin = Math.sin(yaw);
@@ -189,6 +189,6 @@ export const steer = (body: Body, scale: Scale, yaw: number, intent: MoveIntent)
   body.vel[0] = (-sin * forward + cos * right) * speed;
   body.vel[2] = (-cos * forward - sin * right) * speed;
   if (intent.jump && body.onGround) {
-    body.vel[1] = PLAYER.jump / scale.blockSize;
+    body.vel[1] = tuning.jump / scale.blockSize;
   }
 };

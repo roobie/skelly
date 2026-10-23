@@ -32,7 +32,6 @@ import { amalgamTypeOf, figureSeedPool } from '../src/core/zombieFigure.ts';
 import { flinchSideForId, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes, shamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { type Zombie, type ZombieMode, ZombieSystem } from '../src/core/zombies.ts';
-import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { ZOMBIE_RATE } from '../src/game/simulationRates.ts';
 import { CARVED_NEIGHBOUR } from '../src/render/amalgamFlesh.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
@@ -45,9 +44,9 @@ import {
   perceptionLabelFor,
 } from '../src/render/mobActors.ts';
 import { ZombieMeshes } from '../src/render/zombies.ts';
-
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 interface TestDebris {
@@ -780,7 +779,7 @@ describe('MobActorMeshes', () => {
       camera.lookAt(0, 1, -2);
       camera.updateMatrixWorld(true);
       renderer.setCamera(camera);
-      renderer.setPlayerEyePosition([2, 0, -2]);
+      renderer.setPlayerEyePosition([2, 0, -2], PLAYER.sprint);
       const zombie = makeZombie([0, 0, -4]);
       zombie.mode = 'chase';
       const store = new MapEntityStore<Zombie>();
@@ -804,25 +803,27 @@ describe('MobActorMeshes', () => {
     const blockSize = 0.5;
     const playerEye: Vec3 = [1.5, 1.6, -2];
     zombie.mode = 'chase';
-    const chase = perceptionLabelFor(zombie, false, playerEye, blockSize);
+    const chase = perceptionLabelFor(zombie, false, playerEye, { blockSize, maxSpeed: PLAYER.sprint });
     zombie.mode = 'investigate';
     zombie.investigationTier = 'near';
     zombie.lastPerceived = [playerEye[0] / blockSize, 0, playerEye[2] / blockSize];
-    const playerNoise = perceptionLabelFor(zombie, true, playerEye, blockSize);
+    const playerNoise = perceptionLabelFor(zombie, true, playerEye, { blockSize, maxSpeed: PLAYER.sprint });
     const oneSprintStepLater: Vec3 = [
       playerEye[0] + (PLAYER.sprint / ZOMBIE_RATE) * (1 - 1e-6),
       playerEye[1],
       playerEye[2],
     ];
-    expect(perceptionLabelFor(zombie, true, oneSprintStepLater, blockSize)).toBe(playerNoise);
+    expect(perceptionLabelFor(zombie, true, oneSprintStepLater, { blockSize, maxSpeed: PLAYER.sprint })).toBe(
+      playerNoise,
+    );
     const lureLightPosition: Vec3 = [playerEye[0] + blockSize, playerEye[1], playerEye[2]];
     zombie.lastPerceived = [lureLightPosition[0] / blockSize, 0, lureLightPosition[2] / blockSize];
-    const lure = perceptionLabelFor(zombie, true, playerEye, blockSize);
-    const stale = perceptionLabelFor(zombie, false, playerEye, blockSize);
+    const lure = perceptionLabelFor(zombie, true, playerEye, { blockSize, maxSpeed: PLAYER.sprint });
+    const stale = perceptionLabelFor(zombie, false, playerEye, { blockSize, maxSpeed: PLAYER.sprint });
     zombie.mode = 'idle';
     zombie.investigationTier = undefined;
     zombie.lastPerceived = undefined;
-    const unaware = perceptionLabelFor(zombie, false, playerEye, blockSize);
+    const unaware = perceptionLabelFor(zombie, false, playerEye, { blockSize, maxSpeed: PLAYER.sprint });
     expect(new Set([chase, playerNoise, lure, stale, unaware])).toHaveLength(5);
   });
 

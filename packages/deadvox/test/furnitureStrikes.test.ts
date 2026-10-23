@@ -10,10 +10,10 @@ import { makeScale } from '../src/core/scale.ts';
 import type { SoundEmission } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
 import { type PlayerSense, ZombieSystem } from '../src/core/zombies.ts';
-import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { buildFixtureRegistry, FIXTURE_BLOW_SOUND } from './economyFixtures.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
+import { PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const MINIMUM = 5;

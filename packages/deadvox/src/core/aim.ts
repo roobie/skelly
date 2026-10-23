@@ -1,5 +1,6 @@
 import type { Vec3 } from './coords.ts';
 import { Rng, type RngState } from './random.ts';
+import type { PlayerDef } from './schema.ts';
 
 /** Camera-local angles shared by firearm presentation and ballistic direction. */
 export interface AimFrame {
@@ -124,14 +125,9 @@ export const advanceOrnsteinUhlenbeckAxis = (
 };
 
 const TAU = Math.PI * 2;
-const MOVE_YAW_PER_SPEED = 0.0045;
-const LOOK_LAG_PER_RADIAN = 0.035;
-const LOOK_SETTLE_SECONDS = 0.22;
-const RECOIL_RECOVERY_SECONDS = 0.34;
-const MAX_OFFSET = 0.12;
 
 const wrapAngle = (angle: number): number => Math.atan2(Math.sin(angle), Math.cos(angle));
-const bounded = (value: number): number => Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, value));
+const bounded = (value: number, limit: number): number => Math.max(-limit, Math.min(limit, value));
 
 const boundedNormalPair = (rng: Rng): readonly [number, number] => {
   const radius = Math.sqrt(-2 * Math.log(Math.max(Number.MIN_VALUE, rng.next())));
@@ -145,8 +141,11 @@ const boundVector = (yaw: number, pitch: number, limit: number): AimFrame => {
   return { yaw: yaw * scale, pitch: pitch * scale };
 };
 
+type AimTuning = PlayerDef['aim'];
+
 // Keep gait/look wobble separate so its larger content bound cannot enlarge recoil's view-pitch limit.
 interface FrameFromStateOptions {
+  readonly tuning: AimTuning;
   readonly state: AimState;
   readonly speed: number;
   readonly variance: number;
@@ -158,6 +157,7 @@ interface FrameFromStateOptions {
 }
 
 const frameFromState = ({
+  tuning,
   state,
   speed,
   variance,
@@ -172,14 +172,14 @@ const frameFromState = ({
   const archPhase = phase + shape.phaseOffsetRadians * Math.sin(2 * phase) ** 2;
   const pitchArch = 1 - 2 * Math.abs(Math.sin(archPhase)) ** shape.archPower;
   const wobble = boundVector(
-    (state.lookYaw + gait * speed * MOVE_YAW_PER_SPEED) * variance +
+    (state.lookYaw + gait * speed * tuning.moveYawPerSpeed) * variance +
       wobbleNoise.yaw * variance * wobbleNoiseStrengthScale,
-    (state.lookPitch + pitchArch * speed * MOVE_YAW_PER_SPEED * shape.verticalToHorizontalRatio) * variance +
+    (state.lookPitch + pitchArch * speed * tuning.moveYawPerSpeed * shape.verticalToHorizontalRatio) * variance +
       wobbleNoise.pitch * variance * wobbleNoiseStrengthScale,
     wobbleLimitRadians,
   );
-  const recoilYaw = bounded(state.recoilYaw);
-  const pitchLimit = Math.sqrt(Math.max(0, MAX_OFFSET ** 2 - recoilYaw ** 2));
+  const recoilYaw = bounded(state.recoilYaw, tuning.maxOffsetRadians);
+  const pitchLimit = Math.sqrt(Math.max(0, tuning.maxOffsetRadians ** 2 - recoilYaw ** 2));
   const boundedRecoilPitch = Math.max(-pitchLimit, Math.min(pitchLimit, state.recoilPitch));
   const excessPitch = state.recoilPitch - boundedRecoilPitch;
   let viewPitchShift = 0;
@@ -234,10 +234,6 @@ export const assertAimState = (state: AimState): void => {
       ].every(Number.isFinite)
     ) ||
     typeof state.hasLookSample !== 'boolean' ||
-    Math.abs(state.lookYaw) > MAX_OFFSET * 8 ||
-    Math.abs(state.lookPitch) > MAX_OFFSET * 8 ||
-    Math.abs(state.recoilYaw) > MAX_OFFSET * 8 ||
-    Math.abs(state.recoilPitch) > MAX_OFFSET * 8 ||
     Math.hypot(state.frame.yaw, state.frame.pitch) > Math.PI
   ) {
     throw new Error('Invalid aim state');
@@ -246,6 +242,7 @@ export const assertAimState = (state: AimState): void => {
 
 /** Mutable state owner; all time and input arrive on the fixed simulation step. */
 interface AimControllerOptions {
+  readonly tuning: AimTuning;
   readonly wobbleLimitRadians: number;
   readonly wobbleShape: AimWobbleShape;
   readonly wobbleSeed: number;
@@ -258,6 +255,7 @@ interface AimControllerOptions {
 }
 
 export class AimController {
+  private readonly tuning: AimTuning;
   private readonly state: AimState;
   private variance: number;
   private speed = 0;
@@ -272,6 +270,7 @@ export class AimController {
   private viewPitchShift = 0;
 
   constructor({
+    tuning,
     wobbleLimitRadians,
     wobbleShape,
     wobbleSeed,
@@ -283,6 +282,7 @@ export class AimController {
     wobbleNoiseState,
   }: AimControllerOptions) {
     assertAimState(state);
+    this.tuning = { ...tuning };
     if (!(Number.isFinite(variance) && variance > 0)) {
       throw new Error('Invalid aim variance');
     }
@@ -363,6 +363,7 @@ export class AimController {
 
   private recomputeFrame(): void {
     const result = frameFromState({
+      tuning: this.tuning,
       state: this.state,
       speed: this.speed,
       variance: this.variance,
@@ -425,15 +426,21 @@ export class AimController {
     if (state.hasLookSample) {
       const yawRate = wrapAngle(yaw - state.lastYaw) / dt;
       const pitchRate = (pitch - state.lastPitch) / dt;
-      state.lookYaw = bounded(state.lookYaw - yawRate * LOOK_LAG_PER_RADIAN * dt);
-      state.lookPitch = bounded(state.lookPitch - pitchRate * LOOK_LAG_PER_RADIAN * dt);
+      state.lookYaw = bounded(
+        state.lookYaw - yawRate * this.tuning.lookLagPerRadian * dt,
+        this.tuning.maxOffsetRadians,
+      );
+      state.lookPitch = bounded(
+        state.lookPitch - pitchRate * this.tuning.lookLagPerRadian * dt,
+        this.tuning.maxOffsetRadians,
+      );
     }
     state.lastYaw = yaw;
     state.lastPitch = pitch;
     state.hasLookSample = true;
 
-    const lookDecay = Math.exp(-dt / LOOK_SETTLE_SECONDS);
-    const recoilDecay = firing ? 1 : Math.exp((-dt * recoilRecoveryRate) / RECOIL_RECOVERY_SECONDS);
+    const lookDecay = Math.exp(-dt / this.tuning.lookSettleSimSeconds);
+    const recoilDecay = firing ? 1 : Math.exp((-dt * recoilRecoveryRate) / this.tuning.recoilRecoverySimSeconds);
     state.lookYaw *= lookDecay;
     state.lookPitch *= lookDecay;
     state.recoilYaw *= recoilDecay;
@@ -462,7 +469,7 @@ export class AimController {
     const previousPitch = this.state.recoilPitch;
     const yawFactor = 0.5 + ((seed >>> 1) & 0xff) / 510;
     const kick = recoilKickRadians * recoilKickScale;
-    this.state.recoilYaw = bounded(previousYaw + sign * kick * yawFactor);
+    this.state.recoilYaw = bounded(previousYaw + sign * kick * yawFactor, this.tuning.maxOffsetRadians);
     this.state.recoilPitch = previousPitch + kick;
     this.recomputeFrame();
   }

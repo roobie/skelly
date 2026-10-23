@@ -6,6 +6,7 @@ import {
   advanceOrnsteinUhlenbeckAxis,
   aimBasis,
   aimDirection,
+  assertAimState,
   NEUTRAL_AIM,
 } from '../src/core/aim.ts';
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
@@ -16,7 +17,7 @@ import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { PLAYER } from '../src/game/player.ts';
+import { PLAYER } from './playerFixture.ts';
 
 const footstepTuning = BUNDLED_CONTENT.registry.senses.get('player')!.footsteps;
 const stanceTuning = BUNDLED_CONTENT.registry.skills.get('firearms_combat')!.combat!.firearms!;
@@ -37,6 +38,7 @@ const createAim = (
   verticalToHorizontalRatio = stanceTuning.wobbleVerticalToHorizontalRatio,
 ) =>
   new AimController({
+    tuning: PLAYER.aim,
     wobbleLimitRadians,
     wobbleShape: {
       verticalToHorizontalRatio,
@@ -49,6 +51,7 @@ const createAim = (
   });
 const createNoiseAim = (wobbleNoise: AimWobbleNoiseTuning, variance = 1) =>
   new AimController({
+    tuning: PLAYER.aim,
     wobbleLimitRadians: stanceTuning.wobbleLimitRadians,
     wobbleShape: {
       verticalToHorizontalRatio: stanceTuning.wobbleVerticalToHorizontalRatio,
@@ -73,6 +76,12 @@ const step = (overrides: AimStepOverrides = {}) => ({
   recoilRecoveryRate: 1,
   stridePhase: 0,
   ...overrides,
+});
+
+it('admits finite saved aim offsets beyond core tuning without relaxing the geometric frame bound', () => {
+  const state = { ...createAim().snapshotState(), lookYaw: 1.2, recoilPitch: 1.2 };
+  expect(() => assertAimState(state)).not.toThrow();
+  expect(() => assertAimState({ ...state, frame: { yaw: Math.PI + 1, pitch: 0 } })).toThrow('Invalid aim state');
 });
 
 it('OU noise reverts without diffusion and bounds each Brownian step', () => {

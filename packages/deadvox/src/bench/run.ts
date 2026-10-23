@@ -18,7 +18,7 @@ import { figureSeedPool } from '../core/zombieFigure.ts';
 import { ZombieSystem } from '../core/zombies.ts';
 import { type SiteName, siteFromUrl } from '../game/config.ts';
 import type { RenderedEngine } from '../game/engine.ts';
-import { PLAYER, physicsFor } from '../game/player.ts';
+import { physicsFor, playerTuning } from '../game/player.ts';
 import type { StreamerStats } from '../game/streamer.ts';
 import { flashlightDaylightScale } from '../render/flashlight.ts';
 import { MobActorMeshes } from '../render/mobActors.ts';
@@ -137,8 +137,9 @@ export const nextUrl = (run: BenchRun, seed: number): string => {
   return `?bench=1&i=${run.index + 1}&plan=${formatPlan(run.plan)}&seed=${seed}${site}${time}${shamblers}${postUrlPart(run.post, run.nightVision)}${sources}${quick}`;
 };
 
-export const forestWorkload = (registry: Pick<Registry, 'siteGeneration'>, seed: number, density: number | null) => {
+export const forestWorkload = (registry: Registry, seed: number, density: number | null) => {
   const { vegetation } = siteGenerationOf(registry);
+  const Player = playerTuning(registry);
   return {
     seed,
     density,
@@ -151,9 +152,9 @@ export const forestWorkload = (registry: Pick<Registry, 'siteGeneration'>, seed:
       heading: HEADING,
       lookSeconds: DURATIONS.full.look,
       jogSeconds: DURATIONS.full.jog,
-      jogMetresPerSecond: PLAYER.jog,
+      jogMetresPerSecond: Player.jog,
       sprintSeconds: DURATIONS.full.sprint,
-      sprintMetresPerSecond: PLAYER.sprint,
+      sprintMetresPerSecond: Player.sprint,
     },
   };
 };
@@ -168,6 +169,7 @@ export const benchSiteLabel = (run: BenchRun): string =>
 
 export const startBench = (engine: RenderedEngine, run: BenchRun, stats: StreamerStats): void => {
   const { config, streamer, renderer, camera, world } = engine;
+  const Player = playerTuning(engine.registry);
   const s = config.scale.blockSize;
   const durations = run.quick ? DURATIONS.quick : DURATIONS.full;
   const hud = document.getElementById('hud')!;
@@ -274,7 +276,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
   let movement: 'still' | 'jogging' | 'sprinting' = 'still';
   const place = (yaw: number, pitch: number) => {
     const ground = engine.groundAt(x, z);
-    camera.position.set(x, Math.max(ground, engine.spawn.pos[1]) + PLAYER.eye, z);
+    camera.position.set(x, Math.max(ground, engine.spawn.pos[1]) + Player.eye, z);
     camera.rotation.set(pitch, yaw, 0);
     if (playerBody) {
       playerBody.pos[0] = x / s;
@@ -311,8 +313,8 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
         isOpaque: engine.isOpaque,
         blockSize: s,
         tuning: engine.registry.senses.get(CORE_CONTENT_IDS.player)!,
-        physics: physicsFor(config.scale),
-        jumpSpeed: PLAYER.jump,
+        physics: physicsFor(config.scale, Player),
+        jumpSpeed: Player.jump,
         player: () => ({
           pos: [...playerBody!.pos] as [number, number, number],
           body: playerBody!,
@@ -320,7 +322,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
           movement,
           lit: true,
           lightSeenFrom,
-          eyeHeightMetres: PLAYER.eye,
+          eyeHeightMetres: Player.eye,
         }),
         dayPhase: () => dayPhaseAt(dayCycle, startTime),
         hurtPlayer: (amount) => simulation.hurt(amount, 'a shambler'),
@@ -436,7 +438,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
   const moveStep = (moving: 'jog' | 'sprint', now: number, t: number, ms: number): boolean => {
     movement = moving === 'jog' ? 'jogging' : 'sprinting';
     lightFixture.setSprinting(moving === 'sprint');
-    const speed = moving === 'jog' ? PLAYER.jog : PLAYER.sprint;
+    const speed = moving === 'jog' ? Player.jog : Player.sprint;
     x += (dir[0] * speed * ms) / 1000;
     z += (dir[1] * speed * ms) / 1000;
     place(travelYaw, -0.05);

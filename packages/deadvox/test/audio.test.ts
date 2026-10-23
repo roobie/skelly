@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { simRate, simSeconds } from '../src/core/time.ts';
+import { simSeconds } from '../src/core/time.ts';
 import { GameAudio } from '../src/game/audio.ts';
 import { startupContent } from './baseRegistry.ts';
 import { BASE_SENSE_TUNING } from './senseFixture.ts';
@@ -8,14 +8,10 @@ const base = startupContent().registry;
 
 const senseTuning = {
   id: 'fixture_player',
-  movement: { sidewaysSpeedScale: 0.7, backwardSpeedScale: 0.5 },
   chestEyeFraction: 0.62,
   crouch: {
-    speedMetresPerSimSecond: simRate(0.8),
     hearingRangeScale: 0.5,
     sightRangeScale: 0.5,
-    eyeDropMetres: 0.6,
-    bodyHeightMetres: 1.2,
   },
   prone: BASE_SENSE_TUNING.prone,
   wall: { hearingRangeScale: 0.5, gain: 0.5, cutoffHz: 1200, clearGain: 1, clearCutoffHz: 18_000 },
