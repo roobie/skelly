@@ -24,6 +24,7 @@ import { adjustLookPitch, LOOK_PITCH_LIMIT } from '../src/game/input.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { presentationFlight } from './itemFlightFixture.ts';
 import { PLAYER } from './playerFixture.ts';
 import { chargedRifle, rifleAmmunition, rifleInHand, settle } from './rifleFixture.ts';
 
@@ -716,7 +717,14 @@ it('hides a committed pile item during its arc and lands at its current model po
   const flightSimSeconds = reachTuning(registry).throwFlightSimSeconds;
   const landingAt = startedAtSimSeconds + flightSimSeconds;
   throws.spawn(
-    { item: rifle, itemUid: placed.item.uid, origin: [0, 1, 0], startedAtSimSeconds, landingAt },
+    {
+      item: rifle,
+      itemUid: placed.item.uid,
+      flight: presentationFlight,
+      origin: [0, 1, 0],
+      startedAtSimSeconds,
+      landingAt,
+    },
     runtime.inventory,
   );
 

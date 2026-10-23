@@ -29,7 +29,7 @@ export const controlsCardRows = (registry: BindingRegistry = inputBindings, debu
     }),
   ...POINTER_ACTIONS.map((action) => ({
     id: action.id,
-    keys: registry.binding(action.id) ? registry.label(action.id) : action.label,
+    keys: registry.label(action.id),
     action: action.description,
     description: action.description,
   })),

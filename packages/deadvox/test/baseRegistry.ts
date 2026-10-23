@@ -2,8 +2,9 @@ import { readFileSync } from 'node:fs';
 import { deserialize } from 'node:v8';
 import { safeParse } from 'valibot';
 import { inject } from 'vitest';
+import baseUi from '../src/content/base/ui.json' with { type: 'json' };
 import { type ContentSource, type Registry, schemaIssues } from '../src/core/content.ts';
-import { CONTENT_SECTION_KEYS, ContentFileSchema } from '../src/core/schema.ts';
+import { CONTENT_SECTION_KEYS, ContentFileSchema, type ScreenText } from '../src/core/schema.ts';
 import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import type { TerrainShape } from '../src/core/worldgen.ts';
 import type { StartupContent } from '../src/game/bundledContent.ts';
@@ -19,6 +20,9 @@ declare module 'vitest' {
 export const baseRegistry = (): Registry => deserialize(readFileSync(inject('baseRegistryPath'))) as Registry;
 
 export const baseTerrainShape = (): TerrainShape => terrainShapeOf(baseRegistry());
+
+/** The core ui content's screen text, for a case that renders a screen without building a registry. */
+export const baseScreenText = (): ScreenText => structuredClone(baseUi.ui[0]!.screenText) as ScreenText;
 
 export const startupContent = (): StartupContent =>
   deserialize(readFileSync(inject('startupContentPath'))) as StartupContent;

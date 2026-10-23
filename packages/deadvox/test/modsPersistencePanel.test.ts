@@ -2,6 +2,7 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import { ModStorage } from '../src/game/modStorage.ts';
 import { chooseMods } from '../src/ui/modsPanel.ts';
+import { baseScreenText } from './baseRegistry.ts';
 
 vi.mock('../src/game/browserMods.ts', () => ({
   MAX_MOD_BYTES: 100,
@@ -22,7 +23,7 @@ test('unavailable storage names the failure and starts with an empty mod set', a
   vi.spyOn(storage, 'load').mockRejectedValue(new Error('blocked'));
   const root = document.createElement('div');
   document.body.append(root);
-  const result = chooseMods(root, storage);
+  const result = chooseMods(root, baseScreenText().mods, storage);
   await Promise.resolve();
   const alert = root.querySelector('[role=alert]');
   expect(alert).not.toBeNull();
@@ -47,7 +48,7 @@ test('a failed edit clears the entire loaded set rather than starting with a sub
   );
   const root = document.createElement('div');
   document.body.append(root);
-  const result = chooseMods(root, storage);
+  const result = chooseMods(root, baseScreenText().mods, storage);
   await Promise.resolve();
   expect(root.querySelectorAll('[data-mod-source]')).toHaveLength(2);
   root.querySelector<HTMLButtonElement>('li button:last-of-type')!.click();

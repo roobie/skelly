@@ -434,6 +434,7 @@ const panelTemplate = ({
             label: 'Weathering profile',
             options: weatheringProfiles.map(({ id }) => ({ value: id, label: id })),
             value: weatheringState.profileId,
+            emptyLabel: 'No matches',
             choose: selectWeatheringProfile,
           })}
           ${Object.keys(WEATHERING_RANGES).map((field) =>

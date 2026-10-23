@@ -83,7 +83,7 @@ local rooms = {
     finish: { floor: 'floor', wall: 'metal', base: 'plaster' }, ceilingDrop: 2, floorRise: 0,
     openings: [{ token: 'h', at: [19, 12], axis: 'z', width: 2 }, { token: 'j', at: [24, 13], axis: 'x', width: 3 }],
     dressing: [
-      { id: 'technical_pump', at: [26, 6], kit: 'pump', fixture: 'broken' },
+      { id: 'technical_generator', at: [26, 6], kit: 'generator', fixture: 'broken' },
       { id: 'technical_spares', at: [22, 9], kit: 'cabinets', fixture: null },
     ],
   },
