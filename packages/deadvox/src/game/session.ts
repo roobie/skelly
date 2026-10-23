@@ -115,6 +115,7 @@ import {
 } from './firearmAttachmentHandling.ts';
 import {
   FirearmMechanics,
+  type FirearmOutcome,
   type FirearmShotEffect,
   type FirearmTrajectory,
   isFirearmTrainingAction,
@@ -355,6 +356,9 @@ export interface SessionOptions {
   /** Observational hook for actual handling completion/failure outcomes. */
   onHandlingOutcomes?: (result: TickResult) => void;
   onConsumed?: ((type: string) => void) | undefined;
+  onHandlingOutcome?: (item: Item, outcome: FirearmOutcome) => void;
+  onDischarge?: (item: Item, sighted: boolean) => void;
+  onCompletedSwing?: (isFist: boolean) => void;
   onBatterySwapped?: ((lightType: string) => void) | undefined;
   /** Output only, called after the simulation has committed the case transition. */
   onFirearmEjection?: (effect: FirearmShotEffect) => void;
@@ -952,7 +956,9 @@ export const createSession = (options: SessionOptions) => {
           firearms.recoilScaleFor(firearmUid),
       );
     },
-    onShot: (shot, time, firearm) => {
+    onHandlingOutcome: (item, outcome) => options.onHandlingOutcome?.(item, outcome),
+    onShot: (shot, time, firearm, sighted) => {
+      options.onDischarge?.(firearm, sighted);
       const hits = zombieSystem.firePellets(shot);
       if (hits > 0 && firearmReadyWalking) {
         const training = skillActivityPractice(registry, CORE_CONTENT_IDS.firearmsCombat, 'hit');
@@ -1283,9 +1289,12 @@ export const createSession = (options: SessionOptions) => {
     },
     (uid) => wearMeleeWeaponOnHit(inventory, uid),
     character,
-    () => {
-      const training = skillActivityPractice(registry, CORE_CONTENT_IDS.meleeCombat, 'hit');
-      character.awardPractice(CORE_CONTENT_IDS.meleeCombat, training.practice, training.tier);
+    {
+      onLandedHit: () => {
+        const training = skillActivityPractice(registry, CORE_CONTENT_IDS.meleeCombat, 'hit');
+        character.awardPractice(CORE_CONTENT_IDS.meleeCombat, training.practice, training.tier);
+      },
+      onCompletedSwing: (isFist) => options.onCompletedSwing?.(isFist),
     },
   );
   let lastZombieStep = 0;

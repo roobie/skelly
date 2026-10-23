@@ -57,7 +57,7 @@ const fixture = (side: HandSide = 'right', quality = 2) => {
   }
   const queue = new HandlingQueue(inventory);
   const opened = vi.fn();
-  const unpacking = new Unpacking(inventory, queue, () => [0, 0, 0], opened);
+  const unpacking = new Unpacking(inventory, queue, () => [0, 0, 0], { opened });
   const sim = new Simulation({ seed: 1 });
   const survival = new Survival(sim, inventory, queue, {
     reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 1, clock: BASE_CLOCK }),
