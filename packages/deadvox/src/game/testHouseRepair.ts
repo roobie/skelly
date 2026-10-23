@@ -39,7 +39,7 @@ const repairCornerStock = (registry: Registry, recipes: readonly RecipeDef[]) =>
 };
 
 /** Every item with a tool quality, so a tool content adds reaches the garage without a test-house edit. */
-export const garageToolTypes = (registry: Registry): string[] =>
+const garageToolTypes = (registry: Registry): string[] =>
   [...registry.items.values()]
     .filter(({ tool }) => Object.keys(tool?.qualities ?? {}).length > 0)
     .map(({ id }) => id)
