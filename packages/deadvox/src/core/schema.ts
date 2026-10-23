@@ -3656,10 +3656,10 @@ const SenseSchema = strictObject({
      */
     groundLight: strictObject({ senseHeightMetres: Positive, renderLiftMetres: Positive }),
     /**
-     * Light at a point, in the renderer's light units (`DESIGN.md`, "Light"): the distance decay every point light
-     * is drawn and measured with, and the least light a page or sign needs to be read.
+     * Light at a point, in the renderer's light units (`DESIGN.md`, "Light"): the distance decay and near-field
+     * offset every punctual light is drawn and measured with, and the least light a page or sign needs to be read.
      */
-    illumination: strictObject({ pointDecay: NonNegative, readingThreshold: Positive }),
+    illumination: strictObject({ pointDecay: NonNegative, nearFieldMetres: NonNegative, readingThreshold: Positive }),
   }),
 });
 /** Counts are whole items, never millilitres; no partial-liquid storage contract exists yet. */

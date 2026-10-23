@@ -6,19 +6,44 @@ import { type IlluminationScene, litEnoughToRead } from '../src/core/illuminatio
 import { Inventory } from '../src/core/inventory.ts';
 import { chargeOf, drainLight, toggleLight } from '../src/core/lights.ts';
 import { makeScale } from '../src/core/scale.ts';
+import type { DayCycleDef } from '../src/core/schema.ts';
 import { gameSeconds } from '../src/core/time.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const base = baseRegistry();
-const { readingThreshold } = base.senses.get(CORE_CONTENT_IDS.player)!.light.illumination;
-// Far above the threshold wherever it sits, so each case turns on its own rule, not on tuning.
-const BRIGHT = readingThreshold * 1000;
+// The fixture owns the threshold and every light level, far apart, so each case turns on its own rule, not on tuning.
+const THRESHOLD = 1;
+const BRIGHT = THRESHOLD * 1000;
+const player = base.senses.get(CORE_CONTENT_IDS.player)!;
 const flashlight = base.items.get('flashlight')!;
 const registry = {
   ...base,
+  senses: new Map(base.senses).set(CORE_CONTENT_IDS.player, {
+    ...player,
+    light: { ...player.light, illumination: { ...player.light.illumination, readingThreshold: THRESHOLD } },
+  }),
   items: new Map(base.items).set('flashlight', { ...flashlight, light: { ...flashlight.light!, intensity: BRIGHT } }),
 };
-const cycle = requireDayCycle(registry);
+const baseCycle = requireDayCycle(base);
+const dark = (look: DayCycleDef['looks']['day']) => ({ ...look, lightIntensity: 0, ambientIntensity: 0 });
+// On the equator the sun is up at noon and down at midnight on any date; only the day look carries light.
+const cycle: DayCycleDef = {
+  ...baseCycle,
+  latitudeDegrees: 0,
+  looks: {
+    night: dark(baseCycle.looks.night),
+    deepNight: dark(baseCycle.looks.deepNight),
+    dawn: dark(baseCycle.looks.dawn),
+    dusk: dark(baseCycle.looks.dusk),
+    day: { ...baseCycle.looks.day, lightIntensity: BRIGHT, ambientIntensity: BRIGHT },
+  },
+  keys: [
+    { phase: 'night', at: 0.5, look: 'night' },
+    { phase: 'dawn', at: 0.5, look: 'dawn' },
+    { phase: 'day', at: 0.5, look: 'day' },
+    { phase: 'dusk', at: 0.5, look: 'dusk' },
+  ],
+};
 const MIDNIGHT = 0;
 const NOON = 12;
 const READER: Vec3 = [0.5, 1.5, 0.5];

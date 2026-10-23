@@ -1,7 +1,7 @@
 // A near-field-capped falloff for punctual lights. three.js lights a surface at distance d with 1 / d^decay,
 // which grows without bound up close: a beam tuned to reach 10 m blows out a wall at 1 m. Here the distance is
-// offset (`src/core/illumination.ts`, `NEAR_FIELD_M`), so close surfaces stop brightening while the far reach stays. The
-// flashlight (render/flashlight.ts) and made lights both use punctual lights; the sun is directional and the rest
+// offset by content's near field (`src/core/schema.ts`, `illumination`), so close surfaces stop brightening while
+// the far reach stays. The flashlight (render/flashlight.ts) and made lights both use punctual lights; the sun is directional and the rest
 // is hemisphere light. One global patch of three's shared chunk covers every material these sources can hit:
 // chunk meshes, mob actors, held items, glTF models and furniture all include `lights_pars_begin`.
 //
@@ -9,7 +9,6 @@
 // when installed and throws if three changed it, so an upgrade fails loudly instead of silently lighting wrong.
 
 import { ShaderChunk } from 'three';
-import { NEAR_FIELD_M } from '../core/illumination.ts';
 
 const ORIGINAL = 'float distanceFalloff = 1.0 / max( pow( lightDistance, decayExponent ), 0.01 );';
 
@@ -27,13 +26,20 @@ export const withNearFieldFalloff = (chunk: string, offset: number): string => {
   );
 };
 
-let installed = false;
+let installedOffset: number | undefined;
 
-/** Patches three's shared light chunk once, before any material compiles. Safe to call again. */
-export const installNearFieldFalloff = (): void => {
-  if (installed) {
+/**
+ * Patches three's shared light chunk with `offset` metres, once, before any material compiles. Safe to call again
+ * with the same offset; another offset throws, since compiled materials and the other patches of this chunk
+ * (`src/render/flashlightCone.ts`) cannot follow it.
+ */
+export const installNearFieldFalloff = (offset: number): void => {
+  if (installedOffset !== undefined) {
+    if (installedOffset !== offset) {
+      throw new Error(`lightFalloff: near field already installed at ${installedOffset} m, not ${offset} m`);
+    }
     return;
   }
-  ShaderChunk.lights_pars_begin = withNearFieldFalloff(ShaderChunk.lights_pars_begin, NEAR_FIELD_M);
-  installed = true;
+  ShaderChunk.lights_pars_begin = withNearFieldFalloff(ShaderChunk.lights_pars_begin, offset);
+  installedOffset = offset;
 };

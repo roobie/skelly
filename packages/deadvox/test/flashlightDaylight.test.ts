@@ -2,11 +2,13 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { SECONDS_PER_DAY } from '../src/core/clock.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
-import { NEAR_FIELD_M } from '../src/core/illumination.ts';
 import type { ItemDef } from '../src/core/schema.ts';
 import { skyAt } from '../src/core/sky.ts';
 import { flashlightDaylightScale } from '../src/render/flashlight.ts';
 import { BASE_DAY_CYCLE, phaseMidpoint } from './dayPhaseFixture.ts';
+import { BASE_SENSE_TUNING } from './senseFixture.ts';
+
+const NEAR_FIELD_M = BASE_SENSE_TUNING.light.illumination.nearFieldMetres;
 
 const scaleAt = (hour: number): number => flashlightDaylightScale(skyAt(hour, BASE_DAY_CYCLE));
 

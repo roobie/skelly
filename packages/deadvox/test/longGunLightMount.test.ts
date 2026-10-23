@@ -17,6 +17,7 @@ import { LENS, type ModelLibrary } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
+import { CALIBRATED_NEAR_FIELD_M } from './flashlightFixture.ts';
 import { Simulation } from './simulationFixture.ts';
 
 const SITE_KIND = 'fixture-strap';
@@ -170,7 +171,7 @@ describe('a light mount on a long gun', () => {
     expect(chargeOf(registry, mount)).toBeLessThan(before);
     const camera = new PerspectiveCamera();
     const held = new HeldItems(inventory, undefined, registry.figures.get('player')!.palette);
-    const beam = new Flashlight(new Scene(), 1, false);
+    const beam = new Flashlight(new Scene(), 1, CALIBRATED_NEAR_FIELD_M, false);
     held.update(camera);
     beam.update({ registry, inventory, held, camera, lit: mount });
     expect(beam.light.intensity).toBeGreaterThan(0);
@@ -219,7 +220,7 @@ describe('a light mount on a long gun', () => {
     piles.sync(inventory);
     const held = new HeldItems(inventory, undefined, registry.figures.get('player')!.palette);
     const camera = new PerspectiveCamera();
-    const beam = new Flashlight(new Scene(), 1, false);
+    const beam = new Flashlight(new Scene(), 1, CALIBRATED_NEAR_FIELD_M, false);
     const update = () => beam.update({ registry, inventory, held, camera, lit: undefined, piles });
     update();
     expect(beam.light.intensity).toBeGreaterThan(0);

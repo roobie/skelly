@@ -24,15 +24,17 @@ export interface IlluminationScene {
   holder: Vec3;
 }
 
-/** Shared punctual-light cap prevents close surfaces from blowing out when lights are tuned for reach. */
-export const NEAR_FIELD_M = 4;
-
 /**
  * The renderer's point-light falloff (three.js `getDistanceAttenuation` as patched by `src/render/lightFalloff.ts`,
  * `installNearFieldFalloff`), so both sides measure alike.
  */
-const distanceAttenuation = (distanceMetres: number, radiusMetres: number, decay: number): number => {
-  const falloff = 1 / Math.max((distanceMetres + NEAR_FIELD_M) ** decay, 0.01);
+const distanceAttenuation = (
+  distanceMetres: number,
+  radiusMetres: number,
+  decay: number,
+  nearFieldMetres: number,
+): number => {
+  const falloff = 1 / Math.max((distanceMetres + nearFieldMetres) ** decay, 0.01);
   const edge = Math.min(Math.max(1 - (distanceMetres / radiusMetres) ** 4, 0), 1);
   return falloff * edge * edge;
 };
@@ -97,7 +99,9 @@ export const illuminationAt = (scene: IlluminationScene, point: Vec3): number =>
   for (const source of pointSources(scene, tuning.illumination.pointDecay, tuning.groundLight.renderLiftMetres)) {
     const metres = Math.hypot(...source.pos.map((value, axis) => (value - point[axis]!) * scene.blockSize));
     if (metres < source.radius && reaches(source.pos, point, scene.isBlocking)) {
-      total += source.intensity * distanceAttenuation(metres, source.radius, source.decay);
+      total +=
+        source.intensity *
+        distanceAttenuation(metres, source.radius, source.decay, tuning.illumination.nearFieldMetres);
     }
   }
   return total;
