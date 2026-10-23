@@ -4,6 +4,7 @@ read_if:
   - you're changing how authored text enters play or how reading owns time
   - you're changing gameplay input while a readable is open
   - you're changing how much light reading needs or where it is measured
+  - you're deciding whether a scenario clue in the dark should be readable without a light
 ---
 
 # Authored notes and signs
@@ -29,5 +30,7 @@ Prototype samples remain explicitly marked as placeholders and separate from aut
 ## Reading needs light
 
 All readable paper, notes, maps, books and signs alike, opens only where the light reaches the content reading threshold, so a dark building asks for a carried light before its paper gives anything up. Carried paper is measured at the reader's eyes, because it is held there; a sign is measured at the sign, because that is where the player must bring light. The measure is the shared photometry the renderer draws (`DESIGN.md`, "Light"), so a page that looks readable is readable. Sky visibility comes from the simulation's cache, which answers open sky outside authored fields so missing data never reads as darkness, and it never depends on camera residency. See `src/core/illumination.ts`, `readingLightRefusal`, and `src/game/session.ts`, `readingLight`.
+
+Scenario clues may lie in the dark, even by day, and nothing lights them for the player: no light at the clue, no indoor bounce, no light in the start kit and no lower threshold for clues. A scenario expects the player to find or make a light to read a clue in the dark, rather than handing every clue over in readable light. Tests that read such a clue bring a light the way a player does: pick one up and switch it on.
 
 Light that fails while a page is open closes it with a short reason, and a book's timed reading stops, keeping its progress: reading on in the dark would let one lit moment pay for the whole text. See `src/game/play.ts`, `closeReadingInDarkness`, and `src/core/bookReading.ts`, `bookReadingHooks`.

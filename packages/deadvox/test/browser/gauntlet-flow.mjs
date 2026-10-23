@@ -228,6 +228,41 @@ export const gauntletFlow = async (browser, baseUrl) => {
         w.manual = false;
       }
     });
+    // The first clue lies in the dark by design, so the reader brings a light found as loot.
+    await page.evaluate(async () => {
+      const w = globalThis.gauntletWitness;
+      const { engine, session } = w;
+      const { chargeOf } = await import('/src/core/lights.ts');
+      const { registry } = engine;
+      const roll = (type) => session.inventory.createRolled({ type, count: 1, condition: 1, charge: 1 });
+      const lightType = [...registry.items.keys()].find((id) => {
+        const { light } = registry.items.get(id);
+        return light?.power && !light.burning && chargeOf(registry, roll(id)) > 0;
+      });
+      const lamp = roll(lightType);
+      const feet = session.body.pos.map((v, axis) => Math.floor(axis === 1 ? v + 0.01 : v));
+      if (!session.inventory.add(lamp, { kind: 'pile', pos: feet })) {
+        throw new Error('No room for the light at the reader’s feet');
+      }
+      const take = session.queue.enqueue(lamp, { kind: 'hand', side: 'left' });
+      if (!take.ok) {
+        throw new Error(take.reason);
+      }
+      const taken = session.queue.tick(session.queue.remaining);
+      if (taken.failed.length > 0 || session.inventory.hands.left !== lamp) {
+        throw new Error('Ordinary light pickup failed');
+      }
+      w.lampUid = lamp.uid;
+    });
+    await page.waitForFunction(() => {
+      const { session } = globalThis.gauntletWitness;
+      return !(session.queue.busy || session.firearms.busy);
+    });
+    await pressAction(page, 'hand.use-off');
+    await page.waitForFunction(() => {
+      const { session, lampUid } = globalThis.gauntletWitness;
+      return session.inventory.itemByUid(lampUid)?.on === true;
+    });
     const releasePaper = await holdAction(page, 'quickbar.use.1');
     try {
       await page.locator('#reading').waitFor({ state: 'visible' });
