@@ -33,6 +33,7 @@ import {
   ContentFileSchema,
   type ContentSection,
   type DayCycleDef,
+  FIGURE_BOX_LIMBS,
   type FigureDef,
   type FurnitureDef,
   HELD_DISPLAY_KIND,
@@ -1667,6 +1668,10 @@ const checkFigurePart = (
   }
   for (const box of part.draws) {
     claim(`${path}.draws`, box);
+  }
+  const limbs = new Set(part.draws.map((box) => FIGURE_BOX_LIMBS[box]));
+  if (limbs.size > 1) {
+    report(`${path}.draws`, `draws parts of several limbs (${[...limbs].join(', ')}); a part moves as one limb`);
   }
 };
 

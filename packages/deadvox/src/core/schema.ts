@@ -3322,6 +3322,22 @@ export const FIGURE_BOX_PARTS = [
   'rightFoot',
 ] as const;
 export type FigureBoxPart = (typeof FIGURE_BOX_PARTS)[number];
+export type FigureLimb = 'torso' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg';
+/** The limb each box part moves and hides with; one authored part draws parts of one limb. */
+export const FIGURE_BOX_LIMBS: Readonly<Record<FigureBoxPart, FigureLimb>> = {
+  body: 'torso',
+  head: 'torso',
+  leftUpperArm: 'leftArm',
+  leftForearm: 'leftArm',
+  leftHand: 'leftArm',
+  rightUpperArm: 'rightArm',
+  rightForearm: 'rightArm',
+  rightHand: 'rightArm',
+  leftLeg: 'leftLeg',
+  leftFoot: 'leftLeg',
+  rightLeg: 'rightLeg',
+  rightFoot: 'rightLeg',
+};
 /** The pivots the rest of the figure hangs from and is posed about. */
 const FIGURE_JOINTS = ['leftHip', 'rightHip', 'leftShoulder', 'rightShoulder'] as const;
 export type FigureJoint = (typeof FIGURE_JOINTS)[number];

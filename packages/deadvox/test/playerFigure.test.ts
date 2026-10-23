@@ -25,7 +25,7 @@ import { meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/co
 import { opticViewSettings } from '../src/core/opticView.ts';
 import type { PlayerStance } from '../src/core/playerStance.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { FIGURE_BOX_PARTS } from '../src/core/schema.ts';
+import { FIGURE_BOX_PARTS, type FigureBoxPart } from '../src/core/schema.ts';
 import { FIGURE_BOXES } from '../src/core/zombieRegions.ts';
 import { createPlayerBody as createBody } from '../src/game/player.ts';
 import { HeldItems } from '../src/render/hands.ts';
@@ -425,6 +425,54 @@ describe('player figure', () => {
         expect(legTop.distanceTo(hip), `${stance} ${leg}`).toBeCloseTo(0, 6);
       }
     }
+  });
+
+  /** A figure whose one authored part, the bust's model, draws `draws` in place of their boxes. */
+  const authoredLimb = (draws: FigureBoxPart[]) => {
+    const [part] = playerFigure.parts!;
+    const figure = { ...playerFigure, parts: [{ ...part!, draws }] };
+    const loaded = { version: 1, has: (id: string) => id === part!.model, part: () => new Group() };
+    const meshes = new PlayerMeshes(scale.blockSize, figure, registry.models, loaded as unknown as ModelLibrary);
+    const drawn = () => meshes.group.getObjectByName(`figure-${part!.model}`)!;
+    return { meshes, drawn };
+  };
+
+  it('strides an authored leg as the leg box it draws in place of', () => {
+    const body = createPlayerBody(scale, 4, 1, 4);
+    const { meshes, drawn } = authoredLimb(['leftLeg']);
+    const legBox = meshes.group.children[FIGURE_BOX_PARTS.indexOf('leftLeg')] as InstancedMesh;
+    const turns = [0, Math.PI / 2].map((gaitPhase) => {
+      meshes.sync({ body, yaw: 0.4, stepOffset: 0, gaitPhase, moving: true, ...STANDING });
+      const box = new Matrix4();
+      legBox.getMatrixAt(0, box);
+      const boxTurn = new Quaternion().setFromRotationMatrix(box.extractRotation(box));
+      const modelTurn = drawn()
+        .quaternion.clone()
+        .multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), -Math.PI));
+      expect(modelTurn.angleTo(boxTurn), `gait phase ${gaitPhase}`).toBeCloseTo(0, 4);
+      return modelTurn;
+    });
+    expect(turns[0]!.angleTo(turns[1]!)).toBeGreaterThan(0.1);
+  });
+
+  it('hides an authored arm held in first person, and shows it in third person', () => {
+    const body = createPlayerBody(scale, 4, 1, 4);
+    const inventory = new Inventory(registry);
+    inventory.add(inventory.create('kitchen_knife'), { kind: 'hand', side: 'right' });
+    const { meshes, drawn } = authoredLimb(['rightUpperArm']);
+    meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING, inventory });
+    expect(drawn().visible).toBe(false);
+    meshes.sync({
+      body,
+      yaw: 0,
+      stepOffset: 0,
+      gaitPhase: 0,
+      moving: false,
+      ...STANDING,
+      inventory,
+      thirdPerson: true,
+    });
+    expect(drawn().visible).toBe(true);
   });
 
   it('hides held arms from the world body, including both arms for a two-handed item', () => {

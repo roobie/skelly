@@ -18,7 +18,14 @@ import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf } from '../core/items.ts';
 import type { Body } from '../core/physics.ts';
 import type { PlayerStance } from '../core/playerStance.ts';
-import { FIGURE_BOX_PARTS, type FigureBoxPart, type FigureJoint, type WearSlot } from '../core/schema.ts';
+import {
+  FIGURE_BOX_LIMBS,
+  FIGURE_BOX_PARTS,
+  type FigureBoxPart,
+  type FigureJoint,
+  type FigureLimb,
+  type WearSlot,
+} from '../core/schema.ts';
 import { FIGURE_BOXES, type FigureBox } from '../core/zombieRegions.ts';
 import { PLAYER_ARM_BOXES } from './figure.ts';
 import { withHeightFog } from './heightFog.ts';
@@ -191,22 +198,12 @@ export const FIRST_PERSON_PALM: Vec3 = [0.09, 0.08, 0.09];
 const SEGMENT_UP = new Vector3(0, 1, 0);
 const segmentDirection = new Vector3();
 
-const armSideOf = (part: FigureBoxPart): HandSide | undefined => {
-  if (part.startsWith('left')) {
-    return 'left';
-  }
-  if (part.startsWith('right')) {
-    return 'right';
-  }
-  return undefined;
-};
+const ARM_SIDES: Partial<Record<FigureLimb, HandSide>> = { leftArm: 'left', rightArm: 'right' };
+const LEG_HIPS: Partial<Record<FigureLimb, 'leftHip' | 'rightHip'>> = { leftLeg: 'leftHip', rightLeg: 'rightHip' };
 
 /** A leg's walking swing about its hip, in radians; the two sides swing opposite ways. */
-const strideOf = (part: FigureBoxPart, gaitPhase: number): number =>
-  (part.startsWith('left') ? 1 : -1) * Math.sin(gaitPhase) * 0.22;
-
-const isArmPart = (part: FigureBoxPart): boolean =>
-  part.includes('UpperArm') || part.includes('Forearm') || part.includes('Hand');
+const strideOf = (limb: FigureLimb, gaitPhase: number): number =>
+  (limb === 'leftLeg' ? 1 : -1) * Math.sin(gaitPhase) * 0.22;
 
 const hiddenWorldArms = (inventory?: Inventory): Record<HandSide, boolean> => {
   const hidden: Record<HandSide, boolean> = { right: false, left: false };
@@ -340,13 +337,17 @@ export class PlayerMeshes {
     this.placement.thirdPerson = thirdPerson;
     const hidden = thirdPerson ? { right: false, left: false } : hiddenWorldArms(inventory);
     const modelDrawn = this.syncAuthored();
+    const heldArm = (part: FigureBoxPart): boolean => {
+      const side = ARM_SIDES[FIGURE_BOX_LIMBS[part]];
+      return side !== undefined && hidden[side];
+    };
     for (const part of FIGURE_BOX_PARTS) {
-      const side = armSideOf(part);
-      const hiddenHeldArm = isArmPart(part) && side !== undefined && hidden[side];
       const hiddenInFirstPerson = part === 'head' && !thirdPerson && !modelDrawn.has(part);
-      this.syncPart(part, pose, !(hiddenHeldArm || hiddenInFirstPerson), modelDrawn.has(part));
+      this.syncPart(part, pose, !(heldArm(part) || hiddenInFirstPerson), modelDrawn.has(part));
     }
+    // A part's draws all belong to one limb (content validation), so it moves and hides as that limb.
     for (const [part, drawn] of this.authored) {
+      drawn.visible = !heldArm(part.draws[0]!);
       this.posePoint(part.at, part.draws[0]!, pose);
       drawn.position.copy(this.dummy.position);
       drawn.quaternion.copy(this.dummy.quaternion);
@@ -441,9 +442,6 @@ export class PlayerMeshes {
     const box = this.layout.boxes[part];
     const isLeg = part === 'leftLeg' || part === 'rightLeg';
     this.posePoint(box.at, part, pose);
-    if (isLeg && pose.moving) {
-      this.dummy.rotateX(strideOf(part, pose.gaitPhase));
-    }
     if (isLeg) {
       this.dummy.translateY(-box.size[1] / 2);
     }
@@ -454,18 +452,19 @@ export class PlayerMeshes {
     mesh.boundingSphere = null;
   }
 
-  /** Puts `dummy` at figure-frame point `at`, posed as `part` is: legs and feet about the hips, the rest leaning. */
+  /** Puts `dummy` at figure-frame point `at`, posed as `part`'s limb is: a leg strides about its hip, all lean. */
   private posePoint(at: Vec3, part: FigureBoxPart, pose: PlayerFigurePose): void {
     const { yaw, stepOffset, gaitPhase, moving } = pose;
     const hip = this.layout.hipHeight;
-    const isLeg = part === 'leftLeg' || part === 'rightLeg';
-    const isFoot = part === 'leftFoot' || part === 'rightFoot';
-    const footStride = isFoot && moving ? strideOf(part, gaitPhase) : 0;
-    const localY = hip + (at[1] - hip) * Math.cos(footStride) - at[2] * Math.sin(footStride);
-    const localZ = (at[1] - hip) * Math.sin(footStride) + at[2] * Math.cos(footStride);
+    const limb = FIGURE_BOX_LIMBS[part];
+    const legHip = LEG_HIPS[limb];
+    const stride = legHip && moving ? strideOf(limb, gaitPhase) : 0;
+    const [, pivotY, pivotZ] = legHip ? this.layout.joints[legHip] : [0, hip, 0];
+    const localY = pivotY + (at[1] - pivotY) * Math.cos(stride) - (at[2] - pivotZ) * Math.sin(stride);
+    const localZ = pivotZ + (at[1] - pivotY) * Math.sin(stride) + (at[2] - pivotZ) * Math.cos(stride);
     // The stance swings the legs and the upper body about the hip, then lowers the hip.
     const { hipDropMetres, torsoForwardDegrees, legsForwardDegrees } = this.shownPose;
-    const swing = ((isLeg || isFoot ? legsForwardDegrees : -torsoForwardDegrees) * Math.PI) / 180;
+    const swing = ((legHip ? legsForwardDegrees : -torsoForwardDegrees) * Math.PI) / 180;
     const aboveHip = localY - hip;
     this.localPosition[0] = at[0];
     this.localPosition[1] = stepOffset + hip - hipDropMetres + aboveHip * Math.cos(swing) - localZ * Math.sin(swing);
@@ -477,6 +476,6 @@ export class PlayerMeshes {
     }
     setPlayerFigurePosition(this.dummy.position, this.placement, this.localPosition);
     this.dummy.rotation.order = 'YXZ';
-    this.dummy.rotation.set(footStride + swing, yaw, 0);
+    this.dummy.rotation.set(stride + swing, yaw, 0);
   }
 }

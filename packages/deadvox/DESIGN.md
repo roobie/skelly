@@ -2472,7 +2472,11 @@ the row sets the hip height the parts stand at. A box part that no authored part
 names still draws, so the body is authored a part at a time and stays whole
 throughout; the boxes go when the last part lands. Box limbs hang from the
 authored joints, so they meet the authored parts. Code poses every part about
-those joints. Hit regions keep the box layout, because the body simulation, not
+those joints. Each box part belongs to one limb (the torso with the head, an
+arm, a leg with its foot), and an authored part draws parts of one limb only,
+because a rigid model moves as one piece. It then strides, leans and hides as
+that limb's boxes do, so a new limb model with an accepted part selection needs
+no renderer change. See `src/core/schema.ts`, `FIGURE_BOX_LIMBS`. Hit regions keep the box layout, because the body simulation, not
 the drawn shape, decides where a hit lands, so gore stays put while parts change.
 See `src/core/schema.ts`, `FigureSchema`, and `src/render/playerFigure.ts`,
 `playerFigureLayout`.
