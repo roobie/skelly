@@ -4,11 +4,13 @@ local palette = {
   '.': 'air', G: { ground: true }, s: 'stone', b: 'brick', p: 'planks', t: 'tiles',
   f: 'fabric', r: 'roof', a: 'plaster', R: 'siding_red', B: 'siding_blue',
   g: 'galvanized', m: 'cobblestone_mossy', h: 'hazard_yellow', d: 'dressed_stone',
-  F: { furniture: 'fridge' }, C: { furniture: 'kitchen_cupboard' },
+  U: { furniture: 'fuel_generator', fixed: true }, V: { furniture: 'storage_battery', fixed: true },
+  J: { furniture: 'main_breaker', fixed: true }, S: { furniture: 'solar_panel', fixed: true },
+  L: { furniture: 'electric_lamp', fixed: true }, X: { furniture: 'battery_charger', fixed: true },
+  F: { furniture: 'fridge', fixed: true }, C: { furniture: 'kitchen_cupboard' },
   H: { furniture: 'chair' }, W: { furniture: 'wardrobe', facing: 'w' },
   Q: { furniture: 'crate', loot: 'sample_note_loot' }, N: { furniture: 'sample_sign' },
-  J: { furniture: 'battery_charger' }, e: { furniture: 'gauntlet_lab_generator' },
-  L: { furniture: 'crate', items: [
+  K: { furniture: 'crate', items: [
     { item: 'rechargeable_aa_battery', count: 1, charge: 0.25, placement: 'surface' },
     { item: 'flashlight', count: 1, charge: 0, placement: 'surface' },
   ] },
@@ -29,7 +31,7 @@ local lower = [
   'ssssssssssssssssssss...',
   's.tttttt..a.pppppp.s...', 's.tttttt..a.pppppp.s...',
   's.........a.......Ws...', 's.........a.......Ws...',
-  's.........a........s...',
+  'sL........aL.......s...',
   '............H......s...', '...................s...',
   's.........a........s...',
   's....ppp..a....ffffs...', 's....ppp..a....ffffsss.',
@@ -41,7 +43,7 @@ local middle = [
   'bbbbbbbbbbbbbbbbbbbb...',
   'b.tttttt..a..ppppp.b...', 'b.tttttt..a..ppppp.b...',
   'b.........a.......Wb...', 'b.........a.......Wb...',
-  'b.........a........b...',
+  'bL........aL.......b...',
   '............H......b...', '...................b...',
   'b.........a........b...',
   'b....ppp..a........b...', 'b....ppp..a........bss.',
@@ -53,7 +55,7 @@ local windowLower = [
   'bbbb..bbbbbbbbbbbbbb...',
   'b.........a...pppp.b...', 'b.........a...pppp.b...',
   'b.........a.......Wb...', 'b.........a.......Wb...',
-  'b.........a........b...',
+  'bL........aL.......b...',
   '.......................', '.......................',
   'b.........a........b...',
   'b.........a........b...', 'b.........a........bss.',
@@ -121,12 +123,11 @@ local cap = [
 ];
 local templates = [
   {
-    id: 'test_house_charging', size: [10, 4, 3],
+    id: 'test_house_charging', size: [3, 3, 3],
     layers: [
-      ['GGGGGGGGGG', 'GGGGGGGGGG', 'GGGGGGGGGG'],
-      ['......eeee', 'LL....eeee', 'LLJ...eeee'],
-      ['......eeee', 'LL....eeee', 'LL....eeee'],
-      ['......eeee', '......eeee', '......eeee'],
+      ['GGG', 'GGG', 'GGG'],
+      ['...', 'KK.', 'KKX'],
+      ['...', 'KK.', 'KK.'],
     ],
   },
   {
@@ -135,15 +136,16 @@ local templates = [
       upperLower, upperUpper, ceiling, chimney, chimney, cap],
   },
   {
-    id: 'test_house_shed', size: [6, 7, 5],
+    id: 'test_house_shed', size: [6, 8, 5],
     layers: [
-      ['GGGGGG', 'GGGGGG', 'GGGGGG', 'GGGGGG', 'GGGGGG'],
-      ['BBBBBB', 'B....B', 'B....B', 'B....B', 'BB..BB'],
-      ['BBBBBB', 'B....B', 'B....B', 'B....B', 'BB..BB'],
+      ['pppppp', 'pppppp', 'pppppp', 'pppppp', 'pppppp'],
+      ['BBBBBB', 'BUUVJB', 'BUU..B', 'B....B', 'BB..BB'],
+      ['BBBBBB', 'BUUVJB', 'BUU..B', 'B....B', 'BB..BB'],
       ['BBBBBB', 'B....B', 'B....B', 'B....B', 'BB..BB'],
       ['BBBBBB', 'B....B', 'B....B', 'B....B', 'BB..BB'],
       ['BBBBBB', 'B....B', 'B....B', 'B....B', 'BBBBBB'],
       ['gggggg', 'gggggg', 'gggggg', 'gggggg', 'gggggg'],
+      ['......', '.SSSS.', '.SSSS.', '......', '......'],
     ],
   },
   {

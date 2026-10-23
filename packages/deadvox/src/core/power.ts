@@ -78,6 +78,7 @@ type Spec = { readonly priority: number } & (
   | { readonly kind: 'solar'; readonly output: Readonly<Record<DayPhase, number>> }
   | { readonly kind: 'battery'; readonly capacity: number; readonly charge: number; readonly discharge: number }
   | { readonly kind: 'consumer'; readonly demand: number }
+  | { readonly kind: 'switch' }
 );
 type Device = PowerDeviceState & { readonly spec: Spec };
 interface Store {
@@ -124,6 +125,8 @@ const specOf = (def: PowerDeviceDef): Spec => {
       };
     case 'consumer':
       return { kind: def.kind, priority: def.priority, demand: exactUnits(def.demandWatts, rate) };
+    case 'switch':
+      return { kind: def.kind, priority: def.priority };
     default:
       throw new Error('Unknown power device kind');
   }
@@ -270,7 +273,16 @@ export class PowerNetwork {
   }
 
   private wiring(links: readonly PowerLink[]) {
-    return { nodes: [...this.devices.keys()], wires: links.map(({ from, to }) => [from, to] as const) };
+    const connected = (id: string): boolean => {
+      const device = this.device(id);
+      return device.spec.kind !== 'switch' || device.enabled;
+    };
+    return {
+      nodes: [...this.devices.keys()],
+      wires: links
+        .filter(({ from, to }) => connected(from) && connected(to))
+        .map(({ from, to }) => [from, to] as const),
+    };
   }
 
   snapshot(): PowerState {
@@ -281,6 +293,10 @@ export class PowerNetwork {
         .map(({ spec: _, ...entry }) => ({ ...entry })),
       links: this.links.map((link) => ({ ...link })),
     };
+  }
+
+  enabled(id: string): boolean | undefined {
+    return this.devices.get(id)?.enabled;
   }
 
   isPowered(id: string): boolean {
@@ -295,6 +311,7 @@ export class PowerNetwork {
     const device = this.device(id);
     const changes = [...this.advance(at)];
     device.enabled = enabled;
+    this.graph.replaceWiring(this.wiring(this.links));
     changes.push(...this.advance(at));
     return changes;
   }

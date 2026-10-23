@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change food exposure ownership or ambient catch-up
   - you change the test-house normal or debug-only boundary
   - you change regional paper-map coverage, item ownership or persistence
   - you change held sharpening, blade repair entry points or prepared hand pairs
@@ -346,8 +347,10 @@ should behave as though the player is there. Inside that block, catch-up
 agrees with ordinary ticking within each system's tolerance, because a player
 can compare a short absence with what they saw; once a region leaves the block,
 the coarse model is canonical. See
-[ADR 0008](docs/decisions/0008-deterministic-world.md). Food age derives from its creation time, so unloaded food
-needs no decay pass. Unloaded zombies are represented by regional hordes, which
+[ADR 0008](docs/decisions/0008-deterministic-world.md). Food owns its exposure history so
+storage changes cannot rewrite its past; ambient absence can be projected without
+periodic decay work. See `src/core/food.ts`, `projectFoodExposure`, and
+[food ownership](docs/food.md). Unloaded zombies are represented by regional hordes, which
 become individual actors when the area returns. See [Zombies](#zombies).
 
 ## Simulation architecture
@@ -1845,12 +1848,15 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
 - **Shot impacts.** Each round that meets world geometry leaves a surface
   mark. Marks and dust are presentation, not simulation damage or save state.
   When a wall lies between eye and muzzle, tracing from the eye lets the near
-  wall receive its visible impact mark. The shot trace's reach is shared
+  wall receive its visible impact mark. The session traces each round against
+  the same physical world its hits resolve in, parked vehicles included, and the
+  view only draws those segments: a view that traced its own world could show a
+  shot passing through a body that stopped it. The shot trace's reach is shared
   firearms tuning in content, so the crosshair, bore target and impact marks
   agree on one range and a mod changes it once
-  (`PILLARS.md`, "Content forward compatibility"). See `traceShot` in
-  `src/render/shotTrace.ts` and `ImpactEffects.fire` in
-  `src/render/impactEffects.ts`; the range comes from
+  (`PILLARS.md`, "Content forward compatibility"). See `src/game/session.ts`,
+  `ResolvedFirearmTrajectory`, `src/core/shotTrace.ts`, `traceShot`, and
+  `src/render/impactEffects.ts`, `ImpactEffects.fire`; the range comes from
   `src/core/skillTraining.ts`, `firearmsCombatTuning`, and
   `src/content/base/recipes.json`, `firearms_combat`.
 - **Magazines:** A detachable magazine is an item whose exported model carries gungen's fitted round column. Its calibre and capacity come from that model, as the pump's tube capacity does, so the geometry that fits the rounds also sets how many go in. Its cartridges are item state in feed order, top round first, and save with the magazine; loading pushes onto the top and stripping takes from it, as with a real spring-fed box. Each round loaded or stripped is one handling job, so releasing R loses nothing and the inputs replay deterministically. Hold R loads; stripping is the held magazine's item action, not an R gesture, because R's gestures load, rack and remove (`CONTROLS.md`, "Reload, rack, remove"). Loading and stripping a round both use the firearms skill's reload factor. See `src/core/magazine.ts`, `magazineSpec`, and `src/game/magazineHandling.ts`, `MagazineHandling`.
@@ -2534,6 +2540,13 @@ their state.
    (skill, tools, materials and time to install, remove and repair, because building and
    repair are crafting); and what it's for (the capabilities it provides). The spike's
    supports are `src/vehicles/model.ts`, `Fitting.supportedBy`.
+**Parked service.** Factory service sites use a content mount identity and content-owned
+quality and duration requirements. `src/core/vehicleWork.ts`, `vehicleWorkHooks`, keeps
+the exact UID with its original owner until `src/core/inventory.ts`, `Inventory.vehicleTransfer`
+preflights and commits the transfer, so a stopped or refused action cannot orphan it.
+`src/core/longAction.ts`, `LongActions.beginVehicleWork`, saves references rather than a
+copied part or an interaction closure.
+
 3. **Condition is not attachment or appearance.** Part types are immutable content;
    fittings own instance state. A fitting places an item on a vehicle without changing
    its identity or condition vocabulary. Cosmetic weathering

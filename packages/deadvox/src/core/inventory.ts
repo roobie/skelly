@@ -25,6 +25,7 @@ import {
   validDisassemblyToolLevels,
 } from './disassembly.ts';
 import { firearmSlotIds, isLongGun, slingFitted } from './firearmFitting.ts';
+import { initialFoodExposure } from './food.ts';
 import { furnitureSurfacePosition } from './furnitureSurface.ts';
 import { PILE_GRID } from './inventoryScale.ts';
 import {
@@ -155,6 +156,14 @@ export type Target =
   | { kind: 'pile'; pos: Vec3; at?: Spot }
   | { kind: 'furniture'; entity: BlockEntity; pocket: number; at?: Spot };
 
+export interface VehicleTransfer {
+  kind: 'install' | 'remove';
+  vehicleId: number;
+  fittingId: string;
+  itemUid: number;
+  output?: Target;
+}
+
 type Place =
   | { kind: 'pile'; pile: Pile }
   | { kind: 'furniture'; entity: BlockEntity }
@@ -244,6 +253,8 @@ export class Inventory {
   version = 0;
   /** Whether a pile's block is within reach; the game sets it from the player's position. */
   canReach: (pos: Vec3) => boolean = () => true;
+  /** Whether a vehicle service point is within reach. */
+  canReachVehicle: (pos: Vec3) => boolean = () => true;
   /** Whether a piece of furniture is within reach. */
   canReachEntity: (entity: BlockEntity) => boolean = () => true;
   /** Where a pile put down in a block comes to rest, or undefined with nowhere to land; the game sets it. */
@@ -256,15 +267,18 @@ export class Inventory {
   handHold: HandHold = { moveRefusal: () => undefined, liftRefusal: () => undefined };
 
   /** A deep plain-data copy of carried, worn, piled and furnished items and allocators. */
-  snapshotState(): Readonly<InventoryState> {
+  snapshotState(foodAt?: number): Readonly<InventoryState> {
     return freezeSnapshot({
       nextItemUid: this.factory.next,
-      hands: Object.fromEntries(Object.entries(this.hands).map(([side, item]) => [side, snapshotItem(item!)])),
-      worn: Object.fromEntries(Object.entries(this.worn).map(([slot, item]) => [slot, snapshotItem(item!)])),
-      piles: [...this.piles.values()].map((pile) => ({ pos: [...pile.pos], items: pile.items.map(snapshotPlaced) })),
+      hands: Object.fromEntries(Object.entries(this.hands).map(([side, item]) => [side, snapshotItem(item!, foodAt)])),
+      worn: Object.fromEntries(Object.entries(this.worn).map(([slot, item]) => [slot, snapshotItem(item!, foodAt)])),
+      piles: [...this.piles.values()].map((pile) => ({
+        pos: [...pile.pos],
+        items: pile.items.map((placed) => snapshotPlaced(placed, foodAt)),
+      })),
       looted: [...this.looted.entries()].map(([type, count]) => [type, count]),
       quickbarOrigins: [...this.quickbarOrigins.entries()].map(([uid, target]) => [uid, structuredClone(target)]),
-      entities: this.entities.snapshotState(),
+      entities: this.entities.snapshotState(foodAt),
     });
   }
 
@@ -337,6 +351,114 @@ export class Inventory {
     this.character = character;
     this.factory = factory;
     this.entities = entities;
+  }
+
+  /**
+   * Moves one exact UID between an ordinary owner and a serviceable vehicle site.  The destination
+   * is completely admitted before either owner changes; see `vehicleTransfer`.
+   */
+  vehicleTransfer(request: VehicleTransfer): string | undefined {
+    const { kind, vehicleId, fittingId, itemUid } = request;
+    const vehicle = this.vehicles.get(vehicleId);
+    const site = vehicle?.sites.find(({ id }) => id === fittingId);
+    const item = this.itemByUid(itemUid);
+    if (!(vehicle && site?.service && item)) {
+      return 'Vehicle service target is unavailable';
+    }
+    if (this.registry.items.get(item.type)?.vehicle?.mount !== site.service.mount || item.count !== 1) {
+      return 'Part does not fit this service site';
+    }
+    return kind === 'install'
+      ? this.installVehiclePart(vehicle, site, item, vehicleId)
+      : this.removeVehiclePart(vehicle, item, request);
+  }
+
+  private replaceVehicle(vehicleId: number, build: VehicleInstance): string | undefined {
+    try {
+      this.vehicles.replace(this.registry, vehicleId, build);
+      return undefined;
+    } catch (error) {
+      return error instanceof Error ? error.message : 'Vehicle service refused';
+    }
+  }
+
+  private vehicleBuild(vehicle: VehicleInstance, fittings: VehicleInstance['fittings']): VehicleInstance {
+    return {
+      ...vehicle,
+      origin: [...vehicle.origin],
+      sites: vehicle.sites.map(copyVehiclePlacement),
+      fittings: fittings.map((entry) => ({ ...copyVehiclePlacement(entry), item: entry.item })),
+    };
+  }
+
+  private installVehiclePart(
+    vehicle: VehicleInstance,
+    site: VehicleInstance['sites'][number],
+    item: Item,
+    vehicleId: number,
+  ): string | undefined {
+    const from = this.locate(item);
+    if (!from || from.kind === 'vehicle' || vehicle.fittings.some(({ id }) => id === site.id)) {
+      return 'Vehicle service source changed';
+    }
+    const refusal = this.replaceVehicle(
+      vehicleId,
+      this.vehicleBuild(vehicle, [...vehicle.fittings, { ...copyVehiclePlacement(site), item }]),
+    );
+    if (refusal) {
+      return refusal;
+    }
+    this.remove(from);
+    this.version += 1;
+    return undefined;
+  }
+
+  private removeVehiclePart(vehicle: VehicleInstance, item: Item, request: VehicleTransfer): string | undefined {
+    const { fittingId, output, vehicleId } = request;
+    const fitted = vehicle.fittings.find(({ id }) => id === fittingId);
+    if (!fitted || fitted.item !== item || !output) {
+      return 'Vehicle service source changed';
+    }
+    if (vehicle.fittings.some((entry) => entry.supportedBy.includes(fittingId))) {
+      return 'Another part rests on this fitting';
+    }
+    const placement = this.planAdd(item, output);
+    if (!placement.ok) {
+      return placement.reason;
+    }
+    const refusal = this.replaceVehicle(
+      vehicleId,
+      this.vehicleBuild(
+        vehicle,
+        vehicle.fittings.filter((entry) => entry !== fitted),
+      ),
+    );
+    if (refusal) {
+      return refusal;
+    }
+    if (placement.merge) {
+      this.mergeStack(placement.merge, item);
+    } else {
+      this.put(item, output, placement.at);
+    }
+    this.version += 1;
+    return undefined;
+  }
+
+  vehicleService(
+    vehicleId: number,
+    fittingId: string,
+    itemUid: number,
+  ): Readonly<{ durationSimSeconds: number; qualities: Readonly<Record<string, number>> }> | undefined {
+    const vehicle = this.vehicles.get(vehicleId);
+    const site = vehicle?.sites.find(({ id }) => id === fittingId);
+    const item = this.itemByUid(itemUid);
+    return site?.service &&
+      item &&
+      site.supportedBy.every((support) => vehicle?.fittings.some(({ id }) => id === support)) &&
+      this.registry.items.get(item.type)?.vehicle?.mount === site.service.mount
+      ? site.service
+      : undefined;
   }
 
   registerVehicle(
@@ -543,8 +665,8 @@ export class Inventory {
     }
   }
 
-  create(type: string, count = 1, condition = 1): Item {
-    return this.factory.create(this.registry, type, count, { condition });
+  create(type: string, count = 1, condition = 1, madeAt = 0): Item {
+    return this.factory.create(this.registry, type, count, { condition, madeAt });
   }
 
   /** Fills or empties an owner's slot with a loose, certified item; returns the item displaced. */
@@ -1016,18 +1138,18 @@ export class Inventory {
     return drops;
   }
 
-  private workOutputs(payload: NonNullable<Item['work']>, finish: boolean): Item[] {
+  private workOutputs(payload: NonNullable<Item['work']>, finish: boolean, calendar: number): Item[] {
     if (!finish) {
       return payload.components;
     }
     if (payload.kind === 'disassembly') {
-      return payload.outputs.map(({ item, count }) => this.create(item, count));
+      return payload.outputs.map(({ item, count }) => this.create(item, count, 1, calendar));
     }
     if (payload.repairTargetUid !== undefined) {
       return [];
     }
     const { result } = this.registry.recipes.get(payload.recipe)!;
-    return [this.create(result.item, result.count)];
+    return [this.create(result.item, result.count, 1, calendar)];
   }
 
   private repairTargetForWork(payload: NonNullable<Item['work']>, finish: boolean): Item | undefined {
@@ -1042,7 +1164,7 @@ export class Inventory {
   }
 
   /** Terminal ownership transfer. Exact input UIDs never merge on cancellation. */
-  releaseWork(work: Item, finish: boolean, feet: Vec3): void {
+  releaseWork(work: Item, finish: boolean, feet: Vec3, calendar = 0): void {
     const payload = work.work;
     const at = this.locate(work);
     if (!(payload && at)) {
@@ -1050,7 +1172,7 @@ export class Inventory {
     }
     const repairing = payload.kind === 'craft' && payload.repairTargetUid !== undefined;
     const target = this.repairTargetForWork(payload, finish);
-    const outputs = this.workOutputs(payload, finish);
+    const outputs = this.workOutputs(payload, finish, calendar);
     const resultInHand = finish && !repairing && payload.kind === 'craft' && at.kind === 'hand';
     if (!resultInHand && outputs.some((item) => !couldFit(this.registry, PILE_GRID, item))) {
       throw new Error('An input or result is too large to put down');
@@ -1598,7 +1720,26 @@ export class Inventory {
     return spot ? { ok: true, time: 0, at: spot } : coreRefusal(this.registry, 'noRoom');
   }
 
-  transform(item: Item, type: string): void {
+  transform(item: Item, type: string, food: { kind: 'same' | 'remove' } | { kind: 'new'; calendar: number }): void {
+    const exposure = initialFoodExposure(
+      this.registry,
+      defOf(this.registry, type),
+      food.kind === 'new' ? food.calendar : 0,
+    );
+    if (food.kind === 'same' && Boolean(item.foodExposure) !== Boolean(exposure)) {
+      throw new Error('Same-serving transform cannot change perishability');
+    }
+    if (food.kind === 'remove' && exposure) {
+      throw new Error('Food removal cannot create a perishable serving');
+    }
+    if (food.kind !== 'same') {
+      item.foodExposure = undefined;
+      item.madeAtGameTimestamp = undefined;
+      if (exposure && food.kind === 'new') {
+        item.foodExposure = exposure;
+        item.madeAtGameTimestamp = food.calendar;
+      }
+    }
     item.type = type;
     this.version += 1;
   }

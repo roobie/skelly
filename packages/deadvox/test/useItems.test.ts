@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest';
-import { SECONDS_PER_HOUR } from '../src/core/clock.ts';
 import type { Registry } from '../src/core/content.ts';
 import { coreMessage } from '../src/core/coreText.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -16,11 +15,10 @@ import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
+import { fixtureFood, foodFixtureRegistry } from './foodFixture.ts';
 import { BODY_TUNING_FIXTURE, fixtureTier, Simulation } from './simulationFixture.ts';
 
 const registry = baseRegistry();
-const APPLE_EAT_TIME = registry.items.get('apple')!.food!.consumeSimSeconds;
-const FOOD_POISONING = registry.items.get('apple')!.food!.poisonHealth!;
 const TAKE_TIME = 2;
 
 const sealedCanRegistry = (): Registry => {
@@ -267,19 +265,35 @@ describe('using what you hold', () => {
   });
 
   it('needs the food in your hands, and rotten food makes you sick', () => {
-    const { sim, inventory, queue, survival, notices, hold } = setup();
-    const pocketed = inventory.create('chocolate_bar');
+    const { sim, inventory, queue, survival, notices, hold } = setup(foodFixtureRegistry(registry));
+    const pocketed = inventory.create('fixture_keeps');
     expect(survival.use(pocketed)).toBeTruthy();
     expect(queue.jobs).toEqual([]);
-    const apple = hold('apple');
-    apple.madeAtGameTimestamp = 0;
-    sim.setDebugCalendarTime(300 * SECONDS_PER_HOUR);
-    survival.use(apple);
+    const food = hold(fixtureFood.id);
+    sim.setDebugCalendarTime(sim.calendar + fixtureFood.food!.rotsAfterGameHours!);
+    survival.use(food);
     const noticed = notices.length;
-    queue.tick(APPLE_EAT_TIME + 0.1);
+    queue.tick(fixtureFood.food!.consumeSimSeconds + 0.1);
     expect(sim.needs.calories).toBe(sim.body.spawnNeeds.calories);
-    expect(sim.body.health).toBe(100 - FOOD_POISONING);
+    expect(sim.body.health).toBe(100 - fixtureFood.food!.poisonHealth!);
     expect(notices.length).toBeGreaterThan(noticed);
+  });
+
+  it('consumes the actual perishable serving and leaves an ageless empty vessel', () => {
+    const f = setup(foodFixtureRegistry(registry));
+    const vessel = f.hold('fixture_full');
+    const { health } = f.sim.body;
+    const { calories } = f.sim.needs;
+    const before = structuredClone(vessel);
+    f.survival.describe(vessel);
+    expect(vessel).toEqual(before);
+    expect(f.survival.use(vessel)).toBeUndefined();
+    f.queue.tick(fixtureFood.food!.consumeSimSeconds);
+    expect(f.sim.body.health).toBe(health - fixtureFood.food!.poisonHealth!);
+    expect(f.sim.needs.calories).toBe(calories);
+    expect(f.inventory.itemByUid(vessel.uid)).toBe(vessel);
+    expect(vessel.type).toBe('fixture_empty');
+    expect(vessel.foodExposure).toBeUndefined();
   });
 
   it.each(['material_pill', 'tool_pill'])(

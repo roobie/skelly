@@ -86,7 +86,10 @@ describe('a light mount on a long gun', () => {
     const sim = new Simulation({ seed: 1 });
     const position: [number, number, number] = [0, 0, 0];
     const reach = bindReach({ inventory, position, blockSize: 1, clock: BASE_CLOCK });
-    sim.actions.craft = craftActionHooks(inventory, character, reach, () => position);
+    sim.actions.craft = craftActionHooks(inventory, character, reach, {
+      feet: () => position,
+      calendar: () => sim.calendar,
+    });
     const commands = new CraftCommands({ inventory, character, sim, queue, reach });
     for (const alternatives of recipe.components) {
       const component = alternatives[0]!;

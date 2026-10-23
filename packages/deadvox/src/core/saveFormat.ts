@@ -10,6 +10,7 @@ import {
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from './character.ts';
 import { CHUNK, CHUNK_VOLUME } from './coords.ts';
 import { assertFirearmState } from './firearmState.ts';
+import { FOOD_EXPOSURE_DENOMINATOR, foodMillisecondsAt } from './food.ts';
 import type { InventoryState } from './inventory.ts';
 import type { ItemState } from './items.ts';
 import { itemIds as collectItemIds, savedItemTree } from './itemTree.ts';
@@ -64,7 +65,7 @@ export type SaveContentKind =
   | 'recipe'
   | 'scenario'
   | 'vehicleBlueprint';
-type SaveContentLookup = (kind: SaveContentKind, id: string) => boolean;
+type SaveContentLookup = (kind: SaveContentKind, id: string, item?: ItemState) => boolean;
 
 export interface EncodeSaveOptions {
   /** Slot owner supplies a strictly increasing safe-integer generation; the codec has no storage state. */
@@ -155,7 +156,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 57;
+export const SAVE_SCHEMA_VERSION = 59;
 export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -368,6 +369,13 @@ itemSchema = obj({
     ),
   ),
   madeAtGameTimestamp: opt(nonNegative),
+  foodExposure: opt(
+    obj({
+      gameMilliseconds: num({ integer: true, safe: true, min: 0 }),
+      remainder: num({ integer: true, safe: true, min: 0, max: FOOD_EXPOSURE_DENOMINATOR - 1 }),
+      settledAtGameMilliseconds: num({ integer: true, safe: true, min: 0 }),
+    }),
+  ),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
   cartridges: opt(arr(str({ id: true }))),
   paperMap: opt(obj({ x: safeInt, z: safeInt })),
@@ -511,6 +519,13 @@ const vehiclePlacementFields = {
   at: vec3,
   mirror: opt(enumeration([true])),
   supportedBy: arr(str({ id: true })),
+  service: opt(
+    obj({
+      mount: str({ id: true }),
+      durationSimSeconds: positive,
+      qualities: record(positiveInt),
+    }),
+  ),
 };
 const vehicleSchema = obj({
   blueprint: str({ id: true }),
@@ -545,6 +560,9 @@ const longJob = (jobType: Schema, extra: Record<string, Schema> = {}) =>
     region: opt(enumeration(bodyRegionValues)),
     itemUid: opt(positiveInt),
     itemType: opt(str({ id: true })),
+    kind: opt(enumeration(['install', 'remove'])),
+    vehicleId: opt(positiveInt),
+    fittingId: opt(str({ id: true })),
     duration: opt(positive),
     strikeInterval: opt(positive),
     nextStrike: opt(positive),
@@ -562,7 +580,7 @@ const longJob = (jobType: Schema, extra: Record<string, Schema> = {}) =>
 const longAction = obj({
   job: nullable(
     union(
-      longJob(enumeration(['rest', 'sleep', 'craft', 'reading', 'treatment', 'wait'])),
+      longJob(enumeration(['rest', 'sleep', 'craft', 'reading', 'treatment', 'wait', 'vehicleWork'])),
       longJob(enumeration(['forceDoor']), { method: str({ id: true }) }),
     ),
   ),
@@ -1586,6 +1604,7 @@ function validateWorkItems(tree: readonly { item: ItemState }[], itemsByUid: Rea
 function ownsLongActionItem(
   job: SaveSnapshot['character']['longAction']['job'],
   tree: readonly { item: ItemState }[],
+  vehicles: VehicleInstancesState,
 ): boolean {
   if (job?.jobType === 'craft') {
     return tree.some(({ item }) => item.uid === job.workUid && item.work !== undefined);
@@ -1599,7 +1618,23 @@ function ownsLongActionItem(
   if (job?.jobType === 'treatment') {
     return tree.some(({ item }) => item.uid === job.itemUid && item.type === job.itemType);
   }
+  if (job?.jobType === 'vehicleWork') {
+    const vehicle = vehicles.instances.find(({ id }) => id === job.vehicleId)?.vehicle;
+    const fitting = vehicle?.fittings.find(({ id }) => id === job.fittingId);
+    const item = tree.find(({ item: candidate }) => candidate.uid === job.itemUid)?.item;
+    return job.kind === 'remove' ? fitting?.item.uid === job.itemUid : item !== undefined && fitting === undefined;
+  }
   return true;
+}
+
+function validateFoodWatermarks(snapshot: SaveSnapshot, tree: readonly { item: ItemState }[]): void {
+  const { clock: savedClock, time } = snapshot.character.simulation;
+  const foodTimestamp = foodMillisecondsAt(savedClock.start + time * savedClock.ratio);
+  for (const { item } of tree) {
+    if (item.foodExposure && item.foodExposure.settledAtGameMilliseconds !== foodTimestamp) {
+      throw new Error('Food exposure watermark differs from snapshot');
+    }
+  }
 }
 
 function validateActionReferences(snapshot: SaveSnapshot): void {
@@ -1613,9 +1648,10 @@ function validateActionReferences(snapshot: SaveSnapshot): void {
     throw new Error('Running forcing action cannot use compression');
   }
   const tree = [...savedItemTree(snapshot.character.inventory, snapshot.world.vehicles)];
+  validateFoodWatermarks(snapshot, tree);
   const itemsByUid = new Map(tree.map(({ item }) => [item.uid, item]));
   validateWorkItems(tree, itemsByUid);
-  if (!ownsLongActionItem(job, tree)) {
+  if (!ownsLongActionItem(job, tree, snapshot.world.vehicles)) {
     let reason = 'Missing craft work item';
     if (job?.jobType === 'reading') {
       reason = 'Missing reading book';
@@ -1654,10 +1690,10 @@ function grabbedLadder(
 function validateItemContentReferences(
   state: SaveSnapshot['character']['inventory'],
   vehicles: VehicleInstancesState,
-  check: (kind: SaveContentKind, id: string, path: string) => void,
+  check: (kind: SaveContentKind, id: string, path: string, item?: ItemState) => void,
 ): void {
   for (const { item, path } of savedItemTree(state, vehicles)) {
-    check('item', item.type, `${path}.type`);
+    check('item', item.type, `${path}.type`, item);
     if (item.firearm?.roundType) {
       check('item', item.firearm.roundType, `${path}.firearm.roundType`);
     }
@@ -1690,8 +1726,8 @@ function validateItemContentReferences(
 }
 
 function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLookup): void {
-  const check = (kind: SaveContentKind, id: string, path: string) => {
-    if (!lookup(kind, id)) {
+  const check = (kind: SaveContentKind, id: string, path: string, item?: ItemState) => {
+    if (!lookup(kind, id, item)) {
       throw new Error(`Unknown ${kind} content id "${id}" at ${path}`);
     }
   };

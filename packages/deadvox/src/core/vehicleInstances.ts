@@ -10,7 +10,7 @@ import { freezeSnapshot } from './snapshotData.ts';
 import type { Facing } from './templates.ts';
 import { placeFitting } from './vehicleBlueprint.ts';
 
-type VehiclePlacement = Pick<VehicleFittingDef, 'id' | 'at' | 'mirror' | 'supportedBy'>;
+export type VehiclePlacement = Pick<VehicleFittingDef, 'id' | 'at' | 'mirror' | 'supportedBy' | 'service'>;
 interface VehicleBuild<Node> {
   readonly blueprint: string;
   readonly placementKey: string;
@@ -26,25 +26,50 @@ export interface VehicleInstancesState {
 }
 export type VehicleInstance = VehicleBuild<Item>;
 
-export const copyVehiclePlacement = ({ id, at, mirror, supportedBy }: VehiclePlacement): VehiclePlacement => ({
+export const copyVehiclePlacement = ({ id, at, mirror, supportedBy, service }: VehiclePlacement): VehiclePlacement => ({
   id,
   at: [...at],
   ...(mirror === undefined ? {} : { mirror }),
+  ...(service === undefined
+    ? {}
+    : {
+        service: {
+          mount: service.mount,
+          durationSimSeconds: service.durationSimSeconds,
+          qualities: { ...service.qualities },
+        },
+      }),
   supportedBy: [...supportedBy],
 });
+
+const validService = (service: VehiclePlacement['service']): boolean => {
+  if (service === undefined) {
+    return true;
+  }
+  return (
+    Boolean(service.mount) &&
+    Number.isFinite(service.durationSimSeconds) &&
+    service.durationSimSeconds > 0 &&
+    Object.entries(service.qualities).every(
+      ([quality, level]) => Boolean(quality) && Number.isInteger(level) && level >= 1,
+    )
+  );
+};
+
+const validPlacement = (value: VehiclePlacement, ids: Set<string>): boolean =>
+  Boolean(value.id) &&
+  !ids.has(value.id) &&
+  value.at.length === 3 &&
+  value.at.every(Number.isFinite) &&
+  (value.mirror === undefined || value.mirror) &&
+  value.supportedBy.every(Boolean) &&
+  new Set(value.supportedBy).size === value.supportedBy.length &&
+  validService(value.service);
 
 const assertPlacements = (values: readonly VehiclePlacement[]): void => {
   const ids = new Set<string>();
   for (const value of values) {
-    if (
-      !value.id ||
-      ids.has(value.id) ||
-      value.at.length !== 3 ||
-      value.at.some((v) => !Number.isFinite(v)) ||
-      (value.mirror !== undefined && value.mirror !== true) ||
-      value.supportedBy.some((id) => !id) ||
-      new Set(value.supportedBy).size !== value.supportedBy.length
-    ) {
+    if (!validPlacement(value, ids)) {
       throw new Error('Invalid or duplicate vehicle placement');
     }
     ids.add(value.id);
@@ -162,7 +187,7 @@ export class VehicleInstances {
     this.version += 1;
   }
 
-  snapshotState(): Readonly<VehicleInstancesState> {
+  snapshotState(foodAt?: number): Readonly<VehicleInstancesState> {
     return freezeSnapshot({
       nextId: this.store.nextId,
       instances: [...this.records].map(([id, vehicle]) => ({
@@ -175,7 +200,7 @@ export class VehicleInstances {
           sites: vehicle.sites.map(copyVehiclePlacement),
           fittings: vehicle.fittings.map((fitting) => ({
             ...copyVehiclePlacement(fitting),
-            item: snapshotItem(fitting.item),
+            item: snapshotItem(fitting.item, foodAt),
           })),
         },
       })),
