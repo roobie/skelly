@@ -425,6 +425,9 @@ describe('inventory screen Lit rendering', () => {
     const viewPress = inputBindings.chords('inventory.view-item')[0]!;
     const button = Number(viewPress.code.replace('Mouse', ''));
     const before = { state: inv.snapshotState(), selected: screen.selected, jobs: queue.jobs.length };
+    const covered = root.querySelector<HTMLButtonElement>('button.inv-option')!;
+    covered.focus();
+    expect(document.activeElement).toBe(covered);
 
     root.querySelector<HTMLElement>(`[data-uid="${beans.uid}"]`)!.dispatchEvent(
       new PointerEvent('pointerdown', {
@@ -436,7 +439,13 @@ describe('inventory screen Lit rendering', () => {
     );
     expect(screen.viewedUid).toBe(beans.uid);
     expect(model).toHaveBeenLastCalledWith(beans);
-    expect(root.querySelector(`.inv-viewer[data-item-viewer="${beans.uid}"]`)).not.toBeNull();
+    const viewer = root.querySelector(`.inv-viewer[data-item-viewer="${beans.uid}"]`);
+    expect(viewer).not.toBeNull();
+    // Focus leaves the covered button, which stays out of reach through a redraw.
+    expect(document.activeElement).toBe(viewer);
+    screen.update();
+    expect(covered.closest('[inert]')).not.toBeNull();
+    expect(viewer!.closest('[inert]')).toBeNull();
 
     // The viewer swallows item keys while open.
     expect(screen.onAction('inventory.drop')).toBe(true);
@@ -446,8 +455,42 @@ describe('inventory screen Lit rendering', () => {
     root.querySelector<HTMLButtonElement>('[data-action="viewer.close"]')!.click();
     expect(screen.viewedUid).toBeUndefined();
     expect(root.querySelector('.inv-viewer')).toBeNull();
+    expect(root.querySelector('[inert]')).toBeNull();
+    expect(document.activeElement).toBe(covered);
     expect({ state: inv.snapshotState(), selected: screen.selected, jobs: queue.jobs.length }).toEqual(before);
     screen.close();
+  });
+
+  it('turns the model on a left drag even when the view binding is the left button', () => {
+    const test = setup();
+    const { root, screen, beans } = test;
+    const view = vi.fn();
+    Object.assign(test.hooks, { itemView: { model: () => new Group(), view } });
+    screen.update();
+    const issue = inputBindings.rebind('inventory.view-item', [{ code: 'Mouse0' }]);
+    try {
+      expect(issue).toBeUndefined();
+      root
+        .querySelector<HTMLElement>(`[data-uid="${beans.uid}"]`)!
+        .dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1 }));
+      globalThis.window.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1 }));
+      expect(screen.viewedUid).toBe(beans.uid);
+      const yaw = () => view.mock.lastCall![1].yaw;
+      const opened = yaw();
+      root
+        .querySelector('.inv-viewer-canvas')!
+        .dispatchEvent(
+          new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, clientX: 10, clientY: 10 }),
+        );
+      globalThis.window.dispatchEvent(
+        new PointerEvent('pointermove', { bubbles: true, pointerId: 1, clientX: 40, clientY: 10 }),
+      );
+      expect(screen.viewedUid).toBe(beans.uid);
+      expect(yaw()).not.toBe(opened);
+    } finally {
+      inputBindings.reset();
+      screen.close();
+    }
   });
 
   // The browser breaks and clips a grid name (style.css, `.inv-item-name`), so the screen hands it the whole name.

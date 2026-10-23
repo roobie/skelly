@@ -739,6 +739,8 @@ body.unconscious::after {
   padding: calc(var(--ui-spacing) * 1rem);
   border-radius: inherit;
   background: rgb(10 11 14 / 92%);
+  /* It holds focus only so keys leave the covered inventory; its own controls show focus. */
+  outline: none;
 }
 #inventory .inv-viewer-card {
   display: flex;

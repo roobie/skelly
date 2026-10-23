@@ -49,6 +49,10 @@ export class ItemViewer {
   private viewing: Viewing | undefined;
   private drag: { readonly pointerId: number; x: number; y: number } | undefined;
   private wheelHost: HTMLElement | undefined;
+  /** What had focus before the viewer took it, given back on close. */
+  private returnFocus: HTMLElement | undefined;
+  /** The covered inventory parts this viewer made inert. */
+  private readonly covered = new Set<Element>();
 
   constructor(
     host: () => HTMLElement | null,
@@ -77,6 +81,10 @@ export class ItemViewer {
       return false;
     }
     const tuning = this.tuning();
+    if (!this.viewing) {
+      const focused = document.activeElement;
+      this.returnFocus = focused instanceof HTMLElement ? focused : undefined;
+    }
     this.viewing = {
       uid: item.uid,
       name,
@@ -87,13 +95,43 @@ export class ItemViewer {
     };
     this.render();
     this.draw();
+    this.host()?.querySelector<HTMLElement>('.inv-viewer')?.focus({ preventScroll: true });
     return true;
   }
 
   close(): void {
+    const wasViewing = this.viewing !== undefined;
     this.viewing = undefined;
     this.drag = undefined;
     this.render();
+    if (!wasViewing) {
+      return;
+    }
+    const { returnFocus } = this;
+    this.returnFocus = undefined;
+    if (returnFocus?.isConnected) {
+      returnFocus.focus({ preventScroll: true });
+    }
+  }
+
+  /**
+   * An aria-modal dialog does not stop focus or a native key press reaching a control it covers, so every other part
+   * of the panel is inert while the viewer is open. Repeated on each render, because a redraw can add a part.
+   */
+  private syncCovered(host: HTMLElement): void {
+    const open = this.viewing !== undefined;
+    for (const part of open ? (host.parentElement?.children ?? []) : []) {
+      if (part !== host && !part.hasAttribute('inert')) {
+        part.setAttribute('inert', '');
+        this.covered.add(part);
+      }
+    }
+    if (!open) {
+      for (const part of this.covered) {
+        part.removeAttribute('inert');
+      }
+      this.covered.clear();
+    }
   }
 
   /** Follows the viewed item after the screen redraws: its current look, or closed once it has left the screen. */
@@ -128,7 +166,7 @@ export class ItemViewer {
     render(
       viewing
         ? html`
-          <div class="inv-viewer" role="dialog" aria-modal="true" aria-label=${viewing.name} data-item-viewer=${viewing.uid} @pointerdown=${(e: PointerEvent) => this.pointerDown(e)}>
+          <div class="inv-viewer" role="dialog" aria-modal="true" tabindex="-1" aria-label=${viewing.name} data-item-viewer=${viewing.uid} @pointerdown=${(e: PointerEvent) => this.pointerDown(e)}>
             <div class="inv-viewer-card">
               <header class="inv-viewer-head">
                 <h3>${viewing.name}</h3>
@@ -141,6 +179,7 @@ export class ItemViewer {
         : nothing,
       host,
     );
+    this.syncCovered(host);
   }
 
   private canvas(): HTMLCanvasElement | null | undefined {
@@ -173,14 +212,16 @@ export class ItemViewer {
   private pointerDown(e: PointerEvent): void {
     // The viewer covers the screen, so no press reaches the inventory beneath it.
     e.stopPropagation();
-    if (isViewItemPress(e)) {
-      e.preventDefault();
-      this.close();
-      return;
-    }
+    // A left press on the model always turns it, even when the view binding is the left button; the close button
+    // still closes.
     if (e.button === 0 && (e.target as Element).closest('.inv-viewer-canvas')) {
       e.preventDefault();
       this.drag = { pointerId: e.pointerId, x: e.clientX, y: e.clientY };
+      return;
+    }
+    if (isViewItemPress(e) && !(e.target as Element).closest('button')) {
+      e.preventDefault();
+      this.close();
     }
   }
 

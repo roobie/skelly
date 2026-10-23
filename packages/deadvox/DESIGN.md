@@ -1394,7 +1394,8 @@ attachments, turned by dragging and zoomed by the wheel. A grid card is too smal
 to judge an item's shape or what is fitted to it, and a close look must not cost
 a move, so the viewer is view-only. It changes neither the item, the selection
 nor the queue, item keys wait until it closes, and the clock runs as it does with
-the inventory open. It draws with the item pictures' renderer rather than a
+the inventory open. It is modal: it takes focus and the inventory it covers is
+inert until it closes, so no key or press reaches a hidden control. It draws with the item pictures' renderer rather than a
 second WebGL context. See `src/ui/itemViewer.ts`, `ItemViewer`, and
 `src/render/itemPictures.ts`, `ItemPictures`.
 

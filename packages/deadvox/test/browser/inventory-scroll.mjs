@@ -1396,8 +1396,26 @@ try {
       return mouse ? ['left', 'middle', 'right'][Number(chord.code.slice('Mouse'.length))] : undefined;
     }, '/src/game/inputBindings.ts');
     assert.ok(viewButton, 'the default view binding is a mouse button Playwright can press');
+    // A focused covered control must not take keys while the viewer is open: the fit button dispatches on activation.
+    const coveredFit = page
+      .locator('#inventory .inv-details button.inv-option')
+      .filter({ hasText: /Fit .*foregrip/i })
+      .first();
+    await coveredFit.focus();
+    const isFocused = (locator) => locator.evaluate((element) => document.activeElement === element);
+    assert.ok(await isFocused(coveredFit), 'the fit button holds focus before the viewer opens');
     await clickThroughMenuCursor(`#inventory [data-uid="${rifleUid}"]`, { button: viewButton });
-    await page.locator(`#inventory .inv-viewer[data-item-viewer="${rifleUid}"]`).waitFor({ state: 'visible' });
+    const viewerLocator = page.locator(`#inventory .inv-viewer[data-item-viewer="${rifleUid}"]`);
+    await viewerLocator.waitFor({ state: 'visible' });
+    assert.ok(await isFocused(viewerLocator), 'opening moves focus into the viewer');
+    await page.keyboard.press('Space');
+    await page.keyboard.press('Enter');
+    assert.equal(await viewerLocator.count(), 1, 'keys while open leave the viewer open');
+    assert.equal(
+      await page.evaluate(() => globalThis.foregripFitTest.dispatches.length),
+      beforeView.dispatches,
+      'keys while open activate no covered inventory control',
+    );
     const opened = await viewerPixels();
     assert.ok(opened.opaque > 0 && opened.opaque < opened.total, 'the viewer draws the clicked item on transparency');
     const dragFrom = await moveMenuCursorTo('#inventory .inv-viewer-canvas');
@@ -1411,6 +1429,7 @@ try {
     assert.ok(zoomed.opaque > turned.opaque, 'wheeling up zooms in');
     await clickThroughMenuCursor('#inventory [data-action="viewer.close"]');
     await page.locator('#inventory .inv-viewer').waitFor({ state: 'detached' });
+    assert.ok(await isFocused(coveredFit), 'closing gives focus back to the control that had it');
     assert.deepEqual(await viewState(), beforeView, 'viewing and closing leave the inventory as it was');
     logPhase('item viewer');
     await page.evaluate(() => {
