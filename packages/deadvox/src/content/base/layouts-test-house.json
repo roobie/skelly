@@ -47,6 +47,11 @@
           "position": [-2, 20.5, 0.5],
           "rotation": 0,
           "template": "test_house_sign"
+        },
+        {
+          "position": [-2, 20.5, -3],
+          "rotation": 0,
+          "template": "test_house_loose_wardrobe"
         }
       ],
       "demo": true,
