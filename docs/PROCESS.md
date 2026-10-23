@@ -5,6 +5,7 @@ read_if:
   - you record a maintainer's decision and need to know where it goes
   - you plan refactoring, a maintainability survey or a slice retrospective
   - you apply the standing rules for visual work, playtest discoveries, review causes, test budgets or hosted-CI outages
+  - you prepare a feature for a maintainer look and need its placement and spawn-link rules
 ---
 
 # How work gets done in skelly
@@ -105,7 +106,9 @@ Whoever merges ticks by hand what the workflow cannot. Slice 3's checklist is #2
   another machine, so the review origin is supplied outside tracked work.
 - **gungen:** give a page path per design with a `camera=` view (side, rear, rear-¾), from a
   stable review server pinned to the reviewed commit, not a contributor's live worktree.
-- **deadvox:** `/?seed=<n>&debug=1`. Anything that saves needs HTTPS (a secure context).
+- **deadvox:** put a feature sent to the maintainer for a look in the test house, and use a
+  look link that spawns them beside it (`/?site=testHouse&seed=<n>&debug=1`). The maintainer
+  has no time to travel to the feature. Anything that saves needs HTTPS (a secure context).
 - **Quote the maintainer's verdict verbatim.** A verdict on one item never counts for another.
 
 ## Slice decision rules

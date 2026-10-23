@@ -1,6 +1,45 @@
 {
   "templates": [
     {
+      "id": "test_house_charging",
+      "layers": [["GGG", "GGG", "GGG"], ["...", "KK.", "KKX"], ["...", "KK.", "KK."]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["...", "...", "..."], ["RRR", "SSR", "SSS"], ["RRR", "SSR", "SSR"]]
+      },
+      "palette": {
+        ".": "air",
+        "G": {
+          "ground": true
+        },
+        "K": {
+          "furniture": "crate",
+          "items": [
+            {
+              "charge": 0.25,
+              "count": 1,
+              "item": "rechargeable_aa_battery",
+              "placement": "surface"
+            },
+            {
+              "charge": 0,
+              "count": 1,
+              "item": "flashlight",
+              "placement": "surface"
+            }
+          ]
+        },
+        "X": {
+          "fixed": true,
+          "furniture": "battery_charger"
+        }
+      },
+      "size": [3, 3, 3]
+    },
+    {
       "id": "test_house_home",
       "layers": [
         [
@@ -30,7 +69,7 @@
           "sL........aL.......s...",
           "............H......s...",
           "...................s...",
-          "sX........a........s...",
+          "s.........a........s...",
           "s....ppp..a....ffffs...",
           "s....ppp..a....ffffsss.",
           "s.FF......a....ffffsss.",
@@ -224,7 +263,7 @@
             "SSRRRRRRRRSSRRRRRRRSRRR",
             "RRRRRRRRRRRRSRRRRRRSRRR",
             "RRRRRRRRRRRRRRRRRRRSRRR",
-            "SSRRRRRRRRSRRRRRRRRSRRR",
+            "SRRRRRRRRRSRRRRRRRRSRRR",
             "SRRRRSSSRRSRRRRSSSSSRRR",
             "SRRRRSSSRRSRRRRSSSSSSSR",
             "SRSSRRRRRRSRRRRSSSSSSSR",
@@ -410,10 +449,6 @@
         "W": {
           "facing": "w",
           "furniture": "wardrobe"
-        },
-        "X": {
-          "fixed": true,
-          "furniture": "battery_charger"
         },
         "a": "plaster",
         "b": "brick",

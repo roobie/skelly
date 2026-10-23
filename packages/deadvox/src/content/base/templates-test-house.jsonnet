@@ -10,6 +10,10 @@ local palette = {
   F: { furniture: 'fridge', fixed: true }, C: { furniture: 'kitchen_cupboard' },
   H: { furniture: 'chair' }, W: { furniture: 'wardrobe', facing: 'w' },
   Q: { furniture: 'crate', loot: 'sample_note_loot' }, N: { furniture: 'sample_sign' },
+  K: { furniture: 'crate', items: [
+    { item: 'rechargeable_aa_battery', count: 1, charge: 0.25, placement: 'surface' },
+    { item: 'flashlight', count: 1, charge: 0, placement: 'surface' },
+  ] },
 };
 local foundation = [
   'GGGGGGGGGGGGGGGGGGGGGGG',
@@ -29,7 +33,7 @@ local lower = [
   's.........a.......Ws...', 's.........a.......Ws...',
   'sL........aL.......s...',
   '............H......s...', '...................s...',
-  'sX........a........s...',
+  's.........a........s...',
   's....ppp..a....ffffs...', 's....ppp..a....ffffsss.',
   's.FF......a....ffffsss.', 's.FF..CC..a....ffffsss.',
   'ssssssssssssssssssss...',
@@ -118,6 +122,14 @@ local cap = [
   '...................dddd', '...................dddd', '...................dddd',
 ];
 local templates = [
+  {
+    id: 'test_house_charging', size: [3, 3, 3],
+    layers: [
+      ['GGG', 'GGG', 'GGG'],
+      ['...', 'KK.', 'KKX'],
+      ['...', 'KK.', 'KK.'],
+    ],
+  },
   {
     id: 'test_house_home', size: [23, 11, 15],
     layers: [foundation, lower, middle, windowLower, windowUpper,
