@@ -1,6 +1,7 @@
 import { ShaderChunk } from 'three';
 import { describe, expect, it } from 'vitest';
-import { installNearFieldFalloff, NEAR_FIELD_M, withNearFieldFalloff } from '../src/render/lightFalloff.ts';
+import { NEAR_FIELD_M } from '../src/core/illumination.ts';
+import { installNearFieldFalloff, withNearFieldFalloff } from '../src/render/lightFalloff.ts';
 import { CALIBRATED_BEAM_INTENSITY } from './flashlightFixture.ts';
 
 // three.js's own source is the thing under test: the patch must find the line it replaces.

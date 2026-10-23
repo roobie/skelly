@@ -1,6 +1,6 @@
 // A near-field-capped falloff for punctual lights. three.js lights a surface at distance d with 1 / d^decay,
 // which grows without bound up close: a beam tuned to reach 10 m blows out a wall at 1 m. Here the distance is
-// offset, 1 / (d + NEAR_FIELD_M)^decay, so close surfaces stop brightening while the far reach stays. The
+// offset (`src/core/illumination.ts`, `NEAR_FIELD_M`), so close surfaces stop brightening while the far reach stays. The
 // flashlight (render/flashlight.ts) and made lights both use punctual lights; the sun is directional and the rest
 // is hemisphere light. One global patch of three's shared chunk covers every material these sources can hit:
 // chunk meshes, mob actors, held items, glTF models and furniture all include `lights_pars_begin`.
@@ -9,9 +9,7 @@
 // when installed and throws if three changed it, so an upgrade fails loudly instead of silently lighting wrong.
 
 import { ShaderChunk } from 'three';
-
-/** Shared punctual-light cap prevents close surfaces from blowing out when lights are tuned for reach. */
-export const NEAR_FIELD_M = 4;
+import { NEAR_FIELD_M } from '../core/illumination.ts';
 
 const ORIGINAL = 'float distanceFalloff = 1.0 / max( pow( lightDistance, decayExponent ), 0.01 );';
 

@@ -2075,6 +2075,17 @@ restored state. Outside every field the answer is open sky, as `docs/readables.m
 "Darkness remains open" requires, so missing data never reads as darkness. See
 `src/core/skyField.ts`, `SkyFields`, and `src/game/session.ts`, `createSession`.
 
+Rules that ask whether a place is lit enough, such as reading a page or a sign, measure
+light the way the renderer draws it, so a page the player sees lit is readable and one
+they see dark is not. Both sides share one point-light decay and reading threshold from
+content and one near-field falloff, so tuning a light changes what is seen and what is
+readable together. The answer adds the sky visibility above, lit carried lights, lit
+lights set down and powered fixtures that have line of sight to the point. A carried
+beam counts for its holder: the player aims it at what they read, so carried light works
+the same for pages and signs. A beam set down points somewhere the rules don't model, so
+it counts for nothing. See `src/core/illumination.ts`, `illuminationAt`, and
+`src/render/lightFalloff.ts`, `installNearFieldFalloff`.
+
 Mesh-first admission protects the first visible geometry without making it wait for
 lighting readiness. A copied sky request may wait outside the pool capacity;
 a mesh completion admits it before the next mesh refill, preventing persistent
