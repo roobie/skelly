@@ -1,6 +1,7 @@
 ---
 read_if:
   - you author or change Deadvox content sources or their build pipeline
+  - you change the test-house layout or its authored structures
   - you change content schemas, validation, registry merging, browser-mod identity or content-loading test fixtures
   - you add or change a bundled mod such as beginner mode, or how `?mods=` selects one
   - you add code that reads a content row by a fixed id
@@ -190,7 +191,9 @@ Keep enclosed building roofs flush with their exterior wall footprint so the roo
 - A sheet-metal roof is a plain galvanized deck.
 - A semi-walled concrete roof is a concrete deck with waist-high wall segments along some edges, never a full ring.
 
-Both decks are non-wood, bound per style through the `roofing_sheet` and `roofing_slab` bindings, because a deck bound to the style's wooden floor reads as a wooden roof on brick and concrete walls. The reason for the mix is that roofs read as a varied, plausible urban skyline rather than one uniform treatment. The wall segments are furniture on cells that the plain roof claims as air, so both treatments keep the same solid support, and they leave the ladder landing and every route open. Open forecourt canopies are separate structures, not building eaves. See `src/content/base/gauntlet-city-decor.libsonnet`, `roofs`, `src/content/base/gauntlet-city-kits.libsonnet`, `roofDeck`, and `src/game/testHouse.ts`, `testHouse`.
+Non-wood decks keep wooden flooring from reading as a wooden roof on masonry walls. The mix makes the skyline varied and plausible; keep ladder landings and roof routes open. Open forecourt canopies are separate structures, not building eaves. See `src/content/base/gauntlet-city-decor.libsonnet`, `roofs`, and `src/content/base/gauntlet-city-kits.libsonnet`, `roofDeck`.
+
+The test house is authored content rather than a code-built exception, so the same layout and template mechanisms serve mods and evaluation scenes. See `src/content/base/layouts-test-house.jsonnet`, `layouts`, and `docs/test-house.md`, "Content ownership".
 
 Scenario lead references may carry fixed loot on their template's furniture anchors, so a portable clue uses the same surface or container machinery as other items. Lead admission requires readable furniture or a readable fixed item; the route certificate still proves independent access around solid supports. Surface loot and discovery share furniture-top positioning so an observation identifies the pile actually offered by inventory, rather than the support's corner. See `src/core/furnitureSurface.ts`, `furnitureSurfacePosition`. Unknown placement kinds fail schema validation instead of selecting a fallback. See `src/core/schema.ts`, `FixedLootItem`; `src/core/scenarioComposition.ts`, `extraTemplateIssues`; and `src/core/scenarioCertificate.ts`, `lead`.
 
@@ -433,7 +436,7 @@ Templates own procedural defaults. Authored building contexts override them; whe
 
 Keep empty source descriptions so a dynamic event can address any source without regenerating geometry; world loot itself rolls once per chunk column (`packages/deadvox/DESIGN.md`, "Loot"). Source identity must include the building, local vertical anchor and destination channel, never traversal order or a generated template name; independent random streams then remain stable when another source is visited first. See `src/core/loot.ts`, `lootSpawnPoint`, `lootPointsByColumn`, and `lootPointStream`.
 
-Debug descriptions are fixture-scoped so showcase stock cannot define production eligibility. Explicit fixture stock may include demonstration items without changing their economy metadata. The world selector still rejects those types in ordinary pools; see `src/game/worldSetup.ts`, `fixtureLootSource`, and `src/core/loot.ts`, `selectLootType`.
+Fixture descriptions keep showcase stock from defining production eligibility. They may include demonstration items without changing their economy metadata; ordinary pools must still reject those types. See `src/core/authoredSite.ts`, `AuthoredSite`, `src/game/worldSetup.ts`, `DebugTestHouseSite`, and `src/core/loot.ts`, `selectLootType`.
 
 ## Furniture visual shapes
 

@@ -196,7 +196,7 @@ describe('using what you hold', () => {
     const readableType = [...registry.items.values()].find((def) => def.readable && !def.book)?.id;
     expect(readableType).toBeDefined();
     const readTypes: (string | undefined)[] = [];
-    const t = setup(registry, (_readable, _bookUid, itemType) => readTypes.push(itemType));
+    const t = setup(registry, (request) => readTypes.push(request.itemType));
     const note = t.hold(readableType!);
 
     expect(t.survival.use(note)).toBeUndefined();

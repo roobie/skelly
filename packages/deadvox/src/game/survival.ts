@@ -23,7 +23,7 @@ import {
 import { consume } from '../core/needs.ts';
 import { consumption, useOption } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
-import type { Readable } from '../core/readable.ts';
+import type { Readable, ReadRequest } from '../core/readable.ts';
 import type { Simulation } from '../core/sim.ts';
 import { simSeconds, simToGameSeconds } from '../core/time.ts';
 import { swapCanister } from '../core/torch.ts';
@@ -57,9 +57,8 @@ export interface SurvivalHooks {
   feet: (item: Item) => Target | undefined;
   notice: (text: string) => void;
   reach: () => ReachSnapshot;
-  /** Presents validated authored text and, for books, its action owner. */
-  /** `itemType` names the read item; a readable fixture has none. */
-  read: (readable: Readonly<Readable>, bookUid?: number, itemType?: string) => void;
+  /** Presents a validated authored text or generated paper surface. */
+  read: (request: ReadRequest) => void;
   /** Whether the book has already taught every recipe it owns. */
   bookRead?: (bookUid: number) => boolean;
   consumed?: ((type: string) => void) | undefined;
@@ -225,15 +224,24 @@ export class Survival {
   }
 
   private readItem(item: Item, readable: Readonly<Readable> | undefined): string | undefined {
-    const hasBook = defOf(this.inventory.registry, item.type).book !== undefined;
+    const definition = defOf(this.inventory.registry, item.type);
+    const hasBook = definition.book !== undefined;
     if (hasBook && this.hooks.bookRead?.(item.uid) !== true) {
       const reason = this.sim.actions.beginReading(item.uid);
       if (reason) {
         return reason;
       }
     }
-    if (readable) {
-      this.hooks.read(readable, hasBook ? item.uid : undefined, item.type);
+    if (definition.paperMap && item.paperMap) {
+      this.hooks.read({
+        kind: 'paperMap',
+        ownerUid: item.uid,
+        coverage: item.paperMap,
+        title: definition.name,
+        itemType: item.type,
+      });
+    } else if (readable) {
+      this.hooks.read({ kind: 'text', readable, ...(hasBook ? { bookUid: item.uid } : {}), itemType: item.type });
     }
     return undefined;
   }

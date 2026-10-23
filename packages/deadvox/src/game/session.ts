@@ -71,17 +71,20 @@ import { pryPlan } from '../core/prying.ts';
 import { Rng } from '../core/random.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
 import { bindReach, pileDistance as distanceToPile, furnitureDistance, reachTuning } from '../core/reach.ts';
-import type { Readable } from '../core/readable.ts';
+import type { ReadRequest } from '../core/readable.ts';
 import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../core/saveState.ts';
 import type { Scale } from '../core/scale.ts';
 import { nearDiscoveryBox, type ScenarioDiscovery } from '../core/scenarioDiscovery.ts';
 import { assertScenarioRun, ScenarioRun } from '../core/scenarioRun.ts';
 import type { EventRuleDef } from '../core/schema.ts';
+import { type ShotTrace, traceShot } from '../core/shotTrace.ts';
 import { Simulation } from '../core/sim.ts';
 import type { ColumnSource } from '../core/site.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
 import { type PlacedPowerDevice, SitePower } from '../core/sitePower.ts';
 import { skillActivityPractice, skillActivityPracticeRate } from '../core/skillTraining.ts';
+import { SkyFields } from '../core/skyField.ts';
+import type { SkyBounds } from '../core/skylight.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
 import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
 import type { SoundId } from '../core/soundEvents.ts';
@@ -89,6 +92,7 @@ import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core
 import { simTimestamp } from '../core/time.ts';
 import { spendFuel } from '../core/torch.ts';
 import { VehicleOccupancy } from '../core/vehicleProjection.ts';
+import { vehicleWorkHooks } from '../core/vehicleWork.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
 import { figureSeedPool, zombieFigure } from '../core/zombieFigure.ts';
@@ -326,6 +330,11 @@ interface SessionDebug {
   stepNoclip: (step: DebugNoclipStep) => void;
 }
 
+/** A committed round with its segments traced against the world its hits resolve in (`DESIGN.md`, "Shot impacts"). */
+export interface ResolvedFirearmTrajectory extends FirearmTrajectory {
+  readonly traces: readonly ShotTrace[];
+}
+
 export interface SessionOptions {
   powerDevices?: readonly PlacedPowerDevice[];
   registry: Registry;
@@ -348,6 +357,8 @@ export interface SessionOptions {
   spawn: Vec3;
   /** The game's shared block entities; restore populates this same object in place. */
   entities?: Inventory['entities'];
+  /** The site's sky boxes in blocks (`src/core/skyField.ts`, `authoredSkyBoxes`); none leaves every point open. */
+  skyBoxes?: readonly SkyBounds[];
   /** Deterministic scenario registrations run after restore, before world consumers. */
   registerVehicles?: ((inventory: Inventory) => void) | undefined;
   terrainFloor?: (x: number, z: number) => number;
@@ -361,8 +372,8 @@ export interface SessionOptions {
   notice: (text: string) => void;
   /** Presentation cue for an action the handling queue refused. */
   refusal?: ((text: string) => void) | undefined;
-  /** Authored text selected by a live domain command; presentation owns its view. */
-  onRead: (readable: Readonly<Readable>, bookUid?: number, itemType?: string) => void;
+  /** A held paper request selected by a live domain command; presentation owns its view. */
+  onRead: (request: ReadRequest) => void;
   /** Observational hook for actual handling completion/failure outcomes. */
   onHandlingOutcomes?: (result: TickResult) => void;
   onConsumed?: ((type: string) => void) | undefined;
@@ -375,7 +386,7 @@ export interface SessionOptions {
   /** Output only, after the simulation inserts an ejected item into its landing pile. */
   onFirearmCaseLanded?: (seed: number, item: Item, instanceIndex: number) => void;
   /** Presentation-only trajectory for every committed round, including virtual automatic fire. */
-  onFirearmTrajectory?: (trajectory: FirearmTrajectory, time: number) => void;
+  onFirearmTrajectory?: (trajectory: ResolvedFirearmTrajectory, time: number) => void;
   /** Presentation-only: an explosive went off here, with this blast radius, both in metres. */
   onDetonation?: (at: Vec3, radiusMetres: number) => void;
   /** Presentation-only: a melee block absorbed damage. */
@@ -747,6 +758,12 @@ export const createSession = (options: SessionOptions) => {
   const { entities } = inventory;
   // Zombie ticks share vertical block geometry; revisions keep edits visible to every caller.
   const sunExposureCache = new SunExposureCache(skyTop, scale.minCy * CHUNK, isLightBlocking);
+  // Rebuilt from restored world state and never saved, so a reload answers the same at the same position.
+  const skyFields = new SkyFields(
+    { world, entities, registry },
+    { bottom: scale.minCy * CHUNK, top: skyTop },
+    options.skyBoxes,
+  );
   let cachedWorldVersion = world.version;
   let cachedEntityVersion = entities.version;
   let cachedVehicleVersion = inventory.vehicles.version;
@@ -789,6 +806,8 @@ export const createSession = (options: SessionOptions) => {
     },
   };
   const reach = bindReach(reachPlayer);
+  inventory.canReachVehicle = (position) =>
+    distanceToPile(body.pos, position, s) <= reachTuning(inventory.registry).reachMetres;
   inventory.landing = (pos) => settleCell(pos, s, scale.minCy * CHUNK, physicalSolid);
   inventory.dropFeet = feet;
   const pileDistance = (pos: Vec3) => distanceToPile(body.pos, pos, s);
@@ -975,7 +994,19 @@ export const createSession = (options: SessionOptions) => {
         : undefined,
     onEjection: (effect) => options.onFirearmEjection?.(effect),
     onCaseLanded: (caseSeed, item, instanceIndex) => options.onFirearmCaseLanded?.(caseSeed, item, instanceIndex),
-    onTrajectory: (trajectory, time) => options.onFirearmTrajectory?.(trajectory, time),
+    onTrajectory: (trajectory, time) =>
+      options.onFirearmTrajectory?.(
+        {
+          ...trajectory,
+          traces: traceShot(
+            trajectory.origin,
+            trajectory.directions,
+            currentFirearmsCombatTuning().shotTraceRangeBlocks,
+            physicalSolid,
+          ),
+        },
+        time,
+      ),
     firearmsSkillLevel: () => firearmsSkillLevel(character),
     firearmsSkillZeroHandling: () => currentFirearmsCombatTuning().skillZeroHandling,
     handlingSlowdown: () => sim.body.pain.effects.handlingSlowdown,
@@ -1037,6 +1068,11 @@ export const createSession = (options: SessionOptions) => {
   sim.actions.craft = craftActionHooks(inventory, character, reach, { feet, calendar: () => sim.calendar });
   sim.actions.reading = bookReadingHooks(inventory, character);
   sim.actions.treatment = playerTreatmentHooks(inventory, sim);
+  sim.actions.vehicleWork = vehicleWorkHooks(inventory, {
+    output: () => ({ kind: 'pile', pos: feet() }),
+    quality: (quality) =>
+      Math.max(0, ...reach().entries.map(({ item }) => registry.items.get(item.type)?.tool?.qualities[quality] ?? 0)),
+  });
   const rest = new RestController(sim, {
     furniture: (uid) => {
       const entity = entities.byUid(uid);
@@ -2048,6 +2084,7 @@ export const createSession = (options: SessionOptions) => {
       return scenarioRunWon(scenarioRun);
     },
     power,
+    skyFields,
     chargerControl: (uid: number, operation: 'start' | 'stop'): string | undefined => {
       const entity = entities.byUid(uid);
       const id = entity && power?.chargerId(entity);
@@ -2279,7 +2316,7 @@ export const createSession = (options: SessionOptions) => {
       if (options.discovery?.clues.some((at) => at.every((value, axis) => value === entity.pos[axis]))) {
         scenarioRun?.discover('clueRead', sim.calendar);
       }
-      options.onRead(readable);
+      options.onRead({ kind: 'text', readable });
       return undefined;
     },
     searching: (entity: BlockEntity): boolean => searching.has(entity),

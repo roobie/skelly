@@ -156,7 +156,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 58;
+export const SAVE_SCHEMA_VERSION = 59;
 export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -519,6 +519,13 @@ const vehiclePlacementFields = {
   at: vec3,
   mirror: opt(enumeration([true])),
   supportedBy: arr(str({ id: true })),
+  service: opt(
+    obj({
+      mount: str({ id: true }),
+      durationSimSeconds: positive,
+      qualities: record(positiveInt),
+    }),
+  ),
 };
 const vehicleSchema = obj({
   blueprint: str({ id: true }),
@@ -553,6 +560,9 @@ const longJob = (jobType: Schema, extra: Record<string, Schema> = {}) =>
     region: opt(enumeration(bodyRegionValues)),
     itemUid: opt(positiveInt),
     itemType: opt(str({ id: true })),
+    kind: opt(enumeration(['install', 'remove'])),
+    vehicleId: opt(positiveInt),
+    fittingId: opt(str({ id: true })),
     duration: opt(positive),
     strikeInterval: opt(positive),
     nextStrike: opt(positive),
@@ -570,7 +580,7 @@ const longJob = (jobType: Schema, extra: Record<string, Schema> = {}) =>
 const longAction = obj({
   job: nullable(
     union(
-      longJob(enumeration(['rest', 'sleep', 'craft', 'reading', 'treatment', 'wait'])),
+      longJob(enumeration(['rest', 'sleep', 'craft', 'reading', 'treatment', 'wait', 'vehicleWork'])),
       longJob(enumeration(['forceDoor']), { method: str({ id: true }) }),
     ),
   ),
@@ -1594,6 +1604,7 @@ function validateWorkItems(tree: readonly { item: ItemState }[], itemsByUid: Rea
 function ownsLongActionItem(
   job: SaveSnapshot['character']['longAction']['job'],
   tree: readonly { item: ItemState }[],
+  vehicles: VehicleInstancesState,
 ): boolean {
   if (job?.jobType === 'craft') {
     return tree.some(({ item }) => item.uid === job.workUid && item.work !== undefined);
@@ -1606,6 +1617,12 @@ function ownsLongActionItem(
   }
   if (job?.jobType === 'treatment') {
     return tree.some(({ item }) => item.uid === job.itemUid && item.type === job.itemType);
+  }
+  if (job?.jobType === 'vehicleWork') {
+    const vehicle = vehicles.instances.find(({ id }) => id === job.vehicleId)?.vehicle;
+    const fitting = vehicle?.fittings.find(({ id }) => id === job.fittingId);
+    const item = tree.find(({ item: candidate }) => candidate.uid === job.itemUid)?.item;
+    return job.kind === 'remove' ? fitting?.item.uid === job.itemUid : item !== undefined && fitting === undefined;
   }
   return true;
 }
@@ -1634,7 +1651,7 @@ function validateActionReferences(snapshot: SaveSnapshot): void {
   validateFoodWatermarks(snapshot, tree);
   const itemsByUid = new Map(tree.map(({ item }) => [item.uid, item]));
   validateWorkItems(tree, itemsByUid);
-  if (!ownsLongActionItem(job, tree)) {
+  if (!ownsLongActionItem(job, tree, snapshot.world.vehicles)) {
     let reason = 'Missing craft work item';
     if (job?.jobType === 'reading') {
       reason = 'Missing reading book';
