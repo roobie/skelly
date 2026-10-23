@@ -1416,6 +1416,15 @@ try {
       beforeView.dispatches,
       'keys while open activate no covered inventory control',
     );
+    const viewerFill = await page.evaluate(() => {
+      const panel = document.querySelector('#inventory').getBoundingClientRect();
+      const canvas = document.querySelector('#inventory .inv-viewer-canvas').getBoundingClientRect();
+      return { width: canvas.width / panel.width, height: canvas.height / panel.height };
+    });
+    assert.ok(
+      viewerFill.width > 0.8 && viewerFill.height > 0.6,
+      `the viewer fills most of the inventory panel: ${JSON.stringify(viewerFill)}`,
+    );
     const opened = await viewerPixels();
     assert.ok(opened.opaque > 0 && opened.opaque < opened.total, 'the viewer draws the clicked item on transparency');
     const dragFrom = await moveMenuCursorTo('#inventory .inv-viewer-canvas');

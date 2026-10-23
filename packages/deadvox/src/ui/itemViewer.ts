@@ -9,7 +9,7 @@ import { inputBindings } from '../game/inputBindings.ts';
 import { fillHint, keyCap } from './keyCap.ts';
 import { wheelPixels } from './wheel.ts';
 
-/** Radians, and the view's half height per bounding radius. */
+/** Radians, and the view's half shorter side per bounding radius. */
 interface ItemViewPose {
   readonly yaw: number;
   readonly pitch: number;

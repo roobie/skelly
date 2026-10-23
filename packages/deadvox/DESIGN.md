@@ -1385,8 +1385,11 @@ to judge an item's shape or what is fitted to it, and a close look must not cost
 a move, so the viewer is view-only. It changes neither the item, the selection
 nor the queue, item keys wait until it closes, and the clock runs as it does with
 the inventory open. It is modal: it takes focus and the inventory it covers is
-inert until it closes, so no key or press reaches a hidden control. It draws with the item pictures' renderer rather than a
-second WebGL context. See `src/ui/itemViewer.ts`, `ItemViewer`, and
+inert until it closes, so no key or press reaches a hidden control. It fills the
+inventory panel, the full HUD allowance, because a small box hides the detail it
+exists to show; the model stays framed along the view's shorter side, so a
+phone-shaped panel does not clip it. It draws with the item pictures' renderer
+rather than a second WebGL context. See `src/ui/itemViewer.ts`, `ItemViewer`, and
 `src/render/itemPictures.ts`, `ItemPictures`.
 
 ### Piles and item models
