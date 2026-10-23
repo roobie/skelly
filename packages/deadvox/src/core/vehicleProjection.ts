@@ -179,19 +179,23 @@ export class VehicleOccupancy {
         if (this.channel && !this.registry.items.get(part.item.type)?.vehicle?.obstruction[this.channel]) {
           continue;
         }
-        for (const box of part.boxes) {
-          for (const [x, y, z] of cellsOfBox(box, this.blockSize)) {
-            const key = `${x},${y},${z}`;
-            const owners = this.cells.get(key);
-            if (owners) {
-              owners.add(vehicleId);
-            } else {
-              this.cells.set(key, new Set([vehicleId]));
-            }
-          }
-        }
+        this.claimCells(vehicleId, part.boxes);
       }
     }
     this.seenVersion = this.vehicles.version;
+  }
+
+  private claimCells(vehicleId: number, boxes: readonly ModelBox[]): void {
+    for (const box of boxes) {
+      for (const [x, y, z] of cellsOfBox(box, this.blockSize)) {
+        const key = `${x},${y},${z}`;
+        const owners = this.cells.get(key);
+        if (owners) {
+          owners.add(vehicleId);
+        } else {
+          this.cells.set(key, new Set([vehicleId]));
+        }
+      }
+    }
   }
 }

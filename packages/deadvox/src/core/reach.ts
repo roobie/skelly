@@ -213,7 +213,8 @@ export const bindReach = (
   player.inventory.canReach = (position) => pileInReach(player, position);
   player.inventory.canReachEntity = (entity) => furnitureInReach(player, entity);
   if (vehicleParts) {
-    player.inventory.canReachVehicle = (vehicleId) => vehicleInReach(player, vehicleId, vehicleParts.boxesOf(vehicleId));
+    player.inventory.canReachVehicle = (vehicleId) =>
+      vehicleInReach(player, vehicleId, vehicleParts.boxesOf(vehicleId));
   }
   player.inventory.actorPosition = () => player.position;
   return () => reach(player);
