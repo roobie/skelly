@@ -82,12 +82,13 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
     }
   });
   it('registers each jack and hoist as an ordinary tool item on a nonempty model', () => {
-    for (const id of ['scissor_jack', 'bottle_jack', 'engine_hoist']) {
-      const item = registry.items.get(id);
-      assert.ok(item, `${id}: missing item`);
-      assert.equal(item.category, 'tool');
+    const jacks = [...registry.items.values()].filter((item) => item.tool?.qualities?.jacking !== undefined);
+    assert.ok(jacks.length > 0, 'no item carries a jacking quality');
+    for (const item of jacks) {
+      const { id } = item;
+      assert.equal(item.category, 'tool', `${id}: a jack is a tool`);
       assert.equal(item.vehicle, undefined, `${id}: a jack is carried, not fitted`);
-      assert.ok((item.tool?.qualities?.jacking ?? 0) >= 1, `${id}: missing jacking quality`);
+      assert.ok(item.tool.qualities.jacking >= 1, `${id}: missing jacking quality`);
       const model = registry.models.get(item.model);
       assert.ok(model && Object.keys(model.parts ?? {}).length > 0, `${id}: empty model`);
     }

@@ -116,8 +116,8 @@
       "category": "tool",
       "description": "A wheeled floor crane with a hydraulic boom. It takes two hands and a lot of room.",
       "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+        "tiers": [],
+        "usage": []
       },
       "id": "engine_hoist",
       "model": "engine_hoist",
