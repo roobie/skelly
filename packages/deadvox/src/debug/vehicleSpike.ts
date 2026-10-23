@@ -1180,7 +1180,7 @@ const addPlayer = (): void => {
   if (!player) {
     throw new Error('The bundled player figure is missing');
   }
-  const person = new PlayerMeshes(BLOCK_SIZE, player);
+  const person = new PlayerMeshes(BLOCK_SIZE, player, registry.models);
   const [px, , pz] = PLAYER_AT;
   person.sync({
     body: {

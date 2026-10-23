@@ -139,11 +139,19 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
       issues.push([path, 'spawn must stand on a supported surface']);
     }
   };
-  layout.fixturePiles?.forEach((position, i) => {
-    const path = `.fixturePiles[${i}]`;
+  layout.bays?.forEach(({ position }, i) => {
+    const path = `.bays[${i}].position`;
     checkSpawn([position[0], position[2]], path);
     supported(position, path);
   });
+  if (layout.repairStock !== undefined) {
+    const stock = placements.filter(({ template }) => template.id === layout.repairStock);
+    if (stock.length !== 1) {
+      issues.push(['.repairStock', `"${layout.repairStock}" must name exactly one building in this site`]);
+    } else if (!placedPieces(stock[0]!).some(({ furniture }) => registry.furniture.get(furniture)?.container)) {
+      issues.push(['.repairStock', `"${layout.repairStock}" has no container furniture`]);
+    }
+  }
   supported(layout.player.position, '.player.position');
   checkSpawn([layout.player.position[0], layout.player.position[2]], '.player.position');
   const authoredHordes = layout.hordes ?? [];

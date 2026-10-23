@@ -17,7 +17,6 @@ const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders
 const { Box3, Vector3 } = deadvoxRequire('three');
 const { safeParse } = deadvoxRequire('valibot');
 const base = new URL('../packages/deadvox/src/content/base/', import.meta.url).pathname;
-const AVATAR_SOURCE = 'player_bust';
 const recipe = loadThingRecipe();
 const exported = recipe.map((row) => ({ id: row.id, source: row.source, voxel: row.voxel, ...row.generate() }));
 const { registry, issues } = buildRegistry(
@@ -25,6 +24,8 @@ const { registry, issues } = buildRegistry(
     .filter((file) => file.endsWith('.json'))
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) })),
 );
+const figureParts = [...registry.figures.values()].flatMap((figure) => figure.parts ?? []);
+const figureModels = new Set(figureParts.map(({ model }) => model));
 
 describe('thing tool exports satisfy the Deadvox contract', () => {
   it('validates and reproduces every recipe model without orphaned records', () => {
@@ -58,8 +59,8 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
   it('builds the registry with one authoritative mass source for each item', () => {
     assert.deepEqual(issues, []);
     for (const row of recipe) {
-      if (row.source === AVATAR_SOURCE) {
-        // The player figure is a model rows only; the avatar study draws it, no item holds it.
+      if (figureModels.has(row.id)) {
+        // A figure part's model is drawn by its figure row; no item holds it.
         assert.equal(registry.items.has(row.source), false);
         assert.ok(registry.models.get(row.id));
         continue;
@@ -78,6 +79,16 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
         assert.ok(toolItem);
         const authoredMass = toolItem.parts.reduce((sum, part) => sum + part.massKg, 0);
         assert.equal(exportDifference(modelMassKg(model), authoredMass), null, row.id);
+      }
+    }
+  });
+  it('resolves every figure part to an exported model holding each joint anchor', () => {
+    assert.ok(figureParts.length > 0, 'the base content must author a figure part');
+    for (const part of figureParts) {
+      const out = exported.find(({ id }) => id === part.model);
+      assert.ok(out, `${part.model}: no recipe export`);
+      for (const [joint, anchor] of Object.entries(part.joints)) {
+        assert.ok(out.modelEntry.anchors?.[anchor], `${part.model}: ${joint} names missing anchor ${anchor}`);
       }
     }
   });

@@ -91,8 +91,7 @@ import type { ColumnSource } from '../core/site.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
 import { type PlacedPowerDevice, SitePower } from '../core/sitePower.ts';
 import { skillActivityPractice, skillActivityPracticeRate } from '../core/skillTraining.ts';
-import { SkyFields } from '../core/skyField.ts';
-import type { SkyBounds } from '../core/skylight.ts';
+import { type SkyFieldOwner, SkyFields } from '../core/skyField.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
 import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
 import type { SoundId } from '../core/soundEvents.ts';
@@ -366,8 +365,8 @@ export interface SessionOptions {
   spawn: Vec3;
   /** The game's shared block entities; restore populates this same object in place. */
   entities?: Inventory['entities'];
-  /** The site's sky boxes in blocks (`src/core/skyField.ts`, `authoredSkyBoxes`); none leaves every point open. */
-  skyBoxes?: readonly SkyBounds[];
+  /** The site's sky field cache over this world and these entities, shared with the renderer; none leaves every point open. */
+  skyFields?: SkyFields;
   /** Deterministic scenario registrations run after restore, before world consumers. */
   registerVehicles?: ((inventory: Inventory) => void) | undefined;
   terrainFloor?: (x: number, z: number) => number;
@@ -668,6 +667,10 @@ const createSessionPower = (options: SessionOptions, sim: Simulation, inventory:
   return power;
 };
 
+/** The shared cache, or one with no fields, which answers open sky everywhere. */
+const sessionSkyFields = (shared: SkyFields | undefined, owner: SkyFieldOwner, scale: Scale, top: number) =>
+  shared ?? new SkyFields(owner, { bottom: scale.minCy * CHUNK, top });
+
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
   const dayCycle = requireDayCycle(registry);
@@ -731,14 +734,9 @@ export const createSession = (options: SessionOptions) => {
   const isOpaque = (x: number, y: number, z: number) => options.isOpaque(x, y, z) || vehicleSight.isSolid(x, y, z);
   const isLightBlocking = (x: number, y: number, z: number) =>
     options.isOpaque(x, y, z) || vehicleLight.isSolid(x, y, z);
-  const wearPlaced = (piece: BlockEntity | undefined, wear: number | undefined): void => {
-    if (piece && wear !== undefined) {
-      inventory.entities.wear(piece, wear);
-    }
-  };
   const generateColumnSupply = (cx: number, cz: number, source: ColumnSource): void => {
-    for (const { spec, loot, surfaceLoot, fixedCount, wear } of source.furnitureIn(cx, cz)) {
-      wearPlaced(inventory.furnish(spec, loot, surfaceLoot, fixedCount), wear);
+    for (const spawn of source.furnitureIn(cx, cz)) {
+      inventory.furnishSpawn(spawn);
     }
     for (const point of source.lootPointsIn(cx, cz)) {
       if (point.channel !== 'ground') {
@@ -768,11 +766,7 @@ export const createSession = (options: SessionOptions) => {
   // Zombie ticks share vertical block geometry; revisions keep edits visible to every caller.
   const sunExposureCache = new SunExposureCache(skyTop, scale.minCy * CHUNK, isLightBlocking);
   // Rebuilt from restored world state and never saved, so a reload answers the same at the same position.
-  const skyFields = new SkyFields(
-    { world, entities, registry },
-    { bottom: scale.minCy * CHUNK, top: skyTop },
-    options.skyBoxes,
-  );
+  const skyFields = sessionSkyFields(options.skyFields, { world, entities, registry }, scale, skyTop);
   let cachedWorldVersion = world.version;
   let cachedEntityVersion = entities.version;
   let cachedVehicleVersion = inventory.vehicles.version;

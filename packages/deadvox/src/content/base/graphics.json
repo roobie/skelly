@@ -69,7 +69,8 @@
         "default": false,
         "label": "Smaller sun shadow map",
         "options": [false, true]
-      }
+      },
+      "unbuiltSkyCap": 0.5
     }
   ]
 }

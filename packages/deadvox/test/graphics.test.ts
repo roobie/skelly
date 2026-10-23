@@ -40,6 +40,7 @@ const source = (options: GraphicsOptions) => ({
         id: CORE_CONTENT_IDS.coreGraphics,
         readyRadiusM: 16,
         itemPictureCacheCapacity: 2,
+        unbuiltSkyCap: 0.5,
         itemViewer: {
           framing: 1,
           startYawDegrees: 0,
