@@ -1232,7 +1232,7 @@ try {
       { timeout: 20_000 },
     );
     logPhase('render-free live game readiness');
-    const clickThroughMenuCursor = async (selector) => {
+    const moveMenuCursorTo = async (selector) => {
       const targetLocator = typeof selector === 'string' ? page.locator(selector) : selector;
       const bounds = await targetLocator.boundingBox();
       assert.ok(bounds, `visible target: ${selector}`);
@@ -1251,7 +1251,11 @@ try {
           alsoDispatchMouseMove: true,
         });
       }
-      await page.mouse.click(target.x, target.y);
+      return target;
+    };
+    const clickThroughMenuCursor = async (selector, options) => {
+      const target = await moveMenuCursorTo(selector);
+      await page.mouse.click(target.x, target.y, options);
     };
     const spawn = async (type) => {
       await pressAction(page, 'debug.spawn-menu-toggle');
@@ -1354,13 +1358,87 @@ try {
       'tile still contains model pixels on transparency',
     );
     assert.ok(picturePixels.colors > 1, 'reference-lit model has surface detail rather than a flat placeholder');
+    logPhase('isolated item picture pixels');
+
+    // The item viewer shares the pictures' renderer; the view press over a card opens it and nothing else changes.
+    const viewState = () =>
+      page.evaluate(() => {
+        const { session, screen, dispatches } = globalThis.foregripFitTest;
+        return {
+          inventory: JSON.stringify(session.inventory.snapshotState()),
+          selected: screen.selected?.uid,
+          jobs: session.queue.jobs.length,
+          dispatches: dispatches.length,
+        };
+      });
+    const viewerPixels = () =>
+      page.locator('#inventory .inv-viewer-canvas').evaluate((canvas) => {
+        const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+        let opaque = 0;
+        let sum = 0;
+        for (let i = 0; i < pixels.length; i += 4) {
+          if (pixels[i + 3] > 0) {
+            opaque += 1;
+            sum = (sum * 31 + pixels[i] + pixels[i + 1] * 7 + pixels[i + 2] * 13 + i) % 1_000_000_007;
+          }
+        }
+        return { opaque, sum, total: canvas.width * canvas.height };
+      });
     await page.evaluate(() => {
       const { screen } = globalThis.foregripFitTest;
+      screen.hooks.itemView = screen.hooks.pictures;
+    });
+    const beforeView = await viewState();
+    const viewButton = await page.evaluate(async (bindingsModule) => {
+      const { inputBindings } = await import(bindingsModule);
+      const [chord] = inputBindings.chords('inventory.view-item');
+      const mouse = chord.code.startsWith('Mouse') && !chord.modifier;
+      return mouse ? ['left', 'middle', 'right'][Number(chord.code.slice('Mouse'.length))] : undefined;
+    }, '/src/game/inputBindings.ts');
+    assert.ok(viewButton, 'the default view binding is a mouse button Playwright can press');
+    // A focused covered control must not take keys while the viewer is open: the fit button dispatches on activation.
+    const coveredFit = page
+      .locator('#inventory .inv-details button.inv-option')
+      .filter({ hasText: /Fit .*foregrip/i })
+      .first();
+    await coveredFit.focus();
+    const isFocused = (locator) => locator.evaluate((element) => document.activeElement === element);
+    assert.ok(await isFocused(coveredFit), 'the fit button holds focus before the viewer opens');
+    await clickThroughMenuCursor(`#inventory [data-uid="${rifleUid}"]`, { button: viewButton });
+    const viewerLocator = page.locator(`#inventory .inv-viewer[data-item-viewer="${rifleUid}"]`);
+    await viewerLocator.waitFor({ state: 'visible' });
+    assert.ok(await isFocused(viewerLocator), 'opening moves focus into the viewer');
+    await page.keyboard.press('Space');
+    await page.keyboard.press('Enter');
+    assert.equal(await viewerLocator.count(), 1, 'keys while open leave the viewer open');
+    assert.equal(
+      await page.evaluate(() => globalThis.foregripFitTest.dispatches.length),
+      beforeView.dispatches,
+      'keys while open activate no covered inventory control',
+    );
+    const opened = await viewerPixels();
+    assert.ok(opened.opaque > 0 && opened.opaque < opened.total, 'the viewer draws the clicked item on transparency');
+    const dragFrom = await moveMenuCursorTo('#inventory .inv-viewer-canvas');
+    await page.mouse.down();
+    await page.mouse.move(dragFrom.x + 80, dragFrom.y + 20, { steps: 4 });
+    await page.mouse.up();
+    const turned = await viewerPixels();
+    assert.notEqual(turned.sum, opened.sum, 'dragging turns the model');
+    await page.mouse.wheel(0, -400);
+    const zoomed = await viewerPixels();
+    assert.ok(zoomed.opaque > turned.opaque, 'wheeling up zooms in');
+    await clickThroughMenuCursor('#inventory [data-action="viewer.close"]');
+    await page.locator('#inventory .inv-viewer').waitFor({ state: 'detached' });
+    assert.ok(await isFocused(coveredFit), 'closing gives focus back to the control that had it');
+    assert.deepEqual(await viewState(), beforeView, 'viewing and closing leave the inventory as it was');
+    logPhase('item viewer');
+    await page.evaluate(() => {
+      const { screen } = globalThis.foregripFitTest;
+      screen.hooks.itemView = undefined;
       screen.hooks.pictures.dispose();
       screen.hooks.pictures = undefined;
       screen.update();
     });
-    logPhase('isolated item picture pixels');
     const fitButtons = page.locator('#inventory .inv-details button.inv-option').filter({ hasText: /Fit .*foregrip/i });
     assert.ok((await fitButtons.count()) > 0, 'held AR offers the pocketed foregrip as a fit action');
     const fitButton = fitButtons.first();

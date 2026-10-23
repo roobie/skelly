@@ -806,6 +806,7 @@ const UiScreenTextSchema = strictObject({
     noneToTake: ['category'],
     secs: ['value'],
     kg: ['value'],
+    viewerClose: ['key'],
   }),
 });
 
@@ -1185,7 +1186,7 @@ const LightSchema = strictObject({
   radius: Positive,
   /** Metres from which others can see it (`DESIGN.md`, "Light"). */
   seenFrom: Positive,
-  /** Point-light colour and candela; both are presentation-owned content. */
+  /** Point-light colour, and intensity in the light units the renderer draws and the simulation measures. */
   color: Color,
   intensity: Positive,
   /** Material glow for sources that remain visible when outside the point-light pool. */
@@ -3655,6 +3656,11 @@ const SenseSchema = strictObject({
      * has no flame to shine from, high enough that the near-field falloff reaches nearby surfaces.
      */
     groundLight: strictObject({ senseHeightMetres: Positive, renderLiftMetres: Positive }),
+    /**
+     * Light at a point, in the renderer's light units (`DESIGN.md`, "Light"): the distance decay and near-field
+     * offset every punctual light is drawn and measured with, and the least light a page or sign needs to be read.
+     */
+    illumination: strictObject({ pointDecay: NonNegative, nearFieldMetres: NonNegative, readingThreshold: Positive }),
   }),
 });
 /** Counts are whole items, never millilitres; no partial-liquid storage contract exists yet. */
@@ -4010,6 +4016,25 @@ const GraphicsTuningSchema = strictObject({
   id: Id,
   readyRadiusM: pipe(number(), finite(), minValue(0)),
   itemPictureCacheCapacity: pipe(number(), integer(), minValue(1)),
+  /** The inventory item viewer: opening pose, drag and wheel response, and zoom range around the opening zoom of 1. */
+  itemViewer: pipe(
+    strictObject({
+      /** Half the view's height per bounding radius at zoom 1. */
+      framing: Positive,
+      startYawDegrees: Degrees,
+      startPitchDegrees: Degrees,
+      pitchLimitDegrees: pipe(number(), minValue(0), maxValue(90)),
+      degreesPerPixel: Positive,
+      zoomPerWheelPixel: Positive,
+      zoomMin: Positive,
+      zoomMax: Positive,
+    }),
+    check(({ zoomMin, zoomMax }) => zoomMin <= 1 && zoomMax >= 1, 'zoom range must include 1'),
+    check(
+      ({ startPitchDegrees, pitchLimitDegrees }) => Math.abs(startPitchDegrees) <= pitchLimitDegrees,
+      'start pitch must be within the pitch limit',
+    ),
+  ),
   mobActors: strictObject({ maxCorpses: Count }),
   gore: strictObject({
     dropletCap: Count,

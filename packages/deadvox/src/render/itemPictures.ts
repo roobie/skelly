@@ -5,8 +5,17 @@ import type { Item } from '../core/items.ts';
 import { itemLook } from './itemLook.ts';
 import { type ModelLibrary, visibleBounds } from './models.ts';
 
+/** Where the reference camera sits around a model: radians, and a framing extent per bounding radius. */
+export interface ReferencePose {
+  readonly yaw: number;
+  readonly pitch: number;
+  readonly framing: number;
+}
+
 export interface PicturePainter {
   paint: (model: Object3D) => string;
+  /** Draws the model at a pose and returns the drawn surface; read it before the next paint or view. */
+  view: (model: Object3D, pose: ReferencePose, width: number, height: number) => CanvasImageSource;
   dispose: () => void;
 }
 
@@ -15,36 +24,61 @@ type PictureRenderer = Pick<
   'setSize' | 'setClearColor' | 'render' | 'domElement' | 'dispose' | 'forceContextLoss'
 >;
 
+/** The inventory still's pose: three-quarter view from the front right, slightly above. */
+const PICTURE_POSE: ReferencePose = {
+  yaw: Math.PI / 4,
+  pitch: Math.atan2(0.7, Math.SQRT2),
+  framing: 1.1,
+};
+
 /** A separate reference scene keeps pictures independent of world light and handling motion. */
 export const referencePainter = (
   createRenderer: () => PictureRenderer = () => new WebGLRenderer({ alpha: true, antialias: true }),
 ): PicturePainter => {
   let renderer: PictureRenderer | undefined;
   let disposed = false;
+  const draw = (model: Object3D, pose: ReferencePose, width: number, height: number): PictureRenderer => {
+    if (disposed) {
+      throw new Error('Picture painter is disposed');
+    }
+    renderer ??= createRenderer();
+    renderer.setSize(width, height);
+    renderer.setClearColor(0, 0);
+    const scene = new Scene();
+    scene.add(new AmbientLight(0xff_ff_ff, 2));
+    const key = new DirectionalLight(0xff_ff_ff, 3);
+    key.position.set(2, 3, 4);
+    scene.add(key, model);
+    const bounds = visibleBounds(model);
+    const centre = bounds.getCenter(new Vector3());
+    const radius = Math.max(bounds.getSize(new Vector3()).length() / 2, 0.001);
+    const extent = radius * pose.framing;
+    const aspect = width / height;
+    const camera = new OrthographicCamera(
+      -extent * aspect,
+      extent * aspect,
+      extent,
+      -extent,
+      radius * 0.01,
+      radius * 10,
+    );
+    const direction = new Vector3(
+      Math.cos(pose.pitch) * Math.sin(pose.yaw),
+      Math.sin(pose.pitch),
+      Math.cos(pose.pitch) * Math.cos(pose.yaw),
+    );
+    camera.position.copy(centre).add(direction.multiplyScalar(radius * 3));
+    camera.lookAt(centre);
+    renderer.render(scene, camera);
+    scene.remove(model);
+    return renderer;
+  };
   return {
     paint(model) {
-      if (disposed) {
-        throw new Error('Picture painter is disposed');
-      }
-      renderer ??= createRenderer();
-      renderer.setSize(128, 128);
-      renderer.setClearColor(0, 0);
-      const scene = new Scene();
-      scene.add(new AmbientLight(0xff_ff_ff, 2));
-      const key = new DirectionalLight(0xff_ff_ff, 3);
-      key.position.set(2, 3, 4);
-      scene.add(key, model);
-      const bounds = visibleBounds(model);
-      const centre = bounds.getCenter(new Vector3());
-      const radius = Math.max(bounds.getSize(new Vector3()).length() / 2, 0.001);
-      const extent = radius * 1.1;
-      const camera = new OrthographicCamera(-extent, extent, extent, -extent, radius * 0.01, radius * 10);
-      camera.position.copy(centre).add(new Vector3(1, 0.7, 1).normalize().multiplyScalar(radius * 3));
-      camera.lookAt(centre);
-      renderer.render(scene, camera);
-      const picture = renderer.domElement.toDataURL();
-      scene.remove(model);
-      return picture;
+      return draw(model, PICTURE_POSE, 128, 128).domElement.toDataURL();
+    },
+    view(model, pose, width, height) {
+      return draw(model, pose, width, height).domElement;
     },
     dispose() {
       if (disposed) {
@@ -110,11 +144,7 @@ export class ItemPictures {
       this.cache.set(key, cached);
       return cached;
     }
-    // ModelLibrary reports declared-model failures; waiting for all parts avoids a misleading partial still.
-    if (!this.models.has(look.model) || look.slots.some((slot) => slot.model && !this.models.has(slot.model))) {
-      return undefined;
-    }
-    const model = this.models.groundLook(look);
+    const model = this.model(item);
     if (!model) {
       return undefined;
     }
@@ -124,5 +154,23 @@ export class ItemPictures {
     }
     this.cache.set(key, picture);
     return picture;
+  }
+
+  /** The item instance's own ground model, as the world draws it; undefined until every part has loaded. */
+  model(item: Item): Object3D | undefined {
+    const look = this.disposed ? undefined : itemLook(this.registry, item);
+    // ModelLibrary reports declared-model failures; waiting for all parts avoids a misleading partial model.
+    if (
+      !(look && this.models.has(look.model)) ||
+      look.slots.some((slot) => slot.model && !this.models.has(slot.model))
+    ) {
+      return undefined;
+    }
+    return this.models.groundLook(look);
+  }
+
+  /** Draws a model from `model` with the pictures' own renderer, so the viewer needs no second context. */
+  view(model: Object3D, pose: ReferencePose, width: number, height: number): CanvasImageSource | undefined {
+    return this.disposed ? undefined : this.painter.view(model, pose, width, height);
   }
 }

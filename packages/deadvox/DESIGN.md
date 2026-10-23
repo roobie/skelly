@@ -1378,6 +1378,17 @@ Separating deliberate use from a tap prevents accidental activation. See
 `src/core/inventory.ts`. `QuickbarActions` in `src/game/quickbarActions.ts` owns
 quickbar use.
 
+The view-item binding over an item card, or as a key on the selected item, opens
+the item viewer: that instance's own model, with its fitted magazine and
+attachments, turned by dragging and zoomed by the wheel. A grid card is too small
+to judge an item's shape or what is fitted to it, and a close look must not cost
+a move, so the viewer is view-only. It changes neither the item, the selection
+nor the queue, item keys wait until it closes, and the clock runs as it does with
+the inventory open. It is modal: it takes focus and the inventory it covers is
+inert until it closes, so no key or press reaches a hidden control. It draws with the item pictures' renderer rather than a
+second WebGL context. See `src/ui/itemViewer.ts`, `ItemViewer`, and
+`src/render/itemPictures.ts`, `ItemPictures`.
+
 ### Piles and item models
 
 Ground presentation preserves an item's identity rather than making distinct
@@ -2074,6 +2085,14 @@ restored state. Outside every field the answer is open sky, as `docs/readables.m
 `src/core/skyField.ts`, `SkyFields`, `src/game/worldSetup.ts`, `createWorldSetup`, and
 `src/game/session.ts`, `createSession`.
 
+Rules that ask whether a place is lit enough, such as reading a page or a sign, take the
+renderer's falloff and its content tuning, so light levels for the rules are never tuned
+apart from the light the player sees. A carried beam counts for its holder, because the
+player aims it at what they read; a beam set down points somewhere the rules don't model,
+so it counts for nothing. A lit candle held alone is enough to read by at night. See
+`src/core/illumination.ts`, `illuminationAt`, and `src/render/lightFalloff.ts`,
+`installNearFieldFalloff`.
+
 Mesh-first admission protects the first visible geometry without making it wait for
 lighting readiness. A copied sky request may wait outside the pool capacity;
 a mesh completion admits it before the next mesh refill, preventing persistent
@@ -2133,6 +2152,16 @@ and it is refilled by swapping the oil in, not pouring, because refilling a cart
 is direction only; pouring and partial refills stay open (#536). The lamp is content
 only: any light with a fuel rate and a swappable fuel canister behaves the same. See
 `src/core/lights.ts`, `drainLight`, and `src/core/torch.ts`, `swapCanister`.
+
+A held light's battery can be taken out on its own, as an action chosen on the wheel
+and then activated, because a swap needs a spare: without one a player could not move
+a cell to a charger, another light or a pocket. It follows magazine removal: the light
+must be in hand, the battery keeps its charge and goes to the first pocket with room,
+else the ground, and with nowhere to put it, it stays fitted. A dead primary cell is
+thrown away, as in a swap. Taking the battery out switches the light off, and an empty
+light is a valid item that takes a battery back as a dead one does. See
+`src/core/lights.ts`, `unloadBattery`; `src/game/itemActions.ts`, `itemActionsFor`;
+and `src/core/options.ts`, `stowTarget`.
 
 Zombies see light farther than they see a player in darkness, and see a player
 lit by any source. Aimed-down or covered flashlights shorten that reach. Light

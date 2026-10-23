@@ -63,7 +63,7 @@ export class LightPool {
 
   constructor(scene: Scene, handScene?: Scene) {
     this.lights = Array.from({ length: POINT_LIGHT_POOL_SIZE }, () => {
-      const light = new PointLight(0xff_ff_ff, 0, 0, 1);
+      const light = new PointLight(0xff_ff_ff, 0, 0);
       light.castShadow = false;
       this.group.add(light);
       return light;
@@ -93,7 +93,9 @@ export class LightPool {
 
   update(inventory: Inventory, context: LightPoolContext): void {
     const { camera, blockSize, daylightScale } = context;
-    const groundLiftMetres = inventory.registry.senses.get(CORE_CONTENT_IDS.player)!.light.groundLight.renderLiftMetres;
+    const tuning = inventory.registry.senses.get(CORE_CONTENT_IDS.player)!.light;
+    const groundLiftMetres = tuning.groundLight.renderLiftMetres;
+    const { pointDecay } = tuning.illumination;
     const entries = [...inventory.items()]
       .map((entry, order) => ({
         ...entry,
@@ -135,6 +137,7 @@ export class LightPool {
       })
       .slice(0, FIXTURE_POINT_LIGHTS);
     for (const [index, light] of this.lights.entries()) {
+      light.decay = pointDecay;
       if (index >= ITEM_POINT_LIGHTS) {
         const fixture = fixtures[index - ITEM_POINT_LIGHTS];
         light.intensity = fixture ? fixture.intensity * daylightScale : 0;
