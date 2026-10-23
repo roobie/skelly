@@ -16,6 +16,7 @@ local notSpawnable = [
   'beans', 'soup', 'soda', 'opened_beans', 'opened_soup', 'opened_soda', 'empty_can', 'empty_soda_can',
   'shambler_torso', 'shambler_head', 'shambler_left_arm', 'shambler_right_arm',
   'shambler_left_leg', 'shambler_right_leg',
+  'engine_hoist',
 ];
 local commonItems = [
   'rifle_hunting', 'cartridge_308_h_winchester', 'cartridge_box_308_h_winchester', 'optic_hunting_3_9x',
@@ -33,7 +34,7 @@ local commonItems = [
   'fuse', 'nylon_cord', 'wire_strippers', 'adjustable_pliers', 'sewing_kit', 'broken_toaster', 'dead_desk_lamp', 'oil_lamp',
   'broken_table_fan', 'cracked_phone', 'broken_clock', 'sewing_repair_kit', 'electrical_repair_kit',
   'taped_flashlight_mount', 'scrap_foregrip', 'hinge_set', 'glass_bulb', 'hand_saw', 'screwdriver', 'wrench',
-  'improvised_suppressor', 'compass', 'crowbar', 'sledgehammer', 'blowtorch', 'gas_canister', 'hammer', 'kitchen_knife', 'kabar', 'machete', 'can_opener', 'whetstone', 'door_bar',
+  'improvised_suppressor', 'compass', 'crowbar', 'sledgehammer', 'blowtorch', 'scissor_jack', 'bottle_jack', 'gas_canister', 'hammer', 'kitchen_knife', 'kabar', 'machete', 'can_opener', 'whetstone', 'door_bar',
   'baseball_bat', 'steel_pipe', 'flashlight', 'headlamp', 'torch', 'candle', 'glowstick', 'road_flare', 'lighter', 'matches',
   'jeans', 'cargo_pants', 'rubber_boots', 'hoodie', 'jacket', 'utility_vest', 'fanny_pack', 'school_backpack', 'hiking_backpack',
   'shed_key', 'pump_shotgun', 'sample_note', 'regional_map', 'stick', 'wax', 'wooden_plank', 'repair_kit', 'copper_wire', 'field_patch',

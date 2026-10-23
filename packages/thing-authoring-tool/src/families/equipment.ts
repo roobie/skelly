@@ -1,50 +1,9 @@
 import type { Vec3 } from '@skelly/engine/foundation/math.ts';
-import type { BoxSolid, ExtrudedPolygonSolid, Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
+import type { Solid } from '@skelly/engine/shapes/solid.ts';
 import { integer, minValue, parse, picklist, pipe, strictObject, string, transform } from 'valibot';
-import { annulus, cylinder, positive } from './shapes.ts';
+import { annulus, box, link, positive, round } from './shapes.ts';
 
 const count = pipe(string(), transform(Number), integer(), minValue(1));
-const box = (id: string, center: Vec3, size: Vec3, slot = 'body'): BoxSolid => ({
-  id,
-  kind: 'box',
-  box: { center, half: size.map((v) => v / 2) as unknown as Vec3 },
-  slot,
-});
-const round = (
-  id: string,
-  origin: Vec3,
-  [radius, length]: Vec2,
-  [axis, slot]: readonly ['x' | 'y' | 'z', string],
-): Solid => ({
-  ...cylinder(id, radius, length, slot),
-  origin,
-  axis,
-});
-const link = (
-  id: string,
-  [start, end]: readonly [Vec2, Vec2],
-  [width, depth]: Vec2,
-  slot: string,
-): ExtrudedPolygonSolid => {
-  const length = Math.hypot(end[0] - start[0], end[1] - start[1]);
-  if (length === 0) {
-    throw new Error('Equipment link needs length');
-  }
-  const dx = (-(end[1] - start[1]) * width) / (2 * length);
-  const dy = ((end[0] - start[0]) * width) / (2 * length);
-  return {
-    id,
-    kind: 'extruded-polygon',
-    slot,
-    profile: [
-      [start[0] + dx, start[1] + dy],
-      [start[0] - dx, start[1] - dy],
-      [end[0] - dx, end[1] - dy],
-      [end[0] + dx, end[1] + dy],
-    ],
-    z: [-depth / 2, depth / 2],
-  };
-};
 const loop = (
   id: string,
   center: Vec3,

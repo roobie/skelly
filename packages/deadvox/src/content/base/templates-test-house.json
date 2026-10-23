@@ -569,7 +569,7 @@
           "b..............eeEEeewww.nn..b",
           "b....................www.nn..b",
           "b............................b",
-          "b............................b",
+          "b...........j................b",
           "b....................oo......b",
           "b....................oo......b",
           "b....................qq......b",
@@ -747,7 +747,7 @@
             "SRRRRRRRRRRRRRRSSSSSSSSSRSSRRS",
             "SRRRRRRRRRRRRRRRRRRRRSSSRSSRRS",
             "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
-            "SRRRRRRRRRRRRRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRARRRRRRRRRRRRRRRRS",
             "SRRRRRRRRRRRRRRRRRRRRSSRRRRRRS",
             "SRRRRRRRRRRRRRRRRRRRRSSRRRRRRS",
             "SRRRRRRRRRRRRRRRRRRRRSSRRRRRRS",
@@ -913,6 +913,16 @@
           "furniture": "shelf"
         },
         "g": "galvanized",
+        "j": {
+          "groundLoot": {
+            "items": [
+              {
+                "item": "engine_hoist"
+              }
+            ],
+            "kind": "fixed"
+          }
+        },
         "k": "concrete",
         "n": {
           "fixed": true,

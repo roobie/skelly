@@ -42,6 +42,7 @@ import { foldedGarment } from './families/garment.ts';
 import { grenade } from './families/grenade.ts';
 import { compass, keycard, key as keyFamily, lighter, matchbox } from './families/handheld.ts';
 import { handOpener } from './families/handOpener.ts';
+import { bottleJack, engineHoist, scissorJack } from './families/jacks.ts';
 import { arm, base, shade } from './families/lamp.ts';
 import { candle, flashlight, torch } from './families/lights.ts';
 import { cutStock, foldedSheet, turnedStock } from './families/materials.ts';
@@ -170,6 +171,9 @@ const builders = {
   portableRadio,
   repairKit,
   webbingSling,
+  scissorJack,
+  bottleJack,
+  engineHoist,
   torch,
   flashlight,
   candle,

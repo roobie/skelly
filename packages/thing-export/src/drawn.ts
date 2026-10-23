@@ -1,7 +1,7 @@
 // Where each solid is drawn, so the datums an export writes (grips, anchors, round poses, collision boxes, centres of
 // mass) read off the voxels the player sees rather than off the authored solids those voxels approximate.
 
-import type { Resolved } from '@skelly/engine/assembly/schema.ts';
+import type { PartDef, Resolved } from '@skelly/engine/assembly/schema.ts';
 import { add, applyPoint, extrusionPoint, invert, type Transform, type Vec3 } from '@skelly/engine/foundation/math.ts';
 import {
   clippedExtrudedPolygonPolyhedron,
@@ -97,9 +97,9 @@ const unionOf = (boxes: readonly (readonly [Vec3, Vec3])[]): [Vec3, Vec3] => [
 ];
 
 /**
- * Reads datums off the drawn voxels of `resolved` at the export's grains: each solid is sampled alone on its part's
- * lattice, as `glb.ts` samples it for the file. Without a grain the file holds the authored meshes, so datums stay on
- * the authored solids.
+ * Reads datums off the drawn voxels of `resolved` at the export's grains: each solid is sampled on its part's lattice
+ * together with the solids it is drawn among, as `glb.ts` samples them for the file, and measured by the voxels it
+ * fills there. Without a grain the file holds the authored meshes, so datums stay on the authored solids.
  */
 export const drawnGeometry = (
   resolved: Resolved,
@@ -107,39 +107,60 @@ export const drawnGeometry = (
 ): DrawnGeometry => {
   const { voxelGrain, voxelDetailGrain } = options;
   const unit = resolved.domain.units.metresPerUnit;
-  const measures = new Map<Solid, SolidMeasure>();
+  const authoredMeasures = new Map<Solid, SolidMeasure>();
+  /** Per list of solids sampled together, each solid's drawn measure, undefined where it draws no voxels. */
+  const measured = new Map<readonly Solid[], Map<Solid, SolidMeasure | undefined>>();
+  const drawnMeasures = (
+    siblings: readonly Solid[],
+    def: PartDef,
+    placed: Transform,
+  ): Map<Solid, SolidMeasure | undefined> => {
+    const grain = partVoxelGrain(def, { voxelGrain: voxelGrain!, voxelDetailGrain });
+    const sources = siblings.map((solid) => {
+      const bevel = solid.display?.mergeGroup === undefined ? displayBevel(solid, resolved.domain.units) : 0;
+      const mesh = meshForSolid(solid, bevel, options.revolveFacets);
+      return { positions: mesh.positions.map((x) => x * unit), indices: mesh.indices, group: 0 };
+    });
+    const inUnits = (v: readonly number[]): Vec3 => [v[0]! / unit, v[1]! / unit, v[2]! / unit];
+    const voxels = measureVoxels(sources, grain, latticeOrigin(placed, grain, unit));
+    return new Map(
+      siblings.map((solid, index) => {
+        const own = voxels[index];
+        return [
+          solid,
+          own && {
+            min: inUnits(own.min),
+            max: inUnits(own.max),
+            centre: inUnits(own.centroid),
+            volume: own.voxels * (grain / unit) ** 3,
+          },
+        ];
+      }),
+    );
+  };
   const measure = (partId: string, solid: Solid): SolidMeasure => {
-    const known = measures.get(solid);
-    if (known) {
-      return known;
-    }
     const def = resolved.defs.get(partId);
     const placed = resolved.placed.get(partId);
     if (!(def && placed)) {
       throw new Error(`No placed part ${partId} to read a datum from`);
     }
-    let found = authoredMeasure(solid);
-    if (voxelGrain !== undefined) {
-      const grain = partVoxelGrain(def, { voxelGrain, voxelDetailGrain });
-      const bevel = solid.display?.mergeGroup === undefined ? displayBevel(solid, resolved.domain.units) : 0;
-      const mesh = meshForSolid(solid, bevel, options.revolveFacets);
-      const voxels = measureVoxels(
-        [{ positions: mesh.positions.map((x) => x * unit), indices: mesh.indices, group: 0 }],
-        grain,
-        latticeOrigin(placed, grain, unit),
-      );
-      if (!voxels) {
-        throw new Error(`Solid ${solid.id} of ${partId} draws no voxels to read its datums from`);
-      }
-      const inUnits = (v: readonly number[]): Vec3 => [v[0]! / unit, v[1]! / unit, v[2]! / unit];
-      found = {
-        min: inUnits(voxels.min),
-        max: inUnits(voxels.max),
-        centre: inUnits(voxels.centroid),
-        volume: voxels.voxels * (grain / unit) ** 3,
-      };
+    if (voxelGrain === undefined) {
+      const authored = authoredMeasures.get(solid) ?? authoredMeasure(solid);
+      authoredMeasures.set(solid, authored);
+      return authored;
     }
-    measures.set(solid, found);
+    // A solid is sampled with the solids it is drawn among, as the file samples them; a collision solid the file does
+    // not draw, with the part's other collision solids.
+    const siblings = [def.displaySolids ?? def.solids, def.solids].find((list) => list.includes(solid)) ?? [solid];
+    let measures = measured.get(siblings);
+    if (!measures) {
+      measures = drawnMeasures(siblings, def, placed);
+      measured.set(siblings, measures);
+    }
+    const found = measures.get(solid);
+    if (!found) {
+      throw new Error(`Solid ${solid.id} of ${partId} draws no voxels to read its datums from`);
+    }
     return found;
   };
   let regions: Region[] | undefined;

@@ -30,6 +30,11 @@ clothing repair; folded continuous webbing keeps a sling's ground footprint prac
 making it look like a rigid rod. See `src/families/equipment.ts`, `repairKit`, `webbingSling`
 and `pliers`, and `equipment.libsonnet`.
 
+Jacks and the standalone hoist are ordinary carried tools: their jacking quality is authored
+in deadvox content and their models say nothing about load, reach or supported groups, so
+what a jack may lift stays a content and runtime decision. See `src/families/jacks.ts`,
+`engineHoist`, and `jacks.libsonnet`.
+
 The preview draws the same engine report the exporter consumes, so visual inspection is
 not a second model implementation. See `src/main.ts` and `packages/tool-ui/src/scene.ts`,
 `buildLayers`. The page is `index.html`; the deployed viewer path is `/thing-authoring-tool/`.

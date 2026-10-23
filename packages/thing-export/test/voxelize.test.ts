@@ -210,6 +210,45 @@ describe('voxelize', () => {
     expect(bodies(voxelize([block], grain, [0, 0, 0], [bar]), voxelize([bar], grain, [0, 0, 0], [block]))).toBe(1);
   });
 
+  /** A closed prism over a counter-clockwise triangle in x and y, from z = 0 to `height`. */
+  const prism = (triangle: readonly (readonly number[])[], height: number) => {
+    const sides = [0, 1, 2].flatMap((i) => {
+      const j = (i + 1) % 3;
+      return [i, j, j + 3, i, j + 3, i + 3];
+    });
+    return {
+      positions: [0, height].flatMap((z) => triangle.flatMap(([x, y]) => [x!, y!, z])),
+      indices: [0, 2, 1, 3, 4, 5, ...sides],
+      group: 0,
+    };
+  };
+  // A block split on its diagonal, like the facets of a curved magazine body: near the far corners the sample lines
+  // cross one piece in a stretch too short to hold a voxel centre, though the block is thick there.
+  it('draws a solid split into pieces that meet face to face as it draws the whole solid', () => {
+    const [low, high, height] = [0.03, 0.33, 0.18];
+    const pieces = [
+      prism(
+        [
+          [low, low],
+          [high, low],
+          [low, high],
+        ],
+        height,
+      ),
+      prism(
+        [
+          [high, low],
+          [high, high],
+          [low, high],
+        ],
+        height,
+      ),
+    ];
+    const whole = filledCells([voxelize([box([low, low, 0], [high, high, height])], grain)]);
+    expect(whole.size).toBeGreaterThan(0);
+    expect(filledCells([voxelize(pieces, grain)])).toEqual(whole);
+  });
+
   it('lets a later source paint over an earlier one and meshes each group alone', () => {
     const { groups, stats } = voxelize(
       [box([0, 0, 0], [0.2, 0.2, 0.2], 0), box([0.1, 0.1, 0.1], [0.3, 0.2, 0.2], 1)],
