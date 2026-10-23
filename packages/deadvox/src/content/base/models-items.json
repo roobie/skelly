@@ -3453,6 +3453,39 @@
       "roll": 0
     },
     {
+      "file": "assets/models/scissor_jack.glb",
+      "id": "scissor_jack",
+      "parts": {
+        "jack": {
+          "centreOfMass": [0.0034969939879759527, 0.038587174348697399, 0.00015030060120240483],
+          "massKg": 3.2000000000000002,
+          "node": "jack:scissorJack"
+        }
+      }
+    },
+    {
+      "file": "assets/models/bottle_jack.glb",
+      "id": "bottle_jack",
+      "parts": {
+        "jack": {
+          "centreOfMass": [0.0003823743627093955, 0.077250546249089613, -4.7341587764020424e-5],
+          "massKg": 5.5,
+          "node": "jack:bottleJack"
+        }
+      }
+    },
+    {
+      "file": "assets/models/engine_hoist.glb",
+      "id": "engine_hoist",
+      "parts": {
+        "jack": {
+          "centreOfMass": [0.30281202384452949, 0.73938530834825855, -6.8165414739811427e-6],
+          "massKg": 48,
+          "node": "jack:engineHoist"
+        }
+      }
+    },
+    {
       "file": "assets/models/lighter.glb",
       "grip": {
         "at": [0, 0.025000000000000001, 0],

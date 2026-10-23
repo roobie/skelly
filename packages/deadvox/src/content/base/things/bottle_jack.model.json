@@ -1,0 +1,11 @@
+{
+  "id": "bottle_jack",
+  "file": "assets/models/bottle_jack.glb",
+  "parts": {
+    "jack": {
+      "node": "jack:bottleJack",
+      "massKg": 5.5,
+      "centreOfMass": [0.0003823743627093955, 0.07725054624908961, -0.000047341587764020424]
+    }
+  }
+}

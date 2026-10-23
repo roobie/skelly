@@ -1,0 +1,11 @@
+{
+  "id": "engine_hoist",
+  "file": "assets/models/engine_hoist.glb",
+  "parts": {
+    "jack": {
+      "node": "jack:engineHoist",
+      "massKg": 48,
+      "centreOfMass": [0.3028120238445295, 0.7393853083482586, -0.000006816541473981143]
+    }
+  }
+}

@@ -143,14 +143,27 @@ const installedLootTypes = (
   return [...Object.values(overrides), ...children];
 };
 
-export const lootTypeIssue = (
+/** An item no loot context admits: it exists only where content places it by hand. */
+export const neverSpawns = (economy: ItemEconomy): boolean => economy.tiers.length === 0 || economy.usage.length === 0;
+
+/** Why one item is refused; authored placement also admits an item that never spawns, but not craft escrow. */
+const admissionIssue = (item: ItemDef, context: LootContext, placed: boolean): string | undefined => {
+  if (placed && item.workInProgress) {
+    return `"${item.id}" is craft escrow, which only a craft creates`;
+  }
+  return economyEligible(item.economy, context) || (placed && neverSpawns(item.economy))
+    ? undefined
+    : `"${item.id}" is outside the source loot context`;
+};
+
+const typeIssue = (
   registry: Registry,
-  type: string,
+  root: { readonly type: string; readonly fitted: Readonly<Record<string, string>> },
   context: LootContext,
-  fitted: Readonly<Record<string, string>> = {},
+  placed: boolean,
 ): string | undefined => {
   const seen = new Set<string>();
-  const pending = [{ type, fitted }];
+  const pending = [root];
   while (pending.length > 0) {
     const candidate = pending.pop()!;
     if (seen.has(candidate.type)) {
@@ -161,8 +174,9 @@ export const lootTypeIssue = (
     if (!item) {
       return `no item "${candidate.type}"`;
     }
-    if (!economyEligible(item.economy, context)) {
-      return `"${candidate.type}" is outside the source loot context`;
+    const refused = admissionIssue(item, context, placed);
+    if (refused !== undefined) {
+      return refused;
     }
     for (const child of installedLootTypes(registry, item, candidate.fitted)) {
       if (child === undefined) {
@@ -173,6 +187,22 @@ export const lootTypeIssue = (
   }
   return undefined;
 };
+
+/** Whether random loot may roll the item: its economy must reach the context. */
+export const lootTypeIssue = (
+  registry: Registry,
+  type: string,
+  context: LootContext,
+  fitted: Readonly<Record<string, string>> = {},
+): string | undefined => typeIssue(registry, { type, fitted }, context, false);
+
+/** Whether authored content may place the item: loot admission, or an item that never spawns. */
+export const placedTypeIssue = (
+  registry: Registry,
+  type: string,
+  context: LootContext,
+  fitted: Readonly<Record<string, string>> = {},
+): string | undefined => typeIssue(registry, { type, fitted }, context, true);
 
 export interface Rolled {
   type: string;
@@ -231,6 +261,8 @@ export interface WeightedCandidate {
   readonly type?: string | undefined;
   readonly weight: number;
   readonly fitted?: Readonly<Record<string, string>> | undefined;
+  /** Authored by hand rather than rolled from a table, so an item that never spawns is admitted. */
+  readonly placed?: true | undefined;
 }
 
 export const admittedCandidates = (
@@ -243,7 +275,12 @@ export const admittedCandidates = (
       candidate.type === undefined ||
       (registry.items.has(candidate.type) &&
         ((point.fixture && point.supply.kind === 'fixed') ||
-          lootTypeIssue(registry, candidate.type, point.context, candidate.fitted) === undefined)),
+          (candidate.placed === true ? placedTypeIssue : lootTypeIssue)(
+            registry,
+            candidate.type,
+            point.context,
+            candidate.fitted,
+          ) === undefined)),
   );
 
 /** All item-type choices meet here; explicit fixture stock is not world-economy supply. */
@@ -265,7 +302,12 @@ interface RollContext {
 
 const fixedItems = (registry: Registry, items: readonly FixedLootItemDef[], context: RollContext): Rolled[] =>
   items.flatMap(({ item, count = 1, condition = 1, fitted, charge }) => {
-    const type = selectLootType(registry, context.point, [{ type: item, weight: 1, fitted }], context.rng);
+    const type = selectLootType(
+      registry,
+      context.point,
+      [{ type: item, weight: 1, fitted, placed: true }],
+      context.rng,
+    );
     if (type === undefined) {
       if (context.point.required) {
         throw new Error(`required loot ${item} is outside source ${context.point.id}`);
