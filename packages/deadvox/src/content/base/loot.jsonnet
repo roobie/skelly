@@ -78,6 +78,7 @@ local pills(weight, least, parts, of) =
       rolls: [1, 3],
       entries: [
         item('paperback', 3),
+        item('regional_map', 1),
         item('field_manual', 1),
         item('home_repair_book', 1),
         item('aa_battery', 3, count=[1, 4]),

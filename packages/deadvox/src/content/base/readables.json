@@ -50,6 +50,21 @@
       "size": [1, 1],
       "weight": 5,
       "workInProgress": false
+    },
+    {
+      "category": "note",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+      },
+      "id": "regional_map",
+      "model": "paper_sheet",
+      "name": "Regional map",
+      "notLoot": false,
+      "paperMap": true,
+      "size": [1, 1],
+      "weight": 5,
+      "workInProgress": false
     }
   ],
   "loot": [

@@ -165,6 +165,10 @@
           "weight": 3
         },
         {
+          "item": "regional_map",
+          "weight": 1
+        },
+        {
           "item": "field_manual",
           "weight": 1
         },

@@ -712,7 +712,7 @@ export const createSession = (options: SessionOptions) => {
       if (point.channel !== 'ground') {
         continue;
       }
-      for (const rolled of rollLoot(registry, point, lootPointStream(seed, point))) {
+      for (const rolled of rollLoot(registry, point, lootPointStream(seed, point), scale.blockSize)) {
         if (!inventory.add(inventory.createRolled(rolled), { kind: 'pile', pos: point.destination })) {
           throw new Error(`ground item "${rolled.type}" does not fit in its pile`);
         }

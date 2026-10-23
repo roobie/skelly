@@ -45,7 +45,10 @@ const MAX_NESTING = 16;
 const itemOf = (search: Search, type: string): Item => {
   let item = search.items.get(type);
   if (!item) {
-    item = search.factory.create(search.registry, type);
+    // This admission proof only needs footprint; live loot resolves coverage from its source before creation.
+    item = search.factory.create(search.registry, type, 1, {
+      ...(search.registry.items.get(type)?.paperMap ? { paperMap: { x: 0, z: 0 } } : {}),
+    });
     search.items.set(type, item);
   }
   return item;
