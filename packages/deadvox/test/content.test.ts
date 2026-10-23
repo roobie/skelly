@@ -673,6 +673,21 @@ describe('content', () => {
     expect(issues.some(({ path }) => path.endsWith('.combat.firearms.shotTraceRangeBlocks'))).toBe(true);
   });
 
+  it('rejects ammunition spread or firearm choke scale that is not authored', () => {
+    const files = structuredClone(base) as {
+      source: string;
+      data: { items?: { ammo?: Record<string, unknown>; firearm?: Record<string, unknown> }[] };
+    }[];
+    const items = files.flatMap(({ data }) => data.items ?? []);
+    const ammunition = items.find((item) => item.ammo !== undefined)!;
+    const firearm = items.find((item) => item.firearm !== undefined)!;
+    Reflect.deleteProperty(ammunition.ammo!, 'spreadDegrees');
+    Reflect.deleteProperty(firearm.firearm!, 'pelletSpreadScale');
+    const { issues } = buildRegistry(files);
+    expect(issues.some(({ path }) => path.endsWith('.ammo.spreadDegrees'))).toBe(true);
+    expect(issues.some(({ path }) => path.endsWith('.firearm.pelletSpreadScale'))).toBe(true);
+  });
+
   it('rejects firearm attachment effects without a per-shot wear', () => {
     const files = (
       structuredClone(base) as { source: string; data: { items?: { firearmAttachmentEffects?: object }[] } }[]
@@ -814,6 +829,7 @@ describe('content', () => {
         pump: true,
         recoilKickRadians: 0.01,
         dispersionRadians: 0.01,
+        pelletSpreadScale: 1,
         shotSound: 'gunshot',
         handling: {},
         roundLoadSimSeconds: 1,
@@ -839,7 +855,7 @@ describe('content', () => {
       category: 'weapon',
       weight: 1,
       size: [1, 1],
-      firearm: { recoilKickRadians: 0.01, shotSound: 'gunshot', handling: {} },
+      firearm: { recoilKickRadians: 0.01, pelletSpreadScale: 1, shotSound: 'gunshot', handling: {} },
     };
     const missing = validateContent({ source, data: { items: [item] } });
     expect(missing.map(({ path }) => path)).toContain('items[0].firearm.dispersionRadians');
@@ -862,7 +878,13 @@ describe('content', () => {
           weight: 1,
           size: [1, 1],
           model: 'fixture_gun',
-          firearm: { recoilKickRadians: 0.01, dispersionRadians: 0, shotSound: 'gunshot', handling: {} },
+          firearm: {
+            recoilKickRadians: 0.01,
+            dispersionRadians: 0,
+            pelletSpreadScale: 1,
+            shotSound: 'gunshot',
+            handling: {},
+          },
         },
         {
           id: 'fixture_suppressor',

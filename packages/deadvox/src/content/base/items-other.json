@@ -480,6 +480,7 @@
         "loadSimSeconds": 0.80000000000000004,
         "pellets": 9,
         "rangeMetres": 50,
+        "spreadDegrees": 2,
         "stripSimSeconds": 0.5
       },
       "category": "ammo",

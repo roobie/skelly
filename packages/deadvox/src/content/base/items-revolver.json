@@ -10,6 +10,7 @@
         "dispersionRadians": 0.012,
         "dryFireSound": "revolver_dry_click",
         "handling": {},
+        "pelletSpreadScale": 1,
         "recoilKickRadians": 0.035000000000000003,
         "revolver": {
           "closeSimSeconds": 0.40000000000000002,
@@ -66,6 +67,7 @@
         "loadSimSeconds": 0.69999999999999996,
         "pellets": 1,
         "rangeMetres": 100,
+        "spreadDegrees": 0,
         "stripSimSeconds": 0.5
       },
       "category": "ammo",

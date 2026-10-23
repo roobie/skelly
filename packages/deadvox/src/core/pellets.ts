@@ -16,8 +16,10 @@ export interface PelletShot {
   readonly headDamageMultiplier?: number;
 }
 
-/** Gameplay estimates, not measured choke patterns or physical wound/energy models. */
-export const BUCK_HALF_ANGLE = (2 * Math.PI) / 180;
+export const pelletSpreadRadians = (
+  ammo: NonNullable<ItemDef['ammo']>,
+  firearm: NonNullable<ItemDef['firearm']>,
+): number => (ammo.spreadDegrees * Math.PI * firearm.pelletSpreadScale) / 180;
 
 /** The cartridge's projectile data along `directions`; each direction is copied, so the shot owns its rays. */
 export const projectileShot = (
@@ -55,24 +57,30 @@ export const coneDirection = (basis: ReturnType<typeof aimBasis>, halfAngleRadia
 
 export const pelletShotFromBasis = ({
   ammo,
+  firearm,
   origin,
   basis,
   seed,
   key,
 }: {
   ammo: NonNullable<ItemDef['ammo']>;
+  firearm: NonNullable<ItemDef['firearm']>;
   origin: Vec3;
   basis: AimBasis;
   seed: number;
   key: string;
 }): PelletShot => {
   const rng = Rng.stream(seed, `buckshot:${key}`);
-  const directions = Array.from({ length: ammo.pellets }, (): Vec3 => coneDirection(basis, BUCK_HALF_ANGLE, rng));
+  const directions = Array.from(
+    { length: ammo.pellets },
+    (): Vec3 => coneDirection(basis, pelletSpreadRadians(ammo, firearm), rng),
+  );
   return projectileShot(ammo, origin, directions);
 };
 
 export const pelletShot = ({
   ammo,
+  firearm,
   origin,
   yaw,
   pitch,
@@ -81,10 +89,11 @@ export const pelletShot = ({
   key,
 }: {
   ammo: NonNullable<ItemDef['ammo']>;
+  firearm: NonNullable<ItemDef['firearm']>;
   origin: Vec3;
   yaw: number;
   pitch: number;
   aimFrame: AimFrame;
   seed: number;
   key: string;
-}): PelletShot => pelletShotFromBasis({ ammo, origin, basis: aimBasis(yaw, pitch, aimFrame), seed, key });
+}): PelletShot => pelletShotFromBasis({ ammo, firearm, origin, basis: aimBasis(yaw, pitch, aimFrame), seed, key });
