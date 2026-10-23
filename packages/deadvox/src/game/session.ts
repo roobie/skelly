@@ -5,6 +5,7 @@
 // callbacks; nothing here draws or listens.
 
 import type { Body as MobBody } from '@mobgen/core/body.ts';
+import { actionText, fillText } from '../core/actionText.ts';
 import { AimController, type AimWobbleNoiseTuning, aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import { BearTraps } from '../core/bearTrap.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
@@ -451,6 +452,7 @@ interface StanceBody {
   readonly body: Body;
   readonly heights: Readonly<Record<PlayerStance, number>>;
   readonly isSolid: SolidAt;
+  readonly text: Pick<ReturnType<typeof actionText>, 'play'>;
 }
 
 const setStanceHeight = (stance: StanceBody, current: PlayerStance): void => {
@@ -469,7 +471,7 @@ const settleStance = (
   }
   const height = stance.heights[wanted];
   if (height > stance.body.height && bodyOverlapsTerrain({ ...stance.body, height }, stance.isSolid)) {
-    refuse(wanted === 'standing' ? 'No room to stand up' : 'No room to crouch');
+    refuse(wanted === 'standing' ? stance.text.play.noRoomToStand : stance.text.play.noRoomToCrouch);
     return current;
   }
   setStanceHeight(stance, wanted);
@@ -534,24 +536,26 @@ const playerTreatmentHooks = (
   sim: Simulation,
 ): NonNullable<Simulation['actions']['treatment']> => ({
   validate: (region, itemUid, itemType) => {
+    const text = actionText(inventory.registry).treatment;
     const item = inventory.itemByUid(itemUid);
     const treatment = item?.type === itemType ? defOf(inventory.registry, itemType).treatment : undefined;
     if (!treatment) {
-      return 'Treatment item is unavailable';
+      return text.gone;
     }
-    return sim.body.canTreat(region, treatment) ? undefined : 'That treatment does not apply';
+    return sim.body.canTreat(region, treatment) ? undefined : text.doesNotApply;
   },
   finish: (region, itemUid, itemType) => {
+    const text = actionText(inventory.registry).treatment;
     const item = inventory.itemByUid(itemUid);
     const treatment = item?.type === itemType ? defOf(inventory.registry, itemType).treatment : undefined;
     if (!(item && treatment)) {
-      return 'Treatment item is no longer available';
+      return text.gone;
     }
     if (!sim.body.canTreat(region, treatment)) {
-      return 'That treatment no longer applies';
+      return text.doesNotApply;
     }
     if (!inventory.consume(item)) {
-      return 'Treatment item is no longer available';
+      return text.gone;
     }
     const roll = sim.rng(`treatment:${region}:${itemUid}:${sim.time}`);
     if (!sim.body.treat(region, treatment, () => roll.next())) {
@@ -673,6 +677,7 @@ const sessionSkyFields = (shared: SkyFields | undefined, owner: SkyFieldOwner, s
 
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
+  const text = actionText(registry);
   const dayCycle = requireDayCycle(registry);
   const shamblerVoice = shamblerVoiceLaw(
     figureSeedPool(registry.zombies),
@@ -699,6 +704,7 @@ export const createSession = (options: SessionOptions) => {
       prone: Player.prone.bodyHeightMetres / s,
     },
     isSolid: (x, y, z) => physicalSolid(x, y, z),
+    text,
   };
   setStanceHeight(stanceBody, playerStance);
   const updateStance = (): void => {
@@ -1091,6 +1097,7 @@ export const createSession = (options: SessionOptions) => {
     },
     notice: options.notice,
     hasAlarm: () => [...inventory.carriedTree()].some(({ item }) => registry.items.get(item.type)?.alarm === true),
+    text,
   });
 
   const {
@@ -1465,7 +1472,7 @@ export const createSession = (options: SessionOptions) => {
       spec.blast.damage *
       blastShare(spec.blast, Math.hypot(centre[0] - at[0], centre[1] - at[1], centre[2] - at[2]) * s);
     if (blast > 0 && inSight(at, centre, physicalSolid)) {
-      sim.hit(blast, 'a grenade', 'torso', { kind: 'blunt' });
+      sim.hit(blast, text.causes.grenade, 'torso', { kind: 'blunt' });
     }
     for (const region of fragmentHitsOnBody({
       origin: at,
@@ -1475,7 +1482,7 @@ export const createSession = (options: SessionOptions) => {
       isSolid: physicalSolid,
       regionHeights: bodyTuning.fragmentRegionHeights,
     })) {
-      sim.hit(damage, 'a grenade', region, { kind: 'pierce' });
+      sim.hit(damage, text.causes.grenade, region, { kind: 'pierce' });
     }
     options.onDetonation?.([at[0] * s, at[1] * s, at[2] * s], spec.blast.radiusMetres);
     // The blast is the player's doing, so it is heard as their noise, from where it went off.
@@ -1506,7 +1513,7 @@ export const createSession = (options: SessionOptions) => {
         zombies: [...zombieStore.entries()].map(([id, zombie]) => [id, zombie.body.pos] as const),
         blockSize: s,
         alive: (id) => zombieStore.get(id) !== undefined,
-        hurtPlayer: ({ region, damage, kind }) => sim.hit(damage, 'a bear trap', region, { kind }),
+        hurtPlayer: ({ region, damage, kind }) => sim.hit(damage, text.causes.bearTrap, region, { kind }),
         injureZombie: (id, damage) => zombieSystem.injureLegs(id, damage),
       });
       lastZombieStep = time;
@@ -1555,7 +1562,7 @@ export const createSession = (options: SessionOptions) => {
   const liftPiece = (uid: number, floorLocked = false): string | undefined => {
     const entity = entities.byUid(uid);
     if (!entity) {
-      return 'It is no longer there';
+      return text.common.gone;
     }
     const centre = boxCentre(entity.pos, entity.size);
     const reason = liftFurniture(furnitureMover(), entity, floorLocked);
@@ -1612,7 +1619,7 @@ export const createSession = (options: SessionOptions) => {
   const placePiece = (aimed: Readonly<Vec3>): string | undefined => {
     const carried = entities.carrying();
     if (!carried) {
-      return 'Nothing to set down';
+      return registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.emptyHands;
     }
     const sound = carried.floorLocked ? 'furniture_drag' : 'furniture_scrape';
     const reason = placeFurniture(furnitureMover(), aimed);
@@ -1958,7 +1965,7 @@ export const createSession = (options: SessionOptions) => {
    */
   const removePiece = (entity: BlockEntity): string | undefined => {
     if (entities.byUid(entity.uid) !== entity) {
-      return 'It is no longer there';
+      return text.common.gone;
     }
     const mover = furnitureMover();
     const refusal = removalRefusal(mover, entity);
@@ -1975,7 +1982,7 @@ export const createSession = (options: SessionOptions) => {
     }
     const entity = entities.byUid(uid);
     if (!entity) {
-      return 'It is no longer there';
+      return text.common.gone;
     }
     searching.delete(entity);
     const reserved = entities.useRefusal(entity);
@@ -1986,7 +1993,7 @@ export const createSession = (options: SessionOptions) => {
     if (reached) {
       entities.markSearched(entity);
     }
-    return reached ? undefined : 'Too far away';
+    return reached ? undefined : text.common.tooFar;
   });
   registerDoorAction({
     queue,
@@ -2011,7 +2018,7 @@ export const createSession = (options: SessionOptions) => {
     validate: (entityUid, toolUid, method) => {
       const entity = entities.byUid(entityUid);
       if (!entity) {
-        return 'The door is no longer there';
+        return text.common.gone;
       }
       const reserved = entities.useRefusal(entity);
       if (reserved) {
@@ -2032,7 +2039,7 @@ export const createSession = (options: SessionOptions) => {
     finish: (entityUid, toolUid, method) => {
       const entity = entities.byUid(entityUid);
       if (!entity) {
-        return 'The door is no longer there';
+        return text.common.gone;
       }
       const plan = pryPlan(inventory, entity, { toolUid, method }, character);
       if (!plan.ok) {
@@ -2089,7 +2096,7 @@ export const createSession = (options: SessionOptions) => {
   scenarioRun = restoreScenarioRun(options, sim);
   /** Why a held piece can't be used: it is no longer the live piece, or its deconstruction holds it. */
   const pieceRefusal = (entity: BlockEntity): string | undefined =>
-    entities.byUid(entity.uid) === entity ? entities.useRefusal(entity) : 'It is no longer there';
+    entities.byUid(entity.uid) === entity ? entities.useRefusal(entity) : text.common.gone;
   const isObjective = (entity: BlockEntity): boolean =>
     Boolean(
       options.objective &&
@@ -2148,14 +2155,14 @@ export const createSession = (options: SessionOptions) => {
     isObjective,
     activateGoal: (entity: BlockEntity): string | undefined => {
       if (sim.dead) {
-        return 'This survivor died';
+        return text.objective.survivorDied;
       }
       const unusable = pieceRefusal(entity);
       if (unusable) {
         return unusable;
       }
       if (!(scenarioRun && isObjective(entity))) {
-        return 'Not the designated objective';
+        return text.objective.notObjective;
       }
       if (scenarioRun.won) {
         return undefined;
@@ -2164,7 +2171,7 @@ export const createSession = (options: SessionOptions) => {
         return sim.body.actionRefusal;
       }
       if (!inventory.canReachEntity(entity)) {
-        return 'Too far away';
+        return text.common.tooFar;
       }
       const yaw = controls.yaw();
       const pitch = controls.pitch();
@@ -2177,7 +2184,7 @@ export const createSession = (options: SessionOptions) => {
         isSolid: isOpaque,
       });
       if (selected !== entity) {
-        return 'Face the unobstructed objective';
+        return text.objective.blocked;
       }
       scenarioRun.complete(sim.calendar);
       sim.paused = true;
@@ -2350,7 +2357,7 @@ export const createSession = (options: SessionOptions) => {
       }
       queue.enqueueAction(
         'furniture.search',
-        `Search the ${nameOf(entity)}`,
+        fillText(text.play.search, { furniture: nameOf(entity) }),
         inventory.scaleHandlingTime(searchTime(entities.defOf(entity), reachTuning(inventory.registry))),
         {
           entityUid: entity.uid,
@@ -2365,11 +2372,11 @@ export const createSession = (options: SessionOptions) => {
         return unusable;
       }
       if (!inventory.canReachEntity(entity)) {
-        return 'Too far away';
+        return text.common.tooFar;
       }
       const { readable } = entities.defOf(entity);
       if (!readable) {
-        return 'Nothing to read';
+        return text.objective.nothingToRead;
       }
       const lightAt: Vec3 = [entity.pos[0] + 0.5, entity.pos[1] + 0.5, entity.pos[2] + 0.5];
       const dark = readingLight(lightAt);

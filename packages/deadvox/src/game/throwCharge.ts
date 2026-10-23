@@ -1,5 +1,6 @@
 // A held item's throw, from the press that picks its hand and item through release or cancel. The session owns it so a climber holds still while it charges (`DESIGN.md`, "Ladders and hatches").
 
+import { actionText, fillText } from '../core/actionText.ts';
 import { dominantSide, offSide } from '../core/character.ts';
 import type { HandSide, Inventory, Target } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
@@ -116,7 +117,10 @@ export class ThrowCharge {
     }
     const placed = this.inventory.throwToPile(item, hand, target);
     if (!placed.ok) {
-      return { landed: false, reason: `Can't throw it there: ${placed.reason}` };
+      return {
+        landed: false,
+        reason: fillText(actionText(this.inventory.registry).play.throwRefused, { reason: placed.reason }),
+      };
     }
     return { landed: true, item: placed.item };
   }

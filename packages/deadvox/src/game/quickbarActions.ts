@@ -1,3 +1,4 @@
+import { actionText } from '../core/actionText.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import type { Inventory } from '../core/inventory.ts';
@@ -33,9 +34,9 @@ export class QuickbarActions {
   }
 
   hold(item: Item): void {
-    const { queue, survival, notice } = this.dependencies;
+    const { inventory, queue, survival, notice } = this.dependencies;
     if (queue.busy) {
-      notice('Already handling something');
+      notice(actionText(inventory.registry).common.busy);
       return;
     }
     const reason = survival.useFromQuickbar(item);
