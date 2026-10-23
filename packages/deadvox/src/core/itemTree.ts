@@ -142,6 +142,22 @@ export function* walkItemTree<Node extends NodeShape<Node>, Pile, Entity>(
   }
 }
 
+/** One subtree in preorder; its root need not be placed anywhere, as between leaving one owner and joining another. */
+export function* subtreeItems<Node extends NodeShape<Node>>(root: Node): Generator<Node> {
+  yield root;
+  for (const child of Object.values(root.slots ?? {})) {
+    if (child) {
+      yield* subtreeItems(child);
+    }
+  }
+  for (const child of root.work?.components ?? []) {
+    yield* subtreeItems(child);
+  }
+  for (const placed of (root.pockets ?? []).flat()) {
+    yield* subtreeItems(placed.item);
+  }
+}
+
 export const savedItemTree = (
   state: InventoryState,
   vehicles?: import('./vehicleInstances.ts').VehicleInstancesState,

@@ -31,6 +31,7 @@ import {
   sameFirearmsSkillZeroHandling,
 } from '../core/firearmsSkill.ts';
 import { foliageRustle, initialRustleClock } from '../core/foliageRustle.ts';
+import { foodMillisecondsAt } from '../core/food.ts';
 import {
   advanceFootsteps,
   footstepEventAt,
@@ -54,6 +55,7 @@ import {
 } from '../core/furnitureMove.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import { HandlingQueue, type Job, type MoveStart, type TickResult } from '../core/handling.ts';
+import { illuminationAt } from '../core/illumination.ts';
 import { Inventory, type Location } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { settleCell } from '../core/itemThrow.ts';
@@ -722,14 +724,9 @@ export const createSession = (options: SessionOptions) => {
   const isOpaque = (x: number, y: number, z: number) => options.isOpaque(x, y, z) || vehicleSight.isSolid(x, y, z);
   const isLightBlocking = (x: number, y: number, z: number) =>
     options.isOpaque(x, y, z) || vehicleLight.isSolid(x, y, z);
-  const wearPlaced = (piece: BlockEntity | undefined, wear: number | undefined): void => {
-    if (piece && wear !== undefined) {
-      inventory.entities.wear(piece, wear);
-    }
-  };
   const generateColumnSupply = (cx: number, cz: number, source: ColumnSource): void => {
-    for (const { spec, loot, surfaceLoot, fixedCount, wear } of source.furnitureIn(cx, cz)) {
-      wearPlaced(inventory.furnish(spec, loot, surfaceLoot, fixedCount), wear);
+    for (const spawn of source.furnitureIn(cx, cz)) {
+      inventory.furnishSpawn(spawn);
     }
     for (const point of source.lootPointsIn(cx, cz)) {
       if (point.channel !== 'ground') {
@@ -810,6 +807,7 @@ export const createSession = (options: SessionOptions) => {
     distanceToPile(body.pos, position, s) <= reachTuning(inventory.registry).reachMetres;
   inventory.landing = (pos) => settleCell(pos, s, scale.minCy * CHUNK, physicalSolid);
   inventory.dropFeet = feet;
+  inventory.foodClock = () => foodMillisecondsAt(sim.calendar);
   const pileDistance = (pos: Vec3) => distanceToPile(body.pos, pos, s);
   const chest = (): Vec3 => [
     body.pos[0],
@@ -2085,6 +2083,21 @@ export const createSession = (options: SessionOptions) => {
     },
     power,
     skyFields,
+    /** Light reaching a point in blocks (`src/core/illumination.ts`, `illuminationAt`). */
+    illuminationAt: (point: Vec3): number =>
+      illuminationAt(
+        {
+          inventory,
+          sky: skyFields,
+          gameHour: hourOfDay(sim.calendar),
+          cycle: dayCycle,
+          fixtures: power?.lights() ?? [],
+          isBlocking: isLightBlocking,
+          blockSize: s,
+          holder: [body.pos[0], body.pos[1] + playerEyeHeightMetres() / s, body.pos[2]],
+        },
+        point,
+      ),
     powerControl: (uid: number, enabled: boolean): string | undefined => {
       const entity = entities.byUid(uid);
       const control = entity && power?.control(entity);

@@ -605,8 +605,13 @@ export const damageWord = (registry: Registry, condition: number): string | unde
   return condition < bands.at(-1)!.from ? conditionWord(registry, condition) : undefined;
 };
 
-/** How many of `item` could join the `onto` stack. */
-export const stackRoom = (registry: Registry, onto: Item, item: Item): number => {
+/** How many of `item` could join the `onto` stack. `sameFood` lets an owner compare under each item's environment. */
+export const stackRoom = (
+  registry: Registry,
+  onto: Item,
+  item: Item,
+  sameFood: (a: Item, b: Item) => boolean = equalFoodExposure,
+): number => {
   const def = defOf(registry, onto.type);
   const same =
     onto !== item &&
@@ -615,7 +620,7 @@ export const stackRoom = (registry: Registry, onto: Item, item: Item): number =>
     onto.charges === item.charges &&
     onto.batteryMicrojoules === item.batteryMicrojoules &&
     onto.madeAtGameTimestamp === item.madeAtGameTimestamp &&
-    equalFoodExposure(onto, item) &&
+    sameFood(onto, item) &&
     onto.firearm === undefined &&
     item.firearm === undefined &&
     !def.paperMap &&

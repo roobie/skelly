@@ -14,7 +14,102 @@ local palette = {
     { item: 'rechargeable_aa_battery', count: 1, charge: 0.25, placement: 'surface' },
     { item: 'flashlight', count: 1, charge: 0, placement: 'surface' },
   ] },
+  k: 'concrete', w: { furniture: 'workbench', fixed: true }, n: { furniture: 'grinding_wheel', fixed: true },
+  e: { furniture: 'shelf', facing: 's' }, E: { furniture: 'shelf', facing: 's' },
+  o: { furniture: 'crate' }, q: { furniture: 'crate' },
+  I: { furniture: 'gauntlet_lab_fixture', fixed: true }, Y: { furniture: 'ladder', facing: 'w' },
 };
+// The garage's back wall is z 0 and its two bay doors open south onto one shared floor, kept clear for driving
+// out; the repair stock stands along the back wall and the crates beside the east bay. Strip lights hang under
+// the roof over both bays and the bench, on the house supply, and a ladder climbs the doorless west wall.
+local garageFloor = [
+  'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk', 'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk', 'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk',
+  'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk', 'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk', 'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk',
+  'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk', 'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk', 'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk',
+  'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk', 'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk', 'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk',
+  'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk', 'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk', 'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk',
+  'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk', 'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk',
+];
+local garageStock = [
+  'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+  'b..............eeEEeewww.nn..b', 'b....................www.nn..b',
+  'b............................b', 'b............................b',
+  'b....................oo......b', 'b....................oo......b',
+  'b....................qq......b', 'b....................qq......b',
+  'b............................b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b',
+  'bb........bb........bbbbbbbbbb',
+];
+local garageShelves = [
+  'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+  'b..............eeEEee........b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b',
+  'bb........bb........bbbbbbbbbb',
+];
+local garageShelfWindows = [
+  'bbbb....bbbbbb....bbbbb....bbb',
+  'b..............eeEEee........b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b',
+  'bb........bb........bbbbbbbbbb',
+];
+local garageWindows = [
+  'bbbb....bbbbbb....bbbbb....bbb',
+  'b............................b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b',
+  'bb........bb........bbbbbbbbbb',
+];
+local garageLintel = [
+  'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+  'b............................b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b',
+  'bbddddddddbbddddddddbbbbbbbbbb',
+];
+local garageLights = [
+  'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+  'b............................b', 'b............................b',
+  'b............................b', 'b......................II....b',
+  'b....II........II............b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b....II........II............b', 'b............................b',
+  'b............................b', 'b............................b',
+  'b............................b',
+  'bbddddddddbbddddddddbbbbbbbbbb',
+];
+local garageRoof = [
+  'gggggggggggggggggggggggggggggg', 'gggggggggggggggggggggggggggggg', 'gggggggggggggggggggggggggggggg',
+  'gggggggggggggggggggggggggggggg', 'gggggggggggggggggggggggggggggg', 'gggggggggggggggggggggggggggggg',
+  'gggggggggggggggggggggggggggggg', 'gggggggggggggggggggggggggggggg', 'gggggggggggggggggggggggggggggg',
+  'gggggggggggggggggggggggggggggg', 'gggggggggggggggggggggggggggggg', 'gggggggggggggggggggggggggggggg',
+  'gggggggggggggggggggggggggggggg', 'gggggggggggggggggggggggggggggg', 'gggggggggggggggggggggggggggggg',
+  'gggggggggggggggggggggggggggggg', 'gggggggggggggggggggggggggggggg',
+];
 local foundation = [
   'GGGGGGGGGGGGGGGGGGGGGGG',
   'ppppppppppppppppppppGGG',
@@ -155,6 +250,16 @@ local templates = [
       ['ssssssssssssssss..ssssssssssssss'],
       ['mmmmmmmmmmmmmmmh..hmmmmmmmmmmmmm'],
     ],
+  },
+  {
+    id: 'test_house_garage', size: [30, 9, 17],
+    layers: [garageFloor, garageStock, garageStock, garageShelves, garageShelfWindows,
+      garageWindows, garageLintel, garageLights, garageRoof],
+  },
+  {
+    // Against the garage's west wall, up to its roof layer, so the climb ends with the feet on the roof.
+    id: 'test_house_garage_ladder', size: [1, 9, 2],
+    layers: [['k', 'k'], ['Y', 'Y'], ['Y', 'Y'], ['Y', 'Y'], ['Y', 'Y'], ['Y', 'Y'], ['Y', 'Y'], ['Y', 'Y'], ['Y', 'Y']],
   },
   { id: 'test_house_path', size: [14, 1, 2], layers: [['ssssssssssssss', 'ssssssssssssss']] },
   { id: 'test_house_step', size: [2, 1, 4], layers: [['dd', 'dd', 'dd', 'dd']] },

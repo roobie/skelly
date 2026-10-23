@@ -1075,7 +1075,7 @@ export const startPlay = (
       registry,
       site: config.site,
       debug: config.debug,
-      blockSize: s,
+      source: engine.site,
     });
   }
   const { load: applyColumnLoad, unload: applyColumnUnload } = columnArrival(session, engine);

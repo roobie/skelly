@@ -64,10 +64,11 @@ export class Flashlight {
 
   private readonly spillOverride: boolean | undefined;
   /** `spillOverride` is the render-only comparison switch: true enables present spill, false forces the plain cone, undefined follows content. */
-  constructor(scene: Scene, beamLimit: number, spillOverride?: boolean) {
+  /** `nearFieldMetres` is content's punctual-light offset, the one the illumination query measures with. */
+  constructor(scene: Scene, beamLimit: number, nearFieldMetres: number, spillOverride?: boolean) {
     this.spillOverride = spillOverride;
     // Before any material compiles; the light chunk is shared by all of them.
-    installNearFieldFalloff();
+    installNearFieldFalloff(nearFieldMetres);
     if (spillOverride !== false) {
       installFlashlightSpill(beamLimit);
     }
