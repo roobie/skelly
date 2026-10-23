@@ -2087,14 +2087,18 @@ of a large field takes far longer than a frame, so the renderer asks the cache f
 off-thread builds of the fields near the camera, one at a time, and never builds while
 drawing. The cache captures the snapshot on the main thread and installs the worker's
 result only while that snapshot is still current, so it is the result a synchronous
-build would give. A capture the worker cannot take yet waits for the next request,
-so one result in flight and one prepared successor bound memory. See
+build would give. Each field holds its own pending capture, waiting or out at the
+worker, until the result lands or an edit makes it stale; a capture the worker cannot
+take yet stays on its field for that field's next request, so several fields the camera
+passed can each hold one. See
 `src/game/streamer.ts`, `dispatchSky`, `src/core/skyField.ts`, `request`, and
 `src/render/skylight.ts`, `prepare`.
 
-A field the cache has not built draws open sky, as the cache answers there: cold
-discovery must not make an open surface appear sealed, so an unbuilt room reads bright
-until its field lands. Once a field has a complete result, the view keeps it while an
+A field with no result to draw yet draws open sky. This is a presentation fallback, not
+the simulation's answer: a query builds the field synchronously, so a loaded roofed room
+answers dark to the simulation while the view still draws it bright. The fallback keeps
+cold discovery from making an open surface appear sealed, at the cost of an unbuilt room
+reading bright until its field lands. Once a field has a complete result, the view keeps it while an
 edit is rebuilt: dropping to open sky would flash a dark room bright when a door opens.
 The replacement swaps atomically, and a late result for superseded geometry cannot
 install. Retained column heights supply the nonresident estimate. CPU and shader share

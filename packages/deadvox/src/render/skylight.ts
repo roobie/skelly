@@ -83,8 +83,9 @@ function regionIndex(fields: readonly SkyField[]) {
 }
 /**
  * An upload view over the shared sky field cache: it asks the cache to build fields near the camera off
- * the main thread and draws the results the cache holds. A field the cache has not built draws open sky,
- * as the cache answers there; one being rebuilt keeps its last complete result until the new one lands.
+ * the main thread and draws the results the cache holds. A field with no result to draw yet draws open sky as
+ * a presentation fallback, even where the simulation's synchronous build answers dark; one being rebuilt keeps
+ * its last complete result until the new one lands.
  */
 export class Skylight {
   private readonly texture = { value: volumeTexture(new Uint8Array([255]), [1, 1, 1]) };

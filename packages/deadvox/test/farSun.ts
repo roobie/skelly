@@ -50,7 +50,7 @@ export function farSunProof() {
     const unknownFar = sample(point, false);
     const nearUnknown = sample(point, true);
     if (fixture.sky.at(point) !== 1) {
-      throw new Error('An unbuilt field must draw open sky, as the cache answers');
+      throw new Error('A field with no result to draw yet must fall back to open sky in the view');
     }
     fixture.complete();
     fixture.update(point);

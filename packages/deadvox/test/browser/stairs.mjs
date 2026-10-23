@@ -773,7 +773,7 @@ try {
     assert.deepEqual(
       selection.pending.room,
       { cpu: 1, shader: 1 },
-      'an unbuilt field draws open sky, as the cache answers',
+      'a field with no result to draw yet falls back to open sky in the view',
     );
     for (const phase of [selection.ready, selection.evicted]) {
       assert.deepEqual(
