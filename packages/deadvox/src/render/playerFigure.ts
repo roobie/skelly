@@ -198,30 +198,12 @@ export const FIRST_PERSON_PALM: Vec3 = [0.09, 0.08, 0.09];
 const SEGMENT_UP = new Vector3(0, 1, 0);
 const segmentDirection = new Vector3();
 
-const ARM_SIDES: Partial<Record<FigureLimb, HandSide>> = { leftArm: 'left', rightArm: 'right' };
+const ARM_LIMBS: ReadonlySet<FigureLimb> = new Set(['leftArm', 'rightArm']);
 const LEG_HIPS: Partial<Record<FigureLimb, 'leftHip' | 'rightHip'>> = { leftLeg: 'leftHip', rightLeg: 'rightHip' };
 
 /** A leg's walking swing about its hip, in radians; the two sides swing opposite ways. */
 const strideOf = (limb: FigureLimb, gaitPhase: number): number =>
   (limb === 'leftLeg' ? 1 : -1) * Math.sin(gaitPhase) * 0.22;
-
-const hiddenWorldArms = (inventory?: Inventory): Record<HandSide, boolean> => {
-  const hidden: Record<HandSide, boolean> = { right: false, left: false };
-  if (!inventory) {
-    return hidden;
-  }
-  for (const side of ['right', 'left'] as const) {
-    const held = inventory.hands[side];
-    if (!held) {
-      continue;
-    }
-    hidden[side] = true;
-    if (defOf(inventory.registry, held.type).twoHanded) {
-      hidden[side === 'right' ? 'left' : 'right'] = true;
-    }
-  }
-  return hidden;
-};
 
 export const placeFirstPersonSegment = (
   mesh: Mesh,
@@ -335,19 +317,16 @@ export class PlayerMeshes {
     this.placement.bodyPosition = pose.body.pos;
     this.placement.yaw = pose.yaw;
     this.placement.thirdPerson = thirdPerson;
-    const hidden = thirdPerson ? { right: false, left: false } : hiddenWorldArms(inventory);
     const modelDrawn = this.syncAuthored();
-    const heldArm = (part: FigureBoxPart): boolean => {
-      const side = ARM_SIDES[FIGURE_BOX_LIMBS[part]];
-      return side !== undefined && hidden[side];
-    };
+    // In first person the view draws both arms, gripping or as fists (`HeldItems`), so the body's arms would double them.
+    const viewArm = (part: FigureBoxPart): boolean => !thirdPerson && ARM_LIMBS.has(FIGURE_BOX_LIMBS[part]);
     for (const part of FIGURE_BOX_PARTS) {
       const hiddenInFirstPerson = part === 'head' && !thirdPerson && !modelDrawn.has(part);
-      this.syncPart(part, pose, !(heldArm(part) || hiddenInFirstPerson), modelDrawn.has(part));
+      this.syncPart(part, pose, !(viewArm(part) || hiddenInFirstPerson), modelDrawn.has(part));
     }
     // A part's draws all belong to one limb (content validation), so it moves and hides as that limb.
     for (const [part, drawn] of this.authored) {
-      drawn.visible = !heldArm(part.draws[0]!);
+      drawn.visible = !viewArm(part.draws[0]!);
       this.posePoint(part.at, part.draws[0]!, pose);
       drawn.position.copy(this.dummy.position);
       drawn.quaternion.copy(this.dummy.quaternion);

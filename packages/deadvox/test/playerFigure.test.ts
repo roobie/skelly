@@ -25,7 +25,7 @@ import { meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/co
 import { opticViewSettings } from '../src/core/opticView.ts';
 import type { PlayerStance } from '../src/core/playerStance.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { FIGURE_BOX_PARTS, type FigureBoxPart } from '../src/core/schema.ts';
+import { FIGURE_BOX_LIMBS, FIGURE_BOX_PARTS, type FigureBoxPart } from '../src/core/schema.ts';
 import { FIGURE_BOXES } from '../src/core/zombieRegions.ts';
 import { createPlayerBody as createBody } from '../src/game/player.ts';
 import { HeldItems } from '../src/render/hands.ts';
@@ -301,7 +301,7 @@ describe('player figure', () => {
     }
   });
 
-  it('uses the content palette, hides the head in first person, and applies the figure offset', () => {
+  it('uses the content palette, hides the head and arms in first person, and applies the figure offset', () => {
     const meshes = new PlayerMeshes(scale.blockSize, playerFigure, registry.models);
     const parts = meshes.group.children as import('three').InstancedMesh[];
     expect(FIGURE_BOX_PARTS).toContain('head');
@@ -332,7 +332,8 @@ describe('player figure', () => {
     expect(center.z).toBeCloseTo(body.pos[2] * scale.blockSize + PLAYER_BODY_REAR_OFFSET);
     const headIndex = FIGURE_BOX_PARTS.indexOf('head');
     expect(parts[headIndex]!.count).toBe(0);
-    expect(parts.every((mesh, index) => index === headIndex || mesh.count === 1)).toBe(true);
+    const bodyArm = (index: number) => FIGURE_BOX_LIMBS[FIGURE_BOX_PARTS[index]!].endsWith('Arm');
+    expect(parts.every((mesh, index) => index === headIndex || bodyArm(index) || mesh.count === 1)).toBe(true);
   });
 
   it('shows the head at its figure-box position in third person', () => {
@@ -455,67 +456,50 @@ describe('player figure', () => {
     expect(turns[0]!.angleTo(turns[1]!)).toBeGreaterThan(0.1);
   });
 
-  it('hides an authored arm held in first person, and shows it in third person', () => {
+  it('hides an authored arm in first person, as the box arm it replaces, and shows it in third person', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
-    const inventory = new Inventory(registry);
-    inventory.add(inventory.create('kitchen_knife'), { kind: 'hand', side: 'right' });
     const { meshes, drawn } = authoredLimb(['rightUpperArm']);
-    meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING, inventory });
+    meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING });
     expect(drawn().visible).toBe(false);
-    meshes.sync({
-      body,
-      yaw: 0,
-      stepOffset: 0,
-      gaitPhase: 0,
-      moving: false,
-      ...STANDING,
-      inventory,
-      thirdPerson: true,
-    });
+    meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING, thirdPerson: true });
     expect(drawn().visible).toBe(true);
   });
 
-  it('hides held arms from the world body, including both arms for a two-handed item', () => {
+  it('draws one pair of arms: no body arm on a side whose first-person view arm draws, all body arms in third person', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
-    const inventory = new Inventory(registry);
-    const knife = inventory.create('kitchen_knife');
-    inventory.add(knife, { kind: 'hand', side: 'right' });
     const meshes = new PlayerMeshes(scale.blockSize, playerFigure, registry.models);
-    const parts = meshes.group.children as import('three').InstancedMesh[];
-    const indexes = Object.fromEntries(FIGURE_BOX_PARTS.map((part, index) => [part, index])) as Record<
-      (typeof FIGURE_BOX_PARTS)[number],
-      number
-    >;
-
-    meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING, inventory });
-    expect(parts[indexes.rightUpperArm]!.count).toBe(0);
-    expect(parts[indexes.rightForearm]!.count).toBe(0);
-    expect(parts[indexes.rightHand]!.count).toBe(0);
-    expect(parts[indexes.leftUpperArm]!.count).toBe(1);
-
-    const batInventory = new Inventory(registry);
-    const bat = batInventory.create('baseball_bat');
-    batInventory.add(bat, { kind: 'hand', side: 'left' });
-    meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING, inventory: batInventory });
-    expect(parts[indexes.leftForearm]!.count).toBe(0);
-    expect(parts[indexes.rightForearm]!.count).toBe(0);
-    expect(parts[indexes.leftHand]!.count).toBe(0);
-    expect(parts[indexes.rightHand]!.count).toBe(0);
-
-    meshes.sync({
-      body,
-      yaw: 0,
-      stepOffset: 0,
-      gaitPhase: 0,
-      moving: false,
-      ...STANDING,
-      inventory: batInventory,
-      thirdPerson: true,
-    });
-    expect(parts[indexes.leftForearm]!.count).toBe(1);
-    expect(parts[indexes.rightForearm]!.count).toBe(1);
-    expect(parts[indexes.leftHand]!.count).toBe(1);
-    expect(parts[indexes.rightHand]!.count).toBe(1);
+    const parts = meshes.group.children as InstancedMesh[];
+    const bodyArmCounts = (side: 'left' | 'right') =>
+      FIGURE_BOX_PARTS.flatMap((part, index) => (FIGURE_BOX_LIMBS[part] === `${side}Arm` ? [parts[index]!.count] : []));
+    // Empty hands draw fists; a one-handed and a two-handed item each draw their own grip.
+    for (const held of [undefined, 'kitchen_knife', 'baseball_bat']) {
+      const inventory = new Inventory(registry);
+      if (held) {
+        inventory.add(inventory.create(held), { kind: 'hand', side: 'right' });
+      }
+      const view = new HeldItems(inventory, undefined, palette);
+      view.update(new PerspectiveCamera(), readyMeleePose(false));
+      const viewArms = (view as unknown as { arms: Map<'left' | 'right', Group> }).arms;
+      expect(viewArms.size, `${held} view arms`).toBeGreaterThan(0);
+      meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING, inventory });
+      for (const side of viewArms.keys()) {
+        expect(bodyArmCounts(side), `${held}: ${side} body arm in first person`).toEqual([0, 0, 0]);
+      }
+      meshes.sync({
+        body,
+        yaw: 0,
+        stepOffset: 0,
+        gaitPhase: 0,
+        moving: false,
+        ...STANDING,
+        inventory,
+        thirdPerson: true,
+      });
+      for (const side of ['left', 'right'] as const) {
+        expect(bodyArmCounts(side), `${held}: ${side} body arm in third person`).toEqual([1, 1, 1]);
+      }
+      view.dispose();
+    }
   });
 
   it('keeps idle first-person grips camera-relative when the camera turns', () => {

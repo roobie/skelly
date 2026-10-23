@@ -1490,7 +1490,9 @@ Worn items carry their own part model that covers or replaces the body part
 under it, so gear shows on the body without the body knowing about gear.
 
 The first-person arms are rebuilt from the same authored hand and sleeve parts
-as the body, so both views share one look.
+as the body, so both views share one look. In first person the view draws both
+arms, gripping or as fists, so the body's own arms hide there; otherwise an
+empty hand would show two arms.
 
 Third person remains a debug inspection aid, not a player-facing camera.
 `PlayerMeshes` in `src/render/playerFigure.ts` draws the body from the `player`
