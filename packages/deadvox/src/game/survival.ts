@@ -6,7 +6,7 @@
 
 import { canonicalJson } from '../core/canonicalJson.ts';
 import { dominantSide } from '../core/character.ts';
-import { coreLabel } from '../core/coreText.ts';
+import { coreLabel, coreMessage } from '../core/coreText.ts';
 import { freshnessWord, isRotten } from '../core/food.ts';
 import type { HandlingQueue, JobParams, JobValue } from '../core/handling.ts';
 import type { HandSide, Inventory, Target, TargetState } from '../core/inventory.ts';
@@ -150,9 +150,13 @@ export class Survival {
       return reason;
     });
     this.queue.registerAction('survival.batteryOut', (params) => {
+      const { registry } = this.inventory;
       const light = this.inventory.itemByUid(numberParam(params, 'lightUid'));
-      if (!(light && lightInHands(this.inventory, light))) {
-        return "I haven't got the light in hand";
+      if (!light) {
+        return coreMessage(registry, 'gone');
+      }
+      if (!lightInHands(this.inventory, light)) {
+        return coreMessage(registry, 'notInHands', { item: defOf(registry, light.type).name.toLowerCase() });
       }
       const { feet } = this.hooks.reach();
       const reason = unloadBattery(this.inventory, light, (battery) => stowTarget(this.inventory, battery, feet));
