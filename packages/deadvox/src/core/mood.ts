@@ -46,7 +46,33 @@ export const TONE_KEYS = ['none', 'agx', 'aces', 'neutral', AUTO_TONE] as const;
  * it. `bloomClip` is not content: null follows the tone mapper. Height-fog mist follows the
  * weather's fogginess (core/weather.ts).
  */
-export type LookDefaults = Omit<LookState & MoodState, 'bloomClip'>;
+export type LookDefaults = Omit<LookState & MoodState, 'bloomClip'> & {
+  readonly heightFog: { readonly baseMetres: number; readonly scaleMetres: number };
+  readonly painCue: {
+    readonly pulseRiseRealSeconds: number;
+    readonly pulseFallRealSeconds: number;
+    readonly settleStretch: number;
+  };
+  readonly damageFeedback: {
+    readonly vignetteMax: number;
+    readonly damageForFullStrength: number;
+    readonly vignetteFadeRealSeconds: number;
+    readonly rollPeakDegrees: number;
+    readonly rollRiseRealSeconds: number;
+    readonly rollSettleRealSeconds: number;
+  };
+  readonly mobActors: {
+    readonly corpseLieSimSeconds: number;
+    readonly corpseSinkSimSeconds: number;
+    readonly corpseSinkDepthMetres: number;
+    readonly launchSpinRadiansPerSecond: number;
+    readonly hearingGazeJitter: {
+      readonly yawDegrees: number;
+      readonly pitchDegrees: number;
+      readonly cyclesPerSimSecond: number;
+    };
+  };
+};
 
 /** A look as the renderer and mood pass take it, with the bloom clip following the tone mapper. */
 export const lookOf = (defaults: LookDefaults): LookState => ({

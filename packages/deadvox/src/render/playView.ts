@@ -39,6 +39,7 @@ import { DrawCounters } from './drawCounters.ts';
 import { Flashlight, flashlightDaylightScale, spillSwitchFromSearch } from './flashlight.ts';
 import { FurnitureMeshes } from './furniture.ts';
 import { Gore } from './gore.ts';
+import { setHeightFogTuning } from './heightFog.ts';
 import { type HeldHandlingFrame, HeldItems } from './hands.ts';
 import { ImpactEffects } from './impactEffects.ts';
 import { ItemThrows } from './itemThrows.ts';
@@ -169,6 +170,11 @@ export const createPlayView = (
   const { config, registry, renderer, meshes, scene, camera, mood, shadows } = engine;
   const drawCounters = config.debug && renderer ? new DrawCounters(renderer) : undefined;
   const dayCycle = requireDayCycle(registry);
+  const look = lookDefaultsOf(registry);
+  const graphics = registry.graphics.get(CORE_CONTENT_IDS.coreGraphics);
+  if (graphics === undefined) {
+    throw new Error('Missing core graphics tuning');
+  }
   const s = config.scale.blockSize;
   // Play's look defaults are presentation; benchmark mode never applies them.
   if (renderer) {
@@ -178,8 +184,8 @@ export const createPlayView = (
     if (shadows === undefined) {
       throw new Error('rendering resources are incomplete');
     }
-    const look = lookDefaultsOf(registry);
     applyLook(renderer, meshes, lookOf(look));
+    setHeightFogTuning(look.heightFog);
     mood.restore(moodOf(look));
     shadows.restore(DEFAULT_SHADOWS);
   }
@@ -189,7 +195,7 @@ export const createPlayView = (
   const playerPalette = playerFigure.palette;
   const piles = new PileMeshes(s, models, config.seed, meshes);
   const caseEffects = new CaseEffects(s, models);
-  const gore = new Gore(s, config.seed);
+  const gore = new Gore(s, graphics.gore, config.seed);
   const decals =
     engine.scenario && config.authoredDecals
       ? new AuthoredDecals(engine.site?.authoredPlacements ?? [], {
@@ -267,8 +273,8 @@ export const createPlayView = (
   zombieMeshes.setWorld?.(engine.isSolid, s);
   scene.add(zombieMeshes.group);
   const cameraStepOffset = new StepOffset(PLAYER.stepHeight);
-  const damageFeedback = new DamageFeedback();
-  const painCue = new PainCue();
+  const damageFeedback = new DamageFeedback(look.damageFeedback);
+  const painCue = new PainCue(look.painCue);
   let cameraRoll = 0;
   let thirdPerson = false;
   /** The spectator camera leaves the player's own view (arms, held item, vignettes) with the avatar. */

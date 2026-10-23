@@ -17,19 +17,13 @@ import {
 } from 'three';
 import { BODY_REGIONS, type BodyRegion } from '../core/body.ts';
 import type { Vec3 } from '../core/coords.ts';
+import type { GraphicsTuningDef } from '../core/schema.ts';
 import type { EntityStore } from '../core/entities.ts';
 import { Rng } from '../core/random.ts';
 import type { HitImpulse, Zombie } from '../core/zombies.ts';
 import { PLAYER_REGION_BOXES, type PlayerFigurePlacement, setPlayerFigurePosition } from './playerFigure.ts';
 
-/** Droplets in flight at once; a new one replaces the oldest. */
-export const DROPLET_CAP = 128;
-/** Splats on surfaces at once; a new one replaces the oldest. */
-export const SPLAT_CAP = 256;
-/** Droplets that may start between two updates, across sprays and drips; the rest of a burst is skipped. */
-export const DROPLET_SPAWNS_PER_FRAME = 48;
-/** Wounded bodies that drip at once: the nearest ones. */
-const DRIP_SOURCE_CAP = 6;
+export type GoreTuning = GraphicsTuningDef['gore'];
 
 // Presentation tuning, not gameplay.
 const GRAVITY_MPS2 = 9.81;
@@ -149,6 +143,7 @@ const patchSplatOpacity = (material: MeshLambertMaterial): void => {
 export class Gore {
   readonly group = new Group();
   private readonly blockSize: number;
+  private readonly tuning: GoreTuning;
   private readonly rng: Rng;
   private readonly droplets: Droplet[];
   private readonly splats: Splat[];
@@ -175,18 +170,19 @@ export class Gore {
   private dripperCount = 0;
   private updates = 0;
 
-  constructor(blockSize: number, seed = 1) {
+  constructor(blockSize: number, tuning: GoreTuning, seed = 1) {
     this.blockSize = blockSize;
+    this.tuning = tuning;
     this.rng = Rng.stream(seed, 'gore');
-    this.droplets = Array.from({ length: DROPLET_CAP }, () => ({
+    this.droplets = Array.from({ length: tuning.dropletCap }, () => ({
       active: false,
       position: new Vector3(),
       velocity: new Vector3(),
       ageRealSeconds: 0,
       sizeMetres: 0,
     }));
-    this.splats = Array.from({ length: SPLAT_CAP }, () => ({ active: false, ageRealSeconds: 0 }));
-    this.drippers = Array.from({ length: DRIP_SOURCE_CAP }, () => ({
+    this.splats = Array.from({ length: tuning.splatCap }, () => ({ active: false, ageRealSeconds: 0 }));
+    this.drippers = Array.from({ length: tuning.dripSourceCap }, () => ({
       zombie: undefined,
       distanceBlocks: 0,
       severity: 0,
@@ -194,7 +190,7 @@ export class Gore {
     this.dropletMesh = new InstancedMesh(
       new BoxGeometry(1, 1, 1),
       new MeshLambertMaterial({ color: DROPLET_COLOR }),
-      DROPLET_CAP,
+      tuning.dropletCap,
     );
     const splatMaterial = new MeshLambertMaterial({
       color: SPLAT_COLOR,
@@ -205,8 +201,8 @@ export class Gore {
       polygonOffsetFactor: -2,
     });
     patchSplatOpacity(splatMaterial);
-    this.splatMesh = new InstancedMesh(new CircleGeometry(1, 9), splatMaterial, SPLAT_CAP);
-    this.splatOpacity = new InstancedBufferAttribute(new Float32Array(SPLAT_CAP), 1);
+    this.splatMesh = new InstancedMesh(new CircleGeometry(1, 9), splatMaterial, tuning.splatCap);
+    this.splatOpacity = new InstancedBufferAttribute(new Float32Array(tuning.splatCap), 1);
     this.splatOpacity.setUsage(DynamicDrawUsage);
     this.splatMesh.geometry.setAttribute('splatOpacity', this.splatOpacity);
     for (const mesh of [this.dropletMesh, this.splatMesh]) {
@@ -217,7 +213,7 @@ export class Gore {
     }
     this.dummy.scale.setScalar(0);
     this.dummy.updateMatrix();
-    for (let slot = 0; slot < SPLAT_CAP; slot++) {
+    for (let slot = 0; slot < tuning.splatCap; slot++) {
       this.splatMesh.setMatrixAt(slot, this.dummy.matrix);
     }
     this.drawDroplets();
@@ -319,12 +315,12 @@ export class Gore {
 
   /** Starts one droplet, reusing the oldest; false once this update's spawn budget is spent. */
   private emit(origin: Vector3, velocity: Vector3, sizeMetres: number): boolean {
-    if (this.spawnedSinceUpdate >= DROPLET_SPAWNS_PER_FRAME) {
+    if (this.spawnedSinceUpdate >= this.tuning.dropletSpawnsPerFrame) {
       return false;
     }
     this.spawnedSinceUpdate += 1;
     const droplet = this.droplets[this.nextDroplet]!;
-    this.nextDroplet = (this.nextDroplet + 1) % DROPLET_CAP;
+    this.nextDroplet = (this.nextDroplet + 1) % this.tuning.dropletCap;
     droplet.active = true;
     droplet.ageRealSeconds = 0;
     droplet.sizeMetres = sizeMetres;
@@ -344,10 +340,10 @@ export class Gore {
     for (const [, zombie] of bodies.zombies.entries()) {
       const { pos } = zombie.body;
       const distanceBlocks = Math.hypot(pos[0] - lx, pos[1] - ly, pos[2] - lz);
-      const full = this.dripperCount === DRIP_SOURCE_CAP;
+      const full = this.dripperCount === this.tuning.dripSourceCap;
       if (
         distanceBlocks > rangeBlocks ||
-        (full && distanceBlocks >= this.drippers[DRIP_SOURCE_CAP - 1]!.distanceBlocks)
+        (full && distanceBlocks >= this.drippers[this.tuning.dripSourceCap - 1]!.distanceBlocks)
       ) {
         continue;
       }
@@ -361,7 +357,7 @@ export class Gore {
   /** Keeps the drippers sorted by distance: takes a free slot, or the farthest's when full, and moves it in
    * behind the last one nearer than it. */
   private insertDripper(zombie: Zombie, distanceBlocks: number, severity: number): void {
-    let index = Math.min(this.dripperCount, DRIP_SOURCE_CAP - 1);
+    let index = Math.min(this.dripperCount, this.tuning.dripSourceCap - 1);
     const slot = this.drippers[index]!;
     while (index > 0 && this.drippers[index - 1]!.distanceBlocks > distanceBlocks) {
       this.drippers[index] = this.drippers[index - 1]!;
@@ -371,7 +367,7 @@ export class Gore {
     slot.distanceBlocks = distanceBlocks;
     slot.severity = severity;
     this.drippers[index] = slot;
-    this.dripperCount = Math.min(this.dripperCount + 1, DRIP_SOURCE_CAP);
+    this.dripperCount = Math.min(this.dripperCount + 1, this.tuning.dripSourceCap);
   }
 
   private drip(dt: number): void {
@@ -439,7 +435,7 @@ export class Gore {
 
   private splat(point: Vector3, normal: Vector3, radiusMetres: number): void {
     const slot = this.nextSplat;
-    this.nextSplat = (this.nextSplat + 1) % SPLAT_CAP;
+    this.nextSplat = (this.nextSplat + 1) % this.tuning.splatCap;
     const splat = this.splats[slot]!;
     splat.active = true;
     splat.ageRealSeconds = 0;
@@ -457,7 +453,7 @@ export class Gore {
   }
 
   private fadeSplats(dt: number): void {
-    for (let slot = 0; slot < SPLAT_CAP; slot++) {
+    for (let slot = 0; slot < this.tuning.splatCap; slot++) {
       const splat = this.splats[slot]!;
       if (!splat.active) {
         continue;
@@ -478,7 +474,7 @@ export class Gore {
 
   /** Each droplet stretches along its velocity, so it reads wet in flight. */
   private drawDroplets(): void {
-    for (let slot = 0; slot < DROPLET_CAP; slot++) {
+    for (let slot = 0; slot < this.tuning.dropletCap; slot++) {
       const droplet = this.droplets[slot]!;
       if (droplet.active) {
         const speed = droplet.velocity.length();

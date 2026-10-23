@@ -2,9 +2,17 @@
 // loop so this remains deterministic in scripted frame-by-frame tests.
 
 import { Euler } from 'three';
-
 /** The visual camera follows the same input angles and adds only presentation roll. */
 export const cameraRotation = (pitch: number, yaw: number, roll: number): Euler => new Euler(pitch, yaw, roll, 'YXZ');
+
+export interface DamageFeedbackTuning {
+  readonly vignetteMax: number;
+  readonly damageForFullStrength: number;
+  readonly vignetteFadeRealSeconds: number;
+  readonly rollPeakDegrees: number;
+  readonly rollRiseRealSeconds: number;
+  readonly rollSettleRealSeconds: number;
+}
 
 export interface DamageFeedbackState {
   readonly vignetteOpacity: number;
@@ -12,11 +20,16 @@ export interface DamageFeedbackState {
 }
 
 export class DamageFeedback {
+  private readonly tuning: DamageFeedbackTuning;
   private vignetteAge = Number.POSITIVE_INFINITY;
   private rollAge = Number.POSITIVE_INFINITY;
   private vignetteStrength = 0;
   private rollPeak = 0;
   private direction = 1;
+
+  constructor(tuning: DamageFeedbackTuning) {
+    this.tuning = tuning;
+  }
 
   hit(amount: number, direction?: -1 | 1): void {
     if (!(amount > 0)) {
@@ -24,8 +37,10 @@ export class DamageFeedback {
     }
     this.vignetteAge = 0;
     this.rollAge = 0;
-    this.vignetteStrength = Math.min(0.72, (amount / 25) * 0.72);
-    this.rollPeak = Math.min(6, (amount / 25) * 6) * (Math.PI / 180);
+    this.vignetteStrength = Math.min(this.tuning.vignetteMax, (amount / this.tuning.damageForFullStrength) * this.tuning.vignetteMax);
+    this.rollPeak =
+      Math.min(this.tuning.rollPeakDegrees, (amount / this.tuning.damageForFullStrength) * this.tuning.rollPeakDegrees) *
+      (Math.PI / 180);
     this.direction = direction ?? -this.direction;
   }
 
@@ -33,10 +48,12 @@ export class DamageFeedback {
   step(dt: number, settle = 1): DamageFeedbackState {
     this.vignetteAge += dt;
     this.rollAge += dt;
-    const vignetteOpacity = this.vignetteAge >= 1 ? 0 : this.vignetteStrength * (1 - this.vignetteAge);
+    const vignetteOpacity = this.vignetteAge >= this.tuning.vignetteFadeRealSeconds
+      ? 0
+      : this.vignetteStrength * (1 - this.vignetteAge / this.tuning.vignetteFadeRealSeconds);
     let roll = 0;
-    const rise = 4 / 60;
-    const settled = rise + (0.35 - rise) * settle;
+    const rise = this.tuning.rollRiseRealSeconds;
+    const settled = rise + (this.tuning.rollSettleRealSeconds - rise) * settle;
     if (this.rollAge < rise) {
       roll = this.rollPeak * (this.rollAge / rise);
     } else if (this.rollAge < settled) {

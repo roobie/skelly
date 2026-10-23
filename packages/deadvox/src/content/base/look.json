@@ -2,10 +2,38 @@
   "look": [
     {
       "bloom": true,
+      "damageFeedback": {
+        "damageForFullStrength": 25,
+        "rollPeakDegrees": 6,
+        "rollRiseRealSeconds": 0.066666666666666666,
+        "rollSettleRealSeconds": 0.34999999999999998,
+        "vignetteFadeRealSeconds": 1,
+        "vignetteMax": 0.71999999999999997
+      },
       "exposure": 0.20000000000000001,
       "film": true,
       "grade": 0.90000000000000002,
+      "heightFog": {
+        "baseMetres": 16,
+        "scaleMetres": 14
+      },
       "id": "core",
+      "mobActors": {
+        "corpseLieSimSeconds": 8,
+        "corpseSinkDepthMetres": 1.5,
+        "corpseSinkSimSeconds": 1.5,
+        "hearingGazeJitter": {
+          "cyclesPerSimSecond": 0.59999999999999998,
+          "pitchDegrees": 3,
+          "yawDegrees": 5
+        },
+        "launchSpinRadiansPerSecond": 20
+      },
+      "painCue": {
+        "pulseFallRealSeconds": 1.2,
+        "pulseRiseRealSeconds": 0.14999999999999999,
+        "settleStretch": 2
+      },
       "patterns": true,
       "post": false,
       "srgb": true,

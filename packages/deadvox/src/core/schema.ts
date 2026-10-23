@@ -3460,6 +3460,13 @@ const RecipeSchema = strictObject({
 const GraphicsTuningSchema = strictObject({
   id: Id,
   readyRadiusM: pipe(number(), finite(), minValue(0)),
+  mobActors: strictObject({ maxCorpses: Count }),
+  gore: strictObject({
+    dropletCap: Count,
+    splatCap: Count,
+    dropletSpawnsPerFrame: Count,
+    dripSourceCap: Count,
+  }),
   ...GraphicsOptionsSchema.entries,
 });
 
@@ -3480,6 +3487,31 @@ const LookDefaultsSchema = strictObject({
   bloom: vBoolean(),
   film: vBoolean(),
   grade: Fraction,
+  heightFog: strictObject({ baseMetres: NonNegative, scaleMetres: Positive }),
+  painCue: strictObject({
+    pulseRiseRealSeconds: PositiveRealSeconds,
+    pulseFallRealSeconds: PositiveRealSeconds,
+    settleStretch: NonNegative,
+  }),
+  damageFeedback: strictObject({
+    vignetteMax: Fraction,
+    damageForFullStrength: Positive,
+    vignetteFadeRealSeconds: PositiveRealSeconds,
+    rollPeakDegrees: Positive,
+    rollRiseRealSeconds: PositiveRealSeconds,
+    rollSettleRealSeconds: PositiveRealSeconds,
+  }),
+  mobActors: strictObject({
+    corpseLieSimSeconds: PositiveSimSeconds,
+    corpseSinkSimSeconds: PositiveSimSeconds,
+    corpseSinkDepthMetres: Positive,
+    launchSpinRadiansPerSecond: Positive,
+    hearingGazeJitter: strictObject({
+      yawDegrees: NonNegative,
+      pitchDegrees: NonNegative,
+      cyclesPerSimSecond: NonNegative,
+    }),
+  }),
 });
 
 // ---- files ----
@@ -3604,6 +3636,8 @@ export type CompressionCaps = InferOutput<typeof CompressionTuningSchema>['caps'
 export type HandlingRangeDef = InferOutput<typeof HandlingRangeSchema>;
 export type WeatheringDef = InferOutput<typeof WeatheringSchema>;
 export type SenseDef = InferOutput<typeof SenseSchema>;
+export type GraphicsTuningDef = InferOutput<typeof GraphicsTuningSchema>;
+export type LookDefaultsDef = InferOutput<typeof LookDefaultsSchema>;
 export type TreeConeCrown = Extract<InferOutput<typeof TreeCrownSchema>, { kind: 'cone' }>;
 export type DayCycleDef = InferOutput<typeof DayCycleSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;

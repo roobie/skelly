@@ -33,7 +33,17 @@ const tuning: GraphicsOptions = {
 };
 const source = (options: GraphicsOptions) => ({
   source: 'fixture-graphics.json',
-  data: { graphics: [{ id: CORE_CONTENT_IDS.coreGraphics, readyRadiusM: 16, ...options }] },
+  data: {
+    graphics: [
+      {
+        id: CORE_CONTENT_IDS.coreGraphics,
+        readyRadiusM: 16,
+        mobActors: { maxCorpses: 9 },
+        gore: { dropletCap: 11, splatCap: 13, dropletSpawnsPerFrame: 5, dripSourceCap: 2 },
+        ...options,
+      },
+    ],
+  },
 });
 
 it('validates graphics ranges, defaults and allowed toggle choices before admitting a file', () => {
