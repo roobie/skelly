@@ -156,7 +156,7 @@
     },
     {
       "connections": [],
-      "exportMass": "parts",
+      "exportMass": "inventory-atom",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
@@ -176,6 +176,44 @@
           },
           "id": "package",
           "massKg": 0.35999999999999999,
+          "params": {
+            "bandHeight": "0.074750000000000011",
+            "bandInset": "0.00029999999999999997",
+            "capHeight": "0.001",
+            "capRadius": "0.029999999999999999",
+            "height": "0.115",
+            "neckHeight": "0.001",
+            "neckRadius": "0.029000000000000001",
+            "radius": "0.033000000000000002",
+            "rimHeight": "0.001",
+            "shoulderHeight": "0.0050000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "package",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "empty_soda_can",
+      "parts": [
+        {
+          "family": "vessel",
+          "finish": {
+            "body": "steel-grey",
+            "cap": "steel-grey",
+            "label": "plastic-red"
+          },
+          "id": "package",
+          "massKg": 0.014999999999999999,
           "params": {
             "bandHeight": "0.074750000000000011",
             "bandInset": "0.00029999999999999997",

@@ -244,9 +244,11 @@ describe('using what you hold', () => {
     for (const def of cans) {
       const { inventory, queue, survival, hold } = setup();
       const can = hold(def.id);
-      const quality = Object.keys(def.unpack!.qualities!)[0]!;
-      const tool = [...registry.items.values()].find((item) => (item.tool?.qualities?.[quality] ?? 0) > 0)!;
-      hold(tool.id, 'left');
+      const [quality] = Object.keys(def.unpack!.qualities ?? {});
+      if (quality !== undefined) {
+        const tool = [...registry.items.values()].find((item) => (item.tool?.qualities?.[quality] ?? 0) > 0)!;
+        hold(tool.id, 'left');
+      }
       const sealedMass = inventory.carriedWeight();
       const unpacking = new Unpacking(inventory, queue, () => [0, 0, 0]);
       expect(unpacking.activate(can)).toBeUndefined();
