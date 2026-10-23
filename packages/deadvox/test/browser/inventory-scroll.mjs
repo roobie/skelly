@@ -23,6 +23,9 @@ const logPhase = (name) => {
 const { firefox } = await loadPlaywright();
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
+const itemPicturesModule = '/src/render/itemPictures.ts';
+const modelsModule = '/src/render/models.ts';
+const itemLookModule = '/src/render/itemLook.ts';
 // argv[3], when given, is a PNG path for a debugging screenshot of the around pane; CI never passes it.
 const engine = process.argv[2] ?? 'chromium';
 assert.ok(['chromium', 'firefox'].includes(engine));
@@ -1294,31 +1297,34 @@ try {
     );
     await clickThroughMenuCursor(`#inventory [data-uid="${rifleUid}"]`);
     logPhase('spawn and inventory handling');
-    await page.evaluate(async (uid) => {
-      // biome-ignore lint/correctness/noUnresolvedImports: served by Vite inside the browser
-      const { ItemPictures } = await import('/src/render/itemPictures.ts');
-      // biome-ignore lint/correctness/noUnresolvedImports: served by Vite inside the browser
-      const { ModelLibrary } = await import('/src/render/models.ts');
-      // biome-ignore lint/correctness/noUnresolvedImports: served by Vite inside the browser
-      const { itemLook } = await import('/src/render/itemLook.ts');
-      const { session, screen } = globalThis.foregripFitTest;
-      if (screen.hooks.pictures) {
-        throw new Error('Live handling must remain render-free');
-      }
-      const { registry } = session.inventory;
-      const look = itemLook(registry, session.inventory.itemByUid(uid));
-      if (!look) {
-        throw new Error('Pixel fixture needs a declared model');
-      }
-      const ids = new Set([look.model, ...look.slots.map((slot) => slot.model).filter(Boolean)]);
-      const models = new ModelLibrary(
-        { ...registry, models: new Map([...registry.models].filter(([id]) => ids.has(id))) },
-        (message) => {
-          throw new Error(message);
-        },
-      );
-      screen.hooks.pictures = new ItemPictures(registry, models, 1);
-    }, rifleUid);
+    await page.evaluate(
+      async ({ uid, moduleUrls }) => {
+        const { ItemPictures } = await import(moduleUrls.itemPictures);
+        const { ModelLibrary } = await import(moduleUrls.models);
+        const { itemLook } = await import(moduleUrls.itemLook);
+        const { session, screen } = globalThis.foregripFitTest;
+        if (screen.hooks.pictures) {
+          throw new Error('Live handling must remain render-free');
+        }
+        const { registry } = session.inventory;
+        const look = itemLook(registry, session.inventory.itemByUid(uid));
+        if (!look) {
+          throw new Error('Pixel fixture needs a declared model');
+        }
+        const ids = new Set([look.model, ...look.slots.map((slot) => slot.model).filter(Boolean)]);
+        const models = new ModelLibrary(
+          { ...registry, models: new Map([...registry.models].filter(([id]) => ids.has(id))) },
+          (message) => {
+            throw new Error(message);
+          },
+        );
+        screen.hooks.pictures = new ItemPictures(registry, models, 1);
+      },
+      {
+        uid: rifleUid,
+        moduleUrls: { itemPictures: itemPicturesModule, models: modelsModule, itemLook: itemLookModule },
+      },
+    );
     await page.waitForFunction((uid) => {
       globalThis.foregripFitTest.screen.update();
       return Boolean(document.querySelector(`#inventory [data-uid="${uid}"] .inv-item-picture`));
