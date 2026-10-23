@@ -1,6 +1,7 @@
 // A held-paper/sign reading surface. Authored text remains escaped Lit text nodes.
 import { html, render } from 'lit-html';
 import type { Readable } from '../core/readable.ts';
+import type { ScreenText } from '../core/schema.ts';
 import { inputBindings } from '../game/inputBindings.ts';
 
 /** Meta progress embedded in the paper, because the optional HUD cannot explain a compressed reading action. */
@@ -33,7 +34,12 @@ const scrollText = (text: HTMLElement, action: string): void => {
       break;
   }
 };
-export const mountReading = (host: HTMLElement, changed: () => void, closing: () => void = () => undefined) => {
+export const mountReading = (
+  host: HTMLElement,
+  text: ScreenText['reading'],
+  changed: () => void,
+  closing: () => void = () => undefined,
+) => {
   let current: Readonly<Readable> | undefined;
   let currentBookUid: number | undefined;
   let progress: ReadingProgress | undefined;
@@ -59,9 +65,9 @@ export const mountReading = (host: HTMLElement, changed: () => void, closing: ()
     render(
       html`
       <article class="reading-paper" role="dialog" aria-modal="true" aria-labelledby="reading-title" tabindex="-1">
-        <header><h1 class="reading-title" id="reading-title">${current.title}</h1><button class="reading-dismiss" type="button" @click=${close} aria-label="Put away reading">Put away</button></header>
-        ${progress ? html`<progress class="reading-progress" max=${progress.max} value=${progress.value} aria-label="Reading progress"></progress>` : ''}
-        <div class="reading-text" tabindex="0" aria-label="Text">${current.text}</div>
+        <header><h1 class="reading-title" id="reading-title">${current.title}</h1><button class="reading-dismiss" type="button" @click=${close} aria-label=${text.putAwayLabel}>${text.putAway}</button></header>
+        ${progress ? html`<progress class="reading-progress" max=${progress.max} value=${progress.value} aria-label=${text.progress}></progress>` : ''}
+        <div class="reading-text" tabindex="0" aria-label=${text.text}>${current.text}</div>
       </article>`,
       host,
     );

@@ -86,6 +86,7 @@ local box(position, size) = { position: position, size: size };
   sounds: [
     {
       id: 'foliage_rustle',
+      description: 'Walk through bushes or other foliage that rustles.',
       variants: ['assets/audio/footstep-leaves-01.ogg'],
       gain: 0.4,
       pitchJitter: [0.96, 1.04],
@@ -96,6 +97,7 @@ local box(position, size) = { position: position, size: size };
     },
     {
       id: 'foliage_rustle_fast',
+      description: 'Jog or sprint through bushes or other foliage that rustles.',
       variants: ['assets/audio/footstep-leaves-01.ogg'],
       gain: 0.75,
       pitchJitter: [0.96, 1.04],

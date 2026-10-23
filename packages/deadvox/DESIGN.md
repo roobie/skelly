@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change regional paper-map coverage, item ownership or persistence
   - you change held sharpening, blade repair entry points or prepared hand pairs
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
   - you change the player figure's look, its authored parts, its clothes or how it is posed
@@ -1411,9 +1412,12 @@ item the player actually owns. See `itemLook` in `src/render/itemLook.ts` and
   what it says. If the library ever falls short, the fallback is a fork, which
   becomes our own code. The renderer is `src/core/soundSynth.ts`,
   `renderSoundRecipe`.
-- Keep the curated `/sounds.html` sheet with sound-event variants and status.
-  A change that adds, replaces, or re-levels a sound updates the sheet in the
-  same change. The sheet marks a synthesised variant as such.
+- **The listening sheet.** `/sounds.html` lists every loaded sound with its
+  settings, variants and credits, and marks a synthesised variant as such. What
+  makes a sound play is the required description on its content entry, so a
+  pack's sounds reach the sheet without a code edit. The sheet keeps no approval
+  status: a verdict is history, which belongs in the commit that changes the
+  sound. See `src/ui/soundGuide.ts`, `buildSoundGuide`.
 
 ## Crafting
 
@@ -2167,7 +2171,7 @@ A grenade thrown into the horde is meant to be the playtest's climax: the one mo
 - **Fragments are seeded shots.** They are rays through the same hit test as shotgun pellets, so walls and bodies stop them and fewer reach a farther body. One fragment severs a shambler's limb, and they reach past the blast, so a crowd around the landing point comes apart. A full-strength throw carries the player beyond fragment reach; shorter throws can still expose the player to fragments. Each ray is traced against every body in range, so the count sets the cost of the moment; the schema caps it. See `src/core/explosive.ts`, `fragmentDirections`; `ZombieSystem.firePellets`; and `src/core/schema.ts`, `ExplosiveSchema`.
 - **The player takes the same falloff, line of sight and fragments** in a simpler model: one blast hit to the torso, and fragments traced against a body box, which zombie bodies do not shield. A short throw hurts the thrower. See `src/core/explosive.ts`, `fragmentHitsOnBody`.
 - **The blast is the player's noise, heard from where it went off.** It carries further than any other sound, so it draws zombies from far around to the blast rather than to the thrower.
-- **The blast sounds like an explosion; the flash is a placeholder.** The sound is a recorded explosion, because a pitched-down gunshot read as a gun rather than the climax the grenade is for. See `src/content/base/sounds.json`, `grenade_blast`, and `src/render/blastFlashes.ts`, `BlastFlashes`.
+- **The blast sounds like an explosion; the flash is a placeholder.** The sound is a recorded explosion, because a pitched-down gunshot read as a gun rather than the climax the grenade is for. See `src/content/base/sounds.jsonnet`, `grenade_blast`, and `src/render/blastFlashes.ts`, `BlastFlashes`.
 
 `?debug=1&loadout=grenade` starts with one in hand and more packed (`src/debug/debugLoadout.ts`, `equipDebugLoadout`).
 
@@ -2811,6 +2815,30 @@ decoration.
 - Web Audio, started by the first click (browsers block sound until then).
   Sounds are content: ids in the pack, checked by the validator. Files are
   small, and follow [Assets and credits](#assets-and-credits).
+
+## Regional paper maps
+
+Paper coverage uses the world's existing grid, not settlement bounds: wilderness
+needs an owner too, and a settlement need not fit on one sheet. A sheet belongs to
+its saved world; its region pair identifies the publication, not the physical
+copy. See `src/core/paperMap.ts`, `paperMapAt` and `paperMapBounds`, and
+`src/core/worldRegion.ts`, `regionIndex`.
+
+Paper is a carried source of knowledge, not a permanent atlas unlock or a live
+camera. Its approved printed geography is baseline terrain and public roads,
+including unvisited places, not actors, possessions, secrets or mutable damage.
+The discovery policy is optional local supply without guaranteed coverage;
+duplicate copies are ordinary possessions, not globally unique collectibles.
+Completing #470 requires a shared reading-light policy for all paper rather than
+a map-only exception.
+
+Region payloads stay with ordinary item ownership so putting down a sheet removes
+access without erasing its identity. Sheets do not stack: stateless merging must
+not discard coverage. Saved coverage must not require visited or edited terrain,
+and render caches are not durable knowledge. See `src/core/schema.ts`,
+`ItemSchema`; `src/core/content.ts`, `checkItems`; `src/core/items.ts`,
+`ItemFields`, `ItemFactory`, `snapshotItem` and `restoreItem`; and
+`src/core/saveFormat.ts`, `itemSchema`.
 
 ## UI principles
 

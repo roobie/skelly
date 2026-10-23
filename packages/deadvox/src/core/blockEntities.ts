@@ -803,7 +803,12 @@ export class BlockEntities {
       case 'close':
         return this.closeRefusal(entity);
       case 'bar':
-        return this.barRefusal(entity) ?? (entity.open ? 'Close the door first' : entity.bar && "It's already barred");
+        return (
+          this.barRefusal(entity) ??
+          (entity.open
+            ? coreMessage(this.registry, 'barDoorOpen')
+            : entity.bar && coreMessage(this.registry, 'alreadyBarred'))
+        );
       case 'unbar':
         return this.unbarRefusal(entity, from);
       default:
@@ -817,39 +822,41 @@ export class BlockEntities {
     from: Vec3 | undefined,
   ): string | undefined {
     if (entity.open) {
-      return "It's already open";
+      return coreMessage(this.registry, 'alreadyOpen');
     }
     if (door.barredFrom && from && this.sideOf(entity, from) === door.barredFrom) {
-      return "It's boarded up";
+      return coreMessage(this.registry, 'boardedUp');
     }
     if (entity.bar && from) {
       return this.sideOf(entity, from) === entity.bar.side
-        ? 'I need to lift the bar first'
-        : "It's barred from the other side";
+        ? coreMessage(this.registry, 'liftBarFirst')
+        : coreMessage(this.registry, 'barredOtherSide');
     }
     if (door.hatch && this.lyingOn(entity)) {
       return this.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.hatchCovered;
     }
-    return entity.lock?.locked ? "It's locked" : undefined;
+    return entity.lock?.locked ? coreMessage(this.registry, 'locked') : undefined;
   }
 
   private unbarRefusal(entity: BlockEntity, from: Vec3 | undefined): string | undefined {
     if (!entity.bar) {
-      return "It isn't barred";
+      return coreMessage(this.registry, 'notBarred');
     }
-    return from && this.sideOf(entity, from) === entity.bar.side ? undefined : "It's barred from the other side";
+    return from && this.sideOf(entity, from) === entity.bar.side
+      ? undefined
+      : coreMessage(this.registry, 'barredOtherSide');
   }
 
   /** Why a door can't hold a bar at all, open or shut: a hatch, a cabinet's front, a broken or boarded-up leaf. */
   private barRefusal(entity: BlockEntity): string | undefined {
     const def = this.defOf(entity);
     if (!def.door || def.door.hatch || isBodyDoor(def)) {
-      return "It won't take a bar";
+      return coreMessage(this.registry, 'cantBar');
     }
     if (entity.broken) {
-      return "It's broken";
+      return coreMessage(this.registry, 'broken');
     }
-    return def.door.barredFrom ? "It's boarded up" : undefined;
+    return def.door.barredFrom ? coreMessage(this.registry, 'boardedUp') : undefined;
   }
 
   private closeRefusal(entity: BlockEntity): string | undefined {

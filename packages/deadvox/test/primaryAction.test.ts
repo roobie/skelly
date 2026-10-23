@@ -101,6 +101,7 @@ const { registry, issues } = buildRegistry([
     source: '../content/base/sounds.json',
     data: JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')) as unknown,
   },
+  { source: '../content/base/ui.json', data: JSON.parse(readFileSync('src/content/base/ui.json', 'utf8')) as unknown },
   {
     source: 'hand-action-fixture',
     data: {

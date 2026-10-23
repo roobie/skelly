@@ -1,4 +1,6 @@
 import { html, render } from 'lit-html';
+import type { ScreenText } from '../core/schema.ts';
+import { fillText } from '../core/textTemplate.ts';
 import { type BrowserMod, evaluateMods, MAX_MOD_BYTES, type ModEvaluation } from '../game/browserMods.ts';
 import { ModStorage } from '../game/modStorage.ts';
 import { factDetail } from './factDetail.ts';
@@ -6,8 +8,11 @@ import { factDetail } from './factDetail.ts';
 const httpUrl = /^https?:\/\//i;
 const sourceSequence = /^mod-(\d+)\//;
 
+type ModsText = ScreenText['mods'];
+
 export const readPaste = async (
   draft: string,
+  messages: ModsText,
   fetchMod: typeof fetch = fetch,
 ): Promise<{ name: string; text: string; issue?: string }> => {
   const value = draft.trim();
@@ -19,14 +24,14 @@ export const readPaste = async (
     const response = await fetchMod(value, { credentials: 'omit' });
     if (response.url && !httpUrl.test(response.url)) {
       await response.body?.cancel();
-      return failed('HTTP or HTTPS URLs only');
+      return failed(messages.httpOnly);
     }
     if (!response.ok) {
       await response.body?.cancel();
-      return failed(`HTTP ${response.status}`);
+      return failed(fillText(messages.httpStatus, { status: response.status }));
     }
     if (!response.body) {
-      return failed('Empty response');
+      return failed(messages.emptyResponse);
     }
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -42,7 +47,7 @@ export const readPaste = async (
         bytes += chunk.value.byteLength;
         if (bytes > MAX_MOD_BYTES) {
           await reader.cancel();
-          return failed(`File exceeds ${MAX_MOD_BYTES} bytes`);
+          return failed(fillText(messages.tooLarge, { maxBytes: MAX_MOD_BYTES }));
         }
         text += decoder.decode(chunk.value, { stream: true });
       }
@@ -52,16 +57,16 @@ export const readPaste = async (
       reader.releaseLock();
     }
   } catch {
-    return failed('Could not fetch URL; the host may not allow browser access');
+    return failed(messages.fetchFailed);
   }
 };
 
-const readUpload = async (file: File): Promise<{ name: string; text: string; issue?: string }> => {
+const readUpload = async (file: File, messages: ModsText): Promise<{ name: string; text: string; issue?: string }> => {
   if (!file.name.toLowerCase().endsWith('.json')) {
-    return { name: file.name, text: '', issue: '.json files only' };
+    return { name: file.name, text: '', issue: messages.jsonOnly };
   }
   if (file.size > MAX_MOD_BYTES) {
-    return { name: file.name, text: '', issue: `File exceeds ${MAX_MOD_BYTES} bytes` };
+    return { name: file.name, text: '', issue: fillText(messages.tooLarge, { maxBytes: MAX_MOD_BYTES }) };
   }
   try {
     return { name: file.name, text: await file.text() };
@@ -71,7 +76,11 @@ const readUpload = async (file: File): Promise<{ name: string; text: string; iss
 };
 
 // Meta: content selection precedes the world, so no world or bodily cue can replace it.
-export const chooseMods = async (root: HTMLElement, storage = new ModStorage()): Promise<ModEvaluation> => {
+export const chooseMods = async (
+  root: HTMLElement,
+  text: ModsText,
+  storage = new ModStorage(),
+): Promise<ModEvaluation> => {
   let initial: BrowserMod[] = [];
   let storageFailed = false;
   try {
@@ -85,9 +94,9 @@ export const chooseMods = async (root: HTMLElement, storage = new ModStorage()):
     let sequence = mods.reduce((max, mod) => Math.max(max, Number(sourceSequence.exec(mod.source)?.[1]) || 0), 0);
     let busy = false;
     let uploadError = '';
-    const add = (name: string, text: string) => {
+    const add = (name: string, contents: string) => {
       sequence += 1;
-      mods.push({ source: `mod-${sequence}/${name}`, text, enabled: true });
+      mods.push({ source: `mod-${sequence}/${name}`, text: contents, enabled: true });
     };
     const update = async () => {
       busy = true;
@@ -114,7 +123,7 @@ export const chooseMods = async (root: HTMLElement, storage = new ModStorage()):
       busy = true;
       uploadError = '';
       draw();
-      const results = await Promise.all(files.map(readUpload));
+      const results = await Promise.all(files.map((file) => readUpload(file, text)));
       for (const result of results) {
         if (result.issue) {
           uploadError += `${result.name}: ${result.issue}\n`;
@@ -133,7 +142,7 @@ export const chooseMods = async (root: HTMLElement, storage = new ModStorage()):
       busy = true;
       uploadError = '';
       draw();
-      const result = await readPaste(draft);
+      const result = await readPaste(draft, text);
       if (result.issue) {
         uploadError = `${result.name}: ${result.issue}`;
       } else {
@@ -147,17 +156,17 @@ export const chooseMods = async (root: HTMLElement, storage = new ModStorage()):
       const result = evaluateMods(mods);
       render(
         html`
-      <section class="mods-card" aria-label="Mods">
-        <h1>Mods</h1>
-        <p>${factDetail('JSON files', `Later JSON files replace whole definitions with the same id; the limit is ${MAX_MOD_BYTES} bytes per file. Selections are stored in this browser; saves require the same enabled mods in the same order.`)}</p>
-        <pre role="alert">${storageFailed ? 'Mod storage unavailable · No mods loaded' : ''}</pre>
-        <label>JSON or URL<textarea aria-label="Mod JSON or URL" ?disabled=${busy || storageFailed} .value=${draft} @input=${(
+      <section class="mods-card" aria-label=${text.heading}>
+        <h1>${text.heading}</h1>
+        <p>${factDetail(text.jsonLabel, fillText(text.jsonFact, { maxBytes: MAX_MOD_BYTES }))}</p>
+        <pre role="alert">${storageFailed ? text.storageFailed : ''}</pre>
+        <label>${text.input}<textarea aria-label=${text.inputLabel} ?disabled=${busy || storageFailed} .value=${draft} @input=${(
           event: Event,
         ) => {
           draft = (event.currentTarget as HTMLTextAreaElement).value;
         }}></textarea></label>
-        <button type="button" ?disabled=${busy || storageFailed} @click=${paste}>Add</button>
-        <label>Upload .json<input type="file" accept=".json,application/json" multiple ?disabled=${busy || storageFailed} @change=${upload}></label>
+        <button type="button" ?disabled=${busy || storageFailed} @click=${paste}>${text.add}</button>
+        <label>${text.upload}<input type="file" accept=".json,application/json" multiple ?disabled=${busy || storageFailed} @change=${upload}></label>
         <pre role="alert">${uploadError}</pre>
         <pre role="alert">${[...result.issues]
           .filter(([source]) => !mods.some((mod) => mod.source === source))
@@ -170,13 +179,13 @@ export const chooseMods = async (root: HTMLElement, storage = new ModStorage()):
               mod.enabled = (event.currentTarget as HTMLInputElement).checked;
               update();
             }}>${mod.source}</label>
-            <button type="button" aria-label=${`Move ${mod.source} up`} ?disabled=${busy || index === 0} @click=${() => move(index, -1)}>Up</button>
-            <button type="button" aria-label=${`Move ${mod.source} down`} ?disabled=${busy || index === mods.length - 1} @click=${() => move(index, 1)}>Down</button>
-            <button type="button" aria-label=${`Remove ${mod.source}`} ?disabled=${busy} @click=${() => {
+            <button type="button" aria-label=${fillText(text.moveUp, { mod: mod.source })} ?disabled=${busy || index === 0} @click=${() => move(index, -1)}>${text.up}</button>
+            <button type="button" aria-label=${fillText(text.moveDown, { mod: mod.source })} ?disabled=${busy || index === mods.length - 1} @click=${() => move(index, 1)}>${text.down}</button>
+            <button type="button" aria-label=${fillText(text.removeLabel, { mod: mod.source })} ?disabled=${busy} @click=${() => {
               mods.splice(index, 1);
               update();
-            }}>Remove</button>
-            <pre role="status">${(result.issues.get(mod.source) ?? []).map((issue) => `${issue.path}: ${issue.message}`).join('\n') || 'Valid'}</pre>
+            }}>${text.remove}</button>
+            <pre role="status">${(result.issues.get(mod.source) ?? []).map((issue) => `${issue.path}: ${issue.message}`).join('\n') || text.valid}</pre>
           </li>`,
         )}
         </ol>
@@ -186,7 +195,7 @@ export const chooseMods = async (root: HTMLElement, storage = new ModStorage()):
             root.hidden = true;
             resolve(selected);
           }
-        }}>Start</button>
+        }}>${text.start}</button>
       </section>`,
         root,
       );
