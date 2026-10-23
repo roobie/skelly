@@ -497,7 +497,9 @@ because rearranging a room should not require destroying its contents. See `src/
   `src/core/furnitureMove.ts`, `slideFurniture`, and `src/game/session.ts`,
   `slidePiece`.
 - **Movement choices.** Movement must not hide a container's search or a bed's
-  rest. The selector belongs to movable kinds: building parts keep direct use
+  rest or a freestanding sign's reading. Readability does not fasten a board;
+  its ordinary use remains a choice alongside movement. The selector belongs
+  to movable kinds: building parts keep direct use
   because offering impossible moves would obstruct their ordinary interaction.
   A fitted placement of a movable kind still offers the choice and explains why
   it cannot move, so fitting does not silently change that kind's controls. See

@@ -887,8 +887,14 @@ try {
     });
     await walk('movement.back', signFixture.x, false);
     await aim(signFixture.type);
-    await pressAction(page, 'world.interact');
-    await page.locator('#reading').waitFor({ state: 'visible' });
+    const readSign = async () => {
+      await pressAction(page, 'world.interact');
+      await page.locator('#item-action-list').waitFor({ state: 'visible' });
+      assert.equal(await page.locator('#reading').isVisible(), false);
+      await pressAction(page, 'world.interact');
+      await page.locator('#reading').waitFor({ state: 'visible' });
+    };
+    await readSign();
     assert.equal(await page.locator('#reading h1').innerText(), signFixture.readable.title);
     assert.equal(await page.locator('.reading-text').textContent(), signFixture.readable.text);
     await pressAction(page, 'ui.main-menu-toggle');
@@ -907,8 +913,7 @@ try {
     assert.equal(pageResumed.menuPointer, false);
     assert.equal(await page.locator('#reading').isVisible(), false);
     // A hidden reading surface must not capture F after resume.
-    await pressAction(page, 'world.interact');
-    await page.locator('#reading').waitFor({ state: 'visible' });
+    await readSign();
     assert.equal(await page.locator('#reading h1').innerText(), signFixture.readable.title);
     assert.equal(await page.locator('.reading-text').textContent(), signFixture.readable.text);
     await page.screenshot({ path: resolve(artifacts, 'sign-reading.png') });
