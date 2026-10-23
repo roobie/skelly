@@ -89,6 +89,15 @@ describe('illumination', () => {
     expect(litEnoughToRead(sceneWith(inventory, { fixtures, isBlocking: wall }), READER)).toBe(false);
   });
 
+  it('a lit candle held alone reads a page at night with base tuning', () => {
+    const inventory = new Inventory(base);
+    const candle = inventory.create('candle');
+    expect(inventory.add(candle, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(toggleLight(base, candle, 0)).toBeUndefined();
+    const page: Vec3 = [READER[0] + 1, READER[1], READER[2]];
+    expect(litEnoughToRead({ ...sceneWith(inventory), cycle: baseCycle }, page)).toBe(true);
+  });
+
   it('open sky reads at noon and not at midnight', () => {
     const inventory = new Inventory(registry);
     const openSky = { visibilityAt: () => 1 };

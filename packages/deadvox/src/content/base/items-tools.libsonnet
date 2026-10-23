@@ -274,7 +274,8 @@ local items = [
       radius: 3,
       seenFrom: 15,
       color: '#ffd28a',
-      intensity: 1,
+      // Enough that the candle alone, held, lights a page at night (senses `illumination`, `readingThreshold`).
+      intensity: 3,
       flame: { heightMetres: 0.03, radiusMetres: 0.007 },
       burnTimeGameHours: 6,
       burning: burns('firestarter', douse=true, sprint='douse', stow='douse', drop='stay', relight=true),
