@@ -44,6 +44,8 @@ export const FEASIBILITY_ENTRIES = ['src/vehicles/feasibility/runner.ts'] as con
 
 export const SIMULATION_ENTRIES = [
   'src/core/sim.ts',
+  // Independently constructed appliance owners also determine saved simulation results.
+  'src/core/batteryChargers.ts',
   'src/core/worldgen.ts',
   'src/core/saveState.ts',
   'src/core/saveFormat.ts',

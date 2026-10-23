@@ -364,6 +364,42 @@
         "durability": 60,
         "minimumStrength": 3.5
       },
+      "charger": {
+        "batteries": ["rechargeable_aa_battery"],
+        "efficiency": 0.75,
+        "pocket": 0
+      },
+      "color": "#55585b",
+      "container": {
+        "pockets": [
+          {
+            "grid": [1, 1],
+            "handlingSimSeconds": 1
+          }
+        ]
+      },
+      "id": "battery_charger",
+      "material": "steel",
+      "name": "Battery charger",
+      "power": {
+        "device": "portable_battery_charger",
+        "enabled": true,
+        "fuelLitres": 0
+      },
+      "shape": [
+        {
+          "position": [0, 0, 0],
+          "size": [1, 0.29999999999999999, 1]
+        }
+      ],
+      "size": [1, 1, 1],
+      "solidFill": 0.01
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#98734f",
       "id": "workbench",
       "material": "wood",

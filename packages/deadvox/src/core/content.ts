@@ -23,6 +23,7 @@ import { lootTypeIssue } from './loot.ts';
 import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
 import { mapKitIssues } from './mapKit.ts';
 import { pieceItemIssues } from './placementLoot.ts';
+import { POWER_UNITS } from './powerContent.ts';
 import { handlingRangeIssues } from './rangeLayout.ts';
 import { scenarioSources } from './scenarioComposition.ts';
 import {
@@ -462,12 +463,26 @@ const checkItemHeldDisplay = (item: ItemDef, registry: Registry, report: Report)
   }
 };
 
+const checkItemBatteries = (item: ItemDef, registry: Registry, report: Report) => {
+  const { light } = item;
+  const batteries = light?.power ? [light.power.battery, ...(light.power.compatibleBatteries ?? [])] : [];
+  for (const [index, battery] of batteries.entries()) {
+    if (registry.items.get(battery)?.battery === undefined) {
+      const path = index === 0 ? '.light.power.battery' : `.light.power.compatibleBatteries[${index - 1}]`;
+      report('items', item.id, path, `"${battery}" is not an item with a battery component`);
+    }
+  }
+  if (
+    item.battery?.rechargeable &&
+    !Number.isSafeInteger(item.battery.capacity * item.battery.rechargeable.microjoulesPerCharge)
+  ) {
+    report('items', item.id, '.battery', 'rechargeable capacity must be a safe integer number of microjoules');
+  }
+};
+
 const checkItemLight = (item: ItemDef, hasIgniter: boolean, registry: Registry, report: Report) => {
   const { light, igniter } = item;
-  const battery = light?.power?.battery;
-  if (battery !== undefined && registry.items.get(battery)?.battery === undefined) {
-    report('items', item.id, '.light.power.battery', `"${battery}" is not an item with a battery component`);
-  }
+  checkItemBatteries(item, registry, report);
   if (igniter && igniter.perIgnition > igniter.capacity) {
     report('items', item.id, '.igniter.perIgnition', 'must not exceed fuel capacity');
   }
@@ -996,7 +1011,45 @@ const checkToolFuel = (item: ItemDef, registry: Registry, report: Report) => {
   }
 };
 
+const checkChargerBattery = (registry: Registry, furniture: FurnitureDef, type: string, report: Report) => {
+  const charger = furniture.charger!;
+  const grid = furniture.container?.pockets[charger.pocket]?.grid;
+  const item = registry.items.get(type);
+  if (!item?.battery?.rechargeable) {
+    report('furniture', furniture.id, '.charger.batteries', `"${type}" is not rechargeable`);
+  } else if (
+    grid &&
+    !((item.size[0] <= grid[0] && item.size[1] <= grid[1]) || (item.size[1] <= grid[0] && item.size[0] <= grid[1]))
+  ) {
+    report('furniture', furniture.id, '.charger.pocket', `"${type}" does not fit`);
+  }
+};
+
+const checkFurnitureCharger = (registry: Registry, furniture: FurnitureDef, report: Report) => {
+  const { power, charger } = furniture;
+  if (charger) {
+    const device = power && registry.powerDevices.get(power.device);
+    const rate = device?.kind === 'consumer' ? device.demandWatts * POWER_UNITS.rate * charger.efficiency : 0;
+    if (!Number.isSafeInteger(rate) || rate <= 0 || power?.light) {
+      report(
+        'furniture',
+        furniture.id,
+        '.charger',
+        'needs a positive consumer with exact delivered microjoules per game millisecond and no light',
+      );
+    }
+    const grid = furniture.container?.pockets[charger.pocket]?.grid;
+    if (!grid) {
+      report('furniture', furniture.id, '.charger.pocket', 'needs a container pocket');
+    }
+    for (const type of charger.batteries) {
+      checkChargerBattery(registry, furniture, type, report);
+    }
+  }
+};
+
 const checkFurniturePower = (registry: Registry, furniture: FurnitureDef, report: Report) => {
+  checkFurnitureCharger(registry, furniture, report);
   const { power } = furniture;
   if (!power) {
     return;

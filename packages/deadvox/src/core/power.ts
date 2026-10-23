@@ -65,7 +65,7 @@ export interface PowerWork {
   settle: (elapsedGameMilliseconds: number, servedConsumerIds: readonly string[]) => void;
 }
 
-interface PowerEnvironment {
+export interface PowerEnvironment {
   readonly registry: Pick<Registry, 'powerDevices'>;
   readonly tuning: PowerTuningDef;
   readonly cycle: DayCycle;
@@ -295,6 +295,18 @@ export class PowerNetwork {
     const device = this.device(id);
     const changes = [...this.advance(at)];
     device.enabled = enabled;
+    changes.push(...this.advance(at));
+    return changes;
+  }
+
+  removeConsumer(at: SimTimestamp, id: string): readonly PowerTransition[] {
+    if (this.device(id).spec.kind !== 'consumer') {
+      throw new Error('Only consumers can be removed without transferring resources');
+    }
+    const changes = [...this.setEnabled(at, id, false)];
+    this.devices.delete(id);
+    this.links = this.links.filter((link) => link.from !== id && link.to !== id);
+    this.graph.replaceWiring(this.wiring(this.links));
     changes.push(...this.advance(at));
     return changes;
   }

@@ -2,6 +2,7 @@
 // cells and can be rotated; a container's pockets are grids. Identical, stateless
 // items stack up to their type's limit.
 
+import { assertBatteryEnergy, batteryFields } from './battery.ts';
 import type { ItemDef, ModelDef, Registry } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { firearmSlotIds } from './firearmFitting.ts';
@@ -39,7 +40,8 @@ export interface ItemFields<Node> {
   /** 0 (ruined) to 1 (pristine). */
   condition: number;
   /** Battery charge, fuel and the like; absent means full (as found). */
-  charges?: number;
+  charges?: number | undefined;
+  batteryMicrojoules?: number;
   /** A light that's switched on. */
   on?: boolean;
   /** Remaining consumable-light burn in Game seconds; absent until first ignition. */
@@ -114,7 +116,7 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
     count: item.count,
     ...(item.lootedCount === undefined ? {} : { lootedCount: item.lootedCount }),
     condition: item.condition,
-    ...(item.charges === undefined ? {} : { charges: item.charges }),
+    ...batteryFields(item),
     ...(item.on === undefined ? {} : { on: item.on }),
     ...(item.burnRemainingGameSeconds === undefined ? {} : { burnRemainingGameSeconds: item.burnRemainingGameSeconds }),
     ...(item.litAtGameTimestamp === undefined ? {} : { litAtGameTimestamp: item.litAtGameTimestamp }),
@@ -267,6 +269,7 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
   assertSavedTrap(def, state);
   assertSavedLootCount(state);
   assertSavedCargo(def, state);
+  assertBatteryEnergy(registry, state);
   assertPaperMapItem(def, state.count, state.paperMap);
   const firearm = restoreFirearmState(registry, def, state);
   const magazineReason =
@@ -280,7 +283,7 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
     count: state.count,
     ...(state.lootedCount === undefined ? {} : { lootedCount: state.lootedCount }),
     condition: state.condition,
-    ...(state.charges === undefined ? {} : { charges: state.charges }),
+    ...batteryFields(state),
     ...(state.on === undefined ? {} : { on: state.on }),
     ...(state.burnRemainingGameSeconds === undefined
       ? {}
@@ -447,6 +450,9 @@ export class ItemFactory {
     if (item.charges !== undefined) {
       part.charges = item.charges;
     }
+    if (item.batteryMicrojoules !== undefined) {
+      part.batteryMicrojoules = item.batteryMicrojoules;
+    }
     if (item.madeAtGameTimestamp !== undefined) {
       part.madeAtGameTimestamp = item.madeAtGameTimestamp;
     }
@@ -571,6 +577,7 @@ export const stackRoom = (registry: Registry, onto: Item, item: Item): number =>
     onto.type === item.type &&
     onto.condition === item.condition &&
     onto.charges === item.charges &&
+    onto.batteryMicrojoules === item.batteryMicrojoules &&
     onto.madeAtGameTimestamp === item.madeAtGameTimestamp &&
     onto.firearm === undefined &&
     item.firearm === undefined &&

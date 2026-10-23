@@ -151,7 +151,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 56;
+export const SAVE_SCHEMA_VERSION = 57;
 export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -351,6 +351,7 @@ itemSchema = obj({
   lootedCount: opt(nonNegativeInt),
   condition: num({ min: 0, max: 1 }),
   charges: opt(nonNegative),
+  batteryMicrojoules: opt(nonNegativeInt),
   on: opt(bool),
   burnRemainingGameSeconds: opt(nonNegative),
   litAtGameTimestamp: opt(nonNegative),
@@ -499,6 +500,7 @@ const blockEntitySchema = obj({
   lock: opt(obj({ id: str({ id: true }), locked: bool })),
   bar: opt(obj({ side: enumeration(['front', 'back']), item: str({ id: true }) })),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
+  charging: opt(obj({ batteryUid: positiveInt, atGameMilliseconds: nonNegativeInt })),
 });
 const pileSchema = obj({ pos: tuple(safeInt, safeInt, safeInt), items: placedGrid });
 const entitiesState = obj({ nextUid: positiveInt, entities: arr(blockEntitySchema), reserved: opt(arr(positiveInt)) });

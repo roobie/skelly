@@ -160,8 +160,11 @@ const pileKey = (pos: Vec3) => pos.join(',');
 const refuse = (reason: string): Plan => ({ ok: false, reason });
 
 /** Why an item can't leave where it is, whatever the target. */
+const chargingBattery = (from: Location): boolean =>
+  from.kind === 'furniture' && from.entity.charging?.batteryUid === from.placed.item.uid;
+
 const heldInPlace = (registry: Registry, item: Item, from: Location): string | undefined => {
-  if (from.kind === 'work') {
+  if (from.kind === 'work' || chargingBattery(from)) {
     return coreMessage(registry, 'inWork');
   }
   if (from.kind === 'slot') {
@@ -662,6 +665,13 @@ export class Inventory {
     if (item.on && light?.burning?.stow === 'refuse' && target.kind !== 'hand' && target.kind !== 'pile') {
       return coreRefusal(this.registry, 'stillLit');
     }
+    if (
+      target.kind === 'furniture' &&
+      target.entity.charging &&
+      this.registry.furniture.get(target.entity.type)?.charger?.pocket === target.pocket
+    ) {
+      return coreRefusal(this.registry, 'inWork');
+    }
     const source = this.placeOf(from);
     const destination = this.targetPlace(target);
     if (!(this.reachable(source) && (this.reachable(destination) || this.dropLanding(target)))) {
@@ -796,9 +806,11 @@ export class Inventory {
   }
 
   private validCraftComponent(item: Item, count: number): boolean {
+    const from = this.locate(item);
     return (
       this.itemByUid(item.uid) === item &&
-      Boolean(this.locate(item)) &&
+      from !== undefined &&
+      !chargingBattery(from) &&
       isEmpty(item) &&
       Number.isSafeInteger(count) &&
       count >= 1 &&
@@ -808,9 +820,11 @@ export class Inventory {
 
   private validDisassemblyPlan(plan: Extract<WorkPlan, { kind: 'disassembly' }>): boolean {
     const sourceDef = this.registry.items.get(plan.source.type);
+    const from = this.locate(plan.source);
     if (
       this.itemByUid(plan.source.uid) !== plan.source ||
-      !this.locate(plan.source) ||
+      !from ||
+      chargingBattery(from) ||
       !sourceDef ||
       !(sourceDef.disassembly || sourceDef.salvage) ||
       !validDisassemblyToolLevels(sourceDef, plan.toolLevels) ||
@@ -1215,7 +1229,7 @@ export class Inventory {
   }
 
   private canMoveDisplaced(item: Item, from: Location, source: Location): boolean {
-    if (from.kind === 'work' || from.kind === 'slot') {
+    if (from.kind === 'work' || from.kind === 'slot' || chargingBattery(from)) {
       return false;
     }
     const sourceTarget = this.targetForLocation(source);
@@ -1525,7 +1539,7 @@ export class Inventory {
   /** Uses up `count` of an item wherever it is: eaten, burnt, loaded into something. */
   consume(item: Item, count = 1): boolean {
     const at = this.locate(item);
-    if (!at || item.work || at.kind === 'work' || at.kind === 'slot' || count > item.count) {
+    if (!at || item.work || at.kind === 'work' || at.kind === 'slot' || chargingBattery(at) || count > item.count) {
       return false;
     }
     if (count < item.count) {
