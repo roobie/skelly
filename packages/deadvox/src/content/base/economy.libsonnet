@@ -13,7 +13,7 @@ local huntingItems = ['bear_trap'];
 local notSpawnable = [
   'work_in_progress', 'debug_shotgun_pump', 'spent_case_308_h_winchester', 'spent_case_357_h_magnum',
   'spent_case_5_d_56x45', 'spent_case_7_d_62x39', 'spent_case_12_h_gauge_h_00_h_buck',
-  'beans', 'soup', 'opened_beans', 'opened_soup', 'opened_soda', 'empty_can',
+  'beans', 'soup', 'soda', 'opened_beans', 'opened_soup', 'opened_soda', 'empty_can', 'empty_soda_can',
   'shambler_torso', 'shambler_head', 'shambler_left_arm', 'shambler_right_arm',
   'shambler_left_leg', 'shambler_right_leg',
 ];

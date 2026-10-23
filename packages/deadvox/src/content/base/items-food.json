@@ -188,7 +188,36 @@
         "inPlace": true,
         "item": "opened_soda",
         "simSeconds": 2
-      }
+      },
+      "weight": 360
+    },
+    {
+      "category": "drink",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "opened_soda",
+      "model": "soda_can",
+      "name": "Opened can of soda",
+      "serving": {
+        "empty": "empty_soda_can",
+        "food": "soda"
+      },
+      "size": [1, 2],
+      "weight": 15
+    },
+    {
+      "category": "tool",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "empty_soda_can",
+      "model": "empty_soda_can",
+      "name": "Empty soda can",
+      "size": [1, 2],
+      "weight": 15
     },
     {
       "category": "drink",
@@ -201,10 +230,10 @@
         "consumeSimSeconds": 2,
         "water": 300
       },
-      "id": "opened_soda",
-      "model": "soda_can",
-      "name": "Opened can of soda",
-      "size": [1, 2]
+      "id": "soda",
+      "name": "Soda",
+      "size": [1, 2],
+      "weight": 345
     },
     {
       "category": "drink",

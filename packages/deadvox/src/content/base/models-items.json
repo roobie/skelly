@@ -213,13 +213,16 @@
       },
       "hold": "upright",
       "id": "soda_can",
-      "parts": {
-        "package": {
-          "centreOfMass": [0, 0.058809523809523805, 0],
-          "massKg": 0.35999999999999999,
-          "node": "package:vessel"
-        }
+      "roll": 0
+    },
+    {
+      "file": "assets/models/empty_soda_can.glb",
+      "grip": {
+        "at": [0, 0.059999999999999998, 0],
+        "turn": [0, 0, -90]
       },
+      "hold": "upright",
+      "id": "empty_soda_can",
       "roll": 0
     },
     {

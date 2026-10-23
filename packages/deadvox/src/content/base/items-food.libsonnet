@@ -2,6 +2,8 @@
 local eats(calories, water) = { calories: calories, water: water, consumeSimSeconds: 3 };
 local drinks(calories, water) = { calories: calories, water: water, consumeSimSeconds: 2 };
 local canShellGrams = (import 'packages/thing-authoring-tool/cans.libsonnet').shellMassKg * 1000;
+local sodaShellGrams = 15;
+local sodaDrinkGrams = 345;
 local beansGrams = 350;
 local soupGrams = 330;
 
@@ -86,6 +88,7 @@ local soupGrams = 330;
       name: 'Can of soda',
       category: 'drink',
       model: 'soda_can',
+      weight: sodaShellGrams + sodaDrinkGrams,
       size: [1, 2],
       unpack: { item: 'opened_soda', count: 1, simSeconds: 2, inPlace: true },
     },
@@ -94,6 +97,23 @@ local soupGrams = 330;
       name: 'Opened can of soda',
       category: 'drink',
       model: 'soda_can',
+      weight: sodaShellGrams,
+      size: [1, 2],
+      serving: { food: 'soda', empty: 'empty_soda_can' },
+    },
+    {
+      id: 'empty_soda_can',
+      name: 'Empty soda can',
+      category: 'tool',
+      model: 'empty_soda_can',
+      weight: sodaShellGrams,
+      size: [1, 2],
+    },
+    {
+      id: 'soda',
+      name: 'Soda',
+      category: 'drink',
+      weight: sodaDrinkGrams,
       size: [1, 2],
       food: drinks(140, 300),
     },
