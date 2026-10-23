@@ -11,7 +11,7 @@ import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import { Character, dominantSide, offSide, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
 import { hourOfDay } from '../core/clock.ts';
-import { terrainSolid, worldMeleeBlocker, worldSolid, worldSoundBlocking } from '../core/collision.ts';
+import { terrainSolid, worldMeleeBlocker, worldSoundBlocking } from '../core/collision.ts';
 import { type RecipeDef, type Registry, requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
@@ -84,6 +84,7 @@ import type { SoundId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
 import { simTimestamp } from '../core/time.ts';
 import { spendFuel } from '../core/torch.ts';
+import { VehicleOccupancy } from '../core/vehicleProjection.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
 import { figureSeedPool, zombieFigure } from '../core/zombieFigure.ts';
@@ -698,7 +699,8 @@ export const createSession = (options: SessionOptions) => {
       })
     : new Inventory(registry, undefined, options.entities, character);
   options.registerVehicles?.(inventory);
-  physicalSolid = worldSolid(world, registry, inventory.entities, { vehicles: inventory.vehicles, blockSize: s });
+  const vehicleOccupancy = new VehicleOccupancy(registry, inventory.vehicles, s);
+  physicalSolid = (x, y, z) => isSolid(x, y, z) || vehicleOccupancy.isSolid(x, y, z);
   const wearPlaced = (piece: BlockEntity | undefined, wear: number | undefined): void => {
     if (piece && wear !== undefined) {
       inventory.entities.wear(piece, wear);
@@ -1470,7 +1472,7 @@ export const createSession = (options: SessionOptions) => {
   const moveTerrain = terrainSolid(world, registry);
   const furnitureMover = (): FurnitureMover => ({
     inventory,
-    terrainSolid: moveTerrain,
+    terrainSolid: (x, y, z) => moveTerrain(x, y, z) || vehicleOccupancy.isSolid(x, y, z),
     blockSize: s,
     player: body,
     others: standingZombieBodies(),

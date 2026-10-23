@@ -1,14 +1,16 @@
 import { expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { worldSolid } from '../src/core/collision.ts';
+import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import { type FurnitureMover, placement } from '../src/core/furnitureMove.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { settleCell } from '../src/core/itemThrow.ts';
 import { bodyOverlapsTerrain } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { type BrickOut, brickHas, worldBricks } from '../src/core/solidBricks.ts';
 import { spawnOverlappingSolidBlock } from '../src/core/spawnClearance.ts';
-import { projectVehicleParts } from '../src/core/vehicleProjection.ts';
+import { projectVehicleParts, VehicleOccupancy } from '../src/core/vehicleProjection.ts';
 import { World } from '../src/core/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { createPlayerBody } from './playerFixture.ts';
@@ -80,6 +82,45 @@ it('updates physical cells, bricks, navigation clearance and landing after an oc
     spawnOverlappingSolidBlock([x + 0.5, y + 0.5, z + 0.5], { halfWidth: 0.1, height: 0.1 }, solid),
   ).toBeUndefined();
   expect(settleCell(cell, scale.blockSize, -10, solid)).toEqual(cell);
+});
+
+it('refuses furniture placement in an occupied fitting and permits it after the fitting is removed', () => {
+  const inventory = new Inventory(registry);
+  const id = inventory.registerVehicle({
+    blueprint: 'hatchback',
+    placementKey: 'vehicle-placement',
+    origin: [0, 0, 0],
+    facing: 'n',
+  });
+  const vehicle = inventory.vehicles.get(id)!;
+  const cell = projectVehicleParts(registry, id, vehicle, scale.blockSize).flatMap((part) =>
+    part.boxes.flatMap(cellsOf),
+  )[0]!;
+  const crate = inventory.furnish({
+    type: 'crate',
+    pos: [-10, 1, -10],
+    size: [...registry.furniture.get('crate')!.size],
+    facing: 'n',
+  })!;
+  inventory.entities.lift(crate);
+  const occupancy = new VehicleOccupancy(registry, inventory.vehicles, scale.blockSize);
+  const mover: FurnitureMover = {
+    inventory,
+    terrainSolid: (x, y, z) => y < 0 || occupancy.isSolid(x, y, z),
+    blockSize: scale.blockSize,
+    player: { pos: [-20, 1, -20], vel: [0, 0, 0], halfWidth: 0.4, height: 1.8, onGround: true },
+    others: [],
+    stamina: 100,
+  };
+  const aimed: Vec3 = [cell[0] + Math.floor(crate.size[0] / 2), cell[1], cell[2] + Math.floor(crate.size[2] / 2)];
+
+  expect(placement(mover, aimed)).toEqual({
+    refusal: registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.noRoom,
+  });
+
+  inventory.vehicles.replace(registry, id, { ...vehicle, fittings: [] });
+
+  expect(placement(mover, aimed)).toEqual({ pos: expect.any(Array) });
 });
 
 it('leaves a player body standing in exported vehicle space with no collision box', () => {
