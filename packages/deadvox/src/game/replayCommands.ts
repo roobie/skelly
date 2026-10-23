@@ -9,10 +9,10 @@ export type ReplayActionPayload =
   | { kind: 'inventory.move'; itemUid: number; target: TargetState; count: number }
   | { kind: 'inventory.to-hands'; itemUid: number; feet: [number, number, number] }
   | { kind: 'item.pickup'; itemUid: number; mode: 'pocket' | 'wield'; feet: [number, number, number] }
-  | { kind: 'furniture.interact'; entityUid: number }
-  | { kind: 'furniture.lift'; entityUid: number }
+  | { kind: 'furniture.interact'; entityUid: number; alternatives?: true }
+  | { kind: 'furniture.lift'; entityUid: number; floorLocked?: boolean }
   | { kind: 'furniture.use'; entityUid: number }
-  | { kind: 'furniture.slide'; entityUid: number; way: 'push' | 'drag' }
+  | { kind: 'furniture.slide'; entityUid: number; way: 'push' }
   | { kind: 'furniture.place'; pos: [number, number, number] }
   | { kind: 'power.set'; entityUid: number; enabled: boolean }
   | { kind: 'charger.start'; entityUid: number }
@@ -89,7 +89,13 @@ const isPowerPayload = (payload: Record<string, unknown>): boolean =>
   isUid(payload.entityUid) && typeof payload.enabled === 'boolean';
 
 const isSlidePayload = (payload: Record<string, unknown>): boolean =>
-  isUid(payload.entityUid) && (payload.way === 'push' || payload.way === 'drag');
+  isUid(payload.entityUid) && payload.way === 'push';
+
+const isInteractPayload = (payload: Record<string, unknown>): boolean =>
+  isUid(payload.entityUid) && (payload.alternatives === undefined || payload.alternatives === true);
+
+const isLiftPayload = (payload: Record<string, unknown>): boolean =>
+  isUid(payload.entityUid) && (payload.floorLocked === undefined || typeof payload.floorLocked === 'boolean');
 
 const isVehicleWorkPayload = (payload: Record<string, unknown>): boolean =>
   (payload.work === 'install' || payload.work === 'remove') &&
@@ -122,10 +128,12 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
     case 'charger.start':
     case 'charger.stop':
     case 'inventory.search':
-    case 'furniture.interact':
-    case 'furniture.lift':
     case 'furniture.use':
       return isUid(payload.entityUid);
+    case 'furniture.interact':
+      return isInteractPayload(payload);
+    case 'furniture.lift':
+      return isLiftPayload(payload);
     case 'furniture.slide':
       return isSlidePayload(payload);
     case 'furniture.place':
@@ -202,10 +210,10 @@ export interface ReplayCommandOwners {
   ) => string | undefined;
   toHands: (itemUid: number, feet: [number, number, number]) => string | undefined;
   pickup: (itemUid: number, mode: 'pocket' | 'wield', feet: [number, number, number]) => string | undefined;
-  interact: (entityUid: number) => string | undefined;
-  lift: (entityUid: number) => string | undefined;
+  interact: (entityUid: number, alternatives?: true) => string | undefined;
+  lift: (entityUid: number, floorLocked?: boolean) => string | undefined;
   useFurniture: (entityUid: number) => string | undefined;
-  slide: (entityUid: number, way: 'push' | 'drag') => string | undefined;
+  slide: (entityUid: number, way: 'push') => string | undefined;
   /** Sets the carried piece down at the aimed cell. */
   place: (pos: [number, number, number]) => string | undefined;
   /** Turns the carried piece a quarter, seen from above. */
@@ -242,9 +250,9 @@ export const applyReplayActionPayload = (
     case 'item.pickup':
       return owners.pickup(payload.itemUid, payload.mode, payload.feet);
     case 'furniture.interact':
-      return owners.interact(payload.entityUid);
+      return owners.interact(payload.entityUid, payload.alternatives);
     case 'furniture.lift':
-      return owners.lift(payload.entityUid);
+      return owners.lift(payload.entityUid, payload.floorLocked);
     case 'furniture.use':
       return owners.useFurniture(payload.entityUid);
     case 'furniture.slide':
