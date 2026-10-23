@@ -159,6 +159,11 @@ export class SitePower {
     if (id !== undefined) {
       this.chargers!.beforeRemove(at, id);
       this.chargerIds.delete(entity.uid);
+      return;
+    }
+    const deviceId = identity({ type: entity.type, pos: entity.origin });
+    if (this.network.enabled(deviceId) !== undefined) {
+      this.network.setEnabled(at, deviceId, false);
     }
   }
 

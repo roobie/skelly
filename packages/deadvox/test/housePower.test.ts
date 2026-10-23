@@ -115,6 +115,7 @@ const fixture = (start = 0, restore?: SaveSnapshot, far = false) => {
   return {
     session,
     command,
+    control,
     powered,
     loadCharger,
     snapshot: () => session.snapshot({ worldId: 'power-fixture', characterId: 'survivor' }),
@@ -189,6 +190,16 @@ describe('house supply and player controls', () => {
     expect(sources.every((device) => device.enabled)).toBe(true);
     expect(f.command('switch', true)).toBeUndefined();
     expect(f.powered().every(Boolean)).toBe(true);
+  });
+
+  it('settles and disconnects a destroyed generator instead of leaving phantom supply', () => {
+    const f = fixture();
+    f.loadCharger();
+    const generator = f.control('generator');
+    expect(f.powered().every(Boolean)).toBe(true);
+    expect(f.session.bashFurniture(generator, registry.furniture.get(generator.type)!.breach.durability)).toBe(true);
+    expect(f.session.entities.byUid(generator.uid)).toBeUndefined();
+    expect(f.powered().every((powered) => !powered)).toBe(true);
   });
 
   it.each(['generator', 'switch'] as const)('refuses the %s action out of reach without changing power', (role) => {

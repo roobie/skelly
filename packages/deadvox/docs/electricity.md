@@ -105,6 +105,10 @@ commands preserve replay intent instead of toggling whatever state a replay find
 See `src/game/session.ts`, `powerControl`, and `src/game/replayCommands.ts`,
 `applyReplayActionPayload`.
 
+Removing equipment settles old service and disables its authored connection so a
+ruined source cannot keep supplying power. A moved piece does not carry fixed wiring
+with it. See `src/core/sitePower.ts`, `SitePower.beforeRemove`.
+
 Authored fixed wiring uses stable local link identities, not player inventory cables;
 routing and refuelling remain separate interactions to design. Session time drives
 fuel and blackouts, and the world snapshot keeps the network so Continue cannot
