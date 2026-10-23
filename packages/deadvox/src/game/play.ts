@@ -1293,6 +1293,7 @@ export const startPlay = (
     charger: (entity) => chargerPanel(entity, session.power, session.reach()),
     chargerRevision: () => Math.floor(sim.time),
     pictures: view.pictures,
+    itemView: view.pictures,
     feet,
     reach: session.reach,
     nearby: () => session.reach().piles,

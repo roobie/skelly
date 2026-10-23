@@ -36,7 +36,7 @@ it('does not cache missing pictures while models load, and reuses completed stil
   const { registry, inv } = fixture();
   const models = { version: 0, has: () => models.version > 0, groundLook: vi.fn(() => new Group()) };
   const paint = vi.fn(() => 'still');
-  const pictures = new ItemPictures(registry, models, 2, { paint, dispose: vi.fn() });
+  const pictures = new ItemPictures(registry, models, 2, { paint, view: vi.fn(), dispose: vi.fn() });
   expect(pictures.picture(inv.create('text_only'))).toBeUndefined();
   const item = inv.create('pictured');
   expect(pictures.picture(item)).toBeUndefined();
@@ -52,7 +52,7 @@ it('evicts the least recently used still and regenerates it on demand within cap
   const { registry, inv } = fixture();
   const models = { version: 1, has: () => true, groundLook: () => new Group() };
   const paint = vi.fn(() => `still-${paint.mock.calls.length}`);
-  const pictures = new ItemPictures(registry, models, 2, { paint, dispose: vi.fn() });
+  const pictures = new ItemPictures(registry, models, 2, { paint, view: vi.fn(), dispose: vi.fn() });
   const [a, b, c] = ['pictured', 'other', 'third'].map((id) => inv.create(id));
   const first = pictures.picture(a!);
   pictures.picture(b!);
@@ -67,7 +67,7 @@ it('evicts the least recently used still and regenerates it on demand within cap
 
 it('clears pictures and disposes its painter exactly once without restarting it', () => {
   const { registry, inv } = fixture();
-  const painter = { paint: vi.fn(() => 'still'), dispose: vi.fn() };
+  const painter = { paint: vi.fn(() => 'still'), view: vi.fn(), dispose: vi.fn() };
   const pictures = new ItemPictures(
     registry,
     { version: 1, has: () => true, groundLook: () => new Group() },

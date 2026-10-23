@@ -392,6 +392,7 @@
           "taking": "Taking {count} {category} items",
           "takingApart": "Taking apart: {item}",
           "twoHanded": "Needs both hands",
+          "viewerClose": "Close ({key})",
           "vitals": "Health {health} · Blood {blood} · Shock {shock}",
           "wait": "Wait",
           "wakeAt": "Wake at",
