@@ -240,7 +240,9 @@
       },
       "model": "gauntlet_police_armoury_key",
       "name": "Police armoury key",
-      "size": [1, 1]
+      "notLoot": false,
+      "size": [1, 1],
+      "workInProgress": false
     }
   ],
   "layouts": [

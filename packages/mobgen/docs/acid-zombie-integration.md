@@ -4,6 +4,7 @@ read_if:
   - you change the acid body's standing-height fitting or shape measurements
   - you change mobgen's material, budget or carve contracts while the acid zombie lands
   - you add a non-humanoid mob that Deadvox must hit, sever, pose or light
+  - you change creature-owned severed-part item policy
   - you build the cross-mob far level of detail for per-bone meshes
 ---
 
@@ -160,10 +161,9 @@ humanoid lookup would find nothing.
   `src/mob/dismember.ts`, `SEVERABLE_PARTS`. The crowd gore mask already sizes itself from
   the widest body (`packages/deadvox/src/render/mobActors.ts` passes the bone count to
   `crowdTextureLayout`), so the acid bone count needs no encoding change. A severed acid
-  part drops the shambler's severed-part item for its region
-  (`packages/deadvox/src/core/zombieRegionNames.ts`, `SEVERED_ITEM`), and no new item content is
-  added. That mapping is keyed by region, and the acid bones map into the same regions, so
-  it needs no acid entry.
+  part follows its creature kind's authored drop policy, independently of bone names.
+  See `packages/deadvox/src/core/schema.ts`, `ZombieSchema.severedItems`, and
+  `packages/deadvox/src/game/session.ts`, `createSession`.
 - **Death burst.** On death the sac's voxels are removed without leaving a severed item and
   without any simulation consequence, so presentation reads death and the sac stays out of
   saves and fingerprints. Keeping it a disposition rather than a Deadvox special case lets a

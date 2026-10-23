@@ -86,7 +86,13 @@ local opticZoom = { step: 1, rememberPerWeapon: true };
       "weight": 300,
       "size": [1, 2],
       "model": "real_suppressor",
-      "firearmAttachmentEffects": { "kind": "suppressor", "recoilReduction": 0.15, "wearPerShot": 0.001 }
+      "firearmAttachmentEffects": {
+        "kind": "suppressor",
+        "recoilReduction": 0.15,
+        "wearPerShot": 0.001,
+        "fitSkillLevel": 4,
+        "fitRefusal": "I can't fit this suppressor yet"
+      }
     },
     {
       "id": "tactical_flashlight_mount",

@@ -12,6 +12,7 @@ local blades = [
 local sharpen(blade, method) = {
   id: method.prefix + blade,
   kind: 'repair',
+  activation: 'sharpen',
   result: { item: blade, count: 1 },
   repair: { skill: 'crafting', amount: method.amount, perSkill: 0.05 },
   timeGameMinutes: method.timeGameMinutes,

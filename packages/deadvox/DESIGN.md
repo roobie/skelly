@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change held sharpening, blade repair entry points or prepared hand pairs
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
   - you change the player figure's look, its authored parts, its clothes or how it is posed
   - you change worn head gear seen from inside or on the player figure
@@ -1260,10 +1261,20 @@ See `packages/thing-authoring-tool/cans.libsonnet`, `items`, and
 `packages/thing-authoring-tool/src/families/openTin.ts`, `openTin`, and
 `packages/thing-authoring-tool/src/families/handOpener.ts`, `handOpener`.
 
-Crafting, repair, disassembly, and reading gather required items from reachable
-hands, worn storage, piles, and furniture when the action starts. Gathering is
-part of the compressed action and keeps both hands busy. Inspecting an item
-shows exact weight, condition, qualities, and handling times.
+Sharpening is held-item work rather than a craft-list repair: the prepared
+blade-and-stone pair makes carried equipment matter, and the wheel rewards a
+trip to furniture. Like can opening, a blade's competing action remains a player
+choice so sharpening does not cause a surprise swing. Aimed wheel activation
+uses the held blade. Repair recipes retain the shared content-owned restoration,
+skill and work-rate contract; their activation selector keeps held work out of
+the craft list. See `src/game/sharpening.ts`, `Sharpening`,
+`src/game/itemActions.ts`, `ItemActionSelection`, `src/core/schema.ts`,
+`RecipeSchema`, and `src/ui/craftReadout.ts`, `craftRows`.
+
+Craft-list repairs, crafting and disassembly gather reachable supplies because
+retrieving materials is part of the work, not free access to distant storage.
+See `src/core/reach.ts`, `bindReach`, and `src/core/craftCommands.ts`,
+`CraftCommands`.
 
 ### Shoulder and sling
 
@@ -1634,13 +1645,14 @@ for minor wounds to close. See `Body.advance` in `src/core/body.ts`.
 
 Under normal play, blood loss progresses with simulation time; a stalled browser
 slows the whole simulation rather than skipping ahead. Content sets when
-bleeding refuses compression. Rest, sleep, and waiting are refused, and an
-already-running player long action returns to real-time pace. Debug time controls
-may advance bleeding, but real emitted interruptions still apply. Treatment,
-crafting, and reading remain available at real-time pace, leaving movement free;
-crafting stays available because it may let a player make what stops the wound.
-See `Body.compressionRefusal` and `Simulation.checkInterruptions` in
-`src/core/sim.ts`.
+bleeding refuses compression. Rest, sleep, and waiting must stop or stay refused:
+the player must stay conscious enough to act. Doable long actions remain available
+at real-time pace because making or using treatment may be the player's remaining
+chance to stop the wound. Harming exposure instead refuses every long action:
+leave the fire first, then treat. Unconsciousness permits no action. Debug time
+controls do not bypass real emitted interruptions. See `src/core/body.ts`, `Body.compressionRefusal`;
+`src/core/sim.ts`, `Simulation.actionRefusal` and `Simulation.checkInterruptions`;
+and `src/core/longAction.ts`, `LongActions.runsUncompressed`.
 
 Treatments declare bleeding strength, infection stages, or both. Treatment
 strength is spent progressively across severity bands, and applications stack;
@@ -1653,10 +1665,9 @@ wound severity. See `Body.treat` in `src/core/body.ts` and `bodyWound` in
 
 Pain is its own body state, apart from health and wounds, so a painkiller can ease
 what hurts without healing anything. Felt pain is acute plus background pain,
-less analgesia; it has no top. The threshold is a balance point for tiers and
-effects, not an implemented knockout: only shock knocks out (`src/core/body.ts`,
-`Body.unconscious`), and felt pain reaching the threshold is meant to knock out through
-that same mechanism once it is built. Acute pain comes from each
+less analgesia; it has no top. Reaching the threshold empties shock, so shock owns
+knockout, recovery and save state (`src/core/body.ts`, `Body.impact` and
+`Body.unconscious`). Acute pain comes from each
 hit by damage kind and region,
 then fades. Background pain is derived from region damage, bleeding and infection,
 so treatment and healing change it without saved derived state. Pain tiers drive
@@ -1828,7 +1839,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
 
   A fitted optic owns the aiming sight line because its mount can obstruct the irons. Visible placement and aiming must share the connector transform so the view and shot remain aligned; see `src/render/firearmSight.ts`, `sightedFirearmModel`. Magnification changes the local sight picture, not the weapon or its ballistics, so zoom selection stays outside saved item and replay state. Content-controlled per-weapon memory lasts for the play session; a fresh session starts at the authored power rather than making a camera preference authoritative simulation state. See `src/game/opticZoom.ts`, `OpticZoom`; `src/core/opticView.ts`, `mountedOptic`, `opticViewSettings` and `projectLensAperture`; and `src/render/opticLens.ts`, `OpticLensRenderer`. The digital thermal optic stays out of loot, fitting and ADS until its thermal view exists; exposing an optic without its defining view would mislead the player. See `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`.
 
-  An attachment is an atom, so its mass is the mass authored for its item, and a fitted gun weighs the sum of its own parts and its fitted items; see `things/README.md`, "Rules". Every atom's item `weight` is authoritative even when atoms share a visual model. Assemblies author no competing item total: their model carries authored body-part masses, with replaceable geometry owned by the fitted child item instead. See `src/core/items.ts`, `typeWeightGrams`, and `src/core/modelMass.ts`, `modelBodyMassKg`. `muzzleLoad` combines fitted attachment mass with mount distance from the grip to feed the existing handling response. Runtime skill-zero tuning remains separate from attachment response so editing a debug endpoint cannot apply the attachment effect twice. Suppressors affect recoil, noise and wear, and foregrips affect aim, stance and wear. Effects are tagged with their model's attachment kind, each kind authors every effect it has, wear included as zero for none, and a suppressor model always exports its noise factor: a missing value is a content error rather than a silent neutral default, so an unfinished attachment cannot ship as one that does nothing (see `src/core/schema.ts`, `FirearmAttachmentEffectsSchema` and `AttachmentSchema`; `src/core/content.ts`, `checkItemAttachmentEffects`); a powered light nested under a held firearm remains exposed to carried-light and sense behavior and drains its owned battery on simulation time. Effect estimates remain tunable until attachment behavior has been playtested. See `src/core/firearmAttachments.ts`, `muzzleLoad`, `firearmAttachmentResponse` and `wearFirearmAttachments`; `src/game/firearmHandling.ts`, `skillZeroHandlingSettingFor` and `skillZeroHandlingFor`; `src/core/items.ts`, `weightOf`; and `src/core/lights.ts`, `lightExposureFor`. Heat (#366), improvised accuracy, fouling and smoke (#365, all in #367) are deferred until after the playtest.
+  An attachment is an atom, so its mass is the mass authored for its item, and a fitted gun weighs the sum of its own parts and its fitted items; see `things/README.md`, "Rules". Every atom's item `weight` is authoritative even when atoms share a visual model. Assemblies author no competing item total: their model carries authored body-part masses, with replaceable geometry owned by the fitted child item instead. See `src/core/items.ts`, `typeWeightGrams`, and `src/core/modelMass.ts`, `modelBodyMassKg`. `muzzleLoad` combines fitted attachment mass with mount distance from the grip to feed the existing handling response. Runtime skill-zero tuning remains separate from attachment response so editing a debug endpoint cannot apply the attachment effect twice. Suppressors affect recoil, noise and wear, and foregrips affect aim, stance and wear. Effects are tagged with their model's attachment kind, each kind authors every effect it has, wear included as zero for none, and a suppressor model always exports its noise factor: a missing value is a content error rather than a silent neutral default, so an unfinished attachment cannot ship as one that does nothing. Fitting either suppressor requires Firearms Combat 4; removing one has no skill gate. See `src/core/schema.ts`, `FirearmAttachmentEffectsSchema` and `AttachmentSchema`; `src/core/content.ts`, `checkItemAttachmentEffects`; and `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`. A powered light nested under a held firearm remains exposed to carried-light and sense behavior and drains its owned battery on simulation time. Effect estimates remain tunable until attachment behavior has been playtested. See `src/core/firearmAttachments.ts`, `muzzleLoad`, `firearmAttachmentResponse` and `wearFirearmAttachments`; `src/game/firearmHandling.ts`, `skillZeroHandlingSettingFor` and `skillZeroHandlingFor`; `src/core/items.ts`, `weightOf`; and `src/core/lights.ts`, `lightExposureFor`. Heat (#366), improvised accuracy, fouling and smoke (#365, all in #367) are deferred until after the playtest.
 
 - **Military loot (3.2):** Authored Military-only usage protects military progression without inferring admission from calibre or furniture type. Shared supplies remain craftable even when military sources can carry them; ordinary crafting, salvage and unpacking cannot manufacture Military-only supplies. Fixed stock and its installed descendants must match their resolved source context. Tables supply weights, not a second geography authority. See `src/core/loot.ts`, `economyEligible` and `lootTypeIssue`, `src/core/magazine.ts`, `militaryLootItems`, and `src/core/content.ts`, `checkMilitaryLoot`.
 - **Spent cases per block:** Cases must never end inside terrain; use only clear,

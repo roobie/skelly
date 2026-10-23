@@ -10,7 +10,7 @@ import {
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from './character.ts';
 import { CHUNK, CHUNK_VOLUME } from './coords.ts';
 import { assertFirearmState } from './firearmState.ts';
-import { type InventoryState, WORK_IN_PROGRESS } from './inventory.ts';
+import type { InventoryState } from './inventory.ts';
 import type { ItemState } from './items.ts';
 import { itemIds as collectItemIds, savedItemTree } from './itemTree.ts';
 import { validateLongJob } from './longAction.ts';
@@ -1488,7 +1488,7 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
 
 function validateWorkItems(tree: readonly { item: ItemState }[], itemsByUid: ReadonlyMap<number, ItemState>): void {
   for (const { item } of tree) {
-    if (item.work && (item.type !== WORK_IN_PROGRESS || item.work.elapsed > item.work.duration)) {
+    if (item.work && item.work.elapsed > item.work.duration) {
       throw new Error('Invalid craft work payload');
     }
     if (item.work?.repairTargetUid !== undefined) {
@@ -1508,10 +1508,10 @@ function ownsLongActionItem(
     return tree.some(({ item }) => item.uid === job.workUid && item.work !== undefined);
   }
   if (job?.jobType === 'reading') {
-    return tree.some(({ item }) => item.uid === job.bookUid && item.type !== WORK_IN_PROGRESS);
+    return tree.some(({ item }) => item.uid === job.bookUid && item.work === undefined);
   }
   if (job?.jobType === 'forceDoor') {
-    return tree.some(({ item }) => item.uid === job.toolUid && item.type !== WORK_IN_PROGRESS);
+    return tree.some(({ item }) => item.uid === job.toolUid && item.work === undefined);
   }
   if (job?.jobType === 'treatment') {
     return tree.some(({ item }) => item.uid === job.itemUid && item.type === job.itemType);

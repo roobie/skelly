@@ -385,7 +385,13 @@ local lights = import 'lights.libsonnet';
         "skill": "mechanics",
         "yields": [{ "item": "scrap_metal", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }]
       },
-      "firearmAttachmentEffects": { "kind": "suppressor", "recoilReduction": 0.05, "wearPerShot": 0.02 }
+      "firearmAttachmentEffects": {
+        "kind": "suppressor",
+        "recoilReduction": 0.05,
+        "wearPerShot": 0.02,
+        "fitSkillLevel": 4,
+        "fitRefusal": "I can't fit this suppressor yet"
+      }
     }
   ],
   "recipes": [

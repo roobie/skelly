@@ -2,6 +2,8 @@
   "items": [
     {
       "id": "review_only_item",
+      "workInProgress": false,
+      "notLoot": false,
       "economy": { "usage": [], "tiers": [] },
       "name": "Only here",
       "category": "material",

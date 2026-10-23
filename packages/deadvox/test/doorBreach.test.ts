@@ -10,13 +10,14 @@ import { decodeSave } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SoundEmission } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
-import { type PlayerSense, ZombieSystem } from '../src/core/zombies.ts';
+import type { PlayerSense } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { buildFixtureRegistry, FIXTURE_BLOW_SOUND, fixtureSounds } from './economyFixtures.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const MINIMUM = 5;
 /** A whole number of minimum blows, so the last of them brings the damage exactly to it. */

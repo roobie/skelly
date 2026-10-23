@@ -4,6 +4,7 @@ read_if:
   - you change content schemas, validation, registry merging, browser-mod identity or content-loading test fixtures
   - you add or change a bundled mod such as beginner mode, or how `?mods=` selects one
   - you add code that reads a content row by a fixed id
+  - you change runtime escrow roles, severed-part item policy or world liveness tuning
   - you add or change a refusal, notice or option label that core code shows the player
   - you change recipe, skill, workstation or book content, content references, static reachability or disassembly-output contracts
   - you change item economy metadata, source contexts, loot selection, loot-point descriptions or fixed loot
@@ -424,7 +425,7 @@ Content acceptance checks that authored world sources can provide declared item 
 
 Reachability is a type-source contract, not a quantity, seed, or whole-game solver. A recipe cycle without a found source cannot make itself reachable. Disassembly reachability assumes the required skill is attainable, while recipe requirements must have a reachable practice source; workstation qualities must be placed and reachable. Showcase and demo layouts are fixtures, not sources for playable-world reachability. Preserve these distinctions when changing the checker. See `checkReachability` and its source-closure helpers in `src/core/reachability.ts`, and `SiteLayoutSchema.demo` in `src/core/schema.ts`.
 
-Debug fixtures, runtime escrow, spent cases, and body-part policy stay out of acquired-content totals. Keep their exclusions with `CONTENT_COUNT_EXCLUSIONS` in `src/core/reachability.ts`. Reachability stores no runtime state; progression, crafting, and disassembly remain separate owners. Winning-override diagnostics retain source-file provenance so a broken effective definition can be traced to its authoring source.
+Acquired-content totals exclude types by their authored policy, not their identity, so adding a debug fixture or a creature part needs no checker edit. See `ItemSchema.notLoot` in `src/core/schema.ts` and `checkReachability` in `src/core/reachability.ts`. Runtime escrow selects its definition through `ItemSchema.workInProgress`; exactly one definition must own that role. Creature kinds own their severed-region item policy through `ZombieSchema.severedItems`, including an explicit null for a region that leaves nothing. World liveness belongs to site-generation tuning, not creature identity; see `SiteGenerationSchema.activeZombieRadiusMetres` in `src/core/schema.ts` and `ZombieSystem.tierAt` in `src/core/zombies.ts`. Reachability stores no runtime state; progression, crafting, and disassembly remain separate owners. Winning-override diagnostics retain source-file provenance so a broken effective definition can be traced to its authoring source.
 
 ## Loot economy descriptions
 
