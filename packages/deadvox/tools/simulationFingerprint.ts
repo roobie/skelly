@@ -145,6 +145,8 @@ export const SIMULATION_EXCLUSIONS = [
   'src/ui/inventoryScreen.ts',
   // Read-only appliance projection; command admission and effects stay in session and core.
   'src/ui/chargerPanel.ts',
+  // Read-only vehicle service projection; work admission and transfer stay in core/vehicleWork and session.
+  'src/ui/vehicleInspection.ts',
   // Craft views/readouts and UI preference/event forwarding only. Native intents/admission
   // remain fingerprinted through session -> core/craftCommands and core/longAction.
   'src/ui/craftController.ts',

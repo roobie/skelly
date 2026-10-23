@@ -10,7 +10,15 @@ import { freezeSnapshot } from './snapshotData.ts';
 import type { Facing } from './templates.ts';
 import { placeFitting } from './vehicleBlueprint.ts';
 
-export type VehiclePlacement = Pick<VehicleFittingDef, 'id' | 'at' | 'mirror' | 'supportedBy' | 'service'>;
+/** A site's saved service rules; its player-visible name stays in content, read through `vehicleSiteName`. */
+type VehicleService = Omit<NonNullable<VehicleFittingDef['service']>, 'name'>;
+export type VehiclePlacement = Pick<VehicleFittingDef, 'id' | 'at' | 'mirror' | 'supportedBy'> & {
+  service?: VehicleService | undefined;
+};
+
+/** Content names an empty service site by its factory fitting, so a reworded pack relabels saved vehicles. */
+export const vehicleSiteName = (registry: Registry, blueprint: string, siteId: string): string | undefined =>
+  registry.vehicleBlueprints.get(blueprint)?.fittings.find(({ id }) => id === siteId)?.service?.name;
 interface VehicleBuild<Node> {
   readonly blueprint: string;
   readonly placementKey: string;
@@ -104,12 +112,14 @@ export const assertVehicleState = (state: VehicleInstancesState): void => {
 };
 
 /** Geometry is a projection of the owned item, never a saved second part type or cargo size. */
-const projectVehicleFitting = (registry: Registry, fitting: VehicleInstance['fittings'][number]) =>
-  placeFitting(registry, {
-    ...copyVehiclePlacement(fitting),
+const projectVehicleFitting = (registry: Registry, fitting: VehicleInstance['fittings'][number]) => {
+  const { service: _service, ...placement } = copyVehiclePlacement(fitting);
+  return placeFitting(registry, {
+    ...placement,
     part: fitting.item.type,
     ...(fitting.item.cargo ? { cargo: [...fitting.item.cargo] } : {}),
   });
+};
 
 const validateBuild = (registry: Registry, vehicle: VehicleInstance): void => {
   if (!registry.vehicleBlueprints.has(vehicle.blueprint)) {

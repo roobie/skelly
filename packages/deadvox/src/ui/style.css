@@ -930,6 +930,18 @@ body.unconscious::after {
   min-width: min(100%, var(--inv-around-container-width-cap, 100%));
   max-width: min(100%, var(--inv-around-container-width-cap, 100%));
 }
+#inventory .inv-around-section[data-around-section="vehicle"] {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+/* One row per vehicle site: the fitted part (or the empty site), its condition and its service work. */
+.inv-vehicle-site {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--ui-spacing) * 0.25rem) calc(var(--ui-spacing) * 0.5rem);
+  min-width: 0;
+}
 #inventory .inv-pocket {
   min-width: 0;
   max-width: 100%;

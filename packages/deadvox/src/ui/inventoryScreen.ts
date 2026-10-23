@@ -65,10 +65,13 @@ const SHOWN_SLOTS: readonly WearSlot[] = ['shoulder', 'torso', 'vest', 'hands', 
 const WORN_ONLY_SLOTS: readonly WearSlot[] = ['head', 'eyes'];
 
 import type { ChargerPanel } from './chargerPanel.ts';
+import type { VehicleInspectionViewModel, VehicleServiceAction, VehicleWorkPayload } from './vehicleInspection.ts';
 
 export interface ScreenHooks {
   charger?: (entity: BlockEntity) => ChargerPanel | undefined;
   chargerRevision?: () => number;
+  /** The vehicle the player opened by interacting with it, while it stays in reach. */
+  openedVehicle?: () => { readonly view: VehicleInspectionViewModel; readonly distanceMetres: number } | undefined;
   pictures?: { readonly version: number; picture: (item: Item) => string | undefined } | undefined;
   /** What each wear slot is called; from the core ui content. */
   slotLabels: Readonly<Record<WearSlot, string>>;
@@ -164,6 +167,30 @@ interface FurnitureViewModel {
   readonly grids: readonly { readonly label?: string | undefined; readonly grid: GridViewModel }[];
 }
 
+interface VehicleOptionViewModel {
+  readonly label: string;
+  /** The work's length, already worded. */
+  readonly span?: string;
+  readonly reason?: string;
+  readonly payload: VehicleWorkPayload;
+}
+
+interface VehicleSiteViewModel {
+  readonly id: string;
+  readonly item?: ItemViewModel | undefined;
+  readonly label: string;
+  readonly site?: string | undefined;
+  readonly condition?: string | undefined;
+  readonly options: readonly VehicleOptionViewModel[];
+  readonly noPart?: string | undefined;
+}
+
+interface VehicleViewModel {
+  readonly vehicleId: number;
+  readonly label: string;
+  readonly sites: readonly VehicleSiteViewModel[];
+}
+
 interface OptionViewModel {
   readonly label: string;
   readonly button: boolean;
@@ -193,6 +220,8 @@ interface DetailsViewModel {
   readonly description?: string | undefined;
   readonly lines: readonly string[];
   readonly options: readonly OptionViewModel[];
+  /** A fitted vehicle part goes only where its service work takes it. */
+  readonly vehicleOptions?: readonly VehicleOptionViewModel[];
   readonly attachmentSlots?: readonly AttachmentSlotViewModel[];
 }
 
@@ -241,6 +270,7 @@ interface InventoryScreenViewModel {
   readonly hasFeetPile: boolean;
   readonly feetTarget: string;
   readonly furniture: readonly FurnitureViewModel[];
+  readonly vehicle?: VehicleViewModel | undefined;
   readonly details: DetailsViewModel;
 }
 
@@ -345,6 +375,42 @@ const optionTemplate = (
         </div>
       `;
 
+const vehicleOptionTemplate = (
+  option: VehicleOptionViewModel,
+  dispatch: (payload: ReplayActionPayload) => void,
+): TemplateResult =>
+  option.reason === undefined
+    ? html`
+        <button class="inv-option" type="button" data-vehicle-work=${option.payload.work} data-item-uid=${option.payload.itemUid} @click=${() => dispatch(option.payload)}>
+          <span>${option.label}</span><span class="inv-time">${option.span}</span>
+        </button>
+      `
+    : html`
+        <div class="inv-option inv-option-no" data-vehicle-work=${option.payload.work} data-item-uid=${option.payload.itemUid}>
+          <span>${option.label}</span><span class="inv-reason">${option.reason}</span>
+        </div>
+      `;
+
+const vehicleTemplate = (
+  vehicle: VehicleViewModel,
+  dispatch: (payload: ReplayActionPayload) => void,
+): TemplateResult => html`
+  <div class="inv-around-section inv-around-vehicle" data-around-section="vehicle" data-vehicle-id=${vehicle.vehicleId}>
+    <div class="inv-pile-label">${vehicle.label}</div>
+    ${vehicle.sites.map(
+      (site) => html`
+        <div class="inv-vehicle-site" data-vehicle-site=${site.id} data-occupied=${site.item !== undefined}>
+          ${site.item ? itemTemplate(site.item) : html`<span class="inv-muted">${site.label}</span>`}
+          ${site.site ? html`<span class="inv-muted">${site.site}</span>` : nothing}
+          ${site.condition ? html`<span class="inv-condition">${site.condition}</span>` : nothing}
+          ${site.options.map((option) => vehicleOptionTemplate(option, dispatch))}
+          ${site.noPart ? html`<span class="inv-muted">${site.noPart}</span>` : nothing}
+        </div>
+      `,
+    )}
+  </div>
+`;
+
 const attachmentSlotTemplate = (
   firearm: Item,
   slot: AttachmentSlotViewModel,
@@ -388,7 +454,11 @@ const detailsTemplate = (
       <div class="inv-kicker">${text.inspect}</div>
       ${vm.lines.map((line) => html`<div class="inv-line">${line}</div>`)}
       <div class="inv-kicker">${text.whereItCanGo}</div>
-      ${vm.options.map((option) => optionTemplate(option, item, queue))}
+      ${
+        vm.vehicleOptions
+          ? vm.vehicleOptions.map((option) => vehicleOptionTemplate(option, attachmentAction))
+          : vm.options.map((option) => optionTemplate(option, item, queue))
+      }
       ${
         vm.attachmentSlots?.length
           ? html`<div class="inv-kicker">${text.firearmSlots}</div>${vm.attachmentSlots.map((slot) => attachmentSlotTemplate(item, slot, attachmentAction, text))}`
@@ -565,6 +635,7 @@ const inventoryTemplate = (
           </div>
         `,
         )}
+        ${vm.vehicle ? vehicleTemplate(vm.vehicle, attachmentAction) : nothing}
       </div>
     </section>
     ${detailsTemplate(vm.details, queue, attachmentAction, text)}
@@ -700,6 +771,24 @@ const splitFactors = (ratio: number): { readonly you: string; readonly around: s
  * layout floors can reserve exactly one per gutter. The probe has a stable gutter like the panes, not
  * `overflow: scroll`: a browser can hide scrollbars yet still reserve a stable gutter. Undefined while hidden.
  */
+/** What the opened vehicle section draws from; refusals change with reach and tools, not only with the build. */
+const openedVehicleKey = (opened: ReturnType<NonNullable<ScreenHooks['openedVehicle']>>): string =>
+  opened
+    ? `${opened.view.vehicleId}@${opened.distanceMetres.toFixed(1)}:${opened.view.sites
+        .map(
+          (site) =>
+            `${site.id}=${site.item?.uid ?? ''}/${site.condition ?? ''}/${site.actions
+              .map((action) => `${action.payload.itemUid}${action.refusal ?? ''}`)
+              .join(',')}`,
+        )
+        .join(';')}`
+    : '';
+
+const vehicleOptionViewModel = (action: VehicleServiceAction, text: InventoryText): VehicleOptionViewModel =>
+  action.refusal === undefined
+    ? { label: action.label, span: secs(text, action.durationSimSeconds), payload: action.payload }
+    : { label: action.label, reason: action.refusal.toLowerCase(), payload: action.payload };
+
 const scrollbarWidth = (root: HTMLElement): number | undefined => {
   const probe = root.querySelector<HTMLElement>('.inv-gutter-probe');
   return probe && probe.offsetWidth > 0 ? probe.offsetWidth - probe.clientWidth : undefined;
@@ -733,6 +822,8 @@ export class InventoryScreen {
   private readonly tabs = new InventoryTabState();
   private readonly byUid = new Map<number, Item>();
   private readonly entityByUid = new Map<number, BlockEntity>();
+  /** The opened vehicle's service options for each fitted part, for that part's details. */
+  private readonly vehicleOptionsByUid = new Map<number, readonly VehicleOptionViewModel[]>();
   private order: Item[] = [];
   private drawn = '';
   private revealedSelectionUid: number | undefined;
@@ -841,7 +932,7 @@ export class InventoryScreen {
     const characterKey = JSON.stringify(this.hooks.character());
     const needsKey = this.hooks.needs();
     const wakeKey = JSON.stringify(this.hooks.wakeGameHour?.() ?? null);
-    const key = `${this.hooks.chargerRevision?.()}|${this.hooks.pictures?.version}|${this.findQuery}|${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${this.targetUid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}|${wakeKey}`;
+    const key = `${openedVehicleKey(this.hooks.openedVehicle?.())}|${this.hooks.chargerRevision?.()}|${this.hooks.pictures?.version}|${this.findQuery}|${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${this.targetUid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}|${wakeKey}`;
     if (key !== this.drawn) {
       this.drawn = key;
       this.render();
@@ -1080,6 +1171,7 @@ export class InventoryScreen {
   private render(): void {
     this.byUid.clear();
     this.entityByUid.clear();
+    this.vehicleOptionsByUid.clear();
     this.order = [];
     const vm = this.viewModel();
     render(
@@ -1285,6 +1377,7 @@ export class InventoryScreen {
         grids: searchedGrids,
       };
     });
+    const vehicle = this.vehicleViewModel();
     const skills = [...this.inv.registry.skills.values()].map((definition): SkillViewModel => {
       const level = character.skills[definition.id] ?? 0;
       const practice = character.practice[definition.id] ?? 0;
@@ -1311,7 +1404,39 @@ export class InventoryScreen {
       hasFeetPile,
       feetTarget: feet.join(','),
       furniture,
+      vehicle,
       details: this.detailsViewModel(),
+    };
+  }
+
+  private vehicleViewModel(): VehicleViewModel | undefined {
+    const opened = this.hooks.openedVehicle?.();
+    if (!opened) {
+      return undefined;
+    }
+    const text = this.text();
+    const { view } = opened;
+    return {
+      vehicleId: view.vehicleId,
+      label: fillText(this.inv.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.vehicle.heading, {
+        vehicle: view.name,
+        distance: opened.distanceMetres.toFixed(1),
+      }),
+      sites: view.sites.map((site): VehicleSiteViewModel => {
+        const siteOptions = site.actions.map((action) => vehicleOptionViewModel(action, text));
+        if (site.item) {
+          this.vehicleOptionsByUid.set(site.item.uid, siteOptions);
+        }
+        return {
+          id: site.id,
+          item: site.item && this.itemViewModel(site.item, 'inv-item inv-item-slot'),
+          label: site.label,
+          site: site.site,
+          condition: site.condition,
+          options: siteOptions,
+          noPart: site.noPart,
+        };
+      }),
     };
   }
 
@@ -1424,6 +1549,9 @@ export class InventoryScreen {
       description: def.description,
       lines: this.inspect(item),
       ...(attachmentSlots.length > 0 ? { attachmentSlots } : {}),
+      ...(this.inv.locate(item)?.kind === 'vehicle'
+        ? { vehicleOptions: this.vehicleOptionsByUid.get(item.uid) ?? [] }
+        : {}),
       options: [
         ...options(item, this.hooks.reach()).filter((option) => option.kind !== 'use'),
         ...this.hooks.workOptions(item.uid),

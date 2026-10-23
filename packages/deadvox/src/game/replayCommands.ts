@@ -25,6 +25,7 @@ export type ReplayActionPayload =
   | { kind: 'inventory.cancel-handling' }
   | { kind: 'firearm.attachment.fit'; firearmUid: number; slotId: string; attachmentUid: number }
   | { kind: 'firearm.attachment.remove'; firearmUid: number; slotId: string }
+  | { kind: 'vehicle.work'; work: 'install' | 'remove'; vehicleId: number; fittingId: string; itemUid: number }
   | { kind: 'craft.start'; recipeId: string; preference?: CraftPreference }
   | { kind: 'craft.continue' }
   | { kind: 'craft.stop' }
@@ -86,6 +87,13 @@ const isAttachmentPayload = (payload: Record<string, unknown>): boolean =>
 const isSlidePayload = (payload: Record<string, unknown>): boolean =>
   isUid(payload.entityUid) && (payload.way === 'push' || payload.way === 'drag');
 
+const isVehicleWorkPayload = (payload: Record<string, unknown>): boolean =>
+  (payload.work === 'install' || payload.work === 'remove') &&
+  isUid(payload.vehicleId) &&
+  typeof payload.fittingId === 'string' &&
+  payload.fittingId !== '' &&
+  isUid(payload.itemUid);
+
 /** An hour of the day, or null to sleep until rested. */
 const isWakeGameHour = (value: unknown): boolean =>
   value === null || (Number.isSafeInteger(value) && (value as number) >= 0 && (value as number) < 24);
@@ -134,6 +142,8 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
     case 'firearm.attachment.fit':
     case 'firearm.attachment.remove':
       return isAttachmentPayload(payload);
+    case 'vehicle.work':
+      return isVehicleWorkPayload(payload);
     case 'inventory.cancel-handling':
     case 'furniture.turn':
     case 'furniture.tip':
@@ -177,6 +187,12 @@ export interface ReplayCommandOwners {
   work: (itemUid: number, operation: WorkOperation) => string | undefined;
   fitAttachment?: (firearmUid: number, slotId: string, attachmentUid: number) => string | undefined;
   removeAttachment?: (firearmUid: number, slotId: string) => string | undefined;
+  vehicleWork: (
+    work: 'install' | 'remove',
+    vehicleId: number,
+    fittingId: string,
+    itemUid: number,
+  ) => string | undefined;
   toHands: (itemUid: number, feet: [number, number, number]) => string | undefined;
   pickup: (itemUid: number, mode: 'pocket' | 'wield', feet: [number, number, number]) => string | undefined;
   interact: (entityUid: number) => string | undefined;
@@ -257,6 +273,8 @@ export const applyReplayActionPayload = (
       return owners.removeAttachment
         ? owners.removeAttachment(payload.firearmUid, payload.slotId)
         : 'Attachment handling is unavailable';
+    case 'vehicle.work':
+      return owners.vehicleWork(payload.work, payload.vehicleId, payload.fittingId, payload.itemUid);
     case 'inventory.cancel-handling':
       owners.queue.cancel();
       return undefined;

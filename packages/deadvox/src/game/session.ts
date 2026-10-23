@@ -2136,7 +2136,7 @@ export const createSession = (options: SessionOptions) => {
         direction: aimDirection(yaw, pitch, NEUTRAL_AIM),
         maxDistance: reachTuning(inventory.registry).reachMetres / s,
         blockSize: s,
-        isSolid: options.isOpaque,
+        isSolid: isOpaque,
       });
       if (selected !== entity) {
         return 'Face the unobstructed objective';
@@ -2218,6 +2218,23 @@ export const createSession = (options: SessionOptions) => {
     /** Set when the session was restored: the view direction to hand back to the input. */
     restoredLook,
     vehicles: inventory.vehicles,
+    /** Why the selected part can't be fitted at or removed from the selected site now. */
+    vehicleWorkRefusal: (kind: 'install' | 'remove', vehicleId: number, fittingId: string, itemUid: number) =>
+      sim.actions.vehicleWork?.validate(kind, vehicleId, fittingId, itemUid),
+    /** Starts, or resumes, service work on one selected site and part; returns why not. */
+    beginVehicleWork: (kind: 'install' | 'remove', vehicleId: number, fittingId: string, itemUid: number) => {
+      const service = inventory.vehicleService(vehicleId, fittingId, itemUid);
+      return (
+        sim.actions.vehicleWork?.validate(kind, vehicleId, fittingId, itemUid) ??
+        sim.actions.beginVehicleWork({
+          kind,
+          vehicleId,
+          fittingId,
+          itemUid,
+          durationSimSeconds: service?.durationSimSeconds ?? 0,
+        })
+      );
+    },
     /** The player's noise state; saved with the character. */
     playerAudio,
     worldColumns: () => world.snapshotColumns((id) => registry.blocks[id]!.id),

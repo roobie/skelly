@@ -21,16 +21,20 @@ local part(id, name, size, capabilities, description=null) = {
 local fitting(id, part, at, supportedBy=[], service=null) =
   { id: id, part: part, at: at, supportedBy: supportedBy } +
   if service == null then {} else { service: service };
-local service(mount, durationSimSeconds, qualities={}) = {
+// A paired site's service names each side, since the opened vehicle lists both while empty.
+local service(mount, durationSimSeconds, qualities={}, near=null, far=null) = {
   mount: mount,
   durationSimSeconds: durationSimSeconds,
   qualities: qualities,
+  names:: { near: near, far: far },
 };
+local sideService(service, side) =
+  if service == null then null else service + { name: service.names[side] };
 // A near-side fitting and its far-side twin, reflected across the centre plane. `0 - z` rather than `-z`
 // keeps a centred twin at 0: -0 doesn't survive a JSON round trip, so the admitted registry would differ.
 local pair(id, part, at, supportedBy, service=null) = [
-  fitting(id + '_near', part, at, [support + '_near' for support in supportedBy.paired] + supportedBy.shared, service),
-  fitting(id + '_far', part, [at[0], at[1], 0 - at[2]], [support + '_far' for support in supportedBy.paired] + supportedBy.shared, service) + { mirror: true },
+  fitting(id + '_near', part, at, [support + '_near' for support in supportedBy.paired] + supportedBy.shared, sideService(service, 'near')),
+  fitting(id + '_far', part, [at[0], at[1], 0 - at[2]], [support + '_far' for support in supportedBy.paired] + supportedBy.shared, sideService(service, 'far')) + { mirror: true },
 ];
 local on(shared=[], paired=[]) = { shared: shared, paired: paired };
 local batteryBay(tray, at, supportedBy=[]) = [
@@ -68,8 +72,8 @@ local hatchback = [
   + pair('rear_door', 'hatchback_rear_door', origin, on(['shell']))
   + pair('front_wing', 'hatchback_front_wing', origin, on(['shell']))
   + pair('tail_lamp', 'hatchback_tail_lamp', origin, on(['shell']))
-  + pair('front_strut', 'hatchback_front_strut', origin, on(['shell']), service('hatchback_front_strut', 30, { wrenching: 1 }))
-  + pair('front_wheel', 'wheel_205_55r16', [1.24, 0.316, 0.75], on(paired=['front_strut']), service('hatchback_wheel', 30, { wrenching: 1 }))
+  + pair('front_strut', 'hatchback_front_strut', origin, on(['shell']), service('hatchback_front_strut', 30, { wrenching: 1 }, 'Near front strut', 'Far front strut'))
+  + pair('front_wheel', 'wheel_205_55r16', [1.24, 0.316, 0.75], on(paired=['front_strut']), service('hatchback_wheel', 30, { wrenching: 1 }, 'Near front wheel', 'Far front wheel'))
   + pair('rear_wheel', 'wheel_205_55r16', [-1.27, 0.316, 0.75], on(['rear_axle']))
   + pair('front_seat', 'front_seat', [0, 0.3, 0.37], on(['shell']))
   + pair('door_mirror', 'door_mirror', [0.66, 0.98, 0.8675], on(['shell']))

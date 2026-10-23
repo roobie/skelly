@@ -3927,6 +3927,7 @@
           "service": {
             "durationSimSeconds": 30,
             "mount": "hatchback_front_strut",
+            "name": "Near front strut",
             "qualities": {
               "wrenching": 1
             }
@@ -3941,6 +3942,7 @@
           "service": {
             "durationSimSeconds": 30,
             "mount": "hatchback_front_strut",
+            "name": "Far front strut",
             "qualities": {
               "wrenching": 1
             }
@@ -3954,6 +3956,7 @@
           "service": {
             "durationSimSeconds": 30,
             "mount": "hatchback_wheel",
+            "name": "Near front wheel",
             "qualities": {
               "wrenching": 1
             }
@@ -3968,6 +3971,7 @@
           "service": {
             "durationSimSeconds": 30,
             "mount": "hatchback_wheel",
+            "name": "Far front wheel",
             "qualities": {
               "wrenching": 1
             }

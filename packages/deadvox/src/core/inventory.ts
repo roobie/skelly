@@ -185,8 +185,11 @@ const heldInPlace = (registry: Registry, item: Item, from: Location): string | u
   if (from.kind === 'work' || chargingBattery(from)) {
     return coreMessage(registry, 'inWork');
   }
-  if (from.kind === 'slot' || from.kind === 'vehicle') {
+  if (from.kind === 'slot') {
     return coreMessage(registry, 'fitted');
+  }
+  if (from.kind === 'vehicle') {
+    return coreMessage(registry, 'fittedToVehicle');
   }
   if (item.trap) {
     return coreMessage(registry, item.trap.state === 'armed' ? 'trapSet' : 'trapShut');
@@ -359,10 +362,10 @@ export class Inventory {
     const site = vehicle?.sites.find(({ id }) => id === fittingId);
     const item = this.itemByUid(itemUid);
     if (!(vehicle && site?.service && item)) {
-      return 'Vehicle service target is unavailable';
+      return coreMessage(this.registry, 'gone');
     }
     if (this.registry.items.get(item.type)?.vehicle?.mount !== site.service.mount || item.count !== 1) {
-      return 'Part does not fit this service site';
+      return coreMessage(this.registry, 'partDoesNotFit');
     }
     return kind === 'install'
       ? this.installVehiclePart(vehicle, site, item, vehicleId)
@@ -395,7 +398,7 @@ export class Inventory {
   ): string | undefined {
     const from = this.locate(item);
     if (!from || from.kind === 'vehicle' || vehicle.fittings.some(({ id }) => id === site.id)) {
-      return 'Vehicle service source changed';
+      return coreMessage(this.registry, 'gone');
     }
     const refusal = this.replaceVehicle(
       vehicleId,
@@ -413,10 +416,10 @@ export class Inventory {
     const { fittingId, output, vehicleId } = request;
     const fitted = vehicle.fittings.find(({ id }) => id === fittingId);
     if (!fitted || fitted.item !== item || !output) {
-      return 'Vehicle service source changed';
+      return coreMessage(this.registry, 'gone');
     }
     if (vehicle.fittings.some((entry) => entry.supportedBy.includes(fittingId))) {
-      return 'Another part rests on this fitting';
+      return coreMessage(this.registry, 'partSupportsOthers');
     }
     const placement = this.planAdd(item, output);
     if (!placement.ok) {

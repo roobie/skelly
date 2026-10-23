@@ -1,5 +1,6 @@
 // Service work keeps item ownership in Inventory until its terminal atomic transfer.
 
+import { coreMessage } from './coreText.ts';
 import type { Inventory, Location, Target } from './inventory.ts';
 import type { VehicleWorkHooks } from './longAction.ts';
 
@@ -17,14 +18,25 @@ interface WorkTarget {
   itemUid: number;
 }
 
-const sourceRefusal = (inventory: Inventory, kind: WorkKind, itemUid: number): string | undefined => {
+const sourceRefusal = (
+  inventory: Inventory,
+  kind: WorkKind,
+  { vehicleId, fittingId, itemUid }: WorkTarget,
+): string | undefined => {
   const item = inventory.itemByUid(itemUid);
   const location = item && inventory.locate(item);
   if (!(item && location) || (kind === 'install' && location.kind === 'vehicle')) {
-    return 'Vehicle service source changed';
+    return coreMessage(inventory.registry, 'gone');
+  }
+  // Refused before work starts as well as at the transfer, so no work time is spent on a part that can't come off.
+  if (
+    kind === 'remove' &&
+    inventory.vehicles.get(vehicleId)?.fittings.some(({ supportedBy }) => supportedBy.includes(fittingId))
+  ) {
+    return coreMessage(inventory.registry, 'partSupportsOthers');
   }
   if (kind === 'install' && !reachableSource(inventory, location)) {
-    return 'Vehicle service source changed';
+    return coreMessage(inventory.registry, 'tooFar');
   }
   return undefined;
 };
@@ -37,20 +49,33 @@ const reachableSource = (inventory: Inventory, location: Location): boolean => {
   return place?.kind !== 'pile' || inventory.canReach(place.pile.pos);
 };
 
-const serviceRefusal = (
-  inventory: Inventory,
-  options: VehicleWorkOptions,
-  { vehicleId, fittingId, itemUid }: WorkTarget,
-): string | undefined => {
-  const service = inventory.vehicleService(vehicleId, fittingId, itemUid);
+/** Why the selected site cannot take or give up this exact part, before tools are considered. */
+const siteRefusal = (inventory: Inventory, { vehicleId, fittingId, itemUid }: WorkTarget): string | undefined => {
   const vehicle = inventory.vehicles.get(vehicleId);
-  if (!(service && vehicle && inventory.canReachVehicle(vehicle.origin))) {
-    return 'Vehicle service target is unavailable';
+  const site = vehicle?.sites.find(({ id }) => id === fittingId);
+  const item = inventory.itemByUid(itemUid);
+  if (!(vehicle && site?.service && item)) {
+    return coreMessage(inventory.registry, 'gone');
   }
-  if (Object.entries(service.qualities).some(([quality, level]) => options.quality(quality) < level)) {
-    return 'Required tool is unavailable';
+  if (!inventory.canReachVehicle(vehicle.origin)) {
+    return coreMessage(inventory.registry, 'tooFar');
   }
-  return undefined;
+  if (inventory.registry.items.get(item.type)?.vehicle?.mount !== site.service.mount) {
+    return coreMessage(inventory.registry, 'partDoesNotFit');
+  }
+  return inventory.vehicleService(vehicleId, fittingId, itemUid)
+    ? undefined
+    : coreMessage(inventory.registry, 'partNeedsSupport');
+};
+
+const serviceRefusal = (inventory: Inventory, options: VehicleWorkOptions, target: WorkTarget): string | undefined => {
+  const refusal = siteRefusal(inventory, target);
+  if (refusal) {
+    return refusal;
+  }
+  const service = inventory.vehicleService(target.vehicleId, target.fittingId, target.itemUid)!;
+  const missing = Object.entries(service.qualities).find(([quality, level]) => options.quality(quality) < level);
+  return missing ? coreMessage(inventory.registry, 'toolNotInReach', { quality: missing[0] }) : undefined;
 };
 
 /**
@@ -58,8 +83,10 @@ const serviceRefusal = (
  * contains no output object or closure; see `longAction.ts`, `VehicleWorkHooks`.
  */
 export const vehicleWorkHooks = (inventory: Inventory, options: VehicleWorkOptions): VehicleWorkHooks => {
-  const validate = (kind: WorkKind, vehicleId: number, fittingId: string, itemUid: number) =>
-    serviceRefusal(inventory, options, { vehicleId, fittingId, itemUid }) ?? sourceRefusal(inventory, kind, itemUid);
+  const validate = (kind: WorkKind, vehicleId: number, fittingId: string, itemUid: number) => {
+    const target = { vehicleId, fittingId, itemUid };
+    return serviceRefusal(inventory, options, target) ?? sourceRefusal(inventory, kind, target);
+  };
   return {
     validate,
     finish: (kind, vehicleId, fittingId, itemUid) =>

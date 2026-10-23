@@ -119,6 +119,7 @@ const applyCommand = (
     inventory: runtime.inventory,
     queue: runtime.handling,
     quickbar: runtime.quickbar,
+    vehicleWork: runtime.session.beginVehicleWork,
     search: (uid) => {
       const entity = runtime.entities.byUid(uid);
       return entity ? runtime.session.search(entity) : 'The container is no longer available';
@@ -1335,6 +1336,23 @@ describe('input replay', () => {
     expect(decoded.inputs.actions.map(({ action, context, payload }) => ({ action, context, payload }))).toEqual(
       commands.map((payload) => ({ action: payload.kind, context: 'inventory', payload })),
     );
+  });
+
+  it('round-trips vehicle service commands from the opened vehicle', async () => {
+    const start = capture(createRuntime());
+    const recorder = new InputReplayRecorder(start);
+    const commands = [
+      { kind: 'vehicle.work', work: 'remove', vehicleId: 1, fittingId: 'site', itemUid: 2 },
+      { kind: 'vehicle.work', work: 'install', vehicleId: 1, fittingId: 'site', itemUid: 2 },
+    ] as const;
+    for (const command of commands) {
+      recorder.queueAction(command.kind, 'down', 'inventory', { payload: command });
+      recorder.recordTick(replaySample);
+    }
+
+    const bytes = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
+    const decoded = await decodeInputReplay(bytes, { contentLookup });
+    expect(decoded.inputs.actions.map(({ payload }) => payload)).toEqual(commands);
   });
 
   it('round-trips the Actions tab commands: Wait and the alarm wake hour', async () => {

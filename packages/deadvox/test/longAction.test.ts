@@ -157,7 +157,7 @@ describe('core long actions', () => {
         vehicleId: 1,
         fittingId: 'fixture_site',
         itemUid: 7,
-        duration: 10,
+        durationSimSeconds: 10,
       }),
     ).toBeUndefined();
     sim.scheduler.advance(4);

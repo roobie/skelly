@@ -88,6 +88,7 @@
         "craftInputsChanged": "Craft inputs changed",
         "doorOpen": "The door is open",
         "fitted": "It's fitted to the firearm",
+        "fittedToVehicle": "It's fitted to the vehicle",
         "gone": "It isn't there any more",
         "handsBusy": "My hands are busy",
         "handsFull": "My hands are full",
@@ -131,6 +132,9 @@
         "outOfFuelNoSpare": "It's out of fuel, and I have no spare",
         "outOfReach": "It's out of reach",
         "partCount": "I can't move {count} of {total}",
+        "partDoesNotFit": "It doesn't fit there",
+        "partNeedsSupport": "Nothing holds it there",
+        "partSupportsOthers": "Another part rests on it",
         "pocketsFull": "My pockets are full",
         "preferredCompete": "Preferred alternatives compete for the same stock or would consume a required tool",
         "recipeUnknown": "Recipe not known",
@@ -632,6 +636,16 @@
           "wieldAmmunitionBox": "Wield ammunition box",
           "wieldSelected": "Wield selected",
           "wieldSelectedItem": "Wield selected item"
+        },
+        "vehicle": {
+          "empty": "{site}: empty",
+          "heading": "{vehicle} · {distance} m",
+          "inspect": "{key}: open {vehicle}",
+          "install": "Fit {part}",
+          "installing": "Fitting {part}",
+          "noPart": "No part in reach fits",
+          "remove": "Remove",
+          "removing": "Removing {part}"
         },
         "win": {
           "export": "Export attempt",
