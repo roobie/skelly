@@ -96,12 +96,10 @@ body {
   text-transform: uppercase;
 }
 .sound-trigger,
-.debug-hint,
-.sound-note {
+.debug-hint {
   margin: 6px 0;
 }
-.debug-hint,
-.sound-note {
+.debug-hint {
   color: var(--muted);
 }
 .sound-settings {

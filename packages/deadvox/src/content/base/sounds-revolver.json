@@ -2,6 +2,7 @@
   "sounds": [
     {
       "category": "world",
+      "description": "Fire the revolver on a live round.",
       "gain": 0.90000000000000002,
       "gainJitter": [0.94999999999999996, 1.05],
       "id": "revolver_shot",
@@ -15,6 +16,7 @@
     },
     {
       "category": "body",
+      "description": "Pull the revolver’s trigger on an empty or spent chamber.",
       "gain": 0.29999999999999999,
       "gainJitter": [0.94999999999999996, 1.05],
       "id": "revolver_dry_click",
@@ -28,6 +30,7 @@
     },
     {
       "category": "body",
+      "description": "Start a revolver reload: the crane swings out.",
       "gain": 0.40000000000000002,
       "gainJitter": [0.94999999999999996, 1.05],
       "id": "revolver_crane_open",
@@ -41,6 +44,7 @@
     },
     {
       "category": "body",
+      "description": "Finish or release a revolver reload: the crane closes.",
       "gain": 0.40000000000000002,
       "gainJitter": [0.94999999999999996, 1.05],
       "id": "revolver_crane_close",
@@ -54,6 +58,7 @@
     },
     {
       "category": "body",
+      "description": "Dump the cylinder with the ejector rod.",
       "gain": 0.40000000000000002,
       "gainJitter": [0.94999999999999996, 1.05],
       "id": "revolver_eject",
@@ -67,6 +72,7 @@
     },
     {
       "category": "body",
+      "description": "Top up the revolver: each spent case is picked out by hand.",
       "gain": 0.25,
       "gainJitter": [0.94999999999999996, 1.05],
       "id": "revolver_case_pick",
@@ -80,6 +86,7 @@
     },
     {
       "category": "body",
+      "description": "Load one loose round into an open cylinder.",
       "gain": 0.29999999999999999,
       "gainJitter": [0.94999999999999996, 1.05],
       "id": "revolver_round_insert",
@@ -93,6 +100,7 @@
     },
     {
       "category": "body",
+      "description": "Cock the revolver’s hammer for a single-action shot.",
       "gain": 0.29999999999999999,
       "gainJitter": [0.94999999999999996, 1.05],
       "id": "revolver_hammer_cock",

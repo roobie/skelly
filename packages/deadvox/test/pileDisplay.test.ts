@@ -8,10 +8,11 @@ import { PILE_DISPLAY_KIND } from '../src/core/schema.ts';
 import { ItemThrows } from '../src/render/itemThrows.ts';
 import { PileMeshes } from '../src/render/piles.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { presentationFlight } from './itemFlightFixture.ts';
 
 const base = baseRegistry();
 
-const { throwFlightSimSeconds: ITEM_FLIGHT_SECONDS, throwArcHeightMetres } = reachTuning(base);
+const { throwFlightSimSeconds: ITEM_FLIGHT_SECONDS } = reachTuning(base);
 
 const fixtureRegistry = () => ({ ...base, items: new Map(base.items) });
 const pile = { kind: 'pile' as const, pos: [2, 0, 0] as [number, number, number] };
@@ -43,12 +44,22 @@ it('aligns a landing with the bundle after excluding another active throw', () =
   const piles = new PileMeshes(0.5, undefined, 17);
 
   expect(inventory.throwToPile(first, 'right', pile).ok).toBe(true);
-  throws.spawn({ item: first, origin: [0, 1, 0], startedAtSimSeconds: 0, landingAt: ITEM_FLIGHT_SECONDS }, inventory);
+  throws.spawn(
+    {
+      item: first,
+      flight: presentationFlight,
+      origin: [0, 1, 0],
+      startedAtSimSeconds: 0,
+      landingAt: ITEM_FLIGHT_SECONDS,
+    },
+    inventory,
+  );
   expect(inventory.throwToPile(second, 'left', pile).ok).toBe(true);
   const secondStart = ITEM_FLIGHT_SECONDS / 2;
   throws.spawn(
     {
       item: second,
+      flight: presentationFlight,
       origin: [0, 1, 0],
       startedAtSimSeconds: secondStart,
       landingAt: secondStart + ITEM_FLIGHT_SECONDS,
@@ -104,12 +115,16 @@ it('updates a reused arc after later-indexed arcs have landed', () => {
   const origin: [number, number, number] = [0, 1, 0];
 
   expect(inventory.throwToPile(first, 'right', pile).ok).toBe(true);
-  throws.spawn({ item: first, origin, startedAtSimSeconds: 0, landingAt: ITEM_FLIGHT_SECONDS }, inventory);
+  throws.spawn(
+    { item: first, flight: presentationFlight, origin, startedAtSimSeconds: 0, landingAt: ITEM_FLIGHT_SECONDS },
+    inventory,
+  );
   const secondStart = ITEM_FLIGHT_SECONDS / 2;
   expect(inventory.throwToPile(second, 'left', pile).ok).toBe(true);
   throws.spawn(
     {
       item: second,
+      flight: presentationFlight,
       origin,
       startedAtSimSeconds: secondStart,
       landingAt: secondStart + ITEM_FLIGHT_SECONDS,
@@ -124,7 +139,13 @@ it('updates a reused arc after later-indexed arcs have landed', () => {
   expect(inventory.throwToPile(third, 'right', pile).ok).toBe(true);
   const thirdStart = ITEM_FLIGHT_SECONDS * 1.25;
   throws.spawn(
-    { item: third, origin, startedAtSimSeconds: thirdStart, landingAt: thirdStart + ITEM_FLIGHT_SECONDS },
+    {
+      item: third,
+      flight: presentationFlight,
+      origin,
+      startedAtSimSeconds: thirdStart,
+      landingAt: thirdStart + ITEM_FLIGHT_SECONDS,
+    },
     inventory,
   );
   expect(throws.activeCount).toBe(2);
@@ -161,7 +182,7 @@ it('updates a reused arc after later-indexed arcs have landed', () => {
       origin,
       endpointBundle!.position.toArray() as [number, number, number],
       (landingTime - thirdStart) / ITEM_FLIGHT_SECONDS,
-      throwArcHeightMetres,
+      presentationFlight,
     ),
   );
   expect(activeThird.position.distanceTo(expected)).toBeLessThan(1e-5);
@@ -174,7 +195,7 @@ it('updates a reused arc after later-indexed arcs have landed', () => {
       origin,
       endpointBundle!.position.toArray() as [number, number, number],
       (nextTime - thirdStart) / ITEM_FLIGHT_SECONDS,
-      throwArcHeightMetres,
+      presentationFlight,
     ),
   );
   expect(activeThird.position.distanceTo(nextExpected)).toBeLessThan(1e-5);
@@ -201,7 +222,7 @@ it('aligns a thrown scatter item with its seeded scatter placement', () => {
   expect(inventory.throwToPile(item, 'right', pile).ok).toBe(true);
   const snapshot = inventory.snapshotState();
 
-  throws.spawn({ item, origin: [0, 1, 0], landingAt: ITEM_FLIGHT_SECONDS }, inventory);
+  throws.spawn({ item, flight: presentationFlight, origin: [0, 1, 0], landingAt: ITEM_FLIGHT_SECONDS }, inventory);
   throws.update(ITEM_FLIGHT_SECONDS, inventory);
   expect(throws.activeCount).toBe(0);
   piles.sync(inventory, throws.hiddenItemUids);

@@ -726,13 +726,13 @@ describe('input replay', () => {
     expect.soft(status).not.toBe(idleStatus);
   });
 
-  it('rejects a replay from another schema version', async () => {
+  it('rejects recordings from before drag-free throw strength', async () => {
     const start = capture(createRuntime());
     const recorder = new InputReplayRecorder(start);
     recorder.recordTick(replaySample);
     const current = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
     const differentSchema = JSON.parse(new TextDecoder().decode(current)) as Record<string, unknown>;
-    differentSchema.schemaVersion = Number(differentSchema.schemaVersion) - 1;
+    differentSchema.schemaVersion = 20;
 
     await expect(decodeInputReplay(canonicalJsonBytes(differentSchema), { contentLookup })).rejects.toThrow(
       'Unsupported replay format',
