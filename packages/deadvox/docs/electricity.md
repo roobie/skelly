@@ -48,15 +48,21 @@ type with more authored output, and damage lowers output. Better and less damage
 panels are therefore worth seeking out and repairing. d587 builds this when the
 session constructs, ticks and saves a power network.
 
-Elapsed time settles resource and phase boundaries before changing rates so a
-load or wiring change cannot rewrite earlier service. Appliance owners receive
-power transitions with simulation timestamps, rather than guessing away-time
-service from the final powered flag. Returned histories belong to the caller;
-consuming a history and saving appliance progress must share the same settlement
-boundary. See `src/core/power.ts`, `PowerNetwork.advance`, `PowerTransition`,
-`PowerNetwork.setEnabled`, `PowerNetwork.refuel` and `PowerNetwork.rewire`.
-The same event model is canonical beyond the player's simulation block; it needs
-no renderer or streaming input.
+Elapsed time settles old service before changing rates so a load or wiring
+change cannot rewrite earlier work. Completion must feed demand back into the
+same electrical advance: releasing demand only at the request target would deny
+another consumer service and miscount stored energy. The appliance owner retains
+work and completion effects; the network retains electrical dispatch. See
+`src/core/power.ts`, `PowerWork` and `PowerNetwork.run`.
+
+Tied completions settle together before rebalancing to prevent iteration order
+from exposing transient service. A command at completion settles the old interval
+first. An interruption pauses work instead of erasing already served time. Saved
+work and power must share a settled boundary; neither a final powered flag nor
+an undelivered transition history is a progress snapshot. See
+`test/powerWork.test.ts`, and `src/core/power.ts`, `PowerNetwork.setEnabled`,
+`PowerNetwork.refuel` and `PowerNetwork.rewire`. The same event model is canonical
+beyond the player's simulation block; it needs no renderer or streaming input.
 
 ## Integer units
 
