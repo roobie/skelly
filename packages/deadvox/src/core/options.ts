@@ -296,6 +296,9 @@ export const batterySlotRefusal = (view: ReachSnapshot, light: Item, battery: It
   if (!(reachable(slotRoot(inv, light)) && reachable(battery))) {
     return coreMessage(inv.registry, 'tooFar');
   }
+  if (inv.locate(light)?.kind === 'worn') {
+    return coreMessage(inv.registry, 'headlampOnHead');
+  }
   return fitsLight(inv.registry, light, battery) ? undefined : coreMessage(inv.registry, 'wrongBattery');
 };
 
@@ -306,10 +309,9 @@ export const batterySlotOption = (view: ReachSnapshot, light: Item, battery: Ite
   return refusal ? refuseUse(inv, refusal) : loadOption(inv, light, battery);
 };
 
-/** A battery in one hand goes into the light held, or fitted to the gun held, in the other. */
+/** A battery used from one hand goes into the light held, or fitted to the gun held, in the other. */
 const batteryOption = (battery: Item, inv: Inventory): UseOption => {
-  const hand = inv.locate(battery);
-  if (hand?.kind !== 'hand') {
+  if (inv.locate(battery)?.kind !== 'hand') {
     return refuseUse(inv, coreMessage(inv.registry, 'notInHands', { item: inv.name(battery).toLowerCase() }));
   }
   const light = [...inv.carriedTree()]
@@ -498,7 +500,13 @@ export const options = (item: Item, view: ReachSnapshot): Option[] => {
 
 const quickbarHand = (inv: Inventory, item: Item): HandSide => {
   const def = defOf(inv.registry, item.type);
-  return def.light && !def.twoHanded ? offSide(inv.character) : dominantSide(inv.character);
+  if (def.light && !def.twoHanded) {
+    return offSide(inv.character);
+  }
+  const dominant = dominantSide(inv.character);
+  const held = inv.hands[dominant];
+  // A battery goes beside the light it fits, so using it puts it in (`DESIGN.md`, "Light").
+  return def.battery && held && fitsLight(inv.registry, held, item) ? otherHand(dominant) : dominant;
 };
 
 /** Where a displaced held item goes without being dropped: a free shoulder, else the best pocket's planned spot. */

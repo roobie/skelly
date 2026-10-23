@@ -1,6 +1,6 @@
 // Using what's in your hands (`DESIGN.md`, "Hands"): eating, drinking and taking a painkiller
 // are short actions in the handling queue, a light switches on and off, and a battery goes into
-// the light you're holding, or comes out of it. A light whose content sets `wornSwitch` also stays lit while worn and answers the
+// a light as the player chooses (`DESIGN.md`, "Light"), or comes out of it. A light whose content sets `wornSwitch` also stays lit while worn and answers the
 // worn-light control (`toggleWornLights`).
 // The needs themselves are in the simulation (core/needs.ts).
 
@@ -23,7 +23,7 @@ import {
   unloadBattery,
 } from '../core/lights.ts';
 import { consume } from '../core/needs.ts';
-import { consumption, stowTarget, useOption } from '../core/options.ts';
+import { batterySlotOption, batterySlotRefusal, consumption, stowTarget, useOption } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { Readable, ReadRequest } from '../core/readable.ts';
 import type { Simulation } from '../core/sim.ts';
@@ -134,16 +134,12 @@ export class Survival {
     this.queue.registerAction('survival.battery', (params) => {
       const light = this.inventory.itemByUid(numberParam(params, 'lightUid'));
       const battery = this.inventory.itemByUid(numberParam(params, 'batteryUid'));
-      if (!(light && lightInHands(this.inventory, light))) {
-        return "I haven't got the light in hand";
+      if (!(light && battery)) {
+        return coreMessage(this.inventory.registry, 'batteryGone');
       }
-      if (!battery) {
-        return "The battery isn't there any more";
-      }
-      if (!this.hooks.reach().entries.some((entry) => entry.item === battery)) {
-        return 'The battery is no longer in reach';
-      }
-      const reason = swapBattery(this.inventory, light, battery, this.hooks.feet);
+      const reason =
+        batterySlotRefusal(this.hooks.reach(), light, battery) ??
+        swapBattery(this.inventory, light, battery, this.hooks.feet);
       if (reason === undefined) {
         this.hooks.batterySwapped?.(light.type);
       }
@@ -265,6 +261,30 @@ export class Survival {
     return undefined;
   }
 
+  /** Queues a battery into a light from the light's battery slot on its item card. */
+  loadBattery(lightUid: number, batteryUid: number): string | undefined {
+    if (this.sim.body.actionRefusal) {
+      return this.sim.body.actionRefusal;
+    }
+    const light = this.inventory.itemByUid(lightUid);
+    const battery = this.inventory.itemByUid(batteryUid);
+    if (!(light && battery)) {
+      return coreMessage(this.inventory.registry, 'batteryGone');
+    }
+    return this.enqueueBattery(batterySlotOption(this.hooks.reach(), light, battery));
+  }
+
+  private enqueueBattery(option: ReturnType<typeof useOption>): string | undefined {
+    if (!option.plan.ok) {
+      return option.plan.reason;
+    }
+    this.queue.enqueueAction('survival.battery', option.label, option.plan.time, {
+      lightUid: option.light!.uid,
+      batteryUid: option.battery!.uid,
+    });
+    return undefined;
+  }
+
   /** Executes the live core option; this owner retains effects and serializable queue actions. */
   use(item: Item): string | undefined {
     if (this.sim.body.actionRefusal) {
@@ -295,11 +315,7 @@ export class Survival {
         this.queue.enqueueAction('survival.consume', option.label, option.plan.time, { itemUid: item.uid });
         return undefined;
       case 'battery':
-        this.queue.enqueueAction('survival.battery', option.label, option.plan.time, {
-          lightUid: option.light!.uid,
-          batteryUid: option.battery!.uid,
-        });
-        return undefined;
+        return this.enqueueBattery(option);
       case 'canister':
         this.queue.enqueueAction('survival.canister', option.label, option.plan.time, {
           toolUid: option.tool!.uid,

@@ -1569,6 +1569,65 @@ try {
     assert.equal(removalSettled.attachedUid, undefined, 'the production removal control empties the clicked slot');
     assert.deepEqual(errors.slice(pageErrorsBeforeRemove), [], 'removal does not raise a page error');
     logPhase('render-free attachment removal');
+
+    // A battery dragged onto the battery slot on a light's card goes into that light.
+    await pressAction(page, 'ui.inventory-toggle');
+    await page.waitForFunction(() => document.querySelector('#inventory')?.hidden);
+    await spawn('flashlight');
+    await spawn('aa_battery');
+    await pressAction(page, 'ui.inventory-toggle');
+    await page.waitForFunction(() => !document.querySelector('#inventory')?.hidden);
+    const { lightUid, spareUid } = await page.evaluate(() => {
+      const { inventory } = globalThis.foregripFitTest.session;
+      // The world has its own lights and batteries; the spawned ones are the newest.
+      const loose = (type) =>
+        Math.max(
+          ...[...inventory.items()]
+            .filter(({ item }) => item.type === type && inventory.locate(item)?.kind !== 'slot')
+            .map(({ item }) => item.uid),
+        );
+      return { lightUid: loose('flashlight'), spareUid: loose('aa_battery') };
+    });
+    assert.ok(Number.isSafeInteger(lightUid) && Number.isSafeInteger(spareUid), 'the light and a loose battery spawn');
+    await page.locator(`#inventory [data-uid="${lightUid}"]`).scrollIntoViewIfNeeded();
+    await clickThroughMenuCursor(`#inventory [data-uid="${lightUid}"]`);
+    const batterySlot = page.locator(`#inventory .inv-details [data-target="battery:${lightUid}"]`);
+    await batterySlot.waitFor({ state: 'visible', timeout: 5000 });
+    await batterySlot.scrollIntoViewIfNeeded();
+    await page.locator(`#inventory [data-uid="${spareUid}"]`).scrollIntoViewIfNeeded();
+    const pageErrorsBeforeLoad = errors.length;
+    await moveMenuCursorTo(`#inventory [data-uid="${spareUid}"]`);
+    await page.mouse.down();
+    await moveMenuCursorTo(batterySlot);
+    assert.equal(
+      await batterySlot.getAttribute('data-drop-shape'),
+      'will-land',
+      'the card keeps the light while the battery is dragged, and its slot accepts the battery',
+    );
+    await page.mouse.up();
+    const loaded = await page.evaluate(
+      ({ light, spare }) => {
+        const { session, dispatches } = globalThis.foregripFitTest;
+        // The command is applied on the next player tick.
+        session.frame(0.1);
+        const maxFrames = Math.ceil(session.queue.remaining / 0.1) + 2;
+        let frames = 0;
+        while (session.queue.jobs.length > 0 && frames < maxFrames) {
+          session.frame(0.1);
+          frames += 1;
+        }
+        return {
+          loads: dispatches.filter((action) => action.kind === 'light.battery.load').length,
+          fittedUid: session.inventory.itemByUid(light)?.slots?.battery?.uid,
+          expected: spare,
+        };
+      },
+      { light: lightUid, spare: spareUid },
+    );
+    assert.equal(loaded.loads, 1, 'the drop dispatches one battery load');
+    assert.equal(loaded.fittedUid, loaded.expected, 'the dragged battery is in the light');
+    assert.deepEqual(errors.slice(pageErrorsBeforeLoad), [], 'loading does not raise a page error');
+    logPhase('battery slot drag');
     process.stdout.write(
       `${engine}: live held-AR pocketed-foregrip fit/removal via locked menu click ${JSON.stringify({ fitSettled, removalSettled })}\n`,
     );

@@ -244,7 +244,7 @@ describe('a light mount on a long gun', () => {
     piles.dispose();
   });
 
-  it('swaps a fitted battery through timed use and saves it without detaching the mount', () => {
+  it('swaps a fitted battery from the slot on its card and saves it without detaching the mount', () => {
     const { registry, inventory, queue, handling, survival, sim } = setup();
     const { gun, mount } = fitted(inventory);
     expect(handling.fit(gun.uid, LIGHT_MOUNT_SLOT, mount.uid)).toBeUndefined();
@@ -255,7 +255,8 @@ describe('a light mount on a long gun', () => {
     const before = chargeOf(registry, old)!;
     const replacement = inventory.create(old.type);
     expect(inventory.add(replacement, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
-    expect(survival.use(replacement)).toBeUndefined();
+    // Both hands hold the gun, so the battery goes in through the light's slot on the card.
+    expect(survival.loadBattery(mount.uid, replacement.uid)).toBeUndefined();
     expect(mount.slots!.battery).toBe(old);
     queue.tick(60);
     expect(gun.slots![LIGHT_MOUNT_SLOT]).toBe(mount);

@@ -8,6 +8,7 @@ import type { WorkOperation, WorkOption } from '../src/core/craftCommands.ts';
 import { planCraft } from '../src/core/crafting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { swapBattery } from '../src/core/lights.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import {
@@ -103,6 +104,7 @@ function setup(contentRegistry = registry) {
   let needs = 'health 100% · stamina 100% · food 100% · water 100% · fatigue 0';
   let lastPayload: ReplayActionPayload | undefined;
   let workHandler = (_uid: number, _operation: WorkOperation): string | undefined => undefined;
+  let loadHandler = (_lightUid: number, _batteryUid: number): string | undefined => undefined;
   let alarm: { gameHour: number | undefined } | undefined;
   const commandOwners: ReplayCommandOwners = {
     inventory: inv,
@@ -116,6 +118,7 @@ function setup(contentRegistry = registry) {
       queue.enqueueAction('furniture.search', 'Search furniture', 5);
     },
     work: (uid, operation) => workHandler(uid, operation),
+    loadBattery: (lightUid, batteryUid) => loadHandler(lightUid, batteryUid),
     toHands: () => undefined,
     pickup: () => undefined,
     interact: () => undefined,
@@ -192,6 +195,9 @@ function setup(contentRegistry = registry) {
     lastPayload: () => lastPayload,
     setWorkHandler: (handler: typeof workHandler) => {
       workHandler = handler;
+    },
+    setLoadHandler: (handler: typeof loadHandler) => {
+      loadHandler = handler;
     },
     setNeeds: (value: string) => {
       needs = value;
@@ -732,8 +738,47 @@ describe('inventory screen Lit rendering', () => {
     screen.selected = firearm;
     screen.update();
 
-    const battery = root.querySelector<HTMLElement>(`[data-attachment-slot="${mounted.fitted.mountedAt}.battery"]`);
+    const light = firearm.slots![mounted.fitted.mountedAt]!;
+    const battery = root.querySelector<HTMLElement>(`[data-target="battery:${light.uid}"]`);
     expect(battery?.dataset.occupied).toBe('true');
+  });
+
+  it('loads a battery dragged onto the battery slot of a light card', () => {
+    const t = setup();
+    const light = t.inv.create('flashlight');
+    const spare = t.inv.create('aa_battery');
+    if (!(t.inv.add(light, { kind: 'pile', pos: [0, 0, 0] }) && t.inv.add(spare, { kind: 'hand', side: 'left' }))) {
+      throw new Error('Fixture could not place the light on the ground and the battery in hand');
+    }
+    const fitted = light.slots!.battery!;
+    t.setLoadHandler((lightUid, batteryUid) =>
+      swapBattery(t.inv, t.inv.itemByUid(lightUid)!, t.inv.itemByUid(batteryUid)!, () => ({
+        kind: 'pile',
+        pos: [0, 0, 0],
+      })),
+    );
+    t.screen.selected = light;
+    t.screen.update();
+    const slot = t.root.querySelector<HTMLElement>(`[data-target="battery:${light.uid}"]`)!;
+    const hitTest = vi.spyOn(document, 'elementsFromPoint').mockImplementation(() => [slot]);
+
+    t.root
+      .querySelector<HTMLElement>(`.inv-item-slot[data-uid="${spare.uid}"]`)!
+      .dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, clientX: 10, clientY: 10 }),
+      );
+    globalThis.window.dispatchEvent(
+      new PointerEvent('pointermove', { bubbles: true, pointerId: 1, clientX: 30, clientY: 10 }),
+    );
+    globalThis.window.dispatchEvent(
+      new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1, clientX: 30, clientY: 10 }),
+    );
+    hitTest.mockRestore();
+
+    expect(t.lastPayload()).toEqual({ kind: 'light.battery.load', lightUid: light.uid, batteryUid: spare.uid });
+    expect(light.slots?.battery).toBe(spare);
+    expect(t.inv.locate(fitted)?.kind).toBe('pile');
+    t.screen.close();
   });
 
   it('fits a foregrip from an inventory pocket onto the held AR through the inventory control', () => {
@@ -768,6 +813,7 @@ describe('inventory screen Lit rendering', () => {
         work: () => undefined,
         fitAttachment: (uid, targetSlot, attachmentUid) => handling.fit(uid, targetSlot, attachmentUid),
         removeAttachment: (uid, targetSlot) => handling.remove(uid, targetSlot),
+        loadBattery: () => undefined,
         toHands: () => undefined,
         pickup: () => undefined,
         interact: () => undefined,
