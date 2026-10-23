@@ -31,7 +31,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { amalgamTypeOf, figureSeedPool } from '../src/core/zombieFigure.ts';
 import { flinchSideForId, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes, shamblerRegionBoxes } from '../src/core/zombieRegions.ts';
-import { type Zombie, type ZombieMode, ZombieSystem } from '../src/core/zombies.ts';
+import type { Zombie, ZombieMode } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { ZOMBIE_RATE } from '../src/game/simulationRates.ts';
 import { CARVED_NEIGHBOUR } from '../src/render/amalgamFlesh.ts';
@@ -45,10 +45,10 @@ import {
   perceptionLabelFor,
 } from '../src/render/mobActors.ts';
 import { ZombieMeshes } from '../src/render/zombies.ts';
-
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 interface TestDebris {
   elapsed: number;
