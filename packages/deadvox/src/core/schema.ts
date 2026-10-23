@@ -833,6 +833,10 @@ const FirearmAttachmentEffectsSchema = variant('kind', [
     recoilReduction: Fraction,
     /** Condition lost per committed shot; zero means the attachment does not wear. */
     wearPerShot: Fraction,
+    /** Firearms Combat level required to fit this suppressor; removing it remains open. */
+    fitSkillLevel: SkillLevel,
+    /** Player-facing refusal when the character lacks the fitting skill. */
+    fitRefusal: Name,
   }),
   strictObject({
     kind: literal('foregrip'),
