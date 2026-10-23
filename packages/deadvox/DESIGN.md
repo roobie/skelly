@@ -2123,6 +2123,16 @@ is direction only; pouring and partial refills stay open (#536). The lamp is con
 only: any light with a fuel rate and a swappable fuel canister behaves the same. See
 `src/core/lights.ts`, `drainLight`, and `src/core/torch.ts`, `swapCanister`.
 
+A held light's battery can be taken out on its own, as an action chosen on the wheel
+and then activated, because a swap needs a spare: without one a player could not move
+a cell to a charger, another light or a pocket. It follows magazine removal: the light
+must be in hand, the battery keeps its charge and goes to the first pocket with room,
+else the ground, and with nowhere to put it, it stays fitted. A dead primary cell is
+thrown away, as in a swap. Taking the battery out switches the light off, and an empty
+light is a valid item that takes a battery back as a dead one does. See
+`src/core/lights.ts`, `unloadBattery`; `src/game/itemActions.ts`, `itemActionsFor`;
+and `src/core/options.ts`, `stowTarget`.
+
 Zombies see light farther than they see a player in darkness, and see a player
 lit by any source. Aimed-down or covered flashlights shorten that reach. Light
 through doors and windows can make a building a beacon; covering or boarding

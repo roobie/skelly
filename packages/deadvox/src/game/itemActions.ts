@@ -1,9 +1,11 @@
 import type { Body } from '../core/body.ts';
 import { BODY_REGIONS, type BodyRegion, bodyRegionLabel } from '../core/body.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
+import { coreLabel } from '../core/coreText.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { defOf } from '../core/items.ts';
+import { canUnloadBattery, chargeOf, lightInHands } from '../core/lights.ts';
 import { magazineSpec } from '../core/magazine.ts';
 import type { TreatmentDef } from '../core/schema.ts';
 import { openingTargetForHand } from './canOpening.ts';
@@ -18,6 +20,8 @@ export interface ItemAction {
   readonly treatment?: Readonly<{ region: BodyRegion; itemType: string }>;
   /** Unloading a held magazine: R only loads one (`CONTROLS.md`, "Reload, rack, remove"), so stripping is an item action. */
   readonly magazine?: 'strip';
+  /** Taking a held light's battery out: a swap needs a spare, so this is the way to move a cell on its own. */
+  readonly battery?: 'unload';
   readonly opening?: true;
   readonly sharpening?: true;
 }
@@ -63,10 +67,28 @@ export const itemActionsFor = (item: Item, inventory: Inventory, body: Body): re
   return target ? [...actions, { id: 'open-can', label: 'Open can', opening: true }] : actions;
 };
 
+/** The light's own click first, so the wheel has to be turned to take the battery out. */
+const lightActions = (item: Item, inventory: Inventory): readonly ItemAction[] => {
+  const { registry } = inventory;
+  let own: 'switchOff' | 'switchOn' | 'use' = 'use';
+  if (item.on) {
+    own = 'switchOff';
+  } else if ((chargeOf(registry, item) ?? 0) > 0) {
+    own = 'switchOn';
+  }
+  return [
+    { id: 'own', label: coreLabel(registry, own) },
+    { id: 'battery:unload', label: coreLabel(registry, 'batteryOut'), battery: 'unload' },
+  ];
+};
+
 const ordinaryItemActions = (item: Item, inventory: Inventory, body: Body): readonly ItemAction[] => {
   if (magazineSpec(inventory.registry, item.type)) {
     const label = inventory.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.itemActionLabels.stripRound;
     return (item.cartridges?.length ?? 0) > 0 ? [{ id: 'magazine:strip', label, magazine: 'strip' }] : [];
+  }
+  if (canUnloadBattery(inventory.registry, item) && lightInHands(inventory, item)) {
+    return lightActions(item, inventory);
   }
   const { treatment } = defOf(inventory.registry, item.type);
   if (!treatment) {

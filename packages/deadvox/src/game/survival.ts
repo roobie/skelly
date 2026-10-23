@@ -1,11 +1,12 @@
 // Using what's in your hands (`DESIGN.md`, "Hands"): eating, drinking and taking a painkiller
 // are short actions in the handling queue, a light switches on and off, and a battery goes into
-// the light you're holding. A light whose content sets `wornSwitch` also stays lit while worn and answers the
+// the light you're holding, or comes out of it. A light whose content sets `wornSwitch` also stays lit while worn and answers the
 // worn-light control (`toggleWornLights`).
 // The needs themselves are in the simulation (core/needs.ts).
 
 import { canonicalJson } from '../core/canonicalJson.ts';
 import { dominantSide } from '../core/character.ts';
+import { coreLabel } from '../core/coreText.ts';
 import { freshnessWord, isRotten } from '../core/food.ts';
 import type { HandlingQueue, JobParams, JobValue } from '../core/handling.ts';
 import type { HandSide, Inventory, Target, TargetState } from '../core/inventory.ts';
@@ -19,9 +20,10 @@ import {
   lightInHands,
   swapBattery,
   toggleLight,
+  unloadBattery,
 } from '../core/lights.ts';
 import { consume } from '../core/needs.ts';
-import { consumption, useOption } from '../core/options.ts';
+import { consumption, stowTarget, useOption } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { Readable, ReadRequest } from '../core/readable.ts';
 import type { Simulation } from '../core/sim.ts';
@@ -147,6 +149,19 @@ export class Survival {
       }
       return reason;
     });
+    this.queue.registerAction('survival.batteryOut', (params) => {
+      const light = this.inventory.itemByUid(numberParam(params, 'lightUid'));
+      if (!(light && lightInHands(this.inventory, light))) {
+        return "I haven't got the light in hand";
+      }
+      const { feet } = this.hooks.reach();
+      const reason = unloadBattery(this.inventory, light, (battery) => stowTarget(this.inventory, battery, feet));
+      if (reason === undefined && this.lit === light) {
+        this.lit = undefined;
+        this.fallBackToWornBeam();
+      }
+      return reason;
+    });
     this.queue.registerAction('survival.canister', (params) => {
       const tool = this.inventory.itemByUid(numberParam(params, 'toolUid'));
       const canister = this.inventory.itemByUid(numberParam(params, 'canisterUid'));
@@ -257,6 +272,15 @@ export class Survival {
         return `Take the ${definition.name.toLowerCase()} in your hands first`;
       }
       return this.applyItemAction(item, this.selectedItemAction(item));
+    }
+    if (this.selectedItemAction(item)?.battery === 'unload') {
+      this.queue.enqueueAction(
+        'survival.batteryOut',
+        coreLabel(this.inventory.registry, 'batteryOut'),
+        definition.light!.power!.swapSimSeconds,
+        { lightUid: item.uid },
+      );
+      return undefined;
     }
     const option = useOption(item, this.hooks.reach());
     if (!option.plan.ok) {

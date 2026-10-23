@@ -147,11 +147,10 @@ const batterySlotReason = (
   slots: Readonly<Record<string, { readonly type: string } | undefined>>,
 ): string | undefined => {
   if (registry.items.get(lightType)?.light?.power) {
-    return slots.battery &&
-      batteryFits(registry, lightType, slots.battery.type) &&
-      registry.items.get(slots.battery.type)?.battery
+    return !slots.battery ||
+      (batteryFits(registry, lightType, slots.battery.type) && registry.items.get(slots.battery.type)?.battery)
       ? undefined
-      : 'A powered light needs its matching battery';
+      : 'A powered light takes only its matching battery';
   }
   return slots.battery ? 'Only a powered light has a battery slot' : undefined;
 };
