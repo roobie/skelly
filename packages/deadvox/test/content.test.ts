@@ -463,6 +463,36 @@ describe('content', () => {
     expect(validateContent({ source: 'body.json', data: { body: [withRegionFactor({ chest: 1 })] } })).not.toEqual([]);
   });
 
+  it('rejects a heartbeat sound that is missing or has more than one variant', () => {
+    const body = baseRegistry.body.get('player')!;
+    const [onlyVariant] = [...baseRegistry.sounds.values()][0]!.variants;
+    const single = {
+      ...[...baseRegistry.sounds.values()][0]!,
+      id: 'heartbeat_fixture_single',
+      variants: [onlyVariant],
+    };
+    const pair = { ...single, id: 'heartbeat_fixture_pair', variants: [onlyVariant, onlyVariant] };
+    const events = [single.id, pair.id, 'heartbeat_fixture_absent'];
+    const { issues } = buildRegistry([
+      {
+        source: 'heartbeat-fixture.json',
+        data: {
+          sounds: [single, pair],
+          body: events.map((event, index) => ({
+            ...body,
+            id: `heartbeat_fixture_${index}`,
+            heartbeat: { ...body.heartbeat, sounds: { slow: event, fast: single.id } },
+          })),
+        },
+      },
+    ]);
+
+    expect(issues.filter(({ source }) => source === 'heartbeat-fixture.json').map(({ path }) => path)).toEqual([
+      'body[1].heartbeat.sounds.slow',
+      'body[2].heartbeat.sounds.slow',
+    ]);
+  });
+
   it('accepts a touch slot covering some regions only, and rejects one covering none', () => {
     const body = baseRegistry.body.get('player')!;
     const handSlot = body.touchFirst.hand;
@@ -562,6 +592,21 @@ describe('content', () => {
     const { issues } = buildRegistry([{ source: source.source, data }]);
     expect(issues.some(({ path }) => path.endsWith('.combat.firearms.caseEjection'))).toBe(true);
     expect(issues.some(({ path }) => path.endsWith('.combat.firearms.shotTraceRangeBlocks'))).toBe(true);
+  });
+
+  it('rejects ammunition spread or firearm choke scale that is not authored', () => {
+    const files = structuredClone(base) as {
+      source: string;
+      data: { items?: { ammo?: Record<string, unknown>; firearm?: Record<string, unknown> }[] };
+    }[];
+    const items = files.flatMap(({ data }) => data.items ?? []);
+    const ammunition = items.find((item) => item.ammo !== undefined)!;
+    const firearm = items.find((item) => item.firearm !== undefined)!;
+    Reflect.deleteProperty(ammunition.ammo!, 'spreadDegrees');
+    Reflect.deleteProperty(firearm.firearm!, 'pelletSpreadScale');
+    const { issues } = buildRegistry(files);
+    expect(issues.some(({ path }) => path.endsWith('.ammo.spreadDegrees'))).toBe(true);
+    expect(issues.some(({ path }) => path.endsWith('.firearm.pelletSpreadScale'))).toBe(true);
   });
 
   it('rejects firearm attachment effects without a per-shot wear', () => {
@@ -705,6 +750,7 @@ describe('content', () => {
         pump: true,
         recoilKickRadians: 0.01,
         dispersionRadians: 0.01,
+        pelletSpreadScale: 1,
         shotSound: 'gunshot',
         handling: {},
         roundLoadSimSeconds: 1,
@@ -728,7 +774,7 @@ describe('content', () => {
       category: 'weapon',
       weight: 1,
       size: [1, 1],
-      firearm: { recoilKickRadians: 0.01, shotSound: 'gunshot', handling: {} },
+      firearm: { recoilKickRadians: 0.01, pelletSpreadScale: 1, shotSound: 'gunshot', handling: {} },
     };
     const missing = validateContent({ source, data: { items: [item] } });
     expect(missing.map(({ path }) => path)).toContain('items[0].firearm.dispersionRadians');
@@ -751,7 +797,13 @@ describe('content', () => {
           weight: 1,
           size: [1, 1],
           model: 'fixture_gun',
-          firearm: { recoilKickRadians: 0.01, dispersionRadians: 0, shotSound: 'gunshot', handling: {} },
+          firearm: {
+            recoilKickRadians: 0.01,
+            dispersionRadians: 0,
+            pelletSpreadScale: 1,
+            shotSound: 'gunshot',
+            handling: {},
+          },
         },
         {
           id: 'fixture_suppressor',
@@ -2430,6 +2482,12 @@ describe('content references', () => {
               farMultiplier: 2,
               bearingErrorRadians: 0.61,
               investigationDistanceMetres: 8,
+              loudNoiseRadiusMetres: 10,
+              hesitationSimSeconds: { min: 1, max: 1 },
+              refusalSuspicionSimSeconds: 2,
+              refusalLean: 0.75,
+              chainRadiusMetres: 4,
+              chainChance: 0.5,
               searchSimSeconds: { min: 40, max: 50 },
               searchRadiusMetres: 4,
               searchStrollSimSeconds: { min: 1, max: 3 },

@@ -1,5 +1,6 @@
 local shape = import 'furniture-shape.libsonnet';
 local breach = import 'furniture-breach.libsonnet';
+local detail = import 'door-detail.libsonnet';
 local woodDoor = {
   id: 'wood_door',
   name: 'Burglary-safe wooden door',
@@ -15,13 +16,19 @@ local woodDoor = {
         timeSimSeconds: 15, fastestTimeSimSeconds: 7.5,
         strikeIntervalSimSeconds: 0.5, strikeSound: 'lock_pry',
       },
+      hammer: {
+        quality: 'hammering', level: 3, skill: 'mechanics',
+        timeSimSeconds: 4, fastestTimeSimSeconds: 2.5,
+        strikeIntervalSimSeconds: 0.8, strikeSound: 'lock_hammer',
+      },
     },
+    detail: detail.panelled,
   },
 };
 breach.breaking(shape.colliding({
   furnitureMaterials: [
     {
-      id: 'wood', blowSound: 'door_bash', methods: ['pry'], broken: { tint: '#d8c9a6', strength: 0.6 },
+      id: 'wood', blowSound: 'door_bash', methods: ['pry', 'hammer'], broken: { tint: '#d8c9a6', strength: 0.6 },
       damaged: [
         { from: 0.01, tint: '#3a2a1c', strength: 0.2 },
         { from: 0.4, tint: '#3a2a1c', strength: 0.4 },
@@ -29,7 +36,7 @@ breach.breaking(shape.colliding({
       ],
     },
     {
-      id: 'steel', blowSound: 'door_bash', methods: ['pry', 'cut'], broken: { tint: '#9a4a28', strength: 0.55 },
+      id: 'steel', blowSound: 'door_bash', methods: ['pry', 'cut', 'hammer'], broken: { tint: '#9a4a28', strength: 0.55 },
       damaged: [
         { from: 0.01, tint: '#2a2a2e', strength: 0.2 },
         { from: 0.4, tint: '#2a2a2e', strength: 0.4 },
@@ -366,10 +373,14 @@ breach.breaking(shape.colliding({
       id: 'flimsy_wood_door', name: 'Flimsy wooden door',
       breach: { minimumStrength: 3.5, durability: 60 },
       door: woodDoor.door + {
-        methods: {
+        methods: woodDoor.door.methods + {
           pry: woodDoor.door.methods.pry + {
             level: 1, timeSimSeconds: 6, fastestTimeSimSeconds: 3,
           },
+        },
+        // An interior door turns on a knob rather than a lever.
+        detail: detail.panelled + {
+          handle: { kind: 'knob', fromFreeEdge: 0.08, along: 0.48, length: 0.06, thickness: 0.02 },
         },
       },
     },
@@ -378,12 +389,14 @@ breach.breaking(shape.colliding({
       breach: { minimumStrength: 9, durability: 300 },
       door: woodDoor.door + {
         methods: {
+          hammer: woodDoor.door.methods.hammer + { timeSimSeconds: 12, fastestTimeSimSeconds: 7 },
           cut: {
             quality: 'flame_cutting', level: 1, skill: 'mechanics',
             timeSimSeconds: 90, fastestTimeSimSeconds: 45,
             strikeIntervalSimSeconds: 1, strikeSound: 'lock_pry', fuel: 1,
           },
         },
+        detail: detail.flush,
       },
     }
   ]

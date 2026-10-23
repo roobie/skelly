@@ -6,7 +6,7 @@ local vehicleParts = std.set([part.id for part in import '../vehicle-parts.libso
 // every other catalogue row is an item. A catalogue row may name its own grain in place of its class's.
 local voxel = import 'tools/jsonnet/lib/voxel-grains.libsonnet';
 // Hand-held items take the gun grain, so a long thin shape keeps its taper, hook and edge.
-local gunGrained = std.set(['crowbar', 'hammer', 'baseball_bat', 'kabar', 'kitchen_knife', 'machete', 'wrench', 'steel_pipe', 'flashlight']);
+local gunGrained = std.set(['crowbar', 'hammer', 'sledgehammer', 'baseball_bat', 'kabar', 'kitchen_knife', 'machete', 'wrench', 'steel_pipe', 'flashlight']);
 [
   {
     id: std.get(renamed, row.id, row.id),

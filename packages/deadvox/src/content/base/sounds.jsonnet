@@ -114,6 +114,14 @@ local shellInsert = numbered('shotgun-insert', [1, 2]);
       numbered('player-strain', [9, 12, 14]), 0.5, [0.96, 1.05], [0.9, 1.1], 0.6, category='body', noise=heard(5),
     ),
     sound(
+      'player_heartbeat_slow', 'Sprint to lower stamina, then stop and listen as it recovers.',
+      audio(['heartbeat-slow-beat.ogg']), 1, [1, 1], [1, 1], 0, category='body',
+    ),
+    sound(
+      'player_heartbeat_fast', 'Sprint to lower stamina, then stop and listen as it recovers.',
+      audio(['heartbeat-fast-beat.ogg']), 1, [1, 1], [1, 1], 0, category='body',
+    ),
+    sound(
       'player_landing_hard', 'Land after a long drop.',
       numbered('player-landing-hard', [1]), 0.72, [0.94, 1.04], [0.88, 1.12], 0.6, category='body',
     ) + { debugHint: "?debug=1: Use the debug panel's Noclip action to reach a ledge." },
@@ -189,6 +197,10 @@ local shellInsert = numbered('shotgun-insert', [1, 2]);
     sound(
       'lock_pry', 'Strike a locked door with a crowbar to force its padlock.',
       doorBlocked, 0.8, [0.96, 1.04], [0.9, 1.1], 0, noise=heard(60),
+    ),
+    sound(
+      'lock_hammer', 'Strike a locked door with a sledgehammer to break its lock open.',
+      doorBlocked, 1, [0.6, 0.7], [0.9, 1.1], 0, noise=heard(110),
     ),
     sound('door_open', 'Open a closed door within reach.', doorOpen, 0.65, [0.96, 1.04], [0.9, 1.1], 0.08),
     sound(

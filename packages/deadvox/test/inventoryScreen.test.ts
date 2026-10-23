@@ -841,6 +841,41 @@ describe('inventory screen Lit rendering', () => {
     buttons.find((button) => button.textContent!.includes('Take apart'))!.click();
     expect(calls).toEqual([[item.uid, 'apart']]);
   });
+  it('cycles the container target and puts the selected item into it through the move path', () => {
+    const t = setup();
+    const second = t.inv.entities.add({ type: t.entity.type, pos: [0, 0, 1], size: [1, 1, 1], facing: 'n' })!;
+    t.hooks.containers = () => [t.entity, second];
+    t.inv.entities.markSearched(t.entity);
+    t.inv.entities.markSearched(second);
+    const targeted = () =>
+      [...t.root.querySelectorAll<HTMLElement>('[data-target="true"]')].map((node) => Number(node.dataset.entityUid));
+    t.screen.update();
+    t.screen.selected = t.beans;
+
+    expect(targeted()).toEqual([t.entity.uid]);
+    expect(t.screen.onAction('inventory.cycle-target')).toBe(true);
+    t.screen.update();
+    expect(targeted()).toEqual([second.uid]);
+
+    expect(t.screen.onAction('inventory.put-target')).toBe(true);
+    t.queue.tick(t.queue.remaining);
+    expect(t.inv.locate(t.beans)).toMatchObject({ kind: 'furniture', entity: second });
+
+    expect(t.screen.onAction('inventory.cycle-target')).toBe(true);
+    t.screen.update();
+    expect(targeted()).toEqual([t.entity.uid]);
+  });
+
+  it('refuses to cycle or put when no container is in reach', () => {
+    const t = setup();
+    t.hooks.containers = () => [];
+    t.screen.selected = t.beans;
+    expect(t.screen.onAction('inventory.cycle-target')).toBe(true);
+    expect(t.screen.onAction('inventory.put-target')).toBe(true);
+    expect(t.refusals).toHaveLength(2);
+    expect(t.inv.locate(t.beans)?.kind).toBe('hand');
+  });
+
   it('redraws the body when a furniture search is queued without a version bump', () => {
     const test = setup();
     const versions = [test.inv.version, test.inv.entities.version];

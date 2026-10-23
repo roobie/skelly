@@ -51,6 +51,7 @@ import {
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { SPAWN_TIME_NAMES } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
+import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS } from './coreText.ts';
 import { DAY_PHASES } from './dayPhase.ts';
 import { DECAL_KINDS, type DecalKind } from './decalKinds.ts';
 import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
@@ -64,7 +65,7 @@ import { SCENARIO_KINDS } from './scenarioKinds.ts';
 import { shapeBlocks } from './shapeSolid.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
 import { jfxrPresetIssues } from './soundSynth.ts';
-import { templateSlots } from './textTemplate.ts';
+import { SLOT_PATTERN } from './textTemplate.ts';
 import {
   gameHours,
   gameMinutes,
@@ -354,27 +355,27 @@ const InventoryTuningSchema = strictObject({
   }),
 });
 
-/** A line of screen text that uses exactly these `{slot}` names, so code always has a value to put in each. */
-const textTemplate = (slots: readonly string[]) =>
+/** Text whose `{slot}` names are exactly `slots`, so a template can't drop or invent what code fills in. */
+const slotted = (slots: readonly string[]) =>
   pipe(
-    string(),
-    nonEmpty('must not be empty'),
+    Name,
     check(
       (text) => {
-        const used = new Set(templateSlots(text));
-        return used.size === slots.length && slots.every((slot) => used.has(slot));
+        const named = new Set([...text.matchAll(SLOT_PATTERN)].map(([, slot]) => slot));
+        return named.size === slots.length && slots.every((slot) => named.has(slot));
       },
       slots.length === 0
-        ? 'must not use {slots}'
-        : `must use exactly the slots ${slots.map((slot) => `{${slot}}`).join(', ')}`,
+        ? 'must not name a {slot}'
+        : `must name exactly ${slots.map((slot) => `{${slot}}`).join(', ')}`,
     ),
   );
-/** A keyed table of screen text; each key lists the slots its line must use. */
-const textTable = <const T extends Record<string, readonly string[]>>(slots: T) =>
+
+const slottedTable = <K extends string>(slots: Readonly<Record<K, readonly string[]>>) =>
   strictObject(
-    Object.fromEntries(Object.entries(slots).map(([key, names]) => [key, textTemplate(names)])) as {
-      [K in keyof T]: ReturnType<typeof textTemplate>;
-    },
+    Object.fromEntries(Object.entries<readonly string[]>(slots).map(([key, names]) => [key, slotted(names)])) as Record<
+      K,
+      ReturnType<typeof slotted>
+    >,
   );
 
 /** Labels and messages the screens under `src/ui` draw. */
@@ -398,7 +399,7 @@ const UiScreenTextSchema = strictObject({
   /** What the win card says about saving the completed attempt. */
   winCheckpointMessages: strictObject({ saved: Name, pending: Name, failed: Name, unavailable: Name }),
   /** The HUD, audio, graphics and fullscreen options in the menu. */
-  options: textTable({
+  options: slottedTable({
     hudHeading: [],
     showHud: ['key'],
     audioHeading: [],
@@ -413,7 +414,7 @@ const UiScreenTextSchema = strictObject({
     browserShortcutsLabel: [],
     browserShortcuts: ['shortcuts'],
   }),
-  inputOptions: textTable({
+  inputOptions: slottedTable({
     heading: [],
     browserControlsLabel: [],
     storageLabel: [],
@@ -426,10 +427,10 @@ const UiScreenTextSchema = strictObject({
     reset: [],
     restored: [],
   }),
-  worldLoading: textTable({ loading: [], failed: ['error'], reload: [] }),
+  worldLoading: slottedTable({ loading: [], failed: ['error'], reload: [] }),
   /** The main menu's play button before and after the world starts. */
-  menu: textTable({ play: [], continue: [] }),
-  credits: textTable({
+  menu: slottedTable({ play: [], continue: [] }),
+  credits: slottedTable({
     heading: [],
     none: [],
     back: [],
@@ -438,7 +439,7 @@ const UiScreenTextSchema = strictObject({
     licence: ['licence'],
     changes: ['changes'],
   }),
-  death: textTable({
+  death: slottedTable({
     heading: [],
     cause: ['cause', 'span'],
     seed: ['seed'],
@@ -450,12 +451,12 @@ const UiScreenTextSchema = strictObject({
     spanLong: ['hrs', 'mins'],
     spanShort: ['mins'],
   }),
-  win: textTable({ heading: [], seed: ['seed'], played: ['hrs'], export: [], newWorld: [], freshAttempt: [] }),
-  rest: textTable({ waiting: [], fallingAsleep: [], until: ['rest', 'clock'], stop: ['key'] }),
+  win: slottedTable({ heading: [], seed: ['seed'], played: ['hrs'], export: [], newWorld: [], freshAttempt: [] }),
+  rest: slottedTable({ waiting: [], fallingAsleep: [], until: ['rest', 'clock'], stop: ['key'] }),
   /** The continue-or-stop prompt an interruption raises, on the rest card and in the world prompt. */
-  prompt: textTable({ interruption: ['reason'], continue: ['key'], stop: ['key'] }),
-  reading: textTable({ putAway: [], putAwayLabel: [], progress: [], text: [] }),
-  crafting: textTable({
+  prompt: slottedTable({ interruption: ['reason'], continue: ['key'], stop: ['key'] }),
+  reading: slottedTable({ putAway: [], putAwayLabel: [], progress: [], text: [] }),
+  crafting: slottedTable({
     heading: [],
     headingFact: [],
     length: ['span'],
@@ -483,14 +484,14 @@ const UiScreenTextSchema = strictObject({
     secs: ['value'],
   }),
   /** The handling meter and quickbar while the inventory is closed. */
-  handling: textTable({
+  handling: slottedTable({
     throwForce: [],
     pause: ['key'],
     next: ['job'],
     progress: ['done', 'total'],
     minimumRelease: ['percent'],
   }),
-  quickbar: textTable({
+  quickbar: slottedTable({
     empty: [],
     inRightHand: [],
     inLeftHand: [],
@@ -499,7 +500,7 @@ const UiScreenTextSchema = strictObject({
     count: ['item', 'count'],
   }),
   /** The optional stats, clock and details readout lines. */
-  stats: textTable({
+  stats: slottedTable({
     health: ['value'],
     blood: ['value'],
     stamina: ['value'],
@@ -526,7 +527,7 @@ const UiScreenTextSchema = strictObject({
     looking: ['name'],
   }),
   /** The interaction hint for the looked-at target and the carried piece. */
-  interaction: textTable({
+  interaction: slottedTable({
     action: ['key', 'action'],
     open: ['name'],
     close: ['name'],
@@ -543,8 +544,8 @@ const UiScreenTextSchema = strictObject({
     turn: ['key'],
     tip: ['key'],
   }),
-  primaryAction: textTable({ nothingToDo: ['item'] }),
-  mods: textTable({
+  primaryAction: slottedTable({ nothingToDo: ['item'] }),
+  mods: slottedTable({
     heading: [],
     jsonLabel: [],
     jsonFact: ['maxBytes'],
@@ -569,7 +570,7 @@ const UiScreenTextSchema = strictObject({
     jsonOnly: [],
   }),
   /** The practice run's objective lines and buttons; each label sits beside its action's key cap. */
-  tutorial: textTable({
+  tutorial: slottedTable({
     inventory: [],
     closeInventory: [],
     quickAction: [],
@@ -605,7 +606,7 @@ const UiScreenTextSchema = strictObject({
     exit: [],
   }),
   /** Save discovery, checkpoint and recovery status on the title and pause card. */
-  save: textTable({
+  save: slottedTable({
     insecurePage: [],
     apisUnavailable: [],
     noSavedWorld: [],
@@ -668,7 +669,7 @@ const UiScreenTextSchema = strictObject({
     reasonDeath: [],
     reasonRetry: [],
   }),
-  inventory: textTable({
+  inventory: slottedTable({
     heading: [],
     headingFact: [],
     carrying: ['weight'],
@@ -763,6 +764,8 @@ const UiTuningSchema = strictObject({
   hudScale: Positive,
   /** The sound event played when the player tries an action that cannot be completed. */
   refusalSound: picklist(SOUND_EVENT_IDS),
+  /** The audio options' volumes before the player saves any. */
+  audioVolumes: strictObject({ master: Fraction, world: Fraction, body: Fraction, ui: Fraction }),
   /** What the rest card calls each kind of rest. */
   restLabels: strictObject({ rest: Name, sleep: Name }),
   /** Why a door will not close: the player, or something else, is standing in its way. */
@@ -798,6 +801,10 @@ const UiTuningSchema = strictObject({
   }),
   /** What the item action list calls an action whose wording does not depend on the item or wound. */
   itemActionLabels: strictObject({ stripRound: Name }),
+  /** Core's refusals and notices, by the key code asks for. */
+  coreMessages: slottedTable(CORE_MESSAGE_SLOTS),
+  /** What core's item, door and work options are called, by the key code asks for. */
+  coreActionLabels: slottedTable(CORE_LABEL_SLOTS),
   /** What the inventory screen calls each wear slot. */
   wearSlotLabels: strictObject({
     head: Name,
@@ -1010,6 +1017,8 @@ const FirearmSchema = strictObject({
   shotSound: Id,
   /** Shot event while a suppressor is fitted; required when the model can mount one. */
   suppressedShotSound: optional(Id),
+  /** Low-frequency layer played with the shot, for a gun whose report needs more body than one recording has; skipped while suppressed. */
+  shotBodySound: optional(Id),
   /** Trigger pulled on an empty chamber; absent stays silent. */
   dryFireSound: optional(Id),
   /** The trigger pull cocks the hammer itself (double action), so every empty pull clicks; otherwise only working the action re-cocks it. */
@@ -1021,6 +1030,8 @@ const FirearmSchema = strictObject({
   recoilKickRadians: Positive,
   /** Half-angle of the firearm's independent per-round cone; pump firearms must set zero because pellet spread owns their cone. */
   dispersionRadians: pipe(NonNegative, maxValue(Math.PI / 2, 'must be at most a right angle')),
+  /** Multiplies an ammunition item's pellet spread, so the firearm owns its choke. */
+  pelletSpreadScale: Positive,
   /** Optional per-gun skill-zero endpoints; absent guns use firearms-combat's shared factors. */
   skillZeroHandling: optional(FirearmsSkillZeroHandlingSchema),
   /** Reload handling times at skill 0, before the firearms skill's reload factor. */
@@ -1052,6 +1063,8 @@ const FirearmSchema = strictObject({
 const AmmoSchema = strictObject({
   calibre: CalibreId,
   pellets: pipe(Count, minValue(1), maxValue(64)),
+  /** Base half-angle for pellet directions; the firearm's choke scale multiplies it. */
+  spreadDegrees: pipe(NonNegative, maxValue(90, 'must be at most a right angle')),
   diameterMm: Positive,
   /** Region health a projectile takes, before the zombie's per-region pierce resistance. */
   damage: Positive,
@@ -1673,7 +1686,7 @@ const AttachmentSightSchema = strictObject({
 });
 const AttachmentFieldsSchema = strictObject({
   id: pipe(string(), nonEmpty('must not be empty')),
-  kind: picklist(['optic', 'iron-sight', 'suppressor', 'flashlight-mount', 'foregrip']),
+  kind: picklist(['optic', 'iron-sight', 'suppressor', 'flashlight-mount', 'foregrip', 'muzzle-device']),
   mount: picklist(['rail-top', 'rail-side', 'rail-bottom', 'muzzle']),
   mountFrame: strictObject({ normal: UnitVector, up: UnitVector }),
   properties: AttachmentPropertiesSchema,
@@ -1899,6 +1912,29 @@ const DoorForcingSchema = pipe(
   ),
 );
 
+/** How a doorway leaf or hatch reads as one that opens; lengths are in metres (`docs/content.md`, "Door detail"). */
+const DoorDetailSchema = strictObject({
+  /** Colour of the handle and hinges. */
+  hardware: Color,
+  /** How far the fields stand off each face of the leaf. */
+  relief: Positive,
+  /** Bare border round the fields, and the gap between them; both show the leaf's darker core. */
+  frame: NonNegative,
+  seam: NonNegative,
+  /** Raised fields across the leaf from its hinge edge, and along that edge. */
+  fields: tuple([pipe(Count, minValue(1, 'must be at least 1')), pipe(Count, minValue(1, 'must be at least 1'))]),
+  /** Strap hinges lying on both faces from the hinge edge. */
+  hinges: strictObject({ count: Count, length: Positive, width: Positive }),
+  /** On both faces: its grip centre lies `fromFreeEdge` in from the free edge and `along` the length of the hinge edge. */
+  handle: strictObject({
+    kind: picklist(['knob', 'lever', 'pull', 'bar', 'ring']),
+    fromFreeEdge: Positive,
+    along: Fraction,
+    length: Positive,
+    thickness: Positive,
+  }),
+});
+
 const FurnitureShapeBoxSchema = strictObject({
   /** Lower corner in the furniture's cell coordinates. */
   position: tuple([NonNegative, NonNegative, NonNegative]),
@@ -1940,6 +1976,7 @@ const FurnitureSchema = pipe(
         hatch: optional(literal(true)),
         /** Barricaded from this side, the facing side (`front`) or its opposite (`back`): it opens only from the other. */
         barredFrom: optional(picklist(['front', 'back'])),
+        detail: optional(DoorDetailSchema),
       }),
     ),
     /**
@@ -2050,6 +2087,11 @@ const FurnitureSchema = pipe(
     'appearance needs a plain container without a shape, door or readable',
   ),
   check(({ door, shape }) => !(door?.hatch && shape), 'a hatch is its own panel and cannot have a shape'),
+  // The same reading as `src/core/blockEntities.ts`, `isBodyDoor`: a body door is the front of its own drawn body.
+  check(
+    ({ door, shape, container }) => !door?.detail || shape === undefined || container === undefined,
+    'a body door draws its handle on its body, so door detail belongs only on doorway leaves and hatches',
+  ),
   // The same reading as `src/core/blockEntities.ts`, `isBodyDoor`: any other door breaks instead of being ruined.
   check(
     ({ ruin, door, shape, container }) => !(ruin && door) || (shape !== undefined && container !== undefined),
@@ -3009,10 +3051,20 @@ const ZombieSchema = strictObject({
       farMultiplier: pipe(Positive, minValue(1, 'must be at least 1')),
       bearingErrorRadians: pipe(Positive, maxValue(Math.PI, 'must be at most pi')),
       investigationDistanceMetres: Positive,
+      loudNoiseRadiusMetres: Positive,
+      hesitationSimSeconds: SimDurationRange,
+      refusalSuspicionSimSeconds: PositiveSimSeconds,
+      refusalLean: Fraction,
+      chainRadiusMetres: NonNegative,
+      chainChance: Fraction,
       searchSimSeconds: SimDurationRange,
       searchRadiusMetres: Positive,
       searchStrollSimSeconds: SimDurationRange,
     }),
+    check(
+      (model) => model.hesitationSimSeconds.min <= model.hesitationSimSeconds.max,
+      'minimum hesitation must not exceed maximum',
+    ),
     check(
       (model) => model.searchSimSeconds.min <= model.searchSimSeconds.max,
       'minimum search duration must not exceed maximum',
@@ -3101,10 +3153,25 @@ const zombieRegionsMatchModel = (zombie: InferOutput<typeof ZombieSchema>): bool
   return keys.length === expected.length && expected.every((key) => Object.hasOwn(zombie.regions, key));
 };
 
-/** Actor palettes are content so appearance doesn't live in renderer code. */
+/** A lowered stance's drawn pose, pivoting about the hip; `DESIGN.md`, "Crouching and lying prone". */
+const StancePoseSchema = strictObject({
+  hipDropMetres: NonNegative,
+  /** Torso, head and arms pitch forward about the hip. */
+  torsoForwardDegrees: Degrees,
+  /** Legs and feet swing forward about the hip; negative swings them back. */
+  legsForwardDegrees: Degrees,
+});
+
+/** Actor palettes and poses are content so appearance doesn't live in renderer code. */
 const FigureSchema = strictObject({
   id: Id,
   palette: strictObject({ skin: Color, shirt: Color, trousers: Color }),
+  stancePoses: strictObject({
+    crouching: StancePoseSchema,
+    prone: StancePoseSchema,
+    /** How long the drawn body takes to settle into a new stance. */
+    blendRealSeconds: PositiveRealSeconds,
+  }),
 });
 
 // ---- skills and recipes ----
@@ -3360,6 +3427,14 @@ const HandlingRangeSchema = strictObject({
   table: strictObject({ offset: Count, lateral: BlockOffset }),
 });
 
+const LoweredStanceSchema = strictObject({
+  speedMetresPerSimSecond: SimRate,
+  hearingRangeScale: Fraction,
+  sightRangeScale: Fraction,
+  eyeDropMetres: Positive,
+  bodyHeightMetres: Positive,
+});
+
 const SenseSchema = strictObject({
   id: Id,
   movement: strictObject({
@@ -3368,13 +3443,9 @@ const SenseSchema = strictObject({
   }),
   /** Chest height as a fraction of the eye height, so a stance that lowers the eyes lowers the chest. */
   chestEyeFraction: Fraction,
-  crouch: strictObject({
-    speedMetresPerSimSecond: SimRate,
-    hearingRangeScale: Fraction,
-    sightRangeScale: Fraction,
-    eyeDropMetres: Positive,
-    bodyHeightMetres: Positive,
-  }),
+  crouch: LoweredStanceSchema,
+  /** Below crouch: the player lies down and crawls. */
+  prone: LoweredStanceSchema,
   wall: strictObject({
     hearingRangeScale: Fraction,
     gain: Fraction,
@@ -3391,6 +3462,18 @@ const SenseSchema = strictObject({
   }),
   /** How long a player vocal noise stays audible to shamblers after it is emitted. */
   vocalNoiseLifetimeSimSeconds: PositiveSimSeconds,
+  /**
+   * The shambler voice-pitch law (`DESIGN.md`, "Audio"), as multiples of the old law's pitch √(reference height ÷ body
+   * height) at the smallest pooled body. One law covers the whole figure pool, so it lives here, not on a zombie type.
+   */
+  shamblerVoice: strictObject({
+    oldLawReferenceHeightMetres: Positive,
+    smallestAnchorMultiplier: Positive,
+    clampMultiplier: pipe(
+      strictObject({ min: Positive, max: Positive }),
+      check(({ min, max }) => min <= max, 'min must not exceed max'),
+    ),
+  }),
   light: strictObject({
     playerDaySightScale: Fraction,
     /** Reduce how far shamblers investigate non-player light sources. */
@@ -3589,6 +3672,8 @@ const BodyTuningSchema = pipe(
     infectionChance: Fraction,
     /** Sim seconds that the player remains unconscious. */
     knockoutSimSeconds: PositiveSimSeconds,
+    /** Why the player can't act while unconscious. */
+    knockoutRefusal: Name,
     /** Sim seconds to wait after stamina reaches zero before recovery begins. */
     staminaRegenDelaySimSeconds: PositiveSimSeconds,
     /** Player eye height in metres while unconscious and prone. */
@@ -3676,6 +3761,17 @@ const BodyTuningSchema = pipe(
     /** Health lost per Sim second while infection is advanced. */
     advancedInfectionHealthLossPerSimSecond: SimRate,
     needs: NeedsTuningSchema,
+    /** The stamina heartbeat, a presentation cue only (`DESIGN.md`, "Audio"). */
+    heartbeat: strictObject({
+      /** One beat each: the slow recording, and the shorter one used once a beat is too quick for the slow one. */
+      sounds: strictObject({ slow: Id, fast: Id }),
+      /** Silent above this stamina; rate and loudness rise linearly from here to exhaustion. */
+      startStamina: NeedPercent,
+      startHz: Positive,
+      exhaustedHz: Positive,
+      startGain: Fraction,
+      exhaustedGain: Fraction,
+    }),
     /** Fatigue is sleep debt with no upper cap; this much accrues per Game hour awake. */
     fatigueRisePerGameHour: GamePerHour,
     /** Fatigue cleared per Game hour resting, scaled by the furniture's rest quality. */

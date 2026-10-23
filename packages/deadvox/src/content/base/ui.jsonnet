@@ -4,6 +4,7 @@
     spacing: 1,
     hudScale: 1,
     refusalSound: 'player_nope',
+    audioVolumes: { master: 0.8, world: 0.8, body: 0.8, ui: 0.8 },
     restLabels: { rest: 'Resting', sleep: 'Sleeping' },
     doorCloseBlockedMessages: { player: "You're in the way", other: "Something's in the way" },
     furnitureMoveMessages: {
@@ -45,5 +46,5 @@
       shoulder: 'Shoulder',
     },
     screenText: import 'ui-screen-text.libsonnet',
-  }],
+  } + import 'ui-core-text.libsonnet'],
 }

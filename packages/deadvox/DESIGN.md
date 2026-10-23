@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change zombie hesitation, refusal, interest chaining or attention phase ordering
   - you change the player figure's look, its authored parts, its clothes or how it is posed
   - you change worn head gear seen from inside or on the player figure
   - you add a wear slot or change what night-vision goggles do to the view
@@ -9,7 +10,7 @@ read_if:
   - you decide how sunlight, shadows or interior sky should read during discovery and edit revalidation
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance, performance targets or the default render scale
-  - you change the player's collision body, movement pace by direction, or what crouching lets the player fit through
+  - you change the player's collision body, movement pace by direction, or what crouching or lying prone lets the player fit through
   - you're changing world block shapes, wire fences or their supports, sight opacity, reach through obstacles, sound blocking or slab geometry
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry and put down, or how stacks settle
@@ -163,20 +164,49 @@ them by axis for diagonals, keeping diagonal pace between its two axis speeds.
 The factors scale speed without changing movement direction and compose with
 other pace factors.
 
-Crouching lowers the collision body as well as the eye, so a crouched player
-fits openings that reject a standing body. The FOB's east-wall passage is sized
-so a crouched player fits but a standing player does not. It is a separate low
-route from the guarded north entrance and southern breach, with its floor level
-to the approach; it must not expose any part of the finale from near-ground
-viewpoints, leaving the southern breach as the only near-ground exception.
+### Crouching and lying prone
+
+The player has three stances: standing, crouching and prone. Each lower stance
+lowers the collision body as well as the eye, so it fits openings that reject the
+stance above it, and a low opening becomes a route only for someone willing to
+move slowly. Crouching and prone each have their own body height, eye drop and
+pace in content, and neither can sprint. A prone player can't jump either, since
+lying flat leaves nothing to jump from. The crouch key toggles between standing
+and crouching, the prone key toggles between crouching and prone, and either key
+rises from prone to a crouch, so a player never stands straight up from lying
+flat. Rising is refused, keeping the lower stance, when the taller body would
+intersect a solid overhead block. Only height changes; the body's footprint stays
+the same in every stance.
+
+Hearing and sight treat a prone player as they treat a crouched one, through
+prone's own content fields, because how lying down should affect noticing is
+still open (#550). The camera and the spit's chest target follow the eye height,
+so each stance moves them without stance-specific code.
+
+The drawn body follows the stance, so third person shows the stance the player is
+in (#582): crouched it sinks and leans forward, and prone it lies along the facing.
+Each stance pose stays inside that stance's body height, so the drawn head never
+pokes through a ceiling the body fits under. The body blends into a new stance
+over a short real-time span instead of snapping, which hides the change of shape;
+the eye snaps, because sight and collision use the new height at once. Poses and
+the blend time are figure content. See `src/content/base/figures-player.jsonnet`,
+`stancePoses`, and `src/render/playerFigure.ts`, `PlayerMeshes`.
+
+The FOB's east-wall passage is sized so a crouched player fits but a standing
+player does not. It is a separate low route from the guarded north entrance and
+southern breach, with its floor level to the approach; it must not expose any
+part of the finale from near-ground viewpoints, leaving the southern breach as
+the only near-ground exception.
 `test/campGate.test.ts`, "hides the finale from approach tracks and near ground except through the southern breach", checks from the amalgam's feet to its top.
 Zombies use the passage only if their ordinary collision body fits; they do not
-crouch or gain a type-specific exception. Standing up is refused when the body
-would intersect a solid overhead block. On a restore admitted by
-`decodeSave` with matching content identity, the saved stance is preserved and
-body height is derived from content. See `src/core/saveFormat.ts`, `decodeSave`;
-`src/content/base/senses.jsonnet`, `crouch.bodyHeightMetres`;
-`src/game/session.ts`, `settleStance`; `src/core/schema.ts`, `SenseSchema`;
+crouch or gain a type-specific exception.
+
+A save keeps the stance; on a restore admitted by `decodeSave` with matching
+content identity, body height is derived from content for that stance. See
+`src/core/saveFormat.ts`, `decodeSave`; `src/content/base/senses.jsonnet`,
+`crouch` and `prone`; `src/game/player.ts`, `nextStance`;
+`src/game/session.ts`, `settleStance`; `src/core/zombies.ts`,
+`loweredStanceTuning`; `src/core/schema.ts`, `SenseSchema`;
 `src/content/base/camp.libsonnet`, `camp_wall_run_crouch_hole`; and
 `src/core/spawnClearance.ts`, `zombieBodyDimensions`.
 
@@ -2029,6 +2059,15 @@ sets it down to light a room. Whether a model rests upright is content, so any s
 light stands the same way. See `src/render/models.ts`, `prepareModel`, and
 `src/render/modelFlame.ts`, `ModelFlames.onModel`.
 
+An oil lamp gives lamp oil a use, and a lit lamp set down at night makes the base a
+beacon: the player trades light for being seen, either lighting the room and being
+noticed from far off, or sitting in the dark. A lamp carried lit keeps a hand busy;
+a doused one stows. The lamp is a fuelled light whose oil sits in its canister slot,
+and it is refilled by swapping the oil in, not pouring, because refilling a cartridge
+is direction only; pouring and partial refills stay open (#536). The lamp is content
+only: any light with a fuel rate and a swappable fuel canister behaves the same. See
+`src/core/lights.ts`, `drainLight`, and `src/core/torch.ts`, `swapCanister`.
+
 Zombies see light farther than they see a player in darkness, and see a player
 lit by any source. Aimed-down or covered flashlights shorten that reach. Light
 through doors and windows can make a building a beacon; covering or boarding
@@ -2311,7 +2350,9 @@ crouch rules. See `src/core/zombies.ts`, `hearingTier`, `hearVocalNoise` and
 - Shamblers do not gain stair knowledge from an attention target on another floor.
 - For #281, visible prey suppresses obstacle wandering; an active wander ends when the prey becomes visible, and the shambler resumes beelining while retaining its slide. Unseen targets and idle strolling can still wander. See `packages/deadvox/src/core/zombies.ts`, `seesPlayer` and `ZombieSystem.tick`.
 - The named phases in `src/core/zombies.ts`, `ZombieSystem.tick`, make the established order reviewable because later steps consume state produced by earlier simulation steps; keep that order when changing the per-tick behavior. See `ZombieSystem.updateAttention`, `ZombieSystem.stepZombieBody`, `ZombieSystem.updateObstacleContact`, `ZombieSystem.resolveZombieAttack` and `ZombieSystem.emitFootsteps`.
-- **Attention and attacks:** Sight, hearing, `lastPerceived`, chase/investigate transitions and `withinAttackReach` remain the authorities for choosing and acting on targets. Far-hearing direction stays uncertain: a grounded listener projects it onto known terrain rather than learning the source's height. See `src/core/zombies.ts`, `seesPlayer`, `farBearingTarget` and `withinAttackReach`.
+- **Quiet-sound hesitation:** An uncommitted individual pauses and turns toward a quiet noise before deciding; loudness, not a sound category, makes a noise urgent. Idle listeners refuse, while listeners already strolling pursue after the pause: movement expresses existing interest without a heard-noise history or a random pursue roll. Refusal biases the next stroll toward the sound and briefly makes another noise urgent. Searchers and pursuing bodies retain their existing attention rules; sight and light can interrupt the pause. Hordes beeline because their group response should remain decisive. Player movement hearing remains continuous rather than restarting a discrete-noise pause. See `src/core/zombies.ts`, `ZombieSystem.updateAttention` and `ZombieSystem.beginStroll`; tuning belongs to `src/content/base/zombies.jsonnet`, `hearingModel`.
+- **Shared interest:** A pursuing body's alert can recruit nearby listeners to its target point, including its bearing uncertainty, rather than sending them to the caller. Each call offers a flat chance inside its radius. Cascades deliberately have no damping so crowd behaviour can be evaluated before imposing a limit. The transient stimulus queue drains after player perception and before movement, including calls from recruited bodies; no pending queue crosses a save boundary. This prevents entity iteration order from giving one listener an extra movement tick. A future damping decision belongs at this queue's recruitment boundary, not in player noise. See `src/core/zombies.ts`, `ZombieSystem.announcePursuit` and `ZombieSystem.processChainStimuli`; tuning belongs to `src/content/base/zombies.jsonnet`, `hearingModel`.
+- **Attention and attacks:** Sight and hearing remain the authorities for choosing targets, so interest chaining must not replace visible prey. Far-hearing direction stays uncertain: a grounded listener projects it onto known terrain rather than learning the source's height. See `src/core/zombies.ts`, `seesPlayer`, `farBearingTarget` and `withinAttackReach`.
 - **Background steps:** Background zombies beeline in big, cheap steps. Each type's content caps how far one step moves it, because that cap, not the chase speed, sets how fast a fast type closes in while unseen. The background tick rate stays in code: it is the scheduler's cadence, saved with its phase, so it is engine timing rather than tuning. See `src/core/schema.ts`, `ZombieSchema`, and `src/core/zombies.ts`, `ZombieSystem.tickBackground`.
 - **Distant attention and noise persistence:** A horde retains a heard noise target until it arrives or forgets it; its sun-derived preference for home or roaming does not replace an active noise target. Once the target ends, the horde roams only from sunset to sunrise. A background zombie with no horde or stimulus uses idle behavior instead of treating the player as an implicit target, because distance alone must not make an unseen zombie pursue. See `src/core/zombies.ts`, `ZombieSystem.updateHordes` and `ZombieSystem.tickBackground`.
 - **Stimulus memory:** Individual zombies and hordes forget unreachable stimuli after the shared content duration. The stimulus timestamp is saved so loading does not restart the wait. Whether this duration should use real time or game time remains open for BR's decision; the current simulation-seconds behavior is not a settled design choice. A horde resumes the sun-derived roam or home behavior after forgetting. See `ZombieSchema` in `src/core/schema.ts` and `ZombieSystem.updateHordes` in `src/core/zombies.ts`.
@@ -2374,6 +2415,7 @@ cannot be authored, blended or added to without a code change per animation.
   disassembly.
 - **Doors and locks.** A matching key is the quiet route. The noisy fallback needs the door's forcing tool, not always a crowbar, so finding that tool is part of the trade. How a door yields follows from its material and its own resistance; flimsy and burglary-safe leaves need not yield alike. Forced entry destroys the lock so the breach is one-way. A leaf shows its state, because the player has to see which doors no longer hold, and how close the rest are to giving way, before trusting one: damage repaints it in steps as it grows toward breaking, and a broken leaf has its own look. The leaf's material in the shared furniture material table authors both, so a mod retunes them; the steps and redraws work as for any piece (`DESIGN.md`, "Block entities").
 - **Breach by strength.** A door leaf yields to blows by its piece's breach, so flimsy and burglary-safe leaves yield differently. A blow below the minimum strength does nothing, so a weak attacker cannot grind through by waiting; stronger blows add up until they reach the durability. Zombie strength and a melee weapon's impulse share one scale, so a zombie's bash and a player's strike meet the same gate; a swing that meets no zombie strikes the standing piece, leaf or furniture, in its reach, and the blow is heard in the sound its material names. Every blow makes a noise zombies hear. A broken leaf stands open with its lock gone and cannot be shut, so the breach is one-way, as forcing is, and movement, sight and sound treat it as an open doorway. Damage short of breaking leaves a boarded leaf's opening sides as they were. A container's front is its body, so a blow on it damages the whole piece; on a piece that is no door leaf, the breach sets the durability its condition is measured against, and reaching it ruins the piece (`DESIGN.md`, "Damage, destruction and dismemberment"). See `src/core/blockEntities.ts`, `BlockEntities.bash`, `src/game/session.ts`, `bashPiece` and `strikePiece`, and `src/core/schema.ts`, `FurnitureSchema`.
+- **Forcing routes trade time against noise.** A door offers more than one forcing method so the player chooses how to pay: the crowbar's prying is slow and the quieter route, the sledgehammer's hammering is fast and the louder one, and it is heavy and two-handed to carry. Each method names its own strike sound and times, so the choice is content, and the noise reaches zombies through the same hearing as any sound. Forcing by method and destroying a leaf by damage stay separate, so boarded doors and bashing leave this choice alone. See `src/core/prying.ts`, `pryPlan`, and `src/core/zombies.ts`, `hearPlayer`.
 - **Cutting.** Cutting a wooden door will start a fire, so wood offers no cut method until a fire model exists. Cutting steel is a flame-cutting quality apart from a knife's `cutting`, and a finished cut spends gas from the torch's swappable cartridge, so one torch does not settle every cut door; a cut without enough gas won't start. Refilling a cartridge is direction only, with no source yet. See `src/core/prying.ts`, `pryPlan`, `src/core/torch.ts`, `spendFuel`, `src/core/longAction.ts`, `LongActions.beginForcing`, and `src/core/schema.ts`, `FurnitureMaterialSchema` and `DoorForcingSchema`.
 - **Electricity** keeps topology separate from energy balance so rate changes
   do not rebuild networks. Resource settlement and timestamped power transitions
@@ -2724,8 +2766,10 @@ decoration.
   `shambler_idle` provides an occasional groan while idling or strolling. Each
   shambler's vocals and body-made sounds shift lower with its realized body
   height, so larger figures sound heavier and the runner/brute templates inherit
-  the same law. `shamblerVoiceLaw` in `src/game/shamblerAudio.ts` calibrates it
-  on the authored figure seeds. Body-size pitch tuning affects playback only, never
+  the same law. It is calibrated on the whole authored figure pool and also
+  pitches figures without seeds of their own, so its anchors and clamp are one
+  sense tuning rather than a zombie type's; see `src/game/shamblerAudio.ts`,
+  `shamblerVoiceLaw`. Body-size pitch tuning affects playback only, never
   hearing or simulation; the `voice_size` comparison site exposes its endpoints.
 - **Shambler movement is audible:** surface-specific, heavy, dragging footsteps
   follow actual ground travel; a chase is faster than a stroll. Only the nearest
@@ -2739,10 +2783,16 @@ decoration.
 - **Heartbeat:** The heartbeat becomes audible as stamina falls and grows faster
   and louder toward exhaustion. It is a presentation cue, not a noise event, so
   shamblers do not hear it and it does not alter simulation or save identity.
-  Fear/danger and low-health responses remain open questions for BR. See
-  `heartbeatForStamina` in
-  `src/game/audioPresentation.ts` and `GameAudio.updateHeartbeat` in
-  `src/game/audio.ts`.
+  Fear/danger and low-health responses remain open questions for BR. Its curve
+  belongs to the body it reports on, so it is body tuning, and its two
+  recordings are sound events so validation checks their files. See
+  `src/game/audioPresentation.ts`, `heartbeatForStamina`, and
+  `src/game/audio.ts`, `GameAudio.updateHeartbeat`.
+- **Audio tuning is content** (`PILLARS.md`, "Content forward compatibility"):
+  the voice law, the heartbeat and the audio options' starting volumes are
+  required content fields with no code fallback, so retuning them never needs a
+  code change. The starting volumes are UI tuning because they are what the
+  options sliders show before the player saves any.
 - **Ambience by time and place:** wind, rain, a building settling. The
   distant sounds (a gunshot, a scream, a helicopter over the cordon, a
   generator) come from things happening in the simulation, not from a random

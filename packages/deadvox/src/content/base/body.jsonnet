@@ -9,6 +9,7 @@ local normalSleep = 100 / normalSleepGameHours;
     antisepticWindowGameHours: 12,
     infectionChance: 0.5,
     knockoutSimSeconds: 20,
+    knockoutRefusal: "I'm out cold",
     staminaRegenDelaySimSeconds: 5,
     proneEyeHeightMetres: 0.3,
     fragmentRegionHeights: { head: 0.85, torso: 0.45 },
@@ -135,6 +136,15 @@ local normalSleep = 100 / normalSleepGameHours;
         { need: 'fatigue', above: 90, message: "You're exhausted" },
       ],
       badlyHurt: { below: 25, message: "You're badly hurt" },
+    },
+    // Gains are provisional loudness tuning.
+    heartbeat: {
+      sounds: { slow: 'player_heartbeat_slow', fast: 'player_heartbeat_fast' },
+      startStamina: 85,
+      startHz: 1,
+      exhaustedHz: 3,
+      startGain: 0.12,
+      exhaustedGain: 0.8,
     },
     fatigueRisePerGameHour: 4,
     // Resting clears a fixed share of a normal sleep, so sitting never beats sleeping.

@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { simRate, simSeconds } from '../src/core/time.ts';
 import { GameAudio } from '../src/game/audio.ts';
+import { startupContent } from './baseRegistry.ts';
 import { BASE_SENSE_TUNING } from './senseFixture.ts';
+
+const base = startupContent().registry;
 
 const senseTuning = {
   id: 'fixture_player',
@@ -14,9 +17,11 @@ const senseTuning = {
     eyeDropMetres: 0.6,
     bodyHeightMetres: 1.2,
   },
+  prone: BASE_SENSE_TUNING.prone,
   wall: { hearingRangeScale: 0.5, gain: 0.5, cutoffHz: 1200, clearGain: 1, clearCutoffHz: 18_000 },
   footsteps: BASE_SENSE_TUNING.footsteps,
   vocalNoiseLifetimeSimSeconds: BASE_SENSE_TUNING.vocalNoiseLifetimeSimSeconds,
+  shamblerVoice: BASE_SENSE_TUNING.shamblerVoice,
   light: {
     playerDaySightScale: 0,
     lureRangeScale: 0,
@@ -54,7 +59,7 @@ describe('GameAudio Web Audio compatibility', () => {
     }
     vi.stubGlobal('AudioContext', LegacyAudioContext);
     const audio = new GameAudio({
-      registry: { sounds: new Map(), soundOrigins: new Map() } as never,
+      registry: { sounds: new Map(), soundOrigins: new Map(), ui: base.ui, body: base.body } as never,
       blockSize: 1,
       isSolid: () => false,
       tuning: senseTuning,

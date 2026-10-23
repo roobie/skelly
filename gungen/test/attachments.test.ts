@@ -397,15 +397,7 @@ const attachmentMetadataProblems = (id: string, attachment: AttachmentMetadata |
   return problems;
 };
 
-const attachmentFamily = (id: string): string => {
-  if (id.startsWith('optic-')) {
-    return 'sight';
-  }
-  if (id === 'real-suppressor' || id === 'improvised-suppressor') {
-    return 'suppressor';
-  }
-  return id;
-};
+const attachmentFamily = (id: string): string => attachmentInstanceForId(id).family;
 
 const fittedMountPose = ({
   label,
@@ -449,12 +441,27 @@ const attachmentBuild = (id: string) => {
   const defaults = Object.fromEntries(
     Object.entries(family.params).flatMap(([name, spec]) => (spec.default === undefined ? [] : [[name, spec.default]])),
   );
-  const params = {
-    ...defaults,
-    ...(familyName === 'sight' ? { type: id.slice('optic-'.length) } : {}),
-    ...(familyName === 'suppressor' ? { type: id } : {}),
-  };
+  const params = { ...defaults, ...attachmentInstanceForId(id).params };
   return { familyName, params, part: family.build(params) };
+};
+
+const muzzleBase = (id: string): PortDef | undefined =>
+  attachmentBuild(id).part.ports.find(({ id: port, mount }) => port === 'base' && mount === 'muzzle');
+
+/** The attachments certified on a bare barrel's muzzle, by barrel section. */
+const muzzleAllowlist = (section: string): readonly string[] => {
+  const assembly: Assembly = {
+    name: `bare-${section}-barrel`,
+    root: 'barrel',
+    parts: { barrel: { family: 'barrel', params: { section } } },
+    connections: [],
+  };
+  const slots = attachmentSlots(resolve(assembly, gunDomain)).filter(({ mount }) => mount === 'muzzle');
+  const allowlist = attachmentCompatibility(assembly, slots)['barrel.muzzle.0'];
+  if (!allowlist) {
+    throw new Error(`The ${section} barrel exports no muzzle slot`);
+  }
+  return allowlist;
 };
 
 const railExtent = (part: PartDef, port: PortDef, pitch: number, solids = part.solids) => {
@@ -1015,32 +1022,29 @@ describe('attachment parts and export metadata', () => {
     expect(slots.some((_, index) => has(index))).toBe(true);
   });
 
-  it("certifies rifle muzzle devices on a rifled barrel but not on a shotgun's smoothbore barrel", () => {
-    const rifleDevices = ATTACHMENT_IDS.filter((id) =>
-      attachmentBuild(id).part.ports.some(
-        ({ id: port, mount, standard }) => port === 'base' && mount === 'muzzle' && standard === 'rifled',
-      ),
-    );
+  it("certifies unthreaded rifle muzzle devices on a rifled barrel but not on a shotgun's smoothbore barrel", () => {
+    const rifleDevices = ATTACHMENT_IDS.filter((id) => {
+      const base = muzzleBase(id);
+      return base?.standard === 'rifled' && base.size === undefined;
+    });
     expect(rifleDevices).not.toEqual([]);
-    const muzzleAllowlist = (section: 'standard' | 'pump') => {
-      const assembly: Assembly = {
-        name: `bare-${section}-barrel`,
-        root: 'barrel',
-        parts: { barrel: { family: 'barrel', params: { section } } },
-        connections: [],
-      };
-      const slots = attachmentSlots(resolve(assembly, gunDomain)).filter(({ mount }) => mount === 'muzzle');
-      const allowlist = attachmentCompatibility(assembly, slots)['barrel.muzzle.0'];
-      if (!allowlist) {
-        throw new Error(`The ${section} barrel exports no muzzle slot`);
-      }
-      return allowlist;
-    };
     const rifle = muzzleAllowlist('standard');
     const shotgun = muzzleAllowlist('pump');
     for (const id of rifleDevices) {
       expect(rifle, id).toContain(id);
       expect(shotgun, id).not.toContain(id);
+    }
+  });
+
+  it('certifies a threaded muzzle device only on the barrel section its thread names', () => {
+    const threaded = ATTACHMENT_IDS.flatMap((id) => {
+      const size = muzzleBase(id)?.size;
+      return size === undefined ? [] : [{ id, size }];
+    });
+    expect(threaded).not.toEqual([]);
+    for (const { id, size } of threaded) {
+      expect(muzzleAllowlist(size), id).toContain(id);
+      expect(muzzleAllowlist('standard'), id).not.toContain(id);
     }
   });
 

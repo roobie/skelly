@@ -1,6 +1,22 @@
 {
   "models": [
     {
+      "file": "assets/models/ak_slant_compensator.glb",
+      "gun": {
+        "attachment": {
+          "id": "ak-slant-compensator",
+          "kind": "muzzle-device",
+          "mount": "muzzle",
+          "mountFrame": {
+            "normal": [-1, 0, 0],
+            "up": [0, 1, 0]
+          },
+          "properties": {}
+        }
+      },
+      "id": "ak_slant_compensator"
+    },
+    {
       "file": "assets/models/foregrip.glb",
       "gun": {
         "attachment": {

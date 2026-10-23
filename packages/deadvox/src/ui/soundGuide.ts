@@ -3,7 +3,7 @@ import type { Manifest } from '../core/assets.ts';
 import type { SoundDef } from '../core/content.ts';
 import type { SoundId } from '../core/soundEvents.ts';
 import { soundVariantKey } from '../core/soundSynth.ts';
-import { HEARTBEAT_FILES, HEARTBEAT_TUNING, heartbeatForStamina } from '../game/audioPresentation.ts';
+import { type HeartbeatTuning, heartbeatForStamina } from '../game/audioPresentation.ts';
 
 interface SoundVariantGuide {
   readonly file: string;
@@ -31,7 +31,8 @@ export interface HeartbeatSoundGuide {
   readonly id: 'player-heartbeat';
   readonly category: 'body';
   readonly trigger: string;
-  readonly variants: readonly SoundVariantGuide[];
+  readonly variants: readonly (SoundVariantGuide & { readonly event: SoundId })[];
+  readonly levels: readonly { readonly label: string; readonly gain: number }[];
 }
 
 /** Joins the live sound definitions to their source/author/licence rows in the asset manifest. */
@@ -56,28 +57,39 @@ const synthesisedVariant = (file: string): SoundVariantGuide => ({
   synthesised: true,
 });
 
-// The heartbeat is presentation code rather than a content sound, so its guide text stays beside it.
-export const buildHeartbeatSoundGuide = (manifest: Manifest): HeartbeatSoundGuide => {
+/** The heartbeat's own card previews its content sound events at in-game loudness. */
+export const buildHeartbeatSoundGuide = (
+  heartbeat: HeartbeatTuning,
+  sounds: ReadonlyMap<SoundId, SoundDef>,
+  manifest: Manifest,
+): HeartbeatSoundGuide => {
   const byFile = assetSourcesByFile(manifest);
   return {
     id: 'player-heartbeat',
     category: 'body',
     trigger: 'Sprint to lower stamina, then stop and listen as it recovers.',
-    variants: Object.values(HEARTBEAT_FILES).map((file) => soundVariant(file, byFile.get(file))),
+    variants: Object.values(heartbeat.sounds).flatMap((event) =>
+      (sounds.get(event)?.variants ?? []).map((variant) => {
+        const file = soundVariantKey(event, variant);
+        return {
+          ...(typeof variant === 'string' ? soundVariant(file, byFile.get(file)) : synthesisedVariant(file)),
+          event,
+        };
+      }),
+    ),
+    levels: [
+      {
+        label: `at ${heartbeat.startStamina}% stamina`,
+        gain: heartbeatForStamina(heartbeat, heartbeat.startStamina).gain,
+      },
+      { label: 'at exhaustion', gain: heartbeatForStamina(heartbeat, 0).gain },
+    ],
   };
 };
 
-export const HEARTBEAT_PREVIEW_LEVELS = [
-  {
-    label: `at ${HEARTBEAT_TUNING.startStamina}% stamina`,
-    gain: heartbeatForStamina(HEARTBEAT_TUNING.startStamina).gain,
-  },
-  { label: 'at exhaustion', gain: heartbeatForStamina(0).gain },
-] as const;
-
 export const renderHeartbeatSoundGuide = (
   heartbeat: HeartbeatSoundGuide,
-  preview: (file: string, gain: number) => void,
+  preview: (event: SoundId, gain: number) => void,
 ) => html`
   <article class="sound-event" data-sound-event=${heartbeat.id}>
     <header>
@@ -97,9 +109,9 @@ export const renderHeartbeatSoundGuide = (
               }
               · ${variant.author} · ${variant.licence}
             </span>
-            ${HEARTBEAT_PREVIEW_LEVELS.map(
+            ${heartbeat.levels.map(
               ({ label, gain }) => html`
-                <button type="button" @click=${() => preview(variant.file, gain)}>Play ${label}</button>
+                <button type="button" @click=${() => preview(variant.event, gain)}>Play ${label}</button>
               `,
             )}
           </li>

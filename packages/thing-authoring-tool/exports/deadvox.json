@@ -1692,6 +1692,18 @@
     }
   },
   {
+    "id": "sledgehammer",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "sledgehammer",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "baseball_bat",
     "kind": "item",
     "options": {

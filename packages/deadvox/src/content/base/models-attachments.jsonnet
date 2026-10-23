@@ -1,5 +1,6 @@
 {
   models: [
+    import 'gungen/ak_slant_compensator.model.json',
     import 'gungen/foregrip.model.json',
     import 'gungen/improvised_suppressor.model.json',
     import 'gungen/optic_digital_thermal.model.json',

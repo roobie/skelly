@@ -119,9 +119,21 @@
         "hydration": 25
       },
       "healthRecoveryPerGameHour": 2,
+      "heartbeat": {
+        "exhaustedGain": 0.80000000000000004,
+        "exhaustedHz": 3,
+        "sounds": {
+          "fast": "player_heartbeat_fast",
+          "slow": "player_heartbeat_slow"
+        },
+        "startGain": 0.12,
+        "startHz": 1,
+        "startStamina": 85
+      },
       "id": "player",
       "infectionChance": 0.5,
       "infectionOnsetGameHours": 2,
+      "knockoutRefusal": "I'm out cold",
       "knockoutSimSeconds": 20,
       "landing": {
         "cause": "a fall",

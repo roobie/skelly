@@ -59,8 +59,6 @@ local row(id, family, match, massKg) = { id: id, family: family, match: match, m
     row('barrel-standard-long-small', 'barrel', { section: 'standard', profile: 'standard', length: 'L', bore: 'S' }, 0.6),
     row('barrel-standard-long', 'barrel', { section: 'standard', profile: 'standard', length: 'L', bore: 'M' }, 0.95),
     row('barrel-anti-materiel', 'barrel', { section: 'standard', profile: 'standard', length: 'L', bore: 'L' }, 2.6),
-    row('muzzle-ak-slant', 'ak-muzzle-device', { style: 'slant' }, 0.08),
-    row('muzzle-ak74', 'ak-muzzle-device', { style: 'ak74' }, 0.12),
     row('handguard-ak', 'handguard', { layout: 'ak' }, 0.25),
     row('handguard-ak-standard', 'handguard', { layout: 'standard', section: 'ak' }, 0.25),
     row('handguard-ar-clamped', 'handguard', { layout: 'ar', mount: 'clamped' }, 0.35),

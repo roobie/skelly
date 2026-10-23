@@ -115,6 +115,36 @@ export const hammer = (params: Readonly<Record<string, string>>) => {
   ];
 };
 
+// A long-handled maul: a turned shaft through a squat block head with a striking face at each end of its y span.
+export const sledgehammer = (params: Readonly<Record<string, string>>) => {
+  const d = parse(
+    strictObject({
+      handleBack: positive,
+      handleRadius: positive,
+      headBottom: positive,
+      headTop: positive,
+      faceReach: positive,
+      headDepth: positive,
+    }),
+    params,
+  );
+  if (!(d.headBottom < d.headTop && d.handleRadius * 2 < d.headDepth)) {
+    throw new Error('Invalid sledgehammer dimensions');
+  }
+  return [
+    turnedAlongX(
+      'handle',
+      [
+        [-d.handleBack, d.handleRadius * 1.3],
+        [-d.handleBack * 0.93, d.handleRadius],
+        [d.headTop * 0.7, d.handleRadius * 0.9],
+      ],
+      'handle',
+    ),
+    box('head', { x: [d.headBottom, d.headTop], y: [-d.faceReach, d.faceReach], depth: d.headDepth }, 'head'),
+  ];
+};
+
 // One blade family for the fixed-blade tools: a turned handle, a thin guard and a flat blade whose edge runs along the
 // bottom and whose point sits level with the grip axis.
 export const knife = (params: Readonly<Record<string, string>>) => {

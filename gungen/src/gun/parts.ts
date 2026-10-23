@@ -1325,6 +1325,12 @@ const receiverPorts = (context: ReceiverContext): PortDef[] => {
   } else if (params.stockStyle === 'sporting') {
     stockPortY = SPORTER_PROPORTIONS.stock.genericSeatY;
   }
+  let barrelPortX = frontFaceX;
+  if (params.section === 'ar') {
+    barrelPortX -= AR_ACTION_LAYOUT.barrelExtensionLengthU;
+  } else if (params.section === 'compact-smg') {
+    barrelPortX = COMPACT_SMG_PROPORTIONS.barrel.breechU;
+  }
   const ports: PortDef[] = [
     ...(context.carrierPattern === 'bolt' && params.section !== 'sporter'
       ? [
@@ -1355,7 +1361,7 @@ const receiverPorts = (context: ReceiverContext): PortDef[] => {
       mount: 'barrel',
       gender: 'female',
       size: bore,
-      pos: [params.section === 'ar' ? frontFaceX - AR_ACTION_LAYOUT.barrelExtensionLengthU : frontFaceX, 0, 0],
+      pos: [barrelPortX, 0, 0],
       normal: X,
       up: Y,
       required: true,
@@ -2820,7 +2826,10 @@ const barrelLength = (params: Readonly<Record<string, string>>): number => {
     return SPORTER_PROPORTIONS.barrel.lengthU[sizeClass];
   }
   if (params.section === 'compact-smg') {
-    return COMPACT_SMG_PROPORTIONS.barrel.tipU[params.muzzle === 'plain' ? 'plain' : 'threaded'];
+    return (
+      COMPACT_SMG_PROPORTIONS.barrel.tipU[params.muzzle === 'plain' ? 'plain' : 'threaded'] -
+      COMPACT_SMG_PROPORTIONS.barrel.breechU
+    );
   }
   return params.section === 'ak' ? akBarrelLength(sizeClass) : { S: 26, M: 36, L: 46 }[sizeClass];
 };
@@ -2955,31 +2964,31 @@ const ak74Brake = (): Solid[] => {
 };
 
 /**
- * A muzzle device threaded on an AK barrel's end. It carries the muzzle port on to its own front, so the
- * gun's muzzle anchor and muzzle mount move to the front of whichever device it has.
+ * A muzzle device threaded on an AK barrel's end, removable like a suppressor. It offers no muzzle port of its own:
+ * a suppressor threaded on it would cross the barrel's keep-out, so the barrel's port stays the gun's one muzzle host.
+ * Its base declares the AK barrel section as its size so it threads only on AK muzzles; suppressors declare none.
  */
 const akMuzzleDevice: PartFamily = {
   name: 'ak-muzzle-device',
   params: { style: choice('slant', 'ak74') },
   build(params): PartDef {
     const ak74 = params.style === 'ak74';
-    const { slant, ak74: brake74 } = AK_PROPORTIONS.muzzleDevice;
-    const frontX = ak74 ? brake74.bodyLengthU + brake74.nose.lengthU : slant.lengthU;
     return {
       family: 'ak-muzzle-device',
+      tags: ['attachment', 'muzzle-device'],
       solids: ak74 ? ak74Brake() : akSlantBrake(),
       ports: [
         {
           id: 'base',
           mount: 'muzzle',
           standard: 'rifled',
+          size: 'ak',
           gender: 'male',
           pos: [0, 0, 0],
           normal: NEG_X,
           up: Y,
           required: true,
         },
-        { id: 'muzzle', mount: 'muzzle', standard: 'rifled', gender: 'female', pos: [frontX, 0, 0], normal: X, up: Y },
       ],
       keepOuts: [],
       axes: [{ kind: 'bore', origin: [0, 0, 0], dir: X }],
@@ -3023,6 +3032,7 @@ const barrel: PartFamily = {
     const len = barrelLength(params);
     const r = Math.ceil((PISTOL_BARREL_RADIUS[bore] * (params.profile === 'heavy' ? 1.5 : 1)) / GRID) * GRID;
     const handguardLengthClass = cls(params, 'handguardLength');
+    const barrelSeatX = params.section === 'compact-smg' ? -COMPACT_SMG_PROPORTIONS.barrel.breechU : 0;
     let fore: number;
     if (params.handguardLayout === 'ak') {
       fore = akHandguardLength(handguardLengthClass);
@@ -3033,6 +3043,9 @@ const barrel: PartFamily = {
     } else {
       fore = snapAkGrid(len * HANDGUARD_REACH.barrelFraction);
     }
+    if (params.section === 'compact-smg') {
+      fore += barrelSeatX;
+    }
     const tubeLengthPercent = params.tubeLengthPercent ?? '75';
     const tubeDrop = tubeDropForBore(bore);
     const tubeEnd = pumpTubeLength(len, tubeLengthPercent);
@@ -3040,7 +3053,7 @@ const barrel: PartFamily = {
       tubeEnd > fore
         ? [{ id: 'support-lug', mount: 'lug', gender: 'female', pos: [fore, -tubeDrop, 0], normal: NEG_X, up: Y }]
         : [];
-    const tube = octagonalPrism('tube', r, [0, len]);
+    const tube = octagonalPrism('tube', r, [barrelSeatX, len]);
     const breechX = params.section === 'ar' ? -AR_ACTION_LAYOUT.barrelExtensionLengthU : 0;
     const extension =
       breechX < 0
@@ -3142,6 +3155,7 @@ const barrel: PartFamily = {
           id: 'muzzle',
           mount: params.muzzle === 'plain' ? 'plain-muzzle' : 'muzzle',
           standard: muzzleBore,
+          size: params.section ?? 'standard',
           gender: 'female',
           pos: [len, 0, 0],
           normal: X,
