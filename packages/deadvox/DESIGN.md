@@ -2073,14 +2073,17 @@ allocating, because a stall on first sight of each look would cost frame rate on
 GPUs (#680). A cabin with no window stays dark. See `src/core/skyTransport.ts`, `buildSkyResult`, `src/render/skylight.ts`, `Skylight`,
 and `src/render/skyAnchor.ts`, `addSkyAnchors` and `addSkyOpeningAnchors`.
 
-Gameplay that reads sky light cannot use the renderer's estimate: that is scheduled by
-camera residency and wall-clock budgets, so two machines, a reload or a different camera
-would read differently (`docs/decisions/0008-deterministic-world.md`). The session
-therefore answers from world state alone, so when an answer is computed never changes it.
-That visibility is derived, so it is not saved: a reload recomputes the same answer from
+Gameplay and the renderer read one sky field cache. Sky light scheduled by camera
+residency or wall-clock budgets would read differently on two machines, after a reload
+or from a different camera (`docs/decisions/0008-deterministic-world.md`), so the cache
+answers from world state alone and when an answer is computed never changes it. The
+renderer only chooses which fields to build early and draws what the cache holds; two
+caches would let the room a player sees and the room gameplay reads disagree. The
+visibility is derived, so it is not saved: a reload recomputes the same answer from
 restored state. Outside every field the answer is open sky, as `docs/readables.md`,
 "Darkness remains open" requires, so missing data never reads as darkness. See
-`src/core/skyField.ts`, `SkyFields`, and `src/game/session.ts`, `createSession`.
+`src/core/skyField.ts`, `SkyFields`, `src/game/worldSetup.ts`, `createWorldSetup`, and
+`src/game/session.ts`, `createSession`.
 
 Rules that ask whether a place is lit enough, such as reading a page or a sign, take the
 renderer's falloff and its content tuning, so light levels for the rules are never tuned
@@ -2094,28 +2097,36 @@ Mesh-first admission protects the first visible geometry without making it wait 
 lighting readiness. A copied sky request may wait outside the pool capacity;
 a mesh completion admits it before the next mesh refill, preventing persistent
 mesh backlog from starving lighting. Native worker FIFO remains the executor;
-its FIFO alone cannot guarantee fairness between these callers. Independent
-snapshot preparation overlaps the single lighting request within the presentation
-budget. Keeping one received result and one prepared successor bounds memory and
-validated publication work; another submission waits for the render update rather
-than overwriting a result awaiting publication. See `src/game/streamer.ts`,
-`dispatchSky`, and `src/render/skylight.ts`, `prepare`.
+its FIFO alone cannot guarantee fairness between these callers. A synchronous build
+of a large field takes far longer than a frame, so the renderer asks the cache for
+off-thread builds of the fields near the camera, one at a time, and never builds while
+drawing. The cache captures the snapshot on the main thread and installs the worker's
+result only while that snapshot is still current, so it is the result a synchronous
+build would give. Each field holds its own pending capture, waiting or out at the
+worker, until the result lands or an edit makes it stale; a capture the worker cannot
+take yet stays on its field for that field's next request, so several fields the camera
+passed can each hold one. See
+`src/game/streamer.ts`, `dispatchSky`, `src/core/skyField.ts`, `request`, and
+`src/render/skylight.ts`, `prepare`.
 
-Inside those application regions, an uncertified column uses a capped version of
-the existing estimate rather than blackout: cold discovery must not make an open
-surface appear sealed. The cap is the accepted look for that uncertainty, not
-proof that the geometry is open. Once lighting has been published, keep that
-committed estimate while geometry edits are revalidated: replacing a dark room with
-the uncertainty cap would flash it bright when a door opens. The accepted replacement
-swaps atomically; a late result for superseded geometry still cannot publish.
-Retained column heights supply the nonresident estimate, and an unknown overlapping
-field cannot override a published certificate. CPU and shader share this policy.
-This stale display can delay a darkening edit or step visibly at replacement; it is
-presentation latency, not permission to treat stale geometry as a current result. Cached CPU results survive GPU eviction so
-re-entry does not repeat transport. Outside these
-regions, preserve the existing sky estimate: otherwise a canopy with no discovery job
-could remain permanently dark. Solve halos and spatial lookup cells do not expand
-eligibility. Arbitrary construction and caves remain outside this discovery scope.
+Until a field's answer lands, the view dims its diffuse sky to a content cap, during the
+load pause and in play alike. Near the player, direct sun still follows the shadow map,
+because that map is cast from real geometry; beyond the shadow map, an unbuilt receiver
+gets no direct sun. This is a presentation fallback, not the simulation's answer: a
+query builds the field synchronously, so gameplay already reads the room's real light.
+A room briefly too dark reads as "not lit yet", while open sky in a roofed room reads
+as wrong light; finishing a field before revealing its room would avoid both but stalls
+frames on walks without scheduling to spread that work. When #1261 provides that
+scheduling, finishing before reveal replaces this fallback. See
+`src/content/base/graphics.jsonnet`, `unbuiltSkyCap`. Once a field has a complete
+result, the view keeps it while an edit is rebuilt, so opening a door cannot flash a
+dark room. The replacement
+swaps atomically, and a late result for superseded geometry cannot install. Retained
+column heights supply the nonresident estimate. CPU and shader share this policy. The
+kept result can delay a darkening edit or step visibly at replacement; that is
+presentation latency only, since gameplay's answer is already current. Results survive
+GPU eviction, so re-entry does not repeat transport. Solve halos and spatial lookup
+cells do not expand the fields. Arbitrary construction and caves remain outside them.
 
 Worker execution protects rendering from dense transport work, but copying, submission,
 publication and texture uploads still consume the main frame, so background execution

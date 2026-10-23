@@ -48,6 +48,7 @@ it('benchmark engines use mod defaults despite saved graphics preferences and de
             id: CORE_CONTENT_IDS.coreGraphics,
             readyRadiusM: 16,
             itemPictureCacheCapacity: 2,
+            unbuiltSkyCap: 0.5,
             itemViewer: {
               framing: 1,
               startYawDegrees: 0,
@@ -67,7 +68,7 @@ it('benchmark engines use mod defaults despite saved graphics preferences and de
     },
   ]);
   const { registry } = content;
-  owner.setup = { registry };
+  owner.setup = { registry, skyFields: { fields: [] } };
   let saved = '';
   const storage = {
     getItem: vi.fn(() => saved),
