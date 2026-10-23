@@ -3,9 +3,9 @@ import type { Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { type CrosshairTarget, crosshairTarget } from '../src/core/crosshairTarget.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
+import { PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ZombieSystem } from './zombieSystemFixture.ts';
 

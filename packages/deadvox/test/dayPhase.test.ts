@@ -7,8 +7,8 @@ import { SunExposureCache } from '../src/core/lights.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { skyAt, sunDirection } from '../src/core/sky.ts';
 import { type HordeState, perceivePlayer } from '../src/core/zombies.ts';
-import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { PLAYER, physicsFor } from './playerFixture.ts';
 import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();

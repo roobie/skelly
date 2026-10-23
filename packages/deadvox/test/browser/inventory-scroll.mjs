@@ -11,9 +11,21 @@ import { pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
+const stageStarted = performance.now();
+let phaseStarted = stageStarted;
+const logPhase = (name) => {
+  const now = performance.now();
+  process.stdout.write(
+    `inventory-scroll: ${name} ${(now - phaseStarted).toFixed(0)}ms; total ${(now - stageStarted).toFixed(0)}ms\n`,
+  );
+  phaseStarted = now;
+};
 const { firefox } = await loadPlaywright();
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
+const itemPicturesModule = '/src/render/itemPictures.ts';
+const modelsModule = '/src/render/models.ts';
+const itemLookModule = '/src/render/itemLook.ts';
 // argv[3], when given, is a PNG path for a debugging screenshot of the around pane; CI never passes it.
 const engine = process.argv[2] ?? 'chromium';
 assert.ok(['chromium', 'firefox'].includes(engine));
@@ -348,6 +360,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 480 } });
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
+  logPhase('server and browser startup');
   await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);
   try {
     await page.waitForFunction(() => Boolean(globalThis.scrollFixture));
@@ -1181,6 +1194,7 @@ try {
     cursor.visible && Math.abs(cursor.tip.x - cursor.cursorX) <= 0.5 && Math.abs(cursor.tip.y - cursor.cursorY) <= 0.5,
     `the drawn cursor sits at the menu cursor position: ${JSON.stringify(cursor)}`,
   );
+  logPhase('render-free scroll contracts');
   if (engine === 'chromium') {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.addInitScript(() => {
@@ -1199,7 +1213,9 @@ try {
     await page.goto(
       browserStageUrl(
         'inventory-scroll',
-        `http://127.0.0.1:${address.port}/?debug=1&seed=73&radius=64&post=0&sunshadow=0&torchshadow=0`,
+        `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=testHouse&radius=32`,
+        // Only the isolated item still needs WebGL, not the world or attachment handling.
+        'render-free',
       ),
     );
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
@@ -1215,6 +1231,7 @@ try {
       null,
       { timeout: 20_000 },
     );
+    logPhase('render-free live game readiness');
     const clickThroughMenuCursor = async (selector) => {
       const targetLocator = typeof selector === 'string' ? page.locator(selector) : selector;
       const bounds = await targetLocator.boundingBox();
@@ -1279,6 +1296,71 @@ try {
       { timeout: 10_000 },
     );
     await clickThroughMenuCursor(`#inventory [data-uid="${rifleUid}"]`);
+    logPhase('spawn and inventory handling');
+    await page.evaluate(
+      async ({ uid, moduleUrls }) => {
+        const { ItemPictures } = await import(moduleUrls.itemPictures);
+        const { ModelLibrary } = await import(moduleUrls.models);
+        const { itemLook } = await import(moduleUrls.itemLook);
+        const { session, screen } = globalThis.foregripFitTest;
+        if (screen.hooks.pictures) {
+          throw new Error('Live handling must remain render-free');
+        }
+        const { registry } = session.inventory;
+        const look = itemLook(registry, session.inventory.itemByUid(uid));
+        if (!look) {
+          throw new Error('Pixel fixture needs a declared model');
+        }
+        const ids = new Set([look.model, ...look.slots.map((slot) => slot.model).filter(Boolean)]);
+        const models = new ModelLibrary(
+          { ...registry, models: new Map([...registry.models].filter(([id]) => ids.has(id))) },
+          (message) => {
+            throw new Error(message);
+          },
+        );
+        screen.hooks.pictures = new ItemPictures(registry, models, 1);
+      },
+      {
+        uid: rifleUid,
+        moduleUrls: { itemPictures: itemPicturesModule, models: modelsModule, itemLook: itemLookModule },
+      },
+    );
+    await page.waitForFunction((uid) => {
+      globalThis.foregripFitTest.screen.update();
+      return Boolean(document.querySelector(`#inventory [data-uid="${uid}"] .inv-item-picture`));
+    }, rifleUid);
+    const tilePicture = page.locator(`#inventory [data-uid="${rifleUid}"] .inv-item-picture`);
+    await tilePicture.waitFor({ state: 'visible' });
+    const picturePixels = await tilePicture.evaluate(async (image) => {
+      await image.decode();
+      const canvas = document.createElement('canvas');
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext('2d');
+      context.drawImage(image, 0, 0);
+      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+      let opaque = 0;
+      const colors = new Set();
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (pixels[i + 3] > 0) {
+          opaque += 1;
+          colors.add(`${pixels[i]},${pixels[i + 1]},${pixels[i + 2]}`);
+        }
+      }
+      return { opaque, colors: colors.size, total: canvas.width * canvas.height };
+    });
+    assert.ok(
+      picturePixels.opaque > 0 && picturePixels.opaque < picturePixels.total,
+      'tile still contains model pixels on transparency',
+    );
+    assert.ok(picturePixels.colors > 1, 'reference-lit model has surface detail rather than a flat placeholder');
+    await page.evaluate(() => {
+      const { screen } = globalThis.foregripFitTest;
+      screen.hooks.pictures.dispose();
+      screen.hooks.pictures = undefined;
+      screen.update();
+    });
+    logPhase('isolated item picture pixels');
     const fitButtons = page.locator('#inventory .inv-details button.inv-option').filter({ hasText: /Fit .*foregrip/i });
     assert.ok((await fitButtons.count()) > 0, 'held AR offers the pocketed foregrip as a fit action');
     const fitButton = fitButtons.first();
@@ -1359,6 +1441,7 @@ try {
     assert.deepEqual(fitSettled.gripLocation, { kind: 'slot', ownerUid: rifleUid, slot: slotId });
     assert.deepEqual(errors.slice(pageErrorsBeforeFit), [], 'fitting does not raise a page error');
 
+    logPhase('render-free attachment fit');
     const removeButton = page.locator(`#inventory [data-attachment-slot="${slotId}"] button.inv-option`).filter({
       hasText: /^Remove\b/,
     });
@@ -1407,6 +1490,7 @@ try {
     assert.equal(removalSettled.queueJobs, 0, 'simulation frames finish the removal handling job');
     assert.equal(removalSettled.attachedUid, undefined, 'the production removal control empties the clicked slot');
     assert.deepEqual(errors.slice(pageErrorsBeforeRemove), [], 'removal does not raise a page error');
+    logPhase('render-free attachment removal');
     process.stdout.write(
       `${engine}: live held-AR pocketed-foregrip fit/removal via locked menu click ${JSON.stringify({ fitSettled, removalSettled })}\n`,
     );

@@ -9,7 +9,7 @@ import { type CoreMessageKey, coreLabel, coreMessage } from './coreText.ts';
 import type { HandlingQueue, MoveJob } from './handling.ts';
 import { dropSpots, type HandSide, Inventory, type Plan, type Target, wornSlotOf } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
-import { chargeOf, fitsLight } from './lights.ts';
+import { chargeOf, fitsLight, lightInHands } from './lights.ts';
 import type { ReachSnapshot } from './reach.ts';
 import type { Readable } from './readable.ts';
 import { fitsFuelledTool } from './torch.ts';
@@ -271,9 +271,9 @@ const refuseUse = (inv: Inventory, reason: string): UseOption => ({
 const batteryOption = (battery: Item, inv: Inventory, selectedLight?: Item): UseOption => {
   const light =
     selectedLight ??
-    [inv.hands[dominantSide(inv.character)], inv.hands[offSide(inv.character)]].find(
-      (held) => held && fitsLight(inv.registry, held, battery),
-    );
+    [...inv.carriedTree()]
+      .map(({ item }) => item)
+      .find((item) => lightInHands(inv, item) && fitsLight(inv.registry, item, battery));
   return light
     ? {
         kind: 'use',

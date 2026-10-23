@@ -1007,6 +1007,14 @@ body.unconscious::after {
 .inv-item.inv-item-unmatched {
   opacity: 0.3;
 }
+.inv-item-picture {
+  float: left;
+  width: 1.125rem;
+  height: 1.125rem;
+  object-fit: contain;
+  margin-right: calc(var(--ui-spacing) * 0.125rem);
+  pointer-events: none;
+}
 .inv-item-name {
   display: block;
   overflow: hidden;

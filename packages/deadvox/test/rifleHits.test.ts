@@ -12,9 +12,9 @@ import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
 import { posedShamblerRegionBoxes, type ZombieRegion, type ZombieRegions } from '../src/core/zombieRegions.ts';
 import { FirearmMechanics, type FirearmShotInput, type FirearmTrajectory } from '../src/game/firearmHandling.ts';
-import { PLAYER } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { PLAYER } from './playerFixture.ts';
 import { chargedRifle, rifleAmmunition } from './rifleFixture.ts';
 
 const registry = baseRegistry();

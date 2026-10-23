@@ -3,6 +3,7 @@
 // handling time is up (handling.ts). `DESIGN.md`, "Items and inventory"; `DESIGN.md`, "Hands".
 
 import { BlockEntities, type BlockEntity } from './blockEntities.ts';
+import { cargoGrid, cargoSpaceItem } from './cargoSpace.ts';
 import {
   DEFAULT_HANDED_CHARACTER,
   dominantSide,
@@ -29,6 +30,7 @@ import { PILE_GRID } from './inventoryScale.ts';
 import {
   cellCount,
   couldFit,
+  craftComponentEligible,
   defOf,
   findSpot,
   fitsAt,
@@ -54,6 +56,12 @@ import { magazineWellCalibre, slotsReason } from './magazine.ts';
 import type { WearSlot } from './schema.ts';
 import { inventoryManagementTuning } from './skillTraining.ts';
 import { freezeSnapshot } from './snapshotData.ts';
+import {
+  copyVehiclePlacement,
+  type VehicleInstance,
+  VehicleInstances,
+  type VehicleInstancesState,
+} from './vehicleInstances.ts';
 
 /** Handling tunables in seconds, authored in content beside the skill that scales them. */
 export const handlingWeights = (registry: Registry) => {
@@ -147,8 +155,10 @@ export type Target =
   | { kind: 'pile'; pos: Vec3; at?: Spot }
   | { kind: 'furniture'; entity: BlockEntity; pocket: number; at?: Spot };
 
-/** Where in the world an item lies, if it isn't on the player: a pile, or furniture. */
-type Place = { kind: 'pile'; pile: Pile } | { kind: 'furniture'; entity: BlockEntity };
+type Place =
+  | { kind: 'pile'; pile: Pile }
+  | { kind: 'furniture'; entity: BlockEntity }
+  | { kind: 'vehicle'; origin: Vec3; vehicleId: number };
 
 export type Plan =
   | { ok: true; time: number; merge?: Item; at?: Spot; swap?: Item }
@@ -167,7 +177,7 @@ const heldInPlace = (registry: Registry, item: Item, from: Location): string | u
   if (from.kind === 'work' || chargingBattery(from)) {
     return coreMessage(registry, 'inWork');
   }
-  if (from.kind === 'slot') {
+  if (from.kind === 'slot' || from.kind === 'vehicle') {
     return coreMessage(registry, 'fitted');
   }
   if (item.trap) {
@@ -229,6 +239,7 @@ export class Inventory {
   readonly looted = new Map<string, number>();
   private readonly quickbarOrigins = new Map<number, TargetState>();
   readonly entities: BlockEntities;
+  readonly vehicles = new VehicleInstances();
   /** Goes up on every change, so views know when to redraw. */
   version = 0;
   /** Whether a pile's block is within reach; the game sets it from the player's position. */
@@ -273,17 +284,23 @@ export class Inventory {
     registry: Registry,
     state: InventoryState,
     entities?: BlockEntities,
-    character: HandedCharacter = DEFAULT_HANDED_CHARACTER,
+    {
+      character = DEFAULT_HANDED_CHARACTER,
+      vehicles: vehiclesState = { nextId: 1, instances: [] },
+    }: { character?: HandedCharacter; vehicles?: VehicleInstancesState } = {},
   ): Inventory {
     if (!Number.isSafeInteger(state.nextItemUid) || state.nextItemUid < 1) {
       throw new Error('Invalid next item id');
     }
-    validateInventoryTree(registry, state);
-    const restoredEntities = entities ?? BlockEntities.restoreState(registry, state.entities);
-    if (entities) {
-      entities.restoreState(state.entities);
-    }
-    const inventory = new Inventory(registry, new ItemFactory(state.nextItemUid), restoredEntities, character);
+    validateInventoryTree(registry, state, vehiclesState);
+    const restoredEntities = BlockEntities.restoreState(registry, state.entities);
+    const inventory = new Inventory(
+      registry,
+      new ItemFactory(state.nextItemUid),
+      entities ?? restoredEntities,
+      character,
+    );
+    inventory.vehicles.restoreState(registry, vehiclesState);
     for (const [side, item] of Object.entries(state.hands)) {
       if (item) {
         inventory.hands[side as HandSide] = restoreItem(registry, item);
@@ -304,6 +321,9 @@ export class Inventory {
       inventory.looted.set(type, count);
     }
     inventory.restoreQuickbarOrigins(state.quickbarOrigins);
+    if (entities) {
+      entities.restoreState(state.entities);
+    }
     return inventory;
   }
 
@@ -317,6 +337,36 @@ export class Inventory {
     this.character = character;
     this.factory = factory;
     this.entities = entities;
+  }
+
+  registerVehicle(
+    spec: Pick<VehicleInstance, 'blueprint' | 'placementKey' | 'origin' | 'facing'>,
+    absent: readonly string[] = [],
+  ): number {
+    const existing = this.vehicles.idForPlacementKey(spec.placementKey);
+    if (existing !== undefined) {
+      return existing;
+    }
+    const blueprint = this.registry.vehicleBlueprints.get(spec.blueprint);
+    if (!blueprint || absent.some((id) => !blueprint.fittings.some((fitting) => fitting.id === id))) {
+      throw new Error('Invalid vehicle factory build');
+    }
+    const vehicle: VehicleInstance = {
+      ...spec,
+      origin: [...spec.origin],
+      sites: blueprint.fittings.map(copyVehiclePlacement),
+      fittings: blueprint.fittings
+        .filter(({ id }) => !absent.includes(id))
+        .map((fitting) => ({
+          ...copyVehiclePlacement(fitting),
+          item: fitting.cargo
+            ? cargoSpaceItem(this.factory, this.registry, fitting.part, fitting.cargo)
+            : this.factory.create(this.registry, fitting.part),
+        })),
+    };
+    const vehicleId = this.vehicles.add(this.registry, vehicle);
+    this.version += 1;
+    return vehicleId;
   }
 
   /**
@@ -382,6 +432,7 @@ export class Inventory {
         get entities() {
           return inventory.entities.records;
         },
+        vehicles: inventory.vehicles.records,
       });
     }
     return walkItemTree(roots());
@@ -457,6 +508,7 @@ export class Inventory {
       case 'work':
         throw new Error('Work inputs have no independent target');
       case 'slot':
+      case 'vehicle':
         throw new Error('A fitted item has no independent target');
       default:
         throw new Error(`Unknown location kind ${String((location as { kind: string }).kind)}`);
@@ -573,7 +625,10 @@ export class Inventory {
 
   /** The grid of a pocket, from the owner's type. */
   pocketGrid(owner: Item, pocket: number): GridSize {
-    const spec = defOf(this.registry, owner.type).container?.pockets[pocket];
+    const def = defOf(this.registry, owner.type);
+    const container =
+      owner.cargo && def.vehicle?.cargoSpace ? cargoGrid(owner.cargo, def.vehicle.cargoSpace) : def.container;
+    const spec = container?.pockets[pocket];
     if (!spec) {
       throw new Error(`${owner.type} has no pocket ${pocket}`);
     }
@@ -581,7 +636,10 @@ export class Inventory {
   }
 
   pocketHandling(owner: Item, pocket: number): number {
-    return defOf(this.registry, owner.type).container?.pockets[pocket]?.handlingSimSeconds ?? 0;
+    const def = defOf(this.registry, owner.type);
+    const container =
+      owner.cargo && def.vehicle?.cargoSpace ? cargoGrid(owner.cargo, def.vehicle.cargoSpace) : def.container;
+    return container?.pockets[pocket]?.handlingSimSeconds ?? 0;
   }
 
   /** Where an item is, searching hands, worn items, piles and every pocket inside them. */
@@ -797,7 +855,7 @@ export class Inventory {
     }
     const seen = new Set<number>();
     for (const { item, count } of plan.components) {
-      if (!this.validCraftComponent(item, count) || seen.has(item.uid)) {
+      if (!this.validCraftComponent(item, count, recipe.consumeFitted) || seen.has(item.uid)) {
         return false;
       }
       seen.add(item.uid);
@@ -805,13 +863,14 @@ export class Inventory {
     return !plan.tools.some((tool) => seen.has(tool.item.uid));
   }
 
-  private validCraftComponent(item: Item, count: number): boolean {
-    const from = this.locate(item);
+  private validCraftComponent(item: Item, count: number, consumeFitted = false): boolean {
+    const location = this.locate(item);
     return (
       this.itemByUid(item.uid) === item &&
-      from !== undefined &&
-      !chargingBattery(from) &&
-      isEmpty(item) &&
+      location !== undefined &&
+      location.kind !== 'vehicle' &&
+      !chargingBattery(location) &&
+      craftComponentEligible(item, consumeFitted) &&
       Number.isSafeInteger(count) &&
       count >= 1 &&
       count <= item.count
@@ -820,11 +879,12 @@ export class Inventory {
 
   private validDisassemblyPlan(plan: Extract<WorkPlan, { kind: 'disassembly' }>): boolean {
     const sourceDef = this.registry.items.get(plan.source.type);
-    const from = this.locate(plan.source);
+    const location = this.locate(plan.source);
     if (
       this.itemByUid(plan.source.uid) !== plan.source ||
-      !from ||
-      chargingBattery(from) ||
+      !location ||
+      location.kind === 'vehicle' ||
+      chargingBattery(location) ||
       !sourceDef ||
       !(sourceDef.disassembly || sourceDef.salvage) ||
       !validDisassemblyToolLevels(sourceDef, plan.toolLevels) ||
@@ -1008,9 +1068,10 @@ export class Inventory {
     }
   }
 
-  /** The pile or furniture an item is in, directly or inside a bag lying there; undefined if it's on you. */
   placeOf(location: Location): Place | undefined {
     switch (location.kind) {
+      case 'vehicle':
+        return { kind: 'vehicle', origin: location.origin, vehicleId: location.vehicleId };
       case 'pile':
         return { kind: 'pile', pile: location.pile };
       case 'furniture':
@@ -1092,6 +1153,9 @@ export class Inventory {
   private reachable(place: Place | undefined): boolean {
     if (!place) {
       return true;
+    }
+    if (place.kind === 'vehicle') {
+      return this.canReach(place.origin);
     }
     return place.kind === 'pile' ? this.canReach(place.pile.pos) : this.canReachEntity(place.entity);
   }
@@ -1229,7 +1293,7 @@ export class Inventory {
   }
 
   private canMoveDisplaced(item: Item, from: Location, source: Location): boolean {
-    if (from.kind === 'work' || from.kind === 'slot' || chargingBattery(from)) {
+    if (from.kind === 'work' || from.kind === 'slot' || from.kind === 'vehicle' || chargingBattery(from)) {
       return false;
     }
     const sourceTarget = this.targetForLocation(source);
@@ -1539,7 +1603,15 @@ export class Inventory {
   /** Uses up `count` of an item wherever it is: eaten, burnt, loaded into something. */
   consume(item: Item, count = 1): boolean {
     const at = this.locate(item);
-    if (!at || item.work || at.kind === 'work' || at.kind === 'slot' || chargingBattery(at) || count > item.count) {
+    if (
+      !at ||
+      item.work ||
+      at.kind === 'work' ||
+      at.kind === 'slot' ||
+      at.kind === 'vehicle' ||
+      chargingBattery(at) ||
+      count > item.count
+    ) {
       return false;
     }
     if (count < item.count) {
@@ -1575,6 +1647,8 @@ export class Inventory {
       }
       case 'work':
         throw new Error('Craft inputs are owned by the work item');
+      case 'vehicle':
+        throw new Error('A fitted part is owned by its vehicle');
       case 'slot':
         throw new Error('A fitted item is owned by its firearm');
       default:
@@ -1636,9 +1710,9 @@ const validateRepairTargets = (registry: Registry, tree: readonly { item: ItemSt
   }
 };
 
-const validateInventoryTree = (registry: Registry, state: InventoryState): void => {
-  const tree = [...savedItemTree(state)];
-  itemIds(tree, state.nextItemUid);
+const validateInventoryTree = (registry: Registry, state: InventoryState, vehicles: VehicleInstancesState): void => {
+  itemIds(savedItemTree(state, vehicles), state.nextItemUid);
+  const tree = [...savedItemTree(state, vehicles)];
   validateRepairTargets(registry, tree);
   const grid = (placed: readonly PlacedState[], size: GridSize) => {
     const previous: Placed[] = [];
@@ -1668,7 +1742,10 @@ const validateInventoryTree = (registry: Registry, state: InventoryState): void 
     }
   };
   for (const { item } of tree) {
-    pockets(item.type, item.pockets, defOf(registry, item.type).container?.pockets);
+    const def = defOf(registry, item.type);
+    const container =
+      item.cargo && def.vehicle?.cargoSpace ? cargoGrid(item.cargo, def.vehicle.cargoSpace) : def.container;
+    pockets(item.type, item.pockets, container?.pockets);
     if (defOf(registry, item.type).workInProgress && !item.work) {
       throw new Error('Missing craft work payload');
     }
@@ -1793,7 +1870,7 @@ export const validateWorkItem = (registry: Registry, item: ItemState): void => {
 
 /** Where an item lies in a grid, if it's in one. */
 export const spotOf = (at: Location): Spot | undefined =>
-  at.kind === 'hand' || at.kind === 'worn' || at.kind === 'work' || at.kind === 'slot'
+  at.kind === 'hand' || at.kind === 'worn' || at.kind === 'work' || at.kind === 'slot' || at.kind === 'vehicle'
     ? undefined
     : { x: at.placed.x, y: at.placed.y, rotated: at.placed.rotated };
 

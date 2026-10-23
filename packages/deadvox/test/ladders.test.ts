@@ -10,10 +10,10 @@ import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { pieceSize } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
-import { type MoveIntent, PLAYER } from '../src/game/player.ts';
 import { applyToHeldItem, PlayerTickActions } from '../src/game/playerTickActions.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { type MoveIntent, PLAYER } from './playerFixture.ts';
 import { BASE_SENSE_TUNING } from './senseFixture.ts';
 
 const registry = baseRegistry();

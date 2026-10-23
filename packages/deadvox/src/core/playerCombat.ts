@@ -101,18 +101,26 @@ export class PlayerCombat {
   private readonly targets: MeleeTargetResolver;
   private readonly onWeaponHit: (uid: number) => void;
   private readonly onLandedHit: () => void;
+  private readonly onCompletedSwing: (isFist: boolean) => void;
 
   constructor(
     targets: MeleeTargetResolver,
     onWeaponHit: (uid: number) => void = () => undefined,
     character: HandedCharacter = DEFAULT_HANDED_CHARACTER,
-    onLandedHit: () => void = () => undefined,
+    {
+      onLandedHit = () => undefined,
+      onCompletedSwing = () => undefined,
+    }: {
+      onLandedHit?: () => void;
+      onCompletedSwing?: (isFist: boolean) => void;
+    } = {},
   ) {
     this.character = character;
     this.nextFistHand = dominantSide(character);
     this.targets = targets;
     this.onWeaponHit = onWeaponHit;
     this.onLandedHit = onLandedHit;
+    this.onCompletedSwing = onCompletedSwing;
   }
 
   get activeMeleeAction(): Readonly<MeleeActionState> | undefined {
@@ -179,6 +187,7 @@ export class PlayerCombat {
       action.hitResolved = true;
     }
     if (elapsed >= action.cooldown) {
+      this.onCompletedSwing(action.profile === 'fists');
       this.meleeAction = null;
     } else {
       action.elapsed = elapsed;

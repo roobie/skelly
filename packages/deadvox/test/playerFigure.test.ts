@@ -26,7 +26,6 @@ import { opticViewSettings } from '../src/core/opticView.ts';
 import type { PlayerStance } from '../src/core/playerStance.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { FIGURE_BOXES } from '../src/core/zombieRegions.ts';
-import { createPlayerBody, PLAYER } from '../src/game/player.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { renderMeleePose } from '../src/render/meleePose.ts';
 import {
@@ -37,6 +36,7 @@ import {
 } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
+import { createPlayerBody, PLAYER } from './playerFixture.ts';
 
 const registry = baseRegistry();
 const scale = makeScale(0.5);
@@ -346,7 +346,7 @@ describe('player figure', () => {
     const meshes = new PlayerMeshes(scale.blockSize, playerFigure);
     const parts = meshes.group.children as InstancedMesh[];
     const headIndex = PLAYER_ARM_PARTS.indexOf('head');
-    const senses = registry.senses.get('player')!;
+    const senses = registry.player.get('player')!;
     const heightOf: Record<PlayerStance, number> = {
       standing: PLAYER.height,
       crouching: senses.crouch.bodyHeightMetres,

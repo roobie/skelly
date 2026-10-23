@@ -25,15 +25,8 @@ local lightSwing = { melee+: { swingSound: 'melee_swing_light' } };
 local heavySwing = { melee+: { swingSound: 'melee_swing_heavy' } };
 local metalRing = { melee+: { hitLayerSound: 'melee_hit_metal' } };
 
-// A battery beam: an LED light whose cone is shaped by `beam` and which drains AA batteries.
-local batteryBeam(radius, seenFrom, intensity, beam, chargePerGameHour) = {
-  radius: radius,
-  seenFrom: seenFrom,
-  color: '#fff1d8',
-  intensity: intensity,
-  beam: beam,
-  power: { battery: 'aa_battery', compatibleBatteries: ['rechargeable_aa_battery'], chargePerGameHour: chargePerGameHour, swapSimSeconds: 2 },
-};
+local lights = import 'lights.libsonnet';
+local batteryBeam = lights.batteryBeam;
 
 local burns(ignition, douse, sprint, stow, drop, relight) = {
   ignition: ignition,
@@ -200,13 +193,7 @@ local items = [
     size: [1, 2],
     description: 'A battery-powered flashlight. Its light is visible to nearby zombies.',
     model: 'flashlight',
-    light: batteryBeam(
-      radius=20,
-      seenFrom=40,
-      intensity=5,
-      beam={ angleDegrees: 60, penumbra: 0.6, decay: 1, spill: { enabled: false, radiusRatio: 1.5, intensity: 0.18 } },
-      chargePerGameHour=0.25,
-    ),
+    light: lights.flashlight,
   },
   {
     id: 'headlamp',

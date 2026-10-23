@@ -96,6 +96,8 @@ export const SIMULATION_EXCLUSIONS = [
   'src/core/skyTransport.ts',
   'src/core/shell.ts',
   'src/core/pileLayout.ts',
+  // Paper-map terrain sampling is disposable presentation; it changes neither simulation nor saves.
+  'src/core/paperMapRender.ts',
   // WebAudio output/voice allocation and body-sized pitch law are presentation; admission and saved SoundPicker stay fingerprinted.
   'src/game/audio.ts',
   'src/game/audioPresentation.ts',

@@ -18,10 +18,10 @@ import { World } from '../src/core/world.ts';
 import { ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
 import type { ZombieRegions } from '../src/core/zombieRegions.ts';
 import type { Detonation } from '../src/core/zombies.ts';
-import type { MoveIntent } from '../src/game/player.ts';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import type { MoveIntent } from './playerFixture.ts';
 
 const registry = baseRegistry();
 const BLOCK = 0.5;

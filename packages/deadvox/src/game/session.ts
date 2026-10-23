@@ -115,6 +115,7 @@ import {
 } from './firearmAttachmentHandling.ts';
 import {
   FirearmMechanics,
+  type FirearmOutcome,
   type FirearmShotEffect,
   type FirearmTrajectory,
   isFirearmTrainingAction,
@@ -125,8 +126,8 @@ import {
   type MoveIntent,
   movementPace,
   nextStance,
-  PLAYER,
   physicsFor,
+  playerTuning,
   restorePlayer,
   type StanceToggle,
   snapshotPlayer,
@@ -165,6 +166,7 @@ const sessionFirearmTargetName = (registry: Registry, firearmType: string | unde
 const isInventoryPracticeAction = (job: Job): boolean =>
   job.kind === 'action' && (job.jobType === UNPACK_ACTION || job.jobType === 'furniture.search');
 const createSessionAim = ({
+  player,
   tuning,
   seed,
   restored,
@@ -172,6 +174,7 @@ const createSessionAim = ({
   wobbleFlatOverride,
   wobbleNoiseScaleOverride,
 }: {
+  player: ReturnType<typeof playerTuning>;
   tuning: FirearmsCombatTuning;
   seed: number;
   restored: SaveSnapshot | undefined;
@@ -182,6 +185,7 @@ const createSessionAim = ({
   const footstepClock = restored?.character.playerAudio.footstepClock ?? initialFootstepClock();
   const wobbleSeed = Rng.stream(restored?.character.simulation.seed ?? seed, 'player-aim-wobble').int(0, 0xff_ff_ff_ff);
   return new AimController({
+    tuning: player.aim,
     wobbleLimitRadians: tuning.wobbleLimitRadians,
     wobbleShape: {
       verticalToHorizontalRatio: wobbleFlatOverride ?? tuning.wobbleVerticalToHorizontalRatio,
@@ -339,6 +343,8 @@ export interface SessionOptions {
   spawn: Vec3;
   /** The game's shared block entities; restore populates this same object in place. */
   entities?: Inventory['entities'];
+  /** Deterministic scenario registrations run after restore, before world consumers. */
+  registerVehicles?: ((inventory: Inventory) => void) | undefined;
   terrainFloor?: (x: number, z: number) => number;
   /** Whether the world under (x, z), in blocks, is loaded enough to stand on. */
   ready: (x: number, z: number) => boolean;
@@ -355,6 +361,9 @@ export interface SessionOptions {
   /** Observational hook for actual handling completion/failure outcomes. */
   onHandlingOutcomes?: (result: TickResult) => void;
   onConsumed?: ((type: string) => void) | undefined;
+  onHandlingOutcome?: (item: Item, outcome: FirearmOutcome) => void;
+  onDischarge?: (item: Item, sighted: boolean) => void;
+  onCompletedSwing?: (isFist: boolean) => void;
   onBatterySwapped?: ((lightType: string) => void) | undefined;
   /** Output only, called after the simulation has committed the case transition. */
   onFirearmEjection?: (effect: FirearmShotEffect) => void;
@@ -443,8 +452,12 @@ const settleStance = (
   return wanted;
 };
 
-const resolvePlayerEyeHeight = (unconscious: boolean, proneHeight: number, eyeDrop: number | undefined): number =>
-  unconscious ? proneHeight : PLAYER.eye - (eyeDrop ?? 0);
+const resolvePlayerEyeHeight = (
+  unconscious: boolean,
+  proneHeight: number,
+  eyeDrop: number | undefined,
+  eye: number,
+): number => (unconscious ? proneHeight : eye - (eyeDrop ?? 0));
 
 const movementIntent = (refusal: string | undefined, intent: MoveIntent): MoveIntent => (refusal ? IDLE : intent);
 
@@ -638,22 +651,22 @@ export const createSession = (options: SessionOptions) => {
   );
   const s = scale.blockSize;
   const skyTop = (scale.maxCy + 1) * CHUNK - 1;
-  const physics = physicsFor(scale);
+  const Player = playerTuning(registry);
+  const physics = physicsFor(scale, Player);
   const restored = options.restore;
   const rolledColumns = new Set(restored?.world.rolledColumns);
 
   const restoredPlayer = restored ? restorePlayer(restored.character.player) : undefined;
   const senseTuning = playerSenseTuning(registry);
   let playerStance: PlayerStance = restoredPlayer?.stance ?? 'standing';
-  const body: Body =
-    restoredPlayer?.body ?? createPlayerBody(scale, options.spawn[0], options.spawn[1], options.spawn[2]);
+  const body: Body = restoredPlayer?.body ?? createPlayerBody(scale, options.spawn, Player);
   // The stance sets the collision height, so a lowered save loads lowered and retuned content applies.
   const stanceBody: StanceBody = {
     body,
     heights: {
-      standing: PLAYER.height / s,
-      crouching: senseTuning.crouch.bodyHeightMetres / s,
-      prone: senseTuning.prone.bodyHeightMetres / s,
+      standing: Player.height / s,
+      crouching: Player.crouch.bodyHeightMetres / s,
+      prone: Player.prone.bodyHeightMetres / s,
     },
     isSolid,
   };
@@ -663,7 +676,7 @@ export const createSession = (options: SessionOptions) => {
     const wanted = debug?.()?.noclip ? playerStance : nextStance(playerStance, toggle);
     playerStance = settleStance(stanceBody, playerStance, wanted, options.refusal ?? options.notice);
   };
-  const loweredStance = () => loweredStanceTuning(senseTuning, playerStance);
+  const loweredStance = () => loweredStanceTuning(Player, playerStance);
   const restoredLook: RestoredLook | undefined = restoredPlayer && {
     yaw: restoredPlayer.yaw,
     pitch: restoredPlayer.pitch,
@@ -678,8 +691,12 @@ export const createSession = (options: SessionOptions) => {
   const currentFirearmsCombatTuning = (): FirearmsCombatTuning => firearmsCombatTuning;
   const meleeCombatTuning = registry.skills.get(CORE_CONTENT_IDS.meleeCombat)?.combat?.melee;
   const inventory = restored
-    ? Inventory.restoreState(registry, restored.character.inventory, options.entities, character)
+    ? Inventory.restoreState(registry, restored.character.inventory, options.entities, {
+        character,
+        vehicles: restored.world.vehicles,
+      })
     : new Inventory(registry, undefined, options.entities, character);
+  options.registerVehicles?.(inventory);
   const wearPlaced = (piece: BlockEntity | undefined, wear: number | undefined): void => {
     if (piece && wear !== undefined) {
       inventory.entities.wear(piece, wear);
@@ -705,6 +722,7 @@ export const createSession = (options: SessionOptions) => {
     Array.from(inventory.items(), ({ item }) => item),
   );
   const aim = createSessionAim({
+    player: Player,
     tuning: currentFirearmsCombatTuning(),
     seed,
     restored,
@@ -952,7 +970,9 @@ export const createSession = (options: SessionOptions) => {
           firearms.recoilScaleFor(firearmUid),
       );
     },
-    onShot: (shot, time, firearm) => {
+    onHandlingOutcome: (item, outcome) => options.onHandlingOutcome?.(item, outcome),
+    onShot: (shot, time, firearm, sighted) => {
+      options.onDischarge?.(firearm, sighted);
       const hits = zombieSystem.firePellets(shot);
       if (hits > 0 && firearmReadyWalking) {
         const training = skillActivityPractice(registry, CORE_CONTENT_IDS.firearmsCombat, 'hit');
@@ -1019,7 +1039,12 @@ export const createSession = (options: SessionOptions) => {
   let sprinting = restoredSprinting;
   let firearmReadyWalking = restoredFirearmReadyWalking;
   const playerEyeHeightMetres = (): number =>
-    resolvePlayerEyeHeight(sim.body.unconscious, sim.body.tuning.proneEyeHeightMetres, loweredStance()?.eyeDropMetres);
+    resolvePlayerEyeHeight(
+      sim.body.unconscious,
+      sim.body.tuning.proneEyeHeightMetres,
+      loweredStance()?.eyeDropMetres,
+      Player.eye,
+    );
   let footstepClock = savedFootstepClock;
   let rustleClock = restoredRustleClock;
   let airbornePeakY = restoredAirbornePeakY;
@@ -1029,7 +1054,7 @@ export const createSession = (options: SessionOptions) => {
     body,
     inventory,
     reachBelow: physics.stepHeight,
-    reach: PLAYER.reach / s,
+    reach: Player.reach / s,
     restored: restoredPlayer?.ladder,
   });
   inventory.handHold = ladderHold;
@@ -1180,8 +1205,7 @@ export const createSession = (options: SessionOptions) => {
     bashObstacle: (ahead, strength) => bashPiece(entities.pieceTouching(ahead), strength),
     blockSize: s,
     physics,
-    // Metres per second, as PLAYER.jump is: the system divides by blockSize itself.
-    jumpSpeed: PLAYER.jump,
+    jumpSpeed: Player.jump,
     tuning: senseTuning,
     player: playerSense,
     dayPhase: () => dayPhaseAt(dayCycle, sim.calendar),
@@ -1283,9 +1307,12 @@ export const createSession = (options: SessionOptions) => {
     },
     (uid) => wearMeleeWeaponOnHit(inventory, uid),
     character,
-    () => {
-      const training = skillActivityPractice(registry, CORE_CONTENT_IDS.meleeCombat, 'hit');
-      character.awardPractice(CORE_CONTENT_IDS.meleeCombat, training.practice, training.tier);
+    {
+      onLandedHit: () => {
+        const training = skillActivityPractice(registry, CORE_CONTENT_IDS.meleeCombat, 'hit');
+        character.awardPractice(CORE_CONTENT_IDS.meleeCombat, training.practice, training.tier);
+      },
+      onCompletedSwing: (isFist) => options.onCompletedSwing?.(isFist),
     },
   );
   let lastZombieStep = 0;
@@ -1547,7 +1574,7 @@ export const createSession = (options: SessionOptions) => {
     const acting = queue.busy || firearms.busy || playerCombat.activeMeleeAction !== undefined || throwCharge.active;
     const steered = ladderHold.on && acting ? { ...pacedIntent, forward: 0, right: 0 } : pacedIntent;
     const ladder = ladderHold.piece(pacedIntent.jump || sim.body.actionRefusal !== undefined);
-    steer(body, scale, sampledInput().yaw, { ...steered, onLadder: ladder !== undefined });
+    steer(body, scale, { yaw: sampledInput().yaw, intent: { ...steered, onLadder: ladder !== undefined } }, Player);
     if (jumpStarted) {
       playPlayerSound('player_strain', time);
     }
@@ -1710,10 +1737,11 @@ export const createSession = (options: SessionOptions) => {
         movementSpeed: sim.body.consequences.movementSpeed,
         stanceSpeed: loweredStance()?.speedMetresPerSimSecond,
         directionalSpeed: {
-          sideways: senseTuning.movement.sidewaysSpeedScale,
-          backward: senseTuning.movement.backwardSpeedScale,
+          sideways: Player.movement.sidewaysSpeedScale,
+          backward: Player.movement.backwardSpeedScale,
         },
       },
+      Player,
     );
     const tools = debug?.();
     if (tools?.noclip) {
@@ -2046,6 +2074,7 @@ export const createSession = (options: SessionOptions) => {
     body,
     /** Set when the session was restored: the view direction to hand back to the input. */
     restoredLook,
+    vehicles: inventory.vehicles,
     /** The player's noise state; saved with the character. */
     playerAudio,
     worldColumns: () => world.snapshotColumns((id) => registry.blocks[id]!.id),

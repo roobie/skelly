@@ -29,13 +29,13 @@ import {
   placedPoint,
   placedSpawns,
 } from '../src/core/templates.ts';
-import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { vehicleInstanceOf, vehicleModel, workshopLift } from '../src/render/workshopVehicle.ts';
 import { CATALOGUE } from '../src/vehicles/catalogue.ts';
 import { PartLibrary, VOXEL } from '../src/vehicles/model.ts';
 import { wheel } from '../src/vehicles/rangeRover.ts';
 import { GLASS, keyVoxel } from '../src/vehicles/voxels.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureLootPoint } from './economyFixtures.ts';
+import { PLAYER, physicsFor } from './playerFixture.ts';
 
 const sources = readdirSync('src/content/base')
   .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))
@@ -1124,7 +1124,7 @@ describe('authored fixed loot', () => {
     }
   });
 
-  it('covers the light recipe and guarantees the quiet input at the noisy scrap pile', () => {
+  it('covers light mounting hardware and guarantees the quiet input at the noisy scrap pile', () => {
     const overrides = placedOverrides(layout);
     const garageTemplates = ['workshop_hall', 'workshop_office', 'workshop_parts_store'];
     const garageTemplateIds = [...garageTemplates, 'workshop_yard'];
@@ -1139,11 +1139,15 @@ describe('authored fixed loot', () => {
     const suppressorRecipe = recipes.find(({ result: recipeResult }) => recipeResult.item === 'improvised_suppressor');
     expect(mountRecipe).toBeDefined();
     expect(suppressorRecipe).toBeDefined();
-    const coversIngredients = (recipe: NonNullable<typeof mountRecipe>) =>
-      recipe.components.every((alternatives) =>
+    const hardware = mountRecipe!.components.filter((alternatives) =>
+      alternatives.every((ingredient) => result.registry.items.get(ingredient.item)?.light === undefined),
+    );
+    expect(hardware.length).toBeGreaterThan(0);
+    expect(
+      hardware.every((alternatives) =>
         alternatives.some((ingredient) => itemCount(garageItems, ingredient.item) >= ingredient.count),
-      );
-    expect(coversIngredients(mountRecipe!)).toBe(true);
+      ),
+    ).toBe(true);
 
     const hall = compileTemplate(result.registry, result.registry.templates.get('workshop_hall')!);
     const bench = hall.pieces.find(({ furniture }) => furniture === 'workbench');

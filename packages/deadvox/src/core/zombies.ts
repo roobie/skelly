@@ -64,7 +64,7 @@ import {
 export type PlayerMovement = 'walking' | 'jogging' | 'sprinting' | 'still';
 
 /** A lowered stance's tuning, or undefined standing. */
-export const loweredStanceTuning = (tuning: SenseDef, stance: PlayerStance | undefined) => {
+export const loweredStanceTuning = <T>(tuning: { crouch: T; prone: T }, stance: PlayerStance | undefined) => {
   switch (stance) {
     case 'crouching':
       return tuning.crouch;
@@ -600,7 +600,7 @@ export interface ZombieSystemOptions {
   isOpaque: SolidAt;
   blockSize: number;
   physics: PhysicsParams;
-  /** Take-off speed in metres per second, like `PLAYER.jump`; the system divides by `blockSize` itself. */
+  /** Take-off speed in metres per second; the system divides by `blockSize` itself. */
   jumpSpeed: number;
   tuning: SenseDef;
   player: () => PlayerSense;

@@ -10,9 +10,9 @@ import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { type MoveIntent, PLAYER } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
+import { type MoveIntent, PLAYER } from './playerFixture.ts';
 
 const profile = fixtureScenario();
 const own = buildRegistry(fixtureScenarioSources(profile));

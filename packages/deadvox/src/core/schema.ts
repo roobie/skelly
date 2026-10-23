@@ -605,6 +605,40 @@ const UiScreenTextSchema = strictObject({
     crouch: [],
     exitPath: [],
     mainMenu: [],
+    revolver: [],
+    pumpShotgun: [],
+    ammunitionDetails: [],
+    wieldAmmunitionBox: [],
+    carryLooseAmmunition: [],
+    wearBackpack: [],
+    ready: [],
+    fireDominant: [],
+    fireOff: [],
+    load: [],
+    pump: [],
+    closeCylinder: [],
+    boxedAmmunition: [],
+    unpackDominant: [],
+    unpackOff: [],
+    partialLoad: [],
+    readyFire: [],
+    sightsOff: [],
+    reloadAfterFiring: [],
+    sightedFire: [],
+    sights: [],
+    unloadLiveRounds: [],
+    unload: [],
+    emptyHands: [],
+    putDownSelected: [],
+    stowSelected: [],
+    enGarde: [],
+    punch: [],
+    weaponsComplete: [],
+    weaponsPractice: [],
+    finishPractice: [],
+    rangeSupplies: [],
+    loadingDetail: [],
+    pumpingDetail: [],
     unsaved: [],
     practiceControls: [],
     restart: [],
@@ -1408,6 +1442,16 @@ const ItemSchema = strictObject({
   firearmAttachmentEffects: optional(FirearmAttachmentEffectsSchema),
   /** Fits a long gun's sling mount, so the gun can be carried on the shoulder. */
   sling: optional(vBoolean()),
+  /** A light mount: fits a long gun whose `lightMountSite` has the same kind, where gungen exports no rail for it. */
+  lightMount: optional(strictObject({ kind: Id })),
+  /** Where a long gun takes a `lightMount` of the same kind: a frame in the gun model's metres and XYZ degrees. */
+  lightMountSite: optional(
+    strictObject({
+      kind: Id,
+      at: tuple([number(), number(), number()]),
+      turn: tuple([number(), number(), number()]),
+    }),
+  ),
   /** One authored/global lock id; no per-placement key payload. */
   key: optional(strictObject({ lock: Id })),
   /**
@@ -3472,19 +3516,45 @@ const HandlingRangeSchema = strictObject({
 });
 
 const LoweredStanceSchema = strictObject({
-  speedMetresPerSimSecond: SimRate,
   hearingRangeScale: Fraction,
   sightRangeScale: Fraction,
+});
+
+const PlayerStanceTuningSchema = strictObject({
+  speedMetresPerSimSecond: SimRate,
   eyeDropMetres: Positive,
   bodyHeightMetres: Positive,
 });
 
+const PlayerSchema = strictObject({
+  id: Id,
+  halfWidth: Positive,
+  height: Positive,
+  eye: Positive,
+  walk: SimRate,
+  jog: SimRate,
+  sprint: SimRate,
+  jump: SimRate,
+  reach: Positive,
+  stepHeight: Positive,
+  movement: strictObject({ sidewaysSpeedScale: Fraction, backwardSpeedScale: Fraction }),
+  crouch: PlayerStanceTuningSchema,
+  prone: PlayerStanceTuningSchema,
+  load: pipe(
+    strictObject({ light: NonNegative, heavy: Positive, slowest: Fraction, handlingScale: Fraction }),
+    check(({ light, heavy }) => heavy > light, 'heavy load must exceed light load'),
+  ),
+  aim: strictObject({
+    moveYawPerSpeed: NonNegative,
+    lookLagPerRadian: NonNegative,
+    lookSettleSimSeconds: PositiveSimSeconds,
+    recoilRecoverySimSeconds: PositiveSimSeconds,
+    maxOffsetRadians: pipe(Positive, maxValue(Math.PI / 2)),
+  }),
+});
+
 const SenseSchema = strictObject({
   id: Id,
-  movement: strictObject({
-    sidewaysSpeedScale: Fraction,
-    backwardSpeedScale: Fraction,
-  }),
   /** Chest height as a fraction of the eye height, so a stance that lowers the eyes lowers the chest. */
   chestEyeFraction: Fraction,
   crouch: LoweredStanceSchema,
@@ -3882,12 +3952,14 @@ const RecipeSchema = strictObject({
   skills: record(Id, SkillLevel),
   qualities: record(Id, pipe(Count, minValue(1), maxValue(5))),
   components: array(pipe(array(RecipeItemSchema), nonEmpty('needs at least one alternative'))),
+  consumeFitted: optional(vBoolean()),
   workstation: optional(nullable(Id)),
 });
 
 const GraphicsTuningSchema = strictObject({
   id: Id,
   readyRadiusM: pipe(number(), finite(), minValue(0)),
+  itemPictureCacheCapacity: pipe(number(), integer(), minValue(1)),
   mobActors: strictObject({ maxCorpses: Count }),
   gore: strictObject({
     dropletCap: Count,
@@ -3997,6 +4069,7 @@ const SECTION_DESCRIPTOR = {
   layouts: { schema: optional(array(SiteLayoutSchema)), label: 'site layouts', order: 11 },
   body: { schema: optional(array(BodyTuningSchema)), label: 'body tuning', order: 12 },
   senses: { schema: optional(array(SenseSchema)), label: 'sense tuning', order: 13 },
+  player: { schema: optional(array(PlayerSchema)), label: 'player tuning', order: 13.5 },
   meleeClasses: { schema: optional(array(MeleeClassSchema)), label: 'melee classes', order: 14 },
   siteGeneration: { schema: optional(array(SiteGenerationSchema)), label: 'site generation', order: 15 },
   handlingRange: { schema: optional(array(HandlingRangeSchema)), label: 'handling range', order: 29 },
@@ -4065,6 +4138,7 @@ export type CompressionCaps = InferOutput<typeof CompressionTuningSchema>['caps'
 export type HandlingRangeDef = InferOutput<typeof HandlingRangeSchema>;
 export type WeatheringDef = InferOutput<typeof WeatheringSchema>;
 export type SenseDef = InferOutput<typeof SenseSchema>;
+export type PlayerDef = InferOutput<typeof PlayerSchema>;
 export type GraphicsTuningDef = InferOutput<typeof GraphicsTuningSchema>;
 export type LookDefaultsDef = InferOutput<typeof LookDefaultsSchema>;
 export type TreeConeCrown = Extract<InferOutput<typeof TreeCrownSchema>, { kind: 'cone' }>;

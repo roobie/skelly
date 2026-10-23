@@ -16,8 +16,27 @@ interface PileShape<Node> {
 interface EntityShape<Node> {
   readonly pockets?: PlacedItem<Node>[][];
 }
+interface VehicleShape<Node> {
+  readonly origin: Vec3;
+  readonly fittings: readonly { readonly id: string; readonly item: Node }[];
+}
+
+function* vehicleRoots<Node, Pile, Entity>(
+  vehicles: Iterable<readonly [number, VehicleShape<Node>]>,
+): Generator<TreeEntry<Node, Pile, Entity>> {
+  for (const [vehicleId, vehicle] of vehicles) {
+    for (const fitting of vehicle.fittings) {
+      yield {
+        item: fitting.item,
+        location: { kind: 'vehicle', vehicleId, fittingId: fitting.id, origin: vehicle.origin },
+        path: `world.vehicles.${vehicleId}.fittings.${fitting.id}.item`,
+      };
+    }
+  }
+}
 export type TreeLocation<Node, Pile, Entity> =
   | { kind: 'hand'; side: HandSide }
+  | { kind: 'vehicle'; vehicleId: number; fittingId: string; origin: Vec3 }
   | { kind: 'worn'; slot: WearSlot }
   | { kind: 'work'; owner: Node }
   | { kind: 'slot'; owner: Node; slot: string }
@@ -42,6 +61,7 @@ export function* itemRoots<Node, Pile extends PileShape<Node>, Entity extends En
     readonly worn: Partial<Record<WearSlot, Node>>;
     readonly piles: Iterable<Pile>;
     readonly entities: Iterable<Entity>;
+    readonly vehicles?: Iterable<readonly [number, VehicleShape<Node>]>;
   },
   prefix = 'inventory',
 ): Generator<TreeEntry<Node, Pile, Entity>> {
@@ -67,6 +87,7 @@ export function* itemRoots<Node, Pile extends PileShape<Node>, Entity extends En
     }
     pileIndex += 1;
   }
+  yield* vehicleRoots<Node, Pile, Entity>(forest.vehicles ?? []);
   let entityIndex = 0;
   for (const entity of forest.entities) {
     for (const [pocket, grid] of (entity.pockets ?? []).entries()) {
@@ -121,12 +142,17 @@ export function* walkItemTree<Node extends NodeShape<Node>, Pile, Entity>(
   }
 }
 
-export const savedItemTree = (state: InventoryState, prefix = 'character.inventory') => {
+export const savedItemTree = (
+  state: InventoryState,
+  vehicles?: import('./vehicleInstances.ts').VehicleInstancesState,
+  prefix = 'character.inventory',
+) => {
   function* roots() {
     yield* itemRoots<ItemState, InventoryState['piles'][number], InventoryState['entities']['entities'][number]>(
       {
         hands: state.hands,
         worn: state.worn,
+        vehicles: vehicles?.instances.map(({ id, vehicle }) => [id, vehicle] as const) ?? [],
         get piles() {
           return state.piles;
         },

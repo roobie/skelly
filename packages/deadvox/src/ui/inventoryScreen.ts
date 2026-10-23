@@ -12,7 +12,7 @@ import { practiceForNextLevel } from '../core/character.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { WorkOperation, WorkOption } from '../core/craftCommands.ts';
-import { firearmSlotIds } from '../core/firearmFitting.ts';
+import { firearmSlotIds, LIGHT_MOUNT_SLOT } from '../core/firearmFitting.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import { type Inventory, type Pile, sameGrid, spotOf, type Target, wornSlotOf } from '../core/inventory.ts';
 import { GRID_CELL_REM as CELL_REM } from '../core/inventoryGridName.ts';
@@ -65,6 +65,7 @@ const SHOWN_SLOTS: readonly WearSlot[] = ['shoulder', 'torso', 'vest', 'hands', 
 const WORN_ONLY_SLOTS: readonly WearSlot[] = ['head', 'eyes'];
 
 export interface ScreenHooks {
+  pictures?: { readonly version: number; picture: (item: Item) => string | undefined } | undefined;
   /** What each wear slot is called; from the core ui content. */
   slotLabels: Readonly<Record<WearSlot, string>>;
   reach: () => ReachSnapshot;
@@ -118,6 +119,7 @@ interface ItemViewModel {
   readonly title: string;
   readonly name: string;
   readonly count?: string | undefined;
+  readonly picture?: string | undefined;
   readonly style?: string | undefined;
 }
 
@@ -298,6 +300,7 @@ const scrollItemWithinAncestor = (row: HTMLElement, parent: HTMLElement, axis: '
 
 const itemTemplate = (vm: ItemViewModel): TemplateResult => html`
   <div class=${vm.className} data-uid=${vm.uid} title=${vm.title} style=${vm.style ?? ''}>
+    ${vm.picture ? html`<img class="inv-item-picture" src=${vm.picture} alt="" draggable="false" />` : nothing}
     <span class="inv-item-name">${vm.name}</span>
     ${vm.count ? html`<span class="inv-item-count">${vm.count}</span>` : nothing}
   </div>
@@ -824,7 +827,7 @@ export class InventoryScreen {
     const characterKey = JSON.stringify(this.hooks.character());
     const needsKey = this.hooks.needs();
     const wakeKey = JSON.stringify(this.hooks.wakeGameHour?.() ?? null);
-    const key = `${this.findQuery}|${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${this.targetUid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}|${wakeKey}`;
+    const key = `${this.hooks.pictures?.version}|${this.findQuery}|${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${this.targetUid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}|${wakeKey}`;
     if (key !== this.drawn) {
       this.drawn = key;
       this.render();
@@ -1354,6 +1357,7 @@ export class InventoryScreen {
         condition: conditionWord(this.inv.registry, item.condition),
       }),
       name: workName(this.inv.registry, item),
+      picture: this.hooks.pictures?.picture(item),
       count: item.count > 1 ? fillText(text.countBadge, { count: item.count }) : undefined,
       style:
         Object.keys(itemStyle).length > 0
@@ -1383,7 +1387,7 @@ export class InventoryScreen {
       }
       return {
         id: slotId,
-        label: slotId,
+        label: slotId === LIGHT_MOUNT_SLOT ? 'Light mount' : slotId,
         ...(fitted ? { occupied: workName(this.inv.registry, fitted), attachmentUid: fitted.uid } : {}),
         ...(battery === undefined ? {} : { battery: battery.name, batteryFitted: battery.fitted }),
         candidates: fitted

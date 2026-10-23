@@ -16,10 +16,10 @@ import {
   shouldEnterMeleeReady,
   startPlayerMelee,
 } from '../src/game/melee.ts';
-import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
+import { PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 import { ZombieSystem } from './zombieSystemFixture.ts';
@@ -40,6 +40,35 @@ const BASE_WEAPON: MeleeWeapon = {
   contactFraction: 0.4,
   windupCapSimSeconds: 0.25,
 };
+it('reports a completed empty-hand swing only after its owner finishes, not after a cancelled windup', () => {
+  const completed: boolean[] = [];
+  const combat = new PlayerCombat(
+    { playPlayerMeleeSwing: () => undefined, resolvePlayerMelee: () => false },
+    undefined,
+    undefined,
+    { onCompletedSwing: (isFist) => completed.push(isFist) },
+  );
+  const hands = { right: null, left: null };
+  const swing = () =>
+    combat.beginMeleeSwing({
+      origin: [0, 0, 0],
+      direction: [0, 0, -1],
+      weapon: BASE_WEAPON,
+      profile: 'fists',
+      twoHanded: false,
+      hands,
+    });
+  expect(swing()).toBe(true);
+  combat.tick(BASE_WEAPON.cooldown / 2, { right: 1, left: null });
+  expect(completed).toEqual([]);
+  combat.tick(BASE_WEAPON.cooldown, hands);
+  expect(swing()).toBe(true);
+  combat.tick(BASE_WEAPON.cooldown / 2, hands);
+  expect(completed).toEqual([]);
+  combat.tick(BASE_WEAPON.cooldown / 2, hands);
+  expect(completed).toEqual([true]);
+});
+
 const blockedPlayer = {
   pos: [1000, 1, 1000] as Vec3,
   facing: [1, 0, 0] as Vec3,

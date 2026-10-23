@@ -17,12 +17,12 @@ import type { BodyTuningDef } from '../src/core/schema.ts';
 import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
-import type { MoveIntent, StanceToggle } from '../src/game/player.ts';
 import { createSession, IDLE, type PlayerInputSample } from '../src/game/session.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { SnapshotSite } from './fixtures/snapshotSite.ts';
+import type { MoveIntent, StanceToggle } from './playerFixture.ts';
 import { withPlayerBodyTuning } from './simulationFixture.ts';
 
 const registry = baseRegistry();

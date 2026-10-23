@@ -23,9 +23,9 @@ import {
   firearmHandlingFor,
   spentCaseItemId,
 } from '../src/game/firearmHandling.ts';
-import { createPlayerBody, type MoveIntent, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { CaseEffects, caseFlightPoint } from '../src/render/caseEffects.ts';
+import { createPlayerBody, type MoveIntent, PLAYER, physicsFor, steer } from './playerFixture.ts';
 import { chargedRifle } from './rifleFixture.ts';
 
 const { registry } = BUNDLED_CONTENT;

@@ -577,8 +577,8 @@
       "workInProgress": false
     },
     {
-      "category": "weapon",
-      "description": "A loose strap-and-bracket assembly.",
+      "category": "light",
+      "description": "A flashlight strapped to a bracket. Taped under the barrel of a long gun, its beam follows the barrel.",
       "disassembly": {
         "skill": "mechanics",
         "timeGameMinutes": 7,
@@ -602,6 +602,31 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "taped_flashlight_mount",
+      "light": {
+        "beam": {
+          "angleDegrees": 60,
+          "decay": 1,
+          "penumbra": 0.59999999999999998,
+          "spill": {
+            "enabled": false,
+            "intensity": 0.17999999999999999,
+            "radiusRatio": 1.5
+          }
+        },
+        "color": "#fff1d8",
+        "intensity": 5,
+        "power": {
+          "battery": "aa_battery",
+          "chargePerGameHour": 0.25,
+          "compatibleBatteries": ["rechargeable_aa_battery"],
+          "swapSimSeconds": 2
+        },
+        "radius": 20,
+        "seenFrom": 40
+      },
+      "lightMount": {
+        "kind": "strap"
+      },
       "model": "flashlight_mount",
       "name": "Taped-on flashlight mount",
       "notLoot": false,
@@ -1051,6 +1076,12 @@
         [
           {
             "count": 1,
+            "item": "flashlight"
+          }
+        ],
+        [
+          {
+            "count": 1,
             "item": "scrap_metal"
           }
         ],
@@ -1067,6 +1098,7 @@
           }
         ]
       ],
+      "consumeFitted": true,
       "id": "make_taped_flashlight_mount",
       "qualities": {
         "screwing": 1
