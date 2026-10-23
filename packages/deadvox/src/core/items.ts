@@ -7,7 +7,13 @@ import type { ItemDef, ModelDef, Registry } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { firearmSlotIds } from './firearmFitting.ts';
 import { assertFirearmState, type FirearmState, snapshotFirearm } from './firearmState.ts';
-import { assertFoodExposure, equalFoodExposure, type FoodExposure, initialFoodExposure } from './food.ts';
+import {
+  assertFoodExposure,
+  equalFoodExposure,
+  type FoodExposure,
+  initialFoodExposure,
+  projectFoodExposure,
+} from './food.ts';
 import { magazineContentsReason, magazineSpec, magazineWellCalibre, slotsReason } from './magazine.ts';
 import { modelBodyMassKg } from './modelMass.ts';
 import { assertPaperMapItem, type PaperMapCoverage } from './paperMap.ts';
@@ -107,11 +113,22 @@ const trapField = (trap: TrapState | undefined): { trap?: TrapState } =>
 const cargoField = (cargo: ItemFields<unknown>['cargo']): Pick<ItemFields<unknown>, 'cargo'> =>
   cargo === undefined ? {} : { cargo: [...cargo] };
 
+const foodExposureField = (
+  exposure: FoodExposure | undefined,
+  foodAt: number | undefined,
+): { foodExposure?: FoodExposure } =>
+  exposure === undefined
+    ? {}
+    : { foodExposure: foodAt === undefined ? { ...exposure } : projectFoodExposure(exposure, foodAt) };
+
 const paperMapField = (paperMap: PaperMapCoverage | undefined): { paperMap?: PaperMapCoverage } =>
   paperMap === undefined ? {} : { paperMap: { ...paperMap } };
 
-/** Immutable, isolated item tree suitable for a save snapshot. */
-export const snapshotItem = (item: Item): Readonly<ItemState> =>
+/**
+ * Immutable, isolated item tree suitable for a save snapshot. With `foodAt`, the copy carries exposure settled at
+ * that game millisecond while the live item keeps its own watermark, so capturing never changes live state.
+ */
+export const snapshotItem = (item: Item, foodAt?: number): Readonly<ItemState> =>
   freezeSnapshot({
     uid: item.uid,
     type: item.type,
@@ -126,7 +143,7 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
     ...(item.fuseRemainingSimSeconds === undefined ? {} : { fuseRemainingSimSeconds: item.fuseRemainingSimSeconds }),
     ...trapField(item.trap),
     ...(item.madeAtGameTimestamp === undefined ? {} : { madeAtGameTimestamp: item.madeAtGameTimestamp }),
-    ...(item.foodExposure === undefined ? {} : { foodExposure: { ...item.foodExposure } }),
+    ...foodExposureField(item.foodExposure, foodAt),
     ...(item.firearm === undefined ? {} : { firearm: snapshotFirearm(item.firearm) }),
     ...(item.cartridges === undefined ? {} : { cartridges: [...item.cartridges] }),
     ...cargoField(item.cargo),
@@ -137,10 +154,12 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
           slots: Object.fromEntries(
             Object.entries(item.slots)
               .filter((entry): entry is [string, Item] => entry[1] !== undefined)
-              .map(([slot, child]) => [slot, snapshotItem(child) as ItemState]),
+              .map(([slot, child]) => [slot, snapshotItem(child, foodAt) as ItemState]),
           ),
         }),
-    ...(item.pockets === undefined ? {} : { pockets: item.pockets.map((grid) => grid.map(snapshotPlaced)) }),
+    ...(item.pockets === undefined
+      ? {}
+      : { pockets: item.pockets.map((grid) => grid.map((placed) => snapshotPlaced(placed, foodAt))) }),
     ...(item.work === undefined
       ? {}
       : {
@@ -152,13 +171,13 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
                   toolLevels: { ...item.work.toolLevels },
                 }
               : {}),
-            components: item.work.components.map((component) => snapshotItem(component) as ItemState),
+            components: item.work.components.map((component) => snapshotItem(component, foodAt) as ItemState),
           },
         }),
   });
 
-export const snapshotPlaced = ({ item, x, y, rotated }: Placed): Readonly<PlacedState> =>
-  freezeSnapshot({ item: snapshotItem(item) as ItemState, x, y, rotated });
+export const snapshotPlaced = ({ item, x, y, rotated }: Placed, foodAt?: number): Readonly<PlacedState> =>
+  freezeSnapshot({ item: snapshotItem(item, foodAt) as ItemState, x, y, rotated });
 
 const assertSavedBurnState = (def: ItemDef, state: ItemState): void => {
   const burnTime = def.light?.burnTimeGameHours;

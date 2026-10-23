@@ -38,14 +38,14 @@ describe('saved food exposure', () => {
     expect(saved.foodExposure!.settledAtGameMilliseconds).toBe(at);
     expect(saved.foodExposure!.gameMilliseconds).toBe(at + 2);
     expect(saved.foodExposure!.remainder).toBe(37);
-    expect(saved.foodExposure).not.toBe(item.foodExposure);
+    expect(item.foodExposure).toEqual({ gameMilliseconds: 2, remainder: 37, settledAtGameMilliseconds: 0 });
     const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup: lookup });
     const restored = createRuntime(decoded.snapshot, false, runtime.columns, {
       registry,
       start: runtime.sim.clock.start,
     });
     const food = restored.inventory.itemByUid(item.uid)!;
-    expect(food.foodExposure).toEqual(item.foodExposure);
+    expect(food.foodExposure).toEqual(saved.foodExposure);
     expect(spoilage(fixtureFood, food, restored.sim.calendar + 1)).toBe(
       spoilage(fixtureFood, item, runtime.sim.calendar + 1),
     );

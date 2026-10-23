@@ -29,7 +29,9 @@ See `src/core/food.ts`, `servingDef` and `spoilage`, and `src/game/survival.ts`,
 `Survival.finishConsuming`.
 
 Snapshots settle the entire inventory forest at one absolute calendar boundary so
-restoring needs neither a service journal nor inferred history. The clock origin
+restoring needs neither a service journal nor inferred history. They settle the
+copy, not the live owner, because capturing must not change live state; see
+`src/core/items.ts`, `snapshotItem`. The clock origin
 belongs at the conversion boundary, not in elapsed-time integration. Closing the
 application adds no simulated time. Missing or corrupt history is refused rather
 than repaired; see `src/core/saveState.ts`, `snapshotSession`, `src/core/saveFormat.ts`,

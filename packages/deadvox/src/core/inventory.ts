@@ -267,15 +267,18 @@ export class Inventory {
   handHold: HandHold = { moveRefusal: () => undefined, liftRefusal: () => undefined };
 
   /** A deep plain-data copy of carried, worn, piled and furnished items and allocators. */
-  snapshotState(): Readonly<InventoryState> {
+  snapshotState(foodAt?: number): Readonly<InventoryState> {
     return freezeSnapshot({
       nextItemUid: this.factory.next,
-      hands: Object.fromEntries(Object.entries(this.hands).map(([side, item]) => [side, snapshotItem(item!)])),
-      worn: Object.fromEntries(Object.entries(this.worn).map(([slot, item]) => [slot, snapshotItem(item!)])),
-      piles: [...this.piles.values()].map((pile) => ({ pos: [...pile.pos], items: pile.items.map(snapshotPlaced) })),
+      hands: Object.fromEntries(Object.entries(this.hands).map(([side, item]) => [side, snapshotItem(item!, foodAt)])),
+      worn: Object.fromEntries(Object.entries(this.worn).map(([slot, item]) => [slot, snapshotItem(item!, foodAt)])),
+      piles: [...this.piles.values()].map((pile) => ({
+        pos: [...pile.pos],
+        items: pile.items.map((placed) => snapshotPlaced(placed, foodAt)),
+      })),
       looted: [...this.looted.entries()].map(([type, count]) => [type, count]),
       quickbarOrigins: [...this.quickbarOrigins.entries()].map(([uid, target]) => [uid, structuredClone(target)]),
-      entities: this.entities.snapshotState(),
+      entities: this.entities.snapshotState(foodAt),
     });
   }
 
