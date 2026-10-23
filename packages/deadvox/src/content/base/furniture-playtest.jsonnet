@@ -2,6 +2,7 @@ local shape = import 'furniture-shape.libsonnet';
 local breach = import 'furniture-breach.libsonnet';
 local cabinets = import 'cabinet-shapes.libsonnet';
 local vehicles = import 'vehicles.libsonnet';
+local detail = import 'door-detail.libsonnet';
 local plaque(id, name, color, readable) = {
   id: id,
   name: name,
@@ -47,7 +48,7 @@ breach.breaking(shape.colliding({
       material: 'steel',
       breach: { minimumStrength: 9, durability: 400 },
       door: {
-        methods: {}, handlingSimSeconds: 1.2, openNoise: { sound: 'door_roller_open' },
+        methods: {}, handlingSimSeconds: 1.2, openNoise: { sound: 'door_roller_open' }, detail: detail.slatted,
       },
     },
     { id: 'workshop_service_pit', name: 'Service pit', size: [6, 1, 2], color: '#373a3b', solid: false },

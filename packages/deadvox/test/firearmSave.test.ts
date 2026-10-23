@@ -260,10 +260,29 @@ it('a codec save restores the immediate aim frame, recoil and next pellet rays',
   const resumedWithoutWobbleState = session([], withoutWobbleState);
   expect(resumedWithoutWobbleState.aim.advance(next)).not.toEqual(originalFrame);
   const ammo = registry.items.get('shell_12_gauge_00_buck')!.ammo!;
+  const firearm = registry.items.get('pump_shotgun')!.firearm!;
   expect(
-    pelletShot({ ammo, origin: [1, 2, 3], yaw: 0.2, pitch: -0.1, aimFrame: resumedFrame, seed: 83, key: 'resume' }),
+    pelletShot({
+      ammo,
+      firearm,
+      origin: [1, 2, 3],
+      yaw: 0.2,
+      pitch: -0.1,
+      aimFrame: resumedFrame,
+      seed: 83,
+      key: 'resume',
+    }),
   ).toEqual(
-    pelletShot({ ammo, origin: [1, 2, 3], yaw: 0.2, pitch: -0.1, aimFrame: originalFrame, seed: 83, key: 'resume' }),
+    pelletShot({
+      ammo,
+      firearm,
+      origin: [1, 2, 3],
+      yaw: 0.2,
+      pitch: -0.1,
+      aimFrame: originalFrame,
+      seed: 83,
+      key: 'resume',
+    }),
   );
 });
 
