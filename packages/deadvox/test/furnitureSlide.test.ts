@@ -146,14 +146,23 @@ describe('floor furniture steps', () => {
       view.update(1, new Quaternion(), { pos: spot.pos, blockSize: mover.blockSize });
       expect(view.group.children).toHaveLength(0);
       expect(new Box3().setFromObject(view.floorGroup).min.y).toBeCloseTo(height * mover.blockSize);
-      expect(turnCarried(inventory)).toBe(messages.floorOnly);
-      expect(tipCarried(inventory)).toBe(messages.floorOnly);
       expect(placeFurniture(mover, aimed)).toBeUndefined();
       expect(entity.pos[1]).toBe(height);
       expect(entity.pos[0]).not.toBe(spec.pos[0]);
       expect(inventory.entities.carrying()).toBeUndefined();
       expect(entity.floorLocked).toBeUndefined();
     }
+  });
+  it('turns and tips a dragged piece like a held one, and the level-floor check still guards setting down', () => {
+    const { inventory, entity, mover } = fixture();
+    expect(liftFurniture(mover, entity, true)).toBeUndefined();
+    expect(turnCarried(inventory)).toBeUndefined();
+    expect(entity.size).toEqual([spec.size[2], spec.size[1], spec.size[0]]);
+    expect(tipCarried(inventory)).toBeUndefined();
+    expect(entity.tip).toBeDefined();
+    expect(placeFurniture({ ...mover, terrainSolid: () => false }, [8, 1, 6])).toBe(messages.floorOnly);
+    expect(placeFurniture(mover, [8, 1, 6])).toBeUndefined();
+    expect(entity.pos[1]).toBe(spec.pos[1]);
   });
   it.each(['mount', 'door', 'climbable', 'vehicle', 'scenarioGoal', 'cover'] as const)(
     'keeps oversized content with %s out of the movement selector',

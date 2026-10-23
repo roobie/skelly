@@ -496,18 +496,23 @@ because rearranging a room should not require destroying its contents. See `src/
   drag mode. Pushing remains a floor step because it moves an obstacle without
   holding it. See `src/core/furnitureMove.ts`, `liftFurniture`, `placement` and
   `slideFurniture`, and `src/game/session.ts`, `liftPiece` and `slidePiece`.
-- **Movement choices.** Movement must not hide a container's search or a bed's
-  rest or a freestanding sign's reading. Readability does not fasten a board;
-  its ordinary use remains a choice alongside movement. The selector belongs
-  to movable kinds: building parts keep direct use
+- **Movement choices.** A tap on movable furniture does its ordinary use (open,
+  search, rest, read), so the common action stays one tap. A tap-and-hold opens
+  the list of other actions, push and drag, with disassembly joining it later, because rarer actions that move or break the piece sit behind a
+  deliberate hold. Readability does not fasten a board; its ordinary use stays
+  on the tap. The list belongs to movable kinds: building parts keep direct use
   because offering impossible moves would obstruct their ordinary interaction.
-  A fitted placement of a movable kind still offers the choice and explains why
+  A fitted placement of a movable kind still offers the list and explains why
   it cannot move, so fitting does not silently change that kind's controls.
-  An open choice is a single confirmation, not a persistent interaction mode:
+  An open list is a single confirmation, not a persistent interaction mode:
   returning from a pause or another target must not unexpectedly act instead of
   offering choices. See `src/core/furnitureMove.ts`, `slidableFurniture`,
   `src/game/play.ts`, `furnitureActions`, and `src/game/furnitureActions.ts`,
   `FurnitureActionSelection`.
+- **Held pieces turn and tip.** A dragged piece is a held piece with its floor
+  height fixed, so it turns and tips like any held piece; only setting down
+  needs the level floor. See `src/core/furnitureMove.ts`, `turnCarried`,
+  `tipCarried` and `placement`.
 - **What lifts.** Pieces that are part of the building stay put. Fitted is a
   mark on a placement, not a definition, because the same cupboard is fixed in
   a kitchen and loose in a shed. A moved piece keeps its origin, so generation

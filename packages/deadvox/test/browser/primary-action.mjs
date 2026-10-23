@@ -1184,14 +1184,17 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
       'a door opens directly without a movement list',
     );
     const fixedUid = await aimFurnitureFixture('fixed');
-    await pressAction(page, 'world.interact');
-    await page.waitForFunction(() => !document.querySelector('#item-action-list').hidden);
+    const openAlternatives = async () => {
+      const releaseHold = await holdAction(page, 'world.interact');
+      await page.waitForFunction(() => !document.querySelector('#item-action-list').hidden);
+      await releaseHold();
+    };
+    await openAlternatives();
     for (const way of ['push', 'drag']) {
       if (way === 'drag') {
-        await pressAction(page, 'world.interact');
-        await page.waitForFunction(() => !document.querySelector('#item-action-list').hidden);
+        await openAlternatives();
+        await page.mouse.wheel(0, 100);
       }
-      await page.mouse.wheel(0, 100);
       await pressAction(page, 'world.interact');
       await page.waitForFunction(
         ({ uid, way: expectedWay }) =>
@@ -1212,6 +1215,20 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
         'a fastened piece refuses movement rather than queuing a step',
       );
     }
+    await pressAction(page, 'world.interact');
+    await page.waitForFunction(
+      (uid) => globalThis.primaryActionTest.inventory.entities.byUid(uid)?.searched === true,
+      fixedUid,
+    );
+    assert.equal(
+      await page.evaluate(() =>
+        globalThis.primaryActionTest.inputRecorder
+          .copyInputs()
+          .actions.some(({ payload }) => payload?.kind === 'furniture.interact' && payload.alternatives !== true),
+      ),
+      true,
+      'a tap on movable furniture records a plain interaction that searches it',
+    );
     assert.deepEqual(pageErrors, []);
   } finally {
     await context.close();

@@ -733,9 +733,6 @@ export const turnCarried = (inventory: Inventory): string | undefined => {
   if (!entity) {
     return messagesOf(inventory).emptyHands;
   }
-  if (entity.floorLocked) {
-    return messagesOf(inventory).floorOnly;
-  }
   inventory.entities.orient(entity, turnPose(entity, 'y'));
   return undefined;
 };
@@ -747,9 +744,6 @@ export const tipCarried = (inventory: Inventory): string | undefined => {
   const entity = entities.carrying();
   if (!entity) {
     return messages.emptyHands;
-  }
-  if (entity.floorLocked) {
-    return messages.floorOnly;
   }
   if (entities.defOf(entity).upright) {
     return messages.staysUpright;

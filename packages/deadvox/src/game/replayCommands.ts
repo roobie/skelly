@@ -9,7 +9,7 @@ export type ReplayActionPayload =
   | { kind: 'inventory.move'; itemUid: number; target: TargetState; count: number }
   | { kind: 'inventory.to-hands'; itemUid: number; feet: [number, number, number] }
   | { kind: 'item.pickup'; itemUid: number; mode: 'pocket' | 'wield'; feet: [number, number, number] }
-  | { kind: 'furniture.interact'; entityUid: number }
+  | { kind: 'furniture.interact'; entityUid: number; alternatives?: true }
   | { kind: 'furniture.lift'; entityUid: number; floorLocked?: boolean }
   | { kind: 'furniture.use'; entityUid: number }
   | { kind: 'furniture.slide'; entityUid: number; way: 'push' }
@@ -183,7 +183,7 @@ export interface ReplayCommandOwners {
   removeAttachment?: (firearmUid: number, slotId: string) => string | undefined;
   toHands: (itemUid: number, feet: [number, number, number]) => string | undefined;
   pickup: (itemUid: number, mode: 'pocket' | 'wield', feet: [number, number, number]) => string | undefined;
-  interact: (entityUid: number) => string | undefined;
+  interact: (entityUid: number, alternatives?: true) => string | undefined;
   lift: (entityUid: number, floorLocked?: boolean) => string | undefined;
   useFurniture: (entityUid: number) => string | undefined;
   slide: (entityUid: number, way: 'push') => string | undefined;
@@ -223,7 +223,7 @@ export const applyReplayActionPayload = (
     case 'item.pickup':
       return owners.pickup(payload.itemUid, payload.mode, payload.feet);
     case 'furniture.interact':
-      return owners.interact(payload.entityUid);
+      return owners.interact(payload.entityUid, payload.alternatives);
     case 'furniture.lift':
       return owners.lift(payload.entityUid, payload.floorLocked);
     case 'furniture.use':
