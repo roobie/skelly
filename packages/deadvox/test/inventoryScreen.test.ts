@@ -4,6 +4,7 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 import { Body } from '../src/core/body.ts';
 import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { coreLabel } from '../src/core/coreText.ts';
 import type { WorkOperation, WorkOption } from '../src/core/craftCommands.ts';
 import { planCraft } from '../src/core/crafting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -839,6 +840,12 @@ describe('inventory screen Lit rendering', () => {
     expect(receiver.liquidContents).toEqual({ kind: 'empty' });
     expect(source.liquidContents?.kind).toBe('filled');
     expect([t.inv.locate(source), t.inv.locate(receiver)]).toEqual(owners);
+    expect(t.inv.move(source, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    expect(t.inv.add(t.inv.create(t.beans.type), { kind: 'hand', side: 'left' })).toBe(true);
+    t.screen.update();
+    const unavailable = t.root.querySelector<HTMLButtonElement>('.inv-pour')!;
+    expect(unavailable.disabled).toBe(true);
+    expect(unavailable.textContent).toBe(coreLabel(t.inv.registry, 'pour'));
     t.screen.close();
   });
 

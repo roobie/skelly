@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import type { Item } from '../src/core/items.ts';
+import { type Item, snapshotItem } from '../src/core/items.ts';
 import { toggleLight } from '../src/core/lights.ts';
 import { bindReach } from '../src/core/reach.ts';
+import { decodeSave } from '../src/core/saveFormat.ts';
+import { gameSeconds, gameToSimSeconds } from '../src/core/time.ts';
 import { decodeInputReplay, encodeInputReplay, InputReplayRecorder } from '../src/game/inputReplay.ts';
 import {
   applyReplayActionPayload,
@@ -16,7 +18,14 @@ import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 import { Simulation } from './simulationFixture.ts';
-import { capture, createRuntime, formatWorldOptions } from './snapshotTestSupport.ts';
+import {
+  blockId,
+  capture,
+  createRuntime,
+  encodeFixture,
+  formatVersion,
+  formatWorldOptions,
+} from './snapshotTestSupport.ts';
 
 const vessel = (id: string, amount: number, capacityMicrolitres = 12) => ({
   id,
@@ -61,6 +70,7 @@ if (built.issues.length > 0) {
 const base = baseRegistry();
 const registry = {
   ...base,
+  dayCycle: { ...base.dayCycle!, clockRatio: 1 },
   items: new Map([...base.items, ...built.registry.items]),
   liquids: new Map([...base.liquids, ...built.registry.liquids]),
 };
@@ -181,6 +191,74 @@ describe('progressive explicit pouring', () => {
     expect(observed).toBe(registry.items.get(receiver.type)!.vessel!.capacityMicrolitres);
     expect(volume(source) + volume(receiver)).toBe(total);
     expect(inventory.itemByUid(source.uid)).toBe(source);
+  });
+
+  it('fills, burns a set-down lamp, douses and decants into the selected bottle before reloading', async () => {
+    const runtime = createRuntime(undefined, false, undefined, { registry });
+    const { inventory, survival, session, sim } = runtime;
+    const ground = { kind: 'pile', pos: session.feet() } as const;
+    const [x, y, z] = ground.pos;
+    runtime.world.setBlock(x, y - 1, z, blockId('stone'));
+    for (const item of Object.values(inventory.hands)) {
+      const moved = inventory.move(item, ground);
+      expect(moved.ok, JSON.stringify(moved)).toBe(true);
+    }
+    const bottle = admit(inventory, 'fixture_source', 'right');
+    const lamp = admit(inventory, 'fixture_lamp', 'left');
+    const identities = () => [...inventory.items()].map(({ item }) => [item.uid, item.type]);
+    const initialIdentities = identities();
+    const unchangedShells = () => {
+      expect(identities()).toEqual(expect.arrayContaining(initialIdentities));
+      expect(identities()).toHaveLength(initialIdentities.length);
+      expect(lamp.slots).toBeUndefined();
+      expect(bottle.slots).toBeUndefined();
+    };
+    const initialOil = volume(bottle) + volume(lamp);
+    expect(survival.use(bottle)).toBeUndefined();
+    finish(session.queue);
+    expect(volume(lamp)).toBeGreaterThan(1);
+    expect(volume(lamp) + volume(bottle)).toBe(initialOil);
+    unchangedShells();
+    sim.paused = false;
+    session.frame(1 / 60);
+    expect(survival.use(lamp)).toBeUndefined();
+    expect(lamp.on).toBe(true);
+    expect(inventory.move(lamp, ground).ok).toBe(true);
+    const burnSpan = gameToSimSeconds(sim.clock, gameSeconds(3));
+    const frames = Math.ceil(burnSpan * 60);
+    for (let frame = 0; frame < frames; frame++) {
+      session.frame(burnSpan / frames);
+    }
+    expect(inventory.locate(lamp)?.kind).toBe('pile');
+    expect(lamp.on).toBe(true);
+    expect(volume(lamp) + volume(bottle)).toBeLessThan(initialOil);
+    expect(volume(lamp)).toBeGreaterThan(0);
+    unchangedShells();
+    expect(inventory.move(lamp, { kind: 'hand', side: 'left' })).toMatchObject({ ok: true });
+    expect(survival.use(lamp)).toBeUndefined();
+    expect(lamp.on).toBe(false);
+    const remainingOil = volume(lamp) + volume(bottle);
+    expect(inventory.move(bottle, ground).ok).toBe(true);
+    expect(survival.pour(lamp.uid, bottle.uid)).toBeUndefined();
+    finish(session.queue);
+    expect(lamp.liquidContents).toEqual({ kind: 'empty' });
+    expect(volume(bottle)).toBe(remainingOil);
+    expect(inventory.locate(bottle)?.kind).toBe('pile');
+    expect(inventory.locate(lamp)).toEqual({ kind: 'hand', side: 'left' });
+    unchangedShells();
+    const snapshot = capture(runtime);
+    const decoded = await decodeSave(await encodeFixture(snapshot), {
+      version: formatVersion,
+      contentLookup: (kind, id, item) => contentLookup(registry, kind, id, item),
+    });
+    const restored = createRuntime(decoded.snapshot, false, runtime.columns, {
+      registry,
+      start: sim.clock.start,
+    });
+    for (const original of [lamp, bottle]) {
+      expect(snapshotItem(restored.inventory.itemByUid(original.uid)!)).toEqual(snapshotItem(original));
+    }
+    expect(capture(restored).character.inventory).toEqual(snapshot.character.inventory);
   });
 
   it('captures explicit endpoint payloads and replays the same committed balances', async () => {

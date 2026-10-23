@@ -1254,11 +1254,9 @@ surprise weapon use. See `src/game/canOpening.ts`, `openingTargetForHand`,
 `src/game/itemActions.ts`, `ItemActionSelection`, and `src/game/unpacking.ts`,
 `Unpacking`.
 
-An opened can retains a serving, not loose food. Its content-declared serving
-names the food and the vessel left after eating. Food servings do not mix histories
-through liquid transfer. Keeping the
-same owned item through both transitions prevents food from escaping to storage
-and leaves the empty can where eating occurred. See `src/core/schema.ts`,
+An opened can retains its vessel so opening and eating cannot teleport food or
+leave an empty shell in a different place. Food exposure histories belong to
+servings, not measured fuel, so liquid transfer does not mix them. See `src/core/schema.ts`,
 `ItemSchema`, `src/game/unpacking.ts`, `Unpacking.complete`, and
 `src/game/survival.ts`, `Survival.finishConsuming`.
 
@@ -2164,7 +2162,7 @@ than a fitted part. Fuel moves only between explicitly selected compatible vesse
 emptying needs a receiver, not disposal or an automatic search for nearby stock.
 Service requires extinguishing, but no cooling wait: there is no heat consequence
 to model, and a lamp-only heat system would invent procedure without a meaningful
-choice. A real temperature system can add that consequence later. See
+choice. See
 `src/core/liquids.ts`, `planLiquidTransfer`, `src/core/inventory.ts`, `Inventory.transferLiquid`,
 and `src/core/lights.ts`, `drainLight`.
 

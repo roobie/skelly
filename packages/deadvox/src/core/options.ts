@@ -289,7 +289,8 @@ export const pourRefusal = (view: ReachSnapshot, sourceUid: number, receiverUid:
 export const otherHandPour = (item: Item, view: ReachSnapshot): UseOption => {
   const inv = view.player.inventory;
   const at = inv.locate(item);
-  const receiver = at?.kind === 'hand' ? inv.hands[otherHand(at.side)] : undefined;
+  const other = at?.kind === 'hand' ? inv.hands[otherHand(at.side)] : undefined;
+  const receiver = other && defOf(inv.registry, other.type).vessel ? other : undefined;
   const refusal = receiver
     ? pourRefusal(view, item.uid, receiver.uid)
     : coreMessage(inv.registry, 'liquidTransferRefused');

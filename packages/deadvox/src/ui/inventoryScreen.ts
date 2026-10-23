@@ -224,7 +224,7 @@ interface DetailsViewModel {
 }
 
 const batterySlotTemplate = (slot: BatterySlotViewModel, text: InventoryText): TemplateResult =>
-  html`<div class="inv-line inv-battery-slot" data-target=${batterySlotTarget(slot.lightUid)} data-occupied=${slot.fitted}>${fillText(text.battery, { battery: slot.name })}</div>`;
+  html`<div class="inv-line inv-service-target" data-target=${batterySlotTarget(slot.lightUid)} data-occupied=${slot.fitted}>${fillText(text.battery, { battery: slot.name })}</div>`;
 
 /** Only a tier content marks `warn` gets the warning style (`DESIGN.md`, "Bleeding"). */
 const bleedingTemplate = (bleeding: BodyRegionViewModel['bleeding']) => {
@@ -414,7 +414,7 @@ const detailsTemplate = (
       <div class="inv-kicker">${text.inspect}</div>
       ${vm.lines.map((line) => html`<div class="inv-line">${line}</div>`)}
       ${vm.battery ? batterySlotTemplate(vm.battery, text) : nothing}
-      ${vm.reservoir ? html`<div class="inv-line inv-battery-slot" data-target=${`reservoir:${item.uid}`}>${vm.reservoir}</div>` : nothing}
+      ${vm.reservoir ? html`<div class="inv-line inv-service-target" data-target=${`reservoir:${item.uid}`}>${vm.reservoir}</div>` : nothing}
       ${vm.pour ? html`<button class="inv-pour" ?disabled=${vm.pour.reason !== undefined} title=${vm.pour.reason ?? ''} @click=${() => attachmentAction({ kind: 'liquid.pour', sourceUid: item.uid, receiverUid: vm.pour!.receiverUid! })}>${vm.pour.label}</button>` : nothing}
       <div class="inv-kicker">${text.whereItCanGo}</div>
       ${vm.options.map((option) => optionTemplate(option, item, queue))}
