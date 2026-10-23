@@ -260,9 +260,11 @@ export const createPlayView = (
   held.attach(carriedPiece.group);
   scene.add(carriedPiece.floorGroup);
   const playerMeshes = new PlayerMeshes(s, playerFigure, models);
+  const lightTuning = registry.senses.get(CORE_CONTENT_IDS.player)!.light;
   const flashlight = new Flashlight(
     scene,
-    registry.senses.get(CORE_CONTENT_IDS.player)!.light.renderedBeamLimit,
+    lightTuning.renderedBeamLimit,
+    lightTuning.illumination.nearFieldMetres,
     spillSwitchFromSearch(globalThis.location?.search ?? ''),
   );
   let cameraDaylightScale = 1;

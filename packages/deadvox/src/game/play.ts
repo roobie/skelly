@@ -1306,6 +1306,7 @@ export const startPlay = (
     chargerRevision: () => Math.floor(sim.time),
     openedVehicle,
     pictures: view.pictures,
+    itemView: view.pictures,
     feet,
     reach: session.reach,
     nearby: () => session.reach().piles,

@@ -32,13 +32,16 @@ const fixture = () => {
 describe('saved food exposure', () => {
   it('settles and isolates the snapshot, then encodes, decodes and restores its exact history', async () => {
     const { runtime, item } = fixture();
+    const live = structuredClone(item.foodExposure!);
+    runtime.sim.setDebugCalendarTime(runtime.sim.calendar + 5);
     const snapshot = capture(runtime);
     const at = foodMillisecondsAt(runtime.sim.calendar);
     const saved = savedFood(snapshot);
     expect(saved.foodExposure!.settledAtGameMilliseconds).toBe(at);
     expect(saved.foodExposure!.gameMilliseconds).toBe(at + 2);
     expect(saved.foodExposure!.remainder).toBe(37);
-    expect(item.foodExposure).toEqual({ gameMilliseconds: 2, remainder: 37, settledAtGameMilliseconds: 0 });
+    expect(live.settledAtGameMilliseconds).toBeLessThan(at);
+    expect(item.foodExposure).toEqual(live);
     const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup: lookup });
     const restored = createRuntime(decoded.snapshot, false, runtime.columns, {
       registry,

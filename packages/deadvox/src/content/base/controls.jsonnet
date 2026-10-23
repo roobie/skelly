@@ -52,6 +52,7 @@ local digits(prefix, count) = [one(prefix + '.' + i, 'Digit' + i) for i in std.r
     one('inventory.best-pocket', 'Enter'),
     one('inventory.take-all-like', 'KeyA'),
     one('inventory.quick-action-gate', 'KeyT'),
+    one('inventory.view-item', 'Mouse1'),
     one('reading.close', 'Tab'),
     one('reading.line-up', 'ArrowUp'),
     one('reading.line-down', 'ArrowDown'),
