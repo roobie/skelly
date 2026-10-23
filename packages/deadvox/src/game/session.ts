@@ -78,6 +78,7 @@ import type { Scale } from '../core/scale.ts';
 import { nearDiscoveryBox, type ScenarioDiscovery } from '../core/scenarioDiscovery.ts';
 import { assertScenarioRun, ScenarioRun } from '../core/scenarioRun.ts';
 import type { EventRuleDef } from '../core/schema.ts';
+import { type ShotTrace, traceShot } from '../core/shotTrace.ts';
 import { Simulation } from '../core/sim.ts';
 import type { ColumnSource } from '../core/site.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
@@ -92,6 +93,7 @@ import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core
 import { simTimestamp } from '../core/time.ts';
 import { spendFuel } from '../core/torch.ts';
 import { VehicleOccupancy } from '../core/vehicleProjection.ts';
+import { vehicleWorkHooks } from '../core/vehicleWork.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
 import { figureSeedPool, zombieFigure } from '../core/zombieFigure.ts';
@@ -329,6 +331,11 @@ interface SessionDebug {
   stepNoclip: (step: DebugNoclipStep) => void;
 }
 
+/** A committed round with its segments traced against the world its hits resolve in (`DESIGN.md`, "Shot impacts"). */
+export interface ResolvedFirearmTrajectory extends FirearmTrajectory {
+  readonly traces: readonly ShotTrace[];
+}
+
 export interface SessionOptions {
   powerDevices?: readonly PlacedPowerDevice[];
   registry: Registry;
@@ -380,7 +387,7 @@ export interface SessionOptions {
   /** Output only, after the simulation inserts an ejected item into its landing pile. */
   onFirearmCaseLanded?: (seed: number, item: Item, instanceIndex: number) => void;
   /** Presentation-only trajectory for every committed round, including virtual automatic fire. */
-  onFirearmTrajectory?: (trajectory: FirearmTrajectory, time: number) => void;
+  onFirearmTrajectory?: (trajectory: ResolvedFirearmTrajectory, time: number) => void;
   /** Presentation-only: an explosive went off here, with this blast radius, both in metres. */
   onDetonation?: (at: Vec3, radiusMetres: number) => void;
   /** Presentation-only: a melee block absorbed damage. */
@@ -800,6 +807,8 @@ export const createSession = (options: SessionOptions) => {
     },
   };
   const reach = bindReach(reachPlayer);
+  inventory.canReachVehicle = (position) =>
+    distanceToPile(body.pos, position, s) <= reachTuning(inventory.registry).reachMetres;
   inventory.landing = (pos) => settleCell(pos, s, scale.minCy * CHUNK, physicalSolid);
   inventory.dropFeet = feet;
   const pileDistance = (pos: Vec3) => distanceToPile(body.pos, pos, s);
@@ -986,7 +995,19 @@ export const createSession = (options: SessionOptions) => {
         : undefined,
     onEjection: (effect) => options.onFirearmEjection?.(effect),
     onCaseLanded: (caseSeed, item, instanceIndex) => options.onFirearmCaseLanded?.(caseSeed, item, instanceIndex),
-    onTrajectory: (trajectory, time) => options.onFirearmTrajectory?.(trajectory, time),
+    onTrajectory: (trajectory, time) =>
+      options.onFirearmTrajectory?.(
+        {
+          ...trajectory,
+          traces: traceShot(
+            trajectory.origin,
+            trajectory.directions,
+            currentFirearmsCombatTuning().shotTraceRangeBlocks,
+            physicalSolid,
+          ),
+        },
+        time,
+      ),
     firearmsSkillLevel: () => firearmsSkillLevel(character),
     firearmsSkillZeroHandling: () => currentFirearmsCombatTuning().skillZeroHandling,
     handlingSlowdown: () => sim.body.pain.effects.handlingSlowdown,
@@ -1048,6 +1069,11 @@ export const createSession = (options: SessionOptions) => {
   sim.actions.craft = craftActionHooks(inventory, character, reach, feet);
   sim.actions.reading = bookReadingHooks(inventory, character);
   sim.actions.treatment = playerTreatmentHooks(inventory, sim);
+  sim.actions.vehicleWork = vehicleWorkHooks(inventory, {
+    output: () => ({ kind: 'pile', pos: feet() }),
+    quality: (quality) =>
+      Math.max(0, ...reach().entries.map(({ item }) => registry.items.get(item.type)?.tool?.qualities[quality] ?? 0)),
+  });
   const rest = new RestController(sim, {
     furniture: (uid) => {
       const entity = entities.byUid(uid);
@@ -2075,6 +2101,19 @@ export const createSession = (options: SessionOptions) => {
         },
         point,
       ),
+    powerControl: (uid: number, enabled: boolean): string | undefined => {
+      const entity = entities.byUid(uid);
+      const control = entity && power?.control(entity);
+      if (!(entity && control && power && inventory.canReachEntity(entity))) {
+        return coreMessage(registry, 'tooFar');
+      }
+      const refusal = entities.useRefusal(entity) ?? sim.body.actionRefusal;
+      if (refusal) {
+        return refusal;
+      }
+      power.network.setEnabled(simTimestamp(sim.time), control.id, enabled);
+      return undefined;
+    },
     chargerControl: (uid: number, operation: 'start' | 'stop'): string | undefined => {
       const entity = entities.byUid(uid);
       const id = entity && power?.chargerId(entity);

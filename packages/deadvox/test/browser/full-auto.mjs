@@ -420,9 +420,9 @@ try {
     const { impactEffects } = globalThis.fullAutoRuntime.view;
     const fire = impactEffects.fire.bind(impactEffects);
     globalThis.fullAutoProbe.trajectories = 0;
-    impactEffects.fire = (trajectory, debugLaser) => {
-      globalThis.fullAutoProbe.trajectories += trajectory.directions.length;
-      fire(trajectory, debugLaser);
+    impactEffects.fire = (traces, debugLaser) => {
+      globalThis.fullAutoProbe.trajectories += traces.length;
+      fire(traces, debugLaser);
       globalThis.fullAutoProbe.laserVisibleAfterFire ||= impactEffects.laser.visible;
     };
   });

@@ -1,6 +1,7 @@
 // Labels and messages drawn by the screens under src/ui, kept apart from the other ui tables.
 // `{name}` marks a value the screen fills in; a key cap slot is drawn as the live binding.
 {
+  powerControl: { on: 'Switch on', off: 'Switch off' },
   charger: {
     idle: 'Idle', running: 'Charging', noPower: 'No power', ready: 'Ready',
     start: 'Start', stop: 'Stop', collect: 'Collect', load: 'Load {name}',

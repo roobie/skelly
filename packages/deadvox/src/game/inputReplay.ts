@@ -33,6 +33,7 @@ const INPUT_REPLAY_MAX_ACTION_PAYLOAD_BYTES = 256 * 1024;
 const MAGIC = 'DEADVOX_REPLAY';
 const PENDING_REPLAY_KEY = 'deadvox.pending-replay';
 const REPLAY_PAYLOAD_ACTIONS = new Set<ReplayActionPayload['kind']>([
+  'power.set',
   'furniture.use',
   'furniture.slide',
   'charger.start',
@@ -61,6 +62,7 @@ const REPLAY_PAYLOAD_ACTIONS = new Set<ReplayActionPayload['kind']>([
   'item.throw',
 ]);
 const REPLAY_SEMANTIC_ACTIONS = [
+  'power.set',
   'furniture.use',
   'furniture.slide',
   'charger.start',
