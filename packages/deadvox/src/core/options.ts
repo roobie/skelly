@@ -268,22 +268,70 @@ const refuseUse = (inv: Inventory, reason: string): UseOption => ({
   plan: { ok: false, reason },
 });
 
-const batteryOption = (battery: Item, inv: Inventory, selectedLight?: Item): UseOption => {
-  const light =
-    selectedLight ??
-    [...inv.carriedTree()]
-      .map(({ item }) => item)
-      .find((item) => lightInHands(inv, item) && fitsLight(inv.registry, item, battery));
-  return light
-    ? {
-        kind: 'use',
-        label: coreLabel(inv.registry, 'batteryIn', { item: inv.name(light).toLowerCase() }),
-        operation: 'battery',
-        light,
-        battery,
-        plan: swapPlan(defOf(inv.registry, light.type).light!.power!.swapSimSeconds),
-      }
-    : refuseUse(inv, coreMessage(inv.registry, 'noLightToFit'));
+const loadOption = (inv: Inventory, light: Item, battery: Item): UseOption => ({
+  kind: 'use',
+  label: coreLabel(inv.registry, 'batteryIn', { item: inv.name(light).toLowerCase() }),
+  operation: 'battery',
+  light,
+  battery,
+  plan: swapPlan(defOf(inv.registry, light.type).light!.power!.swapSimSeconds),
+});
+
+/** The item at the top of `item`'s slot chain, as a light fitted to a gun answers to the gun. */
+const slotRoot = (inv: Inventory, item: Item): Item => {
+  const at = inv.locate(item);
+  return at?.kind === 'slot' ? slotRoot(inv, at.owner) : item;
+};
+
+/**
+ * Whether `battery` can go into `light` from the light's battery slot on its item card: both within reach,
+ * a fitted light through the item it is fitted to. Returns why not, or undefined.
+ */
+export const batterySlotRefusal = (view: ReachSnapshot, light: Item, battery: Item): string | undefined => {
+  const inv = view.player.inventory;
+  const reachable = (item: Item) => view.entries.some((entry) => entry.item === item);
+  if (!(inv.locate(light) && inv.locate(battery))) {
+    return coreMessage(inv.registry, 'gone');
+  }
+  if (!(reachable(slotRoot(inv, light)) && reachable(battery))) {
+    return coreMessage(inv.registry, 'tooFar');
+  }
+  return fitsLight(inv.registry, light, battery) ? undefined : coreMessage(inv.registry, 'wrongBattery');
+};
+
+/** Loading from the item card's battery slot (`DESIGN.md`, "Light"). */
+export const batterySlotOption = (view: ReachSnapshot, light: Item, battery: Item): UseOption => {
+  const inv = view.player.inventory;
+  const refusal = batterySlotRefusal(view, light, battery);
+  return refusal ? refuseUse(inv, refusal) : loadOption(inv, light, battery);
+};
+
+/** A battery in one hand goes into the light held, or fitted to the gun held, in the other. */
+const batteryOption = (battery: Item, inv: Inventory): UseOption => {
+  const hand = inv.locate(battery);
+  if (hand?.kind !== 'hand') {
+    return refuseUse(inv, coreMessage(inv.registry, 'notInHands', { item: inv.name(battery).toLowerCase() }));
+  }
+  const light = [...inv.carriedTree()]
+    .map(({ item }) => item)
+    .find((item) => lightInHands(inv, item) && fitsLight(inv.registry, item, battery));
+  return light ? loadOption(inv, light, battery) : refuseUse(inv, coreMessage(inv.registry, 'noLightToFit'));
+};
+
+/** A fitting battery with charge in the hand that doesn't hold `light`. */
+const otherHandBattery = (inv: Inventory, light: Item): Item | undefined => {
+  const at = inv.locate(light);
+  const lightHand = at?.kind === 'hand' ? at.side : undefined;
+  return SIDES.filter((side) => side !== lightHand)
+    .map((side) => inv.hands[side])
+    .find(
+      (held): held is Item =>
+        held !== undefined &&
+        held !== light &&
+        defOf(inv.registry, held.type).battery !== undefined &&
+        fitsLight(inv.registry, light, held) &&
+        (chargeOf(inv.registry, held) ?? 0) > 0,
+    );
 };
 
 const swapPlan = (simSeconds: number): UseOption['plan'] => ({ ok: true, time: simSeconds });
@@ -320,14 +368,11 @@ const lightOption = (item: Item, view: ReachSnapshot): UseOption => {
     if (!defOf(inv.registry, item.type).light?.power) {
       return refuseUse(inv, coreMessage(inv.registry, 'outOfFuel'));
     }
-    const [battery] = view.entries
-      .map((entry) => entry.item)
-      .filter((candidate) => fitsLight(inv.registry, item, candidate) && (chargeOf(inv.registry, candidate) ?? 0) > 0)
-      .sort((a, b) => (chargeOf(inv.registry, b) ?? 0) - (chargeOf(inv.registry, a) ?? 0));
+    const battery = otherHandBattery(inv, item);
     if (battery) {
-      return batteryOption(battery, inv, item);
+      return loadOption(inv, item, battery);
     }
-    return refuseUse(inv, coreMessage(inv.registry, item.slots?.battery ? 'batteryDeadNoSpare' : 'noBattery'));
+    return refuseUse(inv, coreMessage(inv.registry, item.slots?.battery ? 'batteryDeadNoSpare' : 'noBatteryNoSpare'));
   }
   return {
     kind: 'use',
