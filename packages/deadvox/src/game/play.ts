@@ -1278,6 +1278,7 @@ export const startPlay = (
   };
 
   const hooks: ScreenHooks = {
+    pictures: view.pictures,
     feet,
     reach: session.reach,
     nearby: () => session.reach().piles,

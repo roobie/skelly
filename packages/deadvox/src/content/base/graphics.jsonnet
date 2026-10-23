@@ -5,6 +5,7 @@ local toggle(label, default=false) = { label: label, default: default, options: 
   graphics: [{
     id: 'core',
     readyRadiusM: 64,
+    itemPictureCacheCapacity: 128,
     mobActors: { maxCorpses: 16 },
     gore: {
       dropletCap: 128,

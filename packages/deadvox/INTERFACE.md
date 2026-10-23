@@ -87,8 +87,22 @@ Sharing the likeness avoids a second art obligation for new items and mods, whil
 runtime composition avoids baking every fitted combination. Stills avoid
 continuous rendering competition with the moving world, at the cost of cold
 picture generation and cache upkeep. Readiness and appearance changes must not
-leave stale pictures. See `src/render/itemLook.ts`, `itemLook`, and
-`src/render/models.ts`, `ModelLibrary`.
+leave stale pictures. Wait for fitted geometry before caching a still: a partial
+likeness would claim the item lacks equipment it owns. See
+`src/render/itemPictures.ts`, `ItemPictures`, `src/render/itemLook.ts`, `itemLook`,
+and `src/render/models.ts`, `ModelLibrary`.
+
+Keep still storage bounded: fitted combinations must not accumulate for the
+whole session. Eviction may cost another cold render, but must preserve the
+likeness when requested again. The play view owns picture resources so leaving
+the page releases their GPU context without releasing shared model geometry.
+Render-free play keeps text tiles rather than creating a second rendering path.
+See `src/render/itemPictures.ts`, `ItemPictures`, and `src/render/playView.ts`,
+`createPlayView`.
+
+Keep browser pixel proof isolated from world rendering: a still needs a model,
+not a continuously drawn world. This preserves graphics budget for the assertion
+rather than unrelated gameplay frames; see `test/browser/inventory-scroll.mjs`.
 
 Use neutral reference lighting so recognition remains stable in darkness and
 pictures can be reused without following world-light changes. The picture is an

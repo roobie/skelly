@@ -35,6 +35,7 @@
         "splatCap": 256
       },
       "id": "core",
+      "itemPictureCacheCapacity": 128,
       "mobActors": {
         "maxCorpses": 16
       },
