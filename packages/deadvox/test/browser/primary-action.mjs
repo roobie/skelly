@@ -1392,14 +1392,24 @@ const verifyVehicleService = async (browserInstance, port, renderOverride) => {
     await work('install', 'vehicle');
 
     // A read-only witness: the same UID, at the same site, in exactly one saved owner.
+    // Placed entities number their UIDs apart from items, so a saved copy must match the item's type too.
     const witness = await page.evaluate(({ uid }) => {
       const r = globalThis.primaryActionTest;
       const item = r.inventory.itemByUid(uid);
-      const saved = JSON.stringify(r.session.snapshot({ worldId: 'vehicle-world', characterId: 'vehicle-actor' }));
+      const saved = JSON.parse(
+        JSON.stringify(r.session.snapshot({ worldId: 'vehicle-world', characterId: 'vehicle-actor' })),
+      );
+      const countCopies = (value) => {
+        if (value === null || typeof value !== 'object') {
+          return 0;
+        }
+        const own = value.uid === uid && value.type === item.type ? 1 : 0;
+        return own + Object.values(value).reduce((sum, child) => sum + countCopies(child), 0);
+      };
       return {
         location: r.inventory.locate(item),
         condition: item.condition,
-        savedCopies: saved.match(new RegExp(`"uid":${uid}[,}]`, 'g'))?.length ?? 0,
+        savedCopies: countCopies(saved),
       };
     }, fixture);
     assert.equal(witness.location.kind, 'vehicle', 'the part is refitted to the car');
