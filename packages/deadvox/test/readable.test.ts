@@ -5,7 +5,7 @@ import { pickInteractionTarget } from '../src/core/interactionPick.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { useOption } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
-import { READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT, type ReadRequest, type Readable } from '../src/core/readable.ts';
+import { READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT, type Readable, type ReadRequest } from '../src/core/readable.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { startupContent } from './baseRegistry.ts';

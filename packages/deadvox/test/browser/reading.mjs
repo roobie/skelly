@@ -1021,10 +1021,10 @@ try {
           readable: {
             title: 'T'.repeat(120),
             text:
-            ('long'.repeat(1000) + '\n\nPaper paragraph & literal entity &copy;.\n\n'.repeat(400)).slice(
-              0,
-              12_000 - end.length,
-            ) + end,
+              ('long'.repeat(1000) + '\n\nPaper paragraph & literal entity &copy;.\n\n'.repeat(400)).slice(
+                0,
+                12_000 - end.length,
+              ) + end,
           },
         }),
       marker,
@@ -1107,11 +1107,11 @@ try {
       if (!session.inventory.add(map, { kind: 'hand', side: 'right' })) {
         throw new Error('Could not place pending map owner in hand');
       }
-      let resolve;
+      let complete;
       const pending = new Promise((done) => {
-        resolve = done;
+        complete = done;
       });
-      Object.assign(globalThis, { resolvePendingMap: resolve, pendingMapOwner: map.uid });
+      Object.assign(globalThis, { resolvePendingMap: complete, pendingMapOwner: map.uid });
       globalThis.readingWitness.reading.open(
         { kind: 'paperMap', ownerUid: map.uid, coverage: { x: -1, z: 2 }, title: 'Map A', itemType: 'regional_map' },
         pending,
@@ -1124,11 +1124,11 @@ try {
     await page.evaluate(() => globalThis.resolvePendingMap());
     assert.equal(await page.locator('#reading').isVisible(), false, 'a late map completion cannot reopen its owner');
     await page.evaluate(() => {
-      let resolve;
+      let complete;
       const pending = new Promise((done) => {
-        resolve = done;
+        complete = done;
       });
-      Object.assign(globalThis, { resolveReplacedMap: resolve });
+      Object.assign(globalThis, { resolveReplacedMap: complete });
       globalThis.readingWitness.reading.open(
         {
           kind: 'paperMap',
@@ -1146,14 +1146,22 @@ try {
     assert.equal(await page.locator('.reading-map').getAttribute('data-coverage'), '4,-3');
     await pressAction(page, 'reading.close');
     await page.evaluate(() =>
-      globalThis.readingWitness.reading.open({ kind: 'text', readable: { title: 'Main menu close', text: 'Placeholder' } }),
+      globalThis.readingWitness.reading.open({
+        kind: 'text',
+        readable: { title: 'Main menu close', text: 'Placeholder' },
+      }),
     );
     await pressAction(page, 'ui.main-menu-toggle');
     assert.equal(await page.locator('#reading').isVisible(), false);
     assert.equal(await page.locator('#overlay').isVisible(), true);
     await pressAction(page, 'ui.main-menu-toggle');
     await page.waitForFunction(() => globalThis.readingWitness.input.locked);
-    await page.evaluate(() => globalThis.readingWitness.reading.open({ kind: 'text', readable: { title: 'Pointer loss', text: 'Placeholder' } }));
+    await page.evaluate(() =>
+      globalThis.readingWitness.reading.open({
+        kind: 'text',
+        readable: { title: 'Pointer loss', text: 'Placeholder' },
+      }),
+    );
     await page.evaluate(() => document.exitPointerLock());
     await page.waitForFunction(
       () => !(globalThis.readingWitness.input.locked || globalThis.readingWitness.reading.isOpen),
@@ -1175,11 +1183,11 @@ try {
     );
     const generationBeforeDeath = await page.evaluate(() => globalThis.readingWitness.saveController.savedGeneration);
     await page.evaluate(() => {
-      let resolve;
+      let complete;
       const pending = new Promise((done) => {
-        resolve = done;
+        complete = done;
       });
-      Object.assign(globalThis, { resolveWorldReplacedMap: resolve });
+      Object.assign(globalThis, { resolveWorldReplacedMap: complete });
       globalThis.readingWitness.reading.open(
         {
           kind: 'paperMap',

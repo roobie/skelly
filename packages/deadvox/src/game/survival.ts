@@ -23,7 +23,7 @@ import {
 import { consume } from '../core/needs.ts';
 import { consumption, useOption } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
-import type { ReadRequest, Readable } from '../core/readable.ts';
+import type { Readable, ReadRequest } from '../core/readable.ts';
 import type { Simulation } from '../core/sim.ts';
 import { simSeconds, simToGameSeconds } from '../core/time.ts';
 import { swapCanister } from '../core/torch.ts';

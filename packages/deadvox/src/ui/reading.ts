@@ -68,10 +68,12 @@ export const mountReading = (
       html`
       <article class="reading-paper" role="dialog" aria-modal="true" aria-labelledby="reading-title" tabindex="-1">
         <header><h1 class="reading-title" id="reading-title">${current.kind === 'text' ? current.readable.title : current.title}</h1><button class="reading-dismiss" type="button" @click=${close} aria-label=${text.putAwayLabel}>${text.putAway}</button></header>
-        ${current.kind === 'text'
-          ? html`${progress ? html`<progress class="reading-progress" max=${progress.max} value=${progress.value} aria-label=${text.progress}></progress>` : ''}
+        ${
+          current.kind === 'text'
+            ? html`${progress ? html`<progress class="reading-progress" max=${progress.max} value=${progress.value} aria-label=${text.progress}></progress>` : ''}
               <div class="reading-text" tabindex="0" aria-label=${text.text}>${current.readable.text}</div>`
-          : html`<section class="reading-map" data-coverage="${current.coverage.x},${current.coverage.z}" aria-busy=${mapReady ? 'false' : 'true'}></section>`}
+            : html`<section class="reading-map" data-coverage="${current.coverage.x},${current.coverage.z}" aria-busy=${mapReady ? 'false' : 'true'}></section>`
+        }
       </article>`,
       host,
     );
@@ -101,13 +103,14 @@ export const mountReading = (
       current = request;
       progress = undefined;
       mapReady = request.kind !== 'paperMap';
-      const opened = ++generation;
+      generation += 1;
+      const opened = generation;
       host.hidden = false;
       draw();
       host.querySelector<HTMLElement>('article')!.focus({ preventScroll: true });
       changed();
       if (request.kind === 'paperMap') {
-        void ready.then(() => {
+        ready.then(() => {
           if (generation === opened && current === request) {
             mapReady = true;
             draw();
