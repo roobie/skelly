@@ -1309,12 +1309,13 @@ battery must not erase its identity. Battery replacement with the gun in hand
 uses the same work as a handheld light rather than requiring removal of the
 mount. See `src/core/lights.ts`, `lightInHands` and `swapBattery`.
 
-Putting a switched-on gun light away does not turn its switch off. A slung gun
-still illuminates and drains; a bag conceals the beam but not the battery cost.
-Without a first-person slung-gun model, the shoulder is its beam origin and the
-beam points down rather than following the held gun's aim. See
-`src/game/survival.ts`, `Survival.tickLight`; `src/core/lights.ts`, `lightExposureFor`;
-and `src/render/flashlight.ts`, `Flashlight.update`.
+Putting a switched-on gun light away does not turn its switch off: concealment
+blocks illumination, not battery use. An exposed dropped gun must remain a light
+source because dropping it does not cover its lens. Its drawn ground pose owns
+the beam rather than the player's aim. Without a first-person slung-gun model,
+the shoulder and a downward beam approximate that absent geometry. See
+`src/game/survival.ts`, `Survival.tickLight`; `src/core/lights.ts`, `inventoryLightEntries`;
+`src/render/piles.ts`, `PileMeshes.beamPoseOf`; and `src/render/flashlight.ts`, `Flashlight.update`.
 
 ### Handling time
 

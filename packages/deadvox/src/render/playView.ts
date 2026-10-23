@@ -490,7 +490,7 @@ export const createPlayView = (
           : 0;
       carriedPiece.update(dt, camera.quaternion);
       held.update(camera, pose, recoil, { ...handling, lift });
-      flashlight.update({ registry, lit: light, held, camera, inventory });
+      flashlight.update({ registry, lit: light, held, camera, inventory, piles });
       lightPool.update(inventory, { held, piles, camera, blockSize: s, daylightScale: cameraDaylightScale });
       updateFlare(nightVision, dt);
     },

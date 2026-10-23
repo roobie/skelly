@@ -1,4 +1,4 @@
-import { PerspectiveCamera, Scene, Vector3 } from 'three';
+import { Group, Object3D, PerspectiveCamera, Scene, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { Character } from '../src/core/character.ts';
 import type { Registry } from '../src/core/content.ts';
@@ -13,6 +13,8 @@ import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling
 import { Survival } from '../src/game/survival.ts';
 import { Flashlight } from '../src/render/flashlight.ts';
 import { HeldItems } from '../src/render/hands.ts';
+import { LENS, type ModelLibrary } from '../src/render/models.ts';
+import { PileMeshes } from '../src/render/piles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { Simulation } from './simulationFixture.ts';
@@ -192,6 +194,53 @@ describe('a light mount on a long gun', () => {
     held.dispose();
   });
 
+  it('shines from a dropped gun ground pose only while switched on', () => {
+    const { registry, inventory, queue, handling, sim } = setup();
+    const { gun, mount } = fitted(inventory);
+    expect(handling.fit(gun.uid, LIGHT_MOUNT_SLOT, mount.uid)).toBeUndefined();
+    queue.tick(60);
+    expect(toggleLight(registry, mount)).toBeUndefined();
+    expect(inventory.move(gun, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    const before = chargeOf(registry, mount)!;
+    sim.scheduler.advance(1);
+    expect(chargeOf(registry, mount)).toBeLessThan(before);
+    const sources = inventoryLightSources(inventory, [0, 0, 0], 1);
+    expect(sources).toHaveLength(1);
+    expect(sources[0]!.carried).toBe(false);
+    expect(sources[0]!.seenFrom).toBeGreaterThan(0);
+    const ground = new Group();
+    const lens = new Object3D();
+    lens.name = LENS;
+    lens.position.set(0.2, 0.1, 0);
+    lens.rotation.x = Math.PI / 2;
+    ground.add(lens);
+    const models = { version: 1, has: () => true, groundLook: () => ground } as unknown as ModelLibrary;
+    const piles = new PileMeshes(1, models);
+    piles.sync(inventory);
+    const held = new HeldItems(inventory, undefined, registry.figures.get('player')!.palette);
+    const camera = new PerspectiveCamera();
+    const beam = new Flashlight(new Scene(), 1, false);
+    const update = () => beam.update({ registry, inventory, held, camera, lit: undefined, piles });
+    update();
+    expect(beam.light.intensity).toBeGreaterThan(0);
+    expect(beam.light.position.distanceTo(lens.getWorldPosition(new Vector3()))).toBeLessThan(1e-8);
+    const direction = new Vector3(0, 0, -1).transformDirection(lens.matrixWorld);
+    expect(beam.light.target.position.clone().sub(beam.light.position).normalize().distanceTo(direction)).toBeLessThan(
+      1e-8,
+    );
+    const start = beam.light.position.clone();
+    camera.position.set(4, 2, 3);
+    update();
+    expect(beam.light.position.distanceTo(start)).toBeLessThan(1e-8);
+    expect(toggleLight(registry, mount)).toBeUndefined();
+    update();
+    expect(beam.light.intensity).toBe(0);
+    expect(inventoryLightSources(inventory, [0, 0, 0], 1)).toEqual([]);
+    beam.dispose();
+    held.dispose();
+    piles.dispose();
+  });
+
   it('swaps a fitted battery through timed use and saves it without detaching the mount', () => {
     const { registry, inventory, queue, handling, survival, sim } = setup();
     const { gun, mount } = fitted(inventory);
@@ -217,5 +266,4 @@ describe('a light mount on a long gun', () => {
     expect(saved.slots!.battery!.uid).toBe(replacement.uid);
     expect(chargeOf(registry, saved)).toBe(chargeOf(registry, replacement));
   });
-
 });

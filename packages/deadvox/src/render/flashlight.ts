@@ -5,13 +5,14 @@ import { MathUtils, type PerspectiveCamera, type Scene, SpotLight, Vector3 } fro
 import type { Registry } from '../core/content.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
-import { lightExposureFor } from '../core/lights.ts';
+import { inventoryLightEntries, lightExposureFor } from '../core/lights.ts';
 import { DEFAULT_TORCH } from '../core/mood.ts';
 import type { BeamSpill } from '../core/schema.ts';
 import type { Sky } from '../core/sky.ts';
 import { installFlashlightSpill, setFlashlightSpill, spillHalfAngle } from './flashlightCone.ts';
 import type { HeldItems } from './hands.ts';
 import { installNearFieldFalloff } from './lightFalloff.ts';
+import type { PileMeshes } from './piles.ts';
 import { FIRST_PERSON_SHOULDER } from './playerFigure.ts';
 
 /** Sun plus ambient intensity at which the beam is at half strength. */
@@ -129,19 +130,22 @@ export class Flashlight {
     held,
     camera,
     inventory,
+    piles,
   }: {
     registry: Registry;
     lit: Item | undefined;
     held: HeldItems;
     camera: PerspectiveCamera;
     inventory: Inventory;
+    piles?: Pick<PileMeshes, 'beamPoseOf'>;
   }): void {
-    const sources = [...inventory.carriedTree()]
+    const sources = [...inventoryLightEntries(inventory)]
       .filter(
         ({ item, location, path }) =>
           defOf(registry, item.type).light?.beam !== undefined &&
-          lightExposureFor(registry, item, location, path) === 'carried' &&
-          (held.lensOf(item, this.at) ||
+          lightExposureFor(registry, item, location, path) !== undefined &&
+          ((location.kind === 'pile' && piles?.beamPoseOf(item, this.at, this.ahead)) ||
+            held.lensOf(item, this.at) ||
             (location.kind === 'worn' && location.slot === 'head') ||
             (location.kind === 'slot' && path.startsWith('inventory.worn.'))),
       )
@@ -161,7 +165,11 @@ export class Flashlight {
       const def = defOf(registry, source.item.type).light!;
       const beam = def.beam!;
       const wornMount = source.location.kind === 'slot' && source.path.startsWith('inventory.worn.');
-      this.aim(source.item, wornMount, held, camera);
+      if (source.location.kind === 'pile') {
+        piles!.beamPoseOf(source.item, this.at, this.ahead);
+      } else {
+        this.aim(source.item, wornMount, held, camera);
+      }
       light.color.set(def.color);
       light.intensity = def.intensity * this.daylightScale * this.strength;
       light.distance = def.radius;
