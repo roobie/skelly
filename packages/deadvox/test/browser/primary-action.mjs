@@ -1834,7 +1834,7 @@ try {
       inventory.registry,
       snapshot.character.inventory,
       undefined,
-      inventory.character,
+      { character: inventory.character },
     );
     return {
       uid: snapshot.character.lightUid,
