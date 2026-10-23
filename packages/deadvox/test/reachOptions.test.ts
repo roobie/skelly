@@ -4,7 +4,7 @@ import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory, WORK_IN_PROGRESS } from '../src/core/inventory.ts';
+import { Inventory, workInProgressItem } from '../src/core/inventory.ts';
 import { options, pocketGroundItem, quickbarTake, quickMove, toHands } from '../src/core/options.ts';
 import { bindReach, type ReachPlayer, type ReachSnapshot } from '../src/core/reach.ts';
 import type { FurnitureDef } from '../src/core/schema.ts';
@@ -16,6 +16,7 @@ import { buildFixtureRegistry as buildRegistry, FIXTURE_MATERIAL, fixtureBreach 
 import { playerInventorySource } from './fixtures/playerInventory.ts';
 
 const registry = baseRegistry();
+const WORK_IN_PROGRESS = workInProgressItem(registry).id;
 
 const setup = (handedness?: 'right' | 'left', contentRegistry = registry) => {
   const character = new Character(contentRegistry, handedness ? { handedness } : {});

@@ -283,6 +283,14 @@ const allocateCombination = (
   return allocation;
 };
 
+export const craftWorkDuration = (recipe: RecipeDef, character: CraftCharacter, workFactorBonus = 0): number => {
+  const skillLevel = Math.max(
+    SKILL_LEVEL_MIN,
+    ...Object.keys(recipe.skills).map((skill) => skillEffectLevel(character.skills[skill] ?? SKILL_LEVEL_MIN)),
+  );
+  return (recipe.timeGameMinutes * (1 - workFactorBonus)) / (1 + skillLevel * 0.1);
+};
+
 const craftPlan = (
   recipe: RecipeDef,
   snapshot: ReachSnapshot,
@@ -293,11 +301,7 @@ const craftPlan = (
         .filter((station) => stationMatches(recipe, station))
         .sort((a, b) => b.workFactorBonus - a.workFactorBonus || a.entity.uid - b.entity.uid)[0]
     : undefined;
-  const skillLevel = Math.max(
-    SKILL_LEVEL_MIN,
-    ...Object.keys(recipe.skills).map((skill) => skillEffectLevel(character.skills[skill] ?? SKILL_LEVEL_MIN)),
-  );
-  const work = (recipe.timeGameMinutes * (1 - (workstation?.workFactorBonus ?? 0))) / (1 + skillLevel * 0.1);
+  const work = craftWorkDuration(recipe, character, workstation?.workFactorBonus);
   return {
     kind: 'craft',
     recipe: recipe.id,

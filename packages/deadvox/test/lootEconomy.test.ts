@@ -201,6 +201,8 @@ describe('loot economy descriptions', () => {
               weight: 1,
               size: [1, 1],
               economy: { usage: ['Hunting'], tiers: ['Tier2'] },
+              workInProgress: false,
+              notLoot: false,
             },
           ],
           furniture: [
@@ -289,6 +291,8 @@ describe('loot economy descriptions', () => {
       weight: 1,
       size: [1, 1],
       economy: { usage, tiers: ['Tier2'] },
+      workInProgress: false,
+      notLoot: false,
     });
     const { registry, issues } = buildRegistry([
       {
@@ -320,7 +324,15 @@ describe('loot economy descriptions', () => {
   });
 
   it('requires authored economy metadata at the registry boundary', () => {
-    const item = { id: 'fixture_item', name: 'Fixture', category: 'misc', weight: 1, size: [1, 1] };
+    const item = {
+      id: 'fixture_item',
+      workInProgress: false,
+      notLoot: false,
+      name: 'Fixture',
+      category: 'misc',
+      weight: 1,
+      size: [1, 1],
+    };
     const accepted = buildRegistry([
       { source: 'fixture', data: { items: [{ ...item, economy: { usage: [], tiers: [] } }] } },
     ]);

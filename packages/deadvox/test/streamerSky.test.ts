@@ -131,6 +131,8 @@ it.each([0, 1])('blocks sight past an incomplete column (height %i), even after 
     weight: 1,
     category: 'misc',
     economy: registry.items.values().next().value!.economy,
+    workInProgress: false,
+    notLoot: false,
   });
   const inventory = new Inventory(registry);
   const contentPosition: [number, number, number] = [2 * CHUNK + 1, 1, 1];

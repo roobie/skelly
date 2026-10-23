@@ -21,6 +21,8 @@ const trapDef: ItemDef = {
   weight: 1000,
   size: [2, 2],
   economy: { usage: [], tiers: [] },
+  workInProgress: false,
+  notLoot: false,
   trap: {
     setSimSeconds: simSeconds(1),
     disarmSimSeconds: simSeconds(2),

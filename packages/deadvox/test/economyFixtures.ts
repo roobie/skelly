@@ -55,7 +55,7 @@ const fixtureEntry = (entry: unknown, section: string): unknown => {
     return entry;
   }
   if (section === 'items') {
-    return { economy: fixtureEconomy(), ...entry };
+    return { economy: fixtureEconomy(), workInProgress: false, notLoot: false, ...entry };
   }
   if (section === 'templates') {
     return { lootContext: fixtureLootContext(), ...entry };

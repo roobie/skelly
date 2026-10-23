@@ -126,40 +126,43 @@ export const craftRows = ({
   preferences: Readonly<Record<string, CraftPreference>>;
   startReason: string | undefined;
 }): CraftRow[] =>
-  [...character.knownRecipes].sort().map((id) => {
-    const recipe = registry.recipes.get(id)!;
-    const prefer = preferences[id];
-    const result = planCraft(recipe, reach, character, prefer);
-    const status = requirementStatus(recipe, reach, character);
-    const text = craftingText(registry);
-    const itemName = registry.items.get(recipe.result.item)!.name;
-    return {
-      id,
-      name: recipe.kind === 'repair' ? fillText(text.repairName, { item: itemName }) : itemName,
-      itemName,
-      kind: recipe.kind === 'repair' ? 'repair' : 'craft',
-      time: craftTime('plan' in result ? result.plan.gather + result.plan.work : recipe.timeGameMinutes, text),
-      reason: recipeStartReason(recipe, result, reach, { startReason, noRepairTarget: text.noRepairTarget }),
-      components: status.components.map(({ alternatives, group }) => ({
-        group,
-        preferred: prefer?.[group] ?? '',
-        alternatives: alternatives.map((a) => ({
-          id: a.item,
-          name: registry.items.get(a.item)!.name,
-          needed: a.needed,
-          found: a.available,
+  [...character.knownRecipes]
+    .filter((id) => !registry.recipes.get(id)!.activation)
+    .sort()
+    .map((id) => {
+      const recipe = registry.recipes.get(id)!;
+      const prefer = preferences[id];
+      const result = planCraft(recipe, reach, character, prefer);
+      const status = requirementStatus(recipe, reach, character);
+      const text = craftingText(registry);
+      const itemName = registry.items.get(recipe.result.item)!.name;
+      return {
+        id,
+        name: recipe.kind === 'repair' ? fillText(text.repairName, { item: itemName }) : itemName,
+        itemName,
+        kind: recipe.kind === 'repair' ? 'repair' : 'craft',
+        time: craftTime('plan' in result ? result.plan.gather + result.plan.work : recipe.timeGameMinutes, text),
+        reason: recipeStartReason(recipe, result, reach, { startReason, noRepairTarget: text.noRepairTarget }),
+        components: status.components.map(({ alternatives, group }) => ({
+          group,
+          preferred: prefer?.[group] ?? '',
+          alternatives: alternatives.map((a) => ({
+            id: a.item,
+            name: registry.items.get(a.item)!.name,
+            needed: a.needed,
+            found: a.available,
+          })),
         })),
-      })),
-      qualities: status.qualities.map(({ quality, required, available }) => ({
-        name: quality,
-        required,
-        best: available,
-      })),
-      skills: status.skills.map(({ skill, required, available }) => ({
-        name: registry.skills.get(skill)!.name,
-        required,
-        available,
-      })),
-      workstation: recipe.workstation ?? null,
-    };
-  });
+        qualities: status.qualities.map(({ quality, required, available }) => ({
+          name: quality,
+          required,
+          best: available,
+        })),
+        skills: status.skills.map(({ skill, required, available }) => ({
+          name: registry.skills.get(skill)!.name,
+          required,
+          available,
+        })),
+        workstation: recipe.workstation ?? null,
+      };
+    });

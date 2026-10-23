@@ -8,6 +8,7 @@ import { magazineSpec } from '../core/magazine.ts';
 import type { TreatmentDef } from '../core/schema.ts';
 import { openingTargetForHand } from './canOpening.ts';
 import { selectPrimaryAction } from './primaryAction.ts';
+import { sharpeningMethods, sharpeningTargetForHand } from './sharpening.ts';
 
 export interface ItemAction {
   readonly id: string;
@@ -18,6 +19,7 @@ export interface ItemAction {
   /** Unloading a held magazine: R only loads one (`CONTROLS.md`, "Reload, rack, remove"), so stripping is an item action. */
   readonly magazine?: 'strip';
   readonly opening?: true;
+  readonly sharpening?: true;
 }
 
 /** What the treatment treats in the wound (`Body.canTreat`): its bleeding tier, else its infection stage. */
@@ -26,9 +28,29 @@ const woundDescription = (body: Body, region: BodyRegion, treatment: TreatmentDe
   return tier?.label ?? `${body.wounds[region]!.infection} infection`;
 };
 
+const withSharpeningActions = (
+  item: Item,
+  inventory: Inventory,
+  base: readonly ItemAction[],
+): readonly ItemAction[] => {
+  const at = inventory.locate(item);
+  const sharpeningTarget = at?.kind === 'hand' && sharpeningTargetForHand(inventory, at.side);
+  if (at?.kind === 'hand' && (sharpeningTarget || sharpeningMethods(inventory, item).length > 0)) {
+    const own = selectPrimaryAction(inventory, at.side);
+    return [
+      ...base,
+      ...(base.length === 0 && own.kind !== 'sharpen'
+        ? [{ id: 'own', label: own.kind === 'melee' ? 'Swing' : 'Use' }]
+        : []),
+      ...(sharpeningTarget ? [{ id: 'sharpen', label: 'Sharpen', sharpening: true as const }] : []),
+    ];
+  }
+  return base;
+};
+
 export const itemActionsFor = (item: Item, inventory: Inventory, body: Body): readonly ItemAction[] => {
   const at = inventory.locate(item);
-  const base = ordinaryItemActions(item, inventory, body);
+  const base = withSharpeningActions(item, inventory, ordinaryItemActions(item, inventory, body));
   if (at?.kind !== 'hand' || !defOf(inventory.registry, item.type).tool?.qualities.opening) {
     return base;
   }
@@ -87,6 +109,9 @@ export class ItemActionSelection {
   private readonly selected = new Map<number, string>();
 
   forItem(item: Pick<Item, 'uid'>, actions: readonly ItemAction[]): ItemAction | undefined {
+    if (this.selected.get(item.uid) === 'sharpen' && !actions.some((action) => action.sharpening)) {
+      return { id: 'sharpen', label: 'Sharpen', sharpening: true };
+    }
     if (this.selected.get(item.uid) === 'open-can' && !actions.some((action) => action.opening)) {
       return { id: 'open-can', label: 'Open can', opening: true };
     }
@@ -110,7 +135,11 @@ export class ItemActionSelection {
     if (direction === 0) {
       return false;
     }
-    if (actions.length === 1 && this.selected.get(item.uid) === 'open-can' && !actions[0]!.opening) {
+    if (
+      actions.length === 1 &&
+      ((this.selected.get(item.uid) === 'open-can' && !actions[0]!.opening) ||
+        (this.selected.get(item.uid) === 'sharpen' && !actions[0]!.sharpening))
+    ) {
       this.selected.set(item.uid, actions[0]!.id);
       return true;
     }

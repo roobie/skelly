@@ -39,7 +39,9 @@
       },
       "model": "shed_key",
       "name": "Shed key",
-      "size": [1, 1]
+      "notLoot": false,
+      "size": [1, 1],
+      "workInProgress": false
     }
   ],
   "layouts": [

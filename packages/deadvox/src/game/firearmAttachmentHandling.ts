@@ -126,6 +126,14 @@ export class FirearmAttachmentHandling {
     const attachmentModel = attachmentDefinition.model
       ? this.inventory.registry.models.get(attachmentDefinition.model)
       : undefined;
+    const effects = attachmentDefinition.firearmAttachmentEffects;
+    if (
+      effects?.kind === 'suppressor' &&
+      skillEffectLevel(this.inventory.character.skills?.[ATTACHMENT_WORK_SKILL] ?? SKILL_LEVEL_MIN) <
+        effects.fitSkillLevel
+    ) {
+      return effects.fitRefusal;
+    }
     if (
       attachmentModel?.gun?.attachment?.kind === 'optic' &&
       !opticViewSettings(attachmentDefinition, attachmentModel)
