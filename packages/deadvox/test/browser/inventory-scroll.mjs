@@ -1495,8 +1495,65 @@ try {
       `${engine}: live held-AR pocketed-foregrip fit/removal via locked menu click ${JSON.stringify({ fitSettled, removalSettled })}\n`,
     );
   }
+  await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);
+  await page.waitForFunction(() => Boolean(globalThis.scrollFixture));
+  await page.evaluate(
+    async ({ chargerModule, contentModule }) => {
+      globalThis.scrollFixture.screen.close();
+      const { mountChargerFlow } = await import(chargerModule);
+      const { buildBundledContent } = await import(contentModule);
+      globalThis.chargerFlow = mountChargerFlow(buildBundledContent().registry, document.querySelector('#inventory'));
+    },
+    { chargerModule: '/test/browser/charger-flow.ts', contentModule: '/src/game/bundledContent.ts' },
+  );
+  const chargerButton = (kind) => page.locator(`[data-charger-action="${kind}"]`);
+  await chargerButton('inventory.move').click();
+  await page.evaluate(() => globalThis.chargerFlow.advance(3));
+  assert.equal(await page.evaluate(() => globalThis.chargerFlow.inspect().jobs), 0);
+  await chargerButton('charger.start').click();
+  const started = await page.evaluate(() => {
+    const flow = globalThis.chargerFlow;
+    flow.advance(0.5);
+    flow.blackout(true);
+    return flow.inspect();
+  });
+  assert.ok(started.active && started.energy > 0, 'a started cell has partial powered work');
+  const blackout = await page.evaluate(() => {
+    const flow = globalThis.chargerFlow;
+    flow.move(1);
+    flow.advance(0.5);
+    flow.move(0);
+    return flow.inspect();
+  });
+  assert.notDeepEqual(blackout.pos, started.pos, 'charging does not take movement');
+  assert.ok(
+    blackout.hands.every((uid) => uid === undefined),
+    'loading leaves both hands available',
+  );
+  assert.equal(blackout.energy, started.energy, 'blackout pauses delivered charge');
+  await page.evaluate(() => globalThis.chargerFlow.reload());
+  const reloaded = await page.evaluate(() => globalThis.chargerFlow.inspect());
+  assert.equal(reloaded.uid, started.uid, 'reload retains the same cell');
+  assert.equal(reloaded.energy, started.energy, 'reload preserves partial energy without offline progress');
+  await page.evaluate(() => {
+    const flow = globalThis.chargerFlow;
+    flow.move(-1);
+    flow.advance(0.5);
+    flow.move(0);
+    flow.blackout(false);
+    flow.advance(20);
+  });
+  assert.equal(await chargerButton('charger.start').count(), 0, 'capacity completion removes running demand');
+  await chargerButton('inventory.to-hands').click();
+  await page.evaluate(() => globalThis.chargerFlow.advance(3));
+  const collected = await page.evaluate(() => globalThis.chargerFlow.inspect());
+  assert.ok(collected.hands.includes(started.uid), 'collection returns the exact charged cell');
+  assert.deepEqual(collected.owned, [], 'collection empties appliance ownership');
+  assert.equal(await chargerButton('inventory.to-hands').count(), 0, 'the cell cannot be collected twice');
+  assert.deepEqual(collected.refusals, [], 'every offered charger operation succeeds');
+  logPhase('charger leave, blackout, save/reload and collect');
   process.stdout.write(
-    `${engine}: inventory/vicinity/details wheel and redraw contract passed (free pointer + synthetic locked cursor)\n`,
+    `${engine}: inventory/vicinity/details wheel, redraw and charger contracts passed (free pointer + synthetic locked cursor)\n`,
   );
 } finally {
   await browser?.close();

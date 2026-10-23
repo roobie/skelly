@@ -1,6 +1,11 @@
 // Labels and messages drawn by the screens under src/ui, kept apart from the other ui tables.
 // `{name}` marks a value the screen fills in; a key cap slot is drawn as the live binding.
 {
+  charger: {
+    idle: 'Idle', running: 'Charging', noPower: 'No power', ready: 'Ready',
+    start: 'Start', stop: 'Stop', collect: 'Collect', load: 'Load {name}',
+    remaining: '{seconds} powered seconds remaining',
+  },
   hudOptionLabels: {
     stats: 'Health, blood, bleeding, food, water, fatigue, pain, stamina and carrying weight',
     clock: 'Clock and time compression',

@@ -81,6 +81,7 @@ local pills(weight, least, parts, of) =
         item('field_manual', 1),
         item('home_repair_book', 1),
         item('aa_battery', 3, count=[1, 4]),
+        item('rechargeable_aa_battery', 1, count=[1, 2]),
         item('flashlight', 1, condition=[0.5, 1]),
         item('headlamp', 1, condition=[0.5, 1]),
         pills(1, 2, 1, 3),

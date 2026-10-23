@@ -16,6 +16,7 @@ import type { ScenarioRunState } from './scenarioRun.ts';
 import type { Simulation, SimulationState } from './sim.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundPickerState } from './soundPicker.ts';
+import { simTimestamp } from './time.ts';
 import type { VehicleInstancesState } from './vehicleInstances.ts';
 import type { SavedColumn, World } from './world.ts';
 import type { ZombieSpawner } from './zombieSpawns.ts';
@@ -112,6 +113,7 @@ export const snapshotSession = ({
   rustleClock,
   audio,
 }: SnapshotSessionInput): Readonly<SaveSnapshot> => {
+  power?.advance(simTimestamp(simulation.time));
   const lightUid = survival.snapshotState().litUid ?? null;
   // Check non-owning references at the synchronous snapshot barrier, not only during restore.
   for (const uid of [lightUid, ...quickbar]) {

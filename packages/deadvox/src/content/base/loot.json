@@ -178,6 +178,11 @@
           "weight": 3
         },
         {
+          "count": [1, 2],
+          "item": "rechargeable_aa_battery",
+          "weight": 1
+        },
+        {
           "condition": [0.5, 1],
           "item": "flashlight",
           "weight": 1

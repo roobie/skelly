@@ -12,6 +12,8 @@ export type ReplayActionPayload =
   | { kind: 'furniture.interact'; entityUid: number }
   | { kind: 'furniture.lift'; entityUid: number }
   | { kind: 'furniture.place'; pos: [number, number, number] }
+  | { kind: 'charger.start'; entityUid: number }
+  | { kind: 'charger.stop'; entityUid: number }
   | { kind: 'furniture.turn' }
   | { kind: 'furniture.tip' }
   | { kind: 'zombie.downed'; zombieId: number; way: DownedBodyWay }
@@ -98,6 +100,8 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
       );
     case 'inventory.to-hands':
       return isUid(payload.itemUid) && isTriple(payload.feet);
+    case 'charger.start':
+    case 'charger.stop':
     case 'inventory.search':
     case 'furniture.interact':
     case 'furniture.lift':
@@ -161,6 +165,7 @@ export interface ReplayCommandOwners {
   queue: Pick<HandlingQueue, 'enqueue' | 'cancel'>;
   quickbar: Pick<Quickbar, 'assign'>;
   search: (entityUid: number) => string | undefined;
+  charger?: (entityUid: number, operation: 'start' | 'stop') => string | undefined;
   work: (itemUid: number, operation: WorkOperation) => string | undefined;
   fitAttachment?: (firearmUid: number, slotId: string, attachmentUid: number) => string | undefined;
   removeAttachment?: (firearmUid: number, slotId: string) => string | undefined;
@@ -215,6 +220,9 @@ export const applyReplayActionPayload = (
       return owners.tip();
     case 'zombie.downed':
       return owners.clearDownedBody(payload.zombieId, payload.way);
+    case 'charger.start':
+    case 'charger.stop':
+      return owners.charger?.(payload.entityUid, payload.kind === 'charger.start' ? 'start' : 'stop');
     case 'inventory.search':
       return owners.search(payload.entityUid);
     case 'inventory.work':

@@ -69,8 +69,20 @@ process. Pause on loss of power; completion releases demand at its boundary,
 not at the end of an absence. See `src/core/power.ts`, `PowerWork`, and
 `docs/electricity.md`, "Solar and elapsed time".
 
-Session controls and the appliance panel remain unconnected to the charging
-owner; `src/core/sitePower.ts`, `SitePower`, owns authored building service.
-The core lifecycle boundary is `src/core/batteryChargers.ts`,
-`BatteryChargers.beforeRemove`: callers settle before using the existing
-ruin/drop path so reserved contents are neither lost nor duplicated.
+Authored appliance identity must survive streaming and reload rather than depend
+on whichever mesh is visible. See `src/core/sitePower.ts`, `SitePower`, and
+`src/game/session.ts`, `createSessionPower`. Settlement at the snapshot barrier
+prevents a save from keeping power at one time and cell energy at another; see
+`src/core/saveState.ts`, `snapshotSession`.
+
+Loading and collecting use ordinary handling so the same reach and ownership
+checks apply at admission and completion. Starting and stopping do not occupy
+hands; an opened inventory surface keeps machine diagnosis local without a
+permanent HUD. See `src/ui/chargerPanel.ts`, `chargerPanel`, and
+`src/game/session.ts`, `chargerControl`.
+
+Relocation and destruction settle before ownership changes, including pieces
+that fall when their support moves, so reserved contents are neither lost nor
+duplicated. A relocated charger loses its authored connection rather than carrying
+service with it. See `src/core/furnitureMove.ts`, `FurnitureMover`, and
+`src/core/batteryChargers.ts`, `BatteryChargers.beforeRemove`.
