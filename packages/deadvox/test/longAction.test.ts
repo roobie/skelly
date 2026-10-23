@@ -141,6 +141,37 @@ const startRepair = () => {
 };
 
 describe('core long actions', () => {
+  it('saves a native vehicle-work descriptor and revalidates it before finishing', () => {
+    const { sim } = make();
+    let reachable = true;
+    let finished = 0;
+    sim.actions.vehicleWork = {
+      validate: () => (reachable ? undefined : 'Vehicle service target is unavailable'),
+      finish: () => {
+        finished += 1;
+        return;
+      },
+    };
+    expect(sim.actions.beginVehicleWork('install', 1, 'fixture_site', 7, 10)).toBeUndefined();
+    sim.scheduler.advance(4);
+    const state = sim.actions.snapshotState();
+    expect(state.job).toMatchObject({
+      jobType: 'vehicleWork',
+      kind: 'install',
+      vehicleId: 1,
+      fittingId: 'fixture_site',
+      itemUid: 7,
+    });
+    const restored = new Simulation({ seed: 1 });
+    restored.actions.vehicleWork = sim.actions.vehicleWork;
+    restored.restoreState(sim.snapshotState());
+    restored.actions.restoreState(state);
+    reachable = false;
+    restored.scheduler.advance(20);
+    expect(restored.actions.job).toMatchObject({ jobType: 'vehicleWork', stopped: true });
+    expect(finished).toBe(0);
+  });
+
   it('wait advances the simulation, saves its progress, and stops cleanly', () => {
     const runtime = make();
     const startTime = runtime.sim.time;

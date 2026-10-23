@@ -169,6 +169,34 @@ describe('production vehicle ownership', () => {
     expect(() => createRuntime(floating)).toThrow('Invalid vehicle cargo containment');
   });
 
+  it('atomically removes and reinstalls a serviced part without changing its UID state', () => {
+    const blueprint = registry.vehicleBlueprints.get('pickup')!;
+    const site = blueprint.fittings.find((entry) => entry.cargo)!;
+    const definition = registry.items.get(site.part)!;
+    Object.assign(site, { service: { mount: 'fixture_mount', durationSimSeconds: 1, qualities: {} } });
+    registry.items.set(site.part, { ...definition, vehicle: { ...definition.vehicle!, mount: 'fixture_mount' } });
+    const { inventory, id, cargo, cargoId, light } = fixture();
+    cargo.condition = 0.4;
+    cargo.charges = 7;
+    const output = { kind: 'pile' as const, pos: [0, 0, 0] as [number, number, number] };
+
+    expect(inventory.vehicleTransfer('remove', id, cargoId, cargo.uid, output)).toBeUndefined();
+    expect(inventory.locate(cargo)).toMatchObject({ kind: 'pile' });
+    expect(inventory.vehicles.get(id)!.fittings.some(({ id: fittingId }) => fittingId === cargoId)).toBe(false);
+    expect(inventory.vehicleTransfer('install', id, cargoId, cargo.uid)).toBeUndefined();
+    expect(inventory.locate(cargo)).toMatchObject({ kind: 'vehicle', vehicleId: id, fittingId: cargoId });
+    expect(cargo).toMatchObject({ condition: 0.4, charges: 7 });
+    expect(cargo.pockets?.[0]?.[0]?.item.uid).toBe(light.uid);
+  });
+
+  it('refuses an unavailable removal destination without detaching the fitted UID', () => {
+    const { inventory, id, cargo, cargoId } = fixture();
+    const output = { kind: 'pocket' as const, owner: cargo, pocket: 0 };
+    expect(inventory.vehicleTransfer('remove', id, cargoId, cargo.uid, output)).toBeDefined();
+    expect(inventory.locate(cargo)).toMatchObject({ kind: 'vehicle', vehicleId: id, fittingId: cargoId });
+    expect(inventory.itemByUid(cargo.uid)).toBe(cargo);
+  });
+
   it('repeated testHouse registration after restore preserves saved missing parts and placement identity', async () => {
     const runtime = createRuntime();
     const { fittings } = registry.vehicleBlueprints.get('hatchback')!;

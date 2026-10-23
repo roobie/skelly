@@ -2513,6 +2513,13 @@ their state.
    (skill, tools, materials and time to install, remove and repair, because building and
    repair are crafting); and what it's for (the capabilities it provides). The spike's
    supports are `src/vehicles/model.ts`, `Fitting.supportedBy`.
+**Parked service.** Factory service sites use a content mount identity and content-owned
+quality and duration requirements. `src/core/vehicleWork.ts`, `vehicleWorkHooks`, keeps
+the exact UID with its original owner until `src/core/inventory.ts`, `Inventory.vehicleTransfer`
+preflights and commits the transfer, so a stopped or refused action cannot orphan it.
+`src/core/longAction.ts`, `LongActions.beginVehicleWork`, saves references rather than a
+copied part or an interaction closure.
+
 3. **Condition is not attachment or appearance.** Part types are immutable content;
    fittings own instance state. A fitting places an item on a vehicle without changing
    its identity or condition vocabulary. Cosmetic weathering

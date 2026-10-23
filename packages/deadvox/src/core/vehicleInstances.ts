@@ -10,7 +10,7 @@ import { freezeSnapshot } from './snapshotData.ts';
 import type { Facing } from './templates.ts';
 import { placeFitting } from './vehicleBlueprint.ts';
 
-type VehiclePlacement = Pick<VehicleFittingDef, 'id' | 'at' | 'mirror' | 'supportedBy'>;
+export type VehiclePlacement = Pick<VehicleFittingDef, 'id' | 'at' | 'mirror' | 'supportedBy' | 'service'>;
 interface VehicleBuild<Node> {
   readonly blueprint: string;
   readonly placementKey: string;
@@ -26,10 +26,19 @@ export interface VehicleInstancesState {
 }
 export type VehicleInstance = VehicleBuild<Item>;
 
-export const copyVehiclePlacement = ({ id, at, mirror, supportedBy }: VehiclePlacement): VehiclePlacement => ({
+export const copyVehiclePlacement = ({ id, at, mirror, supportedBy, service }: VehiclePlacement): VehiclePlacement => ({
   id,
   at: [...at],
   ...(mirror === undefined ? {} : { mirror }),
+  ...(service === undefined
+    ? {}
+    : {
+        service: {
+          mount: service.mount,
+          durationSimSeconds: service.durationSimSeconds,
+          qualities: { ...service.qualities },
+        },
+      }),
   supportedBy: [...supportedBy],
 });
 
@@ -43,7 +52,14 @@ const assertPlacements = (values: readonly VehiclePlacement[]): void => {
       value.at.some((v) => !Number.isFinite(v)) ||
       (value.mirror !== undefined && value.mirror !== true) ||
       value.supportedBy.some((id) => !id) ||
-      new Set(value.supportedBy).size !== value.supportedBy.length
+      new Set(value.supportedBy).size !== value.supportedBy.length ||
+      (value.service !== undefined &&
+        (!value.service.mount ||
+          !Number.isFinite(value.service.durationSimSeconds) ||
+          value.service.durationSimSeconds <= 0 ||
+          Object.entries(value.service.qualities).some(
+            ([quality, level]) => !quality || !Number.isInteger(level) || level < 1,
+          )))
     ) {
       throw new Error('Invalid or duplicate vehicle placement');
     }

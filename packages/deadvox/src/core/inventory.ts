@@ -339,6 +339,98 @@ export class Inventory {
     this.entities = entities;
   }
 
+  /**
+   * Moves one exact UID between an ordinary owner and a serviceable vehicle site.  The destination
+   * is completely admitted before either owner changes; see `vehicleTransfer`.
+   */
+  vehicleTransfer(
+    kind: 'install' | 'remove',
+    vehicleId: number,
+    fittingId: string,
+    itemUid: number,
+    output?: Target,
+  ): string | undefined {
+    const vehicle = this.vehicles.get(vehicleId);
+    const site = vehicle?.sites.find(({ id }) => id === fittingId);
+    const fitted = vehicle?.fittings.find(({ id }) => id === fittingId);
+    const item = this.itemByUid(itemUid);
+    if (!vehicle || !site || !site.service || !item) {
+      return 'Vehicle service target is unavailable';
+    }
+    const mount = this.registry.items.get(item.type)?.vehicle?.mount;
+    if (mount !== site.service.mount || item.count !== 1) {
+      return 'Part does not fit this service site';
+    }
+    if (kind === 'install') {
+      const from = this.locate(item);
+      if (!from || from.kind === 'vehicle' || fitted) {
+        return 'Vehicle service source changed';
+      }
+      const build: VehicleInstance = {
+        ...vehicle,
+        origin: [...vehicle.origin],
+        sites: vehicle.sites.map(copyVehiclePlacement),
+        fittings: [
+          ...vehicle.fittings.map((entry) => ({ ...copyVehiclePlacement(entry), item: entry.item })),
+          {
+            ...copyVehiclePlacement(site),
+            item,
+          },
+        ],
+      };
+      try {
+        this.vehicles.replace(this.registry, vehicleId, build);
+      } catch (error) {
+        return error instanceof Error ? error.message : 'Vehicle service refused';
+      }
+      this.remove(from);
+      this.version += 1;
+      return undefined;
+    }
+    if (!fitted || fitted.item !== item || !output) {
+      return 'Vehicle service source changed';
+    }
+    if (vehicle.fittings.some((entry) => entry.supportedBy.includes(fittingId))) {
+      return 'Another part rests on this fitting';
+    }
+    const placement = this.planAdd(item, output);
+    if (!placement.ok) {
+      return placement.reason;
+    }
+    const build: VehicleInstance = {
+      ...vehicle,
+      origin: [...vehicle.origin],
+      sites: vehicle.sites.map(copyVehiclePlacement),
+      fittings: vehicle.fittings
+        .filter((entry) => entry !== fitted)
+        .map((entry) => ({ ...copyVehiclePlacement(entry), item: entry.item })),
+    };
+    try {
+      this.vehicles.replace(this.registry, vehicleId, build);
+    } catch (error) {
+      return error instanceof Error ? error.message : 'Vehicle service refused';
+    }
+    if (placement.merge) {
+      this.mergeStack(placement.merge, item);
+    } else {
+      this.put(item, output, placement.at);
+    }
+    this.version += 1;
+    return undefined;
+  }
+
+  vehicleService(
+    vehicleId: number,
+    fittingId: string,
+    itemUid: number,
+  ): Readonly<{ durationSimSeconds: number; qualities: Readonly<Record<string, number>> }> | undefined {
+    const site = this.vehicles.get(vehicleId)?.sites.find(({ id }) => id === fittingId);
+    const item = this.itemByUid(itemUid);
+    return site?.service && item && this.registry.items.get(item.type)?.vehicle?.mount === site.service.mount
+      ? site.service
+      : undefined;
+  }
+
   registerVehicle(
     spec: Pick<VehicleInstance, 'blueprint' | 'placementKey' | 'origin' | 'facing'>,
     absent: readonly string[] = [],

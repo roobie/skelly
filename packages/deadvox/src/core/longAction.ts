@@ -46,6 +46,17 @@ export type LongJob =
       nextStrike: number;
     }
   | {
+      jobType: 'vehicleWork';
+      kind: 'install' | 'remove';
+      vehicleId: number;
+      fittingId: string;
+      itemUid: number;
+      elapsed: number;
+      duration: number;
+      stopped: boolean;
+      last: number;
+    }
+  | {
       jobType: 'treatment';
       stopped: boolean;
       last: number;
@@ -105,6 +116,11 @@ export interface DoorForcingHooks {
 export interface TreatmentActionHooks {
   validate: (region: BodyRegion, itemUid: number, itemType: string) => string | undefined;
   finish: (region: BodyRegion, itemUid: number, itemType: string) => string | true;
+}
+/** Vehicle work saves only stable owner references; the effect owner retains destination policy. */
+export interface VehicleWorkHooks {
+  validate: (kind: 'install' | 'remove', vehicleId: number, fittingId: string, itemUid: number) => string | undefined;
+  finish: (kind: 'install' | 'remove', vehicleId: number, fittingId: string, itemUid: number) => string | undefined;
 }
 export interface LongActionState {
   job: LongJob | null;
@@ -174,6 +190,24 @@ const validateForcing = (job: Extract<LongJob, { jobType: 'forceDoor' }>): void 
   }
 };
 
+const validateVehicleWork = (job: Extract<LongJob, { jobType: 'vehicleWork' }>): void => {
+  if (
+    (job.kind !== 'install' && job.kind !== 'remove') ||
+    !Number.isSafeInteger(job.vehicleId) ||
+    job.vehicleId < 1 ||
+    !job.fittingId ||
+    !Number.isSafeInteger(job.itemUid) ||
+    job.itemUid < 1 ||
+    !Number.isFinite(job.elapsed) ||
+    job.elapsed < 0 ||
+    !Number.isFinite(job.duration) ||
+    job.duration <= 0 ||
+    job.elapsed > job.duration
+  ) {
+    throw new Error('Invalid vehicle work descriptor');
+  }
+};
+
 const validateTreatment = (job: Extract<LongJob, { jobType: 'treatment' }>): void => {
   if (
     !(BODY_REGIONS.includes(job.region) && Number.isSafeInteger(job.itemUid)) ||
@@ -238,6 +272,9 @@ export const validateLongJob = (job: LongJob | null, time: number): void => {
     case 'treatment':
       validateTreatment(job);
       return;
+    case 'vehicleWork':
+      validateVehicleWork(job);
+      return;
     case 'rest':
     case 'sleep':
       validateRest(job);
@@ -259,6 +296,7 @@ export class LongActions {
   reading: ReadingActionHooks | undefined;
   forcing: DoorForcingHooks | undefined;
   treatment: TreatmentActionHooks | undefined;
+  vehicleWork: VehicleWorkHooks | undefined;
   notice: (text: string) => void = () => undefined;
   /**
    * The hour of day (0–23) the player set to wake at, or undefined to sleep until rested. It is
@@ -290,7 +328,7 @@ export class LongActions {
       this.sim.compression.snap();
       return undefined;
     }
-    const result = this.sim.compressLongAction(jobType);
+    const result = this.sim.compressLongAction(jobType === 'vehicleWork' ? 'craft' : jobType);
     return result.ok ? undefined : result.reason;
   }
   get job(): Readonly<LongJob> | undefined {
@@ -340,6 +378,17 @@ export class LongActions {
         throw new Error(reason ?? 'Missing forcing action owner');
       }
     }
+    if (state.job?.jobType === 'vehicleWork') {
+      const reason = this.vehicleWork?.validate(
+        state.job.kind,
+        state.job.vehicleId,
+        state.job.fittingId,
+        state.job.itemUid,
+      );
+      if (!this.vehicleWork || reason) {
+        throw new Error(reason ?? 'Missing vehicle work owner');
+      }
+    }
     if (state.job?.jobType === 'treatment') {
       const reason = this.treatment?.validate(state.job.region, state.job.itemUid, state.job.itemType);
       if (!this.treatment || reason) {
@@ -354,7 +403,7 @@ export class LongActions {
   private restoreCompressionCap(): void {
     const job = this.current;
     if (job && !job.stopped && job.jobType !== 'forceDoor' && this.sim.compression.active) {
-      this.sim.compressLongAction(job.jobType);
+      this.sim.compressLongAction(job.jobType === 'vehicleWork' ? 'craft' : job.jobType);
     }
   }
   startWait(): string | undefined {
@@ -520,6 +569,43 @@ export class LongActions {
       duration,
       strikeInterval,
       nextStrike: previous?.nextStrike ?? strikeInterval,
+    };
+    return undefined;
+  }
+  beginVehicleWork(
+    kind: 'install' | 'remove',
+    vehicleId: number,
+    fittingId: string,
+    itemUid: number,
+    duration: number,
+  ): string | undefined {
+    const actionRefusal = this.bodyActionRefusal();
+    if (actionRefusal) return actionRefusal;
+    if (!this.vehicleWork) return 'Missing vehicle work owner';
+    if (this.current && !this.current.stopped) return coreMessage(this.sim.registry, 'busy');
+    const reason = this.vehicleWork.validate(kind, vehicleId, fittingId, itemUid);
+    if (reason) return reason;
+    if (!Number.isFinite(duration) || duration <= 0) return 'Invalid vehicle work time';
+    const refusal = this.startTiming('vehicleWork');
+    if (refusal) return refusal;
+    const elapsed =
+      this.current?.jobType === 'vehicleWork' &&
+      this.current.kind === kind &&
+      this.current.vehicleId === vehicleId &&
+      this.current.fittingId === fittingId &&
+      this.current.itemUid === itemUid
+        ? this.current.elapsed
+        : 0;
+    this.current = {
+      jobType: 'vehicleWork',
+      kind,
+      vehicleId,
+      fittingId,
+      itemUid,
+      elapsed,
+      duration,
+      stopped: false,
+      last: this.sim.time,
     };
     return undefined;
   }
@@ -753,7 +839,7 @@ export class LongActions {
       reason === undefined &&
       !job.stopped &&
       RUN_AT_1X_WHILE_COMPRESSION_REFUSED.has(job.jobType) &&
-      this.sim.compressLongAction(job.jobType).ok
+      this.sim.compressLongAction(job.jobType === 'vehicleWork' ? 'craft' : job.jobType).ok
     ) {
       return;
     }
@@ -773,6 +859,10 @@ export class LongActions {
         return this.treatment
           ? this.treatment.validate(job.region, job.itemUid, job.itemType)
           : 'Missing treatment action owner';
+      case 'vehicleWork':
+        return this.vehicleWork
+          ? this.vehicleWork.validate(job.kind, job.vehicleId, job.fittingId, job.itemUid)
+          : 'Missing vehicle work owner';
       default:
         return undefined;
     }
@@ -791,7 +881,7 @@ export class LongActions {
     if (job.jobType === 'craft') {
       return this.craft!.advance(job.workUid, seconds);
     }
-    if (job.jobType === 'reading' || job.jobType === 'treatment') {
+    if (job.jobType === 'reading' || job.jobType === 'treatment' || job.jobType === 'vehicleWork') {
       job.elapsed = Math.min(job.duration, job.elapsed + seconds);
       return job.elapsed === job.duration;
     }
@@ -824,6 +914,11 @@ export class LongActions {
         this.reading!.finish(job.bookUid);
       } else if (job.jobType === 'forceDoor') {
         const reason = this.forcing!.finish(job.entityUid, job.toolUid, job.method);
+        if (reason) {
+          throw new Error(reason);
+        }
+      } else if (job.jobType === 'vehicleWork') {
+        const reason = this.vehicleWork!.finish(job.kind, job.vehicleId, job.fittingId, job.itemUid);
         if (reason) {
           throw new Error(reason);
         }
@@ -870,7 +965,7 @@ export class LongActions {
     const fromTime = job.last;
     const simSecondsElapsed = Math.max(0, time - fromTime);
     const elapsed =
-      job.jobType === 'forceDoor' || job.jobType === 'treatment'
+      job.jobType === 'forceDoor' || job.jobType === 'treatment' || job.jobType === 'vehicleWork'
         ? simSecondsElapsed
         : simSecondsElapsed * this.sim.clock.ratio;
     job.last = time;
