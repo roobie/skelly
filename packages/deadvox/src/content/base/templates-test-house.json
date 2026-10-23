@@ -27,10 +27,10 @@
           "s.tttttt..a.pppppp.s...",
           "s.........a.......Ws...",
           "s.........a.......Ws...",
-          "s.........a........s...",
+          "sL........aL.......s...",
           "............H......s...",
           "...................s...",
-          "s.........a........s...",
+          "sX........a........s...",
           "s....ppp..a....ffffs...",
           "s....ppp..a....ffffsss.",
           "s.FF......a....ffffsss.",
@@ -44,7 +44,7 @@
           "b.tttttt..a..ppppp.b...",
           "b.........a.......Wb...",
           "b.........a.......Wb...",
-          "b.........a........b...",
+          "bL........aL.......b...",
           "............H......b...",
           "...................b...",
           "b.........a........b...",
@@ -61,7 +61,7 @@
           "b.........a...pppp.b...",
           "b.........a.......Wb...",
           "b.........a.......Wb...",
-          "b.........a........b...",
+          "bL........aL.......b...",
           ".......................",
           ".......................",
           "b.........a........b...",
@@ -221,10 +221,10 @@
             "SRSSSSSSRRSRSSSSSSRSRRR",
             "SRRRRRRRRRSRRRRRRRSSRRR",
             "SRRRRRRRRRSRRRRRRRSSRRR",
-            "SRRRRRRRRRSRRRRRRRRSRRR",
+            "SSRRRRRRRRSSRRRRRRRSRRR",
             "RRRRRRRRRRRRSRRRRRRSRRR",
             "RRRRRRRRRRRRRRRRRRRSRRR",
-            "SRRRRRRRRRSRRRRRRRRSRRR",
+            "SSRRRRRRRRSRRRRRRRRSRRR",
             "SRRRRSSSRRSRRRRSSSSSRRR",
             "SRRRRSSSRRSRRRRSSSSSSSR",
             "SRSSRRRRRRSRRRRSSSSSSSR",
@@ -238,7 +238,7 @@
             "SRSSSSSSRRSRRSSSSSRSRRR",
             "SRRRRRRRRRSRRRRRRRSSRRR",
             "SRRRRRRRRRSRRRRRRRSSRRR",
-            "SRRRRRRRRRSRRRRRRRRSRRR",
+            "SSRRRRRRRRSSRRRRRRRSRRR",
             "RRRRRRRRRRRRSRRRRRRSRRR",
             "RRRRRRRRRRRRRRRRRRRSRRR",
             "SRRRRRRRRRSRRRRRRRRSRRR",
@@ -255,7 +255,7 @@
             "SRRRRRRRRRSRRRSSSSRSRRR",
             "SRRRRRRRRRSRRRRRRRSSRRR",
             "SRRRRRRRRRSRRRRRRRSSRRR",
-            "SRRRRRRRRRSRRRRRRRRSRRR",
+            "SSRRRRRRRRSSRRRRRRRSRRR",
             "RRRRRRRRRRRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRRRRRRRRRRR",
             "SRRRRRRRRRSRRRRRRRRSRRR",
@@ -393,6 +393,7 @@
           "furniture": "kitchen_cupboard"
         },
         "F": {
+          "fixed": true,
           "furniture": "fridge"
         },
         "G": {
@@ -401,10 +402,18 @@
         "H": {
           "furniture": "chair"
         },
+        "L": {
+          "fixed": true,
+          "furniture": "electric_lamp"
+        },
         "R": "siding_red",
         "W": {
           "facing": "w",
           "furniture": "wardrobe"
+        },
+        "X": {
+          "fixed": true,
+          "furniture": "battery_charger"
         },
         "a": "plaster",
         "b": "brick",
@@ -420,13 +429,14 @@
     {
       "id": "test_house_shed",
       "layers": [
-        ["GGGGGG", "GGGGGG", "GGGGGG", "GGGGGG", "GGGGGG"],
-        ["BBBBBB", "B....B", "B....B", "B....B", "BB..BB"],
-        ["BBBBBB", "B....B", "B....B", "B....B", "BB..BB"],
+        ["pppppp", "pppppp", "pppppp", "pppppp", "pppppp"],
+        ["BBBBBB", "BUUVJB", "BUU..B", "B....B", "BB..BB"],
+        ["BBBBBB", "BUUVJB", "BUU..B", "B....B", "BB..BB"],
         ["BBBBBB", "B....B", "B....B", "B....B", "BB..BB"],
         ["BBBBBB", "B....B", "B....B", "B....B", "BB..BB"],
         ["BBBBBB", "B....B", "B....B", "B....B", "BBBBBB"],
-        ["gggggg", "gggggg", "gggggg", "gggggg", "gggggg"]
+        ["gggggg", "gggggg", "gggggg", "gggggg", "gggggg"],
+        ["......", ".SSSS.", ".SSSS.", "......", "......"]
       ],
       "lootContext": {
         "tier": "Tier1",
@@ -434,24 +444,39 @@
       },
       "ownership": {
         "layers": [
-          ["......", "......", "......", "......", "......"],
-          ["SSSSSS", "SRRRRS", "SRRRRS", "SRRRRS", "SSRRSS"],
-          ["SSSSSS", "SRRRRS", "SRRRRS", "SRRRRS", "SSRRSS"],
+          ["SSSSSS", "SSSSSS", "SSSSSS", "SSSSSS", "SSSSSS"],
+          ["SSSSSS", "SSSSSS", "SSSRRS", "SRRRRS", "SSRRSS"],
+          ["SSSSSS", "SSSSSS", "SSSRRS", "SRRRRS", "SSRRSS"],
           ["SSSSSS", "SRRRRS", "SRRRRS", "SRRRRS", "SSRRSS"],
           ["SSSSSS", "SRRRRS", "SRRRRS", "SRRRRS", "SSRRSS"],
           ["SSSSSS", "SRRRRS", "SRRRRS", "SRRRRS", "SSSSSS"],
-          ["SSSSSS", "SSSSSS", "SSSSSS", "SSSSSS", "SSSSSS"]
+          ["SSSSSS", "SSSSSS", "SSSSSS", "SSSSSS", "SSSSSS"],
+          ["RRRRRR", "RSSSSR", "RSSSSR", "RRRRRR", "RRRRRR"]
         ]
       },
       "palette": {
         ".": "air",
         "B": "siding_blue",
-        "G": {
-          "ground": true
+        "J": {
+          "fixed": true,
+          "furniture": "main_breaker"
         },
-        "g": "galvanized"
+        "S": {
+          "fixed": true,
+          "furniture": "solar_panel"
+        },
+        "U": {
+          "fixed": true,
+          "furniture": "fuel_generator"
+        },
+        "V": {
+          "fixed": true,
+          "furniture": "storage_battery"
+        },
+        "g": "galvanized",
+        "p": "planks"
       },
-      "size": [6, 7, 5]
+      "size": [6, 8, 5]
     },
     {
       "id": "test_house_garden_wall",

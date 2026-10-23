@@ -4,7 +4,7 @@ read_if:
   - you're integrating appliances with power catch-up or changing electrical content
   - you're checking the reasons for electricity priorities, storage losses or restart behaviour
   - you're designing better solar panels and panel damage
-  - you're wiring authored building devices into session power
+  - you're wiring authored building devices into session power or changing player power controls
 ---
 
 # Electricity
@@ -86,17 +86,29 @@ splitting a span at a tick cannot change the result. See `src/core/power.ts`,
 
 ## Authored building wiring
 
-A lab is one electrical grid because its floors belong to one facility, not separate
-power puzzles. Build from finished placements rather than streamed entities so a
-remote floor draws power before the player visits it. Furniture declares its device,
-initial fuel and enabled state; broken equipment remains connected but disabled.
-See `src/core/sitePower.ts`, `placedPowerDevices` and `SitePower`, and
-`src/core/schema.ts`, `FurnitureSchema`.
+An authored facility is one electrical grid because its floors belong to one place,
+not separate power puzzles. Build from finished placements rather than streamed
+entities so a remote floor draws power before the player visits it. See
+`src/core/sitePower.ts`, `placedPowerDevices` and `SitePower`, and
+`src/game/worldSetup.ts`, `createWorldSetup`.
 
-Authored fixed wiring uses stable local link identities, not player inventory cables.
-It needs no routing or refuelling interaction. Session scheduler time drives fuel and
-blackouts, and the world snapshot keeps the network so Continue cannot replenish it.
-See `src/game/session.ts`, `createSession`, and `src/core/saveState.ts`, `snapshotSession`.
+Generator control and a main breaker serve different purposes: stopping a generator
+saves fuel without disabling independent solar and storage; opening the breaker
+isolates consumers even while those sources remain available. Keep storage on the
+supply side so disconnecting the house does not prevent charging. Switches interrupt
+connectivity rather than disabling consumers, preserving each appliance's own state.
+See `src/core/power.ts`, `PowerNetwork.setEnabled`, and `src/core/sitePower.ts`, `SitePower`.
+
+Player controls use ordinary reach and use-admission checks, not debug privileges,
+because cutting supply is an ordinary appliance interaction. Explicit enabled-state
+commands preserve replay intent instead of toggling whatever state a replay finds.
+See `src/game/session.ts`, `powerControl`, and `src/game/replayCommands.ts`,
+`applyReplayActionPayload`.
+
+Authored fixed wiring uses stable local link identities, not player inventory cables;
+routing and refuelling remain separate interactions to design. Session time drives
+fuel and blackouts, and the world snapshot keeps the network so Continue cannot
+replenish it. See `src/core/saveState.ts`, `snapshotSession`.
 
 ## Links and state
 

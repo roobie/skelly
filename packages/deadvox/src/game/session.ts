@@ -2048,6 +2048,19 @@ export const createSession = (options: SessionOptions) => {
       return scenarioRunWon(scenarioRun);
     },
     power,
+    powerControl: (uid: number, enabled: boolean): string | undefined => {
+      const entity = entities.byUid(uid);
+      const control = entity && power?.control(entity);
+      if (!(entity && control && power && inventory.canReachEntity(entity))) {
+        return coreMessage(registry, 'tooFar');
+      }
+      const refusal = entities.useRefusal(entity) ?? sim.body.actionRefusal;
+      if (refusal) {
+        return refusal;
+      }
+      power.network.setEnabled(simTimestamp(sim.time), control.id, enabled);
+      return undefined;
+    },
     chargerControl: (uid: number, operation: 'start' | 'stop'): string | undefined => {
       const entity = entities.byUid(uid);
       const id = entity && power?.chargerId(entity);
