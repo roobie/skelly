@@ -7,6 +7,8 @@ import { type PowerEnvironment, PowerNetwork, type PowerState, type PowerWork } 
 import { exactUnits, POWER_UNITS } from './powerContent.ts';
 import type { SimTimestamp } from './time.ts';
 
+type StartResult = { ok: true } | { ok: false; reason: string };
+
 export interface ChargerEndpoint {
   readonly consumerId: string;
   readonly entityUid: number;
@@ -129,7 +131,7 @@ export class BatteryChargers implements PowerWork {
   }
 
   /** Loading uses the ordinary move admission, including reach and stack splitting. */
-  start(at: SimTimestamp, consumerId: string, battery: Item): Plan {
+  start(at: SimTimestamp, consumerId: string, battery: Item): StartResult {
     this.network.advance(at);
     const entity = this.entity(consumerId);
     if (!entity || entity.carried || !this.inventory.canReachEntity(entity)) {
@@ -147,9 +149,9 @@ export class BatteryChargers implements PowerWork {
     if (!Number.isSafeInteger(energy) || energy < 0 || energy >= capacity) {
       return { ok: false, reason: coreMessage(this.inventory.registry, 'wrongBattery') };
     }
-    const plan: Plan =
+    const plan: StartResult =
       this.battery(entity) === battery
-        ? { ok: true, time: 0 }
+        ? { ok: true }
         : this.inventory.move(battery, { kind: 'furniture', entity, pocket: spec.pocket }, 1);
     if (!plan.ok) {
       return plan;
@@ -159,7 +161,7 @@ export class BatteryChargers implements PowerWork {
     owned.charges = undefined;
     entity.charging = { batteryUid: owned.uid, atGameMilliseconds: this.atGameMilliseconds };
     this.network.advance(at);
-    return plan;
+    return { ok: true };
   }
 
   stop(at: SimTimestamp, consumerId: string): boolean {
