@@ -56,6 +56,8 @@ export const reloadTarget = (
     readonly releaseLoad?: (uid: number, time: number) => void;
   },
   magazines: ReloadOwner,
+  /** Why a wielded magazine can't be racked or have a magazine removed. */
+  notHoldingGun: string,
 ): ReloadTarget | undefined => {
   const gun = firearms.reloadableUid();
   if (gun !== undefined) {
@@ -80,8 +82,8 @@ export const reloadTarget = (
         uid: magazine,
         oneAction: false,
         load: (time) => magazines.loadNext(magazine, time),
-        rack: () => 'Only a held firearm racks',
-        remove: () => 'Only a held firearm has a magazine to remove',
+        rack: () => notHoldingGun,
+        remove: () => notHoldingGun,
         cancelLoad: () => magazines.cancelLoad(magazine),
       };
 };

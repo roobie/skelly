@@ -1,3 +1,4 @@
+import { actionText } from '../core/actionText.ts';
 import type { BlockEntity, DoorOperation } from '../core/blockEntities.ts';
 import { dominantSide } from '../core/character.ts';
 import type { Vec3 } from '../core/coords.ts';
@@ -65,7 +66,7 @@ export const registerDoorAction = ({
     }
     const entity = entities.byUid(uid);
     if (!entity) {
-      return 'The door is no longer there';
+      return actionText(inventory.registry).common.gone;
     }
     const reserved = entities.useRefusal(entity);
     if (reserved) {

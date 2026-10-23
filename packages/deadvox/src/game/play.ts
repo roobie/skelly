@@ -2,6 +2,7 @@
 // The simulation core runs the clock, the player's physics, needs and the handling
 // queue; Esc pauses it. When health runs out, the death screen offers a new world.
 
+import { actionText, fillParts, fillText } from '../core/actionText.ts';
 import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import type { BodyRegion } from '../core/body.ts';
@@ -38,7 +39,7 @@ import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import { firearmsCombatTuning } from '../core/skillTraining.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
 import { soundVariantKey } from '../core/soundSynth.ts';
-import { fillText } from '../core/textTemplate.ts';
+import { fillText as fillScreenText } from '../core/textTemplate.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, realTimestamp } from '../core/time.ts';
 import { type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';
 import { sightedFirearmModel } from '../render/firearmSight.ts';
@@ -503,22 +504,23 @@ const isTimedLongJob = (job: Readonly<LongJob>): job is TimedLongJob =>
   job.jobType === 'vehicleWork';
 
 const timedActionLabel = (job: TimedLongJob, inventory: Inventory): string => {
+  const labels = actionText(inventory.registry).longActions;
   switch (job.jobType) {
     case 'reading': {
       const book = inventory.itemByUid(job.bookUid);
-      return book ? `Reading ${inventory.name(book)}` : 'Reading';
+      return book ? fillText(labels.reading, { item: inventory.name(book) }) : labels.readingUnnamed;
     }
     case 'forceDoor':
-      return 'Forcing padlock';
+      return labels.forcingPadlock;
     case 'treatment': {
       const item = inventory.itemByUid(job.itemUid);
-      return item ? `Treating ${inventory.name(item)}` : 'Treating wound';
+      return item ? fillText(labels.treating, { item: inventory.name(item) }) : labels.treatingUnnamed;
     }
     case 'vehicleWork': {
       const text = screenTextOf(inventory.registry).vehicle;
       const item = inventory.itemByUid(job.itemUid);
       const part = item ? inventory.name(item) : '';
-      return fillText(job.kind === 'remove' ? text.removing : text.installing, { part });
+      return fillScreenText(job.kind === 'remove' ? text.removing : text.installing, { part });
     }
     default: {
       const unhandled: never = job;
@@ -564,7 +566,11 @@ const handlingPresentationFor = ({
   if (throwCharge) {
     return { jobs: [], throwCharge };
   }
-  const inactive = { ...queue, cancelLabel: queue.cancelLabel ?? html`Cancel (${keyCap('handling.stop')})` };
+  const { cancel } = actionText(inventory.registry).hints;
+  const inactive = {
+    ...queue,
+    cancelLabel: queue.cancelLabel ?? html`${fillParts(cancel, { key: keyCap('handling.stop') })}`,
+  };
   if (!job || job.stopped || !isTimedLongJob(job)) {
     return inactive;
   }
@@ -676,6 +682,8 @@ export const startPlay = (
 ): { enter: () => void } => {
   assertPracticeIsolation(options);
   const { config, registry, streamer, renderer, camera, meshes } = engine;
+  const lines = actionText(registry);
+  const restRefusals = { rest: lines.play.restRefused, sleep: lines.play.sleepRefused };
   const autosave = autosaveTuning(registry);
   const inputTarget = renderer?.domElement ?? $('view');
   const { owner: worldLoading, draw: drawWorldLoading } = playLoadingFor(engine, options);
@@ -722,7 +730,7 @@ export const startPlay = (
   let interactionPressTarget: InteractionTarget | undefined;
   /** The vehicle opened by interacting with it; presentation only, so it is neither saved nor replayed. */
   let openedVehicleId: number | undefined;
-  const furnitureActionSelection = new FurnitureActionSelection();
+  const furnitureActionSelection = new FurnitureActionSelection(actionText(registry).itemActions.openCan);
   const furnitureActions = (): ItemAction[] => [
     { id: 'push', label: 'Push' },
     { id: 'drag', label: 'Drag' },
@@ -1228,7 +1236,7 @@ export const startPlay = (
     }
     const reason = rest.toggle(kind, entity.uid);
     if (reason) {
-      showRefusal(`Can't ${kind}: ${reason}`, sim.time);
+      showRefusal(fillText(restRefusals[kind], { reason }), sim.time);
     }
   };
 
@@ -1253,7 +1261,8 @@ export const startPlay = (
       showRefusal(option.plan.reason, sim.time);
       return;
     }
-    queue.enqueueAction(DOOR_ACTION, `${option.label} the ${nameOf(entity)}`, option.plan.time, {
+    const label = fillText(lines.doors.operate, { action: option.label, door: nameOf(entity) });
+    queue.enqueueAction(DOOR_ACTION, label, option.plan.time, {
       entityUid: entity.uid,
       closing: option.operation === 'close',
     });
@@ -1274,7 +1283,8 @@ export const startPlay = (
       showRefusal(plan.reason, sim.time);
       return;
     }
-    queue.enqueueAction(DOOR_ACTION, `${operation === 'lock' ? 'Lock' : 'Unlock'} the ${nameOf(entity)}`, plan.time, {
+    const label = fillText(operation === 'lock' ? lines.doors.lock : lines.doors.unlock, { door: nameOf(entity) });
+    queue.enqueueAction(DOOR_ACTION, label, plan.time, {
       entityUid: entity.uid,
       locked: operation === 'lock',
     });
@@ -1287,7 +1297,7 @@ export const startPlay = (
       return plan.reason;
     }
     const label = barring
-      ? fillText(screenText.interaction.barDoor, { name: nameOf(entity) })
+      ? fillScreenText(screenText.interaction.barDoor, { name: nameOf(entity) })
       : screenText.interaction.liftBar;
     queue.enqueueAction(DOOR_ACTION, label, plan.time, { entityUid: entity.uid, barring });
     return undefined;
@@ -1769,7 +1779,7 @@ export const startPlay = (
     queue.cancel();
     const result = sim.compress();
     if (!result.ok) {
-      showRefusal(`Can't rest: ${result.reason}`, sim.time);
+      showRefusal(fillText(lines.play.restRefused, { reason: result.reason }), sim.time);
     }
   };
 
@@ -1825,7 +1835,7 @@ export const startPlay = (
     }
     const reason = actOnWork(workUid, 'continue');
     if (reason) {
-      showRefusal(`Can't continue: ${reason}`, sim.time);
+      showRefusal(fillText(lines.play.continueRefused, { reason }), sim.time);
     }
     return true;
   };
@@ -1843,7 +1853,7 @@ export const startPlay = (
     if (rest.action || continueActionResumesJob(sim.actions.job?.jobType)) {
       const reason = rest.action ? rest.resume() : sim.actions.resume();
       if (reason) {
-        showRefusal(`Can't continue: ${reason}`, sim.time);
+        showRefusal(fillText(lines.play.continueRefused, { reason }), sim.time);
       }
     } else {
       compress();
@@ -1882,7 +1892,7 @@ export const startPlay = (
     search: (uid) => {
       const entity = entities.byUid(uid);
       if (!entity) {
-        return 'The container is no longer available';
+        return lines.common.gone;
       }
       playtestObserver?.beginSearch(entity, nameOf(entity));
       return search(entity);
@@ -1895,7 +1905,7 @@ export const startPlay = (
     loadBattery: (lightUid, batteryUid) => survival.loadBattery(lightUid, batteryUid),
     toHands: (uid, feetPosition) => {
       const item = inventory.itemByUid(uid);
-      return item ? toHands(inventory, queue, item, feetPosition) : 'The item is no longer available';
+      return item ? toHands(inventory, queue, item, feetPosition) : lines.common.gone;
     },
     pickup: pickupGroundItem,
     interact: interactFurniture,
@@ -2004,7 +2014,7 @@ export const startPlay = (
     }
     const item = quickbar.resolve(slot, inventory);
     if (!item) {
-      showRefusal(`Quickbar ${slot + 1} is empty`, sim.time);
+      showRefusal(fillText(lines.play.quickbarEmpty, { slot: slot + 1 }), sim.time);
       return;
     }
     if (held) {
@@ -2089,7 +2099,7 @@ export const startPlay = (
       }
       return reason === undefined;
     };
-    const target = reloadTarget(firearms, magazines);
+    const target = reloadTarget(firearms, magazines, lines.play.notHoldingGun);
     if (!target) {
       return;
     }
@@ -2552,7 +2562,8 @@ export const startPlay = (
     }
     const operation = entity.lock?.locked ? 'unlock' : 'lock';
     const plan = doorPlan(inventory, entity, operation, [keyLock]);
-    return `${operation === 'lock' ? 'Lock' : 'Unlock'}${plan.ok ? '' : ` — ${plan.reason}`}`;
+    const hint = operation === 'lock' ? lines.doors.lockHint : lines.doors.unlockHint;
+    return plan.ok ? hint : fillText(lines.doors.refusedHint, { hint, reason: plan.reason });
   };
 
   const barHint = (entity: BlockEntity): string | undefined => {
@@ -2562,7 +2573,7 @@ export const startPlay = (
     const plan = doorPlan(inventory, entity, 'bar');
     return plan.ok
       ? screenText.interaction.bar
-      : fillText(screenText.interaction.blocked, { action: screenText.interaction.bar, reason: plan.reason });
+      : fillScreenText(screenText.interaction.blocked, { action: screenText.interaction.bar, reason: plan.reason });
   };
 
   const pryHint = (entity: BlockEntity): string | undefined => {
@@ -2570,11 +2581,12 @@ export const startPlay = (
       return undefined;
     }
     const plan = pryPlan(inventory, entity, undefined, session.character);
+    const { doors } = lines;
     if (plan.ok) {
-      return `with the ${inventory.name(plan.tool).toLowerCase()}`;
+      return fillText(doors.pryWith, { tool: inventory.name(plan.tool).toLowerCase() });
     }
-    const tools = plan.toolNames.map((name) => name.toLowerCase()).join(' or ') || 'a suitable tool';
-    return `with ${tools} — ${plan.reason}`;
+    const tools = plan.toolNames.map((name) => name.toLowerCase()).join(doors.toolSeparator) || doors.anyTool;
+    return fillText(doors.pryWithAny, { tools, reason: plan.reason });
   };
 
   const downedBodyHint = (id: EntityId): HintText => {
@@ -2583,14 +2595,18 @@ export const startPlay = (
       return finish.reason;
     }
     const dismember = session.downedBodyPlan(id, 'dismember');
-    const reason = dismember.ok ? '' : ` — ${dismember.reason.toLowerCase()}`;
-    return html`${keyCap('world.interact')}: ${finish.label.toLowerCase()} · ${keyCap('world.interact')} (hold): dismember${reason}`;
+    const values = { key: keyCap('world.interact'), finish: finish.label.toLowerCase() };
+    return html`${
+      dismember.ok
+        ? fillParts(lines.hints.downedBody, values)
+        : fillParts(lines.hints.downedBodyRefused, { ...values, reason: dismember.reason.toLowerCase() })
+    }`;
   };
 
   /** Describes the displayed action for the selected target. */
   const useText = (entity: BlockEntity): HintText => {
     if (session.isObjective(entity)) {
-      return html`${keyCap('world.interact')}: activate ${nameOf(entity)}`;
+      return html`${fillParts(lines.hints.activate, { key: keyCap('world.interact'), name: nameOf(entity) })}`;
     }
     const door = entities.defOf(entity).door ? doorOptions(inventory, entity)[0] : undefined;
     const prying = pryHint(entity);
@@ -2701,7 +2717,7 @@ export const startPlay = (
   function pickupGroundItem(uid: number, mode: 'pocket' | 'wield', feetPosition: Vec3): string | undefined {
     const item = inventory.itemByUid(uid);
     if (!item) {
-      return 'The item is no longer available';
+      return lines.common.gone;
     }
     return mode === 'wield' ? toHands(inventory, queue, item, feetPosition) : pocketGroundItem(inventory, queue, item);
   }
@@ -2709,7 +2725,7 @@ export const startPlay = (
   function interactFurniture(uid: number, alternatives?: true): string | undefined {
     const entity = entities.byUid(uid);
     if (!entity) {
-      return 'The target is no longer available';
+      return lines.common.gone;
     }
     if (session.isObjective(entity)) {
       return session.activateGoal(entity);
@@ -2786,7 +2802,7 @@ export const startPlay = (
     const drop = dropTarget(inventory, item, feet());
     const result = drop.plan.ok ? inventory.move(item, drop.target) : drop.plan;
     if (!result.ok) {
-      showRefusal(`Can't drop it: ${result.reason}`, sim.time);
+      showRefusal(fillText(lines.play.dropRefused, { reason: result.reason }), sim.time);
       return;
     }
     if (session.throwCharge.itemUid === item.uid) {
@@ -2805,7 +2821,7 @@ export const startPlay = (
     if (begun.kind === 'refused') {
       showRefusal(begun.reason, sim.time);
     } else if (begun.kind === 'waiting') {
-      showNotice('Waiting for handling to finish');
+      showNotice(lines.play.waitingForHandling);
     }
   }
 
@@ -2875,7 +2891,7 @@ export const startPlay = (
       return;
     }
     if (!charge.start(sim.time)) {
-      showRefusal('The item left your hand before the throw began', sim.time);
+      showRefusal(lines.play.throwLostItem, sim.time);
       return;
     }
     showNotice('');
@@ -3041,7 +3057,7 @@ export const startPlay = (
       sim.body.tuning.staminaRegenDelaySimSeconds,
     );
     if (result === 'too-tired') {
-      showRefusal('You are too tired to swing', sim.time);
+      showRefusal(lines.melee.tooTired, sim.time);
     }
   };
 
@@ -3091,7 +3107,7 @@ export const startPlay = (
     if (!(queue.busy || firearms.busy)) {
       return false;
     }
-    showRefusal('Already handling something', sim.time);
+    showRefusal(lines.common.busy, sim.time);
     return true;
   };
 
@@ -3117,21 +3133,21 @@ export const startPlay = (
     if (!isFirearmReady(item.uid) || session.sprinting || fireWeapon(item, sim.time)) {
       return;
     }
-    showRefusal(firearms.fireReason(item.uid) ?? 'Firearm is not ready', sim.time);
+    showRefusal(firearms.fireReason(item.uid) ?? lines.play.gunNotReady, sim.time);
   };
   const togglePin = (item: Item): void => {
     const state = session.fuses.togglePin(item);
     if (state === 'pulled') {
-      showNotice('Pin pulled');
+      showNotice(lines.play.pinPulled);
     } else if (state === 'in') {
-      showNotice('Pin back in');
+      showNotice(lines.play.pinIn);
     } else if (state === 'burning') {
-      showRefusal('The fuse is already burning', sim.time);
+      showRefusal(lines.play.fuseBurning, sim.time);
     }
   };
   const openHeldCan = (hand: HandSide): void => {
     const target = openingTargetForHand(inventory, hand);
-    refusalReason(target ? unpacking.activate(target) : 'I have no can to open');
+    refusalReason(target ? unpacking.activate(target) : lines.unpacking.noCan);
   };
   const sharpenAtWheel = (hand: HandSide): boolean => {
     const held = inventory.hands[hand];
@@ -3186,7 +3202,7 @@ export const startPlay = (
         refusalReason(
           survival.selectedItemAction(action.item)?.magazine === 'strip'
             ? magazines.strip(action.item.uid, sim.time, replaySample?.intent.useDominantHeld ?? input.dominantUseHeld)
-            : 'Magazine is empty',
+            : lines.magazine.empty,
         );
         return;
       case 'fists':
@@ -3344,7 +3360,10 @@ export const startPlay = (
       const lift = doorPlan(inventory, entity, 'unbar');
       const action = lift.ok
         ? screenText.interaction.liftBar
-        : fillText(screenText.interaction.blocked, { action: screenText.interaction.liftBar, reason: lift.reason });
+        : fillScreenText(screenText.interaction.blocked, {
+            action: screenText.interaction.liftBar,
+            reason: lift.reason,
+          });
       return html`${useText(entity)} · ${fillHint(screenText.interaction.hold, { key, action })}`;
     }
     if (slidableFurniture(inventory, entity, s)) {
@@ -3365,13 +3384,15 @@ export const startPlay = (
     const key = keyCap('world.interact');
     if (carry) {
       return playCarryText(
-        'refusal' in carry.spot ? carry.spot.refusal : html`${key}: set down ${nameOf(carry.entity)}`,
+        'refusal' in carry.spot
+          ? carry.spot.refusal
+          : html`${fillParts(lines.hints.setDown, { key, name: nameOf(carry.entity) })}`,
         screenText.interaction,
       );
     }
     switch (target?.kind) {
       case 'item':
-        return html`${key}: pocket ${inventory.name(target.item)} · ${key} (hold): wield`;
+        return html`${fillParts(lines.hints.groundItem, { key, item: inventory.name(target.item) })}`;
       case 'furniture':
         return powerControlHint(target.entity) ?? furnitureInteractionHint(target.entity);
       case 'body':

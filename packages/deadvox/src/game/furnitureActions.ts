@@ -3,6 +3,10 @@ import { type ItemAction, ItemActionSelection } from './itemActions.ts';
 export class FurnitureActionSelection extends ItemActionSelection {
   private uid: number | undefined;
 
+  constructor(openCanLabel: string) {
+    super(openCanLabel);
+  }
+
   open(entity: { uid: number }, actions: readonly ItemAction[]): void {
     this.uid = entity.uid;
     this.forItem(entity, actions);
