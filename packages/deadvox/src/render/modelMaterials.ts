@@ -1,4 +1,4 @@
-import { type MaterialDef, MaterialReferenceSchema } from '@skelly/thing-core/materials';
+import { type MaterialDef, MaterialReferenceSchema, surfaceOf } from '@skelly/thing-core/materials';
 import {
   BufferGeometry,
   DataTexture,
@@ -45,7 +45,7 @@ const applyMaterial = (loaded: Material, table: Readonly<Record<string, Material
   if (!(definition && loaded instanceof MeshStandardMaterial)) {
     throw new Error(`Unsupported model material ${materialId}`);
   }
-  const { sheen } = definition.finish;
+  const { opacity, transparent, depthWrite, sheen } = surfaceOf(definition.finish);
   const material = sheen ? sheenable(loaded) : loaded;
   if (sheen && material instanceof MeshPhysicalMaterial) {
     material.sheen = 1;
@@ -60,11 +60,9 @@ const applyMaterial = (loaded: Material, table: Readonly<Record<string, Material
   );
   material.metalness = definition.finish.metallic;
   material.roughness = definition.finish.roughness;
-  const opacity = definition.finish.opacity ?? 1;
   material.opacity = opacity;
-  material.transparent = opacity < 1;
-  // A see-through surface must not hide what lies behind it from later draws.
-  material.depthWrite = opacity >= 1;
+  material.transparent = transparent;
+  material.depthWrite = depthWrite;
   return material;
 };
 

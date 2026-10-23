@@ -1,12 +1,20 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import { validate } from '@skelly/engine/assembly/validate.ts';
+import { MAIN_AXIS } from '@skelly/engine/foundation/conventions.ts';
 import type { Vec3 } from '@skelly/engine/foundation/math.ts';
-import type { Mesh, MeshStandardMaterial } from 'three';
+import type { Solid } from '@skelly/engine/shapes/solid.ts';
+import type { Palette } from '@skelly/thing-export/exportTypes.ts';
+import { buildLayers as buildToolLayers } from '@skelly/tool-ui/scene';
+import { threeRuntime } from '@skelly/tool-ui/three-runtime';
+import type { Mesh, MeshPhysicalMaterial, MeshStandardMaterial } from 'three';
 import { describe, expect, it } from 'vitest';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
+import { GUN_PALETTE } from '../src/gun/palette.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
+import { GUN_UNITS } from '../src/gun/units.ts';
 import { buildLayers, disposeGroup } from '../src/viewer/scene.ts';
 import { loadFixture } from './helpers.ts';
 
@@ -73,6 +81,52 @@ describe('viewer geometry', () => {
         disposeGroup(group);
       }
     }
+  });
+
+  it('draws a see-through, sheened finish as glass and keeps diagnostic colouring opaque', () => {
+    const palette = {
+      ...GUN_PALETTE,
+      materials: {
+        ...GUN_PALETTE.materials,
+        'fixture-glass': {
+          colour: [0.2, 0.2, 0.2],
+          finish: { metallic: 0, roughness: 0.1, opacity: 0.5, sheen: { colour: [1, 0.5, 0], roughness: 0.4 } },
+        },
+      },
+    } satisfies Palette;
+    const pane: Solid = {
+      id: 'pane',
+      kind: 'box',
+      box: { center: [0, 0, 0], half: [1, 1, 1] },
+      material: 'fixture-glass',
+    };
+    const family = { family: 'pane', solids: [pane], ports: [], keepOuts: [], axes: [] };
+    const resolved = resolve(
+      { name: 'glass-pane', root: 'pane', parts: { pane: { family: 'pane' } }, connections: [] },
+      {
+        name: 'glass-pane',
+        families: { pane: { name: 'pane', params: {}, build: () => family } },
+        axisRules: [],
+        units: GUN_UNITS,
+      },
+    );
+    const materialIn = (mode: 'finish' | 'role') => {
+      const layers = buildToolLayers({ ok: true, resolved, issues: [] }, [], palette, threeRuntime, MAIN_AXIS, mode);
+      const material = (layers.solids.children[0] as Mesh).material as MeshPhysicalMaterial;
+      const { type, opacity, transparent, depthWrite, sheen } = material;
+      for (const group of Object.values(layers)) {
+        disposeGroup(group);
+      }
+      return { type, opacity, transparent, depthWrite, sheen };
+    };
+    expect(materialIn('finish')).toEqual({
+      type: 'MeshPhysicalMaterial',
+      opacity: 0.5,
+      transparent: true,
+      depthWrite: false,
+      sheen: 1,
+    });
+    expect(materialIn('role')).toMatchObject({ type: 'MeshStandardMaterial', opacity: 1, transparent: false });
   });
 
   it('renders a view-only pump action-open pose by moving the carrier and forend together', () => {

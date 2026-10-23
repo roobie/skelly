@@ -31,6 +31,15 @@ export const MaterialSchema = strictObject({
 
 export const MATERIALS = parse(record(string(), MaterialSchema), content);
 export type MaterialDef = InferOutput<typeof MaterialSchema>;
+
+/**
+ * How every renderer draws a finish's see-through and sheen, so a model looks the same in each. A see-through
+ * surface writes no depth, because that would hide what lies behind it from later draws.
+ */
+export const surfaceOf = (finish: MaterialDef['finish']) => {
+  const opacity = finish.opacity ?? 1;
+  return { opacity, transparent: opacity < 1, depthWrite: opacity >= 1, sheen: finish.sheen };
+};
 export const MaterialReferenceSchema = strictObject({
   materialId: pipe(string(), nonEmpty()),
   colourMultiplier: tuple([Fraction, Fraction, Fraction]),
