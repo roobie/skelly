@@ -151,7 +151,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 54;
+export const SAVE_SCHEMA_VERSION = 56;
 export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -365,6 +365,7 @@ itemSchema = obj({
   madeAtGameTimestamp: opt(nonNegative),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
   cartridges: opt(arr(str({ id: true }))),
+  paperMap: opt(obj({ x: safeInt, z: safeInt })),
   cargo: opt(arr(positiveInt)),
   slots: opt(record(lazy(() => itemSchema))),
   firearm: opt(
@@ -496,6 +497,7 @@ const blockEntitySchema = obj({
   damage: opt(positive),
   broken: opt(enumeration([true])),
   lock: opt(obj({ id: str({ id: true }), locked: bool })),
+  bar: opt(obj({ side: enumeration(['front', 'back']), item: str({ id: true }) })),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
 });
 const pileSchema = obj({ pos: tuple(safeInt, safeInt, safeInt), items: placedGrid });

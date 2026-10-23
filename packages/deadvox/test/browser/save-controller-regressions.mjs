@@ -215,8 +215,10 @@ try {
         );
         gauntletWitness.manual = true;
         try {
+          const tutorialText = gauntletWitness.engine.registry.ui.get('core').screenText.tutorial;
           const draw = mountTutorial(
             tutorial,
+            tutorialText,
             () => undefined,
             () => undefined,
           );
@@ -226,6 +228,7 @@ try {
             );
           mountTutorial(
             lootTutorial,
+            tutorialText,
             () => undefined,
             () => undefined,
           )({

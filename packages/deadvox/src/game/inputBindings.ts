@@ -226,15 +226,11 @@ const BASE_DEFAULT_KEYS: BindingMap = new Map(
 );
 export const INPUT_BINDINGS: readonly Binding[] = withDefaults(BASE_DEFAULT_KEYS);
 export const POINTER_ACTIONS = [
-  {
-    id: 'hand.use-dominant',
-    description: 'Use dominant hand; hold to fire automatically when ready',
-    label: 'Left click',
-  },
-  { id: 'hand.off-instant', description: 'Instant off-hand use', label: 'Mouse 5' },
-  { id: 'stance.ready', description: 'Hold to ready a firearm or enter en-garde', label: 'Right mouse' },
-  { id: 'aim.ads-toggle', description: 'Toggle sights while firearm is ready', label: 'Mouse 3' },
-  { id: 'pointer.look', description: 'Look', label: 'Mouse' },
+  { id: 'hand.use-dominant', description: 'Use dominant hand; hold to fire automatically when ready' },
+  { id: 'hand.off-instant', description: 'Instant off-hand use' },
+  { id: 'stance.ready', description: 'Hold to ready a firearm or enter en-garde' },
+  { id: 'aim.ads-toggle', description: 'Toggle sights while firearm is ready' },
+  { id: 'pointer.look', description: 'Look' },
 ] as const;
 // Escape is left out so a tap still frees the pointer and the browser's own fullscreen exit stays.
 export const BROWSER_CHORD_LOCK_CODES: string[] = ['KeyW', 'KeyT', 'KeyN', 'Tab'];
@@ -520,6 +516,7 @@ export class BindingRegistry {
   private readonly suspended = new Map<string, readonly Chord[]>();
   private readonly listeners = new Set<(bindingsChanged: boolean) => void>();
   private layout: ReadonlyMap<string, string> | undefined;
+  private pointerLabels: Readonly<Record<string, string>> = {};
   private readonly storage: PreferenceStorage | undefined;
   private debugRun = false;
   constructor(bindings = INPUT_BINDINGS, storage = browserStorage()) {
@@ -584,7 +581,7 @@ export class BindingRegistry {
   label(id: string): string {
     const binding = this.binding(id);
     if (!binding) {
-      return POINTER_ACTIONS.find((action) => action.id === id)?.label ?? id;
+      return this.pointerLabels[id] ?? id;
     }
     return [...new Set(this.chords(binding.id).map((_, index) => this.alternativeLabel(binding.id, index)))].join(
       ' / ',
@@ -637,6 +634,11 @@ export class BindingRegistry {
   }
   setLayout(layout: ReadonlyMap<string, string>): void {
     this.layout = layout;
+    this.changed(false);
+  }
+  /** Names the fixed pointer input of each pointer action that has no binding. */
+  setPointerLabels(labels: Readonly<Record<string, string>>): void {
+    this.pointerLabels = labels;
     this.changed(false);
   }
   async loadLayout(): Promise<void> {
