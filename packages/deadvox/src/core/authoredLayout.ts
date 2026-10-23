@@ -7,9 +7,17 @@ import { placementLootIssues } from './placementLoot.ts';
 import { WORLD_BOTTOM_M } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
 import { HORDE_TYPE, TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
+import { slotPlacement, slotProps } from './showroom.ts';
 import { type Rect, rectsOverlap } from './site.ts';
 import { spawnOverlappingSolidBlock, zombieBodyDimensions } from './spawnClearance.ts';
-import { type Placement, placedBlockAt, placedPieces, templateLockIds, templateResolves } from './templates.ts';
+import {
+  cellsOf,
+  type Placement,
+  placedBlockAt,
+  placedPieces,
+  templateLockIds,
+  templateResolves,
+} from './templates.ts';
 
 export type LayoutPoint = readonly [number, number];
 const insideLayout = (bounds: Rect, [x, z]: LayoutPoint, inset = 0): boolean =>
@@ -26,6 +34,48 @@ const foundationFits = (layout: SiteLayoutDef, building: SiteLayoutDef['building
     }
   }
   return true;
+};
+
+/** A slot row that names unknown furniture, outgrows its capacity or leaves the deck is reported, not placed. */
+const showroomIssues = (
+  layout: SiteLayoutDef,
+  registry: Registry,
+  solidAt: (x: number, y: number, z: number) => boolean,
+): [string, string][] => {
+  const showroom = layout.showroom!;
+  const issues: [string, string][] = [];
+  if (!registry.blockIds.has(showroom.catalogue.floor)) {
+    issues.push(['.showroom.catalogue.floor', `no block "${showroom.catalogue.floor}"`]);
+  }
+  if (showroom.focusDistance >= showroom.catalogue.spacing) {
+    issues.push(['.showroom.focusDistance', 'must be less than the catalogue spacing, so focus stands in an aisle']);
+  }
+  if (showroom.slots.length > showroom.capacity) {
+    issues.push(['.showroom.slots', `holds ${showroom.slots.length} slots; capacity is ${showroom.capacity}`]);
+  }
+  showroom.slots.forEach(({ furniture }, i) => {
+    if (!registry.furniture.has(furniture)) {
+      issues.push([`.showroom.slots[${i}].furniture`, `no furniture "${furniture}"`]);
+    }
+  });
+  if (issues.length > 0) {
+    return issues;
+  }
+  const placement = slotPlacement(registry, layout);
+  if (placement) {
+    issues.push(
+      ...placementLootIssues({ registry, context: layout.lootContext }, placement.template, [], '.showroom.slots'),
+    );
+  }
+  slotProps(registry, showroom).forEach(({ pos, size }, i) => {
+    const cells = [...cellsOf(size)].map(([dx, dy, dz]): Vec3 => [pos[0] + dx, pos[1] + dy, pos[2] + dz]);
+    const blocked = cells.some((cell) => solidAt(...cell));
+    const unsupported = cells.some(([x, y, z]) => y === pos[1] && !solidAt(x, y - 1, z));
+    if (blocked || unsupported) {
+      issues.push([`.showroom.slots[${i}]`, 'must stand clear on a solid deck']);
+    }
+  });
+  return issues;
 };
 
 export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry): [string, string][] => {
@@ -151,6 +201,9 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     } else if (!placedPieces(stock[0]!).some(({ furniture }) => registry.furniture.get(furniture)?.container)) {
       issues.push(['.repairStock', `"${layout.repairStock}" has no container furniture`]);
     }
+  }
+  if (layout.showroom) {
+    issues.push(...showroomIssues(layout, registry, solidAt));
   }
   supported(layout.player.position, '.player.position');
   checkSpawn([layout.player.position[0], layout.player.position[2]], '.player.position');

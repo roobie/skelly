@@ -35,6 +35,11 @@ export interface GameConfig {
   /** Debug-only fresh-session start in metres (`?at=x,z[,yawDegrees]`). */
   debugStart?: DebugStart;
   /**
+   * A fresh start facing a showroom prop of this furniture type (`?focus=<furniture>`), so a look request lands
+   * in front of the thing to look at. See `docs/test-house.md`, "Focus".
+   */
+  focus?: string;
+  /**
    * The selected scenario, authored layout or debug world.
    */
   site: SiteName;
@@ -247,6 +252,10 @@ export const configFromUrl = (params: URLSearchParams, content: StartupContent):
   const debugStart = debugStartFromUrl(params);
   if (debugStart) {
     config.debugStart = debugStart;
+  }
+  const focus = params.get('focus')?.trim();
+  if (focus) {
+    config.focus = focus;
   }
   if (config.debug && params.get('handedness') === 'left') {
     config.debugHandedness = 'left';

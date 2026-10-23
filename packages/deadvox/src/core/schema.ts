@@ -2670,6 +2670,44 @@ const LayoutRect = pipe(
   check((r) => r.x0 < r.x1 && r.z0 < r.z1, 'must have positive area'),
 );
 
+const HalfMetrePosition = tuple([HalfMetres, HalfMetres, HalfMetres]);
+const PositiveHalfMetres = pipe(HalfMetres, minValue(0.5));
+/** Where new features are shown: an authored row of slots and a derived catalogue of every furniture piece. */
+const ShowroomSchema = strictObject({
+  /** The west end of the slot row's front line, feet on the deck; slots run east from here. */
+  row: HalfMetrePosition,
+  /** Which way every slot's front faces; the row is seen from that side. */
+  facing: picklist(['n', 's']),
+  /** Gap between neighbouring slots. */
+  spacing: PositiveHalfMetres,
+  /** How many slots the row holds; a new slot past it replaces the oldest. */
+  capacity: pipe(Count, minValue(1)),
+  /** Oldest first; the default spawn faces the last. */
+  slots: array(
+    strictObject({
+      furniture: Id,
+      fixed: optional(literal(true)),
+      /** The slot's fixture stock. */
+      items: optional(pipe(array(omit(FixedLootItem, ['key'])), nonEmpty())),
+    }),
+  ),
+  /** How far in front of a prop a focus spawn stands. */
+  focusDistance: PositiveHalfMetres,
+  /** Every content furniture piece in rows facing south, on a flat floor; row packing remains game logic. */
+  catalogue: strictObject({
+    /** The floor's north-west corner, feet height; rows run east and each next row lies further south. */
+    position: HalfMetrePosition,
+    /** How far east a row may run. */
+    width: PositiveHalfMetres,
+    /** Gap between neighbouring pieces, and the aisle in front of each row. */
+    spacing: PositiveHalfMetres,
+    /** The block the floor is made of. */
+    floor: Id,
+    /** How far the natural ground takes to blend into the floor. */
+    blend: PositiveHalfMetres,
+  }),
+});
+
 const SiteLayoutSchema = strictObject({
   /** Layout keys are URL scene names, including camel-case names. */
   id: pipe(string(), regex(/^[a-zA-Z][a-zA-Z0-9_]*$/, 'must be a URL scene name')),
@@ -2699,6 +2737,7 @@ const SiteLayoutSchema = strictObject({
   bays: optional(array(strictObject({ position: MetrePosition, facing: picklist(['n', 'e', 's', 'w']) }))),
   /** The building template whose containers receive derived repair stock; derivation remains game logic. */
   repairStock: optional(Id),
+  showroom: optional(ShowroomSchema),
   player: strictObject({
     position: MetrePosition,
     /** Clockwise degrees from WORLD_NORTH; converted to camera yaw only at startup. */

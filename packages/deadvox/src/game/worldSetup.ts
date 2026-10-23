@@ -13,6 +13,7 @@ import type { Scale } from '../core/scale.ts';
 import type { ScenarioKind } from '../core/scenarioKinds.ts';
 import type { ScenarioDef } from '../core/schema.ts';
 import { TEMPLATE_BLOCK_SIZE } from '../core/settlementSpawns.ts';
+import { focusPose, ShowroomCatalogue } from '../core/showroom.ts';
 import { type ColumnSource, type FurnitureSpawn, fillFurnitureLoot, type Site } from '../core/site.ts';
 import { sitePalette, terrainShapeOf } from '../core/sitePalette.ts';
 import { type PlacedPowerDevice, placedPowerDevices } from '../core/sitePower.ts';
@@ -44,9 +45,10 @@ export interface WorldSetup extends ColumnSource {
   spawn: { pos: Vec3; yaw: number };
 }
 
-/** The authored site owns the house; this wrapper adds only the debug range. */
+/** The authored site owns the house; this wrapper adds only the debug range and the showroom catalogue. */
 export class DebugTestHouseSite implements Site {
   readonly range: HandlingRange;
+  readonly catalogue: ShowroomCatalogue | undefined;
   readonly surface: Surface;
   readonly spawn: Site['spawn'];
   readonly house: AuthoredSite;
@@ -66,9 +68,14 @@ export class DebugTestHouseSite implements Site {
       beside: { x0: bounds.x0 / s, x1: bounds.x1 / s, z0: bounds.z0 / s, z1: bounds.z1 / s },
       floor: house.spawn.pos[1] / s - 1,
     });
+    const catalogue = house.showroom && new ShowroomCatalogue(registry, house.showroom.catalogue);
+    this.catalogue = catalogue;
     this.surface = {
-      height: (x, z, natural) => this.range.approachHeight(x, z, house.surface.height(x, z, natural)),
-      top: (x, z) => this.range.top(x, z) ?? house.surface.top?.(x, z),
+      height: (x, z, natural) => {
+        const ground = this.range.approachHeight(x, z, house.surface.height(x, z, natural));
+        return catalogue ? catalogue.height(x, z, ground) : ground;
+      },
+      top: (x, z) => this.range.top(x, z) ?? catalogue?.top(x, z) ?? house.surface.top?.(x, z),
     };
     const rackType = 'range_rack';
     const rackSize = registry.furniture.get(rackType)?.size;
@@ -114,6 +121,12 @@ export class DebugTestHouseSite implements Site {
     return this.house.placements;
   }
 
+  /** A slot wins over the catalogue, so a feature's own staging is what a focus shows. */
+  focus(furniture: string): Site['spawn'] | undefined {
+    const pose = this.catalogue && focusPose(this.catalogue.props, furniture, this.house.showroom!.focusDistance);
+    return this.house.focus(furniture) ?? (pose && { pos: [...pose.pos], yaw: pose.yaw });
+  }
+
   stamp(chunk: Parameters<Site['stamp']>[0]): void {
     this.house.stamp(chunk);
     this.range.stamp(chunk);
@@ -124,7 +137,11 @@ export class DebugTestHouseSite implements Site {
   }
 
   furnitureIn(cx: number, cz: number): FurnitureSpawn[] {
-    const spawns = [...this.house.furnitureIn(cx, cz), ...this.range.furnitureIn(cx, cz)];
+    const spawns = [
+      ...this.house.furnitureIn(cx, cz),
+      ...this.range.furnitureIn(cx, cz),
+      ...(this.catalogue?.furnitureIn(cx, cz) ?? []),
+    ];
     if (toChunk(this.rack.pos[0]) === cx && toChunk(this.rack.pos[2]) === cz) {
       spawns.push(
         ...fillFurnitureLoot(this.registry, this.seed, [{ spec: this.rack, loot: [] }], this.lootPointsIn(cx, cz)),
@@ -236,21 +253,34 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
   };
 }
 
-/** Resolve the initial pose in block space; restored state bypasses debug starts. */
+/**
+ * Resolve the initial pose in block space; restored state bypasses debug starts and focus. A focus the site
+ * does not show falls back to the default spawn and is returned as `unknownFocus`, so the caller can say so.
+ */
 export function playerStartFromWorld(
-  setup: Pick<WorldSetup, 'spawn' | 'groundAt'>,
+  setup: Pick<WorldSetup, 'spawn' | 'groundAt'> & { site?: Site | undefined },
   scale: Scale,
   debugStart?: DebugStart,
-  restoring = false,
-): { position: Vec3; yaw: number } {
+  start: { restoring?: boolean; focus?: string | undefined } = {},
+): { position: Vec3; yaw: number; unknownFocus?: string } {
   const { blockSize } = scale;
-  if (debugStart && !restoring) {
+  const fresh = !start.restoring;
+  if (debugStart && fresh) {
     const { x, z, yawDegrees } = debugStart;
     return {
       position: [x / blockSize, setup.groundAt(x, z) / blockSize + 0.01, z / blockSize],
       yaw: yawDegrees === undefined ? setup.spawn.yaw : (yawDegrees * Math.PI) / 180,
     };
   }
-  const [x, y, z] = setup.spawn.pos;
-  return { position: [x / blockSize, y / blockSize + 0.01, z / blockSize], yaw: setup.spawn.yaw };
+  const focus = fresh ? start.focus : undefined;
+  const focused = focus === undefined ? undefined : setup.site?.focus?.(focus);
+  const {
+    pos: [x, y, z],
+    yaw,
+  } = focused ?? setup.spawn;
+  return {
+    position: [x / blockSize, y / blockSize + 0.01, z / blockSize],
+    yaw,
+    ...(focus !== undefined && !focused ? { unknownFocus: focus } : {}),
+  };
 }
