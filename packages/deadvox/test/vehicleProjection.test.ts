@@ -27,7 +27,8 @@ describe('production vehicle projection', () => {
     const { inventory } = createRuntime();
     const id = inventory.registerVehicle(spec('projection.east', 'e'));
     const vehicle = inventory.vehicles.get(id)!;
-    const mirrored = vehicle.fittings.find((fitting) => fitting.mirror)!;
+    const mirrored = vehicle.fittings.find((fitting) => fitting.mirror && fitting.at[2] !== 0)!;
+    expect(mirrored.at[2]).not.toBe(0);
     const loaded = placeFitting(registry, {
       id: mirrored.id,
       at: mirrored.at,
