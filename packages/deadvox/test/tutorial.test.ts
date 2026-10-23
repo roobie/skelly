@@ -71,10 +71,11 @@ describe('practice objectives', () => {
     state.lightOn = false;
     observe();
     expect(tutorial.stage).toBe('escape');
-    state.position = [11, 1, 11];
+    state.crouching = true;
     observe();
     expect(tutorial.stage).toBe('escape');
-    state.crouching = true;
+    state.crouching = false;
+    state.position = [11, 1, 11];
     observe();
     expect(tutorial.stage).toBe('pause');
     expect(tutorial.canStartLight).toBe(false);
