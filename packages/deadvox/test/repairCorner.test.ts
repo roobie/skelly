@@ -5,11 +5,13 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { planCraft } from '../src/core/crafting.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
+import { cellsOf, footprint, placedPieces } from '../src/core/templates.ts';
 import { gameMinutes } from '../src/core/time.ts';
 import { startingLoadout } from '../src/game/loadout.ts';
-import { populateTestHouseRepairCorner } from '../src/game/testHouseRepair.ts';
+import { populateTestHouseRepairCorner, repairStockRecipes } from '../src/game/testHouseRepair.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
+import { testHouseSite } from './testHouseSite.ts';
 
 const baseRegistry = loadBaseRegistry();
 
@@ -38,9 +40,9 @@ const scenarioRegistry: Registry = {
   recipes: new Map([...baseRegistry.recipes, [repairFixture.id, repairFixture]]),
 };
 
-const repairRecipes = [...scenarioRegistry.recipes.values()].filter(
-  (recipe) => recipe.kind === 'repair' && !recipe.workstation,
-);
+const house = testHouseSite(scenarioRegistry);
+const stockBuilding = house.site.placements.find(({ template }) => template.id === house.layout.repairStock)!;
+const repairRecipes = repairStockRecipes(scenarioRegistry, placedPieces(stockBuilding));
 
 const addRepairCorner = (inventory: Inventory, site: string, debug = true): void => {
   populateTestHouseRepairCorner({
@@ -48,11 +50,44 @@ const addRepairCorner = (inventory: Inventory, site: string, debug = true): void
     registry: scenarioRegistry,
     site,
     debug,
-    blockSize: 0.5,
+    placements: house.site.placements,
   });
 };
 
-interface PileItem {
+/** Column arrival as the session does it, for the stock building's furniture only. */
+const arriveStockBuilding = (inventory: Inventory): void => {
+  const [ox, , oz] = stockBuilding.origin;
+  const [width, depth] = footprint(stockBuilding);
+  for (const { spec, loot, surfaceLoot, fixedCount } of house.furniture) {
+    const [x, , z] = spec.pos;
+    if (x >= ox && x < ox + width && z >= oz && z < oz + depth) {
+      inventory.furnish(spec, loot, surfaceLoot, fixedCount);
+    }
+  }
+};
+
+const furnitureCells = new Set(
+  house.furniture.flatMap(({ spec }) =>
+    [...cellsOf(spec.size)].map(([dx, , dz]) => [spec.pos[0] + dx, spec.pos[2] + dz].join()),
+  ),
+);
+
+/** Floor cells inside the stock building where the player can stand. */
+const standPoints = (): Vec3[] => {
+  const [ox, oy, oz] = stockBuilding.origin;
+  const [width, depth] = footprint(stockBuilding);
+  const points: Vec3[] = [];
+  for (let x = ox; x < ox + width; x += 1) {
+    for (let z = oz; z < oz + depth; z += 1) {
+      if (house.walkable(x, oy + 1, z) && !furnitureCells.has([x, z].join())) {
+        points.push([x + 0.5, oy + 1, z + 0.5]);
+      }
+    }
+  }
+  return points;
+};
+
+interface StockItem {
   item: { uid: number; type: string; count: number; condition: number };
 }
 
@@ -63,15 +98,6 @@ interface RepairPlanCheck {
   components: { type: string; available: number; required: number }[];
   qualities: { quality: string; provided: boolean }[];
 }
-
-const cornerPosition = (inventory: Inventory): Vec3 => {
-  const positions = [...inventory.piles.values()].map(({ pos }) => pos);
-  return [
-    positions.reduce((sum, pos) => sum + pos[0] + 0.5, 0) / positions.length,
-    positions[0]![1],
-    positions.reduce((sum, pos) => sum + pos[2] + 0.5, 0) / positions.length,
-  ];
-};
 
 const repairCharacter = (): Character => {
   const character = new Character(scenarioRegistry);
@@ -90,40 +116,59 @@ const repairCharacter = (): Character => {
   return character;
 };
 
-const targetUidsFor = (piles: readonly PileItem[]): Set<number> => {
+const targetUidsFor = (stock: readonly StockItem[]): Set<number> => {
   const targetTypes = new Set(repairRecipes.map((recipe) => recipe.result.item));
   return new Set(
-    piles.filter(({ item }) => targetTypes.has(item.type) && item.condition < 1).map(({ item }) => item.uid),
+    stock.filter(({ item }) => targetTypes.has(item.type) && item.condition < 1).map(({ item }) => item.uid),
   );
+};
+
+type CraftPlan = Extract<ReturnType<typeof planCraft>, { plan: unknown }>['plan'];
+type ReachSnapshot = ReturnType<ReturnType<typeof bindReach>>;
+
+/** The first stand point in the building that reaches a damaged target and plans its repair, if any. */
+const planFromBuilding = (
+  recipe: RecipeDef,
+  reaches: readonly ReturnType<typeof bindReach>[],
+  character: Character,
+  targetUids: ReadonlySet<number>,
+): { plan: CraftPlan; snapshot: ReachSnapshot } | undefined => {
+  for (const reach of reaches) {
+    const snapshot = reach();
+    if (!snapshot.entries.some(({ item }) => item.type === recipe.result.item && targetUids.has(item.uid))) {
+      continue;
+    }
+    const result = planCraft(recipe, snapshot, character);
+    if ('plan' in result) {
+      return { plan: result.plan, snapshot };
+    }
+  }
+  return undefined;
 };
 
 const repairPlanCheck = ({
   recipe,
-  piles,
-  reach,
-  character,
+  stock,
+  plan,
+  snapshot,
   targetUids,
 }: {
   recipe: RecipeDef;
-  piles: readonly PileItem[];
-  reach: ReturnType<typeof bindReach>;
-  character: Character;
+  stock: readonly StockItem[];
+  plan: CraftPlan;
+  snapshot: ReachSnapshot;
   targetUids: ReadonlySet<number>;
 }): RepairPlanCheck => {
-  const targets = piles.filter(
+  const targets = stock.filter(
     ({ item }) => item.type === recipe.result.item && item.count === 1 && item.condition > 0 && item.condition < 1,
   );
-  const result = planCraft(recipe, reach(), character);
-  if (!('plan' in result)) {
-    throw new Error(`${recipe.id}: ${result.missing.reason}`);
-  }
   const required = new Map<string, number>();
-  for (const { item, count } of result.plan.components) {
+  for (const { item, count } of plan.components) {
     required.set(item.type, (required.get(item.type) ?? 0) + count * 2);
   }
-  const toolUids = new Set(result.plan.tools.map(({ item }) => item.uid));
+  const toolUids = new Set(plan.tools.map(({ item }) => item.uid));
   const available = new Map<string, number>();
-  for (const { item } of piles) {
+  for (const { item } of stock) {
     if (toolUids.has(item.uid) || targetUids.has(item.uid)) {
       continue;
     }
@@ -140,23 +185,40 @@ const repairPlanCheck = ({
     })),
     qualities: Object.entries(recipe.qualities).map(([quality, level]) => ({
       quality,
-      provided: result.plan.tools.some(
-        ({ item, quality: plannedQuality }) =>
-          plannedQuality === quality && (scenarioRegistry.items.get(item.type)?.tool?.qualities[quality] ?? 0) >= level,
-      ),
+      provided:
+        snapshot.workstations.some((station) => (station.qualities[quality] ?? 0) >= level) ||
+        plan.tools.some(
+          ({ item, quality: plannedQuality }) =>
+            plannedQuality === quality &&
+            (scenarioRegistry.items.get(item.type)?.tool?.qualities[quality] ?? 0) >= level,
+        ),
     })),
   };
 };
 
-describe('test-house repair corner', () => {
-  it('stocks every repair target, two planned repairs of components, and the required tool qualities', () => {
+describe('test-house repair stock', () => {
+  it('plans every repair the stock building serves from a stand point inside it, twice over in components', () => {
     const inventory = new Inventory(scenarioRegistry);
     addRepairCorner(inventory, 'testHouse');
-    const piles = [...inventory.items()].filter(({ location }) => location.kind === 'pile');
-    const targetUids = targetUidsFor(piles);
-    const reach = bindReach({ inventory, position: cornerPosition(inventory), blockSize: 0.5, clock: BASE_CLOCK });
+    arriveStockBuilding(inventory);
+    for (const entity of inventory.entities.records) {
+      if (entity.pockets) {
+        inventory.entities.markSearched(entity);
+      }
+    }
+    const stock = [...inventory.items()].filter(({ location }) => location.kind === 'furniture');
+    const targetUids = targetUidsFor(stock);
+    const obstacles = { isSolid: house.solid, version: 0 };
+    const reaches = standPoints().map((position) =>
+      bindReach({ inventory, position, blockSize: house.s, clock: BASE_CLOCK, obstacles }),
+    );
     const character = repairCharacter();
-    const checks = repairRecipes.map((recipe) => repairPlanCheck({ recipe, piles, reach, character, targetUids }));
+    expect(repairRecipes.length).toBeGreaterThan(0);
+    const checks = repairRecipes.map((recipe) => {
+      const planned = planFromBuilding(recipe, reaches, character, targetUids);
+      expect(planned, `${recipe.id} plans beside its target inside the stock building`).toBeDefined();
+      return repairPlanCheck({ recipe, stock, ...planned!, targetUids });
+    });
 
     for (const check of checks) {
       expect(check.targetCount, `${check.recipe} targets`).toBe(check.expectedTargets);
@@ -171,19 +233,32 @@ describe('test-house repair corner', () => {
     }
   });
 
+  it('keeps the stocked containers when their column arrives', () => {
+    const inventory = new Inventory(scenarioRegistry);
+    addRepairCorner(inventory, 'testHouse');
+    const stocked = [...inventory.entities.records].map(({ uid }) => uid);
+    const items = [...inventory.items()].length;
+    arriveStockBuilding(inventory);
+    const containers = [...inventory.entities.records].filter(({ pockets }) => pockets);
+    expect(containers.map(({ uid }) => uid).sort()).toEqual(stocked.sort());
+    expect([...inventory.items()].length).toBe(items);
+  });
+
   it('keeps derived repair stock out of normal mode', () => {
     const inventory = new Inventory(scenarioRegistry);
     addRepairCorner(inventory, 'testHouse', false);
-    expect(inventory.piles.size).toBe(0);
+    expect([...inventory.items()]).toEqual([]);
+    expect([...inventory.entities.records]).toEqual([]);
   });
 
-  it('adds no corner piles to the default or authored sites', () => {
-    const authoredSite = [...scenarioRegistry.layouts.values()].find((layout) => !layout.fixturePiles?.length)!.id;
+  it('adds no repair stock to the default or authored sites', () => {
+    const authoredSite = [...scenarioRegistry.layouts.values()].find((layout) => !layout.repairStock)!.id;
     for (const site of ['gauntlet', authoredSite]) {
       const inventory = new Inventory(scenarioRegistry);
       startingLoadout(inventory);
+      const before = [...inventory.items()].length;
       addRepairCorner(inventory, site);
-      expect(inventory.piles.size).toBe(0);
+      expect([...inventory.items()].length).toBe(before);
     }
   });
 });

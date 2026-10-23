@@ -1,10 +1,20 @@
 {
   "layouts": [
     {
+      "bays": [
+        {
+          "facing": "e",
+          "position": [-19, 21, -7]
+        },
+        {
+          "facing": "e",
+          "position": [-14, 21, -7]
+        }
+      ],
       "bounds": {
-        "x0": -6,
+        "x0": -23,
         "x1": 17,
-        "z0": -7,
+        "z0": -13,
         "z1": 6
       },
       "buildings": [
@@ -22,6 +32,11 @@
           "position": [-5, 20.5, -7],
           "rotation": 0,
           "template": "test_house_shed"
+        },
+        {
+          "position": [-22, 20.5, -12],
+          "rotation": 0,
+          "template": "test_house_garage"
         },
         {
           "position": [-2, 20.5, 4.5],
@@ -50,17 +65,6 @@
         }
       ],
       "demo": true,
-      "fixturePiles": [
-        [5, 21, -1],
-        [5, 21, -0.5],
-        [5, 21, 0],
-        [5.5, 21, -1],
-        [5.5, 21, -0.5],
-        [5.5, 21, 0],
-        [6, 21, -1],
-        [6, 21, -0.5],
-        [6, 21, 0]
-      ],
       "ground": 20.5,
       "id": "testHouse",
       "lootContext": {
@@ -71,6 +75,7 @@
         "bearing": 90,
         "position": [-4, 21, -0.5]
       },
+      "repairStock": "test_house_garage",
       "shamblers": [],
       "terrain": [],
       "tracks": [],
@@ -79,7 +84,7 @@
           "blueprint": "hatchback",
           "facing": "e",
           "placementKey": "testHouse.parked-hatchback",
-          "position": [0, 21, -8]
+          "position": [-19, 21, -7]
         }
       ],
       "woodlands": []

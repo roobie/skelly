@@ -1,6 +1,7 @@
 ---
 read_if:
-  - you change the test house, its fixture stock or its debug gate
+  - you change the test house, its garage, its fixture stock or its debug gate
+  - you change parking bays or where the test house places vehicles
   - you add a feature demonstration near the test-house spawn
   - you benchmark the test house at a different block scale
   - you change house supply, powered furnishings or player power controls
@@ -53,6 +54,26 @@ a generator-only fixture would hide their independence. Electrical values belong
 content so balancing the haven does not change its mechanisms. See
 `src/content/base/furniture.jsonnet`, `furniture`, and
 `src/content/base/power.jsonnet`, `powerDevices`.
+
+## Garage
+
+The garage gathers vehicle and repair work in one building so that a single visit can
+evaluate both. Bay 1 holds the parked vehicle and bay 2 stays empty floor, so part work
+has a place to stand that the parked vehicle does not take. Bays are layout content and
+vehicles are placed from them, so moving a bay moves everything parked in it. See
+`src/content/base/layouts-test-house.jsonnet`, `bays`. The doors open onto open ground
+because a vehicle must be able to drive out of either bay; `test/testHouse.test.ts`
+checks that for every parked blueprint.
+
+The garage building, its workbench, grinding wheel and shelving stay in normal mode as
+ordinary furnishings. The repair stock in its containers is debug-only, as above. The
+layout's `repairStock` names the building that receives it, so the house no longer
+needs piles of its own. See `src/core/authoredLayout.ts`, `repairStock`.
+
+Debug stock is placed at session start, before the garage's column arrives, so its
+containers are added then. Arrival later furnishes the same containers rather than
+duplicating them, which keeps the stock where it was placed. See
+`src/game/testHouseRepair.ts`, `standingContainer`.
 
 ## Benchmark scale
 
