@@ -12,7 +12,7 @@ import test from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { launchChromium } from './chromium.mjs';
 import { gauntletFlow } from './gauntlet-flow.mjs';
-import { pressAction } from './input-actions.mjs';
+import { holdAction, pressAction } from './input-actions.mjs';
 import { auditModelLoads, instrumentModelLoads, modelLoadAuditPlugin } from './model-load-audit.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { installWorldMeshControl } from './world-mesh-fixture.mjs';
@@ -443,6 +443,99 @@ try {
       );
       await page.click('#go');
       await page.waitForFunction(() => globalThis.tutorialSession.sim.paused === false);
+      await page.evaluate(async () => {
+        const { Tutorial } = await import('/src/game/tutorial.ts');
+        const { mountTutorial } = await import('/src/ui/tutorial.ts');
+        const { engine, session } = gauntletWitness;
+        // A separate observer starts at this lesson; the playing session still owns movement and stance.
+        const exit = engine.site.playtestMarks.beats.find((beat) => beat.id === 'tutorial_exit').area;
+        const tutorial = new Tutorial([0, 0, 0], 0, exit, engine.site.lightPractice);
+        tutorial.opened('canned_beans');
+        tutorial.consumed('beans');
+        tutorial.consumed('water_bottle');
+        const prerequisites = {
+          position: [8, 0, 0],
+          yaw: 1,
+          crouching: false,
+          doorOpen: true,
+          searched: true,
+          looted: true,
+          wielded: true,
+          lightOn: true,
+          paused: false,
+        };
+        tutorial.observe(prerequisites);
+        tutorial.observe({ ...prerequisites, lightOn: false });
+        const draw = mountTutorial(
+          tutorial,
+          engine.registry.ui.get('core').screenText.tutorial,
+          () => undefined,
+          () => undefined,
+        );
+        const observe = () => {
+          tutorial.observe({
+            ...prerequisites,
+            position: session.body.pos,
+            crouching: session.stance === 'crouching',
+            lightOn: false,
+          });
+          draw({ inventory: session.inventory, inventoryOpen: false, lightOn: false });
+          return tutorial.stage;
+        };
+        gauntletWitness.manual = true;
+        globalThis.tutorialExitFixture = { tutorial, exit, observe };
+        if (observe() !== 'escape') {
+          throw new Error('Exit fixture must begin with an unfinished escape lesson');
+        }
+      });
+      const releaseForward = await holdAction(page, 'movement.forward');
+      try {
+        await page.evaluate(() => {
+          const { session, input, engine } = gauntletWitness;
+          const { exit, observe } = tutorialExitFixture;
+          const x = (exit.x0 + exit.x1) / 2;
+          const z = (exit.z0 + exit.z1) / 2;
+          for (const target of [
+            [x, session.body.pos[2]],
+            [x, z],
+          ]) {
+            let reached = false;
+            for (let tick = 0; tick < 3600; tick++) {
+              const dx = target[0] - session.body.pos[0];
+              const dz = target[1] - session.body.pos[2];
+              if (Math.hypot(dx, dz) < 0.5) {
+                reached = true;
+                break;
+              }
+              input.yaw = Math.atan2(-dx, -dz);
+              engine.streamer.update(session.body.pos[0], session.body.pos[2]);
+              session.frame(1 / 60);
+              observe();
+            }
+            if (!reached) {
+              throw new Error('Ordinary forward input must reach the exit via the west side of the station');
+            }
+          }
+        });
+      } finally {
+        await releaseForward();
+      }
+      assert.equal(
+        await page.evaluate(() => tutorialExitFixture.observe()),
+        'escape',
+        'reaching the named destination without crouching is not enough',
+      );
+      await pressAction(page, 'player.crouch-toggle');
+      assert.equal(
+        await page.evaluate(() => {
+          gauntletWitness.session.frame(1 / 60);
+          const stage = tutorialExitFixture.observe();
+          gauntletWitness.manual = false;
+          return stage;
+        }),
+        'pause',
+        'ordinary crouch input at the named destination completes the exit lesson',
+      );
       await page.evaluate(() => {
         document.dispatchEvent(new Event('visibilitychange'));
         globalThis.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: false }));

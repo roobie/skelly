@@ -224,7 +224,7 @@
     switchOn: 'Switch on',
     flashlight: 'Flashlight — On / off',
     crouch: 'Crouch',
-    exitPath: 'Exit path',
+    exitPath: 'Reach the dirt path bend north-west of the station',
     mainMenu: 'Main menu',
     revolver: 'Revolver',
     pumpShotgun: 'Pump shotgun',
