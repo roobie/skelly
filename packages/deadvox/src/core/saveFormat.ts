@@ -112,6 +112,7 @@ interface WirePayload {
   world: {
     id: string;
     options: SaveWorldIdentity;
+    power?: SaveSnapshot['world']['power'];
     regions: Record<string, Region>;
     zombieSystem: {
       nextEntityId: number;
@@ -154,7 +155,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 54;
+export const SAVE_SCHEMA_VERSION = 55;
 export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -499,6 +500,7 @@ const blockEntitySchema = obj({
   damage: opt(positive),
   broken: opt(enumeration([true])),
   lock: opt(obj({ id: str({ id: true }), locked: bool })),
+  bar: opt(obj({ side: enumeration(['front', 'back']), item: str({ id: true }) })),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
 });
 const vehiclePlacementFields = {
@@ -773,10 +775,27 @@ const scenarioRun = nullable(
 
 const savedRun = obj({ start: nonNegativeInt, length: positiveInt, id: nonNegativeInt });
 
+const powerState = obj({
+  atGameMilliseconds: nonNegativeInt,
+  devices: arr(
+    obj({
+      id: str({ nonEmpty: true }),
+      type: str({ nonEmpty: true }),
+      enabled: bool,
+      fuelUnits: nonNegativeInt,
+      storedMicrojoules: nonNegativeInt,
+      powered: bool,
+      restartBlocked: bool,
+    }),
+  ),
+  links: arr(obj({ from: str({ nonEmpty: true }), to: str({ nonEmpty: true }), itemUid: positiveInt })),
+});
+
 const wirePayloadSchema = obj({
   world: obj({
     id: str({ nonEmpty: true }),
     options: worldIdentitySchema,
+    power: opt(powerState),
     regions: record(
       obj({
         chunks: arr(
@@ -1202,6 +1221,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
   const wire: WirePayload = {
     world: {
       id: snapshot.world.id,
+      ...(snapshot.world.power ? { power: structuredClone(snapshot.world.power) } : {}),
       options: {
         ...worldOptions,
         seed: snapshot.character.simulation.seed,
@@ -1282,6 +1302,7 @@ function restoreWirePayload(wire: WirePayload): SaveSnapshot {
   const snapshot: SaveSnapshot = {
     world: {
       id: wire.world.id,
+      ...(wire.world.power ? { power: structuredClone(wire.world.power) } : {}),
       columns,
       vehicles: {
         nextId: wire.world.vehiclesNextId,
@@ -1742,6 +1763,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
       world: obj({
         id: str({ nonEmpty: true }),
         vehicles: vehiclesStateSchema,
+        power: opt(powerState),
         columns: arr(
           obj({
             cx: safeInt,

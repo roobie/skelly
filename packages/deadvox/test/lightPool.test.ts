@@ -375,13 +375,9 @@ describe('made-light point pool', () => {
       .map(({ item }) => fixtureRegistry.items.get(item.type)!.light!.intensity);
     const handIntensities = [right, left].map((item) => fixtureRegistry.items.get(item.type)!.light!.intensity);
     expect(pocketIntensities).toHaveLength(3);
-    expect(pool.lights.map((light) => light.intensity)).toEqual([
+    expect(pool.lights.filter((light) => light.intensity > 0).map((light) => light.intensity)).toEqual([
       ...handIntensities,
       ...pocketIntensities.slice(0, 2),
-      0,
-      0,
-      0,
-      0,
     ]);
   });
 

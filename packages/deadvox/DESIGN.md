@@ -68,7 +68,7 @@ read_if:
   - you author the police armoury's roof key or its view from the start
   - you change what vehicles are for, how their parts fit, come off and behave, or what a parked vehicle blocks
   - you're changing where a dropped, crafted, unpacked or swapped-out item lands, whether a drop checks reach, or what happens with no ground nearby
-  - you're changing held-item throwing or its range tuning
+  - you're changing held-item throwing, its dragged path and duration, range tuning or replay strength
   - you're changing thrown explosives (fuse, blast, fragments, their noise) or where the playtest horde stands
   - you're choosing or changing the building-weathering look and its dilapidation direction
   - you're authoring dilapidated structures or breached perimeters
@@ -236,7 +236,7 @@ passage, where small objects fit through openings and large ones stop, is the
 expected direction rather than a promise that visible holes already simulate size.
 Firearm aiming must not offer a target behind a physical blocker; opacity still
 hides targets in foliage. See `src/core/zombies.ts`, `ZombieSystem.aimAt` and
-`ZombieSystem.firePellets`; and `src/core/itemThrow.ts`, `traceItemLanding`.
+`ZombieSystem.firePellets`; and `src/core/itemThrow.ts`, `steppedItemFlight`.
 
 Wire passes only thrusting melee: a directed strike can reach through an opening,
 while a swing or wrestle needs space the fence denies. This gives fence defence a
@@ -879,9 +879,9 @@ lidded shaft remains an alternate return route. Each level's stair and shaft lea
 different places than the ways that arrive on it, so the next way down is something to
 find and retreat by the other route is a real choice. The lowest rebuilt level joins
 the grid below through a temporary landing named in one place, which each rebuild moves
-down a storey. Threat may drop down a shaft but never climb up, so deep threat cannot
-reach the top and depth ordering holds. A lid then defends only against threat above.
-Threat moving between levels is not built; until it is, threat stays on its own level. See
+down a storey. Threat is allowed to move between levels; that behaviour is not built.
+Depth ordering is not a promise of isolation. Floors damp sound like walls rather than
+silencing it between storeys; see `src/core/soundOcclusion.ts`, `soundOcclusion`. See
 `src/content/base/gauntlet-lab-administration.libsonnet`, `stair`;
 `src/content/base/gauntlet-lab.libsonnet`, `join`; and
 `src/content/base/gauntlet-lab-equipment.libsonnet`, `mapPieces`.
@@ -981,15 +981,14 @@ Readable furniture does not confer objective authority; the live interaction mus
 reach the terminal button. See `src/core/scenarioCertificate.ts`, `scenarioCertificate`,
 and `src/game/session.ts`, `activateGoal`.
 
-Darkness uses world-derived sky transport and an ordinary carried light. The lab's
-fixtures are intended to light only after power is restored, so light is earned,
-not given. Rebuilt levels' working and broken fixtures are inert set dressing. Entry's breaker
-belongs in the security post. Level two's is in a plant room off its circulation, so
-power is found by exploring. The breaker interaction and its saved per-level power state
-are not built; until they are, the room and its marking are enough. Deeper levels' switch positions are decided at their own reviews. The
-lab has no lighting category until its light round. See
-`src/content/base/gauntlet-lab-entry.libsonnet`, `rooms`, and
-`src/content/base/gauntlet-lab-administration.libsonnet`, `rooms`. Finished site placements
+The whole lab shares one grid, fed by a generator on its first subterranean level.
+Its small fuel reserve makes working lights temporary rather than a permanent escape
+from darkness. Lights and machinery declare their electrical roles in content; there
+are no per-level breakers or player refuelling interaction. See
+`src/content/base/gauntlet-lab.libsonnet`, `furniture`;
+`src/content/base/gauntlet-lab-entry.libsonnet`, `rooms`;
+`src/core/sitePower.ts`, `SitePower`; and `src/game/session.ts`, `createSession`.
+Darkness also uses world-derived sky transport and ordinary carried light. Finished site placements
 expose the same sky eligibility contract across authored layouts, hamlets and
 scenario composition. Benchmark city plans do not opt into scenario
 sky work, preserving their stress policy. Demo stock stays outside ordinary
@@ -2134,27 +2133,23 @@ See `src/core/inventory.ts`, `Inventory.landing` and `Inventory.dropLanding`;
 
 ## Held-item throws
 
-A released item joins its target pile immediately, keeping inventory as its
-sole owner and preserving ordinary fuse and save behavior. The flight is
-presentation only: the pile renderer hides the item while its arc plays, and the
-arc follows the pile's visible pose so the landing does not jump. No second owner
-exists while an item is in flight, so saves and fuses see only the pile; behavior
-during flight is new work on a new issue. A throw adds no hit damage or landing
-lure; explosive effects belong to the grenade.
-See `src/game/throwCharge.ts`, `ThrowCharge.place`;
+Inventory remains the sole owner during flight so saves and fuses do not need a
+second ownership model. The arc ends at the pile's visible pose to avoid a landing
+jump. A throw adds no hit damage or landing lure; explosive effects belong to the
+grenade. See `src/game/throwCharge.ts`, `ThrowCharge.place`;
 `src/render/itemThrows.ts`, `ItemThrows.update`; and `src/render/piles.ts`,
 `PileMeshes.sync`.
 
-Mass and air both limit range. Mass caps the speed the arm can give; drag then
-takes a share of that range by how much air the item pushes for its mass, so a
-flimsy glowstick falls shorter than a dense grenade thrown with the same effort.
-Drag derives from the item's footprint and mass, so no item needs its own row.
-The footprint is a cell-rounded outline, not the face that meets the air, so one
-coefficient against it stands in for shape and tumbling. The range comes from
-stepping a level 45-degree flight with drag at a fixed step, so the same throw
-always lands at the same place, and a replay records that range. The arc's
-height and flight time do not depend on drag. See `src/core/itemThrow.ts`,
-`throwDistanceForItem` and `dragRangeShare`, and
+Landing, presentation and duration share a stepped flight so drag cannot shorten
+the range while leaving a light item floating through an undragged arc. The launch
+follows the player's pitch, rather than borrowing the range of a different angle.
+Replay records launch strength rather than a drag-adjusted distance so it can
+reproduce the same flight with the recorded aim. See `src/core/itemThrow.ts`,
+`throwDistanceForItem`, `flightForItem` and `steppedItemFlight`.
+
+Drag derives from footprint and mass so items need no individual drag rows. The
+footprint is a cell-rounded outline, not the face that meets the air, so one
+coefficient stands in for shape and tumbling. See
 `src/content/base/inventory.jsonnet`, `throwDrag`.
 
 ## Hand grenade
@@ -2423,6 +2418,7 @@ cannot be authored, blended or added to without a code change per animation.
   disassembly.
 - **Doors and locks.** A matching key is the quiet route. The noisy fallback needs the door's forcing tool, not always a crowbar, so finding that tool is part of the trade. How a door yields follows from its material and its own resistance; flimsy and burglary-safe leaves need not yield alike. Forced entry destroys the lock so the breach is one-way. A leaf shows its state, because the player has to see which doors no longer hold, and how close the rest are to giving way, before trusting one: damage repaints it in steps as it grows toward breaking, and a broken leaf has its own look. The leaf's material in the shared furniture material table authors both, so a mod retunes them; the steps and redraws work as for any piece (`DESIGN.md`, "Block entities").
 - **Breach by strength.** A door leaf yields to blows by its piece's breach, so flimsy and burglary-safe leaves yield differently. A blow below the minimum strength does nothing, so a weak attacker cannot grind through by waiting; stronger blows add up until they reach the durability. Zombie strength and a melee weapon's impulse share one scale, so a zombie's bash and a player's strike meet the same gate; a swing that meets no zombie strikes the standing piece, leaf or furniture, in its reach, and the blow is heard in the sound its material names. Every blow makes a noise zombies hear. A broken leaf stands open with its lock gone and cannot be shut, so the breach is one-way, as forcing is, and movement, sight and sound treat it as an open doorway. Damage short of breaking leaves a boarded leaf's opening sides as they were. A container's front is its body, so a blow on it damages the whole piece; on a piece that is no door leaf, the breach sets the durability its condition is measured against, and reaching it ruins the piece (`DESIGN.md`, "Damage, destruction and dismemberment"). See `src/core/blockEntities.ts`, `BlockEntities.bash`, `src/game/session.ts`, `bashPiece` and `strikePiece`, and `src/core/schema.ts`, `FurnitureSchema`.
+- **Door bar.** Barring holds a door shut at the player's choice, so where to bar is a decision about which side to be on. A bar set on a shut door lies on the setter's side: that side must lift it before opening, and the far side is refused. Setting and lifting take time and both hands. The barred side is door state beside the lock, not item state, so a bar on a door survives a save and a bar item is just the thing that sets it; setting spends the item and lifting gives one back. A broken leaf loses its bar with its lock, and boarded doors take no bar. See `src/core/blockEntities.ts`, `BlockEntities.setBar` and `BlockEntities.liftBar`, `src/core/options.ts`, `heldDoorBar`, and `src/core/schema.ts`, `ItemSchema`.
 - **Forcing routes trade time against noise.** A door offers more than one forcing method so the player chooses how to pay: the crowbar's prying is slow and the quieter route, the sledgehammer's hammering is fast and the louder one, and it is heavy and two-handed to carry. Each method names its own strike sound and times, so the choice is content, and the noise reaches zombies through the same hearing as any sound. Forcing by method and destroying a leaf by damage stay separate, so boarded doors and bashing leave this choice alone. See `src/core/prying.ts`, `pryPlan`, and `src/core/zombies.ts`, `hearPlayer`.
 - **Cutting.** Cutting a wooden door will start a fire, so wood offers no cut method until a fire model exists. Cutting steel is a flame-cutting quality apart from a knife's `cutting`, and a finished cut spends gas from the torch's swappable cartridge, so one torch does not settle every cut door; a cut without enough gas won't start. Refilling a cartridge is direction only, with no source yet. See `src/core/prying.ts`, `pryPlan`, `src/core/torch.ts`, `spendFuel`, `src/core/longAction.ts`, `LongActions.beginForcing`, and `src/core/schema.ts`, `FurnitureMaterialSchema` and `DoorForcingSchema`.
 - **Electricity** keeps topology separate from energy balance so rate changes

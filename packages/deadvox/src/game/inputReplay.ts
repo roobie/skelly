@@ -9,7 +9,7 @@ import { isReplayActionPayload, type ReplayActionPayload } from './replayCommand
 import { PHYSICS_RATE } from './session.ts';
 
 // Recordings from older schemas don't resolve identically.
-export const INPUT_REPLAY_SCHEMA_VERSION = 20;
+export const INPUT_REPLAY_SCHEMA_VERSION = 21;
 
 export const withReplayExportGuard = <T>(hasOverrides: boolean, exportReplay: () => T): T => {
   if (hasOverrides) {

@@ -21,12 +21,12 @@ import { movableRefusal } from '../core/furnitureMove.ts';
 import { heldFirearmTransform, throwStanceWorldOffset } from '../core/heldPose.ts';
 import { interactionAffordance } from '../core/interactionAffordance.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
-import type { HandSide, Inventory, Pile, Target } from '../core/inventory.ts';
+import type { HandSide, Inventory, Pile } from '../core/inventory.ts';
 import { damageWord, type Item } from '../core/items.ts';
-import { hasMetThrowMinimumHold, throwDistanceForItem, traceItemLanding } from '../core/itemThrow.ts';
+import { flightForItem, hasMetThrowMinimumHold, throwDistanceForItem } from '../core/itemThrow.ts';
 import { chargeShare, offHandUse, wornNightVision } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
-import { doorOptions, doorPlan, dropTarget, pocketGroundItem, toHands } from '../core/options.ts';
+import { doorOptions, doorPlan, dropTarget, heldDoorBar, pocketGroundItem, toHands } from '../core/options.ts';
 import { pryPlan } from '../core/prying.ts';
 import { raycast } from '../core/raycast.ts';
 import { reachTuning } from '../core/reach.ts';
@@ -804,6 +804,7 @@ export const startPlay = (
   const session = createSession({
     registry,
     scenario: engine.scenario,
+    powerDevices: engine.powerDevices,
     objective: scenarioObjective(engine.site),
     discovery: scenarioDiscovery(engine.site),
     handedness: config.debugHandedness ?? options.handedness,
@@ -1086,10 +1087,15 @@ export const startPlay = (
       inputRecorder.queueColumnChange(cx, cz, false);
     }
   };
-  const view = createPlayView(engine, inventory, (message) => {
-    const box = $('errors');
-    box.textContent = [box.textContent, message].filter(Boolean).join('\n');
-  });
+  const view = createPlayView(
+    engine,
+    inventory,
+    (message) => {
+      const box = $('errors');
+      box.textContent = [box.textContent, message].filter(Boolean).join('\n');
+    },
+    { poweredLights: () => session.power?.lights() ?? [] },
+  );
   input.setMouseLookOverride((movementX, movementY) =>
     thirdPersonOrbit.rotate(movementX, movementY, isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled)),
   );
@@ -1216,6 +1222,25 @@ export const startPlay = (
       entityUid: entity.uid,
       locked: operation === 'lock',
     });
+  };
+
+  /** Sets a held bar across the door or lifts the bar off it, from the side the player stands on. */
+  const enqueueDoorBar = (entity: BlockEntity, barring: boolean): string | undefined => {
+    const plan = doorPlan(inventory, entity, barring ? 'bar' : 'unbar');
+    if (!plan.ok) {
+      return plan.reason;
+    }
+    const label = barring ? `Bar the ${nameOf(entity)}` : 'Lift the bar';
+    queue.enqueueAction(DOOR_ACTION, label, plan.time, { entityUid: entity.uid, barring });
+    return undefined;
+  };
+
+  const activateBar = () => {
+    const entity = lookedAt();
+    const reason = entity && entities.defOf(entity).door ? enqueueDoorBar(entity, true) : undefined;
+    if (reason) {
+      showRefusal(reason, sim.time);
+    }
   };
 
   const hooks: ScreenHooks = {
@@ -1797,7 +1822,10 @@ export const startPlay = (
     },
     pickup: pickupGroundItem,
     interact: interactFurniture,
-    lift: (uid) => session.liftFurniture(uid),
+    lift: (uid) => {
+      const entity = entities.byUid(uid);
+      return entity?.bar ? enqueueDoorBar(entity, false) : session.liftFurniture(uid);
+    },
     place: (pos) => session.placeFurniture(pos),
     turn: () => session.turnFurniture(),
     tip: () => session.tipFurniture(),
@@ -2428,6 +2456,14 @@ export const startPlay = (
     return `${operation === 'lock' ? 'Lock' : 'Unlock'}${plan.ok ? '' : ` — ${plan.reason}`}`;
   };
 
+  const barHint = (entity: BlockEntity): string | undefined => {
+    if (!heldDoorBar(inventory)) {
+      return undefined;
+    }
+    const plan = doorPlan(inventory, entity, 'bar');
+    return `Bar${plan.ok ? '' : ` — ${plan.reason}`}`;
+  };
+
   const pryHint = (entity: BlockEntity): string | undefined => {
     if (!(entity.lock?.locked && Object.keys(entities.defOf(entity).door?.methods ?? {}).length > 0)) {
       return undefined;
@@ -2460,7 +2496,7 @@ export const startPlay = (
     const doorReason = !prying && door?.plan.ok === false ? door.plan.reason : undefined;
     return playInteractionText({
       doorReason,
-      lock: keyLockHint(entity),
+      lock: keyLockHint(entity) ?? (entities.defOf(entity).door ? barHint(entity) : undefined),
       prying,
       door: Boolean(entities.defOf(entity).door),
       open: entity.open,
@@ -2486,7 +2522,7 @@ export const startPlay = (
       case 'body':
         return { kind: 'zombie.downed', zombieId: target.id, way: mode === 'pocket' ? 'finish-off' : 'dismember' };
       default:
-        return mode === 'wield' && liftable(target.entity)
+        return mode === 'wield' && (liftable(target.entity) || target.entity.bar)
           ? { kind: 'furniture.lift', entityUid: target.entity.uid }
           : { kind: 'furniture.interact', entityUid: target.entity.uid };
     }
@@ -2646,7 +2682,6 @@ export const startPlay = (
       return;
     }
     const distance = throwDistanceForItem(item, registry, itemThrowTuning, heldSimSeconds);
-    const chargeProgress = Math.min(1, heldSimSeconds / itemThrowTuning.chargeSimSeconds);
     if (!replayPlayer) {
       inputRecorder?.queueAction('item.throw', 'down', inputContext(), {
         payload: {
@@ -2658,7 +2693,7 @@ export const startPlay = (
       });
       pendingPlayerTickActions.enqueue(() => {
         applyToHeldItem(inventory.hands, hand, uid, (heldItem) => {
-          throwHeldItem(heldItem, hand, distance, chargeProgress);
+          throwHeldItem(heldItem, hand, distance);
           syncThrowingStance();
         });
       });
@@ -2695,25 +2730,40 @@ export const startPlay = (
     });
   }
 
-  function throwHeldItem(item: Item, hand: HandSide, distanceMetres: number, chargeProgress = 0): void {
+  function itemThrowFlight(item: Item, hand: HandSide, distanceMetres: number) {
+    const fullStrength = throwDistanceForItem(item, registry, itemThrowTuning, itemThrowTuning.chargeSimSeconds);
+    const chargeProgress = fullStrength > 0 ? Math.max(0, Math.min(1, distanceMetres / fullStrength)) : 0;
+    const offset: Vec3 = throwingStance
+      ? throwStanceWorldOffset(hand, input.yaw, input.pitch, chargeProgress)
+      : [0, 0, 0];
+    const origin: Vec3 = [
+      body.pos[0] * s + offset[0],
+      body.pos[1] * s + session.playerEyeHeightMetres + offset[1],
+      body.pos[2] * s + offset[2],
+    ];
+    return flightForItem(item, registry, {
+      from: origin,
+      direction: lookDir(),
+      distanceMetres,
+      blockSize: s,
+      minY: scale.minCy * CHUNK,
+      isSolid: engine.isSolid,
+    });
+  }
+
+  function throwHeldItem(item: Item, hand: HandSide, distanceMetres: number): void {
     if (inventory.hands[hand] !== item) {
       return;
     }
-    const target = itemLandingTarget(distanceMetres);
+    const flight = itemThrowFlight(item, hand, distanceMetres);
+    const origin = flight.points[0]!;
+    const target = flight.landing ? { kind: 'pile' as const, pos: flight.landing } : undefined;
     if (!target) {
       showRefusal(coreMessage(registry, 'noLanding'), sim.time);
       return;
     }
-    const throwOffset: Vec3 = throwingStance
-      ? throwStanceWorldOffset(hand, input.yaw, input.pitch, chargeProgress)
-      : [0, 0, 0];
-    const origin: Vec3 = [
-      body.pos[0] * s + throwOffset[0],
-      body.pos[1] * s + session.playerEyeHeightMetres + throwOffset[1],
-      body.pos[2] * s + throwOffset[2],
-    ];
     const startedAtSimSeconds = sim.time;
-    const landingAt = startedAtSimSeconds + reachTuning(registry).throwFlightSimSeconds;
+    const landingAt = startedAtSimSeconds + flight.durationSimSeconds;
     const landed = session.throwCharge.place(item, hand, target);
     if (!landed.landed) {
       if (landed.reason) {
@@ -2721,21 +2771,7 @@ export const startPlay = (
       }
       return;
     }
-    itemThrows.spawn({ item, itemUid: landed.item.uid, origin, startedAtSimSeconds, landingAt }, inventory);
-  }
-
-  function itemLandingTarget(distanceMetres: number): Extract<Target, { kind: 'pile' }> | undefined {
-    const from: Vec3 = [body.pos[0] * s, body.pos[1] * s + session.playerEyeHeightMetres, body.pos[2] * s];
-    const pos = traceItemLanding({
-      from,
-      direction: lookDir(),
-      distanceMetres,
-      arcHeightMetres: reachTuning(registry).throwArcHeightMetres,
-      blockSize: s,
-      minY: scale.minCy * CHUNK,
-      isSolid: engine.isSolid,
-    });
-    return pos ? { kind: 'pile', pos } : undefined;
+    itemThrows.spawn({ item, itemUid: landed.item.uid, origin, startedAtSimSeconds, landingAt, flight }, inventory);
   }
 
   function toggleRestFromTarget(kind: RestKind, entity: BlockEntity): void {
@@ -3004,6 +3040,9 @@ export const startPlay = (
       case 'key':
         activateKey(action.item);
         return;
+      case 'bar':
+        activateBar();
+        return;
       case 'none':
         showRefusal(primaryActionHint(registry, action.item), sim.time);
         return;
@@ -3133,6 +3172,13 @@ export const startPlay = (
       view.furniture.markBounds(undefined, [0, 0, 0], [0, 0, 0]);
     }
   };
+  const furnitureHint = (entity: BlockEntity, key: ReturnType<typeof keyCap>): HintText => {
+    if (entity.bar) {
+      const lift = doorPlan(inventory, entity, 'unbar');
+      return html`${useText(entity)} · ${key} (hold): lift the bar${lift.ok ? '' : ` — ${lift.reason}`}`;
+    }
+    return liftable(entity) ? html`${useText(entity)} · ${key} (hold): lift` : useText(entity);
+  };
   const interactionHintFor = (
     target: InteractionTarget | undefined,
     carry: ReturnType<typeof carryPreview>,
@@ -3147,7 +3193,7 @@ export const startPlay = (
       case 'item':
         return html`${key}: pocket ${inventory.name(target.item)} · ${key} (hold): wield`;
       case 'furniture':
-        return liftable(target.entity) ? html`${useText(target.entity)} · ${key} (hold): lift` : useText(target.entity);
+        return furnitureHint(target.entity, key);
       case 'body':
         return downedBodyHint(target.id);
       default:
