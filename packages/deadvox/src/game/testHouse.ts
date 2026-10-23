@@ -145,7 +145,7 @@ const HOUSE_FURNITURE: readonly { type: string; at: Vec3; facing: Facing; loot?:
 
 /**
  * The house's furniture as entity specs in blocks, for a lot origin in metres. Furniture sizes are
- * in blocks and authored for the hamlet's 0.5 m blocks, and the positions are whole blocks only
+ * in blocks and authored for half-metre blocks, and the positions are whole blocks only
  * there, so the caller places furniture at that block size only.
  * @param sizeOf a furniture type's size in blocks, before turning
  */

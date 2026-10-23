@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { placementOf } from '../src/core/authoredPlacement.ts';
 import { buildRegistry } from '../src/core/content.ts';
-import { HAMLET_BLOCK_SIZE, HAMLET_HORDE_MEMBERS, HAMLET_HORDE_TYPE } from '../src/core/hamlet.ts';
+import { HORDE_MEMBERS, HORDE_TYPE, TEMPLATE_BLOCK_SIZE } from '../src/core/settlementSpawns.ts';
 import { footprint } from '../src/core/templates.ts';
 
 const projectRoot = resolve(import.meta.dirname, '..');
@@ -59,8 +59,8 @@ const buildings = playtest.buildings.map((building, index) => {
     placement,
     spawns: groupSpawns(placement.template.spawns),
     center: [
-      building.position[0] + (width * HAMLET_BLOCK_SIZE) / 2,
-      building.position[2] + (depth * HAMLET_BLOCK_SIZE) / 2,
+      building.position[0] + (width * TEMPLATE_BLOCK_SIZE) / 2,
+      building.position[2] + (depth * TEMPLATE_BLOCK_SIZE) / 2,
     ],
   };
 });
@@ -213,7 +213,7 @@ for (const { spawns } of buildings) {
   }
 }
 for (const _horde of playtest.hordes ?? []) {
-  const hordeSource = sourceForZombie(HAMLET_HORDE_TYPE);
+  const hordeSource = sourceForZombie(HORDE_TYPE);
   hordeSource.hordes += 1;
 }
 
@@ -228,9 +228,7 @@ const zombieSourceText = (source) =>
   [
     ...(source.map.size > 0 ? [`map: ${describeChanceCounts(source.map)}`] : []),
     ...(source.templates.size > 0 ? [`templates: ${describeChanceCounts(source.templates)}`] : []),
-    ...(source.hordes > 0
-      ? [`hordes: ${markerCount(source.hordes)} ×${rangeText(HAMLET_HORDE_MEMBERS)} members each`]
-      : []),
+    ...(source.hordes > 0 ? [`hordes: ${markerCount(source.hordes)} ×${rangeText(HORDE_MEMBERS)} members each`] : []),
   ].join('; ') || 'no authored source';
 
 const outsideLootLines = () => {

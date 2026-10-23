@@ -98,7 +98,7 @@ describe('tick-consumed dominant melee input across save and restore', () => {
     const bytes = await encodeSave(snapshot, {
       generation: 1,
       version: saveVersion,
-      worldOptions: { blockSize: 0.5, site: 'hamlet', storeys: 1, density: 0.5 },
+      worldOptions: { blockSize: 0.5, site: 'gauntlet', storeys: 1, density: 0.5 },
     });
     const decoded = await decodeSave(bytes, { version: saveVersion, contentLookup });
     expect(snapshot.character.playerCombat.nextFistHand).toBe(offSide(source.session.character));

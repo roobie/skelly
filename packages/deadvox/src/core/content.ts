@@ -1268,18 +1268,10 @@ const checkSiteGeneration = (registry: Registry, report: Report) => {
       ...Object.entries(terrain).map(([key, name]): [string, string] => [`.palette.terrain.${key}`, name]),
       ...Object.entries(trees).map(([key, name]): [string, string] => [`.palette.trees.${key}`, name]),
       ...Object.entries(single).map(([key, name]): [string, string] => [`.palette.${key}`, name]),
-      ['.hamlet.hedge', entry.hamlet.hedge],
     ];
     for (const [path, name] of blocks) {
       if (!registry.blockIds.has(name)) {
         report('siteGeneration', entry.id, path, `no block "${name}"`);
-      }
-    }
-    for (const side of ['northSide', 'southSide'] as const) {
-      for (const id of entry.hamlet[side]) {
-        if (!registry.templates.has(id)) {
-          report('siteGeneration', entry.id, `.hamlet.${side}`, `no template "${id}"`);
-        }
       }
     }
   }
@@ -1533,10 +1525,7 @@ const checkScenarios = (registry: Registry, report: Report): void => {
       report('scenarios', scenario.id, '.compression', `no compression tuning "${scenario.compression}"`);
     }
     checkEventRules(registry, scenario, report);
-    if (
-      registry.layouts.has(scenario.id) ||
-      ['hamlet', 'city', 'forest', 'testHouse', 'weatheringTest'].includes(scenario.id)
-    ) {
+    if (registry.layouts.has(scenario.id) || ['city', 'forest', 'testHouse', 'weatheringTest'].includes(scenario.id)) {
       report('scenarios', scenario.id, '.id', 'scenario id collides with another site selector');
     }
   }

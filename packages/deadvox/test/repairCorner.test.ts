@@ -169,7 +169,7 @@ describe('test-house repair corner', () => {
 
   it('adds no corner piles to the default or authored sites', () => {
     const authoredSite = [...scenarioRegistry.layouts.keys()].sort()[0]!;
-    for (const site of ['hamlet', authoredSite]) {
+    for (const site of ['gauntlet', authoredSite]) {
       const inventory = new Inventory(scenarioRegistry);
       startingLoadout(inventory);
       addRepairCorner(inventory, site);

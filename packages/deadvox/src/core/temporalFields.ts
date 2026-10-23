@@ -20,6 +20,15 @@ export interface TemporalField {
 
 /** Authored temporal schema fields; the lint rule checks this catalogue against schemas and base content. */
 export const TEMPORAL_FIELDS = [
+  { path: 'look[].damageFeedback.rollRiseRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
+  { path: 'look[].damageFeedback.rollSettleRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
+  { path: 'look[].damageFeedback.vignetteFadeRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
+  { path: 'look[].painCue.pulseRiseRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
+  { path: 'look[].painCue.pulseFallRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
+  { path: 'look[].mobActors.corpseLieSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'look[].mobActors.corpseSinkSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'look[].mobActors.launchSpinRadiansPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
+  { path: 'look[].mobActors.hearingGazeJitter.cyclesPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'powerTuning[].tickSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'powerDevices[].burnLitresPerGameHour', clock: 'Game', unit: 'PerHour', dimension: 'rate' },
   { path: 'graphics[].renderScale.adaptive.targetRealMs', clock: 'Real', unit: 'Milliseconds', dimension: 'duration' },

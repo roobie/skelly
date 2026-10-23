@@ -45,7 +45,7 @@ describe('shambler body-sized audio', () => {
     for (const body of figures) {
       const baseline = bodyPitch(body);
       expect(bodyPitch(body, '?site=voice_size&voicePitch=1.1&voicePitchLarge=0.9')).toBe(baseline);
-      expect(bodyPitch(body, '?site=hamlet&debug=1&voicePitch=1.1&voicePitchLarge=0.9')).toBe(baseline);
+      expect(bodyPitch(body, '?site=gauntlet&debug=1&voicePitch=1.1&voicePitchLarge=0.9')).toBe(baseline);
     }
   });
 });

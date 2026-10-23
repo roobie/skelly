@@ -85,7 +85,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     await page.goto(
       browserStageUrl(
         'primary-action',
-        `http://127.0.0.1:${port}/?debug=1&seed=73&site=hamlet&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        `http://127.0.0.1:${port}/?debug=1&seed=73&site=replay_fixture&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
         renderOverride,
       ),
     );
@@ -3290,7 +3290,7 @@ try {
   await page.goto(
     browserStageUrl(
       'primary-action',
-      `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=hamlet&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+      `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=testHouse&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
       renderOverride,
     ),
   );
