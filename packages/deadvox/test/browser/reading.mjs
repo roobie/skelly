@@ -42,7 +42,7 @@ const vite = await createServer({
         assert.equal(code.split(marker).length, 2);
         return code.replace(
           marker,
-          `let proofReadCalls=0; let throwGameLoopError=false; const proofOpen=reading.open; reading.open=(value,...args)=>{proofReadCalls++;proofOpen(value,...args);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,saveController:options.saveController,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;},requestResume(){resume();},playFrame:frame,triggerGameLoopError(){throwGameLoopError=true;}}});\nstartRealFrames((now)=>{if(throwGameLoopError){throwGameLoopError=false;throw new Error('Browser-stage game-loop failure');}return frame(now);});`,
+          `let proofReadCalls=0; let throwGameLoopError=false; const proofOpen=reading.open; reading.open=(value,...args)=>{proofReadCalls++;proofOpen(value,...args);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,saveController:options.saveController,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;},requestResume(){resume();},playFrame:frame,triggerGameLoopError(){throwGameLoopError=true;},get handsBusy(){return queue.busy||firearms.busy;}}});\nstartRealFrames((now)=>{if(throwGameLoopError){throwGameLoopError=false;throw new Error('Browser-stage game-loop failure');}return frame(now);});`,
         );
       },
     },
@@ -907,7 +907,6 @@ try {
         const { session, reading, readCalls } = globalThis.readingWitness;
         return {
           refusal: session.readingLight(),
-          illumination: session.illuminationAt(),
           open: reading.isOpen,
           readCalls,
           prompt: document.querySelector('#prompt')?.textContent ?? '',
@@ -967,8 +966,9 @@ try {
       }
       return { type, full: full.uid };
     });
-    // The off hand's use switches the lamp on the next game frame.
+    // Busy hands refuse a hand use, so the switch waits for them as a player would; it lands on the next game frame.
     const switchLamp = async (uid, on) => {
+      await page.waitForFunction(() => !globalThis.readingWitness.handsBusy);
       await pressAction(page, 'hand.use-off');
       await page.waitForFunction(
         ({ lampUid, want }) => globalThis.readingWitness.session.inventory.itemByUid(lampUid)?.on === want,
