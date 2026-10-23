@@ -33,7 +33,11 @@ const modPart = (
       model: id,
       size: [3, 2],
       economy: { usage: [], tiers: [] },
-      vehicle: { capabilities, ...(ratedLoadKg === undefined ? {} : { ratedLoadKg }) },
+      vehicle: {
+        capabilities,
+        obstruction: { sight: true, light: true, sound: true, combat: true },
+        ...(ratedLoadKg === undefined ? {} : { ratedLoadKg }),
+      },
     },
   ],
 });

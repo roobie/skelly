@@ -1493,6 +1493,13 @@ const ItemSchema = strictObject({
         array(picklist(VEHICLE_CAPABILITIES)),
         check((list) => new Set(list).size === list.length, 'capabilities must be distinct'),
       ),
+      /** Channel-specific blockers; a physical fitting need not hide, shade, hear or stop a strike. */
+      obstruction: strictObject({
+        sight: vBoolean(),
+        light: vBoolean(),
+        sound: vBoolean(),
+        combat: vBoolean(),
+      }),
       /** The heaviest load a `lift` part raises; one rating, not a chart over reach. */
       ratedLoadKg: optional(Positive),
       /**

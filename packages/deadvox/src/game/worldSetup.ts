@@ -335,7 +335,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     groundAt,
     isSolid,
     isOpaque: worldOpaque(world, registry, entities),
-    isSoundBlocking: worldSoundBlocking(world, registry, entities),
+    isSoundBlocking: worldSoundBlocking(world, registry, { entities }),
     streamer,
     spawn: site.spawn,
     lootPointsIn: (cx, cz) => built?.lootPointsIn(cx, cz) ?? houseLootPoints.get(`${cx},${cz}`) ?? [],

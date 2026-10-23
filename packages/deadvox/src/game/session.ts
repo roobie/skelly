@@ -705,7 +705,12 @@ export const createSession = (options: SessionOptions) => {
     : new Inventory(registry, undefined, options.entities, character);
   options.registerVehicles?.(inventory);
   const vehicleOccupancy = new VehicleOccupancy(registry, inventory.vehicles, s);
+  const vehicleSight = new VehicleOccupancy(registry, inventory.vehicles, s, 'sight');
+  const vehicleLight = new VehicleOccupancy(registry, inventory.vehicles, s, 'light');
   physicalSolid = (x, y, z) => isSolid(x, y, z) || vehicleOccupancy.isSolid(x, y, z);
+  const isOpaque = (x: number, y: number, z: number) => options.isOpaque(x, y, z) || vehicleSight.isSolid(x, y, z);
+  const isLightBlocking = (x: number, y: number, z: number) =>
+    options.isOpaque(x, y, z) || vehicleLight.isSolid(x, y, z);
   const wearPlaced = (piece: BlockEntity | undefined, wear: number | undefined): void => {
     if (piece && wear !== undefined) {
       inventory.entities.wear(piece, wear);
@@ -741,16 +746,22 @@ export const createSession = (options: SessionOptions) => {
   });
   const { entities } = inventory;
   // Zombie ticks share vertical block geometry; revisions keep edits visible to every caller.
-  const sunExposureCache = new SunExposureCache(skyTop, scale.minCy * CHUNK, options.isOpaque);
+  const sunExposureCache = new SunExposureCache(skyTop, scale.minCy * CHUNK, isLightBlocking);
   let cachedWorldVersion = world.version;
   let cachedEntityVersion = entities.version;
+  let cachedVehicleVersion = inventory.vehicles.version;
   const clearSunExposureCache = (): void => {
     sunExposureCache.clear();
     cachedWorldVersion = world.version;
     cachedEntityVersion = entities.version;
+    cachedVehicleVersion = inventory.vehicles.version;
   };
   const isSunExposedAt = (pos: Vec3, hour: number): boolean => {
-    if (cachedWorldVersion !== world.version || cachedEntityVersion !== entities.version) {
+    if (
+      cachedWorldVersion !== world.version ||
+      cachedEntityVersion !== entities.version ||
+      cachedVehicleVersion !== inventory.vehicles.version
+    ) {
       clearSunExposureCache();
     }
     return sunExposureCache.isExposedAt(pos, hour, dayCycle);
@@ -951,7 +962,7 @@ export const createSession = (options: SessionOptions) => {
 
   const firearms = new FirearmMechanics(inventory, queue, {
     blockSize: s,
-    isSolid,
+    isSolid: physicalSolid,
     pose: (uid) =>
       inventory.hands.right?.uid === uid || inventory.hands.left?.uid === uid
         ? {
@@ -1169,7 +1180,12 @@ export const createSession = (options: SessionOptions) => {
     [inventory.hands[dominantSide(character)], inventory.hands[offSide(character)]].find(
       (item) => item && registry.items.get(item.type)?.firearm,
     );
-  const meleeBlocker = worldMeleeBlocker(world, registry, inventory.entities, isSolid);
+  const meleeBlocker = worldMeleeBlocker(world, registry, {
+    entities: inventory.entities,
+    physical: physicalSolid,
+    vehicles: inventory.vehicles,
+    blockSize: s,
+  });
   /**
    * One blow on a piece, a zombie's bash or the player's strike; every blow is heard, whatever it does, in the sound
    * its material names. A blow that ruins a piece destroys it, and whatever came down with it, with the work that
@@ -1208,8 +1224,13 @@ export const createSession = (options: SessionOptions) => {
     terrainFloor: options.terrainFloor,
     isSolid: physicalSolid,
     solidBricks: solidBricksFor(world, registry, inventory, s),
-    isOpaque: options.isOpaque,
-    isSoundBlocking: worldSoundBlocking(world, registry, inventory.entities, isSolid),
+    isOpaque,
+    isSoundBlocking: worldSoundBlocking(world, registry, {
+      entities: inventory.entities,
+      physical: physicalSolid,
+      vehicles: inventory.vehicles,
+      blockSize: s,
+    }),
     meleeBlocker,
     bashObstacle: (ahead, strength) => bashPiece(entities.pieceTouching(ahead), strength),
     blockSize: s,
@@ -1401,7 +1422,7 @@ export const createSession = (options: SessionOptions) => {
     const blast =
       spec.blast.damage *
       blastShare(spec.blast, Math.hypot(centre[0] - at[0], centre[1] - at[1], centre[2] - at[2]) * s);
-    if (blast > 0 && inSight(at, centre, isSolid)) {
+    if (blast > 0 && inSight(at, centre, physicalSolid)) {
       sim.hit(blast, 'a grenade', 'torso', { kind: 'blunt' });
     }
     for (const region of fragmentHitsOnBody({
@@ -1409,7 +1430,7 @@ export const createSession = (options: SessionOptions) => {
       directions,
       rangeBlocks: rangeMetres / s,
       body,
-      isSolid,
+      isSolid: physicalSolid,
       regionHeights: bodyTuning.fragmentRegionHeights,
     })) {
       sim.hit(damage, 'a grenade', region, { kind: 'pierce' });
@@ -2093,6 +2114,15 @@ export const createSession = (options: SessionOptions) => {
       }
     },
     sim,
+    /** Derived vehicle-aware world queries for presentation and input consumers. */
+    physicalSolid,
+    isOpaque,
+    isSoundBlocking: worldSoundBlocking(world, registry, {
+      entities: inventory.entities,
+      physical: physicalSolid,
+      vehicles: inventory.vehicles,
+      blockSize: s,
+    }),
     inventory,
     entities,
     queue,

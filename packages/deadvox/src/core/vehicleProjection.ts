@@ -138,17 +138,23 @@ export function* vehicleCells(
 }
 
 /** Derived physical cells from the same occupied fitting boxes as rendering and picking. */
+export type VehicleObstructionChannel = 'sight' | 'light' | 'sound' | 'combat';
+
+/** A warmed cell query over one channel; its key is the collection revision, never a stale part snapshot. */
 export class VehicleOccupancy {
   private readonly cells = new Set<string>();
   private seenVersion = -1;
+
   private readonly registry: Registry;
   private readonly vehicles: VehicleInstances;
   private readonly blockSize: number;
+  private readonly channel: VehicleObstructionChannel | undefined;
 
-  constructor(registry: Registry, vehicles: VehicleInstances, blockSize: number) {
+  constructor(registry: Registry, vehicles: VehicleInstances, blockSize: number, channel?: VehicleObstructionChannel) {
     this.registry = registry;
     this.vehicles = vehicles;
     this.blockSize = blockSize;
+    this.channel = channel;
   }
 
   isSolid(x: number, y: number, z: number): boolean {
@@ -161,8 +167,17 @@ export class VehicleOccupancy {
       return;
     }
     this.cells.clear();
-    for (const [x, y, z] of vehicleCells(this.registry, this.vehicles, this.blockSize)) {
-      this.cells.add(`${x},${y},${z}`);
+    for (const [vehicleId, vehicle] of this.vehicles.records) {
+      for (const part of projectVehicleParts(this.registry, vehicleId, vehicle, this.blockSize)) {
+        if (this.channel && !this.registry.items.get(part.item.type)?.vehicle?.obstruction[this.channel]) {
+          continue;
+        }
+        for (const box of part.boxes) {
+          for (const [x, y, z] of cellsOfBox(box, this.blockSize)) {
+            this.cells.add(`${x},${y},${z}`);
+          }
+        }
+      }
     }
     this.seenVersion = this.vehicles.version;
   }
