@@ -160,7 +160,7 @@ local rooms = {
   // The breaker's place until the per-level power switch is built: a dead panel in a hazard-marked room off the
   // corridor's blind end, found by exploring rather than passed on the route.
   plant: {
-    tokens: ['z', 'B', '?', 'S'], wall: 'B', floor: 'z', band: '}', bay: '?',
+    tokens: ['z', 'B', '?', 'S'], wall: 'B', floor: 'z', band: '}', bays: ['?'],
     finish: { floor: 'hazard', wall: 'metal', base: 'hazard_wall' }, ceilingDrop: 2, floorRise: 0,
     openings: [{ token: 'S', at: [32, 10], axis: 'z', width: 2 }],
     dressing: [{ id: 'plant_panel', at: [33, 6], kit: 'console', fixture: null }],
