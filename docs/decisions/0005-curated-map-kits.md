@@ -71,27 +71,28 @@ directions; material ownership alone does not establish a usable flight.
 
 ## Lab room boundaries
 
-Repeated room pieces reserve their thresholds and central circulation separately from
-furnishing bays. A room substitution may change equipment inside a bay without changing
-its supported routes or borrowing space from a connector. Mouth clearance should enclose
-the walking body, not adjacent equipment: declaring an unnecessarily deep mouth would
-turn a valid furnishing bay into a circulation conflict. See
-`packages/deadvox/src/content/base/gauntlet-lab-rooms.libsonnet`, `room`.
+A level's shell reserves its openings and walking air separately from equipment bays,
+which it leaves unclaimed, so equipment in a bay cannot change the level's supported
+routes or borrow space from a connector. An opening's clearance should enclose the
+walking body, not adjacent equipment: declaring an unnecessarily deep opening would turn
+a valid bay into a circulation conflict. See
+`packages/deadvox/src/content/base/gauntlet-lab-level.libsonnet`, `claims`.
 
 A descent shaft owns its ladder column, body clearance and opening through the upper
-floor. The receiving room leaves the shaft volume unclaimed; the departing room leaves
+floor. The receiving level leaves the shaft volume unclaimed; the departing level leaves
 its floor opening unclaimed. Furnishing beside the column still needs a final climb
 certificate: exclusive ownership prevents overlapping writes, not a body obstruction in
-an adjacent cell. See `packages/deadvox/src/content/base/gauntlet-lab-descents.libsonnet`, `shaft`,
-and `packages/deadvox/test/labDescentKit.test.ts`.
+an adjacent cell. See `packages/deadvox/src/content/base/gauntlet-lab-descents.libsonnet`,
+`shaft`, and `packages/deadvox/test/scenarioCertificate.test.ts`,
+"rejects a shaft-neighbor obstruction in the final furnished production lab".
 
-Production storeys compose literal circulation strips and furnished room assemblies.
-Equipment bays belong to their room, while descent shafts and floor openings belong to
-connectors. Closed descent lids support both side cells of the opening, so crossing an
-upper room cannot silently become a drop route. Opening the lid deliberately admits the
-climb. See `packages/deadvox/src/content/base/gauntlet-lab.libsonnet`, `storey`,
-`packages/deadvox/src/content/base/gauntlet-lab-equipment.libsonnet`, `furnished`, and
-`packages/deadvox/src/content/base/gauntlet-lab-descents.libsonnet`, `mapPieces`.
+Each lab level is authored whole from one plan through the shared level builder, so its
+rooms, equipment bays and openings stay one design rather than substitutable kits.
+Equipment bays belong to their room, while descent shafts and stairs belong to the
+connectors between levels. Closed descent lids support both side cells of the opening,
+so crossing an upper room cannot silently become a drop route. Opening the lid
+deliberately admits the climb. See `packages/deadvox/src/content/base/gauntlet-lab-level.libsonnet`,
+`build`, and `packages/deadvox/src/content/base/gauntlet-lab.libsonnet`, `mapAssemblies`.
 
 The service facade and underground campus share one owned assembly rather than a second
 copy of the lab geometry. Portal anchors address finished furniture positions, not source

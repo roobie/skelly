@@ -48,7 +48,8 @@ local threshold = [lab.port.x + lab.port.width / 2, intake, lab.depth - 1];
       landmarkPositions: [[-16, 0, -82], [-34, 0, -24]],
       incidentalTemplates: ['gauntlet_incidental_bollard', 'gauntlet_incidental_cabinet', 'gauntlet_incidental_riser'],
       objective: lab.anchors.objective,
-      objectiveFace: [lab.anchors.objective[0], lab.anchors.storeys[std.length(lab.anchors.storeys) - 1].standing[1], lab.anchors.objective[2] + 3],
+      // The objective's standing face is authored with the level that places it, not derived from a console orientation.
+      objectiveFace: lab.anchors.objectiveFace,
       retreat: [lab.surfaceOffset + 12, ground + 1, lab.surfaceOffset + 8],
       resources: [
         { at: [lab.surfaceOffset + 9, ground + 1, lab.surfaceOffset + 18], standing: [lab.surfaceOffset + 11, ground + 1, lab.surfaceOffset + 21] },

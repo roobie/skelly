@@ -787,18 +787,14 @@ in `src/core/templateSpatial.ts`; see also `templateReachableStandingPositions`
 there and `src/core/ladders.ts`, `ladderOutward`.
 
 Lab threat grows with depth so descending feels like going deeper into a failing
-facility, not repeating one room. Each level, or grid storey until its rebuild,
-authors weighted marker rows, so threat
-follows depth and not a level's function, and each room kind sets how many of its
-marker cells are live; breach and quarantine rooms are densest. The threat first
-changes kind on the research level, where the place turns from offices to labs, and
-the deeper levels still carry more of the dangerous kinds. The rows are slot choices, so a mod retunes a level by
-overriding data. The amalgam body is taller
-than a storey, so the bottom storey holds it in a double-height chamber: the room piece
-is one storey, and a cap piece in the storey above owns the slab and air over it, with
-solid wall and cap around so nothing walks over the opening. The amalgam row appears
-only there. See
-`src/content/base/gauntlet-lab-threat.libsonnet`, `rows` and `kinds`; and
+facility, not repeating one room. Each level authors weighted marker rows and places
+its own marker cells, so threat follows depth and not a level's function, and where a
+level puts its cells sets which rooms are dense. The threat first changes kind on the
+research level, where the place turns from offices to labs, and special research still
+carries more of the dangerous kinds. The rows are slot choices, so a mod retunes a
+level by overriding data. The amalgam is never a weighted row: its body needs space
+built for it, so it has one dedicated marker where that space is. See
+`src/content/base/gauntlet-lab-threat.libsonnet`, `rows` and `amalgamSlot`; and
 `test/scenarioCertificate.test.ts`, "lab threat by depth".
 
 One owned assembly supplies the service facade and underground campus, so the
@@ -880,28 +876,46 @@ freezes them so Continue cannot rewrite the journey. See
 `src/core/scenarioDiscovery.ts`, `discoveryForPlan`; `src/core/scenarioRun.ts`,
 `ScenarioRun`; and `src/game/session.ts`, `createSession`.
 
-The lab's target is four levels below the hatch, with the nuclear objective at the
-bottom. Each function from the drawn plan gets a level, but the drawing is inspiration,
-not a blueprint: its mood guides the rebuild and BR judges fidelity in play. Looped
-circulation and separated descents make exploration and retreat choices rather than
-one corridor and a continuous climb. Entry and security, administration and general
-research replace the grid's top storeys; the grid's last two storeys remain until
-special research's rebuild, which retires the extra one and establishes the target depth. Rebuilt
-levels share one builder and one scale, so a level's rooms keep their proportions and a
-fix to the builder reaches every level. See `src/content/base/gauntlet-lab-level.libsonnet`,
-`build`, and `src/content/base/gauntlet-lab.libsonnet`, `mapAssemblies`.
+The lab's four underground levels follow a working facility's progression from entry
+and security through administration and general research to special research, with
+the nuclear objective on the last, so the rooms explain why the player keeps
+descending. Each function from the drawn plan gets a level, but the drawing is
+inspiration, not a blueprint: its mood guides the build and BR judges fidelity in play.
+Looped circulation and separated descents make exploration and retreat choices rather
+than one corridor and a continuous climb. The levels share one builder and one scale,
+so a level's rooms keep their proportions and a fix to the builder reaches every level.
+See `src/content/base/gauntlet-lab-level.libsonnet`, `build`, and
+`src/content/base/gauntlet-lab.libsonnet`, `mapAssemblies` and `anchors`.
 
 The stair is the main way down because a building's descent should read as one. A
 lidded shaft remains an alternate return route. Each level's stair and shaft leave from
 different places than the ways that arrive on it, so the next way down is something to
-find and retreat by the other route is a real choice. The lowest rebuilt level joins
-the grid below through a temporary landing named in one place, which each rebuild moves
-down a storey. Threat is allowed to move between levels; that behaviour is not built.
-Depth ordering is not a promise of isolation. Floors damp sound like walls rather than
-silencing it between storeys; see `src/core/soundOcclusion.ts`, `soundOcclusion`. See
-`src/content/base/gauntlet-lab-administration.libsonnet`, `stair`;
-`src/content/base/gauntlet-lab.libsonnet`, `join`; and
-`src/content/base/gauntlet-lab-equipment.libsonnet`, `mapPieces`.
+find and retreat by the other route is a real choice. The deepest level has no onward
+descent: its loops serve exploration and retreat around the destination. Threat is
+allowed to move between levels; that behaviour is not built. Depth ordering is not a
+promise of isolation. Floors damp sound like walls rather than silencing it between
+storeys; see `src/core/soundOcclusion.ts`, `soundOcclusion`. See
+`src/content/base/gauntlet-lab-administration.libsonnet`, `stair`, and
+`src/content/base/gauntlet-lab-descents.libsonnet`, `shaft`.
+
+The objective occupies special research's central chamber so the floor's strongest
+spatial landmark is also its end. The amalgam shares the destination so the final
+interaction takes place under the encounter's pressure; the button stays reachable
+without a kill, because the goal never required one. The amalgam waits in a specimen
+pit sunk below the chamber floor, so the encounter is a look down from the rim rather
+than face to face. The pit gives its whole body room inside special research, so the
+research level above stays untouched and the creature keeps its full size. A ladder in
+the pit lets a player who falls in climb back to the rim. See
+`src/content/base/gauntlet-lab-special.libsonnet`, `pitPiece`, `amalgam` and `objectiveFace`;
+`src/content/base/gauntlet-lab-threat.libsonnet`, `amalgamSlot`; and
+`src/content/base/scenarios.jsonnet`, `composition`.
+
+Deeper lab stock keeps the shallower tiers, so depth adds possibilities rather than
+replacing ordinary supplies. Special research's experimental-arms locker rolls a table
+no other source shares, so what it holds is a discovery at the deepest level rather
+than equipment found elsewhere in preparation for it, and none of it is needed for the
+objective. The laser rifle joins that table when #1128 defines it. See
+`src/content/base/gauntlet-lab-special.libsonnet`, `loot`.
 
 The hatch-side entrance is open. Each rebuilt level's ways down need that level's own
 keycard, from one authored spot on its open side. A card may be stock in a container
@@ -915,16 +929,16 @@ the card opens them. The certificate checks seals top-down: each level's matchin
 card must be present, reachable from the hatch landing with only the seals above it
 open, and within pickup reach, in the open or in its container, before its locks are admitted to the descent
 proof. Checking in that order means no card can depend on its own seal or a deeper one,
-which would make the run a dead end. See
+which would make the run a dead end. Cards gate ways down, so special research, which
+has none, has no card: level three's seal is the last clearance, and the destination is
+open to whoever reaches the level. See
 `src/content/base/gauntlet-lab-administration.libsonnet`, `seal`;
 `src/content/base/gauntlet-lab-research.libsonnet`, `lab_breached`;
 `src/content/base/gauntlet-lab-level.libsonnet`, `cardStock`;
 `src/core/scenarioCertificate.ts`, `seals`; and `src/core/prying.ts`, `pryPlan`.
 
-Each level is fully rebuilt and judged in play before the next one, so the first
-level sets the look and the destination is built last. Unrebuilt grid storeys keep
-their shafts without seals or fixtures. Their shell and circulation retire with
-them; equipment, descent lids, threat and the holding cap are reused where they fit.
+Each level is fully built and judged in play before the next one, so the first level
+sets the look and the destination is built last.
 The authored plan scales rooms together while equipment and doors stay human-sized.
 Rooms differ in
 height, finish and furnishing so each reads as its own space under a carried light.
@@ -935,12 +949,13 @@ A level that holds a hazard separates its staff side from its working side throu
 changing or decontamination room, with a second way between them, so the player reads
 where the danger is without being forced through one small room. Those cues are not a danger or balance proof. A room stocks from a loot context that
 fits its use, so what a search turns up says what the room was for; few rolls and
-heavy nothing weights keep the lab scarce. Rebuilt levels carry no readables until the
-destination round, because what the lab's papers tell depends on the destination. See
-`src/content/base/gauntlet-lab-entry.libsonnet`, `rooms` and `plan`;
+heavy nothing weights keep the lab scarce. In-lab papers explain the facility without
+authorizing access: staff notes filed in special research's records vault tell the work
+and its failure but give no directions, so finding the destination stays architectural.
+See `src/content/base/gauntlet-lab-entry.libsonnet`, `rooms` and `plan`;
 `src/content/base/gauntlet-lab-administration.libsonnet`, `rooms`;
 `src/content/base/gauntlet-lab-research.libsonnet`, `rooms`; and
-`src/content/base/gauntlet-lab-equipment.libsonnet`, `furnished`.
+`src/content/base/gauntlet-lab-special.libsonnet`, `rooms` and `items`.
 
 Level two's briefing hall is double height: it extends down into a column that the
 research level reserves for it, so a level gains one tall space without a storey of its
