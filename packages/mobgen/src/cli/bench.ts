@@ -59,7 +59,7 @@ if (!(Number.isInteger(frameCount) && frameCount > 0)) {
   process.exit(2);
 }
 
-const LUNGE_GRAB = ATTACK_CLIPS.LUNGE_GRAB!;
+const LUNGE_GRAB = ATTACK_CLIPS['lunge-grab'];
 const ATTACKER_FRACTION = 0.1; // matches stress.ts's crowd
 
 interface PoolEntry {

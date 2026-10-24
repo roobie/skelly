@@ -30,7 +30,7 @@ import {
 import { acidTemplate } from '../mob/acidTemplate.ts';
 import { amalgamManifest } from '../mob/amalgam.ts';
 import { VIEWER_TEMPLATES } from '../mob/amalgamTemplate.ts';
-import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
+import { ATTACK_CLIPS, type AttackClip, attackClipById, attackClipFor, attackPose } from '../mob/attack.ts';
 import { crawlerGaitPose, crawlerHitPose, crawlerPose } from '../mob/crawler.ts';
 import { severableParts, severedBoneSet } from '../mob/dismember.ts';
 import { DOG_SEVERABLE_PARTS, dogGaitPose, dogHitPose, dogPose } from '../mob/dog.ts';
@@ -78,6 +78,8 @@ const speedValue = $<HTMLSpanElement>('speed-value');
 const idleStanceSelect = $<HTMLSelectElement>('idle-stance');
 const attackBtn = $<HTMLButtonElement>('attack-btn');
 const attackLoop = $<HTMLInputElement>('attack-loop');
+const attackClipSelect = $<HTMLSelectElement>('attack-clip');
+const darkScene = $<HTMLInputElement>('dark-scene');
 const acidWindup = $<HTMLInputElement>('acid-windup');
 const acidWindupLabel = $<HTMLLabelElement>('acid-windup-label');
 const hitBtn = $<HTMLButtonElement>('hit-btn');
@@ -110,10 +112,22 @@ view.appendChild(renderer.domElement);
 
 const scene = new Scene();
 scene.background = new Color(0x16_18_1c);
-scene.add(new HemisphereLight(0xdf_e6_ee, 0x2a_26_22, 1.6));
+const hemi = new HemisphereLight(0xdf_e6_ee, 0x2a_26_22, 1.6);
+scene.add(hemi);
 const sun = new DirectionalLight(0xff_ff_ff, 2.2);
 sun.position.set(2, 4, 3);
 scene.add(sun);
+
+/** Dim scene lighting to a faint remnant, so self-lit materials (template emission — see scene.ts,
+ * fleshMaterial) can be judged as glow in the dark rather than as shaded colour. */
+const applySceneLighting = (): void => {
+  hemi.intensity = darkScene.checked ? 0.06 : 1.6;
+  sun.intensity = darkScene.checked ? 0.04 : 2.2;
+};
+darkScene.addEventListener('change', () => {
+  applySceneLighting();
+  updateUrl();
+});
 
 // One 0.5 m/cell grid (a deadvox block) that scrolls under the figure while it walks, plus a finer
 // one at voxel spacing near the origin (cheap: just extra lines).
@@ -186,8 +200,23 @@ const dogStance = (genome: Genome, severed?: ReadonlySet<string>) => ({
   severed,
 });
 const ATTACK_COOLDOWN_S = 1.5; // matches deadvox's shambler attack cooldown
-let attackTime: number | undefined; // seconds into ATTACK_CLIPS.LUNGE_GRAB, or undefined when idle
+let attackTime: number | undefined; // seconds into the playing clip, or undefined when idle
 let attackCooldown = 0; // seconds until the loop (if checked) fires the next attack
+/** Fallback clip until a template loads; the first load always sets the template's own choice. */
+let activeClip: AttackClip = ATTACK_CLIPS['lunge-grab'];
+/** The clip this template's content selects, so the URL records only a deliberate override. */
+let templateClipName: string | undefined;
+/** A clip named by the page's URL, honoured on every load until the selector is touched by hand. */
+let clipOverride: string | undefined;
+for (const clip of Object.values(ATTACK_CLIPS)) {
+  attackClipSelect.add(new Option(clip.name, clip.name));
+}
+attackClipSelect.addEventListener('change', () => {
+  clipOverride = undefined;
+  activeClip = attackClipById(attackClipSelect.value)!;
+  attackTime = undefined;
+  updateUrl();
+});
 let hitTime: number | undefined; // seconds into HIT_FLINCH, or undefined when idle
 let hitSide = 0; // -1..1, alternates each press so the side-mirror is visible across repeated hits
 // Death freezes whatever pose was current (walk, standing, or mid-attack) the instant it starts, and
@@ -262,8 +291,7 @@ const playDeath = (): void => {
   const speed = walking ? Number(speedInput.value) : 0;
   const idle = idlePose(actor, currentStance(), idleTime);
   const walkBase: Pose = walkPose(actor, clock, speed, { idle });
-  deathBasePose =
-    attackTime === undefined ? walkBase : attackPose(actor, ATTACK_CLIPS.LUNGE_GRAB!, attackTime, walkBase);
+  deathBasePose = attackTime === undefined ? walkBase : attackPose(actor, activeClip, attackTime, walkBase);
   deathDirection = dieBackward.checked ? -1 : 1;
   deathTime = 0;
 };
@@ -382,16 +410,34 @@ const updateUrl = (): void => {
   params.set('speed', speedInput.value);
   params.set('walk', walkOn.checked ? '1' : '0');
   params.set('stance', idleStanceSelect.value);
-  if (attackLoop.checked) {
-    params.set('attack', '1');
-  }
-  if (acidWindup.checked) {
-    params.set('windup', '1');
+  const setFlag = (box: HTMLInputElement, key: string): void => {
+    if (box.checked) {
+      params.set(key, '1');
+    }
+  };
+  setFlag(attackLoop, 'attack');
+  setFlag(darkScene, 'dark');
+  setFlag(acidWindup, 'windup');
+  if (templateClipName !== undefined && attackClipSelect.value !== templateClipName) {
+    params.set('clip', attackClipSelect.value);
   }
   if (new URLSearchParams(location.search).get('shot') === '1') {
     params.set('shot', '1');
   }
   history.replaceState(null, '', `?${params.toString()}`);
+};
+
+/** Syncs the attack-clip selector with a freshly loaded template: it offers every shared-rig clip
+ * beside the template's own choice, so a look can be judged in motion against the alternative on the
+ * same body. The URL's clip stays honoured until the selector is touched by hand. */
+const syncAttackClip = (template: Template): void => {
+  const humanoidRig = usesHumanoidRig(template);
+  templateClipName = humanoidRig ? attackClipFor(template).name : undefined;
+  attackClipSelect.closest('label')!.hidden = !humanoidRig;
+  if (templateClipName !== undefined) {
+    attackClipSelect.value = clipOverride ?? templateClipName;
+    activeClip = attackClipById(attackClipSelect.value)!;
+  }
 };
 
 const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
@@ -457,6 +503,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
     );
   }
   acidWindupLabel.hidden = template.bodyPlan !== 'acid';
+  syncAttackClip(template);
   walkFieldset.hidden = staticOnly;
   attackFieldset.hidden = staticOnly;
   reactionsFieldset.hidden = staticOnly;
@@ -652,6 +699,14 @@ setSpeed(Number(query.get('speed') ?? '0.8'));
 walkOn.checked = query.get('walk') === '1';
 attackLoop.checked = query.get('attack') === '1';
 acidWindup.checked = query.get('windup') === '1';
+darkScene.checked = query.get('dark') === '1';
+applySceneLighting();
+const clipParam = query.get('clip');
+if (clipParam && [...attackClipSelect.options].some((o) => o.value === clipParam)) {
+  clipOverride = clipParam;
+  attackClipSelect.value = clipParam;
+  activeClip = attackClipById(clipParam)!;
+}
 const stanceParam = query.get('stance');
 if (stanceParam && [...idleStanceSelect.options].some((o) => o.value === stanceParam)) {
   idleStanceSelect.value = stanceParam;
@@ -801,14 +856,13 @@ const applyLiveFrame = (loaded: Loaded, dt: number): void => {
   const walking = walkOn.checked;
   const speed = walking ? Number(speedInput.value) : 0;
   advanceWalk(dt, walking, speed);
-  const clip = ATTACK_CLIPS.LUNGE_GRAB!;
-  advanceAttack(dt, clip.duration);
+  advanceAttack(dt, activeClip.duration);
   advanceHit(dt);
 
   const actor = loaded.walkActor;
   const idle = idlePose(actor, currentStance(), idleTime);
   const basePose: Pose = walkPose(actor, clock, speed, { idle });
-  const attacked = attackTime === undefined ? basePose : attackPose(actor, clip, attackTime, basePose);
+  const attacked = attackTime === undefined ? basePose : attackPose(actor, activeClip, attackTime, basePose);
   const pose = hitTime === undefined ? attacked : flinchPose(actor, hitTime, attacked, { side: hitSide });
   applyLookAt(loaded, pose, dt);
 };
