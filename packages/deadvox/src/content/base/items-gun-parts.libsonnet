@@ -38,6 +38,17 @@ local looks = {
   revolver_grip: { name: 'Revolver grip', size: [1, 2] },
   revolver_hammer: { name: 'Revolver hammer', size: [1, 1] },
   revolver_trigger: { name: 'Revolver trigger', size: [1, 1] },
+  receiver_sporter: { name: 'Sporter receiver', size: [1, 3] },
+  bolt_carrier_bolt: { name: 'Bolt carrier', size: [1, 2] },
+  bolt_handle_sporter: { name: 'Bolt handle', size: [1, 1] },
+  bolt_knob_sporter: { name: 'Bolt knob', size: [1, 1] },
+  lower_sporter: { name: 'Sporter trigger housing', size: [1, 2] },
+  barrel_sporter_long: { name: 'Sporter barrel', size: [1, 4] },
+  handguard_sporter: { name: 'Sporter forend', size: [1, 3] },
+  integral_magazine: { name: 'Integral magazine', size: [1, 2] },
+  stock_sporting_medium: { name: 'Sporting stock', size: [2, 3] },
+  front_sight_sporter: { name: 'Sporting front sight', size: [1, 1] },
+  rear_sight_sporter: { name: 'Sporting rear sight', size: [1, 1] },
 };
 local ids = std.set([entry.id for entry in catalogue.parts if std.objectHas(entry, 'params')]);
 assert ids == std.set(std.objectFields(looks)) :

@@ -1,0 +1,13 @@
+{
+  "id": "barrel_sporter_long",
+  "file": "assets/models/barrel_sporter_long.glb",
+  "gun": {},
+  "parts": {
+    "barrel_sporter_long": {
+      "item": "barrel_sporter_long",
+      "node": "barrel_sporter_long:barrel",
+      "massKg": 0.85,
+      "centreOfMass": [0.276, 0, 0]
+    }
+  }
+}

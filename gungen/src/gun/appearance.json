@@ -204,6 +204,11 @@
         "furniture": "wood-walnut",
         "metal": "steel-parkerized"
       },
+      "hunting-rifle": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
       "pistol": {
         "accent": "rubber-black",
         "furniture": "polymer-black",

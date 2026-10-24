@@ -79,10 +79,32 @@
     },
     {
       "family": "receiver",
-      "id": "receiver-sporter",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "receiver_sporter",
       "massKg": 0.69999999999999996,
       "match": {
         "section": "sporter"
+      },
+      "params": {
+        "action": "bolt",
+        "actionFrame": "small",
+        "boltCalibre": "308-winchester",
+        "boltHandle": "rest",
+        "boltHandleProfile": "sporter",
+        "bore": "M",
+        "carrierPattern": "bolt",
+        "chargingHandle": "side",
+        "feed": "top",
+        "handleStyle": "auto",
+        "integral": "yes",
+        "magazineWell": "recessed",
+        "rail": "full",
+        "section": "sporter",
+        "stockStyle": "sporting"
       }
     },
     {
@@ -182,10 +204,25 @@
     },
     {
       "family": "bolt-carrier",
-      "id": "bolt-carrier-bolt",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "bolt_carrier_bolt",
       "massKg": 0.34999999999999998,
       "match": {
         "pattern": "bolt"
+      },
+      "params": {
+        "action": "bolt",
+        "boltCalibre": "308-winchester",
+        "bore": "M",
+        "feed": "top",
+        "handleProfile": "sporter",
+        "handleStyle": "auto",
+        "pattern": "bolt",
+        "section": "sporter"
       }
     },
     {
@@ -237,10 +274,23 @@
     },
     {
       "family": "bolt-handle-arm",
-      "id": "bolt-handle-sporter",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "bolt_handle_sporter",
       "massKg": 0.070000000000000007,
       "match": {
         "handleProfile": "sporter"
+      },
+      "params": {
+        "action": "bolt",
+        "boltCalibre": "308-winchester",
+        "bore": "M",
+        "feed": "top",
+        "handleProfile": "sporter",
+        "section": "sporter"
       }
     },
     {
@@ -261,10 +311,23 @@
     },
     {
       "family": "bolt-handle-knob",
-      "id": "bolt-knob-sporter",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "bolt_knob_sporter",
       "massKg": 0.025000000000000001,
       "match": {
         "handleProfile": "sporter"
+      },
+      "params": {
+        "action": "bolt",
+        "boltCalibre": "308-winchester",
+        "bore": "M",
+        "feed": "top",
+        "handleProfile": "sporter",
+        "section": "sporter"
       }
     },
     {
@@ -368,11 +431,26 @@
     },
     {
       "family": "lower",
-      "id": "lower-sporter",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "lower_sporter",
       "massKg": 0.17999999999999999,
       "match": {
         "layout": "conventional",
         "section": "sporter"
+      },
+      "params": {
+        "boltCalibre": "308-winchester",
+        "integral": "yes",
+        "layout": "conventional",
+        "magazineOrientation": "straight",
+        "magazineProfile": "standard",
+        "magazineWell": "recessed",
+        "section": "sporter",
+        "triggerGuard": "present"
       }
     },
     {
@@ -542,11 +620,27 @@
     },
     {
       "family": "barrel",
-      "id": "barrel-sporter-long",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "barrel_sporter_long",
       "massKg": 0.84999999999999998,
       "match": {
         "length": "L",
         "section": "sporter"
+      },
+      "params": {
+        "bore": "M",
+        "frontSightStyle": "sporting",
+        "handguardLayout": "standard",
+        "handguardLength": "L",
+        "length": "L",
+        "muzzle": "threaded",
+        "profile": "standard",
+        "section": "sporter",
+        "tubeLengthPercent": "75"
       }
     },
     {
@@ -768,10 +862,28 @@
     },
     {
       "family": "handguard",
-      "id": "handguard-sporter",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "handguard_sporter",
       "massKg": 0.34999999999999998,
       "match": {
         "layout": "standard",
+        "section": "sporter"
+      },
+      "params": {
+        "barrelBore": "M",
+        "boltCalibre": "308-winchester",
+        "boltHandleProfile": "sporter",
+        "bore": "M",
+        "clearance": "M",
+        "fit": "receiver",
+        "handleStyle": "none",
+        "layout": "standard",
+        "length": "L",
+        "mount": "clamped",
         "section": "sporter"
       }
     },
@@ -998,10 +1110,21 @@
     },
     {
       "family": "stock",
-      "id": "stock-sporting-medium",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "stock_sporting_medium",
       "massKg": 0.5,
       "match": {
         "length": "M",
+        "style": "sporting"
+      },
+      "params": {
+        "combDegrees": "2",
+        "length": "M",
+        "section": "sporter",
         "style": "sporting"
       }
     },
@@ -1193,9 +1316,19 @@
     },
     {
       "family": "front-sight",
-      "id": "front-sight-sporting",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "front_sight_sporter",
       "massKg": 0.02,
       "match": {
+        "style": "sporting"
+      },
+      "params": {
+        "bore": "M",
+        "section": "sporter",
         "style": "sporting"
       }
     },
@@ -1209,9 +1342,18 @@
     },
     {
       "family": "sporting-rear-sight",
-      "id": "rear-sight-sporting",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "rear_sight_sporter",
       "massKg": 0.035000000000000003,
-      "match": {}
+      "match": {},
+      "params": {
+        "bore": "M",
+        "section": "sporter"
+      }
     },
     {
       "family": "drum-rear-sight",
@@ -1265,10 +1407,25 @@
     },
     {
       "family": "magazine",
-      "id": "integral-magazine",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "integral_magazine",
       "massKg": 0.12,
       "match": {
         "integral": "yes"
+      },
+      "params": {
+        "boltCalibre": "308-winchester",
+        "integral": "yes",
+        "length": "S",
+        "orientation": "straight",
+        "profile": "standard",
+        "section": "sporter",
+        "variant": "ak74",
+        "wellBody": "sporter"
       }
     },
     {
