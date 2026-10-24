@@ -26,6 +26,7 @@ read_if:
   - you author lab equipment bays, curated storeys or supported descent lids
   - you change sleep onset, its tuning or cancellation
   - you're changing the rendering of zombie actor models
+  - you're considering a coarser mesh or level of detail for distant zombie bodies
   - you're integrating a mobgen amalgam body, its collision envelope or member hit ownership (#308)
   - you're changing how the amalgam's flesh meets terrain, the player or shots
   - you're measuring or reducing amalgam collision cost against its per-tick budget
@@ -2911,6 +2912,13 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   must build its own pose before drawing. See `src/render/mobActors.ts`,
   `MobActorMeshes.syncZombie`, `test/runnerRenderContinuity.test.ts`,
   `runEngagement`, and `test/mobActors.test.ts`, `MobActorMeshes`.
+- **Far zombie bodies draw at full detail:** a coarser mesh for distant bodies
+  cut submitted geometry but showed no repeatable whole-frame GPU saving, at two
+  crowd sizes under fixed and adaptive render scale (closed branch
+  `deadvox/far-actor-lod`). Any later coarse path keeps the full skeleton, parts
+  and joint contacts, so severing and stump gore work at any distance, and
+  crawlers keep full detail. Revisit when a frame profile shows far-body cost
+  (#1273).
 - **Sun shadows:** Favor a stable edge near the player over sharp shadows far
   beyond them. The remaining jaggedness is accepted; do not pursue further
   refinement without a new decision. See `sunShadowTexelSize` and
