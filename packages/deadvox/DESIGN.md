@@ -790,8 +790,9 @@ Lab threat grows with depth so descending feels like going deeper into a failing
 facility, not repeating one room. Each level, or grid storey until its rebuild,
 authors weighted marker rows, so threat
 follows depth and not a level's function, and each room kind sets how many of its
-marker cells are live; breach and quarantine rooms are densest. The faster types
-appear only deep down. The rows are slot choices, so a mod retunes a level by
+marker cells are live; breach and quarantine rooms are densest. The threat first
+changes kind on the research level, where the place turns from offices to labs, and
+the deeper levels still carry more of the dangerous kinds. The rows are slot choices, so a mod retunes a level by
 overriding data. The amalgam body is taller
 than a storey, so the bottom storey holds it in a double-height chamber: the room piece
 is one storey, and a cap piece in the storey above owns the slab and air over it, with
@@ -883,9 +884,9 @@ The lab's target is four levels below the hatch, with the nuclear objective at t
 bottom. Each function from the drawn plan gets a level, but the drawing is inspiration,
 not a blueprint: its mood guides the rebuild and BR judges fidelity in play. Looped
 circulation and separated descents make exploration and retreat choices rather than
-one corridor and a continuous climb. Entry and security, then administration, replace
-the grid's top storeys; the lower grid remains until its top-down review rounds, with
-one grid storey to retire when the final rebuild establishes the target depth. Rebuilt
+one corridor and a continuous climb. Entry and security, administration and general
+research replace the grid's top storeys; the grid's last two storeys remain until
+special research's rebuild, which retires the extra one and establishes the target depth. Rebuilt
 levels share one builder and one scale, so a level's rooms keep their proportions and a
 fix to the builder reaches every level. See `src/content/base/gauntlet-lab-level.libsonnet`,
 `build`, and `src/content/base/gauntlet-lab.libsonnet`, `mapAssemblies`.
@@ -905,7 +906,10 @@ silencing it between storeys; see `src/core/soundOcclusion.ts`, `soundOcclusion`
 The hatch-side entrance is open. Each rebuilt level's ways down need that level's own
 keycard, from one authored spot on its open side. A card may be stock in a container
 instead of lying in the open, so that finding it is a search rather than a sighting.
-Acquisition cannot depend on the seal
+Level three's card is harder to reach than level two's by place and threat, not by
+mechanism: it is in a dead researcher's pockets in the breached lab, the level's densest
+threat room, off the main route. A harder place costs one furniture piece, while a new
+mechanism would change the certificate or the engine. Acquisition cannot depend on the seal
 it opens. The seals are vault or bulkhead doors, which a crowbar cannot force: only
 the card opens them. The certificate checks seals top-down: each level's matching
 card must be present, reachable from the hatch landing with only the seals above it
@@ -913,6 +917,7 @@ open, and within pickup reach, in the open or in its container, before its locks
 proof. Checking in that order means no card can depend on its own seal or a deeper one,
 which would make the run a dead end. See
 `src/content/base/gauntlet-lab-administration.libsonnet`, `seal`;
+`src/content/base/gauntlet-lab-research.libsonnet`, `lab_breached`;
 `src/content/base/gauntlet-lab-level.libsonnet`, `cardStock`;
 `src/core/scenarioCertificate.ts`, `seals`; and `src/core/prying.ts`, `pryPlan`.
 
@@ -926,12 +931,15 @@ height, finish and furnishing so each reads as its own space under a carried lig
 Loops run between rooms instead of along a one-sided excavation corridor that serves
 nothing; unused excavation stays solid rather than making the rooms larger and emptier.
 Delegated equipment bays prevent furnishings from borrowing thresholds or circulation.
-Those cues are not a danger or balance proof. A room stocks from a loot context that
+A level that holds a hazard separates its staff side from its working side through a
+changing or decontamination room, with a second way between them, so the player reads
+where the danger is without being forced through one small room. Those cues are not a danger or balance proof. A room stocks from a loot context that
 fits its use, so what a search turns up says what the room was for; few rolls and
 heavy nothing weights keep the lab scarce. Rebuilt levels carry no readables until the
 destination round, because what the lab's papers tell depends on the destination. See
 `src/content/base/gauntlet-lab-entry.libsonnet`, `rooms` and `plan`;
-`src/content/base/gauntlet-lab-administration.libsonnet`, `rooms`; and
+`src/content/base/gauntlet-lab-administration.libsonnet`, `rooms`;
+`src/content/base/gauntlet-lab-research.libsonnet`, `rooms`; and
 `src/content/base/gauntlet-lab-equipment.libsonnet`, `furnished`.
 
 Level two's briefing hall is double height: it sinks into the grid storey below, as the
@@ -939,9 +947,9 @@ holding room rises into the storey above it, so a level gains one tall space wit
 a storey of its own. That touched a second level in a one-level round, an exception to
 one level per round that BR accepted with this choice. The well keeps its
 walls whole so the grid's threat cannot reach the hall, and its floor steps up so a
-player can climb back out. Level three's rebuild must leave the well its slot. See
-`src/content/base/gauntlet-lab-administration.libsonnet`, `well`, and
-`src/content/base/gauntlet-lab.libsonnet`, `join`.
+player can climb back out. Level three leaves the well's column void so the hall keeps
+its height. See `src/content/base/gauntlet-lab-administration.libsonnet`, `well`, and
+`src/content/base/gauntlet-lab-level.libsonnet`, `voids`.
 
 Level two carries a larger population than level one because BR judged it too thin in
 play. Its spawns spread over the briefing hall, the corridor, the canteen and the offices,
@@ -2321,7 +2329,7 @@ reused across types: `grab`, `leap`, `scream`, `explode`, `acidSpit`,
 | 3 | Incandescent hulk | A brute running a fever of a thousand degrees: glows, sets fires, warps glass. Seen from far away at night |
 | 3 | Lantern | Bioluminescent lure that draws you in, and others |
 
-Zombie types are content definitions used by shared systems; choose behavior through content properties rather than type-id cases. `src/core/schema.ts`, `ZombieSchema`, defines those properties, and `src/core/zombies.ts`, `ZombieSystem.emitFootsteps`, uses the declared footstep family. The soldier appears only at military-camp markers, explicit camp spawns and the crisis HQ's markers, because the HQ is a military site whose threat should be mostly soldiers; no other place that merely looks military takes them; `src/core/settlementSpawns.ts`, `ordinarySpawnWeights`, excludes authored-only kinds from ordinary selection.
+Zombie types are content definitions used by shared systems; choose behavior through content properties rather than type-id cases. `src/core/schema.ts`, `ZombieSchema`, defines those properties, and `src/core/zombies.ts`, `ZombieSystem.emitFootsteps`, uses the declared footstep family. The soldier appears only at military-camp markers, explicit camp spawns, the crisis HQ's markers and the lab's research level, because the HQ is a military site whose threat should be mostly soldiers and the research level is where the lab's threat changes kind (`DESIGN.md`, "Gauntlet"); no other place that merely looks military takes them; `src/core/settlementSpawns.ts`, `ordinarySpawnWeights`, excludes authored-only kinds from ordinary selection.
 
 A shambler's kit is the loot table its type names in `loot`, rolled when it dies from the world seed and the zombie's id (see `src/game/session.ts`, `onDeath`), so it is deterministic and needs no state of its own: the drop is an ordinary pile that saves already cover. Kit belongs to the kind and lives in content, not in code, because a kind such as the farmer, the site worker or the medic then differs from a plain shambler by one more type and one more table, never by a branch on its id. Kinds with a kit are authored-only and spawn only where their place puts them. Kit uses ordinary items; military loot remains restricted to site containers. A corpse drops only what its loot context admits, so a base kit item outside that context is dead content and a base-content test rejects it; validate does not, because a table supplies weights, not a second geography authority (`DESIGN.md`, "Military loot"). For #487, defer rendering what a kind wears and carries, the military clothing palette, armour, and body searching; until then clothes and tools appear only as drops.
 

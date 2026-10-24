@@ -4,7 +4,7 @@ local quiet = row(null, 0, 1);
 local rows = {
   entry: [row(null, 0, 2), row('shambler', 0.6, 3)],
   administration: [row(null, 0, 1), row('shambler', 0.6, 2)],
-  containment: [row(null, 0, 1), row('shambler', 0.8, 5)],
+  research: [row(null, 0, 2), row('shambler', 0.8, 2), row('military_shambler', 0.8, 1), row('brute_shambler', 0.8, 1), row('crawler', 0.8, 1)],
   failure: [row(null, 0, 1), row('shambler', 0.8, 4), row('runner', 0.8, 3), row('crawler', 0.8, 3)],
   bottom: [row(null, 0, 1), row('shambler', 0.8, 3), row('runner', 0.8, 4), row('crawler', 0.8, 4)],
   // The sewer is the quieter trade for the street run, so its few cells stay sparse.

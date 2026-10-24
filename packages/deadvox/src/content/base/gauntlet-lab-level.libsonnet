@@ -20,6 +20,19 @@ local kits = {
   kitchen: { furniture: { A: 'kitchen_cupboard', B: 'station_kitchen_sink' }, layers: tall(['AABB', '....', '....', '....'], 2) },
   fridge: { furniture: { F: 'gauntlet_lab_fridge' }, layers: tall(['FF..', 'FF..', '....', '....'], 4) },
   wc: { furniture: { A: 'station_toilet', B: 'station_washbasin' }, layers: tall(['AABB', 'AA..', '....', '....'], 2) },
+  basins: { furniture: { A: 'station_washbasin', B: 'station_washbasin' }, layers: tall(['AABB', '....', '....', '....'], 2) },
+  lockers: { furniture: { A: 'police_evidence_locker', B: 'police_evidence_locker' }, layers: tall(['AABB', '....', '....', '....'], 4) },
+  body: { furniture: { F: 'gauntlet_lab_dead_researcher' }, layers: [['FFFF', 'FFFF', '....', '....']] },
+  culture: { furniture: { F: 'gauntlet_look_culture' }, layers: tall(['FFFF', 'FFFF', '....', '....'], 4) },
+  containment: { furniture: { F: 'gauntlet_look_containment_bay' }, layers: tall(['FFFF', 'FFFF', '....', '....'], 4) },
+  breached: { furniture: { F: 'gauntlet_look_breached_bay' }, layers: tall(['FFFF', 'FFFF', '....', '....'], 5) },
+  cold_store: { furniture: { F: 'gauntlet_look_cold_store' }, layers: tall(['FFFF', 'FFFF', '....', '....'], 5) },
+  exam: { furniture: { F: 'gauntlet_look_exam' }, layers: short },
+  spill: { furniture: { F: 'gauntlet_look_spill' }, layers: [['FFFF', 'FFFF', 'FFFF', '....']] },
+  couch: { furniture: { F: 'medical_examination_couch', A: 'medical_folding_screen' }, layers: [['FF.A', 'FF..', 'FF..', 'FF..'], ['...A', '....', '....', '....']] },
+  files: { furniture: { A: 'medical_card_file', B: 'medical_card_file' }, layers: tall(['A..B', '....', '....', '....'], 2) },
+  sterilizer: { furniture: { A: 'medical_steam_sterilizer', B: 'police_file_cabinet' }, layers: tall(['A.BB', '....', '....', '....'], 2) + tall(['..BB', '....', '....', '....'], 2) },
+  lounge: { furniture: { F: 'sofa', T: 'range_table' }, layers: tall(['FFFF', 'FFFF', 'TTTT', 'TTTT'], 2) },
 };
 local empty = ['....', '....', '....', '....'];
 local platform = ['pppp', 'pppp', 'pppp', 'pppp'];
@@ -39,7 +52,8 @@ local stair = {
   scale: scale,
   stair: stair,
   // One rebuilt level from its plan and room table. A room's `lootUsage` gives its stocked furniture a context that fits its use. `through` boxes stay open on every layer above the floor for pieces that
-  // pass through the level; `holes` open its floor over the ways that leave it. Both are in blocks, as are `markers`.
+  // pass through the level; `holes` open its floor over the ways that leave it; `voids` leave a piece from another level
+  // the whole column, unclaimed on every layer. All are in blocks, as are `markers`.
   build:: function(level)
     local plan = level.plan;
     local rooms = level.rooms;
@@ -59,6 +73,7 @@ local stair = {
     local size = [std.length(plan[0]) * scale, height, std.length(plan) * scale];
     local through = function(dx, dz, x, z) inBox(level.through, x * scale + dx, z * scale + dz);
     local hole = function(dx, dz, x, z) inBox(level.holes, x * scale + dx, z * scale + dz);
+    local voided = function(dx, dz, x, z) inBox(std.get(level, 'voids', []), x * scale + dx, z * scale + dz);
     local marker = function(y, dx, dz, x, z) std.member(level.markers, [x * scale + dx, y, z * scale + dz]);
     local card = level.card;
     // A card with a `container` is stock in that dressing bay's container, so finding it is a search rather than a sighting.
@@ -72,7 +87,8 @@ local stair = {
         o + { clear: along >= std.get(o, 'offset', 0) && along < std.get(o, 'offset', 0) + o.width };
     local wallGlyph = function(room, y) if y == 1 then room.band else room.wall;
     local cell = function(c, y, dx, dz, x, z)
-      if c == '#' then '#'
+      if voided(dx, dz, x, z) then '.'
+      else if c == '#' then '#'
       else local room = byToken[c];
         local bay = bayAt(c, x, z);
         local o = opening(room, c, dx, dz, x, z);
@@ -88,7 +104,8 @@ local stair = {
         else '.';
     local claims = function(y) expand(function(c, dx, dz, x, z)
       local glyph = cell(c, y, dx, dz, x, z);
-      if y == 0 then (if glyph == '.' then '.' else 'S')
+      if voided(dx, dz, x, z) then '.'
+      else if y == 0 then (if glyph == '.' then '.' else 'S')
       else if glyph != '.' && glyph != 'K' then 'S'
       else if isCard(x, z) then 'A'
       else if through(dx, dz, x, z) || std.length(bayAt(c, x, z)) > 0 || marker(y, dx, dz, x, z) then '.'

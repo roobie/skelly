@@ -286,6 +286,8 @@ export const gauntletFlow = async (browser, baseUrl) => {
       const tick = () => {
         engine.streamer.update(session.body.pos[0], session.body.pos[2]);
         session.frame(1 / 60);
+        // Manual ticks bypass the game loop, which rolls the replay window after each frame; the journey outlasts one.
+        w.rollReplay();
         if (session.sim.dead) {
           throw new Error(`Route stopped by survival: ${JSON.stringify(session.sim.dead)}`);
         }
