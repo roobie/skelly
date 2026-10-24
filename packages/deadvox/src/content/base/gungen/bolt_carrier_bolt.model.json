@@ -1,0 +1,13 @@
+{
+  "id": "bolt_carrier_bolt",
+  "file": "assets/models/bolt_carrier_bolt.glb",
+  "gun": {},
+  "parts": {
+    "bolt_carrier_bolt": {
+      "item": "bolt_carrier_bolt",
+      "node": "bolt_carrier_bolt:bolt-carrier",
+      "massKg": 0.35,
+      "centreOfMass": [0.038822429906542055, -0.00011588785046728973, -0.00014579439252336449]
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "lower_sporter",
+  "file": "assets/models/lower_sporter.glb",
+  "gun": {},
+  "parts": {
+    "lower_sporter": {
+      "item": "lower_sporter",
+      "node": "lower_sporter:lower",
+      "massKg": 0.18,
+      "centreOfMass": [-0.10520704845814982, 0.0012687224669603525, 0.000026431718061674023]
+    }
+  }
+}
