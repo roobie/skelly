@@ -330,6 +330,15 @@
     }
   },
   {
+    "id": "receiver_ak",
+    "kind": "part",
+    "source": "receiver_ak",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "receiver_ar",
     "kind": "part",
     "source": "receiver_ar",
@@ -348,9 +357,27 @@
     }
   },
   {
+    "id": "bolt_carrier_ak",
+    "kind": "part",
+    "source": "bolt_carrier_ak",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "bolt_carrier_ar",
     "kind": "part",
     "source": "bolt_carrier_ar",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "lower_ak",
+    "kind": "part",
+    "source": "lower_ak",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.0040000000000000001
@@ -366,9 +393,27 @@
     }
   },
   {
+    "id": "barrel_ak_medium",
+    "kind": "part",
+    "source": "barrel_ak_medium",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "barrel_ar_medium",
     "kind": "part",
     "source": "barrel_ar_medium",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "handguard_ak",
+    "kind": "part",
+    "source": "handguard_ak",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.0040000000000000001
@@ -384,6 +429,24 @@
     }
   },
   {
+    "id": "gas_cylinder_ak",
+    "kind": "part",
+    "source": "gas_cylinder_ak",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "gas_block_ak",
+    "kind": "part",
+    "source": "gas_block_ak",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "grip_standard",
     "kind": "part",
     "source": "grip_standard",
@@ -393,9 +456,45 @@
     }
   },
   {
+    "id": "grip_ak",
+    "kind": "part",
+    "source": "grip_ak",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "stock_ak_long",
+    "kind": "part",
+    "source": "stock_ak_long",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "stock_m4_medium",
     "kind": "part",
     "source": "stock_m4_medium",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "rear_sight_ak",
+    "kind": "part",
+    "source": "rear_sight_ak",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "front_sight_ak",
+    "kind": "part",
+    "source": "front_sight_ak",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.0040000000000000001

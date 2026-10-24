@@ -1,6 +1,19 @@
 {
   "models": [
     {
+      "file": "assets/models/barrel_ak_medium.glb",
+      "gun": {},
+      "id": "barrel_ak_medium",
+      "parts": {
+        "barrel_ak_medium": {
+          "centreOfMass": [0.184, 0, 0],
+          "item": "barrel_ak_medium",
+          "massKg": 0.69999999999999996,
+          "node": "barrel_ak_medium:barrel"
+        }
+      }
+    },
+    {
       "file": "assets/models/barrel_ar_medium.glb",
       "gun": {},
       "id": "barrel_ar_medium",
@@ -10,6 +23,19 @@
           "item": "barrel_ar_medium",
           "massKg": 0.94999999999999996,
           "node": "barrel_ar_medium:barrel"
+        }
+      }
+    },
+    {
+      "file": "assets/models/bolt_carrier_ak.glb",
+      "gun": {},
+      "id": "bolt_carrier_ak",
+      "parts": {
+        "bolt_carrier_ak": {
+          "centreOfMass": [-0.019016949152542376, -9.7928436911487744e-5, -0.00092278719397363425],
+          "item": "bolt_carrier_ak",
+          "massKg": 0.52000000000000002,
+          "node": "bolt_carrier_ak:bolt-carrier"
         }
       }
     },
@@ -40,6 +66,19 @@
       }
     },
     {
+      "file": "assets/models/front_sight_ak.glb",
+      "gun": {},
+      "id": "front_sight_ak",
+      "parts": {
+        "front_sight_ak": {
+          "centreOfMass": [-5.9808612440191416e-5, 0.013568181818181814, -1.0765550239234365e-5],
+          "item": "front_sight_ak",
+          "massKg": 0.050000000000000003,
+          "node": "front_sight_ak:front-sight"
+        }
+      }
+    },
+    {
       "file": "assets/models/front_sight_ar.glb",
       "gun": {},
       "id": "front_sight_ar",
@@ -49,6 +88,45 @@
           "item": "front_sight_ar",
           "massKg": 0.11,
           "node": "front_sight_ar:front-sight"
+        }
+      }
+    },
+    {
+      "file": "assets/models/gas_block_ak.glb",
+      "gun": {},
+      "id": "gas_block_ak",
+      "parts": {
+        "gas_block_ak": {
+          "centreOfMass": [-0.012168674698795182, 0.012409638554216866, -9.1386813298348228e-20],
+          "item": "gas_block_ak",
+          "massKg": 0.070000000000000007,
+          "node": "gas_block_ak:gas-block"
+        }
+      }
+    },
+    {
+      "file": "assets/models/gas_cylinder_ak.glb",
+      "gun": {},
+      "id": "gas_cylinder_ak",
+      "parts": {
+        "gas_cylinder_ak": {
+          "centreOfMass": [0.085999999999999993, 0, 0],
+          "item": "gas_cylinder_ak",
+          "massKg": 0.17999999999999999,
+          "node": "gas_cylinder_ak:gas-cylinder"
+        }
+      }
+    },
+    {
+      "file": "assets/models/grip_ak.glb",
+      "gun": {},
+      "id": "grip_ak",
+      "parts": {
+        "grip_ak": {
+          "centreOfMass": [0.00025814863102998698, -0.048018252933507172, 0],
+          "item": "grip_ak",
+          "massKg": 0.10000000000000001,
+          "node": "grip_ak:grip"
         }
       }
     },
@@ -66,6 +144,19 @@
       }
     },
     {
+      "file": "assets/models/handguard_ak.glb",
+      "gun": {},
+      "id": "handguard_ak",
+      "parts": {
+        "handguard_ak": {
+          "centreOfMass": [0.089129411764705846, 0.0042901960784313704, 0],
+          "item": "handguard_ak",
+          "massKg": 0.25,
+          "node": "handguard_ak:handguard"
+        }
+      }
+    },
+    {
       "file": "assets/models/handguard_ar_clamped.glb",
       "gun": {},
       "id": "handguard_ar_clamped",
@@ -75,6 +166,19 @@
           "item": "handguard_ar_clamped",
           "massKg": 0.34999999999999998,
           "node": "handguard_ar_clamped:handguard"
+        }
+      }
+    },
+    {
+      "file": "assets/models/lower_ak.glb",
+      "gun": {},
+      "id": "lower_ak",
+      "parts": {
+        "lower_ak": {
+          "centreOfMass": [-0.13586788154897494, -0.01074259681093394, -1.3667425968109337e-5],
+          "item": "lower_ak",
+          "massKg": 0.25,
+          "node": "lower_ak:lower"
         }
       }
     },
@@ -92,6 +196,32 @@
       }
     },
     {
+      "file": "assets/models/rear_sight_ak.glb",
+      "gun": {},
+      "id": "rear_sight_ak",
+      "parts": {
+        "rear_sight_ak": {
+          "centreOfMass": [0.00086666666666666674, 0.0030000000000000001, 0],
+          "item": "rear_sight_ak",
+          "massKg": 0.050000000000000003,
+          "node": "rear_sight_ak:sight"
+        }
+      }
+    },
+    {
+      "file": "assets/models/receiver_ak.glb",
+      "gun": {},
+      "id": "receiver_ak",
+      "parts": {
+        "receiver_ak": {
+          "centreOfMass": [-0.12189654535377797, 0.013765749122482917, -0.00159948272676889],
+          "item": "receiver_ak",
+          "massKg": 0.84999999999999998,
+          "node": "receiver_ak:receiver"
+        }
+      }
+    },
+    {
       "file": "assets/models/receiver_ar.glb",
       "gun": {},
       "id": "receiver_ar",
@@ -101,6 +231,19 @@
           "item": "receiver_ar",
           "massKg": 0.90000000000000002,
           "node": "receiver_ar:receiver"
+        }
+      }
+    },
+    {
+      "file": "assets/models/stock_ak_long.glb",
+      "gun": {},
+      "id": "stock_ak_long",
+      "parts": {
+        "stock_ak_long": {
+          "centreOfMass": [-0.13118881118881123, -0.038657342657342664, 0],
+          "item": "stock_ak_long",
+          "massKg": 0.40000000000000002,
+          "node": "stock_ak_long:stock"
         }
       }
     },

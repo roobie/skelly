@@ -3012,56 +3012,67 @@
       "parts": {
         "barrel": {
           "centreOfMass": [0.184, 0, 2.2533501104311298e-17],
+          "item": "barrel_ak_medium",
           "massKg": 0.69999999999999996,
           "node": "barrel:barrel"
         },
         "bolt-carrier": {
           "centreOfMass": [-0.048866666666666669, 0.010404166666666667, 0.0010124999999999939],
+          "item": "bolt_carrier_ak",
           "massKg": 0.52000000000000002,
           "node": "bolt-carrier:bolt-carrier"
         },
         "front-sight": {
           "centreOfMass": [0.34786935866983376, 0.013953681710213781, -4.7505938241428152e-6],
+          "item": "front_sight_ak",
           "massKg": 0.050000000000000003,
           "node": "front-sight:front-sight"
         },
         "gas-block": {
           "centreOfMass": [0.24076543209876544, 0.013358024691358024, 5.8916457463793319e-17],
+          "item": "gas_block_ak",
           "massKg": 0.070000000000000007,
           "node": "gas-block:gas-block"
         },
         "gas-cylinder": {
           "centreOfMass": [0.12599999999999997, 0.026000000000000002, 1.543054966925665e-17],
+          "item": "gas_cylinder_ak",
           "massKg": 0.17999999999999999,
           "node": "gas-cylinder:gas-cylinder"
         },
         "grip": {
           "centreOfMass": [-0.22734294225893464, -0.07449784466758376, 1.3317506036538535e-17],
+          "item": "grip_ak",
           "massKg": 0.10000000000000001,
           "node": "grip:grip"
         },
         "handguard": {
           "centreOfMass": [0.089129411764705846, 0.0042901960784313704, 1.0915204882753347e-17],
+          "item": "handguard_ak",
           "massKg": 0.25,
           "node": "handguard:handguard"
         },
         "lower": {
           "centreOfMass": [-0.13580781294553751, -0.022650128314798974, -2.2241231822067367e-5],
+          "item": "lower_ak",
           "massKg": 0.25,
           "node": "lower:lower"
         },
         "rear-sight": {
           "centreOfMass": [-0.029000000000000001, 0.045999999999999999, -5.6616598073888948e-18],
+          "item": "rear_sight_ak",
           "massKg": 0.050000000000000003,
           "node": "rear-sight:ak-rear-sight"
         },
         "receiver": {
           "centreOfMass": [-0.12189654535377797, 0.013765749122482917, -0.00159948272676889],
+          "item": "receiver_ak",
           "massKg": 0.84999999999999998,
           "node": "receiver:ak-receiver"
         },
         "stock": {
           "centreOfMass": [-0.39550643274853797, -0.03869707602339182, -4.813604515889194e-17],
+          "item": "stock_ak_long",
           "massKg": 0.40000000000000002,
           "node": "stock:stock"
         }

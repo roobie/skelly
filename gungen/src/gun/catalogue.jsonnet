@@ -10,7 +10,7 @@ local item(id, family, selector, params, massKg, profile) =
   // Pose and placement never select a part or its mass; an item leaves them to the assembly instance.
   placementParams: ['pose', 'muzzleInsetRatio', 'chamberIndex', 'frontSightMuzzleInsetRatio'],
   parts: [
-    row('receiver-ak', 'ak-receiver', {}, 0.85),
+    item('receiver_ak', 'ak-receiver', [], { action: 'bolt', feed: 'box', bore: 'S', section: 'ak' }, 0.85, 'ak'),
     item('receiver_ar', 'receiver', ['section'], {
       section: 'ar', action: 'auto', actionFrame: 'small', feed: 'box', bore: 'M', chargingHandle: 'rear-top',
       boltHandle: 'rest', rail: 'full', magazineWell: 'standard', integral: 'no', boltHandleProfile: 'standard',
@@ -23,7 +23,10 @@ local item(id, family, selector, params, massKg, profile) =
     row('receiver-battle', 'receiver', { section: 'standard', action: 'auto', carrierPattern: 'barrett' }, 1.1),
     row('receiver-smg', 'receiver', { section: 'standard', action: 'auto', carrierPattern: 'smg' }, 0.7),
     item('charging_handle_ar', 'ar-charging-handle', [], {}, 0.06, 'ar'),
-    row('bolt-carrier-ak', 'bolt-carrier', { pattern: 'ak' }, 0.52),
+    item('bolt_carrier_ak', 'bolt-carrier', ['pattern'], {
+      pattern: 'ak', handleStyle: 'auto', handleProfile: 'standard', feed: 'box', section: 'ak', bore: 'S',
+      action: 'bolt', boltCalibre: '308-winchester',
+    }, 0.52, 'ak'),
     item('bolt_carrier_ar', 'bolt-carrier', ['pattern'], {
       pattern: 'ar', handleStyle: 'auto', handleProfile: 'standard', feed: 'box', section: 'ar', bore: 'M',
       action: 'auto', boltCalibre: '308-winchester',
@@ -39,7 +42,10 @@ local item(id, family, selector, params, massKg, profile) =
     row('bolt-knob-sporter', 'bolt-handle-knob', { handleProfile: 'sporter' }, 0.025),
     row('bolt-knob-awm', 'bolt-handle-knob', { handleProfile: 'awm' }, 0.04),
     row('smg-handle', 'smg-handle', {}, 0.04),
-    row('lower-ak', 'lower', { layout: 'ak' }, 0.25),
+    item('lower_ak', 'lower', ['layout'], {
+      layout: 'ak', triggerGuard: 'present', magazineWell: 'standard', magazineProfile: 'ak-curved',
+      magazineOrientation: 'straight', integral: 'no', section: 'ak', boltCalibre: '308-winchester',
+    }, 0.25, 'ak'),
     item('lower_ar', 'lower', ['layout'], {
       layout: 'ar', triggerGuard: 'present', magazineWell: 'standard', magazineProfile: 'stanag-straight',
       magazineOrientation: 'straight', integral: 'no', section: 'ar', boltCalibre: '308-winchester',
@@ -51,7 +57,10 @@ local item(id, family, selector, params, massKg, profile) =
     row('lower-compact-smg', 'lower', { layout: 'conventional', section: 'compact-smg' }, 0.2),
     row('lower-conventional', 'lower', { layout: 'conventional', section: 'standard' }, 0.25),
     row('barrel-ak-short', 'barrel', { section: 'ak', length: 'S' }, 0.6),
-    row('barrel-ak-medium', 'barrel', { section: 'ak', length: 'M' }, 0.7),
+    item('barrel_ak_medium', 'barrel', ['section', 'length'], {
+      section: 'ak', length: 'M', profile: 'standard', muzzle: 'threaded', frontSightStyle: 'ak', handguardLength: 'M',
+      handguardLayout: 'ak', bore: 'S', tubeLengthPercent: '75',
+    }, 0.7, 'ak'),
     row('barrel-ak-long', 'barrel', { section: 'ak', length: 'L' }, 0.85),
     row('barrel-ar-short', 'barrel', { section: 'ar', length: 'S' }, 0.75),
     item('barrel_ar_medium', 'barrel', ['section', 'length'], {
@@ -79,7 +88,10 @@ local item(id, family, selector, params, massKg, profile) =
     row('barrel-standard-long-small', 'barrel', { section: 'standard', profile: 'standard', length: 'L', bore: 'S' }, 0.6),
     row('barrel-standard-long', 'barrel', { section: 'standard', profile: 'standard', length: 'L', bore: 'M' }, 0.95),
     row('barrel-anti-materiel', 'barrel', { section: 'standard', profile: 'standard', length: 'L', bore: 'L' }, 2.6),
-    row('handguard-ak', 'handguard', { layout: 'ak' }, 0.25),
+    item('handguard_ak', 'handguard', ['layout'], {
+      layout: 'ak', mount: 'clamped', clearance: 'M', handleStyle: 'none', fit: 'receiver', barrelBore: 'S',
+      boltCalibre: '308-winchester', section: 'ak', length: 'M', bore: 'S', boltHandleProfile: 'standard',
+    }, 0.25, 'ak'),
     row('handguard-ak-standard', 'handguard', { layout: 'standard', section: 'ak' }, 0.25),
     item('handguard_ar_clamped', 'handguard', ['layout', 'mount'], {
       layout: 'ar', mount: 'clamped', clearance: 'M', handleStyle: 'none', fit: 'receiver', barrelBore: 'M',
@@ -91,12 +103,20 @@ local item(id, family, selector, params, massKg, profile) =
     row('handguard-standard-short', 'handguard', { layout: 'standard', section: 'standard', length: 'S' }, 0.15),
     row('handguard-standard-medium', 'handguard', { layout: 'standard', section: 'standard', length: 'M' }, 0.3),
     row('handguard-standard-long', 'handguard', { layout: 'standard', section: 'standard', length: 'L' }, 0.4),
-    row('gas-cylinder-ak', 'gas-cylinder', {}, 0.18),
-    row('gas-block-ak', 'gas-block', {}, 0.07),
-    item('grip_standard', 'grip', [], { length: 'M', well: 'none', section: 'ar' }, 0.1, 'ar'),
+    item('gas_cylinder_ak', 'gas-cylinder', [], { barrelLength: 'M' }, 0.18, 'ak'),
+    item('gas_block_ak', 'gas-block', [], { barrelLength: 'M', bore: 'S' }, 0.07, 'ak'),
+    // A grip is built to its lower's section and finished to its gun, so the AR and AK grips are separate items.
+    item('grip_standard', 'grip', ['section'], { length: 'M', well: 'none', section: 'ar' }, 0.1, 'ar'),
+    item('grip_ak', 'grip', ['section'], { length: 'M', well: 'none', section: 'ak' }, 0.1, 'ak'),
+    row('grip-standard', 'grip', { section: 'standard' }, 0.1),
+    row('grip-pump', 'grip', { section: 'pump' }, 0.1),
+    row('grip-sporter', 'grip', { section: 'sporter' }, 0.1),
+    row('grip-compact-smg', 'grip', { section: 'compact-smg' }, 0.1),
     row('stock-ak-short', 'stock', { style: 'ak-buttstock', length: 'S' }, 0.3),
     row('stock-ak-medium', 'stock', { style: 'ak-buttstock', length: 'M' }, 0.35),
-    row('stock-ak-long', 'stock', { style: 'ak-buttstock', length: 'L' }, 0.4),
+    item('stock_ak_long', 'stock', ['style', 'length'], {
+      style: 'ak-buttstock', length: 'L', combDegrees: '2', section: 'ak',
+    }, 0.4, 'ak'),
     row('stock-m4-short', 'stock', { style: 'm4', length: 'S' }, 0.3),
     item('stock_m4_medium', 'stock', ['style', 'length'], { style: 'm4', length: 'M', combDegrees: '2', section: 'ar' }, 0.35, 'ar'),
     row('stock-m4-long', 'stock', { style: 'm4', length: 'L' }, 0.4),
@@ -115,8 +135,8 @@ local item(id, family, selector, params, massKg, profile) =
     row('stock-thumbhole-short', 'stock', { style: 'thumbhole', length: 'S' }, 0.45),
     row('stock-thumbhole-medium', 'stock', { style: 'thumbhole', length: 'M' }, 0.6),
     row('stock-thumbhole-long', 'stock', { style: 'thumbhole', length: 'L' }, 0.75),
-    row('rear-sight-ak', 'ak-rear-sight', {}, 0.05),
-    row('front-sight-ak', 'front-sight', { style: 'ak' }, 0.05),
+    item('rear_sight_ak', 'ak-rear-sight', [], {}, 0.05, 'ak'),
+    item('front_sight_ak', 'front-sight', ['style'], { style: 'ak', section: 'ak', bore: 'S' }, 0.05, 'ak'),
     // The AR sight block is built to its barrel's section and bore, so the narrow-section build is its own shape.
     item('front_sight_ar', 'front-sight', ['style', 'section'], { style: 'ar', section: 'ar', bore: 'M' }, 0.11, 'ar'),
     row('front-sight-ar-standard', 'front-sight', { style: 'ar', section: 'standard' }, 0.11),

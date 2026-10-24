@@ -2,9 +2,20 @@
   "parts": [
     {
       "family": "ak-receiver",
-      "id": "receiver-ak",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "receiver_ak",
       "massKg": 0.84999999999999998,
-      "match": {}
+      "match": {},
+      "params": {
+        "action": "bolt",
+        "bore": "S",
+        "feed": "box",
+        "section": "ak"
+      }
     },
     {
       "family": "receiver",
@@ -103,10 +114,25 @@
     },
     {
       "family": "bolt-carrier",
-      "id": "bolt-carrier-ak",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "bolt_carrier_ak",
       "massKg": 0.52000000000000002,
       "match": {
         "pattern": "ak"
+      },
+      "params": {
+        "action": "bolt",
+        "boltCalibre": "308-winchester",
+        "bore": "S",
+        "feed": "box",
+        "handleProfile": "standard",
+        "handleStyle": "auto",
+        "pattern": "ak",
+        "section": "ak"
       }
     },
     {
@@ -220,10 +246,25 @@
     },
     {
       "family": "lower",
-      "id": "lower-ak",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "lower_ak",
       "massKg": 0.25,
       "match": {
         "layout": "ak"
+      },
+      "params": {
+        "boltCalibre": "308-winchester",
+        "integral": "no",
+        "layout": "ak",
+        "magazineOrientation": "straight",
+        "magazineProfile": "ak-curved",
+        "magazineWell": "standard",
+        "section": "ak",
+        "triggerGuard": "present"
       }
     },
     {
@@ -311,11 +352,27 @@
     },
     {
       "family": "barrel",
-      "id": "barrel-ak-medium",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "barrel_ak_medium",
       "massKg": 0.69999999999999996,
       "match": {
         "length": "M",
         "section": "ak"
+      },
+      "params": {
+        "bore": "S",
+        "frontSightStyle": "ak",
+        "handguardLayout": "ak",
+        "handguardLength": "M",
+        "length": "M",
+        "muzzle": "threaded",
+        "profile": "standard",
+        "section": "ak",
+        "tubeLengthPercent": "75"
       }
     },
     {
@@ -572,10 +629,28 @@
     },
     {
       "family": "handguard",
-      "id": "handguard-ak",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "handguard_ak",
       "massKg": 0.25,
       "match": {
         "layout": "ak"
+      },
+      "params": {
+        "barrelBore": "S",
+        "boltCalibre": "308-winchester",
+        "boltHandleProfile": "standard",
+        "bore": "S",
+        "clearance": "M",
+        "fit": "receiver",
+        "handleStyle": "none",
+        "layout": "ak",
+        "length": "M",
+        "mount": "clamped",
+        "section": "ak"
       }
     },
     {
@@ -673,15 +748,32 @@
     },
     {
       "family": "gas-cylinder",
-      "id": "gas-cylinder-ak",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "gas_cylinder_ak",
       "massKg": 0.17999999999999999,
-      "match": {}
+      "match": {},
+      "params": {
+        "barrelLength": "M"
+      }
     },
     {
       "family": "gas-block",
-      "id": "gas-block-ak",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "gas_block_ak",
       "massKg": 0.070000000000000007,
-      "match": {}
+      "match": {},
+      "params": {
+        "barrelLength": "M",
+        "bore": "S"
+      }
     },
     {
       "family": "grip",
@@ -692,11 +784,63 @@
       },
       "id": "grip_standard",
       "massKg": 0.10000000000000001,
-      "match": {},
+      "match": {
+        "section": "ar"
+      },
       "params": {
         "length": "M",
         "section": "ar",
         "well": "none"
+      }
+    },
+    {
+      "family": "grip",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "grip_ak",
+      "massKg": 0.10000000000000001,
+      "match": {
+        "section": "ak"
+      },
+      "params": {
+        "length": "M",
+        "section": "ak",
+        "well": "none"
+      }
+    },
+    {
+      "family": "grip",
+      "id": "grip-standard",
+      "massKg": 0.10000000000000001,
+      "match": {
+        "section": "standard"
+      }
+    },
+    {
+      "family": "grip",
+      "id": "grip-pump",
+      "massKg": 0.10000000000000001,
+      "match": {
+        "section": "pump"
+      }
+    },
+    {
+      "family": "grip",
+      "id": "grip-sporter",
+      "massKg": 0.10000000000000001,
+      "match": {
+        "section": "sporter"
+      }
+    },
+    {
+      "family": "grip",
+      "id": "grip-compact-smg",
+      "massKg": 0.10000000000000001,
+      "match": {
+        "section": "compact-smg"
       }
     },
     {
@@ -719,10 +863,21 @@
     },
     {
       "family": "stock",
-      "id": "stock-ak-long",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "stock_ak_long",
       "massKg": 0.40000000000000002,
       "match": {
         "length": "L",
+        "style": "ak-buttstock"
+      },
+      "params": {
+        "combDegrees": "2",
+        "length": "L",
+        "section": "ak",
         "style": "ak-buttstock"
       }
     },
@@ -901,15 +1056,31 @@
     },
     {
       "family": "ak-rear-sight",
-      "id": "rear-sight-ak",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "rear_sight_ak",
       "massKg": 0.050000000000000003,
-      "match": {}
+      "match": {},
+      "params": {}
     },
     {
       "family": "front-sight",
-      "id": "front-sight-ak",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "front_sight_ak",
       "massKg": 0.050000000000000003,
       "match": {
+        "style": "ak"
+      },
+      "params": {
+        "bore": "S",
+        "section": "ak",
         "style": "ak"
       }
     },

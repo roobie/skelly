@@ -1,0 +1,13 @@
+{
+  "id": "gas_block_ak",
+  "file": "assets/models/gas_block_ak.glb",
+  "gun": {},
+  "parts": {
+    "gas_block_ak": {
+      "item": "gas_block_ak",
+      "node": "gas_block_ak:gas-block",
+      "massKg": 0.07,
+      "centreOfMass": [-0.012168674698795182, 0.012409638554216866, -9.138681329834823e-20]
+    }
+  }
+}

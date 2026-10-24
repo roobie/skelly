@@ -1,0 +1,13 @@
+{
+  "id": "grip_ak",
+  "file": "assets/models/grip_ak.glb",
+  "gun": {},
+  "parts": {
+    "grip_ak": {
+      "item": "grip_ak",
+      "node": "grip_ak:grip",
+      "massKg": 0.1,
+      "centreOfMass": [0.000258148631029987, -0.04801825293350717, 0]
+    }
+  }
+}

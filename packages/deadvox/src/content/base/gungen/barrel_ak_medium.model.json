@@ -1,0 +1,13 @@
+{
+  "id": "barrel_ak_medium",
+  "file": "assets/models/barrel_ak_medium.glb",
+  "gun": {},
+  "parts": {
+    "barrel_ak_medium": {
+      "item": "barrel_ak_medium",
+      "node": "barrel_ak_medium:barrel",
+      "massKg": 0.7,
+      "centreOfMass": [0.184, 0, 0]
+    }
+  }
+}
