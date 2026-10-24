@@ -3,6 +3,7 @@ read_if:
   - you continue phase 4 of the things suite or decide whether it is complete
   - you migrate a hand-made Deadvox item model to the thing tool
   - you move a handling datum out of Deadvox content into the thing tool
+  - you decide whether a carried item needs an authored handling datum
 ---
 
 # Remaining families
@@ -17,7 +18,8 @@ Phase 4 is complete when all of these hold:
   exception has a thing-tool row, so no hand-made item GLB remains.
 - For every tool row the model Deadvox loads is the one the recipe exports, with no
   Deadvox override of the exported grip, hold, roll or anchors.
-- A tool row a player holds authors its handling datum against a named solid.
+- A tool row a player holds either authors its handling datum against a named solid or takes
+  Deadvox's default hold; a default judged wrong at a look in game gets an authored datum.
 
 To derive what remains, compare the rows of `packages/thing-authoring-tool/items.jsonnet`,
 `items`, with the model registrations in
@@ -42,7 +44,9 @@ the hand with it and Deadvox keeps no second geometry authority (`things/WORK.md
 Deadvox override of an exported datum silently diverges from the geometry. Items that share a
 GLB, such as two lights drawn by one file, still keep separate item and model identities.
 
-## Open for BR
+## Carried items and the default hold
 
-Whether a carried tool row may take Deadvox's default hold instead of authoring a datum.
-Until BR rules, a carried row without a datum is not counted as complete.
+A carried item may leave its handling datum out and take Deadvox's default hold. A datum
+that reproduces the default adds work and a second value to keep in step without changing
+what the player sees. A wrong default shows when someone looks at the item in game, and
+only then does the tool author a datum for it.
