@@ -91,14 +91,46 @@ export const LUNGE_GRAB: AttackClip = {
   ],
 };
 
-/** Every shared-rig clip by its content-facing id (the clip's own name). The grab is authored above; the
- * other clips are content (`attackClips.jsonnet`) sampled and layered by the same code. Literal keys, so
- * a caller reading a removed or renamed id fails the type check. Templates select an entry through
- * `attackClip`; see attackClipFor. */
-export const ATTACK_CLIPS = {
+const isVec3 = (value: unknown): value is readonly [number, number, number] =>
+  Array.isArray(value) && value.length === 3 && value.every((n) => Number.isFinite(n));
+
+/** Checks one authored clip at the content boundary, so a malformed entry fails at import with its id
+ * instead of surfacing as an undefined during sampling. */
+const contentClip = (id: string, value: unknown): AttackClip => {
+  const clip = value as Partial<AttackClip> | null;
+  const bad = (why: string): never => {
+    throw new Error(`attack clip "${id}" in attackClips.jsonnet ${why}`);
+  };
+  if (typeof clip !== 'object' || clip === null) {
+    return bad('is not an object');
+  }
+  if (clip.name !== id) {
+    return bad(`must be named "${id}", not "${String(clip.name)}"`);
+  }
+  if (!(Number.isFinite(clip.duration) && Number.isFinite(clip.hitTime) && Array.isArray(clip.keys))) {
+    return bad('needs numeric duration and hitTime and a keys list');
+  }
+  for (const key of clip.keys as readonly Partial<AttackKey>[]) {
+    const rotations = Object.values(key.rotations ?? {});
+    if (!Number.isFinite(key.t) || key.rotations === undefined || !rotations.every(isVec3)) {
+      return bad('has a key without a time or with a rotation that is not [x, y, z]');
+    }
+  }
+  return clip as AttackClip;
+};
+
+const contentClips: Readonly<Record<string, AttackClip>> = Object.fromEntries(
+  Object.entries(clipContent).map(([id, value]) => [id, contentClip(id, value)]),
+);
+
+/** Every shared-rig clip by its content-facing id (the clip's own name). The grab is authored above; every
+ * entry of `attackClips.jsonnet` is registered here without a code change and sampled and layered by the
+ * same code. The grab's literal key stays statically checked for direct callers; other ids are looked up
+ * through `attackClipById`. Templates select an entry through `attackClip`; see attackClipFor. */
+export const ATTACK_CLIPS: { readonly 'lunge-grab': AttackClip } & Readonly<Record<string, AttackClip>> = {
+  ...contentClips,
   'lunge-grab': LUNGE_GRAB,
-  swipe: clipContent.swipe as unknown as AttackClip,
-} satisfies Readonly<Record<string, AttackClip>>;
+};
 
 const clipTable: Readonly<Record<string, AttackClip | undefined>> = ATTACK_CLIPS;
 
