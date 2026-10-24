@@ -115,11 +115,10 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "copper_wire",
-      "model": "wire_spool",
+      "model": "copper_wire",
       "name": "Salvaged wire",
       "notLoot": false,
       "size": [1, 2],
-      "weight": 80,
       "workInProgress": false
     },
     {

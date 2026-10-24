@@ -56,6 +56,21 @@ export const vertexColors = (
   return out;
 };
 
+/** Each vertex's self-light: its material's emission strength, carried as a vertex attribute so any
+ * template's glowing materials (skeleton eyes, acid sacs) read lit without a per-template material.
+ * The fragment side of this shared path is fleshMaterial's emissive patch below. */
+const vertexGlow = (
+  colorBytes: Uint8Array,
+  materials: Body['materials'],
+  voxels: Pick<Voxels, 'materials'>,
+): Float32Array => {
+  const out = new Float32Array(colorBytes.length);
+  for (let v = 0; v < colorBytes.length; v++) {
+    out[v] = materials[materialOf(voxels, colorBytes[v]!)]!.emissive;
+  }
+  return out;
+};
+
 /** Exported for stress.ts: one bone's BoneMesh as a BufferGeometry, in the same rest-world coordinates
  * boneTransforms/matrixOf pose from. */
 export const geometryOf = (
@@ -67,6 +82,7 @@ export const geometryOf = (
   geo.setAttribute('position', new BufferAttribute(mesh.positions, 3));
   geo.setAttribute('normal', new BufferAttribute(mesh.normals, 3));
   geo.setAttribute('color', new BufferAttribute(vertexColors(mesh.colors, materials, voxels), 3));
+  geo.setAttribute('glow', new BufferAttribute(vertexGlow(mesh.colors, materials, voxels), 1));
   geo.setIndex(new BufferAttribute(mesh.indices, 1));
   geo.computeBoundingSphere();
   return geo;
@@ -92,6 +108,31 @@ export interface Actor {
 
 const DOT_RADIUS_FACTOR = 0.35; // relative to voxel size, just big enough to read as a joint
 
+/** The flesh material for every body: vertex-coloured, with each voxel's material emission decoded into
+ * three.js's emissive term — the same decode the crowd shader applies (mob/crowd.ts,
+ * CROWD_EMISSIVE_FRAGMENT), so glowing materials read as light sources in a dark scene through one
+ * shared path rather than a per-template material. */
+const fleshMaterial = (): MeshStandardMaterial => {
+  const material = new MeshStandardMaterial({
+    vertexColors: true,
+    flatShading: true,
+    roughness: 0.92,
+    metalness: 0.02,
+  });
+  material.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute float glow;\nvarying float vGlow;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGlow = glow;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying float vGlow;')
+      .replace(
+        '#include <emissivemap_fragment>',
+        '#include <emissivemap_fragment>\ntotalEmissiveRadiance += diffuseColor.rgb * vGlow;',
+      );
+  };
+  return material;
+};
+
 /** Builds the flesh, colour-by-bone and skeleton layers for one realized actor. Call `applyPose`
  * once after building (and again each frame, for the walk) to place every bone. */
 export const buildActor = (realized: Realized, voxelSize: number): Actor => {
@@ -104,14 +145,12 @@ export const buildActor = (realized: Realized, voxelSize: number): Actor => {
 
   const fleshMeshes = new Map<number, Mesh>();
   const tintMeshes = new Map<number, Mesh>();
+  const fleshMat = fleshMaterial();
   for (const [boneIndex, boneMesh] of meshes) {
     const bone = body.bones[boneIndex]!;
     const geometry = geometryOf(boneMesh, body.materials, realized.voxels);
 
-    const fleshMesh = new Mesh(
-      geometry,
-      new MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.92, metalness: 0.02 }),
-    );
+    const fleshMesh = new Mesh(geometry, fleshMat);
     fleshMesh.matrixAutoUpdate = false;
     fleshMesh.userData = { boneId: bone.id, voxelCount: report.stats.perBoneVoxels[bone.id] ?? 0 };
     flesh.add(fleshMesh);

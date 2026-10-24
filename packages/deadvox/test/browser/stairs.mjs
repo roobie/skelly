@@ -406,6 +406,14 @@ try {
     ),
   );
   if (isLightingMode) {
+    // Play drops action input until the world is ready, so a scenario press sent during loading is lost.
+    await timePhase('world-ready', () =>
+      page.waitForFunction(
+        () =>
+          document.querySelector('#world-loading')?.dataset.state === 'ready' &&
+          document.querySelector('#world-loading').hidden,
+      ),
+    );
     const shaderErrors = errors.filter((error) => error.includes('THREE.WebGLProgram: Shader Error'));
     assert.deepEqual(shaderErrors, [], 'chunk shaders compile before the lighting pixel checks');
     if (mode === 'lighting-residents') {

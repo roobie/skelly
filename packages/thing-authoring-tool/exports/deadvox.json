@@ -1980,6 +1980,102 @@
     }
   },
   {
+    "id": "hand_saw",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "hand_saw",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "screwdriver",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "screwdriver",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.002
+    }
+  },
+  {
+    "id": "copper_wire",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "copper_wire",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "small_spring",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "small_spring",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.002
+    }
+  },
+  {
+    "id": "hinge_set",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "hinge_set",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.002
+    }
+  },
+  {
+    "id": "fastener_pack",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "fastener_pack",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.002
+    }
+  },
+  {
+    "id": "taped_flashlight_mount",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "taped_flashlight_mount",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "scrap_foregrip",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "scrap_foregrip",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "player_bust",
     "kind": "item",
     "options": {

@@ -1,4 +1,5 @@
 {
+  "attackClip": "swipe",
   "bodyMassKg": 12,
   "bodyPlan": "skeleton",
   "boneB": [0.73999999999999999, 0.71999999999999997, 0.56999999999999995],
@@ -45,16 +46,17 @@
     "eyeOffset": 0.22,
     "eyeRows": 2,
     "faceForward": 0.45000000000000001,
-    "fingerCount": 3,
+    "fingerCount": 4,
     "fingerRadiusVoxels": 0.59999999999999998,
     "fingerRootDepth": 0.5,
     "fingerSpacingVoxels": 2,
     "footBall": 0.55000000000000004,
-    "footHalfWidth": 0.028000000000000001,
+    "footHalfWidth": 0.044999999999999998,
     "footSpread": 0.073999999999999996,
     "forearmRadius": 0.021000000000000001,
     "grimeScale": 0.050000000000000003,
     "grimeThreshold": 0.28000000000000003,
+    "handLength": 0.11,
     "headBoneLength": 0.80000000000000004,
     "heelBack": 0.025000000000000001,
     "heelForward": 0.01,
@@ -80,7 +82,7 @@
     "noseHeight": 0.33000000000000002,
     "noseRows": 1,
     "palmHalf": [0.012, 0.029999999999999999],
-    "palmLength": 0.035000000000000003,
+    "palmLength": 0.050000000000000003,
     "pubisDrop": 0.029999999999999999,
     "pubisForward": 0.014999999999999999,
     "pubisHalf": [0.012, 0.014],
@@ -97,7 +99,7 @@
     "sacrumHalf": [0.028000000000000001, 0.040000000000000001, 0.017999999999999999],
     "sacrumRise": 0.029999999999999999,
     "shinRadius": 0.021999999999999999,
-    "skullFraction": 0.17000000000000001,
+    "skullFraction": 0.14999999999999999,
     "socketRadius": 0.021999999999999999,
     "spineRadiusVoxels": 0.75,
     "sternumHalf": [0.014, 0.012],
@@ -108,9 +110,10 @@
     "thumbLength": 0.028000000000000001,
     "thumbSplayDeg": 35,
     "thumbStart": 0.20000000000000001,
-    "toeCount": 3,
+    "toeCount": 5,
     "toeRadiusVoxels": 0.59999999999999998,
-    "toeSpacingVoxels": 2,
+    "toeRecessVoxels": 1,
+    "toeSpacingVoxels": 1,
     "toeStartVoxels": 1,
     "upperArmRadius": 0.021000000000000001,
     "vertebraHalf": [0.021999999999999999, 0.016],
@@ -156,17 +159,13 @@
       "max": 0.059999999999999998,
       "min": 0.029999999999999999
     },
-    "girth": {
-      "max": 0.69999999999999996,
-      "min": 0.55000000000000004
-    },
     "headLoll": {
       "max": 8,
       "min": 2
     },
     "headScale": {
-      "max": 1.0800000000000001,
-      "min": 0.94999999999999996
+      "max": 1.0600000000000001,
+      "min": 0.95999999999999996
     },
     "headTilt": {
       "choices": [-5, 0, 0, 5]
@@ -210,6 +209,10 @@
     "spineTwist": {
       "max": 6,
       "min": 2
+    },
+    "stepWidth": {
+      "max": 0.23999999999999999,
+      "min": 0.20000000000000001
     },
     "strideFactor": {
       "max": 1.1000000000000001,

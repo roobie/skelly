@@ -1,0 +1,13 @@
+{
+  "id": "revolver_frame",
+  "file": "assets/models/revolver_frame.glb",
+  "gun": {},
+  "parts": {
+    "revolver_frame": {
+      "item": "revolver_frame",
+      "node": "revolver_frame:revolver-frame",
+      "massKg": 0.4,
+      "centreOfMass": [-0.05915694330320455, -0.032027937551355794, -0.000009860312243221029]
+    }
+  }
+}

@@ -1442,51 +1442,115 @@
     },
     {
       "family": "revolver-frame",
-      "id": "revolver-frame",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-stainless"
+      },
+      "id": "revolver_frame",
       "massKg": 0.40000000000000002,
-      "match": {}
+      "match": {},
+      "params": {
+        "bore": "M",
+        "butt": "round",
+        "frameSize": "M",
+        "gripLength": "M"
+      }
     },
     {
       "family": "revolver-barrel",
-      "id": "revolver-barrel",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-stainless"
+      },
+      "id": "revolver_barrel",
       "massKg": 0.22,
-      "match": {}
+      "match": {},
+      "params": {
+        "bore": "M",
+        "length": "M",
+        "style": "classic"
+      }
     },
     {
       "family": "revolver-cylinder",
-      "id": "revolver-cylinder",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-stainless"
+      },
+      "id": "revolver_cylinder",
       "massKg": 0.28000000000000003,
-      "match": {}
+      "match": {},
+      "params": {
+        "chamberCount": "6"
+      }
     },
     {
       "family": "revolver-crane",
-      "id": "revolver-crane",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-stainless"
+      },
+      "id": "revolver_crane",
       "massKg": 0.070000000000000007,
-      "match": {}
+      "match": {},
+      "params": {}
     },
     {
       "family": "revolver-ejector",
-      "id": "revolver-ejector",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-stainless"
+      },
+      "id": "revolver_ejector",
       "massKg": 0.025000000000000001,
-      "match": {}
+      "match": {},
+      "params": {}
     },
     {
       "family": "revolver-grip",
-      "id": "revolver-grip",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-stainless"
+      },
+      "id": "revolver_grip",
       "massKg": 0.080000000000000002,
-      "match": {}
+      "match": {},
+      "params": {
+        "butt": "round",
+        "length": "M"
+      }
     },
     {
       "family": "revolver-hammer",
-      "id": "revolver-hammer",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-stainless"
+      },
+      "id": "revolver_hammer",
       "massKg": 0.029999999999999999,
-      "match": {}
+      "match": {},
+      "params": {}
     },
     {
       "family": "revolver-trigger",
-      "id": "revolver-trigger",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-stainless"
+      },
+      "id": "revolver_trigger",
       "massKg": 0.025000000000000001,
-      "match": {}
+      "match": {},
+      "params": {
+        "frameSize": "M"
+      }
     },
     {
       "family": "heavy-receiver",

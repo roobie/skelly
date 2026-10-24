@@ -1,7 +1,7 @@
 import { expect, it, vi } from 'vitest';
 import { realTimestamp } from '../src/core/time.ts';
 import type { Engine } from '../src/game/engine.ts';
-import { WorldLoading } from '../src/game/worldLoading.ts';
+import { finishLoadingFrame, WorldLoading } from '../src/game/worldLoading.ts';
 
 function fixture(workUnits = 2) {
   let holes = 1;
@@ -81,6 +81,30 @@ it('bounds stalled loading in proportion to the owner workload', () => {
   large.check(1e9);
   expect(large.loading.state).toBe('failed');
   expect(large.loading.ready).toBe(false);
+});
+
+it('skips world draws behind the loading mask but draws the frame that turns ready', () => {
+  const f = fixture();
+  const calls: string[] = [];
+  const frame = () =>
+    finishLoadingFrame(
+      f.loading,
+      () => {
+        calls.push('check');
+        f.check();
+      },
+      { worldFeedsSkylight: true, skylight: () => calls.push('skylight'), world: () => calls.push('world') },
+    );
+  frame();
+  expect(calls).toEqual(['skylight', 'check']);
+  f.meshComplete();
+  f.lightComplete();
+  calls.length = 0;
+  frame();
+  expect(calls).toEqual(['skylight', 'check', 'world']);
+  calls.length = 0;
+  frame();
+  expect(calls).toEqual(['check', 'world']);
 });
 
 it('uses only recorded initial terrain for replay rather than requiring a full view ring', () => {

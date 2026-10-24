@@ -1,0 +1,11 @@
+{
+  "id": "hinge_set",
+  "file": "assets/models/hinge_set.glb",
+  "parts": {
+    "hinge_set": {
+      "node": "hinge_set:compound",
+      "massKg": 0.36,
+      "centreOfMass": [0, 0.0016666666666666668, 9.069962856941094e-19]
+    }
+  }
+}

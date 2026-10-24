@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { generateValid } from '../src/core/generate.ts';
 import { applyPoint, IDENTITY_M } from '../src/core/math.ts';
 import { boneTransforms, type Pose } from '../src/core/pose.ts';
-import { ATTACK_CLIPS, attackPose } from '../src/mob/attack.ts';
+import { attackPose, LUNGE_GRAB } from '../src/mob/attack.ts';
 import {
   advanceClock,
   corners,
@@ -33,7 +33,7 @@ const actorOf = (found: ReturnType<typeof setup>) => ({
   cache: createGaitCache(),
 });
 
-const CLIP = ATTACK_CLIPS.LUNGE_GRAB!;
+const CLIP = LUNGE_GRAB;
 
 /** Walk clock advances with distance, same mechanic the viewer uses — see advanceClock's doc comment. */
 const clockTrack = (setupResult: ReturnType<typeof setup>, speed: number) => {

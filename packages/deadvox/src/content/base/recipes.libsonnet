@@ -156,9 +156,8 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
       "id": "copper_wire",
       "name": "Salvaged wire",
       "category": "material",
-      "weight": 80,
       "size": [1, 2],
-      "model": "wire_spool",
+      "model": "copper_wire",
       "disassembly": {
         "timeGameMinutes": 8,
         "skill": "mechanics",

@@ -84,11 +84,11 @@ describe('flinchPose', () => {
   });
 
   it('layers on top of an attack pose too, not just a walk pose (mid-attack flinch)', async () => {
-    const { ATTACK_CLIPS, attackPose } = await import('../src/mob/attack.ts');
+    const { attackPose, LUNGE_GRAB } = await import('../src/mob/attack.ts');
     const found = setup('shambler');
     const actor = walkActorOf(found);
     const walkBase = walkPose(actor, INITIAL_CLOCK, 0.8);
-    const attacking = attackPose(actor, ATTACK_CLIPS.LUNGE_GRAB!, 0.3, walkBase);
+    const attacking = attackPose(actor, LUNGE_GRAB, 0.3, walkBase);
     const flinched = flinchPose(actor, 0.05, attacking, { side: -1 });
     // Differs from the pure attack pose (the flinch actually did something)...
     expect(maxPoseDiff(flinched, attacking)).toBeGreaterThan(0);
