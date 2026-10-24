@@ -1,4 +1,4 @@
-export type CartridgeClearanceMeasure = 'maximumOverallLengthMm' | 'maximumHeadDiameterMm' | 'caseLengthMm';
+type CartridgeClearanceMeasure = 'maximumOverallLengthMm' | 'maximumHeadDiameterMm' | 'caseLengthMm';
 
 interface CartridgeClearance {
   readonly measure: CartridgeClearanceMeasure;
@@ -54,12 +54,6 @@ export interface ActionFrameIssue {
 export type FrameSelection =
   | { readonly ok: true; readonly frame: ActionFrame }
   | { readonly ok: false; readonly issue: ActionFrameIssue };
-
-export const AR_FRAME_RANKS = {
-  small: 0,
-  large: 1,
-  magnum: 2,
-} as const;
 
 const HTTP_URL = /^https?:\/\//;
 

@@ -1,0 +1,104 @@
+{
+  "assembly": {
+    "connections": [
+      {
+        "from": "receiver.charging-handle",
+        "to": "charging-handle.mount"
+      },
+      {
+        "from": "receiver.lower",
+        "to": "lower.top"
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear"
+      },
+      {
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount"
+      },
+      {
+        "from": "receiver.handguard",
+        "to": "handguard.rear"
+      },
+      {
+        "from": "handguard.front",
+        "to": "barrel.clamp"
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top"
+      },
+      {
+        "from": "lower.magazine",
+        "to": "magazine.top"
+      },
+      {
+        "from": "receiver.stock",
+        "to": "stock.front"
+      },
+      {
+        "from": "receiver.rail",
+        "slot": 3,
+        "to": "sight.base"
+      },
+      {
+        "from": "barrel.front-sight",
+        "to": "front-sight.base"
+      }
+    ],
+    "description": "AR-10 class rifle in 7.62×51 on the large AR frame, with an A2 front-sight block at the gas station.",
+    "name": "archetype-ar-large",
+    "parts": {
+      "barrel": {
+        "item": "barrel_ar_large_medium"
+      },
+      "bolt-carrier": {
+        "item": "bolt_carrier_ar_large"
+      },
+      "charging-handle": {
+        "item": "charging_handle_ar_large"
+      },
+      "front-sight": {
+        "item": "front_sight_ar"
+      },
+      "grip": {
+        "item": "grip_standard"
+      },
+      "handguard": {
+        "item": "handguard_ar_large_clamped"
+      },
+      "lower": {
+        "item": "lower_ar_large"
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "M",
+          "profile": "sr25-straight"
+        }
+      },
+      "receiver": {
+        "item": "receiver_ar_large"
+      },
+      "sight": {
+        "family": "sight",
+        "params": {
+          "type": "lpvo-1-6x"
+        }
+      },
+      "stock": {
+        "item": "stock_m4_medium"
+      }
+    },
+    "root": "receiver"
+  },
+  "calibre": "7.62x51",
+  "format": 1,
+  "locks": {
+    "optionalParts": [],
+    "params": {}
+  },
+  "status": "published",
+  "template": "ar"
+}

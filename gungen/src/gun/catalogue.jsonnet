@@ -11,11 +11,16 @@ local item(id, family, selector, params, massKg, profile) =
   placementParams: ['pose', 'muzzleInsetRatio', 'chamberIndex', 'frontSightMuzzleInsetRatio'],
   parts: [
     item('receiver_ak', 'ak-receiver', [], { action: 'bolt', feed: 'box', bore: 'S', section: 'ak' }, 0.85, 'ak'),
-    item('receiver_ar', 'receiver', ['section'], {
+    item('receiver_ar', 'receiver', ['section', 'actionFrame'], {
       section: 'ar', action: 'auto', actionFrame: 'small', feed: 'box', bore: 'M', chargingHandle: 'rear-top',
       boltHandle: 'rest', rail: 'full', magazineWell: 'standard', integral: 'no', boltHandleProfile: 'standard',
       handleStyle: 'auto', carrierPattern: 'ar', stockStyle: 'm4', boltCalibre: '308-winchester',
     }, 0.9, 'ar'),
+    item('receiver_ar_large', 'receiver', ['section', 'actionFrame'], {
+      section: 'ar', action: 'auto', actionFrame: 'large', feed: 'box', bore: 'M', chargingHandle: 'rear-top',
+      boltHandle: 'rest', rail: 'full', magazineWell: 'standard', integral: 'no', boltHandleProfile: 'standard',
+      handleStyle: 'auto', carrierPattern: 'ar', stockStyle: 'm4', boltCalibre: '308-winchester',
+    }, 1.15, 'ar'),
     item('receiver_pump', 'receiver', ['section'], {
       section: 'pump', action: 'pump', actionFrame: 'small', feed: 'tube', bore: 'L', chargingHandle: 'side',
       boltHandle: 'rest', rail: 'none', magazineWell: 'standard', integral: 'no', boltHandleProfile: 'standard',
@@ -30,23 +35,28 @@ local item(id, family, selector, params, massKg, profile) =
     row('receiver-bolt', 'receiver', { section: 'standard', action: 'bolt' }, 0.85),
     row('receiver-battle', 'receiver', { section: 'standard', action: 'auto', carrierPattern: 'barrett' }, 1.1),
     row('receiver-smg', 'receiver', { section: 'standard', action: 'auto', carrierPattern: 'smg' }, 0.7),
-    item('charging_handle_ar', 'ar-charging-handle', [], {}, 0.06, 'ar'),
+    item('charging_handle_ar', 'ar-charging-handle', ['actionFrame'], { actionFrame: 'small' }, 0.06, 'ar'),
+    item('charging_handle_ar_large', 'ar-charging-handle', ['actionFrame'], { actionFrame: 'large' }, 0.07, 'ar'),
     item('bolt_carrier_ak', 'bolt-carrier', ['pattern'], {
       pattern: 'ak', handleStyle: 'auto', handleProfile: 'standard', feed: 'box', section: 'ak', bore: 'S',
-      action: 'bolt', boltCalibre: '308-winchester',
+      action: 'bolt', actionFrame: 'small', boltCalibre: '308-winchester',
     }, 0.52, 'ak'),
-    item('bolt_carrier_ar', 'bolt-carrier', ['pattern'], {
-      pattern: 'ar', handleStyle: 'auto', handleProfile: 'standard', feed: 'box', section: 'ar', bore: 'M',
-      action: 'auto', boltCalibre: '308-winchester',
+    item('bolt_carrier_ar', 'bolt-carrier', ['pattern', 'actionFrame'], {
+      pattern: 'ar', actionFrame: 'small', handleStyle: 'auto', handleProfile: 'standard', feed: 'box', section: 'ar',
+      bore: 'M', action: 'auto', boltCalibre: '308-winchester',
     }, 0.33, 'ar'),
+    item('bolt_carrier_ar_large', 'bolt-carrier', ['pattern', 'actionFrame'], {
+      pattern: 'ar', actionFrame: 'large', handleStyle: 'auto', handleProfile: 'standard', feed: 'box', section: 'ar',
+      bore: 'M', action: 'auto', boltCalibre: '308-winchester',
+    }, 0.45, 'ar'),
     item('bolt_carrier_bolt', 'bolt-carrier', ['pattern'], {
       pattern: 'bolt', handleStyle: 'auto', handleProfile: 'sporter', feed: 'top', section: 'sporter', bore: 'M',
-      action: 'bolt', boltCalibre: '308-winchester',
+      action: 'bolt', actionFrame: 'small', boltCalibre: '308-winchester',
     }, 0.35, 'hunting-rifle'),
     row('bolt-carrier-battle', 'bolt-carrier', { pattern: 'barrett' }, 0.45),
     item('bolt_carrier_pump', 'bolt-carrier', ['pattern'], {
       pattern: 'pump', handleStyle: 'auto', handleProfile: 'standard', feed: 'tube', section: 'pump', bore: 'L',
-      action: 'pump', boltCalibre: '308-winchester',
+      action: 'pump', actionFrame: 'small', boltCalibre: '308-winchester',
     }, 0.2, 'pump-shotgun'),
     row('bolt-carrier-smg', 'bolt-carrier', { pattern: 'smg' }, 0.4),
     row('bolt-handle-standard', 'bolt-handle-arm', { handleProfile: 'standard' }, 0.07),
@@ -61,21 +71,28 @@ local item(id, family, selector, params, massKg, profile) =
     row('bolt-knob-awm', 'bolt-handle-knob', { handleProfile: 'awm' }, 0.04),
     row('smg-handle', 'smg-handle', {}, 0.04),
     item('lower_ak', 'lower', ['layout'], {
-      layout: 'ak', triggerGuard: 'present', magazineWell: 'standard', magazineProfile: 'ak-curved',
-      magazineOrientation: 'straight', integral: 'no', section: 'ak', boltCalibre: '308-winchester',
+      layout: 'ak', actionFrame: 'small', triggerGuard: 'present', magazineWell: 'standard',
+      magazineProfile: 'ak-curved', magazineOrientation: 'straight', integral: 'no', section: 'ak',
+      boltCalibre: '308-winchester',
     }, 0.25, 'ak'),
-    item('lower_ar', 'lower', ['layout'], {
-      layout: 'ar', triggerGuard: 'present', magazineWell: 'standard', magazineProfile: 'stanag-straight',
-      magazineOrientation: 'straight', integral: 'no', section: 'ar', boltCalibre: '308-winchester',
+    item('lower_ar', 'lower', ['layout', 'actionFrame'], {
+      layout: 'ar', actionFrame: 'small', triggerGuard: 'present', magazineWell: 'standard',
+      magazineProfile: 'stanag-straight', magazineOrientation: 'straight', integral: 'no', section: 'ar',
+      boltCalibre: '308-winchester',
     }, 0.35, 'ar'),
+    item('lower_ar_large', 'lower', ['layout', 'actionFrame'], {
+      layout: 'ar', actionFrame: 'large', triggerGuard: 'present', magazineWell: 'standard',
+      magazineProfile: 'sr25-straight', magazineOrientation: 'straight', integral: 'no', section: 'ar',
+      boltCalibre: '308-winchester',
+    }, 0.4, 'ar'),
     item('lower_pump', 'lower', ['layout'], {
-      layout: 'pump', triggerGuard: 'present', magazineWell: 'standard', magazineProfile: 'standard',
+      layout: 'pump', actionFrame: 'small', triggerGuard: 'present', magazineWell: 'standard', magazineProfile: 'standard',
       magazineOrientation: 'straight', integral: 'no', section: 'pump', boltCalibre: '308-winchester',
     }, 0.15, 'pump-shotgun'),
     row('lower-thumbhole', 'lower', { layout: 'thumbhole' }, 0.2),
     row('lower-trigger', 'lower', { layout: 'trigger' }, 0.2),
     item('lower_sporter', 'lower', ['layout', 'section'], {
-      layout: 'conventional', section: 'sporter', triggerGuard: 'present', magazineWell: 'recessed',
+      layout: 'conventional', section: 'sporter', actionFrame: 'small', triggerGuard: 'present', magazineWell: 'recessed',
       magazineProfile: 'standard', magazineOrientation: 'straight', integral: 'yes', boltCalibre: '308-winchester',
     }, 0.18, 'hunting-rifle'),
     row('lower-compact-smg', 'lower', { layout: 'conventional', section: 'compact-smg' }, 0.2),
@@ -83,26 +100,30 @@ local item(id, family, selector, params, massKg, profile) =
     row('barrel-ak-short', 'barrel', { section: 'ak', length: 'S' }, 0.6),
     item('barrel_ak_medium', 'barrel', ['section', 'length'], {
       section: 'ak', length: 'M', profile: 'standard', muzzle: 'threaded', frontSightStyle: 'ak', handguardLength: 'M',
-      handguardLayout: 'ak', bore: 'S', tubeLengthPercent: '75',
+      handguardLayout: 'ak', bore: 'S', actionFrame: 'small', tubeLengthPercent: '75',
     }, 0.7, 'ak'),
     row('barrel-ak-long', 'barrel', { section: 'ak', length: 'L' }, 0.85),
     row('barrel-ar-short', 'barrel', { section: 'ar', length: 'S' }, 0.75),
-    item('barrel_ar_medium', 'barrel', ['section', 'length'], {
+    item('barrel_ar_medium', 'barrel', ['section', 'length', 'actionFrame'], {
       section: 'ar', length: 'M', profile: 'standard', muzzle: 'threaded', frontSightStyle: 'ar', handguardLength: 'M',
-      handguardLayout: 'ar', bore: 'M', tubeLengthPercent: '75',
+      handguardLayout: 'ar', bore: 'M', actionFrame: 'small', tubeLengthPercent: '75',
     }, 0.95, 'ar'),
+    item('barrel_ar_large_medium', 'barrel', ['section', 'length', 'actionFrame'], {
+      section: 'ar', length: 'M', profile: 'standard', muzzle: 'threaded', frontSightStyle: 'ar', handguardLength: 'M',
+      handguardLayout: 'ar', bore: 'M', actionFrame: 'large', tubeLengthPercent: '75',
+    }, 1.15, 'ar'),
     row('barrel-ar-long', 'barrel', { section: 'ar', length: 'L' }, 1.15),
     row('barrel-pump-short', 'barrel', { section: 'pump', length: 'S' }, 0.7),
     item('barrel_pump_medium', 'barrel', ['section', 'length'], {
       section: 'pump', length: 'M', profile: 'standard', muzzle: 'threaded', frontSightStyle: 'ar', handguardLength: 'M',
-      handguardLayout: 'standard', bore: 'L', tubeLengthPercent: '75',
+      handguardLayout: 'standard', bore: 'L', actionFrame: 'small', tubeLengthPercent: '75',
     }, 0.8, 'pump-shotgun'),
     row('barrel-pump-long', 'barrel', { section: 'pump', length: 'L' }, 0.95),
     row('barrel-sporter-short', 'barrel', { section: 'sporter', length: 'S' }, 0.5),
     row('barrel-sporter-medium', 'barrel', { section: 'sporter', length: 'M' }, 0.7),
     item('barrel_sporter_long', 'barrel', ['section', 'length'], {
       section: 'sporter', length: 'L', profile: 'standard', muzzle: 'threaded', frontSightStyle: 'sporting',
-      handguardLength: 'L', handguardLayout: 'standard', bore: 'M', tubeLengthPercent: '75',
+      handguardLength: 'L', handguardLayout: 'standard', bore: 'M', actionFrame: 'small', tubeLengthPercent: '75',
     }, 0.85, 'hunting-rifle'),
     row('barrel-compact-smg', 'barrel', { section: 'compact-smg' }, 0.3),
     row('barrel-pistol', 'barrel', { section: 'standard', profile: 'pistol' }, 0.12),
@@ -120,17 +141,26 @@ local item(id, family, selector, params, massKg, profile) =
     row('barrel-anti-materiel', 'barrel', { section: 'standard', profile: 'standard', length: 'L', bore: 'L' }, 2.6),
     item('handguard_ak', 'handguard', ['layout'], {
       layout: 'ak', mount: 'clamped', clearance: 'M', handleStyle: 'none', fit: 'receiver', barrelBore: 'S',
-      boltCalibre: '308-winchester', section: 'ak', length: 'M', bore: 'S', boltHandleProfile: 'standard',
+      actionFrame: 'small', boltCalibre: '308-winchester', section: 'ak', length: 'M', bore: 'S',
+      boltHandleProfile: 'standard',
     }, 0.25, 'ak'),
     row('handguard-ak-standard', 'handguard', { layout: 'standard', section: 'ak' }, 0.25),
-    item('handguard_ar_clamped', 'handguard', ['layout', 'mount'], {
+    item('handguard_ar_clamped', 'handguard', ['layout', 'mount', 'actionFrame'], {
       layout: 'ar', mount: 'clamped', clearance: 'M', handleStyle: 'none', fit: 'receiver', barrelBore: 'M',
-      boltCalibre: '308-winchester', section: 'ar', length: 'M', bore: 'M', boltHandleProfile: 'standard',
+      actionFrame: 'small', boltCalibre: '308-winchester', section: 'ar', length: 'M', bore: 'M',
+      boltHandleProfile: 'standard',
     }, 0.35, 'ar'),
+    // The large frame's wider barrel extension opens the handguard's bore, so its clamped handguard is its own shape.
+    item('handguard_ar_large_clamped', 'handguard', ['layout', 'mount', 'actionFrame'], {
+      layout: 'ar', mount: 'clamped', clearance: 'M', handleStyle: 'none', fit: 'receiver', barrelBore: 'M',
+      actionFrame: 'large', boltCalibre: '308-winchester', section: 'ar', length: 'M', bore: 'M',
+      boltHandleProfile: 'standard',
+    }, 0.4, 'ar'),
     row('handguard-ar-free-float', 'handguard', { layout: 'ar', mount: 'free-float' }, 0.46),
     item('handguard_sporter', 'handguard', ['layout', 'section'], {
       layout: 'standard', section: 'sporter', clearance: 'M', handleStyle: 'none', fit: 'receiver', mount: 'clamped',
-      barrelBore: 'M', boltHandleProfile: 'sporter', boltCalibre: '308-winchester', length: 'L', bore: 'M',
+      barrelBore: 'M', actionFrame: 'small', boltHandleProfile: 'sporter', boltCalibre: '308-winchester', length: 'L',
+      bore: 'M',
     }, 0.35, 'hunting-rifle'),
     row('handguard-compact-smg', 'handguard', { layout: 'standard', section: 'compact-smg' }, 0.25),
     row('handguard-standard-short', 'handguard', { layout: 'standard', section: 'standard', length: 'S' }, 0.15),

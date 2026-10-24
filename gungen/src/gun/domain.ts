@@ -3,6 +3,7 @@ import { ANTI_MATERIEL_RULES } from './antiMateriel/index.ts';
 import { FAMILIES } from './parts.ts';
 import { revolverRules } from './revolver.ts';
 import {
+  actionFrameMatch,
   actionHandleRest,
   feedMatch,
   firingGrip,
@@ -35,6 +36,7 @@ export const gunDomain: Domain = {
     actionHandleRest,
     thumbholeGripMatch,
     feedMatch,
+    actionFrameMatch,
     pistolBarrelCrown,
     triggerGuard,
     handguardFit,

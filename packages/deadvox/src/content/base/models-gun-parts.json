@@ -14,6 +14,19 @@
       }
     },
     {
+      "file": "assets/models/barrel_ar_large_medium.glb",
+      "gun": {},
+      "id": "barrel_ar_large_medium",
+      "parts": {
+        "barrel_ar_large_medium": {
+          "centreOfMass": [0.18857473800330946, 0, -5.5157198014340778e-6],
+          "item": "barrel_ar_large_medium",
+          "massKg": 1.1499999999999999,
+          "node": "barrel_ar_large_medium:barrel"
+        }
+      }
+    },
+    {
       "file": "assets/models/barrel_ar_medium.glb",
       "gun": {},
       "id": "barrel_ar_medium",
@@ -79,6 +92,19 @@
       }
     },
     {
+      "file": "assets/models/bolt_carrier_ar_large.glb",
+      "gun": {},
+      "id": "bolt_carrier_ar_large",
+      "parts": {
+        "bolt_carrier_ar_large": {
+          "centreOfMass": [0.013452380952380952, 0.0029047619047619048, 0],
+          "item": "bolt_carrier_ar_large",
+          "massKg": 0.45000000000000001,
+          "node": "bolt_carrier_ar_large:bolt-carrier"
+        }
+      }
+    },
+    {
       "file": "assets/models/bolt_carrier_bolt.glb",
       "gun": {},
       "id": "bolt_carrier_bolt",
@@ -140,6 +166,19 @@
           "item": "charging_handle_ar",
           "massKg": 0.059999999999999998,
           "node": "charging_handle_ar:ar-charging-handle"
+        }
+      }
+    },
+    {
+      "file": "assets/models/charging_handle_ar_large.glb",
+      "gun": {},
+      "id": "charging_handle_ar_large",
+      "parts": {
+        "charging_handle_ar_large": {
+          "centreOfMass": [-0.17055555555555563, 0.022000000000000002, 0.00050000000000000023],
+          "item": "charging_handle_ar_large",
+          "massKg": 0.070000000000000007,
+          "node": "charging_handle_ar_large:ar-charging-handle"
         }
       }
     },
@@ -287,6 +326,19 @@
       }
     },
     {
+      "file": "assets/models/handguard_ar_large_clamped.glb",
+      "gun": {},
+      "id": "handguard_ar_large_clamped",
+      "parts": {
+        "handguard_ar_large_clamped": {
+          "centreOfMass": [0.1486872898453262, 0, 0],
+          "item": "handguard_ar_large_clamped",
+          "massKg": 0.40000000000000002,
+          "node": "handguard_ar_large_clamped:handguard"
+        }
+      }
+    },
+    {
       "file": "assets/models/handguard_sporter.glb",
       "gun": {},
       "id": "handguard_sporter",
@@ -335,6 +387,19 @@
           "item": "lower_ar",
           "massKg": 0.34999999999999998,
           "node": "lower_ar:lower"
+        }
+      }
+    },
+    {
+      "file": "assets/models/lower_ar_large.glb",
+      "gun": {},
+      "id": "lower_ar_large",
+      "parts": {
+        "lower_ar_large": {
+          "centreOfMass": [-0.10188530465949826, -0.015538829151732382, 0],
+          "item": "lower_ar_large",
+          "massKg": 0.40000000000000002,
+          "node": "lower_ar_large:lower"
         }
       }
     },
@@ -413,6 +478,19 @@
           "item": "receiver_ar",
           "massKg": 0.90000000000000002,
           "node": "receiver_ar:receiver"
+        }
+      }
+    },
+    {
+      "file": "assets/models/receiver_ar_large.glb",
+      "gun": {},
+      "id": "receiver_ar_large",
+      "parts": {
+        "receiver_ar_large": {
+          "centreOfMass": [-0.13291219512195121, 0.0013658536585365853, -0.00068292682926829231],
+          "item": "receiver_ar_large",
+          "massKg": 1.1499999999999999,
+          "node": "receiver_ar_large:receiver"
         }
       }
     },

@@ -1,0 +1,13 @@
+{
+  "id": "lower_ar_large",
+  "file": "assets/models/lower_ar_large.glb",
+  "gun": {},
+  "parts": {
+    "lower_ar_large": {
+      "item": "lower_ar_large",
+      "node": "lower_ar_large:lower",
+      "massKg": 0.4,
+      "centreOfMass": [-0.10188530465949826, -0.015538829151732382, 0]
+    }
+  }
+}

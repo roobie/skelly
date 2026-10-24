@@ -11,6 +11,7 @@ import {
   type Vec3,
 } from '@skelly/engine/foundation/math.ts';
 import { partNodeName } from '@skelly/thing-export/glb.ts';
+import { AR_CYCLIC_RPM } from './arFrames.ts';
 import { boltCycleMotion, type CycleMode, type CycleMotion, cycleMotion, pumpCycleMotion } from './cycle.ts';
 import { localEjectionPoint } from './ejection.ts';
 
@@ -88,6 +89,12 @@ const coupledParts = (
   return parts;
 };
 
+/** An AR fires at its frame's cyclic rate; other actions keep their profile's. */
+const frameCyclicRpm = (resolved: Resolved, kind: 'ar' | 'ak', receiverId: string): number | undefined => {
+  const frameId = kind === 'ar' ? resolved.params.get(receiverId)?.actionFrame?.value : undefined;
+  return frameId === undefined ? undefined : AR_CYCLIC_RPM[frameId];
+};
+
 export const resolveGunAction = (resolved: Resolved): ResolvedGunAction | undefined => {
   const entry = [...resolved.defs].find(([, def]) => def.family === 'bolt-carrier');
   if (!entry) {
@@ -115,7 +122,12 @@ export const resolveGunAction = (resolved: Resolved): ResolvedGunAction | undefi
   } else if (kind === 'pump') {
     cycle = pumpCycleMotion(carrier.def.motion!, resolved.domain.units.metresPerUnit);
   } else {
-    cycle = cycleMotion(kind, carrier.def.motion!, resolved.domain.units.metresPerUnit);
+    cycle = cycleMotion(
+      kind,
+      carrier.def.motion!,
+      resolved.domain.units.metresPerUnit,
+      frameCyclicRpm(resolved, kind, receiverId),
+    );
   }
   return {
     kind,

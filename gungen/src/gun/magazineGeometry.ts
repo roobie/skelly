@@ -5,6 +5,7 @@ import { type Column, layoutColumn, polylineLength } from '../ammo/magazineColum
 import { roundProfiles } from '../ammo/roundProfile.ts';
 import { METRES_PER_UNIT } from './exportFrame.ts';
 import { magazineCenterline } from './magazineCenterline.ts';
+import { magazineProfileContent } from './magazineProfiles.ts';
 
 export const MAGAZINE_WALL_U = 0.125;
 /** Assumed portion of the top round that stands proud of the magazine feed face. */
@@ -107,7 +108,7 @@ export const nominalCapacityForMagazine = (params: Readonly<Record<string, strin
   if (params.length === 'M' && params.profile === 'stanag-straight') {
     return 20;
   }
-  return undefined;
+  return magazineProfileContent(params.profile)?.capacity;
 };
 
 export const magazineRoundColumn = (
