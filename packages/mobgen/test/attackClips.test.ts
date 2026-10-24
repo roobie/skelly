@@ -19,6 +19,20 @@ describe('content-authored attack clips', () => {
     expect(attackClipFor({ name: 'fixture-template', attackClip: fixtureId }).name).toBe(fixtureId);
   });
 
+  it.each([
+    ['null rotations', { rotations: null }],
+    ['numeric rotations', { rotations: 5 }],
+    ['array rotations', { rotations: [] }],
+    ['a non-triple rotation', { rotations: { spine: [1, 2] } }],
+    ['a non-numeric pelvisDrop', { pelvisDrop: 'low' }],
+  ])('refuses a key with %s at the import boundary', async (_label, override) => {
+    const broken = structuredClone(content.swipe);
+    broken.keys[1] = { ...broken.keys[1], ...override } as never;
+    vi.resetModules();
+    vi.doMock('../src/mob/attackClips.json', () => ({ default: { ...content, swipe: broken } }));
+    await expect(import('../src/mob/attack.ts')).rejects.toThrow('attack clip "swipe"');
+  });
+
   it('refuses content whose entry name differs from its id', async () => {
     vi.resetModules();
     vi.doMock('../src/mob/attackClips.json', () => ({ default: { ...content, misnamed: content.swipe } }));

@@ -110,10 +110,20 @@ const contentClip = (id: string, value: unknown): AttackClip => {
   if (!(Number.isFinite(clip.duration) && Number.isFinite(clip.hitTime) && Array.isArray(clip.keys))) {
     return bad('needs numeric duration and hitTime and a keys list');
   }
-  for (const key of clip.keys as readonly Partial<AttackKey>[]) {
-    const rotations = Object.values(key.rotations ?? {});
-    if (!Number.isFinite(key.t) || key.rotations === undefined || !rotations.every(isVec3)) {
-      return bad('has a key without a time or with a rotation that is not [x, y, z]');
+  for (const key of clip.keys as readonly unknown[]) {
+    const k = key as Partial<Record<keyof AttackKey, unknown>> | null;
+    if (typeof k !== 'object' || k === null || !Number.isFinite(k.t)) {
+      return bad('has a key that is not an object with a numeric time t');
+    }
+    const rotations = k.rotations;
+    if (typeof rotations !== 'object' || rotations === null || Array.isArray(rotations)) {
+      return bad('has a key whose rotations is not a map of bone to [x, y, z]');
+    }
+    if (!Object.values(rotations).every(isVec3)) {
+      return bad('has a rotation that is not [x, y, z]');
+    }
+    if (k.pelvisDrop !== undefined && !Number.isFinite(k.pelvisDrop)) {
+      return bad('has a pelvisDrop that is not a number');
     }
   }
   return clip as AttackClip;
