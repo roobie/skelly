@@ -15,6 +15,7 @@ import {
   safeParse,
   strictObject,
   string,
+  tuple,
   unknown,
 } from 'valibot';
 import { parseCartridge } from '../ammo/parseCartridge.ts';
@@ -66,10 +67,24 @@ const FrameSchema = strictObject({
       rearX: Finite,
       wellCenterX: Finite,
       gripX: Finite,
-      fingerBottomU: Finite,
       housingFrontBottomU: Finite,
       housingRearBottomU: Finite,
       halfWidthU: Positive,
+      trigger: optional(
+        strictObject({
+          fingerRearX: Finite,
+          fingerFrontX: Finite,
+          fingerTopU: Finite,
+          fingerBottomU: Finite,
+          guardWallU: Positive,
+          housingRearWallU: Positive,
+          blade: strictObject({
+            // Convex side profiles that together trace the curved blade.
+            segments: pipe(array(pipe(array(tuple([Finite, Finite])), minLength(3))), minLength(1)),
+            halfWidthU: Positive,
+          }),
+        }),
+      ),
     }),
   ),
   freeFloatHandguard: optional(strictObject({ lengthU: Positive, topU: Positive })),
@@ -235,9 +250,10 @@ export interface AuthoredARFrame {
 
 /**
  * A frame's lower traced from its reference photo, in u from the receiver's front face (x) and the bore (y):
- * the lower's rear, the magazine well's centre, the grip's mount, the trigger finger's bottom, the
- * magazine housing's bottom at its front and rear, and the lower's half width. A frame without one keeps the
- * family's.
+ * the lower's rear, the magazine well's centre, the grip's mount, the magazine housing's bottom at its front and
+ * rear, the lower's half width, and optionally its trigger group: the finger space inside the guard, the guard's
+ * and the housing's rear wall thicknesses, and the trigger blade's side profile and half width. A frame without one
+ * keeps the family's.
  */
 export type ARLowerProportions = NonNullable<FrameSource['lower']>;
 

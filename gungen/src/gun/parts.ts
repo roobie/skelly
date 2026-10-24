@@ -604,6 +604,16 @@ const lowerGripContactX = (layout: string, gripXOverride?: number): number => {
   const angle = (GRIP_BANDS.leanDegrees * Math.PI) / 180;
   return gripX + x * Math.cos(angle) - y * Math.sin(angle);
 };
+/**
+ * Where a grip's front edge sits at height y in the lower's frame: below its contact vertex the edge leans back
+ * with the grip, so a guard whose top sits lower meets it further back.
+ */
+const lowerGripFrontXAt = (gripX: number, y: number): number => {
+  const angle = (GRIP_BANDS.leanDegrees * Math.PI) / 180;
+  const [x, mountY] = GRIP_MOUNT_PROFILE[0];
+  const contactY = -1.5 - x * Math.sin(angle) + mountY * Math.cos(angle);
+  return lowerGripContactX('ar', gripX) - Math.max(0, contactY - y) * Math.tan(angle);
+};
 const lowerGripRearX = (gripX: number): number => {
   const angle = (GRIP_BANDS.leanDegrees * Math.PI) / 180;
   const faceRearX = Math.min(
@@ -2730,7 +2740,10 @@ const lower: PartFamily = {
         halfWidth = LOWER_HALF_WIDTH,
         opening = { depth: MAGAZINE_WELL_DEPTH, width: MAGAZINE_WELL_WIDTH },
         skirt = { front: MAGAZINE_HOUSING_FRONT_LENGTH, rear: MAGAZINE_HOUSING_REAR_LENGTH },
+        rearWall = MAGAZINE_HOUSING_REAR_WALL,
       }: {
+        /** The rear wall's thickness behind the well. */
+        rearWall?: number;
         frontPanelThickness: number;
         halfWidth?: number;
         /** The well the housing hangs from, so a frame's larger opening carries down into its skirt. */
@@ -2753,10 +2766,10 @@ const lower: PartFamily = {
         wall(
           'rear',
           [
-            [-halfDepth - MAGAZINE_HOUSING_REAR_WALL, -skirt.rear],
+            [-halfDepth - rearWall, -skirt.rear],
             [-halfDepth, -skirt.rear],
             [-halfDepth, 0],
-            [-halfDepth - MAGAZINE_HOUSING_REAR_WALL, 0],
+            [-halfDepth - rearWall, 0],
           ],
           [-outerZ, outerZ],
         ),
@@ -2832,15 +2845,55 @@ const lower: PartFamily = {
             : housingRearX;
         const gripShift = Math.min(0, housingRearX - guardFrontX);
         const arTriggerX = triggerX + gripShift;
+        // A traced trigger group takes its finger space and wall thicknesses from the photo, absolute in x.
+        const tracedTrigger = traced?.trigger;
         const arTriggerFinger =
-          traced === undefined
+          tracedTrigger === undefined
             ? trigger(arTriggerX)
-            : keepOut('trigger-finger', [arTriggerX, fromBore(traced.fingerBottomU), -1], [arTriggerX + 2, -1.75, 1]);
+            : keepOut(
+                'trigger-finger',
+                [tracedTrigger.fingerRearX, fromBore(tracedTrigger.fingerBottomU), -1],
+                [tracedTrigger.fingerFrontX, fromBore(tracedTrigger.fingerTopU), 1],
+              );
         const arGripX = traced?.gripX ?? LOWER_GRIP_X.ar + gripShift;
+        const guardWalls =
+          tracedTrigger === undefined
+            ? LOWER_TRIGGER_GUARD
+            : { ...LOWER_TRIGGER_GUARD, sideWall: tracedTrigger.guardWallU };
+        // A traced guard's top sits below the grip's contact vertex, so its rear wall meets the leaning grip there.
+        const guardRearX =
+          tracedTrigger === undefined
+            ? lowerGripContactX(layout, arGripX)
+            : lowerGripFrontXAt(arGripX, fromBore(tracedTrigger.fingerTopU) + TRIGGER_GUARD.verticalWall);
         const arTriggerGuards =
-          triggerGuards.length > 0
-            ? triggerGuardSolids(arTriggerFinger, lowerGripContactX(layout, arGripX), LOWER_TRIGGER_GUARD)
-            : [];
+          triggerGuards.length > 0 ? triggerGuardSolids(arTriggerFinger, guardRearX, guardWalls) : [];
+        // Above a traced guard the lower's body comes down to the guard's top bar, as the photo's pinned trigger
+        // housing does; the blade hangs from there inside the guard.
+        const triggerBody: Solid[] =
+          tracedTrigger === undefined
+            ? []
+            : [
+                solid(
+                  'trigger-housing',
+                  [
+                    tracedTrigger.fingerRearX - LOWER_TRIGGER_GUARD.innerXClearance,
+                    fromBore(tracedTrigger.fingerTopU) + TRIGGER_GUARD.verticalWall,
+                    -(traced?.halfWidthU ?? LOWER_HALF_WIDTH),
+                  ],
+                  [
+                    tracedTrigger.fingerFrontX + LOWER_TRIGGER_GUARD.innerXClearance + tracedTrigger.guardWallU,
+                    -1.5,
+                    traced?.halfWidthU ?? LOWER_HALF_WIDTH,
+                  ],
+                ),
+                ...tracedTrigger.blade.segments.map((segment, index) =>
+                  extrudedPolygon(
+                    `trigger-blade-${index}`,
+                    segment.map(([x, y]) => [x, fromBore(y)] as Vec2),
+                    [-tracedTrigger.blade.halfWidthU, tracedTrigger.blade.halfWidthU],
+                  ),
+                ),
+              ];
         const arWell = well(arWellCenterX);
         const lowerRearX = Math.min(traced?.rearX ?? -14.75, lowerGripRearX(arGripX));
         const frame = magazineWellFrame(
@@ -2872,8 +2925,10 @@ const lower: PartFamily = {
                       front: -1.5 - fromBore(traced.housingFrontBottomU),
                       rear: -1.5 - fromBore(traced.housingRearBottomU),
                     },
+                    ...(traced.trigger === undefined ? {} : { rearWall: traced.trigger.housingRearWallU }),
                   }),
             }),
+            ...triggerBody,
             ...arTriggerGuards,
           ],
           ports: [top, grip(arGripX), arWell.port],

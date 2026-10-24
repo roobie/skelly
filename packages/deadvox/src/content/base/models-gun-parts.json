@@ -435,7 +435,7 @@
       "id": "lower_ar_large",
       "parts": {
         "lower_ar_large": {
-          "centreOfMass": [-0.12684799460734755, -0.020329625884732062, -6.066734074823059e-6],
+          "centreOfMass": [-0.12790836535619274, -0.02033047590895655, 5.9119125036949459e-7],
           "item": "lower_ar_large",
           "massKg": 0.40000000000000002,
           "node": "lower_ar_large:lower"

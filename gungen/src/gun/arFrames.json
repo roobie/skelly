@@ -657,12 +657,26 @@
       },
       "id": "large",
       "lower": {
-        "fingerBottomU": -7.5,
         "gripX": -15.5,
         "halfWidthU": 2,
         "housingFrontBottomU": -6.5,
         "housingRearBottomU": -7.75,
         "rearX": -20.25,
+        "trigger": {
+          "blade": {
+            "halfWidthU": 0.25,
+            "segments": [
+              [[-12.5, -6], [-12, -6], [-11.75, -5], [-12.25, -5]],
+              [[-12, -7.25], [-11.75, -7.25], [-11.75, -7], [-12, -6], [-12.5, -6]]
+            ]
+          },
+          "fingerBottomU": -7.75,
+          "fingerFrontX": -9.75,
+          "fingerRearX": -13,
+          "fingerTopU": -5,
+          "guardWallU": 0.25,
+          "housingRearWallU": 0.25
+        },
         "wellCenterX": -5
       },
       "magazineProfile": "sr25-straight",

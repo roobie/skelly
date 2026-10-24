@@ -86,11 +86,31 @@ local derivation(measure, clearanceUnits, snap, description, multiplier=null) =
         rearX: -20.25,
         wellCenterX: -5,
         gripX: -15.5,
-        fingerBottomU: -7.5,
         housingFrontBottomU: -6.5,
         housingRearBottomU: -7.75,
         // Not visible in a side photo: flush with the receiver's sides.
         halfWidthU: 2,
+        // The trigger group, traced from the same photo. The guard's opening runs -13.4u to -8.71u and -5.0u to -7.7u
+        // with its bottom bar's underside near -8u; the lower's pinned body fills the space above it. The opening's
+        // front stops at -9.25u, 0.54u short of the photo's, because the magazine's well clearance and the housing's
+        // and guard's 0.25u walls sit in front of it. The finger space keeps the guard's 0.5u clearance each side.
+        // The blade curves forward from the opening's top at -12.2u to its tip at -11.7u, -7.35u, about 0.4u thick,
+        // traced in two convex segments; a real trigger is about 0.25 in (0.5u) wide.
+        trigger: {
+          fingerRearX: -13,
+          fingerFrontX: -9.75,
+          fingerTopU: -5,
+          fingerBottomU: -7.75,
+          guardWallU: 0.25,
+          housingRearWallU: 0.25,
+          blade: {
+            segments: [
+              [[-12.5, -6], [-12, -6], [-11.75, -5], [-12.25, -5]],
+              [[-12, -7.25], [-11.75, -7.25], [-11.75, -7], [-12, -6], [-12.5, -6]],
+            ],
+            halfWidthU: 0.25,
+          },
+        },
       },
       // The free-float rail ends 34.57u ahead of the receiver (34u, so its 2u slot pitch divides it) with its top
       // rail flush with the receiver's at 2.75u (2.85u traced).
