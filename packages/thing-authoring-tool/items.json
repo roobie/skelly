@@ -6153,6 +6153,81 @@
       ]
     },
     {
+      "anchors": {
+        "shoulder": {
+          "fraction": [0.5, 1, 0.5],
+          "part": "arm",
+          "solid": "sleeve"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "player_arm",
+      "parts": [
+        {
+          "family": "avatarArm",
+          "finish": {
+            "shirt": "cloth-shirt-player",
+            "skin": "body-skin-player"
+          },
+          "id": "arm",
+          "massKg": 3.5,
+          "params": {
+            "fingerLength": "0.080000000000000002",
+            "foreLength": "0.25",
+            "foreWidth": "0.080000000000000002",
+            "palmLength": "0.10000000000000001",
+            "palmThickness": "0.032000000000000001",
+            "palmWidth": "0.085000000000000006",
+            "sleeveLength": "0.14999999999999999",
+            "thumbLength": "0.059999999999999998",
+            "upperDepth": "0.089999999999999997",
+            "upperLength": "0.29999999999999999",
+            "upperWidth": "0.085000000000000006",
+            "wristWidth": "0.059999999999999998"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "hip": {
+          "fraction": [0.5, 1, 0.5],
+          "part": "leg",
+          "solid": "thigh"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "id": "player_leg",
+      "parts": [
+        {
+          "family": "avatarLeg",
+          "finish": {
+            "pants": "cloth-pants-player",
+            "shoe": "leather-shoe-player",
+            "sole": "rubber-black"
+          },
+          "id": "leg",
+          "massKg": 11,
+          "params": {
+            "heelReach": "0.059999999999999998",
+            "length": "0.81999999999999995",
+            "shinDepth": "0.12",
+            "shinWidth": "0.11",
+            "shoeHeight": "0.089999999999999997",
+            "shoeWidth": "0.10000000000000001",
+            "thighDepth": "0.16",
+            "thighLength": "0.41999999999999998",
+            "thighWidth": "0.14999999999999999",
+            "toeReach": "0.20999999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
       "connections": [],
       "exportMass": "parts",
       "id": "electrical_tape",

@@ -3434,57 +3434,42 @@ const StancePoseSchema = strictObject({
   legsForwardDegrees: Degrees,
 });
 
-/** The player figure's box parts: the figure's look until an authored part draws one in its place. */
-export const FIGURE_BOX_PARTS = [
-  'body',
-  'head',
-  'leftUpperArm',
-  'rightUpperArm',
-  'leftForearm',
-  'rightForearm',
-  'leftHand',
-  'rightHand',
-  'leftLeg',
-  'rightLeg',
-  'leftFoot',
-  'rightFoot',
-] as const;
-export type FigureBoxPart = (typeof FIGURE_BOX_PARTS)[number];
-export type FigureLimb = 'torso' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg';
-/** The limb each box part moves and hides with; one authored part draws parts of one limb. */
-export const FIGURE_BOX_LIMBS: Readonly<Record<FigureBoxPart, FigureLimb>> = {
-  body: 'torso',
-  head: 'torso',
-  leftUpperArm: 'leftArm',
-  leftForearm: 'leftArm',
-  leftHand: 'leftArm',
-  rightUpperArm: 'rightArm',
-  rightForearm: 'rightArm',
-  rightHand: 'rightArm',
-  leftLeg: 'leftLeg',
-  leftFoot: 'leftLeg',
-  rightLeg: 'rightLeg',
-  rightFoot: 'rightLeg',
-};
-/** The pivots the rest of the figure hangs from and is posed about. */
+/** The limbs a figure hangs from its body, each at the body joint of the same name in `FIGURE_LIMB_JOINTS`. */
+export const FIGURE_LIMBS = ['leftArm', 'rightArm', 'leftLeg', 'rightLeg'] as const;
+export type FigureLimb = (typeof FIGURE_LIMBS)[number];
+/** The pivots the limbs hang from and are posed about. */
 const FIGURE_JOINTS = ['leftHip', 'rightHip', 'leftShoulder', 'rightShoulder'] as const;
 export type FigureJoint = (typeof FIGURE_JOINTS)[number];
+export const FIGURE_LIMB_JOINTS: Readonly<Record<FigureLimb, FigureJoint>> = {
+  leftArm: 'leftShoulder',
+  rightArm: 'rightShoulder',
+  leftLeg: 'leftHip',
+  rightLeg: 'rightHip',
+};
 
-/** An authored part of a figure: a model drawn in place of box parts; `DESIGN.md`, "Models". */
-const FigurePartSchema = strictObject({
-  model: Id,
-  draws: pipe(array(picklist(FIGURE_BOX_PARTS)), nonEmpty('must name a box part')),
-  /** Each joint names the model anchor it sits at. The part stands with its hips at the figure's hip height. */
-  joints: strictObject({ leftHip: Id, rightHip: Id, leftShoulder: optional(Id), rightShoulder: optional(Id) }),
-});
+/** An authored limb: its model and the model anchor that sits at, and turns about, its body joint. */
+const FigureLimbSchema = strictObject({ model: Id, joint: Id });
 
-/** Actor palettes and poses are content so appearance doesn't live in renderer code. */
+/** Actor palettes and poses are content so appearance doesn't live in renderer code; `DESIGN.md`, "Models". */
 const FigureSchema = strictObject({
   id: Id,
+  /** The first-person view arms' colours, until they are drawn from the figure's own parts. */
   palette: strictObject({ skin: Color, shirt: Color, trousers: Color }),
-  /** Where the hips stand above the ground; box legs reach down from them, and stances pivot about them. */
+  /** Where the hips stand above the ground; stances pivot about them. */
   hipHeightMetres: Positive,
-  parts: optional(array(FigurePartSchema)),
+  /** The head and torso model; each joint names its anchor. It stands with its hips at the hip height. */
+  body: strictObject({
+    model: Id,
+    joints: strictObject({ leftHip: Id, rightHip: Id, leftShoulder: Id, rightShoulder: Id }),
+  }),
+  limbs: strictObject({
+    leftArm: FigureLimbSchema,
+    rightArm: FigureLimbSchema,
+    leftLeg: FigureLimbSchema,
+    rightLeg: FigureLimbSchema,
+  }),
+  /** Walking swings each leg about its hip and each arm, against its leg, about its shoulder; peak angles. */
+  gait: strictObject({ legSwingDegrees: Degrees, armSwingDegrees: Degrees }),
   stancePoses: strictObject({
     crouching: StancePoseSchema,
     prone: StancePoseSchema,

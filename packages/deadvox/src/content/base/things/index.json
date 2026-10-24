@@ -2504,6 +2504,26 @@
     }
   },
   {
+    "id": "player_arm",
+    "file": "assets/models/player_arm.glb",
+    "parts": {
+      "arm": { "node": "arm:avatarArm", "massKg": 3.5, "centreOfMass": [0, -0.2773447069116361, 0.0002624671916010499] }
+    },
+    "anchors": { "shoulder": [0, 0, 0] }
+  },
+  {
+    "id": "player_leg",
+    "file": "assets/models/player_leg.glb",
+    "parts": {
+      "leg": {
+        "node": "leg:avatarLeg",
+        "massKg": 11,
+        "centreOfMass": [-0.0011272707009918645, -0.3997213863813663, 0.010909952078457595]
+      }
+    },
+    "anchors": { "hip": [0, 0, 0] }
+  },
+  {
     "id": "tape_roll",
     "file": "assets/models/tape_roll.glb",
     "parts": {

@@ -1,22 +1,25 @@
+import { readFileSync } from 'node:fs';
 import {
+  Box3,
   BoxGeometry,
   DirectionalLight,
   Euler,
   Frustum,
   Group,
   HemisphereLight,
-  type InstancedMesh,
   Matrix4,
   Mesh,
   MeshBasicMaterial,
   type MeshLambertMaterial,
   MeshStandardMaterial,
+  type Object3D,
   PerspectiveCamera,
   Quaternion,
   Raycaster,
   Scene,
   Vector3,
 } from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
 import { HOLD, heldAnchorOffset } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -25,8 +28,7 @@ import { meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/co
 import { opticViewSettings } from '../src/core/opticView.ts';
 import type { PlayerStance } from '../src/core/playerStance.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { FIGURE_BOX_LIMBS, FIGURE_BOX_PARTS, type FigureBoxPart } from '../src/core/schema.ts';
-import { FIGURE_BOXES } from '../src/core/zombieRegions.ts';
+import { FIGURE_LIMB_JOINTS, FIGURE_LIMBS, type FigureLimb } from '../src/core/schema.ts';
 import { createPlayerBody as createBody } from '../src/game/player.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { renderMeleePose } from '../src/render/meleePose.ts';
@@ -42,23 +44,47 @@ const playerFigure = registry.figures.get('player')!;
 const { palette } = playerFigure;
 const STANDING = { stance: 'standing', dt: 0 } as const;
 
-const hasVisibleFootCorner = (feet: InstancedMesh[], torso: InstancedMesh, eye: Vector3, frustum: Frustum): boolean =>
-  feet.some((foot) => {
-    const instance = new Matrix4();
-    foot.getMatrixAt(0, instance);
-    const worldMatrix = new Matrix4().multiplyMatrices(foot.matrixWorld, instance);
-    return [-0.5, 0.5].some((x) => {
-      const target = new Vector3(x, 0.5, -0.5).applyMatrix4(worldMatrix);
-      if (!frustum.containsPoint(target)) {
-        return false;
-      }
-      const rayDirection = target.clone().sub(eye);
-      const distance = rayDirection.length();
-      rayDirection.normalize();
-      const ray = new Raycaster(eye, rayDirection, 0, distance - 0.001);
-      return ray.intersectObject(torso, false).length === 0;
+/** The figure row's exported models, loaded from their files, behind the `ModelLibrary` calls the figure makes. */
+const figureModels = await (async () => {
+  const loader = new GLTFLoader();
+  const ids = [...new Set([playerFigure.body.model, ...FIGURE_LIMBS.map((limb) => playerFigure.limbs[limb].model)])];
+  const parsed = await Promise.all(
+    ids.map((id) => {
+      const bytes = readFileSync(new URL(`../src/content/base/${registry.models.get(id)!.file}`, import.meta.url));
+      return loader.parseAsync(Uint8Array.from(bytes).buffer, '');
+    }),
+  );
+  const scenes = new Map<string, Object3D>(ids.map((id, index) => [id, parsed[index]!.scene]));
+  return { version: 1, has: (id: string) => scenes.has(id), part: (id: string) => scenes.get(id)?.clone() };
+})();
+const playerMeshes = () =>
+  new PlayerMeshes(scale.blockSize, playerFigure, registry.models, figureModels as unknown as ModelLibrary);
+const drawnPart = (meshes: PlayerMeshes, name: 'body' | FigureLimb) => meshes.group.getObjectByName(`figure-${name}`)!;
+/** Each drawn vertex in world space, for the parts `visible` passes. */
+const drawnVertices = (meshes: PlayerMeshes): { part: string; at: Vector3 }[] => {
+  meshes.group.updateMatrixWorld(true);
+  return meshes.group.children
+    .filter((part) => part.visible)
+    .flatMap((part) => {
+      const vertices: { part: string; at: Vector3 }[] = [];
+      part.traverse((object) => {
+        const position = object instanceof Mesh ? object.geometry.getAttribute('position') : undefined;
+        for (let index = 0; index < (position?.count ?? 0); index++) {
+          vertices.push({
+            part: part.name,
+            at: new Vector3().fromBufferAttribute(position!, index).applyMatrix4(object.matrixWorld),
+          });
+        }
+      });
+      return vertices;
     });
-  });
+};
+const anchorAt = (meshes: PlayerMeshes, name: 'body' | FigureLimb, model: string, anchor: string): Vector3 => {
+  meshes.group.updateMatrixWorld(true);
+  return new Vector3(...registry.models.get(model)!.anchors![anchor]!).applyMatrix4(
+    drawnPart(meshes, name).matrixWorld,
+  );
+};
 
 const fallbackLightHands = [...registry.items.values()]
   .filter((definition) => definition.light && !definition.model)
@@ -232,8 +258,7 @@ describe('player figure', () => {
       prone: senses.prone.eyeDropMetres,
     };
     for (const stance of ['standing', 'crouching', 'prone'] as const) {
-      const meshes = new PlayerMeshes(scale.blockSize, playerFigure, registry.models);
-      const parts = meshes.group.children as InstancedMesh[];
+      const meshes = playerMeshes();
       meshes.sync({
         body,
         yaw: 0,
@@ -243,7 +268,7 @@ describe('player figure', () => {
         stance,
         dt: playerFigure.stancePoses.blendRealSeconds,
       });
-      meshes.group.updateMatrixWorld(true);
+      const vertices = drawnVertices(meshes);
       for (const pitch of [0, 0.25, 0.5, Math.PI / 3]) {
         const camera = new PerspectiveCamera(75, 16 / 9, 0.05, 128);
         camera.rotation.order = 'YXZ';
@@ -257,27 +282,16 @@ describe('player figure', () => {
         const frustum = new Frustum().setFromProjectionMatrix(
           new Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse),
         );
-        const visible = parts.flatMap((mesh, index) => {
-          if (mesh.count === 0) {
-            return [];
-          }
-          const instance = new Matrix4();
-          mesh.getMatrixAt(0, instance);
-          const worldMatrix = new Matrix4().multiplyMatrices(mesh.matrixWorld, instance);
-          const inView = [-0.5, 0.5]
-            .flatMap((x) => [-0.5, 0.5].flatMap((y) => [-0.5, 0.5].map((z) => new Vector3(x, y, z))))
-            .some((corner) => frustum.containsPoint(corner.applyMatrix4(worldMatrix)));
-          return inView ? [FIGURE_BOX_PARTS[index]] : [];
-        });
-        expect(visible, `${stance} at pitch ${pitch}`).toEqual([]);
+        expect(vertices.length, 'the figure draws').toBeGreaterThan(0);
+        const visible = new Set(vertices.filter(({ at }) => frustum.containsPoint(at)).map(({ part }) => part));
+        expect([...visible], `${stance} at pitch ${pitch}`).toEqual([]);
       }
     }
   });
 
-  it('keeps a foot front-top corner visible past the torso at -60 and -80 degrees', () => {
+  it('keeps a shoe toe visible past the torso at -60 and -80 degrees', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
-    const meshes = new PlayerMeshes(scale.blockSize, playerFigure, registry.models);
-    const parts = meshes.group.children as import('three').InstancedMesh[];
+    const meshes = playerMeshes();
     const eye = new Vector3(
       body.pos[0] * scale.blockSize,
       body.pos[1] * scale.blockSize + PLAYER.eye,
@@ -285,7 +299,6 @@ describe('player figure', () => {
     );
     for (const pitch of [-Math.PI / 3, (-80 * Math.PI) / 180]) {
       meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING });
-      meshes.group.updateMatrixWorld(true);
       const camera = new PerspectiveCamera(75, 16 / 9, 0.05, 128);
       camera.rotation.order = 'YXZ';
       camera.position.copy(eye);
@@ -294,71 +307,42 @@ describe('player figure', () => {
       const frustum = new Frustum().setFromProjectionMatrix(
         new Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse),
       );
-      expect(
-        hasVisibleFootCorner(parts.slice(9), parts[0]!, eye, frustum),
-        `foot is visible at ${((pitch * 180) / Math.PI).toFixed(0)} degrees`,
-      ).toBe(true);
+      // Yaw 0 faces -z, so each shoe's toe is its leg's foremost vertex.
+      const toes = drawnVertices(meshes)
+        .filter(({ part }) => part === 'figure-leftLeg' || part === 'figure-rightLeg')
+        .sort((a, b) => a.at.z - b.at.z)
+        .slice(0, 8)
+        .map(({ at }) => at);
+      const seen = toes.some((toe) => {
+        const direction = toe.clone().sub(eye);
+        const ray = new Raycaster(eye, direction.clone().normalize(), 0, direction.length() - 0.01);
+        return frustum.containsPoint(toe) && ray.intersectObject(drawnPart(meshes, 'body'), true).length === 0;
+      });
+      expect(seen, `a toe is visible at ${((pitch * 180) / Math.PI).toFixed(0)} degrees`).toBe(true);
     }
   });
 
-  it('uses the content palette, hides the head and arms in first person, and applies the figure offset', () => {
-    const meshes = new PlayerMeshes(scale.blockSize, playerFigure, registry.models);
-    const parts = meshes.group.children as import('three').InstancedMesh[];
-    expect(FIGURE_BOX_PARTS).toContain('head');
-    expect(parts).toHaveLength(FIGURE_BOX_PARTS.length);
-    expect(parts.map((mesh) => (mesh.material as MeshLambertMaterial).color.getHex())).toEqual(
-      [
-        palette.shirt,
-        palette.skin,
-        palette.shirt,
-        palette.shirt,
-        palette.skin,
-        palette.skin,
-        palette.skin,
-        palette.skin,
-        palette.trousers,
-        palette.trousers,
-        palette.trousers,
-        palette.trousers,
-      ].map((hex) => Number.parseInt(hex.slice(1), 16)),
-    );
-
+  it('draws every figure-row part, hides only the arms in first person, and sets the body back only there', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
-    body.onGround = true;
-    meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING });
-    const bodyMatrix = new Matrix4();
-    parts[0]!.getMatrixAt(0, bodyMatrix);
-    const center = new Vector3().setFromMatrixPosition(bodyMatrix);
-    expect(center.z).toBeCloseTo(body.pos[2] * scale.blockSize + PLAYER_BODY_REAR_OFFSET);
-    const headIndex = FIGURE_BOX_PARTS.indexOf('head');
-    expect(parts[headIndex]!.count).toBe(0);
-    const bodyArm = (index: number) => FIGURE_BOX_LIMBS[FIGURE_BOX_PARTS[index]!].endsWith('Arm');
-    expect(parts.every((mesh, index) => index === headIndex || bodyArm(index) || mesh.count === 1)).toBe(true);
-  });
-
-  it('shows the head at its figure-box position in third person', () => {
-    const body = createPlayerBody(scale, 4, 1, 4);
-    const meshes = new PlayerMeshes(scale.blockSize, playerFigure, registry.models);
-    const parts = meshes.group.children as import('three').InstancedMesh[];
-    const headIndex = FIGURE_BOX_PARTS.indexOf('head');
-
-    meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING, thirdPerson: true });
-    const bodyMatrix = new Matrix4();
-    const headMatrix = new Matrix4();
-    parts[0]!.getMatrixAt(0, bodyMatrix);
-    parts[headIndex]!.getMatrixAt(0, headMatrix);
-    expect(parts[headIndex]!.count).toBe(1);
-    expect(new Vector3().setFromMatrixPosition(bodyMatrix).z).toBeCloseTo(body.pos[2] * scale.blockSize);
-    expect(new Vector3().setFromMatrixPosition(headMatrix).y).toBeCloseTo(
-      body.pos[1] * scale.blockSize + FIGURE_BOXES.head.at[1],
-    );
+    const meshes = playerMeshes();
+    const bodyZ = (thirdPerson: boolean) => {
+      meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING, thirdPerson });
+      return drawnPart(meshes, 'body').position.z;
+    };
+    const firstPerson = bodyZ(false);
+    expect(meshes.loaded).toBe(true);
+    for (const name of ['body', ...FIGURE_LIMBS] as const) {
+      expect(drawnPart(meshes, name).visible, `${name} in first person`).toBe(!name.endsWith('Arm'));
+    }
+    expect(firstPerson - bodyZ(true)).toBeCloseTo(PLAYER_BODY_REAR_OFFSET);
+    for (const name of ['body', ...FIGURE_LIMBS] as const) {
+      expect(drawnPart(meshes, name).visible, `${name} in third person`).toBe(true);
+    }
   });
 
   it('poses the drawn body for the stance it is given, inside that stance’s height, blending between stances', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
-    const meshes = new PlayerMeshes(scale.blockSize, playerFigure, registry.models);
-    const parts = meshes.group.children as InstancedMesh[];
-    const headIndex = FIGURE_BOX_PARTS.indexOf('head');
+    const meshes = playerMeshes();
     const senses = registry.player.get('player')!;
     const heightOf: Record<PlayerStance, number> = {
       standing: PLAYER.height,
@@ -369,18 +353,9 @@ describe('player figure', () => {
     const baseY = body.pos[1] * scale.blockSize;
     const pose = (stance: PlayerStance, dt: number) => {
       meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, thirdPerson: true, stance, dt });
-      const matrix = new Matrix4();
-      parts[headIndex]!.getMatrixAt(0, matrix);
-      const top = Math.max(
-        ...parts.flatMap((mesh) => {
-          const instance = new Matrix4();
-          mesh.getMatrixAt(0, instance);
-          return [-0.5, 0.5].flatMap((x) =>
-            [-0.5, 0.5].flatMap((y) => [-0.5, 0.5].map((z) => new Vector3(x, y, z).applyMatrix4(instance).y)),
-          );
-        }),
-      );
-      return { head: new Vector3().setFromMatrixPosition(matrix), top: top - baseY };
+      meshes.group.updateMatrixWorld(true);
+      const top = new Box3().setFromObject(meshes.group, true).max.y;
+      return { head: anchorAt(meshes, 'body', playerFigure.body.model, 'head'), top: top - baseY };
     };
 
     const settled = Object.fromEntries(
@@ -401,76 +376,50 @@ describe('player figure', () => {
     expect(pose('standing', blendRealSeconds / 2).head.y).toBeCloseTo(settled.standing.y);
   });
 
-  it('draws a loaded authored part in place of its boxes, with the box legs hung from its hip anchors', () => {
-    const [part] = playerFigure.parts!;
-    const loaded = { version: 1, has: (id: string) => id === part!.model, part: () => new Group() };
-    const meshes = new PlayerMeshes(scale.blockSize, playerFigure, registry.models, loaded as unknown as ModelLibrary);
-    const boxes = meshes.group.children.slice(0, FIGURE_BOX_PARTS.length) as InstancedMesh[];
+  it('keeps each limb joint anchor on its body joint anchor while standing, crouching and walking', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
-    const anchors = registry.models.get(part!.model)!.anchors!;
-    for (const stance of ['standing', 'crouching'] as const) {
-      meshes.sync({ body, yaw: 0.4, stepOffset: 0, gaitPhase: 0, moving: false, thirdPerson: true, stance, dt: 1 });
-      meshes.group.updateMatrixWorld(true);
-      const drawn = meshes.group.getObjectByName(`figure-${part!.model}`)!;
-      for (const box of part!.draws) {
-        expect(boxes[FIGURE_BOX_PARTS.indexOf(box)]!.count, `${box} box`).toBe(0);
-      }
-      for (const [leg, joint] of [
-        ['leftLeg', part!.joints.leftHip],
-        ['rightLeg', part!.joints.rightHip],
-      ] as const) {
-        const instance = new Matrix4();
-        boxes[FIGURE_BOX_PARTS.indexOf(leg)]!.getMatrixAt(0, instance);
-        const legTop = new Vector3(0, 0.5, 0).applyMatrix4(instance);
-        const hip = new Vector3(...anchors[joint]!).applyMatrix4(drawn.matrixWorld);
-        expect(legTop.distanceTo(hip), `${stance} ${leg}`).toBeCloseTo(0, 6);
+    const meshes = playerMeshes();
+    const poses = [
+      { stance: 'standing', moving: false, gaitPhase: 0 },
+      { stance: 'crouching', moving: false, gaitPhase: 0 },
+      { stance: 'standing', moving: true, gaitPhase: Math.PI / 2 },
+      { stance: 'crouching', moving: true, gaitPhase: -Math.PI / 3 },
+    ] as const;
+    for (const { stance, moving, gaitPhase } of poses) {
+      for (const thirdPerson of [false, true]) {
+        meshes.sync({ body, yaw: 0.4, stepOffset: 0.05, gaitPhase, moving, stance, dt: 1, thirdPerson });
+        for (const limb of FIGURE_LIMBS) {
+          const { model, joint } = playerFigure.limbs[limb];
+          const bodyJoint = playerFigure.body.joints[FIGURE_LIMB_JOINTS[limb]];
+          const at = anchorAt(meshes, limb, model, joint);
+          const on = anchorAt(meshes, 'body', playerFigure.body.model, bodyJoint);
+          expect(at.distanceTo(on), `${limb} ${stance} moving ${moving} third person ${thirdPerson}`).toBeCloseTo(0, 6);
+        }
       }
     }
   });
 
-  /** A figure whose one authored part, the bust's model, draws `draws` in place of their boxes. */
-  const authoredLimb = (draws: FigureBoxPart[]) => {
-    const [part] = playerFigure.parts!;
-    const figure = { ...playerFigure, parts: [{ ...part!, draws }] };
-    const loaded = { version: 1, has: (id: string) => id === part!.model, part: () => new Group() };
-    const meshes = new PlayerMeshes(scale.blockSize, figure, registry.models, loaded as unknown as ModelLibrary);
-    const drawn = () => meshes.group.getObjectByName(`figure-${part!.model}`)!;
-    return { meshes, drawn };
-  };
-
-  it('strides an authored leg as the leg box it draws in place of', () => {
+  it('swings each leg against the other and each arm against its own leg while walking', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
-    const { meshes, drawn } = authoredLimb(['leftLeg']);
-    const legBox = meshes.group.children[FIGURE_BOX_PARTS.indexOf('leftLeg')] as InstancedMesh;
-    const turns = [0, Math.PI / 2].map((gaitPhase) => {
-      meshes.sync({ body, yaw: 0.4, stepOffset: 0, gaitPhase, moving: true, ...STANDING });
-      const box = new Matrix4();
-      legBox.getMatrixAt(0, box);
-      const boxTurn = new Quaternion().setFromRotationMatrix(box.extractRotation(box));
-      const modelTurn = drawn()
-        .quaternion.clone()
-        .multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), -Math.PI));
-      expect(modelTurn.angleTo(boxTurn), `gait phase ${gaitPhase}`).toBeCloseTo(0, 4);
-      return modelTurn;
-    });
-    expect(turns[0]!.angleTo(turns[1]!)).toBeGreaterThan(0.1);
-  });
-
-  it('hides an authored arm in first person, as the box arm it replaces, and shows it in third person', () => {
-    const body = createPlayerBody(scale, 4, 1, 4);
-    const { meshes, drawn } = authoredLimb(['rightUpperArm']);
-    meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING });
-    expect(drawn().visible).toBe(false);
-    meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING, thirdPerson: true });
-    expect(drawn().visible).toBe(true);
+    const meshes = playerMeshes();
+    meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: Math.PI / 2, moving: true, ...STANDING, thirdPerson: true });
+    // Yaw 0 faces -z, so a limb reaching forward ends at a lower z than its joint.
+    const reach = (limb: FigureLimb) => {
+      const { model, joint } = playerFigure.limbs[limb];
+      meshes.group.updateMatrixWorld(true);
+      const end = new Box3().setFromObject(drawnPart(meshes, limb), true).getCenter(new Vector3());
+      return end.z - anchorAt(meshes, limb, model, joint).z;
+    };
+    expect(Math.sign(reach('leftLeg'))).toBe(-1);
+    expect(Math.sign(reach('rightLeg'))).toBe(1);
+    expect(Math.sign(reach('leftArm'))).toBe(1);
+    expect(Math.sign(reach('rightArm'))).toBe(-1);
   });
 
   it('draws one pair of arms: no body arm on a side whose first-person view arm draws, all body arms in third person', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
-    const meshes = new PlayerMeshes(scale.blockSize, playerFigure, registry.models);
-    const parts = meshes.group.children as InstancedMesh[];
-    const bodyArmCounts = (side: 'left' | 'right') =>
-      FIGURE_BOX_PARTS.flatMap((part, index) => (FIGURE_BOX_LIMBS[part] === `${side}Arm` ? [parts[index]!.count] : []));
+    const meshes = playerMeshes();
+    const bodyArmShown = (side: 'left' | 'right') => drawnPart(meshes, `${side}Arm`).visible;
     // Empty hands draw fists; a one-handed and a two-handed item each draw their own grip.
     for (const held of [undefined, 'kitchen_knife', 'baseball_bat']) {
       const inventory = new Inventory(registry);
@@ -483,7 +432,7 @@ describe('player figure', () => {
       expect(viewArms.size, `${held} view arms`).toBeGreaterThan(0);
       meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING, inventory });
       for (const side of viewArms.keys()) {
-        expect(bodyArmCounts(side), `${held}: ${side} body arm in first person`).toEqual([0, 0, 0]);
+        expect(bodyArmShown(side), `${held}: ${side} body arm in first person`).toBe(false);
       }
       meshes.sync({
         body,
@@ -496,7 +445,7 @@ describe('player figure', () => {
         thirdPerson: true,
       });
       for (const side of ['left', 'right'] as const) {
-        expect(bodyArmCounts(side), `${held}: ${side} body arm in third person`).toEqual([1, 1, 1]);
+        expect(bodyArmShown(side), `${held}: ${side} body arm in third person`).toBe(true);
       }
       view.dispose();
     }

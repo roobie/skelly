@@ -52,6 +52,7 @@ local hex(n) = [std.floor(n / 65536) / 255, (std.floor(n / 256) % 256) / 255, (n
   'body-skin-player': material(hex(12947312)),
   'cloth-shirt-player': material(hex(5400445)),
   'cloth-pants-player': material(hex(4868949)),
+  'leather-shoe-player': material(hex(3811878)) + { finish: { metallic: 0, roughness: 0.6 } },
   'cloth-pants-grey': material([0.24, 0.26, 0.3]),
   'cloth-shirt-faded': material([0.4, 0.3, 0.28]),
 }
