@@ -6,6 +6,28 @@ import type { ReplayGeneratedColumn } from './inputReplay.ts';
 // Scale the deadline to chunk-sized work so large views do not inherit a small view's failure budget.
 const REAL_MS_PER_WORK_UNIT = 500;
 
+export interface LoadingFrameDraw {
+  /** True when drawing the world also updates the skylight (a renderer's before-render hook). */
+  readonly worldFeedsSkylight: boolean;
+  readonly skylight: () => void;
+  readonly world: () => void;
+}
+
+/** Skips world draws behind the opaque loading mask; see `TROUBLESHOOTING.md`, "Startup and save discovery". */
+export const finishLoadingFrame = (
+  loading: Pick<WorldLoading, 'ready'>,
+  check: () => void,
+  draw: LoadingFrameDraw,
+): void => {
+  if (!(draw.worldFeedsSkylight && loading.ready)) {
+    draw.skylight();
+  }
+  check();
+  if (loading.ready) {
+    draw.world();
+  }
+};
+
 export class WorldLoading {
   state: 'loading' | 'ready' | 'failed' = 'loading';
   error = '';
