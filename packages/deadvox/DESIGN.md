@@ -942,13 +942,10 @@ destination round, because what the lab's papers tell depends on the destination
 `src/content/base/gauntlet-lab-research.libsonnet`, `rooms`; and
 `src/content/base/gauntlet-lab-equipment.libsonnet`, `furnished`.
 
-Level two's briefing hall is double height: it sinks into the grid storey below, as the
-holding room rises into the storey above it, so a level gains one tall space without
-a storey of its own. That touched a second level in a one-level round, an exception to
-one level per round that BR accepted with this choice. The well keeps its
-walls whole so the grid's threat cannot reach the hall, and its floor steps up so a
-player can climb back out. Level three leaves the well's column void so the hall keeps
-its height. See `src/content/base/gauntlet-lab-administration.libsonnet`, `well`, and
+Level two's briefing hall is double height: it extends down into a column that the
+research level reserves for it, so a level gains one tall space without a storey of its
+own. The well's walls are whole so the hall stays apart from the research level around
+it, and its floor steps up so a player can climb back out. See `src/content/base/gauntlet-lab-administration.libsonnet`, `well`, and
 `src/content/base/gauntlet-lab-level.libsonnet`, `voids`.
 
 Level two carries a larger population than level one because BR judged it too thin in
