@@ -95,6 +95,42 @@ export const foodPortion = (params: Readonly<Record<string, string>>): readonly 
   return solids;
 };
 
+/** A tapered cup holding a drink; the liquid is its own slot so it takes its own finish. */
+export const drinkCup = (params: Readonly<Record<string, string>>): readonly Solid[] => {
+  const d = parse(
+    strictObject({ radius: positive, baseRadius: positive, height: positive, wall: positive, fillDepth: positive }),
+    params,
+  );
+  if (!(d.baseRadius <= d.radius && d.wall * 2 < d.baseRadius && d.wall + d.fillDepth < d.height)) {
+    throw new Error('Invalid drink cup dimensions');
+  }
+  // The inner wall at height `y` follows the outer taper.
+  const inner = (y: number) => d.baseRadius + ((d.radius - d.baseRadius) * y) / d.height - d.wall;
+  const surface = d.wall + d.fillDepth;
+  return [
+    revolve('body', [
+      [0, 0],
+      [0, d.baseRadius],
+      [d.height, d.radius],
+      [d.height, d.radius - d.wall],
+      [d.wall, inner(d.wall)],
+      [d.wall, 0],
+      [0, 0],
+    ]),
+    revolve(
+      'liquid',
+      [
+        [d.wall, 0],
+        [d.wall, inner(d.wall)],
+        [surface, inner(surface)],
+        [surface, 0],
+        [d.wall, 0],
+      ],
+      'liquid',
+    ),
+  ];
+};
+
 export const woundRoll = (params: Readonly<Record<string, string>>): readonly Solid[] => {
   const d = parse(
     strictObject({

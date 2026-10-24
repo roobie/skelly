@@ -220,7 +220,7 @@
         "usage": []
       },
       "id": "opened_soda",
-      "model": "soda_can",
+      "model": "opened_soda",
       "name": "Opened can of soda",
       "notLoot": false,
       "serving": {
@@ -257,6 +257,7 @@
         "water": 300
       },
       "id": "soda",
+      "model": "soda",
       "name": "Soda",
       "notLoot": false,
       "size": [1, 2],
