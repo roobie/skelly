@@ -185,7 +185,7 @@ local stairAt = [31, base - 7, 29];
 local shaftLid = { at: [29 * scale, 5 * scale], size: [3, 2] };
 // The briefing hall is double height: its south end sinks a storey into the grid's south-west room slot, as the holding
 // room rises into the storey above it. The well's walls stay whole so the grid cannot reach the hall, and its floor steps
-// down a block at a time so a player can climb back out. Level three's rebuild must leave this slot to the well.
+// down a block at a time so a player can climb back out. Level three leaves the well's column void.
 local well = { id: 'gauntlet_lab_administration_well', at: [4, base - self.size[1], 42], size: [18, 8, 14] };
 local wellGlyph = function(x, y, z)
   if x == 0 || x == well.size[0] - 1 || z == 0 || z == well.size[2] - 1 then '='
@@ -223,6 +223,8 @@ local built = level.build({
   loop: { from: [5, 25, 13], through: [5, 25, 19], to: [31, 25, 21], cut: { min: [4, 25, 16], size: [4, 5, 2] } },
   standing: [6 * scale, base + 1, 20 * scale],
   stairAt: stairAt,
+  shaftLid: shaftLid,
+  shaft: { ladder: [shaftLid.at[0] + 1, base - 7, shaftLid.at[1]], upper: [shaftLid.at[0], base + 1, shaftLid.at[1] + 1], lower: [shaftLid.at[0], base - 7, shaftLid.at[1] + 1] },
   well: well,
   stair: { upper: [stairAt[0] + 11, base + 1, stairAt[2] + 1], lower: [stairAt[0] + 1, stairAt[1], stairAt[2] + 1] },
   seal: { doors: [[20 * scale, base + 1, 12 * scale], [29 * scale, base + 1, 8 * scale]] } + built.cardSeal,
