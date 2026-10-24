@@ -6,7 +6,7 @@
 // build(genome) and generate(template, seed) can dispatch without the core
 // knowing anything about bones or clothes.
 
-import type { Body } from './body.ts';
+import type { Body, BodyRegion } from './body.ts';
 import type { BoneMesh } from './mesh.ts';
 import { meshBones } from './mesh.ts';
 import { pick, type Rng, range, seededRng } from './random.ts';
@@ -55,6 +55,9 @@ export interface BodyPlanDef {
   readonly woundBones: readonly string[];
   readonly budgets: (genome: Genome, template: Template) => Budgets;
   readonly limbBones: readonly string[];
+  /** Bones forming each hit region, for plans a consumer resolves shots against; a bone missing from a
+   * realized body adds nothing. Region membership is the plan's, because each skeleton names its own bones. */
+  readonly regionBones?: Readonly<Record<BodyRegion, readonly string[]>>;
 }
 
 const BODY_PLANS = new Map<BodyPlan, BodyPlanDef>();
@@ -63,7 +66,7 @@ export const registerBodyPlan = (name: BodyPlan, def: BodyPlanDef): void => {
   BODY_PLANS.set(name, def);
 };
 
-const planOf = (name: BodyPlan): BodyPlanDef => {
+export const planOf = (name: BodyPlan): BodyPlanDef => {
   const def = BODY_PLANS.get(name);
   if (!def) {
     throw new Error(`no body plan registered for "${name}"`);

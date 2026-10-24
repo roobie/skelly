@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { build, generateValid } from '../src/core/generate.ts';
-import { SEVERABLE_PARTS, severedBoneSet } from '../src/mob/dismember.ts';
+import { build, generateValid, planOf } from '../src/core/generate.ts';
+import { acidTemplate } from '../src/mob/acidTemplate.ts';
+import { burstBones, regionSeverableParts, severedBoneSet } from '../src/mob/dismember.ts';
 import { TEMPLATES } from '../src/mob/templates.ts';
 
 const shamblerBones = () => {
@@ -9,17 +10,25 @@ const shamblerBones = () => {
   return build(found.genome).bones;
 };
 
-describe('SEVERABLE_PARTS', () => {
-  it('names only bones the shambler has, each hiding itself when cut', () => {
-    const bones = shamblerBones();
-    expect(SEVERABLE_PARTS.length).toBeGreaterThan(0);
-    for (const part of SEVERABLE_PARTS) {
-      expect(
-        bones.some((bone) => bone.id === part),
-        part,
-      ).toBe(true);
-      expect(severedBoneSet(bones, [part]).has(part), part).toBe(true);
+describe('regionSeverableParts', () => {
+  it('keeps the shambler cuttable at its arms and head only', () => {
+    const parts = regionSeverableParts(shamblerBones(), planOf('humanoid').regionBones!);
+    expect(parts.leftArm).toEqual(['upperArm.L', 'forearm.L', 'hand.L']);
+    expect(parts.head).toEqual(['head']);
+    expect([...parts.torso, ...parts.leftLeg, ...parts.rightLeg]).toEqual([]);
+  });
+
+  it('follows the acid dispositions: limbs and skull cut, the sac bursts under the torso', () => {
+    const { bones } = generateValid(acidTemplate, 1)!.realized.body;
+    const regions = planOf('acid').regionBones!;
+    const parts = regionSeverableParts(bones, regions);
+    for (const region of ['head', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'] as const) {
+      expect(parts[region].length, region).toBeGreaterThan(0);
     }
+    expect(parts.torso).toEqual([]);
+    const burst = burstBones(bones);
+    expect(burst.length).toBeGreaterThan(0);
+    expect(burst.every((id) => regions.torso.includes(id))).toBe(true);
   });
 });
 

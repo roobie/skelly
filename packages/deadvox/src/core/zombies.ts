@@ -1,3 +1,5 @@
+import { severedBoneSet } from '@mobgen/mob/dismember.ts';
+import { zombieFigure as humanoidFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { type AcidGlobState, advanceAcidGlob } from './acidGlob.ts';
 import { type AcidPuddleState, feetInAcidPuddle } from './acidPuddle.ts';
 import {
@@ -48,7 +50,13 @@ import type { SoundId } from './soundEvents.ts';
 import { soundOcclusion } from './soundOcclusion.ts';
 import { zombieBodyDimensions as measureZombieBody } from './spawnClearance.ts';
 import { updateStepOffset } from './stepOffset.ts';
-import { advanceStanceWeight, HIT_FLINCH_DURATION, targetStanceWeight, zombiePoseInputFor } from './zombiePose.ts';
+import {
+  advanceStanceWeight,
+  HIT_FLINCH_DURATION,
+  posedMouth,
+  targetStanceWeight,
+  zombiePoseInputFor,
+} from './zombiePose.ts';
 import { ZOMBIE_REGION_NAMES } from './zombieRegionNames.ts';
 import {
   type PosedBoneBox,
@@ -389,9 +397,9 @@ export interface Zombie {
   stepOffset?: number | undefined;
   /** Fixed-step hit reaction time; optional for backward-compatible saves. */
   hitFlinchTime?: number | undefined;
-  /** Part names (packages/mobgen/src/mob/dismember.ts's SEVERABLE_PARTS, e.g. "upperArm.L", "head") severed so
-   * far — cumulative, never un-severed. A renderer derives what to hide via mobgen's severedBoneSet, not
-   * stored pre-expanded here (severing upperArm.L already implies forearm.L/hand.L without listing them). */
+  /** Bone ids severed so far, each one a bone whose disposition is `sever` (packages/mobgen/src/mob/dismember.ts,
+   * `severableParts`) — cumulative, never un-severed. A renderer derives what to hide via mobgen's
+   * severedBoneSet, not stored pre-expanded here (a cut part already implies everything below it). */
   severed: string[];
   /** Voxel-grid cells of an amalgam's realized figure that hits have knocked out, ascending; empty for every
    * other type. Holes are flesh only: they never change regions, damage, severing or hit tests. */
@@ -891,12 +899,10 @@ const clearLine = (from: Vec3, to: Vec3, isSolid: SolidAt): boolean => {
   return lineDistance > 0 && raycast(from, unit(toward), lineDistance, isSolid) === undefined;
 };
 
-/** Where a spit leaves a zombie: its grab height, which stands in for the mouth until the model gives one. */
-const spitOrigin = (zombiePos: Vec3, blockSize: number): Vec3 => [
-  zombiePos[0],
-  zombiePos[1] + PLAYER_CHEST_METRES / blockSize,
-  zombiePos[2],
-];
+/** Where a spit leaves a zombie: its posed mouth, held at the end of the wind-up, so the line follows the
+ * drawn-back head and its gaze. */
+const spitOrigin = (zombie: Zombie, id: EntityId, blockSize: number): Vec3 =>
+  posedMouth({ ...zombiePoseInputFor(zombie, id, blockSize), spitProgress: 1 });
 
 /** The chest follows the stance through the eye height, so crouching behind low cover lowers the spit's target. */
 const spitChest = (player: PlayerSense, tuning: SenseDef, blockSize: number): Vec3 => {
@@ -905,8 +911,7 @@ const spitChest = (player: PlayerSense, tuning: SenseDef, blockSize: number): Ve
 };
 
 /** The mouth-to-chest line at release, by the same rule as a melee strike. */
-const spitLineClear = (zombiePos: Vec3, chest: Vec3, blockSize: number, isSolid: SolidAt): boolean =>
-  clearLine(spitOrigin(zombiePos, blockSize), chest, isSolid);
+const spitLineClear = (origin: Vec3, chest: Vec3, isSolid: SolidAt): boolean => clearLine(origin, chest, isSolid);
 
 /** What a released spit hands the simulation: the glob's start, its seeded direction and the hit moves it carries. */
 export interface AcidSpitRelease {
@@ -937,12 +942,6 @@ type GlobContact =
   | { kind: 'player'; distance: number }
   | { kind: 'zombie'; distance: number; hit: RegionHit };
 
-/** Share of the wind-up elapsed, 0 when not winding up; presentation reads it for the sac glow and head pull. */
-export const acidSpitWindupProgress = (zombie: Zombie): number => {
-  const spit = zombie.type.acidSpit;
-  return spit && zombie.spitWindup > 0 ? 1 - zombie.spitWindup / spit.windupSimSeconds : 0;
-};
-
 /** A spitter that sees the player inside its range band stands and faces; outside the band it closes in. */
 const holdSpitGround = (scratch: ZombieTickScratch, toward: Vec3): void => {
   const { zombie, type, sees, metresToTarget, dt } = scratch;
@@ -960,26 +959,59 @@ const holdSpitGround = (scratch: ZombieTickScratch, toward: Vec3): void => {
 };
 
 // ---- dismemberment: which part a hit can sever, and the gameplay effect of already-severed parts ----
-// Mirrors packages/mobgen/src/mob/dismember.ts's SEVERABLE_PARTS (arms only here — the head has its own
-// headOnKillChance roll in swing(), not picked randomly among these).
+// The body's bone dispositions say what each hit region may lose, so no skeleton's bone names are listed
+// here; see packages/mobgen/src/mob/shamblerFigure.ts, `ShamblerFigure`. The random roll picks among arm
+// parts; a destroyed region cuts at its top part; the head has its own headOnKillChance roll.
 
-const ARM_PARTS = ['hand.L', 'hand.R', 'forearm.L', 'forearm.R', 'upperArm.L', 'upperArm.R'] as const;
-/** A part already severed further up the same arm makes a part below it moot to sever again (upperArm.L
- * severed already implies forearm.L/hand.L are gone too — see mobgen's severedBoneSet). */
-const CONTAINING_PARTS: Readonly<Record<(typeof ARM_PARTS)[number], readonly string[]>> = {
-  'hand.L': ['forearm.L', 'upperArm.L'],
-  'hand.R': ['forearm.R', 'upperArm.R'],
-  'forearm.L': ['upperArm.L'],
-  'forearm.R': ['upperArm.R'],
-  'upperArm.L': [],
-  'upperArm.R': [],
+const cutsFor = (zombie: Zombie) => {
+  const figure = humanoidFigure(zombie.type.model, zombie.figureSeed);
+  return { parts: figure.severableParts, bones: figure.realized.body.bones };
 };
 
-type ArmRegion = 'leftArm' | 'rightArm';
-/** The mobgen part a destroyed arm region cuts at (the figure's own left is -X, mobgen's ".L"). */
-const meleeOutcome = (killed: boolean, incapacitated: boolean, part: string | undefined): MeleeResult['outcome'] => {
+/** The part a destroyed region cuts at, parents first, so the whole region goes; undefined where it can't be cut. */
+const regionCut = (zombie: Zombie, region: ZombieRegion): string | undefined => cutsFor(zombie).parts[region][0];
+
+/** Arm parts still worth severing: neither severed nor below a severed part. Deepest first and left before
+ * right, so the dismember roll draws the same parts in the same order on every humanoid-like arm. */
+const availableArmParts = (zombie: Zombie): string[] => {
+  const { parts, bones } = cutsFor(zombie);
+  const hidden = severedBoneSet(bones, zombie.severed);
+  const ordered: string[] = [];
+  for (let depth = Math.max(parts.leftArm.length, parts.rightArm.length) - 1; depth >= 0; depth--) {
+    for (const arm of [parts.leftArm, parts.rightArm]) {
+      const part = arm[depth];
+      if (part !== undefined && !hidden.has(part)) {
+        ordered.push(part);
+      }
+    }
+  }
+  return ordered;
+};
+
+/** True once an arm's cut reaches above its last part: a lost hand alone still lets it grab with the stump. */
+const armDisabled = (arm: readonly string[], hidden: ReadonlySet<string>): boolean =>
+  arm.length > 0 && hidden.has(arm[Math.max(0, arm.length - 2)]!);
+
+/** Gameplay effect, first slice: with both arms disabled there's nothing left to grab or claw with — the
+ * zombie can still chase, but never starts a new attack (see the windup start check in tick()).
+ * Already-started windups aren't cancelled retroactively; this only gates a *new* one. */
+const canStillAttack = (zombie: Zombie): boolean => {
+  if (zombie.severed.length === 0) {
+    return true;
+  }
+  const { parts, bones } = cutsFor(zombie);
+  const hidden = severedBoneSet(bones, zombie.severed);
+  return !(armDisabled(parts.leftArm, hidden) && armDisabled(parts.rightArm, hidden));
+};
+
+const meleeOutcome = (
+  killed: boolean,
+  incapacitated: boolean,
+  part: string | undefined,
+  headPart: string | undefined,
+): MeleeResult['outcome'] => {
   if (killed) {
-    return part === 'head' ? 'decapitated' : 'killed';
+    return part !== undefined && part === headPart ? 'decapitated' : 'killed';
   }
   if (incapacitated) {
     return 'incapacitated';
@@ -991,27 +1023,6 @@ const meleeHitSounds = (weapon: HitWeapon, isFist: boolean): SoundId[] => {
   const hitSound = weapon.hitSound ?? (isFist ? 'melee_hit_fist' : 'melee_hit');
   return weapon.hitLayerSound === undefined ? [hitSound] : [hitSound, weapon.hitLayerSound];
 };
-
-const ARM_REGION_PART: Readonly<Record<ArmRegion, (typeof ARM_PARTS)[number]>> = {
-  leftArm: 'upperArm.L',
-  rightArm: 'upperArm.R',
-};
-
-/** Arm parts still worth severing: not already severed, and not already implied by a containing part
- * severed further up the same arm (see CONTAINING_PARTS). Empty once both arms are fully gone. */
-const availableArmParts = (severed: readonly string[]): (typeof ARM_PARTS)[number][] =>
-  ARM_PARTS.filter((part) => !(severed.includes(part) || CONTAINING_PARTS[part].some((c) => severed.includes(c))));
-
-/** True once a side's arm is gone at the forearm or above (a hand-only loss still lets it attack — it's
- * grabbing with the other hand or the stump itself). */
-const armGoneAtForearmOrAbove = (severed: readonly string[], side: 'L' | 'R'): boolean =>
-  severed.includes(`forearm.${side}`) || severed.includes(`upperArm.${side}`);
-
-/** Gameplay effect, first slice: with both arms gone at the forearm or above, there's nothing left to grab
- * or claw with — the zombie can still chase, but never starts a new attack (see the windup start check in
- * tick()). Already-started windups aren't cancelled retroactively; this only gates a *new* one. */
-const canStillAttack = (severed: readonly string[]): boolean =>
-  !(armGoneAtForearmOrAbove(severed, 'L') && armGoneAtForearmOrAbove(severed, 'R'));
 
 interface JumpObstacleProbe {
   body: Body;
@@ -3285,7 +3296,7 @@ export class ZombieSystem {
       zombie.staggerSimSeconds <= 0 &&
       zombie.attackWait <= 0 &&
       zombie.spitWindup <= 0 &&
-      (type.model === 'amalgam' ? activeAmalgamMembers(zombie).length > 0 : canStillAttack(zombie.severed)) &&
+      (type.model === 'amalgam' ? activeAmalgamMembers(zombie).length > 0 : canStillAttack(zombie)) &&
       this.reachableZombieMoves(zombie, pos, player.pos).length > 0
     ) {
       this.options.onSound?.(type.sounds.attack, copy(pos), zombie);
@@ -3309,11 +3320,11 @@ export class ZombieSystem {
         return;
       }
       const chest = spitChest(player, this.options.tuning, blockSize);
-      if (!spitLineClear(pos, chest, blockSize, isSolid)) {
+      const origin = spitOrigin(zombie, scratch.id, blockSize);
+      if (!spitLineClear(origin, chest, isSolid)) {
         return;
       }
       zombie.spitWait = spit.cooldownSimSeconds;
-      const origin = spitOrigin(pos, blockSize);
       const spread = (zombie.spitRng.range(-1, 1) * spit.spreadDegrees * Math.PI) / 180;
       const toPlayer = sub(chest, origin);
       const heading = headingAt(angleOf(toPlayer) + spread);
@@ -3984,8 +3995,9 @@ export class ZombieSystem {
     const killed = healthAfter === 0 && lethalRegion(zombie.type, region);
     const incapacitated = this.applyMeleeEffects({ id, zombie, region, healthAfter, killed, hit });
     const newParts = zombie.severed.filter((candidate) => !severedBefore.has(candidate));
-    const part = newParts.includes('head') ? 'head' : newParts[0];
-    const outcome = meleeOutcome(killed, incapacitated, part);
+    const headPart = zombie.type.model === 'amalgam' ? undefined : regionCut(zombie, 'head');
+    const part = headPart !== undefined && newParts.includes(headPart) ? headPart : newParts[0];
+    const outcome = meleeOutcome(killed, incapacitated, part, headPart);
     if (!projectile) {
       this.options.onMeleeResult?.({
         id,
@@ -4052,8 +4064,12 @@ export class ZombieSystem {
         this.sever(id, zombie, member, hit);
       }
     } else {
-      if (healthAfter === 0 && region in ARM_REGION_PART) {
-        this.sever(id, zombie, ARM_REGION_PART[region as ArmRegion], hit);
+      const cut =
+        healthAfter === 0 && region !== 'head' && region !== 'torso'
+          ? regionCut(zombie, region as ZombieRegion)
+          : undefined;
+      if (cut !== undefined) {
+        this.sever(id, zombie, cut, hit);
       }
       this.rollDismember(id, zombie, killed, hit);
     }
@@ -4119,8 +4135,8 @@ export class ZombieSystem {
     if (dismember) {
       const hit: HitImpulse = { point: copy(zombie.body.pos), direction: [0, -1, 0], impulse: 0 };
       for (const region of ['leftArm', 'rightArm', 'head'] as const) {
-        const part = region === 'head' ? region : ARM_REGION_PART[region];
-        if (!zombie.severed.includes(part)) {
+        const part = regionCut(zombie, region);
+        if (part !== undefined && !zombie.severed.includes(part)) {
           this.sever(id, zombie, part, hit);
           this.options.onSevered?.(zombie, region);
         }
@@ -4148,14 +4164,20 @@ export class ZombieSystem {
   private rollDismember(id: EntityId, zombie: Zombie, killed: boolean, hit: HitImpulse): void {
     const { dismember } = zombie.type;
     if (zombie.dismemberRng.chance(dismember.chance)) {
-      const available = availableArmParts(zombie.severed);
+      const available = availableArmParts(zombie);
       if (available.length > 0) {
         const part = available[zombie.dismemberRng.int(0, available.length - 1)]!;
         this.sever(id, zombie, part, hit);
       }
     }
-    if (killed && !zombie.severed.includes('head') && zombie.dismemberRng.chance(dismember.headOnKillChance)) {
-      this.sever(id, zombie, 'head', hit);
+    const head = regionCut(zombie, 'head');
+    if (
+      killed &&
+      head !== undefined &&
+      !zombie.severed.includes(head) &&
+      zombie.dismemberRng.chance(dismember.headOnKillChance)
+    ) {
+      this.sever(id, zombie, head, hit);
     }
   }
 }

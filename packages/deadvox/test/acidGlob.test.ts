@@ -259,6 +259,8 @@ describe('acid glob', () => {
     const decoded = await decodeSave(bytes, { version, contentLookup: () => true });
     const restored = runtime(decoded.snapshot);
     expect(restored.session.zombies.acidGlobs).toEqual(original.session.zombies.acidGlobs);
+    // The acid-bodied spitter itself comes back whole, not only its glob.
+    expect(restored.session.zombies.snapshotState()).toEqual(original.session.zombies.snapshotState());
     original.land();
     restored.land();
     expect(original.hits).toHaveBeenCalledTimes(1);

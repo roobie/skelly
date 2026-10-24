@@ -46,9 +46,20 @@
 // zeroed) and is driven by the core rigid-body stepper, reusing the corpse cap/eviction/lifecycle machinery
 // (a debris row counts toward the shared corpse budget exactly like a corpse does).
 
+import type { BodyAnchor } from '@mobgen/core/body.ts';
 import type { Realized } from '@mobgen/core/generate.ts';
 import { voxelBounds } from '@mobgen/core/massProperties.ts';
-import { type Mat3, mat3ToQuat, mulMM, mulMV, quatToMat3, rotY, type Transform, transpose } from '@mobgen/core/math.ts';
+import {
+  applyPoint,
+  type Mat3,
+  mat3ToQuat,
+  mulMM,
+  mulMV,
+  quatToMat3,
+  rotY,
+  type Transform,
+  transpose,
+} from '@mobgen/core/math.ts';
 import {
   allocateBoneTransforms,
   boneTransforms,
@@ -60,11 +71,14 @@ import {
 } from '@mobgen/core/pose.ts';
 import { templatePartMassProperties } from '@mobgen/core/templateMass.ts';
 import { cellIndex, worldPosition } from '@mobgen/core/voxelize.ts';
+import { acidDeathPose } from '@mobgen/mob/acidPoses.ts';
+import { acidTemplate } from '@mobgen/mob/acidTemplate.ts';
 import { amalgamTemplate } from '@mobgen/mob/amalgamTemplate.ts';
 import {
   CROWD_BEGIN_VERTEX,
   CROWD_BEGINNORMAL_VERTEX,
   CROWD_COLOR_FRAGMENT,
+  CROWD_EMISSIVE_FRAGMENT,
   CROWD_FRAGMENT_DECLARATIONS,
   CROWD_VERTEX_DECLARATIONS,
   type CrowdPlacement,
@@ -72,10 +86,11 @@ import {
   crowdTexelIndex,
   crowdTextureLayout,
   packBloodiness,
+  packCharge,
   packCrowdBoneMatrix,
   packSeveredMask,
 } from '@mobgen/mob/crowd.ts';
-import { SEVERABLE_PARTS, severedBoneSet } from '@mobgen/mob/dismember.ts';
+import { burstBones, severableParts, severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { bodyRestExtents, createGaitCache, type Extent, footRestExtents, type WalkActor } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { LOOK_AT_REST, type LookAtState, lookAtPose } from '@mobgen/mob/lookAt.ts';
@@ -116,7 +131,7 @@ import {
   stepRigidBody,
 } from '../core/rigidBody.ts';
 import { type ZombieFigureType, zombieFigure } from '../core/zombieFigure.ts';
-import { posedShambler, zombiePoseInputFor } from '../core/zombiePose.ts';
+import { acidSpitWindupProgress, posedShambler, zombiePoseInputFor } from '../core/zombiePose.ts';
 import { BACKGROUND_ZOMBIE_RATE, type HitImpulse, type Zombie, zombieAttackReachMetres } from '../core/zombies.ts';
 import { ZOMBIE_RATE } from '../game/simulationRates.ts';
 import { buildCarvedGeometry, FleshChunks, mergeBoneMeshes } from './amalgamFlesh.ts';
@@ -149,6 +164,7 @@ export interface ZombieRenderer {
   setPlayerEyePosition?: (position: Vec3, maxSpeed: number) => void;
   setPlayerChestPosition?: (position: Vec3) => void;
   setPerceptionLabels?: (enabled: boolean) => void;
+  anchors?: () => Iterable<DrawnAnchors>;
   zombieDied?: (id: EntityId, zombie: Zombie, playerPos?: Vec3) => void;
   zombieIncapacitated?: (id: EntityId, zombie: Zombie) => void;
   /** Called once for every part severed (src/core/zombies.ts's onSever, forwarded by play.ts) — a flying
@@ -225,6 +241,10 @@ interface Variant {
     { mass: number; inertiaBody: RigidBody['inertiaBody']; corners: readonly Vec3[]; boneIndices: readonly number[] }
   >;
   readonly severedRoots: ReadonlyMap<string, string>;
+  /** The part a cut at the head starts at; a body without one has no gaze. */
+  readonly headPart: string | undefined;
+  /** Bones a death removes without a severed part (mobgen's `burst` disposition), such as the acid sac. */
+  readonly burstIndices: readonly number[];
   readonly parentIndex: ParentIndex;
   /** Bone id -> this variant's own bone array index — translates mobgen's severedBoneSet (string ids, body-
    * plan-generic) into the indices the shared texture and its severed mask are keyed by. */
@@ -262,6 +282,8 @@ interface ZombieRenderState extends SlotHolder {
   readonly walkActor: WalkActor;
   lastPose: Pose | undefined;
   lastPlacement: CrowdPlacement | undefined;
+  /** The simulation zombie last drawn in this slot. */
+  zombie: Zombie | undefined;
   lastSeenFrame: number;
 }
 
@@ -341,6 +363,8 @@ interface Corpse extends SlotHolder {
   readonly severed: readonly string[];
   /** How bloodied the body was as it fell (gore.ts's woundSeverity), drawn as stains until it's gone. */
   readonly bloodiness: number;
+  /** The charged materials' emission multiplier the body keeps (see acidCharge). */
+  readonly charge: number;
   elapsed: number;
   /** Insertion order across corpses AND debris together — see evictOldestDeadThing*'s own doc comment on
    * why a single Map's own iteration order isn't enough once there are two Maps to compare. */
@@ -410,9 +434,40 @@ export interface MobActorMeshesOptions {
   readonly onFleshLanded?: (centre: Vec3) => void;
   /** How bloodied a live body is drawn, 0 to 1; gore.ts's woundSeverity unless gore shares its per-frame value. */
   readonly bloodiness?: (zombie: Zombie) => number;
+  /** Draws acid-model actors as well. */
+  readonly includeAcid?: boolean;
+  /** A death burst bones away (the acid sac) at this glow-anchor position in metres, for the splash. */
+  readonly onBurst?: (position: Vec3, zombie: Zombie) => void;
 }
 
-type ActorModel = 'shambler' | 'runner' | 'crawler' | 'brute' | 'amalgam';
+/** Where a live actor's body anchors were drawn this frame, in metres, for presentation that follows them. */
+export interface DrawnAnchors {
+  readonly zombie: Zombie;
+  readonly glow: Vec3 | undefined;
+  readonly mouth: Vec3 | undefined;
+}
+
+/** The sac's emission multiplier: idle at rest, rising to charged across the spit wind-up. */
+const acidCharge = (zombie: Zombie): number => {
+  const body = zombie.type.acidBody;
+  if (!body) {
+    return 1;
+  }
+  return body.charge.idle + (body.charge.charged - body.charge.idle) * acidSpitWindupProgress(zombie);
+};
+
+const anchorWorld = (
+  transforms: ReadonlyMap<string, Transform>,
+  anchor: BodyAnchor,
+  placement: CrowdPlacement,
+  scale = 1,
+): Vec3 => {
+  const local = applyPoint(transforms.get(anchor.bone)!, anchor.position);
+  const world = mulMV(rotY((placement.yawRad * 180) / Math.PI), [local[0] * scale, local[1] * scale, local[2] * scale]);
+  return [placement.x + world[0], placement.y + world[1], placement.z + world[2]];
+};
+
+type ActorModel = 'shambler' | 'runner' | 'crawler' | 'brute' | 'acid' | 'amalgam';
 interface BuiltActorVariant {
   model: ActorModel;
   figureSeed: number;
@@ -422,6 +477,7 @@ interface BuiltActorVariant {
   bodyExtents: ReadonlyMap<string, Extent>;
   lookAt: LookAtProfile;
   severedRoots: ReadonlyMap<string, string>;
+  headPart: string | undefined;
 }
 
 const requireAmalgamType = (type: ZombieFigureType | undefined): ZombieFigureType => {
@@ -481,6 +537,7 @@ const buildActorVariant = (model: ActorModel, seed: number, amalgamType?: Zombie
     bodyExtents: bodyRestExtents(realized.body.bones, realized.voxels),
     lookAt: LOOK_AT_PROFILES[model === 'amalgam' ? 'shambler' : model]!,
     severedRoots: severedRootsFor(figure),
+    headPart: 'severableParts' in figure ? figure.severableParts.head[0] : undefined,
   };
 };
 
@@ -566,10 +623,17 @@ export class MobActorMeshes implements ZombieRenderer {
     if (options.includeAmalgam && options.amalgamType?.model !== 'amalgam') {
       throw new Error('MobActorMeshes requires amalgamType when amalgam actors are enabled');
     }
-    const templatesByModel = new Map([...TEMPLATES, amalgamTemplate].map((template) => [template.name, template]));
-    const modelIds: readonly ActorModel[] = options.includeAmalgam
-      ? ['shambler', 'runner', 'crawler', 'brute', 'amalgam']
-      : ['shambler', 'runner', 'crawler', 'brute'];
+    const templatesByModel = new Map(
+      [...TEMPLATES, acidTemplate, amalgamTemplate].map((template) => [template.name, template]),
+    );
+    const modelIds: readonly ActorModel[] = [
+      'shambler',
+      'runner',
+      'crawler',
+      'brute',
+      ...(options.includeAcid ? (['acid'] as const) : []),
+      ...(options.includeAmalgam ? (['amalgam'] as const) : []),
+    ];
 
     const t0 = performance.now();
     const built = buildActorVariants(modelIds, options.figureSeeds.slice(0, poolSize), options.amalgamType);
@@ -608,10 +672,12 @@ export class MobActorMeshes implements ZombieRenderer {
         .replace('#include <begin_vertex>', CROWD_BEGIN_VERTEX)
         .replace('#include <beginnormal_vertex>', CROWD_BEGINNORMAL_VERTEX);
       shader.fragmentShader =
-        `${CROWD_FRAGMENT_DECLARATIONS}\n${BLOOD_STAIN_FRAGMENT_DECLARATIONS}\n${shader.fragmentShader}`.replace(
-          '#include <color_fragment>',
-          `#include <color_fragment>\n${CROWD_COLOR_FRAGMENT}\n${BLOOD_STAIN_COLOR_FRAGMENT}`,
-        );
+        `${CROWD_FRAGMENT_DECLARATIONS}\n${BLOOD_STAIN_FRAGMENT_DECLARATIONS}\n${shader.fragmentShader}`
+          .replace(
+            '#include <color_fragment>',
+            `#include <color_fragment>\n${CROWD_COLOR_FRAGMENT}\n${BLOOD_STAIN_COLOR_FRAGMENT}`,
+          )
+          .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>\n${CROWD_EMISSIVE_FRAGMENT}`);
     };
 
     // The shadow pass draws with a depth material, which would leave every actor in its bind pose: this
@@ -668,7 +734,7 @@ export class MobActorMeshes implements ZombieRenderer {
           boneIndices: readonly number[];
         }
       >();
-      for (const part of v.model === 'amalgam' ? [] : SEVERABLE_PARTS) {
+      for (const part of v.model === 'amalgam' ? [] : severableParts(v.realized.body.bones)) {
         const boneIndices = [...severedBoneSet(v.realized.body.bones, [part])]
           .map((boneId) => boneIndexById.get(boneId))
           .filter((index): index is number => index !== undefined);
@@ -702,6 +768,8 @@ export class MobActorMeshes implements ZombieRenderer {
         bodyExtents: v.bodyExtents,
         rigidParts,
         severedRoots: v.severedRoots,
+        headPart: v.headPart,
+        burstIndices: burstBones(v.realized.body.bones).map((id) => boneIndexById.get(id)!),
         parentIndex: indexBonesByParent(v.realized.body.bones),
         boneIndexById,
         geometry,
@@ -1011,6 +1079,7 @@ export class MobActorMeshes implements ZombieRenderer {
       walkActor: { ...variant.walkActorTemplate, cache: createGaitCache() },
       lastPose: undefined,
       lastPlacement: undefined,
+      zombie: undefined,
       lastSeenFrame: this.frameCounter,
     };
     this.states.set(id, state);
@@ -1284,6 +1353,7 @@ export class MobActorMeshes implements ZombieRenderer {
       direction: fallDirectionAwayFromPlayer(zombie.facing, zombie.body.pos, undefined),
       severed: [...zombie.severed],
       bloodiness: woundSeverity(zombie),
+      charge: acidCharge(zombie),
       elapsed: 0,
       insertOrder: this.takeDeadOrder(),
     });
@@ -1331,7 +1401,9 @@ export class MobActorMeshes implements ZombieRenderer {
       zombie.body.pos[1] * this.blockSize,
       zombie.body.pos[2] * this.blockSize,
     ];
-    const basePose = this.posedFrame(state, zombie, this.currentRenderPlacement(zombie), { dt: 0 }).pose;
+    const posed = this.posedFrame(state, zombie, this.currentRenderPlacement(zombie), { dt: 0 });
+    const basePose = posed.pose;
+    this.burst(this.variants[state.variantIndex]!, posed.transforms, posed.placement, zombie);
     this.corpses.set(id, {
       incapacitated: false,
       variantIndex: state.variantIndex,
@@ -1345,10 +1417,24 @@ export class MobActorMeshes implements ZombieRenderer {
       direction: fallDirectionAwayFromPlayer(zombie.facing, zombie.body.pos, playerPos),
       severed: [...zombie.severed],
       bloodiness: woundSeverity(zombie),
+      charge: acidCharge(zombie),
       elapsed: 0,
       insertOrder: this.takeDeadOrder(),
     });
     this.states.delete(id);
+  }
+
+  /** Reports where a dying body's burst bones (the acid sac) were, for the splash. */
+  private burst(
+    variant: Variant,
+    transforms: ReadonlyMap<string, Transform>,
+    placement: CrowdPlacement,
+    zombie: Zombie,
+  ): void {
+    const glow = variant.realized.body.anchors?.glow;
+    if (variant.burstIndices.length > 0 && glow && this.options.onBurst) {
+      this.options.onBurst(anchorWorld(transforms, glow, placement, variant.bodyScale), zombie);
+    }
   }
 
   /** A downed body that dies (finished off or dismembered) becomes an ordinary corpse where it lies: it keeps its
@@ -1358,6 +1444,20 @@ export class MobActorMeshes implements ZombieRenderer {
       this.evictOldestDeadThingGlobally();
     }
     // Read after the eviction, which may have moved this corpse's instance.
+    const downed = this.corpses.get(id)!;
+    const variant = this.variants[downed.variantIndex]!;
+    const placement = {
+      x: downed.worldPos[0],
+      y: downed.worldPos[1],
+      z: downed.worldPos[2],
+      yawRad: downed.yaw,
+    };
+    this.burst(
+      variant,
+      boneTransforms(variant.realized.body.bones, this.corpsePose(downed, variant)),
+      placement,
+      zombie,
+    );
     const corpse: Corpse = {
       ...this.corpses.get(id)!,
       incapacitated: false,
@@ -1657,10 +1757,11 @@ export class MobActorMeshes implements ZombieRenderer {
       placement: CrowdPlacement;
       severedIndices: ReadonlySet<number>;
       bloodiness: number;
+      charge: number;
       transforms?: ReadonlyMap<string, Transform>;
     },
   ): void {
-    const { pose, placement, severedIndices, bloodiness, transforms } = frame;
+    const { pose, placement, severedIndices, bloodiness, charge, transforms } = frame;
     if (transforms) {
       for (let bone = 0; bone < variant.realized.body.bones.length; bone++) {
         const source = transforms.get(variant.realized.body.bones[bone]!.id)!;
@@ -1684,6 +1785,7 @@ export class MobActorMeshes implements ZombieRenderer {
     }
     packSeveredMask(this.textureData, this.layout, globalRow, severedIndices);
     packBloodiness(this.textureData, this.layout, globalRow, bloodiness);
+    packCharge(this.textureData, this.layout, globalRow, charge);
     this.textureUpdates.touch(globalRow);
   }
 
@@ -1729,7 +1831,8 @@ export class MobActorMeshes implements ZombieRenderer {
       }),
     );
     let { pose, transforms }: { pose: Pose; transforms: ReadonlyMap<string, Transform> } = posed;
-    const hasHead = zombie.type.model !== 'amalgam' && zombie.regions.head! > 0 && !zombie.severed.includes('head');
+    const hasHead =
+      variant.headPart !== undefined && zombie.regions.head! > 0 && !zombie.severed.includes(variant.headPart);
     if (hasHead) {
       const rootRotation = transpose(rotY((yaw * 180) / Math.PI));
       const eye = this.playerEyePosition ?? [this.cameraPosition.x, this.cameraPosition.y, this.cameraPosition.z];
@@ -1786,9 +1889,31 @@ export class MobActorMeshes implements ZombieRenderer {
       presentationSimSeconds: frame.presentationSimSeconds,
     });
     const severedIndices = this.indicesFor(variant, severedBoneIds(variant, zombie.severed));
-    this.packSkeleton(state.globalRow, variant, { ...posed, severedIndices, bloodiness: this.bloodiness(zombie) });
+    this.packSkeleton(state.globalRow, variant, {
+      ...posed,
+      severedIndices,
+      bloodiness: this.bloodiness(zombie),
+      charge: acidCharge(zombie),
+    });
     state.lastPose = posed.pose;
     state.lastPlacement = posed.placement;
+    state.zombie = zombie;
+  }
+
+  /** Live actors' glow and mouth anchors as last drawn, for the glow light and drips. Presentation only. */
+  *anchors(): Iterable<DrawnAnchors> {
+    for (const state of this.states.values()) {
+      const variant = this.variants[state.variantIndex]!;
+      const { anchors } = variant.realized.body;
+      const { zombie } = state;
+      if (!((anchors?.glow || anchors?.mouth) && state.lastPose && state.lastPlacement && zombie)) {
+        continue;
+      }
+      const transforms = boneTransforms(variant.realized.body.bones, state.lastPose);
+      const at = (anchor: BodyAnchor | undefined): Vec3 | undefined =>
+        anchor && anchorWorld(transforms, anchor, state.lastPlacement!, variant.bodyScale);
+      yield { zombie, glow: at(anchors.glow), mouth: at(anchors.mouth) };
+    }
   }
 
   private packCachedPose(
@@ -1809,18 +1934,26 @@ export class MobActorMeshes implements ZombieRenderer {
       placement: crowdPlacement,
       severedIndices,
       bloodiness: this.bloodiness(zombie),
+      charge: acidCharge(zombie),
     });
     state.lastPlacement = crowdPlacement;
+    state.zombie = zombie;
   }
 
   /** A corpse's own per-frame pose+pack: deathPose from its frozen basePose, sinking (an extra downward Y
    * offset, no re-posing needed) once it's been lying long enough. No LOD/frustum culling — the global
    * shared corpse cap already bounds this to a small, fixed extra cost regardless of camera or distance. */
+  private corpsePose(corpse: Corpse, variant: Variant): Pose {
+    if (variant.model === 'acid') {
+      return acidDeathPose(variant.realized, corpse.basePose, corpse.elapsed, corpse.direction);
+    }
+    const deathActor: DeathActor = { ...corpse.walkActor, bodyExtents: variant.bodyExtents };
+    return deathPose(deathActor, corpse.basePose, corpse.elapsed, { direction: corpse.direction });
+  }
+
   private packCorpse(corpse: Corpse): void {
     const variant = this.variants[corpse.variantIndex]!;
-    const deathActor: DeathActor = { ...corpse.walkActor, bodyExtents: variant.bodyExtents };
-    const pose = deathPose(deathActor, corpse.basePose, corpse.elapsed, { direction: corpse.direction });
-
+    const pose = this.corpsePose(corpse, variant);
     const sinkElapsed = corpse.elapsed - (DEATH_FALL_DURATION + this.options.look.corpseLieSimSeconds);
     const sinkT = corpse.incapacitated
       ? 0
@@ -1831,12 +1964,18 @@ export class MobActorMeshes implements ZombieRenderer {
       z: corpse.worldPos[2],
       yawRad: corpse.yaw,
     };
-    const severedIndices = this.indicesFor(variant, severedBoneIds(variant, corpse.severed));
+    const severedIndices = new Set(this.indicesFor(variant, severedBoneIds(variant, corpse.severed)));
+    if (!corpse.incapacitated) {
+      for (const index of variant.burstIndices) {
+        severedIndices.add(index);
+      }
+    }
     this.packSkeleton(corpse.globalRow, variant, {
       pose,
       placement: crowdPlacement,
       severedIndices,
       bloodiness: corpse.bloodiness,
+      charge: corpse.charge,
     });
   }
 
@@ -1885,6 +2024,7 @@ export class MobActorMeshes implements ZombieRenderer {
     }
     packSeveredMask(this.textureData, this.layout, d.globalRow, hidden);
     packBloodiness(this.textureData, this.layout, d.globalRow, d.bloodiness);
+    packCharge(this.textureData, this.layout, d.globalRow, 1);
     this.textureUpdates.touch(d.globalRow);
   }
 

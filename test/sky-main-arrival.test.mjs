@@ -12,6 +12,7 @@ import {
   mainOverlaySources,
   mainSourceOverlays,
   removedExports,
+  removedModuleExports,
   workspaceDirectory,
 } from '../packages/deadvox/test/browser/sky-main-arrival.mjs';
 
@@ -147,6 +148,42 @@ function movedPackageHistory(repository, git) {
   write('package.json', { workspaces: ['other', 'packages/deadvox'] });
   return { base, branch: commit('move') };
 }
+
+it('main imports of an export the branch removed from a sibling package are found where each revision keeps it', () => {
+  const repository = mkdtempSync(join(tmpdir(), 'main-sibling-export-'));
+  // biome-ignore lint/style/noProcessEnv: a pre-push hook exports GIT_DIR and its kin, which would aim the fixture's commits at the pushing repository.
+  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')));
+  const git = (args) => execFileSync('git', args, { cwd: repository, encoding: 'utf8', env }).trim();
+  const write = (path, text) => {
+    mkdirSync(join(repository, path, '..'), { recursive: true });
+    writeFileSync(join(repository, path), text);
+  };
+  const commit = (message) => {
+    git(['add', '-A']);
+    git(['-c', 'user.name=fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', message]);
+    return git(['rev-parse', 'HEAD']);
+  };
+  try {
+    git(['init', '-q']);
+    write('package.json', JSON.stringify({ workspaces: ['game', 'mob'] }));
+    write('game/package.json', JSON.stringify({ name: 'deadvox' }));
+    write('mob/package.json', JSON.stringify({ name: 'mobgen' }));
+    write('mob/src/cut.ts', 'export const cut = 1;\nexport const PARTS = [];\n');
+    write('mob/src/kept.ts', 'export const kept = 1;\n');
+    const base = commit('base');
+    git(['mv', 'mob', 'packages-mobgen']);
+    write('package.json', JSON.stringify({ workspaces: ['game', 'packages-mobgen'] }));
+    write('packages-mobgen/src/cut.ts', 'export const cut = 1;\n');
+    commit('move and drop');
+    const { removedFrom, shimmed } = removedModuleExports(git, base);
+    const top = git(['rev-parse', '--show-toplevel']);
+    assert.deepEqual(removedFrom(join(top, 'packages-mobgen/src/cut.ts')), ['PARTS']);
+    assert.deepEqual(removedFrom(join(top, 'packages-mobgen/src/kept.ts')), []);
+    assert.deepEqual(shimmed(), { 'packages-mobgen/src/cut.ts': ['PARTS'] });
+  } finally {
+    rmSync(repository, { recursive: true, force: true });
+  }
+});
 
 it('main overlays accept the directory URL trailing separator and worker module query', () => {
   const root = resolve('fixture-root');

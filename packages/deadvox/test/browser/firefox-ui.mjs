@@ -296,40 +296,102 @@ try {
   assert.equal(bandagesAfterConfirm, bandagesBeforeConfirm + 1, 'plain Enter spawns the selected item');
   await page.keyboard.press('Enter');
   assert.equal(await bandages(), bandagesAfterConfirm, 'Enter after closing the menu does not spawn an item');
-  await pressAction(page, 'debug.spawn-zombie.runner');
-  await page.waitForFunction(
-    () =>
-      [...globalThis.firefoxUiTest.session.zombies.store.entries()].some(([, zombie]) => zombie.type.id === 'runner'),
-    null,
-    { timeout: 5000 },
+  // Zombies of each mobgen body are drawn as their own model. The debug spawn ring finds no clear ground in sight of
+  // this stage's start, so these check zombies the world already holds.
+  const drawnAsItsModel = (typeId) => {
+    const { session, view } = globalThis.firefoxUiTest;
+    return [...session.zombies.store.entries()].some(([id, zombie]) => {
+      const state = zombie.type.id === typeId && view.zombieMeshes.states?.get(id);
+      const variant = state && view.zombieMeshes.variants?.[state.variantIndex];
+      return variant?.model === zombie.type.model && variant.mesh.count > 0;
+    });
+  };
+  await Promise.all(
+    ['runner', 'crawler', 'shambler'].map((typeId) =>
+      page
+        .waitForFunction(drawnAsItsModel, typeId, { timeout: 10_000 })
+        .catch(() => assert.fail(`a world ${typeId} is drawn as its own model`)),
+    ),
   );
-  await page.evaluate(() => {
-    const { registry, session } = globalThis.firefoxUiTest;
-    const runnerModel = registry.zombies.get('runner')?.model;
-    const runner = [...session.zombies.store.entries()].find(([, zombie]) => zombie.type.id === 'runner')?.[1];
-    if (!runnerModel || runner?.type.model !== runnerModel) {
-      throw new Error('debug runner spawn did not select the registered mobgen model');
-    }
-  });
-  await pressAction(page, 'debug.spawn-zombie.crawler');
-  await pressAction(page, 'debug.spawn-shamblers');
-  await page.waitForFunction(
+  // The acid body: drawn as its own model, dripping and lighting a shared slot, and on death losing its sac to a
+  // splash that leaves the world as the death left it. Like the bodies above, it is one the world holds: the nearest
+  // of the lab's acid zombies.
+  const acidId = await page.waitForFunction(
     () => {
       const { session, view } = globalThis.firefoxUiTest;
-      const zombies = [...session.zombies.store.entries()];
-      const required = ['crawler', 'runner', 'shambler'];
-      return required.every((typeId) => {
-        const found = zombies.find(([, zombie]) => zombie.type.id === typeId);
-        if (!found) {
-          return false;
-        }
-        const state = view.zombieMeshes.states?.get(found[0]);
-        const variant = state && view.zombieMeshes.variants?.[state.variantIndex];
-        return variant?.model === found[1].type.model && variant.mesh.count > 0;
-      });
+      const away = ([, zombie]) => Math.hypot(...zombie.body.pos.map((value, axis) => value - session.body.pos[axis]));
+      const [found] = [...session.zombies.store.entries()]
+        .filter(([, zombie]) => zombie.type.id === 'acid_zombie')
+        .sort((a, b) => away(a) - away(b));
+      const state = found && view.zombieMeshes.states?.get(found[0]);
+      const variant = state && view.zombieMeshes.variants?.[state.variantIndex];
+      const body = found?.[1].type.acidBody;
+      const lit = view.lightPool.lights.some(
+        (light) => light.color.getHexString() === body?.color.slice(1) && light.distance === body?.light.radiusMetres,
+      );
+      const sac = found && view.zombieMeshes.boneMatrix(found[0], 'sac.0');
+      return variant?.model === 'acid' &&
+        variant.mesh.count > 0 &&
+        lit &&
+        sac?.some((value) => value !== 0) &&
+        view.acidEffects.dropletCount() > 0
+        ? found[0]
+        : false;
     },
     null,
     { timeout: 10_000 },
+  );
+  const acidDeath = await page.evaluate(
+    (id) => {
+      const { session } = globalThis.firefoxUiTest;
+      const { zombies } = session;
+      const {
+        pos: [x, y, z],
+        height: bodyHeight,
+      } = zombies.store.get(id).body;
+      // Only the head kills this body; a shot that strikes the torso first only downs it. Walls may stand beside
+      // it, so level rays from around and up the body look for one whose first visible region is its head.
+      const weapon = { damage: 1000, reach: 100, cooldown: 0, impulse: 0 };
+      let shot;
+      for (let turn = 0; turn < 16 && !shot; turn++) {
+        const [dx, dz] = [Math.cos((turn * Math.PI) / 8), Math.sin((turn * Math.PI) / 8)];
+        for (let height = bodyHeight; height > 0 && !shot; height -= 0.2) {
+          const origin = [x + 2 * dx, y + height, z + 2 * dz];
+          const aim = zombies.aimAt(origin, [-dx, 0, -dz], weapon);
+          if (aim?.id === id && aim.region === 'head') {
+            shot = { origin, directions: [[-dx, 0, -dz]] };
+          }
+        }
+      }
+      if (shot) {
+        zombies.firePellets({ ...shot, damage: weapon.damage, impulse: 0, rangeMetres: weapon.reach });
+      }
+      return {
+        aimed: shot !== undefined,
+        died: zombies.store.get(id) === undefined,
+        piles: JSON.stringify(session.inventory.snapshotState().piles),
+      };
+    },
+    await acidId.jsonValue(),
+  );
+  assert.ok(acidDeath.aimed, 'a clear level ray reaches the acid zombie head first');
+  assert.ok(acidDeath.died, 'the acid zombie dies to a lethal shot');
+  await page.waitForFunction(
+    (id) => {
+      const { view } = globalThis.firefoxUiTest;
+      return (
+        view.zombieMeshes.boneMatrix(id, 'sac.0')?.every((value) => value === 0) &&
+        view.acidEffects.dropletCount() >=
+          globalThis.firefoxUiTest.registry.zombies.get('acid_zombie').acidBody.deathSplash.droplets
+      );
+    },
+    await acidId.jsonValue(),
+    { timeout: 5000 },
+  );
+  assert.equal(
+    await page.evaluate(() => JSON.stringify(globalThis.firefoxUiTest.session.inventory.snapshotState().piles)),
+    acidDeath.piles,
+    'the sac burst and its splash leave no item behind',
   );
   const bodyBeforeSpectator = await page.evaluate(() => [...globalThis.firefoxUiTest.session.body.pos]);
   await pressAction(page, 'debug.spectator-camera-toggle');

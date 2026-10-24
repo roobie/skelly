@@ -3123,7 +3123,7 @@ export type ZombieRegions = Record<string, number>;
 
 const AMALGAM_REGION_KEYS = ['core.trunk', ...ZOMBIE_REGION_NAMES.map((region) => `member.${region}`)];
 
-const ZOMBIE_MODEL = picklist(['shambler', 'runner', 'brute', 'amalgam']);
+const ZOMBIE_MODEL = picklist(['shambler', 'runner', 'brute', 'acid', 'amalgam']);
 
 const ZOMBIE_ABILITIES = [
   'grab',
@@ -3190,6 +3190,26 @@ const AcidSpitSchema = pipe(
   check(({ rangeBand }) => rangeBand.nearMetres < rangeBand.farMetres, 'range band near edge must be inside far edge'),
   check((spit) => spit.windupSimSeconds < spit.cooldownSimSeconds, 'windup must be less than cooldown'),
   check(({ moves }) => new Set(moves.map(({ id }) => id)).size === moves.length, 'zombie move ids must be unique'),
+);
+
+/** How the acid model's body shows its acid (`docs/acid-zombie.md`, "Model"). Presentation only. */
+const AcidBodySchema = pipe(
+  strictObject({
+    color: Color,
+    /** Multiplier on the sac's emission, at rest and at the end of a spit wind-up. */
+    charge: strictObject({ idle: NonNegative, charged: NonNegative }),
+    /** The point light the sac lends its surroundings while the actor is among the nearest glowing ones. */
+    light: strictObject({ intensity: Positive, radiusMetres: Positive }),
+    drips: strictObject({ perRealSecond: Positive, sizeMetres: Positive }),
+    /** The burst of droplets that replaces the sac on death. */
+    deathSplash: strictObject({
+      droplets: pipe(number(), integer(), minValue(1, 'must be at least 1')),
+      speedMetresPerRealSecond: Positive,
+      slowestSpeedFraction: Fraction,
+      sizeMetres: Positive,
+    }),
+  }),
+  check(({ charge }) => charge.idle <= charge.charged, 'the sac must not dim during the wind-up'),
 );
 
 const ZombieSchema = strictObject({
@@ -3390,6 +3410,8 @@ const ZombieSchema = strictObject({
   abilities: array(picklist(ZOMBIE_ABILITIES)),
   /** Tunables of the `acidSpit` ability; present exactly when the type lists that ability. */
   acidSpit: optional(AcidSpitSchema),
+  /** The acid model's glow, drips and death splash; present exactly when the model is `acid`. */
+  acidBody: optional(AcidBodySchema),
   /** What's in its pockets. */
   loot: optional(Id),
 });
@@ -4285,6 +4307,10 @@ const SECTION_DESCRIPTOR = {
         check(
           (types) => types.every(zombieAcidSpitMatchesAbility),
           'acidSpit tunables must match the acidSpit ability',
+        ),
+        check(
+          (types) => types.every((zombie) => (zombie.model === 'acid') === (zombie.acidBody !== undefined)),
+          'acidBody must be defined exactly for the acid model',
         ),
       ),
     ),

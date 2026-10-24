@@ -11,6 +11,7 @@
 // actor's row: a row-major 3x4 affine matrix, r0 r1 r2 tx | r3 r4 r5 ty | r6 r7 r8 tz (no perspective row —
 // every transform here is rigid).
 
+import type { MaterialDef } from '../core/body.ts';
 import type { MutableTransform } from '../core/pose.ts';
 
 export interface CrowdTextureLayout {
@@ -79,6 +80,18 @@ export const packBloodiness = (
 ): void => {
   data[crowdMaskTexelIndex(layout, slot) + 1] = Math.min(1, Math.max(0, bloodiness));
 };
+
+/** Packs the multiplier on `slot`'s charged materials' emission (body.ts, MaterialDef.charged) into its
+ * mask texel's blue channel. A reused row keeps the last value written, so every packer writes it. */
+export const packCharge = (data: Float32Array, layout: CrowdTextureLayout, slot: number, charge: number): void => {
+  data[crowdMaskTexelIndex(layout, slot) + 2] = Math.max(0, charge);
+};
+
+/** A vertex's `crowdEmission` attribute: its material's emission, and 1 when the actor's charge scales it. */
+export const crowdEmission = (material: MaterialDef): readonly [number, number] => [
+  material.emissive,
+  material.charged === true ? 1 : 0,
+];
 
 /** Whether the texture mask says `boneIndex` was severed. The shader applies the same word/bit split in
  * crowdBoneSevered; this helper lets the maintained CPU contract tests inspect the packed representation. */
@@ -179,7 +192,9 @@ uniform float crowdBonesPerSlot;
 attribute float crowdSlot;
 attribute float boneIndex;
 attribute float neighbourBone;
+attribute vec2 crowdEmission;
 varying float vCrowdGore;
+varying float vCrowdEmission;
 varying float vCrowdBloodiness;
 varying vec3 vCrowdLocal;
 varying float vCrowdBone;
@@ -226,6 +241,13 @@ float crowdBloodiness( float slot ) {
 	return texelFetch( crowdBoneTexture, ivec2( int( crowdBonesPerSlot ) * 3, int( slot ) ), 0 ).y;
 
 }
+
+// Emission: the material's own level, scaled by the actor's charge (packCharge) where crowdEmission.y says so.
+float crowdCharge( float slot ) {
+
+	return texelFetch( crowdBoneTexture, ivec2( int( crowdBonesPerSlot ) * 3, int( slot ) ), 0 ).z;
+
+}
 `;
 
 // Computed independently in each replacement (rather than sharing one `crowdM` local) since
@@ -241,6 +263,7 @@ vCrowdGore = crowdBoneSevered( crowdSlot, neighbourBone ) ? 1.0 : 0.0;
 vCrowdBloodiness = crowdBloodiness( crowdSlot );
 vCrowdLocal = position;
 vCrowdBone = boneIndex;
+vCrowdEmission = crowdEmission.x * mix( 1.0, crowdCharge( crowdSlot ), crowdEmission.y );
 `;
 
 export const CROWD_BEGINNORMAL_VERTEX = /* glsl */ `
@@ -250,6 +273,13 @@ vec3 objectNormal = mat3( crowdNormalM ) * normal;
 
 export const CROWD_FRAGMENT_DECLARATIONS = /* glsl */ `
 varying float vCrowdGore;
+varying float vCrowdEmission;
+`;
+
+// Patched in after <emissivemap_fragment>: a glowing voxel emits its own colour, so it reads as a light
+// source in the dark and feeds bloom instead of darkening with the scene.
+export const CROWD_EMISSIVE_FRAGMENT = /* glsl */ `
+totalEmissiveRadiance += diffuseColor.rgb * vCrowdEmission;
 `;
 
 // Apply after vertex colour so a fresh cut remains legible even against light flesh.

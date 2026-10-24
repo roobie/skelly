@@ -4,6 +4,7 @@ import type { Realized } from '@mobgen/core/generate.ts';
 import { type Mat3, mat3ToQuat, quatToMat3 } from '@mobgen/core/math.ts';
 import { type BoneMesh, meshBones } from '@mobgen/core/mesh.ts';
 import { materialOf, shadeOf, type Voxels, worldPosition } from '@mobgen/core/voxelize.ts';
+import { crowdEmission } from '@mobgen/mob/crowd.ts';
 import { BufferAttribute, BufferGeometry, type Color, type Group, Mesh, MeshLambertMaterial } from 'three';
 import type { Vec3 } from '../core/coords.ts';
 import { type Quaternion, type RigidBody, type RigidWorld, stepRigidBody } from '../core/rigidBody.ts';
@@ -47,6 +48,31 @@ interface CarvedFaces {
   readonly color: Color;
 }
 
+interface VertexSource {
+  readonly mesh: BoneMesh;
+  readonly vertex: number;
+  readonly materials: Body['materials'];
+  readonly voxels: Pick<Voxels, 'materials'>;
+  readonly carved: CarvedFaces | undefined;
+}
+
+/** A hole wall takes the carved colour and marker; any other face takes its neighbour and its material's emission. */
+const writeVertexSurface = (
+  out: { neighbour: Float32Array; emission: Float32Array; colors: Float32Array },
+  at: number,
+  { mesh, vertex, materials, voxels, carved }: VertexSource,
+): void => {
+  if (carved !== undefined && mesh.neighbourBone[vertex] === carved.neighbour) {
+    out.neighbour[at] = CARVED_NEIGHBOUR;
+    out.colors[at * 3] = carved.color.r;
+    out.colors[at * 3 + 1] = carved.color.g;
+    out.colors[at * 3 + 2] = carved.color.b;
+    return;
+  }
+  out.neighbour[at] = mesh.neighbourBone[vertex]!;
+  out.emission.set(crowdEmission(materials[materialOf(voxels, mesh.colors[vertex]!)]!), at * 2);
+};
+
 /** Merged geometry for one body: like mobgen's own buildCrowdGeometry (stressActors.ts, not importable for
  * the same reason as vertexColorsFrom above) — one float `boneIndex` per vertex instead of
  * skinIndex/skinWeight, fetched straight from the shared bone texture in the vertex shader. */
@@ -70,6 +96,7 @@ export const mergeBoneMeshes = (
   // bone's own index — dismemberment's gore effect (crowd.ts) tints a face whose neighbour has just been
   // severed but this bone hasn't.
   const neighbourBoneAttr = new Float32Array(vertexCount);
+  const emissionAttr = new Float32Array(vertexCount * 2);
   const indices = new Uint32Array(indexCount);
 
   let vertexOffset = 0;
@@ -81,13 +108,13 @@ export const mergeBoneMeshes = (
     colors.set(vertexColorsFrom(mesh.colors, materials, voxels), vertexOffset * 3);
     boneIndexAttr.fill(boneIndex, vertexOffset, vertexOffset + vertices);
     for (let v = 0; v < vertices; v++) {
-      const inner = carved !== undefined && mesh.neighbourBone[v] === carved.neighbour;
-      neighbourBoneAttr[vertexOffset + v] = inner ? CARVED_NEIGHBOUR : mesh.neighbourBone[v]!;
-      if (inner) {
-        colors[(vertexOffset + v) * 3] = carved.color.r;
-        colors[(vertexOffset + v) * 3 + 1] = carved.color.g;
-        colors[(vertexOffset + v) * 3 + 2] = carved.color.b;
-      }
+      writeVertexSurface({ neighbour: neighbourBoneAttr, emission: emissionAttr, colors }, vertexOffset + v, {
+        mesh,
+        vertex: v,
+        materials,
+        voxels,
+        carved,
+      });
     }
     for (let i = 0; i < mesh.indices.length; i++) {
       indices[indexOffset + i] = mesh.indices[i]! + vertexOffset;
@@ -102,6 +129,7 @@ export const mergeBoneMeshes = (
   geometry.setAttribute('color', new BufferAttribute(colors, 3));
   geometry.setAttribute('boneIndex', new BufferAttribute(boneIndexAttr, 1));
   geometry.setAttribute('neighbourBone', new BufferAttribute(neighbourBoneAttr, 1));
+  geometry.setAttribute('crowdEmission', new BufferAttribute(emissionAttr, 2));
   geometry.setIndex(new BufferAttribute(indices, 1));
   geometry.computeBoundingSphere();
   return geometry;

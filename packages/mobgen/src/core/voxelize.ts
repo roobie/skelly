@@ -641,7 +641,8 @@ const checkMaterials = (body: Body): readonly Material[] => {
       definition.color.length !== 3 ||
       definition.color.some((value) => !Number.isFinite(value) || value < 0 || value > 1) ||
       !Number.isFinite(definition.emissive) ||
-      definition.emissive < 0
+      definition.emissive < 0 ||
+      (definition.charged === true && definition.emissive === 0)
     ) {
       throw new Error(`invalid material definition "${name}"`);
     }

@@ -271,6 +271,13 @@ export const TEMPORAL_FIELDS = [
     dimension: 'acceleration',
   },
   { path: 'zombies.acidSpit.presentation.splashRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
+  { path: 'zombies.acidBody.drips.perRealSecond', clock: 'Real', unit: 'PerSecond', dimension: 'rate' },
+  {
+    path: 'zombies.acidBody.deathSplash.speedMetresPerRealSecond',
+    clock: 'Real',
+    unit: 'PerSecond',
+    dimension: 'rate',
+  },
   { path: 'zombies.acidSpit.puddle.lifetimeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.acidSpit.puddle.damagePerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'zombies.downed.finishOff.simSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },

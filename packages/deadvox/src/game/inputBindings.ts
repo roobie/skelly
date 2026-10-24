@@ -189,6 +189,7 @@ const INPUT_ACTIONS: readonly Action[] = [
   debugRow('debug.spawn-zombie.runner', 'Spawn runner'),
   debugRow('debug.spawn-zombie.crawler', 'Spawn crawler'),
   debugRow('debug.spawn-zombie.amalgam', 'Spawn amalgam'),
+  debugRow('debug.spawn-zombie.acid_zombie', 'Spawn acid zombie'),
   debugRow('debug.melee-aim-toggle', 'Melee aim boxes'),
   debugRow('debug.freeze-shamblers', 'Freeze shamblers'),
   debugRow('debug.review-map-toggle', 'Review map', ['play', 'carrying', 'noclip', 'review-map']),

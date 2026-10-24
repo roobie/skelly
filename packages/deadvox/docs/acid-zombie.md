@@ -67,7 +67,7 @@ These must all work, because each is the reason the fight reads as more than tra
 
 ## Spawning
 
-Acid zombies spawn only in labs, where `DESIGN.md`, "Evolution" puts weird types. Each lab storey holds as many acid zombies as its depth: one on the entry level, two on administration, three on research, and so on down. Lab threat is authored per storey as weighted marker rows, which gives chances, not counts, so the rule needs a fixed per-storey count in that content. See `src/content/base/gauntlet-lab-threat.libsonnet`, `rows`, and `src/content/base/gauntlet-lab.libsonnet`, `storeys`. The type is otherwise `authoredOnly`, so ordinary settlement selection cannot place it.
+Acid zombies spawn only in labs, where `DESIGN.md`, "Evolution" puts weird types. Each lab storey holds as many acid zombies as its depth: one on the entry level, two on administration, three on research, and one more on each storey down; storeys outside the lab's numbered depth, such as the sewer, hold none. Lab threat is authored per storey as weighted marker rows, which gives chances, not counts, so the acid zombies take fixed marker cells beside those rows. See `src/content/base/gauntlet-lab-threat.libsonnet`, `acidCounts`, and `src/content/base/gauntlet-lab.libsonnet`, `storeys`. The type is otherwise `authoredOnly`, so ordinary settlement selection cannot place it.
 
 ## Saves and determinism
 
@@ -82,6 +82,8 @@ The acid zombie gets its own mobgen body, built from the ground up, not a recolo
 - glowing green eyes;
 - acid drooling from the mouth, with drips that fall to the ground.
 
-The body is a mobgen design task for an opus designer and opus coder pair; it adds a `model` entry for the type. See `packages/mobgen/PROJECT.md` and `src/core/schema.ts`, `ZombieSchema`, `model`.
+The body is mobgen's `acid` model; its bone rules and how Deadvox consumes them are in `packages/mobgen/docs/acid-zombie-integration.md`. See `src/core/schema.ts`, `ZombieSchema` and `ZOMBIE_MODEL`.
+
+The sac, eyes, drips and splash are presentation only, so no simulation outcome or save depends on them. Their tuning is the type's `acidBody` content, which validation requires exactly for the acid model; see `src/core/schema.ts`, `AcidBodySchema`. The sac and eyes glow through their material's emission, and the wind-up brightens only the sac through the crowd data texture. The nearest acid zombies also light their surroundings through item-light slots that lights leave free; see `src/render/lightPool.ts`, `acidGlows`. Drips fall from the drawn mouth, and on death the sac's voxels vanish as a splash thrown from the glow anchor; see `src/render/acidEffects.ts`, `AcidEffects`, and `src/render/mobActors.ts`, `onBurst`.
 
 Player-visible text follows `INTERFACE.md`, "Text": the type's name is a label, and the burn shows through bodily cues and the body panel, never as narration.

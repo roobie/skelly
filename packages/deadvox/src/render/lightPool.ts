@@ -5,6 +5,7 @@ import type { Item } from '../core/items.ts';
 import { lightExposureFor } from '../core/lights.ts';
 import type { PoweredLight } from '../core/sitePower.ts';
 import type { HeldItems } from './hands.ts';
+import type { DrawnAnchors } from './mobActors.ts';
 import type { PileMeshes } from './piles.ts';
 
 /** Fixed shader-light budget: carried sources and dropped sources have stable partitions. */
@@ -28,6 +29,28 @@ interface LightPoolContext {
    */
   worldDaylightScale?: number;
   fixtures?: readonly PoweredLight[];
+  /** Body glows (the acid sac): presentation lights that take the item slots no item uses, nearest first. */
+  glows?: readonly BodyGlow[];
+}
+
+export interface BodyGlow {
+  /** Metres. */
+  readonly position: readonly [number, number, number];
+  readonly color: string;
+  readonly intensity: number;
+  readonly radiusMetres: number;
+}
+
+/** The acid sacs' glows as drawn this frame. */
+export function acidGlows(anchors: Iterable<DrawnAnchors>): BodyGlow[] {
+  const glows: BodyGlow[] = [];
+  for (const { zombie, glow } of anchors) {
+    const body = zombie.type.acidBody;
+    if (body && glow) {
+      glows.push({ position: glow, color: body.color, ...body.light });
+    }
+  }
+  return glows;
 }
 
 function handPriority(location: Location): number {
@@ -163,6 +186,11 @@ export class LightPool {
         return distance(a) - distance(b);
       })
       .slice(0, this.fixtureLimit);
+    const glowDistance = ({ position }: BodyGlow) =>
+      (position[0] - camera.position.x) ** 2 +
+      (position[1] - camera.position.y) ** 2 +
+      (position[2] - camera.position.z) ** 2;
+    const glows = [...(context.glows ?? [])].sort((a, b) => glowDistance(a) - glowDistance(b));
     for (const [index, light] of this.lights.entries()) {
       light.decay = pointDecay;
       if (index >= ITEM_POINT_LIGHTS) {
@@ -171,7 +199,16 @@ export class LightPool {
       }
       const entry = index < CARRIED_POINT_LIGHTS ? carried[index] : dropped[index - CARRIED_POINT_LIGHTS];
       if (!entry) {
-        light.intensity = 0;
+        const glow = glows.shift();
+        this.flareSkipped[index] = false;
+        if (glow) {
+          light.position.set(...glow.position);
+          light.color.set(glow.color);
+          light.distance = glow.radiusMetres;
+          light.intensity = glow.intensity * daylightScale;
+        } else {
+          light.intensity = 0;
+        }
         this.syncHandLight(index, light);
         continue;
       }

@@ -640,11 +640,19 @@ local content = {
       "abilities": [],
       "loot": "shambler_pockets"
     },
-    // Placeholder shambler body until the m7 spitter model; `docs/acid-zombie.md` owns what the type must show.
+    // Shambler senses and melee on the acid body; `docs/acid-zombie.md` owns what the type must show.
     $.zombies[0] + {
       "id": "acid_zombie",
       "name": "Acid zombie",
+      "model": "acid",
       "authoredOnly": true,
+      "acidBody": {
+        "color": "#9ad21e",
+        "charge": { "idle": 0.5, "charged": 2.5 },
+        "light": { "intensity": 0.6, "radiusMetres": 3 },
+        "drips": { "perRealSecond": 1.5, "sizeMetres": 0.012 },
+        "deathSplash": { "droplets": 24, "speedMetresPerRealSecond": 3.5, "slowestSpeedFraction": 0.5, "sizeMetres": 0.02 }
+      },
       "acidResistance": 1,
       "abilities": ["acidSpit"],
       "acidSpit": {

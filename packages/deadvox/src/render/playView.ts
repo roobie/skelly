@@ -45,7 +45,7 @@ import { setHeightFogTuning } from './heightFog.ts';
 import { ImpactEffects } from './impactEffects.ts';
 import { ItemPictures } from './itemPictures.ts';
 import { ItemThrows } from './itemThrows.ts';
-import { LightPool } from './lightPool.ts';
+import { acidGlows, LightPool } from './lightPool.ts';
 import { applyLook } from './look.ts';
 import { MobActorMeshes, type ZombieRenderer } from './mobActors.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';
@@ -233,7 +233,7 @@ export const createPlayView = (
     : undefined;
   const impactEffects = new ImpactEffects(s, targetCell);
   const blastFlashes = new BlastFlashes();
-  const acidEffects = new AcidEffects(s);
+  const acidEffects = new AcidEffects(s, config.seed);
   const held = new HeldItems(inventory, models, playerPalette, engine.sky.light);
   scene.add(caseEffects.mesh, impactEffects.group, itemThrows.group, gore.group, blastFlashes.group, acidEffects.group);
   const dispose = () => {
@@ -283,6 +283,8 @@ export const createPlayView = (
           reveal: meshes,
           figureSeeds: figureSeedPool(registry.zombies),
           includeAmalgam: true,
+          includeAcid: true,
+          onBurst: (position, zombie) => acidEffects.deathSplash(position, zombie),
           amalgamType: amalgamTypeOf(registry.zombies),
           onFleshLanded: (centre) => gore.landed(centre),
           bloodiness: (zombie) => gore.severity(zombie),
@@ -427,6 +429,7 @@ export const createPlayView = (
       itemThrows.update(time, inventory);
       blastFlashes.update(dt);
       acidEffects.sync(acidGlobs, acidPuddles, registry.zombies, dt);
+      acidEffects.syncDroplets(zombieMeshes.anchors?.() ?? [], dt);
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour, dayCycle), weather, dayCycle.weather);
       piles.sync(inventory, itemThrows.hiddenItemUids);
@@ -531,6 +534,7 @@ export const createPlayView = (
         daylightScale: cameraDaylightScale,
         worldDaylightScale: engine.skylight ? 1 : cameraDaylightScale,
         fixtures: poweredLights(),
+        glows: acidGlows(zombieMeshes.anchors?.() ?? []),
       });
       updateFlare(nightVision, dt);
     },

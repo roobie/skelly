@@ -32,7 +32,7 @@ import { amalgamManifest } from '../mob/amalgam.ts';
 import { VIEWER_TEMPLATES } from '../mob/amalgamTemplate.ts';
 import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
 import { crawlerGaitPose, crawlerHitPose, crawlerPose } from '../mob/crawler.ts';
-import { SEVERABLE_PARTS, severedBoneSet } from '../mob/dismember.ts';
+import { severableParts, severedBoneSet } from '../mob/dismember.ts';
 import { DOG_SEVERABLE_PARTS, dogGaitPose, dogHitPose, dogPose } from '../mob/dog.ts';
 import { dogTemplate } from '../mob/dogTemplate.ts';
 import {
@@ -100,10 +100,6 @@ if (new URLSearchParams(location.search).get('shot') === '1') {
 
 for (const t of TEMPLATES) {
   templateSelect.add(new Option(t.name, t.name));
-}
-
-for (const part of SEVERABLE_PARTS) {
-  severPart.add(new Option(part, part));
 }
 
 // ---- three.js setup ----
@@ -455,7 +451,9 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
     actor.applyPose(initialPose);
     loaded = { ...loaded, params, extents, bodyExtents, legGeometry, walkActor };
     severPart.replaceChildren(
-      ...(template.bodyPlan === 'dog' ? DOG_SEVERABLE_PARTS : SEVERABLE_PARTS).map((part) => new Option(part, part)),
+      ...(template.bodyPlan === 'dog' ? DOG_SEVERABLE_PARTS : severableParts(realized.body.bones)).map(
+        (part) => new Option(part, part),
+      ),
     );
   }
   acidWindupLabel.hidden = template.bodyPlan !== 'acid';

@@ -13,7 +13,7 @@ import {
   type Pose,
 } from '@mobgen/core/pose.ts';
 import { cellIndex, worldPosition } from '@mobgen/core/voxelize.ts';
-import { SEVERABLE_PARTS, severedBoneSet } from '@mobgen/mob/dismember.ts';
+import { severableParts, severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { corners, footRestExtents, INITIAL_CLOCK, walkPose } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { LOOK_AT_REST } from '@mobgen/mob/lookAt.ts';
@@ -35,6 +35,7 @@ import { flinchSideForId, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes, shamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { Zombie, ZombieMode } from '../src/core/zombies.ts';
 import { ZOMBIE_RATE } from '../src/game/simulationRates.ts';
+import { AcidEffects } from '../src/render/acidEffects.ts';
 import { CARVED_NEIGHBOUR } from '../src/render/amalgamFlesh.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { Gore } from '../src/render/gore.ts';
@@ -635,6 +636,48 @@ describe('MobActorMeshes', () => {
     }
   });
 
+  it('drips from the acid mouth and bursts the sac at death without changing the zombie', () => {
+    const acid = registry.zombies.get('acid_zombie')!;
+    const effects = new AcidEffects(0.5, 1);
+    const bursts: Vec3[] = [];
+    const renderer = new MobActorMeshes(0.5, 2, {
+      figureSeeds: figureSeedPool(registry.zombies),
+      poolSize: 1,
+      includeAcid: true,
+      onBurst: (position, zombie) => {
+        bursts.push(position);
+        effects.deathSplash(position, zombie);
+      },
+    });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const zombie = makeZombie([0, 0, -4], [0, 0, 1], [], { type: acid });
+      const id = store.add(zombie);
+      const before = structuredClone(zombie);
+      let dripped = 0;
+      for (let frame = 0; frame < 60; frame++) {
+        renderer.sync(store, 1 / 30, 1);
+        effects.syncDroplets(renderer.anchors(), 1 / 30);
+        dripped = Math.max(dripped, effects.dropletCount());
+      }
+      expect(dripped).toBeGreaterThan(0);
+
+      store.remove(id);
+      renderer.zombieDied(id, zombie);
+      expect(bursts).toHaveLength(1);
+      const [x, y, z] = bursts[0]!;
+      expect(Math.hypot(x - zombie.body.pos[0] * 0.5, z - zombie.body.pos[2] * 0.5)).toBeLessThan(1);
+      expect(y).toBeGreaterThan(zombie.body.pos[1] * 0.5);
+      expect(effects.dropletCount()).toBeGreaterThanOrEqual(acid.acidBody!.deathSplash.droplets);
+      renderer.sync(store, 1 / 30, 1);
+      effects.syncDroplets(renderer.anchors(), 1 / 30);
+      expect(zombie).toEqual(before);
+    } finally {
+      renderer.dispose();
+      effects.dispose();
+    }
+  });
+
   it('eases gaze back to the simulation pose when the zombie loses sight', () => {
     const renderer = new MobActorMeshes(0.5, 2, { figureSeeds: figureSeedPool(registry.zombies), poolSize: 1 });
     try {
@@ -974,6 +1017,7 @@ describe('MobActorMeshes', () => {
       figureSeeds: SHAMBLER_FIGURE_SEEDS,
       poolSize: 1,
       includeAmalgam: true,
+      includeAcid: true,
       amalgamType: amalgamTypeOf(registry.zombies),
     });
     try {
@@ -987,7 +1031,7 @@ describe('MobActorMeshes', () => {
       const internals = renderer as unknown as {
         group: { visible: boolean };
         states: Map<number, { variantIndex: number }>;
-        variants: readonly { mesh: InstancedMesh }[];
+        variants: readonly { mesh: InstancedMesh; realized: { body: { bones: readonly { id: string }[] } } }[];
       };
 
       expect(internals.group.visible).toBe(true);
@@ -997,7 +1041,7 @@ describe('MobActorMeshes', () => {
         if (!state) {
           continue;
         }
-        const { mesh } = internals.variants[state.variantIndex]!;
+        const { mesh, realized } = internals.variants[state.variantIndex]!;
         expect(mesh.visible).toBe(true);
         expect(mesh.count).toBeGreaterThan(0);
         expect(mesh.geometry.getAttribute('position').count).toBeGreaterThan(0);
@@ -1005,7 +1049,7 @@ describe('MobActorMeshes', () => {
         expect(materials.length).toBeGreaterThan(0);
         expect(materials.every((material) => material.visible)).toBe(true);
         const isAmalgam = type === amalgamTypeOf(registry.zombies);
-        const matrix = renderer.boneMatrix(id, isAmalgam ? 'core' : 'pelvis');
+        const matrix = renderer.boneMatrix(id, realized.body.bones[0]!.id);
         expect(matrix, type.id).toHaveLength(12);
         if (isAmalgam) {
           expect(Math.hypot(matrix![0]!, matrix![4]!, matrix![8]!)).toBeCloseTo(type.bodyScale!);
@@ -1502,7 +1546,11 @@ describe('MobActorMeshes dismemberment', () => {
       };
       const masses = [...variants[0]!.rigidParts.entries()].map(([part, properties]) => [part, properties.mass]);
       const template = TEMPLATES.find((candidate) => candidate.name === 'shambler')!;
-      const expected = SEVERABLE_PARTS.map((part) => [part, template.bodyMassKg * template.massFractions![part]!]);
+      const { realized } = generateValid(template, 1)!;
+      const expected = severableParts(realized.body.bones).map((part) => [
+        part,
+        template.bodyMassKg * template.massFractions![part]!,
+      ]);
       expect(masses).toEqual(expected);
     } finally {
       renderer.dispose();
