@@ -1,23 +1,21 @@
-// Straight box magazines measured from photos, in gun units. Each is a photo estimate that needs visual review: the
-// depth (front to back) and the length below the well are read from a side photo at the scale its `scale` names,
-// and each rounds to the grid the magazine builds on. A side photo cannot show width, so `widthU` states its own basis. The
-// body length is the visible length plus the part the lower hides, so the seated magazine shows what the photo does.
+// Straight box magazines traced from photos, in gun units. Each is a photo estimate that needs visual review: the
+// depth (front to back) and the floor's height are read from a side photo registered and scaled as its `scale`
+// names, and each rounds to the grid the magazine builds on. A side photo cannot show width, so `widthU` states its
+// own basis. The body runs from the seat the lower gives it down to the traced floor.
 {
   profiles: {
-    // The 7.62×51 SR-25 pattern magazine BR chose for the large AR frame, from the same brochure page as that
-    // frame's receiver. At 1.354 mm/px it measures 62 px deep (83.8 mm) and 56 px below the well (76.2 mm, 6.63u).
+    // The 20-round 7.62×51 SR-25 magazine for the large AR frame, traced from the same photo as that frame's
+    // receiver (see arFrames.jsonnet): its front at -1.47u and rear at -8.49u (7.02u deep), its floor at -13.5u in
+    // front and -14.7u behind.
     'sr25-straight': {
-      photo: 'https://www.snipershide.com/shooting/attachments/img_7687-jpeg.8878983/',
-      scale: 'the "Length: 44 inches" printed beside the rifle on the same page',
-      // 7.29u measured; a box's half-depth stays on the 0.25u grid, so depth steps by 0.5u, and 7.5u would leave no
-      // clearance in the large frame's 7.5u well.
+      photo: 'https://viranomainen.fi/tiedostot/1/kuva/tuote/1200/12757212.jpg',
+      scale: 'the 43.5 in extended overall length listed for the SR-25 E2 20 in, https://operationparts.com/?p=175806',
       depthU: 7,
-      // 6.63u visible below the well plus the 4.5u the large frame's lower and receiver hide above the well's rear
-      // lip, rounded to the magazine grid.
-      bodyLengthU: 11.25,
+      // From the seat 1.5u below the bore down to the floor's mean, -14.1u.
+      bodyLengthU: 12.5,
       // Not visible in a side photo: the widest the receiver's 2.7u feed slot over the well admits on the grid.
       widthU: 2.5,
-      // The page's printed "Capacity: 20 round".
+      // The listing's "Knight's Armament 20 round magazine".
       capacity: 20,
     },
   },

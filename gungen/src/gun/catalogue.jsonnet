@@ -112,7 +112,11 @@ local item(id, family, selector, params, massKg, profile) =
       section: 'ar', length: 'M', profile: 'standard', muzzle: 'threaded', frontSightStyle: 'ar', handguardLength: 'M',
       handguardLayout: 'ar', bore: 'M', actionFrame: 'large', tubeLengthPercent: '75',
     }, 1.15, 'ar'),
-    row('barrel-ar-long', 'barrel', { section: 'ar', length: 'L' }, 1.15),
+    row('barrel-ar-long', 'barrel', { section: 'ar', length: 'L', actionFrame: 'small' }, 1.15),
+    item('barrel_ar_large_long', 'barrel', ['section', 'length', 'actionFrame'], {
+      section: 'ar', length: 'L', profile: 'standard', muzzle: 'threaded', frontSightStyle: 'ar', handguardLength: 'L',
+      handguardLayout: 'standard', bore: 'M', actionFrame: 'large', tubeLengthPercent: '75',
+    }, 1.45, 'ar'),
     row('barrel-pump-short', 'barrel', { section: 'pump', length: 'S' }, 0.7),
     item('barrel_pump_medium', 'barrel', ['section', 'length'], {
       section: 'pump', length: 'M', profile: 'standard', muzzle: 'threaded', frontSightStyle: 'ar', handguardLength: 'M',
@@ -156,7 +160,13 @@ local item(id, family, selector, params, massKg, profile) =
       actionFrame: 'large', boltCalibre: '308-winchester', section: 'ar', length: 'M', bore: 'M',
       boltHandleProfile: 'standard',
     }, 0.4, 'ar'),
-    row('handguard-ar-free-float', 'handguard', { layout: 'ar', mount: 'free-float' }, 0.46),
+    row('handguard-ar-free-float', 'handguard', { layout: 'ar', mount: 'free-float', actionFrame: 'small' }, 0.46),
+    // The large frame's free-float rail is traced to its own length and top rail, so it is its own shape.
+    item('handguard_ar_large_free_float', 'handguard', ['layout', 'mount', 'actionFrame'], {
+      layout: 'ar', mount: 'free-float', clearance: 'M', handleStyle: 'none', fit: 'receiver', barrelBore: 'M',
+      actionFrame: 'large', boltCalibre: '308-winchester', section: 'ar', length: 'L', bore: 'none',
+      boltHandleProfile: 'standard',
+    }, 0.62, 'ar'),
     item('handguard_sporter', 'handguard', ['layout', 'section'], {
       layout: 'standard', section: 'sporter', clearance: 'M', handleStyle: 'none', fit: 'receiver', mount: 'clamped',
       barrelBore: 'M', actionFrame: 'small', boltHandleProfile: 'sporter', boltCalibre: '308-winchester', length: 'L',
@@ -169,7 +179,9 @@ local item(id, family, selector, params, massKg, profile) =
     item('gas_cylinder_ak', 'gas-cylinder', [], { barrelLength: 'M' }, 0.18, 'ak'),
     item('gas_block_ak', 'gas-block', [], { barrelLength: 'M', bore: 'S' }, 0.07, 'ak'),
     // A grip is built to its lower's section and finished to its gun, so the AR and AK grips are separate items.
-    item('grip_standard', 'grip', ['section'], { length: 'M', well: 'none', section: 'ar' }, 0.1, 'ar'),
+    item('grip_standard', 'grip', ['section', 'length'], { length: 'M', well: 'none', section: 'ar' }, 0.1, 'ar'),
+    item('grip_ar_long', 'grip', ['section', 'length'], { length: 'L', well: 'none', section: 'ar' }, 0.12, 'ar'),
+    row('grip-ar-short', 'grip', { section: 'ar', length: 'S' }, 0.09),
     item('grip_ak', 'grip', ['section'], { length: 'M', well: 'none', section: 'ak' }, 0.1, 'ak'),
     row('grip-standard', 'grip', { section: 'standard' }, 0.1),
     row('grip-pump', 'grip', { section: 'pump' }, 0.1),
@@ -182,7 +194,7 @@ local item(id, family, selector, params, massKg, profile) =
     }, 0.4, 'ak'),
     row('stock-m4-short', 'stock', { style: 'm4', length: 'S' }, 0.3),
     item('stock_m4_medium', 'stock', ['style', 'length'], { style: 'm4', length: 'M', combDegrees: '2', section: 'ar' }, 0.35, 'ar'),
-    row('stock-m4-long', 'stock', { style: 'm4', length: 'L' }, 0.4),
+    item('stock_m4_long', 'stock', ['style', 'length'], { style: 'm4', length: 'L', combDegrees: '2', section: 'ar' }, 0.4, 'ar'),
     row('stock-sporting-short', 'stock', { style: 'sporting', length: 'S' }, 0.35),
     item('stock_sporting_medium', 'stock', ['style', 'length'], {
       style: 'sporting', length: 'M', combDegrees: '2', section: 'sporter',

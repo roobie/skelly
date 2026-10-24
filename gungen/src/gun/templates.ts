@@ -118,9 +118,9 @@ export const ar: Template = {
         length: { fromSlot: 'barrel', param: 'length' },
       },
     },
-    { id: 'grip', family: 'grip', params: { length: ['S', 'M'] } },
+    { id: 'grip', family: 'grip', params: { length: ['S', 'M', 'L'] } },
     { id: 'magazine', family: 'magazine', params: { length: 'M', profile: [...AR_MAGAZINE_PROFILES] } },
-    { id: 'stock', family: 'stock', params: { length: 'M', style: 'm4' } },
+    { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: 'm4' } },
     {
       id: 'front-sight',
       family: 'front-sight',

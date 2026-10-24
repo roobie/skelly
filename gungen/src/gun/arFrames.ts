@@ -31,6 +31,7 @@ import { GUN_UNITS } from './units.ts';
 const mmPerUnit = GUN_UNITS.metresPerUnit * 1000;
 
 const Positive = pipe(number(), finite(), minValue(Number.MIN_VALUE));
+const Finite = pipe(number(), finite());
 const Text = pipe(string(), nonEmpty());
 const SNAPS = ['none', 'grid', 'half-grid'] as const;
 type Snap = (typeof SNAPS)[number];
@@ -49,9 +50,26 @@ const FrameSchema = strictObject({
   rank: pipe(number(), integer(), minValue(0)),
   // Checked by the cartridge parser below, which owns the cartridge format.
   cartridge: unknown(),
-  receiver: strictObject({ photo: Text, scale: Text, lengthUnits: Positive, heightUnits: Positive }),
+  receiver: strictObject({
+    photo: Text,
+    scale: Text,
+    lengthUnits: Positive,
+    heightUnits: Positive,
+    belowBoreUnits: Positive,
+  }),
   cyclicRpm: Positive,
   magazineProfile: Text,
+  lower: optional(
+    strictObject({
+      rearX: Finite,
+      wellCenterX: Finite,
+      gripX: Finite,
+      fingerBottomU: Finite,
+      housingFrontBottomU: Finite,
+      housingRearBottomU: Finite,
+    }),
+  ),
+  freeFloatHandguard: optional(strictObject({ lengthU: Positive, topU: Positive })),
 });
 type FrameSource = InferOutput<typeof FrameSchema>;
 
@@ -145,7 +163,11 @@ const derivedMeasure = (cartridge: FrameCartridge, derivation: FrameDerivation):
   };
 };
 
-const receiverEstimate = (source: FrameSource, measure: 'length' | 'height', units: number): FrameMeasure => ({
+const receiverEstimate = (
+  source: FrameSource,
+  measure: 'length' | 'height' | 'depth below the bore',
+  units: number,
+): FrameMeasure => ({
   value: units * mmPerUnit,
   evidence: {
     kind: 'estimate',
@@ -167,6 +189,7 @@ const arFrame = (source: FrameSource, cartridge: FrameCartridge, derivations: De
       carrierTravelMm: derived('carrierTravel'),
       receiverLengthMm: receiverEstimate(source, 'length', source.receiver.lengthUnits),
       receiverHeightMm: receiverEstimate(source, 'height', source.receiver.heightUnits),
+      receiverBelowBoreMm: receiverEstimate(source, 'depth below the bore', source.receiver.belowBoreUnits),
       ejectionPortLengthMm: derived('ejectionPortLength'),
       ejectionPortHeightMm: derived('ejectionPortHeight'),
       magwellOpeningLengthMm: derived('magwellOpeningLength'),
@@ -183,7 +206,16 @@ export interface AuthoredARFrame {
   readonly cartridge: CartridgeFrameMeasures;
   readonly cyclicRpm: number;
   readonly magazineProfile: string;
+  readonly lower: ARLowerProportions | undefined;
+  readonly freeFloatHandguard: FrameSource['freeFloatHandguard'];
 }
+
+/**
+ * A frame's lower traced from its reference photo, in u from the receiver's front face (x) and the bore (y):
+ * the buffer tower's rear, the magazine well's centre, the grip's mount, the trigger finger's bottom, and the
+ * magazine housing's bottom at its front and rear. A frame without one keeps the family's.
+ */
+export type ARLowerProportions = NonNullable<FrameSource['lower']>;
 
 /** Checks the authored frame content; a malformed frame is a build error naming the frame and field. */
 export const loadArFrames = (raw: unknown): readonly AuthoredARFrame[] => {
@@ -201,6 +233,8 @@ export const loadArFrames = (raw: unknown): readonly AuthoredARFrame[] => {
       cartridge: cartridge.measures,
       cyclicRpm: source.cyclicRpm,
       magazineProfile: source.magazineProfile,
+      lower: source.lower,
+      freeFloatHandguard: source.freeFloatHandguard,
     };
   });
   const issues = validateActionFrames(authored.map(({ frame }) => frame));
@@ -251,6 +285,18 @@ const magazineProfileOf = (frameId: string): string =>
 export const AR_MAGAZINE_PROFILE_BY_CALIBRE: Readonly<Record<string, string>> = Object.fromEntries(
   AR_FRAMES_BY_CALIBRE.map(({ cartridge, frame }) => [cartridge.id, magazineProfileOf(frame.id)]),
 );
+
+/** Each frame's traced lower, where its content has one. */
+export const AR_LOWER_PROPORTIONS: Readonly<Record<string, ARLowerProportions | undefined>> = Object.fromEntries(
+  authored.map(({ frame, lower }) => [frame.id, lower]),
+);
+
+/**
+ * Each frame's traced free-float rail, where its content has one: its length from the receiver's front face and
+ * its top rail's height above the bore. A frame without one keeps the family's reach and the tube's own height.
+ */
+export const AR_FREE_FLOAT_HANDGUARDS: Readonly<Record<string, AuthoredARFrame['freeFloatHandguard']>> =
+  Object.fromEntries(authored.map(({ frame, freeFloatHandguard }) => [frame.id, freeFloatHandguard]));
 
 /** Every magazine profile an AR frame takes. */
 export const AR_MAGAZINE_PROFILES: readonly string[] = [

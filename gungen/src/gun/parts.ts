@@ -37,6 +37,7 @@ import { akButtstockSolids, akStockTop } from './akButtstock.ts';
 import { AK_PROPORTIONS, akGasPortX } from './akProportions.ts';
 import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';
 import { arChargingHandle, arChargingHandleSolidsFor, arHandleChannel } from './arChargingHandle.ts';
+import { AR_FREE_FLOAT_HANDGUARDS, AR_LOWER_PROPORTIONS } from './arFrames.ts';
 import { AR_ACTION_LAYOUT, AR_ACTION_LAYOUTS, type ARActionLayout, arLayoutFor } from './arLayout.ts';
 import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';
 import {
@@ -803,31 +804,30 @@ export interface ARReceiverSectionData {
   };
 }
 
-// One cross-section for every AR frame; only the height and length follow the frame's measures.
+// One cross-section for every AR frame; its length, height and the bore's place in it follow the frame.
 export const arReceiverSection = (layout: ARActionLayout): ARReceiverSectionData => {
-  const halfHeight = layout.receiverHeightU / 2;
+  const bottom = -layout.receiverBelowBoreU;
+  const top = layout.receiverHeightU + bottom;
+  const wellCenterX = AR_LOWER_PROPORTIONS[layout.frameId]?.wellCenterX ?? MAGAZINE_WELL_CENTER_X;
   return {
-    magazineWellX: [
-      MAGAZINE_WELL_CENTER_X - layout.magwellOpeningLengthU / 2,
-      MAGAZINE_WELL_CENTER_X + layout.magwellOpeningLengthU / 2,
-    ],
+    magazineWellX: [wellCenterX - layout.magwellOpeningLengthU / 2, wellCenterX + layout.magwellOpeningLengthU / 2],
     outline: [
-      [-halfHeight, -1.75],
-      [-(halfHeight - 0.25), -2],
-      [halfHeight - 1, -2],
-      [halfHeight, -1.75],
-      [halfHeight, 1.75],
-      [halfHeight - 1, 2],
-      [-(halfHeight - 0.25), 2],
-      [-halfHeight, 1.75],
+      [bottom, -1.75],
+      [bottom + 0.25, -2],
+      [top - 1, -2],
+      [top, -1.75],
+      [top, 1.75],
+      [top - 1, 2],
+      [bottom + 0.25, 2],
+      [bottom, 1.75],
     ],
     faces: {
-      top: { y: halfHeight, halfWidth: 1.75 },
+      top: { y: top, halfWidth: 1.75 },
       portSide: 2,
       handleSides: [-2, 2],
       front: 0,
       rear: -layout.receiverLengthU,
-      bottom: -halfHeight,
+      bottom,
     },
   };
 };
@@ -2604,7 +2604,7 @@ const lower: PartFamily = {
           carrierEnvelope('ar', params.actionFrame).y[0] - BOLT_CARRIER_RUNNING_CLEARANCE_U,
           -arLayout!.barrelExtensionDiameterU / 2 - BOLT_CARRIER_RUNNING_CLEARANCE_U,
         );
-        const targetPortY = arLayout!.receiverHeightU / 2 + feedLipY - MAGAZINE_INSERTION;
+        const targetPortY = arLayout!.receiverBelowBoreU + feedLipY - MAGAZINE_INSERTION;
         // A STANAG's shaped top clears the feed lip at the nearest grid step; a photo-measured box has a square top,
         // so its seat rounds down to stay under the barrel extension.
         const snap = magazineProfileContent(magazineProfile) === undefined ? Math.round : Math.floor;
@@ -2721,11 +2721,14 @@ const lower: PartFamily = {
         frontPanelThickness,
         halfWidth = LOWER_HALF_WIDTH,
         opening = { depth: MAGAZINE_WELL_DEPTH, width: MAGAZINE_WELL_WIDTH },
+        skirt = { front: MAGAZINE_HOUSING_FRONT_LENGTH, rear: MAGAZINE_HOUSING_REAR_LENGTH },
       }: {
         frontPanelThickness: number;
         halfWidth?: number;
         /** The well the housing hangs from, so a frame's larger opening carries down into its skirt. */
         opening?: { readonly depth: number; readonly width: number };
+        /** How far the skirt hangs below the well at its front and rear. */
+        skirt?: { readonly front: number; readonly rear: number };
       },
     ): Solid[] => {
       const halfDepth = opening.depth / 2;
@@ -2742,8 +2745,8 @@ const lower: PartFamily = {
         wall(
           'rear',
           [
-            [-halfDepth - MAGAZINE_HOUSING_REAR_WALL, -MAGAZINE_HOUSING_REAR_LENGTH],
-            [-halfDepth, -MAGAZINE_HOUSING_REAR_LENGTH],
+            [-halfDepth - MAGAZINE_HOUSING_REAR_WALL, -skirt.rear],
+            [-halfDepth, -skirt.rear],
             [-halfDepth, 0],
             [-halfDepth - MAGAZINE_HOUSING_REAR_WALL, 0],
           ],
@@ -2752,8 +2755,8 @@ const lower: PartFamily = {
         wall(
           'front',
           [
-            [halfDepth, -MAGAZINE_HOUSING_FRONT_LENGTH],
-            [halfDepth + frontPanelThickness, -MAGAZINE_HOUSING_FRONT_LENGTH],
+            [halfDepth, -skirt.front],
+            [halfDepth + frontPanelThickness, -skirt.front],
             [halfDepth + frontPanelThickness, 0],
             [halfDepth, 0],
           ],
@@ -2762,8 +2765,8 @@ const lower: PartFamily = {
         wall(
           'left',
           [
-            [-halfDepth, -MAGAZINE_HOUSING_REAR_LENGTH],
-            [halfDepth, -MAGAZINE_HOUSING_FRONT_LENGTH],
+            [-halfDepth, -skirt.rear],
+            [halfDepth, -skirt.front],
             [halfDepth, 0],
             [-halfDepth, 0],
           ],
@@ -2772,8 +2775,8 @@ const lower: PartFamily = {
         wall(
           'right',
           [
-            [-halfDepth, -MAGAZINE_HOUSING_REAR_LENGTH],
-            [halfDepth, -MAGAZINE_HOUSING_FRONT_LENGTH],
+            [-halfDepth, -skirt.rear],
+            [halfDepth, -skirt.front],
             [halfDepth, 0],
             [-halfDepth, 0],
           ],
@@ -2809,22 +2812,30 @@ const lower: PartFamily = {
         // The well keeps the family's centre, where the receiver opens for it, unless a deeper frame opening would
         // cross the receiver's front face. A deeper well whose housing would then reach the trigger guard moves the
         // trigger and grip back instead, so the guard meets the housing's rear wall as it does on the rifle.
-        const arWellCenterX = Math.min(conventionalWell.port.pos[0], -GRID - wellDepth / 2);
+        // A frame with a traced lower takes its well, grip, trigger depth, skirt and rear from the photo; the
+        // lower's y is measured from the receiver's bottom face, the photo's from the bore.
+        const traced = AR_LOWER_PROPORTIONS[arLayout!.frameId];
+        const fromBore = (y: number) => y + arLayout!.receiverBelowBoreU;
+        const arWellCenterX = Math.min(traced?.wellCenterX ?? conventionalWell.port.pos[0], -GRID - wellDepth / 2);
         const housingRearX = arWellCenterX - wellDepth / 2 - MAGAZINE_HOUSING_REAR_WALL;
         const guardFrontX =
           triggerGuards.length > 0
             ? Math.max(...triggerGuards.flatMap((guard) => localSolidBounds(guard)[1][0]))
             : housingRearX;
         const gripShift = Math.min(0, housingRearX - guardFrontX);
-        const arTriggerFinger = trigger(triggerX + gripShift);
+        const arTriggerX = triggerX + gripShift;
+        const arTriggerFinger =
+          traced === undefined
+            ? trigger(arTriggerX)
+            : keepOut('trigger-finger', [arTriggerX, fromBore(traced.fingerBottomU), -1], [arTriggerX + 2, -1.75, 1]);
+        const arGripX = traced?.gripX ?? LOWER_GRIP_X.ar + gripShift;
         const arTriggerGuards =
           triggerGuards.length > 0
-            ? triggerGuardSolids(arTriggerFinger, lowerGripContactX(layout) + gripShift, LOWER_TRIGGER_GUARD)
+            ? triggerGuardSolids(arTriggerFinger, lowerGripContactX(layout, arGripX), LOWER_TRIGGER_GUARD)
             : [];
-        const arGripX = LOWER_GRIP_X.ar + gripShift;
         const arWell = well(arWellCenterX);
         const frame = magazineWellFrame(
-          Math.min(-14.75, lowerGripRearX(arGripX)),
+          Math.min(traced?.rearX ?? -14.75, lowerGripRearX(arGripX)),
           arWellCenterX + wellDepth / 2 + MAGAZINE_WELL_CLEARANCE,
           arWellCenterX,
         );
@@ -2843,6 +2854,15 @@ const lower: PartFamily = {
               frontPanelThickness,
               halfWidth: wellOuterZ,
               opening: { depth: wellDepth, width: wellWidth },
+              ...(traced === undefined
+                ? {}
+                : {
+                    // The skirt hangs from the well's floor, 1.5u below the lower's top.
+                    skirt: {
+                      front: -1.5 - fromBore(traced.housingFrontBottomU),
+                      rear: -1.5 - fromBore(traced.housingRearBottomU),
+                    },
+                  }),
             }),
             ...arTriggerGuards,
           ],
@@ -3757,8 +3777,15 @@ const handguard: PartFamily = {
   },
   build(params): PartDef {
     const lengthClass = cls(params, 'length');
+    // A frame's traced free-float rail sets its own length and the height of its top rail.
+    const tracedRail =
+      params.section === 'ar' && params.mount === 'free-float'
+        ? AR_FREE_FLOAT_HANDGUARDS[arLayoutFor(params.actionFrame).frameId]
+        : undefined;
     let len: number;
-    if (params.layout === 'ak') {
+    if (tracedRail !== undefined) {
+      len = tracedRail.lengthU;
+    } else if (params.layout === 'ak') {
       len = akHandguardLength(lengthClass);
     } else if (params.layout === 'ar' && params.mount !== 'free-float') {
       len = arHandguardLength(lengthClass);
@@ -3793,6 +3820,7 @@ const handguard: PartFamily = {
     } else {
       outerY = Math.min(ceiling, inner + HANDGUARD_WALL_THICKNESS);
     }
+    const topY = tracedRail?.topU ?? outerY;
     const outerZ =
       params.fit === 'oversized'
         ? RECEIVER_FRONT_HALF_WIDTH + 1
@@ -3840,7 +3868,7 @@ const handguard: PartFamily = {
       bodySolids = akHandguardSolids(len);
     } else {
       bodySolids = [
-        solid('top', [0, inner, -outerZ], [len, outerY, outerZ]),
+        solid('top', [0, inner, -outerZ], [len, topY, outerZ]),
         solid('bottom', [0, -outerY, -outerZ], [len, -inner, outerZ]),
         solid('left', [0, -inner, -outerZ], [len, inner, -inner]),
         solid('right', [0, -inner, inner], [len, inner, outerZ]),
@@ -3869,7 +3897,7 @@ const handguard: PartFamily = {
                 id: 'rail',
                 mount: 'rail-top',
                 gender: 'female' as const,
-                pos: [2, outerY, 0] as Vec3,
+                pos: [2, topY, 0] as Vec3,
                 normal: Y,
                 up: X,
                 slots: { count: (len - 4) / 2 + 1, pitch: 2 },

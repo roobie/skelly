@@ -397,6 +397,7 @@
       "magazineProfile": "stanag-straight",
       "rank": 0,
       "receiver": {
+        "belowBoreUnits": 2.5,
         "heightUnits": 5,
         "lengthUnits": 16,
         "photo": "https://commons.wikimedia.org/wiki/File:PEO_M4_Carbine_RAS_M68_CCO.png",
@@ -645,14 +646,27 @@
         }
       },
       "cyclicRpm": 700,
+      "freeFloatHandguard": {
+        "lengthU": 34,
+        "topU": 2.75
+      },
       "id": "large",
+      "lower": {
+        "fingerBottomU": -7.5,
+        "gripX": -15.5,
+        "housingFrontBottomU": -6.5,
+        "housingRearBottomU": -7.75,
+        "rearX": -22,
+        "wellCenterX": -5
+      },
       "magazineProfile": "sr25-straight",
       "rank": 1,
       "receiver": {
-        "heightUnits": 5,
-        "lengthUnits": 21.25,
-        "photo": "https://www.snipershide.com/shooting/attachments/img_7687-jpeg.8878983/",
-        "scale": "the \"Length: 44 inches\" printed beside the rifle on the same page"
+        "belowBoreUnits": 2,
+        "heightUnits": 4.75,
+        "lengthUnits": 20.25,
+        "photo": "https://viranomainen.fi/tiedostot/1/kuva/tuote/1200/12757212.jpg",
+        "scale": "the 43.5 in extended overall length listed for the SR-25 E2 20 in, https://operationparts.com/?p=175806"
       }
     }
   ]

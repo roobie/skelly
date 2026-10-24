@@ -9,6 +9,7 @@ export interface ARActionLayout {
   readonly frameId: string;
   readonly receiverLengthU: number;
   readonly receiverHeightU: number;
+  readonly receiverBelowBoreU: number;
   readonly barrelExtensionLengthU: number;
   readonly barrelExtensionDiameterU: number;
   readonly carrierFaceLengthU: number;
@@ -23,6 +24,7 @@ const layoutForFrame = ({ id, dimensions }: (typeof AR_ACTION_FRAMES)[number]): 
   frameId: id,
   receiverLengthU: units(dimensions.receiverLengthMm.value),
   receiverHeightU: units(dimensions.receiverHeightMm.value),
+  receiverBelowBoreU: units(dimensions.receiverBelowBoreMm.value),
   barrelExtensionLengthU: units(dimensions.barrelExtensionLengthMm.value),
   barrelExtensionDiameterU: units(dimensions.barrelExtensionDiameterMm.value),
   carrierFaceLengthU: units(dimensions.carrierLengthMm.value),

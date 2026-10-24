@@ -695,8 +695,36 @@
       "id": "barrel-ar-long",
       "massKg": 1.1499999999999999,
       "match": {
+        "actionFrame": "small",
         "length": "L",
         "section": "ar"
+      }
+    },
+    {
+      "family": "barrel",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "polymer-black",
+        "metal": "alu-anodized-black"
+      },
+      "id": "barrel_ar_large_long",
+      "massKg": 1.45,
+      "match": {
+        "actionFrame": "large",
+        "length": "L",
+        "section": "ar"
+      },
+      "params": {
+        "actionFrame": "large",
+        "bore": "M",
+        "frontSightStyle": "ar",
+        "handguardLayout": "standard",
+        "handguardLength": "L",
+        "length": "L",
+        "muzzle": "threaded",
+        "profile": "standard",
+        "section": "ar",
+        "tubeLengthPercent": "75"
       }
     },
     {
@@ -1032,8 +1060,38 @@
       "id": "handguard-ar-free-float",
       "massKg": 0.46000000000000002,
       "match": {
+        "actionFrame": "small",
         "layout": "ar",
         "mount": "free-float"
+      }
+    },
+    {
+      "family": "handguard",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "polymer-black",
+        "metal": "alu-anodized-black"
+      },
+      "id": "handguard_ar_large_free_float",
+      "massKg": 0.62,
+      "match": {
+        "actionFrame": "large",
+        "layout": "ar",
+        "mount": "free-float"
+      },
+      "params": {
+        "actionFrame": "large",
+        "barrelBore": "M",
+        "boltCalibre": "308-winchester",
+        "boltHandleProfile": "standard",
+        "bore": "none",
+        "clearance": "M",
+        "fit": "receiver",
+        "handleStyle": "none",
+        "layout": "ar",
+        "length": "L",
+        "mount": "free-float",
+        "section": "ar"
       }
     },
     {
@@ -1142,12 +1200,41 @@
       "id": "grip_standard",
       "massKg": 0.10000000000000001,
       "match": {
+        "length": "M",
         "section": "ar"
       },
       "params": {
         "length": "M",
         "section": "ar",
         "well": "none"
+      }
+    },
+    {
+      "family": "grip",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "polymer-black",
+        "metal": "alu-anodized-black"
+      },
+      "id": "grip_ar_long",
+      "massKg": 0.12,
+      "match": {
+        "length": "L",
+        "section": "ar"
+      },
+      "params": {
+        "length": "L",
+        "section": "ar",
+        "well": "none"
+      }
+    },
+    {
+      "family": "grip",
+      "id": "grip-ar-short",
+      "massKg": 0.089999999999999997,
+      "match": {
+        "length": "S",
+        "section": "ar"
       }
     },
     {
@@ -1269,10 +1356,21 @@
     },
     {
       "family": "stock",
-      "id": "stock-m4-long",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "polymer-black",
+        "metal": "alu-anodized-black"
+      },
+      "id": "stock_m4_long",
       "massKg": 0.40000000000000002,
       "match": {
         "length": "L",
+        "style": "m4"
+      },
+      "params": {
+        "combDegrees": "2",
+        "length": "L",
+        "section": "ar",
         "style": "m4"
       }
     },

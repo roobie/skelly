@@ -7,7 +7,7 @@
       "item": "bolt_carrier_ar_large",
       "node": "bolt_carrier_ar_large:bolt-carrier",
       "massKg": 0.45,
-      "centreOfMass": [0.013452380952380952, 0.0029047619047619048, 0]
+      "centreOfMass": [0.010606060606060605, 0.0029575757575757574, 0]
     }
   }
 }

@@ -1,11 +1,11 @@
 {
   "profiles": {
     "sr25-straight": {
-      "bodyLengthU": 11.25,
+      "bodyLengthU": 12.5,
       "capacity": 20,
       "depthU": 7,
-      "photo": "https://www.snipershide.com/shooting/attachments/img_7687-jpeg.8878983/",
-      "scale": "the \"Length: 44 inches\" printed beside the rifle on the same page",
+      "photo": "https://viranomainen.fi/tiedostot/1/kuva/tuote/1200/12757212.jpg",
+      "scale": "the 43.5 in extended overall length listed for the SR-25 E2 20 in, https://operationparts.com/?p=175806",
       "widthU": 2.5
     }
   }

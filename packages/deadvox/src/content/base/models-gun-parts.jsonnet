@@ -1,6 +1,7 @@
 {
   models: [
     import 'gungen/barrel_ak_medium.model.json',
+    import 'gungen/barrel_ar_large_long.model.json',
     import 'gungen/barrel_ar_large_medium.model.json',
     import 'gungen/barrel_ar_medium.model.json',
     import 'gungen/barrel_pump_medium.model.json',
@@ -22,10 +23,12 @@
     import 'gungen/gas_block_ak.model.json',
     import 'gungen/gas_cylinder_ak.model.json',
     import 'gungen/grip_ak.model.json',
+    import 'gungen/grip_ar_long.model.json',
     import 'gungen/grip_standard.model.json',
     import 'gungen/handguard_ak.model.json',
     import 'gungen/handguard_ar_clamped.model.json',
     import 'gungen/handguard_ar_large_clamped.model.json',
+    import 'gungen/handguard_ar_large_free_float.model.json',
     import 'gungen/handguard_sporter.model.json',
     import 'gungen/integral_magazine.model.json',
     import 'gungen/lower_ak.model.json',
@@ -49,6 +52,7 @@
     import 'gungen/revolver_hammer.model.json',
     import 'gungen/revolver_trigger.model.json',
     import 'gungen/stock_ak_long.model.json',
+    import 'gungen/stock_m4_long.model.json',
     import 'gungen/stock_m4_medium.model.json',
     import 'gungen/stock_sporting_medium.model.json',
     import 'gungen/stock_tapered_medium.model.json',

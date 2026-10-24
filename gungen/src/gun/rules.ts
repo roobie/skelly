@@ -308,7 +308,11 @@ const freeFloatFitIssue = (
       handguardSolids.map((handguardSolid) => distanceWorld(barrelSolid, handguardSolid)),
     ),
   );
-  const sightViolation = handguardLength >= distanceToPort('front-sight') - 1e-6;
+  // A rail can only reach a front sight that is fitted; an empty sight station is covered like the gas block.
+  const sightFitted = r.connections.some(({ from, to }) =>
+    [from, to].some((end) => end.part === barrelPart && end.port.id === 'front-sight'),
+  );
+  const sightViolation = sightFitted && handguardLength >= distanceToPort('front-sight') - 1e-6;
   const muzzleViolation = handguardLength >= distanceToPort('muzzle') - 1e-6;
   if (actualClearance >= requiredClearance - 1e-6 && !sightViolation && !muzzleViolation) {
     return undefined;

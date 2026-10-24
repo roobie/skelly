@@ -22,10 +22,6 @@
         "to": "handguard.rear"
       },
       {
-        "from": "handguard.front",
-        "to": "barrel.clamp"
-      },
-      {
         "from": "lower.grip",
         "to": "grip.top"
       },
@@ -38,20 +34,16 @@
         "to": "stock.front"
       },
       {
-        "from": "receiver.rail",
-        "slot": 3,
-        "to": "sight.base"
-      },
-      {
-        "from": "barrel.front-sight",
-        "to": "front-sight.base"
+        "from": "handguard.rail",
+        "slot": 15,
+        "to": "rail-front-sight.base"
       }
     ],
-    "description": "AR-10 class rifle in 7.62×51 on the large AR frame, with an A2 front-sight block at the gas station.",
+    "description": "AR-10 class rifle in 7.62×51 on the large AR frame, with a free-floating rail and a front sight on it.",
     "name": "archetype-ar-large",
     "parts": {
       "barrel": {
-        "item": "barrel_ar_large_medium"
+        "item": "barrel_ar_large_long"
       },
       "bolt-carrier": {
         "item": "bolt_carrier_ar_large"
@@ -59,14 +51,11 @@
       "charging-handle": {
         "item": "charging_handle_ar_large"
       },
-      "front-sight": {
-        "item": "front_sight_ar"
-      },
       "grip": {
-        "item": "grip_standard"
+        "item": "grip_ar_long"
       },
       "handguard": {
-        "item": "handguard_ar_large_clamped"
+        "item": "handguard_ar_large_free_float"
       },
       "lower": {
         "item": "lower_ar_large"
@@ -78,17 +67,14 @@
           "profile": "sr25-straight"
         }
       },
+      "rail-front-sight": {
+        "family": "rail-front-sight"
+      },
       "receiver": {
         "item": "receiver_ar_large"
       },
-      "sight": {
-        "family": "sight",
-        "params": {
-          "type": "lpvo-1-6x"
-        }
-      },
       "stock": {
-        "item": "stock_m4_medium"
+        "item": "stock_m4_long"
       }
     },
     "root": "receiver"

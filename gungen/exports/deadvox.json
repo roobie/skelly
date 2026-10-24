@@ -528,6 +528,15 @@
     }
   },
   {
+    "id": "barrel_ar_large_long",
+    "kind": "part",
+    "source": "barrel_ar_large_long",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "barrel_pump_medium",
     "kind": "part",
     "source": "barrel_pump_medium",
@@ -573,6 +582,15 @@
     }
   },
   {
+    "id": "handguard_ar_large_free_float",
+    "kind": "part",
+    "source": "handguard_ar_large_free_float",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "handguard_sporter",
     "kind": "part",
     "source": "handguard_sporter",
@@ -609,6 +627,15 @@
     }
   },
   {
+    "id": "grip_ar_long",
+    "kind": "part",
+    "source": "grip_ar_long",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "grip_ak",
     "kind": "part",
     "source": "grip_ak",
@@ -630,6 +657,15 @@
     "id": "stock_m4_medium",
     "kind": "part",
     "source": "stock_m4_medium",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "stock_m4_long",
+    "kind": "part",
+    "source": "stock_m4_long",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.0040000000000000001

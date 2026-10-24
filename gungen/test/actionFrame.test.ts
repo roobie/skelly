@@ -45,6 +45,7 @@ const frame = (
     carrierTravelMm: estimate(1),
     receiverLengthMm: estimate(1),
     receiverHeightMm: estimate(1),
+    receiverBelowBoreMm: estimate(1),
     ejectionPortLengthMm: estimate(1),
     ejectionPortHeightMm: estimate(1),
     magwellOpeningLengthMm: estimate(1),

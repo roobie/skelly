@@ -24,6 +24,8 @@ interface ActionFrameDimensions {
   readonly carrierTravelMm: FrameMeasure;
   readonly receiverLengthMm: FrameMeasure;
   readonly receiverHeightMm: FrameMeasure;
+  /** How far the receiver's bottom face sits below the bore; the rest of its height is above. */
+  readonly receiverBelowBoreMm: FrameMeasure;
   readonly ejectionPortLengthMm: FrameMeasure;
   readonly ejectionPortHeightMm: FrameMeasure;
   readonly magwellOpeningLengthMm: FrameMeasure;
