@@ -1637,6 +1637,82 @@ try {
     assert.equal(loaded.fittedUid, loaded.expected, 'the dragged battery is in the light');
     assert.deepEqual(errors.slice(pageErrorsBeforeLoad), [], 'loading does not raise a page error');
     logPhase('battery slot drag');
+
+    const pourStart = await page.evaluate(() => {
+      const { session, screen, dispatches } = globalThis.foregripFitTest;
+      const inv = session.inventory;
+      for (const held of Object.values(inv.hands)) {
+        if (held && !inv.move(held, { kind: 'pile', pos: screen.hooks.feet() }).ok) {
+          throw new Error('Cannot set down held fixture item');
+        }
+      }
+      const lampDef = inv.registry.items.get('oil_lamp');
+      inv.registry.items.set('card_empty_lamp', {
+        ...lampDef,
+        id: 'card_empty_lamp',
+        vessel: { ...lampDef.vessel, initialContents: { kind: 'empty' } },
+      });
+      const lamp = inv.create('card_empty_lamp');
+      const bottle = inv.create('lamp_oil');
+      const pos = screen.hooks.feet();
+      if (!(inv.add(lamp, { kind: 'pile', pos }) && inv.add(bottle, { kind: 'hand', side: 'left' }))) {
+        throw new Error('Cannot admit pour fixture');
+      }
+      screen.selected = lamp;
+      screen.update();
+      return {
+        lamp: lamp.uid,
+        bottle: bottle.uid,
+        contents: bottle.liquidContents.volumeMicrolitres,
+        dispatches: dispatches.length,
+      };
+    });
+    const reservoir = page.locator(`#inventory .inv-details [data-target="reservoir:${pourStart.lamp}"]`);
+    await reservoir.scrollIntoViewIfNeeded();
+    const emptyReadout = await reservoir.textContent();
+    await page.locator(`#inventory [data-uid="${pourStart.bottle}"]`).scrollIntoViewIfNeeded();
+    await moveMenuCursorTo(`#inventory [data-uid="${pourStart.bottle}"]`);
+    await page.mouse.down();
+    await moveMenuCursorTo(reservoir);
+    assert.equal(
+      await reservoir.getAttribute('data-drop-shape'),
+      'will-land',
+      'the fixed lamp reservoir accepts the held bottle',
+    );
+    await page.mouse.up();
+    const poured = await page.evaluate(({ lamp, bottle, dispatches: pourDispatchCount }) => {
+      const { session, screen, dispatches } = globalThis.foregripFitTest;
+      session.frame(0.1);
+      for (let steps = 0; session.queue.busy && steps < 1000; steps++) {
+        session.frame(0.1);
+      }
+      const inv = session.inventory;
+      screen.update();
+      const volume = (uid) => {
+        const contents = inv.itemByUid(uid).liquidContents;
+        return contents.kind === 'empty' ? 0 : contents.volumeMicrolitres;
+      };
+      return {
+        jobs: session.queue.jobs.length,
+        actions: dispatches.slice(pourDispatchCount).filter(({ kind }) => kind === 'liquid.pour'),
+        lampVolume: volume(lamp),
+        bottleVolume: volume(bottle),
+        lampOwner: inv.locate(inv.itemByUid(lamp)).kind,
+        bottleOwner: inv.locate(inv.itemByUid(bottle)).kind,
+        fitted: Object.values(inv.itemByUid(lamp).slots ?? {}).some((item) => item?.uid === bottle),
+      };
+    }, pourStart);
+    assert.equal(poured.jobs, 0, 'progressive pour finishes');
+    assert.deepEqual(poured.actions, [
+      { kind: 'liquid.pour', sourceUid: pourStart.bottle, receiverUid: pourStart.lamp },
+    ]);
+    assert.ok(poured.lampVolume > 0, 'the reservoir gains measured fuel');
+    assert.equal(poured.lampVolume + poured.bottleVolume, pourStart.contents, 'the gesture conserves fuel');
+    assert.equal(poured.lampOwner, 'pile');
+    assert.equal(poured.bottleOwner, 'hand');
+    assert.equal(poured.fitted, false, 'the source is not fitted');
+    assert.notEqual(await reservoir.textContent(), emptyReadout, 'the opened card displays its changed balance');
+    logPhase('liquid reservoir drag');
     process.stdout.write(
       `${engine}: live held-AR pocketed-foregrip fit/removal via locked menu click ${JSON.stringify({ fitSettled, removalSettled })}\n`,
     );

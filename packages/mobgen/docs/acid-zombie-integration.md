@@ -4,6 +4,7 @@ read_if:
   - you change the acid body's standing-height fitting or shape measurements
   - you change mobgen's material, budget or carve contracts while the acid zombie lands
   - you add a non-humanoid mob that Deadvox must hit, sever, pose or light
+  - you change acid animation, gaze or the spit mouth anchor
   - you change creature-owned severed-part item policy
   - you build the cross-mob far level of detail for per-bone meshes
 ---
@@ -168,14 +169,21 @@ humanoid lookup would find nothing.
   without any simulation consequence, so presentation reads death and the sac stays out of
   saves and fingerprints. Keeping it a disposition rather than a Deadvox special case lets a
   later tier attach an effect by data.
-- **Poses and gait.** `packages/deadvox/src/core/zombiePose.ts` and the mobgen pose modules address
-  humanoid bones by name. The acid body needs its own idle, walk, attack, hit-reaction and
-  death poses, written against its bones and limits as the dog and crawler did. Its spit
-  wind-up pulls the head back, which is a pose, not a material change.
-- **Gaze.** `src/mob/lookAtProfiles.ts`, `LOOK_AT_PROFILES` gets an acid entry turning
-  `skull`. The mouth that releases a spit should come from the model, replacing the grab
-  height stand-in (`packages/deadvox/src/core/zombies.ts`, `AcidSpitRelease`), because line of sight
-  is checked from the mouth.
+- **Poses and gait.** The hunched rig needs its own motion rather than humanoid bone aliases.
+  Joint-frame clamping keeps layered actions inside the body's articulated limits; the
+  death topple is whole-actor motion at the root, not a hips articulation. Ground fitting
+  uses occupied voxel surfaces so protruding skeletal tips also respect the floor. See
+  `src/mob/acidPoses.ts`, `acidWalkPose` and `acidDeathPose`, and `src/core/joints.ts`,
+  `jointRotation` and `clampJointAngles`. Animation tuning stays with the body content;
+  see `src/mob/acidTemplate.jsonnet`, `animation`.
+- **Gaze and mouth.** Gaze names its head bone rather than requiring a humanoid name, and
+  framed joints clamp the combined action and gaze, not just the gaze correction. See
+  `src/mob/lookAt.ts`, `lookAtPose`, and `src/mob/lookAtProfiles.ts`, `LOOK_AT_PROFILES`.
+  The mouth anchor belongs to the skull's face opening rather than the hanging jaw or its
+  drool, so spit line of sight follows the head through wind-up and gaze. See
+  `src/core/body.ts`, `BodyAnchor`, and `src/mob/acid.ts`, `buildAcid`. Round 4 must replace
+  the grab-height stand-in in `packages/deadvox/src/core/zombies.ts`, `AcidSpitRelease`,
+  with that posed anchor.
 - **Materials and glow.** Deadvox reads colour and glow from the body's material table. That
   keeps the glow a content value instead of a Deadvox list of glowing material names. How
   it renders is in "Glow render path" below. The wind-up brightening is per-actor state
@@ -239,10 +247,9 @@ before it lands.
    default run; see `test/acid.test.ts`, `test/acidMeasurements.test.ts` and
    `test/acidSweeps.test.ts`. Readiness must remain separate from viewer availability; see
    `src/viewer/main.ts` and `test/acidTemplate.test.ts`.
-3. **Acid poses, gait and gaze** (hard coder). Add the idle, walk, attack and wind-up,
-   hit-reaction and death poses, the look-at profile, and the mouth anchor. Done when: the
-   viewer plays each pose within joint limits with feet on the ground, and a gaze test turns
-   the skull.
+3. **Acid poses, gait and gaze.** Keep animation independent of gameplay readiness so the
+   body can be judged in motion before Deadvox consumes it. See `src/mob/acidPoses.ts`,
+   `src/viewer/main.ts`, `applyAcidFrame`, and `test/acidPoses.test.ts`.
 4. **Deadvox consumption and effects** (hard coder). Add plan-owned region bones with the
    sac under torso, disposition-driven severing, the cosmetic death burst, the emissive
    glow with the sac-only wind-up brightening and its borrowed-slot light, the falling drips and the death splash as

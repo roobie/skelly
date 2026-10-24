@@ -244,6 +244,16 @@
               "count": 1,
               "item": "flashlight",
               "placement": "surface"
+            },
+            {
+              "count": 1,
+              "item": "oil_lamp",
+              "placement": "surface"
+            },
+            {
+              "count": 1,
+              "item": "lamp_oil",
+              "placement": "surface"
             }
           ]
         },

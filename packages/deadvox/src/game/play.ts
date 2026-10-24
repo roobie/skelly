@@ -1897,6 +1897,7 @@ export const startPlay = (
   stopReadingOnClose = () => stopReadingPageOnClose(sim);
 
   const replayCommandOwners: ReplayCommandOwners = {
+    pour: (sourceUid, receiverUid) => survival.pour(sourceUid, receiverUid),
     charger: session.chargerControl,
     power: session.powerControl,
     inventory,

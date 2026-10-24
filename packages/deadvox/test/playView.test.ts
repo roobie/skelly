@@ -447,6 +447,21 @@ describe('play presentation ownership', () => {
     }
   });
 
+  it('does not suppress an oil lamp at the source when its holder sees daylight', () => {
+    const f = litWorld('doorway');
+    try {
+      const lamp = f.inventory.create('oil_lamp');
+      expect(f.inventory.add(lamp, { kind: 'hand', side: 'right' })).toBe(true);
+      expect(toggleLight(f.inventory.registry, lamp, 0)).toBeUndefined();
+      f.updateFrame();
+      const [light] = f.view.lightPool.lights.filter((source) => source.intensity > 0);
+      expect(f.sky.at(f.engine.camera.position.toArray() as Vec3)).toBe(1);
+      expect(light!.intensity).toBe(f.inventory.registry.items.get(lamp.type)!.light!.intensity);
+    } finally {
+      f.cleanup();
+    }
+  });
+
   it('suppresses beam strength on a sunlit receiver even with a shaded camera', () => {
     const f = litWorld('near-wall');
     try {

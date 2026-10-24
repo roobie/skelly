@@ -205,9 +205,17 @@ const drainRateOf = (registry: Registry, light: Item): GameRate | undefined => {
   return spec?.power?.chargePerGameHour ?? spec?.fuelPerGameHour;
 };
 
-/** Charge left in the light's battery, or in a battery; undefined for anything else. */
+const liquidCharge = (item: Item, accepts: readonly string[]): number => {
+  const contents = item.liquidContents;
+  return contents?.kind === 'filled' && accepts.includes(contents.liquid) ? contents.volumeMicrolitres : 0;
+};
+
+/** Charge left in a light's fuel or battery balance; undefined for anything else. */
 export const chargeOf = (registry: Registry, item: Item): number | undefined => {
   const def = defOf(registry, item.type);
+  if (def.light?.liquidFuel) {
+    return liquidCharge(item, def.light.liquidFuel.accepts);
+  }
   if (def.battery) {
     return batteryCharge(registry, item);
   }
@@ -229,6 +237,7 @@ export const chargeOf = (registry: Registry, item: Item): number | undefined => 
 export const chargeShare = (registry: Registry, item: Item): number | undefined => {
   const def = defOf(registry, item.type);
   const capacity =
+    (def.light?.liquidFuel ? def.vessel?.capacityMicrolitres : undefined) ??
     def.battery?.capacity ??
     def.canister?.capacity ??
     def.igniter?.capacity ??
@@ -257,6 +266,9 @@ const startBurn = (
   return undefined;
 };
 
+const emptyLightReason = (def: ReturnType<typeof defOf>): CoreMessageKey =>
+  def.igniter || def.tool?.fuel || def.light?.liquidFuel ? 'outOfFuel' : 'batteryDead';
+
 /** Switches a light on or off. Returns why it can't come on, or undefined. */
 export const toggleLight = (registry: Registry, light: Item, calendar = 0): string | undefined => {
   const def = defOf(registry, light.type);
@@ -267,6 +279,9 @@ export const toggleLight = (registry: Registry, light: Item, calendar = 0): stri
   if (light.on) {
     if (spec.burning && !spec.burning.douse) {
       return coreMessage(registry, 'cantDouse');
+    }
+    if (spec.liquidFuel) {
+      drainLiquidLight(registry, light, spec.liquidFuel.microlitresPerGameSecond, calendar);
     }
     light.on = false;
     light.litAtGameTimestamp = undefined;
@@ -281,9 +296,12 @@ export const toggleLight = (registry: Registry, light: Item, calendar = 0): stri
     if (spec.power && !light.slots?.battery) {
       return coreMessage(registry, 'noBattery');
     }
-    return coreMessage(registry, def.igniter || def.tool?.fuel ? 'outOfFuel' : 'batteryDead');
+    return coreMessage(registry, emptyLightReason(def));
   }
   light.on = true;
+  if (spec.liquidFuel) {
+    light.litAtGameTimestamp = calendar;
+  }
   return undefined;
 };
 
@@ -311,12 +329,27 @@ export const drainLight = (
   registry: Registry,
   light: Item,
   elapsedGameSeconds: GameSeconds,
+  calendar?: number,
+): GameSeconds | undefined => {
+  const liquidFuel = defOf(registry, light.type).light?.liquidFuel;
+  if (liquidFuel && light.on) {
+    if (calendar === undefined) {
+      throw new Error('Liquid burn requires a calendar timestamp');
+    }
+    return drainLiquidLight(registry, light, liquidFuel.microlitresPerGameSecond, calendar);
+  }
+  return drainChargeLight(registry, light, elapsedGameSeconds);
+};
+
+const drainChargeLight = (
+  registry: Registry,
+  light: Item,
+  elapsedGameSeconds: GameSeconds,
 ): GameSeconds | undefined => {
   const ratePerGameSecond = drainRateOf(registry, light);
   if (!(light.on && ratePerGameSecond !== undefined)) {
     return undefined;
   }
-  // A fuelled lamp holds its oil in the canister slot, as a powered light holds its battery.
   const cell = light.slots?.battery ?? light.slots?.canister;
   const charge = chargeOf(registry, light) ?? 0;
   const lasts = charge / ratePerGameSecond;
@@ -346,6 +379,36 @@ export const drainLight = (
   }
   light.on = false;
   return gameSeconds(lasts);
+};
+
+const drainLiquidLight = (registry: Registry, light: Item, rate: number, calendar: number): GameSeconds | undefined => {
+  const at = Math.round(calendar * 1_000_000);
+  const from = Math.round(light.litAtGameTimestamp! * 1_000_000);
+  if (!(Number.isSafeInteger(at) && Number.isSafeInteger(from) && at >= from)) {
+    throw new Error('Invalid liquid burn calendar span');
+  }
+  const elapsedMicros = at - from;
+  light.litAtGameTimestamp = calendar;
+  const charge = chargeOf(registry, light) ?? 0;
+  const remainder = light.liquidBurnRemainder!;
+  // Round absolute endpoints, not each step's duration, so partitions share the
+  // same microsecond boundary. Carry fractional work; multiply exactly for long steps.
+  const work = BigInt(elapsedMicros) * BigInt(rate) + BigInt(remainder);
+  const lasts = (charge - remainder / 1_000_000) / rate;
+  if (work >= BigInt(charge) * 1_000_000n) {
+    light.liquidContents = { kind: 'empty' };
+    light.liquidBurnRemainder = 0;
+    light.litAtGameTimestamp = undefined;
+    light.on = false;
+    return gameSeconds(Math.max(0, lasts));
+  }
+  const spent = Number(work / 1_000_000n);
+  light.liquidBurnRemainder = Number(work % 1_000_000n);
+  const contents = light.liquidContents;
+  if (contents?.kind === 'filled') {
+    light.liquidContents = { ...contents, volumeMicrolitres: charge - spent };
+  }
+  return undefined;
 };
 
 /** The actor's off-hand item if it has an instant use (today only a light's on/off). */
