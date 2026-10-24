@@ -69,14 +69,14 @@ breach.breaking(shape.colliding({
     {
       id: 'bedroll',
       name: 'Bedroll',
-      size: [1, 1, 2],
+      size: [2, 1, 4],
       color: '#5b5f3c',
       solid: false,
       cover: true,
       rest: { quality: 0.3, sleep: true },
       shape: [
-        { position: [0.05, 0, 0.05], size: [0.9, 0.08, 1.9] },
-        { position: [0.15, 0.08, 0.1], size: [0.7, 0.08, 0.35], color: '#c9c3a8' },
+        { position: [0.1, 0, 0.1], size: [1.8, 0.08, 3.8] },
+        { position: [0.3, 0.08, 0.2], size: [1.4, 0.1, 0.7], color: '#c9c3a8' },
       ],
     },
     {
