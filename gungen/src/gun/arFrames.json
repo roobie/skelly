@@ -406,9 +406,9 @@
     },
     {
       "carrier": {
-        "bottomU": -0.75,
-        "lengthU": 6,
-        "topU": 1.25
+        "bottomU": -1,
+        "lengthU": 10,
+        "topU": 1.5
       },
       "cartridge": {
         "aliases": [
@@ -669,6 +669,7 @@
       "rank": 1,
       "receiver": {
         "belowBoreUnits": 2,
+        "ejectionPortCenterX": -5.5,
         "ejectionPortLengthUnits": 8,
         "heightUnits": 4.75,
         "lengthUnits": 20.25,

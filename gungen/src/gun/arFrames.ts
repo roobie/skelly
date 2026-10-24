@@ -57,6 +57,7 @@ const FrameSchema = strictObject({
     heightUnits: Positive,
     belowBoreUnits: Positive,
     ejectionPortLengthUnits: optional(Positive),
+    ejectionPortCenterX: optional(Finite),
   }),
   cyclicRpm: Positive,
   magazineProfile: Text,
@@ -229,6 +230,7 @@ export interface AuthoredARFrame {
   readonly lower: ARLowerProportions | undefined;
   readonly freeFloatHandguard: FrameSource['freeFloatHandguard'];
   readonly carrier: FrameSource['carrier'];
+  readonly ejectionPortCenterX: number | undefined;
 }
 
 /**
@@ -258,6 +260,7 @@ export const loadArFrames = (raw: unknown): readonly AuthoredARFrame[] => {
       lower: source.lower,
       freeFloatHandguard: source.freeFloatHandguard,
       carrier: source.carrier,
+      ejectionPortCenterX: source.receiver.ejectionPortCenterX,
     };
   });
   const issues = validateActionFrames(authored.map(({ frame }) => frame));
@@ -315,10 +318,6 @@ export const AR_LOWER_PROPORTIONS: Readonly<Record<string, ARLowerProportions | 
 );
 
 /**
- * Each frame's traced free-float rail, where its content has one: its length from the receiver's front face and
- * its top rail's height above the bore. A frame without one keeps the family's reach and the tube's own height.
- */
-/**
  * Each frame's bolt carrier body, its bottom and top above the bore and its full-height length back from the bolt
  * face (never shorter than the cartridge-derived carrier), where its content sets one; a frame without one keeps
  * the family's carrier.
@@ -327,6 +326,18 @@ export const AR_CARRIER_HEIGHTS: Readonly<Record<string, AuthoredARFrame['carrie
   authored.map(({ frame, carrier }) => [frame.id, carrier]),
 );
 
+/**
+ * Each frame's traced ejection port centre, x from the receiver's front face, where its content sets one; a frame
+ * without one centres its port on the bolt carrier's body.
+ */
+export const AR_EJECTION_PORT_CENTERS: Readonly<Record<string, number | undefined>> = Object.fromEntries(
+  authored.map(({ frame, ejectionPortCenterX }) => [frame.id, ejectionPortCenterX]),
+);
+
+/**
+ * Each frame's traced free-float rail, where its content has one: its length from the receiver's front face and
+ * its top rail's height above the bore. A frame without one keeps the family's reach and the tube's own height.
+ */
 export const AR_FREE_FLOAT_HANDGUARDS: Readonly<Record<string, AuthoredARFrame['freeFloatHandguard']>> =
   Object.fromEntries(authored.map(({ frame, freeFloatHandguard }) => [frame.id, freeFloatHandguard]));
 

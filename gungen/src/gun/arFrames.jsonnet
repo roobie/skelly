@@ -68,11 +68,14 @@ local derivation(measure, clearanceUnits, snap, description, multiplier=null) =
         heightUnits: 4.75,
         belowBoreUnits: 2,
         ejectionPortLengthUnits: 8,
+        // The cover's centre, so the port stays on it at -9.5u to -1.5u whatever the carrier's length.
+        ejectionPortCenterX: -5.5,
       },
-      // Not visible in the photo behind the closed dust cover: the carrier's full-height body fills the port's 2.5u
-      // height less 0.25u above and below, about its centre 0.25u above the bore. The port centres on the body, so a
-      // 6u body puts the port at -9.5u to -1.5u, on the cover's -9.65u to -1.41u.
-      carrier: { bottomU: -0.75, topU: 1.25, lengthU: 6 },
+      // Hidden behind the closed dust cover in the photo, so sized from a real AR-10 class carrier: about 1.0-1.1 in
+      // across, full diameter for about 4.5 in behind its gas key. Its 2.5u (1.13 in) height is the port's, centred
+      // 0.25u above the bore, so the carrier fills the window; a taller carrier would need a taller port. Its 10u
+      // (4.5 in) body runs past the port's rear.
+      carrier: { bottomU: -1, topU: 1.5, lengthU: 10 },
       // See magazines.jsonnet.
       magazineProfile: 'sr25-straight',
       // Traced from the same photo, to the nearest grid step: the magazine's centre at -5u, the grip's top front 1.55u

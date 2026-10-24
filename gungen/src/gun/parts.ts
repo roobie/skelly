@@ -37,7 +37,12 @@ import { akButtstockSolids, akStockTop } from './akButtstock.ts';
 import { AK_PROPORTIONS, akGasPortX } from './akProportions.ts';
 import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';
 import { arChargingHandle, arChargingHandleSolidsFor, arHandleChannel } from './arChargingHandle.ts';
-import { AR_CARRIER_HEIGHTS, AR_FREE_FLOAT_HANDGUARDS, AR_LOWER_PROPORTIONS } from './arFrames.ts';
+import {
+  AR_CARRIER_HEIGHTS,
+  AR_EJECTION_PORT_CENTERS,
+  AR_FREE_FLOAT_HANDGUARDS,
+  AR_LOWER_PROPORTIONS,
+} from './arFrames.ts';
 import { AR_ACTION_LAYOUT, AR_ACTION_LAYOUTS, type ARActionLayout, arLayoutFor } from './arLayout.ts';
 import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';
 import {
@@ -685,7 +690,7 @@ const ejectionPortWindow = (
     xMax = center + pumpMinimum / 2;
   }
   if (arLayout !== undefined) {
-    const centerX = (xMin + xMax) / 2;
+    const centerX = AR_EJECTION_PORT_CENTERS[arLayout.frameId] ?? (xMin + xMax) / 2;
     const centerY = carrierY + (envelope.y[0] + envelope.y[1]) / 2;
     return {
       x: [centerX - arLayout.ejectionPortLengthU / 2, centerX + arLayout.ejectionPortLengthU / 2] as const,
