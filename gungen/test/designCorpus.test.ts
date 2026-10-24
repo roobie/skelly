@@ -7,7 +7,7 @@ import { worldSolid } from '@skelly/engine/shapes/geometry.ts';
 import type { Solid } from '@skelly/engine/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 import { checkDesignFiles } from '../src/cli/designCheck.ts';
-import { SMALL_AR_CARTRIDGE, SMALL_AR_FRAME } from '../src/gun/arFrames.ts';
+import { AR_FRAMES_BY_CALIBRE } from '../src/gun/arFrames.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { loadFixtures } from './helpers.ts';
@@ -73,7 +73,7 @@ const mustLoad = (text: string) => {
 };
 
 describe('published design corpus', () => {
-  it('routes every curated AR design from 5.56x45 to the small action frame', () => {
+  it('routes every curated AR design to the action frame the rank selector picks for its calibre', () => {
     const arFiles = designFiles().filter((file) => {
       const design = JSON.parse(readFileSync(join(DESIGNS, file), 'utf8')) as { template: string };
       return design.template === 'ar';
@@ -81,9 +81,10 @@ describe('published design corpus', () => {
     expect(arFiles.length).toBeGreaterThan(0);
     for (const file of arFiles) {
       const loaded = mustLoad(readFileSync(join(DESIGNS, file), 'utf8'));
-      expect(loaded.design.calibre, file).toBe(SMALL_AR_CARTRIDGE.id);
+      const selected = AR_FRAMES_BY_CALIBRE.find(({ cartridge }) => cartridge.id === loaded.design.calibre);
+      expect(selected, file).toBeDefined();
       const resolved = resolve(loaded.design.assembly, gunDomain);
-      expect(resolved.params.get('receiver')?.actionFrame?.value, file).toBe(SMALL_AR_FRAME.id);
+      expect(resolved.params.get('receiver')?.actionFrame?.value, file).toBe(selected?.frame.id);
     }
   });
 

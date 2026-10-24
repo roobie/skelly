@@ -83,6 +83,22 @@ describe('free-floating handguards', () => {
     expect(changedBarrel.resolved.params.get('handguard')?.length?.value).toBe('M');
   });
 
+  it('refuses a rail that reaches a fitted front sight but may cover an empty sight station', () => {
+    const reachesSight = (assembly: ReturnType<typeof freeFloat>) =>
+      validate(assembly, gunDomain).issues.some(
+        ({ rule, message }) => rule === 'free-float-clearance' && message.includes('front sight'),
+      );
+    const withSight = freeFloat('M', 'L');
+    const withoutSight = {
+      ...withSight,
+      parts: Object.fromEntries(Object.entries(withSight.parts).filter(([part]) => part !== 'front-sight')),
+      connections: withSight.connections.filter(({ to }) => to !== 'front-sight.base'),
+    };
+
+    expect(reachesSight(withSight)).toBe(true);
+    expect(reachesSight(withoutSight)).toBe(false);
+  });
+
   it('keeps the clamped mount and front connection as the default', () => {
     const assembly = loadFixture('archetype-ar');
     const report = validate(assembly, gunDomain);

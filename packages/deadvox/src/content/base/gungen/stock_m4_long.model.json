@@ -1,0 +1,13 @@
+{
+  "id": "stock_m4_long",
+  "file": "assets/models/stock_m4_long.glb",
+  "gun": {},
+  "parts": {
+    "stock_m4_long": {
+      "item": "stock_m4_long",
+      "node": "stock_m4_long:stock",
+      "massKg": 0.4,
+      "centreOfMass": [-0.1664878145827116, -0.015490898239331544, -0.00005948473092609202]
+    }
+  }
+}

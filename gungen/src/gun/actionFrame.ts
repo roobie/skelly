@@ -1,4 +1,4 @@
-export type CartridgeClearanceMeasure = 'maximumOverallLengthMm' | 'maximumHeadDiameterMm' | 'caseLengthMm';
+type CartridgeClearanceMeasure = 'maximumOverallLengthMm' | 'maximumHeadDiameterMm' | 'caseLengthMm';
 
 interface CartridgeClearance {
   readonly measure: CartridgeClearanceMeasure;
@@ -24,6 +24,8 @@ interface ActionFrameDimensions {
   readonly carrierTravelMm: FrameMeasure;
   readonly receiverLengthMm: FrameMeasure;
   readonly receiverHeightMm: FrameMeasure;
+  /** How far the receiver's bottom face sits below the bore; the rest of its height is above. */
+  readonly receiverBelowBoreMm: FrameMeasure;
   readonly ejectionPortLengthMm: FrameMeasure;
   readonly ejectionPortHeightMm: FrameMeasure;
   readonly magwellOpeningLengthMm: FrameMeasure;
@@ -54,12 +56,6 @@ export interface ActionFrameIssue {
 export type FrameSelection =
   | { readonly ok: true; readonly frame: ActionFrame }
   | { readonly ok: false; readonly issue: ActionFrameIssue };
-
-export const AR_FRAME_RANKS = {
-  small: 0,
-  large: 1,
-  magnum: 2,
-} as const;
 
 const HTTP_URL = /^https?:\/\//;
 

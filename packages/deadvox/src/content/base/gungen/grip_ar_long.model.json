@@ -1,0 +1,13 @@
+{
+  "id": "grip_ar_long",
+  "file": "assets/models/grip_ar_long.glb",
+  "gun": {},
+  "parts": {
+    "grip_ar_long": {
+      "item": "grip_ar_long",
+      "node": "grip_ar_long:grip",
+      "massKg": 0.12,
+      "centreOfMass": [0.00022943221320973354, -0.05402317497103128, 0]
+    }
+  }
+}
