@@ -7,46 +7,13 @@
     "description": "Classic AR-pattern rifle with an A2 front-sight block at the gas station.",
     "root": "receiver",
     "parts": {
-      "receiver": {
-        "family": "receiver",
-        "params": {
-          "action": "auto",
-          "feed": "box",
-          "bore": "M",
-          "chargingHandle": "rear-top",
-          "rail": "full",
-          "section": "ar"
-        }
-      },
-      "charging-handle": { "family": "ar-charging-handle" },
-      "bolt-carrier": {
-        "family": "bolt-carrier",
-        "params": { "pattern": "ar" }
-      },
-      "lower": {
-        "family": "lower",
-        "params": {
-          "layout": "ar"
-        }
-      },
-      "barrel": {
-        "family": "barrel",
-        "params": {
-          "length": "M"
-        }
-      },
-      "handguard": {
-        "family": "handguard",
-        "params": {
-          "layout": "ar"
-        }
-      },
-      "grip": {
-        "family": "grip",
-        "params": {
-          "length": "M"
-        }
-      },
+      "receiver": { "item": "receiver_ar" },
+      "charging-handle": { "item": "charging_handle_ar" },
+      "bolt-carrier": { "item": "bolt_carrier_ar" },
+      "lower": { "item": "lower_ar" },
+      "barrel": { "item": "barrel_ar_medium" },
+      "handguard": { "item": "handguard_ar_clamped" },
+      "grip": { "item": "grip_standard" },
       "magazine": {
         "family": "magazine",
         "params": {
@@ -58,19 +25,8 @@
           "version": 1
         }
       },
-      "stock": {
-        "family": "stock",
-        "params": {
-          "length": "M",
-          "style": "m4"
-        }
-      },
-      "front-sight": {
-        "family": "front-sight",
-        "params": {
-          "style": "ar"
-        }
-      },
+      "stock": { "item": "stock_m4_medium" },
+      "front-sight": { "item": "front_sight_ar" },
       "sight": {
         "family": "sight",
         "params": { "type": "lpvo-1-6x" }

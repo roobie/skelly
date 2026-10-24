@@ -15,10 +15,12 @@ import { formatCartridgeParseError, parseCartridgeJson } from '../ammo/parseCart
 import { exportAttachmentGlb } from '../gun/attachmentExport.ts';
 import { ATTACHMENT_IDS } from '../gun/attachments.ts';
 import { exportCartridgeModel } from '../gun/cartridgeExport.ts';
+import { PART_CATALOGUE } from '../gun/catalogue.ts';
 import type { DeadvoxModelEntry } from '../gun/exportGlb.ts';
 import { exportMagazineGlb } from '../gun/magazineExport.ts';
 import { GUN_PREFABS } from '../gun/prefabs.ts';
 import { exportFileText } from './exportFile.ts';
+import { exportPartItem } from './exportPart.ts';
 
 const ROOT = resolve(import.meta.dirname, '../../..');
 const cartridgeAt = (source: string, root: string) => {
@@ -62,6 +64,19 @@ const exporters = {
     }
     return () => {
       const result = exportAttachmentGlb(row.source, assetFor(row), undefined, voxelFor(row));
+      if (!result.ok) {
+        throw new Error(JSON.stringify(result.error));
+      }
+      return result;
+    };
+  },
+  part: (row: Row) => {
+    parse(strictObject({}), optionsFor(row));
+    if (!PART_CATALOGUE.items.has(row.source)) {
+      throw new Error('unknown part item source');
+    }
+    return () => {
+      const result = exportPartItem(row.source, assetFor(row), voxelFor(row));
       if (!result.ok) {
         throw new Error(JSON.stringify(result.error));
       }

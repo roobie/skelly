@@ -1,0 +1,13 @@
+{
+  "id": "receiver_ar",
+  "file": "assets/models/receiver_ar.glb",
+  "gun": {},
+  "parts": {
+    "receiver_ar": {
+      "item": "receiver_ar",
+      "node": "receiver_ar:receiver",
+      "massKg": 0.9,
+      "centreOfMass": [-0.09820214882610423, 0.0018599283724631903, -0.0006685236768802234]
+    }
+  }
+}

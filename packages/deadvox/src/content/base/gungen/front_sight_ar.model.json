@@ -1,0 +1,13 @@
+{
+  "id": "front_sight_ar",
+  "file": "assets/models/front_sight_ar.glb",
+  "gun": {},
+  "parts": {
+    "front_sight_ar": {
+      "item": "front_sight_ar",
+      "node": "front_sight_ar:front-sight",
+      "massKg": 0.11,
+      "centreOfMass": [-0.000030268418046830404, 0.01836150770988007, 0.00005996573386636216]
+    }
+  }
+}

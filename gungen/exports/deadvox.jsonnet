@@ -34,6 +34,9 @@ local attachmentSources = [
 // A look for an attachment no row exports is a misspelt id, not an unused entry.
 local strays = std.setDiff(std.objectFields(attachments), std.set(attachmentSources));
 assert std.length(strays) == 0 : 'attachment looks with no export row: %s' % [strays];
+// Every catalogue item exports as its loose part, on the gun class so it matches the gun it is fitted to.
+local partItems = [entry for entry in (import 'gungen/src/gun/catalogue.jsonnet').parts if std.objectHas(entry, 'params')];
+local part(item) = { id: item.id, kind: 'part', source: item.id, voxel: voxel.gun };
 local magazine(id, source, calibre, appearanceProfile) = {
   id: id, kind: 'magazine', source: source, voxel: voxel.gun,
   options: { cartridge: 'gungen/cartridges/' + calibre + '.json', appearanceProfile: appearanceProfile },
@@ -56,3 +59,4 @@ local magazine(id, source, calibre, appearanceProfile) = {
   magazine('magazine_stanag_30', 'stanag-30', '5.56x45', 'ar'),
   magazine('magazine_akm_30', 'akm-30', '7.62x39', 'ak'),
 ]
++ [part(item) for item in partItems]

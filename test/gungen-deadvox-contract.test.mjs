@@ -7,6 +7,7 @@ import { loadExportRecipe } from '../gungen/src/cli/exportRecipe.ts';
 import { loadGunDesign } from '../gungen/src/gun/designLoader.ts';
 import { exportGunGlb } from '../gungen/src/gun/exportGlb.ts';
 import { buildRegistry } from '../packages/deadvox/src/core/content.ts';
+import { typeWeightGrams } from '../packages/deadvox/src/core/items.ts';
 import { magazineFits } from '../packages/deadvox/src/core/magazine.ts';
 import { ModelSchema } from '../packages/deadvox/src/core/schema.ts';
 import { ammoMatchesCalibre, spentCaseItemId } from '../packages/deadvox/src/game/firearmHandling.ts';
@@ -49,6 +50,7 @@ const loadExports = () =>
     });
 const CURATED_EXPORTS = loadExports();
 const MODELS_FILE = /^models-.*\.json$/;
+const PART_ITEM_PATH = /^models\[0\]\.parts\.[^.]+\.item$/;
 const hasMesh = (scene) => {
   let found = false;
   scene.traverse((node) => {
@@ -162,7 +164,9 @@ describe('gungen exports satisfy deadvox model validation', () => {
     await Promise.all(
       EXPORTED.map(async ({ modelEntry, glb }) => {
         const { issues } = buildRegistry([{ source: modelEntry.file, data: { models: [modelEntry] } }]);
-        assert.deepEqual(issues, [], `${modelEntry.id}: invalid consumer model`);
+        // A part's item lives in another file; the full-base test resolves it.
+        const own = issues.filter(({ path }) => !PART_ITEM_PATH.test(path));
+        assert.deepEqual(own, [], `${modelEntry.id}: invalid consumer model`);
         const loaded = await new GLTFLoader().parseAsync(Uint8Array.from(glb).buffer, '');
         assert.ok(hasMesh(loaded.scene), `${modelEntry.id}: loaded scene has no geometry`);
         const declared = [
@@ -184,6 +188,21 @@ describe('gungen exports satisfy deadvox model validation', () => {
     const { gaps, guns, companions } = BASE_CONSUMPTION;
     assert.deepEqual(gaps, []);
     assert.ok(guns > 0 && companions > 0, 'the base must consume a recipe gun and its companions');
+  });
+
+  it('draws each fitted part item from its own recipe export and weighs it loose as fitted', () => {
+    const { registry } = BASE_CONSUMPTION;
+    const fitted = [...registry.models.values()].flatMap((model) =>
+      Object.values(model.parts ?? {})
+        .filter((part) => part.item !== undefined)
+        .map((part) => ({ model, part })),
+    );
+    assert.ok(fitted.length > 0, 'the base must fit a part item');
+    for (const { model, part } of fitted) {
+      const item = registry.items.get(part.item);
+      assert.ok(item && RECIPE_IDS.has(item.model), `${model.id}: ${part.item} is no recipe part item`);
+      assert.equal(typeWeightGrams(registry, item.id), part.massKg * 1000, `${model.id}: ${part.item} weight`);
+    }
   });
 
   it('reports a dangling model reference and a gun companion drawn from outside the recipe', () => {

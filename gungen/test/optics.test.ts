@@ -34,7 +34,7 @@ import {
   pumpShotgun,
   smg,
 } from '../src/gun/templates.ts';
-import type { MutableAssembly } from './helpers.ts';
+import { loadDesignAssembly, type MutableAssembly } from './helpers.ts';
 
 const HTTPS_URL = /^https:\/\//;
 const TUBULAR_SOLID_ID = /tube|bell|turret|housing|ring-band/;
@@ -482,9 +482,7 @@ describe('curated optic mounts', () => {
       ['archetype-anti-materiel', ['high-mag-5-25x']],
     ] as const;
     for (const [name, types] of designs) {
-      const { assembly } = JSON.parse(readFileSync(new URL(`../designs/${name}.json`, import.meta.url), 'utf8')) as {
-        assembly: MutableAssembly;
-      };
+      const assembly = loadDesignAssembly(name);
       for (const type of types) {
         assembly.parts.sight!.params = { type };
         expectContactOnPhysicalRail(assembly, type);

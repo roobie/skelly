@@ -1,0 +1,13 @@
+{
+  "id": "handguard_ar_clamped",
+  "file": "assets/models/handguard_ar_clamped.glb",
+  "gun": {},
+  "parts": {
+    "handguard_ar_clamped": {
+      "item": "handguard_ar_clamped",
+      "node": "handguard_ar_clamped:handguard",
+      "massKg": 0.35,
+      "centreOfMass": [0.149518573551263, 0, 0]
+    }
+  }
+}

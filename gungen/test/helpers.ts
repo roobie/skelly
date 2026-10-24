@@ -89,6 +89,15 @@ export interface CorpusEntry {
   assembly: Assembly;
 }
 
+/** A design file's loaded assembly, with its item references expanded into the parts they name. */
+export const loadDesignAssembly = (name: string): MutableAssembly => {
+  const result = loadGunDesign(readFileSync(join(DESIGNS, `${name}.json`), 'utf8'));
+  if (!result.ok) {
+    throw new Error(`designs/${name}.json: ${result.error.code}: ${result.error.message}`);
+  }
+  return structuredClone(result.design.assembly) as MutableAssembly;
+};
+
 /** Every published design under designs/, as loaded assemblies. */
 export const loadDesigns = (): CorpusEntry[] =>
   readdirSync(DESIGNS)

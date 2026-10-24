@@ -150,9 +150,11 @@ solid, and they stay cheap for a solver to test. Only an export with part masses
 because collision belongs to the parts whose mass it moves. See `src/physical.ts`,
 `collisionBoxes` and `modelParts`.
 
-Replaceable geometry belongs to the child item rather than the body's mass table. Its
-item weight stays authoritative, so neither a host-specific mount envelope nor a shared
-visual proxy can change an atom's mass. The gun table is
-`gungen/src/gun/physical.jsonnet`, `partMasses`; its adapter is
-`gungen/src/gun/physical.ts`, `gunModelParts`. Export refuses a body part without exactly
-one matching row instead of guessing a mass.
+Tools resolve item identity and supply authored masses before export. Export places the
+supplied centres and physical instances, and carries a part's item when the tool names
+one; it does not select gameplay items or derive an atom's weight from its shape. This
+keeps both tool-specific policy and authoring geometry outside Deadvox's dependency graph.
+Replaceable geometry belongs to the child item, whose weight stays authoritative, so
+neither a host-specific mount envelope nor a shared visual proxy can change an atom's mass.
+See `src/physical.ts`, `PhysicalInputs`, and the gun adapter,
+`gungen/src/gun/physical.ts`, `gunModelParts`.

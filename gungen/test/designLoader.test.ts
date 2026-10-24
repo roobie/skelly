@@ -236,6 +236,22 @@ describe('loadDesign: fatal errors', () => {
     expect(result.declaredStatus).toBe('published');
   });
 
+  it.each([
+    ['an unknown item', { item: 'fixture_unknown_item' }, 'assembly.parts.grip.item'],
+    [
+      'a construction override',
+      { item: 'grip_standard', params: { length: 'L' } },
+      'assembly.parts.grip.params.length',
+    ],
+    ['a second family', { item: 'grip_standard', family: 'grip' }, 'assembly.parts.grip.family'],
+  ])('refuses a part item with %s', (_label, part, path) => {
+    const assembly = withPart(part as unknown as Assembly['parts'][string], 'grip');
+    const result = expectFatal(load(makeDesign({ assembly })));
+    expect(result.error.code).toBe('invalid-shape');
+    expect(result.error.path).toBe(path);
+    expect(result.declaredStatus).toBe('published');
+  });
+
   it.each([3, 99])('refuses an unknown version %d of a known prefab id', (version) => {
     const assembly = withPart({ family: 'magazine', prefab: { id: 'test-stanag', version } });
     expect(expectFatal(load(makeDesign({ assembly }))).error.code).toBe('unknown-prefab');

@@ -38,7 +38,7 @@ import { exportGunGeometry as exportGlb } from './glbWriter.ts';
 import { internalMagazineCapacity } from './internalMagazine.ts';
 import { getOptic } from './optics.ts';
 import { GUN_PALETTE } from './palette.ts';
-import { gunModelParts, PartMassError } from './physical.ts';
+import { gunModelParts, type PartItems, PartMassError } from './physical.ts';
 import { type RevolverMetadata, revolverMetadata } from './revolverExport.ts';
 import { tubeMagazineCapacity } from './tubeCapacity.ts';
 
@@ -140,6 +140,7 @@ interface GunExportOptions extends GunExportMetadata, Partial<VoxelGrains> {
   /** Geometry-only callers skip the slot solver; CLI model exports explicitly request its certificate. */
   readonly includeAttachmentCompatibility?: boolean;
   readonly excludedAttachments?: readonly string[];
+  readonly items?: PartItems;
 }
 
 interface GunModelEntryOptions extends GunExportMetadata {
@@ -728,11 +729,11 @@ const bodyPhysicalData = (
   resolved: Resolved,
   fitted: readonly { readonly node: string }[],
   magazine: { readonly node: string } | undefined,
-  drawn: DrawnGeometry,
+  { drawn, items }: { readonly drawn: DrawnGeometry; readonly items: PartItems },
 ) => {
   const replaceableNodes = new Set([...fitted.map(({ node }) => node), ...(magazine ? [magazine.node] : [])]);
   try {
-    return { ok: true as const, parts: gunModelParts(resolved, replaceableNodes, undefined, drawn) };
+    return { ok: true as const, parts: gunModelParts(resolved, replaceableNodes, { items, drawn }) };
   } catch (error) {
     if (!(error instanceof PartMassError)) {
       throw error;
@@ -763,6 +764,7 @@ export const exportGunGlb = (
   const {
     includeAttachmentCompatibility = false,
     excludedAttachments = [],
+    items = {},
     voxelGrain,
     voxelDetailGrain,
     ...metadata
@@ -804,7 +806,7 @@ export const exportGunGlb = (
   const fittedAttachments = attachmentData(resolved);
   const magazine = magazineSlotData(resolved);
   const drawn = drawnGeometry(resolved, voxelGrainsOf({ voxelGrain, voxelDetailGrain }));
-  const physical = bodyPhysicalData(resolved, fittedAttachments, magazine, drawn);
+  const physical = bodyPhysicalData(resolved, fittedAttachments, magazine, { drawn, items });
   if (!physical.ok) {
     return physical;
   }

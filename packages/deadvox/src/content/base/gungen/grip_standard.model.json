@@ -1,0 +1,13 @@
+{
+  "id": "grip_standard",
+  "file": "assets/models/grip_standard.glb",
+  "gun": {},
+  "parts": {
+    "grip_standard": {
+      "item": "grip_standard",
+      "node": "grip_standard:grip",
+      "massKg": 0.1,
+      "centreOfMass": [0.000258148631029987, -0.04801825293350717, 0]
+    }
+  }
+}

@@ -94,6 +94,32 @@ it('keeps each atom authored weight when several items share a visual model', ()
   }
 });
 
+it('requires a model part that names an item to name a registered item of the same weight', () => {
+  const partItem = {
+    id: 'fixture_part',
+    workInProgress: false,
+    notLoot: false,
+    name: 'Fixture part',
+    category: 'misc',
+    economy: { usage: [], tiers: [] },
+    size: [1, 1],
+    weight: model.parts.body.massKg * 1000,
+  };
+  const issuesFor = (item: string, weight: number) =>
+    buildRegistry([
+      {
+        source: 'part-items.json',
+        data: {
+          models: [{ ...model, parts: { ...model.parts, body: { ...model.parts.body, item } } }],
+          items: [{ ...partItem, weight }],
+        },
+      },
+    ]).issues.map(({ path }) => path);
+  expect(issuesFor(partItem.id, partItem.weight)).toEqual([]);
+  expect(issuesFor('fixture_unregistered', partItem.weight)).toEqual(['models[0].parts.body.item']);
+  expect(issuesFor(partItem.id, partItem.weight + 1)).toEqual(['models[0].parts.body.item']);
+});
+
 it('requires exactly one authored mass source per item', () => {
   for (const parts of [undefined, model.parts]) {
     for (const weight of [undefined, 1]) {
