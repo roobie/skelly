@@ -100,7 +100,7 @@
       "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}"]
     },
     "packages/tool-ui": {
-      "project": ["src/**/*.{js,mjs,ts,tsx}!"]
+      "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}"]
     },
     "packages/mobgen": {
       "entry": ["index.html!", "stress.html!", "src/viewer/stress.ts!"],

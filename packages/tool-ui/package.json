@@ -4,7 +4,8 @@
   "license": "EUPL-1.2",
   "type": "module",
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@skelly/engine": "*",
@@ -13,10 +14,13 @@
   },
   "devDependencies": {
     "@types/three": "^0.186.0",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1"
   },
   "exports": {
     "./scene": "./src/scene.ts",
+    "./camera-state": "./src/cameraState.ts",
+    "./param-panel": "./src/paramPanel.ts",
     "./orbit": "./src/orbit.ts",
     "./preview": "./src/preview.ts",
     "./three-runtime": "./src/threeRuntime.ts"

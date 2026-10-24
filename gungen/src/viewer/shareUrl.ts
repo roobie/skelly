@@ -1,5 +1,4 @@
-import type { Overrides } from './paramPanel.ts';
-import { hasOverrides, serializeOverrides } from './paramPanel.ts';
+import { hasOverrides, type Overrides, serializeOverrides } from '@skelly/tool-ui/param-panel';
 
 type AssemblySelection =
   | { readonly kind: 'fixture'; readonly name: string }

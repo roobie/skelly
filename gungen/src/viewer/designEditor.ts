@@ -3,9 +3,11 @@ import type { DesignLocks, DesignOrigin, DesignStatus } from '@skelly/engine/ass
 import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import type { Assembly, Domain, PartInstance } from '@skelly/engine/assembly/schema.ts';
 import type { ParamChoice, Template } from '@skelly/engine/assembly/template.ts';
+import { clearParam, type EditResult, setParam, setSlotPresent } from '@skelly/tool-ui/param-panel';
+import { PART_CATALOGUE } from '../gun/catalogue.ts';
 import { type GunDesign, loadGunDesignValue } from '../gun/designLoader.ts';
+import type { PartItems } from '../gun/physical.ts';
 import { GUN_PREFABS, type PrefabCatalogue, type PrefabCatalogueEntry } from '../gun/prefabs.ts';
-import { clearParam, type EditResult, setParam, setSlotPresent } from './paramPanel.ts';
 
 export interface DesignEditorState {
   readonly template: Template | undefined;
@@ -13,6 +15,7 @@ export interface DesignEditorState {
   readonly locks: DesignLocks;
   readonly status: DesignStatus;
   readonly calibre?: string;
+  readonly items?: PartItems;
   readonly excludedAttachments?: readonly string[];
   readonly finish?: Readonly<Record<string, string>>;
   readonly origin?: DesignOrigin;
@@ -82,6 +85,7 @@ export const editorStateFromDesign = (design: GunDesign, template: Template | un
   locks: design.locks,
   status: design.status,
   ...(design.calibre === undefined ? {} : { calibre: design.calibre }),
+  ...(design.items ? { items: design.items } : {}),
   ...(design.excludedAttachments === undefined ? {} : { excludedAttachments: design.excludedAttachments }),
   ...(design.finish ? { finish: design.finish } : {}),
   ...(design.origin ? { origin: design.origin } : {}),
@@ -90,10 +94,59 @@ export const editorStateFromDesign = (design: GunDesign, template: Template | un
   ),
 });
 
+const retainedItems = (state: DesignEditorState, assembly: Assembly): PartItems =>
+  Object.fromEntries(
+    Object.entries(state.items ?? {}).filter(([id, itemId]) => {
+      const item = PART_CATALOGUE.items.get(itemId);
+      const part = assembly.parts[id];
+      return (
+        item &&
+        part?.family === item.family &&
+        Object.entries(item.params).every(([name, value]) => part.params?.[name] === value)
+      );
+    }),
+  );
+
 export const withEditorAssembly = (state: DesignEditorState, assembly: Assembly): DesignEditorState => ({
   ...state,
   assembly,
+  items: retainedItems(state, assembly),
 });
+
+export const availablePartItems = (state: DesignEditorState, partId: string) =>
+  [...PART_CATALOGUE.items.values()].filter((item) => item.family === state.assembly.parts[partId]?.family);
+
+export const choosePartItem = (state: DesignEditorState, partId: string, itemId: string): DesignEditorResult => {
+  const item = availablePartItems(state, partId).find((candidate) => candidate.id === itemId);
+  const part = state.assembly.parts[partId];
+  if (!part) {
+    return { ok: false, reason: 'missing-part' };
+  }
+  if (!item) {
+    return { ok: false, reason: 'family-not-allowed' };
+  }
+  const placement = Object.fromEntries(
+    Object.entries(part.params ?? {}).filter(([name]) => PART_CATALOGUE.placementParams.has(name)),
+  );
+  const assembly = {
+    ...state.assembly,
+    parts: {
+      ...state.assembly.parts,
+      [partId]: {
+        family: item.family,
+        params: { ...item.params, ...placement },
+        appearance: { finish: item.finish },
+      },
+    },
+  };
+  return { ok: true, state: { ...state, assembly, items: { ...state.items, [partId]: item.id } } };
+};
+
+export const clearPartItem = (state: DesignEditorState, partId: string): DesignEditorState => {
+  const items = { ...state.items };
+  delete items[partId];
+  return { ...state, items };
+};
 
 export const withEditorStatus = (state: DesignEditorState, status: DesignStatus): DesignEditorState => ({
   ...state,
@@ -164,6 +217,7 @@ export const editParam = (
     state: {
       ...state,
       assembly: nextAssembly,
+      items: retainedItems(state, nextAssembly),
       chosenParams: { ...state.chosenParams, [partId]: includeNames(state.chosenParams[partId] ?? [], name) },
     },
     assembly: nextAssembly,
@@ -195,6 +249,7 @@ export const clearEditorParam = (
     state: {
       ...state,
       assembly: nextAssembly,
+      items: retainedItems(state, nextAssembly),
       chosenParams: withParamNames(state.chosenParams, partId, excludeName(state.chosenParams[partId] ?? [], name)),
     },
     assembly: nextAssembly,
@@ -212,7 +267,7 @@ export const setOptionalPart = (state: DesignEditorState, slotId: string, presen
   const locks =
     !present && wasPresent ? { ...state.locks, params: withParamNames(state.locks.params, slotId, []) } : state.locks;
   const chosenParams = !present && wasPresent ? withParamNames(state.chosenParams, slotId, []) : state.chosenParams;
-  return { ...state, assembly, locks, chosenParams };
+  return { ...state, assembly, locks, chosenParams, items: retainedItems(state, assembly) };
 };
 
 /** The picker source is filtered by PartInstance.family (the registry key), not the visual role. */
@@ -253,7 +308,7 @@ export const choosePrefab = (
   return {
     ok: true,
     state: {
-      ...state,
+      ...clearPartItem(state, partId),
       assembly,
       chosenParams: {
         ...state.chosenParams,
@@ -315,7 +370,11 @@ const keepChosenParam = (
   name: string,
   value: string,
 ): boolean => {
-  if ((state.locks.params[id] ?? []).includes(name) || (state.chosenParams[id] ?? []).includes(name)) {
+  if (
+    state.items?.[id] ||
+    (state.locks.params[id] ?? []).includes(name) ||
+    (state.chosenParams[id] ?? []).includes(name)
+  ) {
     return true;
   }
   if (prefabFixesParam(part, name)) {
@@ -369,18 +428,43 @@ export const saveDesign = (state: DesignEditorState, domain: Domain): SaveDesign
       return { ok: false, reason: 'family-not-allowed' };
     }
   }
+  const selectedItems = retainedItems(state, state.assembly);
   const design: GunDesign = {
     format: 1,
     template: state.template.name,
     ...(state.calibre === undefined ? {} : { calibre: state.calibre }),
     ...(state.excludedAttachments === undefined ? {} : { excludedAttachments: state.excludedAttachments }),
     assembly: chosenAssembly(state, domain),
+    ...(Object.keys(selectedItems).length > 0 ? { items: selectedItems } : {}),
     locks: state.locks,
     status: state.status,
     ...(state.finish ? { finish: state.finish } : {}),
     ...(state.origin ? { origin: state.origin } : {}),
   };
-  return { ok: true, design, text: `${JSON.stringify(design, null, 2)}\n` };
+  const { items, ...persisted } = design;
+  const parts = Object.fromEntries(
+    Object.entries(design.assembly.parts).map(([id, part]) => {
+      const item = items?.[id];
+      return [
+        id,
+        item
+          ? {
+              item,
+              params: Object.fromEntries(
+                Object.entries(state.assembly.parts[id]?.params ?? {}).filter(([name]) =>
+                  PART_CATALOGUE.placementParams.has(name),
+                ),
+              ),
+            }
+          : part,
+      ];
+    }),
+  );
+  return {
+    ok: true,
+    design,
+    text: `${JSON.stringify({ ...persisted, assembly: { ...design.assembly, parts } }, null, 2)}\n`,
+  };
 };
 
 /** Invalid publication requests download as drafts; draft saving is never gated. */
@@ -392,7 +476,11 @@ export const saveDesignForDownload = (
   if (!saved.ok || saved.design.status !== 'published' || !state.template) {
     return saved;
   }
-  const checked = loadGunDesignValue(saved.design, { domain, template: state.template, prefabs: GUN_PREFABS });
+  const checked = loadGunDesignValue(JSON.parse(saved.text), {
+    domain,
+    template: state.template,
+    prefabs: GUN_PREFABS,
+  });
   if (checked.ok && checked.issues.length === 0) {
     return saved;
   }

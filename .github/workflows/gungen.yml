@@ -63,6 +63,7 @@ jobs:
         working-directory: packages/deadvox
       - run: npm --prefix ../packages/engine run typecheck
       - run: npm --prefix ../packages/tool-ui run typecheck
+      - run: npm --prefix ../packages/tool-ui test
       - run: npm run typecheck
       - run: npm test
       - run: npm run validate
