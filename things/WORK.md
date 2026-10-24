@@ -100,6 +100,9 @@ Settled:
 - The thing tool authors grip, hold and roll against its geometry so reshaping a handle
   also moves its hand datum; Deadvox keeps gameplay fields rather than a second geometry
   authority. This governs families with handling datums in the remaining-families phase.
+- A carried item may leave its datum out and take Deadvox's default hold; the tool authors a
+  datum only where the default looks wrong at a look in game. A datum that reproduces the
+  default adds work and a second value to keep in step without changing what the player sees.
 - Engine family and parameter types serve non-gun parts, so the thing tool needs no
   parallel assembly schema. See `packages/thing-authoring-tool/src/catalogue.ts`, `buildItem`.
 - The engine ends at assembly; export belongs above the neutral core so material and model
