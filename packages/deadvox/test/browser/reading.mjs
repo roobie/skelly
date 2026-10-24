@@ -941,7 +941,7 @@ try {
     const lamps = await page.evaluate(async () => {
       const lightsModule = '/src/core/lights.ts';
       const { chargeOf } = await import(lightsModule);
-      const { session, body } = globalThis.readingWitness;
+      const { session } = globalThis.readingWitness;
       const { inventory } = session;
       const { registry } = inventory;
       const { left: book, right: heldNote } = inventory.hands;
@@ -958,7 +958,7 @@ try {
       }
       // Loot rolls a light with its battery's charge, the path a player finds one by.
       const full = inventory.createRolled({ type, count: 1, condition: 1, charge: 1 });
-      const feet = { kind: 'pile', pos: [...body.pos] };
+      const feet = { kind: 'pile', pos: inventory.dropFeet() };
       if (
         !(
           inventory.move(heldNote, feet).ok &&
@@ -990,7 +990,7 @@ try {
     const lowLamp = await page.evaluate(async ({ type, full }) => {
       const lightsModule = '/src/core/lights.ts';
       const { chargeOf } = await import(lightsModule);
-      const { session, body } = globalThis.readingWitness;
+      const { session } = globalThis.readingWitness;
       const { inventory } = session;
       const { registry } = inventory;
       const fullLamp = inventory.itemByUid(full);
@@ -1002,7 +1002,7 @@ try {
       const low = inventory.createRolled({ type, count: 1, condition: 1, charge: share });
       if (
         !(
-          inventory.move(fullLamp, { kind: 'pile', pos: [...body.pos] }).ok &&
+          inventory.move(fullLamp, { kind: 'pile', pos: inventory.dropFeet() }).ok &&
           inventory.add(low, { kind: 'hand', side: 'left' })
         )
       ) {
@@ -1063,10 +1063,10 @@ try {
     await seekHour(12);
     await page.evaluate(
       ({ full, low }) => {
-        const { session, body } = globalThis.readingWitness;
+        const { session } = globalThis.readingWitness;
         const { inventory } = session;
         for (const uid of [full, low]) {
-          if (!inventory.move(inventory.itemByUid(uid), { kind: 'pile', pos: [...body.pos] }).ok) {
+          if (!inventory.move(inventory.itemByUid(uid), { kind: 'pile', pos: inventory.dropFeet() }).ok) {
             throw new Error('Could not set a lamp down');
           }
         }
@@ -1119,13 +1119,18 @@ try {
     assert.equal(await page.locator('#reading h1').innerText(), signFixture.readable.title);
     assert.equal(await page.locator('.reading-text').textContent(), signFixture.readable.text);
     await page.screenshot({ path: resolve(artifacts, 'sign-reading.png') });
+    // An earlier periodic checkpoint may already have committed, so only a newer generation proves this one did.
+    const generationBeforeTrigger = await page.evaluate(() => globalThis.deadvoxSaveTest.saveState().savedGeneration);
     await page.evaluate(() => globalThis.deadvoxSaveTest.triggerPeriodicCheckpoint());
-    await page.waitForFunction(() => {
+    await page.waitForFunction((triggerGeneration) => {
       const { controller } = globalThis.deadvoxSaveTest;
-      return controller.savedGeneration > 0 && !controller.writing && !controller.queued;
-    });
-    const generationBeforeError = await page.evaluate(() => globalThis.deadvoxSaveTest.saveState().savedGeneration);
-    assert.ok(generationBeforeError > 0, 'the error test begins with a committed save');
+      const { savedGeneration, failure, writing, queued } = controller;
+      // A refused snapshot sets `failure` and never advances the generation, so end the wait with its reason.
+      return Boolean(failure) || (savedGeneration > triggerGeneration && !writing && !queued);
+    }, generationBeforeTrigger);
+    const checkpoint = await page.evaluate(() => globalThis.deadvoxSaveTest.saveState());
+    assert.equal(checkpoint.failure, '', 'the checkpoint before the error test saved');
+    assert.ok(checkpoint.savedGeneration > generationBeforeTrigger, 'the error test begins with a new committed save');
     const beforeError = await page.evaluate(() => ({
       paused: globalThis.readingWitness.session.sim.paused,
       locked: globalThis.readingWitness.input.locked,
@@ -1214,7 +1219,7 @@ try {
     });
     assert.equal(
       await page.evaluate(() => globalThis.deadvoxSaveTest.saveState().savedGeneration),
-      generationBeforeError,
+      checkpoint.savedGeneration,
       'hiding the tab after the error leaves the last committed save unchanged',
     );
     await page.goto(
