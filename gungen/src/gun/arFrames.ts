@@ -56,6 +56,7 @@ const FrameSchema = strictObject({
     lengthUnits: Positive,
     heightUnits: Positive,
     belowBoreUnits: Positive,
+    ejectionPortLengthUnits: optional(Positive),
   }),
   cyclicRpm: Positive,
   magazineProfile: Text,
@@ -67,11 +68,11 @@ const FrameSchema = strictObject({
       fingerBottomU: Finite,
       housingFrontBottomU: Finite,
       housingRearBottomU: Finite,
-      bufferTowerTopU: Finite,
       halfWidthU: Positive,
     }),
   ),
   freeFloatHandguard: optional(strictObject({ lengthU: Positive, topU: Positive })),
+  carrier: optional(strictObject({ bottomU: Finite, topU: Finite, lengthU: Positive })),
 });
 type FrameSource = InferOutput<typeof FrameSchema>;
 
@@ -165,9 +166,26 @@ const derivedMeasure = (cartridge: FrameCartridge, derivation: FrameDerivation):
   };
 };
 
+/**
+ * A traced ejection port replaces the cartridge-derived length but keeps its clearance basis, so it may only be
+ * longer than the case needs.
+ */
+const tracedPortLength = (source: FrameSource, derivedLength: FrameMeasure): FrameMeasure => {
+  const units = source.receiver.ejectionPortLengthUnits;
+  if (units === undefined) {
+    return derivedLength;
+  }
+  if (units * mmPerUnit < derivedLength.value) {
+    throw new Error(
+      `AR frame "${source.id}" traces a ${units}u ejection port, shorter than its cartridge's ${derivedLength.value} mm.`,
+    );
+  }
+  return { ...derivedLength, ...receiverEstimate(source, 'ejection port length', units) };
+};
+
 const receiverEstimate = (
   source: FrameSource,
-  measure: 'length' | 'height' | 'depth below the bore',
+  measure: 'length' | 'height' | 'depth below the bore' | 'ejection port length',
   units: number,
 ): FrameMeasure => ({
   value: units * mmPerUnit,
@@ -192,7 +210,7 @@ const arFrame = (source: FrameSource, cartridge: FrameCartridge, derivations: De
       receiverLengthMm: receiverEstimate(source, 'length', source.receiver.lengthUnits),
       receiverHeightMm: receiverEstimate(source, 'height', source.receiver.heightUnits),
       receiverBelowBoreMm: receiverEstimate(source, 'depth below the bore', source.receiver.belowBoreUnits),
-      ejectionPortLengthMm: derived('ejectionPortLength'),
+      ejectionPortLengthMm: tracedPortLength(source, derived('ejectionPortLength')),
       ejectionPortHeightMm: derived('ejectionPortHeight'),
       magwellOpeningLengthMm: derived('magwellOpeningLength'),
       magwellOpeningWidthMm: derived('magwellOpeningWidth'),
@@ -210,11 +228,12 @@ export interface AuthoredARFrame {
   readonly magazineProfile: string;
   readonly lower: ARLowerProportions | undefined;
   readonly freeFloatHandguard: FrameSource['freeFloatHandguard'];
+  readonly carrier: FrameSource['carrier'];
 }
 
 /**
  * A frame's lower traced from its reference photo, in u from the receiver's front face (x) and the bore (y):
- * the buffer tower's rear and top, the magazine well's centre, the grip's mount, the trigger finger's bottom, the
+ * the lower's rear, the magazine well's centre, the grip's mount, the trigger finger's bottom, the
  * magazine housing's bottom at its front and rear, and the lower's half width. A frame without one keeps the
  * family's.
  */
@@ -238,6 +257,7 @@ export const loadArFrames = (raw: unknown): readonly AuthoredARFrame[] => {
       magazineProfile: source.magazineProfile,
       lower: source.lower,
       freeFloatHandguard: source.freeFloatHandguard,
+      carrier: source.carrier,
     };
   });
   const issues = validateActionFrames(authored.map(({ frame }) => frame));
@@ -298,6 +318,15 @@ export const AR_LOWER_PROPORTIONS: Readonly<Record<string, ARLowerProportions | 
  * Each frame's traced free-float rail, where its content has one: its length from the receiver's front face and
  * its top rail's height above the bore. A frame without one keeps the family's reach and the tube's own height.
  */
+/**
+ * Each frame's bolt carrier body, its bottom and top above the bore and its full-height length back from the bolt
+ * face (never shorter than the cartridge-derived carrier), where its content sets one; a frame without one keeps
+ * the family's carrier.
+ */
+export const AR_CARRIER_HEIGHTS: Readonly<Record<string, AuthoredARFrame['carrier']>> = Object.fromEntries(
+  authored.map(({ frame, carrier }) => [frame.id, carrier]),
+);
+
 export const AR_FREE_FLOAT_HANDGUARDS: Readonly<Record<string, AuthoredARFrame['freeFloatHandguard']>> =
   Object.fromEntries(authored.map(({ frame, freeFloatHandguard }) => [frame.id, freeFloatHandguard]));
 

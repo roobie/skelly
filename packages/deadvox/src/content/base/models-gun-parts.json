@@ -110,7 +110,7 @@
       "id": "bolt_carrier_ar_large",
       "parts": {
         "bolt_carrier_ar_large": {
-          "centreOfMass": [0.010606060606060605, 0.0029575757575757574, 0],
+          "centreOfMass": [-0.003661914460285136, 0.0030020366598778013, 0],
           "item": "bolt_carrier_ar_large",
           "massKg": 0.45000000000000001,
           "node": "bolt_carrier_ar_large:bolt-carrier"
@@ -435,7 +435,7 @@
       "id": "lower_ar_large",
       "parts": {
         "lower_ar_large": {
-          "centreOfMass": [-0.13930808536218814, -0.018562669071235348, -5.4102795311091089e-6],
+          "centreOfMass": [-0.12684799460734755, -0.020329625884732062, -6.066734074823059e-6],
           "item": "lower_ar_large",
           "massKg": 0.40000000000000002,
           "node": "lower_ar_large:lower"
@@ -526,7 +526,7 @@
       "id": "receiver_ar_large",
       "parts": {
         "receiver_ar_large": {
-          "centreOfMass": [-0.12232163924247128, 0.0080912760012418483, -0.00069543619993790728],
+          "centreOfMass": [-0.12256334231805938, 0.0077857142857142864, -0.0010849056603773582],
           "item": "receiver_ar_large",
           "massKg": 1.1499999999999999,
           "node": "receiver_ar_large:receiver"

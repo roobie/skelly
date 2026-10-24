@@ -58,29 +58,34 @@ local derivation(measure, clearanceUnits, snap, description, multiplier=null) =
       // the 1,195 px rifle at the listing's 43.5 in extended length, 0.9246 mm/px (12.44 px/u); the 1.148 in
       // receiver extension (32 px) and the 20 in barrel agree within 1%. The upper runs 252 px; the rail top sits
       // 2.85u above the bore and the upper's parting line 1.81u below, each to the nearest grid step, except that the
-      // bottom sits 2u below so the barrel extension's seat keeps its 0.5u wall.
+      // bottom sits 2u below so the barrel extension's seat keeps its 0.5u wall. The closed dust cover spans
+      // -9.65u to -1.41u (8.24u); the port takes 8u, longer than the 7.62×51 case needs, and keeps the derived height,
+      // since the 2u cover is shorter than the case head's clearance.
       receiver: {
         photo: 'https://viranomainen.fi/tiedostot/1/kuva/tuote/1200/12757212.jpg',
         scale: 'the 43.5 in extended overall length listed for the SR-25 E2 20 in, https://operationparts.com/?p=175806',
         lengthUnits: 20.25,
         heightUnits: 4.75,
         belowBoreUnits: 2,
+        ejectionPortLengthUnits: 8,
       },
+      // Not visible in the photo behind the closed dust cover: the carrier's full-height body fills the port's 2.5u
+      // height less 0.25u above and below, about its centre 0.25u above the bore. The port centres on the body, so a
+      // 6u body puts the port at -9.5u to -1.5u, on the cover's -9.65u to -1.41u.
+      carrier: { bottomU: -0.75, topU: 1.25, lengthU: 6 },
       // See magazines.jsonnet.
       magazineProfile: 'sr25-straight',
-      // Traced from the same photo, to the nearest grid step: the buffer tower's rear at -22.1u, the magazine's
-      // centre at -5u, the grip's top front 1.55u ahead of its mount at -13.9u, the guard's bottom at -7.8u (the
-      // finger space ends one 0.25u wall above it), and the flared magwell's lip at -6.4u in front and -7.8u behind.
+      // Traced from the same photo, to the nearest grid step: the magazine's centre at -5u, the grip's top front 1.55u
+      // ahead of its mount at -13.9u, the guard's bottom at -7.8u (the finger space ends one 0.25u wall above it), and
+      // the flared magwell's lip at -6.4u in front and -7.8u behind. Behind the upper the photo's end plate and castle
+      // nut make one face with the lower's rear; the model has neither, so the lower ends flush with the receiver.
       lower: {
-        rearX: -22,
+        rearX: -20.25,
         wellCenterX: -5,
         gripX: -15.5,
         fingerBottomU: -7.5,
         housingFrontBottomU: -6.5,
         housingRearBottomU: -7.75,
-        // Behind the upper the lower rises as its buffer tower to -1.6u, where the castle nut takes over; with no
-        // castle nut on the model it runs up to the buffer tube's underside at -1.25u.
-        bufferTowerTopU: -1.25,
         // Not visible in a side photo: flush with the receiver's sides.
         halfWidthU: 2,
       },

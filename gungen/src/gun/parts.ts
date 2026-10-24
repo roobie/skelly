@@ -37,7 +37,7 @@ import { akButtstockSolids, akStockTop } from './akButtstock.ts';
 import { AK_PROPORTIONS, akGasPortX } from './akProportions.ts';
 import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';
 import { arChargingHandle, arChargingHandleSolidsFor, arHandleChannel } from './arChargingHandle.ts';
-import { AR_FREE_FLOAT_HANDGUARDS, AR_LOWER_PROPORTIONS } from './arFrames.ts';
+import { AR_CARRIER_HEIGHTS, AR_FREE_FLOAT_HANDGUARDS, AR_LOWER_PROPORTIONS } from './arFrames.ts';
 import { AR_ACTION_LAYOUT, AR_ACTION_LAYOUTS, type ARActionLayout, arLayoutFor } from './arLayout.ts';
 import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';
 import {
@@ -619,11 +619,14 @@ interface ARCarrierEnvelope {
   readonly z: readonly [number, number];
 }
 // The carrier's face length is the frame's carrier-length measure, so each AR frame has its own envelope.
-const arCarrierEnvelope = (layout: ARActionLayout): ARCarrierEnvelope => ({
-  x: [1.5 - layout.carrierFaceLengthU, 1.5],
-  y: [-0.5, 1],
-  z: [-1.25, 1.25],
-});
+const arCarrierEnvelope = (layout: ARActionLayout): ARCarrierEnvelope => {
+  const traced = AR_CARRIER_HEIGHTS[layout.frameId];
+  return {
+    x: [1.5 - Math.max(layout.carrierFaceLengthU, traced?.lengthU ?? 0), 1.5],
+    y: traced === undefined ? [-0.5, 1] : [traced.bottomU, traced.topU],
+    z: [-1.25, 1.25],
+  };
+};
 export const BOLT_CARRIER_ENVELOPES = {
   ar: arCarrierEnvelope(AR_ACTION_LAYOUT),
   ak: { x: [-4.5, 1.5], y: [-1.25, 1.25], z: [-1.25, 1.25] },
@@ -2841,19 +2844,6 @@ const lower: PartFamily = {
           arWellCenterX,
           traced?.halfWidthU,
         );
-        // Behind the receiver a traced lower rises as its buffer tower, up under the buffer tube, so its rear
-        // reads as one block with the upper rather than a plate under it.
-        const receiverRearX = -arLayout!.receiverLengthU;
-        const bufferTower =
-          traced !== undefined && lowerRearX < receiverRearX
-            ? [
-                solid(
-                  'buffer-tower',
-                  [lowerRearX, 0, -traced.halfWidthU],
-                  [receiverRearX, fromBore(traced.bufferTowerTopU), traced.halfWidthU],
-                ),
-              ]
-            : [];
         const frontPanel = frame.find(({ id }) => id === 'frame-front');
         if (frontPanel?.kind !== 'box') {
           throw new Error('Expected a box-shaped magazine-well front panel.');
@@ -2865,7 +2855,6 @@ const lower: PartFamily = {
           family: 'lower',
           solids: [
             ...frame,
-            ...bufferTower,
             ...magazineHousing('magazine-housing', arWellCenterX, 0, {
               frontPanelThickness,
               halfWidth: wellOuterZ,

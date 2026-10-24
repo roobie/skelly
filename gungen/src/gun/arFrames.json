@@ -405,6 +405,11 @@
       }
     },
     {
+      "carrier": {
+        "bottomU": -0.75,
+        "lengthU": 6,
+        "topU": 1.25
+      },
       "cartridge": {
         "aliases": [
           {
@@ -652,19 +657,19 @@
       },
       "id": "large",
       "lower": {
-        "bufferTowerTopU": -1.25,
         "fingerBottomU": -7.5,
         "gripX": -15.5,
         "halfWidthU": 2,
         "housingFrontBottomU": -6.5,
         "housingRearBottomU": -7.75,
-        "rearX": -22,
+        "rearX": -20.25,
         "wellCenterX": -5
       },
       "magazineProfile": "sr25-straight",
       "rank": 1,
       "receiver": {
         "belowBoreUnits": 2,
+        "ejectionPortLengthUnits": 8,
         "heightUnits": 4.75,
         "lengthUnits": 20.25,
         "photo": "https://viranomainen.fi/tiedostot/1/kuva/tuote/1200/12757212.jpg",
