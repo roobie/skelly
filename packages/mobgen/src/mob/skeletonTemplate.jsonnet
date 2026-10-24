@@ -4,6 +4,8 @@ local material(color, emissive=0) = { color: color, emissive: emissive };
   description: 'Bare voxel bones on the humanoid rig: separate ribs, open jaw and glowing eye sockets.',
   bodyPlan: 'skeleton',
   status: 'comparison-only',
+  // The shared-rig attack clip this content selects (attack.ts, ATTACK_CLIPS owns the ids).
+  attackClip: 'swipe',
   bodyMassKg: 12,
   sizeReference: 'shambler',
   supportBones: ['foot.L', 'foot.R'],
@@ -16,11 +18,12 @@ local material(color, emissive=0) = { color: color, emissive: emissive };
   // The bone colour is drawn between `materials.bone` and this by `boneTint`.
   boneB: [0.74, 0.72, 0.57],
   params: {
-    // Girth only widens the shared gait's step; the bones keep their own sizes.
-    girth: { min: 0.55, max: 0.7 },
+    // The skeleton has no bulk: its stance width is this explicit target (gait.ts, stanceWidthTarget),
+    // not a girth-derived one.
+    stepWidth: { min: 0.2, max: 0.24 },
     shoulderWidth: { min: 1.15, max: 1.3 },
     hipWidth: { min: 0.9, max: 1.05 },
-    headScale: { min: 0.95, max: 1.08 },
+    headScale: { min: 0.96, max: 1.06 },
     armLength: { min: 0.95, max: 1.05 },
     legLength: { min: 0.96, max: 1.04 },
     hunch: { min: 0, max: 8 },
@@ -49,7 +52,7 @@ local material(color, emissive=0) = { color: color, emissive: emissive };
   // the skull's own height (skullFraction x height x headScale).
   geometry: {
     crispBlend: 0.006,
-    skullFraction: 0.17,
+    skullFraction: 0.15,
     faceForward: 0.45,
     // The head bone ends this far up the skull, inside the crown.
     headBoneLength: 0.8,
@@ -72,13 +75,19 @@ local material(color, emissive=0) = { color: color, emissive: emissive };
     socketRadius: 0.022,
     knobHalf: 0.022, kneeWidth: 1.1,
     upperArmRadius: 0.021, forearmRadius: 0.021, thighRadius: 0.024, shinRadius: 0.022,
-    palmLength: 0.035, palmHalf: [0.012, 0.03],
+    // The hand bone runs this far past the wrist (a fraction of height), long enough for four separate
+    // fingers to show below the palm.
+    handLength: 0.11,
+    palmLength: 0.05, palmHalf: [0.012, 0.03],
     // Fingers root this far into the palm; the thumb splays this many degrees off the hand's axis.
-    fingerCount: 3, fingerSpacingVoxels: 2, fingerRadiusVoxels: 0.6, fingerRootDepth: 0.5,
+    // Spacing is whole voxel columns: each finger owns a column with an air column between neighbours.
+    fingerCount: 4, fingerSpacingVoxels: 2, fingerRadiusVoxels: 0.6, fingerRootDepth: 0.5,
     thumbStart: 0.2, thumbLength: 0.028, thumbSplayDeg: 35,
     kneeSpread: 0.072, footSpread: 0.074,
-    heelBack: 0.025, heelForward: 0.01, footHalfWidth: 0.028, footBall: 0.55, archHeight: 0.035,
-    toeCount: 3, toeSpacingVoxels: 2, toeRadiusVoxels: 0.6, toeStartVoxels: 1,
+    heelBack: 0.025, heelForward: 0.01, footHalfWidth: 0.045, footBall: 0.55, archHeight: 0.035,
+    // Toes sit on adjacent columns; every other one roots back by the recess so five share the span
+    // three wide-spaced toes did, each tip clear of its neighbours.
+    toeCount: 5, toeSpacingVoxels: 1, toeRadiusVoxels: 0.6, toeStartVoxels: 1, toeRecessVoxels: 1,
     grimeScale: 0.05, grimeThreshold: 0.28,
   },
   gaze: {

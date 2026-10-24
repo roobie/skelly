@@ -27,6 +27,10 @@ Mobgen keeps body construction independent of feasibility rules and rendering so
 
 Template material tables and their parameter-driven colour choices are authored in Jsonnet so changing a look does not require changing a builder. Material bytes are local to a voxel grid, not a global palette; consumers must use that grid's material names. See `src/mob/materialTemplates.jsonnet`, `src/mob/materials.ts`, `resolveMaterials`, and `src/core/voxelize.ts`, `materialOf`.
 
+A material's emission is self-light: it brightens the part itself and nothing around it. Render paths decode it through their shared shader — the viewer's flesh material and the crowd shader — so a template's glowing parts read as light sources in a dark scene without a per-template material or a placed light. See `src/core/body.ts`, `MaterialDef`, `src/viewer/scene.ts`, `fleshMaterial`, and `src/mob/crowd.ts`, `CROWD_EMISSIVE_FRAGMENT`.
+
+Attacks are named clips authored on the shared rig; a template's content names the clip it plays (`attackClip`), and an absent or unknown name is an authoring error rather than a silent fallback, so no code path branches on a template to pick an attack. The viewer's clip selector exists to compare clips beside the content's own choice. See `src/core/template.ts`, `Template`, `src/mob/attack.ts`, `attackClipFor`, `ATTACK_CLIPS`, and `src/viewer/main.ts`.
+
 Humanoid coarse builds intentionally omit forearm and hand flesh while retaining forced marrow for connectivity. Those bones explicitly declare a marrow material so this omission preserves their appearance without a core skin fallback. See `src/mob/humanoid.ts`, `buildBones`, and `src/core/body.ts`, `Bone`.
 
 ## Body-plan constraints
@@ -35,7 +39,7 @@ The crawler is a distinct prone creature, not a humanoid gait variant: its arm-d
 
 The dog shambler is a quadruped: four paws, a hanging head and a limping diagonal gait whose opposite-corner pairs (fore-left with hind-right, fore-right with hind-left) define it, so it is its own body plan rather than a crouched humanoid. The four paws are the declared supports, and the template is `comparison-only` (`src/core/template.ts`, `TemplateStatus`): it is kept to compare gaits against other quadrupeds, is not fit for a player to meet, and so is never shipped. Consumers refuse it through `consumableTemplate` and the viewer labels it. See `src/mob/dog.ts`, `buildDog`, `dogPose`, `dogGaitPose`, `dogHitPose`, `src/mob/dogTemplate.ts`, `dogTemplate`, and `test/dog.test.ts`.
 
-The skeleton is its own body plan on the humanoid rig, so the shared humanoid poses drive it without a skeleton-specific animation path. Its thin parts are smaller than the sampling tolerance can preserve, so they snap to voxel rows and columns rather than vanishing or merging with a neighbour. It has no flesh, so its bones declare no marrow material. It stays `comparison-only` until its game contracts are decided. See `src/mob/skeleton.ts`, `buildSkeleton`, `src/mob/skeletonTemplate.jsonnet`, and `test/skeleton.test.ts`.
+The skeleton is its own body plan on the humanoid rig, so the shared humanoid poses drive it without a skeleton-specific animation path. Its thin parts are smaller than the sampling tolerance can preserve, so they snap to voxel rows and columns rather than vanishing or merging with a neighbour. It has no flesh, so its bones declare no marrow material, and its stance width is the template's explicit `stepWidth` rather than a girth-derived body width. It stays `comparison-only` until its game contracts are decided. See `src/mob/skeleton.ts`, `buildSkeleton`, `src/mob/skeletonTemplate.jsonnet`, `src/mob/gait.ts`, `stanceWidthTarget`, and `test/skeleton.test.ts`.
 
 ### Dog gait
 

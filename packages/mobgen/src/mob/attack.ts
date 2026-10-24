@@ -9,6 +9,7 @@
 
 import { clamp, hermite, type Mat3, mulMM, rotAxis, rotX, rotY, rotZ, smoothstep, type Vec3 } from '../core/math.ts';
 import type { EulerDeg, Pose } from '../core/pose.ts';
+import type { Template } from '../core/template.ts';
 import { GROUND_SMOOTHING, groundOffset, legGeometryFor, type WalkActor } from './gait.ts';
 import type { HumanoidParams } from './humanoid.ts';
 
@@ -89,7 +90,82 @@ export const LUNGE_GRAB: AttackClip = {
   ],
 };
 
-export const ATTACK_CLIPS: Readonly<Record<string, AttackClip>> = { LUNGE_GRAB };
+// The bones a one-armed swipe touches: the same shared-rig set as the grab, so both clips layer over
+// any humanoid-rig walk.
+const SWIPE_BONES = LUNGE_BONES;
+
+/** One-armed claw swipe: windup (torso coils away, the right arm lifts wide and curls), strike (torso
+ * unwinds, the arm sweeps horizontally across the front at chest height, hitTime), recover. Authored on
+ * the same rig and layered the same way as the grab; templates select between them by content
+ * (see attackClipFor), never by body-plan branch. */
+export const SWIPE: AttackClip = {
+  name: 'swipe',
+  duration: 0.85,
+  hitTime: 0.42,
+  keys: [
+    zeroKey(0, SWIPE_BONES),
+    {
+      t: 0.28,
+      rotations: {
+        spine: [2, -6, 0],
+        chest: [4, -8, 0],
+        head: [0, 9, 0],
+        jaw: [12, 0, 0],
+        'upperArm.L': [18, 0, 0],
+        'upperArm.R': [55, -100, 0],
+        'forearm.L': [25, 0, 0],
+        'forearm.R': [45, 0, 0],
+      },
+    },
+    {
+      t: 0.42,
+      rotations: {
+        spine: [-5, 7, 0],
+        chest: [-7, 10, 0],
+        head: [-3, -6, 0],
+        jaw: [24, 0, 0],
+        'upperArm.L': [8, 0, 0],
+        'upperArm.R': [85, 15, 0],
+        'forearm.L': [0, 0, 0],
+        'forearm.R': [0, 0, 0],
+      },
+      pelvisDrop: 0.02,
+    },
+    {
+      t: 0.6,
+      rotations: {
+        spine: [-2, 3, 0],
+        chest: [-3, 5, 0],
+        head: [-1, -3, 0],
+        jaw: [10, 0, 0],
+        'upperArm.L': [4, 0, 0],
+        'upperArm.R': [70, 40, 0],
+        'forearm.L': [0, 0, 0],
+        'forearm.R': [12, 0, 0],
+      },
+    },
+    zeroKey(0.85, SWIPE_BONES),
+  ],
+};
+
+/** Every shared-rig clip by its content-facing id (the clip's own name, so content and table cannot
+ * drift apart). Templates select an entry through `attackClip`; see attackClipFor. */
+export const ATTACK_CLIPS: Readonly<Record<string, AttackClip>> = {
+  [LUNGE_GRAB.name]: LUNGE_GRAB,
+  [SWIPE.name]: SWIPE,
+};
+
+/** Resolves the clip a template's content selects for the shared rig. A template that attacks through
+ * the shared rig must name one; an absent or unknown selection is an error, never a silent fallback to
+ * a default clip (`PILLARS.md`, "Content forward compatibility"). */
+export const attackClipFor = (template: Pick<Template, 'name' | 'attackClip'>): AttackClip => {
+  const id = template.attackClip;
+  const clip = id === undefined ? undefined : ATTACK_CLIPS[id];
+  if (!clip) {
+    throw new Error(`template "${template.name}" selects no known attack clip (${String(id)})`);
+  }
+  return clip;
+};
 
 // ---- keyframe curve: monotone cubic Hermite, zero slope forced at the clip's first/last key ----
 
