@@ -7,59 +7,42 @@ read_if:
 
 # Remaining families
 
-Working record for #509. Every item the original census listed has a row in
-`packages/thing-authoring-tool/items.jsonnet`, and the recipe in
-`packages/thing-authoring-tool/exports/deadvox.jsonnet` exports every row, so no family
-is left to build in the order the census proposed. Compass keeps its dedicated held
-display, so a ground model must not replace it; `work_in_progress` is a zero-mass crafting
-placeholder, not a usable item family. Inventory pictures follow
-`packages/deadvox/INTERFACE.md`, "Item pictures". Delete this phase task file when phase 4
-merges.
+Phase 4 of `things/WORK.md`, "Phases". Delete this task file when phase 4 merges.
 
-## What holds
+## Completion criteria
 
-For every thing-tool row the GLB Deadvox loads is the one the recipe exports:
-`test/things-deadvox-contract.test.mjs` checks the committed GLB and model entry against the
-recipe output, and `packages/deadvox/src/content/base/models-items.jsonnet` takes its entries
-from `packages/deadvox/src/content/base/things/index.json`. No GLB in `packages/deadvox/src/content/base/assets/models` is
-unreferenced.
+Phase 4 is complete when all of these hold:
 
-## Remaining: items needing a tool source
+- Every Deadvox item model that is not a gun part, an ammunition piece or a deliberate
+  exception has a thing-tool row, so no hand-made item GLB remains.
+- For every tool row the model Deadvox loads is the one the recipe exports, with no
+  Deadvox override of the exported grip, hold, roll or anchors.
+- A tool row a player holds authors its handling datum against a named solid.
 
-Deadvox models that no tool authors (not the thing tool, not gungen; mobgen writes no item
-models). Each is a hand-made GLB with a hand-written entry in
-`packages/deadvox/src/content/base/models-items.jsonnet`, and each needs a thing-tool row,
-model and authored mass, replacing the hand-made file:
+To derive what remains, compare the rows of `packages/thing-authoring-tool/items.jsonnet`,
+`items`, with the model registrations in
+`packages/deadvox/src/content/base/models-items.jsonnet`, `authored`, and
+`packages/deadvox/src/content/base/items-tools.libsonnet`, `models`, and look for datum
+overrides in `packages/deadvox/src/content/base/models-melee.jsonnet`, `models`, and in
+`authored`. The recipe, `packages/thing-authoring-tool/exports/deadvox.jsonnet`, exports
+every row. See `test/things-deadvox-contract.test.mjs`,
+"thing tool exports satisfy the Deadvox contract", for the check of each committed export.
 
-- Hand tools and parts: `hand_saw`, `screwdriver`, `pliers`, `wire_spool`, `small_spring`,
-  `hinge_set`, `fastener_pack`, `flashlight_mount`, `scrap_foregrip`.
-- Salvage and scrap: `glass_shards`, `glass_lens`, `glass_bulb`, `wood_offcut`,
-  `rubber_strip`, `circuit_board`, `cloth_bundle`, `lamp_oil_bottle`.
-- Light: `glowstick` (also drawn for `road_flare`).
-- Broken appliances and electronics: `broken_toaster`, `table_fan`, `cracked_phone`,
-  `broken_clock`, `electrical_repair_kit`, `sewing_kit`.
-- Worn gear: `stab_vest`, `riot_helmet`, `riot_helmet_view` (the worn view, no item),
-  `night_vision_goggles`.
-- Paper: `paper_sheet`, `folded_note`, `notebook`, shared by the notes, maps and books.
+## Exceptions
 
-`pliers` has no item using it, so check whether it is dead before authoring it.
-`oil_lamp` reuses the tool-authored lamp GLB with its own grip and flame datums, so it needs
-only the datum fix below.
+The compass keeps its dedicated held display, so a ground model must not replace it.
+`work_in_progress` is a zero-mass crafting placeholder, not a usable item family. Inventory
+pictures follow `packages/deadvox/INTERFACE.md`, "Item pictures", and are outside item models.
 
-## Remaining: items needing datum or model fixes
+## Why datums and models migrate
 
-Deadvox overrides the tool's exported grip, hold, roll or anchors for these, so the datums
-are not authored against the geometry (`things/WORK.md`, "Decisions"). Move each datum into
-its tool row against a named solid and delete the override, in
-`packages/deadvox/src/content/base/models-melee.jsonnet` and `models-items.jsonnet`:
+The thing tool owns handling datums and Deadvox consumes exports, so reshaping a handle moves
+the hand with it and Deadvox keeps no second geometry authority (`things/WORK.md`,
+"Decisions"). A hand-made GLB has no authored source, mass or datum to change with it, and a
+Deadvox override of an exported datum silently diverges from the geometry. Items that share a
+GLB, such as two lights drawn by one file, still keep separate item and model identities.
 
-- The melee set: `crowbar`, `hammer`, `sledgehammer`, `baseball_bat`, `kabar`,
-  `kitchen_knife`, `machete`, `wrench`, `steel_pipe`; their strike, face, claw and edge
-  anchors move too.
-- `flashlight` (grip and lens anchor), `oil_lamp` (grip and flame anchor).
+## Open for BR
 
-Tool rows with no handling datum that a player carries, and so take Deadvox's default hold:
-`electrical_tape`, `sewing_thread`, `nylon_cord`, `fuse`, `bear_trap`, `scissor_jack`,
-`bottle_jack`, `engine_hoist`, `dead_desk_lamp`. Rule whether the default hold suffices or each
-needs a datum. Vehicle parts, `cargo_space` and `player_bust` are fitted or worn, not held,
-and need none.
+Whether a carried tool row may take Deadvox's default hold instead of authoring a datum.
+Until BR rules, a carried row without a datum is not counted as complete.
