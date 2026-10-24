@@ -30,7 +30,7 @@ import {
 import { acidTemplate } from '../mob/acidTemplate.ts';
 import { amalgamManifest } from '../mob/amalgam.ts';
 import { VIEWER_TEMPLATES } from '../mob/amalgamTemplate.ts';
-import { ATTACK_CLIPS, type AttackClip, attackClipFor, attackPose } from '../mob/attack.ts';
+import { ATTACK_CLIPS, type AttackClip, attackClipById, attackClipFor, attackPose } from '../mob/attack.ts';
 import { crawlerGaitPose, crawlerHitPose, crawlerPose } from '../mob/crawler.ts';
 import { severableParts, severedBoneSet } from '../mob/dismember.ts';
 import { DOG_SEVERABLE_PARTS, dogGaitPose, dogHitPose, dogPose } from '../mob/dog.ts';
@@ -203,7 +203,7 @@ const ATTACK_COOLDOWN_S = 1.5; // matches deadvox's shambler attack cooldown
 let attackTime: number | undefined; // seconds into the playing clip, or undefined when idle
 let attackCooldown = 0; // seconds until the loop (if checked) fires the next attack
 /** Fallback clip until a template loads; the first load always sets the template's own choice. */
-let activeClip: AttackClip = ATTACK_CLIPS['lunge-grab']!;
+let activeClip: AttackClip = ATTACK_CLIPS['lunge-grab'];
 /** The clip this template's content selects, so the URL records only a deliberate override. */
 let templateClipName: string | undefined;
 /** A clip named by the page's URL, honoured on every load until the selector is touched by hand. */
@@ -213,7 +213,7 @@ for (const clip of Object.values(ATTACK_CLIPS)) {
 }
 attackClipSelect.addEventListener('change', () => {
   clipOverride = undefined;
-  activeClip = ATTACK_CLIPS[attackClipSelect.value]!;
+  activeClip = attackClipById(attackClipSelect.value)!;
   attackTime = undefined;
   updateUrl();
 });
@@ -436,7 +436,7 @@ const syncAttackClip = (template: Template): void => {
   attackClipSelect.closest('label')!.hidden = !humanoidRig;
   if (templateClipName !== undefined) {
     attackClipSelect.value = clipOverride ?? templateClipName;
-    activeClip = ATTACK_CLIPS[attackClipSelect.value]!;
+    activeClip = attackClipById(attackClipSelect.value)!;
   }
 };
 
@@ -705,7 +705,7 @@ const clipParam = query.get('clip');
 if (clipParam && [...attackClipSelect.options].some((o) => o.value === clipParam)) {
   clipOverride = clipParam;
   attackClipSelect.value = clipParam;
-  activeClip = ATTACK_CLIPS[clipParam]!;
+  activeClip = attackClipById(clipParam)!;
 }
 const stanceParam = query.get('stance');
 if (stanceParam && [...idleStanceSelect.options].some((o) => o.value === stanceParam)) {

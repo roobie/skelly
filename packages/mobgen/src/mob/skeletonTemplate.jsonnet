@@ -75,8 +75,8 @@ local material(color, emissive=0) = { color: color, emissive: emissive };
     socketRadius: 0.022,
     knobHalf: 0.022, kneeWidth: 1.1,
     upperArmRadius: 0.021, forearmRadius: 0.021, thighRadius: 0.024, shinRadius: 0.022,
-    // The hand bone runs this far past the wrist (a fraction of height), long enough for four separate
-    // fingers to show below the palm.
+    // How far the fingertips reach past the wrist (a fraction of height), long enough for four separate
+    // fingers to show below the palm; the hand bone itself stops near the palm (skeleton.ts, skeletonLayout).
     handLength: 0.11,
     palmLength: 0.05, palmHalf: [0.012, 0.03],
     // Fingers root this far into the palm; the thumb splays this many degrees off the hand's axis.

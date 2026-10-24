@@ -41,6 +41,16 @@ The dog shambler is a quadruped: four paws, a hanging head and a limping diagona
 
 The skeleton is its own body plan on the humanoid rig, so the shared humanoid poses drive it without a skeleton-specific animation path. Its thin parts are smaller than the sampling tolerance can preserve, so they snap to voxel rows and columns rather than vanishing or merging with a neighbour. It has no flesh, so its bones declare no marrow material, and its stance width is the template's explicit `stepWidth` rather than a girth-derived body width. It stays `comparison-only` until its game contracts are decided. See `src/mob/skeleton.ts`, `buildSkeleton`, `src/mob/skeletonTemplate.jsonnet`, `src/mob/gait.ts`, `stanceWidthTarget`, and `test/skeleton.test.ts`.
 
+The skeleton's look and attack follow these rulings, each with its reason:
+
+- **Swipe.** The skeleton attacks with a one-armed swipe, not the humanoids' two-armed grab. A bare-bone body has no mass to lunge with, and a distinct attack makes it read as a different threat. It is authored on the shared rig and chosen through the template's `attackClip`, so the swipe needs no skeleton-specific animation path and its timing is tuned in content. See `src/mob/attackClips.jsonnet`, `src/mob/attack.ts`, `attackClipFor`.
+- **Middle skull.** The skull is sized between the merged oversized skull and a human-proportioned one: the oversized skull read as a toy, and a human-sized one lost the face at game distance. See `src/mob/skeleton.ts`, `buildSkull`, `skeletonLayout`.
+- **Orange eyes.** The eye sockets keep the merged orange. The colour is the one glowing cue on a pale body, and it is self-light, so it brightens the eyes and lights nothing around them. See `src/mob/skeletonTemplate.jsonnet`, `materials`.
+- **Four fingers plus a thumb.** Each hand has five digits so it reads as a hand. The digits are voxel geometry on the hand bone: the rig gets no extra digit bones and a digit cannot be severed on its own, because digit-level animation and loss are outside the dismemberment model. The hand bone stops near the palm and `handLength` sets how far the fingertips reach past it. See `src/mob/skeleton.ts`, `buildHand`, `skeletonLayout`.
+- **Five toes.** Each foot has five toes for the same read. The same boundary holds: no toe bones and no independent toe animation or loss, which stay separate scope. See `src/mob/skeleton.ts`, `buildFoot`.
+- **No girth, explicit step width.** The skeleton has no bulk to derive a width from, so its stance width is an authored input rather than a hidden code default.
+- **Clip choice by content.** Which clip a template plays is its own content choice, so adding an attack never adds a branch on body plan.
+
 ### Dog gait
 
 The trot uses a withers-normalized stride rather than increasing cadence to compensate for a short,
