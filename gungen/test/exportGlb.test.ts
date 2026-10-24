@@ -647,8 +647,12 @@ describe('glb export: deadvox model entry', () => {
     it('keeps every exported sight line clear of other solids', () => {
       const corpus = loadCorpus();
       expect(corpus.length).toBeGreaterThan(0);
+      // Sightless designs have no line to check; the sight-metadata corpus test ties metadata to sight parts.
       for (const { label, assembly } of corpus) {
-        expectSightLineClear(exported(assembly), label);
+        const out = exported(assembly);
+        if (out.modelEntry.gun.sight) {
+          expectSightLineClear(out, label);
+        }
       }
     });
   });
