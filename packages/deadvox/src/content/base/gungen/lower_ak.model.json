@@ -1,0 +1,13 @@
+{
+  "id": "lower_ak",
+  "file": "assets/models/lower_ak.glb",
+  "gun": {},
+  "parts": {
+    "lower_ak": {
+      "item": "lower_ak",
+      "node": "lower_ak:lower",
+      "massKg": 0.25,
+      "centreOfMass": [-0.13586788154897494, -0.01074259681093394, -0.000013667425968109337]
+    }
+  }
+}

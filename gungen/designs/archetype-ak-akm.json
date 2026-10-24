@@ -7,52 +7,20 @@
     "description": "The archetype-ak rifle carrying the AKM magazine instead of the AK-74 one.",
     "root": "receiver",
     "parts": {
-      "receiver": {
-        "family": "ak-receiver",
-        "params": {
-          "bore": "S"
-        }
-      },
-      "bolt-carrier": {
-        "family": "bolt-carrier",
-        "params": { "pattern": "ak" }
-      },
-      "lower": {
-        "family": "lower",
-        "params": {
-          "layout": "ak"
-        }
-      },
-      "barrel": {
-        "family": "barrel",
-        "params": {
-          "length": "M"
-        }
-      },
+      "receiver": { "item": "receiver_ak" },
+      "bolt-carrier": { "item": "bolt_carrier_ak" },
+      "lower": { "item": "lower_ak" },
+      "barrel": { "item": "barrel_ak_medium" },
       "muzzle-device": {
         "family": "ak-muzzle-device",
         "params": {
           "style": "slant"
         }
       },
-      "handguard": {
-        "family": "handguard",
-        "params": {
-          "layout": "ak"
-        }
-      },
-      "gas-cylinder": {
-        "family": "gas-cylinder"
-      },
-      "gas-block": {
-        "family": "gas-block"
-      },
-      "grip": {
-        "family": "grip",
-        "params": {
-          "length": "M"
-        }
-      },
+      "handguard": { "item": "handguard_ak" },
+      "gas-cylinder": { "item": "gas_cylinder_ak" },
+      "gas-block": { "item": "gas_block_ak" },
+      "grip": { "item": "grip_ak" },
       "magazine": {
         "family": "magazine",
         "params": {
@@ -65,22 +33,9 @@
           "version": 1
         }
       },
-      "stock": {
-        "family": "stock",
-        "params": {
-          "length": "L",
-          "style": "ak-buttstock"
-        }
-      },
-      "rear-sight": {
-        "family": "ak-rear-sight"
-      },
-      "front-sight": {
-        "family": "front-sight",
-        "params": {
-          "style": "ak"
-        }
-      }
+      "stock": { "item": "stock_ak_long" },
+      "rear-sight": { "item": "rear_sight_ak" },
+      "front-sight": { "item": "front_sight_ak" }
     },
     "connections": [
       {

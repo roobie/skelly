@@ -1,0 +1,13 @@
+{
+  "id": "bolt_carrier_ak",
+  "file": "assets/models/bolt_carrier_ak.glb",
+  "gun": {},
+  "parts": {
+    "bolt_carrier_ak": {
+      "item": "bolt_carrier_ak",
+      "node": "bolt_carrier_ak:bolt-carrier",
+      "massKg": 0.52,
+      "centreOfMass": [-0.019016949152542376, -0.00009792843691148774, -0.0009227871939736342]
+    }
+  }
+}

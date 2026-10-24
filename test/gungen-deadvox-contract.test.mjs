@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { loadExportRecipe } from '../gungen/src/cli/exportRecipe.ts';
+import { PART_CATALOGUE } from '../gungen/src/gun/catalogue.ts';
 import { loadGunDesign } from '../gungen/src/gun/designLoader.ts';
 import { exportGunGlb } from '../gungen/src/gun/exportGlb.ts';
 import { buildRegistry } from '../packages/deadvox/src/core/content.ts';
@@ -211,11 +212,14 @@ describe('gungen exports satisfy deadvox model validation', () => {
           .map(([id, part]) => [id, part.item]),
       );
       assert.deepEqual(fitted, gun.items, `${gun.id}: fitted part items differ from its design`);
+      // A composed body has no part left weighed by a mass row.
+      assert.deepEqual(Object.keys(fitted).sort(), Object.keys(parts).sort(), `${gun.id}: body part without an item`);
       for (const [id, itemId] of Object.entries(gun.items)) {
         const item = registry.items.get(itemId);
         const loose = item && modelOf(registry, item);
         assert.ok(loose && item.model === looseExport.get(itemId), `${gun.id} ${id}: ${itemId} is no loose export`);
         const { massKg } = parts[id];
+        assert.equal(massKg, PART_CATALOGUE.items.get(itemId)?.massKg, `${gun.id} ${id}: mass differs from ${itemId}`);
         assert.deepEqual(
           Object.values(loose.parts ?? {}).map((part) => part.massKg),
           [massKg],
@@ -224,6 +228,21 @@ describe('gungen exports satisfy deadvox model validation', () => {
         assert.equal(typeWeightGrams(registry, itemId), massKg * 1000, `${gun.id} ${id}: ${itemId} weight`);
       }
     }
+  });
+
+  it('weighs the replaceable children of each composed recipe gun as children, never as body parts', () => {
+    const { registry } = BASE_CONSUMPTION;
+    let children = 0;
+    for (const gun of COMPOSED_GUNS) {
+      const model = registry.models.get(gun.id);
+      const replaceable = [model.gun?.slots?.magazine?.node, ...(model.gun?.attachments ?? []).map(({ node }) => node)];
+      const body = new Set(Object.values(model.parts ?? {}).map(({ node }) => node));
+      for (const node of replaceable.filter((child) => child !== undefined)) {
+        children += 1;
+        assert.ok(!body.has(node), `${gun.id}: replaceable ${node} is weighed as a body part`);
+      }
+    }
+    assert.ok(children > 0, 'no composed recipe gun has a replaceable child');
   });
 
   it('reports a dangling model reference and a gun companion drawn from outside the recipe', () => {

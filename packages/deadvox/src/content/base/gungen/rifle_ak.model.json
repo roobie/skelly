@@ -3,52 +3,67 @@
   "file": "assets/models/rifle_ak.glb",
   "parts": {
     "receiver": {
+      "item": "receiver_ak",
       "node": "receiver:ak-receiver",
       "massKg": 0.85,
       "centreOfMass": [-0.12189654535377797, 0.013765749122482917, -0.00159948272676889]
     },
     "bolt-carrier": {
+      "item": "bolt_carrier_ak",
       "node": "bolt-carrier:bolt-carrier",
       "massKg": 0.52,
       "centreOfMass": [-0.04886666666666667, 0.010404166666666667, 0.0010124999999999939]
     },
     "lower": {
+      "item": "lower_ak",
       "node": "lower:lower",
       "massKg": 0.25,
       "centreOfMass": [-0.1358078129455375, -0.022650128314798974, -0.000022241231822067367]
     },
-    "barrel": { "node": "barrel:barrel", "massKg": 0.7, "centreOfMass": [0.184, 0, 2.2533501104311298e-17] },
+    "barrel": {
+      "item": "barrel_ak_medium",
+      "node": "barrel:barrel",
+      "massKg": 0.7,
+      "centreOfMass": [0.184, 0, 2.2533501104311298e-17]
+    },
     "handguard": {
+      "item": "handguard_ak",
       "node": "handguard:handguard",
       "massKg": 0.25,
       "centreOfMass": [0.08912941176470585, 0.00429019607843137, 1.0915204882753347e-17]
     },
     "gas-cylinder": {
+      "item": "gas_cylinder_ak",
       "node": "gas-cylinder:gas-cylinder",
       "massKg": 0.18,
       "centreOfMass": [0.12599999999999997, 0.026000000000000002, 1.543054966925665e-17]
     },
     "gas-block": {
+      "item": "gas_block_ak",
       "node": "gas-block:gas-block",
       "massKg": 0.07,
       "centreOfMass": [0.24076543209876544, 0.013358024691358024, 5.891645746379332e-17]
     },
     "grip": {
+      "item": "grip_ak",
       "node": "grip:grip",
       "massKg": 0.1,
       "centreOfMass": [-0.22734294225893464, -0.07449784466758376, 1.3317506036538535e-17]
     },
     "stock": {
+      "item": "stock_ak_long",
       "node": "stock:stock",
       "massKg": 0.4,
       "centreOfMass": [-0.395506432748538, -0.03869707602339182, -4.813604515889194e-17]
     },
     "rear-sight": {
+      "item": "rear_sight_ak",
       "node": "rear-sight:ak-rear-sight",
       "massKg": 0.05,
       "centreOfMass": [-0.029, 0.046, -5.661659807388895e-18]
     },
     "front-sight": {
+      "item": "front_sight_ak",
       "node": "front-sight:front-sight",
       "massKg": 0.05,
       "centreOfMass": [0.34786935866983376, 0.013953681710213781, -0.000004750593824142815]

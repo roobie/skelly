@@ -77,6 +77,10 @@ Settled:
 - Where gun part shapes differ, each shape is its own item, such as a plain and a threaded
   barrel, sharing build helpers but not identity, each with its own weight. A part then
   looks and weighs the same loose and fitted, and its mass is authored once.
+- A different finish of the same gun part shape is also its own item. Each item fixes one
+  look and one mass, so it looks and weighs the same loose and fitted, and one item per
+  finish needs no new mechanism. The accepted cost is that each new finish of an existing
+  shape adds a catalogue item and a loose model.
 - A fitted part's item reference travels on the assembly's physical part, so there is no
   separate composition record to keep in step with the parts. Deadvox checks that the
   named item exists and weighs what the part does. See

@@ -1,0 +1,13 @@
+{
+  "id": "rear_sight_ak",
+  "file": "assets/models/rear_sight_ak.glb",
+  "gun": {},
+  "parts": {
+    "rear_sight_ak": {
+      "item": "rear_sight_ak",
+      "node": "rear_sight_ak:sight",
+      "massKg": 0.05,
+      "centreOfMass": [0.0008666666666666667, 0.003, 0]
+    }
+  }
+}
