@@ -38,8 +38,10 @@ const rowMass = ({ context, family, params }: BuiltPart, catalogue: PartCatalogu
     (row) => row.family === family && Object.entries(row.match).every(([key, value]) => params[key] === value),
   );
   if (matches.length !== 1) {
+    // Items that differ only in finish match the same params, so only an item reference can tell them apart.
+    const items = matches.filter(({ id }) => catalogue.items.has(id));
     throw new PartMassError(
-      `${context}, resolved params ${JSON.stringify(params)}: expected one authored mass row; matched ${matches.length === 0 ? 'none' : matches.map(({ id: row }) => row).join(', ')}`,
+      `${context}, resolved params ${JSON.stringify(params)}: expected one authored mass row; matched ${matches.length === 0 ? 'none' : matches.map(({ id: row }) => row).join(', ')}${items.length > 1 ? `; name one of the items ${items.map(({ id }) => id).join(', ')}` : ''}`,
     );
   }
   return { massKg: matches[0]!.massKg };

@@ -5,6 +5,7 @@ import { expect, it } from 'vitest';
 import { ATTACHMENT_IDS, attachmentInstanceForId } from '../src/gun/attachments.ts';
 import { loadPartCatalogue, PART_CATALOGUE } from '../src/gun/catalogue.ts';
 import { gunDomain } from '../src/gun/domain.ts';
+import { GUN_FINISH_SLOTS, GUN_PALETTE } from '../src/gun/palette.ts';
 import { gunModelParts, PartMassError } from '../src/gun/physical.ts';
 import {
   PART_FIXTURE_CONTENT,
@@ -18,6 +19,7 @@ const MASS_CONTEXT = /mass-fixture.*body.*fixture.*plain.*matched/;
 const AMBIGUOUS_ROWS = /plain-body, second-body/;
 const NO_TAB_ITEM = /no tab item/;
 const BUILT_OTHERWISE = /built with size/;
+const FINISH_AMBIGUITY = /name one of the items fixture_tab, fixture_refinished_tab/;
 
 const fixtureDomain = (): Domain => {
   const part: PartDef = { family: 'fixture', solids: [], ports: [], axes: [], keepOuts: [] };
@@ -111,14 +113,28 @@ it('refuses an item reference that names another family or a part built otherwis
   expect(() => fixtureParts(large)).toThrow(BUILT_OTHERWISE);
 });
 
-it('refuses a catalogue in which two items build the same part', () => {
-  const [item] = PART_FIXTURE_CONTENT.parts;
+it('keeps two finishes of one construction as distinct items and refuses a true duplicate', () => {
+  const tab = PART_FIXTURE_CONTENT.parts.find(({ id }) => id === PART_FIXTURE_ITEMS.tab)!;
+  const [slot] = GUN_FINISH_SLOTS;
+  const [first, second] = Object.keys(GUN_PALETTE.materials ?? {});
+  const finished = { ...tab, finish: { [slot!]: first! } };
+  const refinished = { ...tab, id: 'fixture_refinished_tab', finish: { [slot!]: second! } };
+  const content = { ...PART_FIXTURE_CONTENT, parts: [...PART_FIXTURE_CONTENT.parts, refinished] };
+  const variants = partFixtureCatalogue({
+    ...content,
+    parts: content.parts.map((part) => (part.id === tab.id ? finished : part)),
+  });
+  expect(variants.items.get(refinished.id)?.finish).not.toEqual(variants.items.get(tab.id)?.finish);
+  const assembly = partFixtureAssembly('front', 'flat');
+  const exported = (items: Readonly<Record<string, string>>) =>
+    gunModelParts(resolvedFixture(assembly), REPLACEABLE, { catalogue: variants, items });
+  expect(exported({ ...PART_FIXTURE_ITEMS, tab: refinished.id }).tab?.item).toBe(refinished.id);
+  expect(exported(PART_FIXTURE_ITEMS).tab?.item).toBe(tab.id);
+  // A part that names no item cannot choose between finishes, so its mass is refused rather than picked.
+  expect(() => exported({ frame: PART_FIXTURE_ITEMS.frame })).toThrow(FINISH_AMBIGUITY);
   expect(() =>
-    partFixtureCatalogue({
-      ...PART_FIXTURE_CONTENT,
-      parts: [...PART_FIXTURE_CONTENT.parts, { ...item, id: 'fixture_twin' }],
-    }),
-  ).toThrow('two catalogue items build the same part');
+    partFixtureCatalogue({ ...content, parts: [...content.parts, { ...refinished, id: 'fixture_twin' }] }),
+  ).toThrow('two catalogue items build the same part in the same finish');
 });
 
 it('names the missing half when a catalogue entry has construction params but no finish', () => {

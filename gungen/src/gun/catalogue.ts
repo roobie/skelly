@@ -78,8 +78,11 @@ export const loadPartCatalogue = (raw: unknown, domain: Domain = gunDomain): Par
   const parsed = parse(CatalogueSchema, raw);
   const placement = new Set(parsed.placementParams);
   const items = parsed.parts.filter(isItem);
-  const identities = items.map(({ family, params }) =>
-    JSON.stringify([family, Object.entries(params).sort(([a], [b]) => a.localeCompare(b))]),
+  const sorted = (table: Readonly<Record<string, string>>) =>
+    Object.entries(table).sort(([a], [b]) => a.localeCompare(b));
+  // Finish is identity too: a different finish of the same construction is its own item.
+  const identities = items.map(({ family, params, finish }) =>
+    JSON.stringify([family, sorted(params), sorted(finish)]),
   );
   const problems = [
     ...parsed.parts.flatMap((entry) => [
@@ -93,7 +96,9 @@ export const loadPartCatalogue = (raw: unknown, domain: Domain = gunDomain): Par
         : [`catalogue entry ${entry.id} needs both params and finish to be an item`]),
     ]),
     ...(new Set(parsed.parts.map(({ id }) => id)).size === parsed.parts.length ? [] : ['catalogue ids must be unique']),
-    ...(new Set(identities).size === identities.length ? [] : ['two catalogue items build the same part']),
+    ...(new Set(identities).size === identities.length
+      ? []
+      : ['two catalogue items build the same part in the same finish']),
     ...items.flatMap((item) => (domain.families[item.family] ? itemProblems(item, domain, placement) : [])),
   ];
   if (problems.length > 0) {
