@@ -452,6 +452,10 @@ const useLocationRefusal = (
   });
 };
 
+/** Books, notes and maps all read through one use option, so every hand route agrees on what reads. */
+export const isReadableItem = (def: ItemDef): boolean =>
+  def.book !== undefined || def.readable !== undefined || def.paperMap !== undefined;
+
 const goneReason = (registry: Registry, def: ItemDef, item: string): string => {
   if (def.battery) {
     return coreMessage(registry, 'batteryGone');
@@ -516,7 +520,7 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   if (locationRefusal) {
     return refuseUse(inv, locationRefusal);
   }
-  if (def.book || def.readable || def.paperMap) {
+  if (isReadableItem(def)) {
     return {
       kind: 'use',
       label: coreLabel(inv.registry, 'read'),

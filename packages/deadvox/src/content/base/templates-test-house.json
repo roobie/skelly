@@ -1062,6 +1062,242 @@
       "size": [2, 4, 1]
     },
     {
+      "id": "test_house_reading_booth",
+      "layers": [
+        [
+          "kkkkkkkk",
+          "kkkkkkkk",
+          "kkkkkkkk",
+          "kkkkkkkk",
+          "kkkkkkkk",
+          "kkkkkkkk",
+          "kkkkkkkk",
+          "kkkkkkkk",
+          "kkkkkkkk",
+          "kkkkkkkk",
+          "kkkkkkkk",
+          "kkkkkkkk"
+        ],
+        [
+          "bbbbb..b",
+          "b......b",
+          "b......b",
+          "b..bbbbb",
+          "b......b",
+          "b......b",
+          "bbbbb..b",
+          "b......b",
+          "b......b",
+          "b.ZZ...b",
+          "b.ZZ...b",
+          "bbbbbbbb"
+        ],
+        [
+          "bbbbb..b",
+          "b......b",
+          "b......b",
+          "b..bbbbb",
+          "b......b",
+          "b......b",
+          "bbbbb..b",
+          "b......b",
+          "b......b",
+          "b.ZZ...b",
+          "b.ZZ...b",
+          "bbbbbbbb"
+        ],
+        [
+          "bbbbb..b",
+          "b......b",
+          "b......b",
+          "b..bbbbb",
+          "b......b",
+          "b......b",
+          "bbbbb..b",
+          "b......b",
+          "b......b",
+          "b......b",
+          "b......b",
+          "bbbbbbbb"
+        ],
+        [
+          "bbbbb..b",
+          "b......b",
+          "b......b",
+          "b..bbbbb",
+          "b......b",
+          "b......b",
+          "bbbbb..b",
+          "b......b",
+          "b......b",
+          "b......b",
+          "b......b",
+          "bbbbbbbb"
+        ],
+        [
+          "bbbbb..b",
+          "b......b",
+          "b......b",
+          "b..bbbbb",
+          "b......b",
+          "b......b",
+          "bbbbb..b",
+          "b......b",
+          "b......b",
+          "b......b",
+          "b......b",
+          "bbbbbbbb"
+        ],
+        [
+          "bbbbbbbb",
+          "bbbbbbbb",
+          "bbbbbbbb",
+          "bbbbbbbb",
+          "bbbbbbbb",
+          "bbbbbbbb",
+          "bbbbbbbb",
+          "bbbbbbbb",
+          "bbbbbbbb",
+          "bbbbbbbb",
+          "bbbbbbbb",
+          "bbbbbbbb"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS"
+          ],
+          [
+            "SSSSSRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRSSSSS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SSSSSRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRSSRRRS",
+            "SRSSRRRS",
+            "SSSSSSSS"
+          ],
+          [
+            "SSSSSRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRSSSSS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SSSSSRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRSSRRRS",
+            "SRSSRRRS",
+            "SSSSSSSS"
+          ],
+          [
+            "SSSSSRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRSSSSS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SSSSSRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SSSSSSSS"
+          ],
+          [
+            "SSSSSRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRSSSSS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SSSSSRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SSSSSSSS"
+          ],
+          [
+            "SSSSSRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRSSSSS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SSSSSRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SSSSSSSS"
+          ],
+          [
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS"
+          ]
+        ]
+      },
+      "palette": {
+        ".": "air",
+        "Z": {
+          "furniture": "crate",
+          "items": [
+            {
+              "count": 1,
+              "item": "sample_note",
+              "placement": "surface"
+            },
+            {
+              "count": 1,
+              "item": "regional_map",
+              "placement": "surface"
+            },
+            {
+              "charge": 1,
+              "count": 1,
+              "item": "flashlight",
+              "placement": "surface"
+            }
+          ]
+        },
+        "b": "brick",
+        "k": "concrete"
+      },
+      "size": [8, 7, 12]
+    },
+    {
       "id": "test_house_loose_wardrobe",
       "layers": [["GG"], ["OO"], ["OO"], ["OO"], ["OO"]],
       "lootContext": {

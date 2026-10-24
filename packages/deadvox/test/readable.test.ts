@@ -96,6 +96,7 @@ describe('authored readable text', () => {
       reach,
       feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
       notice: () => undefined,
+      readingLight: () => undefined,
       read: (value) => shown.push(value),
     });
     const note = inventory.create('note');
@@ -129,6 +130,7 @@ describe('authored readable text', () => {
       reach,
       feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
       notice: () => undefined,
+      readingLight: () => undefined,
       read: (request) => shown.push(request),
     });
 
@@ -144,9 +146,28 @@ describe('authored readable text', () => {
     ]);
   });
 
-  it('picks a wall-face plaque for reading and admits only its live in-reach owner', () => {
+  it('refuses a held note with the reading-light reason and shows nothing', () => {
+    const { registry } = admit(readable);
+    const inventory = new Inventory(registry);
+    const shown: ReadRequest[] = [];
+    const owner = new Survival(new Simulation({ seed: 1 }), inventory, new HandlingQueue(inventory), {
+      reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK }),
+      feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
+      notice: () => undefined,
+      readingLight: () => 'fixture darkness',
+      read: (value) => shown.push(value),
+    });
+    const note = inventory.create('note');
+    expect(inventory.add(note, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(owner.use(note)).toBe('fixture darkness');
+    expect(shown).toEqual([]);
+  });
+
+  const signSession = (hour: number) => {
     const { registry, issues } = admit(readable);
-    expect(issues).toEqual([]);
+    if (issues.length > 0) {
+      throw new Error(`The sign fixture was not admitted: ${JSON.stringify(issues)}`);
+    }
     const shown: ReadRequest[] = [];
     const session = createSession({
       registry: {
@@ -161,7 +182,7 @@ describe('authored readable text', () => {
       isOpaque: () => false,
       scale: makeScale(0.5),
       seed: 1,
-      start: 0,
+      start: hour * 3600,
       spawn: [0, 1, 0],
       ready: () => false,
       controls: {
@@ -177,6 +198,21 @@ describe('authored readable text', () => {
       onRead: (value) => shown.push(value),
     });
     const sign = session.inventory.furnish({ type: 'sign', pos: [2, 0, 0], size: [1, 1, 1], facing: 'w' })!;
+    return { registry, session, sign, shown };
+  };
+
+  it('refuses a sign in darkness and measures the light within the sign it admits', () => {
+    const dark = signSession(0);
+    expect(dark.session.readFurniture(dark.sign)).toBe(coreMessage(dark.registry, 'tooDarkToRead'));
+    expect(dark.shown).toEqual([]);
+    const lit = signSession(12);
+    expect(lit.session.readFurniture(lit.sign)).toBeUndefined();
+    const [request] = lit.shown;
+    expect(request?.kind === 'text' && request.lightAt?.map(Math.floor)).toEqual(lit.sign.pos);
+  });
+
+  it('picks a wall-face plaque for reading and admits only its live in-reach owner', () => {
+    const { session, sign, shown } = signSession(12);
     const target = pickInteractionTarget({
       inventory: session.inventory,
       entities: session.inventory.entities,
@@ -201,7 +237,7 @@ describe('authored readable text', () => {
     const goneReason = session.readFurniture({ ...sign });
     expect(goneReason).toBeTruthy();
     expect(session.readFurniture(target.entity)).toBeUndefined();
-    expect(shown).toEqual([{ kind: 'text', readable }]);
+    expect(shown).toMatchObject([{ kind: 'text', readable }]);
     expect({
       time: session.sim.time,
       version: session.inventory.version,
