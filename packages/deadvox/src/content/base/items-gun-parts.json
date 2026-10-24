@@ -448,6 +448,110 @@
         "tiers": [],
         "usage": []
       },
+      "id": "revolver_barrel",
+      "model": "revolver_barrel",
+      "name": "Revolver barrel",
+      "notLoot": false,
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "revolver_crane",
+      "model": "revolver_crane",
+      "name": "Revolver crane",
+      "notLoot": false,
+      "size": [1, 1],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "revolver_cylinder",
+      "model": "revolver_cylinder",
+      "name": "Revolver cylinder",
+      "notLoot": false,
+      "size": [1, 1],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "revolver_ejector",
+      "model": "revolver_ejector",
+      "name": "Revolver ejector",
+      "notLoot": false,
+      "size": [1, 1],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "revolver_frame",
+      "model": "revolver_frame",
+      "name": "Revolver frame",
+      "notLoot": false,
+      "size": [2, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "revolver_grip",
+      "model": "revolver_grip",
+      "name": "Revolver grip",
+      "notLoot": false,
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "revolver_hammer",
+      "model": "revolver_hammer",
+      "name": "Revolver hammer",
+      "notLoot": false,
+      "size": [1, 1],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "revolver_trigger",
+      "model": "revolver_trigger",
+      "name": "Revolver trigger",
+      "notLoot": false,
+      "size": [1, 1],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "stock_ak_long",
       "model": "stock_ak_long",
       "name": "AK buttstock",

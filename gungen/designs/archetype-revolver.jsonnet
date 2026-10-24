@@ -1,4 +1,4 @@
-local part(family, params={}) = { family: family } + if std.length(params) == 0 then {} else { params: params };
+local part(item, params={}) = { item: item } + if std.length(params) == 0 then {} else { params: params };
 local connect(from, to) = { from: from, to: to };
 {
   format: 1,
@@ -9,12 +9,12 @@ local connect(from, to) = { from: from, to: to };
     description: 'Curated K/L-frame revolver with an aligned six-chamber cylinder.',
     root: 'frame',
     parts: {
-      frame: part('revolver-frame', { bore: 'M', frameSize: 'M', butt: 'round' }),
-      barrel: part('revolver-barrel', { length: 'M', style: 'classic' }),
-      cylinder: part('revolver-cylinder', { chamberCount: '6', chamberIndex: '0' }),
-      crane: part('revolver-crane'), ejector: part('revolver-ejector'),
-      hammer: part('revolver-hammer'), trigger: part('revolver-trigger'),
-      grip: part('revolver-grip', { length: 'M' }),
+      frame: part('revolver_frame'),
+      barrel: part('revolver_barrel'),
+      cylinder: part('revolver_cylinder', { chamberIndex: '0' }),
+      crane: part('revolver_crane'), ejector: part('revolver_ejector'),
+      hammer: part('revolver_hammer'), trigger: part('revolver_trigger'),
+      grip: part('revolver_grip'),
     },
     connections: [
       connect('frame.crane', 'crane.mount'),

@@ -3191,41 +3191,49 @@
       "parts": {
         "barrel": {
           "centreOfMass": [0.06241223832528181, -0.0035780998389694043, 3.0914863189787685e-17],
+          "item": "revolver_barrel",
           "massKg": 0.22,
           "node": "barrel:revolver-barrel"
         },
         "crane": {
           "centreOfMass": [-0.0011578947368421117, -0.033789473684210529, 2.6169734202756441e-19],
+          "item": "revolver_crane",
           "massKg": 0.070000000000000007,
           "node": "crane:revolver-crane"
         },
         "cylinder": {
           "centreOfMass": [-0.032000000000000001, -0.015043478260869566, -7.8981041518316817e-18],
+          "item": "revolver_cylinder",
           "massKg": 0.28000000000000003,
           "node": "cylinder:revolver-cylinder"
         },
         "ejector": {
           "centreOfMass": [-0.031923076923076929, -0.014923076923076923, 0.00061538461538460435],
+          "item": "revolver_ejector",
           "massKg": 0.025000000000000001,
           "node": "ejector:revolver-ejector"
         },
         "frame": {
           "centreOfMass": [-0.059156943303204548, -0.032027937551355794, -9.8603122432210289e-6],
+          "item": "revolver_frame",
           "massKg": 0.40000000000000002,
           "node": "frame:revolver-frame"
         },
         "grip": {
           "centreOfMass": [-0.12143708116157857, -0.099346239761727489, 1.2001889342106404e-17],
+          "item": "revolver_grip",
           "massKg": 0.080000000000000002,
           "node": "grip:revolver-grip"
         },
         "hammer": {
           "centreOfMass": [-0.082799999999999985, -0.0064000000000000003, -1.0140075496940083e-17],
+          "item": "revolver_hammer",
           "massKg": 0.029999999999999999,
           "node": "hammer:revolver-hammer"
         },
         "trigger": {
           "centreOfMass": [-0.041733333333333338, -0.067866666666666672, -5.1108593084416213e-18],
+          "item": "revolver_trigger",
           "massKg": 0.025000000000000001,
           "node": "trigger:revolver-trigger"
         }

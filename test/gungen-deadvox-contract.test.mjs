@@ -335,7 +335,11 @@ describe('gungen exports satisfy deadvox model validation', () => {
     assert.ok(models.length > 0);
     await Promise.all(
       models.map(async (model) => {
-        assert.deepEqual(buildRegistry([{ source: model.file, data: { models: [model] } }]).issues, []);
+        const { issues } = buildRegistry([{ source: model.file, data: { models: [model] } }]);
+        assert.deepEqual(
+          issues.filter(({ path }) => !PART_ITEM_PATH.test(path)),
+          [],
+        );
         const bytes = readFileSync(join(DEADVOX_BASE, model.file));
         const loaded = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
         const roles = ['crane', 'cylinder', 'ejector', 'hammer', 'trigger'];

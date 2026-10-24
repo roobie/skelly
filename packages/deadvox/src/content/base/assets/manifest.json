@@ -75,7 +75,15 @@
         "assets/models/front_bead.glb",
         "assets/models/tube_magazine.glb",
         "assets/models/forend_pump.glb",
-        "assets/models/integral_magazine.glb"
+        "assets/models/integral_magazine.glb",
+        "assets/models/revolver_frame.glb",
+        "assets/models/revolver_barrel.glb",
+        "assets/models/revolver_cylinder.glb",
+        "assets/models/revolver_crane.glb",
+        "assets/models/revolver_ejector.glb",
+        "assets/models/revolver_grip.glb",
+        "assets/models/revolver_hammer.glb",
+        "assets/models/revolver_trigger.glb"
       ],
       "licence": "CC0-1.0",
       "title": "Gungen authored model exports",
