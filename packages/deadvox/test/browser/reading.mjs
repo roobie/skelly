@@ -1268,8 +1268,15 @@ try {
         source.uid,
         JSON.stringify({ source, aimed }),
       );
-      const searchFrom = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
       await pressAction(page, 'world.interact');
+      const searchStarted = await page.waitForFunction((uid) => {
+        const { session } = globalThis.readingWitness;
+        return (
+          session.queue.jobs.some((job) => job.kind === 'action' && job.params.entityUid === uid) && session.sim.time
+        );
+      }, source.uid);
+      const searchFrom = await searchStarted.jsonValue();
+      await searchStarted.dispose();
       await waitForSimulation(
         page,
         (uid) => {
