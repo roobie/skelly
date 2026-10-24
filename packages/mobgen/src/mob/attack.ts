@@ -98,7 +98,7 @@ const SWIPE_BONES = LUNGE_BONES;
  * unwinds, the arm sweeps horizontally across the front at chest height, hitTime), recover. Authored on
  * the same rig and layered the same way as the grab; templates select between them by content
  * (see attackClipFor), never by body-plan branch. */
-export const SWIPE: AttackClip = {
+const SWIPE: AttackClip = {
   name: 'swipe',
   duration: 0.85,
   hitTime: 0.42,

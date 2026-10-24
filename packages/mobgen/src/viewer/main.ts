@@ -30,7 +30,7 @@ import {
 import { acidTemplate } from '../mob/acidTemplate.ts';
 import { amalgamManifest } from '../mob/amalgam.ts';
 import { VIEWER_TEMPLATES } from '../mob/amalgamTemplate.ts';
-import { ATTACK_CLIPS, attackClipFor, attackPose, type AttackClip } from '../mob/attack.ts';
+import { ATTACK_CLIPS, type AttackClip, attackClipFor, attackPose } from '../mob/attack.ts';
 import { crawlerGaitPose, crawlerHitPose, crawlerPose } from '../mob/crawler.ts';
 import { severableParts, severedBoneSet } from '../mob/dismember.ts';
 import { DOG_SEVERABLE_PARTS, dogGaitPose, dogHitPose, dogPose } from '../mob/dog.ts';

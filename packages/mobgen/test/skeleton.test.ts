@@ -16,8 +16,7 @@ const maxFilledRuns = (seed: number, boneId: string, axis: 'x' | 'z'): number =>
   const { body, voxels } = realize(generate(skeletonTemplate, seed));
   const [nx, ny, nz] = voxels.dims;
   const owner = body.bones.findIndex((b) => b.id === boneId)! + 1;
-  const own = (i: number, j: number, k: number): boolean =>
-    voxels.owner[cellIndex(voxels.dims, i, j, k)] === owner;
+  const own = (i: number, j: number, k: number): boolean => voxels.owner[cellIndex(voxels.dims, i, j, k)] === owner;
   const countRuns = (n: number, filledAt: (c: number) => boolean): number => {
     let runs = 0;
     let filled = false;
@@ -93,9 +92,7 @@ describe('skeleton template', () => {
     const g = skeletonTemplate.geometry;
     for (const seed of SEEDS) {
       expect(maxFilledRuns(seed, 'hand.L', 'z'), `fingers seed ${seed}`).toBeGreaterThanOrEqual(g.fingerCount);
-      expect(maxFilledRuns(seed, 'foot.L', 'x'), `toes seed ${seed}`).toBeGreaterThanOrEqual(
-        Math.ceil(g.toeCount / 2),
-      );
+      expect(maxFilledRuns(seed, 'foot.L', 'x'), `toes seed ${seed}`).toBeGreaterThanOrEqual(Math.ceil(g.toeCount / 2));
     }
   });
 

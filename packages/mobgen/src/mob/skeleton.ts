@@ -14,8 +14,8 @@ import {
   buildBones,
   HUMANOID_LIMB_BONES,
   type HumanoidParams,
-  type JointLayoutParams,
   type JointLayout,
+  type JointLayoutParams,
   jointLayout,
   REF,
   snapCol,
@@ -387,7 +387,15 @@ const buildHand = (side: Side, [wrist, tip]: readonly [Vec3, Vec3], g: Geometry,
   for (let i = 0; i < count; i++) {
     const z = base + (i - (count - 1) / 2) * g.fingerSpacingVoxels * v;
     features.push(
-      capsule(bone, [[root[0], root[1], z], [tipOut[0], tipOut[1], z]], fingerRadius, blend),
+      capsule(
+        bone,
+        [
+          [root[0], root[1], z],
+          [tipOut[0], tipOut[1], z],
+        ],
+        fingerRadius,
+        blend,
+      ),
     );
   }
   // The thumb leaves the palm's outer edge, splayed away from the hand's axis.
