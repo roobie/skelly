@@ -3,6 +3,7 @@ read_if:
   - "you're changing mobgen's core, authoring or body-plan boundaries"
   - "you're changing the crawler's body-plan or gait constraints"
   - "you're changing the dog shambler's body-plan or gait constraints"
+  - "you're changing the skeleton's body plan or deciding its game contracts"
   - "you're reviewing the amalgam's visual quality pass in #378"
   - "you're changing the Mobgen/Deadvox boundary or the amalgam's movement-cost trade-off"
   - "you're marking a template ready or comparison-only"
@@ -33,6 +34,8 @@ Humanoid coarse builds intentionally omit forearm and hand flesh while retaining
 The crawler is a distinct prone creature, not a humanoid gait variant: its arm-drag silhouette and trailing leg stumps define its identity. Other proposed forms need their own body plans. See `src/mob/crawler.ts`, `crawlerPose`, `crawlerGaitPose`, `crawlerHitPose`, and `test/crawler.test.ts`.
 
 The dog shambler is a quadruped: four paws, a hanging head and a limping diagonal gait whose opposite-corner pairs (fore-left with hind-right, fore-right with hind-left) define it, so it is its own body plan rather than a crouched humanoid. The four paws are the declared supports, and the template is `comparison-only` (`src/core/template.ts`, `TemplateStatus`): it is kept to compare gaits against other quadrupeds, is not fit for a player to meet, and so is never shipped. Consumers refuse it through `consumableTemplate` and the viewer labels it. See `src/mob/dog.ts`, `buildDog`, `dogPose`, `dogGaitPose`, `dogHitPose`, `src/mob/dogTemplate.ts`, `dogTemplate`, and `test/dog.test.ts`.
+
+The skeleton is its own body plan on the humanoid rig: it keeps the humanoid's bone names and reference joints so the shared walk, idle and attack poses drive it unchanged, while its bare-bone shape, sizes and colours are template content rather than builder constants. Its ribs, eye sockets, nose and teeth snap to voxel rows and columns because at full detail each is one or two voxels, and an unsnapped one merges with its neighbour or vanishes. It has no flesh, so its bones declare no marrow material. It stays `comparison-only` until its game contracts (eye light, severing, hit regions) are decided. See `src/mob/skeleton.ts`, `buildSkeleton`, `src/mob/skeletonTemplate.jsonnet`, and `test/skeleton.test.ts`.
 
 ### Dog gait
 
