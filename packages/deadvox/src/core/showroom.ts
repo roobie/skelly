@@ -50,7 +50,7 @@ export const propCentre = ({ pos, size }: ShowroomProp): Vec3 => [
 ];
 
 /** Where to stand to look at a prop: in front of it, on the floor it stands on, facing its centre. */
-export const facingPose = (prop: ShowroomProp, distance: number): ShowroomPose => {
+const facingPose = (prop: ShowroomProp, distance: number): ShowroomPose => {
   const centre = propCentre(prop);
   const front = prop.facing === 's' ? (prop.pos[2] + prop.size[2]) * S + distance : prop.pos[2] * S - distance;
   const pos: Vec3 = [centre[0], centre[1], front];

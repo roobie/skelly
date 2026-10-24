@@ -43,7 +43,7 @@ they demonstrate ordinary interactions without a derived supply catalogue. Shari
 house supply makes charging respond to the same blackout as other appliances, while
 nearby portable equipment avoids debug inventory edits or travel. Liquid service shares
 the charging corner so the player can compare portable light sources without privileged
-setup. See `src/content/base/templates-test-house.jsonnet`, `test_house_charging`.
+setup. See `src/content/base/templates-test-house.jsonnet`, `test_house_showroom`.
 Derived repair stock and the handling range are debug-only because their purpose is
 repeatable system evaluation. See `src/game/play.ts`, `populateTestHouseRepairCorner`, and
 `src/game/worldSetup.ts`, `DebugTestHouseSite`. The range's owning rule remains in
