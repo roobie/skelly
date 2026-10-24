@@ -83,6 +83,9 @@ const page = (state) => html`  <main>
             <label id="deadvox-at-field" ?hidden=${!visible('deadvox-at-field', state)}>Debug start position (m): x,z[,yaw°]
               <input name="at" data-url-param="at" type="text" placeholder="x,z[,yaw]" autocomplete="off"  data-state-key="at" .value=${state.deadvox.at} .disabled=${!enabled('deadvox', 'at', state)}/>
             </label>
+            <label id="deadvox-focus-field" ?hidden=${!visible('deadvox-focus-field', state)}>Showroom focus (furniture id; blank: default spawn)
+              <input name="focus" data-url-param="focus" type="text" placeholder="grinding_wheel" autocomplete="off" spellcheck="false" data-state-key="focus" .value=${state.deadvox.focus} .disabled=${!enabled('deadvox', 'focus', state)}/>
+            </label>
             <label id="deadvox-handedness-field" ?hidden=${!visible('deadvox-handedness-field', state)}>Debug dominant hand
               <select name="handedness" data-url-param="handedness" data-state-key="handedness" .value=${state.deadvox.handedness} .disabled=${!enabled('deadvox', 'handedness', state)}>
                 <option value="">Start-card choice</option>
@@ -241,6 +244,7 @@ const model = {
     debug: false,
     loadout: '',
     at: '',
+    focus: '',
     handedness: '',
     wobbleFlat: '',
     weathering: '',
@@ -280,6 +284,8 @@ const visibility = {
   'deadvox-debug-field': (d) => d.bench === '',
   'deadvox-loadout-field': (d) => d.bench === '' && d.debug,
   'deadvox-at-field': (d) => d.bench === '' && d.debug,
+  // Focus picks a showroom prop, and only the test house has a showroom.
+  'deadvox-focus-field': (d) => d.bench === '' && d.debug && d.site === 'testHouse',
   'deadvox-handedness-field': (d) => d.bench === '' && d.debug,
   'deadvox-wobble-flat-field': (d) => d.bench === '' && d.debug,
   'deadvox-weathering-field': (d) => d.bench === '' && d.debug,
@@ -310,6 +316,7 @@ const deadvoxControlVisibility = {
   debug: 'deadvox-debug-field',
   loadout: 'deadvox-loadout-field',
   at: 'deadvox-at-field',
+  focus: 'deadvox-focus-field',
   handedness: 'deadvox-handedness-field',
   wobbleFlat: 'deadvox-wobble-flat-field',
   weathering: 'deadvox-weathering-field',
@@ -381,6 +388,9 @@ const addDebugParams = (params, d) => {
   setDefault(params, 'weatheringSplit', d.weatheringSplit.trim(), '');
   if (siteOffered(d, d.site) && (d.site === 'testHouse' || d.site === 'weatheringTest')) {
     params.set('site', d.site);
+  }
+  if (enabled('deadvox', 'focus', { deadvox: d })) {
+    setDefault(params, 'focus', d.focus.trim(), '');
   }
 };
 // Sites the game offers only in play compose into the URL only then, never with a benchmark.
@@ -606,6 +616,7 @@ const onPreset = (e) => {
   }
   Object.assign(model.deadvox, presets[name], {
     at: '',
+    focus: '',
     loadout: '',
     lastDefault: '',
   });

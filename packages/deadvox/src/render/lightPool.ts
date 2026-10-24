@@ -11,7 +11,7 @@ import type { PileMeshes } from './piles.ts';
 /** Fixed shader-light budget: carried sources and dropped sources have stable partitions. */
 const CARRIED_POINT_LIGHTS = 4;
 const DROPPED_POINT_LIGHTS = 4;
-/** Point-light slots before the fixtures; the skylight patch fades only the slots from here on. */
+/** Point-light slots before the fixtures. */
 export const ITEM_POINT_LIGHTS = CARRIED_POINT_LIGHTS + DROPPED_POINT_LIGHTS;
 /** Fixed shader budget for the night-vision flare's halos at once (`src/render/nightVisionFlare.ts`). */
 export const NIGHT_VISION_HALOS = 4;
@@ -24,10 +24,10 @@ interface LightPoolContext {
   blockSize: number;
   daylightScale: number;
   /**
-   * Scale for fixtures in the main scene. Under the skylight it is 1, because the shader fades each fixture by
-   * the daylight at the lit surface; the hand scene has no such patch and keeps `daylightScale`.
+   * World output must not inherit the viewer's daylight washout through a bright doorway.
+   * The separate hand scene still adapts to the viewer through `daylightScale`.
    */
-  fixtureDaylightScale?: number;
+  worldDaylightScale?: number;
   fixtures?: readonly PoweredLight[];
   /** Body glows (the acid sac): presentation lights that take the item slots no item uses, nearest first. */
   glows?: readonly BodyGlow[];
@@ -134,7 +134,7 @@ export class LightPool {
       this.syncHandLight(index, light);
       return;
     }
-    light.intensity = fixture.intensity * (context.fixtureDaylightScale ?? daylightScale);
+    light.intensity = fixture.intensity * (context.worldDaylightScale ?? daylightScale);
     light.position.set(...(fixture.pos.map((value) => value * blockSize) as [number, number, number]));
     light.color.set(fixture.color);
     light.distance = fixture.radius;
@@ -218,9 +218,9 @@ export class LightPool {
       light.position.copy(position);
       light.color.set(spec.color);
       light.distance = spec.radius;
-      light.intensity = spec.intensity * daylightScale;
+      light.intensity = spec.intensity * (context.worldDaylightScale ?? daylightScale);
       this.flareSkipped[index] = spec.nightVision !== undefined;
-      this.syncHandLight(index, light);
+      this.syncHandLight(index, light, spec.intensity * daylightScale);
     }
   }
 }

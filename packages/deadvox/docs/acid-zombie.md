@@ -67,7 +67,7 @@ These must all work, because each is the reason the fight reads as more than tra
 
 ## Spawning
 
-Acid zombies spawn only in labs, where `DESIGN.md`, "Evolution" puts weird types. Each lab storey holds as many acid zombies as its depth: one on the entry storey, then one more on each storey down; storeys outside the lab's numbered depth, such as the sewer, hold none. Lab threat is authored per storey as weighted marker rows, which gives chances, not counts, so the acid zombies take fixed marker cells beside those rows. See `src/content/base/gauntlet-lab-threat.libsonnet`, `acidCounts`, and `src/content/base/gauntlet-lab.libsonnet`, `storeys`. The type is otherwise `authoredOnly`, so ordinary settlement selection cannot place it.
+Acid zombies spawn only in labs, where `DESIGN.md`, "Evolution" puts weird types. Each lab storey holds as many acid zombies as its depth: one on the entry level, two on administration, three on research, and one more on each storey down; storeys outside the lab's numbered depth, such as the sewer, hold none. Lab threat is authored per storey as weighted marker rows, which gives chances, not counts, so the acid zombies take fixed marker cells beside those rows. See `src/content/base/gauntlet-lab-threat.libsonnet`, `acidCounts`, and `src/content/base/gauntlet-lab.libsonnet`, `storeys`. The type is otherwise `authoredOnly`, so ordinary settlement selection cannot place it.
 
 ## Saves and determinism
 

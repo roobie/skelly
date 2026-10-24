@@ -8,16 +8,17 @@ local atom(id, family, massKg, dimensions, finish, solid, exportMass, turn=[0, 0
 };
 {
   shellMassKg: 0.100,
-  local tin(id, radius, height, label, serving, exportMass) = atom(id, 'openTin', self.shellMassKg, {
+  local tin(id, radius, height, label, serving, exportMass, food='paint-terracotta', massKg=self.shellMassKg) = atom(id, 'openTin', massKg, {
     radius: radius, height: height, wall: 0.0008, rimWidth: 0.0014,
     labelHeight: height * 0.68, labelThickness: 0.0003, stripeHeight: 0.003,
     hingeWidth: 0.012, hingeHeight: 0.004,
     serving: serving, foodDepth: height * 0.23, beanRadius: 0.006, beanCount: 6,
-  }, { body: 'steel-grey', label: label, stripe: 'paperboard-tan', food: 'paint-terracotta' }, 'wall', exportMass),
+  }, { body: 'steel-grey', label: label, stripe: 'paperboard-tan', food: food }, 'wall', exportMass),
   items: [
     tin('opened_beans', 0.037, 0.11, 'paint-terracotta', 'beans', exportMass='inventory-atom'),
     tin('opened_soup', 0.034, 0.12, 'paperboard-tan', 'soup', exportMass='inventory-atom'),
     tin('empty_can', 0.037, 0.11, 'paint-terracotta', 'empty', exportMass='inventory-atom'),
+    tin('opened_soda', 0.033, 0.115, 'plastic-red', 'drink', exportMass='inventory-atom', food='paint-oxblood', massKg=0.015),
     atom('can_opener', 'handOpener', 0.100, {
       handleLength: 0.127, tangWidth: 0.008, tangDepth: 0.006,
       gripLength: 0.092, gripWidth: 0.014, gripDepth: 0.014,

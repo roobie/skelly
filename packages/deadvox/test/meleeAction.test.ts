@@ -45,7 +45,6 @@ it('reports a completed empty-hand swing only after its owner finishes, not afte
   const combat = new PlayerCombat(
     { playPlayerMeleeSwing: () => undefined, resolvePlayerMelee: () => false },
     undefined,
-    undefined,
     { onCompletedSwing: (isFist) => completed.push(isFist) },
   );
   const hands = { right: null, left: null };
@@ -100,7 +99,7 @@ const makeSystem = (
     onMeleeResult: (result) => results.push(result.id === undefined ? 'miss' : 'hit'),
     onSound: (event) => sounds.push(event),
   });
-  playerCombats.set(system, new PlayerCombat(system, (uid) => weaponHits.push(uid)));
+  playerCombats.set(system, new PlayerCombat(system, undefined, { onWeaponHit: (uid) => weaponHits.push(uid) }));
   return system;
 };
 

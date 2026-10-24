@@ -7,7 +7,9 @@ import { loadExportRecipe } from '../gungen/src/cli/exportRecipe.ts';
 import { loadGunDesign } from '../gungen/src/gun/designLoader.ts';
 import { exportGunGlb } from '../gungen/src/gun/exportGlb.ts';
 import { buildRegistry } from '../packages/deadvox/src/core/content.ts';
+import { magazineFits } from '../packages/deadvox/src/core/magazine.ts';
 import { ModelSchema } from '../packages/deadvox/src/core/schema.ts';
+import { ammoMatchesCalibre, spentCaseItemId } from '../packages/deadvox/src/game/firearmHandling.ts';
 import { namedNodes } from '../packages/deadvox/src/render/firearmModel.ts';
 import {
   assertExportSynced,
@@ -66,6 +68,58 @@ const committedModels = () =>
       .flatMap((file) => JSON.parse(readFileSync(join(DEADVOX_BASE, file), 'utf8')).models)
       .map((model) => [model.id, model]),
   );
+const BASE_SOURCES = readdirSync(DEADVOX_BASE)
+  .filter((file) => file.endsWith('.json'))
+  .sort()
+  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(DEADVOX_BASE, file), 'utf8')) }));
+const RECIPE_IDS = new Set(RECIPE.map(({ id }) => id));
+const modelOf = (registry, item) => (item.model === undefined ? undefined : registry.models.get(item.model));
+const certifiedAttachments = (model) =>
+  new Set([
+    ...(model.gun?.attachments ?? []).map(({ id }) => id),
+    ...Object.values(model.gun?.compatibility ?? {}).flat(),
+  ]);
+// The items the game pairs with a gun: ammo of its calibre, its spent case, fitting magazines and its attachments.
+const companionsOf = (registry, gun) => {
+  const model = modelOf(registry, gun);
+  const calibre = model.gun?.calibre;
+  const attachments = certifiedAttachments(model);
+  return [...registry.items.values()].filter(
+    (item) =>
+      item !== gun &&
+      ((calibre !== undefined &&
+        (ammoMatchesCalibre(item.id, calibre, registry) || item.id === spentCaseItemId(calibre))) ||
+        magazineFits(registry, gun.id, item.id) ||
+        attachments.has(modelOf(registry, item)?.gun?.attachment?.id)),
+  );
+};
+// Builds the whole content base, as the game does, and lists what breaks the recipe's consumption boundary.
+const consumptionGaps = (sources) => {
+  const { registry, issues } = buildRegistry(sources);
+  const gaps = issues.map(({ source, path, message }) => `${source} ${path}: ${message}`);
+  const items = [...registry.items.values()];
+  for (const id of RECIPE_IDS) {
+    if (!registry.models.has(id)) {
+      gaps.push(`${id}: the recipe export is not a registered model`);
+    } else if (!items.some((item) => item.model === id)) {
+      gaps.push(`${id}: no item draws the recipe export`);
+    }
+  }
+  const guns = items.filter((item) => item.firearm && RECIPE_IDS.has(item.model));
+  let companions = 0;
+  for (const gun of guns) {
+    const paired = companionsOf(registry, gun);
+    if (paired.length === 0) {
+      gaps.push(`${gun.id}: no companion item`);
+    }
+    companions += paired.length;
+    for (const item of paired.filter(({ model }) => !RECIPE_IDS.has(model))) {
+      gaps.push(`${gun.id}: companion ${item.id} draws ${item.model}, which no recipe row exports`);
+    }
+  }
+  return { registry, gaps, guns: guns.length, companions };
+};
+const BASE_CONSUMPTION = consumptionGaps(BASE_SOURCES);
 
 describe('gungen exports satisfy deadvox model validation', () => {
   it('validates each curated gun model entry, including action metadata', () => {
@@ -123,6 +177,39 @@ describe('gungen exports satisfy deadvox model validation', () => {
           );
         }
       }),
+    );
+  });
+
+  it('registers every recipe export in the full base and keeps each gun companion inside the recipe', () => {
+    const { gaps, guns, companions } = BASE_CONSUMPTION;
+    assert.deepEqual(gaps, []);
+    assert.ok(guns > 0 && companions > 0, 'the base must consume a recipe gun and its companions');
+  });
+
+  it('reports a dangling model reference and a gun companion drawn from outside the recipe', () => {
+    const { registry } = BASE_CONSUMPTION;
+    const gun = [...registry.items.values()].find((item) => item.firearm && RECIPE_IDS.has(item.model));
+    const ammo = companionsOf(registry, gun).find((item) => item.ammo);
+    const stray = [...registry.models.values()].find(
+      (model) => !(RECIPE_IDS.has(model.id) || model.gun || model.parts),
+    );
+    assert.ok(gun && ammo && stray);
+    const fixture = (id, model) => ({
+      source: `fixture-${id}.json`,
+      data: { items: [{ ...ammo, id, name: `Fixture ${id}`, model }] },
+    });
+    const { gaps } = consumptionGaps([
+      ...BASE_SOURCES,
+      fixture('dangling_cartridge', 'fixture_missing_model'),
+      fixture('stray_cartridge', stray.id),
+    ]);
+    assert.ok(
+      gaps.some((gap) => gap.startsWith('fixture-dangling_cartridge.json') && gap.includes('fixture_missing_model')),
+      JSON.stringify(gaps),
+    );
+    assert.ok(
+      gaps.includes(`${gun.id}: companion stray_cartridge draws ${stray.id}, which no recipe row exports`),
+      JSON.stringify(gaps),
     );
   });
 

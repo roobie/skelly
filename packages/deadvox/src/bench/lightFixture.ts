@@ -131,6 +131,7 @@ export const createBenchLightFixture = (engine: RenderedEngine, calendar: number
     reach: bindReach({ inventory, position: spawn.pos, blockSize, clock: simulation.clock }),
     feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
     notice: () => undefined,
+    readingLight: () => undefined,
     read: () => {
       throw new Error('Unexpected reading in light benchmark fixture');
     },

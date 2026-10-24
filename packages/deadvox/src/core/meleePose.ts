@@ -8,6 +8,9 @@ export type MeleeHand = 'right' | 'left';
 export const meleeContactTime = (cooldown: number, contactFraction: number, windupCapSimSeconds: number): number =>
   Math.min(contactFraction * cooldown, windupCapSimSeconds);
 
+/** When the wind-up reaches the pulled-back pose, where a charged swing holds. */
+export const meleePullEnd = (contact: number): number => contact * 0.36;
+
 export interface MeleeActionPose {
   profile: MeleeProfile;
   hand: MeleeHand;
@@ -58,7 +61,7 @@ const swingPath = (
 ) => {
   const { contact, cooldown } = timing;
   const { pull, strike, follow } = path;
-  const pullEnd = contact * 0.36;
+  const pullEnd = meleePullEnd(contact);
   if (elapsed <= pullEnd) {
     return blendHand(handPose(), pull, smooth(elapsed / pullEnd));
   }

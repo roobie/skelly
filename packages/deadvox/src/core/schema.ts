@@ -992,6 +992,21 @@ const CanisterSchema = strictObject({
   capacity: Positive,
 });
 
+/** Holding the attack past the wind-up builds a stronger strike. Doc: `docs/charged-attacks.md`. */
+const MeleeChargeSchema = strictObject({
+  /** Sim seconds of holding that reach the full charge; holding longer adds nothing. */
+  fullSimSeconds: PositiveSimSeconds,
+  /** Shapes the build-up: the charge level is the held share of `fullSimSeconds` raised to this power. */
+  curveExponent: Positive,
+  /** Damage multiplier at the full charge; a partial charge scales linearly towards it. */
+  damageMultiplier: Positive,
+  /** Impulse multiplier at the full charge; a partial charge scales linearly towards it. */
+  impulseMultiplier: Positive,
+  /** Extra stamina a full charge costs on release, scaled by the charge level. */
+  stamina: NonNegative,
+});
+export type MeleeCharge = InferOutput<typeof MeleeChargeSchema>;
+
 const WeaponSchema = strictObject({
   melee: strictObject({
     motion: picklist(MELEE_MOTIONS),
@@ -1024,6 +1039,7 @@ const WeaponSchema = strictObject({
     /** Played over the hit, such as a metal ring for a metal weapon. */
     hitLayerSound: optional(Id),
     type: picklist(MELEE_DAMAGE_KINDS),
+    charge: optional(MeleeChargeSchema),
   }),
 });
 
@@ -1206,6 +1222,12 @@ const LightSchema = strictObject({
   burnTimeGameHours: optional(PositiveGameHours),
   /** Fuel units consumed per Game hour, for self-fueled sources such as a lighter. */
   fuelPerGameHour: optional(GamePerHour),
+  liquidFuel: optional(
+    strictObject({
+      accepts: pipe(array(Id), minLength(1)),
+      microlitresPerGameSecond: pipe(Positive, integer(), maxValue(Number.MAX_SAFE_INTEGER)),
+    }),
+  ),
   /** A cone-shaped beam; absent means light all around. */
   beam: optional(
     strictObject({
@@ -1409,6 +1431,30 @@ const TreatmentSchema = pipe(
   ),
 );
 
+const LiquidVolumeMicrolitres = pipe(number(), safeInteger(), minValue(0));
+const LiquidContentsSchema = union([
+  strictObject({ kind: literal('empty') }),
+  strictObject({
+    kind: literal('filled'),
+    liquid: Id,
+    volumeMicrolitres: pipe(LiquidVolumeMicrolitres, minValue(1)),
+  }),
+]);
+const LiquidSchema = strictObject({ id: Id, name: Name, densityGramsPerMillilitre: pipe(Positive, finite()) });
+const VesselSchema = strictObject({
+  capacityMicrolitres: pipe(LiquidVolumeMicrolitres, minValue(1)),
+  accepts: pipe(array(Id), nonEmpty()),
+  initialContents: LiquidContentsSchema,
+  pour: optional(
+    strictObject({
+      incrementMicrolitres: pipe(LiquidVolumeMicrolitres, minValue(1)),
+      microlitresPerSimSecond: pipe(Positive, finite()),
+    }),
+  ),
+});
+
+export type LiquidContents = InferOutput<typeof LiquidContentsSchema>;
+
 const ItemSchema = strictObject({
   id: Id,
   economy: ItemEconomySchema,
@@ -1465,6 +1511,7 @@ const ItemSchema = strictObject({
   book: optional(BookSchema),
   battery: optional(BatterySchema),
   canister: optional(CanisterSchema),
+  vessel: optional(VesselSchema),
   /** A working alarm clock: carried, it lets a sleep run to a chosen wake hour. */
   alarm: optional(literal(true)),
   /** Initial ADS power for a variable-power optic; constrained by its exported range. */
@@ -2670,6 +2717,44 @@ const LayoutRect = pipe(
   check((r) => r.x0 < r.x1 && r.z0 < r.z1, 'must have positive area'),
 );
 
+const HalfMetrePosition = tuple([HalfMetres, HalfMetres, HalfMetres]);
+const PositiveHalfMetres = pipe(HalfMetres, minValue(0.5));
+/** Where new features are shown: an authored row of slots and a derived catalogue of every furniture piece. */
+const ShowroomSchema = strictObject({
+  /** The west end of the slot row's front line, feet on the deck; slots run east from here. */
+  row: HalfMetrePosition,
+  /** Which way every slot's front faces; the row is seen from that side. */
+  facing: picklist(['n', 's']),
+  /** Gap between neighbouring slots. */
+  spacing: PositiveHalfMetres,
+  /** How many slots the row holds; a new slot past it replaces the oldest. */
+  capacity: pipe(Count, minValue(1)),
+  /** Oldest first; the default spawn faces the last. */
+  slots: array(
+    strictObject({
+      furniture: Id,
+      fixed: optional(literal(true)),
+      /** The slot's fixture stock. */
+      items: optional(pipe(array(omit(FixedLootItem, ['key'])), nonEmpty())),
+    }),
+  ),
+  /** How far in front of a prop a focus spawn stands. */
+  focusDistance: PositiveHalfMetres,
+  /** Every content furniture piece in rows facing south, on a flat floor; row packing remains game logic. */
+  catalogue: strictObject({
+    /** The floor's north-west corner, feet height; rows run east and each next row lies further south. */
+    position: HalfMetrePosition,
+    /** How far east a row may run. */
+    width: PositiveHalfMetres,
+    /** Gap between neighbouring pieces, and the aisle in front of each row. */
+    spacing: PositiveHalfMetres,
+    /** The block the floor is made of. */
+    floor: Id,
+    /** How far the natural ground takes to blend into the floor. */
+    blend: PositiveHalfMetres,
+  }),
+});
+
 const SiteLayoutSchema = strictObject({
   /** Layout keys are URL scene names, including camel-case names. */
   id: pipe(string(), regex(/^[a-zA-Z][a-zA-Z0-9_]*$/, 'must be a URL scene name')),
@@ -2699,6 +2784,7 @@ const SiteLayoutSchema = strictObject({
   bays: optional(array(strictObject({ position: MetrePosition, facing: picklist(['n', 'e', 's', 'w']) }))),
   /** The building template whose containers receive derived repair stock; derivation remains game logic. */
   repairStock: optional(Id),
+  showroom: optional(ShowroomSchema),
   player: strictObject({
     position: MetrePosition,
     /** Clockwise degrees from WORLD_NORTH; converted to camera yaw only at startup. */
@@ -3296,6 +3382,9 @@ const ZombieSchema = strictObject({
     check((attack) => attack.windupSimSeconds < attack.cooldownSimSeconds, 'windup must be less than cooldown'),
     check(({ moves }) => new Set(moves.map(({ id }) => id)).size === moves.length, 'zombie move ids must be unique'),
   ),
+  /** A melee hit with at least this impulse holds the zombie still and spoils its attack (docs/stagger.md);
+   * absent means it never staggers. */
+  stagger: optional(strictObject({ impulseThreshold: Positive, durationSimSeconds: PositiveSimSeconds })),
   /** Flesh a damaging hit knocks off the body, leaving a hole (src/core/amalgamCarving.ts): the struck voxel
    * and every voxel within the radius of it. Amalgams only. */
   carving: optional(
@@ -4183,6 +4272,7 @@ const LookDefaultsSchema = strictObject({
 const SECTION_DESCRIPTOR = {
   blocks: { schema: optional(array(BlockSchema)), label: 'blocks', order: 0 },
   items: { schema: optional(array(ItemSchema)), label: 'items', order: 1 },
+  liquids: { schema: optional(array(LiquidSchema)), label: 'liquids', order: 34 },
   furnitureMaterials: { schema: optional(array(FurnitureMaterialSchema)), label: 'furniture materials', order: 32 },
   vehicleBlueprints: { schema: optional(array(VehicleBlueprintSchema)), label: 'vehicle blueprints', order: 33 },
   furniture: { schema: optional(array(FurnitureSchema)), label: 'furniture', order: 2 },

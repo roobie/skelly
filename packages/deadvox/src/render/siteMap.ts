@@ -1,3 +1,6 @@
+import type { Chunk } from '../core/chunk.ts';
+import { CHUNK } from '../core/coords.ts';
+
 export type SiteMapView = 'topographic' | 'satellite';
 export type ContourSegments = Float32Array;
 
@@ -212,4 +215,39 @@ export const siteMapPixels = ({
     pixels[offset + 3] = 255;
   }
   return pixels;
+};
+
+export interface SiteMapTopBlock {
+  id: number;
+  /** Block-grid y of the block found. */
+  y: number;
+}
+
+/**
+ * The highest solid block of a generated column at or below `ceilingY` (block-grid y,
+ * inclusive), or undefined when nothing solid lies there. Cutting the column at a ceiling
+ * is how the review map shows a level under the surface: whatever lies above is left out.
+ * `x` and `z` are local to the column's chunks; chunks are in ascending `cy` order.
+ */
+export const topSolidAtOrBelow = (
+  chunks: readonly Chunk[],
+  x: number,
+  z: number,
+  ceilingY = Number.POSITIVE_INFINITY,
+): SiteMapTopBlock | undefined => {
+  for (let ci = chunks.length - 1; ci >= 0; ci -= 1) {
+    const chunk = chunks[ci]!;
+    const base = chunk.cy * CHUNK;
+    if (base > ceilingY) {
+      continue;
+    }
+    const top = Math.min(CHUNK - 1, ceilingY - base);
+    for (let ly = top; ly >= 0; ly -= 1) {
+      const id = chunk.get(x, ly, z);
+      if (id !== 0) {
+        return { id, y: base + ly };
+      }
+    }
+  }
+  return undefined;
 };

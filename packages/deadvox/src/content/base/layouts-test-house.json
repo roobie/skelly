@@ -19,11 +19,6 @@
       },
       "buildings": [
         {
-          "position": [-4.5, 20.5, -2.5],
-          "rotation": 0,
-          "template": "test_house_charging"
-        },
-        {
           "position": [4, 20.5, -4.5],
           "rotation": 0,
           "template": "test_house_home"
@@ -72,6 +67,16 @@
           "position": [-2, 20.5, -3],
           "rotation": 0,
           "template": "test_house_loose_wardrobe"
+        },
+        {
+          "position": [-12.5, 20.5, -3],
+          "rotation": 0,
+          "template": "test_house_showroom"
+        },
+        {
+          "position": [0, 20.5, -11.5],
+          "rotation": 0,
+          "template": "test_house_reading_booth"
         }
       ],
       "demo": true,
@@ -83,10 +88,36 @@
       },
       "player": {
         "bearing": 90,
-        "position": [-4, 21, -0.5]
+        "position": [-6.25, 21.5, -0.5]
       },
       "repairStock": "test_house_garage",
       "shamblers": [],
+      "showroom": {
+        "capacity": 3,
+        "catalogue": {
+          "blend": 4,
+          "floor": "concrete",
+          "position": [-23, 21, 80],
+          "spacing": 2,
+          "width": 50
+        },
+        "facing": "s",
+        "focusDistance": 1,
+        "row": [-12, 21.5, -1],
+        "slots": [
+          {
+            "furniture": "flimsy_wood_door"
+          },
+          {
+            "furniture": "bedroll"
+          },
+          {
+            "fixed": true,
+            "furniture": "grinding_wheel"
+          }
+        ],
+        "spacing": 1
+      },
       "terrain": [],
       "tracks": [],
       "vehicles": [

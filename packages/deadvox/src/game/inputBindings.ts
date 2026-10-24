@@ -77,6 +77,9 @@ const row = (
 });
 const debugRow = (id: string, description: string, contexts: readonly InputContext[] = entered): Action =>
   row(id, description, contexts, 'press', { debug: true, gate: 'debug.gate' });
+/** Modal navigation of the review-map page, like the spawn menu's: no debug gate held, never reaches the game. */
+const mapRow = (id: string, description: string): Action =>
+  row(id, description, ['review-map'], 'press', { repeat: true });
 const INVENTORY_TAB_BINDINGS = [
   { action: 'ui.inventory-tab-items', description: 'Open / select Items tab', tab: 'items' },
   { action: 'ui.inventory-tab-skills', description: 'Open / select Skills tab', tab: 'skills' },
@@ -190,6 +193,9 @@ const INPUT_ACTIONS: readonly Action[] = [
   debugRow('debug.melee-aim-toggle', 'Melee aim boxes'),
   debugRow('debug.freeze-shamblers', 'Freeze shamblers'),
   debugRow('debug.review-map-toggle', 'Review map', ['play', 'carrying', 'noclip', 'review-map']),
+  mapRow('debug.map-slice-down', 'Review map: cut lower'),
+  mapRow('debug.map-slice-up', 'Review map: cut higher'),
+  mapRow('debug.map-slice-surface', 'Review map: back to the surface'),
   debugRow('debug.freeze-game', 'Freeze game'),
   debugRow('debug.tone-cycle', 'Tone mapping'),
   debugRow('debug.exposure-decrease', 'Exposure −'),
@@ -1055,6 +1061,17 @@ export class KeyboardInput {
       !this.capture
     );
   }
+  /** The window lost focus: held keys may be released where this document cannot see it. */
+  windowBlurred(): void {
+    this.recordTrace('blur');
+    this.cancel(false, false, 'window-blur');
+  }
+  visibilityChanged(): void {
+    this.recordTrace('visibility');
+    if (document.hidden) {
+      this.cancel(false, false, 'document-hidden');
+    }
+  }
   install(): () => void {
     if (this.removeListeners) {
       return this.removeListeners;
@@ -1099,17 +1116,9 @@ export class KeyboardInput {
         event.stopPropagation();
       }
     };
-    const blur = () => {
-      this.recordTrace('blur');
-      this.cancel(false, false, 'window-blur');
-    };
+    const blur = () => this.windowBlurred();
     const windowFocus = () => this.recordTrace('focus');
-    const visibility = () => {
-      this.recordTrace('visibility');
-      if (document.hidden) {
-        this.cancel(false, false, 'document-hidden');
-      }
-    };
+    const visibility = () => this.visibilityChanged();
     const lock = () => {
       this.recordTrace('pointer-lock');
       if (!document.pointerLockElement) {

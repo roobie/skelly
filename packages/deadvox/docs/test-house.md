@@ -3,8 +3,11 @@ read_if:
   - you change the test house, its garage, its fixture stock or its debug gate
   - you change parking bays or where the test house places vehicles
   - you add a feature demonstration near the test-house spawn
+  - you change the liquid-service demonstration's normal-mode boundary
   - you benchmark the test house at a different block scale
   - you change house supply, powered furnishings or player power controls
+  - you add a feature's test prop to the showroom, or change its slot row or catalogue
+  - you use or change the focus URL parameter
 ---
 
 # Test house
@@ -19,8 +22,9 @@ and range supply remains logic, not a second copy of the place.
 
 The charging corner belongs to the same template and layout sources, rather than a
 separate runtime look-piece overlay, so furniture, fixture loot and power share one
-authored placement owner. Site power reads finished authored placements independently
-of streaming; see `src/core/sitePower.ts`, `placedPowerDevices`.
+authored placement owner. It stands on the showroom deck beside the spawn, so charging
+needs no walk. Site power reads finished authored placements independently of
+streaming; see `src/core/sitePower.ts`, `placedPowerDevices`.
 
 Keep fixture layouts marked as demos so their containers do not contribute world
 loot supply. The demo flag is an economy boundary, not a save policy; see
@@ -34,11 +38,14 @@ addition must explicitly decide whether it belongs in normal mode or only debug 
 and record its reason here. Re-evaluate this choice whenever the house gains something;
 there is no blanket permission based on where an earlier prop was placed.
 
-Ordinary furnishings and charging stay in normal mode because they demonstrate
-ordinary interactions without a derived supply catalogue. Sharing the house supply
-makes charging respond to the same blackout as other appliances, while nearby portable
-equipment avoids debug inventory edits or travel. Derived repair stock and the handling
-range are debug-only because their purpose is repeatable system evaluation. See `src/game/play.ts`, `populateTestHouseRepairCorner`, and
+Ordinary furnishings, charging and liquid-service stock stay in normal mode because
+they demonstrate ordinary interactions without a derived supply catalogue. Sharing the
+house supply makes charging respond to the same blackout as other appliances, while
+nearby portable equipment avoids debug inventory edits or travel. Liquid service shares
+the charging corner so the player can compare portable light sources without privileged
+setup. See `src/content/base/templates-test-house.jsonnet`, `test_house_showroom`.
+Derived repair stock and the handling range are debug-only because their purpose is
+repeatable system evaluation. See `src/game/play.ts`, `populateTestHouseRepairCorner`, and
 `src/game/worldSetup.ts`, `DebugTestHouseSite`. The range's owning rule remains in
 `DESIGN.md`, "Debug scenes".
 
@@ -49,11 +56,63 @@ makes a blackout test possible without pretending solar and storage stop with th
 generator. See `src/content/base/templates-test-house.jsonnet`, `templates`, and
 `docs/electricity.md`, "Authored building wiring".
 
+The showroom pavilion and its slot row belong in normal mode. A look request must work
+in the profile BR plays without debug keys, and a slot holds ordinary furniture that a
+player meets in the world anyway; the demo rule keeps its fixture stock out of world
+supply. The derived catalogue is debug-only: it shows all content wholesale, including
+test equipment and pieces the world never stands alone, so in normal mode it would turn
+the haven into a warehouse and put evaluation props in play. The focus parameter works
+in both modes because it only chooses where a fresh session starts. See
+`src/game/worldSetup.ts`, `DebugTestHouseSite`.
+
 Mixed supply lets the same home demonstrate both direct generation and stored energy;
 a generator-only fixture would hide their independence. Electrical values belong to
 content so balancing the haven does not change its mechanisms. See
 `src/content/base/furniture.jsonnet`, `furniture`, and
 `src/content/base/power.jsonnet`, `powerDevices`.
+
+## Showroom
+
+The showroom is where a new feature's prop is tried first, so it stands at spawn: the
+open-sided pavilion on the lot holds a short authored row of slots, and the default
+spawn faces the newest slot. The pavilion has no lights of its own: they would light the
+ground around the spawn, and light tests need it dark at night. See
+`src/content/base/templates-test-house.jsonnet`, `test_house_showroom`.
+
+A feature's test prop goes in the layout's slot list, never inside the house, garage or
+yard, because zone content changes only by a design round and the home must stay a
+home. A slot holds one prop and its fixture stock. The list is oldest first and has a
+fixed capacity; when it is full, adding a slot removes the oldest, so the row stays
+short enough to take in at a glance. A slot's furniture is an ordinary authored
+placement, so house power, the demo loot rule and fixture stock reach it as they reach
+the house. Content owns the row's position, spacing and capacity; game logic lays the
+slots out and `validate` rejects a slot that leaves the deck. See
+`src/content/base/layouts-test-house.jsonnet`, `showroom`, and `src/core/showroom.ts`,
+`slotPlacement`.
+
+The catalogue shows every furniture piece in content, so a new piece of furniture needs
+no slot: it appears by being content. Derivation is game logic and placement settings
+are content, as with the repair stock: content says where the floor lies and how the
+rows are spaced, and code packs the pieces into rows, each facing its own aisle so a
+focus has somewhere to stand. The catalogue shows furniture,
+not supply, so its pieces stand empty and stay off the house grid. It lies outside the
+lot on a levelled floor, south of the house and clear of the range, because it is far
+larger than the lot. It also lies beyond the startup ring, because building that many
+pieces before play delays every debug session's start; a focus reaches it directly, and
+`validate` rejects a catalogue placed inside the ring. See `src/core/showroom.ts`,
+`ShowroomCatalogue`. Features that are
+not furniture, such as an item or a vehicle, still need a slot or their owning zone.
+
+## Focus
+
+`?focus=<furniture>` starts a fresh session in front of a showroom prop of that type,
+on the floor it stands on and facing it, so a look request can send BR straight to the
+thing to look at. A slot wins over the catalogue, because a slot is that feature's own
+staging. A focus the site does not show, including a catalogue piece outside debug
+mode, falls back to the default spawn with a visible message rather than silently, so a
+mistyped request is noticed. A restored session ignores focus, as it ignores other
+start overrides. See `src/game/config.ts`, `focus`, and `src/game/worldSetup.ts`,
+`playerStartFromWorld`.
 
 ## Garage
 

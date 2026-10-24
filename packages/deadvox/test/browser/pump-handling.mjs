@@ -377,6 +377,10 @@ try {
     await pressAction(page, 'movement.walk-toggle');
     await page.waitForFunction(() => globalThis.pumpHandlingTest.input.walking);
   }
+  // Spawn faces the showroom's slots, off the route's axes; face east so each leg's key moves along one axis.
+  await page.evaluate(() => {
+    globalThis.pumpHandlingTest.input.yaw = -Math.PI / 2;
+  });
   await page.evaluate(() => globalThis.pumpManualFrames.enable());
   let routeStop;
   for (const waypoint of lockerRoute.waypoints) {

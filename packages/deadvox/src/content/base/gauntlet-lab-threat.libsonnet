@@ -4,7 +4,7 @@ local quiet = row(null, 0, 1);
 local rows = {
   entry: [row(null, 0, 2), row('shambler', 0.6, 3)],
   administration: [row(null, 0, 1), row('shambler', 0.6, 2)],
-  containment: [row(null, 0, 1), row('shambler', 0.8, 5)],
+  research: [row(null, 0, 2), row('shambler', 0.8, 2), row('military_shambler', 0.8, 1), row('brute_shambler', 0.8, 1), row('crawler', 0.8, 1)],
   failure: [row(null, 0, 1), row('shambler', 0.8, 4), row('runner', 0.8, 3), row('crawler', 0.8, 3)],
   bottom: [row(null, 0, 1), row('shambler', 0.8, 3), row('runner', 0.8, 4), row('crawler', 0.8, 4)],
   // The sewer is the quieter trade for the street run, so its few cells stay sparse.
@@ -16,7 +16,7 @@ local centreRows = { bottom: [row('amalgam', 1, 1)] };
 // Each storey holds as many acid zombies as its depth, as a fixed count rather than a chance; `docs/acid-zombie.md`, "Spawning".
 // They take the last marker cells of the storey's hosts, clear of the holding room, which the amalgam fills.
 local acid = row('acid_zombie', 1, 1);
-local acidCounts = { entry: 1, administration: 2, containment: 3, failure: 4, bottom: 5 };
+local acidCounts = { entry: 1, administration: 2, research: 3, failure: 4, bottom: 5 };
 local acidCount = function(storey) std.get(acidCounts, storey, 0);
 local kinds = {
   intake: 1, records: 1, clinic: 1, cold_store: 1, workshop: 1, utilities: 1, observation: 1, culture: 1,

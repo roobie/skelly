@@ -78,6 +78,8 @@ export const ActionTextSchema = strictObject({
     noRoomToStand: Line,
     noRoomToCrouch: Line,
     search: Template('furniture'),
+    /** A `?focus=` start names no prop this site shows, so the player starts at the default spawn. */
+    focusUnknown: Template('focus'),
   }),
   /** Door handling labels, and the fragments the interaction hint shows for a lock or a locked door. */
   doors: strictObject({

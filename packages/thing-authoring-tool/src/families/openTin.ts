@@ -14,7 +14,7 @@ export const openTin = (params: Readonly<Record<string, string>>): readonly Soli
       stripeHeight: positive,
       hingeWidth: positive,
       hingeHeight: positive,
-      serving: picklist(['empty', 'beans', 'soup']),
+      serving: picklist(['empty', 'beans', 'soup', 'drink']),
       foodDepth: positive,
       beanRadius: positive,
       beanCount: pipe(scalar, integer(), minValue(1)),

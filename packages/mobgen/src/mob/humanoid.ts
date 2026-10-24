@@ -93,7 +93,7 @@ export const WOUNDABLE_BONES = [
 
 // ---- Reference proportions (fractions of `height`) ----
 // packages/mobgen/reference/README.md, fgc_skeleton joint heights, converted to our axes.
-const REF = {
+export const REF = {
   topOfHead: 1.0,
   baseOfSkull: 0.897,
   jawHinge: 0.909,
@@ -115,7 +115,7 @@ const SHIN_FRAC = REF.kneeY - REF.ankleY; // 0.217
 /** A vector of length `len`, pointing up but tilted forward by `tiltDeg` (positive = toward -Z). */
 const leanUp = (len: number, tiltDeg: number): Vec3 => scale(applyDir(rotation(rotX(-tiltDeg)), UP), len);
 
-interface JointLayout {
+export interface JointLayout {
   readonly height: number;
   readonly pelvis: { readonly bottom: Vec3; readonly top: Vec3 };
   readonly spine: { readonly head: Vec3; readonly tail: Vec3 };
@@ -137,7 +137,7 @@ interface JointLayout {
 
 /** Pure geometry: every joint position in the rest pose, from height and proportion params.
  * Shared by the builder (flesh placement) and the gait (leg IK targets, bone lengths). */
-const jointLayout = (p: HumanoidParams): JointLayout => {
+export const jointLayout = (p: HumanoidParams): JointLayout => {
   const h = p.height;
   const hunchSpine = p.hunch * 0.3;
   const hunchChest = p.hunch * 0.65;
@@ -236,7 +236,7 @@ const makeLeg = (h: number, p: HumanoidParams, side: Side, geo: LegGeometry): Jo
 
 // ---- Bones ----
 
-const buildBones = (layout: JointLayout): Body['bones'] => {
+export const buildBones = (layout: JointLayout): Body['bones'] => {
   const bones: Body['bones'][number][] = [
     { id: 'pelvis', parent: null, head: layout.pelvis.bottom, tail: layout.pelvis.top },
     { id: 'spine', parent: 'pelvis', head: layout.spine.head, tail: layout.spine.tail },
@@ -318,8 +318,8 @@ const boxFeature = (bone: string, center: Vec3, half: Vec3, round: number): Feat
 // X and Z sit at plain multiples, so x = 0 and x = ±n*v need no snapping to fall exactly on a column).
 // Snapping a feature's Y this way means a carve/paint reliably lands on one intended voxel row instead
 // of splitting across two.
-const snapRow = (y: number, voxel: number): number => (Math.round(y / voxel - 0.5) + 0.5) * voxel;
-const snapCol = (x: number, voxel: number): number => Math.round(x / voxel) * voxel;
+export const snapRow = (y: number, voxel: number): number => (Math.round(y / voxel - 0.5) + 0.5) * voxel;
+export const snapCol = (x: number, voxel: number): number => Math.round(x / voxel) * voxel;
 
 // Median default-voxel-size / median-template-height ratio: shambler 1/41.4,
 // runner 1/45 and brute 1/43. This calibrates the new metric face constants to

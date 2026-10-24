@@ -2857,6 +2857,22 @@
       "size": [1, 1],
       "weight": 5,
       "workInProgress": false
+    },
+    {
+      "category": "tool",
+      "economy": {
+        "tiers": ["Tier1"],
+        "usage": ["Medical"]
+      },
+      "id": "gauntlet_lab_research_card",
+      "key": {
+        "lock": "gauntlet_lab_research_seal"
+      },
+      "model": "gauntlet_lab_entry_card",
+      "name": "Research keycard",
+      "notLoot": false,
+      "size": [1, 1],
+      "workInProgress": false
     }
   ],
   "loot": [
@@ -3507,6 +3523,32 @@
         }
       ],
       "id": "gauntlet_lab_administration_office",
+      "rolls": [1, 1]
+    },
+    {
+      "entries": [
+        {
+          "table": "gauntlet_medical_stock",
+          "weight": 3
+        },
+        {
+          "item": "bandage",
+          "weight": 2
+        },
+        {
+          "item": "antiseptic",
+          "weight": 1
+        },
+        {
+          "item": "rubber_boots",
+          "weight": 1
+        },
+        {
+          "nothing": true,
+          "weight": 6
+        }
+      ],
+      "id": "gauntlet_lab_research_margin",
       "rolls": [1, 1]
     }
   ],
@@ -6604,6 +6646,900 @@
       ]
     },
     {
+      "anchors": {},
+      "id": "gauntlet_lab_level_research",
+      "joins": [],
+      "lootContext": {
+        "lowerTiers": true,
+        "tier": "Tier3",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ports": [],
+      "size": [72, 8, 64],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_shell",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "shell",
+          "size": [72, 8, 64],
+          "turn": 0
+        },
+        {
+          "at": [20, 1, 24],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_changing_lockers",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "changing_lockers",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [20, 1, 28],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_changing_bench",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "changing_bench",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [4, 1, 20],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_equip_north_pump",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "equip_north_pump",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [10, 1, 18],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_equip_north_cabinet",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "equip_north_cabinet",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [42, 1, 42],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_equip_south_pump",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "equip_south_pump",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [46, 1, 42],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_equip_south_cabinet",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "equip_south_cabinet",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [4, 1, 4],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_breached_bay",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "breached_bay",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [10, 1, 4],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_breached_containment",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "breached_containment",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [14, 1, 4],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_breached_researcher",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "breached_researcher",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [4, 1, 10],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_breached_spill",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "breached_spill",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [12, 1, 10],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_breached_shelf",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "breached_shelf",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [22, 1, 36],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_cold_bank_west",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "cold_bank_west",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [26, 1, 36],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_cold_bank_east",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "cold_bank_east",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [30, 1, 36],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_cold_files",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "cold_files",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [58, 1, 38],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_culture_north",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "culture_north",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [58, 1, 44],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_culture_bench",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "culture_bench",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [58, 1, 50],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_culture_south",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "culture_south",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [4, 1, 26],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_exam_slab_north",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "exam_slab_north",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [4, 1, 32],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_exam_couch",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "exam_couch",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [10, 1, 32],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_exam_slab_south",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "exam_slab_south",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [8, 1, 36],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_exam_files",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "exam_files",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [38, 1, 16],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_lobby_basins",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "lobby_basins",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [42, 1, 16],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_lobby_lockers",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "lobby_lockers",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [48, 1, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_rest_lounge",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "rest_lounge",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [48, 1, 4],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_wc_west",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "wc_west",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [52, 1, 4],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_research_bay_wc_east",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "wc_east",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [9, 1, 9],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_military_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_brute_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "research_threat_0",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [17, 1, 13],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_military_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_brute_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "research_threat_1",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [11, 1, 15],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_military_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_brute_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "research_threat_2",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [51, 1, 29],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_military_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_brute_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "research_threat_3",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [65, 1, 21],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_military_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_brute_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "research_threat_4",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [59, 1, 35],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_military_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_brute_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "research_threat_5",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [55, 1, 49],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_military_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_brute_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "research_threat_6",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [63, 1, 41],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_military_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_brute_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "research_threat_7",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [15, 1, 29],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_military_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_brute_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "research_threat_8",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [25, 1, 41],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_none",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_military_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_brute_shambler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_crawler_80",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "research_threat_9",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [51, 1, 41],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_acid_zombie_100",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "research_threat_10",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [15, 1, 21],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_acid_zombie_100",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "research_threat_11",
+          "size": [1, 1, 1],
+          "turn": 0
+        },
+        {
+          "at": [37, 1, 21],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_lab_marker_acid_zombie_100",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "research_threat_12",
+          "size": [1, 1, 1],
+          "turn": 0
+        }
+      ]
+    },
+    {
       "anchors": {
         "circulation": {
           "at": [9, 1, 11],
@@ -8558,818 +9494,6 @@
     },
     {
       "anchors": {},
-      "id": "gauntlet_lab_storey_containment",
-      "joins": [],
-      "lootContext": {
-        "lowerTiers": true,
-        "tier": "Tier3",
-        "usage": ["Industrial", "Medical"]
-      },
-      "ports": [],
-      "size": [72, 8, 64],
-      "slots": [
-        {
-          "at": [0, 0, 0],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_north",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north",
-          "size": [72, 8, 4],
-          "turn": 0
-        },
-        {
-          "at": [0, 0, 18],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_cross",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "cross_north",
-          "size": [72, 8, 5],
-          "turn": 0
-        },
-        {
-          "at": [0, 0, 37],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_cross",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "cross_south",
-          "size": [72, 8, 5],
-          "turn": 0
-        },
-        {
-          "at": [0, 0, 56],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_south",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "south",
-          "size": [72, 8, 8],
-          "turn": 0
-        },
-        {
-          "at": [0, 0, 4],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_west",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "west_north",
-          "size": [4, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [0, 0, 23],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_west",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "west_middle",
-          "size": [4, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [0, 0, 42],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_west",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "west_south",
-          "size": [4, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [22, 0, 4],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_alley",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "alley_west_north",
-          "size": [5, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [22, 0, 23],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_alley",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "alley_west_middle",
-          "size": [5, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [22, 0, 42],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_alley",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "alley_west_south",
-          "size": [5, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [45, 0, 4],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_alley",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "alley_east_north",
-          "size": [5, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [45, 0, 23],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_alley",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "alley_east_middle",
-          "size": [5, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [45, 0, 42],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_alley",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "alley_east_south",
-          "size": [5, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [68, 0, 4],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_east",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "east_north",
-          "size": [4, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [68, 0, 23],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_east",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "east_middle",
-          "size": [4, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [68, 0, 42],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_east",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "east_south",
-          "size": [4, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [4, 0, 4],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_containment",
-                "kind": "assembly"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north_west",
-          "size": [18, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [27, 0, 4],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_assay_outgoing",
-                "kind": "assembly"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north_middle",
-          "size": [18, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [50, 0, 4],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_cold_store_incoming_east",
-                "kind": "assembly"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north_east",
-          "size": [18, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [4, 0, 23],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_observation",
-                "kind": "assembly"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_west",
-          "size": [18, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [27, 0, 23],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_culture_stair_join",
-                "kind": "assembly"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_middle",
-          "size": [18, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [50, 0, 23],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_decon",
-                "kind": "assembly"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_east",
-          "size": [18, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [27, 0, 42],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_security_outgoing",
-                "kind": "assembly"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "south_middle",
-          "size": [18, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [50, 0, 42],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_containment",
-                "kind": "assembly"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "south_east",
-          "size": [18, 8, 14],
-          "turn": 0
-        },
-        {
-          "at": [16, 1, 10],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_80",
-                "kind": "piece"
-              },
-              "weight": 5
-            }
-          ],
-          "id": "north_west_threat_0",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [8, 1, 12],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_80",
-                "kind": "piece"
-              },
-              "weight": 5
-            }
-          ],
-          "id": "north_west_threat_1",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [17, 1, 9],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north_west_threat_2",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [39, 1, 10],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_80",
-                "kind": "piece"
-              },
-              "weight": 5
-            }
-          ],
-          "id": "north_middle_threat_0",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [31, 1, 12],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north_middle_threat_1",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [40, 1, 9],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north_middle_threat_2",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [62, 1, 10],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_80",
-                "kind": "piece"
-              },
-              "weight": 5
-            }
-          ],
-          "id": "north_east_threat_0",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [54, 1, 12],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north_east_threat_1",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [63, 1, 9],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north_east_threat_2",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [16, 1, 29],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_80",
-                "kind": "piece"
-              },
-              "weight": 5
-            }
-          ],
-          "id": "middle_west_threat_0",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [8, 1, 31],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_west_threat_1",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [17, 1, 28],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_west_threat_2",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [62, 1, 29],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_80",
-                "kind": "piece"
-              },
-              "weight": 5
-            }
-          ],
-          "id": "middle_east_threat_0",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [54, 1, 31],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_east_threat_1",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [63, 1, 28],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_acid_zombie_100",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_east_threat_2",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [39, 1, 48],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_80",
-                "kind": "piece"
-              },
-              "weight": 5
-            }
-          ],
-          "id": "south_middle_threat_0",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [31, 1, 50],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "south_middle_threat_1",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [40, 1, 47],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_acid_zombie_100",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "south_middle_threat_2",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [62, 1, 48],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_80",
-                "kind": "piece"
-              },
-              "weight": 5
-            }
-          ],
-          "id": "south_east_threat_0",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [54, 1, 50],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_80",
-                "kind": "piece"
-              },
-              "weight": 5
-            }
-          ],
-          "id": "south_east_threat_1",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [63, 1, 47],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_acid_zombie_100",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "south_east_threat_2",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [13, 1, 11],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "north_west_threat_centre",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [13, 1, 30],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_west_threat_centre",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [59, 1, 30],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "middle_east_threat_centre",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [59, 1, 49],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "south_east_threat_centre",
-          "size": [1, 1, 1],
-          "turn": 0
-        }
-      ]
-    },
-    {
-      "anchors": {},
       "id": "gauntlet_lab_storey_failure",
       "joins": [],
       "lootContext": {
@@ -9640,7 +9764,7 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_quarantine_incoming",
+                "id": "gauntlet_lab_culture_stair_join",
                 "kind": "assembly"
               },
               "weight": 1
@@ -9845,114 +9969,6 @@
             }
           ],
           "id": "north_west_threat_2",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [39, 1, 10],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_80",
-                "kind": "piece"
-              },
-              "weight": 4
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_80",
-                "kind": "piece"
-              },
-              "weight": 3
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_crawler_80",
-                "kind": "piece"
-              },
-              "weight": 3
-            }
-          ],
-          "id": "north_middle_threat_0",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [31, 1, 12],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_80",
-                "kind": "piece"
-              },
-              "weight": 4
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_80",
-                "kind": "piece"
-              },
-              "weight": 3
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_crawler_80",
-                "kind": "piece"
-              },
-              "weight": 3
-            }
-          ],
-          "id": "north_middle_threat_1",
-          "size": [1, 1, 1],
-          "turn": 0
-        },
-        {
-          "at": [40, 1, 9],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_none",
-                "kind": "piece"
-              },
-              "weight": 1
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_80",
-                "kind": "piece"
-              },
-              "weight": 4
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_80",
-                "kind": "piece"
-              },
-              "weight": 3
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_crawler_80",
-                "kind": "piece"
-              },
-              "weight": 3
-            }
-          ],
-          "id": "north_middle_threat_2",
           "size": [1, 1, 1],
           "turn": 0
         },
@@ -11779,13 +11795,13 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_storey_containment",
+                "id": "gauntlet_lab_level_research",
                 "kind": "assembly"
               },
               "weight": 1
             }
           ],
-          "id": "containment",
+          "id": "research",
           "size": [72, 8, 64],
           "turn": 0
         },
@@ -11910,19 +11926,19 @@
           "turn": 0
         },
         {
-          "at": [34, 9, 10],
+          "at": [31, 9, 10],
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_descent_hatched",
+                "id": "gauntlet_lab_stair",
                 "kind": "piece"
               },
               "weight": 1
             }
           ],
-          "id": "containment_north_descent",
-          "size": [3, 8, 2],
-          "turn": 0
+          "id": "research_stair",
+          "size": [12, 8, 2],
+          "turn": 2
         },
         {
           "at": [34, 9, 48],
@@ -11935,7 +11951,7 @@
               "weight": 1
             }
           ],
-          "id": "containment_south_descent",
+          "id": "research_shaft",
           "size": [3, 8, 2],
           "turn": 0
         },
@@ -28186,6 +28202,31 @@
     },
     {
       "anchors": {},
+      "id": "gauntlet_lab_marker_brute_shambler_80",
+      "layers": [["Z"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [["R"]]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "Z": {
+          "chance": 0.80000000000000004,
+          "spawn": "brute_shambler"
+        }
+      },
+      "ports": [],
+      "size": [1, 1, 1],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
       "id": "gauntlet_lab_marker_crawler_80",
       "layers": [["Z"]],
       "lootContext": {
@@ -28203,6 +28244,31 @@
         "Z": {
           "chance": 0.80000000000000004,
           "spawn": "crawler"
+        }
+      },
+      "ports": [],
+      "size": [1, 1, 1],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_marker_military_shambler_80",
+      "layers": [["Z"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [["R"]]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "Z": {
+          "chance": 0.80000000000000004,
+          "spawn": "military_shambler"
         }
       },
       "ports": [],
@@ -33906,6 +33972,2738 @@
       },
       "ports": [],
       "size": [18, 8, 14],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_shell",
+      "layers": [
+        [
+          "########################################################################",
+          "########################################################################",
+          "##bbbbbbbbbbbbbbbbbb##########################tttttttttttt##############",
+          "##bbbbbbbbbbbbbbbbbb##########################tttttttttttt##############",
+          "##bbbbbbbbbbbbbbbbbb##########################ttttttttttssssssssssss####",
+          "##bbbbbbbbbbbbbbbbbb##########################ttttttttttssssssssssss####",
+          "##bbbbbbbbbbbbbbbbbb######vvvvvvvvvvvvvvvvvvvvvvttttttttttssssssssss####",
+          "##bbbbbbbbbbbbbbbbbb######vvvvvvvvvvvvvvvvvvvvvvttttttttttssssssssss####",
+          "##bbbbbbbbbbbbbbbbbb######vvvvvvvvvvvvvvvvvvvvvvttttttttssssssssssss####",
+          "##bbbbbbbbbbbbbbbbbb######vvvvvvvvvvvvvvvvvvvvvvttttttttssssssssssss####",
+          "##bbbbbbbbbbbbbbbbbb######vvvvv............vvvvvttttttttssssssssssss####",
+          "##bbbbbbbbbbbbbbbbbb######vvvvv............vvvvvttttttttssssssssssss####",
+          "##bbbbbbbbbbbbbbbbbb######vvvvvvvvvvvvvvvvvvvvvvrrrrrrrrssssssssssss####",
+          "##bbbbbbbbbbbbbbbbbb######vvvvvvvvvvvvvvvvvvvvvvrrrrrrrrssssssssssss####",
+          "##bbbbbbbbbbbbbbbbbb######vvvvvvvvddddvvvvvvvvvvrrrrrrrrssssssssssss####",
+          "##bbbbbbbbbbbbbbbbbb######vvvvvvvvddddvvvvvvvvvvrrrrrrrrssssssssssss####",
+          "##nnnnnnnnnnnnnnnngggggggggg####llllllllllllllllrrrrrrrrsssssssssssshh##",
+          "##nnnnnnnnnnnnnnnngggggggggg####llllllllllllllllrrrrrrrrsssssssssssshh##",
+          "##nnnnnnnnnnnnnnnngggggggggg####llllllllllllllllhhhhhhhhhhhhhhhhhhhhhh##",
+          "##nnnnnnnnnnnnnnnngggggggggg####llllllllllllllllhhhhhhhhhhhhhhhhhhhhhh##",
+          "##nnnnnnnnnnnnnnnngggggggggg####llllllllllllllllhhhhhhhhhhhhhhhhhhhhhh##",
+          "##nnnnnnnnnnnnnnnngggggggggg####llllllllllllllllhhhhhhhhhhhhhhhhhhhhhh##",
+          "##nnnnnnnnnnnnnnnngggggggggg####llllllllllllllllhhhhhhwwwwwwwwwwhhhhhh##",
+          "##nnnnnnnnnnnnnnnngggggggggg####llllllllllllllllhhhhhhwwwwwwwwwwhhhhhh##",
+          "##eeeeeeeeeenneeeeggggggggggaaaaaaaaaaaaaaaaaaaahhhhhhwwwwwwwwwwhhhhhh##",
+          "##eeeeeeeeeenneeeeggggggggggaaaaaaaaaaaaaaaaaaaahhhhhhwwwwwwwwwwhhhhhh##",
+          "##eeeeeeeeeeeeeeeeggggggggaaaaaaaaaaaaaaaaaaaaaahhhhhhwwwwwwwwwwhhhhhh##",
+          "##eeeeeeeeeeeeeeeeggggggggaaaaaaaaaaaaaaaaaaaaaahhhhhhwwwwwwwwwwhhhhhh##",
+          "##eeeeeeeeeeeeeeeeggggggggaaaaaaaaaaaaaaaaaaaaaahhhhhhwwwwwwwwwwhhhhhh##",
+          "##eeeeeeeeeeeeeeeeggggggggaaaaaaaaaaaaaaaaaaaaaahhhhhhwwwwwwwwwwhhhhhh##",
+          "##eeeeeeeeeeeeeeeeggggggggggaaaaaaaaaaaaaaaaaaaahhhhhhwwwwwwwwwwhhhhhh##",
+          "##eeeeeeeeeeeeeeeeggggggggggaaaaaaaaaaaaaaaaaaaahhhhhhwwwwwwwwwwhhhhhh##",
+          "##eeeeeeeeeeeeeeeeggggggggggaaaaaaaaaaaaaaaaaaaahhhhhhhhhhhhhhhhhhhhhh##",
+          "##eeeeeeeeeeeeeeeeggggggggggaaaaaaaaaaaaaaaaaaaahhhhhhhhhhhhhhhhhhhhhh##",
+          "##eeeeeeeeeeeeeeeeccccccccccccccccccccccccaaaaaahhhhhhhhhhhhhhhhhhhhhh##",
+          "##eeeeeeeeeeeeeeeeccccccccccccccccccccccccaaaaaahhhhhhhhhhhhhhhhhhhhhh##",
+          "##eeeeeeeeeeeeeeeeeeccccccccccccccccccccuuuuuuuuuuuuffffffffffffffffhh##",
+          "##eeeeeeeeeeeeeeeeeeccccccccccccccccccccuuuuuuuuuuuuffffffffffffffffhh##",
+          "##eeeeeeeeeeeeeeeeeeccccccccccccccccccccccuuuuuuuuuuffffffffffffffff####",
+          "##eeeeeeeeeeeeeeeeeeccccccccccccccccccccccuuuuuuuuuuffffffffffffffff####",
+          "##eeeeeeeeeeeeeeeeeeccccccccccccccccccccccuuuuuuuuuuffffffffffffffff####",
+          "##eeeeeeeeeeeeeeeeeeccccccccccccccccccccccuuuuuuuuuuffffffffffffffff####",
+          "####..................ccccccccccccddddccccuuuuuuuuuuuuffffffffffffff####",
+          "####..................ccccccccccccddddccccuuuuuuuuuuuuffffffffffffff####",
+          "####..................########qqqqqqqqqqqquuuuuuuuuuffffffffffffffff####",
+          "####..................########qqqqqqqqqqqquuuuuuuuuuffffffffffffffff####",
+          "####..................########qqqqqqqqqquuuuuuuuuuuuffffffffffffffff####",
+          "####..................########qqqqqqqqqquuuuuuuuuuuuffffffffffffffff####",
+          "####..................########qqqq...qqqqq##########ffffffffffffffff####",
+          "####..................########qqqq...qqqqq##########ffffffffffffffff####",
+          "####..................########qqqqqqqqqqqq##########ffffffffffffffff####",
+          "####..................########qqqqqqqqqqqq##########ffffffffffffffff####",
+          "####..................########qqqqqqqqqqqq##########ffffffffffffffff####",
+          "####..................########qqqqqqqqqqqq##########ffffffffffffffff####",
+          "####..................##############################ffffffffffffffff####",
+          "####..................##############################ffffffffffffffff####",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################"
+        ],
+        [
+          "########################################################################",
+          "########################################################################",
+          "##++++++++++++++++++##########################%%%%%%%%%%%%##############",
+          "##++++++++++++++++++##########################%%%%%%%%%%%%##############",
+          "##++..............++##########################%%........@@@@@@@@@@@@####",
+          "##++..............++##########################%%........@@@@@@@@@@@@####",
+          "##++..............++######((((((((((((((((((((((..................@@####",
+          "##++..............++######((((((((((((((((((((((..................@@####",
+          "##++..............++######((..................((........@@........@@####",
+          "##++..............++######((..................((........@@........@@####",
+          "##++..............++######((..................((%%%%%%%%..........@@####",
+          "##++..............++######((..................((%%%%%%%%..........@@####",
+          "##++..............++######((..................((........@@........@@####",
+          "##++..............++######((..................((........@@........@@####",
+          "##++..............++######((((((((DDDD((((((((((........@@........@@####",
+          "##++..............++######((((((((DDDD((((((((((........@@........@@####",
+          "##~~~~~~..~~~~~~~~))))))))))####**............**$$$$$$..@@@@@@..@@@@^^##",
+          "##~~~~~~..~~~~~~~~))))))))))####**............**$$$$$$..@@@@@@..@@@@^^##",
+          "##~~..............))......))####**............**....................^^##",
+          "##~~..............))......))####**............**....................^^##",
+          "##~~......................))####**..................................^^##",
+          "##~~......................))####**..................................^^##",
+          "##~~..............))......))####**....................&&||||||&&....^^##",
+          "##~~..............))......))####**....................&&||||||&&....^^##",
+          "##<<<<<<<<<<..<<<<))......))!!!!!!!!!!!!!!!!!!!!......||......&&....^^##",
+          "##<<<<<<<<<<..<<<<))......))!!!!!!!!!!!!!!!!!!!!......||......&&....^^##",
+          "##<<..............))......!!..........................||............^^##",
+          "##<<..............))......!!..........................||............^^##",
+          "##<<..............))......!!..................!!......||......&&....^^##",
+          "##<<..............))......!!..................!!......||......&&....^^##",
+          "##<<..............))..........................!!......&&||||||&&....^^##",
+          "##<<..............))..........................!!......&&||||||&&....^^##",
+          "##<<......................))........................................^^##",
+          "##<<......................))........................................^^##",
+          "##<<..............>>>>>>>>>>>>>>>>>>>>>>>>!!!!!!....................^^##",
+          "##<<..............>>>>>>>>>>>>>>>>>>>>>>>>!!!!!!....................^^##",
+          "##<<....................................]]]]]]]]..]]{{{{{{{{{{{{{{{{^^##",
+          "##<<....................................]]]]]]]]..]]{{{{{{{{{{{{{{{{^^##",
+          "##<<................................................{{............{{####",
+          "##<<................................................{{............{{####",
+          "##<<<<<<<<<<<<<<<<<<................................{{............{{####",
+          "##<<<<<<<<<<<<<<<<<<................................{{............{{####",
+          "####..................>>>>>>>>>>>>DDDD>>>>........................{{####",
+          "####..................>>>>>>>>>>>>DDDD>>>>........................{{####",
+          "####..................########[[........[[..........{{............{{####",
+          "####..................########[[........[[..........{{............{{####",
+          "####..................########[[........]]]]]]]]]]]]{{............{{####",
+          "####..................########[[........]]]]]]]]]]]]{{............{{####",
+          "####..................########[[........[[##########{{............{{####",
+          "####..................########[[........[[##########{{............{{####",
+          "####..................########[[........[[##########{{............{{####",
+          "####..................########[[........[[##########{{............{{####",
+          "####..................########[[[[[[[[[[[[##########{{............{{####",
+          "####..................########[[[[[[[[[[[[##########{{............{{####",
+          "####..................##############################{{{{{{{{{{{{{{{{####",
+          "####..................##############################{{{{{{{{{{{{{{{{####",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################"
+        ],
+        [
+          "########################################################################",
+          "########################################################################",
+          "##BBBBBBBBBBBBBBBBBB##########################TTTTTTTTTTTT##############",
+          "##BBBBBBBBBBBBBBBBBB##########################TTTTTTTTTTTT##############",
+          "##BB..............BB##########################TT........SSSSSSSSSSSS####",
+          "##BB..............BB##########################TT........SSSSSSSSSSSS####",
+          "##BB..............BB######VVVVVVVVVVVVVVVVVVVVVV..................SS####",
+          "##BB..............BB######VVVVVVVVVVVVVVVVVVVVVV..................SS####",
+          "##BB..............BB######VV..................VV........SS........SS####",
+          "##BB..............BB######VV..................VV........SS........SS####",
+          "##BB..............BB######VV..................VVTTTTTTTT..........SS####",
+          "##BB..............BB######VV..................VVTTTTTTTT..........SS####",
+          "##BB..............BB######VV..................VV........SS........SS####",
+          "##BB..............BB######VV..................VV........SS........SS####",
+          "##BB..............BB######VVVVVVVVDDDDVVVVVVVVVV........SS........SS####",
+          "##BB..............BB######VVVVVVVVDDDDVVVVVVVVVV........SS........SS####",
+          "##NNNNNN..NNNNNNNNGGGGGGGGGG####LL............LLRRRRRR..SSSSSS..SSSSHH##",
+          "##NNNNNN..NNNNNNNNGGGGGGGGGG####LL............LLRRRRRR..SSSSSS..SSSSHH##",
+          "##NN..............GG......GG####LL............LL....................HH##",
+          "##NN..............GG......GG####LL............LL....................HH##",
+          "##NN......................GG####LL..................................HH##",
+          "##NN......................GG####LL..................................HH##",
+          "##NN..............GG......GG####LL....................WW||||||WW....HH##",
+          "##NN..............GG......GG####LL....................WW||||||WW....HH##",
+          "##EEEEEEEEEE..EEEEGG......GGAAAAAAAAAAAAAAAAAAAA......||......WW....HH##",
+          "##EEEEEEEEEE..EEEEGG......GGAAAAAAAAAAAAAAAAAAAA......||......WW....HH##",
+          "##EE..............GG......AA..........................||............HH##",
+          "##EE..............GG......AA..........................||............HH##",
+          "##EE..............GG......AA..................AA......||......WW....HH##",
+          "##EE..............GG......AA..................AA......||......WW....HH##",
+          "##EE..............GG..........................AA......WW||||||WW....HH##",
+          "##EE..............GG..........................AA......WW||||||WW....HH##",
+          "##EE......................GG........................................HH##",
+          "##EE......................GG........................................HH##",
+          "##EE..............CCCCCCCCCCCCCCCCCCCCCCCCAAAAAA....................HH##",
+          "##EE..............CCCCCCCCCCCCCCCCCCCCCCCCAAAAAA....................HH##",
+          "##EE....................................UUUUUUUU..UUFFFFFFFFFFFFFFFFHH##",
+          "##EE....................................UUUUUUUU..UUFFFFFFFFFFFFFFFFHH##",
+          "##EE................................................FF............FF####",
+          "##EE................................................FF............FF####",
+          "##EEEEEEEEEEEEEEEEEE................................FF............FF####",
+          "##EEEEEEEEEEEEEEEEEE................................FF............FF####",
+          "####..................CCCCCCCCCCCCDDDDCCCC........................FF####",
+          "####..................CCCCCCCCCCCCDDDDCCCC........................FF####",
+          "####..................########QQ........QQ..........FF............FF####",
+          "####..................########QQ........QQ..........FF............FF####",
+          "####..................########QQ........UUUUUUUUUUUUFF............FF####",
+          "####..................########QQ........UUUUUUUUUUUUFF............FF####",
+          "####..................########QQ........QQ##########FF............FF####",
+          "####..................########QQ........QQ##########FF............FF####",
+          "####..................########QQ........QQ##########FF............FF####",
+          "####..................########QQ........QQ##########FF............FF####",
+          "####..................########QQQQQQQQQQQQ##########FF............FF####",
+          "####..................########QQQQQQQQQQQQ##########FF............FF####",
+          "####..................##############################FFFFFFFFFFFFFFFF####",
+          "####..................##############################FFFFFFFFFFFFFFFF####",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################"
+        ],
+        [
+          "########################################################################",
+          "########################################################################",
+          "##BBBBBBBBBBBBBBBBBB##########################TTTTTTTTTTTT##############",
+          "##BBBBBBBBBBBBBBBBBB##########################TTTTTTTTTTTT##############",
+          "##BB..............BB##########################TT........SSSSSSSSSSSS####",
+          "##BB..............BB##########################TT........SSSSSSSSSSSS####",
+          "##BB..............BB######VVVVVVVVVVVVVVVVVVVVVV..................SS####",
+          "##BB..............BB######VVVVVVVVVVVVVVVVVVVVVV..................SS####",
+          "##BB..............BB######VV..................VV........SS........SS####",
+          "##BB..............BB######VV..................VV........SS........SS####",
+          "##BB..............BB######VV..................VVTTTTTTTT..........SS####",
+          "##BB..............BB######VV..................VVTTTTTTTT..........SS####",
+          "##BB..............BB######VV..................VV........SS........SS####",
+          "##BB..............BB######VV..................VV........SS........SS####",
+          "##BB..............BB######VVVVVVVVDDDDVVVVVVVVVV........SS........SS####",
+          "##BB..............BB######VVVVVVVVDDDDVVVVVVVVVV........SS........SS####",
+          "##NNNNNN..NNNNNNNNGGGGGGGGGG####LL............LLRRRRRR..SSSSSS..SSSSHH##",
+          "##NNNNNN..NNNNNNNNGGGGGGGGGG####LL............LLRRRRRR..SSSSSS..SSSSHH##",
+          "##NN..............GG......GG####LL............LL....................HH##",
+          "##NN..............GG......GG####LL............LL....................HH##",
+          "##NN......................GG####LL..................................HH##",
+          "##NN......................GG####LL..................................HH##",
+          "##NN..............GG......GG####LL....................WW||||||WW....HH##",
+          "##NN..............GG......GG####LL....................WW||||||WW....HH##",
+          "##EEEEEEEEEE..EEEEGG......GGAAAAAAAAAAAAAAAAAAAA......||......WW....HH##",
+          "##EEEEEEEEEE..EEEEGG......GGAAAAAAAAAAAAAAAAAAAA......||......WW....HH##",
+          "##EE..............GG......AA..........................||............HH##",
+          "##EE..............GG......AA..........................||............HH##",
+          "##EE..............GG......AA..................AA......||......WW....HH##",
+          "##EE..............GG......AA..................AA......||......WW....HH##",
+          "##EE..............GG..........................AA......WW||||||WW....HH##",
+          "##EE..............GG..........................AA......WW||||||WW....HH##",
+          "##EE......................GG........................................HH##",
+          "##EE......................GG........................................HH##",
+          "##EE..............CCCCCCCCCCCCCCCCCCCCCCCCAAAAAA....................HH##",
+          "##EE..............CCCCCCCCCCCCCCCCCCCCCCCCAAAAAA....................HH##",
+          "##EE....................................UUUUUUUU..UUFFFFFFFFFFFFFFFFHH##",
+          "##EE....................................UUUUUUUU..UUFFFFFFFFFFFFFFFFHH##",
+          "##EE................................................FF............FF####",
+          "##EE................................................FF............FF####",
+          "##EEEEEEEEEEEEEEEEEE................................FF............FF####",
+          "##EEEEEEEEEEEEEEEEEE................................FF............FF####",
+          "####..................CCCCCCCCCCCCDDDDCCCC........................FF####",
+          "####..................CCCCCCCCCCCCDDDDCCCC........................FF####",
+          "####..................########QQ........QQ..........FF............FF####",
+          "####..................########QQ........QQ..........FF............FF####",
+          "####..................########QQ........UUUUUUUUUUUUFF............FF####",
+          "####..................########QQ........UUUUUUUUUUUUFF............FF####",
+          "####..................########QQ........QQ##########FF............FF####",
+          "####..................########QQ........QQ##########FF............FF####",
+          "####..................########QQ........QQ##########FF............FF####",
+          "####..................########QQ........QQ##########FF............FF####",
+          "####..................########QQQQQQQQQQQQ##########FF............FF####",
+          "####..................########QQQQQQQQQQQQ##########FF............FF####",
+          "####..................##############################FFFFFFFFFFFFFFFF####",
+          "####..................##############################FFFFFFFFFFFFFFFF####",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################"
+        ],
+        [
+          "########################################################################",
+          "########################################################################",
+          "##BBBBBBBBBBBBBBBBBB##########################TTTTTTTTTTTT##############",
+          "##BBBBBBBBBBBBBBBBBB##########################TTTTTTTTTTTT##############",
+          "##BB..............BB##########################TT........SSSSSSSSSSSS####",
+          "##BB..............BB##########################TT........SSSSSSSSSSSS####",
+          "##BB..............BB######VVVVVVVVVVVVVVVVVVVVVV..................SS####",
+          "##BB..............BB######VVVVVVVVVVVVVVVVVVVVVV..................SS####",
+          "##BB..............BB######VV..................VV........SS........SS####",
+          "##BB..............BB######VV..................VV........SS........SS####",
+          "##BB..............BB######VV..................VVTTTTTTTT..........SS####",
+          "##BB..............BB######VV..................VVTTTTTTTT..........SS####",
+          "##BB..............BB######VV..................VV........SS........SS####",
+          "##BB..............BB######VV..................VV........SS........SS####",
+          "##BB..............BB######VVVVVVVVDDDDVVVVVVVVVV........SS........SS####",
+          "##BB..............BB######VVVVVVVVDDDDVVVVVVVVVV........SS........SS####",
+          "##NNNNNN..NNNNNNNNGGGGGGGGGG####LL............LLRRRRRR..SSSSSS..SSSSHH##",
+          "##NNNNNN..NNNNNNNNGGGGGGGGGG####LL............LLRRRRRR..SSSSSS..SSSSHH##",
+          "##NN..............GG......GG####LL............LL....................HH##",
+          "##NN..............GG......GG####LL............LL....................HH##",
+          "##NN......................GG####LL..................................HH##",
+          "##NN......................GG####LL..................................HH##",
+          "##NN..............GG......GG####LL....................WW||||||WW....HH##",
+          "##NN..............GG......GG####LL....................WW||||||WW....HH##",
+          "##EEEEEEEEEE..EEEEGG......GGAAAAAAAAAAAAAAAAAAAA......||......WW....HH##",
+          "##EEEEEEEEEE..EEEEGG......GGAAAAAAAAAAAAAAAAAAAA......||......WW....HH##",
+          "##EE..............GG......AA..........................||............HH##",
+          "##EE..............GG......AA..........................||............HH##",
+          "##EE..............GG......AA..................AA......||......WW....HH##",
+          "##EE..............GG......AA..................AA......||......WW....HH##",
+          "##EE..............GG..........................AA......WW||||||WW....HH##",
+          "##EE..............GG..........................AA......WW||||||WW....HH##",
+          "##EE......................GG........................................HH##",
+          "##EE......................GG........................................HH##",
+          "##EE..............CCCCCCCCCCCCCCCCCCCCCCCCAAAAAA....................HH##",
+          "##EE..............CCCCCCCCCCCCCCCCCCCCCCCCAAAAAA....................HH##",
+          "##EE....................................UUUUUUUU..UUFFFFFFFFFFFFFFFFHH##",
+          "##EE....................................UUUUUUUU..UUFFFFFFFFFFFFFFFFHH##",
+          "##EE................................................FF............FF####",
+          "##EE................................................FF............FF####",
+          "##EEEEEEEEEEEEEEEEEE................................FF............FF####",
+          "##EEEEEEEEEEEEEEEEEE................................FF............FF####",
+          "####..................CCCCCCCCCCCCDDDDCCCC........................FF####",
+          "####..................CCCCCCCCCCCCDDDDCCCC........................FF####",
+          "####..................########QQ........QQ..........FF............FF####",
+          "####..................########QQ........QQ..........FF............FF####",
+          "####..................########QQ........UUUUUUUUUUUUFF............FF####",
+          "####..................########QQ........UUUUUUUUUUUUFF............FF####",
+          "####..................########QQ........QQ##########FF............FF####",
+          "####..................########QQ........QQ##########FF............FF####",
+          "####..................########QQ........QQ##########FF............FF####",
+          "####..................########QQ........QQ##########FF............FF####",
+          "####..................########QQQQQQQQQQQQ##########FF............FF####",
+          "####..................########QQQQQQQQQQQQ##########FF............FF####",
+          "####..................##############################FFFFFFFFFFFFFFFF####",
+          "####..................##############################FFFFFFFFFFFFFFFF####",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################"
+        ],
+        [
+          "########################################################################",
+          "########################################################################",
+          "##BBBBBBBBBBBBBBBBBB##########################TTTTTTTTTTTT##############",
+          "##BBBBBBBBBBBBBBBBBB##########################TTTTTTTTTTTT##############",
+          "##BB..............BB##########################TT........SSSSSSSSSSSS####",
+          "##BB..............BB##########################TT........SSSSSSSSSSSS####",
+          "##BB..............BB######VVVVVVVVVVVVVVVVVVVVVV........TT........SS####",
+          "##BB..............BB######VVVVVVVVVVVVVVVVVVVVVV........TT........SS####",
+          "##BB..............BB######VV..................VV........SS........SS####",
+          "##BB..............BB######VV..................VV........SS........SS####",
+          "##BB..............BB######VV..................VVTTTTTTTTSS........SS####",
+          "##BB..............BB######VV..................VVTTTTTTTTSS........SS####",
+          "##BB..............BB######VV..................VV........SS........SS####",
+          "##BB..............BB######VV..................VV........SS........SS####",
+          "##BB..............BB######VVVVVVVVDDDDVVVVVVVVVV........SS........SS####",
+          "##BB..............BB######VVVVVVVVDDDDVVVVVVVVVV........SS........SS####",
+          "##NNNNNNNNNNNNNNNNGGGGGGGGGG####LL............LLRRRRRRRRSSSSSSSSSSSSHH##",
+          "##NNNNNNNNNNNNNNNNGGGGGGGGGG####LL............LLRRRRRRRRSSSSSSSSSSSSHH##",
+          "##NN..............GG......GG####LL............LL....................HH##",
+          "##NN..............GG......GG####LL............LL....................HH##",
+          "##NN..............GG......GG####LL............LL....................HH##",
+          "##NN..............GG......GG####LL............LL....................HH##",
+          "##NN..............GG......GG####LL............LL......WW||||||WW....HH##",
+          "##NN..............GG......GG####LL............LL......WW||||||WW....HH##",
+          "##EEEEEEEEEENNEEEEGG......GGAAAAAAAAAAAAAAAAAAAA......||......WW....HH##",
+          "##EEEEEEEEEENNEEEEGG......GGAAAAAAAAAAAAAAAAAAAA......||......WW....HH##",
+          "##EE..............GG......AA..................AA......||......WW....HH##",
+          "##EE..............GG......AA..................AA......||......WW....HH##",
+          "##EE..............GG......AA..................AA......||......WW....HH##",
+          "##EE..............GG......AA..................AA......||......WW....HH##",
+          "##EE..............GG......GG..................AA......WW||||||WW....HH##",
+          "##EE..............GG......GG..................AA......WW||||||WW....HH##",
+          "##EE..............GG......GG..................AA....................HH##",
+          "##EE..............GG......GG..................AA....................HH##",
+          "##EE..............CCCCCCCCCCCCCCCCCCCCCCCCAAAAAA....................HH##",
+          "##EE..............CCCCCCCCCCCCCCCCCCCCCCCCAAAAAA....................HH##",
+          "##EE..............EE....................UUUUUUUUUUUUFFFFFFFFFFFFFFFFHH##",
+          "##EE..............EE....................UUUUUUUUUUUUFFFFFFFFFFFFFFFFHH##",
+          "##EE..............EE....................CC..........FF............FF####",
+          "##EE..............EE....................CC..........FF............FF####",
+          "##EEEEEEEEEEEEEEEEEE....................CC..........FF............FF####",
+          "##EEEEEEEEEEEEEEEEEE....................CC..........FF............FF####",
+          "####..................CCCCCCCCCCCCDDDDCCCC..........UU............FF####",
+          "####..................CCCCCCCCCCCCDDDDCCCC..........UU............FF####",
+          "####..................########QQ........QQ..........FF............FF####",
+          "####..................########QQ........QQ..........FF............FF####",
+          "####..................########QQ........UUUUUUUUUUUUFF............FF####",
+          "####..................########QQ........UUUUUUUUUUUUFF............FF####",
+          "####..................########QQ........QQ##########FF............FF####",
+          "####..................########QQ........QQ##########FF............FF####",
+          "####..................########QQ........QQ##########FF............FF####",
+          "####..................########QQ........QQ##########FF............FF####",
+          "####..................########QQQQQQQQQQQQ##########FF............FF####",
+          "####..................########QQQQQQQQQQQQ##########FF............FF####",
+          "####..................##############################FFFFFFFFFFFFFFFF####",
+          "####..................##############################FFFFFFFFFFFFFFFF####",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################"
+        ],
+        [
+          "########################################################################",
+          "########################################################################",
+          "##BBBBBBBBBBBBBBBBBB##########################TTTTTTTTTTTT##############",
+          "##BBBBBBBBBBBBBBBBBB##########################TTTTTTTTTTTT##############",
+          "##BB..............BB##########################TT........SSSSSSSSSSSS####",
+          "##BB..............BB##########################TT........SSSSSSSSSSSS####",
+          "##BB..............BB######VVVVVVVVVVVVVVVVVVVVVV........TT........SS####",
+          "##BB..............BB######VVVVVVVVVVVVVVVVVVVVVV........TT........SS####",
+          "##BB..............BB######VV..................VVTTTTTTTTSS........SS####",
+          "##BB..............BB######VV..................VVTTTTTTTTSS........SS####",
+          "##BB..............BB######VV..................VVTTTTTTTTSS........SS####",
+          "##BB..............BB######VV..................VVTTTTTTTTSS........SS####",
+          "##BB..............BB######VV..................VV........SS........SS####",
+          "##BB..............BB######VV..................VV........SS........SS####",
+          "##BB..............BB######VVVVVVVVZZZZVVVVVVVVVV........SS........SS####",
+          "##BB..............BB######VVVVVVVVZZZZVVVVVVVVVV........SS........SS####",
+          "##NNNNNNNNNNNNNNNNGGGGGGGGGG####LL............LLRRRRRRRRSSSSSSSSSSSSHH##",
+          "##NNNNNNNNNNNNNNNNGGGGGGGGGG####LL............LLRRRRRRRRSSSSSSSSSSSSHH##",
+          "##NN..............GGGGGGGGGG####LL............LL....................HH##",
+          "##NN..............GGGGGGGGGG####LL............LL....................HH##",
+          "##NN..............GGGGGGGGGG####LL............LL....................HH##",
+          "##NN..............GGGGGGGGGG####LL............LL....................HH##",
+          "##NN..............GGGGGGGGGG####LL............LL......WWWWWWWWWW....HH##",
+          "##NN..............GGGGGGGGGG####LL............LL......WWWWWWWWWW....HH##",
+          "##EEEEEEEEEENNEEEEGG....GGGGAAAAAAAAAAAAAAAAAAAA......WW......WW....HH##",
+          "##EEEEEEEEEENNEEEEGG....GGGGAAAAAAAAAAAAAAAAAAAA......WW......WW....HH##",
+          "##EE..............GG....GGAA..................AA......WW......WW....HH##",
+          "##EE..............GG....GGAA..................AA......WW......WW....HH##",
+          "##EE..............GG....GGAA..................AA......WW......WW....HH##",
+          "##EE..............GG....GGAA..................AA......WW......WW....HH##",
+          "##EE..............GG....GGGG..................AA......WWWWWWWWWW....HH##",
+          "##EE..............GG....GGGG..................AA......WWWWWWWWWW....HH##",
+          "##EE..............GGGGGGGGGG..................AA....................HH##",
+          "##EE..............GGGGGGGGGG..................AA....................HH##",
+          "##EE..............CCCCCCCCCCCCCCCCCCCCCCCCAAAAAA....................HH##",
+          "##EE..............CCCCCCCCCCCCCCCCCCCCCCCCAAAAAA....................HH##",
+          "##EE..............EE....................UUUUUUUUUUUUFFFFFFFFFFFFFFFFHH##",
+          "##EE..............EE....................UUUUUUUUUUUUFFFFFFFFFFFFFFFFHH##",
+          "##EE..............EE....................CC..........FF............FF####",
+          "##EE..............EE....................CC..........FF............FF####",
+          "##EEEEEEEEEEEEEEEEEE....................CC..........FF............FF####",
+          "##EEEEEEEEEEEEEEEEEE....................CC..........FF............FF####",
+          "####..................CCCCCCCCCCCCZZZZCCCC..........UU............FF####",
+          "####..................CCCCCCCCCCCCZZZZCCCC..........UU............FF####",
+          "####..................########QQ........QQ..........FF............FF####",
+          "####..................########QQ........QQ..........FF............FF####",
+          "####..................########QQ........UUUUUUUUUUUUFF............FF####",
+          "####..................########QQ........UUUUUUUUUUUUFF............FF####",
+          "####..................########QQ........QQ##########FF............FF####",
+          "####..................########QQ........QQ##########FF............FF####",
+          "####..................########QQ........QQ##########FF............FF####",
+          "####..................########QQ........QQ##########FF............FF####",
+          "####..................########QQQQQQQQQQQQ##########FF............FF####",
+          "####..................########QQQQQQQQQQQQ##########FF............FF####",
+          "####..................##############################FFFFFFFFFFFFFFFF####",
+          "####..................##############################FFFFFFFFFFFFFFFF####",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################"
+        ],
+        [
+          "########################################################################",
+          "########################################################################",
+          "##BBBBBBBBBBBBBBBBBB##########################TTTTTTTTTTTT##############",
+          "##BBBBBBBBBBBBBBBBBB##########################TTTTTTTTTTTT##############",
+          "##BB..............BB##########################TT........SSSSSSSSSSSS####",
+          "##BB..............BB##########################TT........SSSSSSSSSSSS####",
+          "##BB..............BB######VVVVVVVVVVVVVVVVVVVVVV........TT........SS####",
+          "##BB..............BB######VVVVVVVVVVVVVVVVVVVVVV........TT........SS####",
+          "##BB..............BB######VVVVVVVVVVVVVVVVVVVVVVTTTTTTTTSS........SS####",
+          "##BB..............BB######VVVVVVVVVVVVVVVVVVVVVVTTTTTTTTSS........SS####",
+          "##BB..............BB######VVVVVVVVVVVVVVVVVVVVVVTTTTTTTTSS........SS####",
+          "##BB..............BB######VVVVVVVVVVVVVVVVVVVVVVTTTTTTTTSS........SS####",
+          "##BB..............BB######VVVVVVVVVVVVVVVVVVVVVV....RRRRSS........SS####",
+          "##BB..............BB######VVVVVVVVVVVVVVVVVVVVVV....RRRRSS........SS####",
+          "##BB..............BB######VVVVVVVVZZZZVVVVVVVVVV....RRRRSS........SS####",
+          "##BB..............BB######VVVVVVVVZZZZVVVVVVVVVV....RRRRSS........SS####",
+          "##NNNNNNNNNNNNNNNNGGGGGGGGGG####LLLLLL........LLRRRRRRRRSSSSSSSSSSSSHH##",
+          "##NNNNNNNNNNNNNNNNGGGGGGGGGG####LLLLLL........LLRRRRRRRRSSSSSSSSSSSSHH##",
+          "##NNNNNNNN....NNNNGGGGGGGGGG####LLLLLL........LL....................HH##",
+          "##NNNNNNNN....NNNNGGGGGGGGGG####LLLLLL........LL....................HH##",
+          "##NN....NN....NNNNGGGGGGGGGG####LLLLLLLLLLLLLLLL....................HH##",
+          "##NN....NN....NNNNGGGGGGGGGG####LLLLLLLLLLLLLLLL....................HH##",
+          "##NN....NNNNNNNNNNGGGGGGGGGG####LLLLLLLLLLLLLLLL......WWWWWWWWWW....HH##",
+          "##NN....NNNNNNNNNNGGGGGGGGGG####LLLLLLLLLLLLLLLL......WWWWWWWWWW....HH##",
+          "##EEEEEEEEEENNEEEEGG....GGGGAAAAAAAAAAAAAAAAAAAA......WW......WW....HH##",
+          "##EEEEEEEEEENNEEEEGG....GGGGAAAAAAAAAAAAAAAAAAAA......WW......WW....HH##",
+          "##EE..............GG....GGAA..................AA......WW......WW....HH##",
+          "##EE..............GG....GGAA..................AA......WW......WW....HH##",
+          "##EE..............GG....GGAA..................AA......WW......WW....HH##",
+          "##EE..............GG....GGAA..................AA......WW......WW....HH##",
+          "##EE..............GG....GGGG..................AA......WWWWWWWWWW....HH##",
+          "##EE..............GG....GGGG..................AA......WWWWWWWWWW....HH##",
+          "##EE..............GGGGGGGGGG..................AA....................HH##",
+          "##EE..............GGGGGGGGGG..................AA....................HH##",
+          "##EE..............CCCCCCCCCCCCCCCCCCCCCCCCAAAAAA....................HH##",
+          "##EE..............CCCCCCCCCCCCCCCCCCCCCCCCAAAAAA....................HH##",
+          "##EE..............EE....................UUUUUUUUUUUUFFFFFFFFFFFFFFFFHH##",
+          "##EE..............EE....................UUUUUUUUUUUUFFFFFFFFFFFFFFFFHH##",
+          "##EE..............EE....................CCUUUUUUUUUUFF............FF####",
+          "##EE..............EE....................CCUUUUUUUUUUFF............FF####",
+          "##EEEEEEEEEEEEEEEEEE....................CCUUUUUUUUUUFF............FF####",
+          "##EEEEEEEEEEEEEEEEEE....................CCUUUUUUUUUUFF............FF####",
+          "####..................CCCCCCCCCCCCZZZZCCCC........UUUU............FF####",
+          "####..................CCCCCCCCCCCCZZZZCCCC........UUUU............FF####",
+          "####..................########QQ........QQ........UUFF............FF####",
+          "####..................########QQ........QQ........UUFF............FF####",
+          "####..................########QQ........UUUUUUUUUUUUFF............FF####",
+          "####..................########QQ........UUUUUUUUUUUUFF............FF####",
+          "####..................########QQ........QQ##########FF............FF####",
+          "####..................########QQ........QQ##########FF............FF####",
+          "####..................########QQ........QQ##########FF............FF####",
+          "####..................########QQ........QQ##########FF............FF####",
+          "####..................########QQQQQQQQQQQQ##########FF............FF####",
+          "####..................########QQQQQQQQQQQQ##########FF............FF####",
+          "####..................##############################FFFFFFFFFFFFFFFF####",
+          "####..................##############################FFFFFFFFFFFFFFFF####",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################",
+          "########################################################################"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS............SSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS............SSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS..................SSSSSSSSSSSS...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS..................SSSSSSSSSSSS...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSSSSSSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSSSSSSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........RRRRRRRRRRSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........RRRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRSSSSSS",
+            "SSSSRRRRR.RRRRRRRRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSSSSSSSSSRR...RRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSSSSSSSSSRR...RRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSS....RRRRSSRRRRRRRRSSSSSS",
+            "SSSS....RRRR....R.SSSSSSSSSSRRRRRRRRRRRRRRRRRRSS....RRRRSSRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....RRRRSSRRRRRRRRSSSSSS",
+            "SSSSRRRRRRR.RRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....RRRRSSRRRRRRRRSSSSSS",
+            "SSSSSSSSRRSSSSSSSSSSSSSSSSSSSSSSSSRRRR........SSSSSSSSRRSSSSSSRRSSSSSSSS",
+            "SSSSSSSSRRSSSSSSSSSSSSSSSSSSSSSSSSRRRR........SSSSSSSSRRSSSSSSRRSSSSSSSS",
+            "SSSSRRRRRR....RRRRSSRRRRRRSSSSSSSSRRRR........SSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSSRRRRRR....RRRRSSRRRRRRSSSSSSSSRRRR........SSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRRRRRRRRRSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....R.RRRRRRRRRRSSSSSSSSRRR.RRRRRRRRRRRRRRRRRRRRRRRRRRR.RRSSSS",
+            "SSSS....RRRRRRRRRRSSRRRRRRSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSS....RRRRRRRRRRSSRRRRRRSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSSSSSSSSSSRRSSSSSS....RRSSSSSSSSSSSSSSSSSSSSSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSSSSSSSSSSRRSSSSSS....RRSSSSSSSSSSSSSSSSSSSSSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....RRSSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....RRSSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....RRSSRRRRRRRRRRRRRRRRRRSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSS....RRRRRRR.RRSS....RRSSRRR............RRRSSRRR.RRSSRRRRRRSSRRRRSSSS",
+            "SSSSRRRRRRRRRRRRRRSS....RRRRRRR............RRRSSRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSSRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRRRRRSSRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSS....RR....RRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRR.RRRRRRRRSSSS",
+            "SSSSRRRR....RRRRRRRRRR............RRRRRRSSSSSSSSRRSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSRRRR....RRRRRRRRRR............RRRRRRSSSSSSSSRRSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSRRRR....RRRRRRRRRR............RRRRRRRRRRRRRRRRRRSSRRRR....RRRRSSSSSS",
+            "SSSSRRRR....RRRRRRRRRR............RRRRRRRRRRRRRRRRRRSSRRRR....RRRRSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRR....RRRRSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSRRRRR.RRRRRRRRRRRRRRRRRRRRRRRRR.SSRRRR....R.RRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSS........RRRRRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSS........RRRRRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSS........RRSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSS........RRSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSR.RRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSSSSSSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSSSSSSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........RRRRRRRRRRSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........RRRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSSSSSSSSSRR...RRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSSSSSSSSSRR...RRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSS....RRRRSSRRRRRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSS....RRRRSSRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....RRRRSSRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....RRRRSSRRRRRRRRSSSSSS",
+            "SSSSSSSSRRSSSSSSSSSSSSSSSSSSSSSSSSRRRR........SSSSSSSSRRSSSSSSRRSSSSSSSS",
+            "SSSSSSSSRRSSSSSSSSSSSSSSSSSSSSSSSSRRRR........SSSSSSSSRRSSSSSSRRSSSSSSSS",
+            "SSSSRRRRRR....RRRRSSRRRRRRSSSSSSSSRRRR........SSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSSRRRRRR....RRRRSSRRRRRRSSSSSSSSRRRR........SSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRRRRRRRRRSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRRRRRRRRRSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RRRRRRRRRRSSRRRRRRSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSS....RRRRRRRRRRSSRRRRRRSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSSSSSSSSSSRRSSSSSS....RRSSSSSSSSSSSSSSSSSSSSSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSSSSSSSSSSRRSSSSSS....RRSSSSSSSSSSSSSSSSSSSSSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....RRSSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....RRSSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....RRSSRRRRRRRRRRRRRRRRRRSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....RRSSRRR............RRRSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSSRRRRRRRRRRRRRRSS....RRRRRRR............RRRSSRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSSRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRRRRRSSRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSS....RR....RRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSSRRRR....RRRRRRRRRR............RRRRRRSSSSSSSSRRSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSRRRR....RRRRRRRRRR............RRRRRRSSSSSSSSRRSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSRRRR....RRRRRRRRRR............RRRRRRRRRRRRRRRRRRSSRRRR....RRRRSSSSSS",
+            "SSSSRRRR....RRRRRRRRRR............RRRRRRRRRRRRRRRRRRSSRRRR....RRRRSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRR....RRRRSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSS........RRRRRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSS........RRRRRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSS........RRSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSS........RRSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSSSSSSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSSSSSSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........RRRRRRRRRRSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........RRRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSSSSSSSSSRR...RRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSSSSSSSSSRR...RRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSS....RRRRSSRRRRRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSS....RRRRSSRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....RRRRSSRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....RRRRSSRRRRRRRRSSSSSS",
+            "SSSSSSSSRRSSSSSSSSSSSSSSSSSSSSSSSSRRRR........SSSSSSSSRRSSSSSSRRSSSSSSSS",
+            "SSSSSSSSRRSSSSSSSSSSSSSSSSSSSSSSSSRRRR........SSSSSSSSRRSSSSSSRRSSSSSSSS",
+            "SSSSRRRRRR....RRRRSSRRRRRRSSSSSSSSRRRR........SSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSSRRRRRR....RRRRSSRRRRRRSSSSSSSSRRRR........SSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRRRRRRRRRSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRRRRRRRRRSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RRRRRRRRRRSSRRRRRRSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSS....RRRRRRRRRRSSRRRRRRSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSSSSSSSSSSRRSSSSSS....RRSSSSSSSSSSSSSSSSSSSSSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSSSSSSSSSSRRSSSSSS....RRSSSSSSSSSSSSSSSSSSSSSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....RRSSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....RRSSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....RRSSRRRRRRRRRRRRRRRRRRSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....RRSSRRR............RRRSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSSRRRRRRRRRRRRRRSS....RRRRRRR............RRRSSRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSSRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRRRRRSSRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSS....RR....RRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSSRRRR....RRRRRRRRRR............RRRRRRSSSSSSSSRRSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSRRRR....RRRRRRRRRR............RRRRRRSSSSSSSSRRSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSRRRR....RRRRRRRRRR............RRRRRRRRRRRRRRRRRRSSRRRR....RRRRSSSSSS",
+            "SSSSRRRR....RRRRRRRRRR............RRRRRRRRRRRRRRRRRRSSRRRR....RRRRSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRR....RRRRSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSS........RRRRRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSS........RRRRRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSS........RRSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSS........RRSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSSSSSSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSSSSSSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........RRRRRRRRRRSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........RRRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSSSSSSSSSRR...RRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSSSSSSSSSRR...RRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSS....RRRRSSRRRRRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSS....RRRRSSRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....RRRRSSRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....RRRRSSRRRRRRRRSSSSSS",
+            "SSSSSSSSRRSSSSSSSSSSSSSSSSSSSSSSSSRRRR........SSSSSSSSRRSSSSSSRRSSSSSSSS",
+            "SSSSSSSSRRSSSSSSSSSSSSSSSSSSSSSSSSRRRR........SSSSSSSSRRSSSSSSRRSSSSSSSS",
+            "SSSSRRRRRR....RRRRSSRRRRRRSSSSSSSSRRRR........SSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSSRRRRRR....RRRRSSRRRRRRSSSSSSSSRRRR........SSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRRRRRRRRRSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRRRRRRRRRSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RRRRRRRRRRSSRRRRRRSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSS....RRRRRRRRRRSSRRRRRRSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSSSSSSSSSSRRSSSSSS....RRSSSSSSSSSSSSSSSSSSSSSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSSSSSSSSSSRRSSSSSS....RRSSSSSSSSSSSSSSSSSSSSSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....RRSSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....RRSSRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....RRSSRRRRRRRRRRRRRRRRRRSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....RRSSRRR............RRRSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSSRRRRRRRRRRRRRRSS....RRRRRRR............RRRSSRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSSRRRRRRRRRRRRRRSS....RRRRRRRRRRRRRRRRRRRRRRSSRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSS....RR....RRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSSRRRR....RRRRRRRRRR............RRRRRRSSSSSSSSRRSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSRRRR....RRRRRRRRRR............RRRRRRSSSSSSSSRRSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSRRRR....RRRRRRRRRR............RRRRRRRRRRRRRRRRRRSSRRRR....RRRRSSSSSS",
+            "SSSSRRRR....RRRRRRRRRR............RRRRRRRRRRRRRRRRRRSSRRRR....RRRRSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRR....RRRRSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSS........RRRRRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSS........RRRRRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSS........RRSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSS........RRSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSSSSSSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSSSSSSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSRRRRRRRRSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSRRRRRRRRSSRRRRRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSSSSSSSSSSS...RRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSSSSSSSSSSS...RRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSS....RRRRSSRRRRRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSS....RRRRSSRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....RRRRSSRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....RRRRSSRRRRRRRRSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR........SSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR........SSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSRRRRRR....RRRRSSRRRRRRSSSSSSSSRRRR........SSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSSRRRRRR....RRRRSSRRRRRRSSSSSSSSRRRR........SSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRSSRRRRRRSSSSSSSSRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRSSRRRRRRSSSSSSSSRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RRRRRRRRRRSSRRRRRRSSSSSSSSRRRRRRRRRRRRSSRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSS....RRRRRRRRRRSSRRRRRRSSSSSSSSRRRRRRRRRRRRSSRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSSSSSSSSSSSSSSSSSS....RRSSSSSSSSSSSSSSSSSSSSSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSSSSSSSSSSSSSSSSSS....RRSSSSSSSSSSSSSSSSSSSSSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....RRSSRRRRRRRRRRRRRRRRRRSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....RRSSRRRRRRRRRRRRRRRRRRSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....RRSSRRRRRRRRRRRRRRRRRRSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....RRSSRRR............RRRSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSSRRRRRRRRRRRRRRSS....RRSSRRR............RRRSSRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSSRRRRRRRRRRRRRRSS....RRSSRRRRRRRRRRRRRRRRRRSSRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSS....RR....RRRRSSRRRRRRSSRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRSSRRRRRRSSRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSSRRRR....RRRRRRSSRR............RRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSRRRR....RRRRRRSSRR............RRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSRRRR....RRRRRRSSRR............RRRRRRSSRRRRRRRRRRSSRRRR....RRRRSSSSSS",
+            "SSSSRRRR....RRRRRRSSRR............RRRRRRSSRRRRRRRRRRSSRRRR....RRRRSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRSSRRRR....RRRRSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSS........RRSSRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSS........RRSSRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSS........RRSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSS........RRSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSSSSSSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSSSSSSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSRRRRRRRRSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSRRRRRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSSSSSSSSSSS...RRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSSSSSSSSSSS...RRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSS....RRRRSSRRRRRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSS....RRRRSSRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....RRRRSSRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....RRRRSSRRRRRRRRSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR........SSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR........SSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSRRRRRR....RRRRSSSSSSSSSSSSSSSSRRRR........SSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSSRRRRRR....RRRRSSSSSSSSSSSSSSSSRRRR........SSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRSSSSSSSSSSSSSSSSRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRSSSSSSSSSSSSSSSSRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RRRRRRRRRRSSSSSSSSSSSSSSSSRRRRRRRRRRRRSSRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSS....RRRRRRRRRRSSSSSSSSSSSSSSSSRRRRRRRRRRRRSSRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSSSSSSSSSSSSSSSSSS....SSSSSSSSSSSSSSSSSSSSSSSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSSSSSSSSSSSSSSSSSS....SSSSSSSSSSSSSSSSSSSSSSSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....SSSSRRRRRRRRRRRRRRRRRRSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....SSSSRRRRRRRRRRRRRRRRRRSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....SSSSRRRRRRRRRRRRRRRRRRSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....SSSSRRR............RRRSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSSRRRRRRRRRRRRRRSS....SSSSRRR............RRRSSRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSSRRRRRRRRRRRRRRSS....SSSSRRRRRRRRRRRRRRRRRRSSRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSS....RR....RRRRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSSRRRR....RRRRRRSSRR............RRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSRRRR....RRRRRRSSRR............RRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSRRRR....RRRRRRSSRR............RRRRRRSSRRRRRRRRRRSSRRRR....RRRRSSSSSS",
+            "SSSSRRRR....RRRRRRSSRR............RRRRRRSSRRRRRRRRRRSSRRRR....RRRRSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRSSRRRR....RRRRSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSS........RRSSRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSS........RRSSRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSS........RRSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSS........RRSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSSSSSSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSSSSSSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSRRRRRRRRSSSSSS",
+            "SSSS....RR........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...RRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...RRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....SSSSSSRRRRRRRRSSSSSS",
+            "SSSS....RRRR....RRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....SSSSSSRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....SSSSSSRRRRRRRRSSSSSS",
+            "SSSSRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....SSSSSSRRRRRRRRSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSS....SSSSSSSSSSSSSSSSSSSSSSSS........SSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSSSSSSSS....SSSSSSSSSSSSSSSSSSSSSSSS........SSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....SS....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....SS....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSS....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSSSSSSSSSSSSSSSSSS....SSSSSSSSSSSSSSSSSSSSSSSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSSSSSSSSSSSSSSSSSS....SSSSSSSSSSSSSSSSSSSSSSSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....SSSSRRRRRRRRRRRRRRRRRRSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....SSSSRRRRRRRRRRRRRRRRRRSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....SSSSRRRRRRRRRRRRRRRRRRSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSS....RRRRRRRRRRSS....SSSSRRR............RRRSSRRRRRRSSRRRRRRSSRRRRSSSS",
+            "SSSSRRRRRRRRRRRRRRSS....SSSSRRR............RRRSSRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSSRRRRRRRRRRRRRRSS....SSSSRRRRRRRRRRRRRRRRRRSSRRRRRRSSSSSSSSSSRRRRSSSS",
+            "SSSS....RR....RRRRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRSSSSSSSSSSRRRRRRRRRRRRRRRRRRSSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSS....RR....RRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSS",
+            "SSSSRRRR....RRRRRRSSRR............RRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSRRRR....RRRRRRSSRR............RRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSRRRR....RRRRRRSSRR............RRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSSRRRR....RRRRRRSSRR............RRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSS........SSSSRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSS........SSSSRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSS........SSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSS........SSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRRRRRRRRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSRRRRRRRRSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSRRRR....RRRRSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ]
+        ]
+      },
+      "palette": {
+        "!": {
+          "material": "metal",
+          "role": "shell"
+        },
+        "#": {
+          "material": "rock",
+          "role": "shell"
+        },
+        "$": {
+          "material": "dressed",
+          "role": "shell"
+        },
+        "%": {
+          "material": "dressed",
+          "role": "shell"
+        },
+        "&": {
+          "material": "hazard_wall",
+          "role": "shell"
+        },
+        "(": {
+          "material": "metal",
+          "role": "shell"
+        },
+        ")": {
+          "material": "dressed",
+          "role": "shell"
+        },
+        "*": {
+          "material": "hazard_wall",
+          "role": "shell"
+        },
+        "+": {
+          "material": "hazard_wall",
+          "role": "shell"
+        },
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        ";": {
+          "material": "metal",
+          "role": "shell"
+        },
+        "<": {
+          "material": "metal",
+          "role": "shell"
+        },
+        ">": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "@": {
+          "material": "hazard_wall",
+          "role": "shell"
+        },
+        "A": {
+          "material": "dressed",
+          "role": "shell"
+        },
+        "B": {
+          "material": "metal",
+          "role": "shell"
+        },
+        "C": {
+          "material": "metal",
+          "role": "shell"
+        },
+        "D": {
+          "facing": "s",
+          "furniture": "gauntlet_lab_bulkhead",
+          "lock": {
+            "id": "gauntlet_lab_research_seal",
+            "locked": true
+          }
+        },
+        "E": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "F": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "G": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        "H": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "K": {
+          "groundLoot": {
+            "items": [
+              {
+                "item": "gauntlet_lab_research_card"
+              }
+            ],
+            "kind": "fixed"
+          }
+        },
+        "L": {
+          "material": "metal",
+          "role": "shell"
+        },
+        "N": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        "Q": {
+          "material": "metal",
+          "role": "shell"
+        },
+        "R": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "S": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        "T": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "U": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        "V": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        "W": {
+          "material": "metal",
+          "role": "shell"
+        },
+        "Z": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        "[": {
+          "material": "hazard_wall",
+          "role": "shell"
+        },
+        "]": {
+          "material": "hazard_wall",
+          "role": "shell"
+        },
+        "^": {
+          "material": "metal",
+          "role": "shell"
+        },
+        "a": {
+          "material": "tiles",
+          "role": "interior_floor"
+        },
+        "b": {
+          "material": "tiles",
+          "role": "interior_floor"
+        },
+        "c": {
+          "material": "tiles",
+          "role": "interior_floor"
+        },
+        "d": {
+          "material": "hazard",
+          "role": "interior_floor"
+        },
+        "e": {
+          "material": "tiles",
+          "role": "interior_floor"
+        },
+        "f": {
+          "material": "tiles",
+          "role": "interior_floor"
+        },
+        "g": {
+          "material": "tiles",
+          "role": "interior_floor"
+        },
+        "h": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "l": {
+          "material": "hazard",
+          "role": "interior_floor"
+        },
+        "n": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "carpet",
+          "role": "interior_floor"
+        },
+        "s": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "tiles",
+          "role": "interior_floor"
+        },
+        "u": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "v": {
+          "material": "hazard",
+          "role": "interior_floor"
+        },
+        "w": {
+          "material": "hazard",
+          "role": "interior_floor"
+        },
+        "{": {
+          "material": "dressed",
+          "role": "shell"
+        },
+        "|": {
+          "material": "wire",
+          "role": "shell"
+        },
+        "~": {
+          "material": "metal",
+          "role": "shell"
+        }
+      },
+      "ports": [],
+      "size": [72, 8, 64],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_changing_lockers",
+      "layers": [
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["LL..", "....", "....", "...."],
+        ["====", "====", "====", "===="],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        "A": {
+          "furniture": "police_evidence_locker",
+          "loot": "gauntlet_lab_research_margin"
+        },
+        "B": {
+          "furniture": "police_evidence_locker",
+          "loot": "gauntlet_lab_research_margin"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_changing_bench",
+      "layers": [
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["====", "====", "====", "===="],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_bench",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_equip_north_pump",
+      "layers": [
+        ["pppp", "pppp", "pppp", "pppp"],
+        ["FFFF", "FFFF", "FFFF", "...."],
+        ["FFFF", "FFFF", "FFFF", "...."],
+        ["FFFF", "FFFF", "FFFF", "...."],
+        ["FFFF", "FFFF", "FFFF", "...."],
+        ["LL..", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "SSSS", "SSSS"],
+          ["SSSS", "SSSS", "SSSS", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_pump",
+          "loot": "d41_empty",
+          "lootUsage": ["Industrial"]
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_equip_north_cabinet",
+      "layers": [
+        ["A.BB", "....", "....", "...."],
+        ["A.BB", "....", "....", "...."],
+        ["..BB", "....", "....", "...."],
+        ["..BB", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SASS", "AAAA", "AAAA", "AAAA"],
+          ["SASS", "AAAA", "AAAA", "AAAA"],
+          ["AASS", "AAAA", "AAAA", "AAAA"],
+          ["AASS", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        "A": {
+          "furniture": "medical_steam_sterilizer",
+          "loot": "gauntlet_lab_research_margin",
+          "lootUsage": ["Industrial"]
+        },
+        "B": {
+          "furniture": "police_file_cabinet",
+          "loot": "gauntlet_lab_research_margin",
+          "lootUsage": ["Industrial"]
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_equip_south_pump",
+      "layers": [
+        ["pppp", "pppp", "pppp", "pppp"],
+        ["FFFF", "FFFF", "FFFF", "...."],
+        ["FFFF", "FFFF", "FFFF", "...."],
+        ["FFFF", "FFFF", "FFFF", "...."],
+        ["FFFF", "FFFF", "FFFF", "...."],
+        ["LL..", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "SSSS", "SSSS"],
+          ["SSSS", "SSSS", "SSSS", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_pump",
+          "loot": "d41_empty",
+          "lootUsage": ["Industrial"]
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture_broken"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_equip_south_cabinet",
+      "layers": [
+        ["A.BB", "....", "....", "...."],
+        ["A.BB", "....", "....", "...."],
+        ["..BB", "....", "....", "...."],
+        ["..BB", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SASS", "AAAA", "AAAA", "AAAA"],
+          ["SASS", "AAAA", "AAAA", "AAAA"],
+          ["AASS", "AAAA", "AAAA", "AAAA"],
+          ["AASS", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        "A": {
+          "furniture": "medical_steam_sterilizer",
+          "loot": "gauntlet_lab_research_margin",
+          "lootUsage": ["Industrial"]
+        },
+        "B": {
+          "furniture": "police_file_cabinet",
+          "loot": "gauntlet_lab_research_margin",
+          "lootUsage": ["Industrial"]
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_breached_bay",
+      "layers": [
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "metal",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_breached_bay",
+          "loot": "d41_empty",
+          "lootUsage": ["Medical"]
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture_broken"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_breached_containment",
+      "layers": [
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "metal",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_containment_bay",
+          "loot": "d41_empty",
+          "lootUsage": ["Medical"]
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture_broken"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_breached_researcher",
+      "layers": [
+        ["FFFF", "FFFF", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "metal",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_lab_dead_researcher",
+          "loot": "d41_empty",
+          "lootUsage": ["Medical"]
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_breached_spill",
+      "layers": [
+        ["FFFF", "FFFF", "FFFF", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "SSSS", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "metal",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_spill",
+          "loot": "d41_empty",
+          "lootUsage": ["Medical"]
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_breached_shelf",
+      "layers": [
+        ["FF..", "FF..", "FF..", "FF.."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSAA", "SSAA", "SSAA", "SSAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "metal",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "shelf",
+          "loot": "d41_empty",
+          "lootUsage": ["Medical"],
+          "tip": "back"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture_broken"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_cold_bank_west",
+      "layers": [
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "metal",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_cold_store",
+          "loot": "d41_empty",
+          "lootUsage": ["Medical"]
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture_broken"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_cold_bank_east",
+      "layers": [
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "metal",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_cold_store",
+          "loot": "d41_empty",
+          "lootUsage": ["Medical"]
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_cold_files",
+      "layers": [
+        ["A..B", "....", "....", "...."],
+        ["A..B", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SAAS", "AAAA", "AAAA", "AAAA"],
+          ["SAAS", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "metal",
+          "role": "shell"
+        },
+        "A": {
+          "furniture": "medical_card_file",
+          "loot": "d41_empty",
+          "lootUsage": ["Medical"]
+        },
+        "B": {
+          "furniture": "medical_card_file",
+          "loot": "d41_empty",
+          "lootUsage": ["Medical"]
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_culture_north",
+      "layers": [
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_culture",
+          "loot": "d41_empty",
+          "lootUsage": ["Medical"]
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_culture_bench",
+      "layers": [
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_bench",
+          "loot": "d41_empty",
+          "lootUsage": ["Medical"]
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_culture_south",
+      "layers": [
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_culture",
+          "loot": "d41_empty",
+          "lootUsage": ["Medical"]
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture_broken"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_exam_slab_north",
+      "layers": [
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_exam",
+          "loot": "d41_empty",
+          "lootUsage": ["Medical"]
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_exam_couch",
+      "layers": [
+        ["FF.A", "FF..", "FF..", "FF.."],
+        ["...A", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSAS", "SSAA", "SSAA", "SSAA"],
+          ["AAAS", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "A": {
+          "furniture": "medical_folding_screen",
+          "loot": "d41_empty",
+          "lootUsage": ["Medical"]
+        },
+        "F": {
+          "furniture": "medical_examination_couch",
+          "loot": "d41_empty",
+          "lootUsage": ["Medical"]
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_exam_slab_south",
+      "layers": [
+        ["FFFF", "FFFF", "....", "...."],
+        ["FFFF", "FFFF", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_exam",
+          "loot": "d41_empty",
+          "lootUsage": ["Medical"]
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture_broken"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_exam_files",
+      "layers": [
+        ["A..B", "....", "....", "...."],
+        ["A..B", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SAAS", "AAAA", "AAAA", "AAAA"],
+          ["SAAS", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "A": {
+          "furniture": "medical_card_file",
+          "loot": "d41_empty",
+          "lootUsage": ["Medical"]
+        },
+        "B": {
+          "furniture": "medical_card_file",
+          "loot": "d41_empty",
+          "lootUsage": ["Medical"]
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_lobby_basins",
+      "layers": [
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "metal",
+          "role": "shell"
+        },
+        "A": {
+          "furniture": "station_washbasin",
+          "loot": "d41_empty"
+        },
+        "B": {
+          "furniture": "station_washbasin",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "hazard",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_lobby_lockers",
+      "layers": [
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["AABB", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "metal",
+          "role": "shell"
+        },
+        "A": {
+          "furniture": "police_evidence_locker",
+          "loot": "gauntlet_lab_research_margin"
+        },
+        "B": {
+          "furniture": "police_evidence_locker",
+          "loot": "gauntlet_lab_research_margin"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture_broken"
+        },
+        "p": {
+          "material": "hazard",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_rest_lounge",
+      "layers": [
+        ["FFFF", "FFFF", "TTTT", "TTTT"],
+        ["FFFF", "FFFF", "TTTT", "TTTT"],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "SSSS", "SSSS"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "sofa",
+          "loot": "gauntlet_lab_research_margin",
+          "lootUsage": ["Residential"]
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "T": {
+          "furniture": "range_table",
+          "loot": "gauntlet_lab_research_margin",
+          "lootUsage": ["Residential"]
+        },
+        "p": {
+          "material": "carpet",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_wc_west",
+      "layers": [
+        ["AABB", "AA..", "....", "...."],
+        ["AABB", "AA..", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["====", "====", "====", "===="],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSAA", "AAAA", "AAAA"],
+          ["SSSS", "SSAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "A": {
+          "furniture": "station_toilet",
+          "loot": "d41_empty"
+        },
+        "B": {
+          "furniture": "station_washbasin",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_research_bay_wc_east",
+      "layers": [
+        ["AABB", "AA..", "....", "...."],
+        ["AABB", "AA..", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["LL..", "....", "....", "...."],
+        ["====", "====", "====", "===="],
+        ["====", "====", "====", "===="]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSAA", "AAAA", "AAAA"],
+          ["SSSS", "SSAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["SSAA", "AAAA", "AAAA", "AAAA"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "plaster",
+          "role": "shell"
+        },
+        "A": {
+          "furniture": "station_toilet",
+          "loot": "d41_empty"
+        },
+        "B": {
+          "furniture": "station_washbasin",
+          "loot": "d41_empty"
+        },
+        "L": {
+          "furniture": "gauntlet_lab_fixture_broken"
+        },
+        "p": {
+          "material": "tiles",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
       "style": "concrete_lab"
     },
     {

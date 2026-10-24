@@ -905,11 +905,6 @@
             "upper": [58, 25, 11]
           },
           {
-            "ladder": [35, 9, 10],
-            "lower": [34, 9, 11],
-            "upper": [34, 17, 11]
-          },
-          {
             "ladder": [35, 9, 48],
             "lower": [34, 9, 49],
             "upper": [34, 17, 49]
@@ -981,6 +976,15 @@
             "items": [
               {
                 "item": "gauntlet_lab_administration_card",
+                "key": true
+              }
+            ]
+          },
+          {
+            "at": [14, 17, 4],
+            "items": [
+              {
+                "item": "gauntlet_lab_research_card",
                 "key": true
               }
             ]
@@ -1065,6 +1069,12 @@
             "held": true,
             "key": [42, 25, 6],
             "standing": [43, 25, 9]
+          },
+          {
+            "doors": [[34, 17, 14], [34, 17, 42]],
+            "held": true,
+            "key": [14, 17, 4],
+            "standing": [15, 17, 7]
           }
         ],
         "stairs": [
@@ -1075,6 +1085,10 @@
           {
             "lower": [32, 17, 30],
             "upper": [42, 25, 30]
+          },
+          {
+            "lower": [42, 9, 11],
+            "upper": [32, 17, 11]
           }
         ],
         "start": {
@@ -1174,8 +1188,8 @@
             "standing": [12, 25, 40]
           },
           {
-            "id": "containment",
-            "standing": [35, 17, 33]
+            "id": "research",
+            "standing": [49, 17, 19]
           },
           {
             "id": "failure",

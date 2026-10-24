@@ -34,9 +34,14 @@ const house = setup.powerDevices;
 const kind = (device: PlacedPowerDevice) => base.powerDevices.get(base.furniture.get(device.type)!.power!.device)!.kind;
 const loads = house.filter((device) => kind(device) === 'consumer');
 
-// Keep the house's electrical content but put the controls and appliance in reach together.
+// Keep the house's electrical content but put the controls and appliance in reach together: each device takes the
+// nearest free cell around the spawn, clear of the player's own, so the house may gain devices.
+const around = Array.from({ length: 81 }, (_, i): [number, number] => [(i % 9) - 4, Math.floor(i / 9) - 4])
+  .filter(([x, z]) => Math.abs(x) > 1 || Math.abs(z) > 1)
+  .sort((a, b) => Math.hypot(...a) - Math.hypot(...b));
 const devices = house.map((device, index): PlacedPowerDevice => {
-  const pos: Vec3 = [(index % 4) - 2, 1, Math.floor(index / 4) * 3 - 2];
+  const [x, z] = around[index]!;
+  const pos: Vec3 = [x, 1, z];
   return { type: device.type, pos, entitySpec: { type: device.type, pos, size: [1, 1, 1], facing: 'n', fixed: true } };
 });
 const registry = {

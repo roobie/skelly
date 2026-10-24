@@ -17,6 +17,14 @@ local melee(type, motion, damage, reach, cooldownSimSeconds, stamina, impulse, w
     windupCapSimSeconds: 0.25,
     type: type,
     motion: motion,
+    // Provisional until #276 is tuned: a full charge costs one more swing's stamina.
+    charge: {
+      fullSimSeconds: 1,
+      curveExponent: 1,
+      damageMultiplier: 1.6,
+      impulseMultiplier: 2,
+      stamina: stamina,
+    },
   },
 };
 
@@ -315,14 +323,19 @@ local items = [
     size: [2, 3],
     description: 'A table lamp that burns lamp oil. It keeps burning where it is set down.',
     model: 'oil_lamp',
-    tool: { qualities: {}, fuel: { canister: 'lamp_oil', swapSimSeconds: 3 } },
+    vessel: {
+      capacityMicrolitres: 400000,
+      pour: { incrementMicrolitres: 10000, microlitresPerSimSecond: 50000 },
+      accepts: ['lamp_fuel'],
+      initialContents: { kind: 'filled', liquid: 'lamp_fuel', volumeMicrolitres: 400000 },
+    },
     light: {
       radius: 8,
       seenFrom: 80,
       color: '#ffc477',
       intensity: 3,
       flame: { heightMetres: 0.05, radiusMetres: 0.02 },
-      fuelPerGameHour: 1,
+      liquidFuel: { accepts: ['lamp_fuel'], microlitresPerGameSecond: 14 },
       burning: burns('firestarter', douse=true, sprint='douse', stow='douse', drop='stay', relight=true),
     },
   },

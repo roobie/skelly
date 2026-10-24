@@ -13,6 +13,13 @@ local palette = {
   K: { furniture: 'crate', items: [
     { item: 'rechargeable_aa_battery', count: 1, charge: 0.25, placement: 'surface' },
     { item: 'flashlight', count: 1, charge: 0, placement: 'surface' },
+    { item: 'oil_lamp', count: 1, placement: 'surface' },
+    { item: 'lamp_oil', count: 1, placement: 'surface' },
+  ] },
+  Z: { furniture: 'crate', items: [
+    { item: 'sample_note', count: 1, placement: 'surface' },
+    { item: 'regional_map', count: 1, placement: 'surface' },
+    { item: 'flashlight', count: 1, charge: 1, placement: 'surface' },
   ] },
   k: 'concrete', w: { furniture: 'workbench', fixed: true }, n: { furniture: 'grinding_wheel', fixed: true },
   e: { furniture: 'shelf', facing: 's' }, E: { furniture: 'shelf', facing: 's' },
@@ -224,14 +231,24 @@ local cap = [
   '.......................', '...................dddd', '...................dddd',
   '...................dddd', '...................dddd', '...................dddd',
 ];
+// The showroom pavilion: an open-sided timber deck under a roof. The layout's slot row stands on the deck and the
+// default spawn in front of it, beside the charging corner's crates and charger (`docs/test-house.md`, "Normal and debug
+// additions"). The spawn's row runs east off the deck along the path to the house door, and the deck's south-east stays
+// open toward the garden gate.
+local pavilionPosts = [
+  'p......p.......p', '................', '................', '................', '................',
+  '................', '................', '................', '................', 'p......p.......p',
+];
+local pavilionCharging(charger) = [
+  'p......p.......p', '................', '.............KK.', '.............KK' + charger, '................',
+  '................', '................', '................', '................', 'p......p.......p',
+];
+local pavilionSolidRows(block) = [std.join('', [block for _ in std.range(1, 16)]) for _ in std.range(1, 10)];
 local templates = [
   {
-    id: 'test_house_charging', size: [3, 3, 3],
-    layers: [
-      ['GGG', 'GGG', 'GGG'],
-      ['...', 'KK.', 'KKX'],
-      ['...', 'KK.', 'KK.'],
-    ],
+    id: 'test_house_showroom', size: [16, 9, 10],
+    layers: [pavilionSolidRows('d'), pavilionSolidRows('p'), pavilionCharging('X'), pavilionCharging('.'),
+      pavilionPosts, pavilionPosts, pavilionPosts, pavilionPosts, pavilionSolidRows('r')],
   },
   {
     id: 'test_house_home', size: [23, 11, 15],
@@ -278,6 +295,18 @@ local templates = [
   {
     id: 'test_house_sign', size: [2, 4, 1],
     layers: [['GG'], ['NN'], ['NN'], ['NN']],
+  },
+  {
+    // Reading needs light, so the papers and the lamp wait at the end of a windowless zigzag that no sky reaches.
+    id: 'test_house_reading_booth', size: [8, 7, 12],
+    local maze = ['bbbbb..b', 'b......b', 'b......b', 'b..bbbbb', 'b......b', 'b......b', 'bbbbb..b', 'b......b', 'b......b'],
+    local walls = maze + ['b......b', 'b......b', 'bbbbbbbb'],
+    local crates = maze + ['b.ZZ...b', 'b.ZZ...b', 'bbbbbbbb'],
+    layers: [
+      ['kkkkkkkk' for _ in std.range(1, 12)],
+      crates, crates, walls, walls, walls,
+      ['bbbbbbbb' for _ in std.range(1, 12)],
+    ],
   },
   {
     id: 'test_house_loose_wardrobe', size: [2, 5, 1],

@@ -156,7 +156,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 60;
+export const SAVE_SCHEMA_VERSION = 62;
 export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -379,6 +379,13 @@ itemSchema = obj({
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
   cartridges: opt(arr(str({ id: true }))),
   paperMap: opt(obj({ x: safeInt, z: safeInt })),
+  liquidBurnRemainder: opt(num({ integer: true, min: 0, max: 999_999 })),
+  liquidContents: opt(
+    union(
+      obj({ kind: enumeration(['empty']) }),
+      obj({ kind: enumeration(['filled']), liquid: str({ id: true }), volumeMicrolitres: positiveInt }),
+    ),
+  ),
   cargo: opt(arr(positiveInt)),
   slots: opt(record(lazy(() => itemSchema))),
   firearm: opt(
@@ -684,6 +691,7 @@ const zombie = obj({
   stanceWeight: opt(finite),
   stepOffset: opt(finite),
   hitFlinchTime: opt(nonNegative),
+  staggerSimSeconds: nonNegative,
   /** Bone ids severed so far — cumulative, never shrinks; see Zombie.severed's own doc comment. */
   severed: arr(str()),
   /** Amalgam voxel-grid cells knocked out by hits, ascending; see Zombie.carved. */
@@ -715,6 +723,7 @@ const meleeAction = nullable(
     origin: vec3,
     direction: vec3,
     hands: obj({ right: nullable(positiveInt), left: nullable(positiveInt) }),
+    chargeHeldSimSeconds: opt(nonNegative),
     weapon: obj({
       motion: enumeration(MELEE_MOTIONS),
       damage: positive,
@@ -732,6 +741,15 @@ const meleeAction = nullable(
       hitSound: opt(str({ id: true })),
       hitLayerSound: opt(str({ id: true })),
       type: opt(enumeration(MELEE_DAMAGE_KINDS)),
+      charge: opt(
+        obj({
+          fullSimSeconds: positive,
+          curveExponent: positive,
+          damageMultiplier: positive,
+          impulseMultiplier: positive,
+          stamina: nonNegative,
+        }),
+      ),
     }),
   }),
 );

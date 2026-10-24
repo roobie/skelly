@@ -65,6 +65,8 @@ const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
   'src/core/pileDisplay.ts': 'Presentation-only pile projection; it does not alter simulation or save identity.',
   'src/game/debugInterface.ts': 'Type-only contracts; the imported interfaces erase from runtime code.',
   'src/game/indexedDbCommit.ts': 'IndexedDB commit policy runs only in the save worker, outside simulation state.',
+  'src/game/mapSliceInput.ts':
+    'Review-map page input helper; only the map page imports it, so it never reaches simulation or save identity.',
   'src/game/renderMode.ts':
     'Presentation-only development render selection; does not alter simulation or save identity.',
   'src/core/rigidBody.ts': 'Presentation-only debris physics, excluded with the renderer from save identity.',

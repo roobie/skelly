@@ -112,7 +112,8 @@ export interface UseOption {
   kind: 'use';
   label: string;
   plan: Plan;
-  operation?: 'consume' | 'switch' | 'battery' | 'canister' | 'read' | 'trap';
+  operation?: 'consume' | 'switch' | 'battery' | 'canister' | 'read' | 'trap' | 'pour';
+  receiver?: Item;
   /** How a battery load was admitted; completion rechecks the same route. */
   route?: BatteryRoute;
   light?: Item;
@@ -270,6 +271,52 @@ const refuseUse = (inv: Inventory, reason: string): UseOption => ({
   plan: { ok: false, reason },
 });
 
+export const pourRefusal = (view: ReachSnapshot, sourceUid: number, receiverUid: number): string | undefined => {
+  const inv = view.player.inventory;
+  const source = inv.itemByUid(sourceUid);
+  const receiver = inv.itemByUid(receiverUid);
+  const to = receiver && inv.locate(receiver);
+  if (!(source && receiver && defOf(inv.registry, source.type).vessel?.pour)) {
+    return coreMessage(inv.registry, 'liquidTransferRefused');
+  }
+  if (inv.locate(source)?.kind !== 'hand') {
+    return coreMessage(inv.registry, 'notInHands', { item: inv.name(source).toLowerCase() });
+  }
+  if (
+    !(
+      view.entries.some((entry) => entry.item === receiver) &&
+      (to?.kind === 'hand' || to?.kind === 'pile' || to?.kind === 'furniture')
+    )
+  ) {
+    return coreMessage(inv.registry, 'liquidTransferRefused');
+  }
+  const plan = inv.planLiquidTransfer(sourceUid, receiverUid);
+  if (plan.ok) {
+    return undefined;
+  }
+  if (plan.reason === 'unserviceable' && (source.on || receiver.on)) {
+    return coreMessage(inv.registry, 'stillLit');
+  }
+  return coreMessage(inv.registry, plan.reason === 'full-receiver' ? 'liquidReceiverFull' : 'liquidTransferRefused');
+};
+
+export const otherHandPour = (item: Item, view: ReachSnapshot): UseOption => {
+  const inv = view.player.inventory;
+  const at = inv.locate(item);
+  const other = at?.kind === 'hand' ? inv.hands[otherHand(at.side)] : undefined;
+  const receiver = other && defOf(inv.registry, other.type).vessel ? other : undefined;
+  const refusal = receiver
+    ? pourRefusal(view, item.uid, receiver.uid)
+    : coreMessage(inv.registry, 'liquidTransferRefused');
+  return {
+    kind: 'use',
+    label: coreLabel(inv.registry, 'pour'),
+    operation: 'pour',
+    ...(receiver ? { receiver } : {}),
+    plan: refusal ? { ok: false, reason: refusal } : swapPlan(0),
+  };
+};
+
 type BatteryRoute = 'hands' | 'slot';
 
 const loadOption = (inv: Inventory, light: Item, battery: Item, route: BatteryRoute): UseOption => ({
@@ -405,6 +452,10 @@ const useLocationRefusal = (
   });
 };
 
+/** Books, notes and maps all read through one use option, so every hand route agrees on what reads. */
+export const isReadableItem = (def: ItemDef): boolean =>
+  def.book !== undefined || def.readable !== undefined || def.paperMap !== undefined;
+
 const goneReason = (registry: Registry, def: ItemDef, item: string): string => {
   if (def.battery) {
     return coreMessage(registry, 'batteryGone');
@@ -429,6 +480,17 @@ const trapOption = (
   return refusal
     ? refuseUse(inventory, refusal)
     : { kind: 'use', label: coreLabel(registry, 'setTrap'), operation: 'trap', plan: swapPlan(setSimSeconds) };
+};
+
+const vesselOrLightOption = (item: Item, view: ReachSnapshot): UseOption => {
+  const inv = view.player.inventory;
+  const def = defOf(inv.registry, item.type);
+  if (def.light) {
+    return lightOption(item, view);
+  }
+  return def.vessel?.pour
+    ? otherHandPour(item, view)
+    : refuseUse(inv, coreMessage(inv.registry, 'cantUse', { item: def.name.toLowerCase() }));
 };
 
 /** Eligibility only: effects remain in the domain command owner. */
@@ -458,7 +520,7 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   if (locationRefusal) {
     return refuseUse(inv, locationRefusal);
   }
-  if (def.book || def.readable || def.paperMap) {
+  if (isReadableItem(def)) {
     return {
       kind: 'use',
       label: coreLabel(inv.registry, 'read'),
@@ -471,7 +533,7 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   if (consumed) {
     return { kind: 'use', label: consumed.label, operation: 'consume', plan: { ok: true, time: consumed.simSeconds } };
   }
-  return def.light ? lightOption(item, view) : refuseUse(inv, coreMessage(inv.registry, 'cantUse', { item: name }));
+  return vesselOrLightOption(item, view);
 };
 
 /** All move/use choices, including their refusal reasons and ordinary handling times. */

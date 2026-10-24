@@ -27,6 +27,6 @@ describe('player start from world setup', () => {
     expect(normalConfig.debugStart).toBeUndefined();
     const worldSpawn = { position: [8, 14.01, 18], yaw: 0.25 };
     expect(playerStartFromWorld(setup, scale, normalConfig.debugStart)).toEqual(worldSpawn);
-    expect(playerStartFromWorld(setup, scale, debugConfig.debugStart, true)).toEqual(worldSpawn);
+    expect(playerStartFromWorld(setup, scale, debugConfig.debugStart, { restoring: true })).toEqual(worldSpawn);
   });
 });

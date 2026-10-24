@@ -23,6 +23,15 @@ import type { Scale } from './scale.ts';
 import type { LightPracticeDef, SiteLayoutDef } from './schema.ts';
 import { HORDE_MEMBERS, HORDE_TYPE, TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
 import {
+  focusPose,
+  propCentre,
+  type ShowroomDef,
+  type ShowroomProp,
+  slotPlacement,
+  slotProps,
+  yawToward,
+} from './showroom.ts';
+import {
   furnitureOf,
   grow,
   type HordeSpawn,
@@ -61,6 +70,9 @@ export class AuthoredSite implements Site {
   readonly lightPractice?: LightPracticeDef;
   readonly seed: number;
   readonly registry: Registry;
+  readonly showroom: ShowroomDef | undefined;
+  /** The showroom's slot row, oldest first. */
+  readonly slots: readonly ShowroomProp[];
 
   constructor(seed: number, registry: Registry, scale: Scale, layout: SiteLayoutDef) {
     this.seed = seed;
@@ -79,11 +91,15 @@ export class AuthoredSite implements Site {
       const rect = buildingBounds(building, registry.templates.get(building.template)!.size);
       return { ...lotOf(building, rect), apron: grow(rectBlocks(rect), LOT_APRON_M / s) };
     });
-    this.placements = layout.buildings.map((building) => placementOf(registry, building, layout.lootContext));
+    const slots = slotPlacement(registry, layout);
+    this.placements = [
+      ...layout.buildings.map((building) => placementOf(registry, building, layout.lootContext)),
+      ...(slots ? [slots] : []),
+    ];
     this.publicCartography = layout.tracks.map(({ points, width }) => ({ kind: 'track', points, width }));
     this.lootColumns = lootPointsByColumn(
       this.placements.flatMap((placement, i) => {
-        const sources = lootSourcesOf(registry, layout.id, placement, layout.buildings[i]!.fixedLoot);
+        const sources = lootSourcesOf(registry, layout.id, placement, layout.buildings[i]?.fixedLoot);
         return layout.demo ? sources.map((source) => ({ ...source, fixture: true as const })) : sources;
       }),
     );
@@ -92,14 +108,20 @@ export class AuthoredSite implements Site {
       keyLoot: placementKeyLoot(
         this.placements.map((placement, index) => ({
           placement,
-          fixedLoot: layout.buildings[index]!.fixedLoot,
+          fixedLoot: layout.buildings[index]?.fixedLoot,
         })),
       ),
     };
     if (layout.practice) {
       this.lightPractice = layout.practice.light;
     }
-    this.spawn = { pos: [...layout.player.position], yaw: yawFromBearing(layout.player.bearing) };
+    this.showroom = layout.showroom;
+    this.slots = layout.showroom ? slotProps(registry, layout.showroom) : [];
+    const newest = this.slots.at(-1);
+    this.spawn = {
+      pos: [...layout.player.position],
+      yaw: newest ? yawToward(layout.player.position, propCentre(newest)) : yawFromBearing(layout.player.bearing),
+    };
     const spawnPoints: [number, number][] = [
       [layout.player.position[0], layout.player.position[2]],
       ...layout.shamblers.map((spawn): [number, number] => [spawn.position[0], spawn.position[2]]),
@@ -353,6 +375,11 @@ export class AuthoredSite implements Site {
       pos: blocks(position),
       members: Rng.stream(seed, `authored-horde:${layout.id}:${id}`).int(...HORDE_MEMBERS),
     }));
+  }
+
+  focus(furniture: string): Site['spawn'] | undefined {
+    const pose = this.showroom && focusPose(this.slots, furniture, this.showroom.focusDistance);
+    return pose && { pos: [...pose.pos], yaw: pose.yaw };
   }
 
   stamp(chunk: Chunk): void {

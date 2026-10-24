@@ -56,7 +56,7 @@ import {
 } from '../core/furnitureMove.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import { HandlingQueue, type Job, type MoveStart, type TickResult } from '../core/handling.ts';
-import { illuminationAt } from '../core/illumination.ts';
+import { type IlluminationScene, illuminationAt, readingLightRefusal } from '../core/illumination.ts';
 import { Inventory, type Location } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { settleCell } from '../core/itemThrow.ts';
@@ -1068,6 +1068,7 @@ export const createSession = (options: SessionOptions) => {
     feet: (item) => freshDropTarget(inventory, item, feet()),
     notice: options.notice,
     read: options.onRead,
+    readingLight: () => readingLight(),
     consumed: options.onConsumed,
     batterySwapped: options.onBatterySwapped,
     bookRead: (bookUid) => {
@@ -1077,7 +1078,7 @@ export const createSession = (options: SessionOptions) => {
     },
   });
   sim.actions.craft = craftActionHooks(inventory, character, reach, { feet, calendar: () => sim.calendar });
-  sim.actions.reading = bookReadingHooks(inventory, character);
+  sim.actions.reading = bookReadingHooks(inventory, character, () => readingLight());
   sim.actions.treatment = playerTreatmentHooks(inventory, sim);
   sim.actions.vehicleWork = vehicleWorkHooks(inventory, {
     output: () => ({ kind: 'pile', pos: feet() }),
@@ -1294,6 +1295,7 @@ export const createSession = (options: SessionOptions) => {
       if (damage <= 0) {
         return;
       }
+      playerCombat.cancelCharge();
       applyZombiePlayerHit(sim, {
         damage,
         sourceName: source?.type.name ?? 'zombie',
@@ -1302,7 +1304,10 @@ export const createSession = (options: SessionOptions) => {
         kind,
       });
     },
-    onAcidPlayerHit: (hit) => applyZombiePlayerHit(sim, hit),
+    onAcidPlayerHit: (hit) => {
+      playerCombat.cancelCharge();
+      applyZombiePlayerHit(sim, hit);
+    },
     onPlayerExposure: (contact) => sim.expose(contact),
     onPlayerLeaveExposure: (source) => sim.leaveExposure(source),
     onAcidImpact: (position, type) => options.onAcidImpact?.(position, type),
@@ -1383,14 +1388,19 @@ export const createSession = (options: SessionOptions) => {
       resolvePlayerMelee: (origin, direction, weapon, isFist) =>
         zombieSystem.resolvePlayerMelee(origin, direction, weapon, isFist) || strikePiece(origin, direction, weapon),
     },
-    (uid) => wearMeleeWeaponOnHit(inventory, uid),
     character,
     {
+      onWeaponHit: (uid) => wearMeleeWeaponOnHit(inventory, uid),
       onLandedHit: () => {
         const training = skillActivityPractice(registry, CORE_CONTENT_IDS.meleeCombat, 'hit');
         character.awardPractice(CORE_CONTENT_IDS.meleeCombat, training.practice, training.tier);
       },
       onCompletedSwing: (isFist) => options.onCompletedSwing?.(isFist),
+      payChargeStamina: (wanted) => {
+        const paid = Math.min(wanted, Math.max(0, sim.needs.stamina));
+        spendStamina(sim.needs, paid, bodyTuning.staminaRegenDelaySimSeconds);
+        return paid;
+      },
     },
   );
   let lastZombieStep = 0;
@@ -1433,6 +1443,7 @@ export const createSession = (options: SessionOptions) => {
       use(dominantRefusal, controls.useDominant);
     }
     if (intent.useOff) {
+      playerCombat.cancelCharge();
       use(ladderHold.refusal(offSide(character)), controls.useOff);
     }
   };
@@ -1814,7 +1825,19 @@ export const createSession = (options: SessionOptions) => {
     controls.consumeDominantUse?.();
     controls.consumeOffUse?.();
     updateAim(dt, moving && Boolean(controls.automaticFireHeld?.()));
-    playerCombat.tick(dt, heldItemUids());
+    // Losing control or another hands action drops a held charge rather than releasing a free strike.
+    if (!moving || handling || throwCharge.active || ladderHold.refusal(dominantSide(character)) !== undefined) {
+      playerCombat.cancelCharge();
+    }
+    playerCombat.tick(dt, heldItemUids(), {
+      held: Boolean(intent.useDominantHeld),
+      aim: {
+        origin: [body.pos[0], body.pos[1] + playerEyeHeightMetres() / s, body.pos[2]],
+        direction: aimDirection(playerInput.yaw, playerInput.pitch, NEUTRAL_AIM),
+        yaw: playerInput.yaw,
+        pitch: playerInput.pitch,
+      },
+    });
     dispatchPlayerActions(moving, intent);
     return { intent, moving, handling, readyGait };
   };
@@ -2053,6 +2076,21 @@ export const createSession = (options: SessionOptions) => {
   };
 
   const power = createSessionPower(options, sim, inventory);
+  const lightScene = (): IlluminationScene => ({
+    inventory,
+    sky: skyFields,
+    gameHour: hourOfDay(sim.calendar),
+    cycle: dayCycle,
+    fixtures: power?.lights() ?? [],
+    isBlocking: isLightBlocking,
+    blockSize: s,
+    holder: [body.pos[0], body.pos[1] + playerEyeHeightMetres() / s, body.pos[2]],
+  });
+  /** Carried paper is lit at the reader's eyes; a sign passes its own point. */
+  const readingLight = (at?: Vec3): string | undefined => {
+    const scene = lightScene();
+    return readingLightRefusal(scene, at ?? scene.holder);
+  };
 
   if (restored) {
     world.restoreColumns(restored.world.columns, (id) => {
@@ -2098,20 +2136,9 @@ export const createSession = (options: SessionOptions) => {
     power,
     skyFields,
     /** Light reaching a point in blocks (`src/core/illumination.ts`, `illuminationAt`). */
-    illuminationAt: (point: Vec3): number =>
-      illuminationAt(
-        {
-          inventory,
-          sky: skyFields,
-          gameHour: hourOfDay(sim.calendar),
-          cycle: dayCycle,
-          fixtures: power?.lights() ?? [],
-          isBlocking: isLightBlocking,
-          blockSize: s,
-          holder: [body.pos[0], body.pos[1] + playerEyeHeightMetres() / s, body.pos[2]],
-        },
-        point,
-      ),
+    illuminationAt: (point: Vec3): number => illuminationAt(lightScene(), point),
+    /** Why a page can't be read where its light is measured, or undefined when it can. */
+    readingLight,
     powerControl: (uid: number, enabled: boolean): string | undefined => {
       const entity = entities.byUid(uid);
       const control = entity && power?.control(entity);
@@ -2373,11 +2400,16 @@ export const createSession = (options: SessionOptions) => {
       if (!readable) {
         return text.objective.nothingToRead;
       }
+      const lightAt: Vec3 = [entity.pos[0] + 0.5, entity.pos[1] + 0.5, entity.pos[2] + 0.5];
+      const dark = readingLight(lightAt);
+      if (dark) {
+        return dark;
+      }
       scenarioRun?.read(sim.calendar);
       if (options.discovery?.clues.some((at) => at.every((value, axis) => value === entity.pos[axis]))) {
         scenarioRun?.discover('clueRead', sim.calendar);
       }
-      options.onRead({ kind: 'text', readable });
+      options.onRead({ kind: 'text', readable, lightAt });
       return undefined;
     },
     searching: (entity: BlockEntity): boolean => searching.has(entity),

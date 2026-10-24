@@ -4,6 +4,7 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 import { Body } from '../src/core/body.ts';
 import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { coreLabel, coreMessage } from '../src/core/coreText.ts';
 import type { WorkOperation, WorkOption } from '../src/core/craftCommands.ts';
 import { planCraft } from '../src/core/crafting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -28,12 +29,13 @@ import {
   type ReplayCommandOwners,
 } from '../src/game/replayCommands.ts';
 import { createScreenCommandDispatcher } from '../src/game/screenCommandDispatcher.ts';
+import { Survival } from '../src/game/survival.ts';
 import { ItemPictures } from '../src/render/itemPictures.ts';
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
-import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
+import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const registry = baseRegistry();
 
@@ -742,6 +744,142 @@ describe('inventory screen Lit rendering', () => {
     const light = firearm.slots![mounted.fitted.mountedAt]!;
     const battery = root.querySelector<HTMLElement>(`[data-target="battery:${light.uid}"]`);
     expect(battery?.dataset.occupied).toBe('true');
+  });
+
+  it('pours once onto a fixed receiver card, refuses a full receiver, and reverses into the explicit other hand', () => {
+    const built = buildRegistry([
+      {
+        source: 'card-vessels',
+        data: {
+          liquids: [{ id: 'card_liquid', name: 'Card liquid', densityGramsPerMillilitre: 1 }],
+          items: ['source', 'receiver'].map((role) => ({
+            id: `card_${role}`,
+            name: role,
+            category: 'tool',
+            weight: 1,
+            size: [1, 1],
+            economy: { usage: [], tiers: [] },
+            workInProgress: false,
+            notLoot: false,
+            ...(role === 'receiver'
+              ? {
+                  light: {
+                    radius: 1,
+                    seenFrom: 1,
+                    color: '#ffffff',
+                    intensity: 1,
+                    liquidFuel: { accepts: ['card_liquid'], microlitresPerGameSecond: 1 },
+                    burning: {
+                      ignition: 'manual',
+                      douse: true,
+                      sprint: 'douse',
+                      stow: 'douse',
+                      drop: 'stay',
+                      relight: true,
+                    },
+                  },
+                }
+              : {}),
+            vessel: {
+              capacityMicrolitres: role === 'source' ? 24 : 12,
+              accepts: ['card_liquid'],
+              initialContents:
+                role === 'source'
+                  ? { kind: 'filled', liquid: 'card_liquid', volumeMicrolitres: 24 }
+                  : { kind: 'empty' },
+              pour: { incrementMicrolitres: 2, microlitresPerSimSecond: 4 },
+            },
+          })),
+        },
+      },
+    ]);
+    expect(built.issues).toEqual([]);
+    const t = setup({
+      ...registry,
+      items: new Map([...registry.items, ...built.registry.items]),
+      liquids: built.registry.liquids,
+    });
+    const source = t.inv.create('card_source');
+    const receiver = t.inv.create('card_receiver');
+    expect(t.inv.consume(t.beans)).toBe(true);
+    expect(t.inv.add(source, { kind: 'hand', side: 'left' })).toBe(true);
+    expect(t.inv.add(receiver, { kind: 'hand', side: 'right' })).toBe(true);
+    const survival = new Survival(new Simulation({ seed: 1 }), t.inv, t.queue, {
+      reach: t.hooks.reach,
+      feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
+      notice: () => undefined,
+      read: () => undefined,
+      readingLight: () => undefined,
+    });
+    const pours = vi.fn((from: number, to: number) => survival.pour(from, to));
+    t.commandOwners.pour = pours;
+    const owners = [t.inv.locate(source), t.inv.locate(receiver)];
+    const finish = () => {
+      for (let step = 0; t.queue.busy && step < 100; step++) {
+        t.queue.tick(t.queue.jobs[0]!.duration);
+      }
+      expect(t.queue.busy).toBe(false);
+      t.screen.update();
+    };
+    const drag = () => {
+      t.screen.selected = receiver;
+      t.screen.update();
+      const slot = t.root.querySelector<HTMLElement>(`[data-target="reservoir:${receiver.uid}"]`)!;
+      const hit = vi.spyOn(document, 'elementsFromPoint').mockImplementation(() => [slot]);
+      t.root
+        .querySelector<HTMLElement>(`.inv-item-slot[data-uid="${source.uid}"], .inv-item[data-uid="${source.uid}"]`)!
+        .dispatchEvent(
+          new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, clientX: 10, clientY: 10 }),
+        );
+      t.screen.update();
+      expect(t.root.querySelector('.inv-details')?.getAttribute('data-selected-uid')).toBe(String(receiver.uid));
+      globalThis.window.dispatchEvent(new PointerEvent('pointermove', { pointerId: 1, clientX: 30, clientY: 10 }));
+      globalThis.window.dispatchEvent(
+        new PointerEvent('pointerup', { button: 0, pointerId: 1, clientX: 30, clientY: 10 }),
+      );
+      hit.mockRestore();
+    };
+    t.screen.selected = receiver;
+    t.screen.update();
+    const readout = () => t.root.querySelector(`[data-target="reservoir:${receiver.uid}"]`)!.textContent;
+    const before = readout();
+    drag();
+    expect(pours).toHaveBeenCalledExactlyOnceWith(source.uid, receiver.uid);
+    finish();
+    expect(source.liquidContents?.kind).toBe('filled');
+    expect(receiver.liquidContents?.kind).toBe('filled');
+    expect(readout()).not.toBe(before);
+    const filled = t.inv.snapshotState();
+    drag();
+    expect(pours).toHaveBeenCalledTimes(1);
+    expect(t.refusals).toEqual([coreMessage(t.inv.registry, 'liquidReceiverFull')]);
+    expect(t.inv.snapshotState()).toEqual(filled);
+    expect(survival.use(receiver)).toBeUndefined();
+    drag();
+    expect(pours).toHaveBeenCalledTimes(1);
+    expect(t.refusals.at(-1)).toBe(coreMessage(t.inv.registry, 'stillLit'));
+    expect(survival.use(receiver)).toBeUndefined();
+    t.screen.update();
+    expect(t.root.querySelector<HTMLButtonElement>('.inv-pour')!.disabled).toBe(false);
+    t.root.querySelector<HTMLButtonElement>('.inv-pour')!.click();
+    expect(pours).toHaveBeenLastCalledWith(receiver.uid, source.uid);
+    expect(pours).toHaveBeenCalledTimes(2);
+    finish();
+    expect(receiver.liquidContents).toEqual({ kind: 'empty' });
+    expect(source.liquidContents?.kind).toBe('filled');
+    expect([t.inv.locate(source), t.inv.locate(receiver)]).toEqual(owners);
+    expect(t.inv.move(source, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    drag();
+    expect(pours).toHaveBeenCalledTimes(2);
+    expect(t.refusals.at(-1)).toBe(
+      coreMessage(t.inv.registry, 'notInHands', { item: t.inv.name(source).toLowerCase() }),
+    );
+    expect(t.inv.add(t.inv.create(t.beans.type), { kind: 'hand', side: 'left' })).toBe(true);
+    t.screen.update();
+    const unavailable = t.root.querySelector<HTMLButtonElement>('.inv-pour')!;
+    expect(unavailable.disabled).toBe(true);
+    expect(unavailable.textContent).toBe(coreLabel(t.inv.registry, 'pour'));
+    t.screen.close();
   });
 
   it('loads a battery dragged onto the battery slot of a light card', () => {

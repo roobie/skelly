@@ -94,6 +94,8 @@ export interface Site {
   readonly publicCartography?: readonly PublicCartographicFeature[];
   /** Where the player starts: feet in metres, and a yaw. */
   readonly spawn: { pos: Vec3; yaw: number };
+  /** A start facing a showroom prop of this furniture type; undefined when the site shows none. */
+  focus?: (furniture: string) => { pos: Vec3; yaw: number } | undefined;
   /** Writes the site's blocks that fall inside a chunk. */
   stamp: (chunk: Chunk) => void;
   /** Descriptions include empty containers and do not roll or materialize supply. */
