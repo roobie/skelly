@@ -89,6 +89,9 @@ export const mountReading = (
     get ownerUid() {
       return current?.kind === 'paperMap' ? current.ownerUid : undefined;
     },
+    get lightAt() {
+      return current?.kind === 'text' ? current.lightAt : undefined;
+    },
     setProgress(next: ReadingProgress | undefined) {
       if (!current || (progress?.value === next?.value && progress?.max === next?.max)) {
         return;

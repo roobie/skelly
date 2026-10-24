@@ -72,6 +72,11 @@
           "position": [-12.5, 20.5, -3],
           "rotation": 0,
           "template": "test_house_showroom"
+        },
+        {
+          "position": [0, 20.5, -11.5],
+          "rotation": 0,
+          "template": "test_house_reading_booth"
         }
       ],
       "demo": true,

@@ -16,6 +16,11 @@ local palette = {
     { item: 'oil_lamp', count: 1, placement: 'surface' },
     { item: 'lamp_oil', count: 1, placement: 'surface' },
   ] },
+  Z: { furniture: 'crate', items: [
+    { item: 'sample_note', count: 1, placement: 'surface' },
+    { item: 'regional_map', count: 1, placement: 'surface' },
+    { item: 'flashlight', count: 1, charge: 1, placement: 'surface' },
+  ] },
   k: 'concrete', w: { furniture: 'workbench', fixed: true }, n: { furniture: 'grinding_wheel', fixed: true },
   e: { furniture: 'shelf', facing: 's' }, E: { furniture: 'shelf', facing: 's' },
   o: { furniture: 'crate' }, q: { furniture: 'crate' },
@@ -290,6 +295,18 @@ local templates = [
   {
     id: 'test_house_sign', size: [2, 4, 1],
     layers: [['GG'], ['NN'], ['NN'], ['NN']],
+  },
+  {
+    // Reading needs light, so the papers and the lamp wait at the end of a windowless zigzag that no sky reaches.
+    id: 'test_house_reading_booth', size: [8, 7, 12],
+    local maze = ['bbbbb..b', 'b......b', 'b......b', 'b..bbbbb', 'b......b', 'b......b', 'bbbbb..b', 'b......b', 'b......b'],
+    local walls = maze + ['b......b', 'b......b', 'bbbbbbbb'],
+    local crates = maze + ['b.ZZ...b', 'b.ZZ...b', 'bbbbbbbb'],
+    layers: [
+      ['kkkkkkkk' for _ in std.range(1, 12)],
+      crates, crates, walls, walls, walls,
+      ['bbbbbbbb' for _ in std.range(1, 12)],
+    ],
   },
   {
     id: 'test_house_loose_wardrobe', size: [2, 5, 1],

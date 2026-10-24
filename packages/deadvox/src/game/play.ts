@@ -4009,6 +4009,17 @@ export const startPlay = (
     return true;
   };
 
+  const closeReadingInDarkness = () => {
+    const tooDark = reading.isOpen ? session.readingLight(reading.lightAt) : undefined;
+    if (tooDark) {
+      reading.close();
+      // A skip stopped by the same darkness already names the reason.
+      if (compression.interruption === undefined) {
+        showRefusal(tooDark, sim.time);
+      }
+    }
+  };
+
   const updateFrame = (now: RealTimestamp) => {
     const workStart = realNow();
     const elapsedReal = Math.max(0, (now - last) / 1000);
@@ -4101,6 +4112,7 @@ export const startPlay = (
     });
     screen.update();
     reading.revalidate((ownerUid) => Object.values(inventory.hands).some((item) => item?.uid === ownerUid));
+    closeReadingInDarkness();
     syncReadingProgress(reading.bookUid, currentPresentation.longAction, reading.setProgress, isBookComplete);
     craftPanel.update(screen.isOpen && !sim.dead, visible.messages);
     drawQuickbar();

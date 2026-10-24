@@ -69,13 +69,14 @@ const make = (
   const character = new Character(contentRegistry);
   const reach = bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK });
   sim.actions.craft = craftActionHooks(inv, character, reach, { feet: () => [0, 0, 0], calendar: () => sim.calendar });
-  sim.actions.reading = bookReadingHooks(inv, character);
+  const light = { dark: false };
+  sim.actions.reading = bookReadingHooks(inv, character, () => (light.dark ? 'fixture darkness' : undefined));
   if (saved) {
     sim.restoreState(saved.simulation);
     sim.actions.restoreState(saved.action);
     sim.paused = false;
   }
-  return { inv, sim, character, reach };
+  return { inv, sim, character, reach, light };
 };
 const start = (contentRegistry: Registry = registry) => {
   const runtime = make(undefined, contentRegistry);
@@ -415,6 +416,29 @@ describe('core long actions', () => {
       bookUid: book.uid,
       elapsed: 10,
     });
+  });
+  it('light lost mid-read stops the book, keeps its progress and refuses Read until light returns', () => {
+    const runtime = make();
+    const book = runtime.inv.create('field_manual');
+    expect(runtime.inv.add(book, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(runtime.sim.actions.beginReading(book.uid)).toBeUndefined();
+    runtime.sim.scheduler.advance(10 / runtime.sim.clock.ratio);
+    runtime.light.dark = true;
+    runtime.sim.scheduler.advance(10 / runtime.sim.clock.ratio);
+    const { job } = runtime.sim.actions;
+    expect(job).toMatchObject({ jobType: 'reading', stopped: true, bookUid: book.uid });
+    if (job?.jobType !== 'reading') {
+      throw new Error('The darkened read was lost');
+    }
+    expect(job.elapsed).toBeGreaterThan(0);
+    expect(job.elapsed).toBeLessThan(job.duration);
+    expect(runtime.sim.compression.interruption).toBe('fixture darkness');
+
+    expect(runtime.sim.actions.beginReading(book.uid)).toBe('fixture darkness');
+    expect(runtime.sim.actions.job).toMatchObject({ stopped: true });
+    runtime.light.dark = false;
+    expect(runtime.sim.actions.beginReading(book.uid)).toBeUndefined();
+    expect(runtime.sim.actions.job).toMatchObject({ jobType: 'reading', stopped: false, elapsed: job.elapsed });
   });
 
   it('selects renamed escrow by content role and restores its work payload', () => {

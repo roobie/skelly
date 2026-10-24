@@ -60,5 +60,5 @@ export const testHouseSite = <S extends Site = AuthoredSite>(
     x * s >= layout.bounds.x0 && x * s < layout.bounds.x1 && z * s >= layout.bounds.z0 && z * s < layout.bounds.z1;
   const walkable = (x: number, y: number, z: number) =>
     solid(x, y - 1, z) && [0, 1, 2, 3].every((dy) => !solid(x, y + dy, z));
-  return { layout, scale, s, house, site, at, solid, furniture, insideLot, walkable };
+  return { layout, scale, s, house, site, world, at, solid, furniture, insideLot, walkable };
 };

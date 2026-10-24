@@ -5,6 +5,7 @@ import { dominantSide, offSide } from '../core/character.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { magazineSpec } from '../core/magazine.ts';
+import { isReadableItem } from '../core/options.ts';
 import type { ItemDef } from '../core/schema.ts';
 import { openingTargetForHand } from './canOpening.ts';
 
@@ -63,7 +64,7 @@ const CAPABILITY_DISPATCH: readonly CapabilityDispatch[] = [
   { kind: 'bar', supports: (definition) => definition.doorBar !== undefined },
   { kind: 'unpack', supports: (definition) => definition.unpack !== undefined },
   { kind: 'pin', supports: (definition) => definition.explosive !== undefined },
-  { kind: 'read', supports: (definition) => definition.book !== undefined },
+  { kind: 'read', supports: isReadableItem },
   {
     kind: 'use',
     supports: (definition) =>

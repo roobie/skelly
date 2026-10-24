@@ -42,7 +42,7 @@ const vite = await createServer({
         assert.equal(code.split(marker).length, 2);
         return code.replace(
           marker,
-          `let proofReadCalls=0; let throwGameLoopError=false; const proofOpen=reading.open; reading.open=(value,...args)=>{proofReadCalls++;proofOpen(value,...args);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,saveController:options.saveController,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;},requestResume(){resume();},playFrame:frame,triggerGameLoopError(){throwGameLoopError=true;}}});\nstartRealFrames((now)=>{if(throwGameLoopError){throwGameLoopError=false;throw new Error('Browser-stage game-loop failure');}return frame(now);});`,
+          `let proofReadCalls=0; let throwGameLoopError=false; const proofOpen=reading.open; reading.open=(value,...args)=>{proofReadCalls++;proofOpen(value,...args);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,saveController:options.saveController,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;},requestResume(){resume();},playFrame:frame,triggerGameLoopError(){throwGameLoopError=true;},get handsBusy(){return queue.busy||firearms.busy;}}});\nstartRealFrames((now)=>{if(throwGameLoopError){throwGameLoopError=false;throw new Error('Browser-stage game-loop failure');}return frame(now);});`,
         );
       },
     },
@@ -897,6 +897,183 @@ try {
     );
     assert.equal(afterMove.stopped, true);
     assert.equal(afterMove.compression, false);
+    // Light states are controlled through the hour, the lamp switch and the battery, never through tuning.
+    const seekHour = (hour) =>
+      page.evaluate(async (seconds) => {
+        const clockModule = '/src/core/clock.ts';
+        const { nextTimeOfDay } = await import(clockModule);
+        const { session, saveController } = globalThis.readingWitness;
+        session.sim.setDebugCalendarTime(nextTimeOfDay(session.sim.calendar, seconds));
+        saveController?.rearmAutosaveAfterTimeSeek?.();
+      }, hour * 3600);
+    const lightState = () =>
+      page.evaluate(() => {
+        const { session, reading, readCalls } = globalThis.readingWitness;
+        return {
+          refusal: session.readingLight(),
+          open: reading.isOpen,
+          readCalls,
+          prompt: document.querySelector('#prompt')?.textContent ?? '',
+        };
+      });
+    const refusedRead = async (slot) => {
+      const unread = await lightState();
+      await pressAction(page, `quickbar.use.${slot}`);
+      const refused = await lightState();
+      assert.equal(
+        refused.readCalls,
+        unread.readCalls,
+        `darkness refuses quickbar ${slot}: ${JSON.stringify(refused)}`,
+      );
+      assert.equal(refused.open, false);
+      return refused;
+    };
+    await holdAction('quickbar.use.1', () => page.locator('#reading').waitFor({ state: 'visible' }));
+    await seekHour(0);
+    const midnight = await lightState();
+    assert.ok(midnight.refusal, `the reading spot must be too dark at midnight: ${JSON.stringify(midnight)}`);
+    await page.locator('#reading').waitFor({ state: 'hidden' });
+    await page.waitForFunction(
+      (reason) => document.querySelector('#prompt')?.textContent?.includes(reason),
+      midnight.refusal,
+    );
+    await refusedRead(1);
+    const lamps = await page.evaluate(async () => {
+      const lightsModule = '/src/core/lights.ts';
+      const { chargeOf } = await import(lightsModule);
+      const { session, body } = globalThis.readingWitness;
+      const { inventory } = session;
+      const { registry } = inventory;
+      const { left: book, right: heldNote } = inventory.hands;
+      const type = [...registry.items.keys()].find((id) => {
+        const { light } = registry.items.get(id);
+        return (
+          light?.power &&
+          !light.burning &&
+          chargeOf(registry, inventory.createRolled({ type: id, count: 1, condition: 1, charge: 1 })) > 0
+        );
+      });
+      if (!type) {
+        throw new Error('No battery light can be rolled with charge for the reading fixture');
+      }
+      // Loot rolls a light with its battery's charge, the path a player finds one by.
+      const full = inventory.createRolled({ type, count: 1, condition: 1, charge: 1 });
+      const feet = { kind: 'pile', pos: [...body.pos] };
+      if (
+        !(
+          inventory.move(heldNote, feet).ok &&
+          inventory.move(book, { kind: 'hand', side: 'right' }).ok &&
+          inventory.add(full, { kind: 'hand', side: 'left' })
+        )
+      ) {
+        throw new Error('Could not arrange the book and lamp in hand');
+      }
+      return { type, full: full.uid };
+    });
+    // Busy hands refuse a hand use, so the switch waits for them as a player would; it lands on the next game frame.
+    const switchLamp = async (uid, on) => {
+      await page.waitForFunction(() => !globalThis.readingWitness.handsBusy);
+      await pressAction(page, 'hand.use-off');
+      await page.waitForFunction(
+        ({ lampUid, want }) => globalThis.readingWitness.session.inventory.itemByUid(lampUid)?.on === want,
+        { lampUid: uid, want: on },
+      );
+    };
+    await switchLamp(lamps.full, true);
+    const lit = await lightState();
+    assert.equal(lit.refusal, undefined, `a carried lamp admits reading: ${JSON.stringify(lit)}`);
+    await holdAction('quickbar.use.2', () => page.locator('#reading').waitFor({ state: 'visible' }));
+    await pressAction(page, 'reading.close');
+    await page.locator('#reading').waitFor({ state: 'hidden' });
+    await switchLamp(lamps.full, false);
+    await refusedRead(2);
+    const lowLamp = await page.evaluate(async ({ type, full }) => {
+      const lightsModule = '/src/core/lights.ts';
+      const { chargeOf } = await import(lightsModule);
+      const { session, body } = globalThis.readingWitness;
+      const { inventory } = session;
+      const { registry } = inventory;
+      const fullLamp = inventory.itemByUid(full);
+      const { job } = session.sim.actions;
+      // Charge for half the book's remaining time, so the battery dies mid-read.
+      const remaining = job.duration - job.elapsed;
+      const share =
+        (registry.items.get(type).light.power.chargePerGameHour * remaining * 0.5) / chargeOf(registry, fullLamp);
+      const low = inventory.createRolled({ type, count: 1, condition: 1, charge: share });
+      if (
+        !(
+          inventory.move(fullLamp, { kind: 'pile', pos: [...body.pos] }).ok &&
+          inventory.add(low, { kind: 'hand', side: 'left' })
+        )
+      ) {
+        throw new Error('Could not swap in the low lamp');
+      }
+      return {
+        uid: low.uid,
+        elapsed: job.elapsed,
+        remaining,
+        ratio: session.sim.clock.ratio,
+        from: session.sim.time,
+      };
+    }, lamps);
+    await switchLamp(lowLamp.uid, true);
+    assert.equal((await lightState()).refusal, undefined);
+    await holdAction('quickbar.use.2', () => page.locator('#reading').waitFor({ state: 'visible' }));
+    await waitForSimulation(
+      page,
+      (elapsed) => {
+        const { session } = globalThis.readingWitness;
+        const { job } = session.sim.actions;
+        // The book's earlier close left its job stopped; only a stop after further reading counts.
+        return {
+          time: session.sim.time,
+          paused: session.sim.paused,
+          reached: job?.jobType === 'reading' && job.stopped === true && job.elapsed > elapsed,
+        };
+      },
+      lowLamp.elapsed,
+      {
+        seconds: lowLamp.remaining / lowLamp.ratio,
+        from: lowLamp.from,
+        label: 'battery dies mid-read',
+        record,
+      },
+    );
+    const drained = await page.evaluate(async (uid) => {
+      const lightsModule = '/src/core/lights.ts';
+      const { chargeOf } = await import(lightsModule);
+      const { session, reading } = globalThis.readingWitness;
+      const { job } = session.sim.actions;
+      const lamp = session.inventory.itemByUid(uid);
+      return {
+        elapsed: job.elapsed,
+        duration: job.duration,
+        charge: chargeOf(session.inventory.registry, lamp),
+        on: lamp.on,
+        open: reading.isOpen,
+        refusal: session.readingLight(),
+      };
+    }, lowLamp.uid);
+    assert.ok(drained.elapsed > 0 && drained.elapsed < drained.duration, JSON.stringify(drained));
+    assert.equal(drained.charge, 0);
+    assert.equal(drained.on, false);
+    assert.ok(drained.refusal, JSON.stringify(drained));
+    await page.locator('#reading').waitFor({ state: 'hidden' });
+    // Back to the noon light and the hands the sign step began with.
+    await seekHour(12);
+    await page.evaluate(
+      ({ full, low }) => {
+        const { session, body } = globalThis.readingWitness;
+        const { inventory } = session;
+        for (const uid of [full, low]) {
+          if (!inventory.move(inventory.itemByUid(uid), { kind: 'pile', pos: [...body.pos] }).ok) {
+            throw new Error('Could not set a lamp down');
+          }
+        }
+      },
+      { full: lamps.full, low: lowLamp.uid },
+    );
+    assert.equal((await lightState()).refusal, undefined);
     const signFixture = await page.evaluate(() => {
       const { engine } = globalThis.readingWitness;
       const sign = [...engine.entities.all].find(

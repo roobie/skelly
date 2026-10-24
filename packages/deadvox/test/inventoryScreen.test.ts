@@ -809,6 +809,7 @@ describe('inventory screen Lit rendering', () => {
       feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
       notice: () => undefined,
       read: () => undefined,
+      readingLight: () => undefined,
     });
     const pours = vi.fn((from: number, to: number) => survival.pour(from, to));
     t.commandOwners.pour = pours;

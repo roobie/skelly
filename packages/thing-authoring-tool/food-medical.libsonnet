@@ -16,6 +16,7 @@ local bottle(id, radius, height, body, label, cap, exportMass, dimensions={}) = 
 [
   atom('beans', 'foodPortion', inventoryMass('beans'), { radius: 0.0375, height: 0.004, chunkRadius: 0.003, chunkLength: 0.011, chunks: 27 }, { body: 'paint-terracotta', chunks: 'paperboard-tan' }, exportMass='inventory-atom'),
   atom('soup', 'foodPortion', inventoryMass('soup'), { radius: 0.0375, height: 0.009, chunkRadius: 0.002, chunkLength: 0.006, chunks: 7 }, { body: 'paint-terracotta', chunks: 'plastic-green' }, exportMass='inventory-atom'),
+  atom('soda', 'drinkCup', inventoryMass('soda'), { radius: 0.04, baseRadius: 0.03, height: 0.115, wall: 0.002, fillDepth: 0.085 }, { body: 'glass-clear', liquid: 'paint-oxblood' }, exportMass='inventory-atom'),
   atom('apple', 'stemmedFruit', 0.180, { radius: 0.04, height: 0.071, stemRadius: 0.0017, stemHeight: 0.017, leafLength: 0.021, leafWidth: 0.011, leafThickness: 0.0008 }, { body: 'plastic-red', stem: 'wood-walnut', leaf: 'plastic-green' }, exportMass='parts'),
   atom('bandage', 'woundRoll', 0.020, { radius: 0.0375, boreRadius: 0.009, width: 0.045, layers: 8, groove: 0.0007, tailLength: 0.035, tailThickness: 0.0008 }, { body: 'plastic-white', edge: 'paperboard-tan' }, exportMass='parts'),
   bottle('antiseptic', 0.023, 0.074, 'paperboard-brown', 'plastic-white', 'plastic-red', exportMass='inventory-atom'),

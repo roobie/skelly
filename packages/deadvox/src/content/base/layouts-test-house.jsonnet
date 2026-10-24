@@ -22,6 +22,8 @@ local bays = [
       { template: 'test_house_loose_wardrobe', position: [-2, 20.5, -3], rotation: 0 },
       // East of both bays' drive-out lanes.
       { template: 'test_house_showroom', position: [-12.5, 20.5, -3], rotation: 0 },
+      // Behind the house, clear of the showroom deck; its doorway opens north.
+      { template: 'test_house_reading_booth', position: [0, 20.5, -11.5], rotation: 0 },
     ],
     // On the showroom deck, on the path's line to the house door; the bearing applies only while the slot row is empty,
     // since spawn faces the newest slot.

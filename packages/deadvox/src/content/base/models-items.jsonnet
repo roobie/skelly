@@ -4,6 +4,8 @@ local authored = [
     import 'things/opened_beans.model.json',
     import 'things/opened_soup.model.json',
     import 'things/empty_can.model.json',
+    import 'things/opened_soda.model.json',
+    import 'things/soda.model.json',
     import 'things/can_opener.model.json',
     import 'things/beans.model.json',
     import 'things/soup.model.json',

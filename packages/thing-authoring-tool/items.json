@@ -738,6 +738,48 @@
     },
     {
       "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "wall",
+        "turn": [0, 0, -90]
+      },
+      "id": "opened_soda",
+      "parts": [
+        {
+          "family": "openTin",
+          "finish": {
+            "body": "steel-grey",
+            "food": "paint-oxblood",
+            "label": "plastic-red",
+            "stripe": "paperboard-tan"
+          },
+          "id": "body",
+          "massKg": 0.014999999999999999,
+          "params": {
+            "beanCount": "6",
+            "beanRadius": "0.0060000000000000001",
+            "foodDepth": "0.026450000000000001",
+            "height": "0.115",
+            "hingeHeight": "0.0040000000000000001",
+            "hingeWidth": "0.012",
+            "labelHeight": "0.078200000000000006",
+            "labelThickness": "0.00029999999999999997",
+            "radius": "0.033000000000000002",
+            "rimWidth": "0.0014",
+            "serving": "drink",
+            "stripeHeight": "0.0030000000000000001",
+            "wall": "0.00080000000000000004"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
       "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
@@ -1152,6 +1194,38 @@
             "chunks": "7",
             "height": "0.0089999999999999993",
             "radius": "0.037499999999999999"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "body",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "soda",
+      "parts": [
+        {
+          "family": "drinkCup",
+          "finish": {
+            "body": "glass-clear",
+            "liquid": "paint-oxblood"
+          },
+          "id": "body",
+          "massKg": 0.34499999999999997,
+          "params": {
+            "baseRadius": "0.029999999999999999",
+            "fillDepth": "0.085000000000000006",
+            "height": "0.115",
+            "radius": "0.040000000000000001",
+            "wall": "0.002"
           },
           "ports": []
         }

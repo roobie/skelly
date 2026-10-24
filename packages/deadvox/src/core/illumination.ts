@@ -3,6 +3,7 @@
 
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
+import { coreMessage } from './coreText.ts';
 import type { Inventory } from './inventory.ts';
 import { inventoryLightEntries, lightExposureFor } from './lights.ts';
 import { raycast, type SolidAt } from './raycast.ts';
@@ -111,3 +112,7 @@ export const illuminationAt = (scene: IlluminationScene, point: Vec3): number =>
 export const litEnoughToRead = (scene: IlluminationScene, point: Vec3): boolean =>
   illuminationAt(scene, point) >=
   scene.inventory.registry.senses.get(CORE_CONTENT_IDS.player)!.light.illumination.readingThreshold;
+
+/** Every readable admits through this one check, so paper and signs share one notion of "enough light". */
+export const readingLightRefusal = (scene: IlluminationScene, point: Vec3): string | undefined =>
+  litEnoughToRead(scene, point) ? undefined : coreMessage(scene.inventory.registry, 'tooDarkToRead');
