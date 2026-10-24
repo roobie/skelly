@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { dirname, relative as relativePath, resolve } from 'node:path';
 import process from 'node:process';
 import { createServer } from 'vite';
 
@@ -113,16 +114,61 @@ export function mainOverlayPath(root, id) {
   return path.startsWith(prefix) ? path.slice(prefix.length) : null;
 }
 
-/** Repository directory where `revision`'s root workspace list places the package named `name`. */
-export function workspaceDirectory(git, revision, name) {
+/** Workspace packages that `revision`'s root workspace list names, with their repository directories. */
+export function workspacePackages(git, revision) {
   const show = (path) => JSON.parse(git(['show', `${revision}:${path}`]));
   const manifests = show('package.json').workspaces.map((workspace) => `${workspace}/package.json`);
   const present = new Set(git(['ls-tree', '--name-only', revision, '--', ...manifests]).split('\n'));
-  const manifest = manifests.find((path) => present.has(path) && show(path).name === name);
-  if (manifest === undefined) {
+  return manifests
+    .filter((path) => present.has(path))
+    .map((path) => ({ name: show(path).name, directory: path.slice(0, -'/package.json'.length) }));
+}
+
+/** Repository directory where `revision`'s root workspace list places the package named `name`. */
+export function workspaceDirectory(git, revision, name) {
+  const found = workspacePackages(git, revision).find((workspace) => workspace.name === name);
+  if (found === undefined) {
     throw new Error(`No workspace package named ${name} at ${revision}`);
   }
-  return manifest.slice(0, -'/package.json'.length);
+  return found.directory;
+}
+
+/**
+ * Runtime exports a module's base copy has and its branch copy lacks, for a module in any workspace package's
+ * src: main sources also import sibling packages (deadvox reaches mobgen through an alias), and the base may
+ * keep a package in another directory. Returns the lookup and a reader of a module's base copy.
+ */
+export function removedModuleExports(git, base) {
+  const repository = git(['rev-parse', '--show-toplevel']);
+  const baseDirectories = new Map(workspacePackages(git, base).map(({ name, directory }) => [name, directory]));
+  const sources = workspacePackages(git, 'HEAD').map(({ name, directory }) => ({
+    prefix: `${repository}/${directory}/src/`,
+    base: baseDirectories.get(name),
+  }));
+  const basePathOf = (id) => {
+    const [path] = id.split('?');
+    const owner = sources.find(({ prefix }) => path.startsWith(prefix));
+    return owner?.base === undefined ? null : `${owner.base}/src/${path.slice(owner.prefix.length)}`;
+  };
+  const baseCopy = (id) => git(['show', `${base}:${basePathOf(id)}`]);
+  const removed = new Map();
+  const removedFrom = (id) => {
+    const [path] = id.split('?');
+    if (!removed.has(path)) {
+      const basePath = SCRIPT_MODULE.test(path) ? basePathOf(path) : null;
+      const both =
+        basePath !== null && existsSync(path) && git(['ls-tree', '--name-only', base, '--', basePath]) === basePath;
+      removed.set(path, both ? removedExports(baseCopy(path), readFileSync(path, 'utf8')) : []);
+    }
+    return removed.get(path);
+  };
+  const shimmed = () =>
+    Object.fromEntries(
+      [...removed]
+        .filter(([, names]) => names.length > 0)
+        .map(([path, names]) => [relativePath(repository, path), names]),
+    );
+  return { removedFrom, baseCopy, shimmed };
 }
 
 const treeSources = (git, revision, source) =>
@@ -179,19 +225,11 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
   const baseOnlyOverlay = (relative) => relative !== null && basePaths.has(relative) && !branchPaths.has(relative);
   // A main source may import an export the branch removed from a module both keep. That module stays the
   // branch's core owner: a shim re-exports it and adds only the removed names, from main's copy of the module.
-  const exportShims = new Map();
-  const removedFor = async (relative) => {
-    if (!exportShims.has(relative)) {
-      const both = SCRIPT_MODULE.test(relative) && basePaths.has(relative) && branchPaths.has(relative);
-      exportShims.set(
-        relative,
-        both ? removedExports(showBase(relative), await readFile(resolve(root, 'src', relative), 'utf8')) : [],
-      );
-    }
-    return exportShims.get(relative);
+  const { removedFrom, baseCopy, shimmed: shimmedExports } = removedModuleExports(git, base);
+  const servedFromBase = (path) => {
+    const relative = path === undefined ? null : mainOverlayPath(root, path);
+    return overlays.has(relative) || baseOnlyOverlay(relative);
   };
-  const shimmedExports = () =>
-    Object.fromEntries([...exportShims].filter(([, names]) => names.length > 0).map(([path, names]) => [path, names]));
   const mainImporter = (importer) => {
     const relative = mainOverlayPath(root, importer);
     return importer.includes(BASE_COPY) || overlays.has(relative) || baseOnlyOverlay(relative);
@@ -208,28 +246,29 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
         name: 'main-first-mesh-source-overlay',
         enforce: 'pre',
         async resolveId(id, importer) {
-          if (!(importer && id.startsWith('.'))) {
+          if (!importer || id.startsWith('\0')) {
             return null;
           }
-          const path = resolve(dirname(importer.split('?')[0]), id);
-          const relative = mainOverlayPath(root, path);
-          if (overlays.has(relative) || baseOnlyOverlay(relative)) {
-            return path;
+          const local = id.startsWith('.') ? resolve(dirname(importer.split('?')[0]), id) : undefined;
+          if (servedFromBase(local)) {
+            return local;
           }
-          if (relative !== null && mainImporter(importer) && (await removedFor(relative)).length > 0) {
-            return `${EXPORT_SHIM}${path}`;
+          if (!mainImporter(importer)) {
+            return null;
           }
-          return null;
+          // Aliased and package imports go through Vite's own resolver, so the boundary spans sibling packages.
+          const path = local ?? (await this.resolve(id, importer, { skipSelf: true }))?.id;
+          return path !== undefined && removedFrom(path).length > 0 ? `${EXPORT_SHIM}${path}` : null;
         },
         load(id) {
           if (id.startsWith(EXPORT_SHIM)) {
             const path = id.slice(EXPORT_SHIM.length);
-            const names = exportShims.get(mainOverlayPath(root, path));
+            const names = removedFrom(path);
             return `export * from ${JSON.stringify(path)};\nexport { ${names.join(', ')} } from ${JSON.stringify(`${path}${BASE_COPY}`)};\n`;
           }
           const relative = mainOverlayPath(root, id);
           if (id.endsWith(BASE_COPY)) {
-            return showBase(relative);
+            return baseCopy(id);
           }
           if (overlays.has(relative)) {
             return overlays.get(relative);

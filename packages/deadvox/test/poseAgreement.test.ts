@@ -1,3 +1,5 @@
+import { clampJointAngles, jointAngles } from '@mobgen/core/joints.ts';
+import { IDENTITY_M } from '@mobgen/core/math.ts';
 import { describe, expect, it } from 'vitest';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -356,6 +358,37 @@ describe('rendered and hit shambler poses', () => {
       expect(aim?.inReach).toBe(true);
     } finally {
       renderer.dispose();
+    }
+  });
+});
+
+describe('shared acid pose', () => {
+  it('keeps a wandering head turn inside every framed joint limit without a hit reaction', () => {
+    const acid = registry.zombies.get('acid_zombie')!;
+    // Just inside the half-arc a wandering acid zombie can pick for its head.
+    const reachable = ((acid.wander.headLookArcDegrees / 2 - 1) * Math.PI) / 180;
+    for (const headYaw of [reachable, -reachable]) {
+      const posed = posedShambler({
+        seed: 1,
+        model: 'acid',
+        position: [0, 0, 0],
+        facing: [0, 0, -1],
+        headYaw,
+        gaitPhase: 0,
+        speed: 0,
+        chasing: false,
+        attackWindup: 0,
+        attackWindupSeconds: acid.attack.windupSimSeconds,
+        severed: [],
+        blockSize: BLOCK_SIZE,
+      });
+      const framed = posed.bones.filter((bone) => bone.frame && bone.limits);
+      expect(framed.length).toBeGreaterThan(0);
+      for (const bone of framed) {
+        const angles = jointAngles(bone, posed.pose.rotations[bone.id] ?? IDENTITY_M);
+        const clamped = clampJointAngles(bone, angles);
+        expect(angles, `${bone.id} at ${headYaw}`).toEqual(clamped.map((value) => expect.closeTo(value, 6)));
+      }
     }
   });
 });

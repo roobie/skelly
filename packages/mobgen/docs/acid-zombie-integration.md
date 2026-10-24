@@ -178,8 +178,11 @@ name lookup would find nothing.
   `jointRotation` and `clampJointAngles`. Animation tuning stays with the body content;
   see `src/mob/acidTemplate.jsonnet`, `animation`.
 - **Gaze and mouth.** Gaze names its head bone rather than requiring a humanoid name, and
-  framed joints clamp the combined action and gaze, not just the gaze correction. See
-  `src/mob/lookAt.ts`, `lookAtPose`, and `src/mob/lookAtProfiles.ts`, `LOOK_AT_PROFILES`.
+  framed joints clamp the combined action and gaze, not just the gaze correction. That holds
+  for the simulation's head turn as well as the presentation gaze, because hit boxes and the
+  spit anchor read the simulation pose. See `src/mob/lookAt.ts`, `lookAtPose`,
+  `src/mob/lookAtProfiles.ts`, `LOOK_AT_PROFILES`, and
+  `packages/deadvox/src/core/zombiePose.ts`, `clampedJointRotation`.
   The mouth anchor belongs to the skull's face opening rather than the hanging jaw or its
   drool, so spit line of sight follows the head through wind-up and gaze. See
   `src/core/body.ts`, `BodyAnchor`, and `src/mob/acid.ts`, `buildAcid`. The spit leaves from
@@ -252,16 +255,10 @@ before it lands.
 3. **Acid poses, gait and gaze.** Keep animation independent of gameplay readiness so the
    body can be judged in motion before Deadvox consumes it. See `src/mob/acidPoses.ts`,
    `src/viewer/main.ts`, `applyAcidFrame`, and `test/acidPoses.test.ts`.
-4. **Deadvox consumption and effects.** Plan-owned region bones with the sac under torso,
-   disposition-driven severing, the cosmetic death burst, the emissive glow with the
-   sac-only wind-up brightening and its borrowed-slot light, and the drips and death splash
-   as presentation in `packages/deadvox/src/render/acidEffects.ts`, `AcidEffects`. The
-   effects ship with the body so the mob ships with them. Hits, severs and the sac are
-   covered in `packages/deadvox/test/zombies.test.ts`; drips and the burst leaving the
-   simulation untouched in `packages/deadvox/test/mobActors.test.ts`; light slots in
-   `packages/deadvox/test/lightPool.test.ts`; height beside a shambler in
-   `packages/deadvox/test/zombieRegions.test.ts`; and the death splash in play in
-   `packages/deadvox/test/browser/firefox-ui.mjs`.
+4. **Deadvox consumption and effects.** The glow, drips and death splash ship with the body
+   so the mob reaches players complete, and stay presentation so they never touch the
+   simulation or saves. See "What Deadvox needs" and
+   `packages/deadvox/src/render/acidEffects.ts`, `AcidEffects`.
 
 The far level of detail follows as its own item, cross-mob, with an owner the lead routes.
 

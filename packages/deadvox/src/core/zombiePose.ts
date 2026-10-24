@@ -1,4 +1,5 @@
 import type { Bone } from '@mobgen/core/body.ts';
+import { clampJointAngles, jointAngles, jointRotation } from '@mobgen/core/joints.ts';
 import { applyPoint, IDENTITY_M, type Mat3, mulMM, mulMV, rotX, rotY, rotZ } from '@mobgen/core/math.ts';
 import { blendPose, boneTransforms, type Pose } from '@mobgen/core/pose.ts';
 import { acidAttackPose, acidHitPose, acidStrideLength, acidWalkPose, acidWindupPose } from '@mobgen/mob/acidPoses.ts';
@@ -266,6 +267,11 @@ const acidAttackTimeFor = (input: ShamblerPoseInput): number | undefined => {
   return time > attackDuration ? undefined : time;
 };
 
+/** Simulation gaze lands on framed joints after the action layers, so it is clamped like them: hit boxes and
+ * the spit anchor must stay inside the bone's articulated limits. */
+const clampedJointRotation = (bone: Bone, rotation: Mat3): Mat3 =>
+  bone.frame && bone.limits ? jointRotation(bone, clampJointAngles(bone, jointAngles(bone, rotation))) : rotation;
+
 const posedAcid = (input: ShamblerPoseInput, figure: ShamblerFigure): PosedShambler => {
   const { realized } = figure;
   const { bones } = realized.body;
@@ -275,7 +281,8 @@ const posedAcid = (input: ShamblerPoseInput, figure: ShamblerFigure): PosedShamb
   const attacked = attackTime === undefined ? walk : acidAttackPose(realized, walk, attackTime);
   const progress = input.spitProgress ?? 0;
   const woundUp = progress > 0 ? acidWindupPose(realized, attacked, progress) : attacked;
-  const headBone = LOOK_AT_PROFILES.acid?.headBone ?? 'skull';
+  const headId = LOOK_AT_PROFILES.acid?.headBone ?? 'skull';
+  const head = bones.find((bone) => bone.id === headId)!;
   const gazed: Pose =
     input.headYaw === 0
       ? woundUp
@@ -283,7 +290,10 @@ const posedAcid = (input: ShamblerPoseInput, figure: ShamblerFigure): PosedShamb
           ...woundUp,
           rotations: {
             ...woundUp.rotations,
-            [headBone]: mulMM(woundUp.rotations[headBone] ?? IDENTITY_M, rotY((input.headYaw * 180) / Math.PI)),
+            [headId]: clampedJointRotation(
+              head,
+              mulMM(woundUp.rotations[headId] ?? IDENTITY_M, rotY((input.headYaw * 180) / Math.PI)),
+            ),
           },
         };
   const pose =
