@@ -21,23 +21,18 @@ Implemented in g76-1: `canned_beans`, `canned_soup`, `crackers`, `chocolate_bar`
 `shotshell_box`, `cartridge_box_308_h_winchester`, `cartridge_box_5_d_56x45`,
 `cartridge_box_7_d_62x39`, `cartridge_box_357_h_magnum`.
 
-## Families left, in suggested order
+## Turned, revolved and coiled stock
 
-- Turned, revolved and coiled stock: `aa_battery`, `duct_tape`, `nails`, `stick`, `wax`.
-- Flat stock and sheets: `scrap_metal`, `wooden_plank`, `field_patch`.
-- Small tools, lights and keys: `camp_armoury_key`, `camp_hq_safe_key`, `dad_cabin_key`,
-  `pharmacy_key`, `shed_key`, `gauntlet_police_armoury_key`, `headlamp`, `torch`,
-  `candle`, `lighter`, `matches`.
-- Hand tools: `blowtorch`, `can_opener`.
-- Appliance and electronics housings: `portable_radio`.
-- Kits: `repair_kit`.
-- Medical and repair supplies: `bandage`, `antiseptic`, `antibiotics`, `painkillers`,
-  `codeine`, `morphine`, `rag`.
-- Wearables and bags: `weapon_sling`, `baseball_cap`, `jeans`, `rubber_boots`,
-  `cargo_pants`, `hoodie`, `jacket`, `utility_vest`, `fanny_pack`, `school_backpack`,
-  `hiking_backpack`.
-- One-offs: `apple`, `frag_grenade`, `shambler_torso`, `shambler_head`,
-  `shambler_left_arm`, `shambler_right_arm`, `shambler_left_leg`, `shambler_right_leg`.
+Done: `aa_battery`, `duct_tape`, `nails`, `stick` and `wax` each have a tool-authored
+row, GLB and model entry, with authored mass and handling datums, in
+`packages/thing-authoring-tool/materials.libsonnet`.
+
+## Families left
+
+None by census: every item the census listed has a row in
+`packages/thing-authoring-tool/items.jsonnet`, and the recipe exports every row. What phase 4
+still owes is the check that each tool-authored GLB replaced its old model and that each
+family's handling datums are authored against the geometry.
 
 Books and notes and firearm-adjacent mounts have no missing references in this census;
 mount source migration stays with the gun tool. Existing non-tool-authored GLBs still
