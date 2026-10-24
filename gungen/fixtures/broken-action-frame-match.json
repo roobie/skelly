@@ -1,6 +1,6 @@
 {
   "name": "broken-action-frame-match",
-  "description": "AR rifle whose lower is built for the large action frame under a small-frame receiver.",
+  "description": "AR rifle whose bolt carrier is built for the small action frame in a large-frame receiver.",
   "expect": ["action-frame-match"],
   "root": "receiver",
   "parts": {
@@ -12,16 +12,17 @@
         "bore": "M",
         "chargingHandle": "rear-top",
         "rail": "full",
-        "section": "ar"
+        "section": "ar",
+        "actionFrame": "large"
       }
     },
     "charging-handle": { "family": "ar-charging-handle" },
-    "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "ar" } },
-    "lower": { "family": "lower", "params": { "layout": "ar", "actionFrame": "large" } },
+    "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "ar", "actionFrame": "small" } },
+    "lower": { "family": "lower", "params": { "layout": "ar" } },
     "barrel": { "family": "barrel", "params": { "length": "M" } },
     "handguard": { "family": "handguard", "params": { "layout": "ar" } },
     "grip": { "family": "grip", "params": { "length": "M" } },
-    "magazine": { "family": "magazine", "params": { "length": "M", "profile": "stanag-straight" } },
+    "magazine": { "family": "magazine", "params": { "length": "M", "profile": "sr25-straight" } },
     "stock": { "family": "stock", "params": { "length": "M", "style": "m4" } }
   },
   "connections": [

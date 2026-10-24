@@ -65,6 +65,10 @@
       "output": "gungen/src/gun/gunVoxel.json"
     },
     {
+      "source": "gungen/src/gun/magazines.jsonnet",
+      "output": "gungen/src/gun/magazines.json"
+    },
+    {
       "source": "gungen/src/gun/physical.jsonnet",
       "output": "gungen/src/gun/physical.json"
     },

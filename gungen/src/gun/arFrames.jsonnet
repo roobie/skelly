@@ -2,8 +2,9 @@
 // cartridge it is derived from, so a new frame needs no code change. A frame measure that follows its
 // cartridge clears the cartridge measure (times `multiplier`) plus `clearanceUnits`, then rounds up to `snap`:
 // `grid`, or `half-grid` where the parts build halves the measure, so each half stays on the grid; `none` keeps
-// the fit envelope exact. A receiver estimate is read from a side-profile photo scaled by the rifle's published
-// overall length, in gun units, and stays an estimate that needs visual review.
+// the fit envelope exact. A receiver estimate is read from a side-profile photo scaled by a published length of the
+// rifle pictured (`scale`), in gun units, and stays an estimate that needs visual review. `magazineProfile` is the
+// box magazine the frame's well takes, so a design in the frame's calibre seats that magazine.
 local derivation(measure, clearanceUnits, snap, description, multiplier=null) =
   { measure: measure, clearanceUnits: clearanceUnits, snap: snap, description: description }
   + (if multiplier == null then {} else { multiplier: multiplier });
@@ -39,10 +40,11 @@ local derivation(measure, clearanceUnits, snap, description, multiplier=null) =
       cartridge: import '../../cartridges/5.56x45.json',
       receiver: {
         photo: 'https://commons.wikimedia.org/wiki/File:PEO_M4_Carbine_RAS_M68_CCO.png',
-        overallLength: 'https://en.wikipedia.org/wiki/M4_carbine',
+        scale: "the rifle's published overall length in https://en.wikipedia.org/wiki/M4_carbine",
         lengthUnits: 16,
         heightUnits: 5,
       },
+      magazineProfile: 'stanag-straight',
       // U.S. Army TM 9-1005-319-10, M16/M4 technical manual: cyclic rate 700–950 rounds/minute.
       cyclicRpm: 800,
     },
@@ -50,12 +52,18 @@ local derivation(measure, clearanceUnits, snap, description, multiplier=null) =
       id: 'large',
       rank: 1,
       cartridge: import '../../cartridges/7.62x51.json',
+      // Measured from an SR-25 Match Rifle brochure page, the AR-10 class reference BR chose, because the earlier
+      // ArmaLite AR-10 photo estimate read wrong on the model. The page is bent, so lengths run along the rifle's
+      // outline; the printed 24 in barrel length agrees with that scale within 1%. The upper measures 180 px long and
+      // 40 px tall at its front, rail included, at 1.354 mm/px; each rounds up to the grid the parts build on.
       receiver: {
-        photo: "https://commons.wikimedia.org/wiki/File:AR10_Armalite_vue_d'ensemble_noBG.png",
-        overallLength: 'https://en.wikipedia.org/wiki/AR-10',
-        lengthUnits: 21.5,
-        heightUnits: 5.5,
+        photo: 'https://www.snipershide.com/shooting/attachments/img_7687-jpeg.8878983/',
+        scale: 'the "Length: 44 inches" printed beside the rifle on the same page',
+        lengthUnits: 21.25,
+        heightUnits: 5,
       },
+      // Measured from the same page; see magazines.jsonnet.
+      magazineProfile: 'sr25-straight',
       // https://en.wikipedia.org/wiki/AR-10, infobox: rate of fire 700 rounds/min.
       cyclicRpm: 700,
     },

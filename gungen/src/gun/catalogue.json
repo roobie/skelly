@@ -494,7 +494,7 @@
         "integral": "no",
         "layout": "ar",
         "magazineOrientation": "straight",
-        "magazineProfile": "stanag-straight",
+        "magazineProfile": "sr25-straight",
         "magazineWell": "standard",
         "section": "ar",
         "triggerGuard": "present"

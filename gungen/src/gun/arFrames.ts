@@ -49,8 +49,9 @@ const FrameSchema = strictObject({
   rank: pipe(number(), integer(), minValue(0)),
   // Checked by the cartridge parser below, which owns the cartridge format.
   cartridge: unknown(),
-  receiver: strictObject({ photo: Text, overallLength: Text, lengthUnits: Positive, heightUnits: Positive }),
+  receiver: strictObject({ photo: Text, scale: Text, lengthUnits: Positive, heightUnits: Positive }),
   cyclicRpm: Positive,
+  magazineProfile: Text,
 });
 type FrameSource = InferOutput<typeof FrameSchema>;
 
@@ -148,7 +149,7 @@ const receiverEstimate = (source: FrameSource, measure: 'length' | 'height', uni
   value: units * mmPerUnit,
   evidence: {
     kind: 'estimate',
-    method: `Receiver ${measure} from the side-profile silhouette in ${source.receiver.photo}, scaled by the rifle's published overall length in ${source.receiver.overallLength}; estimated to ${units}u on the gun grid.`,
+    method: `Receiver ${measure} from the side-profile silhouette in ${source.receiver.photo}, scaled by ${source.receiver.scale}; estimated to ${units}u on the gun grid.`,
   },
 });
 
@@ -181,6 +182,7 @@ export interface AuthoredARFrame {
   /** The frame's own cartridge, which its measures are derived from. */
   readonly cartridge: CartridgeFrameMeasures;
   readonly cyclicRpm: number;
+  readonly magazineProfile: string;
 }
 
 /** Checks the authored frame content; a malformed frame is a build error naming the frame and field. */
@@ -198,6 +200,7 @@ export const loadArFrames = (raw: unknown): readonly AuthoredARFrame[] => {
       frame: arFrame(source, cartridge, derivations),
       cartridge: cartridge.measures,
       cyclicRpm: source.cyclicRpm,
+      magazineProfile: source.magazineProfile,
     };
   });
   const issues = validateActionFrames(authored.map(({ frame }) => frame));
@@ -240,3 +243,16 @@ export const AR_FRAMES_BY_CALIBRE: readonly {
 export const AR_FRAME_BY_CALIBRE: Readonly<Record<string, string>> = Object.fromEntries(
   AR_FRAMES_BY_CALIBRE.map(({ cartridge, frame }) => [cartridge.id, frame.id]),
 );
+
+const magazineProfileOf = (frameId: string): string =>
+  authored.find(({ frame }) => frame.id === frameId)?.magazineProfile ?? reference.magazineProfile;
+
+/** The magazine profile each calibre seats: the one its selected frame's well takes. */
+export const AR_MAGAZINE_PROFILE_BY_CALIBRE: Readonly<Record<string, string>> = Object.fromEntries(
+  AR_FRAMES_BY_CALIBRE.map(({ cartridge, frame }) => [cartridge.id, magazineProfileOf(frame.id)]),
+);
+
+/** Every magazine profile an AR frame takes. */
+export const AR_MAGAZINE_PROFILES: readonly string[] = [
+  ...new Set(authored.map(({ magazineProfile }) => magazineProfile)),
+];

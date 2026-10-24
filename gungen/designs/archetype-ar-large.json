@@ -75,11 +75,7 @@
         "family": "magazine",
         "params": {
           "length": "M",
-          "profile": "stanag-straight"
-        },
-        "prefab": {
-          "id": "stanag-20",
-          "version": 1
+          "profile": "sr25-straight"
         }
       },
       "receiver": {

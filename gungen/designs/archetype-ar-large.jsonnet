@@ -11,6 +11,7 @@ base + {
       lower: { item: 'lower_ar_large' },
       barrel: { item: 'barrel_ar_large_medium' },
       handguard: { item: 'handguard_ar_large_clamped' },
+      magazine: { family: 'magazine', params: { length: 'M', profile: 'sr25-straight' } },
     },
   },
 }

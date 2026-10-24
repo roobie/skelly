@@ -82,7 +82,7 @@ local item(id, family, selector, params, massKg, profile) =
     }, 0.35, 'ar'),
     item('lower_ar_large', 'lower', ['layout', 'actionFrame'], {
       layout: 'ar', actionFrame: 'large', triggerGuard: 'present', magazineWell: 'standard',
-      magazineProfile: 'stanag-straight', magazineOrientation: 'straight', integral: 'no', section: 'ar',
+      magazineProfile: 'sr25-straight', magazineOrientation: 'straight', integral: 'no', section: 'ar',
       boltCalibre: '308-winchester',
     }, 0.4, 'ar'),
     item('lower_pump', 'lower', ['layout'], {

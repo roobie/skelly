@@ -394,12 +394,13 @@
       },
       "cyclicRpm": 800,
       "id": "small",
+      "magazineProfile": "stanag-straight",
       "rank": 0,
       "receiver": {
         "heightUnits": 5,
         "lengthUnits": 16,
-        "overallLength": "https://en.wikipedia.org/wiki/M4_carbine",
-        "photo": "https://commons.wikimedia.org/wiki/File:PEO_M4_Carbine_RAS_M68_CCO.png"
+        "photo": "https://commons.wikimedia.org/wiki/File:PEO_M4_Carbine_RAS_M68_CCO.png",
+        "scale": "the rifle's published overall length in https://en.wikipedia.org/wiki/M4_carbine"
       }
     },
     {
@@ -645,12 +646,13 @@
       },
       "cyclicRpm": 700,
       "id": "large",
+      "magazineProfile": "sr25-straight",
       "rank": 1,
       "receiver": {
-        "heightUnits": 5.5,
-        "lengthUnits": 21.5,
-        "overallLength": "https://en.wikipedia.org/wiki/AR-10",
-        "photo": "https://commons.wikimedia.org/wiki/File:AR10_Armalite_vue_d'ensemble_noBG.png"
+        "heightUnits": 5,
+        "lengthUnits": 21.25,
+        "photo": "https://www.snipershide.com/shooting/attachments/img_7687-jpeg.8878983/",
+        "scale": "the \"Length: 44 inches\" printed beside the rifle on the same page"
       }
     }
   ]
