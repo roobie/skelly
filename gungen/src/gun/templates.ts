@@ -8,7 +8,12 @@
 
 import type { Template } from '@skelly/engine/assembly/template.ts';
 import { AK_MAGAZINE_VARIANT_BY_CALIBRE } from './akMagazineCalibre.ts';
-import { AR_FRAME_BY_CALIBRE } from './arFrames.ts';
+import {
+  AR_ACTION_FRAMES,
+  AR_FRAME_BY_CALIBRE,
+  AR_MAGAZINE_PROFILE_BY_CALIBRE,
+  AR_MAGAZINE_PROFILES,
+} from './arFrames.ts';
 import type { OpticTypeId } from './optics.ts';
 
 const sightMix = (...weights: readonly (readonly [OpticTypeId, number])[]): readonly OpticTypeId[] =>
@@ -81,7 +86,10 @@ export const ar: Template = {
   description:
     'AR-pattern rifle: clamped A2 front sight or a free-float handguard with an optional rail-mounted front post.',
   variant: '5.56x45',
-  variantParams: [{ slot: 'receiver', param: 'actionFrame', byVariant: AR_FRAME_BY_CALIBRE }],
+  variantParams: [
+    { slot: 'receiver', param: 'actionFrame', byVariant: AR_FRAME_BY_CALIBRE },
+    { slot: 'magazine', param: 'profile', byVariant: AR_MAGAZINE_PROFILE_BY_CALIBRE },
+  ],
   root: 'receiver',
   slots: [
     {
@@ -94,7 +102,7 @@ export const ar: Template = {
         chargingHandle: 'rear-top',
         rail: 'full',
         section: 'ar',
-        actionFrame: ['small'],
+        actionFrame: AR_ACTION_FRAMES.map(({ id }) => id),
       },
     },
     { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'ar' } },
@@ -110,9 +118,9 @@ export const ar: Template = {
         length: { fromSlot: 'barrel', param: 'length' },
       },
     },
-    { id: 'grip', family: 'grip', params: { length: ['S', 'M'] } },
-    { id: 'magazine', family: 'magazine', params: { length: 'M', profile: 'stanag-straight' } },
-    { id: 'stock', family: 'stock', params: { length: 'M', style: 'm4' } },
+    { id: 'grip', family: 'grip', params: { length: ['S', 'M', 'L'] } },
+    { id: 'magazine', family: 'magazine', params: { length: 'M', profile: [...AR_MAGAZINE_PROFILES] } },
+    { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: 'm4' } },
     {
       id: 'front-sight',
       family: 'front-sight',

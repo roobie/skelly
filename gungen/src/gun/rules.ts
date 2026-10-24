@@ -308,7 +308,11 @@ const freeFloatFitIssue = (
       handguardSolids.map((handguardSolid) => distanceWorld(barrelSolid, handguardSolid)),
     ),
   );
-  const sightViolation = handguardLength >= distanceToPort('front-sight') - 1e-6;
+  // A rail can only reach a front sight that is fitted; an empty sight station is covered like the gas block.
+  const sightFitted = r.connections.some(({ from, to }) =>
+    [from, to].some((end) => end.part === barrelPart && end.port.id === 'front-sight'),
+  );
+  const sightViolation = sightFitted && handguardLength >= distanceToPort('front-sight') - 1e-6;
   const muzzleViolation = handguardLength >= distanceToPort('muzzle') - 1e-6;
   if (actualClearance >= requiredClearance - 1e-6 && !sightViolation && !muzzleViolation) {
     return undefined;
@@ -747,6 +751,28 @@ export const magazineWellAxis: Rule = {
       const axisError = magazineAxisError(r, lower, magazine, { mag: magStyle, well: wellStyle });
       if (axisError) {
         issues.push(axisError);
+      }
+    }
+    return issues;
+  },
+};
+
+// A catalogue item fixes its own frame instead of inheriting it, so a part built for another frame would
+// otherwise fit silently.
+export const actionFrameMatch: Rule = {
+  id: 'action-frame-match',
+  title: 'Connected parts are built for the same action frame',
+  check(r) {
+    const issues: Issue[] = [];
+    for (const { from, to } of r.connections) {
+      const fromFrame = r.params.get(from.part)?.actionFrame?.value;
+      const toFrame = r.params.get(to.part)?.actionFrame?.value;
+      if (fromFrame !== undefined && toFrame !== undefined && fromFrame !== toFrame) {
+        issues.push({
+          rule: 'action-frame-match',
+          message: `${from.part} is built for the "${fromFrame}" action frame, but ${to.part} is built for "${toFrame}".`,
+          parts: [from.part, to.part],
+        });
       }
     }
     return issues;

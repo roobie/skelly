@@ -1,0 +1,13 @@
+{
+  "id": "handguard_ar_large_free_float",
+  "file": "assets/models/handguard_ar_large_free_float.glb",
+  "gun": {},
+  "parts": {
+    "handguard_ar_large_free_float": {
+      "item": "handguard_ar_large_free_float",
+      "node": "handguard_ar_large_free_float:handguard",
+      "massKg": 0.62,
+      "centreOfMass": [0.19598096359532927, 0.006460406240800707, -0.000002158767539986094]
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "barrel_ar_large_long",
+  "file": "assets/models/barrel_ar_large_long.glb",
+  "gun": {},
+  "parts": {
+    "barrel_ar_large_long": {
+      "item": "barrel_ar_large_long",
+      "node": "barrel_ar_large_long:barrel",
+      "massKg": 1.45,
+      "centreOfMass": [0.24510679611650488, 0, 0]
+    }
+  }
+}

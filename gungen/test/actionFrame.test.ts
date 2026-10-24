@@ -2,16 +2,26 @@ import { validate } from '@skelly/engine/assembly/validate.ts';
 import { describe, expect, it } from 'vitest';
 import {
   type ActionFrame,
-  AR_FRAME_RANKS,
   type CartridgeFrameMeasures,
   type FrameMeasure,
   selectFrame,
   validateActionFrames,
   validateFrameCartridgeClearances,
 } from '../src/gun/actionFrame.ts';
-import { AR_ACTION_FRAMES, SMALL_AR_CARTRIDGE, SMALL_AR_FRAME } from '../src/gun/arFrames.ts';
+import frameContent from '../src/gun/arFrames.json' with { type: 'json' };
+import {
+  AR_ACTION_FRAMES,
+  AR_FRAMES_BY_CALIBRE,
+  loadArFrames,
+  SMALL_AR_CARTRIDGE,
+  SMALL_AR_FRAME,
+} from '../src/gun/arFrames.ts';
 import { gunDomain } from '../src/gun/domain.ts';
-import { variant } from './helpers.ts';
+import { loadDesignAssembly, variant } from './helpers.ts';
+
+const MISSING_RANK = /frames\.0\.rank/;
+const NOT_A_CARTRIDGE = /cartridge is not a cartridge document/;
+const DUPLICATE_RANK = /rank must be a unique integer/;
 
 const estimate = (value: number): FrameMeasure => ({
   value,
@@ -35,6 +45,7 @@ const frame = (
     carrierTravelMm: estimate(1),
     receiverLengthMm: estimate(1),
     receiverHeightMm: estimate(1),
+    receiverBelowBoreMm: estimate(1),
     ejectionPortLengthMm: estimate(1),
     ejectionPortHeightMm: estimate(1),
     magwellOpeningLengthMm: estimate(1),
@@ -57,9 +68,13 @@ const sourceCartridge = (id: string, caseLengthMm: number): CartridgeFrameMeasur
 });
 
 describe('AR action-frame selection', () => {
-  it('keeps every cartridge-bound small-frame measure beyond its stated 5.56 clearance', () => {
+  it('keeps every cartridge-bound frame measure beyond its clearance for each cartridge that selects it or a smaller frame', () => {
     expect(
-      AR_ACTION_FRAMES.flatMap((candidate) => validateFrameCartridgeClearances(candidate, SMALL_AR_CARTRIDGE)),
+      AR_FRAMES_BY_CALIBRE.flatMap(({ cartridge: selected, frame: selectedFrame }) =>
+        AR_ACTION_FRAMES.filter((candidate) => candidate.rank >= selectedFrame.rank).flatMap((candidate) =>
+          validateFrameCartridgeClearances(candidate, selected),
+        ),
+      ),
     ).toEqual([]);
     const carrier = SMALL_AR_FRAME.dimensions.carrierLengthMm;
     const basis = carrier.cartridgeClearance;
@@ -110,15 +125,15 @@ describe('AR action-frame selection', () => {
   });
 
   it('selects the next rank when the cartridge exceeds the smaller frame', () => {
-    const small = frame('small', AR_FRAME_RANKS.small, 8, 4);
-    const large = frame('large', AR_FRAME_RANKS.large, 10, 6);
+    const small = frame('small', 0, 8, 4);
+    const large = frame('large', 1, 10, 6);
 
     expect(selectFrame([large, small], cartridge('next', 9, 5))).toEqual({ ok: true, frame: large });
   });
 
   it('reports the largest frame and cartridge measures when no frame fits', () => {
-    const small = frame('small', AR_FRAME_RANKS.small, 8, 4);
-    const magnum = frame('magnum', AR_FRAME_RANKS.magnum, 10, 6);
+    const small = frame('small', 0, 8, 4);
+    const magnum = frame('magnum', 2, 10, 6);
 
     const result = selectFrame([small, magnum], cartridge('oversize', 11, 7));
 
@@ -143,7 +158,7 @@ describe('AR action-frame selection', () => {
   });
 
   it('reports a cartridge that is too long for its frame', () => {
-    const small = frame('small', AR_FRAME_RANKS.small, 8, 6);
+    const small = frame('small', 0, 8, 6);
     const result = selectFrame([small], cartridge('too-long', 9, 5));
 
     expect(result.ok).toBe(false);
@@ -175,6 +190,34 @@ describe('AR action-frame selection', () => {
     const issue = validate(edited, gunDomain).issues.find((candidate) => candidate.rule === 'structure');
 
     expect(issue?.message).toContain('has no parameter "receiverLengthMm"');
+  });
+
+  it('refuses a malformed frame entry at load and names the problem', () => {
+    const [first, ...rest] = frameContent.frames;
+    if (!first) {
+      throw new Error('this check needs an authored frame');
+    }
+    const withFrames = (frames: readonly unknown[]): unknown => ({ ...frameContent, frames });
+    const { rank: _rank, ...rankless } = first;
+
+    expect(() => loadArFrames(withFrames([rankless, ...rest]))).toThrow(MISSING_RANK);
+    expect(() => loadArFrames(withFrames([{ ...first, cartridge: { id: 'unsourced' } }, ...rest]))).toThrow(
+      NOT_A_CARTRIDGE,
+    );
+    expect(() => loadArFrames(withFrames([first, ...rest, { ...first, id: 'same-rank' }]))).toThrow(DUPLICATE_RANK);
+  });
+
+  it('rejects a part built for a different action frame than its receiver', () => {
+    const assembly = loadDesignAssembly('archetype-ar');
+    const otherFrame = AR_ACTION_FRAMES.find(({ id }) => id !== SMALL_AR_FRAME.id);
+    if (!otherFrame) {
+      throw new Error('this check needs a second AR frame');
+    }
+    assembly.parts.lower!.params = { ...assembly.parts.lower!.params, actionFrame: otherFrame.id };
+
+    const issues = validate(assembly, gunDomain).issues.filter((issue) => issue.rule === 'action-frame-match');
+
+    expect(issues.map((issue) => issue.parts)).toEqual([['receiver', 'lower']]);
   });
 
   it('does not select a frame when a required cartridge measure is unsourced', () => {

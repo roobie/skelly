@@ -1,0 +1,13 @@
+{
+  "id": "charging_handle_ar_large",
+  "file": "assets/models/charging_handle_ar_large.glb",
+  "gun": {},
+  "parts": {
+    "charging_handle_ar_large": {
+      "item": "charging_handle_ar_large",
+      "node": "charging_handle_ar_large:ar-charging-handle",
+      "massKg": 0.07,
+      "centreOfMass": [-0.17587654320987656, 0.022000000000000002, 0.000419753086419753]
+    }
+  }
+}

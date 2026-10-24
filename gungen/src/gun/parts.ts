@@ -36,8 +36,14 @@ import { VOXEL_DETAIL } from '@skelly/thing-export/glb.ts';
 import { akButtstockSolids, akStockTop } from './akButtstock.ts';
 import { AK_PROPORTIONS, akGasPortX } from './akProportions.ts';
 import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';
-import { AR_HANDLE_CHANNEL, arChargingHandle } from './arChargingHandle.ts';
-import { AR_ACTION_LAYOUT } from './arLayout.ts';
+import { arChargingHandle, arChargingHandleSolidsFor, arHandleChannel } from './arChargingHandle.ts';
+import {
+  AR_CARRIER_HEIGHTS,
+  AR_EJECTION_PORT_CENTERS,
+  AR_FREE_FLOAT_HANDGUARDS,
+  AR_LOWER_PROPORTIONS,
+} from './arFrames.ts';
+import { AR_ACTION_LAYOUT, AR_ACTION_LAYOUTS, type ARActionLayout, arLayoutFor } from './arLayout.ts';
 import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';
 import {
   BOLT_MAGAZINE_WALL_U,
@@ -51,6 +57,7 @@ import {
 import { COMPACT_SMG_PROPORTIONS } from './compactSmgProportions.ts';
 import { EJECTION_PORT_MARGIN_U as SHARED_EJECTION_PORT_MARGIN_U } from './ejectionPort.ts';
 import { METRES_PER_UNIT } from './exportFrame.ts';
+import { MAGAZINE_PROFILES, magazineProfileContent } from './magazineProfiles.ts';
 import type { MuzzleBore } from './mounts.ts';
 import { getOptic, OPTIC_TYPE_IDS } from './optics.ts';
 import physical from './physical.json' with { type: 'json' };
@@ -260,6 +267,20 @@ const magazineBodySection = (
     return { depth: STANAG30_BODY_DEPTH_U, width: STANAG30_BODY_WIDTH_U };
   }
   return magazineSection(profile);
+};
+/** A magazine's section: an integral well's, a photo-measured profile's, or its code profile's. */
+const magazineSectionFor = (
+  params: Readonly<Record<string, string>>,
+  profile: MagazineProfile,
+  length: SizeClass,
+  measured: { readonly depthU: number; readonly widthU: number } | undefined,
+): { readonly depth: number; readonly width: number } => {
+  if (params.integral === 'yes') {
+    return boltMagazineSection(boltCartridge(params.boltCalibre));
+  }
+  return measured === undefined
+    ? magazineBodySection(profile, length)
+    : { depth: measured.depthU, width: measured.widthU };
 };
 type MagazineLength = '5-round' | '10-round' | SizeClass;
 type MagazineProfile = 'standard' | 'smg' | 'pistol' | 'ak-curved' | 'stanag-curved' | 'stanag-straight';
@@ -583,6 +604,16 @@ const lowerGripContactX = (layout: string, gripXOverride?: number): number => {
   const angle = (GRIP_BANDS.leanDegrees * Math.PI) / 180;
   return gripX + x * Math.cos(angle) - y * Math.sin(angle);
 };
+/**
+ * Where a grip's front edge sits at height y in the lower's frame: below its contact vertex the edge leans back
+ * with the grip, so a guard whose top sits lower meets it further back.
+ */
+const lowerGripFrontXAt = (gripX: number, y: number): number => {
+  const angle = (GRIP_BANDS.leanDegrees * Math.PI) / 180;
+  const [x, mountY] = GRIP_MOUNT_PROFILE[0];
+  const contactY = -1.5 - x * Math.sin(angle) + mountY * Math.cos(angle);
+  return lowerGripContactX('ar', gripX) - Math.max(0, contactY - y) * Math.tan(angle);
+};
 const lowerGripRearX = (gripX: number): number => {
   const angle = (GRIP_BANDS.leanDegrees * Math.PI) / 180;
   const faceRearX = Math.min(
@@ -597,8 +628,22 @@ const pistolSlideHalfWidth = (bore: SizeClass): number =>
 const PISTOL_SLIDE_REAR = -8;
 const PISTOL_GRIP_X = -6;
 const AK_CHARGING_SLOT_MUZZLE_SHIFT_U = 0.25;
+interface ARCarrierEnvelope {
+  readonly x: readonly [number, number];
+  readonly y: readonly [number, number];
+  readonly z: readonly [number, number];
+}
+// The carrier's face length is the frame's carrier-length measure, so each AR frame has its own envelope.
+const arCarrierEnvelope = (layout: ARActionLayout): ARCarrierEnvelope => {
+  const traced = AR_CARRIER_HEIGHTS[layout.frameId];
+  return {
+    x: [1.5 - Math.max(layout.carrierFaceLengthU, traced?.lengthU ?? 0), 1.5],
+    y: traced === undefined ? [-0.5, 1] : [traced.bottomU, traced.topU],
+    z: [-1.25, 1.25],
+  };
+};
 export const BOLT_CARRIER_ENVELOPES = {
-  ar: { x: [1.5 - AR_ACTION_LAYOUT.carrierFaceLengthU, 1.5], y: [-0.5, 1], z: [-1.25, 1.25] },
+  ar: arCarrierEnvelope(AR_ACTION_LAYOUT),
   ak: { x: [-4.5, 1.5], y: [-1.25, 1.25], z: [-1.25, 1.25] },
   pump: { x: [-3.25, 3], y: [-0.75, 0.75], z: [-0.75, 0.75] },
   smg: { x: [-1.5, 1.5], y: [-0.5, 0.5], z: [-0.75, 0.75] },
@@ -607,6 +652,8 @@ export const BOLT_CARRIER_ENVELOPES = {
 } as const;
 type BoltCarrierPattern = keyof typeof BOLT_CARRIER_ENVELOPES;
 type CarrierEnvelope = (typeof BOLT_CARRIER_ENVELOPES)[BoltCarrierPattern];
+const carrierEnvelope = (pattern: BoltCarrierPattern, frameId: string | undefined): CarrierEnvelope =>
+  pattern === 'ar' ? arCarrierEnvelope(arLayoutFor(frameId)) : BOLT_CARRIER_ENVELOPES[pattern];
 
 export const CARRIER_HANDLE_STYLES = {
   ar: { shape: 'rear-t', owner: 'ar-charging-handle', motion: 'hand', handClearanceU: 0.25 },
@@ -633,8 +680,13 @@ export const EJECTION_PORT_RULES = {
   pumpShellMinimum: { lengthU: PUMP_SHELL_LOADED_LENGTH_U, endClearanceU: EJECTION_PORT_MARGIN_U },
 } as const;
 
-const ejectionPortWindow = (pattern: BoltCarrierPattern, restX: number, carrierY: number, useArFrame = false) => {
-  const envelope = BOLT_CARRIER_ENVELOPES[pattern];
+const ejectionPortWindow = (
+  pattern: BoltCarrierPattern,
+  restX: number,
+  carrierY: number,
+  arLayout?: ARActionLayout,
+) => {
+  const envelope = carrierEnvelope(pattern, arLayout?.frameId);
   const margin = EJECTION_PORT_MARGIN_U;
   let xMin = restX - envelope.x[1] - margin;
   let xMax = restX - envelope.x[0] + margin;
@@ -647,18 +699,12 @@ const ejectionPortWindow = (pattern: BoltCarrierPattern, restX: number, carrierY
     xMin = center - pumpMinimum / 2;
     xMax = center + pumpMinimum / 2;
   }
-  if (useArFrame) {
-    const centerX = (xMin + xMax) / 2;
+  if (arLayout !== undefined) {
+    const centerX = AR_EJECTION_PORT_CENTERS[arLayout.frameId] ?? (xMin + xMax) / 2;
     const centerY = carrierY + (envelope.y[0] + envelope.y[1]) / 2;
     return {
-      x: [
-        centerX - AR_ACTION_LAYOUT.ejectionPortLengthU / 2,
-        centerX + AR_ACTION_LAYOUT.ejectionPortLengthU / 2,
-      ] as const,
-      y: [
-        centerY - AR_ACTION_LAYOUT.ejectionPortHeightU / 2,
-        centerY + AR_ACTION_LAYOUT.ejectionPortHeightU / 2,
-      ] as const,
+      x: [centerX - arLayout.ejectionPortLengthU / 2, centerX + arLayout.ejectionPortLengthU / 2] as const,
+      y: [centerY - arLayout.ejectionPortHeightU / 2, centerY + arLayout.ejectionPortHeightU / 2] as const,
     };
   }
   return {
@@ -735,8 +781,8 @@ const carrierAxisY = (pattern: BoltCarrierPattern, receiverDrop: number, section
   return y - receiverDrop;
 };
 
-export const carrierCavityBounds = (pattern: BoltCarrierPattern, carrierY: number) => {
-  const envelope = BOLT_CARRIER_ENVELOPES[pattern];
+export const carrierCavityBounds = (pattern: BoltCarrierPattern, carrierY: number, frameId?: string) => {
+  const envelope = carrierEnvelope(pattern, frameId);
   if (pattern === 'bolt') {
     const centreY = carrierY + (envelope.y[0] + envelope.y[1]) / 2;
     const centreZ = (envelope.z[0] + envelope.z[1]) / 2;
@@ -762,6 +808,47 @@ export const carrierCavityBounds = (pattern: BoltCarrierPattern, carrierY: numbe
 };
 
 export const RECEIVER_SECTION_WALL_U = 0.5;
+
+export interface ARReceiverSectionData {
+  readonly magazineWellX: readonly [number, number];
+  readonly outline: readonly (readonly [number, number])[];
+  readonly faces: {
+    readonly top: { readonly y: number; readonly halfWidth: number };
+    readonly portSide: number;
+    readonly handleSides: readonly [number, number];
+    readonly front: number;
+    readonly rear: number;
+    readonly bottom: number;
+  };
+}
+
+// One cross-section for every AR frame; its length, height and the bore's place in it follow the frame.
+export const arReceiverSection = (layout: ARActionLayout): ARReceiverSectionData => {
+  const bottom = -layout.receiverBelowBoreU;
+  const top = layout.receiverHeightU + bottom;
+  const wellCenterX = AR_LOWER_PROPORTIONS[layout.frameId]?.wellCenterX ?? MAGAZINE_WELL_CENTER_X;
+  return {
+    magazineWellX: [wellCenterX - layout.magwellOpeningLengthU / 2, wellCenterX + layout.magwellOpeningLengthU / 2],
+    outline: [
+      [bottom, -1.75],
+      [bottom + 0.25, -2],
+      [top - 1, -2],
+      [top, -1.75],
+      [top, 1.75],
+      [top - 1, 2],
+      [bottom + 0.25, 2],
+      [bottom, 1.75],
+    ],
+    faces: {
+      top: { y: top, halfWidth: 1.75 },
+      portSide: 2,
+      handleSides: [-2, 2],
+      front: 0,
+      rear: -layout.receiverLengthU,
+      bottom,
+    },
+  };
+};
 
 export const RECEIVER_SECTION = {
   sporter: {
@@ -791,30 +878,7 @@ export const RECEIVER_SECTION = {
       bottom: -SPORTER_PROPORTIONS.receiver.flatRadiusU,
     },
   },
-  ar: {
-    magazineWellX: [
-      MAGAZINE_WELL_CENTER_X - AR_ACTION_LAYOUT.magwellOpeningLengthU / 2,
-      MAGAZINE_WELL_CENTER_X + AR_ACTION_LAYOUT.magwellOpeningLengthU / 2,
-    ] as const,
-    outline: [
-      [-2.5, -1.75],
-      [-2.25, -2],
-      [1.5, -2],
-      [2.5, -1.75],
-      [2.5, 1.75],
-      [1.5, 2],
-      [-2.25, 2],
-      [-2.5, 1.75],
-    ] as const,
-    faces: {
-      top: { y: AR_ACTION_LAYOUT.receiverHeightU / 2, halfWidth: 1.75 },
-      portSide: 2,
-      handleSides: [-2, 2],
-      front: 0,
-      rear: -AR_ACTION_LAYOUT.receiverLengthU,
-      bottom: -AR_ACTION_LAYOUT.receiverHeightU / 2,
-    } as const,
-  },
+  ar: arReceiverSection(AR_ACTION_LAYOUT),
   ak: {
     clip: [AK_REAR_BEVEL.clip],
     // The dust cover's rounded corners stay in the wall above the carrier's cavity.
@@ -892,6 +956,19 @@ export const RECEIVER_SECTION = {
 const isSectionedReceiver = (section: string): section is keyof typeof RECEIVER_SECTION =>
   Object.hasOwn(RECEIVER_SECTION, section);
 
+type ReceiverSectionData = (typeof RECEIVER_SECTION)[keyof typeof RECEIVER_SECTION];
+
+/** The AR section follows its frame; the other sections are fixed. */
+const receiverSectionData = (
+  section: string,
+  arLayout: ARActionLayout | undefined,
+): ReceiverSectionData | undefined => {
+  if (arLayout !== undefined) {
+    return arReceiverSection(arLayout);
+  }
+  return isSectionedReceiver(section) ? RECEIVER_SECTION[section] : undefined;
+};
+
 const receiverShellSolids = ({
   section,
   feed,
@@ -908,6 +985,8 @@ const receiverShellSolids = ({
   frontFaceX,
   internalPockets = [],
   farPortWindow,
+  sectionData,
+  arLayout,
 }: {
   section: string;
   feed: string;
@@ -924,9 +1003,15 @@ const receiverShellSolids = ({
   frontFaceX: number;
   internalPockets?: readonly SectionPocket[];
   farPortWindow?: { readonly x: readonly [number, number]; readonly y: readonly [number, number] };
+  sectionData?: ReceiverSectionData;
+  arLayout?: ARActionLayout;
 }): Solid[] => {
-  const [xMin, xMax] = [isSectionedReceiver(section) ? RECEIVER_SECTION[section].faces.rear : -16, frontFaceX] as const;
-  const cavity = carrierCavityBounds(carrierPattern, carrierY);
+  // The AK receiver builds through the shared shell without a resolved context, so the section data
+  // still comes from the table when the caller passes none.
+  const resolvedSectionData: ReceiverSectionData | undefined =
+    sectionData ?? (isSectionedReceiver(section) ? RECEIVER_SECTION[section] : undefined);
+  const [xMin, xMax] = [resolvedSectionData ? resolvedSectionData.faces.rear : -16, frontFaceX] as const;
+  const cavity = carrierCavityBounds(carrierPattern, carrierY, arLayout?.frameId);
   if (section === 'sporter') {
     return cutSporterAction({
       solids: octagonalTubeWalls(
@@ -939,8 +1024,8 @@ const receiverShellSolids = ({
       magazine: integral ? { ...boltWellOpening(boltCalibre), x: MAGAZINE_WELL_CENTER_X } : undefined,
     });
   }
-  if (isSectionedReceiver(section)) {
-    const data = RECEIVER_SECTION[section];
+  if (resolvedSectionData) {
+    const data = resolvedSectionData;
     const clipPlanes =
       'clip' in data && data.clip.length > 0
         ? data.clip.map((plane) => ({
@@ -980,7 +1065,10 @@ const receiverShellSolids = ({
               sectionAxis: 1 as const,
               section:
                 section === 'ar'
-                  ? ([-AR_ACTION_LAYOUT.magwellOpeningWidthU / 2, AR_ACTION_LAYOUT.magwellOpeningWidthU / 2] as const)
+                  ? ([
+                      -(arLayout ?? AR_ACTION_LAYOUT).magwellOpeningWidthU / 2,
+                      (arLayout ?? AR_ACTION_LAYOUT).magwellOpeningWidthU / 2,
+                    ] as const)
                   : ([-1.25, 1.25] as const),
             },
           }
@@ -991,8 +1079,9 @@ const receiverShellSolids = ({
     }
     // The barrel extension has its own front seat. Do not enlarge the running
     // cavity behind the breech or cap the carrier's path into the buffer tube.
-    const breechX = xMax - AR_ACTION_LAYOUT.barrelExtensionLengthU;
-    const seatRadius = AR_ACTION_LAYOUT.barrelExtensionDiameterU / 2 + BOLT_CARRIER_RUNNING_CLEARANCE_U;
+    const ar = arLayout ?? AR_ACTION_LAYOUT;
+    const breechX = xMax - ar.barrelExtensionLengthU;
+    const seatRadius = ar.barrelExtensionDiameterU / 2 + BOLT_CARRIER_RUNNING_CLEARANCE_U;
     const spans = [
       { ...spec, x: [xMin, breechX] as const },
       {
@@ -1274,6 +1363,8 @@ interface ReceiverContext {
   readonly travel: BoltTravel;
   readonly carrierPattern: BoltCarrierPattern;
   readonly carrierY: number;
+  /** The receiver's AR action frame; undefined outside the `ar` section. */
+  readonly arLayout: ARActionLayout | undefined;
 }
 
 const receiverTravelClass = (params: Readonly<Record<string, string>>): BoltTravelClass => {
@@ -1328,7 +1419,7 @@ const receiverPorts = (context: ReceiverContext): PortDef[] => {
   }
   let barrelPortX = frontFaceX;
   if (params.section === 'ar') {
-    barrelPortX -= AR_ACTION_LAYOUT.barrelExtensionLengthU;
+    barrelPortX -= context.arLayout!.barrelExtensionLengthU;
   } else if (params.section === 'compact-smg') {
     barrelPortX = COMPACT_SMG_PROPORTIONS.barrel.breechU;
   }
@@ -1451,7 +1542,8 @@ const addReceiverHandleKeepOuts = (params: Readonly<Record<string, string>>, kee
   if (style.owner !== 'ar-charging-handle' || !('handClearanceU' in style)) {
     return;
   }
-  const solids = params.chargingHandle === 'inside' ? receiverActionDetails(params) : arChargingHandle.build({}).solids;
+  const solids =
+    params.chargingHandle === 'inside' ? receiverActionDetails(params) : arChargingHandleSolidsFor(params.actionFrame);
   if (solids.length === 0) {
     return;
   }
@@ -1567,6 +1659,8 @@ const receiverSolids = (context: ReceiverContext): Solid[] => {
     tubeFed,
     frontFaceX,
     rearFaceX,
+    sectionData,
+    arLayout,
   } = context;
   const handleStyleKey = carrierHandleStyleFor(params);
   const movingHandle = carrierHandleSolids(handleStyleKey, carrierPattern);
@@ -1585,7 +1679,7 @@ const receiverSolids = (context: ReceiverContext): Solid[] => {
         ] as const,
       }
     : undefined;
-  const internalPockets = params.section === 'ar' ? [AR_HANDLE_CHANNEL] : [];
+  const internalPockets = params.section === 'ar' && arLayout !== undefined ? [arHandleChannel(arLayout)] : [];
   if (params.section === 'pump' && tubeFed && carrierPattern === 'pump') {
     internalPockets.push(pumpActionBarSlot(bore), {
       x: PUMP_LOADING_PORT_X,
@@ -1608,6 +1702,8 @@ const receiverSolids = (context: ReceiverContext): Solid[] => {
     frontFaceX,
     ...(internalPockets.length > 0 ? { internalPockets } : {}),
     ...(farPortWindow ? { farPortWindow } : {}),
+    ...(sectionData === undefined ? {} : { sectionData }),
+    ...(arLayout === undefined ? {} : { arLayout }),
   });
   const opticRail: Solid[] = [];
   const railLift = boltRailLift(params, carrierY, receiverTop);
@@ -1710,7 +1806,7 @@ const receiver: PartFamily = {
     boltCalibre: boltCalibreParam,
     /** auto: charging handle. bolt: bolt travel/handle. pump: forend-driven. */
     action: choice('auto', 'bolt', 'pump'),
-    actionFrame: choice(AR_ACTION_LAYOUT.frameId),
+    actionFrame: choice(...Object.keys(AR_ACTION_LAYOUTS)),
     /** box: magazine through the lower. top: loaded from above. tube: tube magazine. */
     feed: choice('box', 'top', 'tube'),
     section: choice('standard', 'ar', 'pump', 'sporter', 'compact-smg'),
@@ -1746,13 +1842,10 @@ const receiver: PartFamily = {
   build(params): PartDef {
     const bore = cls(params, 'bore');
     const tubeFed = params.feed === 'tube';
-    if (params.section === 'ar' && (params.actionFrame ?? AR_ACTION_LAYOUT.frameId) !== AR_ACTION_LAYOUT.frameId) {
-      throw new Error(`AR receiver requires the selected action frame "${AR_ACTION_LAYOUT.frameId}".`);
-    }
+    // A part build resolves its frame from the param's value, so an unknown frame id fails here, not later.
+    const arLayout = params.section === 'ar' ? arLayoutFor(params.actionFrame) : undefined;
     const receiverDrop = params.action === 'pump' && tubeFed ? PUMP_RECEIVER_DROP : 0;
-    const sectionData = Object.hasOwn(RECEIVER_SECTION, params.section ?? 'standard')
-      ? RECEIVER_SECTION[params.section as keyof typeof RECEIVER_SECTION]
-      : undefined;
+    const sectionData = receiverSectionData(params.section ?? 'standard', arLayout);
     const frontFaceX = sectionData?.faces.front ?? 0;
     const rearFaceX = sectionData?.faces.rear ?? -16;
     const receiverBottom = (sectionData?.faces.bottom ?? -RECEIVER_FRONT_HALF_HEIGHT) - receiverDrop;
@@ -1771,7 +1864,7 @@ const receiver: PartFamily = {
       params.section === 'ar'
         ? {
             ...baseTravel,
-            restX: frontFaceX - AR_ACTION_LAYOUT.barrelExtensionLengthU + BOLT_CARRIER_ENVELOPES.ar.x[0],
+            restX: frontFaceX - arLayout!.barrelExtensionLengthU + carrierEnvelope('ar', arLayout!.frameId).x[0],
           }
         : baseTravel;
     const carrierY = carrierAxisY(carrierPattern, receiverDrop, params.section);
@@ -1786,9 +1879,10 @@ const receiver: PartFamily = {
       receiverBottom,
       receiverTop,
       carrierPattern,
-      portWindow: ejectionPortWindow(carrierPattern, travel.restX, carrierY, params.section === 'ar'),
+      portWindow: ejectionPortWindow(carrierPattern, travel.restX, carrierY, arLayout),
       travel,
       carrierY,
+      arLayout,
     };
     return {
       family: 'receiver',
@@ -2184,10 +2278,13 @@ const carrierHandleSolids = (styleKey: CarrierHandleStyle, pattern: BoltCarrierP
   }
 };
 
-const carrierTravelLength = (params: Readonly<Record<string, string>>): number =>
-  (params.pattern ?? carrierPatternFor(params)) === 'bolt'
-    ? boltStrokeUnits(boltCartridge(params.boltCalibre))
-    : BOLT_TRAVEL[receiverTravelClass(params)].length;
+const carrierTravelLength = (params: Readonly<Record<string, string>>): number => {
+  if ((params.pattern ?? carrierPatternFor(params)) === 'bolt') {
+    return boltStrokeUnits(boltCartridge(params.boltCalibre));
+  }
+  const klass = receiverTravelClass(params);
+  return klass === 'ar' ? arLayoutFor(params.actionFrame).carrierTravelU : BOLT_TRAVEL[klass].length;
+};
 
 const carrierHandleKeepOuts = (style: CarrierHandleStyle, solids: readonly Solid[], travel: number): KeepOut[] => {
   const definition = CARRIER_HANDLE_STYLES[style];
@@ -2291,6 +2388,10 @@ const boltCarrier: PartFamily = {
     action: { ...choice('auto', 'bolt', 'pump'), from: [{ port: 'mount', param: 'action' }] },
     bore: { ...size, from: [{ port: 'mount', param: 'bore' }] },
     pattern: choice('ar', 'ak', 'pump', 'smg', 'barrett', 'bolt'),
+    actionFrame: {
+      ...choice(...Object.keys(AR_ACTION_LAYOUTS)),
+      from: [{ port: 'mount', param: 'actionFrame' }],
+    },
     handleStyle: choice('auto', ...Object.keys(CARRIER_HANDLE_STYLES)),
     handleProfile: choice('standard', 'awm', 'sporter'),
     section: {
@@ -2302,7 +2403,7 @@ const boltCarrier: PartFamily = {
   build(params): PartDef {
     const pattern = (params.pattern ?? 'ar') as BoltCarrierPattern;
     const handleStyle = carrierHandleStyleFor(params);
-    const envelope = BOLT_CARRIER_ENVELOPES[pattern];
+    const envelope = carrierEnvelope(pattern, params.actionFrame);
     let boreScale = 1;
     if (params.bore === 'L') {
       boreScale = 1.2;
@@ -2321,6 +2422,7 @@ const boltCarrier: PartFamily = {
         : solid('carrier-body', [bodyX[0], envelope.y[0], bodyZ[0]], [bodyX[1], envelope.y[1], bodyZ[1]]),
     ];
     if (pattern === 'ar') {
+      const arLayout = arLayoutFor(params.actionFrame);
       solids.push(
         block('bolt-head', [-2.5, -0.4, -1.25 * boreScale], [-1.5, 0.4, 1.25 * boreScale]),
         block('gas-key', [-0.75, 0.5, -0.4], [1.1, 1, 0.4]),
@@ -2328,9 +2430,7 @@ const boltCarrier: PartFamily = {
           envelope.x[1],
           // Rear end meets the buffer mouth in battery, derived from the same
           // breech/upper layout as the receiver (carrier local +X is rearward).
-          AR_ACTION_LAYOUT.receiverLengthU -
-            (params.section === 'ar' ? AR_ACTION_LAYOUT.barrelExtensionLengthU : 0) +
-            envelope.x[0],
+          arLayout.receiverLengthU - (params.section === 'ar' ? arLayout.barrelExtensionLengthU : 0) + envelope.x[0],
         ]),
       );
     } else if (pattern === 'ak') {
@@ -2450,6 +2550,10 @@ const lower: PartFamily = {
       from: [{ port: 'top', param: 'section' }],
     },
     layout: { values: Object.keys(LOWER_LAYOUTS), default: 'conventional' },
+    actionFrame: {
+      ...choice(...Object.keys(AR_ACTION_LAYOUTS)),
+      from: [{ port: 'top', param: 'actionFrame' }],
+    },
     triggerGuard: { values: ['present', 'missing'], default: 'present', fault: ['missing'] },
     magazineWell: choice('standard', 'recessed'),
     integral: { ...choice('no', 'yes'), from: [{ port: 'magazine', param: 'integral' }] },
@@ -2459,7 +2563,15 @@ const lower: PartFamily = {
       from: [{ port: 'magazine', param: 'orientation' }],
     },
     magazineProfile: {
-      values: ['standard', 'smg', 'pistol', 'ak-curved', 'stanag-curved', 'stanag-straight'],
+      values: [
+        'standard',
+        'smg',
+        'pistol',
+        'ak-curved',
+        'stanag-curved',
+        'stanag-straight',
+        ...Object.keys(MAGAZINE_PROFILES),
+      ],
       default: 'standard',
       from: [{ port: 'magazine', param: 'profile' }],
     },
@@ -2478,8 +2590,9 @@ const lower: PartFamily = {
       section = boltMagazineSection(boltCartridge(params.boltCalibre));
     }
     // Half-extents round up to the grid (the SMG magazine is 3.3u deep).
-    const defaultWellDepth = layout === 'ar' ? AR_ACTION_LAYOUT.magwellOpeningLengthU : MAGAZINE_WELL_DEPTH;
-    const defaultWellWidth = layout === 'ar' ? AR_ACTION_LAYOUT.magwellOpeningWidthU : MAGAZINE_WELL_WIDTH;
+    const arLayout = layout === 'ar' ? arLayoutFor(params.actionFrame) : undefined;
+    const defaultWellDepth = layout === 'ar' ? arLayout!.magwellOpeningLengthU : MAGAZINE_WELL_DEPTH;
+    const defaultWellWidth = layout === 'ar' ? arLayout!.magwellOpeningWidthU : MAGAZINE_WELL_WIDTH;
     const wellDepth = section ? wellSpan(section.depth) : defaultWellDepth;
     const wellWidth = section ? wellSpan(section.width) : defaultWellWidth;
     const top: PortDef = {
@@ -2506,11 +2619,14 @@ const lower: PartFamily = {
         portY = SPORTER_PROPORTIONS.magazine.feedPortY - SPORTER_PROPORTIONS.lower.mountY;
       } else if (layout === 'ar' && orientation.kind === 'straight') {
         const feedLipY = Math.min(
-          BOLT_CARRIER_ENVELOPES.ar.y[0] - BOLT_CARRIER_RUNNING_CLEARANCE_U,
-          -AR_ACTION_LAYOUT.barrelExtensionDiameterU / 2 - BOLT_CARRIER_RUNNING_CLEARANCE_U,
+          carrierEnvelope('ar', params.actionFrame).y[0] - BOLT_CARRIER_RUNNING_CLEARANCE_U,
+          -arLayout!.barrelExtensionDiameterU / 2 - BOLT_CARRIER_RUNNING_CLEARANCE_U,
         );
-        const targetPortY = AR_ACTION_LAYOUT.receiverHeightU / 2 + feedLipY - MAGAZINE_INSERTION;
-        portY = Math.round(targetPortY / GRID) * GRID;
+        const targetPortY = arLayout!.receiverBelowBoreU + feedLipY - MAGAZINE_INSERTION;
+        // A STANAG's shaped top clears the feed lip at the nearest grid step; a photo-measured box has a square top,
+        // so its seat rounds down to stay under the barrel extension.
+        const snap = magazineProfileContent(magazineProfile) === undefined ? Math.round : Math.floor;
+        portY = snap(targetPortY / GRID) * GRID;
       } else if (orientation.kind === 'tilt' && supportsTiltedMagazineWell) {
         portY = -1.5 - (MAGAZINE_HOUSING_FRONT_LENGTH + MAGAZINE_HOUSING_REAR_LENGTH) / 2;
       } else if (params.magazineWell === 'recessed') {
@@ -2587,7 +2703,9 @@ const lower: PartFamily = {
       const x0 = centerX - wellDepth / 2;
       const x1 = centerX + wellDepth / 2;
       const z0 = wellWidth / 2;
-      const outerZ = LOWER_HALF_WIDTH;
+      // The well walls keep their clearance thickness even when the frame's opening is wider
+      // than the generic lower, so a wide frame widens the well block instead of losing walls.
+      const outerZ = Math.max(rearHalfWidth, z0 + MAGAZINE_WELL_CLEARANCE);
       const roofY = -1.5 + MAGAZINE_WELL_HEIGHT;
       const rearWall = solid('frame-rear', [minX, -1.5, -rearHalfWidth], [x0, 0, rearHalfWidth]);
       return [
@@ -2613,10 +2731,30 @@ const lower: PartFamily = {
     const integralRearExtension = params.integral === 'yes' ? (wellDepth - MAGAZINE_WELL_DEPTH) / 2 : 0;
     const conventionalGripX = (recessedConventional ? -12.75 : LOWER_GRIP_X.conventional) - integralRearExtension;
     const conventionalTriggerX = (recessedConventional ? -10.5 : LOWER_TRIGGER_X.conventional) - integralRearExtension;
-    const magazineHousing = (prefix: string, centerX: number, angle: number, frontPanelThickness: number): Solid[] => {
-      const halfDepth = MAGAZINE_WELL_DEPTH / 2;
-      const z0 = MAGAZINE_WELL_WIDTH / 2;
-      const outerZ = LOWER_HALF_WIDTH;
+    const magazineHousing = (
+      prefix: string,
+      centerX: number,
+      angle: number,
+      {
+        frontPanelThickness,
+        halfWidth = LOWER_HALF_WIDTH,
+        opening = { depth: MAGAZINE_WELL_DEPTH, width: MAGAZINE_WELL_WIDTH },
+        skirt = { front: MAGAZINE_HOUSING_FRONT_LENGTH, rear: MAGAZINE_HOUSING_REAR_LENGTH },
+        rearWall = MAGAZINE_HOUSING_REAR_WALL,
+      }: {
+        /** The rear wall's thickness behind the well. */
+        rearWall?: number;
+        frontPanelThickness: number;
+        halfWidth?: number;
+        /** The well the housing hangs from, so a frame's larger opening carries down into its skirt. */
+        opening?: { readonly depth: number; readonly width: number };
+        /** How far the skirt hangs below the well at its front and rear. */
+        skirt?: { readonly front: number; readonly rear: number };
+      },
+    ): Solid[] => {
+      const halfDepth = opening.depth / 2;
+      const z0 = opening.width / 2;
+      const outerZ = Math.max(halfWidth, z0);
       const rotateProfile = (profile: readonly Vec2[]): Vec2[] =>
         profile.map(([x, y]) => [
           centerX + x * Math.cos(angle) - y * Math.sin(angle),
@@ -2628,18 +2766,18 @@ const lower: PartFamily = {
         wall(
           'rear',
           [
-            [-halfDepth - MAGAZINE_HOUSING_REAR_WALL, -MAGAZINE_HOUSING_REAR_LENGTH],
-            [-halfDepth, -MAGAZINE_HOUSING_REAR_LENGTH],
+            [-halfDepth - rearWall, -skirt.rear],
+            [-halfDepth, -skirt.rear],
             [-halfDepth, 0],
-            [-halfDepth - MAGAZINE_HOUSING_REAR_WALL, 0],
+            [-halfDepth - rearWall, 0],
           ],
           [-outerZ, outerZ],
         ),
         wall(
           'front',
           [
-            [halfDepth, -MAGAZINE_HOUSING_FRONT_LENGTH],
-            [halfDepth + frontPanelThickness, -MAGAZINE_HOUSING_FRONT_LENGTH],
+            [halfDepth, -skirt.front],
+            [halfDepth + frontPanelThickness, -skirt.front],
             [halfDepth + frontPanelThickness, 0],
             [halfDepth, 0],
           ],
@@ -2648,8 +2786,8 @@ const lower: PartFamily = {
         wall(
           'left',
           [
-            [-halfDepth, -MAGAZINE_HOUSING_REAR_LENGTH],
-            [halfDepth, -MAGAZINE_HOUSING_FRONT_LENGTH],
+            [-halfDepth, -skirt.rear],
+            [halfDepth, -skirt.front],
             [halfDepth, 0],
             [-halfDepth, 0],
           ],
@@ -2658,8 +2796,8 @@ const lower: PartFamily = {
         wall(
           'right',
           [
-            [-halfDepth, -MAGAZINE_HOUSING_REAR_LENGTH],
-            [halfDepth, -MAGAZINE_HOUSING_FRONT_LENGTH],
+            [-halfDepth, -skirt.rear],
+            [halfDepth, -skirt.front],
             [halfDepth, 0],
             [-halfDepth, 0],
           ],
@@ -2692,25 +2830,109 @@ const lower: PartFamily = {
 
     switch (params.layout) {
       case 'ar': {
+        // The well keeps the family's centre, where the receiver opens for it, unless a deeper frame opening would
+        // cross the receiver's front face. A deeper well whose housing would then reach the trigger guard moves the
+        // trigger and grip back instead, so the guard meets the housing's rear wall as it does on the rifle.
+        // A frame with a traced lower takes its well, grip, trigger depth, skirt and rear from the photo; the
+        // lower's y is measured from the receiver's bottom face, the photo's from the bore.
+        const traced = AR_LOWER_PROPORTIONS[arLayout!.frameId];
+        const fromBore = (y: number) => y + arLayout!.receiverBelowBoreU;
+        const arWellCenterX = Math.min(traced?.wellCenterX ?? conventionalWell.port.pos[0], -GRID - wellDepth / 2);
+        const housingRearX = arWellCenterX - wellDepth / 2 - MAGAZINE_HOUSING_REAR_WALL;
+        const guardFrontX =
+          triggerGuards.length > 0
+            ? Math.max(...triggerGuards.flatMap((guard) => localSolidBounds(guard)[1][0]))
+            : housingRearX;
+        const gripShift = Math.min(0, housingRearX - guardFrontX);
+        const arTriggerX = triggerX + gripShift;
+        // A traced trigger group takes its finger space and wall thicknesses from the photo, absolute in x.
+        const tracedTrigger = traced?.trigger;
+        const arTriggerFinger =
+          tracedTrigger === undefined
+            ? trigger(arTriggerX)
+            : keepOut(
+                'trigger-finger',
+                [tracedTrigger.fingerRearX, fromBore(tracedTrigger.fingerBottomU), -1],
+                [tracedTrigger.fingerFrontX, fromBore(tracedTrigger.fingerTopU), 1],
+              );
+        const arGripX = traced?.gripX ?? LOWER_GRIP_X.ar + gripShift;
+        const guardWalls =
+          tracedTrigger === undefined
+            ? LOWER_TRIGGER_GUARD
+            : { ...LOWER_TRIGGER_GUARD, sideWall: tracedTrigger.guardWallU };
+        // A traced guard's top sits below the grip's contact vertex, so its rear wall meets the leaning grip there.
+        const guardRearX =
+          tracedTrigger === undefined
+            ? lowerGripContactX(layout, arGripX)
+            : lowerGripFrontXAt(arGripX, fromBore(tracedTrigger.fingerTopU) + TRIGGER_GUARD.verticalWall);
+        const arTriggerGuards =
+          triggerGuards.length > 0 ? triggerGuardSolids(arTriggerFinger, guardRearX, guardWalls) : [];
+        // Above a traced guard the lower's body comes down to the guard's top bar, as the photo's pinned trigger
+        // housing does; the blade hangs from there inside the guard.
+        const triggerBody: Solid[] =
+          tracedTrigger === undefined
+            ? []
+            : [
+                solid(
+                  'trigger-housing',
+                  [
+                    tracedTrigger.fingerRearX - LOWER_TRIGGER_GUARD.innerXClearance,
+                    fromBore(tracedTrigger.fingerTopU) + TRIGGER_GUARD.verticalWall,
+                    -(traced?.halfWidthU ?? LOWER_HALF_WIDTH),
+                  ],
+                  [
+                    tracedTrigger.fingerFrontX + LOWER_TRIGGER_GUARD.innerXClearance + tracedTrigger.guardWallU,
+                    -1.5,
+                    traced?.halfWidthU ?? LOWER_HALF_WIDTH,
+                  ],
+                ),
+                ...tracedTrigger.blade.segments.map((segment, index) =>
+                  extrudedPolygon(
+                    `trigger-blade-${index}`,
+                    segment.map(([x, y]) => [x, fromBore(y)] as Vec2),
+                    [-tracedTrigger.blade.halfWidthU, tracedTrigger.blade.halfWidthU],
+                  ),
+                ),
+              ];
+        const arWell = well(arWellCenterX);
+        const lowerRearX = Math.min(traced?.rearX ?? -14.75, lowerGripRearX(arGripX));
         const frame = magazineWellFrame(
-          Math.min(-14.75, lowerGripRearX(LOWER_GRIP_X.ar)),
-          conventionalWell.port.pos[0] + wellDepth / 2 + MAGAZINE_WELL_CLEARANCE,
-          conventionalWell.port.pos[0],
+          lowerRearX,
+          arWellCenterX + wellDepth / 2 + MAGAZINE_WELL_CLEARANCE,
+          arWellCenterX,
+          traced?.halfWidthU,
         );
         const frontPanel = frame.find(({ id }) => id === 'frame-front');
         if (frontPanel?.kind !== 'box') {
           throw new Error('Expected a box-shaped magazine-well front panel.');
         }
         const frontPanelThickness = frontPanel.box.half[0] * 2;
+        // A wider frame widens the well block and its housing skirt together, so the walls survive.
+        const wellOuterZ = Math.max(LOWER_HALF_WIDTH, wellWidth / 2 + MAGAZINE_WELL_CLEARANCE);
         return {
           family: 'lower',
           solids: [
             ...frame,
-            ...magazineHousing('magazine-housing', conventionalWell.port.pos[0], 0, frontPanelThickness),
-            ...triggerGuards,
+            ...magazineHousing('magazine-housing', arWellCenterX, 0, {
+              frontPanelThickness,
+              halfWidth: wellOuterZ,
+              opening: { depth: wellDepth, width: wellWidth },
+              ...(traced === undefined
+                ? {}
+                : {
+                    // The skirt hangs from the well's floor, 1.5u below the lower's top.
+                    skirt: {
+                      front: -1.5 - fromBore(traced.housingFrontBottomU),
+                      rear: -1.5 - fromBore(traced.housingRearBottomU),
+                    },
+                    ...(traced.trigger === undefined ? {} : { rearWall: traced.trigger.housingRearWallU }),
+                  }),
+            }),
+            ...triggerBody,
+            ...arTriggerGuards,
           ],
-          ports: [top, grip(LOWER_GRIP_X.ar), conventionalWell.port],
-          keepOuts: [triggerFinger, conventionalWell.path],
+          ports: [top, grip(arGripX), arWell.port],
+          keepOuts: [arTriggerFinger, arWell.path],
           axes: [],
         };
       }
@@ -2797,7 +3019,9 @@ const lower: PartFamily = {
         );
         const tiltedHousing =
           orientation.kind === 'tilt' && supportsTiltedMagazineWell
-            ? magazineHousing('tilt-housing', conventionalWell.port.pos[0], 0, MAGAZINE_WELL_CLEARANCE)
+            ? magazineHousing('tilt-housing', conventionalWell.port.pos[0], 0, {
+                frontPanelThickness: MAGAZINE_WELL_CLEARANCE,
+              })
             : [];
         return {
           family: 'lower',
@@ -3003,6 +3227,10 @@ const barrel: PartFamily = {
   params: {
     bore: { ...size, from: [{ port: 'rear', param: 'bore' }] },
     length: size,
+    actionFrame: {
+      ...choice(...Object.keys(AR_ACTION_LAYOUTS)),
+      from: [{ port: 'rear', param: 'actionFrame' }],
+    },
     section: {
       ...choice('standard', 'ar', 'pump', 'ak', 'sporter', 'compact-smg'),
       from: [{ port: 'rear', param: 'section' }],
@@ -3055,13 +3283,14 @@ const barrel: PartFamily = {
         ? [{ id: 'support-lug', mount: 'lug', gender: 'female', pos: [fore, -tubeDrop, 0], normal: NEG_X, up: Y }]
         : [];
     const tube = octagonalPrism('tube', r, [barrelSeatX, len]);
-    const breechX = params.section === 'ar' ? -AR_ACTION_LAYOUT.barrelExtensionLengthU : 0;
+    const arLayout = params.section === 'ar' ? arLayoutFor(params.actionFrame) : undefined;
+    const breechX = params.section === 'ar' ? -arLayout!.barrelExtensionLengthU : 0;
     const extension =
       breechX < 0
         ? [
             octagonalPrism(
               'barrel-extension',
-              params.section === 'ar' ? AR_ACTION_LAYOUT.barrelExtensionDiameterU / 2 : BARREL_RADIUS[bore],
+              params.section === 'ar' ? arLayout!.barrelExtensionDiameterU / 2 : BARREL_RADIUS[bore],
               [breechX, 0],
             ),
           ]
@@ -3600,6 +3829,10 @@ const handguard: PartFamily = {
         { port: 'rear', param: 'bore' },
       ],
     },
+    actionFrame: {
+      ...choice(...Object.keys(AR_ACTION_LAYOUTS)),
+      from: [{ port: 'rear', param: 'actionFrame' }],
+    },
     clearance: size,
     bore: { values: ['none', ...SIZE_CLASSES], default: 'none', from: [{ port: 'front', param: 'bore' }] },
     layout: choice('standard', 'ak', 'ar'),
@@ -3609,8 +3842,15 @@ const handguard: PartFamily = {
   },
   build(params): PartDef {
     const lengthClass = cls(params, 'length');
+    // A frame's traced free-float rail sets its own length and the height of its top rail.
+    const tracedRail =
+      params.section === 'ar' && params.mount === 'free-float'
+        ? AR_FREE_FLOAT_HANDGUARDS[arLayoutFor(params.actionFrame).frameId]
+        : undefined;
     let len: number;
-    if (params.layout === 'ak') {
+    if (tracedRail !== undefined) {
+      len = tracedRail.lengthU;
+    } else if (params.layout === 'ak') {
       len = akHandguardLength(lengthClass);
     } else if (params.layout === 'ar' && params.mount !== 'free-float') {
       len = arHandguardLength(lengthClass);
@@ -3618,6 +3858,12 @@ const handguard: PartFamily = {
       len = standardHandguardLength(lengthClass, params.section);
     }
     const bore = (params.barrelBore ?? (params.bore === 'none' ? 'M' : (params.bore ?? 'M'))) as SizeClass;
+    // An AR section's rear sits over the frame's fat barrel extension, so the tube's inner radius
+    // clears both the barrel and the extension; the fault fits keep their deliberate misfit.
+    const extensionFloor =
+      params.section === 'ar'
+        ? arLayoutFor(params.actionFrame).barrelExtensionDiameterU / 2 + HANDGUARD_CLEARANCE.M
+        : 0;
     // On an AK receiver a plain handguard stays under the gas cylinder, giving up clearance before wall.
     const ceiling =
       params.section === 'ak'
@@ -3627,7 +3873,7 @@ const handguard: PartFamily = {
       params.fit === 'too-tight'
         ? BARREL_RADIUS[bore] - 0.5
         : Math.min(
-            BARREL_RADIUS[bore] + HANDGUARD_CLEARANCE[(params.clearance ?? 'M') as SizeClass],
+            Math.max(BARREL_RADIUS[bore] + HANDGUARD_CLEARANCE[(params.clearance ?? 'M') as SizeClass], extensionFloor),
             ceiling - HANDGUARD_WALL_THICKNESS,
           );
     const akLayout = params.layout === 'ak';
@@ -3639,6 +3885,7 @@ const handguard: PartFamily = {
     } else {
       outerY = Math.min(ceiling, inner + HANDGUARD_WALL_THICKNESS);
     }
+    const topY = tracedRail?.topU ?? outerY;
     const outerZ =
       params.fit === 'oversized'
         ? RECEIVER_FRONT_HALF_WIDTH + 1
@@ -3686,7 +3933,7 @@ const handguard: PartFamily = {
       bodySolids = akHandguardSolids(len);
     } else {
       bodySolids = [
-        solid('top', [0, inner, -outerZ], [len, outerY, outerZ]),
+        solid('top', [0, inner, -outerZ], [len, topY, outerZ]),
         solid('bottom', [0, -outerY, -outerZ], [len, -inner, outerZ]),
         solid('left', [0, -inner, -outerZ], [len, inner, -inner]),
         solid('right', [0, -inner, inner], [len, inner, outerZ]),
@@ -3715,7 +3962,7 @@ const handguard: PartFamily = {
                 id: 'rail',
                 mount: 'rail-top',
                 gender: 'female' as const,
-                pos: [2, outerY, 0] as Vec3,
+                pos: [2, topY, 0] as Vec3,
                 normal: Y,
                 up: X,
                 slots: { count: (len - 4) / 2 + 1, pitch: 2 },
@@ -4478,7 +4725,15 @@ export const magazine: PartFamily = {
   params: {
     boltCalibre: { ...boltCalibreParam, from: [{ port: 'top', param: 'boltCalibre' }] },
     length: { values: ['5-round', '10-round', ...SIZE_CLASSES], default: 'M' },
-    profile: choice('standard', 'smg', 'pistol', 'ak-curved', 'stanag-curved', 'stanag-straight'),
+    profile: choice(
+      'standard',
+      'smg',
+      'pistol',
+      'ak-curved',
+      'stanag-curved',
+      'stanag-straight',
+      ...Object.keys(MAGAZINE_PROFILES),
+    ),
     integral: choice('no', 'yes'),
     wellBody: { values: Object.keys(BOLT_WELL_PROFILES), default: 'standard' },
     orientation: choice(...MAGAZINE_ORIENTATIONS),
@@ -4488,24 +4743,37 @@ export const magazine: PartFamily = {
       from: [{ port: 'top', param: 'section' }],
     },
   },
-  validateParams: (params) =>
-    params.profile === 'stanag-straight' && (params.length ?? 'M') !== 'M' ? STRAIGHT_STANAG_LENGTH_REFUSAL : undefined,
+  validateParams: (params) => {
+    if ((params.length ?? 'M') === 'M') {
+      return;
+    }
+    if (params.profile === 'stanag-straight') {
+      return STRAIGHT_STANAG_LENGTH_REFUSAL;
+    }
+    // A photo-measured magazine has the one length it was measured at.
+    return magazineProfileContent(params.profile) === undefined
+      ? undefined
+      : `The ${params.profile} magazine is measured at M length only.`;
+  },
   build(params): PartDef {
     const profile = (params.profile ?? 'standard') as MagazineProfile;
     if (profile === 'stanag-straight' && (params.length ?? 'M') !== 'M') {
       throw new Error(STRAIGHT_STANAG_LENGTH_REFUSAL);
     }
+    const measured = magazineProfileContent(params.profile);
     const tabledLength = params.section === 'compact-smg' && profile === 'smg';
-    const magazineLength = tabledLength
-      ? { size: 'L' as const, length: COMPACT_SMG_PROPORTIONS.magazine.lengthU }
-      : magazineLengthData(params.length, profile, params.variant);
+    let magazineLength: { readonly size: SizeClass; readonly length: number };
+    if (measured !== undefined) {
+      magazineLength = { size: 'M', length: measured.bodyLengthU };
+    } else if (tabledLength) {
+      magazineLength = { size: 'L', length: COMPACT_SMG_PROPORTIONS.magazine.lengthU };
+    } else {
+      magazineLength = magazineLengthData(params.length, profile, params.variant);
+    }
     const isCompactBoltMagazine = params.length === '5-round' || params.length === '10-round';
     const wellProfile = boltWellProfile(params.wellBody ?? 'standard');
     const len = wellProfile.bodyLengthU ?? magazineLength.length;
-    const { depth, width } =
-      params.integral === 'yes'
-        ? boltMagazineSection(boltCartridge(params.boltCalibre))
-        : magazineBodySection(profile, magazineLength.size);
+    const { depth, width } = magazineSectionFor(params, profile, magazineLength.size, measured);
     let curveProfile: CurvedMagazineProfile | undefined;
     if (params.profile === 'ak-curved') {
       curveProfile = CURVED_MAGAZINE_PROFILES[params.variant === 'akm' ? 'akm' : 'ak74'];

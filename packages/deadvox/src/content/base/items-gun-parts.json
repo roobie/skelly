@@ -19,6 +19,32 @@
         "tiers": [],
         "usage": []
       },
+      "id": "barrel_ar_large_long",
+      "model": "barrel_ar_large_long",
+      "name": "AR-10 long barrel",
+      "notLoot": false,
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "barrel_ar_large_medium",
+      "model": "barrel_ar_large_medium",
+      "name": "AR-10 barrel",
+      "notLoot": false,
+      "size": [1, 4],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "barrel_ar_medium",
       "model": "barrel_ar_medium",
       "name": "AR barrel",
@@ -84,6 +110,19 @@
         "tiers": [],
         "usage": []
       },
+      "id": "bolt_carrier_ar_large",
+      "model": "bolt_carrier_ar_large",
+      "name": "AR-10 bolt carrier",
+      "notLoot": false,
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "bolt_carrier_bolt",
       "model": "bolt_carrier_bolt",
       "name": "Bolt carrier",
@@ -139,6 +178,19 @@
       "id": "charging_handle_ar",
       "model": "charging_handle_ar",
       "name": "AR charging handle",
+      "notLoot": false,
+      "size": [1, 1],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "charging_handle_ar_large",
+      "model": "charging_handle_ar_large",
+      "name": "AR-10 charging handle",
       "notLoot": false,
       "size": [1, 1],
       "workInProgress": false
@@ -253,6 +305,19 @@
         "tiers": [],
         "usage": []
       },
+      "id": "grip_ar_long",
+      "model": "grip_ar_long",
+      "name": "Long pistol grip",
+      "notLoot": false,
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "grip_standard",
       "model": "grip_standard",
       "name": "Pistol grip",
@@ -284,6 +349,32 @@
       "name": "AR handguard",
       "notLoot": false,
       "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "handguard_ar_large_clamped",
+      "model": "handguard_ar_large_clamped",
+      "name": "AR-10 handguard",
+      "notLoot": false,
+      "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "handguard_ar_large_free_float",
+      "model": "handguard_ar_large_free_float",
+      "name": "AR-10 rail",
+      "notLoot": false,
+      "size": [1, 4],
       "workInProgress": false
     },
     {
@@ -334,6 +425,19 @@
       "id": "lower_ar",
       "model": "lower_ar",
       "name": "AR lower receiver",
+      "notLoot": false,
+      "size": [2, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "lower_ar_large",
+      "model": "lower_ar_large",
+      "name": "AR-10 lower receiver",
       "notLoot": false,
       "size": [2, 2],
       "workInProgress": false
@@ -414,6 +518,19 @@
       "name": "AR upper receiver",
       "notLoot": false,
       "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "receiver_ar_large",
+      "model": "receiver_ar_large",
+      "name": "AR-10 upper receiver",
+      "notLoot": false,
+      "size": [1, 4],
       "workInProgress": false
     },
     {
@@ -555,6 +672,19 @@
       "id": "stock_ak_long",
       "model": "stock_ak_long",
       "name": "AK buttstock",
+      "notLoot": false,
+      "size": [2, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "stock_m4_long",
+      "model": "stock_m4_long",
+      "name": "M4 stock, long",
       "notLoot": false,
       "size": [2, 3],
       "workInProgress": false

@@ -1,0 +1,90 @@
+{
+  "assembly": {
+    "connections": [
+      {
+        "from": "receiver.charging-handle",
+        "to": "charging-handle.mount"
+      },
+      {
+        "from": "receiver.lower",
+        "to": "lower.top"
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear"
+      },
+      {
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount"
+      },
+      {
+        "from": "receiver.handguard",
+        "to": "handguard.rear"
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top"
+      },
+      {
+        "from": "lower.magazine",
+        "to": "magazine.top"
+      },
+      {
+        "from": "receiver.stock",
+        "to": "stock.front"
+      },
+      {
+        "from": "handguard.rail",
+        "slot": 15,
+        "to": "rail-front-sight.base"
+      }
+    ],
+    "description": "AR-10 class rifle in 7.62×51 on the large AR frame, with a free-floating rail and a front sight on it.",
+    "name": "archetype-ar-large",
+    "parts": {
+      "barrel": {
+        "item": "barrel_ar_large_long"
+      },
+      "bolt-carrier": {
+        "item": "bolt_carrier_ar_large"
+      },
+      "charging-handle": {
+        "item": "charging_handle_ar_large"
+      },
+      "grip": {
+        "item": "grip_ar_long"
+      },
+      "handguard": {
+        "item": "handguard_ar_large_free_float"
+      },
+      "lower": {
+        "item": "lower_ar_large"
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "M",
+          "profile": "sr25-straight"
+        }
+      },
+      "rail-front-sight": {
+        "family": "rail-front-sight"
+      },
+      "receiver": {
+        "item": "receiver_ar_large"
+      },
+      "stock": {
+        "item": "stock_m4_long"
+      }
+    },
+    "root": "receiver"
+  },
+  "calibre": "7.62x51",
+  "format": 1,
+  "locks": {
+    "optionalParts": [],
+    "params": {}
+  },
+  "status": "published",
+  "template": "ar"
+}

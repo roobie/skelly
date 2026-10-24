@@ -348,6 +348,15 @@
     }
   },
   {
+    "id": "receiver_ar_large",
+    "kind": "part",
+    "source": "receiver_ar_large",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "receiver_pump",
     "kind": "part",
     "source": "receiver_pump",
@@ -375,6 +384,15 @@
     }
   },
   {
+    "id": "charging_handle_ar_large",
+    "kind": "part",
+    "source": "charging_handle_ar_large",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "bolt_carrier_ak",
     "kind": "part",
     "source": "bolt_carrier_ak",
@@ -387,6 +405,15 @@
     "id": "bolt_carrier_ar",
     "kind": "part",
     "source": "bolt_carrier_ar",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "bolt_carrier_ar_large",
+    "kind": "part",
+    "source": "bolt_carrier_ar_large",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.0040000000000000001
@@ -447,6 +474,15 @@
     }
   },
   {
+    "id": "lower_ar_large",
+    "kind": "part",
+    "source": "lower_ar_large",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "lower_pump",
     "kind": "part",
     "source": "lower_pump",
@@ -477,6 +513,24 @@
     "id": "barrel_ar_medium",
     "kind": "part",
     "source": "barrel_ar_medium",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "barrel_ar_large_medium",
+    "kind": "part",
+    "source": "barrel_ar_large_medium",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "barrel_ar_large_long",
+    "kind": "part",
+    "source": "barrel_ar_large_long",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.0040000000000000001
@@ -519,6 +573,24 @@
     }
   },
   {
+    "id": "handguard_ar_large_clamped",
+    "kind": "part",
+    "source": "handguard_ar_large_clamped",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "handguard_ar_large_free_float",
+    "kind": "part",
+    "source": "handguard_ar_large_free_float",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "handguard_sporter",
     "kind": "part",
     "source": "handguard_sporter",
@@ -555,6 +627,15 @@
     }
   },
   {
+    "id": "grip_ar_long",
+    "kind": "part",
+    "source": "grip_ar_long",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "grip_ak",
     "kind": "part",
     "source": "grip_ak",
@@ -576,6 +657,15 @@
     "id": "stock_m4_medium",
     "kind": "part",
     "source": "stock_m4_medium",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "stock_m4_long",
+    "kind": "part",
+    "source": "stock_m4_long",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.0040000000000000001
