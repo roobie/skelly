@@ -156,7 +156,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 60;
+export const SAVE_SCHEMA_VERSION = 61;
 export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -379,6 +379,13 @@ itemSchema = obj({
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
   cartridges: opt(arr(str({ id: true }))),
   paperMap: opt(obj({ x: safeInt, z: safeInt })),
+  liquidBurnRemainder: opt(num({ integer: true, min: 0, max: 999_999 })),
+  liquidContents: opt(
+    union(
+      obj({ kind: enumeration(['empty']) }),
+      obj({ kind: enumeration(['filled']), liquid: str({ id: true }), volumeMicrolitres: positiveInt }),
+    ),
+  ),
   cargo: opt(arr(positiveInt)),
   slots: opt(record(lazy(() => itemSchema))),
   firearm: opt(

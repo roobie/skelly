@@ -3,6 +3,7 @@ read_if:
   - you change the test house, its garage, its fixture stock or its debug gate
   - you change parking bays or where the test house places vehicles
   - you add a feature demonstration near the test-house spawn
+  - you change the liquid-service demonstration's normal-mode boundary
   - you benchmark the test house at a different block scale
   - you change house supply, powered furnishings or player power controls
 ---
@@ -34,11 +35,14 @@ addition must explicitly decide whether it belongs in normal mode or only debug 
 and record its reason here. Re-evaluate this choice whenever the house gains something;
 there is no blanket permission based on where an earlier prop was placed.
 
-Ordinary furnishings and charging stay in normal mode because they demonstrate
-ordinary interactions without a derived supply catalogue. Sharing the house supply
-makes charging respond to the same blackout as other appliances, while nearby portable
-equipment avoids debug inventory edits or travel. Derived repair stock and the handling
-range are debug-only because their purpose is repeatable system evaluation. See `src/game/play.ts`, `populateTestHouseRepairCorner`, and
+Ordinary furnishings, charging and liquid-service stock stay in normal mode because
+they demonstrate ordinary interactions without a derived supply catalogue. Sharing the
+house supply makes charging respond to the same blackout as other appliances, while
+nearby portable equipment avoids debug inventory edits or travel. Liquid service shares
+the charging corner so the player can compare portable light sources without privileged
+setup. See `src/content/base/templates-test-house.jsonnet`, `test_house_charging`.
+Derived repair stock and the handling range are debug-only because their purpose is
+repeatable system evaluation. See `src/game/play.ts`, `populateTestHouseRepairCorner`, and
 `src/game/worldSetup.ts`, `DebugTestHouseSite`. The range's owning rule remains in
 `DESIGN.md`, "Debug scenes".
 

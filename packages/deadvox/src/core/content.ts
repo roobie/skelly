@@ -502,11 +502,39 @@ const checkItemLight = (item: ItemDef, hasIgniter: boolean, registry: Registry, 
   if (light?.fuelPerGameHour !== undefined && light.burnTimeGameHours !== undefined) {
     report('items', item.id, '.light.fuelPerGameHour', 'self-fuelled lights cannot also have a burn time');
   }
-  if (light?.burning && light.burnTimeGameHours === undefined && light.fuelPerGameHour === undefined) {
+  checkLiquidFuel(item, registry, report);
+  if (
+    light?.burning &&
+    light.burnTimeGameHours === undefined &&
+    light.fuelPerGameHour === undefined &&
+    !light.liquidFuel
+  ) {
     report('items', item.id, '.light.burning', 'burning rules need a burn time or a fuel rate');
   }
   if (light?.burning?.ignition === 'firestarter' && !hasIgniter) {
     report('items', item.id, '.light.burning.ignition', 'needs at least one item with an igniter component');
+  }
+};
+
+const checkLiquidFuel = (item: ItemDef, registry: Registry, report: Report): void => {
+  const { light } = item;
+  if (!light?.liquidFuel) {
+    return;
+  }
+  if (
+    !item.vessel ||
+    light.power ||
+    item.igniter ||
+    item.tool?.fuel ||
+    light.burnTimeGameHours !== undefined ||
+    light.fuelPerGameHour !== undefined
+  ) {
+    report('items', item.id, '.light.liquidFuel', 'liquid fuel requires a vessel and no other light fuel mechanism');
+  }
+  for (const liquid of light.liquidFuel.accepts) {
+    if (!(registry.liquids.has(liquid) && item.vessel?.accepts.includes(liquid))) {
+      report('items', item.id, '.light.liquidFuel.accepts', 'fuel must be registered and accepted by the vessel');
+    }
   }
 };
 
@@ -810,6 +838,44 @@ const checkPaperMap = (item: ItemDef, report: Report): void => {
   }
 };
 
+const checkVessel = (item: ItemDef, registry: Registry, report: Report): void => {
+  const { vessel } = item;
+  if (!vessel) {
+    return;
+  }
+  if (item.stack !== undefined) {
+    report('items', item.id, '.stack', 'liquid vessels cannot stack');
+  }
+  if (
+    item.canister ||
+    item.battery ||
+    item.igniter ||
+    item.tool?.fuel ||
+    item.light?.power ||
+    item.light?.burnTimeGameHours !== undefined ||
+    item.light?.fuelPerGameHour !== undefined ||
+    item.serving ||
+    item.food ||
+    item.unpack
+  ) {
+    report('items', item.id, '.vessel', 'liquid vessels cannot declare another consumable balance or unpacking');
+  }
+  for (const liquid of vessel.accepts) {
+    if (!registry.liquids.has(liquid)) {
+      report('items', item.id, '.vessel.accepts', `no liquid "${liquid}"`);
+    }
+  }
+  const initial = vessel.initialContents;
+  if (initial.kind === 'filled') {
+    if (!(vessel.accepts.includes(initial.liquid) && registry.liquids.has(initial.liquid))) {
+      report('items', item.id, '.vessel.initialContents', 'initial liquid must be registered and accepted');
+    }
+    if (initial.volumeMicrolitres > vessel.capacityMicrolitres) {
+      report('items', item.id, '.vessel.initialContents', 'initial volume exceeds capacity');
+    }
+  }
+};
+
 const checkItems = (registry: Registry, report: Report) => {
   const items = [...registry.items.values()];
   checkInventoryNameCollisions(items, report);
@@ -826,6 +892,7 @@ const checkItems = (registry: Registry, report: Report) => {
       }
     }
     checkItemMass(item, registry, report);
+    checkVessel(item, registry, report);
     checkItemLight(item, hasIgniter, registry, report);
     checkItemLightModel(item, registry, report);
     checkItemHeldDisplay(item, registry, report);

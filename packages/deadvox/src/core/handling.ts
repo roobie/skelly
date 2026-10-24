@@ -182,6 +182,14 @@ export class HandlingQueue {
     return job;
   }
 
+  /** A completed action's continuation precedes unrelated waiting jobs. */
+  enqueueNextAction(jobType: string, label: string, duration: number, params: JobParams): ActionJob {
+    const job = this.enqueueAction(jobType, label, duration, params);
+    this.jobs.pop();
+    this.jobs.unshift(job);
+    return job;
+  }
+
   cancel(): void {
     this.jobs.length = 0;
     this.announced = undefined;
