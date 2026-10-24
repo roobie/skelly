@@ -7,7 +7,8 @@ import { sitePalette, terrainShapeOf } from './core/sitePalette.ts';
 import { generateColumn, worldGroundAt } from './core/worldgen.ts';
 import { buildBundledContent } from './game/bundledContent.ts';
 import { DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
-import { inputBindings } from './game/inputBindings.ts';
+import { inputBindings, keyboardInput } from './game/inputBindings.ts';
+import { MAP_SLICE_ACTIONS, mapSliceKeys } from './game/mapSliceInput.ts';
 import { siteForReviewMap } from './game/worldSetup.ts';
 import {
   hillshade,
@@ -90,29 +91,22 @@ document.querySelector('#seed')!.textContent = `${seed} · ${config.site}`;
 inputBindings.setDebugRun();
 
 type KeyEventLike = Parameters<NonNullable<typeof globalThis.onkeydown>>[0];
-const SLICE_ACTIONS = ['debug.map-slice-down', 'debug.map-slice-up', 'debug.map-slice-surface'] as const;
 
-/** The slice action a key event is bound to, so a rebind moves the map's keys too. */
-const sliceAction = (event: KeyEventLike): (typeof SLICE_ACTIONS)[number] | undefined =>
-  SLICE_ACTIONS.find((action) =>
-    inputBindings
-      .chords(action)
-      .some((chord) => chord.code === event.code && (chord.modifier === 'shift') === event.shiftKey),
-  );
-
-/** Steps the slice for a bound key; the map owns these keys, so they are not forwarded to the game. */
-const sliceKey = (event: KeyEventLike): boolean => {
-  const action = sliceAction(event);
-  if (!action) {
-    return false;
-  }
-  event.preventDefault();
+const sliceKeys = mapSliceKeys(keyboardInput, (action) => {
   if (action === 'debug.map-slice-surface') {
     showSlice(undefined);
   } else {
     stepSlice(action === 'debug.map-slice-down' ? -1 : 1);
   }
-  return true;
+});
+
+/** The map owns its slice keys, so a taken key is not forwarded to the game. */
+const sliceKey = (event: KeyEventLike): boolean => {
+  const taken = sliceKeys.down(event);
+  if (taken) {
+    event.preventDefault();
+  }
+  return taken;
 };
 
 if (overlay) {
@@ -146,13 +140,16 @@ if (overlay) {
     }
   };
   globalThis.onkeyup = (event) => {
-    if (!sliceAction(event)) {
+    if (!sliceKeys.up(event)) {
       forwardKey(event, 'up');
     }
   };
 } else {
   globalThis.onkeydown = (event) => {
     sliceKey(event);
+  };
+  globalThis.onkeyup = (event) => {
+    sliceKeys.up(event);
   };
 }
 
@@ -408,7 +405,7 @@ const stepSlice = (blocks: number) => {
   showSlice(Math.max(scale.minCy * CHUNK, (wantedSlice ?? surfaceTopBlock) + blocks));
 };
 
-const [downLabel, upLabel, surfaceLabel] = SLICE_ACTIONS.map((action) => inputBindings.label(action));
+const [downLabel, upLabel, surfaceLabel] = MAP_SLICE_ACTIONS.map((action) => inputBindings.label(action));
 document.querySelector('#slice-keys')!.textContent =
   `${downLabel} and ${upLabel} step the cut; ${surfaceLabel} returns to the surface.`;
 

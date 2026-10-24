@@ -500,12 +500,9 @@ describe('keyboard registry', () => {
       ['debug.gate', 'down'],
       ['debug.review-map-toggle', 'down'],
     ]);
-    expect(INPUT_BINDINGS.filter(({ contexts }) => contexts.includes('review-map')).map(({ id }) => id)).toEqual([
-      'debug.gate',
+    const reachable = INPUT_BINDINGS.filter(({ contexts }) => contexts.includes('review-map'));
+    expect(reachable.filter(({ debug, id }) => debug && id !== 'debug.gate').map(({ id }) => id)).toEqual([
       'debug.review-map-toggle',
-      'debug.map-slice-down',
-      'debug.map-slice-up',
-      'debug.map-slice-surface',
     ]);
   });
   it('keeps noclip flight ungated and concurrent with ordinary movement', () => {
