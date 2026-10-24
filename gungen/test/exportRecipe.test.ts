@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadExportRecipe } from '../src/cli/exportRecipe.ts';
 import { readGlb } from './glbReader.ts';
 
@@ -68,27 +68,29 @@ it('exports a voxelized sight whose up is perpendicular to its direction', () =>
 });
 
 describe('recipe iron sight lattice', () => {
+  const designs = loadExportRecipe().filter(({ kind }) => kind === 'design');
+  const modelEntries = new Map<(typeof designs)[number], unknown>();
   let ironSights = 0;
+  beforeAll(() => {
+    for (const row of designs) {
+      modelEntries.set(row, row.generate().modelEntry);
+    }
+  });
   afterAll(() => {
     if (ironSights === 0) {
       throw new Error('The recipe must exercise an iron sight');
     }
   });
-  it.for(loadExportRecipe().filter(({ kind }) => kind === 'design'))(
-    'puts $id iron sight eye on a drawn voxel top, which lies on its fine lattice',
-    (row, context) => {
-      const { sight } = (
-        row.generate().modelEntry as unknown as { gun: { sight: { kind: string; eye: readonly number[] } } }
-      ).gun;
-      if (sight.kind !== 'iron') {
-        context.skip();
-        return;
-      }
-      ironSights += 1;
-      const step = row.voxel.voxelDetailGrain ?? row.voxel.voxelGrain;
-      expect(Math.abs(sight.eye[1]! / step - Math.round(sight.eye[1]! / step)), row.id).toBeLessThan(1e-6);
-    },
-  );
+  it.for(designs)('puts $id iron sight eye on a drawn voxel top, which lies on its fine lattice', (row, context) => {
+    const { sight } = (modelEntries.get(row)! as { gun: { sight: { kind: string; eye: readonly number[] } } }).gun;
+    if (sight.kind !== 'iron') {
+      context.skip();
+      return;
+    }
+    ironSights += 1;
+    const step = row.voxel.voxelDetailGrain ?? row.voxel.voxelGrain;
+    expect(Math.abs(sight.eye[1]! / step - Math.round(sight.eye[1]! / step)), row.id).toBeLessThan(1e-6);
+  });
 });
 
 it('refuses a detail grain the gun grain is not a whole multiple of', () => {
