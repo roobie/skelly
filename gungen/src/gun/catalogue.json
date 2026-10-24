@@ -49,10 +49,32 @@
     },
     {
       "family": "receiver",
-      "id": "receiver-pump",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "receiver_pump",
       "massKg": 0.90000000000000002,
       "match": {
         "section": "pump"
+      },
+      "params": {
+        "action": "pump",
+        "actionFrame": "small",
+        "boltCalibre": "308-winchester",
+        "boltHandle": "rest",
+        "boltHandleProfile": "standard",
+        "bore": "L",
+        "carrierPattern": "pump",
+        "chargingHandle": "side",
+        "feed": "tube",
+        "handleStyle": "auto",
+        "integral": "no",
+        "magazineWell": "standard",
+        "rail": "none",
+        "section": "pump",
+        "stockStyle": "tapered"
       }
     },
     {
@@ -176,10 +198,25 @@
     },
     {
       "family": "bolt-carrier",
-      "id": "bolt-carrier-pump",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "bolt_carrier_pump",
       "massKg": 0.20000000000000001,
       "match": {
         "pattern": "pump"
+      },
+      "params": {
+        "action": "pump",
+        "boltCalibre": "308-winchester",
+        "bore": "L",
+        "feed": "tube",
+        "handleProfile": "standard",
+        "handleStyle": "auto",
+        "pattern": "pump",
+        "section": "pump"
       }
     },
     {
@@ -292,10 +329,25 @@
     },
     {
       "family": "lower",
-      "id": "lower-pump",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "lower_pump",
       "massKg": 0.14999999999999999,
       "match": {
         "layout": "pump"
+      },
+      "params": {
+        "boltCalibre": "308-winchester",
+        "integral": "no",
+        "layout": "pump",
+        "magazineOrientation": "straight",
+        "magazineProfile": "standard",
+        "magazineWell": "standard",
+        "section": "pump",
+        "triggerGuard": "present"
       }
     },
     {
@@ -438,11 +490,27 @@
     },
     {
       "family": "barrel",
-      "id": "barrel-pump-medium",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "barrel_pump_medium",
       "massKg": 0.80000000000000004,
       "match": {
         "length": "M",
         "section": "pump"
+      },
+      "params": {
+        "bore": "L",
+        "frontSightStyle": "ar",
+        "handguardLayout": "standard",
+        "handguardLength": "M",
+        "length": "M",
+        "muzzle": "threaded",
+        "profile": "standard",
+        "section": "pump",
+        "tubeLengthPercent": "75"
       }
     },
     {
@@ -957,10 +1025,21 @@
     },
     {
       "family": "stock",
-      "id": "stock-tapered-medium",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "stock_tapered_medium",
       "massKg": 0.54500000000000004,
       "match": {
         "length": "M",
+        "style": "tapered"
+      },
+      "params": {
+        "combDegrees": "2",
+        "length": "M",
+        "section": "pump",
         "style": "tapered"
       }
     },
@@ -1142,21 +1221,47 @@
     },
     {
       "family": "front-sight-bead",
-      "id": "front-bead",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "front_bead",
       "massKg": 0.0050000000000000001,
-      "match": {}
+      "match": {},
+      "params": {}
     },
     {
       "family": "tube-magazine",
-      "id": "tube-magazine",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "tube_magazine",
       "massKg": 0.20000000000000001,
-      "match": {}
+      "match": {},
+      "params": {
+        "barrelLength": "M",
+        "bore": "L",
+        "lengthPercent": "75"
+      }
     },
     {
       "family": "forend",
-      "id": "pump-forend",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "forend_pump",
       "massKg": 0.20000000000000001,
-      "match": {}
+      "match": {},
+      "params": {
+        "barrelLength": "M",
+        "bore": "L",
+        "lengthPercent": "75"
+      }
     },
     {
       "family": "magazine",

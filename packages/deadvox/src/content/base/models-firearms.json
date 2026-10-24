@@ -3314,41 +3314,49 @@
       "parts": {
         "barrel": {
           "centreOfMass": [0.24745836985100791, 0, 3.0304910056025873e-17],
+          "item": "barrel_pump_medium",
           "massKg": 0.80000000000000004,
           "node": "barrel:barrel"
         },
         "bolt-carrier": {
           "centreOfMass": [-0.012736842105263158, -0.0028421052631578949, -1.5598132915455763e-18],
+          "item": "bolt_carrier_pump",
           "massKg": 0.20000000000000001,
           "node": "bolt-carrier:bolt-carrier"
         },
         "forend": {
           "centreOfMass": [0.23190607935930108, -0.034292682926829264, -8.2999635966453866e-5],
+          "item": "forend_pump",
           "massKg": 0.20000000000000001,
           "node": "forend:forend"
         },
         "front-bead": {
           "centreOfMass": [0.44835087719298244, 0.021263157894736845, -8.771929824556177e-5],
+          "item": "front_bead",
           "massKg": 0.0050000000000000001,
           "node": "front-bead:front-sight-bead"
         },
         "lower": {
           "centreOfMass": [-0.14222807017543862, -0.047824561403508777, 5.8568196043433083e-18],
+          "item": "lower_pump",
           "massKg": 0.14999999999999999,
           "node": "lower:lower"
         },
         "receiver": {
           "centreOfMass": [-0.077140035906642701, -0.012795332136445237, -0.00054398563734290792],
+          "item": "receiver_pump",
           "massKg": 0.90000000000000002,
           "node": "receiver:receiver"
         },
         "stock": {
           "centreOfMass": [-0.39984598324297699, -0.067460078856579619, -4.1646131099112571e-5],
+          "item": "stock_tapered_medium",
           "massKg": 0.54500000000000004,
           "node": "stock:stock"
         },
         "tube": {
           "centreOfMass": [0.21024264178033017, -0.031886575735821966, -3.0150753768818448e-5],
+          "item": "tube_magazine",
           "massKg": 0.20000000000000001,
           "node": "tube:tube-magazine"
         }

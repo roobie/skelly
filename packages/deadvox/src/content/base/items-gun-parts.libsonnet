@@ -22,6 +22,14 @@ local looks = {
   stock_ak_long: { name: 'AK buttstock', size: [2, 3] },
   rear_sight_ak: { name: 'AK rear sight', size: [1, 1] },
   front_sight_ak: { name: 'AK front sight', size: [1, 1] },
+  receiver_pump: { name: 'Pump receiver', size: [1, 3] },
+  bolt_carrier_pump: { name: 'Pump bolt carrier', size: [1, 2] },
+  lower_pump: { name: 'Pump trigger housing', size: [1, 2] },
+  barrel_pump_medium: { name: 'Pump shotgun barrel', size: [1, 4] },
+  front_bead: { name: 'Front bead sight', size: [1, 1] },
+  tube_magazine: { name: 'Shotgun magazine tube', size: [1, 3] },
+  forend_pump: { name: 'Pump forend', size: [1, 2] },
+  stock_tapered_medium: { name: 'Tapered stock', size: [2, 3] },
 };
 local ids = std.set([entry.id for entry in catalogue.parts if std.objectHas(entry, 'params')]);
 assert ids == std.set(std.objectFields(looks)) :

@@ -82,8 +82,9 @@ all invariants above.
 
 **Depends on:** consumption proof.
 
-Give the mass rows concrete, closed item identities and build sources before changing
-assembly composition. Keep the catalogue in gungen until the single move, so there is no
+Give the mass rows of the designs the recipe names concrete, closed item identities and
+build sources before changing assembly composition. Other designs keep their rows until one
+is needed, and the move does not wait on them (`things/WORK.md`, "Phases"). Keep the catalogue in gungen until the single move, so there is no
 package-to-gungen bridge. Items and the remaining mass rows share
 `gungen/src/gun/catalogue.jsonnet`, `parts`, so the catalogue is not a second mass
 authority. `gungen/src/gun/physical.ts`, `gunModelParts`, rejects missing and ambiguous

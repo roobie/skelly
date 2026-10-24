@@ -1,0 +1,13 @@
+{
+  "id": "stock_tapered_medium",
+  "file": "assets/models/stock_tapered_medium.glb",
+  "gun": {},
+  "parts": {
+    "stock_tapered_medium": {
+      "item": "stock_tapered_medium",
+      "node": "stock_tapered_medium:stock",
+      "massKg": 0.545,
+      "centreOfMass": [-0.2152514720314033, -0.05593032384690873, -0.00004268891069676152]
+    }
+  }
+}

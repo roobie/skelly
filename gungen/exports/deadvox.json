@@ -348,6 +348,15 @@
     }
   },
   {
+    "id": "receiver_pump",
+    "kind": "part",
+    "source": "receiver_pump",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "charging_handle_ar",
     "kind": "part",
     "source": "charging_handle_ar",
@@ -375,6 +384,15 @@
     }
   },
   {
+    "id": "bolt_carrier_pump",
+    "kind": "part",
+    "source": "bolt_carrier_pump",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "lower_ak",
     "kind": "part",
     "source": "lower_ak",
@@ -393,6 +411,15 @@
     }
   },
   {
+    "id": "lower_pump",
+    "kind": "part",
+    "source": "lower_pump",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "barrel_ak_medium",
     "kind": "part",
     "source": "barrel_ak_medium",
@@ -405,6 +432,15 @@
     "id": "barrel_ar_medium",
     "kind": "part",
     "source": "barrel_ar_medium",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "barrel_pump_medium",
+    "kind": "part",
+    "source": "barrel_pump_medium",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.0040000000000000001
@@ -483,6 +519,15 @@
     }
   },
   {
+    "id": "stock_tapered_medium",
+    "kind": "part",
+    "source": "stock_tapered_medium",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "rear_sight_ak",
     "kind": "part",
     "source": "rear_sight_ak",
@@ -504,6 +549,33 @@
     "id": "front_sight_ar",
     "kind": "part",
     "source": "front_sight_ar",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "front_bead",
+    "kind": "part",
+    "source": "front_bead",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "tube_magazine",
+    "kind": "part",
+    "source": "tube_magazine",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "forend_pump",
+    "kind": "part",
+    "source": "forend_pump",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.0040000000000000001

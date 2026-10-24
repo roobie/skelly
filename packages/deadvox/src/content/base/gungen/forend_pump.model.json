@@ -1,0 +1,13 @@
+{
+  "id": "forend_pump",
+  "file": "assets/models/forend_pump.glb",
+  "gun": {},
+  "parts": {
+    "forend_pump": {
+      "item": "forend_pump",
+      "node": "forend_pump:forend",
+      "massKg": 0.2,
+      "centreOfMass": [0.08799662098742257, -0.0024708090857893765, -0.00008372442275201895]
+    }
+  }
+}
