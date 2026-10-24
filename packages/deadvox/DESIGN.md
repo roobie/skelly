@@ -2566,8 +2566,8 @@ the two views never diverge in look or proportion and the arm bends where a
 rigid model could not. The view's shoulder is a row value, not a renderer
 constant, because a figure with other proportions needs other shoulders. Every
 part is an authored model, with no box stand-in, so a row that names a missing
-model, anchor or rig part, or hangs an arm above or inside the head, fails
-validation instead of drawing a partial body. Hit regions keep a box layout,
+model, anchor or rig part, or puts the right view shoulder left of or above the
+eye, fails validation instead of drawing a partial body. Hit regions keep a box layout,
 because the body simulation, not the drawn shape, decides where a hit lands, so
 gore stays put while parts change. See `src/core/schema.ts`, `FigureSchema`,
 `src/render/armRig.ts`, `buildArmRig`, and `src/render/playerFigure.ts`,

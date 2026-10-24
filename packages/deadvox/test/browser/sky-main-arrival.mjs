@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
-import { dirname, relative as relativePath, resolve } from 'node:path';
+import { dirname, posix, relative as relativePath, resolve } from 'node:path';
 import process from 'node:process';
 import { createServer } from 'vite';
 
@@ -24,8 +24,12 @@ export const mainSourceOverlays = [
   'game/inputBindings.ts',
   'debug/index.ts',
   'render/playView.ts',
-  // Keep the view and figure together: their constructor and per-frame pose contracts change together.
+  // Keep the view and figure together: their constructor and per-frame pose contracts change together. The
+  // view builds the held items, whose arms hang from the figure's shoulders and whose displays sit on its
+  // palm, so hands and held display stay on the figure's revision too.
   'render/playerFigure.ts',
+  'render/hands.ts',
+  'render/heldDisplay.ts',
   // The view constructs the flashlight, and the flashlight installs the near-field falloff; the three change together.
   'render/flashlight.ts',
   'render/lightFalloff.ts',
@@ -72,6 +76,30 @@ function contentLookView(source) {
   return rewritten;
 }
 
+// A base figure that still colors box parts from the row's palette meets a branch whose row names authored
+// part models and carries no palette. The base figure takes one fixed palette, so the reference still
+// starts; a base that draws the authored models needs no rewrite. Remove this once the base figure reads no
+// palette.
+const ROW_PALETTE = 'const { palette } = figure;';
+const ARM_PALETTE =
+  "export const createFirstPersonArm = (palette: FigureDef['palette'], side: HandSide, grip: Vec3): Group => {";
+const FIXED_PALETTE = "{ skin: '#d9b48f', shirt: '#4b5d3a', trousers: '#3b3f4a' }";
+export function paletteFreeFigure(source) {
+  if (!source.includes("FigureDef['palette']")) {
+    return source;
+  }
+  const shaped = source.includes(ROW_PALETTE) && source.includes(ARM_PALETTE);
+  if (!shaped) {
+    throw new Error(
+      'Main figure reads the row palette in an unexpected shape; update paletteFreeFigure in sky-main-arrival.mjs',
+    );
+  }
+  const arm = ARM_PALETTE.replace("palette: FigureDef['palette']", "given: FigureDef['palette'] | undefined");
+  return source
+    .replace(ROW_PALETTE, `const palette = figure.palette ?? ${FIXED_PALETTE};`)
+    .replace(ARM_PALETTE, `${arm}\n  const palette = given ?? ${FIXED_PALETTE};`);
+}
+
 // Keep the branch's physical-and-visual reach contract without replacing its core picker with main's.
 export function adaptMainInteractionPick(source) {
   return source.replace(
@@ -104,6 +132,52 @@ export const removedExports = (baseSource, branchSource) => {
   const branch = valueExports(branchSource);
   return [...valueExports(baseSource)].filter((name) => !branch.has(name));
 };
+
+const IMPORT_CLAUSE =
+  /^import\s+(?!type\s)((?:[\w$]+|\*\s+as\s+[\w$]+)?\s*,?\s*(?:\{[^}]*\})?)\s*from\s+['"]([^'"]+)['"]/gm;
+const NAMED_IMPORTS = /\{([^}]*)\}/;
+
+/** Runtime names `source` imports by name, keyed by the specifier as written; type-only imports are erased. */
+export function valueImports(source) {
+  const imports = new Map();
+  for (const [, clause, specifier] of source.matchAll(IMPORT_CLAUSE)) {
+    const names = imports.get(specifier) ?? new Set();
+    for (const item of (NAMED_IMPORTS.exec(clause)?.[1] ?? '').split(',').map((entry) => entry.trim())) {
+      if (item && !item.startsWith('type ')) {
+        names.add(item.split(ALIAS)[0]);
+      }
+    }
+    imports.set(specifier, names);
+  }
+  return imports;
+}
+
+/**
+ * Branch modules served beside the base overlays whose named runtime imports an overlaid module's base copy
+ * lacks. The browser refuses to link them, so the overlay set must take the importer too. Both maps are keyed
+ * by the module path under the package's `src`.
+ */
+export function overlayBoundaryGaps(baseSources, branchSources) {
+  const gaps = [];
+  for (const [importer, source] of branchSources) {
+    if (baseSources.has(importer)) {
+      continue;
+    }
+    for (const [specifier, names] of valueImports(source)) {
+      const module = posix.join(posix.dirname(importer), specifier);
+      const base = baseSources.get(module);
+      if (base === undefined) {
+        continue;
+      }
+      const exported = valueExports(base);
+      const missing = [...names].filter((name) => !exported.has(name));
+      if (missing.length > 0) {
+        gaps.push({ importer, module, names: missing });
+      }
+    }
+  }
+  return gaps;
+}
 
 const EXPORT_SHIM = '\0main-export-shim:';
 const BASE_COPY = '?main-base';
@@ -171,6 +245,45 @@ export function removedModuleExports(git, base) {
   return { removedFrom, baseCopy, shimmed };
 }
 
+/** A branch module beside the overlays links against their base copies, so it may import only what they export. */
+function assertOverlayBoundary(root, overlays, branchPaths) {
+  const branchSource = (relative) => resolve(root, 'src', relative);
+  const served = (relative) =>
+    SCRIPT_MODULE.test(relative) && !overlays.has(relative) && existsSync(branchSource(relative));
+  const branchSources = new Map(
+    [...branchPaths].filter(served).map((relative) => [relative, readFileSync(branchSource(relative), 'utf8')]),
+  );
+  const gaps = overlayBoundaryGaps(overlays, branchSources);
+  if (gaps.length > 0) {
+    const listed = gaps.map(({ importer, module, names }) => `${importer} imports ${names.join(', ')} from ${module}`);
+    throw new Error(
+      `Branch modules import names the base overlays lack; extend mainSourceOverlays over the changed boundary: ${listed.join('; ')}`,
+    );
+  }
+}
+
+/** Source rewrites that fit a base startup module to the branch's core and content, or add the measurement hooks. */
+const OVERLAY_ADAPTERS = {
+  'render/playView.ts': contentLookView,
+  'render/playerFigure.ts': paletteFreeFigure,
+  'game/play.ts': adaptMainInteractionPick,
+  'game/engine.ts': (source) =>
+    source.replace(
+      '  return {\n    ...worldSetup,',
+      '  globalThis.mainArrival.engineReadyRealMs=performance.now();\n  return {\n    ...worldSetup,',
+    ),
+  'game/streamer.ts': (source) =>
+    source.replace(
+      '    this.opts.meshes.set(msg.key, [cx * CHUNK, cy * CHUNK, cz * CHUNK], msg.mesh);',
+      `    this.opts.meshes.set(msg.key, [cx * CHUNK, cy * CHUNK, cz * CHUNK], msg.mesh);
+if(msg.mesh.indices.length>0 && globalThis.mainArrival.firstMeshRealMs===null) {
+  globalThis.mainArrival.firstMeshRealMs=performance.now();
+  globalThis.mainArrival.key=msg.key;
+  globalThis.mainArrival.workerComputeRealMs=msg.ms;
+}`,
+    ),
+};
+
 const treeSources = (git, revision, source) =>
   new Set(
     git(['ls-tree', '-r', '--name-only', revision, '--', source])
@@ -220,6 +333,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
     }
   }
   const overlays = new Map(sourceOverlays.map((path) => [path, showBase(path)]));
+  assertOverlayBoundary(root, overlays, branchPaths);
   // A main startup source may import a file the branch deleted; serve that file from the base
   // too, so the overlay never fails to resolve a module main still owns.
   const baseOnlyOverlay = (relative) => relative !== null && basePaths.has(relative) && !branchPaths.has(relative);
@@ -291,30 +405,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
           if (relative === 'core/authoredSite.ts' || relative === 'content/base/templates-stairs.json') {
             source = fixtureTransform(source, id) ?? source;
           }
-          if (relative === 'render/playView.ts') {
-            source = contentLookView(source);
-          }
-          if (relative === 'game/engine.ts') {
-            source = source.replace(
-              '  return {\n    ...worldSetup,',
-              '  globalThis.mainArrival.engineReadyRealMs=performance.now();\n  return {\n    ...worldSetup,',
-            );
-          }
-          if (relative === 'game/play.ts') {
-            source = adaptMainInteractionPick(source);
-          }
-          if (relative === 'game/streamer.ts') {
-            source = source.replace(
-              '    this.opts.meshes.set(msg.key, [cx * CHUNK, cy * CHUNK, cz * CHUNK], msg.mesh);',
-              `    this.opts.meshes.set(msg.key, [cx * CHUNK, cy * CHUNK, cz * CHUNK], msg.mesh);
-if(msg.mesh.indices.length>0 && globalThis.mainArrival.firstMeshRealMs===null) {
-  globalThis.mainArrival.firstMeshRealMs=performance.now();
-  globalThis.mainArrival.key=msg.key;
-  globalThis.mainArrival.workerComputeRealMs=msg.ms;
-}`,
-            );
-          }
-          return source;
+          return OVERLAY_ADAPTERS[relative]?.(source) ?? source;
         },
       },
     ],
