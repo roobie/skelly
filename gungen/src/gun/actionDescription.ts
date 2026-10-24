@@ -128,23 +128,24 @@ export const resolveGunAction = (resolved: Resolved): ResolvedGunAction | undefi
   const port = receiver.keepOuts.find(({ id: volumeId }) => volumeId === 'ejection');
   const carrierHome = applyPoint(invert(placed), carrier.placed.t);
   const boltEjectAt = port ? (carrierHome[0] - (port.box.center[0] - port.box.half[0])) / length(carrier.travel) : 0;
+  const parts = coupledParts(resolved, kind, carrier);
+  // A turning hand-only handle on an automatic action is a notch hold, such as the SMG's.
+  const handNotch = Object.values(parts).some(({ def, modes }) => def.motion?.turn && !modes.includes('fire'));
   let cycle: CycleMotion;
   if (kind === 'bolt') {
     cycle = boltCycleMotion(carrier.def.motion!, resolved.domain.units.metresPerUnit, boltEjectAt);
   } else if (kind === 'pump') {
     cycle = pumpCycleMotion(carrier.def.motion!, resolved.domain.units.metresPerUnit);
   } else {
-    cycle = cycleMotion(
-      kind,
-      carrier.def.motion!,
-      resolved.domain.units.metresPerUnit,
-      frameCyclicRpm(resolved, kind, receiverId),
-    );
+    cycle = cycleMotion(kind, carrier.def.motion!, resolved.domain.units.metresPerUnit, {
+      rpm: frameCyclicRpm(resolved, kind, receiverId),
+      handNotch,
+    });
   }
   return {
     kind,
     carrier,
-    parts: coupledParts(resolved, kind, carrier),
+    parts,
     receiverId,
     ...(local ? { ejection: applyPoint(placed, local) } : {}),
     cycle,

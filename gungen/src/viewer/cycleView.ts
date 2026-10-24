@@ -13,7 +13,13 @@ import {
   Vector3,
 } from 'three';
 import type { ResolvedGunAction } from '../gun/actionDescription.ts';
-import { type CycleMode, type CycleMotion, type CycleTimeline, sweepMovingPart } from '../gun/cycle.ts';
+import {
+  advanceCycleClock,
+  type CycleMode,
+  type CycleMotion,
+  type CycleTimeline,
+  sweepMovingPart,
+} from '../gun/cycle.ts';
 
 const SPEEDS = [1, 0.25, 0.1, 0.02] as const;
 const XRAY_OPACITY = 0.2;
@@ -69,6 +75,8 @@ export const createCycleView = (): CycleView => {
   const speedSelect = el<HTMLSelectElement>('cycle-speed');
   const emptyLabel = el<HTMLElement>('cycle-empty-label');
   const emptyBox = el<HTMLInputElement>('cycle-empty');
+  const holdLabel = el<HTMLElement>('cycle-hold-label');
+  const holdBox = el<HTMLInputElement>('cycle-hold');
   const xrayBox = el<HTMLInputElement>('cycle-xray');
   const readout = el<HTMLElement>('cycle-readout');
   const notes = el<HTMLElement>('cycle-notes');
@@ -147,7 +155,11 @@ export const createCycleView = (): CycleView => {
       timeline.mode === 'fire' || boundAction?.kind === 'pump' || boundAction?.kind === 'bolt'
         ? ` · case exits at ${(timeline.ejectAt * 100).toFixed(0)}% toward [${timeline.ejectDirection.map((value) => value.toFixed(2)).join(', ')}]`
         : ' · hand cycle has no case ejection';
-    readout.textContent = `${phase.toFixed(3)} s · carrier ${(fraction * strokeUnits).toFixed(2)} u (${(fraction * strokeUnits * millimetresPerUnit).toFixed(0)} mm)${ejection}`;
+    const held =
+      holdBox.checked && timeline.holdSeconds !== undefined && Math.abs(phase - timeline.holdSeconds) < 1e-9
+        ? ' · held in notch'
+        : '';
+    readout.textContent = `${phase.toFixed(3)} s · carrier ${(fraction * strokeUnits).toFixed(2)} u (${(fraction * strokeUnits * millimetresPerUnit).toFixed(0)} mm)${held}${ejection}`;
   };
 
   const applyXray = () => {
@@ -259,11 +271,19 @@ export const createCycleView = (): CycleView => {
     }
     emptyLabel.hidden = !cycle.holdOpenOnEmpty || modeSelect.value === 'hand';
     emptyBox.checked = false;
+    holdLabel.hidden = timeline.holdSeconds === undefined;
+    holdBox.checked = false;
     panel.hidden = false;
     faded = meshesOf(solids, action.receiverId);
     applyXray();
     timeSeconds = 0;
     apply();
+  };
+
+  const advance = (deltaSeconds: number) => {
+    timeSeconds = timeline
+      ? advanceCycleClock(timeline, timeSeconds, deltaSeconds, holdBox.checked)
+      : timeSeconds + deltaSeconds;
   };
 
   playButton.addEventListener('click', () => {
@@ -283,6 +303,7 @@ export const createCycleView = (): CycleView => {
     apply();
   });
   emptyBox.addEventListener('change', apply);
+  holdBox.addEventListener('change', apply);
   xrayBox.addEventListener('change', applyXray);
   globalThis.addEventListener('keydown', (event) => {
     if (
@@ -297,7 +318,7 @@ export const createCycleView = (): CycleView => {
       setPlaying(!playing);
     } else if (event.code === 'Comma' || event.code === 'Period') {
       setPlaying(false);
-      timeSeconds += (event.code === 'Comma' ? -1 : 1) * STEP_SECONDS * (event.shiftKey ? 5 : 1);
+      advance((event.code === 'Comma' ? -1 : 1) * STEP_SECONDS * (event.shiftKey ? 5 : 1));
     } else {
       return;
     }
@@ -311,7 +332,7 @@ export const createCycleView = (): CycleView => {
       if (!(playing && timeline)) {
         return;
       }
-      timeSeconds += elapsedSeconds * Number(speedSelect.value);
+      advance(elapsedSeconds * Number(speedSelect.value));
       if (
         modeSelect.value === 'fire' &&
         emptyBox.checked &&

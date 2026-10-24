@@ -645,15 +645,16 @@ describe('glb export: deadvox model entry', () => {
   // This exhaustive corpus check exceeds the default timeout under load. The authored AK is the default sentinel because its sight line passes closest to another solid.
   sweepGroup('published sight-line clearance corpus', () => {
     it('keeps every exported sight line clear of other solids', () => {
-      const corpus = loadCorpus();
-      expect(corpus.length).toBeGreaterThan(0);
       // Sightless designs have no line to check; the sight-metadata corpus test ties metadata to sight parts.
-      for (const { label, assembly } of corpus) {
+      let checked = 0;
+      for (const { label, assembly } of loadCorpus()) {
         const out = exported(assembly);
         if (out.modelEntry.gun.sight) {
           expectSightLineClear(out, label);
+          checked += 1;
         }
       }
+      expect(checked).toBeGreaterThan(0);
     });
   });
 
