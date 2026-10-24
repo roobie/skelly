@@ -332,12 +332,11 @@ try {
     { timeout: 10_000 },
   );
   // The acid body: drawn as its own model, dripping and lighting a shared slot, and on death losing its sac to a
-  // splash that leaves the world as the death left it.
-  await pressAction(page, 'debug.spawn-zombie.acid_zombie');
+  // splash that leaves the world as the death left it. The debug spawn ring finds no clear ground in sight of this
+  // stage's start, so the stage uses the nearest of the acid zombies the lab holds.
   const acidId = await page.waitForFunction(
     () => {
       const { session, view } = globalThis.firefoxUiTest;
-      // The world may hold lab acid zombies too; the one just spawned is the nearest.
       const away = ([, zombie]) => Math.hypot(...zombie.body.pos.map((value, axis) => value - session.body.pos[axis]));
       const [found] = [...session.zombies.store.entries()]
         .filter(([, zombie]) => zombie.type.id === 'acid_zombie')
@@ -363,29 +362,37 @@ try {
   const acidDeath = await page.evaluate(
     (id) => {
       const { session } = globalThis.firefoxUiTest;
-      const zombie = session.zombies.store.get(id);
-      // The debug ring may put walls between player and zombie, so level high-damage rays are fired from just
-      // beside it, around and down the body, until a lethal region gives way.
-      const [x, y, z] = zombie.body.pos;
-      for (let turn = 0; turn < 8 && session.zombies.store.get(id); turn++) {
-        const [dx, dz] = [Math.cos((turn * Math.PI) / 4), Math.sin((turn * Math.PI) / 4)];
-        for (let height = 5; height > 0 && session.zombies.store.get(id); height -= 0.2) {
-          session.zombies.firePellets({
-            origin: [x + 2 * dx, y + height, z + 2 * dz],
-            directions: [[-dx, 0, -dz]],
-            damage: 1000,
-            impulse: 0,
-            rangeMetres: 100,
-          });
+      const { zombies } = session;
+      const {
+        pos: [x, y, z],
+        height: bodyHeight,
+      } = zombies.store.get(id).body;
+      // Only the head kills this body; a shot that strikes the torso first only downs it. Walls may stand beside
+      // it, so level rays from around and up the body look for one whose first visible region is its head.
+      const weapon = { damage: 1000, reach: 100, cooldown: 0, impulse: 0 };
+      let shot;
+      for (let turn = 0; turn < 16 && !shot; turn++) {
+        const [dx, dz] = [Math.cos((turn * Math.PI) / 8), Math.sin((turn * Math.PI) / 8)];
+        for (let height = bodyHeight; height > 0 && !shot; height -= 0.2) {
+          const origin = [x + 2 * dx, y + height, z + 2 * dz];
+          const aim = zombies.aimAt(origin, [-dx, 0, -dz], weapon);
+          if (aim?.id === id && aim.region === 'head') {
+            shot = { origin, directions: [[-dx, 0, -dz]] };
+          }
         }
       }
+      if (shot) {
+        zombies.firePellets({ ...shot, damage: weapon.damage, impulse: 0, rangeMetres: weapon.reach });
+      }
       return {
-        died: session.zombies.store.get(id) === undefined,
+        aimed: shot !== undefined,
+        died: zombies.store.get(id) === undefined,
         piles: JSON.stringify(session.inventory.snapshotState().piles),
       };
     },
     await acidId.jsonValue(),
   );
+  assert.ok(acidDeath.aimed, 'a clear level ray reaches the acid zombie head first');
   assert.ok(acidDeath.died, 'the acid zombie dies to a lethal shot');
   await page.waitForFunction(
     (id) => {
