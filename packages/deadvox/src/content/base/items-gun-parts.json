@@ -32,6 +32,19 @@
         "tiers": [],
         "usage": []
       },
+      "id": "barrel_pump_medium",
+      "model": "barrel_pump_medium",
+      "name": "Pump shotgun barrel",
+      "notLoot": false,
+      "size": [1, 4],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "bolt_carrier_ak",
       "model": "bolt_carrier_ak",
       "name": "AK bolt carrier",
@@ -58,9 +71,48 @@
         "tiers": [],
         "usage": []
       },
+      "id": "bolt_carrier_pump",
+      "model": "bolt_carrier_pump",
+      "name": "Pump bolt carrier",
+      "notLoot": false,
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "charging_handle_ar",
       "model": "charging_handle_ar",
       "name": "AR charging handle",
+      "notLoot": false,
+      "size": [1, 1],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "forend_pump",
+      "model": "forend_pump",
+      "name": "Pump forend",
+      "notLoot": false,
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "front_bead",
+      "model": "front_bead",
+      "name": "Front bead sight",
       "notLoot": false,
       "size": [1, 1],
       "workInProgress": false
@@ -201,6 +253,19 @@
         "tiers": [],
         "usage": []
       },
+      "id": "lower_pump",
+      "model": "lower_pump",
+      "name": "Pump trigger housing",
+      "notLoot": false,
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "rear_sight_ak",
       "model": "rear_sight_ak",
       "name": "AK rear sight",
@@ -240,6 +305,19 @@
         "tiers": [],
         "usage": []
       },
+      "id": "receiver_pump",
+      "model": "receiver_pump",
+      "name": "Pump receiver",
+      "notLoot": false,
+      "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "stock_ak_long",
       "model": "stock_ak_long",
       "name": "AK buttstock",
@@ -258,6 +336,32 @@
       "name": "M4 stock",
       "notLoot": false,
       "size": [2, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "stock_tapered_medium",
+      "model": "stock_tapered_medium",
+      "name": "Tapered stock",
+      "notLoot": false,
+      "size": [2, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "tube_magazine",
+      "model": "tube_magazine",
+      "name": "Shotgun magazine tube",
+      "notLoot": false,
+      "size": [1, 3],
       "workInProgress": false
     }
   ]

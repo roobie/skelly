@@ -27,6 +27,19 @@
       }
     },
     {
+      "file": "assets/models/barrel_pump_medium.glb",
+      "gun": {},
+      "id": "barrel_pump_medium",
+      "parts": {
+        "barrel_pump_medium": {
+          "centreOfMass": [0.20745836985100785, 0, 0],
+          "item": "barrel_pump_medium",
+          "massKg": 0.80000000000000004,
+          "node": "barrel_pump_medium:barrel"
+        }
+      }
+    },
+    {
       "file": "assets/models/bolt_carrier_ak.glb",
       "gun": {},
       "id": "bolt_carrier_ak",
@@ -53,6 +66,19 @@
       }
     },
     {
+      "file": "assets/models/bolt_carrier_pump.glb",
+      "gun": {},
+      "id": "bolt_carrier_pump",
+      "parts": {
+        "bolt_carrier_pump": {
+          "centreOfMass": [-0.019894736842105264, -0.0028421052631578949, 0],
+          "item": "bolt_carrier_pump",
+          "massKg": 0.20000000000000001,
+          "node": "bolt_carrier_pump:bolt-carrier"
+        }
+      }
+    },
+    {
       "file": "assets/models/charging_handle_ar.glb",
       "gun": {},
       "id": "charging_handle_ar",
@@ -62,6 +88,32 @@
           "item": "charging_handle_ar",
           "massKg": 0.059999999999999998,
           "node": "charging_handle_ar:ar-charging-handle"
+        }
+      }
+    },
+    {
+      "file": "assets/models/forend_pump.glb",
+      "gun": {},
+      "id": "forend_pump",
+      "parts": {
+        "forend_pump": {
+          "centreOfMass": [0.087996620987422572, -0.0024708090857893765, -8.3724422752018952e-5],
+          "item": "forend_pump",
+          "massKg": 0.20000000000000001,
+          "node": "forend_pump:forend"
+        }
+      }
+    },
+    {
+      "file": "assets/models/front_bead.glb",
+      "gun": {},
+      "id": "front_bead",
+      "parts": {
+        "front_bead": {
+          "centreOfMass": [-2.0242914979757166e-5, 0.0070728744939271265, -2.0242914979757166e-5],
+          "item": "front_bead",
+          "massKg": 0.0050000000000000001,
+          "node": "front_bead:front-sight-bead"
         }
       }
     },
@@ -196,6 +248,19 @@
       }
     },
     {
+      "file": "assets/models/lower_pump.glb",
+      "gun": {},
+      "id": "lower_pump",
+      "parts": {
+        "lower_pump": {
+          "centreOfMass": [-0.141041095890411, -0.0085205479452054814, 0],
+          "item": "lower_pump",
+          "massKg": 0.14999999999999999,
+          "node": "lower_pump:lower"
+        }
+      }
+    },
+    {
       "file": "assets/models/rear_sight_ak.glb",
       "gun": {},
       "id": "rear_sight_ak",
@@ -235,6 +300,19 @@
       }
     },
     {
+      "file": "assets/models/receiver_pump.glb",
+      "gun": {},
+      "id": "receiver_pump",
+      "parts": {
+        "receiver_pump": {
+          "centreOfMass": [-0.077140035906642701, -0.012795332136445237, -0.00054398563734290792],
+          "item": "receiver_pump",
+          "massKg": 0.90000000000000002,
+          "node": "receiver_pump:receiver"
+        }
+      }
+    },
+    {
       "file": "assets/models/stock_ak_long.glb",
       "gun": {},
       "id": "stock_ak_long",
@@ -257,6 +335,32 @@
           "item": "stock_m4_medium",
           "massKg": 0.34999999999999998,
           "node": "stock_m4_medium:stock"
+        }
+      }
+    },
+    {
+      "file": "assets/models/stock_tapered_medium.glb",
+      "gun": {},
+      "id": "stock_tapered_medium",
+      "parts": {
+        "stock_tapered_medium": {
+          "centreOfMass": [-0.2152514720314033, -0.055930323846908728, -4.2688910696761521e-5],
+          "item": "stock_tapered_medium",
+          "massKg": 0.54500000000000004,
+          "node": "stock_tapered_medium:stock"
+        }
+      }
+    },
+    {
+      "file": "assets/models/tube_magazine.glb",
+      "gun": {},
+      "id": "tube_magazine",
+      "parts": {
+        "tube_magazine": {
+          "centreOfMass": [0.16932321041214751, 3.0368763557483728e-5, 0],
+          "item": "tube_magazine",
+          "massKg": 0.20000000000000001,
+          "node": "tube_magazine:tube-magazine"
         }
       }
     }

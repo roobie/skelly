@@ -1,0 +1,13 @@
+{
+  "id": "lower_pump",
+  "file": "assets/models/lower_pump.glb",
+  "gun": {},
+  "parts": {
+    "lower_pump": {
+      "item": "lower_pump",
+      "node": "lower_pump:lower",
+      "massKg": 0.15,
+      "centreOfMass": [-0.141041095890411, -0.008520547945205481, 0]
+    }
+  }
+}

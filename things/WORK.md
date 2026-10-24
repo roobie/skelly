@@ -170,8 +170,13 @@ Deadvox depends on `thing-core` for the schema and on nothing above it.
 4. **Thing tool, remaining families.** Family by family, each with source, GLB, entry and
    load test together. The compass keeps its dedicated display renderer.
 5. **Gun tool.** Move gungen's gun and ammo logic onto the shared packages as an authoring
-   tool: its parts become a closed set of deadvox items, each atom with an authored mass, and
-   a gun is an assembly of them. Conversion happens in place in gungen; the final move
+   tool: the parts of each gun Deadvox consumes become a closed set of deadvox items, each
+   atom with an authored mass, and a gun is an assembly of them. Only the designs the recipe
+   names convert before the move; every other gungen design stays on the mass-row path and
+   converts one at a time when it is needed. Only the guns Deadvox consumes need item
+   identity before the move, and converting the rest earns its cost only when one of them is
+   needed, so the move does not wait on the whole corpus. Conversion happens in place in
+   gungen; the final move
    changes the workspace and every operational caller together, so there is never a second
    gun implementation. Item identity and authored mass reach the consumer together: a
    renamed mass-table row alone is not a part item, because it has no standalone geometry,

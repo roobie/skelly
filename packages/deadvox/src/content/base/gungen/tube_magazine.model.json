@@ -1,0 +1,13 @@
+{
+  "id": "tube_magazine",
+  "file": "assets/models/tube_magazine.glb",
+  "gun": {},
+  "parts": {
+    "tube_magazine": {
+      "item": "tube_magazine",
+      "node": "tube_magazine:tube-magazine",
+      "massKg": 0.2,
+      "centreOfMass": [0.1693232104121475, 0.000030368763557483728, 0]
+    }
+  }
+}
