@@ -5132,8 +5132,28 @@
       ]
     },
     {
+      "anchors": {
+        "claw": {
+          "fraction": [0.046296296296000003, 0.25, 0.5],
+          "part": "crowbar",
+          "solid": "shaft-3"
+        },
+        "strike": {
+          "fraction": [0.87631578947400002, 0.84210526315800005, 0.5],
+          "part": "crowbar",
+          "solid": "shaft-1"
+        }
+      },
       "connections": [],
       "exportMass": "parts",
+      "handling": {
+        "fraction": [0.17482517482500001, 0.5, 0.5],
+        "hold": "upright",
+        "part": "crowbar",
+        "roll": 90,
+        "solid": "shaft-0",
+        "turn": [0, 0, 0]
+      },
       "id": "crowbar",
       "parts": [
         {
@@ -5158,8 +5178,33 @@
       ]
     },
     {
+      "anchors": {
+        "claw": {
+          "fraction": [0.55882352941199998, 1, 0.5],
+          "part": "hammer",
+          "solid": "claw"
+        },
+        "face": {
+          "fraction": [0.33823529411800002, 0, 0.54545454545500005],
+          "part": "hammer",
+          "solid": "face"
+        },
+        "strike": {
+          "fraction": [1, 0.53333333333300004, 0.5],
+          "part": "hammer",
+          "solid": "eye"
+        }
+      },
       "connections": [],
       "exportMass": "parts",
+      "handling": {
+        "fraction": [0.258928571429, 0.5, 0.5],
+        "hold": "upright",
+        "part": "hammer",
+        "roll": 90,
+        "solid": "handle",
+        "turn": [0, 0, 0]
+      },
       "id": "hammer",
       "parts": [
         {
@@ -5184,8 +5229,28 @@
       ]
     },
     {
+      "anchors": {
+        "face": {
+          "fraction": [0.53571428571400004, 0.0052083333329999999, 0.5],
+          "part": "sledgehammer",
+          "solid": "head"
+        },
+        "strike": {
+          "fraction": [1, 0.5, 0.5],
+          "part": "sledgehammer",
+          "solid": "head"
+        }
+      },
       "connections": [],
       "exportMass": "parts",
+      "handling": {
+        "fraction": [0.44117647058800002, 0.5, 0.5],
+        "hold": "upright",
+        "part": "sledgehammer",
+        "roll": 90,
+        "solid": "handle",
+        "turn": [0, 0, 0]
+      },
       "id": "sledgehammer",
       "parts": [
         {
@@ -5209,8 +5274,23 @@
       ]
     },
     {
+      "anchors": {
+        "strike": {
+          "fraction": [0.99910256410300002, 0.5, 0.5],
+          "part": "baseball_bat",
+          "solid": "body"
+        }
+      },
       "connections": [],
       "exportMass": "parts",
+      "handling": {
+        "fraction": [0.066666666666999996, 0.5, 0.5],
+        "hold": "upright",
+        "part": "baseball_bat",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, 0]
+      },
       "id": "baseball_bat",
       "parts": [
         {
@@ -5232,8 +5312,23 @@
       ]
     },
     {
+      "anchors": {
+        "strike": {
+          "fraction": [1, 0.5, 0.5],
+          "part": "kabar",
+          "solid": "blade"
+        }
+      },
       "connections": [],
       "exportMass": "parts",
+      "handling": {
+        "fraction": [0.40714285714300003, 0.5, 0.5],
+        "hold": "forward",
+        "part": "kabar",
+        "roll": 0,
+        "solid": "handle",
+        "turn": [0, 0, 0]
+      },
       "id": "kabar",
       "parts": [
         {
@@ -5261,8 +5356,23 @@
       ]
     },
     {
+      "anchors": {
+        "strike": {
+          "fraction": [0.99624999999999997, 0.63636363636399995, 0.5],
+          "part": "kitchen_knife",
+          "solid": "blade"
+        }
+      },
       "connections": [],
       "exportMass": "parts",
+      "handling": {
+        "fraction": [0.491935483871, 0.5, 0.5],
+        "hold": "forward",
+        "part": "kitchen_knife",
+        "roll": 0,
+        "solid": "handle",
+        "turn": [0, 0, 0]
+      },
       "id": "kitchen_knife",
       "parts": [
         {
@@ -5290,8 +5400,28 @@
       ]
     },
     {
+      "anchors": {
+        "edge": {
+          "fraction": [0.88888888888899997, 0.25, 0.5],
+          "part": "machete",
+          "solid": "blade"
+        },
+        "strike": {
+          "fraction": [1, 0.72222222222200005, 0.5],
+          "part": "machete",
+          "solid": "blade"
+        }
+      },
       "connections": [],
       "exportMass": "parts",
+      "handling": {
+        "fraction": [0.61290322580599998, 0.5, 0.5],
+        "hold": "forward",
+        "part": "machete",
+        "roll": 0,
+        "solid": "handle",
+        "turn": [0, 0, 0]
+      },
       "id": "machete",
       "parts": [
         {
@@ -5319,8 +5449,23 @@
       ]
     },
     {
+      "anchors": {
+        "strike": {
+          "fraction": [1, 0, 0.5],
+          "part": "wrench",
+          "solid": "fixed-jaw"
+        }
+      },
       "connections": [],
       "exportMass": "parts",
+      "handling": {
+        "fraction": [0.64015151515199997, 0.5, 0.5],
+        "hold": "upright",
+        "part": "wrench",
+        "roll": 90,
+        "solid": "handle",
+        "turn": [0, 0, 0]
+      },
       "id": "wrench",
       "parts": [
         {
@@ -5346,8 +5491,23 @@
       ]
     },
     {
+      "anchors": {
+        "strike": {
+          "fraction": [0.97222222222200005, 0.5, 0],
+          "part": "steel_pipe",
+          "solid": "bend"
+        }
+      },
       "connections": [],
       "exportMass": "parts",
+      "handling": {
+        "fraction": [0, 0.5, 0.5],
+        "hold": "upright",
+        "part": "steel_pipe",
+        "roll": 0,
+        "solid": "tube",
+        "turn": [0, 0, 0]
+      },
       "id": "steel_pipe",
       "parts": [
         {

@@ -110,7 +110,7 @@ local authored = [
     import 'things/shambler_right_leg.model.json'
 ];
 {
-  // A melee row imports its exported model and adds the grip and anchors, so the index must not list it again.
+  // Explicit registrations must not also appear through the export index.
   models: authored + [
     model
     for model in import 'things/index.json'
