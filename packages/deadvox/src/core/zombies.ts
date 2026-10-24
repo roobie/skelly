@@ -897,7 +897,7 @@ const clearLine = (from: Vec3, to: Vec3, isSolid: SolidAt): boolean => {
 /** Where a spit leaves a zombie: its posed mouth, held at the end of the wind-up, so the line follows the
  * drawn-back head and its gaze. */
 const spitOrigin = (zombie: Zombie, id: EntityId, blockSize: number): Vec3 =>
-  posedMouth({ ...zombiePoseInputFor(zombie, id, blockSize), spitWindupProgress: 1 });
+  posedMouth({ ...zombiePoseInputFor(zombie, id, blockSize), spitProgress: 1 });
 
 /** The chest follows the stance through the eye height, so crouching behind low cover lowers the spit's target. */
 const spitChest = (player: PlayerSense, tuning: SenseDef, blockSize: number): Vec3 => {

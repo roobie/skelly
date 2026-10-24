@@ -42,7 +42,7 @@ export interface ShamblerPoseInput {
   /** Fixed-step hit reaction; omitted only for older snapshots/tests. */
   readonly hitFlinchTime?: number;
   /** Share of a spit wind-up elapsed, 0 to 1; draws the head back on a body with a wind-up pose. */
-  readonly spitWindupProgress?: number;
+  readonly spitProgress?: number;
   readonly severed: readonly string[];
   readonly blockSize: number;
 }
@@ -84,7 +84,7 @@ export const zombiePoseInputFor = (
     idleTime: zombie.wanderClock,
     ...(zombie.stanceWeight === undefined ? {} : { stanceWeight: zombie.stanceWeight }),
     ...(zombie.hitFlinchTime === undefined ? {} : { hitFlinchTime: zombie.hitFlinchTime }),
-    ...(zombie.spitWindup > 0 ? { spitWindupProgress: acidSpitWindupProgress(zombie) } : {}),
+    ...(zombie.spitWindup > 0 ? { spitProgress: acidSpitWindupProgress(zombie) } : {}),
     severed: zombie.severed,
     blockSize,
   };
@@ -273,7 +273,7 @@ const posedAcid = (input: ShamblerPoseInput, figure: ShamblerFigure): PosedShamb
   const walk = acidWalkPose(realized, distance, input.speed, input.idleTime ?? 0);
   const attackTime = acidAttackTimeFor(input);
   const attacked = attackTime === undefined ? walk : acidAttackPose(realized, walk, attackTime);
-  const progress = input.spitWindupProgress ?? 0;
+  const progress = input.spitProgress ?? 0;
   const woundUp = progress > 0 ? acidWindupPose(realized, attacked, progress) : attacked;
   const headBone = LOOK_AT_PROFILES.acid?.headBone ?? 'skull';
   const gazed: Pose =
