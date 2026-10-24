@@ -24,7 +24,9 @@ const BOLT_CARTRIDGE = boltCartridge();
 // A part item lives in another file; the full-base contract resolves it, so a fixture ignores those paths.
 const PART_ITEM_PATH = /^models\[0\]\.parts\.[^.]+\.item$/;
 const fixtureIssues = (models: readonly GunDeadvoxModelEntry[]) =>
-  buildRegistry([{ source: 'fixture', data: { models } }]).issues.filter(({ path }) => !PART_ITEM_PATH.test(path ?? ''));
+  buildRegistry([{ source: 'fixture', data: { models } }]).issues.filter(
+    ({ path }) => !PART_ITEM_PATH.test(path ?? ''),
+  );
 const hunting = JSON.parse(readFileSync('designs/hunting-rifle.json', 'utf8'));
 // The authored design names catalogue items, so only the loader expands it into an assembly.
 const loadedHunting = loadGunDesign(readFileSync('designs/hunting-rifle.json', 'utf8'));
