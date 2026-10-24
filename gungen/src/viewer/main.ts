@@ -7,7 +7,22 @@ import { type Report, validate } from '@skelly/engine/assembly/validate.ts';
 import type { Issue } from '@skelly/engine/foundation/issue.ts';
 import { worldBox } from '@skelly/engine/shapes/geometry.ts';
 import { DEFAULT_REVOLVE_FACETS, MAX_REVOLVE_FACETS, MIN_REVOLVE_FACETS } from '@skelly/engine/shapes/revolve.ts';
+import { type CameraState, parseCameraState, serializeCameraState } from '@skelly/tool-ui/camera-state';
 import { createOrbitControls } from '@skelly/tool-ui/orbit';
+import {
+  buildPanelModel,
+  clearParam,
+  diffOverrides,
+  EMPTY_OVERRIDES,
+  hasOverrides,
+  initialOverrides,
+  type PanelEntry,
+  type PanelParam,
+  type PanelPart,
+  type PanelSlot,
+  parseOverrides,
+  setParam,
+} from '@skelly/tool-ui/param-panel';
 import {
   Box3,
   Color,
@@ -33,12 +48,14 @@ import { loadGunDesign } from '../gun/designLoader.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { TEMPLATES } from '../gun/templates.ts';
 import { type AmmoMeshes, ammoEnvironment, buildAmmoMeshes, caseFinishFromQuery } from './ammoLayer.ts';
-import { type CameraState, parseCameraState, serializeCameraState } from './cameraState.ts';
 import { createCycleView } from './cycleView.ts';
 import {
+  availablePartItems,
   availablePrefabs,
+  choosePartItem,
   choosePrefab,
   clearEditorParam,
+  clearPartItem,
   clearPrefab,
   createEditorState,
   type DesignEditorState,
@@ -52,22 +69,9 @@ import {
   withEditorAssembly,
   withEditorStatus,
 } from './designEditor.ts';
+import { exportEditorDesign } from './designExport.ts';
 import { buildDesignViewModel } from './designViewModel.ts';
 import { buildDetachedMagazine } from './magazineView.ts';
-import {
-  buildPanelModel,
-  clearParam,
-  diffOverrides,
-  EMPTY_OVERRIDES,
-  hasOverrides,
-  initialOverrides,
-  type PanelEntry,
-  type PanelParam,
-  type PanelPart,
-  type PanelSlot,
-  parseOverrides,
-  setParam,
-} from './paramPanel.ts';
 import { buildLayers, disposeGroup, type Layers } from './scene.ts';
 import { setModelQuery as writeModelQuery } from './shareUrl.ts';
 import { DEFAULT_UI_STATE, parseUiState, UI_STATE_KEY, type UiState } from './uiState.ts';
@@ -123,6 +127,7 @@ const paramPanel = $<HTMLElement>('param-panel');
 const designStatus = $<HTMLSelectElement>('design-status');
 const saveMessage = $<HTMLParagraphElement>('save-message');
 const saveButton = $<HTMLButtonElement>('save');
+const exportButton = $<HTMLButtonElement>('export');
 const roleColors = $<HTMLInputElement>('role-colors');
 const initialQuery = new URLSearchParams(location.search);
 let colorMode: 'finish' | 'role' = initialQuery.get('colors') === 'role' ? 'role' : 'finish';
@@ -632,6 +637,7 @@ const renderDesignInfo = () => {
   designCounts = { warnings: 0, errors: 0 };
   designStatus.value = editorState?.status ?? 'draft';
   saveButton.disabled = !editorState?.template;
+  exportButton.disabled = !editorState?.template;
   saveMessage.textContent = editorState?.template
     ? ''
     : 'This assembly has no matching template and cannot be saved as a design.';
@@ -987,6 +993,36 @@ const renderPrefabPicker = (entry: PanelPart): HTMLElement | undefined => {
   return picker;
 };
 
+const renderItemPicker = (entry: PanelPart): HTMLElement | undefined => {
+  if (!editorState) {
+    return undefined;
+  }
+  const items = availablePartItems(editorState, entry.id);
+  if (items.length === 0) {
+    return undefined;
+  }
+  const label = document.createElement('label');
+  label.className = 'prefab-picker';
+  label.append('Part item ');
+  const picker = document.createElement('select');
+  picker.setAttribute('aria-label', `${entry.id} part item`);
+  picker.append(new Option('Uncurated', ''), ...items.map((item) => new Option(item.id, item.id)));
+  picker.value = editorState.items?.[entry.id] ?? '';
+  picker.addEventListener('change', () => {
+    if (!editorState) {
+      return;
+    }
+    const result = picker.value
+      ? choosePartItem(editorState, entry.id, picker.value)
+      : { ok: true as const, state: clearPartItem(editorState, entry.id) };
+    if (result.ok) {
+      applyPanelChange(result.state.assembly, [], result.state);
+    }
+  });
+  label.append(picker);
+  return label;
+};
+
 /** A present part: an optional Remove button, then every param row. */
 const renderPartCard = (
   entry: PanelPart,
@@ -997,6 +1033,10 @@ const renderPartCard = (
   card.append(cardTitle(entry, warnings, entry.prefab));
   if (entry.optional) {
     card.append(renderOptionalPartActions(entry));
+  }
+  const itemPicker = renderItemPicker(entry);
+  if (itemPicker) {
+    card.append(itemPicker);
   }
   const picker = renderPrefabPicker(entry);
   if (picker) {
@@ -1367,6 +1407,29 @@ designStatus.addEventListener('change', () => {
   if (current) {
     load(current);
   }
+});
+
+exportButton.addEventListener('click', () => {
+  if (!editorState) {
+    return;
+  }
+  const id = editorState.assembly.name.replace(/[^a-z0-9_]+/gi, '_').toLowerCase();
+  const result = exportEditorDesign(
+    editorState,
+    { id, file: `assets/models/${id}.glb` },
+    cartridges.find((cartridge) => cartridge.id === editorState?.calibre),
+  );
+  if (!result.ok) {
+    saveMessage.textContent = result.message;
+    return;
+  }
+  const url = URL.createObjectURL(new Blob([result.glb as Uint8Array<ArrayBuffer>], { type: 'model/gltf-binary' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${id}.glb`;
+  link.click();
+  URL.revokeObjectURL(url);
+  saveMessage.textContent = `Downloaded ${link.download}.`;
 });
 
 saveButton.addEventListener('click', () => {

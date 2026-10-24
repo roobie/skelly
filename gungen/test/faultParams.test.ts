@@ -1,9 +1,9 @@
 import type { ParamReference, Template } from '@skelly/engine/assembly/template.ts';
+import { buildPanelModel } from '@skelly/tool-ui/param-panel';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
-import { buildPanelModel } from '../src/viewer/paramPanel.ts';
 import { loadFixture, loadFixtures } from './helpers.ts';
 
 const faultTable = {

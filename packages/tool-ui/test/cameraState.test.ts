@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseCameraState, serializeCameraState } from '../src/viewer/cameraState.ts';
+import { parseCameraState, serializeCameraState } from '../src/cameraState.ts';
 
 describe('camera URL state', () => {
   it('round-trips camera position and target at shareable precision', () => {

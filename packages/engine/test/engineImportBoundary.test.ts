@@ -434,6 +434,24 @@ describe('engine import boundary', () => {
     }
   });
 
+  it('keeps tool-ui independent of both authoring tools while allowing engine parameter types', () => {
+    const fixtureRoot = mkdtempSync(join(tmpdir(), 'tool-ui-boundary-'));
+    const fixtureRoots = rootsUnder(fixtureRoot);
+    const directory = join(fixtureRoots.packages, 'tool-ui', 'src');
+    mkdirSync(directory, { recursive: true });
+    try {
+      const file = join(directory, 'panel.ts');
+      writeFileSync(file, "import type { Assembly } from '@skelly/engine/assembly/schema.ts';\n");
+      expect(findBoundaryViolations([file], fixtureRoots)).toEqual([]);
+      writeFileSync(file, "import 'gungen/src/gun/domain.ts';\n");
+      expect(findBoundaryViolations([file], fixtureRoots)[0]).toContain('imports gungen');
+      writeFileSync(file, "import '../../thing-authoring-tool/src/catalogue.ts';\n");
+      expect(findBoundaryViolations([file], fixtureRoots)[0]).toContain('tool-ui imports the thing tool');
+    } finally {
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
   it('keeps thing-core to the engine among packages, and allows the engine', () => {
     const fixtureRoot = mkdtempSync(join(tmpdir(), 'thing-core-boundary-'));
     const fixtureRoots = rootsUnder(fixtureRoot);

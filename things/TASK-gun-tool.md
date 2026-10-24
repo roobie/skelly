@@ -123,9 +123,9 @@ Preserve all invariants above.
 **Depends on:** part items at the consumer boundary.
 
 Keep the gun editor's curation, cycling and ammo presentation rather than replacing it
-with the minimal thing preview. Share only domain-neutral mechanisms: inspect
-`gungen/src/viewer/cameraState.ts`, `parseCameraState`, and
-`gungen/src/viewer/paramPanel.ts`, `buildPanelModel`, for promotion into tool UI.
+with the minimal thing preview. Camera and parameter mechanisms are shared because
+engine assemblies need no firearm policy; see `packages/tool-ui/src/cameraState.ts`,
+`parseCameraState`, and `packages/tool-ui/src/paramPanel.ts`, `buildPanelModel`.
 `gungen/src/viewer/shareUrl.ts`, `setModelQuery`, also carries tool selection policy;
 that policy stays caller-owned rather than becoming a shared gun-shaped URL contract.
 The shared renderer already exists in `packages/tool-ui/src/scene.ts`, `buildLayers`.
