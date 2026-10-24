@@ -908,16 +908,6 @@
             "ladder": [35, 9, 48],
             "lower": [34, 9, 49],
             "upper": [34, 17, 49]
-          },
-          {
-            "ladder": [12, 1, 29],
-            "lower": [11, 1, 30],
-            "upper": [11, 9, 30]
-          },
-          {
-            "ladder": [59, 1, 29],
-            "lower": [58, 1, 30],
-            "upper": [58, 9, 30]
           }
         ],
         "events": [
@@ -988,6 +978,14 @@
                 "key": true
               }
             ]
+          },
+          {
+            "at": [6, 9, 14],
+            "items": [
+              {
+                "item": "gauntlet_lab_special_notes"
+              }
+            ]
           }
         ],
         "incidentalTemplates": [
@@ -1033,8 +1031,8 @@
             "template": "gauntlet_public_directions"
           }
         ],
-        "objective": [30, 3, 26],
-        "objectiveFace": [30, 1, 29],
+        "objective": [41, 11, 24],
+        "objectiveFace": [41, 9, 27],
         "resources": [
           {
             "at": [33, 41, 42],
@@ -1192,12 +1190,8 @@
             "standing": [49, 17, 19]
           },
           {
-            "id": "failure",
-            "standing": [35, 9, 29]
-          },
-          {
-            "id": "bottom",
-            "standing": [35, 1, 29]
+            "id": "special",
+            "standing": [46, 9, 12]
           }
         ]
       },

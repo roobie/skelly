@@ -51,7 +51,7 @@ local stair = {
 {
   scale: scale,
   stair: stair,
-  // One rebuilt level from its plan and room table. A room's `lootUsage` gives its stocked furniture a context that fits its use. `through` boxes stay open on every layer above the floor for pieces that
+  // One level from its plan and room table. A room's `lootUsage` gives its stocked furniture a context that fits its use. `through` boxes stay open on every layer above the floor for pieces that
   // pass through the level; `holes` open its floor over the ways that leave it; `voids` leave a piece from another level
   // the whole column, unclaimed on every layer. All are in blocks, as are `markers`.
   build:: function(level)
@@ -63,8 +63,8 @@ local stair = {
     local dressing = std.flattenArrays([[
       d + { room: room, rise: room.floorRise + std.get(d, 'rise', 0) } for d in room.dressing
     ] for room in roomList]);
-    // Digits mark bays; a room past the tenth names its own `bay` token.
-    local bayTokens = std.stringChars('0123456789') + [room.bay for room in roomList if std.objectHas(room, 'bay')];
+    // Digits mark bays; a room past the tenth names its own `bays` tokens.
+    local bayTokens = std.stringChars('0123456789') + std.flattenArrays([std.get(room, 'bays', []) for room in roomList]);
     local bayAt = function(c, x, z) if !std.member(bayTokens, c) then [] else [d for d in dressing if x >= d.at[0] && x < d.at[0] + 2 && z >= d.at[1] && z < d.at[1] + 2];
     local expand = function(cell) std.flattenArrays([
       [std.join('', [cell(plan[z][x], dx, dz, x, z) for x in std.range(0, std.length(plan[z]) - 1) for dx in std.range(0, scale - 1)]) for dz in std.range(0, scale - 1)]
@@ -75,10 +75,13 @@ local stair = {
     local hole = function(dx, dz, x, z) inBox(level.holes, x * scale + dx, z * scale + dz);
     local voided = function(dx, dz, x, z) inBox(std.get(level, 'voids', []), x * scale + dx, z * scale + dz);
     local marker = function(y, dx, dz, x, z) std.member(level.markers, [x * scale + dx, y, z * scale + dz]);
-    local card = level.card;
+    // A level without a seal has no card.
+    local card = std.get(level, 'card', null);
     // A card with a `container` is stock in that dressing bay's container, so finding it is a search rather than a sighting.
-    local cardBay = if std.objectHas(card, 'container') then [d for d in dressing if d.id == card.container][0] else null;
-    local isCard = function(x, z) cardBay == null && x == card.at[0] && z == card.at[1];
+    local cardBay = if card != null && std.objectHas(card, 'container') then [d for d in dressing if d.id == card.container][0] else null;
+    local isCard = function(x, z) card != null && cardBay == null && x == card.at[0] && z == card.at[1];
+    // Where a bay's first container stands, in the lab's blocks for a level based at `base`.
+    local container = function(d) [d.at[0] * scale, level.base + 1 + d.rise, d.at[1] * scale];
     local opening = function(room, c, dx, dz, x, z)
       local candidates = [o for o in room.openings if o.token == c && (if o.axis == 'x' then z >= o.at[1] && z < o.at[1] + std.get(o, 'depth', 1) else x == o.at[0])];
       if std.length(candidates) == 0 then null
@@ -110,10 +113,11 @@ local stair = {
       else if isCard(x, z) then 'A'
       else if through(dx, dz, x, z) || std.length(bayAt(c, x, z)) > 0 || marker(y, dx, dz, x, z) then '.'
       else 'R');
-    local palette = { '.': { role: 'opening', material: 'air' }, '#': { role: 'shell', material: 'rock' }, '|': { role: 'shell', material: 'wire' },
-      D: { furniture: 'gauntlet_lab_bulkhead', facing: 's', lock: { id: level.lock, locked: true } },
-      K: { groundLoot: { kind: 'fixed', items: [{ item: level.cardItem }] } },
-    } + { [room.floor]: { role: 'interior_floor', material: room.finish.floor } for room in roomList }
+    local palette = { '.': { role: 'opening', material: 'air' }, '#': { role: 'shell', material: 'rock' }, '|': { role: 'shell', material: 'wire' } }
+      + (if card != null && cardBay == null then { K: { groundLoot: { kind: 'fixed', items: [{ item: level.cardItem }] } } } else {})
+      // A level without seals has no bulkhead to lock.
+      + (if std.objectHas(level, 'lock') then { D: { furniture: 'gauntlet_lab_bulkhead', facing: 's', lock: { id: level.lock, locked: true } } } else {})
+      + { [room.floor]: { role: 'interior_floor', material: room.finish.floor } for room in roomList }
       + { [room.wall]: { role: 'shell', material: room.finish.wall } for room in roomList }
       + { [room.band]: { role: 'shell', material: room.finish.base } for room in roomList };
     local shell = {
@@ -143,12 +147,13 @@ local stair = {
         ownership: { layers: [[std.join('', [if c == '.' then 'A' else 'S' for c in std.stringChars(row)]) for row in layer] for layer in layers] },
         anchors: {}, ports: [],
       };
-    local cardSeal = if cardBay == null then
+    local cardSeal = if card == null then null
+    else if cardBay == null then
       local y = level.base + 1 + byToken[plan[card.at[1]][card.at[0]]].floorRise;
       { key: [card.at[0] * scale, y, card.at[1] * scale], standing: [card.at[0] * scale, y, card.at[1] * scale + 1] }
     else
-      local y = level.base + 1 + cardBay.rise;
-      { key: [cardBay.at[0] * scale, y, cardBay.at[1] * scale], standing: [cardBay.at[0] * scale + 1, y, cardBay.at[1] * scale + 3], held: true };
+      local key = container(cardBay);
+      { key: key, standing: [key[0] + 1, key[1], key[2] + 3], held: true };
     assert std.all([std.length(row) == std.length(plan[0]) for row in plan]) : level.id + ' plan rows must have equal width: ' + std.toString([[z, std.length(plan[z])] for z in std.range(0, std.length(plan) - 1) if std.length(plan[z]) != std.length(plan[0])]);
     {
       size: size,
@@ -158,6 +163,8 @@ local stair = {
       // also needs its container's stock.
       cardSeal: cardSeal,
       cardStock: if cardBay == null then [] else [{ at: cardSeal.key, items: [{ item: level.cardItem, key: true }] }],
+      // A bay's `stock` is fixed in its first container, such as papers filed in a cabinet.
+      stock: [{ at: container(d), items: d.stock } for d in dressing if std.objectHas(d, 'stock')],
       mapPieces: [shell] + [bay(d) for d in dressing],
       mapAssembly: {
         id: 'gauntlet_lab_level_' + level.id, size: size, lootContext: level.context + level.range,
