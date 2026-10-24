@@ -19,6 +19,14 @@ import { generate, generateValid, type Realized, realize, realizeLod } from '../
 import type { Pose } from '../core/pose.ts';
 import type { ValidationProfile } from '../core/rules.ts';
 import type { Genome, Template } from '../core/template.ts';
+import {
+  acidAttackPose,
+  acidDeathPose,
+  acidHitPose,
+  acidIdlePose,
+  acidWalkPose,
+  acidWindupPose,
+} from '../mob/acidPoses.ts';
 import { acidTemplate } from '../mob/acidTemplate.ts';
 import { amalgamManifest } from '../mob/amalgam.ts';
 import { VIEWER_TEMPLATES } from '../mob/amalgamTemplate.ts';
@@ -65,6 +73,8 @@ const speedValue = $<HTMLSpanElement>('speed-value');
 const idleStanceSelect = $<HTMLSelectElement>('idle-stance');
 const attackBtn = $<HTMLButtonElement>('attack-btn');
 const attackLoop = $<HTMLInputElement>('attack-loop');
+const acidWindup = $<HTMLInputElement>('acid-windup');
+const acidWindupLabel = $<HTMLLabelElement>('acid-windup-label');
 const hitBtn = $<HTMLButtonElement>('hit-btn');
 const dieBtn = $<HTMLButtonElement>('die-btn');
 const resetBtn = $<HTMLButtonElement>('reset-btn');
@@ -185,6 +195,7 @@ let hitSide = 0; // -1..1, alternates each press so the side-mirror is visible a
 let deathTime: number | undefined;
 let deathBasePose: Pose | undefined;
 let deathDirection: 1 | -1 = 1;
+let lastAcidPose: Pose | undefined;
 /** Every part cut so far — cumulative, so "Sever" a second part while the first is still missing just adds
  * to it (severedBoneSet handles any redundancy, e.g. severing a hand after its own upperArm already took
  * it, for free). Reset on Heal or a fresh load. Not yet the crowd texture's mask (that's a deadvox/renderer
@@ -227,6 +238,12 @@ const heal = (): void => {
 /** Freezes whatever pose is current (walk, standing, or mid-attack) and starts the death fall from that
  * snapshot — a falling body doesn't keep striding underneath itself, unlike a flinch. */
 const playDeath = (): void => {
+  if (current?.template.bodyPlan === 'acid') {
+    deathBasePose = lastAcidPose ?? acidIdlePose(current.realized, idleTime);
+    deathDirection = dieBackward.checked ? -1 : 1;
+    deathTime = 0;
+    return;
+  }
   if (!current?.walkActor) {
     return;
   }
@@ -364,6 +381,12 @@ const updateUrl = (): void => {
   params.set('speed', speedInput.value);
   params.set('walk', walkOn.checked ? '1' : '0');
   params.set('stance', idleStanceSelect.value);
+  if (attackLoop.checked) {
+    params.set('attack', '1');
+  }
+  if (acidWindup.checked) {
+    params.set('windup', '1');
+  }
   if (new URLSearchParams(location.search).get('shot') === '1') {
     params.set('shot', '1');
   }
@@ -381,7 +404,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   }
   const actor = buildActor(realized, genome.voxelSize);
   scene.add(actor.root);
-  const staticOnly = template.bodyPlan === 'amalgam' || template.bodyPlan === 'acid';
+  const staticOnly = template.bodyPlan === 'amalgam';
   let loaded: Loaded = {
     genome,
     template,
@@ -392,12 +415,14 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   };
   if (staticOnly) {
     actor.applyPose({ root: [0, 0, 0], rotations: {} });
-    const parts =
-      template.bodyPlan === 'amalgam'
-        ? amalgamManifest(realized.body, realized.voxels)
-            .parts.filter((part) => part.severable)
-            .map((part) => part.rootBone)
-        : realized.body.bones.filter((bone) => bone.disposition === 'sever').map((bone) => bone.id);
+    const parts = amalgamManifest(realized.body, realized.voxels)
+      .parts.filter((part) => part.severable)
+      .map((part) => part.rootBone);
+    severPart.replaceChildren(...parts.map((id) => new Option(id, id)));
+  } else if (template.bodyPlan === 'acid') {
+    lastAcidPose = acidIdlePose(realized, idleTime);
+    actor.applyPose(lastAcidPose);
+    const parts = realized.body.bones.filter((bone) => bone.disposition === 'sever').map((bone) => bone.id);
     severPart.replaceChildren(...parts.map((id) => new Option(id, id)));
   } else {
     const extents = footRestExtents(realized.body.bones, realized.voxels);
@@ -429,6 +454,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
       ...(template.bodyPlan === 'dog' ? DOG_SEVERABLE_PARTS : SEVERABLE_PARTS).map((part) => new Option(part, part)),
     );
   }
+  acidWindupLabel.hidden = template.bodyPlan !== 'acid';
   walkFieldset.hidden = staticOnly;
   attackFieldset.hidden = staticOnly;
   reactionsFieldset.hidden = staticOnly;
@@ -538,6 +564,11 @@ const setSpeed = (v: number): void => {
 };
 speedInput.addEventListener('input', () => setSpeed(Number(speedInput.value)));
 walkOn.addEventListener('change', updateUrl);
+attackLoop.addEventListener('change', updateUrl);
+acidWindup.addEventListener('change', () => {
+  attackTime = undefined;
+  updateUrl();
+});
 idleStanceSelect.addEventListener('change', updateUrl);
 $<HTMLButtonElement>('preset-wander').addEventListener('click', () => {
   walkOn.checked = true;
@@ -617,6 +648,8 @@ if (profileParam === 'full' || profileParam === 'silhouette') {
 }
 setSpeed(Number(query.get('speed') ?? '0.8'));
 walkOn.checked = query.get('walk') === '1';
+attackLoop.checked = query.get('attack') === '1';
+acidWindup.checked = query.get('windup') === '1';
 const stanceParam = query.get('stance');
 if (stanceParam && [...idleStanceSelect.options].some((o) => o.value === stanceParam)) {
   idleStanceSelect.value = stanceParam;
@@ -636,7 +669,7 @@ const advanceWalk = (dt: number, walking: boolean, speed: number): void => {
     groundGroup.position.z = gridZ;
     return;
   }
-  if (current.template.bodyPlan === 'dog') {
+  if (current.template.bodyPlan === 'dog' || current.template.bodyPlan === 'acid') {
     dogDistance += speed * dt;
     gridZ = (gridZ + speed * dt) % 0.5;
     groundGroup.position.z = gridZ;
@@ -722,8 +755,34 @@ const applyDogFrame = (loaded: Loaded, dt: number): void => {
   applyLookAt(loaded, pose, dt);
 };
 
+const applyAcidFrame = (loaded: Loaded, dt: number): void => {
+  const speed = walkOn.checked ? Number(speedInput.value) : 0;
+  advanceWalk(dt, walkOn.checked, speed);
+  const duration = acidWindup.checked ? acidTemplate.animation.windupDuration : acidTemplate.animation.attackDuration;
+  advanceAttack(dt, duration);
+  if (hitTime !== undefined) {
+    hitTime += dt;
+    if (hitTime > acidTemplate.animation.hitDuration) {
+      hitTime = undefined;
+    }
+  }
+  const base = acidWalkPose(loaded.realized, dogDistance, speed, idleTime);
+  let attacked = base;
+  if (attackTime !== undefined) {
+    attacked = acidWindup.checked
+      ? acidWindupPose(loaded.realized, base, Math.sin((Math.PI * attackTime) / duration))
+      : acidAttackPose(loaded.realized, base, attackTime);
+  }
+  lastAcidPose = hitTime === undefined ? attacked : acidHitPose(loaded.realized, attacked, hitTime, hitSide);
+  applyLookAt(loaded, lastAcidPose, dt);
+};
+
 const applyLiveFrame = (loaded: Loaded, dt: number): void => {
-  if (loaded.template.bodyPlan === 'amalgam' || loaded.template.bodyPlan === 'acid') {
+  if (loaded.template.bodyPlan === 'acid') {
+    applyAcidFrame(loaded, dt);
+    return;
+  }
+  if (loaded.template.bodyPlan === 'amalgam') {
     return;
   }
   if (loaded.template.bodyPlan === 'crawler') {
@@ -755,6 +814,11 @@ const applyLiveFrame = (loaded: Loaded, dt: number): void => {
 /** Advances and poses one frame while dead: deathTime free-runs (deathPose clamps internally), from the
  * pose frozen at the moment of death — a falling body doesn't keep striding or swinging underneath itself. */
 const applyDeathFrame = (loaded: Loaded, dt: number): void => {
+  if (loaded.template.bodyPlan === 'acid') {
+    deathTime = (deathTime ?? 0) + dt;
+    loaded.actor.applyPose(acidDeathPose(loaded.realized, deathBasePose!, deathTime, deathDirection));
+    return;
+  }
   if (!(loaded.walkActor && loaded.bodyExtents)) {
     return;
   }

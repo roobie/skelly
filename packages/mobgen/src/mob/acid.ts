@@ -393,9 +393,9 @@ const buildAcid = (genome: Genome, template: AcidTemplate): AcidBody => {
       { onto: ['skin'] },
     );
 
-    return { jawTail, jawLocal, jawDepth };
+    return { jawTail, jawLocal, jawDepth, mouth: localHead([0, (g.mouthLevel - 0.5) * H, -headHalf[2]]) };
   };
-  const { jawTail, jawLocal, jawDepth } = buildHead();
+  const { jawTail, jawLocal, jawDepth, mouth } = buildHead();
 
   const buildArm = (side: 'L' | 'R') => {
     const sign = side === 'L' ? -1 : 1;
@@ -777,7 +777,13 @@ const buildAcid = (genome: Genome, template: AcidTemplate): AcidBody => {
   const materials: Record<string, MaterialDef> = { ...template.materials };
   const skinA = template.materials.skin!.color;
   materials.skin = { ...template.materials.skin!, color: lerp3(skinA, tuple(template.skinB), n('skinTint')) };
-  return { bones, features, materials, jointAdjacencyPolicy: 'reserve-overlaps' };
+  return {
+    bones,
+    features,
+    materials,
+    anchors: { mouth: { bone: 'skull', position: mouth } },
+    jointAdjacencyPolicy: 'reserve-overlaps',
+  };
 };
 
 registerBodyPlan('acid', {
