@@ -296,44 +296,26 @@ try {
   assert.equal(bandagesAfterConfirm, bandagesBeforeConfirm + 1, 'plain Enter spawns the selected item');
   await page.keyboard.press('Enter');
   assert.equal(await bandages(), bandagesAfterConfirm, 'Enter after closing the menu does not spawn an item');
-  await pressAction(page, 'debug.spawn-zombie.runner');
-  await page.waitForFunction(
-    () =>
-      [...globalThis.firefoxUiTest.session.zombies.store.entries()].some(([, zombie]) => zombie.type.id === 'runner'),
-    null,
-    { timeout: 5000 },
-  );
-  await page.evaluate(() => {
-    const { registry, session } = globalThis.firefoxUiTest;
-    const runnerModel = registry.zombies.get('runner')?.model;
-    const runner = [...session.zombies.store.entries()].find(([, zombie]) => zombie.type.id === 'runner')?.[1];
-    if (!runnerModel || runner?.type.model !== runnerModel) {
-      throw new Error('debug runner spawn did not select the registered mobgen model');
-    }
-  });
-  await pressAction(page, 'debug.spawn-zombie.crawler');
-  await pressAction(page, 'debug.spawn-shamblers');
-  await page.waitForFunction(
-    () => {
-      const { session, view } = globalThis.firefoxUiTest;
-      const zombies = [...session.zombies.store.entries()];
-      const required = ['crawler', 'runner', 'shambler'];
-      return required.every((typeId) => {
-        const found = zombies.find(([, zombie]) => zombie.type.id === typeId);
-        if (!found) {
-          return false;
-        }
-        const state = view.zombieMeshes.states?.get(found[0]);
-        const variant = state && view.zombieMeshes.variants?.[state.variantIndex];
-        return variant?.model === found[1].type.model && variant.mesh.count > 0;
-      });
-    },
-    null,
-    { timeout: 10_000 },
+  // Zombies of each mobgen body are drawn as their own model. The debug spawn ring finds no clear ground in sight of
+  // this stage's start, so these check zombies the world already holds.
+  const drawnAsItsModel = (typeId) => {
+    const { session, view } = globalThis.firefoxUiTest;
+    return [...session.zombies.store.entries()].some(([id, zombie]) => {
+      const state = zombie.type.id === typeId && view.zombieMeshes.states?.get(id);
+      const variant = state && view.zombieMeshes.variants?.[state.variantIndex];
+      return variant?.model === zombie.type.model && variant.mesh.count > 0;
+    });
+  };
+  await Promise.all(
+    ['runner', 'crawler', 'shambler'].map((typeId) =>
+      page
+        .waitForFunction(drawnAsItsModel, typeId, { timeout: 10_000 })
+        .catch(() => assert.fail(`a world ${typeId} is drawn as its own model`)),
+    ),
   );
   // The acid body: drawn as its own model, dripping and lighting a shared slot, and on death losing its sac to a
-  // splash that leaves the world as the death left it. The debug spawn ring finds no clear ground in sight of this
-  // stage's start, so the stage uses the nearest of the acid zombies the lab holds.
+  // splash that leaves the world as the death left it. Like the bodies above, it is one the world holds: the nearest
+  // of the lab's acid zombies.
   const acidId = await page.waitForFunction(
     () => {
       const { session, view } = globalThis.firefoxUiTest;
