@@ -222,11 +222,9 @@ local item(id, family, selector, params, massKg, profile) =
     item('front_sight_sporter', 'front-sight', ['style'], {
       style: 'sporting', section: 'sporter', bore: 'M',
     }, 0.02, 'hunting-rifle'),
-    row('front-sight-ringed', 'front-sight', { style: 'ringed' }, 0.04),
     item('rear_sight_sporter', 'sporting-rear-sight', [], {
       section: 'sporter', bore: 'M',
     }, 0.035, 'hunting-rifle'),
-    row('rear-sight-drum', 'drum-rear-sight', {}, 0.06),
     item('front_bead', 'front-sight-bead', [], {}, 0.005, 'pump-shotgun'),
     item('tube_magazine', 'tube-magazine', [], { lengthPercent: '75', barrelLength: 'M', bore: 'L' }, 0.2, 'pump-shotgun'),
     item('forend_pump', 'forend', [], { lengthPercent: '75', barrelLength: 'M', bore: 'L' }, 0.2, 'pump-shotgun'),

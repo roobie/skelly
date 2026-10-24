@@ -5,7 +5,7 @@ base + {
   assembly: base.assembly + {
     name: 'compact-smg',
     description: 'Compact submachine gun with a threaded, suppressor-ready muzzle.',
-    // Iron sights only: the archetype's optic and its rail would sit where the rear drum stands.
+    // No sights until a new sight design is ruled; see `gungen/docs/compact-smg-export.md`, "Rulings".
     parts: {
       [name]: parts[name]
       for name in std.objectFields(parts)
@@ -13,15 +13,11 @@ base + {
     } + {
       receiver: parts.receiver + { params: parts.receiver.params + { section: 'compact-smg', rail: 'none' } },
       barrel: parts.barrel + { params: parts.barrel.params + { muzzle: 'threaded' } },
-      'front-sight': { family: 'front-sight', params: { style: 'ringed' } },
-      'rear-sight': { family: 'drum-rear-sight' },
     },
     connections: [
       c
       for c in base.assembly.connections
-      if c.to != 'sight.base'
-    ] + [
-      { from: 'receiver.rear-sight', to: 'rear-sight.base' },
+      if c.to != 'sight.base' && c.to != 'front-sight.base'
     ],
   },
 }

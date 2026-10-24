@@ -1608,14 +1608,6 @@
       }
     },
     {
-      "family": "front-sight",
-      "id": "front-sight-ringed",
-      "massKg": 0.040000000000000001,
-      "match": {
-        "style": "ringed"
-      }
-    },
-    {
       "family": "sporting-rear-sight",
       "finish": {
         "accent": "rubber-black",
@@ -1629,12 +1621,6 @@
         "bore": "M",
         "section": "sporter"
       }
-    },
-    {
-      "family": "drum-rear-sight",
-      "id": "rear-sight-drum",
-      "massKg": 0.059999999999999998,
-      "match": {}
     },
     {
       "family": "front-sight-bead",

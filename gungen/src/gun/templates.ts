@@ -418,20 +418,15 @@ const compactSmg: Template = {
   ...smg,
   name: 'compact-smg',
   description: 'Compact submachine gun traced from a dimensioned schematic, on the proportions table.',
-  // The iron sights are the only sights: the optic rail and the optic would sit where the drum stands.
-  slots: [
-    ...smg.slots
-      .filter((slot) => slot.id !== 'front-sight' && slot.id !== 'sight')
-      .map((slot) =>
-        slot.id === 'receiver' ? { ...slot, params: { ...slot.params, section: 'compact-smg', rail: 'none' } } : slot,
-      ),
-    { id: 'front-sight', family: 'front-sight', params: { style: 'ringed' } },
-    { id: 'rear-sight', family: 'drum-rear-sight' },
-  ],
-  connections: [
-    ...smg.connections.filter((connection) => connection.to !== 'sight.base'),
-    { from: 'receiver.rear-sight', to: 'rear-sight.base' },
-  ],
+  // No sights until a new sight design is ruled; see `gungen/docs/compact-smg-export.md`, "Rulings".
+  slots: smg.slots
+    .filter((slot) => slot.id !== 'front-sight' && slot.id !== 'sight')
+    .map((slot) =>
+      slot.id === 'receiver' ? { ...slot, params: { ...slot.params, section: 'compact-smg', rail: 'none' } } : slot,
+    ),
+  connections: smg.connections.filter(
+    (connection) => connection.to !== 'sight.base' && connection.to !== 'front-sight.base',
+  ),
 };
 
 export const boltRifleBox: Template = {

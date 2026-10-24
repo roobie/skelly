@@ -1436,18 +1436,6 @@ const receiverPorts = (context: ReceiverContext): PortDef[] => {
           },
         ]
       : []),
-    ...(params.section === 'compact-smg'
-      ? [
-          {
-            id: 'rear-sight',
-            mount: 'sight-block',
-            gender: 'female' as const,
-            pos: [COMPACT_SMG_PROPORTIONS.sights.rear.xU, receiverTop, 0] as Vec3,
-            normal: Y,
-            up: X,
-          },
-        ]
-      : []),
     {
       id: 'barrel',
       mount: 'barrel',
@@ -3140,9 +3128,6 @@ const frontSightPosition = (style: string, length: SizeClass, barrelEnd: number,
   if (style === 'ak') {
     return barrelEnd - AK_PROPORTIONS.frontSight.behindBarrelEndU;
   }
-  if (style === 'ringed') {
-    return barrelEnd - COMPACT_SMG_PROPORTIONS.sights.front.behindTipU;
-  }
   return style === 'sporting' ? snapAkGrid(barrelEnd * (1 - muzzleInsetRatio)) : gasStationX(length);
 };
 const arHandguardLength = (length: SizeClass): number => gasStationX(length) - AR_FRONT_SIGHT_HALF_LENGTH;
@@ -3244,7 +3229,7 @@ const barrel: PartFamily = {
       from: [{ port: 'clamp', param: 'layout' }],
     },
     handguardLength: { ...size, from: [{ port: 'clamp', param: 'length' }] },
-    frontSightStyle: { ...choice('ar', 'ak', 'sporting', 'ringed'), from: [{ port: 'front-sight', param: 'style' }] },
+    frontSightStyle: { ...choice('ar', 'ak', 'sporting'), from: [{ port: 'front-sight', param: 'style' }] },
     frontSightMuzzleInsetRatio: {
       ...choice(...sportingFrontSightParams.muzzleInsetRatios),
       from: [{ port: 'front-sight', param: 'muzzleInsetRatio' }],
@@ -3399,10 +3384,9 @@ const barrel: PartFamily = {
 };
 
 /** A front sight block and post mounted near the muzzle. */
-const octagonalCollar = (id: string, flatRadius: number, along: readonly [number, number], centreY = 0): Solid[] => {
-  const lift = ([y, z]: readonly [number, number]): [number, number] => [y + centreY, z];
-  const inner = octagonalProfile(flatRadius).map(lift);
-  const outer = octagonalProfile(flatRadius + 0.25).map(lift);
+const octagonalCollar = (id: string, flatRadius: number, along: readonly [number, number]): Solid[] => {
+  const inner = octagonalProfile(flatRadius);
+  const outer = octagonalProfile(flatRadius + 0.25);
   return inner.map((point, index) => {
     const next = (index + 1) % inner.length;
     return {
@@ -3415,24 +3399,6 @@ const octagonalCollar = (id: string, flatRadius: number, along: readonly [number
   });
 };
 
-/** A post inside a protective ring, whose centre is the sight line; the stem rises from the muzzle collar. */
-const ringedFrontSight = (radius: number): PartDef => {
-  const { sightLineU, front } = COMPACT_SMG_PROPORTIONS.sights;
-  const halfThickness = front.ringThicknessU / 2;
-  return {
-    family: 'front-sight',
-    solids: [
-      ...octagonalCollar('collar', radius, [-AR_FRONT_SIGHT_HALF_LENGTH, AR_FRONT_SIGHT_HALF_LENGTH]),
-      ...octagonalCollar('ring', front.ringInnerRadiusU, [-halfThickness, halfThickness], sightLineU),
-      solid('post', [-GRID, radius, -GRID / 2], [GRID, sightLineU, GRID / 2]),
-    ],
-    ports: [{ id: 'base', mount: 'sight-block', gender: 'male', pos: [0, 0, 0], normal: X, up: Y, required: true }],
-    keepOuts: [],
-    axes: [{ kind: 'sight', origin: [0, sightLineU, 0], dir: X, referenceDistanceU: 4 }],
-    tags: [VOXEL_DETAIL],
-  };
-};
-
 /** A fixed A2 or AK front sight block and post, with the bore axis at y = 0. */
 const frontSight: PartFamily = {
   name: 'front-sight',
@@ -3442,14 +3408,11 @@ const frontSight: PartFamily = {
       ...choice('standard', 'ar', 'pump', 'ak', 'sporter', 'compact-smg'),
       from: [{ port: 'base', param: 'section' }],
     },
-    style: choice('ar', 'ak', 'sporting', 'ringed'),
+    style: choice('ar', 'ak', 'sporting'),
     muzzleInsetRatio: choice(...sportingFrontSightParams.muzzleInsetRatios),
   },
   build(params): PartDef {
     const radius = BARREL_RADIUS[cls(params, 'bore')];
-    if (params.style === 'ringed') {
-      return ringedFrontSight(radius);
-    }
     const ak = params.style === 'ak';
     const postHalf = GRID;
     const postHalfZ = ak ? SIGHT_GRAIN : GRID / 2;
@@ -3570,71 +3533,6 @@ const sportingRearSight: PartFamily = {
         { id: 'base', mount: 'sight-block', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true },
       ],
       axes: [{ kind: 'sight', origin: [0, height, 0], dir: X, referenceDistanceU: sporter ? eyeReliefU : 4 }],
-      tags: [VOXEL_DETAIL],
-      keepOuts: [],
-    };
-  },
-};
-
-const DRUM_CELL = 0.5;
-const DRUM_APERTURE_ORDER: readonly (readonly [number, number])[] = [
-  [1, 0],
-  [0, -1],
-  [0, 1],
-  [-1, 0],
-];
-
-/**
- * A static drum rear sight: an octagonal disc seen end-on from the shooter, with square apertures on a rim
- * parallel to the bore. The first aperture is the top one, centred on the sight line.
- */
-const drumRearSight: PartFamily = {
-  name: 'drum-rear-sight',
-  params: {},
-  build(): PartDef {
-    const { sightLineU, rear } = COMPACT_SMG_PROPORTIONS.sights;
-    const topY = sightLineU - COMPACT_SMG_PROPORTIONS.receiver.halfHeightU;
-    const centreY = topY - rear.rimU;
-    const half = rear.drumThicknessU / 2;
-    const cells = Math.round((2 * rear.drumRadiusU) / DRUM_CELL);
-    const open = DRUM_APERTURE_ORDER.slice(0, rear.apertureCount);
-    const isOpen = (y: number, z: number): boolean =>
-      open.some(
-        ([dy, dz]) =>
-          Math.abs(y - dy * rear.rimU) < rear.apertureHalfU && Math.abs(z - dz * rear.rimU) < rear.apertureHalfU,
-      );
-    const solids: Solid[] = [];
-    for (let row = 0; row < cells; row += 1) {
-      const y = -rear.drumRadiusU + (row + 0.5) * DRUM_CELL;
-      let runStart: number | undefined;
-      for (let col = 0; col <= cells; col += 1) {
-        const z = -rear.drumRadiusU + (col + 0.5) * DRUM_CELL;
-        const filled = col < cells && Math.abs(y) + Math.abs(z) <= 1.5 * rear.drumRadiusU && !isOpen(y, z);
-        if (filled && runStart === undefined) {
-          runStart = col;
-        } else if (!filled && runStart !== undefined) {
-          solids.push(
-            solid(
-              `drum-${row}-${runStart}`,
-              [-half, centreY + y - DRUM_CELL / 2, -rear.drumRadiusU + runStart * DRUM_CELL],
-              [half, centreY + y + DRUM_CELL / 2, -rear.drumRadiusU + col * DRUM_CELL],
-            ),
-          );
-          runStart = undefined;
-        }
-      }
-    }
-    const baseTop = centreY - rear.drumRadiusU;
-    if (baseTop > 0) {
-      solids.push(solid('base', [-half, 0, -1], [half, baseTop, 1]));
-    }
-    return {
-      family: 'drum-rear-sight',
-      solids,
-      ports: [
-        { id: 'base', mount: 'sight-block', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true },
-      ],
-      axes: [{ kind: 'sight', origin: [0, topY, 0], dir: X, referenceDistanceU: 4 }],
       tags: [VOXEL_DETAIL],
       keepOuts: [],
     };
@@ -5147,7 +5045,6 @@ export const FAMILIES: Readonly<Record<string, PartFamily>> = {
   'front-sight-bead': muzzleBead,
   'rail-front-sight': railFrontSight,
   'sporting-rear-sight': sportingRearSight,
-  'drum-rear-sight': drumRearSight,
   'gas-cylinder': gasCylinder,
   'gas-block': gasBlock,
   'ak-rear-sight': akRearSight,

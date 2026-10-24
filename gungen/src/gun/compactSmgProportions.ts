@@ -33,13 +33,6 @@ export const COMPACT_SMG_PROPORTIONS = {
     citedLengthU: citedBarrelLengthU,
     tipU: { threaded: barrelTipThreadedU, plain: barrelTipPlainU },
   },
-  // Both sights share one horizontal sight line above the bore. The drum's apertures sit on a rim of
-  // `rimU` about its axis; the first `apertureCount` of top, left, right and bottom are open.
-  sights: {
-    sightLineU: 7,
-    front: { behindTipU: 1, ringInnerRadiusU: 1, ringThicknessU: 0.5 },
-    rear: { xU: -15, drumRadiusU: 2.5, drumThicknessU: 1.5, rimU: 1.5, apertureHalfU: 0.5, apertureCount: 4 },
-  },
   handguard: { lengthU: 12.5 },
   grip: { lengthU: 8.5 },
   magazine: { lengthU: 14 },
