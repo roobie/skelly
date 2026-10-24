@@ -661,6 +661,10 @@
         "flame": [0.069000000000000006, 0.050000000000000003, 0]
       },
       "file": "assets/models/dead_desk_lamp.glb",
+      "grip": {
+        "at": [0, 0, 0],
+        "turn": [0, 0, 0]
+      },
       "id": "oil_lamp",
       "parts": {
         "arm": {

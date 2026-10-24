@@ -1,5 +1,7 @@
 ---
 read_if:
+  - you're changing fixed-reservoir lamp fuel, burn accounting or service admission
+  - you decide how realism should trade off against tedium
   - you change food exposure ownership or ambient catch-up
   - you change the test-house normal or debug-only boundary
   - you change regional paper-map coverage, item ownership or persistence
@@ -24,6 +26,7 @@ read_if:
   - you author lab equipment bays, curated storeys or supported descent lids
   - you change sleep onset, its tuning or cancellation
   - you're changing the rendering of zombie actor models
+  - you're considering a coarser mesh or level of detail for distant zombie bodies
   - you're integrating a mobgen amalgam body, its collision envelope or member hit ownership (#308)
   - you're changing how the amalgam's flesh meets terrain, the player or shots
   - you're measuring or reducing amalgam collision cost against its per-tick budget
@@ -124,6 +127,11 @@ place the authorities gave up on.
    laptop. Each player's machine runs the whole world. Multiplayer, after
    version 1, is lockstep, so peers exchange only inputs; see
    [ADR 0008](docs/decisions/0008-deterministic-world.md).
+
+7. **Realism without tedium.** Model the real physical constraints of an action,
+   but omit repeated procedure that adds no meaningful choice or consequence.
+   Physical consistency lets players reason from the world; needless repetition
+   does not add survival depth.
 
 ## Performance and scale
 
@@ -1216,6 +1224,9 @@ hand. Getting it into hand has its own handling time; using it is separate, and
 a two-handed item occupies both hands. What is held appears in first person,
 what is dropped appears in a pile, and furniture shows its contained items. A
 held light needs both its world illumination and a self-lit held presentation.
+A flame hidden inside the palm cannot communicate ignition, even when its world
+source is working. The lamp's authored grip must leave the flame visible; see
+`src/content/base/models-items.jsonnet`, `oil_lamp`, and `src/render/modelFlame.ts`, `ModelFlames`.
 
 **Held screens.** An item with a screen is held at a raised spot with the screen
 facing the eye and the palm on the item's back, the way a person holds a compass
@@ -1247,11 +1258,9 @@ surprise weapon use. See `src/game/canOpening.ts`, `openingTargetForHand`,
 `src/game/itemActions.ts`, `ItemActionSelection`, and `src/game/unpacking.ts`,
 `Unpacking`.
 
-An opened can retains a serving, not loose food. Its content-declared serving
-names the food and the vessel left after eating; this bounded full/empty model
-avoids a general pouring or refilling system. There are no spills. Keeping the
-same owned item through both transitions prevents food from escaping to storage
-and leaves the empty can where eating occurred. See `src/core/schema.ts`,
+An opened can retains its vessel so opening and eating cannot teleport food or
+leave an empty shell in a different place. Food exposure histories belong to
+servings, not measured fuel, so liquid transfer does not mix them. See `src/core/schema.ts`,
 `ItemSchema`, `src/game/unpacking.ts`, `Unpacking.complete`, and
 `src/game/survival.ts`, `Survival.finishConsuming`.
 
@@ -2054,6 +2063,13 @@ bright outdoor surfaces washed out without making dark targets inherit the user'
 outdoor lighting. See `src/render/playView.ts`, `prepareLighting`, and
 `src/render/skylight.ts`, `Skylight`.
 
+Small omnidirectional item lights must not inherit their holder's daylight washout:
+a bright doorway can otherwise extinguish their contribution throughout a dim room.
+Keep their authored world output rather than compensating with brighter fuel-light
+content, which would also change nighttime illumination. The separate held layer may
+still adapt to the viewer's sky. See `src/render/lightPool.ts`, `LightPool.update`,
+and `src/render/playView.ts`, `updateHeld`.
+
 Dark interiors make carried light useful without an authored indoor flag.
 For authored worlds, live opaque blocks and blocking furniture determine
 diffuse sky transport; placement geometry only bounds discovery. Roofs, openings
@@ -2152,11 +2168,17 @@ light stands the same way. See `src/render/models.ts`, `prepareModel`, and
 An oil lamp gives lamp oil a use, and a lit lamp set down at night makes the base a
 beacon: the player trades light for being seen, either lighting the room and being
 noticed from far off, or sitting in the dark. A lamp carried lit keeps a hand busy;
-a doused one stows. The lamp is a fuelled light whose oil sits in its canister slot,
-and it is refilled by swapping the oil in, not pouring, because refilling a cartridge
-is direction only; pouring and partial refills stay open (#536). The lamp is content
-only: any light with a fuel rate and a swappable fuel canister behaves the same. See
-`src/core/lights.ts`, `drainLight`, and `src/core/torch.ts`, `swapCanister`.
+a doused one stows. Its fixed reservoir keeps the bottle an ordinary bottle rather
+than a fitted part. Fuel moves only between explicitly selected compatible vessels:
+emptying needs a receiver, not disposal or an automatic search for nearby stock.
+Service requires extinguishing, but no cooling wait: there is no heat consequence
+to model, and a lamp-only heat system would invent procedure without a meaningful
+choice. See
+`src/core/liquids.ts`, `planLiquidTransfer`, `src/core/inventory.ts`, `Inventory.transferLiquid`,
+and `src/core/lights.ts`, `drainLight`.
+The reservoir readout owns the measured balance; the lamp's status reports only
+its switch state so the same oil cannot appear to be a second battery supply.
+See `src/game/survival.ts`, `Survival.describe`.
 
 A battery goes into a light only as the player chooses: dropped onto the battery slot
 on the light's card in the inventory, which shows the battery loaded, or used from one
@@ -2890,6 +2912,13 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   must build its own pose before drawing. See `src/render/mobActors.ts`,
   `MobActorMeshes.syncZombie`, `test/runnerRenderContinuity.test.ts`,
   `runEngagement`, and `test/mobActors.test.ts`, `MobActorMeshes`.
+- **Far zombie bodies draw at full detail:** a coarser mesh for distant bodies
+  cut submitted geometry but showed no repeatable whole-frame GPU saving, at two
+  crowd sizes under fixed and adaptive render scale (closed branch
+  `deadvox/far-actor-lod`). Any later coarse path keeps the full skeleton, parts
+  and joint contacts, so severing and stump gore work at any distance, and
+  crawlers keep full detail. Revisit when a frame profile shows far-body cost
+  (#1273).
 - **Sun shadows:** Favor a stable edge near the player over sharp shadows far
   beyond them. The remaining jaggedness is accepted; do not pursue further
   refinement without a new decision. See `sunShadowTexelSize` and

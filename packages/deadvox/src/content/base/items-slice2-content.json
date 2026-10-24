@@ -1,22 +1,31 @@
 {
   "items": [
     {
-      "canister": {
-        "capacity": 8
-      },
       "category": "material",
-      "description": "A small sealed bottle of fuel for lamps and improvised lighting.",
+      "description": "A small bottle for lamp oil.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "lamp_oil",
       "model": "lamp_oil_bottle",
-      "name": "Lamp oil",
+      "name": "Oil bottle",
       "notLoot": false,
       "size": [1, 2],
-      "stack": 2,
-      "weight": 500,
+      "vessel": {
+        "accepts": ["lamp_fuel"],
+        "capacityMicrolitres": 500000,
+        "initialContents": {
+          "kind": "filled",
+          "liquid": "lamp_fuel",
+          "volumeMicrolitres": 500000
+        },
+        "pour": {
+          "incrementMicrolitres": 10000,
+          "microlitresPerSimSecond": 50000
+        }
+      },
+      "weight": 100,
       "workInProgress": false
     },
     {
@@ -821,6 +830,13 @@
       "size": [2, 2],
       "weight": 600,
       "workInProgress": false
+    }
+  ],
+  "liquids": [
+    {
+      "densityGramsPerMillilitre": 0.80000000000000004,
+      "id": "lamp_fuel",
+      "name": "Lamp oil"
     }
   ],
   "recipes": [

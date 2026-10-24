@@ -29,13 +29,14 @@ import {
   batterySlotOption,
   batterySlotRefusal,
   consumption,
+  pourRefusal,
   stowTarget,
   useOption,
 } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { Readable, ReadRequest } from '../core/readable.ts';
 import type { Simulation } from '../core/sim.ts';
-import { simSeconds, simToGameSeconds } from '../core/time.ts';
+import { gameSeconds, simSeconds, simToGameSeconds } from '../core/time.ts';
 import { swapCanister } from '../core/torch.ts';
 import { queueTrapAction } from './bearTrapActions.ts';
 import { type ItemAction, ItemActionSelection, itemActionsFor } from './itemActions.ts';
@@ -196,7 +197,55 @@ export class Survival {
       }
       return swapCanister(this.inventory, tool, canister, this.hooks.feet);
     });
+    this.queue.registerAction('survival.pour', (params): string | undefined => {
+      const sourceUid = numberParam(params, 'sourceUid');
+      const receiverUid = numberParam(params, 'receiverUid');
+      const reason = this.pourRefusal(sourceUid, receiverUid);
+      if (reason) {
+        return reason;
+      }
+      const result = this.inventory.transferLiquid(sourceUid, receiverUid, numberParam(params, 'limitMicrolitres'));
+      if (!result.ok) {
+        return coreMessage(this.inventory.registry, 'liquidTransferRefused');
+      }
+      if (!this.pourRefusal(sourceUid, receiverUid)) {
+        this.enqueuePour(sourceUid, receiverUid, 'next');
+      }
+      return undefined;
+    });
     sim.scheduler.register({ id: 'lights', rate: 1, maxStep: 30, tick: (dt) => this.tickLights(dt) });
+  }
+
+  pourRefusal(sourceUid: number, receiverUid: number): string | undefined {
+    if (this.sim.body.actionRefusal) {
+      return this.sim.body.actionRefusal;
+    }
+    return pourRefusal(this.hooks.reach(), sourceUid, receiverUid);
+  }
+
+  pour(sourceUid: number, receiverUid: number): string | undefined {
+    const reason = this.pourRefusal(sourceUid, receiverUid);
+    if (reason) {
+      return reason;
+    }
+    this.enqueuePour(sourceUid, receiverUid, 'last');
+    return undefined;
+  }
+
+  private enqueuePour(sourceUid: number, receiverUid: number, position: 'last' | 'next'): void {
+    const source = this.inventory.itemByUid(sourceUid)!;
+    const tuning = defOf(this.inventory.registry, source.type).vessel!.pour!;
+    const plan = this.inventory.planLiquidTransfer(sourceUid, receiverUid, tuning.incrementMicrolitres);
+    if (!plan.ok) {
+      return;
+    }
+    const enqueue = position === 'next' ? 'enqueueNextAction' : 'enqueueAction';
+    this.queue[enqueue](
+      'survival.pour',
+      coreLabel(this.inventory.registry, 'pour'),
+      plan.volumeMicrolitres / tuning.microlitresPerSimSecond,
+      { sourceUid, receiverUid, limitMicrolitres: plan.volumeMicrolitres },
+    );
   }
 
   snapshotState(): Readonly<{ litUid?: number }> {
@@ -342,6 +391,8 @@ export class Survival {
       case 'consume':
         this.queue.enqueueAction('survival.consume', option.label, option.plan.time, { itemUid: item.uid });
         return undefined;
+      case 'pour':
+        return this.pour(item.uid, option.receiver!.uid);
       case 'battery':
         return this.enqueueBattery(option);
       case 'canister':
@@ -449,7 +500,9 @@ export class Survival {
       lines.push(fillText(text.freshnessDetail, { freshness: fresh }));
     }
     const share = chargeShare(registry, item);
-    if (share !== undefined) {
+    if (def.light?.liquidFuel) {
+      lines.push(coreLabel(registry, item.on ? 'lightOnStatus' : 'lightOffStatus'));
+    } else if (share !== undefined) {
       const charge = fillText(def.igniter ? text.fuelDetail : text.batteryDetail, { percent: Math.round(share * 100) });
       lines.push(def.light ? fillText(item.on ? text.lightOnDetail : text.lightOffDetail, { charge }) : charge);
     }
@@ -588,6 +641,8 @@ export class Survival {
   private douseLight(item: Item, spec: LightSpec): void {
     if (spec.burnTimeGameHours !== undefined) {
       drainBurnLight(item, this.sim.calendar);
+    } else if (spec.liquidFuel) {
+      drainLight(this.inventory.registry, item, gameSeconds(0), this.sim.calendar);
     }
     item.on = false;
     item.litAtGameTimestamp = undefined;
@@ -617,11 +672,12 @@ export class Survival {
       return;
     }
     const beforeCharge = chargeOf(registry, item);
+    const beforeRemainder = item.liquidBurnRemainder;
     const expired =
       spec.burnTimeGameHours === undefined
-        ? drainLight(registry, item, simToGameSeconds(this.sim.clock, simSeconds(dt))) !== undefined
+        ? drainLight(registry, item, simToGameSeconds(this.sim.clock, simSeconds(dt)), this.sim.calendar) !== undefined
         : drainBurnLight(item, this.sim.calendar);
-    if (chargeOf(registry, item) !== beforeCharge || expired) {
+    if (chargeOf(registry, item) !== beforeCharge || item.liquidBurnRemainder !== beforeRemainder || expired) {
       this.inventory.version += 1;
     }
     if (!expired) {

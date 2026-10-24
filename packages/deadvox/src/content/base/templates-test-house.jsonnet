@@ -13,6 +13,8 @@ local palette = {
   K: { furniture: 'crate', items: [
     { item: 'rechargeable_aa_battery', count: 1, charge: 0.25, placement: 'surface' },
     { item: 'flashlight', count: 1, charge: 0, placement: 'surface' },
+    { item: 'oil_lamp', count: 1, placement: 'surface' },
+    { item: 'lamp_oil', count: 1, placement: 'surface' },
   ] },
   Z: { furniture: 'crate', items: [
     { item: 'sample_note', count: 1, placement: 'surface' },

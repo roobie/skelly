@@ -17,6 +17,7 @@ import {
 import { magazineContentsReason, magazineSpec, magazineWellCalibre, slotsReason } from './magazine.ts';
 import { modelBodyMassKg } from './modelMass.ts';
 import { assertPaperMapItem, type PaperMapCoverage } from './paperMap.ts';
+import type { LiquidContents } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
 /** Craft or disassembly inputs/progress have exactly one owner: this ordinary item subtree. */
@@ -49,6 +50,8 @@ export interface ItemFields<Node> {
   /** Battery charge, fuel and the like; absent means full (as found). */
   charges?: number | undefined;
   batteryMicrojoules?: number;
+  liquidContents?: LiquidContents;
+  liquidBurnRemainder?: number;
   /** A light that's switched on. */
   on?: boolean;
   /** Remaining consumable-light burn in Game seconds; absent until first ignition. */
@@ -121,6 +124,12 @@ const foodExposureField = (
     ? {}
     : { foodExposure: foodAt === undefined ? { ...exposure } : projectFoodExposure(exposure, foodAt) };
 
+const liquidContentsField = (contents: LiquidContents | undefined): { liquidContents?: LiquidContents } =>
+  contents === undefined ? {} : { liquidContents: { ...contents } };
+
+const liquidBurnField = (remainder: number | undefined): { liquidBurnRemainder?: number } =>
+  remainder === undefined ? {} : { liquidBurnRemainder: remainder };
+
 const paperMapField = (paperMap: PaperMapCoverage | undefined): { paperMap?: PaperMapCoverage } =>
   paperMap === undefined ? {} : { paperMap: { ...paperMap } };
 
@@ -148,6 +157,8 @@ export const snapshotItem = (item: Item, foodAt?: number): Readonly<ItemState> =
     ...(item.cartridges === undefined ? {} : { cartridges: [...item.cartridges] }),
     ...cargoField(item.cargo),
     ...paperMapField(item.paperMap),
+    ...liquidContentsField(item.liquidContents),
+    ...liquidBurnField(item.liquidBurnRemainder),
     ...(item.slots === undefined
       ? {}
       : {
@@ -188,11 +199,16 @@ const assertSavedBurnState = (def: ItemDef, state: ItemState): void => {
       !Number.isFinite(state.burnRemainingGameSeconds));
   const missingActiveState =
     state.litAtGameTimestamp !== undefined &&
-    (burnTime === undefined || state.on !== true || state.burnRemainingGameSeconds === undefined);
+    (state.on !== true ||
+      (def.light?.liquidFuel
+        ? !Number.isSafeInteger(Math.round(state.litAtGameTimestamp * 1_000_000)) || state.litAtGameTimestamp < 0
+        : burnTime === undefined || state.burnRemainingGameSeconds === undefined));
   const litWithoutBurnState =
-    burnTime !== undefined &&
     state.on === true &&
-    (state.burnRemainingGameSeconds === undefined || state.litAtGameTimestamp === undefined);
+    (def.light?.liquidFuel
+      ? state.litAtGameTimestamp === undefined
+      : burnTime !== undefined &&
+        (state.burnRemainingGameSeconds === undefined || state.litAtGameTimestamp === undefined));
   if (invalidRemaining || missingActiveState || litWithoutBurnState) {
     throw new Error('Invalid saved light burn state');
   }
@@ -284,9 +300,64 @@ const restoreWork = (registry: Registry, work: NonNullable<ItemState['work']>): 
   components: work.components.map((component) => restoreItem(registry, component)),
 });
 
+const assertLiquidBurn = (registry: Registry, state: ItemState): void => {
+  const { light } = defOf(registry, state.type);
+  const remainder = state.liquidBurnRemainder;
+  if (light?.liquidFuel) {
+    assertSavedBurnState(defOf(registry, state.type), state);
+  }
+  if (
+    light?.liquidFuel
+      ? !(Number.isSafeInteger(remainder) && remainder! >= 0 && remainder! < 1_000_000)
+      : remainder !== undefined
+  ) {
+    throw new Error('Invalid saved liquid burn remainder');
+  }
+  const contents = state.liquidContents;
+  if (
+    light?.liquidFuel &&
+    state.on &&
+    !(contents?.kind === 'filled' && light.liquidFuel.accepts.includes(contents.liquid))
+  ) {
+    throw new Error('Invalid saved lit reservoir contents');
+  }
+};
+
+export const assertSavedLiquidContents = (registry: Registry, state: ItemState): void => {
+  assertLiquidBurn(registry, state);
+  const { vessel, light } = defOf(registry, state.type);
+  const contents = state.liquidContents;
+  if (!vessel) {
+    if (contents !== undefined) {
+      throw new Error('Invalid saved liquid contents: item has no vessel');
+    }
+    return;
+  }
+  const valid =
+    state.count === 1 &&
+    state.charges === undefined &&
+    state.batteryMicrojoules === undefined &&
+    state.burnRemainingGameSeconds === undefined &&
+    (light?.liquidFuel !== undefined || state.litAtGameTimestamp === undefined) &&
+    contents !== undefined &&
+    contents !== null &&
+    ((contents.kind === 'empty' && Object.keys(contents).length === 1) ||
+      (contents.kind === 'filled' &&
+        Object.keys(contents).length === 3 &&
+        registry.liquids.has(contents.liquid) &&
+        vessel.accepts.includes(contents.liquid) &&
+        Number.isSafeInteger(contents.volumeMicrolitres) &&
+        contents.volumeMicrolitres > 0 &&
+        contents.volumeMicrolitres <= vessel.capacityMicrolitres));
+  if (!valid) {
+    throw new Error('Invalid saved liquid contents');
+  }
+};
+
 export const restoreItem = (registry: Registry, state: ItemState): Item => {
   const def = defOf(registry, state.type);
   assertFoodExposure(registry, state);
+  assertSavedLiquidContents(registry, state);
   assertSavedBurnState(def, state);
   assertSavedFuse(def, state);
   assertSavedTrap(def, state);
@@ -321,6 +392,8 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
     ...(state.cartridges === undefined ? {} : { cartridges: [...state.cartridges] }),
     ...cargoField(state.cargo),
     ...paperMapField(state.paperMap),
+    ...liquidContentsField(state.liquidContents),
+    ...liquidBurnField(state.liquidBurnRemainder),
     ...(state.slots === undefined
       ? {}
       : {
@@ -423,13 +496,20 @@ export class ItemFactory {
   ): Item {
     const def = defOf(registry, type);
     assertPaperMapItem(def, count, paperMap);
+    if (def.vessel && count !== 1) {
+      throw new Error('Liquid vessels require one instance per item');
+    }
     const item: Item = {
       uid: this.nextUid,
       type,
       count,
       condition,
       ...paperMapField(paperMap),
+      ...liquidBurnField(def.light?.liquidFuel ? 0 : undefined),
     };
+    if (def.vessel) {
+      item.liquidContents = { ...def.vessel.initialContents };
+    }
     const exposure = initialFoodExposure(registry, def, madeAt);
     if (exposure) {
       item.foodExposure = exposure;
@@ -465,7 +545,7 @@ export class ItemFactory {
 
   /** Takes `count` off a stack into a new instance. */
   split(item: Item, count: number): Item {
-    if (item.paperMap !== undefined || count <= 0 || count >= item.count) {
+    if (item.liquidContents !== undefined || item.paperMap !== undefined || count <= 0 || count >= item.count) {
       throw new Error(`can't split ${count} off a stack of ${item.count}`);
     }
     item.count -= count;
@@ -583,15 +663,19 @@ export const footprint = (def: ItemDef, rotated: boolean): [number, number] =>
 
 export const cellCount = (def: ItemDef): number => def.size[0] * def.size[1];
 
-/** True when the item has no pockets, or they're all empty. */
 export const isEmpty = (item: Item): boolean =>
+  item.liquidContents?.kind !== 'filled' &&
   !item.work &&
   Object.values(item.slots ?? {}).every((child) => child === undefined) &&
   (item.pockets ?? []).every((grid) => grid.length === 0);
 
-/** Recipes may explicitly consume fitted parts, but never hidden pocket contents or unfinished work. */
+/** Recipes may consume fitted parts, but never silently discard liquid, pocket contents or unfinished work. */
 export const craftComponentEligible = (item: Item, consumeFitted = false): boolean =>
-  isEmpty(item) || (consumeFitted && !item.work && (item.pockets ?? []).every((grid) => grid.length === 0));
+  isEmpty(item) ||
+  (consumeFitted &&
+    item.liquidContents?.kind !== 'filled' &&
+    !item.work &&
+    (item.pockets ?? []).every((grid) => grid.length === 0));
 
 /** Condition as a word, from the content band table (`DESIGN.md`, "The item model"). */
 export const conditionWord = (registry: Registry, condition: number): string => {
@@ -624,6 +708,9 @@ export const stackRoom = (
     onto.firearm === undefined &&
     item.firearm === undefined &&
     !def.paperMap &&
+    !def.vessel &&
+    onto.liquidContents === undefined &&
+    item.liquidContents === undefined &&
     onto.paperMap === undefined &&
     item.paperMap === undefined &&
     isEmpty(onto) &&
@@ -709,11 +796,24 @@ export const weightOf = (registry: Registry, item: Item): number =>
   (typeWeightGrams(registry, item.type) +
     (defOf(registry, item.type).serving ? typeWeightGrams(registry, defOf(registry, item.type).serving!.food) : 0)) *
     item.count +
+  liquidWeightGrams(registry, item) +
   ammunitionWeight(registry, item) +
   (item.cartridges ?? []).reduce((sum, round) => sum + typeWeightGrams(registry, round), 0) +
   Object.values(item.slots ?? {}).reduce((sum, child) => sum + (child ? weightOf(registry, child) : 0), 0) +
   (item.pockets ?? []).flat().reduce((sum, p) => sum + weightOf(registry, p.item), 0) +
   (item.work?.components ?? []).reduce((sum, component) => sum + weightOf(registry, component), 0);
+
+const liquidWeightGrams = (registry: Registry, item: Item): number => {
+  const contents = item.liquidContents;
+  if (!contents || contents.kind === 'empty') {
+    return 0;
+  }
+  const liquid = registry.liquids.get(contents.liquid);
+  if (!liquid) {
+    throw new Error(`Missing liquid ${contents.liquid}`);
+  }
+  return (contents.volumeMicrolitres / 1000) * liquid.densityGramsPerMillilitre;
+};
 
 const ammunitionWeight = (registry: Registry, item: Item): number => {
   const state = item.firearm;

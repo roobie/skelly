@@ -1,4 +1,7 @@
+import data from './acidTemplate.json' with { type: 'json' };
+
 export interface LookAtProfile {
+  readonly headBone?: string;
   readonly neck: { readonly yawDeg: number; readonly pitchDeg: number };
   readonly head: { readonly yawDeg: number; readonly pitchDeg: number };
   readonly turnRateDegPerSecond: number;
@@ -6,6 +9,7 @@ export interface LookAtProfile {
 
 /** Presentation limits for the registered rigs; kept outside simulation templates and state. */
 export const LOOK_AT_PROFILES: Readonly<Record<string, LookAtProfile>> = {
+  acid: data.gaze,
   shambler: {
     neck: { yawDeg: 25, pitchDeg: 20 },
     head: { yawDeg: 35, pitchDeg: 25 },
