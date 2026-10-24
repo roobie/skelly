@@ -3,6 +3,7 @@ read_if:
   - you're deciding whether a URL parameter belongs in a mod, the hash, player options or the query
   - you're asking why a demo, bench world or tutorial is a mod rather than a URL preset
   - you're asking why developer view state stays out of save identity
+  - you distinguish bundled URL selectors from remote mod intake or tool handoff
 tags: [deadvox, adr, mods, url, debug, testing]
 ---
 
@@ -33,7 +34,7 @@ The design plan and its slices are in `packages/deadvox/docs/url-mods.md`.
 
 ## Reasons for the details
 
-- **A URL names only bundled mods.** Every mod a link can name is reviewed, bundled content, so links raise no remote-fetch, CORS or trust questions. Arbitrary files go through the mods panel.
+- **The bundled-id selector names only bundled mods.** It selects reviewed content without remote fetching. Arbitrary sources go through mod intake, not that selector. The authoring tool's separate URL handoff and URL-folder direction must resolve remote-fetch, CORS and trust questions before implementation; see `docs/decisions/0008-mod-authoring-tool.md`, "Testing, sharing and start flow".
 - **The start state is content.** A new demo is then a content file, not code, and the kit follows the same validation and save identity as every other definition. Placement errors stop startup rather than dropping an item silently, because a demo that quietly starts without its kit tests the wrong thing.
 - **Hands are named by role, not side.** A kit then follows the player's handedness option, and a left-handed player never has to swap.
 - **The hash overrides the seed.** Exploring other worlds under the same demo stays a hash edit rather than a new mod.

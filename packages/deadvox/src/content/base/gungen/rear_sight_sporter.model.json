@@ -1,0 +1,13 @@
+{
+  "id": "rear_sight_sporter",
+  "file": "assets/models/rear_sight_sporter.glb",
+  "gun": {},
+  "parts": {
+    "rear_sight_sporter": {
+      "item": "rear_sight_sporter",
+      "node": "rear_sight_sporter:sporting-rear-sight",
+      "massKg": 0.035,
+      "centreOfMass": [0.0005909090909090908, 0.005636363636363636, 0]
+    }
+  }
+}

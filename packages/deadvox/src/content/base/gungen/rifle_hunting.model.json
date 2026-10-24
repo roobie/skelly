@@ -2,49 +2,68 @@
   "id": "rifle_hunting",
   "file": "assets/models/rifle_hunting.glb",
   "parts": {
-    "barrel": { "node": "barrel:barrel", "massKg": 0.85, "centreOfMass": [0.276, 0, 3.3800251656466954e-17] },
+    "barrel": {
+      "item": "barrel_sporter_long",
+      "node": "barrel:barrel",
+      "massKg": 0.85,
+      "centreOfMass": [0.276, 0, 3.3800251656466954e-17]
+    },
     "bolt-carrier": {
+      "item": "bolt_carrier_bolt",
       "node": "bolt-carrier:bolt-carrier",
       "massKg": 0.35,
       "centreOfMass": [-0.10666540642722118, -0.0000793950850661626, 0.00010207939508505313]
     },
     "bolt-handle-arm": {
+      "item": "bolt_handle_sporter",
       "node": "bolt-handle-arm:bolt-handle-arm",
       "massKg": 0.07,
       "centreOfMass": [-0.17642232270276367, -0.021439290811054727, 0.029016968108291033]
     },
     "bolt-handle-knob": {
+      "item": "bolt_knob_sporter",
       "node": "bolt-handle-knob:bolt-handle-knob",
       "massKg": 0.025,
       "centreOfMass": [-0.1818461538461538, -0.041846153846153825, 0.04584615384615378]
     },
     "front-sight": {
+      "item": "front_sight_sporter",
       "node": "front-sight:front-sight",
       "massKg": 0.02,
       "centreOfMass": [0.523, 0.0019830028328611904, 0.00015580736543922176]
     },
     "handguard": {
+      "item": "handguard_sporter",
       "node": "handguard:handguard",
       "massKg": 0.35,
       "centreOfMass": [0.0019046153846153811, -0.025650769230769224, 0.00014230769230769196]
     },
     "lower": {
+      "item": "lower_sporter",
       "node": "lower:lower",
       "massKg": 0.18,
       "centreOfMass": [-0.10536842105263158, -0.05052631578947368, 6.187689090428732e-18]
     },
-    "magazine": { "node": "magazine:magazine", "massKg": 0.12, "centreOfMass": [-0.048, -0.028, 6.85802207522518e-18] },
+    "magazine": {
+      "item": "integral_magazine",
+      "node": "magazine:magazine",
+      "massKg": 0.12,
+      "centreOfMass": [-0.048, -0.028, 6.85802207522518e-18]
+    },
     "rear-sight": {
+      "item": "rear_sight_sporter",
       "node": "rear-sight:sporting-rear-sight",
       "massKg": 0.035,
       "centreOfMass": [0.075, 0.016789473684210524, 7.289527044621466e-18]
     },
     "receiver": {
+      "item": "receiver_sporter",
       "node": "receiver:receiver",
       "massKg": 0.7,
       "centreOfMass": [-0.08981801299907154, -0.00012441968430826342, -0.0007632311977715877]
     },
     "stock": {
+      "item": "stock_sporting_medium",
       "node": "stock:stock",
       "massKg": 0.5,
       "centreOfMass": [-0.3649837920489297, -0.06959082568807341, -0.000051681957186589046]

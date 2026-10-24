@@ -3,41 +3,49 @@
   "file": "assets/models/shotgun_pump.glb",
   "parts": {
     "receiver": {
+      "item": "receiver_pump",
       "node": "receiver:receiver",
       "massKg": 0.9,
       "centreOfMass": [-0.0771400359066427, -0.012795332136445237, -0.0005439856373429079]
     },
     "bolt-carrier": {
+      "item": "bolt_carrier_pump",
       "node": "bolt-carrier:bolt-carrier",
       "massKg": 0.2,
       "centreOfMass": [-0.012736842105263158, -0.002842105263157895, -1.5598132915455763e-18]
     },
     "lower": {
+      "item": "lower_pump",
       "node": "lower:lower",
       "massKg": 0.15,
       "centreOfMass": [-0.14222807017543862, -0.04782456140350878, 5.856819604343308e-18]
     },
     "barrel": {
+      "item": "barrel_pump_medium",
       "node": "barrel:barrel",
       "massKg": 0.8,
       "centreOfMass": [0.24745836985100791, 0, 3.0304910056025873e-17]
     },
     "front-bead": {
+      "item": "front_bead",
       "node": "front-bead:front-sight-bead",
       "massKg": 0.005,
       "centreOfMass": [0.44835087719298244, 0.021263157894736845, -0.00008771929824556177]
     },
     "tube": {
+      "item": "tube_magazine",
       "node": "tube:tube-magazine",
       "massKg": 0.2,
       "centreOfMass": [0.21024264178033017, -0.031886575735821966, -0.000030150753768818448]
     },
     "forend": {
+      "item": "forend_pump",
       "node": "forend:forend",
       "massKg": 0.2,
       "centreOfMass": [0.23190607935930108, -0.034292682926829264, -0.00008299963596645387]
     },
     "stock": {
+      "item": "stock_tapered_medium",
       "node": "stock:stock",
       "massKg": 0.545,
       "centreOfMass": [-0.399845983242977, -0.06746007885657962, -0.00004164613109911257]

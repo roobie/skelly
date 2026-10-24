@@ -1,0 +1,13 @@
+{
+  "id": "barrel_pump_medium",
+  "file": "assets/models/barrel_pump_medium.glb",
+  "gun": {},
+  "parts": {
+    "barrel_pump_medium": {
+      "item": "barrel_pump_medium",
+      "node": "barrel_pump_medium:barrel",
+      "massKg": 0.8,
+      "centreOfMass": [0.20745836985100785, 0, 0]
+    }
+  }
+}

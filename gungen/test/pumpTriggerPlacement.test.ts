@@ -6,15 +6,17 @@ import type { Assembly } from '@skelly/engine/assembly/schema.ts';
 import { validate } from '@skelly/engine/assembly/validate.ts';
 import { applyPoint } from '@skelly/engine/foundation/math.ts';
 import { describe, expect, it } from 'vitest';
+import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { pumpShotgun } from '../src/gun/templates.ts';
 
 const ROOT = join(import.meta.dirname, '..');
-const pumpDesign = (
-  JSON.parse(readFileSync(join(ROOT, 'designs', 'archetype-pump-shotgun.json'), 'utf8')) as {
-    assembly: Assembly;
-  }
-).assembly;
+// The authored design names catalogue items, so only the loader expands it into an assembly.
+const loadedPump = loadGunDesign(readFileSync(join(ROOT, 'designs', 'archetype-pump-shotgun.json'), 'utf8'));
+if (!loadedPump.ok) {
+  throw new Error(loadedPump.error.message);
+}
+const pumpDesign: Assembly = loadedPump.design.assembly;
 const samples = [
   { assembly: pumpDesign, label: 'archetype-pump-shotgun design' },
   { assembly: generate(pumpShotgun, gunDomain, 0), label: 'pump-shotgun seed 0' },

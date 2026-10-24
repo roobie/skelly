@@ -50,68 +50,40 @@
     "name": "hunting-rifle",
     "parts": {
       "barrel": {
-        "family": "barrel",
-        "params": {
-          "length": "L"
-        }
+        "item": "barrel_sporter_long"
       },
       "bolt-carrier": {
-        "family": "bolt-carrier",
-        "params": {
-          "handleProfile": "sporter",
-          "pattern": "bolt"
-        }
+        "item": "bolt_carrier_bolt"
       },
       "bolt-handle-arm": {
-        "family": "bolt-handle-arm"
+        "item": "bolt_handle_sporter"
       },
       "bolt-handle-knob": {
-        "family": "bolt-handle-knob"
+        "item": "bolt_knob_sporter"
       },
       "front-sight": {
-        "family": "front-sight",
+        "item": "front_sight_sporter",
         "params": {
-          "muzzleInsetRatio": "0.05",
-          "style": "sporting"
+          "muzzleInsetRatio": "0.05"
         }
       },
       "handguard": {
-        "family": "handguard"
+        "item": "handguard_sporter"
       },
       "lower": {
-        "family": "lower",
-        "params": {
-          "layout": "conventional",
-          "magazineWell": "recessed"
-        }
+        "item": "lower_sporter"
       },
       "magazine": {
-        "family": "magazine",
-        "params": {
-          "integral": "yes",
-          "length": "S",
-          "wellBody": "sporter"
-        }
+        "item": "integral_magazine"
       },
       "rear-sight": {
-        "family": "sporting-rear-sight"
+        "item": "rear_sight_sporter"
       },
       "receiver": {
-        "family": "receiver",
-        "params": {
-          "action": "bolt",
-          "bore": "M",
-          "feed": "top",
-          "section": "sporter"
-        }
+        "item": "receiver_sporter"
       },
       "stock": {
-        "family": "stock",
-        "params": {
-          "combDegrees": "2",
-          "length": "M",
-          "style": "sporting"
-        }
+        "item": "stock_sporting_medium"
       }
     },
     "root": "receiver"

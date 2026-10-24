@@ -1,0 +1,13 @@
+{
+  "id": "bolt_carrier_pump",
+  "file": "assets/models/bolt_carrier_pump.glb",
+  "gun": {},
+  "parts": {
+    "bolt_carrier_pump": {
+      "item": "bolt_carrier_pump",
+      "node": "bolt_carrier_pump:bolt-carrier",
+      "massKg": 0.2,
+      "centreOfMass": [-0.019894736842105264, -0.002842105263157895, 0]
+    }
+  }
+}
