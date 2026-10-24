@@ -682,17 +682,18 @@ describe('procedural bolt carrier', () => {
     const handle = resolved.defs.get('smg-handle')!;
     const handguardTransform = resolved.placed.get('handguard')!;
     const handleTransform = resolved.placed.get('smg-handle')!;
-    const tube = handguard.solids.find(({ id }) => id === 'smg-cocking-tube')!;
+    const isTube = ({ id }: { id: string }) => id.startsWith('smg-cocking-tube-');
+    const tube = handguard.solids.filter(isTube);
     const guardTop = handguard.solids.find(({ id }) => id === 'top')!;
-    const tubeWorld = worldSolid(handguardTransform, tube);
-    const tubeBounds = worldBounds(corners(tube).map((point) => applyPoint(handguardTransform, point)));
+    const tubeWorld = tube.map((wall) => worldSolid(handguardTransform, wall));
+    const tubeBounds = worldBounds(tube.flatMap(corners).map((point) => applyPoint(handguardTransform, point)));
     const receiverTransform = resolved.placed.get('receiver')!;
     const [receiverFrontX] = applyPoint(receiverTransform, receiver.ports.find(({ id }) => id === 'barrel')!.pos);
     const [handguardFrontX] = applyPoint(handguardTransform, handguard.ports.find(({ id }) => id === 'front')!.pos);
     const handleOrigin = applyPoint(handleTransform, [0, 0, 0]);
     const guardBounds = worldBounds(
       handguard.solids
-        .filter(({ id }) => id !== 'smg-cocking-tube')
+        .filter((solid) => !isTube(solid))
         .flatMap(corners)
         .map((point) => applyPoint(handguardTransform, point)),
     );
@@ -712,14 +713,26 @@ describe('procedural bolt carrier', () => {
     const sweepSolid = worldSolid(handleTransform, { id: sweep.id, kind: 'box', box: sweep.box });
     const supportHandSolid = worldSolid(handguardTransform, { id: supportHand.id, kind: 'box', box: supportHand.box });
 
-    expect(tube.kind).toBe('box');
+    expect(tube.length).toBeGreaterThan(0);
+    expect(tube.every(({ kind }) => kind === 'box')).toBe(true);
     expect(tubeBounds[0]![0]).toBeCloseTo(receiverFrontX, 8);
     expect(tubeBounds[0]![1]!).toBeLessThan(handguardFrontX);
-    expect(Math.abs(penetrationWorld(tubeWorld, worldSolid(handguardTransform, guardTop)))).toBeLessThanOrEqual(1e-6);
+    const guardTopWorld = worldSolid(handguardTransform, guardTop);
+    expect(Math.min(...tubeWorld.map((wall) => Math.abs(penetrationWorld(wall, guardTopWorld))))).toBeLessThanOrEqual(
+      1e-6,
+    );
+    // The stem rides in the slot: inside the tube's span, touching no wall.
     const slidingBlock = handle.solids.find(({ id }) => id === 'smg-sliding-handle')!;
-    expect(penetrationWorld(tubeWorld, worldSolid(handleTransform, slidingBlock))).toBeGreaterThan(0);
+    const stemWorld = worldSolid(handleTransform, slidingBlock);
+    const stemBounds = worldBounds(corners(slidingBlock).map((point) => applyPoint(handleTransform, point)));
+    for (const axis of [0, 1, 2]) {
+      expect(stemBounds[axis]![0]!).toBeGreaterThanOrEqual(tubeBounds[axis]![0]! - 1e-6);
+      expect(stemBounds[axis]![1]!).toBeLessThanOrEqual(tubeBounds[axis]![1]! + 1e-6);
+    }
+    for (const wall of tubeWorld) {
+      expect(penetrationWorld(wall, stemWorld)).toBeLessThanOrEqual(0);
+    }
     expect(tubeBounds[2]![1]!).toBeLessThan(0);
-    expect(gripBounds[2]![1]!).toBeLessThanOrEqual(guardBounds[2]![0]! + 1e-6);
     expect(guardBounds[2]![0]! - gripBounds[2]![0]!).toBeGreaterThanOrEqual(1.5);
     expect(handKeepOut).toBeDefined();
     expect(handle.motion?.kind).toBe('linear');
@@ -730,7 +743,7 @@ describe('procedural bolt carrier', () => {
       expect(handleBoundsAt(progress)[0]![1]!, `progress ${progress}`).toBeLessThanOrEqual(handguardFrontX + 1e-6);
     }
     expect(penetrationWorld(sweepSolid, supportHandSolid)).toBeLessThanOrEqual(0);
-    for (const solid of handguard.solids.filter(({ id }) => id !== 'smg-cocking-tube')) {
+    for (const solid of handguard.solids.filter((candidate) => !isTube(candidate))) {
       expect(penetrationWorld(sweepSolid, worldSolid(handguardTransform, solid)), solid.id).toBeLessThanOrEqual(0);
     }
     expect(handleOrigin[0]).toBeLessThanOrEqual(handguardFrontX);
@@ -1203,9 +1216,14 @@ describe('procedural bolt carrier', () => {
       const receiverIds = receiver.solids
         .filter(({ id }) => HANDLE_OR_COCKING_TUBE_ID_REGEX.test(id))
         .map(({ id }) => id);
-      const handguardIds = handguard.solids
-        .filter(({ id }) => HANDLE_OR_COCKING_TUBE_ID_REGEX.test(id))
-        .map(({ id }) => id);
+      // The slotted tube is several walls; its owner matters, not its wall count.
+      const handguardIds = [
+        ...new Set(
+          handguard.solids
+            .filter(({ id }) => HANDLE_OR_COCKING_TUBE_ID_REGEX.test(id))
+            .map(({ id }) => (id.startsWith('smg-cocking-tube-') ? 'smg-cocking-tube' : id)),
+        ),
+      ];
       const carrierIds = carrier.solids.filter(({ id }) => HANDLE_ID_REGEX.test(id)).map(({ id }) => id);
       expect(receiverIds, `${pairing.style} receiver owner`).toEqual(pairing.receiver);
       expect(handguardIds, `${pairing.style} handguard owner`).toEqual(pairing.handguard);

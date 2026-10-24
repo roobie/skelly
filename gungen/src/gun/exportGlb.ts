@@ -195,7 +195,9 @@ const buildActionExport = (resolved: Resolved): GunActionExport | undefined => {
         axis: toFileAxes(part.axis),
         strokeMetres: round6(length(part.travel) * resolved.domain.units.metresPerUnit),
         modes: part.modes,
-        ...(part.def.motion?.turn
+        // A turn without unlock and lock phases, such as the SMG handle's notch, is a held state, not a cycle step.
+        ...(part.def.motion?.turn &&
+        part.modes.every((mode) => cycle[mode]?.unlockSeconds !== undefined && cycle[mode]?.lockSeconds !== undefined)
           ? {
               turn: {
                 pivot: modelPoint(

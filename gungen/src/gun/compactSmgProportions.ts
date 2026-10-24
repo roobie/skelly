@@ -34,6 +34,8 @@ export const COMPACT_SMG_PROPORTIONS = {
     tipU: { threaded: barrelTipThreadedU, plain: barrelTipPlainU },
   },
   handguard: { lengthU: 12.5 },
+  // No source dimensions the slot or notch; see `gungen/docs/compact-smg-export.md`, "Content tunables".
+  chargingHandle: { slotLengthU: 3.5, notchTurnDegrees: 45 },
   grip: { lengthU: 8.5 },
   magazine: { lengthU: 14 },
   // Overall lengths run from the muzzle tip to the butt plate's rear face.

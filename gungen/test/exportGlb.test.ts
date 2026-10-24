@@ -562,12 +562,15 @@ describe('glb export: deadvox model entry', () => {
     }
   });
 
-  it.each(loadCorpus())('exports sight metadata from valid parts: $label', ({ label, assembly }) => {
+  it.each(loadCorpus())('exports sight metadata exactly when sight parts exist: $label', ({ label, assembly }) => {
     const result = exportGunGlb(assembly, ASSET, { appearanceProfile: 'ar' });
     if (!result.ok) {
       throw new Error(`${label}: export failed: ${JSON.stringify(result.error)}`);
     }
-    expect(result.modelEntry.gun.sight).toBeDefined();
+    const sighted = [...resolve(assembly, gunDomain).defs.values()].some(({ axes }) =>
+      axes.some(({ kind }) => kind === 'sight'),
+    );
+    expect(result.modelEntry.gun.sight !== undefined).toBe(sighted);
   });
 
   it('exports optic ocular diameter and eye relief with the sight line', () => {

@@ -450,7 +450,6 @@ export const HANDGUARD_CLEARANCE: Record<SizeClass, number> = { S: 0.25, M: 0.25
 const HANDGUARD_WALL_THICKNESS = 0.5;
 const RECEIVER_FRONT_HALF_HEIGHT = 2.5;
 export const BOLT_CARRIER_RUNNING_CLEARANCE_U = 0.1;
-const SMG_HANDLE_TRAVEL_U = 2.5;
 const SMG_HANDLE_FRONT_CLEARANCE_U = 0.5;
 const BOLT_HANDLE_ARM_RADIUS_U = 0.375;
 const BOLT_RAIL_HALF_WIDTH_U = 1;
@@ -2324,9 +2323,79 @@ const carrierHandleKeepOuts = (style: CarrierHandleStyle, solids: readonly Solid
 
 // ---- independent receiver-connected SMG slide ----
 
+/** Half the cocking tube's outer square: one GRID wall around a bore the handle's block turns in. */
+const SMG_TUBE_HALF_U = 2 * GRID;
+/** The stem's slot share along and across the tube; the stem runs with clearance inside it. */
+const SMG_HANDLE_STEM_SLOT_HALF_U = GRID;
+const SMG_HANDLE_STEM_HALF_U = GRID - BOLT_CARRIER_RUNNING_CLEARANCE_U;
+
+/** Travel and notch turn from content; the stem's share takes its part of the slot's length. */
+const smgHandleTravel = (): { readonly travelU: number; readonly turnRadians: number } => {
+  const { slotLengthU, notchTurnDegrees } = COMPACT_SMG_PROPORTIONS.chargingHandle;
+  // The notch opens only the tube's upper-left quarter, so a turn past a right angle would leave it.
+  if (!(slotLengthU > 2 * SMG_HANDLE_STEM_SLOT_HALF_U && notchTurnDegrees > 0 && notchTurnDegrees <= 90)) {
+    throw new RangeError('The SMG handle slot must be longer than its stem and its notch turn at most 90 degrees.');
+  }
+  return {
+    travelU: slotLengthU - 2 * SMG_HANDLE_STEM_SLOT_HALF_U,
+    turnRadians: (notchTurnDegrees * Math.PI) / 180,
+  };
+};
+
+/**
+ * A square cocking tube from the receiver's front face to `tubeEnd`, slotted on the shooter's left and
+ * notched upward at the slot's rear end. `centre` is the bore axis's y and z in the handguard frame.
+ */
+const smgCockingTube = (tubeEnd: number, centre: readonly [number, number]) => {
+  const { slotLengthU } = COMPACT_SMG_PROPORTIONS.chargingHandle;
+  const { travelU } = smgHandleTravel();
+  const [y, z] = centre;
+  const half = SMG_TUBE_HALF_U;
+  // One wall strip closes the slot's front end, so the handle rests inside the tube.
+  const slotFrontX = tubeEnd - GRID;
+  const slotRearX = slotFrontX - slotLengthU;
+  if (slotRearX < GRID) {
+    throw new RangeError('The SMG handle slot does not fit its cocking tube.');
+  }
+  const notchFrontX = slotRearX + 2 * SMG_HANDLE_STEM_SLOT_HALF_U;
+  const restX = slotFrontX - SMG_HANDLE_STEM_SLOT_HALF_U;
+  const topWall = (id: string, from: number, to: number) =>
+    metalSolid(id, [from, y + half - GRID, z - half], [to, y + half, z + half - GRID]);
+  const leftWall = (id: string, from: number, to: number) =>
+    metalSolid(id, [from, y - half + GRID, z - half], [to, y + half - GRID, z - half + GRID]);
+  return {
+    solids: [
+      metalSolid('smg-cocking-tube-bottom', [0, y - half, z - half], [tubeEnd, y - half + GRID, z + half]),
+      metalSolid('smg-cocking-tube-far', [0, y - half + GRID, z + half - GRID], [tubeEnd, y + half, z + half]),
+      topWall('smg-cocking-tube-top-rear', 0, slotRearX),
+      topWall('smg-cocking-tube-top-front', notchFrontX, tubeEnd),
+      leftWall('smg-cocking-tube-left-rear', 0, slotRearX),
+      leftWall('smg-cocking-tube-left-front', slotFrontX, tubeEnd),
+    ],
+    mount: [restX, y, z] as Vec3,
+    // The hand's path beside the slot; its length along the bore is the handle's travel.
+    travel: keepOut(
+      'smg-handle-travel',
+      [restX - travelU, y - SMG_HANDLE_STEM_SLOT_HALF_U, z - half - 1],
+      [restX, y + SMG_HANDLE_STEM_SLOT_HALF_U + 2 * GRID, z - half],
+      'smg-handle',
+    ),
+  };
+};
+
 const smgHandleShape = (): Solid[] => [
-  metalSolid('smg-sliding-handle', [-0.5, -0.25, -0.25], [0.5, 0.25, 0.25]),
-  metalSolid('smg-handle-grip', [-0.25, -0.25, 0.25], [0.25, 0.25, 2]),
+  // The block rides the bore, thin enough to turn in it.
+  metalSolid(
+    'smg-sliding-handle',
+    [-SMG_HANDLE_STEM_HALF_U, -SMG_HANDLE_STEM_HALF_U, -SMG_HANDLE_STEM_HALF_U],
+    [SMG_HANDLE_STEM_HALF_U, SMG_HANDLE_STEM_HALF_U, SMG_HANDLE_STEM_HALF_U],
+  ),
+  // The stem leaves the bore through the slot and ends in the grip.
+  metalSolid(
+    'smg-handle-grip',
+    [-SMG_HANDLE_STEM_HALF_U, -SMG_HANDLE_STEM_HALF_U, 0],
+    [SMG_HANDLE_STEM_HALF_U, SMG_HANDLE_STEM_HALF_U, SMG_TUBE_HALF_U + 1.75],
+  ),
 ];
 
 const smgSlidingHandle: PartFamily = {
@@ -2336,7 +2405,7 @@ const smgSlidingHandle: PartFamily = {
     const solids = smgHandleShape();
     const [minimum, maximum] = solidsBounds(solids);
     const clearance = CARRIER_HANDLE_STYLES.smg.handClearanceU;
-    const travel = SMG_HANDLE_TRAVEL_U;
+    const { travelU: travel, turnRadians } = smgHandleTravel();
     return {
       family: 'smg-handle',
       solids,
@@ -2361,6 +2430,8 @@ const smgSlidingHandle: PartFamily = {
         axis: [1, 0, 0],
         start: [0, 0, 0],
         end: [0, 0, 0],
+        // At the slot's rear end the stem turns up about the bore into the notch: the held-back state.
+        turn: { pivot: [0, 0, 0], axis: [-1, 0, 0], angleRadians: turnRadians },
         sourceKeepOut: { port: 'mount', id: 'smg-handle-travel' },
       },
     };
@@ -3798,8 +3869,8 @@ const handguard: PartFamily = {
         : undefined;
     const cockingTube =
       tubeEnd === undefined
-        ? []
-        : [metalSolid('smg-cocking-tube', [0, outerY, -outerZ], [tubeEnd, outerY + 0.5, -outerZ + 0.5])];
+        ? undefined
+        : smgCockingTube(tubeEnd, [outerY + SMG_TUBE_HALF_U, -outerZ + SMG_TUBE_HALF_U]);
     const clamp =
       clampRadius && params.section !== 'sporter'
         ? [
@@ -3839,7 +3910,7 @@ const handguard: PartFamily = {
     }
     return {
       family: 'handguard',
-      solids: [...bodySolids, ...clamp, ...cockingTube],
+      solids: [...bodySolids, ...clamp, ...(cockingTube?.solids ?? [])],
       ports: [
         { id: 'rear', mount: 'handguard', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },
         ...(params.mount === 'free-float'
@@ -3884,21 +3955,21 @@ const handguard: PartFamily = {
                 slots: { count: (len - 4) / 2 + 1, pitch: 2 },
               },
             ]),
-        ...(tubeEnd === undefined
+        ...(cockingTube === undefined
           ? []
           : [
               {
                 id: 'smg-handle',
                 mount: 'smg-handle',
                 gender: 'female' as const,
-                pos: [tubeEnd, outerY + 0.25, -outerZ + 0.25] as Vec3,
+                pos: cockingTube.mount,
                 normal: X,
                 up: Y,
               },
             ]),
       ],
       keepOuts:
-        tubeEnd === undefined
+        cockingTube === undefined
           ? []
           : [
               keepOut(
@@ -3906,12 +3977,7 @@ const handguard: PartFamily = {
                 [snapAkGrid(len * 0.25), -outerY, -outerZ - 1],
                 [snapAkGrid(len * 0.75), outerY, -outerZ],
               ),
-              keepOut(
-                'smg-handle-travel',
-                [tubeEnd - SMG_HANDLE_TRAVEL_U / 2, outerY + 0.25, -outerZ - 1],
-                [tubeEnd + SMG_HANDLE_TRAVEL_U / 2, outerY + 1.25, -outerZ],
-                'smg-handle',
-              ),
+              cockingTube.travel,
             ],
       axes: [],
     };

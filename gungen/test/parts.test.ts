@@ -166,7 +166,8 @@ const onGridWithCarrierClearance = (value: number, step: number, family: PartFam
   if (onGrid(value, step)) {
     return true;
   }
-  if (family.name !== 'receiver') {
+  // Receiver cavities and the SMG handle stem in its slot stand one running clearance off the grid.
+  if (family.name !== 'receiver' && family.name !== 'smg-handle') {
     return false;
   }
   const nearest = Math.round(value / step) * step;

@@ -50,11 +50,16 @@ const clearsInterval = (
   );
 };
 
-export const sweepBoltAction = (resolved: Resolved): readonly string[] => {
+/**
+ * Certify every turning mover's path. A turn bolt turns at battery and then draws; the SMG handle draws to
+ * its slot's rear end and then turns into the notch.
+ */
+export const sweepTurningAction = (resolved: Resolved): readonly string[] => {
   const action = resolveGunAction(resolved);
-  if (action?.kind !== 'bolt') {
+  if (!action) {
     return [];
   }
+  const turnFirst = action.kind === 'bolt';
   const moving = new Set(Object.values(action.parts).map(({ id }) => id));
   const obstacles = [...resolved.defs]
     .filter(([id]) => !moving.has(id))
@@ -63,7 +68,10 @@ export const sweepBoltAction = (resolved: Resolved): readonly string[] => {
     );
   return Object.values(action.parts).flatMap((part) => {
     const motion = part.def.motion!;
-    const turn = motion.turn!;
+    const { turn } = motion;
+    if (!turn) {
+      return [];
+    }
     return part.def.solids.flatMap((solid) => {
       const [min, max] = localSolidBounds(solid);
       // Axial length does not contribute to turn speed, especially for the long rear bolt tail.
@@ -78,8 +86,12 @@ export const sweepBoltAction = (resolved: Resolved): readonly string[] => {
           ),
         ),
       );
-      const turnAt = cachedPoses((phase) => worldSolid(motionTransform(part.placed, motion, 0, phase), solid));
-      const drawAt = cachedPoses((phase) => worldSolid(motionTransform(part.placed, motion, phase, 1), solid));
+      const turnAt = cachedPoses((phase) =>
+        worldSolid(motionTransform(part.placed, motion, turnFirst ? 0 : 1, phase), solid),
+      );
+      const drawAt = cachedPoses((phase) =>
+        worldSolid(motionTransform(part.placed, motion, phase, turnFirst ? 1 : 0), solid),
+      );
       return obstacles
         .filter(
           ({ shape }) =>
