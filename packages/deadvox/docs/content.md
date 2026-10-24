@@ -3,6 +3,7 @@ read_if:
   - you author or change Deadvox content sources or their build pipeline
   - you change the test-house layout or its authored structures
   - you change content schemas, validation, registry merging, browser-mod identity or content-loading test fixtures
+  - you integrate mod selection into the ordinary start flow
   - you add or change a bundled mod such as beginner mode, or how `?mods=` selects one
   - you add code that reads a content row by a fixed id
   - you change runtime escrow roles, severed-part item policy or world liveness tuning
@@ -66,7 +67,10 @@ Preserved-save notices name pack differences with the mod's own id, without its
 internal browser namespace. Raw decoder diagnostics do not belong in that notice:
 an ordinary game update is not a mod problem. See `src/ui/saveController.ts`,
 `SaveController.inspectOtherNamespaces`, and `../INTERFACE.md`, "Text".
-The panel remains opt-in pending BR's decision about making it the default entry.
+Mod selection must be integrated into the ordinary start flow alongside new-game and
+Continue, using the same admission and save-identity checks rather than a separate
+startup path. This is the implementation direction, not a claim that the integration
+has landed; see `docs/decisions/0008-mod-authoring-tool.md`, "Testing, sharing and start flow".
 
 ## Bundled mods
 
