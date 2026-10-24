@@ -94,6 +94,22 @@ export const LUNGE_GRAB: AttackClip = {
 const isVec3 = (value: unknown): value is readonly [number, number, number] =>
   Array.isArray(value) && value.length === 3 && value.every((n) => Number.isFinite(n));
 
+/** What is wrong with one authored key, or undefined when it has the shape `AttackKey` promises. */
+const keyProblem = (key: unknown): string | undefined => {
+  const k = key as Partial<Record<keyof AttackKey, unknown>> | null;
+  if (typeof k !== 'object' || k === null || !Number.isFinite(k.t)) {
+    return 'has a key that is not an object with a numeric time t';
+  }
+  const { rotations, pelvisDrop } = k;
+  if (typeof rotations !== 'object' || rotations === null || Array.isArray(rotations)) {
+    return 'has a key whose rotations is not a map of bone to [x, y, z]';
+  }
+  if (!Object.values(rotations).every(isVec3)) {
+    return 'has a rotation that is not [x, y, z]';
+  }
+  return pelvisDrop !== undefined && !Number.isFinite(pelvisDrop) ? 'has a pelvisDrop that is not a number' : undefined;
+};
+
 /** Checks one authored clip at the content boundary, so a malformed entry fails at import with its id
  * instead of surfacing as an undefined during sampling. */
 const contentClip = (id: string, value: unknown): AttackClip => {
@@ -111,19 +127,9 @@ const contentClip = (id: string, value: unknown): AttackClip => {
     return bad('needs numeric duration and hitTime and a keys list');
   }
   for (const key of clip.keys as readonly unknown[]) {
-    const k = key as Partial<Record<keyof AttackKey, unknown>> | null;
-    if (typeof k !== 'object' || k === null || !Number.isFinite(k.t)) {
-      return bad('has a key that is not an object with a numeric time t');
-    }
-    const rotations = k.rotations;
-    if (typeof rotations !== 'object' || rotations === null || Array.isArray(rotations)) {
-      return bad('has a key whose rotations is not a map of bone to [x, y, z]');
-    }
-    if (!Object.values(rotations).every(isVec3)) {
-      return bad('has a rotation that is not [x, y, z]');
-    }
-    if (k.pelvisDrop !== undefined && !Number.isFinite(k.pelvisDrop)) {
-      return bad('has a pelvisDrop that is not a number');
+    const problem = keyProblem(key);
+    if (problem) {
+      return bad(problem);
     }
   }
   return clip as AttackClip;
