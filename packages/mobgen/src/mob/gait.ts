@@ -66,20 +66,27 @@ const chaseBlend = (speed: number): number => clamp((speed - 0.8) / 2, 0, 1);
 const MAX_YAW_DEG = 6; // pelvis yaw amplitude at the longest (cap-saturating) strides
 const JAW_LAG = 0.08; // fraction of a cycle the jaw bounce lags each heel-strike, as if from inertia
 
-// Sideways sway (width-wise waddle): no new sampled params — girth/pelvisSway/limp (already sampled) drive
-// how wide and how much a given actor sways, so a brute (heavy girth) lands widest and a jittery/limping
-// actor sways more. Width is a *target total* (girth-driven), not a fixed add-on — the rig's own sampled
-// hipWidth already varies a lot on its own, and an add-on stacked on top of that overshot badly (how far
-// was not recorded; the outcome, per 596311a, is feet landing 0.27-0.44 m apart, brute widest).
-/** Extra outward step width beyond the hip (each side), so ankle-to-ankle lands near a girth-driven target
- * (~0.3-0.45 m total across the three templates) regardless of this actor's own sampled hip width. Can be
- * negative (feet land inside the hips) for a narrow-hipped, high-girth-range-relative actor. */
-const stepWidthExtra = (params: HumanoidParams, hipWidthTotal: number): number => {
+// Sideways sway (width-wise waddle): no new sampled params — the body's own width content plus
+// pelvisSway/limp (already sampled) drive how wide and how much a given actor sways, so a brute (heavy
+// girth) lands widest and a jittery/limping actor sways more. Width is a *target total*, not a fixed
+// add-on — the rig's own sampled hipWidth already varies a lot on its own, and an add-on stacked on top
+// of that overshot badly (how far was not recorded; the outcome, per 596311a, is feet landing 0.27-0.44 m
+// apart, brute widest).
+/** This actor's target total stance width (ankle to ankle, m): the body's own width base plus a little
+ * more for a jittery or limping actor. The base is whichever width param the body's template samples —
+ * `stepWidth` itself (the skeleton's explicit width, since it has no bulk param) or the bulk width a
+ * flesh body's `girth` asks for — so code never supplies a third, hidden default for a missing choice. */
+const stanceWidthTarget = (params: HumanoidParams): number => {
   const swayNorm = clamp(params.pelvisSway / 6, 0, 1);
   const limpNorm = clamp(params.limp, 0, 1);
-  const desiredTotal = 0.03 + 0.3 * params.girth + 0.02 * swayNorm + 0.01 * limpNorm;
-  return (desiredTotal - hipWidthTotal) / 2;
+  const base = params.stepWidth ?? 0.03 + 0.3 * params.girth;
+  return base + 0.02 * swayNorm + 0.01 * limpNorm;
 };
+/** Extra outward step width beyond the hip (each side), so ankle-to-ankle lands near the body's own
+ * width target regardless of this actor's own sampled hip width. Can be negative (feet land inside the
+ * hips) for a narrow-hipped, wide-target actor. */
+const stepWidthExtra = (params: HumanoidParams, hipWidthTotal: number): number =>
+  (stanceWidthTarget(params) - hipWidthTotal) / 2;
 // Floor on a foot's own world-X distance off-centre (see landingX) — keeps a crossover stagger's swing
 // path a safe margin clear of the opposite, planted foot.
 const MIN_WORLD_OUTWARD = 0.03;
@@ -715,8 +722,8 @@ const legAndFootRotations = (ctx: GaitContext): LegResult => {
     return { ankleRestY: leg.ankleRestY, heelLen: leg.heelLen, toeLen: leg.toeLen, rollMul };
   };
   // Wider base: a step's landing X is the plan's own jitter plus a fixed offset for its side that brings
-  // ankle-to-ankle width to a girth-driven target regardless of this actor's own sampled hip width (see
-  // stepWidthExtra). widthSign reads the actual rig's sign convention off the bone rather than assuming one.
+  // ankle-to-ankle width to the body's own width target regardless of this actor's own sampled hip width
+  // (see stepWidthExtra). widthSign reads the actual rig's sign convention off the bone rather than assuming one.
   const widthSign = (side: Side): number => Math.sign(legFor(side).thigh.head[0]) || (side === 'L' ? -1 : 1);
   const hipWidthTotal = legR.thigh.head[0] - legL.thigh.head[0];
   const widthExtra = stepWidthExtra(params, hipWidthTotal);

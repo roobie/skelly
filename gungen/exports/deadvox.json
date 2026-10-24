@@ -733,5 +733,77 @@
       "detailGrain": 0.002,
       "grain": 0.0040000000000000001
     }
+  },
+  {
+    "id": "revolver_frame",
+    "kind": "part",
+    "source": "revolver_frame",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "revolver_barrel",
+    "kind": "part",
+    "source": "revolver_barrel",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "revolver_cylinder",
+    "kind": "part",
+    "source": "revolver_cylinder",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "revolver_crane",
+    "kind": "part",
+    "source": "revolver_crane",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "revolver_ejector",
+    "kind": "part",
+    "source": "revolver_ejector",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "revolver_grip",
+    "kind": "part",
+    "source": "revolver_grip",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "revolver_hammer",
+    "kind": "part",
+    "source": "revolver_hammer",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "revolver_trigger",
+    "kind": "part",
+    "source": "revolver_trigger",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
   }
 ]

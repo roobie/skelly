@@ -1,0 +1,14 @@
+{
+  "id": "screwdriver",
+  "file": "assets/models/screwdriver.glb",
+  "parts": {
+    "screwdriver": {
+      "node": "screwdriver:compound",
+      "massKg": 0.16,
+      "centreOfMass": [0.06330532240545078, -0.000039399624765478433, -0.000031104966920114464]
+    }
+  },
+  "grip": { "at": [0.052000000000000005, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

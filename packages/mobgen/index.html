@@ -71,6 +71,10 @@
         <div class="row">
           <button id="attack-btn" type="button" title="Press A">Attack (A)</button>
         </div>
+        <label class="field">
+          Clip
+          <select id="attack-clip"></select>
+        </label>
         <label><input id="attack-loop" type="checkbox" /> Loop every 1.5 s (cooldown)</label>
         <label id="acid-windup-label" hidden><input id="acid-windup" type="checkbox" /> Spit wind-up</label>
       </fieldset>
@@ -101,6 +105,10 @@
         <label><input type="checkbox" data-layer="skeleton" /> Skeleton</label>
         <label><input type="checkbox" data-layer="colorByBone" /> Colour by bone</label>
         <label><input type="checkbox" data-layer="shambler" /> Shambler (for scale)</label>
+      </fieldset>
+      <fieldset id="scene">
+        <legend>Scene</legend>
+        <label><input id="dark-scene" type="checkbox" /> Dark scene (judge glow)</label>
       </fieldset>
       <p class="hint">Drag to orbit, scroll to zoom.</p>
       <p id="hover"></p>

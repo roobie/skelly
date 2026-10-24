@@ -33,6 +33,10 @@ export interface Template {
   readonly budgets: Budgets;
   /** Fixed support-bone ids, or the generated voxels' actual ground contacts. */
   readonly supportBones: SupportBones;
+  /** The shared-rig attack clip this template's content selects (mob/attack.ts, ATTACK_CLIPS owns the
+   * ids). Required for a template that attacks through the shared rig; resolving it refuses an absent
+   * or unknown selection rather than falling back. */
+  readonly attackClip?: string;
   /** Readiness for consumers; see `TemplateStatus`. Omitted means ready. */
   readonly status?: TemplateStatus;
 }

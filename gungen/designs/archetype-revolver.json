@@ -46,44 +46,31 @@
     "name": "archetype-revolver",
     "parts": {
       "barrel": {
-        "family": "revolver-barrel",
-        "params": {
-          "length": "M",
-          "style": "classic"
-        }
+        "item": "revolver_barrel"
       },
       "crane": {
-        "family": "revolver-crane"
+        "item": "revolver_crane"
       },
       "cylinder": {
-        "family": "revolver-cylinder",
+        "item": "revolver_cylinder",
         "params": {
-          "chamberCount": "6",
           "chamberIndex": "0"
         }
       },
       "ejector": {
-        "family": "revolver-ejector"
+        "item": "revolver_ejector"
       },
       "frame": {
-        "family": "revolver-frame",
-        "params": {
-          "bore": "M",
-          "butt": "round",
-          "frameSize": "M"
-        }
+        "item": "revolver_frame"
       },
       "grip": {
-        "family": "revolver-grip",
-        "params": {
-          "length": "M"
-        }
+        "item": "revolver_grip"
       },
       "hammer": {
-        "family": "revolver-hammer"
+        "item": "revolver_hammer"
       },
       "trigger": {
-        "family": "revolver-trigger"
+        "item": "revolver_trigger"
       }
     },
     "root": "frame"

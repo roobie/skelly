@@ -2,8 +2,8 @@
 // reference joint layout so the shared walk, idle and attack poses drive it unchanged; its shape,
 // sizes and colours come from the template's `geometry` and `materials` (skeletonTemplate.jsonnet).
 //
-// Face parts and the separate ribs are snapped to voxel rows and columns: they are near the voxel size,
-// so an unsnapped one would merge with its neighbour or vanish.
+// Face parts, the separate ribs and the digits are snapped to voxel rows and columns: they are near
+// the voxel size, so an unsnapped one would merge with its neighbour or vanish.
 
 import type { Body, Feature } from '../core/body.ts';
 import { registerBodyPlan, sampleParams } from '../core/generate.ts';
@@ -15,6 +15,7 @@ import {
   HUMANOID_LIMB_BONES,
   type HumanoidParams,
   type JointLayout,
+  type JointLayoutParams,
   jointLayout,
   REF,
   snapCol,
@@ -37,7 +38,14 @@ type Geometry = Omit<
   readonly palmHalf: Pair;
 };
 
-type SkeletonParams = HumanoidParams & { readonly jawGape: number; readonly boneTint: number };
+/** The skeleton's sampled params: the shared proportions the humanoid rig needs, plus its own face and
+ * tint dials. Girth is deliberately absent — the skeleton has no bulk; its stance width is the gait's
+ * own `stepWidth` param (see gait.ts, stanceWidthTarget). */
+type SkeletonParams = Omit<HumanoidParams, 'girth'> & {
+  readonly jawGape: number;
+  readonly boneTint: number;
+  readonly stepWidth: number;
+};
 
 const SIDES = ['L', 'R'] as const;
 type Side = (typeof SIDES)[number];
@@ -45,7 +53,7 @@ const sideSign = (side: Side): number => (side === 'L' ? -1 : 1);
 
 const SKELETON_PARAM_ORDER = [
   'height',
-  'girth',
+  'stepWidth',
   'shoulderWidth',
   'hipWidth',
   'headScale',
@@ -182,12 +190,25 @@ const skeletonLayout = (p: SkeletonParams, g: Geometry, v: number): { layout: Jo
       ];
     }),
   ) as unknown as JointLayout['leg'];
+  // The hand bone stops just past the palm (its length is a marrow concern, not a look tunable:
+  // voxelize.ts's marrow core rasterizes the wrist-to-tail line, and a bone running the hand's full
+  // length would bridge the air column between the two middle fingers — see buildHand). Fingers reach
+  // the content's hand length regardless of where the bone ends.
+  const arm = Object.fromEntries(
+    SIDES.map((side) => {
+      const a = frame.arm[side];
+      const dir = normalize(sub(a.handTip, a.wrist));
+      const tail = add(a.wrist, scale(dir, g.palmLength * h * 1.2));
+      return [side, { ...a, handTip: tail }];
+    }),
+  ) as unknown as JointLayout['arm'];
   const layout: JointLayout = {
     ...frame,
     height: h,
     head: { head: base, tail: add(base, upTilted(g.headBoneLength * size, tilt)) },
     jaw: { head: hinge, tail: chin },
     leg: legs,
+    arm,
   };
   return { layout, skull: { base, size, faceFront, hinge, jawRot, chin } };
 };
@@ -225,7 +246,7 @@ const buildSpine = (layout: JointLayout, skull: SkullLayout, g: Geometry, v: num
   return features;
 };
 
-const buildRibcage = (layout: JointLayout, p: HumanoidParams, g: Geometry, v: number): Feature[] => {
+const buildRibcage = (layout: JointLayout, p: JointLayoutParams, g: Geometry, v: number): Feature[] => {
   const h = layout.height;
   const blend = g.crispBlend;
   const { shoulder } = layout.arm.R;
@@ -275,7 +296,7 @@ const buildRibcage = (layout: JointLayout, p: HumanoidParams, g: Geometry, v: nu
   return features;
 };
 
-const buildPelvis = (layout: JointLayout, p: HumanoidParams, g: Geometry): Feature[] => {
+const buildPelvis = (layout: JointLayout, p: JointLayoutParams, g: Geometry): Feature[] => {
   const h = layout.height;
   const blend = g.crispBlend;
   const [hipX, hipY] = layout.leg.R.hip;
@@ -341,11 +362,16 @@ interface Units {
 const buildHand = (side: Side, [wrist, tip]: readonly [Vec3, Vec3], g: Geometry, { h, v }: Units): Feature[] => {
   const bone = `hand.${side}`;
   const blend = g.crispBlend;
-  const rot = frameAlong(sub(tip, wrist));
-  const along = (t: number): Vec3 => lerp3(wrist, tip, t);
+  // Fingers hang world-vertical on whole voxel columns: the arm leans in z, so fingers following the
+  // hand bone would drift across columns and merge with a neighbour (each digit and the air beside it
+  // must land on their own columns — see the file header). The hand bone itself stops at the palm
+  // (skeletonLayout), so its marrow core cannot bridge the fingers either.
+  const raw = sub(tip, wrist);
+  const rot = frameAlong(raw);
   const across: Vec3 = [rot[2], rot[5], rot[8]];
+  const down = normalize([raw[0], raw[1], 0]);
   const palmLength = g.palmLength * h;
-  const palmCentre = add(wrist, scale(normalize(sub(tip, wrist)), palmLength / 2));
+  const palmCentre = add(wrist, scale(down, palmLength / 2));
   const count = g.fingerCount;
   const spread = ((count - 1) / 2) * g.fingerSpacingVoxels * v;
   // The palm spans every finger root so no finger is left standing apart from it.
@@ -354,16 +380,28 @@ const buildHand = (side: Side, [wrist, tip]: readonly [Vec3, Vec3], g: Geometry,
   const features: Feature[] = [
     box(bone, { center: palmCentre, half: [palmDepth * h, palmLength / 2, palmWidth], rot }, blend),
   ];
-  const root = (g.fingerRootDepth * palmLength) / Math.hypot(...sub(tip, wrist));
   const fingerRadius = g.fingerRadiusVoxels * v;
+  const base = snapCol(wrist[2], v);
+  const root = add(wrist, scale(down, g.fingerRootDepth * palmLength));
+  const tipOut = add(wrist, scale(down, g.handLength * h));
   for (let i = 0; i < count; i++) {
-    const offset = scale(across, (i - (count - 1) / 2) * g.fingerSpacingVoxels * v);
-    features.push(capsule(bone, [add(along(root), offset), add(along(1), offset)], fingerRadius, blend));
+    const z = base + (i - (count - 1) / 2) * g.fingerSpacingVoxels * v;
+    features.push(
+      capsule(
+        bone,
+        [
+          [root[0], root[1], z],
+          [tipOut[0], tipOut[1], z],
+        ],
+        fingerRadius,
+        blend,
+      ),
+    );
   }
   // The thumb leaves the palm's outer edge, splayed away from the hand's axis.
-  const thumbBase = add(along(g.thumbStart), scale(across, -palmWidth));
+  const thumbBase = add(add(wrist, scale(down, g.thumbStart * palmLength)), scale(across, -palmWidth));
   const splay = (g.thumbSplayDeg * Math.PI) / 180;
-  const thumbDir = add(scale(normalize(sub(tip, wrist)), Math.cos(splay)), scale(across, -Math.sin(splay)));
+  const thumbDir = add(scale(down, Math.cos(splay)), scale(across, -Math.sin(splay)));
   const thumbTip = add(thumbBase, scale(thumbDir, g.thumbLength * h));
   features.push(capsule(bone, [thumbBase, thumbTip], fingerRadius, blend));
   return features;
@@ -397,12 +435,16 @@ const buildFoot = (side: Side, [ankle, toe]: readonly [Vec3, Vec3], g: Geometry,
   const row = snapRow(v / 2, v);
   for (let i = 0; i < g.toeCount; i++) {
     const x = ankle[0] + (i - (g.toeCount - 1) / 2) * g.toeSpacingVoxels * v;
+    // Every other toe roots a voxel further back (alternating tips), so five toes share the span three
+    // wide-spaced ones did: each tip stands clear of its neighbours rather than merging into a block.
+    // The toes point forward (-z), so a recessed tip ends short of the front line.
+    const back = (i % 2) * g.toeRecessVoxels * v;
     features.push(
       capsule(
         bone,
         [
           [x, row, ballZ + g.toeStartVoxels * v],
-          [x, row, toe[2]],
+          [x, row, toe[2] + back],
         ],
         g.toeRadiusVoxels * v,
         blend,

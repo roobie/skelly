@@ -521,6 +521,110 @@
       }
     },
     {
+      "file": "assets/models/revolver_barrel.glb",
+      "gun": {},
+      "id": "revolver_barrel",
+      "parts": {
+        "revolver_barrel": {
+          "centreOfMass": [0.06241223832528181, -0.0035780998389694043, 0],
+          "item": "revolver_barrel",
+          "massKg": 0.22,
+          "node": "revolver_barrel:revolver-barrel"
+        }
+      }
+    },
+    {
+      "file": "assets/models/revolver_crane.glb",
+      "gun": {},
+      "id": "revolver_crane",
+      "parts": {
+        "revolver_crane": {
+          "centreOfMass": [0.030888888888888889, -0.018444444444444444, 0],
+          "item": "revolver_crane",
+          "massKg": 0.070000000000000007,
+          "node": "revolver_crane:revolver-crane"
+        }
+      }
+    },
+    {
+      "file": "assets/models/revolver_cylinder.glb",
+      "gun": {},
+      "id": "revolver_cylinder",
+      "parts": {
+        "revolver_cylinder": {
+          "centreOfMass": [0, 0, 0],
+          "item": "revolver_cylinder",
+          "massKg": 0.28000000000000003,
+          "node": "revolver_cylinder:revolver-cylinder"
+        }
+      }
+    },
+    {
+      "file": "assets/models/revolver_ejector.glb",
+      "gun": {},
+      "id": "revolver_ejector",
+      "parts": {
+        "revolver_ejector": {
+          "centreOfMass": [0.039511111111111122, -6.3209212531357549e-20, -4.444444444444446e-5],
+          "item": "revolver_ejector",
+          "massKg": 0.025000000000000001,
+          "node": "revolver_ejector:revolver-ejector"
+        }
+      }
+    },
+    {
+      "file": "assets/models/revolver_frame.glb",
+      "gun": {},
+      "id": "revolver_frame",
+      "parts": {
+        "revolver_frame": {
+          "centreOfMass": [-0.059156943303204548, -0.032027937551355794, -9.8603122432210289e-6],
+          "item": "revolver_frame",
+          "massKg": 0.40000000000000002,
+          "node": "revolver_frame:revolver-frame"
+        }
+      }
+    },
+    {
+      "file": "assets/models/revolver_grip.glb",
+      "gun": {},
+      "id": "revolver_grip",
+      "parts": {
+        "revolver_grip": {
+          "centreOfMass": [-0.021072768192048012, -0.039497374343585898, 0],
+          "item": "revolver_grip",
+          "massKg": 0.080000000000000002,
+          "node": "revolver_grip:revolver-grip"
+        }
+      }
+    },
+    {
+      "file": "assets/models/revolver_hammer.glb",
+      "gun": {},
+      "id": "revolver_hammer",
+      "parts": {
+        "revolver_hammer": {
+          "centreOfMass": [-0.082799999999999985, -0.0064000000000000003, 0],
+          "item": "revolver_hammer",
+          "massKg": 0.029999999999999999,
+          "node": "revolver_hammer:revolver-hammer"
+        }
+      }
+    },
+    {
+      "file": "assets/models/revolver_trigger.glb",
+      "gun": {},
+      "id": "revolver_trigger",
+      "parts": {
+        "revolver_trigger": {
+          "centreOfMass": [-0.041733333333333338, -0.067866666666666672, 0],
+          "item": "revolver_trigger",
+          "massKg": 0.025000000000000001,
+          "node": "revolver_trigger:revolver-trigger"
+        }
+      }
+    },
+    {
       "file": "assets/models/stock_ak_long.glb",
       "gun": {},
       "id": "stock_ak_long",
