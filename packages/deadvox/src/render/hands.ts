@@ -1489,7 +1489,8 @@ export class HeldItems {
   private syncOffhandArm(side: HandSide, heldAt: Vec3, model: ModelDef | undefined, held: Group): void {
     const otherSide: HandSide = side === 'right' ? 'left' : 'right';
     if (model?.hands) {
-      const support = heldHoldFrame(model, otherSide, 'support');
+      // The hold is authored for the gun's holding side; the support arm is the other hand but mirrors with the gun.
+      const support = heldHoldFrame(model, side, 'support');
       const offhandGrip: Vec3 = support.at.map((value, index) => value + heldAt[index]!) as Vec3;
       this.addArm(otherSide, offhandGrip, model.hands.support.pose, {
         mount: { held, origin: heldAt },

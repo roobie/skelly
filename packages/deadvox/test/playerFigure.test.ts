@@ -19,7 +19,8 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { HOLD, heldHoldFrame } from '../src/core/heldPose.ts';
+import type { Vec3 } from '../src/core/coords.ts';
+import { HOLD } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { toggleLight } from '../src/core/lights.ts';
 import { meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
@@ -724,14 +725,36 @@ describe('player figure', () => {
   });
 
   it.each(['right', 'left'] as const)(
-    'puts each hand of a %s-held long gun on its authored hold: palm on the model, fingers along it, pose from the hold',
+    'puts each hand of a %s-held long gun on its hold, authored for a right hold and mirrored across the gun for a left one',
     (side) => {
       const def = [...registry.items.values()].find(
         (item) => item.firearm && item.twoHanded && item.model && registry.models.get(item.model)?.hands,
       )!;
-      const model = registry.models.get(def.model!)!;
-      const inventory = new Inventory(registry);
+      const source = registry.models.get(def.model!)!;
+      // An asymmetric fixture: both holds off the gun's centre plane, the support fingers across it, no turn or roll,
+      // so the expected placement is the plain forward-hold mapping of model x, y, z onto view -z, y, x.
+      const model = {
+        ...source,
+        roll: undefined,
+        hold: 'forward' as const,
+        grip: { ...source.grip!, turn: undefined },
+        hands: {
+          ...source.hands!,
+          firing: { ...source.hands!.firing, at: [-0.2, -0.03, 0.03] as Vec3 },
+          support: {
+            at: [0.2, -0.05, -0.04] as Vec3,
+            palm: [0, 1, 0] as Vec3,
+            fingers: [0.6, 0, 0.8] as Vec3,
+            pose: 'forend' as const,
+          },
+        },
+      };
+      const models = new Map(registry.models);
+      models.set(model.id, model);
+      const inventory = new Inventory({ ...registry, models });
       expect(inventory.add(inventory.create(def.id), { kind: 'hand', side })).toBe(true);
+      const mirrored = ([x, y, z]: Vec3): Vector3 =>
+        new Vector3(z, y, -x).multiply(new Vector3(side === 'right' ? 1 : -1, 1, 1));
       const held = new HeldItems(inventory, figureOnlyModels, playerFigure);
       const internals = held as unknown as ArmInternals & { heldByHand: Map<'left' | 'right', Group> };
       try {
@@ -745,25 +768,24 @@ describe('player figure', () => {
           [other, 'support'],
         ] as const) {
           const arm = internals.arms.get(hand)!;
-          const frame = heldHoldFrame(model, hand, hold);
+          const authored = model.hands[hold];
+          const at = mirrored(authored.at.map((value, axis) => value - model.grip.at[axis]!) as Vec3);
+          const palm = mirrored(authored.palm).normalize();
+          const fingers = mirrored(authored.fingers).normalize();
           const anchor = gun.worldToLocal(worldOf(arm, 'grip-anchor'));
-          expect(anchor.distanceTo(new Vector3(...frame.at)), `${hand} ${hold} at`).toBeLessThan(1e-6);
+          expect(anchor.distanceTo(at), `${hand} ${hold} at`).toBeLessThan(1e-6);
           const handRotation = arm.getObjectByName(ARM_NODE.hand)!.getWorldQuaternion(new Quaternion());
           const expected = gunRotation
             .clone()
             .multiply(
               new Quaternion().setFromRotationMatrix(
-                new Matrix4().makeBasis(
-                  new Vector3(...frame.thumbSide),
-                  new Vector3(...frame.fingers),
-                  new Vector3(...frame.palm),
-                ),
+                new Matrix4().makeBasis(fingers.clone().cross(palm), fingers, palm),
               ),
             );
           expect(handRotation.angleTo(expected), `${hand} ${hold} frame`).toBeLessThan(1e-6);
           const fingersDegrees = Math.abs(arm.getObjectByName(ARM_NODE.knuckles)!.rotation.z) * (180 / Math.PI);
           expect(fingersDegrees, `${hand} ${hold} pose`).toBeCloseTo(
-            playerFigure.armRig.handPoses[model.hands![hold].pose].fingersDegrees,
+            playerFigure.armRig.handPoses[authored.pose].fingersDegrees,
             6,
           );
           expectConnectedArm(arm, internals.armRigs.get(hand)!, `${hand} ${hold}`);

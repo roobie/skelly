@@ -43,7 +43,7 @@ export const heldGripOffset = (side: HandSide, twoHanded: boolean, model?: Model
     : [...HOLD[side]];
 };
 
-/** One hand's authored hold on `model`, for the hand on `side`, in the view's frame about the held grip. */
+/** One hand's authored hold on `model`, for a gun held on `side`, in the view's frame about the held grip. */
 export interface HeldHoldFrame {
   /** From the held grip to where the palm's face meets the model. */
   readonly at: Vec3;
@@ -55,6 +55,10 @@ export interface HeldHoldFrame {
   readonly thumbSide: Vec3;
 }
 
+/**
+ * Both holds are authored for a right-handed hold, so `side` is the hand holding the gun, not the hand on this hold:
+ * a left-held gun mirrors the firing and the support hold together across the model's z.
+ */
 export const heldHoldFrame = (model: ModelDef, side: HandSide, hold: 'firing' | 'support'): HeldHoldFrame => {
   if (!(model.hands && model.grip)) {
     throw new Error(`Model ${model.id} needs hands and a grip`);
