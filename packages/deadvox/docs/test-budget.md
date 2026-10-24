@@ -39,10 +39,9 @@ mutable registries. See `src/core/templates.ts`, `templateEnvelope`;
 Start-only admission and obstruction cases must not repeatedly certify unrelated lab
 routes. Keep full-composition coverage at the integration boundary: valid exits alone
 cannot prove the designed civic buildings and public leads remain reachable. The fixed
-authored plan makes a service-cell and turn sweep irrelevant; room substitution still
-protects composition against furnishing alternatives. Focused obstruction cases use the
-same start-proof owner. A shared read-only
-compiled plan is safe only
+authored plan makes a service-cell and turn sweep irrelevant, and each lab level is
+authored whole, with no furnishing alternatives to substitute. Focused obstruction cases
+use the same start-proof owner. A shared read-only compiled plan is safe only
 when each obstruction probe owns fresh route-space and entity state; a clear probe
 must not reuse an obstructed probe's memoized geometry. See `test/scenarioStart.test.ts`,
 `certificate`; and `src/core/scenarioCertificate.ts`, `scenarioStartCertificate` and
