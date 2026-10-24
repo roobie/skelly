@@ -1,0 +1,13 @@
+{
+  "id": "integral_magazine",
+  "file": "assets/models/integral_magazine.glb",
+  "gun": {},
+  "parts": {
+    "integral_magazine": {
+      "item": "integral_magazine",
+      "node": "integral_magazine:magazine",
+      "massKg": 0.12,
+      "centreOfMass": [0, -0.008, 0]
+    }
+  }
+}

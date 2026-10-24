@@ -1,0 +1,13 @@
+{
+  "id": "stock_sporting_medium",
+  "file": "assets/models/stock_sporting_medium.glb",
+  "gun": {},
+  "parts": {
+    "stock_sporting_medium": {
+      "item": "stock_sporting_medium",
+      "node": "stock_sporting_medium:stock",
+      "massKg": 0.5,
+      "centreOfMass": [-0.18056912056089008, -0.04658832495046486, -0.00005304069501600365]
+    }
+  }
+}

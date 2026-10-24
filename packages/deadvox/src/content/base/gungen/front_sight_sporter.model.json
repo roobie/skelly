@@ -1,0 +1,13 @@
+{
+  "id": "front_sight_sporter",
+  "file": "assets/models/front_sight_sporter.glb",
+  "gun": {},
+  "parts": {
+    "front_sight_sporter": {
+      "item": "front_sight_sporter",
+      "node": "front_sight_sporter:front-sight",
+      "massKg": 0.02,
+      "centreOfMass": [-0.000058201058201058184, 0.001756613756613757, 0.00014550264550264568]
+    }
+  }
+}
