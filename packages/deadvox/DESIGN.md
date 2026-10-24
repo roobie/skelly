@@ -901,12 +901,12 @@ storeys; see `src/core/soundOcclusion.ts`, `soundOcclusion`. See
 The objective occupies special research's central chamber so the floor's strongest
 spatial landmark is also its end. The amalgam shares the destination so the final
 interaction takes place under the encounter's pressure; the button stays reachable
-without a kill, because the goal never required one. The creature has dedicated
-full-body air space: it waits in a specimen pit sunk into the excavation below the
-chamber, under the chamber's full height, and the research level's solid floor closes
-it above, so no upper floor walks across its void and the creature keeps its full size.
-A ladder in the pit lets a player who falls in climb back to the rim. See
-`src/content/base/gauntlet-lab-special.libsonnet`, `amalgam` and `objectiveFace`;
+without a kill, because the goal never required one. The amalgam waits in a specimen
+pit sunk below the chamber floor, so the encounter is a look down from the rim rather
+than face to face. The pit gives its whole body room inside special research, so the
+research level above stays untouched and the creature keeps its full size. A ladder in
+the pit lets a player who falls in climb back to the rim. See
+`src/content/base/gauntlet-lab-special.libsonnet`, `pitPiece`, `amalgam` and `objectiveFace`;
 `src/content/base/gauntlet-lab-threat.libsonnet`, `amalgamSlot`; and
 `src/content/base/scenarios.jsonnet`, `composition`.
 
