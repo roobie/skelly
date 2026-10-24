@@ -110,10 +110,10 @@ const playerFigureLayout = (
   return { hipHeight, joints, parts: [{ name: 'body', model: body.model, at }, ...limbs] };
 };
 
-/** Where the first-person view hangs each arm, in the eye's frame (`src/render/hands.ts`, `HeldItems`). */
-export const FIRST_PERSON_SHOULDER: Readonly<Record<HandSide, Vec3>> = {
-  right: [0.3, -0.55, 0.05],
-  left: [-0.3, -0.55, 0.05],
+/** Where the first-person view hangs an arm, in the eye's frame (`src/render/hands.ts`, `HeldItems`). */
+export const firstPersonShoulder = (figure: FigureDef, side: HandSide): Vec3 => {
+  const [x, y, z] = figure.armRig.shoulderFromEye;
+  return [side === 'right' ? x : -x, y, z];
 };
 
 export interface PlayerFigurePose {

@@ -83,7 +83,7 @@ import {
 import { ModelFlames } from './modelFlame.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';
 import { type ComposedSlot, heldModelFrame, LENS, type ModelLibrary } from './models.ts';
-import { FIRST_PERSON_SHOULDER } from './playerFigure.ts';
+import { firstPersonShoulder } from './playerFigure.ts';
 import { rummageFrame, rummageGrip } from './rummagePose.ts';
 import { shellLoadPose } from './shellLoadPose.ts';
 import type { SkyTargets } from './sky.ts';
@@ -1136,13 +1136,18 @@ export class HeldItems {
     held.quaternion.copy(this.poseRotation);
   }
 
+  /** Where the view hangs an arm, in the eye's frame. */
+  viewShoulder(side: HandSide): Vector3 {
+    return new Vector3(...firstPersonShoulder(this.figure, side));
+  }
+
   /** Places a torso arm's grip, kept within the arm's reach plus the short shoulder lead a stretch allows. */
   private placeTorsoArm(side: HandSide, arm: Group, transform: ReturnType<typeof interpolateHandPose>): void {
     this.handPosition.set(...transform.offset).applyAxisAngle(TORSO_Y_AXIS, -this.torso.rotation.y);
     transform.offset = [this.handPosition.x, this.handPosition.y, this.handPosition.z];
     const rig = this.armRigs.get(side);
     if (rig) {
-      const shoulder = new Vector3(...FIRST_PERSON_SHOULDER[side]);
+      const shoulder = this.viewShoulder(side);
       const grip = new Vector3(...transform.offset);
       const reach = rig.upperLength + rig.foreLength + rig.gripFromWrist.length() + 0.08;
       if (shoulder.distanceTo(grip) > reach) {
@@ -1342,7 +1347,7 @@ export class HeldItems {
     if (!rig) {
       return;
     }
-    const baseShoulder = new Vector3(...FIRST_PERSON_SHOULDER[side]);
+    const baseShoulder = this.viewShoulder(side);
     const shoulder =
       arm.parent === this.torso ? this.view.worldToLocal(this.torso.localToWorld(baseShoulder)) : baseShoulder;
     const grip = this.view.worldToLocal(arm.getWorldPosition(new Vector3()));

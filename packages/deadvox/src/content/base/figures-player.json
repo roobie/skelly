@@ -32,6 +32,7 @@
             "thumbInDegrees": 0
           }
         },
+        "shoulderFromEye": [0.29999999999999999, -0.55000000000000004, 0.050000000000000003],
         "thumb": {
           "part": "thumb",
           "pivot": "thumb_root"

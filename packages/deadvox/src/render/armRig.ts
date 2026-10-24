@@ -148,10 +148,15 @@ const perpendicular = (vector: Vector3, axis: Vector3, fallback: Vector3): Vecto
   return out.normalize();
 };
 
+/** `vector` normalized, or `fallback` when it has no direction. */
+const direction = (vector: Vector3, fallback: Vector3): Vector3 =>
+  vector.lengthSq() < 1e-12 ? fallback.clone() : vector.clone().normalize();
+
 /** The hand frame for a hand that continues its forearm: fingers along `forearm`, thumb up. */
 const handAlongForearm = (side: HandSide, forearm: Vector3, up: Vector3, bendSide: Vector3): Quaternion => {
-  const thumb = perpendicular(up, forearm, bendSide).multiplyScalar(PALM_SIGN[side]);
-  return basis(thumb, forearm, thumb.clone().cross(forearm));
+  const fingers = direction(forearm, up.clone().negate());
+  const thumb = perpendicular(up, fingers, bendSide).multiplyScalar(PALM_SIGN[side]);
+  return basis(thumb, fingers, thumb.clone().cross(fingers));
 };
 
 /** Where an arm reaches from and to, all in one frame. */
@@ -168,16 +173,18 @@ export interface ArmTarget {
 
 /**
  * Places the shoulder, elbow and hand of `rig` so the grip point sits at the target's grip. The hand takes the
- * target's hand frame if given, else continues the forearm with its thumb up. A grip out of reach pulls the shoulder
- * along, so the hand always meets its grip.
+ * target's hand frame if given, else continues the forearm with its thumb up. Both segments keep their lengths: a
+ * grip out of reach, or closer than the folded arm allows, slides the shoulder along the line to the wrist, so the
+ * hand always meets its grip. A wrist on the shoulder has no such line; the arm then hangs down from a lifted shoulder.
  */
 export const solveArmRig = (rig: ArmRig, { shoulder, grip, handFrame, bendSide, up }: ArmTarget): ArmSolution => {
   const reach = rig.upperLength + rig.foreLength;
+  const folded = Math.abs(rig.upperLength - rig.foreLength);
   const solve = (hand: Quaternion) => {
     const wrist = grip.clone().sub(rig.gripFromWrist.clone().applyQuaternion(hand));
-    const axis = wrist.clone().sub(shoulder);
-    const distance = Math.max(1e-6, Math.min(axis.length(), reach));
-    axis.normalize();
+    const toWrist = wrist.clone().sub(shoulder);
+    const axis = direction(toWrist, up.clone().negate());
+    const distance = Math.max(folded, 1e-6, Math.min(toWrist.length(), reach));
     const shoulderAt = wrist.clone().addScaledVector(axis, -distance);
     const along = (rig.upperLength ** 2 - rig.foreLength ** 2 + distance ** 2) / (2 * distance);
     const height = Math.sqrt(Math.max(0, rig.upperLength ** 2 - along ** 2));

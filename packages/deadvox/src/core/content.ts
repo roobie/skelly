@@ -1811,6 +1811,11 @@ const checkFigures = (registry: Registry, report: Report): void => {
     for (const part of figurePartNames(figure)) {
       checkFigurePart(registry, report, figure, part);
     }
+    // The right arm hangs right of and below the eye, else the view bends it through the head.
+    const [x, y] = figure.armRig.shoulderFromEye;
+    if (x <= 0 || y >= 0) {
+      report('figures', figure.id, '.armRig.shoulderFromEye', 'the right shoulder must sit right of and below the eye');
+    }
   }
 };
 

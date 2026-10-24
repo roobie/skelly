@@ -32,7 +32,7 @@ import { ARM_NODE, type ArmRig } from '../src/render/armRig.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { renderMeleePose } from '../src/render/meleePose.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
-import { FIRST_PERSON_SHOULDER, PLAYER_BODY_REAR_OFFSET, PlayerMeshes } from '../src/render/playerFigure.ts';
+import { firstPersonShoulder, PLAYER_BODY_REAR_OFFSET, PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
@@ -501,7 +501,9 @@ describe('player figure', () => {
       expect(rig.upperLength).toBeCloseTo(anchor(armRig.fore.pivot).distanceTo(anchor(armRig.upper.pivot)), 6);
       expect(rig.foreLength).toBeCloseTo(anchor(armRig.hand.pivot).distanceTo(anchor(armRig.fore.pivot)), 6);
       const joints = armJoints(arm);
-      expect(joints.shoulder.distanceTo(new Vector3(...FIRST_PERSON_SHOULDER[side])), side).toBeLessThan(1e-6);
+      expect(joints.shoulder.distanceTo(new Vector3(...firstPersonShoulder(playerFigure, side))), side).toBeLessThan(
+        1e-6,
+      );
       expect(joints.grip.distanceTo(new Vector3(...HOLD[side])), side).toBeLessThan(1e-6);
       expectConnectedArm(arm, rig, side);
       // Every rig segment is a drawn part of the arm model, hung under its pivot.

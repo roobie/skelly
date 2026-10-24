@@ -2557,25 +2557,21 @@ and no extra class is left to maintain. Retuning the item grain moves the figure
 with the tools, which is accepted.
 
 The figure is a content row, so a mod or a second character ships its own row
-and part models without a code change. The row names one body model, the
-torso with the head, and one model per limb, each arm with its hand and each
-leg with its foot. The body names the anchor each limb joint sits at, and each
-limb names its own joint anchor; the row also sets the hip height and the
-walking swing. An arm model is built from parts mated at its joints, upper arm,
-forearm, palm, fingers and thumb, and the row's arm rig names each part with
-the anchor it turns about, the grip anchor on the palm, and the joint angles of
-a fist, a holding hand and an open hand. One arm model serves both views: the
-world body swings it whole, and the first-person view bends it through the rig
-from the shoulder to the held grip, so the two views never diverge in look or
-proportion and the arm bends where a rigid model could not. Every part is an
-authored model, with no box stand-in, so a figure row that names a missing
-model, anchor or rig part fails validation instead of drawing a partial body.
-Code poses every part about those joints, so a new limb model needs no
-renderer change. Hit regions keep a box layout, because the body simulation,
-not the drawn shape, decides where a hit lands, so gore stays put while parts
-change. See `src/core/schema.ts`, `FigureSchema`, `src/render/armRig.ts`,
-`buildArmRig`, and `src/render/playerFigure.ts`, `playerFigureLayout` and
-`PLAYER_REGION_BOXES`.
+and part models without a code change. The row names the body and limb models
+and the anchors they join at, and holds every value that shapes the drawn
+figure: hip height, walking swing, the arm rig and where the view hangs the
+arms. One arm model serves both views: the world body swings it whole, and the
+first-person view bends it at its authored joints to reach the held grip, so
+the two views never diverge in look or proportion and the arm bends where a
+rigid model could not. The view's shoulder is a row value, not a renderer
+constant, because a figure with other proportions needs other shoulders. Every
+part is an authored model, with no box stand-in, so a row that names a missing
+model, anchor or rig part, or hangs an arm above or inside the head, fails
+validation instead of drawing a partial body. Hit regions keep a box layout,
+because the body simulation, not the drawn shape, decides where a hit lands, so
+gore stays put while parts change. See `src/core/schema.ts`, `FigureSchema`,
+`src/render/armRig.ts`, `buildArmRig`, and `src/render/playerFigure.ts`,
+`playerFigureLayout` and `PLAYER_REGION_BOXES`.
 
 Many animations are expected over time, so a pose is data that names a joint and an
 angle, and code-posed motion such as arm swing and idle breath is one clip among

@@ -41,6 +41,8 @@ local handPose(fingers, thumbAcross, thumbIn) = {
           holding: handPose(80, 50, 30),
           open: handPose(10, 10, 0),
         },
+        // Where the view hangs the right arm, from the eye; the left mirrors it.
+        shoulderFromEye: [0.3, -0.55, 0.05],
       },
       gait: { legSwingDegrees: 12.6, armSwingDegrees: 10 },
       // Each pose keeps the drawn body under its stance's body height in senses.jsonnet.

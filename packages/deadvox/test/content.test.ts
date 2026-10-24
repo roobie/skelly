@@ -3081,30 +3081,47 @@ describe('content', () => {
     }
   });
 
-  it('reports a figure body or limb whose model or joint anchor is missing', () => {
+  it('reports a figure whose model, joint anchor, rig part or pivot is missing, or whose view shoulder is misplaced', () => {
     const figuresFile = base.find(({ source }) => source === 'figures-player.json')!;
     interface Part {
       model: string;
       joint: string;
       joints: Record<string, string>;
     }
+    interface Rig {
+      fore: { part: string; pivot: string };
+      hand: { part: string; pivot: string };
+      shoulderFromEye: [number, number, number];
+    }
     const player = (figuresFile.data as { figures: Record<string, unknown>[] }).figures[0]!;
     const body = player.body as Part;
     const limbs = player.limbs as Record<string, Part>;
-    // One build for all three fixture figures; each fixture breaks one reference, at its own path.
+    const rig = player.armRig as Rig;
+    // One build for all fixture figures; each fixture breaks one reference, at its own path.
     const figures = [
       { body: { ...body, model: 'fixture_missing_model' } },
       { body: { ...body, joints: { ...body.joints, leftHip: 'fixture_missing_anchor' } } },
       { limbs: { ...limbs, rightArm: { ...limbs.rightArm!, joint: 'fixture_missing_anchor' } } },
+      { armRig: { ...rig, fore: { ...rig.fore, part: 'fixture_missing_part' } } },
+      { armRig: { ...rig, hand: { ...rig.hand, pivot: 'fixture_missing_anchor' } } },
+      {
+        armRig: { ...rig, shoulderFromEye: [-rig.shoulderFromEye[0], rig.shoulderFromEye[1], rig.shoulderFromEye[2]] },
+      },
     ].map((change, index) => ({ ...player, ...change, id: `fixture_figure_${index}` }));
     const paths = buildRegistry([
       ...base.filter((source) => source !== figuresFile),
       { source: figuresFile.source, data: { figures: [player, ...figures] } },
     ]).issues.map(({ path }) => path);
+    // Both arms share the rig, so a broken rig name is reported once per arm.
     expect(paths).toEqual([
       'figures[1].body.model',
       'figures[2].body.joints.leftHip',
       'figures[3].limbs.rightArm.joint',
+      'figures[4].armRig.fore.part',
+      'figures[4].armRig.fore.part',
+      'figures[5].armRig.hand.pivot',
+      'figures[5].armRig.hand.pivot',
+      'figures[6].armRig.shoulderFromEye',
     ]);
   });
 

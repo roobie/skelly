@@ -3490,6 +3490,12 @@ const ArmRigSchema = strictObject({
   grip: Id,
   /** The empty hand's fist, the hand around a held grip, and the hand flat on a held screen's back. */
   handPoses: strictObject({ fist: HandPoseSchema, holding: HandPoseSchema, open: HandPoseSchema }),
+  /**
+   * Where the view hangs the right arm, in the eye's frame (x right, y up, z back); the left mirrors x. Presentation,
+   * not the body's own shoulder: wider and lower, so the arms show in view. Validation wants it right of and below
+   * the eye.
+   */
+  shoulderFromEye: Point,
 });
 export type ArmRigDef = InferOutput<typeof ArmRigSchema>;
 export type HandPoseDef = InferOutput<typeof HandPoseSchema>;
