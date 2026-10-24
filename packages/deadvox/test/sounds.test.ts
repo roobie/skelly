@@ -6,6 +6,7 @@ import { simSeconds } from '../src/core/time.ts';
 
 const sound = (variants: string[]): SoundDef => ({
   id: 'player_hurt_light',
+  description: 'fixture hurt',
   variants,
   gain: 0.8,
   pitchJitter: [0.95, 1.05],

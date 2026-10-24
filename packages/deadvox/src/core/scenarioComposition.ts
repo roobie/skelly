@@ -32,6 +32,8 @@ export interface ScenarioComposition {
   readonly seals: readonly {
     readonly doors: readonly Readonly<Vec3>[];
     readonly key: Readonly<Vec3>;
+    /** The card is stock in the fixed container anchored at `key`, not ground loot there. */
+    readonly held?: true;
     readonly standing: Readonly<Vec3>;
   }[];
   readonly stairs: readonly { readonly upper: Readonly<Vec3>; readonly lower: Readonly<Vec3> }[];
@@ -160,6 +162,9 @@ const localAnchorIssues = (registry: Registry, composition: CompositionDef, serv
   composition.seals.forEach((seal, index) => {
     anchor(seal.key, `.composition.seals[${index}].key`);
     anchor(seal.standing, `.composition.seals[${index}].standing`);
+    if (seal.held && !composition.fixedLoot.some((source) => source.at.join(',') === seal.key.join(','))) {
+      issues.push([`.composition.seals[${index}].key`, 'held seal key needs a fixed loot source']);
+    }
     seal.doors.forEach((door, doorIndex) => {
       anchor(door, `.composition.seals[${index}].doors[${doorIndex}]`);
     });
@@ -624,7 +629,7 @@ export const composeScenario = (
       authored.seals.map((seal) =>
         Object.freeze({
           doors: Object.freeze(seal.doors.map(furnitureAnchor)),
-          key: point(seal.key),
+          ...(seal.held ? { key: furnitureAnchor(seal.key), held: true as const } : { key: point(seal.key) }),
           standing: point(seal.standing),
         }),
       ),

@@ -1,6 +1,10 @@
 {
   "files": [
     {
+      "source": "gungen/cartridges/12-gauge-00-buck.jsonnet",
+      "output": "gungen/cartridges/12-gauge-00-buck.json"
+    },
+    {
       "source": "gungen/cartridges/308-winchester.jsonnet",
       "output": "gungen/cartridges/308-winchester.json"
     },
@@ -9,12 +13,28 @@
       "output": "gungen/cartridges/357-magnum.json"
     },
     {
+      "source": "gungen/cartridges/5.56x45.jsonnet",
+      "output": "gungen/cartridges/5.56x45.json"
+    },
+    {
+      "source": "gungen/cartridges/7.62x39.jsonnet",
+      "output": "gungen/cartridges/7.62x39.json"
+    },
+    {
       "source": "gungen/cartridges/catalogue/bolt.jsonnet",
       "output": "gungen/cartridges/catalogue/bolt.json"
     },
     {
       "source": "gungen/designs/archetype-revolver.jsonnet",
       "output": "gungen/designs/archetype-revolver.json"
+    },
+    {
+      "source": "gungen/designs/compact-smg-plain.jsonnet",
+      "output": "gungen/designs/compact-smg-plain.json"
+    },
+    {
+      "source": "gungen/designs/compact-smg.jsonnet",
+      "output": "gungen/designs/compact-smg.json"
     },
     {
       "source": "gungen/designs/hunting-rifle.jsonnet",
@@ -29,6 +49,14 @@
       "output": "gungen/src/gun/appearance.json"
     },
     {
+      "source": "gungen/src/gun/catalogue.jsonnet",
+      "output": "gungen/src/gun/catalogue.json"
+    },
+    {
+      "source": "gungen/src/gun/gunVoxel.jsonnet",
+      "output": "gungen/src/gun/gunVoxel.json"
+    },
+    {
       "source": "gungen/src/gun/physical.jsonnet",
       "output": "gungen/src/gun/physical.json"
     },
@@ -39,6 +67,10 @@
     {
       "source": "packages/deadvox/src/config/bundled-mods.jsonnet",
       "output": "packages/deadvox/src/config/bundled-mods.json"
+    },
+    {
+      "source": "packages/deadvox/src/config/bundled/beginner.jsonnet",
+      "output": "packages/deadvox/src/config/bundled/beginner.json"
     },
     {
       "source": "packages/deadvox/src/config/perf-baseline.jsonnet",
@@ -83,6 +115,10 @@
     {
       "source": "packages/deadvox/src/content/base/crisis-hq.jsonnet",
       "output": "packages/deadvox/src/content/base/crisis-hq.json"
+    },
+    {
+      "source": "packages/deadvox/src/content/base/figures-player.jsonnet",
+      "output": "packages/deadvox/src/content/base/figures-player.json"
     },
     {
       "source": "packages/deadvox/src/content/base/furniture-cabins.jsonnet",
@@ -133,6 +169,10 @@
       "output": "packages/deadvox/src/content/base/items-food.json"
     },
     {
+      "source": "packages/deadvox/src/content/base/items-gun-parts.jsonnet",
+      "output": "packages/deadvox/src/content/base/items-gun-parts.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/items-other.jsonnet",
       "output": "packages/deadvox/src/content/base/items-other.json"
     },
@@ -169,6 +209,10 @@
       "output": "packages/deadvox/src/content/base/layouts-stairs.json"
     },
     {
+      "source": "packages/deadvox/src/content/base/layouts-test-house.jsonnet",
+      "output": "packages/deadvox/src/content/base/layouts-test-house.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/layouts-voice-size.jsonnet",
       "output": "packages/deadvox/src/content/base/layouts-voice-size.json"
     },
@@ -197,12 +241,20 @@
       "output": "packages/deadvox/src/content/base/models-firearms.json"
     },
     {
+      "source": "packages/deadvox/src/content/base/models-gun-parts.jsonnet",
+      "output": "packages/deadvox/src/content/base/models-gun-parts.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/models-items.jsonnet",
       "output": "packages/deadvox/src/content/base/models-items.json"
     },
     {
       "source": "packages/deadvox/src/content/base/models-melee.jsonnet",
       "output": "packages/deadvox/src/content/base/models-melee.json"
+    },
+    {
+      "source": "packages/deadvox/src/content/base/player.jsonnet",
+      "output": "packages/deadvox/src/content/base/player.json"
     },
     {
       "source": "packages/deadvox/src/content/base/power.jsonnet",
@@ -257,6 +309,10 @@
       "output": "packages/deadvox/src/content/base/senses.json"
     },
     {
+      "source": "packages/deadvox/src/content/base/site-generation.jsonnet",
+      "output": "packages/deadvox/src/content/base/site-generation.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/sounds-block.jsonnet",
       "output": "packages/deadvox/src/content/base/sounds-block.json"
     },
@@ -281,6 +337,10 @@
       "output": "packages/deadvox/src/content/base/sounds-weapons.json"
     },
     {
+      "source": "packages/deadvox/src/content/base/sounds.jsonnet",
+      "output": "packages/deadvox/src/content/base/sounds.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/templates-cabins.jsonnet",
       "output": "packages/deadvox/src/content/base/templates-cabins.json"
     },
@@ -295,6 +355,10 @@
     {
       "source": "packages/deadvox/src/content/base/templates-stairs.jsonnet",
       "output": "packages/deadvox/src/content/base/templates-stairs.json"
+    },
+    {
+      "source": "packages/deadvox/src/content/base/templates-test-house.jsonnet",
+      "output": "packages/deadvox/src/content/base/templates-test-house.json"
     },
     {
       "source": "packages/deadvox/src/content/base/templates-workshop.jsonnet",
@@ -341,12 +405,24 @@
       "output": "packages/deadvox/test/fixtures/mods/expression-spike.json"
     },
     {
+      "source": "packages/deadvox/test/fixtures/mods/reading-world.jsonnet",
+      "output": "packages/deadvox/test/fixtures/mods/reading-world.json"
+    },
+    {
       "source": "packages/mobgen/src/mob/acidTemplate.jsonnet",
       "output": "packages/mobgen/src/mob/acidTemplate.json"
     },
     {
+      "source": "packages/mobgen/src/mob/attackClips.jsonnet",
+      "output": "packages/mobgen/src/mob/attackClips.json"
+    },
+    {
       "source": "packages/mobgen/src/mob/materialTemplates.jsonnet",
       "output": "packages/mobgen/src/mob/materialTemplates.json"
+    },
+    {
+      "source": "packages/mobgen/src/mob/skeletonTemplate.jsonnet",
+      "output": "packages/mobgen/src/mob/skeletonTemplate.json"
     },
     {
       "source": "packages/thing-authoring-tool/exports/deadvox.jsonnet",

@@ -2,11 +2,22 @@
 // cells and can be rotated; a container's pockets are grids. Identical, stateless
 // items stack up to their type's limit.
 
+import { assertBatteryEnergy, batteryFields } from './battery.ts';
 import type { ItemDef, ModelDef, Registry } from './content.ts';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { firearmSlotIds } from './firearmFitting.ts';
 import { assertFirearmState, type FirearmState, snapshotFirearm } from './firearmState.ts';
+import {
+  assertFoodExposure,
+  equalFoodExposure,
+  type FoodExposure,
+  initialFoodExposure,
+  projectFoodExposure,
+} from './food.ts';
 import { magazineContentsReason, magazineSpec, magazineWellCalibre, slotsReason } from './magazine.ts';
 import { modelBodyMassKg } from './modelMass.ts';
+import { assertPaperMapItem, type PaperMapCoverage } from './paperMap.ts';
+import type { LiquidContents } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
 /** Craft or disassembly inputs/progress have exactly one owner: this ordinary item subtree. */
@@ -31,12 +42,16 @@ type CraftWork<Node> =
 /** Scalar and pocket fields are shared by live items and their saved tree. */
 export interface ItemFields<Node> {
   count: number;
+  paperMap?: PaperMapCoverage;
   /** Units in this stack already included in the death-screen loot tally. */
   lootedCount?: number;
   /** 0 (ruined) to 1 (pristine). */
   condition: number;
   /** Battery charge, fuel and the like; absent means full (as found). */
-  charges?: number;
+  charges?: number | undefined;
+  batteryMicrojoules?: number;
+  liquidContents?: LiquidContents;
+  liquidBurnRemainder?: number;
   /** A light that's switched on. */
   on?: boolean;
   /** Remaining consumable-light burn in Game seconds; absent until first ignition. */
@@ -51,15 +66,18 @@ export interface ItemFields<Node> {
   trap?: TrapState | undefined;
   /**
    * Game-clock timestamp when it was made; absent means before the world began (day 1,
-   * 00:00). Food rots from then (core/food.ts).
+   * 00:00). This is provenance, not the food exposure authority.
    */
-  madeAtGameTimestamp?: number;
+  madeAtGameTimestamp?: number | undefined;
+  foodExposure?: FoodExposure | undefined;
   /** One grid per pocket of the type's container, in the type's pocket order. */
   pockets?: PlacedItem<Node>[][];
   /** Chamber contents and in-flight mechanical action; separate from handling jobs. */
   firearm?: FirearmState;
   /** A magazine's cartridge item types in feed order, top round first (core/magazine.ts). */
   cartridges?: string[];
+  /** A cargo space's size in inventory cells along x, y and z, kept from fitting to salvage (core/cargoSpace.ts). */
+  cargo?: [x: number, y: number, z: number];
   /** Items fitted to this one, owned by it like work components. Keys are exported mount IDs or named device slots. */
   slots?: ItemSlots<Node>;
   work?: CraftWork<Node> | undefined;
@@ -95,15 +113,38 @@ export type PlacedState = PlacedItem<ItemState>;
 const trapField = (trap: TrapState | undefined): { trap?: TrapState } =>
   trap === undefined ? {} : { trap: { ...trap } };
 
-/** Immutable, isolated item tree suitable for a save snapshot. */
-export const snapshotItem = (item: Item): Readonly<ItemState> =>
+const cargoField = (cargo: ItemFields<unknown>['cargo']): Pick<ItemFields<unknown>, 'cargo'> =>
+  cargo === undefined ? {} : { cargo: [...cargo] };
+
+const foodExposureField = (
+  exposure: FoodExposure | undefined,
+  foodAt: number | undefined,
+): { foodExposure?: FoodExposure } =>
+  exposure === undefined
+    ? {}
+    : { foodExposure: foodAt === undefined ? { ...exposure } : projectFoodExposure(exposure, foodAt) };
+
+const liquidContentsField = (contents: LiquidContents | undefined): { liquidContents?: LiquidContents } =>
+  contents === undefined ? {} : { liquidContents: { ...contents } };
+
+const liquidBurnField = (remainder: number | undefined): { liquidBurnRemainder?: number } =>
+  remainder === undefined ? {} : { liquidBurnRemainder: remainder };
+
+const paperMapField = (paperMap: PaperMapCoverage | undefined): { paperMap?: PaperMapCoverage } =>
+  paperMap === undefined ? {} : { paperMap: { ...paperMap } };
+
+/**
+ * Immutable, isolated item tree suitable for a save snapshot. With `foodAt`, the copy carries exposure settled at
+ * that game millisecond while the live item keeps its own watermark, so capturing never changes live state.
+ */
+export const snapshotItem = (item: Item, foodAt?: number): Readonly<ItemState> =>
   freezeSnapshot({
     uid: item.uid,
     type: item.type,
     count: item.count,
     ...(item.lootedCount === undefined ? {} : { lootedCount: item.lootedCount }),
     condition: item.condition,
-    ...(item.charges === undefined ? {} : { charges: item.charges }),
+    ...batteryFields(item),
     ...(item.on === undefined ? {} : { on: item.on }),
     ...(item.burnRemainingGameSeconds === undefined ? {} : { burnRemainingGameSeconds: item.burnRemainingGameSeconds }),
     ...(item.litAtGameTimestamp === undefined ? {} : { litAtGameTimestamp: item.litAtGameTimestamp }),
@@ -111,18 +152,25 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
     ...(item.fuseRemainingSimSeconds === undefined ? {} : { fuseRemainingSimSeconds: item.fuseRemainingSimSeconds }),
     ...trapField(item.trap),
     ...(item.madeAtGameTimestamp === undefined ? {} : { madeAtGameTimestamp: item.madeAtGameTimestamp }),
+    ...foodExposureField(item.foodExposure, foodAt),
     ...(item.firearm === undefined ? {} : { firearm: snapshotFirearm(item.firearm) }),
     ...(item.cartridges === undefined ? {} : { cartridges: [...item.cartridges] }),
+    ...cargoField(item.cargo),
+    ...paperMapField(item.paperMap),
+    ...liquidContentsField(item.liquidContents),
+    ...liquidBurnField(item.liquidBurnRemainder),
     ...(item.slots === undefined
       ? {}
       : {
           slots: Object.fromEntries(
             Object.entries(item.slots)
               .filter((entry): entry is [string, Item] => entry[1] !== undefined)
-              .map(([slot, child]) => [slot, snapshotItem(child) as ItemState]),
+              .map(([slot, child]) => [slot, snapshotItem(child, foodAt) as ItemState]),
           ),
         }),
-    ...(item.pockets === undefined ? {} : { pockets: item.pockets.map((grid) => grid.map(snapshotPlaced)) }),
+    ...(item.pockets === undefined
+      ? {}
+      : { pockets: item.pockets.map((grid) => grid.map((placed) => snapshotPlaced(placed, foodAt))) }),
     ...(item.work === undefined
       ? {}
       : {
@@ -134,13 +182,13 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
                   toolLevels: { ...item.work.toolLevels },
                 }
               : {}),
-            components: item.work.components.map((component) => snapshotItem(component) as ItemState),
+            components: item.work.components.map((component) => snapshotItem(component, foodAt) as ItemState),
           },
         }),
   });
 
-export const snapshotPlaced = ({ item, x, y, rotated }: Placed): Readonly<PlacedState> =>
-  freezeSnapshot({ item: snapshotItem(item) as ItemState, x, y, rotated });
+export const snapshotPlaced = ({ item, x, y, rotated }: Placed, foodAt?: number): Readonly<PlacedState> =>
+  freezeSnapshot({ item: snapshotItem(item, foodAt) as ItemState, x, y, rotated });
 
 const assertSavedBurnState = (def: ItemDef, state: ItemState): void => {
   const burnTime = def.light?.burnTimeGameHours;
@@ -151,11 +199,16 @@ const assertSavedBurnState = (def: ItemDef, state: ItemState): void => {
       !Number.isFinite(state.burnRemainingGameSeconds));
   const missingActiveState =
     state.litAtGameTimestamp !== undefined &&
-    (burnTime === undefined || state.on !== true || state.burnRemainingGameSeconds === undefined);
+    (state.on !== true ||
+      (def.light?.liquidFuel
+        ? !Number.isSafeInteger(Math.round(state.litAtGameTimestamp * 1_000_000)) || state.litAtGameTimestamp < 0
+        : burnTime === undefined || state.burnRemainingGameSeconds === undefined));
   const litWithoutBurnState =
-    burnTime !== undefined &&
     state.on === true &&
-    (state.burnRemainingGameSeconds === undefined || state.litAtGameTimestamp === undefined);
+    (def.light?.liquidFuel
+      ? state.litAtGameTimestamp === undefined
+      : burnTime !== undefined &&
+        (state.burnRemainingGameSeconds === undefined || state.litAtGameTimestamp === undefined));
   if (invalidRemaining || missingActiveState || litWithoutBurnState) {
     throw new Error('Invalid saved light burn state');
   }
@@ -191,6 +244,23 @@ const assertSavedTrap = (def: ItemDef, state: ItemState): void => {
       (trap.zombie === undefined || Number.isSafeInteger(trap.zombie)));
   if (!(def.trap && state.count === 1 && holdValid)) {
     throw new Error('Invalid saved trap state');
+  }
+};
+
+/** Only a cargo space has a size, in whole cells, and its one pocket is its floor. */
+const assertSavedCargo = (def: ItemDef, state: ItemState): void => {
+  const { cargo } = state;
+  if (
+    cargo !== undefined &&
+    !(
+      def.vehicle?.cargoSpace &&
+      state.count === 1 &&
+      cargo.length === 3 &&
+      cargo.every((cells) => Number.isSafeInteger(cells) && cells >= 1) &&
+      state.pockets?.length === 1
+    )
+  ) {
+    throw new Error('Invalid saved cargo space');
   }
 };
 
@@ -230,12 +300,71 @@ const restoreWork = (registry: Registry, work: NonNullable<ItemState['work']>): 
   components: work.components.map((component) => restoreItem(registry, component)),
 });
 
+const assertLiquidBurn = (registry: Registry, state: ItemState): void => {
+  const { light } = defOf(registry, state.type);
+  const remainder = state.liquidBurnRemainder;
+  if (light?.liquidFuel) {
+    assertSavedBurnState(defOf(registry, state.type), state);
+  }
+  if (
+    light?.liquidFuel
+      ? !(Number.isSafeInteger(remainder) && remainder! >= 0 && remainder! < 1_000_000)
+      : remainder !== undefined
+  ) {
+    throw new Error('Invalid saved liquid burn remainder');
+  }
+  const contents = state.liquidContents;
+  if (
+    light?.liquidFuel &&
+    state.on &&
+    !(contents?.kind === 'filled' && light.liquidFuel.accepts.includes(contents.liquid))
+  ) {
+    throw new Error('Invalid saved lit reservoir contents');
+  }
+};
+
+export const assertSavedLiquidContents = (registry: Registry, state: ItemState): void => {
+  assertLiquidBurn(registry, state);
+  const { vessel, light } = defOf(registry, state.type);
+  const contents = state.liquidContents;
+  if (!vessel) {
+    if (contents !== undefined) {
+      throw new Error('Invalid saved liquid contents: item has no vessel');
+    }
+    return;
+  }
+  const valid =
+    state.count === 1 &&
+    state.charges === undefined &&
+    state.batteryMicrojoules === undefined &&
+    state.burnRemainingGameSeconds === undefined &&
+    (light?.liquidFuel !== undefined || state.litAtGameTimestamp === undefined) &&
+    contents !== undefined &&
+    contents !== null &&
+    ((contents.kind === 'empty' && Object.keys(contents).length === 1) ||
+      (contents.kind === 'filled' &&
+        Object.keys(contents).length === 3 &&
+        registry.liquids.has(contents.liquid) &&
+        vessel.accepts.includes(contents.liquid) &&
+        Number.isSafeInteger(contents.volumeMicrolitres) &&
+        contents.volumeMicrolitres > 0 &&
+        contents.volumeMicrolitres <= vessel.capacityMicrolitres));
+  if (!valid) {
+    throw new Error('Invalid saved liquid contents');
+  }
+};
+
 export const restoreItem = (registry: Registry, state: ItemState): Item => {
   const def = defOf(registry, state.type);
+  assertFoodExposure(registry, state);
+  assertSavedLiquidContents(registry, state);
   assertSavedBurnState(def, state);
   assertSavedFuse(def, state);
   assertSavedTrap(def, state);
   assertSavedLootCount(state);
+  assertSavedCargo(def, state);
+  assertBatteryEnergy(registry, state);
+  assertPaperMapItem(def, state.count, state.paperMap);
   const firearm = restoreFirearmState(registry, def, state);
   const magazineReason =
     magazineContentsReason(registry, state.type, state.cartridges) ?? slotsReason(registry, state.type, state.slots);
@@ -248,7 +377,7 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
     count: state.count,
     ...(state.lootedCount === undefined ? {} : { lootedCount: state.lootedCount }),
     condition: state.condition,
-    ...(state.charges === undefined ? {} : { charges: state.charges }),
+    ...batteryFields(state),
     ...(state.on === undefined ? {} : { on: state.on }),
     ...(state.burnRemainingGameSeconds === undefined
       ? {}
@@ -258,8 +387,13 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
     ...(state.fuseRemainingSimSeconds === undefined ? {} : { fuseRemainingSimSeconds: state.fuseRemainingSimSeconds }),
     ...trapField(state.trap),
     ...(state.madeAtGameTimestamp === undefined ? {} : { madeAtGameTimestamp: state.madeAtGameTimestamp }),
+    ...(state.foodExposure === undefined ? {} : { foodExposure: { ...state.foodExposure } }),
     ...(firearm === undefined ? {} : { firearm }),
     ...(state.cartridges === undefined ? {} : { cartridges: [...state.cartridges] }),
+    ...cargoField(state.cargo),
+    ...paperMapField(state.paperMap),
+    ...liquidContentsField(state.liquidContents),
+    ...liquidBurnField(state.liquidBurnRemainder),
     ...(state.slots === undefined
       ? {}
       : {
@@ -354,9 +488,33 @@ export class ItemFactory {
     return this.nextUid;
   }
 
-  create(registry: Registry, type: string, count = 1, { condition = 1 }: { condition?: number } = {}): Item {
+  create(
+    registry: Registry,
+    type: string,
+    count = 1,
+    { condition = 1, paperMap, madeAt = 0 }: { condition?: number; paperMap?: PaperMapCoverage; madeAt?: number } = {},
+  ): Item {
     const def = defOf(registry, type);
-    const item: Item = { uid: this.nextUid, type, count, condition };
+    assertPaperMapItem(def, count, paperMap);
+    if (def.vessel && count !== 1) {
+      throw new Error('Liquid vessels require one instance per item');
+    }
+    const item: Item = {
+      uid: this.nextUid,
+      type,
+      count,
+      condition,
+      ...paperMapField(paperMap),
+      ...liquidBurnField(def.light?.liquidFuel ? 0 : undefined),
+    };
+    if (def.vessel) {
+      item.liquidContents = { ...def.vessel.initialContents };
+    }
+    const exposure = initialFoodExposure(registry, def, madeAt);
+    if (exposure) {
+      item.foodExposure = exposure;
+      item.madeAtGameTimestamp = madeAt;
+    }
     this.nextUid += 1;
     if (def.container) {
       item.pockets = def.container.pockets.map(() => []);
@@ -387,7 +545,7 @@ export class ItemFactory {
 
   /** Takes `count` off a stack into a new instance. */
   split(item: Item, count: number): Item {
-    if (count <= 0 || count >= item.count) {
+    if (item.liquidContents !== undefined || item.paperMap !== undefined || count <= 0 || count >= item.count) {
       throw new Error(`can't split ${count} off a stack of ${item.count}`);
     }
     item.count -= count;
@@ -401,8 +559,14 @@ export class ItemFactory {
     if (item.charges !== undefined) {
       part.charges = item.charges;
     }
+    if (item.batteryMicrojoules !== undefined) {
+      part.batteryMicrojoules = item.batteryMicrojoules;
+    }
     if (item.madeAtGameTimestamp !== undefined) {
       part.madeAtGameTimestamp = item.madeAtGameTimestamp;
+    }
+    if (item.foodExposure !== undefined) {
+      part.foodExposure = { ...item.foodExposure };
     }
     if (item.burnRemainingGameSeconds !== undefined) {
       part.burnRemainingGameSeconds = item.burnRemainingGameSeconds;
@@ -499,37 +663,56 @@ export const footprint = (def: ItemDef, rotated: boolean): [number, number] =>
 
 export const cellCount = (def: ItemDef): number => def.size[0] * def.size[1];
 
-/** True when the item has no pockets, or they're all empty. */
 export const isEmpty = (item: Item): boolean =>
+  item.liquidContents?.kind !== 'filled' &&
   !item.work &&
   Object.values(item.slots ?? {}).every((child) => child === undefined) &&
   (item.pockets ?? []).every((grid) => grid.length === 0);
 
-/** Condition as a word (`DESIGN.md`, "The item model"). */
-export const conditionWord = (condition: number): string => {
-  if (condition >= 0.9) {
-    return 'pristine';
-  }
-  if (condition >= 0.6) {
-    return 'worn';
-  }
-  if (condition >= 0.3) {
-    return 'damaged';
-  }
-  return condition >= 0.1 ? 'badly damaged' : 'ruined';
+/** Recipes may consume fitted parts, but never silently discard liquid, pocket contents or unfinished work. */
+export const craftComponentEligible = (item: Item, consumeFitted = false): boolean =>
+  isEmpty(item) ||
+  (consumeFitted &&
+    item.liquidContents?.kind !== 'filled' &&
+    !item.work &&
+    (item.pockets ?? []).every((grid) => grid.length === 0));
+
+/** Condition as a word, from the content band table (`DESIGN.md`, "The item model"). */
+export const conditionWord = (registry: Registry, condition: number): string => {
+  const bands = registry.inventory.get(CORE_CONTENT_IDS.player)!.conditionBands;
+  return (bands.findLast((band) => band.from <= condition) ?? bands[0]!).word;
 };
 
-/** How many of `item` could join the `onto` stack. */
-export const stackRoom = (registry: Registry, onto: Item, item: Item): number => {
+/** The band word for a condition below the top band; a thing in the top band reads by its plain name. */
+export const damageWord = (registry: Registry, condition: number): string | undefined => {
+  const bands = registry.inventory.get(CORE_CONTENT_IDS.player)!.conditionBands;
+  return condition < bands.at(-1)!.from ? conditionWord(registry, condition) : undefined;
+};
+
+/** How many of `item` could join the `onto` stack. `sameFood` lets an owner compare under each item's environment. */
+export const stackRoom = (
+  registry: Registry,
+  onto: Item,
+  item: Item,
+  sameFood: (a: Item, b: Item) => boolean = equalFoodExposure,
+): number => {
   const def = defOf(registry, onto.type);
   const same =
     onto !== item &&
     onto.type === item.type &&
     onto.condition === item.condition &&
     onto.charges === item.charges &&
+    onto.batteryMicrojoules === item.batteryMicrojoules &&
     onto.madeAtGameTimestamp === item.madeAtGameTimestamp &&
+    sameFood(onto, item) &&
     onto.firearm === undefined &&
     item.firearm === undefined &&
+    !def.paperMap &&
+    !def.vessel &&
+    onto.liquidContents === undefined &&
+    item.liquidContents === undefined &&
+    onto.paperMap === undefined &&
+    item.paperMap === undefined &&
     isEmpty(onto) &&
     isEmpty(item);
   return same && def.stack !== undefined ? Math.max(0, def.stack - onto.count) : 0;
@@ -613,11 +796,24 @@ export const weightOf = (registry: Registry, item: Item): number =>
   (typeWeightGrams(registry, item.type) +
     (defOf(registry, item.type).serving ? typeWeightGrams(registry, defOf(registry, item.type).serving!.food) : 0)) *
     item.count +
+  liquidWeightGrams(registry, item) +
   ammunitionWeight(registry, item) +
   (item.cartridges ?? []).reduce((sum, round) => sum + typeWeightGrams(registry, round), 0) +
   Object.values(item.slots ?? {}).reduce((sum, child) => sum + (child ? weightOf(registry, child) : 0), 0) +
   (item.pockets ?? []).flat().reduce((sum, p) => sum + weightOf(registry, p.item), 0) +
   (item.work?.components ?? []).reduce((sum, component) => sum + weightOf(registry, component), 0);
+
+const liquidWeightGrams = (registry: Registry, item: Item): number => {
+  const contents = item.liquidContents;
+  if (!contents || contents.kind === 'empty') {
+    return 0;
+  }
+  const liquid = registry.liquids.get(contents.liquid);
+  if (!liquid) {
+    throw new Error(`Missing liquid ${contents.liquid}`);
+  }
+  return (contents.volumeMicrolitres / 1000) * liquid.densityGramsPerMillilitre;
+};
 
 const ammunitionWeight = (registry: Registry, item: Item): number => {
   const state = item.firearm;

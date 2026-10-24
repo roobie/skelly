@@ -3,7 +3,8 @@ read_if:
   - you're implementing or reviewing electricity balance, blackout history or power saves
   - you're integrating appliances with power catch-up or changing electrical content
   - you're checking the reasons for electricity priorities, storage losses or restart behaviour
-  - you're designing solar panel quality and condition for d587
+  - you're designing better solar panels and panel damage
+  - you're wiring authored building devices into session power or changing player power controls
 ---
 
 # Electricity
@@ -43,19 +44,26 @@ orientation remain open. See `src/core/dayPhase.ts`, `dayPhaseAt`, and
 `src/core/power.ts`, `PowerNetwork.solar`.
 
 The approved per-phase output is authored in `src/content/base/power.jsonnet`,
-`solar_panel`. When d587 introduces panel quality and condition, output must rise
-with quality and fall with damage. Better and less damaged panels should be worth
-seeking out and repairing, so quality and condition carry a power payoff.
+`solar_panel`. There is no manufacturing grade: a better panel is another item
+type with more authored output, and damage lowers output. Better and less damaged
+panels are therefore worth seeking out and repairing. Player-directed panel placement
+and damage integration remain outside authored building wiring.
 
-Elapsed time settles resource and phase boundaries before changing rates so a
-load or wiring change cannot rewrite earlier service. Appliance owners receive
-power transitions with simulation timestamps, rather than guessing away-time
-service from the final powered flag. Returned histories belong to the caller;
-consuming a history and saving appliance progress must share the same settlement
-boundary. See `src/core/power.ts`, `PowerNetwork.advance`, `PowerTransition`,
-`PowerNetwork.setEnabled`, `PowerNetwork.refuel` and `PowerNetwork.rewire`.
-The same event model is canonical beyond the player's simulation block; it needs
-no renderer or streaming input.
+Elapsed time settles old service before changing rates so a load or wiring
+change cannot rewrite earlier work. Completion must feed demand back into the
+same electrical advance: releasing demand only at the request target would deny
+another consumer service and miscount stored energy. The appliance owner retains
+work and completion effects; the network retains electrical dispatch. See
+`src/core/power.ts`, `PowerWork` and `PowerNetwork.run`.
+
+Tied completions settle together before rebalancing to prevent iteration order
+from exposing transient service. A command at completion settles the old interval
+first. An interruption pauses work instead of erasing already served time. Saved
+work and power must share a settled boundary; neither a final powered flag nor
+an undelivered transition history is a progress snapshot. See
+`test/powerWork.test.ts`, and `src/core/power.ts`, `PowerNetwork.setEnabled`,
+`PowerNetwork.refuel` and `PowerNetwork.rewire`. The same event model is canonical
+beyond the player's simulation block; it needs no renderer or streaming input.
 
 ## Integer units
 
@@ -75,6 +83,36 @@ safe-integer headroom for long absences. See `src/core/powerContent.ts`,
 Each storage rate rounds once per balance, always in the same direction, so
 splitting a span at a tick cannot change the result. See `src/core/power.ts`,
 `storageTransfer`.
+
+## Authored building wiring
+
+An authored facility is one electrical grid because its floors belong to one place,
+not separate power puzzles. Build from finished placements rather than streamed
+entities so a remote floor draws power before the player visits it. See
+`src/core/sitePower.ts`, `placedPowerDevices` and `SitePower`, and
+`src/game/worldSetup.ts`, `createWorldSetup`.
+
+Generator control and a main breaker serve different purposes: stopping a generator
+saves fuel without disabling independent solar and storage; opening the breaker
+isolates consumers even while those sources remain available. Keep storage on the
+supply side so disconnecting the house does not prevent charging. Switches interrupt
+connectivity rather than disabling consumers, preserving each appliance's own state.
+See `src/core/power.ts`, `PowerNetwork.setEnabled`, and `src/core/sitePower.ts`, `SitePower`.
+
+Player controls use ordinary reach and use-admission checks, not debug privileges,
+because cutting supply is an ordinary appliance interaction. Explicit enabled-state
+commands preserve replay intent instead of toggling whatever state a replay finds.
+See `src/game/session.ts`, `powerControl`, and `src/game/replayCommands.ts`,
+`applyReplayActionPayload`.
+
+Removing equipment settles old service and disables its authored connection so a
+ruined source cannot keep supplying power. A moved piece does not carry fixed wiring
+with it. See `src/core/sitePower.ts`, `SitePower.beforeRemove`.
+
+Authored fixed wiring uses stable local link identities, not player inventory cables;
+routing and refuelling remain separate interactions to design. Session time drives
+fuel and blackouts, and the world snapshot keeps the network so Continue cannot
+replenish it. See `src/core/saveState.ts`, `snapshotSession`.
 
 ## Links and state
 

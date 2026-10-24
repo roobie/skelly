@@ -15,12 +15,22 @@ import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { CHUNK, toChunk, type Vec3, yawFromBearing } from './coords.ts';
-import { HAMLET_BLOCK_SIZE, HAMLET_HORDE_MEMBERS, HAMLET_HORDE_TYPE } from './hamlet.ts';
 import { type LootSpawnPoint, lootPointsByColumn } from './loot.ts';
 import { placementKeyLoot } from './placementLoot.ts';
+import type { PublicCartographicFeature } from './publicCartography.ts';
 import { Rng, simplexNoise2 } from './random.ts';
 import type { Scale } from './scale.ts';
-import type { SiteLayoutDef } from './schema.ts';
+import type { LightPracticeDef, SiteLayoutDef } from './schema.ts';
+import { HORDE_MEMBERS, HORDE_TYPE, TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
+import {
+  focusPose,
+  propCentre,
+  type ShowroomDef,
+  type ShowroomProp,
+  slotPlacement,
+  slotProps,
+  yawToward,
+} from './showroom.ts';
 import {
   furnitureOf,
   grow,
@@ -47,6 +57,7 @@ export class AuthoredSite implements Site {
   readonly spawn: Site['spawn'];
   readonly surface: Surface;
   readonly placements: readonly Placement[];
+  readonly publicCartography: readonly PublicCartographicFeature[];
   get authoredPlacements(): readonly Placement[] {
     return this.placements;
   }
@@ -56,13 +67,17 @@ export class AuthoredSite implements Site {
   private readonly treeIndex: TreeIndex;
   private readonly lootColumns: ReadonlyMap<string, readonly LootSpawnPoint[]>;
   readonly playtestMarks: PlaytestMarks;
+  readonly lightPractice?: LightPracticeDef;
   readonly seed: number;
   readonly registry: Registry;
+  readonly showroom: ShowroomDef | undefined;
+  /** The showroom's slot row, oldest first. */
+  readonly slots: readonly ShowroomProp[];
 
   constructor(seed: number, registry: Registry, scale: Scale, layout: SiteLayoutDef) {
     this.seed = seed;
     this.registry = registry;
-    if (scale.blockSize !== HAMLET_BLOCK_SIZE) {
+    if (scale.blockSize !== TEMPLATE_BLOCK_SIZE) {
       throw new Error('Authored ASCII sites require 0.5 m blocks');
     }
     const s = scale.blockSize;
@@ -76,10 +91,15 @@ export class AuthoredSite implements Site {
       const rect = buildingBounds(building, registry.templates.get(building.template)!.size);
       return { ...lotOf(building, rect), apron: grow(rectBlocks(rect), LOT_APRON_M / s) };
     });
-    this.placements = layout.buildings.map((building) => placementOf(registry, building, layout.lootContext));
+    const slots = slotPlacement(registry, layout);
+    this.placements = [
+      ...layout.buildings.map((building) => placementOf(registry, building, layout.lootContext)),
+      ...(slots ? [slots] : []),
+    ];
+    this.publicCartography = layout.tracks.map(({ points, width }) => ({ kind: 'track', points, width }));
     this.lootColumns = lootPointsByColumn(
       this.placements.flatMap((placement, i) => {
-        const sources = lootSourcesOf(registry, layout.id, placement, layout.buildings[i]!.fixedLoot);
+        const sources = lootSourcesOf(registry, layout.id, placement, layout.buildings[i]?.fixedLoot);
         return layout.demo ? sources.map((source) => ({ ...source, fixture: true as const })) : sources;
       }),
     );
@@ -88,11 +108,20 @@ export class AuthoredSite implements Site {
       keyLoot: placementKeyLoot(
         this.placements.map((placement, index) => ({
           placement,
-          fixedLoot: layout.buildings[index]!.fixedLoot,
+          fixedLoot: layout.buildings[index]?.fixedLoot,
         })),
       ),
     };
-    this.spawn = { pos: [...layout.player.position], yaw: yawFromBearing(layout.player.bearing) };
+    if (layout.practice) {
+      this.lightPractice = layout.practice.light;
+    }
+    this.showroom = layout.showroom;
+    this.slots = layout.showroom ? slotProps(registry, layout.showroom) : [];
+    const newest = this.slots.at(-1);
+    this.spawn = {
+      pos: [...layout.player.position],
+      yaw: newest ? yawToward(layout.player.position, propCentre(newest)) : yawFromBearing(layout.player.bearing),
+    };
     const spawnPoints: [number, number][] = [
       [layout.player.position[0], layout.player.position[2]],
       ...layout.shamblers.map((spawn): [number, number] => [spawn.position[0], spawn.position[2]]),
@@ -342,10 +371,15 @@ export class AuthoredSite implements Site {
       }));
     this.hordes = (layout.hordes ?? []).map(({ id, position }) => ({
       id: `${layout.id}_${id}`,
-      type: HAMLET_HORDE_TYPE,
+      type: HORDE_TYPE,
       pos: blocks(position),
-      members: Rng.stream(seed, `authored-horde:${layout.id}:${id}`).int(...HAMLET_HORDE_MEMBERS),
+      members: Rng.stream(seed, `authored-horde:${layout.id}:${id}`).int(...HORDE_MEMBERS),
     }));
+  }
+
+  focus(furniture: string): Site['spawn'] | undefined {
+    const pose = this.showroom && focusPose(this.slots, furniture, this.showroom.focusDistance);
+    return pose && { pos: [...pose.pos], yaw: pose.yaw };
   }
 
   stamp(chunk: Chunk): void {

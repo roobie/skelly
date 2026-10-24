@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { Character, dominantSide, offSide } from '../src/core/character.ts';
+import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory, WORK_IN_PROGRESS } from '../src/core/inventory.ts';
+import { Inventory, workInProgressItem } from '../src/core/inventory.ts';
 import { options, pocketGroundItem, quickbarTake, quickMove, toHands } from '../src/core/options.ts';
 import { bindReach, type ReachPlayer, type ReachSnapshot } from '../src/core/reach.ts';
 import type { FurnitureDef } from '../src/core/schema.ts';
@@ -11,10 +12,11 @@ import type { Zombie } from '../src/core/zombies.ts';
 import { downedBodyPlan } from '../src/game/downedBody.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
-import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
+import { buildFixtureRegistry as buildRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
 
 const registry = baseRegistry();
+const WORK_IN_PROGRESS = workInProgressItem(registry).id;
 
 const setup = (handedness?: 'right' | 'left', contentRegistry = registry) => {
   const character = new Character(contentRegistry, handedness ? { handedness } : {});
@@ -245,6 +247,8 @@ it('lists workstation components only when their furniture box is within two met
     size: [1, 3, 1],
     color: '#ffffff',
     workstation: { id: 'fixture_station', qualities: { sawing: 1 }, workFactorBonus: 0.2 },
+    breach: fixtureBreach(),
+    material: FIXTURE_MATERIAL,
   });
   const fixtureRegistry = { ...registry, furniture: fixtureFurniture };
   const inventory = new Inventory(fixtureRegistry);
@@ -295,6 +299,29 @@ it('opened beans expose the eat time and a refusal when both hands hold other it
   expect(options(beans, t.view()).find((option) => option.kind === 'use')).toMatchObject({ plan: { ok: false } });
 });
 
+it('hides an obvious refusal by its key, so rewording it in content keeps it hidden', () => {
+  const core = registry.ui.get(CORE_CONTENT_IDS.coreUi)!;
+  const reworded = { ...core, coreMessages: { ...core.coreMessages, alreadyInHand: 'fixture reworded' } };
+  const t = setup('right', { ...registry, ui: new Map(registry.ui).set(core.id, reworded) });
+  const knife = t.add('kabar', { kind: 'hand', side: 'right' });
+  const hands = options(knife, t.view()).flatMap((option) =>
+    option.kind === 'move' && option.target.kind === 'hand' ? [option.target.side] : [],
+  );
+  expect(hands).toEqual(['left']);
+});
+
+it('shows a refusal that content words like an obvious one, since only the key hides it', () => {
+  const core = registry.ui.get(CORE_CONTENT_IDS.coreUi)!;
+  const shared = core.coreMessages.alreadyInHand;
+  const sameWords = { ...core, coreMessages: { ...core.coreMessages, tooFar: shared } };
+  const t = setup('right', { ...registry, ui: new Map(registry.ui).set(core.id, sameWords) });
+  const knife = t.add('kabar', { kind: 'pile', pos: [20, 0, 20] });
+  const hands = options(knife, t.view()).flatMap((option) =>
+    option.kind === 'move' && option.target.kind === 'hand' && !option.plan.ok ? [option.plan.reason] : [],
+  );
+  expect(hands).toEqual([shared, shared]);
+});
+
 describe('handling move admission', () => {
   it.each(['toHands', 'quickbarTake'] as const)(
     'stows a sling-fitted long gun on the shoulder when %s wields a one-hand tool',
@@ -308,7 +335,7 @@ describe('handling move admission', () => {
       const refusal =
         route === 'toHands'
           ? toHands(t.inventory, t.queue, crowbar, [0, 0, 0])
-          : quickbarTake(t.inventory, t.queue, crowbar, [0, 0, 0]);
+          : quickbarTake(t.inventory, t.queue, crowbar);
       expect(refusal).toBeUndefined();
       t.queue.tick(10);
 
@@ -328,7 +355,7 @@ describe('handling move admission', () => {
     }
     expect
       .soft(t.queue.enqueue(item, quickMove(item, t.view()).target))
-      .toEqual({ ok: false, reason: 'Already queued' });
+      .toEqual({ ok: false, reason: expect.any(String), key: 'alreadyQueued' });
     expect.soft(t.queue.jobs).toHaveLength(1);
     expect(t.queue.tick(first.job.duration).done).toEqual([first.job]);
     expect(t.queue.remaining).toBe(0);
@@ -361,9 +388,8 @@ describe('handling move admission', () => {
     }
     const result = t.queue.tick(1);
     expect(result.done).toHaveLength(1);
-    expect(result.failed).toEqual([
-      { job: move.job, reason: change === 'consumed' ? "It isn't there any more" : "It's already there" },
-    ]);
+    expect(result.failed).toEqual([{ job: move.job, reason: expect.any(String) }]);
+    expect(result.failed[0]?.reason).toBeTruthy();
     expect(move.job.elapsed).toBe(0);
     expect(t.queue.remaining).toBe(0);
     expect(t.queue.jobs).toEqual([]);
@@ -705,7 +731,9 @@ describe('quick move rules', () => {
   it('keeps a wielded item in hand and returns the fit hint when there is no room', () => {
     const t = setup();
     const item = t.add('canned_beans', { kind: 'hand', side: 'right' });
-    expect(quickMove(item, t.view()).plan).toMatchObject({ ok: false, reason: "It doesn't fit in your inventory" });
+    const { plan } = quickMove(item, t.view());
+    expect(plan.ok).toBe(false);
+    expect(plan.ok ? undefined : plan.reason).toBeTruthy();
     expect(t.inventory.hands.right).toBe(item);
   });
 
@@ -735,7 +763,9 @@ describe('quick move rules', () => {
   it('returns the fit hint and leaves a floor item in place when no inventory slot fits', () => {
     const t = setup();
     const item = t.add('canned_beans', { kind: 'pile', pos: [0, 0, 0] });
-    expect(quickMove(item, t.view()).plan).toMatchObject({ ok: false, reason: "It doesn't fit in your inventory" });
+    const { plan } = quickMove(item, t.view());
+    expect(plan.ok).toBe(false);
+    expect(plan.ok ? undefined : plan.reason).toBeTruthy();
     expect(t.inventory.locate(item)?.kind).toBe('pile');
   });
 

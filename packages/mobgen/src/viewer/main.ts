@@ -19,12 +19,20 @@ import { generate, generateValid, type Realized, realize, realizeLod } from '../
 import type { Pose } from '../core/pose.ts';
 import type { ValidationProfile } from '../core/rules.ts';
 import type { Genome, Template } from '../core/template.ts';
+import {
+  acidAttackPose,
+  acidDeathPose,
+  acidHitPose,
+  acidIdlePose,
+  acidWalkPose,
+  acidWindupPose,
+} from '../mob/acidPoses.ts';
 import { acidTemplate } from '../mob/acidTemplate.ts';
 import { amalgamManifest } from '../mob/amalgam.ts';
 import { VIEWER_TEMPLATES } from '../mob/amalgamTemplate.ts';
-import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
+import { ATTACK_CLIPS, type AttackClip, attackClipById, attackClipFor, attackPose } from '../mob/attack.ts';
 import { crawlerGaitPose, crawlerHitPose, crawlerPose } from '../mob/crawler.ts';
-import { SEVERABLE_PARTS, severedBoneSet } from '../mob/dismember.ts';
+import { severableParts, severedBoneSet } from '../mob/dismember.ts';
 import { DOG_SEVERABLE_PARTS, dogGaitPose, dogHitPose, dogPose } from '../mob/dog.ts';
 import { dogTemplate } from '../mob/dogTemplate.ts';
 import {
@@ -44,10 +52,15 @@ import { type IdleStance, idlePose } from '../mob/idle.ts';
 import { LOOK_AT_REST, type LookAtState, lookAtPose } from '../mob/lookAt.ts';
 import { LOOK_AT_PROFILES, type LookAtProfile } from '../mob/lookAtProfiles.ts';
 import { deathPose, flinchPose, HIT_FLINCH } from '../mob/reactions.ts';
+import { skeletonTemplate } from '../mob/skeletonTemplate.ts';
 import { type Actor, buildActor, buildShambler, disposeActor } from './scene.ts';
 
 // Comparison-only bodies are explicit viewer opt-ins rather than consumer entries.
-const TEMPLATES: readonly Template[] = [...VIEWER_TEMPLATES, dogTemplate, acidTemplate];
+const TEMPLATES: readonly Template[] = [...VIEWER_TEMPLATES, dogTemplate, acidTemplate, skeletonTemplate];
+
+/** Plans posed by the shared humanoid walk, idle, attack and death. */
+const usesHumanoidRig = (template: Template): boolean =>
+  template.bodyPlan === 'humanoid' || template.bodyPlan === 'skeleton';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const view = $<HTMLElement>('view');
@@ -65,6 +78,10 @@ const speedValue = $<HTMLSpanElement>('speed-value');
 const idleStanceSelect = $<HTMLSelectElement>('idle-stance');
 const attackBtn = $<HTMLButtonElement>('attack-btn');
 const attackLoop = $<HTMLInputElement>('attack-loop');
+const attackClipSelect = $<HTMLSelectElement>('attack-clip');
+const darkScene = $<HTMLInputElement>('dark-scene');
+const acidWindup = $<HTMLInputElement>('acid-windup');
+const acidWindupLabel = $<HTMLLabelElement>('acid-windup-label');
 const hitBtn = $<HTMLButtonElement>('hit-btn');
 const dieBtn = $<HTMLButtonElement>('die-btn');
 const resetBtn = $<HTMLButtonElement>('reset-btn');
@@ -87,10 +104,6 @@ for (const t of TEMPLATES) {
   templateSelect.add(new Option(t.name, t.name));
 }
 
-for (const part of SEVERABLE_PARTS) {
-  severPart.add(new Option(part, part));
-}
-
 // ---- three.js setup ----
 
 const renderer = new WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
@@ -99,10 +112,22 @@ view.appendChild(renderer.domElement);
 
 const scene = new Scene();
 scene.background = new Color(0x16_18_1c);
-scene.add(new HemisphereLight(0xdf_e6_ee, 0x2a_26_22, 1.6));
+const hemi = new HemisphereLight(0xdf_e6_ee, 0x2a_26_22, 1.6);
+scene.add(hemi);
 const sun = new DirectionalLight(0xff_ff_ff, 2.2);
 sun.position.set(2, 4, 3);
 scene.add(sun);
+
+/** Dim scene lighting to a faint remnant, so self-lit materials (template emission — see scene.ts,
+ * fleshMaterial) can be judged as glow in the dark rather than as shaded colour. */
+const applySceneLighting = (): void => {
+  hemi.intensity = darkScene.checked ? 0.06 : 1.6;
+  sun.intensity = darkScene.checked ? 0.04 : 2.2;
+};
+darkScene.addEventListener('change', () => {
+  applySceneLighting();
+  updateUrl();
+});
 
 // One 0.5 m/cell grid (a deadvox block) that scrolls under the figure while it walks, plus a finer
 // one at voxel spacing near the origin (cheap: just extra lines).
@@ -175,8 +200,23 @@ const dogStance = (genome: Genome, severed?: ReadonlySet<string>) => ({
   severed,
 });
 const ATTACK_COOLDOWN_S = 1.5; // matches deadvox's shambler attack cooldown
-let attackTime: number | undefined; // seconds into ATTACK_CLIPS.LUNGE_GRAB, or undefined when idle
+let attackTime: number | undefined; // seconds into the playing clip, or undefined when idle
 let attackCooldown = 0; // seconds until the loop (if checked) fires the next attack
+/** Fallback clip until a template loads; the first load always sets the template's own choice. */
+let activeClip: AttackClip = ATTACK_CLIPS['lunge-grab'];
+/** The clip this template's content selects, so the URL records only a deliberate override. */
+let templateClipName: string | undefined;
+/** A clip named by the page's URL, honoured on every load until the selector is touched by hand. */
+let clipOverride: string | undefined;
+for (const clip of Object.values(ATTACK_CLIPS)) {
+  attackClipSelect.add(new Option(clip.name, clip.name));
+}
+attackClipSelect.addEventListener('change', () => {
+  clipOverride = undefined;
+  activeClip = attackClipById(attackClipSelect.value)!;
+  attackTime = undefined;
+  updateUrl();
+});
 let hitTime: number | undefined; // seconds into HIT_FLINCH, or undefined when idle
 let hitSide = 0; // -1..1, alternates each press so the side-mirror is visible across repeated hits
 // Death freezes whatever pose was current (walk, standing, or mid-attack) the instant it starts, and
@@ -185,6 +225,7 @@ let hitSide = 0; // -1..1, alternates each press so the side-mirror is visible a
 let deathTime: number | undefined;
 let deathBasePose: Pose | undefined;
 let deathDirection: 1 | -1 = 1;
+let lastAcidPose: Pose | undefined;
 /** Every part cut so far — cumulative, so "Sever" a second part while the first is still missing just adds
  * to it (severedBoneSet handles any redundancy, e.g. severing a hand after its own upperArm already took
  * it, for free). Reset on Heal or a fresh load. Not yet the crowd texture's mask (that's a deadvox/renderer
@@ -227,11 +268,17 @@ const heal = (): void => {
 /** Freezes whatever pose is current (walk, standing, or mid-attack) and starts the death fall from that
  * snapshot — a falling body doesn't keep striding underneath itself, unlike a flinch. */
 const playDeath = (): void => {
+  if (current?.template.bodyPlan === 'acid') {
+    deathBasePose = lastAcidPose ?? acidIdlePose(current.realized, idleTime);
+    deathDirection = dieBackward.checked ? -1 : 1;
+    deathTime = 0;
+    return;
+  }
   if (!current?.walkActor) {
     return;
   }
   const actor = current.walkActor;
-  if (current.template.bodyPlan !== 'humanoid') {
+  if (!usesHumanoidRig(current.template)) {
     deathBasePose =
       current.template.bodyPlan === 'dog'
         ? dogPose(current.realized, dogStance(current.genome, severedBones))
@@ -244,8 +291,7 @@ const playDeath = (): void => {
   const speed = walking ? Number(speedInput.value) : 0;
   const idle = idlePose(actor, currentStance(), idleTime);
   const walkBase: Pose = walkPose(actor, clock, speed, { idle });
-  deathBasePose =
-    attackTime === undefined ? walkBase : attackPose(actor, ATTACK_CLIPS.LUNGE_GRAB!, attackTime, walkBase);
+  deathBasePose = attackTime === undefined ? walkBase : attackPose(actor, activeClip, attackTime, walkBase);
   deathDirection = dieBackward.checked ? -1 : 1;
   deathTime = 0;
 };
@@ -364,10 +410,34 @@ const updateUrl = (): void => {
   params.set('speed', speedInput.value);
   params.set('walk', walkOn.checked ? '1' : '0');
   params.set('stance', idleStanceSelect.value);
+  const setFlag = (box: HTMLInputElement, key: string): void => {
+    if (box.checked) {
+      params.set(key, '1');
+    }
+  };
+  setFlag(attackLoop, 'attack');
+  setFlag(darkScene, 'dark');
+  setFlag(acidWindup, 'windup');
+  if (templateClipName !== undefined && attackClipSelect.value !== templateClipName) {
+    params.set('clip', attackClipSelect.value);
+  }
   if (new URLSearchParams(location.search).get('shot') === '1') {
     params.set('shot', '1');
   }
   history.replaceState(null, '', `?${params.toString()}`);
+};
+
+/** Syncs the attack-clip selector with a freshly loaded template: it offers every shared-rig clip
+ * beside the template's own choice, so a look can be judged in motion against the alternative on the
+ * same body. The URL's clip stays honoured until the selector is touched by hand. */
+const syncAttackClip = (template: Template): void => {
+  const humanoidRig = usesHumanoidRig(template);
+  templateClipName = humanoidRig ? attackClipFor(template).name : undefined;
+  attackClipSelect.closest('label')!.hidden = !humanoidRig;
+  if (templateClipName !== undefined) {
+    attackClipSelect.value = clipOverride ?? templateClipName;
+    activeClip = attackClipById(attackClipSelect.value)!;
+  }
 };
 
 const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
@@ -381,7 +451,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   }
   const actor = buildActor(realized, genome.voxelSize);
   scene.add(actor.root);
-  const staticOnly = template.bodyPlan === 'amalgam' || template.bodyPlan === 'acid';
+  const staticOnly = template.bodyPlan === 'amalgam';
   let loaded: Loaded = {
     genome,
     template,
@@ -392,18 +462,19 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   };
   if (staticOnly) {
     actor.applyPose({ root: [0, 0, 0], rotations: {} });
-    const parts =
-      template.bodyPlan === 'amalgam'
-        ? amalgamManifest(realized.body, realized.voxels)
-            .parts.filter((part) => part.severable)
-            .map((part) => part.rootBone)
-        : realized.body.bones.filter((bone) => bone.disposition === 'sever').map((bone) => bone.id);
+    const parts = amalgamManifest(realized.body, realized.voxels)
+      .parts.filter((part) => part.severable)
+      .map((part) => part.rootBone);
+    severPart.replaceChildren(...parts.map((id) => new Option(id, id)));
+  } else if (template.bodyPlan === 'acid') {
+    lastAcidPose = acidIdlePose(realized, idleTime);
+    actor.applyPose(lastAcidPose);
+    const parts = realized.body.bones.filter((bone) => bone.disposition === 'sever').map((bone) => bone.id);
     severPart.replaceChildren(...parts.map((id) => new Option(id, id)));
   } else {
     const extents = footRestExtents(realized.body.bones, realized.voxels);
     const bodyExtents = bodyRestExtents(realized.body.bones, realized.voxels);
-    const legGeometry =
-      template.bodyPlan === 'humanoid' ? legGeometryFor(realized.body.bones, extents, 'L') : undefined;
+    const legGeometry = usesHumanoidRig(template) ? legGeometryFor(realized.body.bones, extents, 'L') : undefined;
     const params = genome.params as HumanoidParams;
     const walkActor: WalkActor = {
       bones: realized.body.bones,
@@ -415,7 +486,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
     // Never the bind pose, even for this first static frame (e.g. ?shot=1 screenshots, taken before the
     // render loop ticks) — same idle stance the live frame loop would settle into at speed 0.
     let initialPose: Pose;
-    if (template.bodyPlan === 'humanoid') {
+    if (usesHumanoidRig(template)) {
       initialPose = idlePose(walkActor, currentStance(), idleTime);
     } else if (template.bodyPlan === 'dog') {
       // A fresh load starts whole; `severedCuts` is cleared below, so this pose is deliberately intact.
@@ -426,9 +497,13 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
     actor.applyPose(initialPose);
     loaded = { ...loaded, params, extents, bodyExtents, legGeometry, walkActor };
     severPart.replaceChildren(
-      ...(template.bodyPlan === 'dog' ? DOG_SEVERABLE_PARTS : SEVERABLE_PARTS).map((part) => new Option(part, part)),
+      ...(template.bodyPlan === 'dog' ? DOG_SEVERABLE_PARTS : severableParts(realized.body.bones)).map(
+        (part) => new Option(part, part),
+      ),
     );
   }
+  acidWindupLabel.hidden = template.bodyPlan !== 'acid';
+  syncAttackClip(template);
   walkFieldset.hidden = staticOnly;
   attackFieldset.hidden = staticOnly;
   reactionsFieldset.hidden = staticOnly;
@@ -538,6 +613,11 @@ const setSpeed = (v: number): void => {
 };
 speedInput.addEventListener('input', () => setSpeed(Number(speedInput.value)));
 walkOn.addEventListener('change', updateUrl);
+attackLoop.addEventListener('change', updateUrl);
+acidWindup.addEventListener('change', () => {
+  attackTime = undefined;
+  updateUrl();
+});
 idleStanceSelect.addEventListener('change', updateUrl);
 $<HTMLButtonElement>('preset-wander').addEventListener('click', () => {
   walkOn.checked = true;
@@ -617,6 +697,16 @@ if (profileParam === 'full' || profileParam === 'silhouette') {
 }
 setSpeed(Number(query.get('speed') ?? '0.8'));
 walkOn.checked = query.get('walk') === '1';
+attackLoop.checked = query.get('attack') === '1';
+acidWindup.checked = query.get('windup') === '1';
+darkScene.checked = query.get('dark') === '1';
+applySceneLighting();
+const clipParam = query.get('clip');
+if (clipParam && [...attackClipSelect.options].some((o) => o.value === clipParam)) {
+  clipOverride = clipParam;
+  attackClipSelect.value = clipParam;
+  activeClip = attackClipById(clipParam)!;
+}
 const stanceParam = query.get('stance');
 if (stanceParam && [...idleStanceSelect.options].some((o) => o.value === stanceParam)) {
   idleStanceSelect.value = stanceParam;
@@ -636,7 +726,7 @@ const advanceWalk = (dt: number, walking: boolean, speed: number): void => {
     groundGroup.position.z = gridZ;
     return;
   }
-  if (current.template.bodyPlan === 'dog') {
+  if (current.template.bodyPlan === 'dog' || current.template.bodyPlan === 'acid') {
     dogDistance += speed * dt;
     gridZ = (gridZ + speed * dt) % 0.5;
     groundGroup.position.z = gridZ;
@@ -722,8 +812,34 @@ const applyDogFrame = (loaded: Loaded, dt: number): void => {
   applyLookAt(loaded, pose, dt);
 };
 
+const applyAcidFrame = (loaded: Loaded, dt: number): void => {
+  const speed = walkOn.checked ? Number(speedInput.value) : 0;
+  advanceWalk(dt, walkOn.checked, speed);
+  const duration = acidWindup.checked ? acidTemplate.animation.windupDuration : acidTemplate.animation.attackDuration;
+  advanceAttack(dt, duration);
+  if (hitTime !== undefined) {
+    hitTime += dt;
+    if (hitTime > acidTemplate.animation.hitDuration) {
+      hitTime = undefined;
+    }
+  }
+  const base = acidWalkPose(loaded.realized, dogDistance, speed, idleTime);
+  let attacked = base;
+  if (attackTime !== undefined) {
+    attacked = acidWindup.checked
+      ? acidWindupPose(loaded.realized, base, Math.sin((Math.PI * attackTime) / duration))
+      : acidAttackPose(loaded.realized, base, attackTime);
+  }
+  lastAcidPose = hitTime === undefined ? attacked : acidHitPose(loaded.realized, attacked, hitTime, hitSide);
+  applyLookAt(loaded, lastAcidPose, dt);
+};
+
 const applyLiveFrame = (loaded: Loaded, dt: number): void => {
-  if (loaded.template.bodyPlan === 'amalgam' || loaded.template.bodyPlan === 'acid') {
+  if (loaded.template.bodyPlan === 'acid') {
+    applyAcidFrame(loaded, dt);
+    return;
+  }
+  if (loaded.template.bodyPlan === 'amalgam') {
     return;
   }
   if (loaded.template.bodyPlan === 'crawler') {
@@ -740,14 +856,13 @@ const applyLiveFrame = (loaded: Loaded, dt: number): void => {
   const walking = walkOn.checked;
   const speed = walking ? Number(speedInput.value) : 0;
   advanceWalk(dt, walking, speed);
-  const clip = ATTACK_CLIPS.LUNGE_GRAB!;
-  advanceAttack(dt, clip.duration);
+  advanceAttack(dt, activeClip.duration);
   advanceHit(dt);
 
   const actor = loaded.walkActor;
   const idle = idlePose(actor, currentStance(), idleTime);
   const basePose: Pose = walkPose(actor, clock, speed, { idle });
-  const attacked = attackTime === undefined ? basePose : attackPose(actor, clip, attackTime, basePose);
+  const attacked = attackTime === undefined ? basePose : attackPose(actor, activeClip, attackTime, basePose);
   const pose = hitTime === undefined ? attacked : flinchPose(actor, hitTime, attacked, { side: hitSide });
   applyLookAt(loaded, pose, dt);
 };
@@ -755,6 +870,11 @@ const applyLiveFrame = (loaded: Loaded, dt: number): void => {
 /** Advances and poses one frame while dead: deathTime free-runs (deathPose clamps internally), from the
  * pose frozen at the moment of death — a falling body doesn't keep striding or swinging underneath itself. */
 const applyDeathFrame = (loaded: Loaded, dt: number): void => {
+  if (loaded.template.bodyPlan === 'acid') {
+    deathTime = (deathTime ?? 0) + dt;
+    loaded.actor.applyPose(acidDeathPose(loaded.realized, deathBasePose!, deathTime, deathDirection));
+    return;
+  }
   if (!(loaded.walkActor && loaded.bodyExtents)) {
     return;
   }

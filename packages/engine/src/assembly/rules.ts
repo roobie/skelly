@@ -199,7 +199,7 @@ const checkSolidOverlap = (r: Resolved, focusParts?: readonly string[]): Issue[]
 };
 
 /** No two parts interpenetrate. Directly connected parts may nest a little. */
-const solidOverlap: Rule = {
+export const solidOverlap: Rule = {
   id: 'solid-overlap',
   title: 'Solids do not overlap',
   check: (r) => checkSolidOverlap(r),
@@ -299,7 +299,12 @@ const keepOutIssue = ({
     return undefined;
   }
   let worst = Number.NEGATIVE_INFINITY;
-  for (const solid of solids.get(other)!) {
+  const sources = r.defs.get(other)!.solids;
+  for (const [index, solid] of solids.get(other)!.entries()) {
+    const slot = sources[index]?.slot;
+    if (slot !== undefined && ko.allowSlots?.includes(slot)) {
+      continue;
+    }
     if (lowerBoundDistanceWorld(koShape, solid) <= TOLERANCE.contact) {
       worst = Math.max(worst, penetrationWorld(koShape, solid));
     }

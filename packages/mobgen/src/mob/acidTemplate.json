@@ -1,4 +1,54 @@
 {
+  "animation": {
+    "armSwing": 8,
+    "attack": {
+      "arm.L": [65, 0, -8],
+      "arm.R": [65, 0, 8],
+      "chest": [-10, 0, 0],
+      "fore.L": [25, 0, 0],
+      "fore.R": [25, 0, 0],
+      "skull": [-8, 0, 0]
+    },
+    "attackDuration": 1.1000000000000001,
+    "attackPeak": 0.55000000000000004,
+    "breath": 2,
+    "death": {
+      "arm.L": [-60, 0, -35],
+      "arm.R": [-60, 0, 35],
+      "belly": [15, 0, 0],
+      "chest": [20, 0, 0],
+      "hand.L": [-30, 0, 0],
+      "hand.R": [-30, 0, 0],
+      "neck": [10, 0, 0],
+      "shin.L": [20, 0, 0],
+      "shin.R": [20, 0, 0],
+      "thigh.L": [20, 0, 0],
+      "thigh.R": [20, 0, 0]
+    },
+    "deathDuration": 1.3999999999999999,
+    "droolDeathFlex": -45,
+    "hit": {
+      "chest": [9, 0, 6],
+      "maw": [10, 0, 0],
+      "neck": [8, 0, 5],
+      "skull": [12, 0, 7]
+    },
+    "hitDuration": 0.40000000000000002,
+    "hitPeak": 0.089999999999999997,
+    "idlePeriod": 4.2000000000000002,
+    "kneeLift": 24,
+    "strideHeight": 0.41999999999999998,
+    "sway": 1.5,
+    "swing": 18,
+    "topple": 95,
+    "windup": {
+      "chest": [8, 0, 0],
+      "maw": [20, 0, 0],
+      "neck": [12, 0, 0],
+      "skull": [14, 0, 0]
+    },
+    "windupDuration": 1.2
+  },
   "bodyMassKg": 105,
   "bodyPlan": "acid",
   "budgets": {
@@ -31,6 +81,18 @@
     }
   },
   "description": "Forward-set cube head, exposed acid sac and asymmetric stooped rig.",
+  "gaze": {
+    "head": {
+      "pitchDeg": 10,
+      "yawDeg": 24
+    },
+    "headBone": "skull",
+    "neck": {
+      "pitchDeg": 10,
+      "yawDeg": 18
+    },
+    "turnRateDegPerSecond": 65
+  },
   "geometry": {
     "ankleHeight": 0.14000000000000001,
     "armAbduct": 8,
@@ -196,6 +258,11 @@
     "mouth": {
       "color": [0.16500000000000001, 0.114, 0.085999999999999993],
       "emissive": 0
+    },
+    "sac": {
+      "charged": true,
+      "color": [0.56100000000000005, 0.89000000000000001, 0.22700000000000001],
+      "emissive": 1
     },
     "skin": {
       "color": [0.66300000000000003, 0.70599999999999996, 0.47799999999999998],
@@ -381,7 +448,7 @@
   },
   "sizeReference": "shambler",
   "skinB": [0.56100000000000005, 0.61199999999999999, 0.44700000000000001],
-  "status": "comparison-only",
+  "status": "ready",
   "supportBones": ["foot.L", "foot.R", "toe.L", "toe.R"],
   "sweep": {
     "count": 216,

@@ -1,10 +1,14 @@
-import { generateValid } from '../core/generate.ts';
+import type { BodyRegion } from '../core/body.ts';
+import { generateValid, planOf } from '../core/generate.ts';
 import { consumableTemplate } from '../core/template.ts';
 import { worldPosition } from '../core/voxelize.ts';
+import { regionSeverableParts } from './dismember.ts';
 // Side effect: registers the shipped archetypes so `consumableTemplate` can resolve them.
 import './templates.ts';
+// Side effect: registers the acid body plan and template beside the shipped archetypes.
+import './acidTemplate.ts';
 
-export type ShamblerHitRegion = 'head' | 'torso' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg';
+export type ShamblerHitRegion = BodyRegion;
 export interface BoneVoxelBox {
   readonly bone: string;
   /** Centre and half-size in the bone's rest frame, metres. The half-size includes half a voxel + 1 mm. */
@@ -16,18 +20,11 @@ export interface ShamblerFigure {
   readonly genome: NonNullable<ReturnType<typeof generateValid>>['genome'];
   readonly realized: NonNullable<ReturnType<typeof generateValid>>['realized'];
   readonly boxes: Readonly<Record<ShamblerHitRegion, readonly BoneVoxelBox[]>>;
+  /** Per region, the parts a cut may start at, parents first; empty where the dispositions allow none. */
+  readonly severableParts: Readonly<Record<ShamblerHitRegion, readonly string[]>>;
   /** Rest-frame voxel centres by owner bone; also used to reject empty upper corners of posed head OBBs. */
   readonly voxelCentersByBone: ReadonlyMap<string, readonly (readonly [number, number, number])[]>;
 }
-
-const REGION_BONES: Readonly<Record<ShamblerHitRegion, readonly string[]>> = {
-  head: ['head', 'jaw'],
-  torso: ['pelvis', 'spine', 'chest', 'neck'],
-  leftArm: ['upperArm.L', 'forearm.L', 'hand.L'],
-  rightArm: ['upperArm.R', 'forearm.R', 'hand.R'],
-  leftLeg: ['thigh.L', 'shin.L', 'foot.L'],
-  rightLeg: ['thigh.R', 'shin.R', 'foot.R'],
-};
 
 interface Bounds {
   min: [number, number, number];
@@ -74,9 +71,13 @@ const findBoneVoxelData = (realized: ShamblerFigure['realized']) => {
   return { limits, voxelCentersByBone };
 };
 
-const buildRegionBoxes = (limits: ReadonlyMap<string, Bounds>, margin: number) =>
+const buildRegionBoxes = (
+  regionBones: Readonly<Record<ShamblerHitRegion, readonly string[]>>,
+  limits: ReadonlyMap<string, Bounds>,
+  margin: number,
+) =>
   Object.fromEntries(
-    Object.entries(REGION_BONES).map(([region, bones]) => [
+    Object.entries(regionBones).map(([region, bones]) => [
       region,
       bones.flatMap((bone) => {
         const bounds = limits.get(bone);
@@ -108,13 +109,18 @@ export const zombieFigure = (model: string, seed: number): ShamblerFigure => {
   if (!generated || (model === 'shambler' && generated.seed !== seed)) {
     throw new Error(`Zombie figure ${model} seed ${seed} is not valid`);
   }
+  const { regionBones } = planOf(template.bodyPlan);
+  if (!regionBones) {
+    throw new Error(`Body plan ${template.bodyPlan} has no hit regions`);
+  }
   const { limits, voxelCentersByBone } = findBoneVoxelData(generated.realized);
-  const boxes = buildRegionBoxes(limits, generated.realized.voxels.size / 2 + 0.001);
+  const boxes = buildRegionBoxes(regionBones, limits, generated.realized.voxels.size / 2 + 0.001);
   const figure: ShamblerFigure = {
     seed,
     genome: generated.genome,
     realized: generated.realized,
     boxes,
+    severableParts: regionSeverableParts(generated.realized.body.bones, regionBones),
     voxelCentersByBone,
   };
   cache.set(key, figure);

@@ -21,6 +21,7 @@ import type { Item } from '../src/core/items.ts';
 import { toggleLight } from '../src/core/lights.ts';
 import { type BeamSpill, BeamSpillSchema, type ContentFile } from '../src/core/schema.ts';
 import { HeldItems } from '../src/render/hands.ts';
+import { CALIBRATED_NEAR_FIELD_M } from './flashlightFixture.ts';
 
 let Flashlight: typeof import('../src/render/flashlight.ts').Flashlight;
 let cone: typeof import('../src/render/flashlightCone.ts');
@@ -53,6 +54,8 @@ const source = (shape: object) => ({
         name: 'Fixture beam',
         category: 'light',
         economy: { usage: [], tiers: [] },
+        workInProgress: false,
+        notLoot: false,
         weight: 10,
         size: [1, 1],
         wearable: { slot: 'head', encumbrance: 0 },
@@ -107,7 +110,7 @@ describe('flashlight cone', () => {
         expect(value[1]).toBeCloseTo(spill?.intensity ?? 0);
       };
       const scene = new Scene();
-      const torch = new Flashlight(scene, 1, override);
+      const torch = new Flashlight(scene, 1, CALIBRATED_NEAR_FIELD_M, override);
       const camera = new PerspectiveCamera();
       const chunk = ShaderChunk.lights_pars_begin;
       expect(chunk.includes('uniform vec2 uFlashlightSpill[ NUM_SPOT_LIGHTS ];')).toBe(enabled);
@@ -160,7 +163,7 @@ describe('flashlight cone', () => {
     expect(inventory.add(lamp, { kind: 'worn' })).toBe(true);
     const held = new HeldItems(inventory, undefined, { skin: '#ffffff', shirt: '#ffffff', trousers: '#ffffff' });
     const scene = new Scene();
-    const torch = new Flashlight(scene, 2);
+    const torch = new Flashlight(scene, 2, CALIBRATED_NEAR_FIELD_M);
     torch.shadowsAllowed = true;
     // three.js's own light state: WebGLRenderer rebuilds a lit material's program whenever its version moves.
     const lights = new WebGLLights({ has: () => false } as unknown as WebGLExtensions);
@@ -203,7 +206,7 @@ describe('flashlight cone', () => {
       at.set(1, 2, 3);
       return item === hand;
     });
-    const torch = new Flashlight(new Scene(), 2);
+    const torch = new Flashlight(new Scene(), 2, CALIBRATED_NEAR_FIELD_M);
     torch.shadowsAllowed = true;
     const uniforms = UniformsUtils.clone(ShaderLib.lambert.uniforms);
     torch.update({ registry, inventory, lit: hand, held, camera: new PerspectiveCamera() });
@@ -283,7 +286,7 @@ describe('flashlight cone', () => {
 
   it('installs the content profile before warm-up and only once without adding a second light', () => {
     const scene = new Scene();
-    const first = new Flashlight(scene, 1);
+    const first = new Flashlight(scene, 1, CALIBRATED_NEAR_FIELD_M);
     const once = ShaderChunk.lights_pars_begin;
     cone.installFlashlightSpill(1);
     expect(ShaderChunk.lights_pars_begin).toBe(once);

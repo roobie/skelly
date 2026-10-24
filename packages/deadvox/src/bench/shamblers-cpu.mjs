@@ -6,8 +6,9 @@ import { parseTimeOfDay } from '../core/clock.ts';
 import { buildRegistry, requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
+import { siteGenerationOf } from '../core/sitePalette.ts';
 import { BACKGROUND_ZOMBIE_RATE, BACKGROUND_ZOMBIE_SLICE_COUNT, ZombieSystem } from '../core/zombies.ts';
-import { PLAYER, physicsFor } from '../game/player.ts';
+import { physicsFor, playerTuning } from '../game/player.ts';
 import { ACTIVE_SHAMBLER_TARGET, parseShamblerSeed } from './plan.ts';
 import { findShamblerBenchPlayer } from './shamblerPlacement.ts';
 import { spawnShamblerRing } from './shamblerSpawn.ts';
@@ -21,6 +22,7 @@ const { registry } = buildRegistry(
     .sort()
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) })),
 );
+const PLAYER = playerTuning(registry);
 const shambler = registry.zombies.get('shambler');
 if (!shambler) {
   console.error('The base content has no shambler definition.');
@@ -72,6 +74,7 @@ const player = {
   movement: 'still',
   lit: true,
   lightSeenFrom: 40,
+  eyeHeightMetres: PLAYER.eye,
 };
 const startTime = parseTimeOfDay('23:30');
 
@@ -79,10 +82,11 @@ for (const count of counts) {
   const activeCount = Math.min(count, ACTIVE_SHAMBLER_TARGET);
   const backgroundCount = count - activeCount;
   const system = new ZombieSystem({
+    activeZombieRadiusMetres: siteGenerationOf(registry).activeZombieRadiusMetres,
     isSolid: engine.isSolid,
     isOpaque: engine.isOpaque,
     blockSize: engine.config.scale.blockSize,
-    physics: physicsFor(engine.config.scale),
+    physics: physicsFor(engine.config.scale, PLAYER),
     jumpSpeed: PLAYER.jump,
     tuning: registry.senses.get(CORE_CONTENT_IDS.player),
     player: () => player,

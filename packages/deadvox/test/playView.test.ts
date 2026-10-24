@@ -15,11 +15,14 @@ import { describe, expect, it, vi } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
+import { graphicsTuningOf } from '../src/core/graphicsTuning.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { inventoryLightSources, toggleLight } from '../src/core/lights.ts';
 import type { Body } from '../src/core/physics.ts';
 import { raycast } from '../src/core/raycast.ts';
+import type { PoweredLight } from '../src/core/sitePower.ts';
 import { skyAt } from '../src/core/sky.ts';
+import { SkyFields } from '../src/core/skyField.ts';
 import type { SkyBounds } from '../src/core/skylight.ts';
 import type { SkySnapshot } from '../src/core/skySnapshot.ts';
 import { buildSkyResult, type SkyResult } from '../src/core/skyTransport.ts';
@@ -27,6 +30,7 @@ import type { Zombie } from '../src/core/zombies.ts';
 import type { Engine } from '../src/game/engine.ts';
 import { ThirdPersonOrbit } from '../src/game/thirdPersonOrbit.ts';
 import { flashlightDaylightScale } from '../src/render/flashlight.ts';
+import { ITEM_POINT_LIGHTS } from '../src/render/lightPool.ts';
 import { createPlayView } from '../src/render/playView.ts';
 import { Skylight } from '../src/render/skylight.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -77,7 +81,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
     },
     isSolid,
   } as unknown as Engine;
-  const view = createPlayView(engine, inventory, vi.fn(), page);
+  const view = createPlayView(engine, inventory, vi.fn(), { page });
   return {
     engine,
     inventory,
@@ -132,7 +136,7 @@ function populateNearWall(owner: ReturnType<typeof skyWorldFixture>): void {
   }
 }
 
-function litWorld(geometry: 'doorway' | 'near-wall') {
+function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readonly PoweredLight[] = () => []) {
   const box = litBounds[geometry];
   const owner = skyWorldFixture([box]);
   if (geometry === 'doorway') {
@@ -148,11 +152,9 @@ function litWorld(geometry: 'doorway' | 'near-wall') {
   camera.position.set(...cameraPosition);
   camera.lookAt(camera.position.clone().add(new Vector3(...aim)));
   const sky = new Skylight(
-    [box],
-    { blockSize: 0.5, top: 31, viewRadiusM: 64 },
+    new SkyFields(owner, { bottom: 0, top: 31 }, [box]),
+    { blockSize: 0.5, viewRadiusM: 64, unbuiltCap: graphicsTuningOf(owner.registry).unbuiltSkyCap },
     {
-      ...owner,
-      bottom: 0,
       clock: () => 0,
       submit: (input, receive) => {
         pending.push({ input, receive });
@@ -195,7 +197,7 @@ function litWorld(geometry: 'doorway' | 'near-wall') {
     },
     shadows: { torchOn: true, restore: vi.fn(), attachTorches: vi.fn() },
   } as unknown as Engine;
-  const view = createPlayView(engine, inventory, vi.fn(), new EventTarget());
+  const view = createPlayView(engine, inventory, vi.fn(), { page: new EventTarget(), poweredLights });
   const daylight = skyAt(12, BASE_DAY_CYCLE);
   const updateFrame = () => {
     view.updateHeld(0, restingHands, flashlight);
@@ -248,8 +250,10 @@ it('renders a hand beam and a worn beam together while both contribute to zombie
 });
 
 const RECEIVER_SCALE = /getSpotLightInfo\([^;]+\);\s*directLight.color \*= ([^;]+);/;
+const FIXTURE_RECEIVER_SCALE =
+  /getPointLightInfo\([^;]+\);\s*#if UNROLLED_LOOP_INDEX >= \d+\s*directLight.color \*= ([^;]+);/;
 
-function receiverLighting(f: ReturnType<typeof litWorld>, target: Vec3) {
+function receiverLighting(f: ReturnType<typeof litWorld>, target: Vec3, patched = RECEIVER_SCALE) {
   const material = new MeshLambertMaterial();
   const geometry = new BoxGeometry();
   const mesh = new Mesh(geometry, material);
@@ -262,15 +266,16 @@ function receiverLighting(f: ReturnType<typeof litWorld>, target: Vec3) {
   };
   material.onBeforeCompile(shader as never, null as never);
   try {
-    const expression = RECEIVER_SCALE.exec(shader.fragmentShader)?.[1];
+    const expression = patched.exec(shader.fragmentShader)?.[1];
     if (!expression) {
-      throw new Error('Skylight did not patch spotlight receiver attenuation');
+      throw new Error('Skylight did not patch receiver attenuation');
     }
     // Execute the emitted scalar GLSL with the CPU sample of the same published field.
     const scale = Number(
       runInNewContext(expression.replaceAll('float(', 'Number(').replaceAll('pow(', 'Math.pow('), {
         uSkyDaylight: shader.uniforms.uSkyDaylight!.value,
         receiverSkyVisibility: f.sky.at(target),
+        receiverSkyFade: f.sky.at(target, 'unfurnished'),
       }),
     );
     return { scale, shader: shader.fragmentShader };
@@ -349,7 +354,9 @@ describe('play presentation ownership', () => {
       expect(f.owner.knownOpaque(...(target.map((axis) => Math.floor(axis / 0.5)) as Vec3))).toBe(false);
       expect(f.sky.at(target)).toBeLessThan(f.sky.at(cameraPosition));
       const receiver = receiverLighting(f, target);
-      expect(receiver.shader).toContain('float receiverSkyVisibility = skyVisibility(receiverSkyUnknown);');
+      expect(receiver.shader).toContain('vec2 receiverSky = skyVisibility(receiverSkyUnbuilt);');
+      expect(receiver.shader).toContain('float receiverSkyVisibility = receiverSky.x;');
+      expect(receiver.shader).toContain('float receiverSkyFade = receiverSky.y;');
       expect(receiver.shader).toContain('irradiance *= receiverSkyVisibility;');
       expect(f.view.flashlight.daylightScale * receiver.scale).toBeGreaterThan(
         flashlightDaylightScale(f.daylight) * 10,
@@ -405,6 +412,60 @@ describe('play presentation ownership', () => {
     }
   });
 
+  it("keeps a ceiling fixture's light on a fixed surface unchanged when only the camera moves", () => {
+    let fixtureBlock: Vec3 = [0, 0, 0];
+    const f = litWorld('doorway', () => [{ pos: fixtureBlock, color: '#ffffff', intensity: 10, radius: 8 }]);
+    try {
+      const sunlit = f.engine.camera.position.toArray() as Vec3;
+      const direction = f.engine.camera.getWorldDirection(new Vector3()).toArray() as Vec3;
+      const hit = raycast(
+        sunlit.map((axis) => axis / 0.5) as Vec3,
+        direction,
+        f.view.flashlight.light.distance / 0.5,
+        f.owner.knownOpaque,
+      );
+      expect(hit).toBeDefined();
+      const shaded = new Vector3(...sunlit)
+        .addScaledVector(new Vector3(...direction), hit!.distance * 0.5)
+        .addScaledVector(new Vector3(...hit!.normal), 0.25)
+        .toArray() as Vec3;
+      // The fixture hangs just above the receiving spot, which is also where the camera moves to.
+      fixtureBlock = shaded.map((axis, i) => axis / 0.5 + (i === 1 ? 1 : 0)) as Vec3;
+      const target = shaded;
+      // Without a daylight difference between the two camera spots, the test would pass vacuously.
+      const cameraScale = (at: Vec3) => flashlightDaylightScale(f.daylight, f.sky.at(at));
+      expect(cameraScale(shaded) / cameraScale(sunlit)).toBeGreaterThan(2);
+      const fixtureOnTarget = () => {
+        f.updateFrame();
+        const slots = f.view.lightPool.lights.slice(ITEM_POINT_LIGHTS).filter((light) => light.intensity > 0);
+        expect(slots).toHaveLength(1);
+        return slots[0]!.intensity * receiverLighting(f, target, FIXTURE_RECEIVER_SCALE).scale;
+      };
+      const fromSunlit = fixtureOnTarget();
+      f.engine.camera.position.set(...shaded);
+      const fromShaded = fixtureOnTarget();
+      expect(fromSunlit).toBeGreaterThan(0);
+      expect(fromShaded / fromSunlit).toBeCloseTo(1);
+    } finally {
+      f.cleanup();
+    }
+  });
+
+  it('does not suppress an oil lamp at the source when its holder sees daylight', () => {
+    const f = litWorld('doorway');
+    try {
+      const lamp = f.inventory.create('oil_lamp');
+      expect(f.inventory.add(lamp, { kind: 'hand', side: 'right' })).toBe(true);
+      expect(toggleLight(f.inventory.registry, lamp, 0)).toBeUndefined();
+      f.updateFrame();
+      const [light] = f.view.lightPool.lights.filter((source) => source.intensity > 0);
+      expect(f.sky.at(f.engine.camera.position.toArray() as Vec3)).toBe(1);
+      expect(light!.intensity).toBe(f.inventory.registry.items.get(lamp.type)!.light!.intensity);
+    } finally {
+      f.cleanup();
+    }
+  });
+
   it('suppresses beam strength on a sunlit receiver even with a shaded camera', () => {
     const f = litWorld('near-wall');
     try {
@@ -442,25 +503,28 @@ describe('play presentation ownership', () => {
       sky: {},
       isSolid: () => false,
     } as unknown as Engine;
-    const view = createPlayView(engine, inventory, vi.fn(), new EventTarget());
+    const view = createPlayView(engine, inventory, vi.fn(), { page: new EventTarget() });
 
+    expect(view.pictures).toBeUndefined();
     expect(view.render()).toBeNull();
     await expect(view.warmUp()).resolves.toBeUndefined();
     view.dispose();
   });
 
-  it('releases owned pile and case instances on pagehide', () => {
+  it('releases owned pictures, pile and case instances on pagehide', () => {
     const { page, view } = fixture();
+    const pictures = vi.spyOn(view.pictures!, 'dispose');
     const piles = vi.spyOn(view.piles, 'dispose');
     const cases = vi.spyOn(view.caseEffects, 'dispose');
     expect(piles).not.toHaveBeenCalled();
     expect(cases).not.toHaveBeenCalled();
     page.dispatchEvent(new Event('pagehide'));
+    expect(pictures).toHaveBeenCalledTimes(1);
     expect(piles).toHaveBeenCalledTimes(1);
     expect(cases).toHaveBeenCalledTimes(1);
   });
 
-  it('uses the shared stride phase for the rendered walk cycle', () => {
+  it('passes the shared stride phase and the stance to the drawn body', () => {
     const { view } = fixture();
     const body: Body = { pos: [2, 1, 6], vel: [0, 0, -1], halfWidth: 0.6, height: 3.6, onGround: true };
     const sync = vi.spyOn(view.playerMeshes, 'sync');
@@ -474,12 +538,13 @@ describe('play presentation ownership', () => {
         yaw: 0,
         pitch: 0,
         stridePhase: 0.25,
+        stance: 'prone',
         eye: [2, 4.24, 6],
         sightImpaired: false,
       },
       damage,
     );
-    expect(sync).toHaveBeenCalledWith(expect.objectContaining({ gaitPhase: Math.PI / 2 }));
+    expect(sync).toHaveBeenCalledWith(expect.objectContaining({ gaitPhase: Math.PI / 2, stance: 'prone' }));
     view.dispose();
   });
 
@@ -497,6 +562,7 @@ describe('play presentation ownership', () => {
       yaw: 0,
       pitch: 0,
       stridePhase: 0,
+      stance: 'standing' as const,
       eye: [2, 4.24, 6] as Vec3,
       sightImpaired: false,
     };
@@ -535,6 +601,7 @@ describe('play presentation ownership', () => {
         yaw: 0,
         pitch: 0,
         stridePhase: 0,
+        stance: 'standing' as const,
         eye: [2, 4.24, 6],
         thirdPerson: true,
         sightImpaired: false,
@@ -559,6 +626,7 @@ describe('play presentation ownership', () => {
       yaw: 0,
       pitch: 0,
       stridePhase: 0,
+      stance: 'standing' as const,
       eye: [2, 4.24, 6] as Vec3,
       thirdPerson: true,
       sightImpaired: false,
@@ -596,6 +664,7 @@ describe('play presentation ownership', () => {
         yaw: 0,
         pitch: 0,
         stridePhase: 0,
+        stance: 'standing' as const,
         eye: [2, 4.24, 6],
         thirdPerson: true,
         thirdPersonOrbit: { yaw: Math.PI / 2, pitch: 0 },
@@ -623,6 +692,7 @@ describe('play presentation ownership', () => {
         yaw: 0,
         pitch: 0,
         stridePhase: 0,
+        stance: 'standing' as const,
         eye: [2, 4.24, 6],
         sightImpaired: false,
       },
@@ -647,6 +717,7 @@ describe('play presentation ownership', () => {
       yaw: 0,
       pitch: 0,
       stridePhase: 0,
+      stance: 'standing' as const,
       eye: [2, 4.24, 6] as Vec3,
       sightImpaired: false,
       nightVision,
@@ -664,7 +735,7 @@ describe('play presentation ownership', () => {
     const uid = 7;
     const drawn = new Group();
     const leverMesh = new Mesh(new BoxGeometry(0.01, 0.08, 0.02), new MeshLambertMaterial());
-    leverMesh.geometry.userData.mergeGroup = lever.mergeGroup;
+    leverMesh.geometry.userData.piece = lever.piece;
     drawn.add(leverMesh);
     // A drop lights the fuse before the next frame's pile sync draws the grenade.
     let pileDrawn = false;

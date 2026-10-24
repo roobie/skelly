@@ -905,29 +905,9 @@
             "upper": [58, 25, 11]
           },
           {
-            "ladder": [12, 17, 48],
-            "lower": [11, 17, 49],
-            "upper": [11, 25, 49]
-          },
-          {
-            "ladder": [35, 9, 10],
-            "lower": [34, 9, 11],
-            "upper": [34, 17, 11]
-          },
-          {
             "ladder": [35, 9, 48],
             "lower": [34, 9, 49],
             "upper": [34, 17, 49]
-          },
-          {
-            "ladder": [12, 1, 29],
-            "lower": [11, 1, 30],
-            "upper": [11, 9, 30]
-          },
-          {
-            "ladder": [59, 1, 29],
-            "lower": [58, 1, 30],
-            "upper": [58, 9, 30]
           }
         ],
         "events": [
@@ -980,6 +960,32 @@
                 "placement": "surface"
               }
             ]
+          },
+          {
+            "at": [42, 25, 6],
+            "items": [
+              {
+                "item": "gauntlet_lab_administration_card",
+                "key": true
+              }
+            ]
+          },
+          {
+            "at": [14, 17, 4],
+            "items": [
+              {
+                "item": "gauntlet_lab_research_card",
+                "key": true
+              }
+            ]
+          },
+          {
+            "at": [6, 9, 14],
+            "items": [
+              {
+                "item": "gauntlet_lab_special_notes"
+              }
+            ]
           }
         ],
         "incidentalTemplates": [
@@ -1025,8 +1031,8 @@
             "template": "gauntlet_public_directions"
           }
         ],
-        "objective": [30, 3, 26],
-        "objectiveFace": [30, 1, 29],
+        "objective": [41, 11, 24],
+        "objectiveFace": [41, 9, 27],
         "resources": [
           {
             "at": [33, 41, 42],
@@ -1055,12 +1061,32 @@
             "doors": [[10, 33, 20], [58, 33, 54]],
             "key": [48, 33, 38],
             "standing": [48, 33, 39]
+          },
+          {
+            "doors": [[40, 25, 24], [58, 25, 16]],
+            "held": true,
+            "key": [42, 25, 6],
+            "standing": [43, 25, 9]
+          },
+          {
+            "doors": [[34, 17, 14], [34, 17, 42]],
+            "held": true,
+            "key": [14, 17, 4],
+            "standing": [15, 17, 7]
           }
         ],
         "stairs": [
           {
             "lower": [9, 25, 11],
             "upper": [19, 33, 11]
+          },
+          {
+            "lower": [32, 17, 30],
+            "upper": [42, 25, 30]
+          },
+          {
+            "lower": [42, 9, 11],
+            "upper": [32, 17, 11]
           }
         ],
         "start": {
@@ -1138,6 +1164,10 @@
                     "key": true
                   },
                   {
+                    "condition": 0.69999999999999996,
+                    "item": "magazine_akm_30"
+                  },
+                  {
                     "item": "cartridge_box_7_d_62x39"
                   }
                 ]
@@ -1152,20 +1182,16 @@
             "standing": [44, 33, 36]
           },
           {
+            "id": "administration",
+            "standing": [12, 25, 40]
+          },
+          {
             "id": "research",
-            "standing": [35, 25, 29]
+            "standing": [49, 17, 19]
           },
           {
-            "id": "containment",
-            "standing": [35, 17, 29]
-          },
-          {
-            "id": "failure",
-            "standing": [35, 9, 29]
-          },
-          {
-            "id": "bottom",
-            "standing": [35, 1, 29]
+            "id": "special",
+            "standing": [46, 9, 12]
           }
         ]
       },

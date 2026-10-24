@@ -7,49 +7,14 @@
     "description": "Hunting-cabin 12-gauge pump of no particular make: mid-length barrel, walnut sporting stock and forend, integral four-shell tube, hand-racked action. Clearances derive from 12-gauge-00-buck source data; not manufacturer dimensions.",
     "root": "receiver",
     "parts": {
-      "receiver": {
-        "family": "receiver",
-        "params": {
-          "action": "pump",
-          "feed": "tube",
-          "bore": "L",
-          "section": "pump",
-          "rail": "none"
-        }
-      },
-      "bolt-carrier": {
-        "family": "bolt-carrier",
-        "params": { "pattern": "pump" }
-      },
-      "lower": {
-        "family": "lower",
-        "params": {
-          "layout": "pump"
-        }
-      },
-      "barrel": {
-        "family": "barrel",
-        "params": {
-          "length": "M"
-        }
-      },
-      "front-bead": {
-        "family": "front-sight-bead"
-      },
-      "tube": {
-        "family": "tube-magazine",
-        "params": { "lengthPercent": "75" }
-      },
-      "forend": {
-        "family": "forend"
-      },
-      "stock": {
-        "family": "stock",
-        "params": {
-          "length": "M",
-          "style": "tapered"
-        }
-      }
+      "receiver": { "item": "receiver_pump" },
+      "bolt-carrier": { "item": "bolt_carrier_pump" },
+      "lower": { "item": "lower_pump" },
+      "barrel": { "item": "barrel_pump_medium" },
+      "front-bead": { "item": "front_bead" },
+      "tube": { "item": "tube_magazine" },
+      "forend": { "item": "forend_pump" },
+      "stock": { "item": "stock_tapered_medium" }
     },
     "connections": [
       {
@@ -91,14 +56,7 @@
     ]
   },
   "locks": {
-    "params": {
-      "receiver": ["action", "feed", "bore", "section", "rail"],
-      "bolt-carrier": ["pattern"],
-      "lower": ["layout"],
-      "barrel": ["length"],
-      "tube": ["lengthPercent"],
-      "stock": ["length", "style"]
-    },
+    "params": {},
     "optionalParts": ["grip", "stock", "stock-pistol"]
   },
   "status": "published"

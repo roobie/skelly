@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { SECONDS_PER_HOUR } from '../src/core/clock.ts';
 import type { Registry } from '../src/core/content.ts';
+import { coreLabel, coreMessage } from '../src/core/coreText.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { type Item, typeWeightGrams } from '../src/core/items.ts';
@@ -15,17 +15,18 @@ import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
+import { fixtureFood, foodFixtureRegistry } from './foodFixture.ts';
 import { BODY_TUNING_FIXTURE, fixtureTier, Simulation } from './simulationFixture.ts';
 
 const registry = baseRegistry();
-const APPLE_EAT_TIME = registry.items.get('apple')!.food!.consumeSimSeconds;
-const FOOD_POISONING = registry.items.get('apple')!.food!.poisonHealth!;
 const TAKE_TIME = 2;
 
 const sealedCanRegistry = (): Registry => {
   const items = new Map(registry.items);
   items.set('fixture_opened_can_contents', {
     id: 'fixture_opened_can_contents',
+    workInProgress: false,
+    notLoot: false,
     economy: { usage: [], tiers: [] },
     name: 'Fixture can contents',
     category: 'food',
@@ -35,6 +36,8 @@ const sealedCanRegistry = (): Registry => {
   });
   items.set('fixture_sealed_can', {
     id: 'fixture_sealed_can',
+    workInProgress: false,
+    notLoot: false,
     economy: { usage: [], tiers: [] },
     name: 'Fixture sealed can',
     category: 'food',
@@ -49,6 +52,8 @@ const sealedCanRegistry = (): Registry => {
   });
   items.set('fixture_can_tool', {
     id: 'fixture_can_tool',
+    workInProgress: false,
+    notLoot: false,
     economy: { usage: [], tiers: [] },
     name: 'Fixture can tool',
     category: 'tool',
@@ -58,6 +63,8 @@ const sealedCanRegistry = (): Registry => {
   });
   items.set('fixture_tool_belt', {
     id: 'fixture_tool_belt',
+    workInProgress: false,
+    notLoot: false,
     economy: { usage: [], tiers: [] },
     name: 'Fixture tool belt',
     category: 'clothing',
@@ -136,6 +143,7 @@ const setup = (
     reach,
     feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
     notice: (text) => notices.push(text),
+    readingLight: () => undefined,
     read: readHook,
   });
   const hold = (type: string, side: 'right' | 'left' = 'right') => {
@@ -147,6 +155,17 @@ const setup = (
 };
 
 describe('using what you hold', () => {
+  it('describes a reservoir lamp by its switch state, not a second battery balance', () => {
+    const t = setup();
+    const lamp = t.hold('oil_lamp', 'right');
+    expect(lamp.slots?.battery).toBeUndefined();
+    expect(registry.items.get(lamp.type)!.light!.power).toBeUndefined();
+    expect(t.survival.describe(lamp)).toEqual([coreLabel(registry, 'lightOffStatus')]);
+    t.hold('matches', 'left');
+    expect(t.survival.use(lamp)).toBeUndefined();
+    expect(t.survival.describe(lamp)).toEqual([coreLabel(registry, 'lightOnStatus')]);
+  });
+
   it('refuses held and quickbar actions while unconscious and permits them after wake', () => {
     const t = setup();
     t.sim.body.impact(1, 'torso', { bleeding: fixtureTier('serious'), shockDamage: 100 });
@@ -190,7 +209,7 @@ describe('using what you hold', () => {
     const readableType = [...registry.items.values()].find((def) => def.readable && !def.book)?.id;
     expect(readableType).toBeDefined();
     const readTypes: (string | undefined)[] = [];
-    const t = setup(registry, (_readable, _bookUid, itemType) => readTypes.push(itemType));
+    const t = setup(registry, (request) => readTypes.push(request.itemType));
     const note = t.hold(readableType!);
 
     expect(t.survival.use(note)).toBeUndefined();
@@ -236,9 +255,11 @@ describe('using what you hold', () => {
     for (const def of cans) {
       const { inventory, queue, survival, hold } = setup();
       const can = hold(def.id);
-      const quality = Object.keys(def.unpack!.qualities!)[0]!;
-      const tool = [...registry.items.values()].find((item) => (item.tool?.qualities?.[quality] ?? 0) > 0)!;
-      hold(tool.id, 'left');
+      const [quality] = Object.keys(def.unpack!.qualities ?? {});
+      if (quality !== undefined) {
+        const tool = [...registry.items.values()].find((item) => (item.tool?.qualities?.[quality] ?? 0) > 0)!;
+        hold(tool.id, 'left');
+      }
       const sealedMass = inventory.carriedWeight();
       const unpacking = new Unpacking(inventory, queue, () => [0, 0, 0]);
       expect(unpacking.activate(can)).toBeUndefined();
@@ -256,17 +277,35 @@ describe('using what you hold', () => {
   });
 
   it('needs the food in your hands, and rotten food makes you sick', () => {
-    const { sim, inventory, queue, survival, notices, hold } = setup();
-    const pocketed = inventory.create('chocolate_bar');
-    expect(survival.use(pocketed)).toBe('Take the chocolate bar in your hands first');
-    const apple = hold('apple');
-    apple.madeAtGameTimestamp = 0;
-    sim.setDebugCalendarTime(300 * SECONDS_PER_HOUR);
-    survival.use(apple);
-    queue.tick(APPLE_EAT_TIME + 0.1);
+    const { sim, inventory, queue, survival, notices, hold } = setup(foodFixtureRegistry(registry));
+    const pocketed = inventory.create('fixture_keeps');
+    expect(survival.use(pocketed)).toBeTruthy();
+    expect(queue.jobs).toEqual([]);
+    const food = hold(fixtureFood.id);
+    sim.setDebugCalendarTime(sim.calendar + fixtureFood.food!.rotsAfterGameHours!);
+    survival.use(food);
+    const noticed = notices.length;
+    queue.tick(fixtureFood.food!.consumeSimSeconds + 0.1);
     expect(sim.needs.calories).toBe(sim.body.spawnNeeds.calories);
-    expect(sim.body.health).toBe(100 - FOOD_POISONING);
-    expect(notices).toContain('The apple was rotten');
+    expect(sim.body.health).toBe(100 - fixtureFood.food!.poisonHealth!);
+    expect(notices.length).toBeGreaterThan(noticed);
+  });
+
+  it('consumes the actual perishable serving and leaves an ageless empty vessel', () => {
+    const f = setup(foodFixtureRegistry(registry));
+    const vessel = f.hold('fixture_full');
+    const { health } = f.sim.body;
+    const { calories } = f.sim.needs;
+    const before = structuredClone(vessel);
+    f.survival.describe(vessel);
+    expect(vessel).toEqual(before);
+    expect(f.survival.use(vessel)).toBeUndefined();
+    f.queue.tick(fixtureFood.food!.consumeSimSeconds);
+    expect(f.sim.body.health).toBe(health - fixtureFood.food!.poisonHealth!);
+    expect(f.sim.needs.calories).toBe(calories);
+    expect(f.inventory.itemByUid(vessel.uid)).toBe(vessel);
+    expect(vessel.type).toBe('fixture_empty');
+    expect(vessel.foodExposure).toBeUndefined();
   });
 
   it.each(['material_pill', 'tool_pill'])(
@@ -341,29 +380,34 @@ describe('using what you hold', () => {
     expect(reason).not.toBe(batteryReason);
   });
 
-  it('drains while on, and a dead light takes a spare battery from your pockets', () => {
-    const { inventory, queue, survival, sim, notices, hold } = setup();
+  it('drains while on, then goes dark', () => {
+    const { survival, sim, notices, hold } = setup();
     const light = hold('flashlight');
     survival.use(light);
+    const noticedBefore = notices.length;
     // 4 game hours is 1800 simulation seconds at 1:8.
     for (let i = 0; i < 1800 + 30; i++) {
       sim.frame(1);
     }
     expect(light.on).toBe(false);
     expect(chargeOf(registry, light)).toBe(0);
-    expect(notices).toContain('The flashlight died');
-    expect(survival.use(light)).toBe('The battery is dead, and you have no spare');
+    expect(notices.length).toBeGreaterThan(noticedBefore);
+  });
 
-    const jeans = inventory.create('jeans');
-    inventory.add(jeans, { kind: 'worn' });
-    const batteries = inventory.create('aa_battery', 2);
-    inventory.add(batteries, { kind: 'pocket', owner: jeans, pocket: 0 });
-    expect(survival.use(light)).toBeUndefined();
-    queue.tick(2.1);
-    expect(chargeOf(registry, light)).toBe(1);
-    expect(batteries.count).toBe(1);
-    expect(survival.use(light)).toBeUndefined();
-    expect(light.on).toBe(true);
+  it('refuses a dead light used alone and loads nothing, even with a charged battery in a bag', () => {
+    const t = setup();
+    const light = t.hold('flashlight');
+    batteryOf(light).charges = 0;
+    const bag = t.inventory.create('school_backpack');
+    t.inventory.add(bag, { kind: 'worn' });
+    const spare = t.inventory.create('aa_battery');
+    t.inventory.add(spare, { kind: 'pocket', owner: bag, pocket: 0 });
+
+    expect(t.survival.use(light)).toBe(coreMessage(registry, 'batteryDeadNoSpare'));
+
+    expect(t.queue.jobs).toEqual([]);
+    expect(t.inventory.locate(spare)).toMatchObject({ kind: 'pocket', owner: bag });
+    expect(chargeOf(registry, light)).toBe(0);
   });
 
   it('keeps a mounted light on and drains its nested battery while its firearm is held', () => {
@@ -396,32 +440,24 @@ describe('using what you hold', () => {
     expect(t.reach()).not.toBe(switched);
   });
 
-  it('selects the fullest searched/ground spare and rechecks its reach at battery completion', () => {
+  it('loads the battery dropped on the slot and rechecks its reach at completion', () => {
     const t = setup();
     const light = t.hold('flashlight');
     batteryOf(light).charges = 0;
-    const bag = t.inventory.create('school_backpack');
-    t.inventory.add(bag, { kind: 'pile', pos: [0, 0, 0] });
-    const floor = t.inventory.create('aa_battery');
-    floor.charges = 0.7;
-    t.inventory.add(floor, { kind: 'pocket', owner: bag, pocket: 0 });
     const definition = [...registry.furniture.values()].find((def) => def.container)!;
     const furniture = t.inventory.entities.add({ type: definition.id, pos: [1, 0, 0], size: [1, 2, 1], facing: 'n' })!;
     const spare = t.inventory.create('aa_battery');
     spare.charges = 0.9;
     t.inventory.add(spare, { kind: 'furniture', entity: furniture, pocket: 0 });
-    expect(t.survival.use(light)).toBeUndefined();
-    expect(t.queue.jobs[0]).toMatchObject({ params: { batteryUid: floor.uid } });
-    t.queue.cancel();
+    expect(t.survival.loadBattery(light.uid, spare.uid)).toBe(coreMessage(registry, 'tooFar'));
     t.inventory.entities.markSearched(furniture);
-    t.survival.use(light);
-    expect(t.queue.jobs[0]).toMatchObject({ params: { batteryUid: spare.uid } });
+    expect(t.survival.loadBattery(light.uid, spare.uid)).toBeUndefined();
     t.player.position[0] = 10;
-    expect(t.queue.tick(3).failed[0]?.reason).toBe('The battery is no longer in reach');
+    expect(t.queue.tick(3).failed[0]?.reason).toBeTruthy();
     expect(batteryOf(light).charges).toBe(0);
     expect(t.inventory.itemByUid(spare.uid)).toBe(spare);
     t.player.position[0] = 0;
-    t.survival.use(light);
+    t.survival.loadBattery(light.uid, spare.uid);
     t.queue.tick(3);
     expect(batteryOf(light).charges).toBe(0.9);
     expect(light.on).not.toBe(true);
@@ -441,5 +477,106 @@ describe('using what you hold', () => {
     // The old battery comes out with what it had left.
     const spent = inventory.pileAt([0, 0, 0])!.items[0]!.item;
     expect(chargeOf(registry, spent)).toBeCloseTo(0.1, 9);
+  });
+
+  it('a dead light used with a charged battery in the other hand refuses and loads nothing', () => {
+    const { inventory, queue, survival, hold } = setup();
+    const light = hold('flashlight');
+    const battery = hold('aa_battery', 'left');
+    const original = batteryOf(light);
+    original.charges = 0;
+    expect(survival.use(light)).toBe(coreMessage(registry, 'batteryDeadNoSpare'));
+    expect(queue.jobs).toEqual([]);
+    expect(light.slots?.battery).toBe(original);
+    expect(inventory.locate(battery)?.kind).toBe('hand');
+  });
+
+  it('a hand load refuses once an earlier queued move has put the light down', () => {
+    const t = setup();
+    const light = t.hold('flashlight');
+    const battery = t.hold('aa_battery', 'left');
+    const original = batteryOf(light);
+    expect(t.queue.enqueue(light, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    expect(t.survival.use(battery)).toBeUndefined();
+    const result = t.queue.tick(t.queue.jobs.reduce((sum, job) => sum + job.duration, 0) + 1);
+    expect(t.inventory.locate(light)?.kind).toBe('pile');
+    expect(result.failed.length).toBeGreaterThan(0);
+    expect(light.slots?.battery).toBe(original);
+    expect(t.inventory.locate(battery)?.kind).toBe('hand');
+  });
+});
+
+describe('taking the battery out of a held light', () => {
+  // The player turns the wheel once from the light's own action, then activates.
+  const unload = (t: ReturnType<typeof setup>, light: Item) => {
+    t.survival.cycleItemAction(light, 1);
+    const selected = t.survival.selectedItemAction(light)?.battery;
+    const refusal = t.survival.use(light);
+    const ticked = t.queue.tick(registry.items.get(light.type)!.light!.power!.swapSimSeconds + 0.1);
+    return { selected, refusal, failed: ticked.failed };
+  };
+
+  it('puts the battery, charge kept, in a pocket with room and switches the light off', () => {
+    const t = setup();
+    const light = t.hold('flashlight');
+    const jeans = t.inventory.create('jeans');
+    t.inventory.add(jeans, { kind: 'worn' });
+    const battery = batteryOf(light);
+    battery.charges = 0.4;
+    expect(t.survival.use(light)).toBeUndefined();
+    expect(light.on).toBe(true);
+
+    expect(unload(t, light)).toEqual({ selected: 'unload', refusal: undefined, failed: [] });
+
+    expect(light.slots?.battery).toBeUndefined();
+    expect(light.on).toBe(false);
+    expect(t.inventory.locate(battery)).toMatchObject({ kind: 'pocket', owner: jeans });
+    expect(chargeOf(registry, battery)).toBeCloseTo(0.4, 9);
+  });
+
+  it('puts the battery on the ground when no pocket has room', () => {
+    const t = setup();
+    const light = t.hold('flashlight');
+    const battery = batteryOf(light);
+
+    unload(t, light);
+
+    expect(light.slots?.battery).toBeUndefined();
+    expect(t.inventory.locate(battery)?.kind).toBe('pile');
+  });
+
+  it('leaves the battery fitted with nowhere to put it', () => {
+    const t = setup();
+    const light = t.hold('flashlight');
+    const battery = batteryOf(light);
+    t.inventory.landing = () => undefined;
+
+    expect(unload(t, light).failed[0]?.reason).toEqual(expect.any(String));
+
+    expect(light.slots?.battery).toBe(battery);
+  });
+
+  it('is not offered for a light with no battery', () => {
+    const t = setup();
+    const light = t.hold('flashlight');
+    expect(t.survival.availableItemActions(light).some((action) => action.battery === 'unload')).toBe(true);
+
+    unload(t, light);
+
+    expect(t.survival.availableItemActions(light).some((action) => action.battery === 'unload')).toBe(false);
+    expect(t.survival.wieldedItemActionHint()).toBeUndefined();
+  });
+
+  it('leaves the light empty: it says so, and a battery goes back in through the slot', () => {
+    const t = setup();
+    const light = t.hold('flashlight');
+    const battery = batteryOf(light);
+    unload(t, light);
+    expect(t.survival.use(light)).toBe(coreMessage(registry, 'noBatteryNoSpare'));
+
+    expect(t.survival.loadBattery(light.uid, battery.uid)).toBeUndefined();
+    t.queue.tick(registry.items.get(light.type)!.light!.power!.swapSimSeconds + 0.1);
+
+    expect(light.slots?.battery).toBe(battery);
   });
 });

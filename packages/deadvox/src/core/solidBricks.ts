@@ -3,6 +3,8 @@ import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
 import { CHUNK } from './coords.ts';
 import type { SolidAt } from './raycast.ts';
+import type { VehicleInstances } from './vehicleInstances.ts';
+import { vehicleCells } from './vehicleProjection.ts';
 import type { World } from './world.ts';
 
 // Solid blocks grouped into 4×4×4 bricks, so an exact body shape rejects an empty brick, or a wall's slice of
@@ -45,6 +47,11 @@ interface ChunkBricks {
  * Bricks read from the world's chunks, each chunk built once per revision, with furniture laid over them.
  * The furniture layer is rebuilt when the standing pieces change.
  */
+interface VehicleBrickOptions {
+  readonly vehicles?: VehicleInstances;
+  readonly blockSize?: number;
+}
+
 class WorldBricks implements SolidBricks {
   private readonly solidById: Uint8Array;
   private readonly chunkBricks = new WeakMap<Chunk, ChunkBricks>();
@@ -52,23 +59,39 @@ class WorldBricks implements SolidBricks {
   private chunksAt = -1;
   private readonly furniture = new Map<number, [number, number]>();
   private furnitureAt = -1;
+  private readonly vehicles: VehicleInstances | undefined;
+  private readonly vehicleLayer = new Map<number, [number, number]>();
+  private vehicleAt = -1;
   private seenWorld = -1;
   private seenEntities = -1;
+  private seenVehicles = -1;
   private changes = 0;
   private readonly world: World;
+  private readonly registry: Registry;
   private readonly entities: BlockEntities | undefined;
+  private readonly blockSize: number;
 
-  constructor(world: World, registry: Registry, entities: BlockEntities | undefined) {
+  constructor(
+    world: World,
+    registry: Registry,
+    entities: BlockEntities | undefined,
+    options: VehicleBrickOptions = {},
+  ) {
     this.world = world;
+    this.registry = registry;
     this.entities = entities;
+    this.vehicles = options.vehicles;
+    this.blockSize = options.blockSize ?? 1;
     this.solidById = Uint8Array.from(registry.blocks, (block, id) => (id !== 0 && block?.solid ? 1 : 0));
   }
 
   get version(): number {
     const entities = this.entities?.standing ?? 0;
-    if (this.world.version !== this.seenWorld || entities !== this.seenEntities) {
+    const vehicles = this.vehicles?.version ?? 0;
+    if (this.world.version !== this.seenWorld || entities !== this.seenEntities || vehicles !== this.seenVehicles) {
       this.seenWorld = this.world.version;
       this.seenEntities = entities;
+      this.seenVehicles = vehicles;
       this.changes += 1;
     }
     return this.changes;
@@ -90,10 +113,14 @@ class WorldBricks implements SolidBricks {
         hi = 0xff_ff_ff_ff;
       }
     }
-    const extra = this.entities ? this.furnitureLayer().get(keyOf(bx, by, bz)) : undefined;
-    if (extra) {
-      lo = (lo | extra[0]) >>> 0;
-      hi = (hi | extra[1]) >>> 0;
+    for (const extra of [
+      this.entities ? this.furnitureLayer().get(keyOf(bx, by, bz)) : undefined,
+      this.vehicles ? this.vehiclesLayer().get(keyOf(bx, by, bz)) : undefined,
+    ]) {
+      if (extra) {
+        lo = (lo | extra[0]) >>> 0;
+        hi = (hi | extra[1]) >>> 0;
+      }
     }
     out.lo = lo;
     out.hi = hi;
@@ -175,19 +202,39 @@ class WorldBricks implements SolidBricks {
   }
 
   private addFurnitureBlock(x: number, y: number, z: number): void {
+    this.addBlock(this.furniture, x, y, z);
+  }
+
+  private vehiclesLayer(): ReadonlyMap<number, readonly [number, number]> {
+    if (this.vehicleAt === this.vehicles!.version) {
+      return this.vehicleLayer;
+    }
+    this.vehicleLayer.clear();
+    for (const [x, y, z] of vehicleCells(this.registry, this.vehicles!, this.blockSize)) {
+      this.addBlock(this.vehicleLayer, x, y, z);
+    }
+    this.vehicleAt = this.vehicles!.version;
+    return this.vehicleLayer;
+  }
+
+  private addBlock(layer: Map<number, [number, number]>, x: number, y: number, z: number): void {
     const key = keyOf(x >> BRICK_BITS, y >> BRICK_BITS, z >> BRICK_BITS);
     const bit = bitOf(x & (BRICK - 1), y & (BRICK - 1), z & (BRICK - 1));
-    const words = this.furniture.get(key) ?? [0, 0];
+    const words = layer.get(key) ?? [0, 0];
     words[bit < 32 ? 0 : 1] = (words[bit < 32 ? 0 : 1] | (1 << (bit & 31))) >>> 0;
-    this.furniture.set(key, words);
+    layer.set(key, words);
   }
 }
 
 /** The solid blocks of core/collision.ts `worldSolid`, as cached bricks. */
-export const worldBricks = (world: World, registry: Registry, entities?: BlockEntities): SolidBricks =>
-  new WorldBricks(world, registry, entities);
+export const worldBricks = (
+  world: World,
+  registry: Registry,
+  entities?: BlockEntities,
+  options?: VehicleBrickOptions,
+): SolidBricks => new WorldBricks(world, registry, entities, options);
 
-/** Bricks from any block test, read afresh on every query, uncached: for callers without a world, such as tests. */
+/** Bricks from any block test, read afresh on every query, uncached: for callers without a world, such as the zombie system's own default and tests. */
 export const testedBricks = (isSolid: SolidAt): SolidBricks => ({
   version: Number.NaN,
   brick: (bx, by, bz, out) => {

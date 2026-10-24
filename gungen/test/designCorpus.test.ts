@@ -87,7 +87,7 @@ describe('published design corpus', () => {
     }
   });
 
-  it('loads every published design and agrees with any corresponding source fixture', { timeout: 15_000 }, () => {
+  it('loads every published design and agrees with any corresponding source fixture', () => {
     const files = designFiles();
     expect(files.length).toBeGreaterThan(0);
     for (const file of files) {

@@ -7,6 +7,13 @@ import { content as BUNDLED_CONTENT, configFromUrl, makeConfig } from './fixture
 
 const dayCycle = BUNDLED_CONTENT.registry.dayCycle!;
 
+it('starts the gauntlet when no world is selected, including debug previews', () => {
+  expect(makeConfig(1, 96).site).toBe('gauntlet');
+  for (const query of ['', 'debug=1']) {
+    expect(configFromUrl(new URLSearchParams(query)).site).toBe('gauntlet');
+  }
+});
+
 it('takes the ready ring from content and caps it at the requested view', () => {
   const graphics = new Map(BUNDLED_CONTENT.registry.graphics);
   const tuning = graphics.get(CORE_CONTENT_IDS.coreGraphics)!;
@@ -72,7 +79,7 @@ it('accepts bounded weathering splits only in debug URLs and defaults the compar
   const comparison = configFromUrl(new URLSearchParams('debug=1&site=weatheringTest'));
   expect(comparison.weatheringSplit).toBe(0);
   expect(comparison.start).toBe(dayCycle.noonGameTimeOfDay);
-  expect(configFromUrl(new URLSearchParams('site=weatheringTest')).site).toBe('hamlet');
+  expect(configFromUrl(new URLSearchParams('site=weatheringTest')).site).toBe('gauntlet');
 });
 
 it('warns and falls back when a debug weathering split is malformed', () => {

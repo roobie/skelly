@@ -3,17 +3,16 @@ import { describe, expect, it, vi } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import type { Chunk } from '../src/core/chunk.ts';
 import { perimeterRouteIssues } from '../src/core/cityLots.ts';
-import { buildCityPlan, type CityPlan, cityGridOf, servicePlacement } from '../src/core/cityPlan.ts';
+import { buildCityPlan, type CityPlan, cityGridOf } from '../src/core/cityPlan.ts';
 import { CitySite } from '../src/core/citySite.ts';
-import { buildRegistry, type Registry } from '../src/core/content.ts';
+import { climbCertificate } from '../src/core/climbCertificate.ts';
+import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import { GauntletSite } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { scenarioCertificate, scenarioLotResourceCertificate } from '../src/core/scenarioCertificate.ts';
-import { composeScenario } from '../src/core/scenarioComposition.ts';
 import { undergroundPortIssues } from '../src/core/scenarioPortal.ts';
 import { ScenarioRouteSpace } from '../src/core/scenarioRoute.ts';
-import type { MapAssemblyDef } from '../src/core/schema.ts';
 import { sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
 import {
   compileAssembly,
@@ -21,11 +20,12 @@ import {
   footprint,
   type Placement,
   placedBlockAt,
+  placedPieces,
   placedPoint,
-  type Turn,
 } from '../src/core/templates.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { cyclicSite, traverseScenario } from './fixtures/scenarioCertificate.ts';
 import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
 
@@ -50,7 +50,8 @@ const compiled = compileAssembly(registry, registry.mapAssemblies.get(profile.se
 const witness = JSON.parse(compileJsonnetFile('packages/deadvox/test/fixtures/jsonnet/lab-witness.jsonnet')) as {
   mapAssemblies: string[];
   mapPieces: string[];
-  loop: { from: Vec3; through: Vec3; to: Vec3; cut: { min: Vec3; size: Vec3 } };
+  loops: { from: Vec3; through: Vec3; to: Vec3; cut: { min: Vec3; size: Vec3 } }[];
+  pitClimb: { ladder: Vec3; upper: Vec3; lower: Vec3 };
 };
 const labDefinition = <T>(definitions: ReadonlyMap<string, T>, id: string): T => {
   const definition = definitions.get(id);
@@ -62,103 +63,6 @@ const labDefinition = <T>(definitions: ReadonlyMap<string, T>, id: string): T =>
 const lab = {
   mapAssemblies: witness.mapAssemblies.map((id) => labDefinition(registry.mapAssemblies, id)),
   mapPieces: witness.mapPieces.map((id) => labDefinition(registry.mapPieces, id)),
-};
-const { loop } = witness;
-const roomPools = new Map<string, MapAssemblyDef[]>();
-for (const room of lab.mapAssemblies) {
-  const shell = room.slots.find((slot) => slot.id === 'shell');
-  if (!shell) {
-    continue;
-  }
-  const template = compileAssembly(registry, room, { seed: 9, siteId: 'fixture_room_pool' });
-  if (template.pieces.some((piece) => registry.furniture.get(piece.furniture)?.scenarioGoal)) {
-    continue;
-  }
-  const key = shell.choices![0]!.ref.id;
-  roomPools.set(key, [...(roomPools.get(key) ?? []), room]);
-}
-const alternatives = new Map(
-  [...roomPools.values()].flatMap((rooms) => rooms.map((room) => [room.id, rooms] as const)),
-);
-const substitutedRegistry: Registry = {
-  ...registry,
-  mapAssemblies: new Map([
-    ...registry.mapAssemblies,
-    ...lab.mapAssemblies.map(
-      (assembly) =>
-        [
-          assembly.id,
-          {
-            ...assembly,
-            slots: assembly.slots.map((slot) => {
-              const { ref } = slot.choices![0]!;
-              const choices = ref.kind === 'assembly' ? alternatives.get(ref.id) : undefined;
-              const replacements = choices?.filter((room) => room.id !== ref.id);
-              return replacements && replacements.length > 0
-                ? {
-                    ...slot,
-                    choices: replacements.map((room) => ({
-                      ref: { kind: 'assembly' as const, id: room.id },
-                      weight: 1,
-                    })),
-                  }
-                : slot;
-            }),
-          },
-        ] as const,
-    ),
-  ]),
-};
-if (![...roomPools.values()].some((rooms) => rooms.length > 1)) {
-  throw new Error('Production lab fixture needs substitutable furnished rooms');
-}
-const servicePick = {
-  seed: 9,
-  template: compileAssembly(substitutedRegistry, substitutedRegistry.mapAssemblies.get(profile.serviceTemplate)!, {
-    seed: 9,
-    siteId: `scenario:${profile.id}:service`,
-  }),
-};
-
-const candidatePlan = (
-  cell: readonly [number, number],
-  turn: Turn,
-  template = compiled,
-  content = registry,
-): CityPlan => {
-  const service = servicePlacement({ template, floor: base.floor, grid, cell, turn });
-  const composition = composeScenario(content, profile, service, {
-    floor: base.floor,
-    start: base.composition!.start.placement,
-    lots: base.lots ?? [],
-  })!;
-  const [width, depth] = footprint(service);
-  const placements = base.placements.filter((placement) => {
-    if (
-      placement === base.service ||
-      base.composition!.leads.includes(placement) ||
-      base.composition!.landmarks.includes(placement)
-    ) {
-      return false;
-    }
-    const [w, d] = footprint(placement);
-    return (
-      placement.origin[0] + w <= service.origin[0] ||
-      placement.origin[0] >= service.origin[0] + width ||
-      placement.origin[2] + d <= service.origin[2] ||
-      placement.origin[2] >= service.origin[2] + depth
-    );
-  });
-  const upper = placedPoint(service, profile.portal.upper);
-  const lower = placedPoint(service, profile.portal.lower);
-  return {
-    ...base,
-    service,
-    serviceBlock: cell,
-    composition,
-    portal: { ...base.portal!, upper, lower },
-    placements: [...placements, service, ...composition.leads, ...composition.landmarks],
-  };
 };
 
 const siteOf = (plan = base) => new CitySite(9, registry, scale, plan);
@@ -221,11 +125,6 @@ describe('final composed body-route certificate', () => {
     }
   });
 
-  it('joins substituted production rooms and authored yards to the fixed campus, resources and objective', () => {
-    const plan = candidatePlan(base.serviceBlock!, base.service!.turn, servicePick.template, substitutedRegistry);
-    expect(scenarioCertificate(new CitySite(servicePick.seed, substitutedRegistry, scale, plan)).issues).toEqual([]);
-  });
-
   it('rejects a blocked service crossing even when its inside witness stays reachable', () => {
     const [selected] = base.grid.service?.routes ?? [];
     expect(selected).toBeDefined();
@@ -265,73 +164,151 @@ describe('final composed body-route certificate', () => {
     GAUNTLET_SITE_MS,
   );
 
-  it('keeps an interior loop when a public room doorway is blocked with the bulkheads closed', () => {
-    const site = siteOf();
-    const point = (at: Vec3) => placedPoint(site.plan.service!, at);
-    const from = point(loop.from);
-    const through = point(loop.through);
-    const to = point(loop.to);
-    const clear = new ScenarioRouteSpace(site);
-    expect(clear.sweep(from, through)).toBe(true);
-    expect(clear.path(through, to, { steps: true })).toBeDefined();
-    const original = site.stamp.bind(site);
-    const stamp = vi.spyOn(site, 'stamp').mockImplementation((chunk) => {
-      original(chunk);
-      for (let y = 0; y < loop.cut.size[1]; y++) {
-        for (let z = 0; z < loop.cut.size[2]; z++) {
-          for (let x = 0; x < loop.cut.size[0]; x++) {
-            obstruct(chunk, point([loop.cut.min[0] + x, loop.cut.min[1] + y, loop.cut.min[2] + z]));
+  it.each(witness.loops)(
+    'keeps storey %# an interior loop when a public room doorway is blocked with the bulkheads closed',
+    (loop) => {
+      const site = siteOf();
+      const point = (at: Vec3) => placedPoint(site.plan.service!, at);
+      const from = point(loop.from);
+      const through = point(loop.through);
+      const to = point(loop.to);
+      const clear = new ScenarioRouteSpace(site);
+      expect(clear.sweep(from, through)).toBe(true);
+      expect(clear.path(through, to, { steps: true })).toBeDefined();
+      const original = site.stamp.bind(site);
+      const stamp = vi.spyOn(site, 'stamp').mockImplementation((chunk) => {
+        original(chunk);
+        for (let y = 0; y < loop.cut.size[1]; y++) {
+          for (let z = 0; z < loop.cut.size[2]; z++) {
+            for (let x = 0; x < loop.cut.size[0]; x++) {
+              obstruct(chunk, point([loop.cut.min[0] + x, loop.cut.min[1] + y, loop.cut.min[2] + z]));
+            }
           }
         }
+      });
+      try {
+        const detour = new ScenarioRouteSpace(site);
+        expect(detour.sweep(from, through)).toBe(false);
+        expect(detour.path(from, to, { steps: true })).toBeDefined();
+      } finally {
+        stamp.mockRestore();
       }
-    });
-    try {
-      const detour = new ScenarioRouteSpace(site);
-      expect(detour.sweep(from, through)).toBe(false);
-      expect(detour.path(from, to, { steps: true })).toBeDefined();
-    } finally {
-      stamp.mockRestore();
-    }
-  });
+    },
+  );
 
-  it('rejects a missing seal keycard instead of admitting its bulkheads', () => {
+  it('lets a body that falls into the amalgam pit climb back to the chamber rim', () => {
+    // The certificate links only storeys, so the pit's ladder is proved here.
     const site = siteOf();
-    const [seal] = site.plan.composition!.seals;
-    expect(seal).toBeDefined();
-    const original = site.lootPointsIn.bind(site);
-    vi.spyOn(site, 'lootPointsIn').mockImplementation((cx, cz) =>
-      original(cx, cz).filter((point) => !point.destination.every((value, axis) => value === seal!.key[axis])),
+    const space = new ScenarioRouteSpace(site);
+    const service = site.plan.service!;
+    const point = (at: Vec3) => placedPoint(service, at);
+    const { ladder, upper, lower } = witness.pitClimb;
+    const index = service.template.pieces.findIndex((piece) => piece.pos.join(',') === ladder.join(','));
+    expect(index).toBeGreaterThanOrEqual(0);
+    const link = { ladder: placedPieces(service)[index]!.pos, upper: point(upper), lower: point(lower) };
+    const entityAt = (at: Readonly<Vec3>) => {
+      space.blocked(Math.floor(at[0]), Math.floor(at[1]), Math.floor(at[2]));
+      return space.entities.at(...(at as Vec3));
+    };
+    const issue = climbCertificate(
+      {
+        entities: space.entities,
+        entityAt,
+        clear: (at) => space.clear(at),
+        solid: ([x, y, z]) => space.blocked(x, y, z),
+        standing: (at) => space.standing(at),
+        sweep: (from, to, supported) => space.sweep(from, to, supported),
+        connected: (from, to) => space.path(from, to) !== undefined,
+      },
+      link,
     );
-    expect(scenarioCertificate(site).issues.some(([path]) => path === '.composition.seals[0]')).toBe(true);
+    expect(issue).toBeUndefined();
   });
 
-  it('keeps both descents behind their bulkheads until the reachable card is admitted', () => {
-    const site = siteOf();
-    const closed = new ScenarioRouteSpace(site);
-    const entry = site.plan.portal!.lower;
-    const composition = site.plan.composition!;
-    expect(composition.seals.length).toBeGreaterThan(0);
-    for (const seal of composition.seals) {
-      expect(closed.path(entry, seal.standing)).toBeDefined();
-      for (const door of seal.doors) {
-        closed.blocked(...door);
-        const definition = closed.entities.defOf(closed.entities.at(...door)!);
-        expect(definition.door).toBeDefined();
-        expect(definition.door!.methods).toEqual({});
+  it.each(base.composition!.seals.map((_, index) => index))(
+    'rejects missing seal %i keycard instead of admitting its bulkheads',
+    (index) => {
+      const site = siteOf();
+      const seal = site.plan.composition!.seals[index]!;
+      const atKey = (at: Readonly<Vec3>) => at.every((value, axis) => value === seal.key[axis]);
+      if (seal.held) {
+        const original = site.furnitureIn.bind(site);
+        vi.spyOn(site, 'furnitureIn').mockImplementation((cx, cz) =>
+          original(cx, cz).map((spawn) => (atKey(spawn.spec.pos) ? { ...spawn, loot: [], surfaceLoot: [] } : spawn)),
+        );
+      } else {
+        const original = site.lootPointsIn.bind(site);
+        vi.spyOn(site, 'lootPointsIn').mockImplementation((cx, cz) =>
+          original(cx, cz).filter((point) => !atKey(point.destination)),
+        );
       }
-    }
-    const [, upper] = entry;
-    const links = [...composition.descents, ...composition.stairs].filter((link) => link.upper[1] === upper);
-    expect(links.length).toBeGreaterThan(0);
-    for (const link of links) {
-      expect(closed.path(entry, link.upper)).toBeUndefined();
-    }
-    const admitted = scenarioCertificate(site);
-    expect(admitted.issues).toEqual([]);
-    for (const link of links) {
-      expect(admitted.space.path(entry, link.upper)).toBeDefined();
-    }
+      expect(scenarioCertificate(site).issues.some(([path]) => path === `.composition.seals[${index}]`)).toBe(true);
+    },
+  );
+
+  it('rejects a keycard container that lies behind the seal it opens', () => {
+    // Level two's card desk, made to hold level one's card and to open level one's bulkheads, which stand between it and the way in.
+    const composition = base.composition!;
+    const held = composition.seals.findIndex((seal) => seal.held);
+    const desk = composition.seals[held]!;
+    const above = composition.seals[held - 1]!;
+    const site = siteOf({ ...base, composition: { ...composition, seals: [{ ...desk, doors: above.doors }] } });
+    const space = new ScenarioRouteSpace(site);
+    space.blocked(...above.doors[0]!);
+    const lock = space.entities.at(...above.doors[0]!)!.lock!.id;
+    const card = [...registry.items.values()].find((item) => item.key?.lock === lock)!;
+    const original = site.furnitureIn.bind(site);
+    vi.spyOn(site, 'furnitureIn').mockImplementation((cx, cz) =>
+      original(cx, cz).map((spawn) =>
+        spawn.spec.pos.every((value, axis) => value === desk.key[axis])
+          ? { ...spawn, loot: spawn.loot.map((item) => ({ ...item, type: card.id })) }
+          : spawn,
+      ),
+    );
+    expect(scenarioCertificate(site).issues.map(([path]) => path)).toContain('.composition.seals[0]');
   });
+
+  it('rejects a keycard container out of reach of where its taker stands', () => {
+    // The desk's taker is sent to level one's card spot, which the way in reaches but which is far from the desk.
+    const composition = base.composition!;
+    const held = composition.seals.findIndex((seal) => seal.held);
+    const { standing } = composition.seals[held - 1]!;
+    const seals = composition.seals.map((seal, index) => (index === held ? { ...seal, standing } : seal));
+    const site = siteOf({ ...base, composition: { ...composition, seals } });
+    expect(scenarioCertificate(site).issues.map(([path]) => path)).toContain(`.composition.seals[${held}]`);
+  });
+
+  it(
+    "keeps each level's ways down behind its bulkheads until its card, reached through the seals above, is admitted",
+    () => {
+      const site = siteOf();
+      const space = new ScenarioRouteSpace(site);
+      const entry = site.plan.portal!.lower;
+      const composition = site.plan.composition!;
+      expect(composition.seals.length).toBeGreaterThan(0);
+      for (const seal of composition.seals) {
+        expect(space.path(entry, seal.standing, { steps: true })).toBeDefined();
+        for (const door of seal.doors) {
+          space.blocked(...door);
+          const definition = space.entities.defOf(space.entities.at(...door)!);
+          expect(definition.door).toBeDefined();
+          expect(definition.door!.methods).toEqual({});
+        }
+        const [, level] = seal.doors[0]!;
+        const links = [...composition.descents, ...composition.stairs].filter((link) => link.upper[1] === level);
+        expect(links.length).toBeGreaterThan(0);
+        for (const link of links) {
+          expect(space.path(entry, link.upper, { steps: true })).toBeUndefined();
+        }
+        space.admitLock(space.entities.at(...seal.doors[0]!)!.lock!.id);
+        for (const link of links) {
+          expect(space.path(entry, link.upper, { steps: true })).toBeDefined();
+        }
+      }
+      expect(scenarioCertificate(site).issues).toEqual([]);
+    },
+    profile.composition!.storeys.length * WALK_MS_PER_STOREY,
+  );
 
   it('rejects a keyed lot resource whose key route has lost its climb', () => {
     const index = base.composition!.resources.findIndex((resource) => resource.key?.climbs.length);
@@ -426,7 +403,18 @@ describe('final composed body-route certificate', () => {
       {
         source: 'owned-boundary.json',
         data: {
-          furniture: [{ id: 'boundary_box', name: 'Boundary box', size: [3, 4, 2], color: '#aaaaaa' }],
+          furnitureMaterials: fixtureMaterials(),
+          sounds: fixtureSounds(),
+          furniture: [
+            {
+              id: 'boundary_box',
+              name: 'Boundary box',
+              size: [3, 4, 2],
+              color: '#aaaaaa',
+              breach: fixtureBreach(),
+              material: FIXTURE_MATERIAL,
+            },
+          ],
           templates: [
             {
               id: 'boundary_box',
@@ -610,10 +598,9 @@ it(
 );
 
 it(
-  'walks substituted rooms and closed lids, opens descents, returns alive and activates the objective from the goal-face save',
+  'walks closed lids, opens descents, returns alive and activates the objective from the goal-face save',
   () => {
-    const plan = candidatePlan(base.serviceBlock!, base.service!.turn, servicePick.template, substitutedRegistry);
-    traverseScenario(new CitySite(servicePick.seed, substitutedRegistry, scale, plan), profile, scale);
+    traverseScenario(siteOf(), profile, scale);
   },
   profile.composition!.storeys.length * WALK_MS_PER_STOREY,
 );

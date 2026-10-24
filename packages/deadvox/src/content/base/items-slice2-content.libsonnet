@@ -1,13 +1,22 @@
+local lights = import 'lights.libsonnet';
+
 {
+  liquids: [{ id: 'lamp_fuel', name: 'Lamp oil', densityGramsPerMillilitre: 0.8 }],
   "items": [
     {
       "id": "lamp_oil",
-      "name": "Lamp oil",
+      "name": "Oil bottle",
       "category": "material",
-      "weight": 500,
+      "weight": 100,
       "size": [1, 2],
-      "description": "A small sealed bottle of fuel for lamps and improvised lighting.",
-      "model": "lamp_oil_bottle"
+      "description": "A small bottle for lamp oil.",
+      "model": "lamp_oil_bottle",
+      vessel: {
+        capacityMicrolitres: 500000,
+        pour: { incrementMicrolitres: 10000, microlitresPerSimSecond: 50000 },
+        accepts: ['lamp_fuel'],
+        initialContents: { kind: 'filled', liquid: 'lamp_fuel', volumeMicrolitres: 500000 },
+      }
     },
     {
       "id": "glass_shards",
@@ -30,7 +39,6 @@
       "id": "fastener_pack",
       "name": "Mixed fasteners",
       "category": "material",
-      "weight": 180,
       "size": [1, 1],
       "stack": 5,
       "model": "fastener_pack",
@@ -88,7 +96,6 @@
       "id": "small_spring",
       "name": "Small spring",
       "category": "material",
-      "weight": 20,
       "size": [1, 1],
       "stack": 8,
       "model": "small_spring"
@@ -135,9 +142,8 @@
       "id": "wire_strippers",
       "name": "Wire strippers",
       "category": "tool",
-      "weight": 180,
       "size": [1, 2],
-      "model": "pliers",
+      "model": "wire_strippers",
       "tool": { "qualities": { "cutting": 1, "screwing": 1 } },
       "disassembly": {
         "timeGameMinutes": 8,
@@ -152,9 +158,8 @@
       "id": "adjustable_pliers",
       "name": "Adjustable pliers",
       "category": "tool",
-      "weight": 300,
       "size": [1, 2],
-      "model": "pliers",
+      "model": "adjustable_pliers",
       "tool": { "qualities": { "wrenching": 1, "cutting": 1 } },
       "salvageTimeGameMinutes": 5,
       "salvage": [{ "item": "scrap_metal", "count": 1 }, { "item": "rubber_strip", "count": 1 }]
@@ -251,9 +256,8 @@
       "id": "sewing_repair_kit",
       "name": "Clothing repair kit",
       "category": "tool",
-      "weight": 420,
       "size": [2, 2],
-      "model": "sewing_kit",
+      "model": "sewing_repair_kit",
       "description": "Thread, patches and needles for mending clothing.",
       "tool": { "qualities": { "sewing": 1, "repairing": 1 } },
       "disassembly": {
@@ -287,11 +291,12 @@
     {
       "id": "taped_flashlight_mount",
       "name": "Taped-on flashlight mount",
-      "category": "weapon",
-      "weight": 120,
+      "category": "light",
       "size": [1, 2],
-      "model": "flashlight_mount",
-      "description": "A loose strap-and-bracket assembly.",
+      "model": "taped_flashlight_mount",
+      "description": "A flashlight strapped to a bracket. Taped under the barrel of a long gun, its beam follows the barrel.",
+      "lightMount": { "kind": "strap" },
+      "light": lights.flashlight,
       "disassembly": {
         "timeGameMinutes": 7,
         "skill": "mechanics",
@@ -305,7 +310,6 @@
       "id": "scrap_foregrip",
       "name": "Scrap foregrip",
       "category": "weapon",
-      "weight": 180,
       "size": [1, 2],
       "model": "scrap_foregrip",
       "description": "A rough grip made from a wood offcut and rubber.",
@@ -322,7 +326,6 @@
       "id": "hinge_set",
       "name": "Small hinge set",
       "category": "material",
-      "weight": 360,
       "size": [2, 1],
       "model": "hinge_set",
       "salvageTimeGameMinutes": 5,
@@ -341,7 +344,6 @@
       "id": "hand_saw",
       "name": "Hand saw",
       "category": "tool",
-      "weight": 650,
       "size": [2, 6],
       "model": "hand_saw",
       "tool": { "qualities": { "sawing": 1 } },
@@ -352,7 +354,6 @@
       "id": "screwdriver",
       "name": "Screwdriver",
       "category": "tool",
-      "weight": 160,
       "size": [1, 2],
       "model": "screwdriver",
       "tool": { "qualities": { "screwing": 1 } },
@@ -363,7 +364,6 @@
       "id": "wrench",
       "name": "Adjustable wrench",
       "category": "tool",
-      "weight": 500,
       "size": [1, 3],
       "model": "wrench",
       "tool": { "qualities": { "wrenching": 1 } },
@@ -383,7 +383,13 @@
         "skill": "mechanics",
         "yields": [{ "item": "scrap_metal", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }]
       },
-      "firearmAttachmentEffects": { "recoilReduction": 0.05, "wearPerShot": 0.02 }
+      "firearmAttachmentEffects": {
+        "kind": "suppressor",
+        "recoilReduction": 0.05,
+        "wearPerShot": 0.02,
+        "fitSkillLevel": 4,
+        "fitRefusal": "I can't fit this suppressor yet"
+      }
     }
   ],
   "recipes": [
@@ -477,11 +483,13 @@
     },
     {
       "id": "make_taped_flashlight_mount",
+      "consumeFitted": true,
       "result": { "item": "taped_flashlight_mount", "count": 1 },
       "timeGameMinutes": 18,
       "skills": { "mechanics": 0 },
       "qualities": { "screwing": 1 },
       "components": [
+        [{ "item": "flashlight", "count": 1 }],
         [{ "item": "scrap_metal", "count": 1 }],
         [{ "item": "electrical_tape", "count": 1 }],
         [{ "item": "fastener_pack", "count": 1 }]

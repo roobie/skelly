@@ -5,7 +5,7 @@ import type { Item } from './items.ts';
 import type { Body } from './physics.ts';
 import type { Rng } from './random.ts';
 import { raycast, type SolidAt } from './raycast.ts';
-import type { ItemDef } from './schema.ts';
+import type { BodyTuningDef, ItemDef } from './schema.ts';
 import { rayBoxEntry } from './zombieRegions.ts';
 
 /** A thrown charge's content (`DESIGN.md`, "Hand grenade"). */
@@ -129,12 +129,14 @@ export const fragmentHitsOnBody = ({
   rangeBlocks,
   body,
   isSolid,
+  regionHeights,
 }: {
   origin: Vec3;
   directions: readonly Vec3[];
   rangeBlocks: number;
   body: Body;
   isSolid: SolidAt;
+  regionHeights: BodyTuningDef['fragmentRegionHeights'];
 }): BodyRegion[] => {
   const centre = bodyCentre(body);
   const local: Vec3 = [origin[0] - centre[0], origin[1] - centre[1], origin[2] - centre[2]];
@@ -145,10 +147,10 @@ export const fragmentHitsOnBody = ({
       return [];
     }
     const height = (local[1] + direction[1] * distance) / body.height + 0.5;
-    if (height >= 0.85) {
+    if (height >= regionHeights.head) {
       return ['head'];
     }
-    if (height >= 0.45) {
+    if (height >= regionHeights.torso) {
       return ['torso'];
     }
     return [local[0] + direction[0] * distance < 0 ? 'leftLeg' : 'rightLeg'];

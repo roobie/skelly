@@ -101,7 +101,7 @@ const around = (scene: Object3D, origin: Vector3, lens?: Vector3): Group => {
 };
 
 /** Bounds of what is drawn: hidden slot geometry doesn't hold a model off the ground. */
-const visibleBounds = (object: Object3D): Box3 => {
+export const visibleBounds = (object: Object3D): Box3 => {
   object.updateMatrixWorld(true);
   const box = new Box3();
   object.traverseVisible((child) => {
@@ -113,17 +113,13 @@ const visibleBounds = (object: Object3D): Box3 => {
   return box;
 };
 
-/** Hides what an item has shed; the glb names each primitive's merge group or lone solid in its extras. */
+/** Hides what an item has shed; the glb names each primitive's piece in its extras. */
 const hideShed = (root: Object3D, hidden: ItemLook['hidden']): void => {
   if (hidden.length === 0) {
     return;
   }
   root.traverse((child) => {
-    if (!(child instanceof Mesh)) {
-      return;
-    }
-    const { mergeGroup, solid } = child.geometry.userData;
-    if (hidden.includes(mergeGroup) || hidden.includes(solid)) {
+    if (child instanceof Mesh && hidden.includes(child.geometry.userData.piece)) {
       child.visible = false;
     }
   });

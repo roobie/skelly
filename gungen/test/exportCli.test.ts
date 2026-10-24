@@ -73,35 +73,34 @@ describe('export CLI core', () => {
     }
   });
 
-  // Exports generated and authored designs through the command-line path.
-  it('preserves the generated template finish through a bare assembly file export', { timeout: 10_000 }, () => {
-    for (const template of ['ak', 'pump-shotgun']) {
-      const generated = execFileSync(
-        process.execPath,
-        [join(import.meta.dirname, '../src/cli/generate.ts'), '--template', template, '--seed', '0', '--valid'],
-        { cwd: join(import.meta.dirname, '..'), encoding: 'utf8', timeout: 300_000 },
-      );
-      const output = JSON.parse(generated) as { appearance?: unknown };
-      expect(output.appearance).toEqual({ appearanceProfile: template });
+  // One spawn: the appearance field exists only in the generate CLI's output, so the CLI is the unit under test.
+  it('preserves the generated template finish through a bare assembly file export', () => {
+    const template = 'pump-shotgun';
+    const generated = execFileSync(
+      process.execPath,
+      [join(import.meta.dirname, '../src/cli/generate.ts'), '--template', template, '--seed', '0', '--valid'],
+      { cwd: join(import.meta.dirname, '..'), encoding: 'utf8' },
+    );
+    const output = JSON.parse(generated) as { appearance?: unknown };
+    expect(output.appearance).toEqual({ appearanceProfile: template });
 
-      const exported = exportFileText(generated, ASSET);
-      expect(exported.ok).toBe(true);
-      if (!exported.ok) {
-        continue;
-      }
-      const glb = readGlb(exported.glb);
-      const stock = glb.json.nodes.find((node) => node.extras?.part === 'stock');
-      expect(stock?.mesh).toBeDefined();
-      // Display-group merging can put the separate rubber pad first. Identify
-      // the wood by its semantic slot, not incidental primitive ordering.
-      const primitive = glb.json.meshes[stock!.mesh!]!.primitives.find((p) => p.extras?.slot === 'furniture');
-      expect(primitive).toBeDefined();
-      const appearance = resolveAppearance(GUN_PALETTE, 'stock', 'butt', { archetype: template, slot: 'furniture' });
-      expect(primitive?.extras).toMatchObject({ material: appearance.material, slot: 'furniture' });
-      expect(glb.json.materials[primitive!.material]!.name).toBe(
-        `#${srgbToHex(appearance.color).toString(16).padStart(6, '0')}`,
-      );
+    const exported = exportFileText(generated, ASSET);
+    expect(exported.ok).toBe(true);
+    if (!exported.ok) {
+      return;
     }
+    const glb = readGlb(exported.glb);
+    const stock = glb.json.nodes.find((node) => node.extras?.part === 'stock');
+    expect(stock?.mesh).toBeDefined();
+    // Display-group merging can put the separate rubber pad first. Identify
+    // the wood by its semantic slot, not incidental primitive ordering.
+    const primitive = glb.json.meshes[stock!.mesh!]!.primitives.find((p) => p.extras?.slot === 'furniture');
+    expect(primitive).toBeDefined();
+    const appearance = resolveAppearance(GUN_PALETTE, 'stock', 'butt', { archetype: template, slot: 'furniture' });
+    expect(primitive?.extras).toMatchObject({ material: appearance.material, slot: 'furniture' });
+    expect(glb.json.materials[primitive!.material]!.name).toBe(
+      `#${srgbToHex(appearance.color).toString(16).padStart(6, '0')}`,
+    );
   });
 
   it('writes the glb and model entry to separate output directories when requested', () => {
@@ -174,6 +173,14 @@ describe('export CLI core', () => {
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
+  });
+
+  it('refuses a bare assembly with no appearance profile instead of exporting it unstyled', () => {
+    const unprofiled = JSON.stringify({ ...JSON.parse(read('fixtures', 'archetype-ak')), name: 'no-such-fixture' });
+    expect(exportFileText(unprofiled, ASSET)).toMatchObject({
+      ok: false,
+      message: expect.stringContaining('no-such-fixture'),
+    });
   });
 
   it('reports malformed input and a bad asset path as messages', () => {

@@ -3,10 +3,12 @@
  * part's mass, centre of mass, baked collision and datums. Loading places those in the vehicle frame.
  */
 import { modelMassKg } from '@skelly/thing-core/mass';
-import type { ModelBox } from '@skelly/thing-core/schema';
+import type { ModelBox, ModelParts } from '@skelly/thing-core/schema';
 import { supportProblems } from '../vehicles/model.ts';
+import { type CargoCells, cargoGrid, fitIssue } from './cargoSpace.ts';
 import type { Registry } from './content.ts';
-import type { ContentSection, VehicleCapability, VehicleFittingDef } from './schema.ts';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
+import type { ContentSection, ItemDef, VehicleCapability, VehicleFittingDef } from './schema.ts';
 
 type Vec3 = readonly [number, number, number];
 
@@ -31,26 +33,98 @@ const partModelIssue = (registry: Registry, itemId: string): string | undefined 
   return bare.length === 0 ? undefined : `model "${item.model}" has no baked collision for ${bare.join(', ')}`;
 };
 
-/** Parts without exported physics, and blueprints with broken references or supports. */
+const ratingIssue = ({
+  capabilities,
+  ratedLoadKg,
+}: {
+  capabilities: readonly VehicleCapability[];
+  ratedLoadKg?: number | undefined;
+}) => {
+  const lifts = capabilities.includes('lift');
+  if (lifts && ratedLoadKg === undefined) {
+    return 'a lifting part needs a rated load';
+  }
+  return !lifts && ratedLoadKg !== undefined ? 'only a lifting part has a rated load' : undefined;
+};
+
+type PathIssue = readonly [path: string, message: string];
+
+const cargoSizeIssue = (item: ItemDef, fitting: VehicleFittingDef): string | undefined => {
+  if (item.vehicle?.cargoSpace) {
+    return fitting.cargo ? undefined : 'a cargo space needs its size';
+  }
+  return fitting.cargo && `item "${item.id}" is not a cargo space`;
+};
+
+const bracingIssue = (registry: Registry, fittings: readonly VehicleFittingDef[]): PathIssue[] => {
+  const fitted = fittings.flatMap(({ part }) => registry.items.get(part)?.vehicle?.capabilities ?? []);
+  return fitted.includes('lift') && !fitted.includes('stabiliser')
+    ? [['.fittings', 'a vehicle that lifts needs a stabiliser fitted']]
+    : [];
+};
+
+/** Fittings naming no vehicle part, cargo sizes on the wrong parts, broken supports, and lifting unbraced. */
+const fittingIssues = (registry: Registry, fittings: readonly VehicleFittingDef[]): PathIssue[] => [
+  ...fittings.flatMap((fitting, i): PathIssue[] => {
+    const item = registry.items.get(fitting.part);
+    if (!item?.vehicle) {
+      const message = item ? `item "${fitting.part}" is not a vehicle part` : `no item "${fitting.part}"`;
+      return [[`.fittings[${i}].part`, message]];
+    }
+    const message = cargoSizeIssue(item, fitting);
+    return message ? [[`.fittings[${i}].cargo`, message]] : [];
+  }),
+  ...supportProblems(fittings).map((message): PathIssue => ['.fittings', message]),
+  ...bracingIssue(registry, fittings),
+];
+
+/** Each fitting placed beside all the others: cargo spaces off their free floor, and parts inside one. */
+const placementIssues = (
+  registry: Registry,
+  fittings: readonly VehicleFittingDef[],
+  cellMetres: number | undefined,
+): PathIssue[] => {
+  if (cellMetres === undefined) {
+    return [['.fittings', 'a cargo space needs the inventory cell size']];
+  }
+  const placed = fittings.map((fitting) => placeFitting(registry, fitting));
+  return placed.flatMap((fitting, i): PathIssue[] => {
+    const message = fitIssue(
+      placed.filter((other) => other !== fitting),
+      fitting,
+      cellMetres,
+    );
+    return message ? [[`.fittings[${i}]`, message]] : [];
+  });
+};
+
+/**
+ * Parts without exported physics or a lift rating; blueprints with broken references, supports or bracing;
+ * cargo spaces off their free floor, and parts inside a cargo space.
+ */
 export const vehicleContentIssues = (registry: Registry): VehicleIssue[] => {
   const issues: VehicleIssue[] = [];
+  const unsound = new Set<string>();
   for (const item of registry.items.values()) {
     const message = item.vehicle && partModelIssue(registry, item.id);
     if (message) {
       issues.push({ section: 'items', id: item.id, path: '.model', message });
     }
-  }
-  for (const blueprint of registry.vehicleBlueprints.values()) {
-    blueprint.fittings.forEach((fitting, i) => {
-      const item = registry.items.get(fitting.part);
-      if (!item?.vehicle) {
-        const message = item ? `item "${fitting.part}" is not a vehicle part` : `no item "${fitting.part}"`;
-        issues.push({ section: 'vehicleBlueprints', id: blueprint.id, path: `.fittings[${i}].part`, message });
-      }
-    });
-    for (const message of supportProblems(blueprint.fittings)) {
-      issues.push({ section: 'vehicleBlueprints', id: blueprint.id, path: '.fittings', message });
+    if (item.vehicle && (message || !registry.models.get(item.model!)?.parts)) {
+      unsound.add(item.id);
     }
+    const rating = item.vehicle && ratingIssue(item.vehicle);
+    if (rating) {
+      issues.push({ section: 'items', id: item.id, path: '.vehicle', message: rating });
+    }
+  }
+  const cellMetres = registry.inventory.get(CORE_CONTENT_IDS.player)?.cellMetres;
+  for (const { id, fittings } of registry.vehicleBlueprints.values()) {
+    let found = fittingIssues(registry, fittings);
+    if (found.length === 0 && fittings.some(({ cargo }) => cargo) && fittings.every(({ part }) => !unsound.has(part))) {
+      found = placementIssues(registry, fittings, cellMetres);
+    }
+    issues.push(...found.map(([path, message]) => ({ section: 'vehicleBlueprints' as const, id, path, message })));
   }
   return issues;
 };
@@ -60,10 +134,20 @@ export interface PlacedFitting {
   readonly id: string;
   readonly part: string;
   readonly capabilities: readonly VehicleCapability[];
+  /** Every fitting it rests on. */
+  readonly supportedBy: readonly string[];
   readonly massKg: number;
   readonly centreOfMass: Vec3;
   readonly collision: readonly ModelBox[];
   readonly datums: Readonly<Record<string, Vec3>>;
+  /** The voxel lattice its drawn collision lies on: planes `grain` metres apart through `origin`. */
+  readonly lattice?: { readonly grain: number; readonly origin: Vec3 };
+  /** A cargo space's size, its pocket and the clearance it assumes where nothing is above. */
+  readonly cargo?: {
+    readonly cells: CargoCells;
+    readonly grid: ReturnType<typeof cargoGrid>;
+    readonly openClearanceCells: number;
+  };
 }
 
 export interface LoadedVehicle {
@@ -94,40 +178,89 @@ const massCentre = (masses: readonly { readonly massKg: number; readonly centreO
   return [moment(0), moment(1), moment(2)];
 };
 
+/** The one grain every part of a model is drawn at, if they share one. */
+const sharedGrain = (parts: readonly { readonly voxelGrain?: number | undefined }[]): number | undefined => {
+  const [first, ...rest] = parts.map(({ voxelGrain }) => voxelGrain);
+  return rest.every((grain) => grain === first) ? first : undefined;
+};
+
+type Body = Pick<PlacedFitting, 'centreOfMass' | 'collision' | 'lattice'>;
+type ModelPart = ModelParts[string];
+
+/** A part's exported body, placed: its parts' collision, mass centre and the lattice they are drawn on. */
+const partBody = (fitting: VehicleFittingDef, parts: readonly ModelPart[]): Body => {
+  const grain = sharedGrain(parts);
+  return {
+    centreOfMass:
+      parts.length > 0
+        ? massCentre(parts.map((part) => ({ ...part, centreOfMass: place(fitting, part.centreOfMass) })))
+        : place(fitting, [0, 0, 0]),
+    collision: parts.flatMap((part) => (part.collision ?? []).map((box) => placeBox(fitting, box))),
+    ...(grain === undefined ? {} : { lattice: { grain, origin: fitting.at } }),
+  };
+};
+
+/**
+ * A cargo space's body is its cells, standing on `at` and centred over it, so the voxels its one-cell model is
+ * drawn in leave its size whole; `cargoSpace.ts` snaps that block onto its load floor's lattice.
+ */
+const cargoBody = (registry: Registry, fitting: VehicleFittingDef, [x, y, z]: CargoCells): Body => {
+  const cell = registry.inventory.get(CORE_CONTENT_IDS.player)?.cellMetres;
+  if (cell === undefined) {
+    throw new Error(`Fitting ${fitting.id} is a cargo space, which needs the inventory cell size`);
+  }
+  return {
+    centreOfMass: place(fitting, [0, (y * cell) / 2, 0]),
+    collision: [
+      placeBox(fitting, {
+        min: [(-x * cell) / 2, 0, (-z * cell) / 2],
+        max: [(x * cell) / 2, y * cell, (z * cell) / 2],
+      }),
+    ],
+  };
+};
+
 /** Places a fitting of validated content; mass and centre come only from the part's export. */
-const placeFitting = (registry: Registry, fitting: VehicleFittingDef): PlacedFitting => {
+export const placeFitting = (registry: Registry, fitting: VehicleFittingDef): PlacedFitting => {
   const item = registry.items.get(fitting.part);
   const model = item?.model === undefined ? undefined : registry.models.get(item.model);
   if (!(item?.vehicle && model?.parts)) {
     throw new Error(`Fitting ${fitting.id} names ${fitting.part}, which is not a loaded vehicle part`);
   }
-  const parts = Object.values(model.parts).map((part) => ({
-    ...part,
-    centreOfMass: place(fitting, part.centreOfMass),
-  }));
+  const space = item.vehicle.cargoSpace;
+  const cells = space && fitting.cargo;
+  const grow = ([x, y, z]: Vec3): Vec3 => (cells ? [x * cells[0], y * cells[1], z * cells[2]] : [x, y, z]);
   return {
     id: fitting.id,
     part: fitting.part,
     capabilities: item.vehicle.capabilities,
+    supportedBy: fitting.supportedBy,
     massKg: modelMassKg({ parts: model.parts }),
-    centreOfMass: parts.length > 0 ? massCentre(parts) : place(fitting, [0, 0, 0]),
-    collision: Object.values(model.parts).flatMap((part) =>
-      (part.collision ?? []).map((box) => placeBox(fitting, box)),
+    ...(cells ? cargoBody(registry, fitting, cells) : partBody(fitting, Object.values(model.parts))),
+    datums: Object.fromEntries(
+      Object.entries(model.anchors ?? {}).map(([id, point]) => [id, place(fitting, grow(point))]),
     ),
-    datums: Object.fromEntries(Object.entries(model.anchors ?? {}).map(([id, point]) => [id, place(fitting, point)])),
+    ...(cells && space
+      ? { cargo: { cells, grid: cargoGrid(cells, space), openClearanceCells: space.openClearanceCells } }
+      : {}),
   };
 };
+
+/** A vehicle of these placed fittings, such as a blueprint with some of its fittings taken off. */
+export const assembledVehicle = (id: string, fittings: readonly PlacedFitting[]): LoadedVehicle => ({
+  id,
+  fittings,
+  massKg: fittings.reduce((sum, { massKg }) => sum + massKg, 0),
+  centreOfMass: massCentre(fittings),
+});
 
 export const loadVehicleBlueprint = (registry: Registry, id: string): LoadedVehicle => {
   const blueprint = registry.vehicleBlueprints.get(id);
   if (!blueprint) {
     throw new Error(`No vehicle blueprint ${id}`);
   }
-  const fittings = blueprint.fittings.map((fitting) => placeFitting(registry, fitting));
-  return {
+  return assembledVehicle(
     id,
-    fittings,
-    massKg: fittings.reduce((sum, { massKg }) => sum + massKg, 0),
-    centreOfMass: massCentre(fittings),
-  };
+    blueprint.fittings.map((fitting) => placeFitting(registry, fitting)),
+  );
 };

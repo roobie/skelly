@@ -1,3 +1,5 @@
+import { SHA256_HEX } from '../core/canonicalJson.ts';
+
 const MAGIC = new TextEncoder().encode('DVXSLOT1');
 const IDENTITY_BYTES = 64;
 const GENERATION_BYTES = 8;
@@ -5,8 +7,8 @@ const LENGTH_BYTES = 4;
 const CHECKSUM_BYTES = 32;
 export const SAVE_RECORD_HEADER_BYTES =
   MAGIC.length + IDENTITY_BYTES + GENERATION_BYTES + LENGTH_BYTES + CHECKSUM_BYTES;
+// Bounds the compressed save as stored; `src/core/saveFormat.ts`, `decodeSave`, bounds its decompressed payload.
 export const SAVE_RECORD_MAX_BYTES = 50 * 1024 * 1024;
-const HASH = /^[0-9a-f]{64}$/;
 
 export interface SaveSlotRecord {
   readonly namespace: string;
@@ -24,7 +26,7 @@ const sha256 = async (bytes: Uint8Array): Promise<Uint8Array> => {
 const toHex = (bytes: Uint8Array): string => [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 
 export async function sealSaveSlot(namespace: string, generation: number, payload: Uint8Array): Promise<Uint8Array> {
-  if (!HASH.test(namespace)) {
+  if (!SHA256_HEX.test(namespace)) {
     throw new Error('Save namespace must be a lowercase SHA-256 digest');
   }
   if (!Number.isSafeInteger(generation) || generation < 1) {
@@ -47,7 +49,7 @@ export async function sealSaveSlot(namespace: string, generation: number, payloa
 }
 
 export async function openSaveSlot(record: Uint8Array, expectedNamespace: string): Promise<SaveSlotRecord> {
-  if (!HASH.test(expectedNamespace)) {
+  if (!SHA256_HEX.test(expectedNamespace)) {
     throw new Error('Save namespace must be a lowercase SHA-256 digest');
   }
   if (record.byteLength < SAVE_RECORD_HEADER_BYTES) {

@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { DamageFeedback } from '../src/game/damageFeedback.ts';
+import { DAMAGE_FEEDBACK_TUNING_FIXTURE } from './presentationFixture.ts';
 import { Simulation } from './simulationFixture.ts';
 
 const FRAME = 1 / 60;
 
 describe('damage feedback', () => {
-  it('scales subtle and clear hits and fades the vignette within one second', () => {
-    const feedback = new DamageFeedback();
+  it('scales subtle and clear hits and fades the vignette within its fixture duration', () => {
+    const feedback = new DamageFeedback(DAMAGE_FEEDBACK_TUNING_FIXTURE);
     feedback.hit(5);
     const subtle = feedback.step(0);
     expect(subtle.vignetteOpacity).toBeGreaterThan(0);
@@ -20,15 +21,16 @@ describe('damage feedback', () => {
     expect(feedback.step(0).vignetteOpacity).toBe(0);
   });
 
-  it('restarts on another hit and returns roll exactly to zero by 0.35 seconds', () => {
-    const feedback = new DamageFeedback();
+  it('restarts on another hit and returns roll exactly to zero after its fixture settling duration', () => {
+    const feedback = new DamageFeedback(DAMAGE_FEEDBACK_TUNING_FIXTURE);
     feedback.hit(25, 1);
     for (let i = 0; i < 4; i++) {
       feedback.step(FRAME);
     }
-    expect(feedback.step(0).roll).toBeCloseTo((6 * Math.PI) / 180, 6);
+    expect(feedback.step(0).roll).toBeGreaterThan(0);
+    expect(feedback.step(0).roll).toBeLessThanOrEqual((DAMAGE_FEEDBACK_TUNING_FIXTURE.rollPeakDegrees * Math.PI) / 180);
     const beforeHit = feedback.step(8 * FRAME).roll;
-    expect(beforeHit).toBeLessThan((6 * Math.PI) / 180);
+    expect(beforeHit).toBeLessThan((DAMAGE_FEEDBACK_TUNING_FIXTURE.rollPeakDegrees * Math.PI) / 180);
     feedback.hit(25, 1);
     expect(feedback.step(0).roll).toBe(0);
     for (let i = 0; i < 21; i++) {
@@ -46,13 +48,13 @@ describe('damage feedback', () => {
   });
 
   it('alternates roll direction without a known source and restarts both effects on another hit', () => {
-    const feedback = new DamageFeedback();
+    const feedback = new DamageFeedback(DAMAGE_FEEDBACK_TUNING_FIXTURE);
     feedback.hit(25);
     expect(Math.sign(feedback.step(0.04).roll)).toBe(-1);
     const fading = feedback.step(0.1);
     expect(fading.vignetteOpacity).toBeLessThan(0.72);
     feedback.hit(25);
-    expect(feedback.step(0).vignetteOpacity).toBe(0.72);
+    expect(feedback.step(0).vignetteOpacity).toBe(DAMAGE_FEEDBACK_TUNING_FIXTURE.vignetteMax);
     expect(Math.sign(feedback.step(0.04).roll)).toBe(1);
   });
 

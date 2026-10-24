@@ -16,7 +16,14 @@ import { Simulation } from './simulationFixture.ts';
 const fixture = (side: HandSide = 'right', quality = 2) => {
   const base = baseRegistry();
   const economy = { usage: [], tiers: [] };
-  const common = { economy, category: 'food' as const, weight: 1, size: [1, 2] as [number, number] };
+  const common = {
+    economy,
+    workInProgress: false,
+    notLoot: false,
+    category: 'food' as const,
+    weight: 1,
+    size: [1, 2] as [number, number],
+  };
   const registry = {
     ...base,
     items: new Map(base.items)
@@ -50,12 +57,13 @@ const fixture = (side: HandSide = 'right', quality = 2) => {
   }
   const queue = new HandlingQueue(inventory);
   const opened = vi.fn();
-  const unpacking = new Unpacking(inventory, queue, () => [0, 0, 0], opened);
+  const unpacking = new Unpacking(inventory, queue, () => [0, 0, 0], { opened });
   const sim = new Simulation({ seed: 1 });
   const survival = new Survival(sim, inventory, queue, {
     reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 1, clock: BASE_CLOCK }),
     feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
     notice: vi.fn(),
+    readingLight: () => undefined,
     read: vi.fn(),
   });
   return { registry, inventory, can, tool, other, queue, opened, unpacking, survival };
@@ -89,6 +97,20 @@ describe('held can opening', () => {
     expect(f.can.type).toBe('test_opened');
     expect(f.registry.items.get(f.can.type)?.serving?.food).toBe('test_food');
     expect(f.opened).toHaveBeenCalledExactlyOnceWith('test_sealed');
+  });
+
+  it('a sealed can with no tool quality opens bare-handed and cannot be consumed before', () => {
+    const f = fixture();
+    const sealed = f.registry.items.get('test_sealed')!;
+    f.registry.items.set('test_sealed', { ...sealed, unpack: { ...sealed.unpack!, qualities: undefined } });
+    expect(f.inventory.move(f.tool, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    expect(f.survival.use(f.can)).toBeDefined();
+    expect(f.queue.busy).toBe(false);
+    expect(selectPrimaryAction(f.inventory, 'right').kind).toBe('unpack');
+    expect(f.unpacking.activate(f.can)).toBeUndefined();
+    expect(f.queue.tick(f.queue.remaining).failed).toEqual([]);
+    expect(f.can.type).toBe('test_opened');
+    expect(f.survival.use(f.can)).toBeUndefined();
   });
 
   it('a lower opening quality takes longer and a changed tool cannot complete the admitted work', () => {
@@ -155,7 +177,8 @@ describe('held can opening', () => {
 
   it('a tutorial opening is earned by completion, not activation or cancellation', () => {
     const f = fixture();
-    const tutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, vi.fn());
+    const lightKit = baseRegistry().layouts.get('tutorial')!.practice!.light;
+    const tutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, lightKit);
     f.opened.mockImplementation(() => tutorial.opened('canned_beans'));
     expect(f.unpacking.activate(f.can)).toBeUndefined();
     f.queue.cancel();
@@ -168,6 +191,7 @@ describe('held can opening', () => {
       looted: true,
       wielded: true,
       lightOn: false,
+      litType: undefined,
       paused: false,
     });
     expect(tutorial.stage).toBe('open');

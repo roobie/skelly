@@ -18,6 +18,7 @@ import {
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { startupContent } from './baseRegistry.ts';
+import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 
 const content = startupContent();
 const authoredAssemblies = (registry: Registry): MapAssemblyDef[] =>
@@ -207,6 +208,8 @@ it('keeps police weapons and ammunition behind the armoury lock', () => {
       name: 'Sealed door',
       size: [2, 4, 1],
       color: '#444444',
+      breach: fixtureBreach(),
+      material: FIXTURE_MATERIAL,
     }),
   };
   const sealed = {
@@ -300,7 +303,7 @@ it('lets a player climb to the matching key on the roof corpse in the base stati
           active: () => true,
           intent: () => ({ ...IDLE, forward: 1, walk: true }),
           readyHeld: () => false,
-          consumeCrouchToggle: () => false,
+          consumeStanceToggle: () => undefined,
           yaw: () => Math.atan2(ox, oz),
           pitch: () => 0,
           walking: () => true,

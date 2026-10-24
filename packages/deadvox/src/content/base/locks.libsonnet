@@ -29,9 +29,9 @@ local content = {
     id: 'shed_key',
     name: 'Shed key',
     category: 'tool',
-    weight: 10,
     size: [1, 1],
     key: { lock: 'test_shed' },
+    model: 'shed_key',
     description: "A small key for the shed's door.",
   }],
   furniture: [{
@@ -39,6 +39,7 @@ local content = {
     name: 'Key box',
     size: [1, 1, 1],
     color: '#666666',
+    appearance: { kind: 'door', surface: 'painted-metal' },
     container: { pockets: [{ name: 'Inside', grid: [2, 1], handlingSimSeconds: 0.2 }] },
   }],
   loot: [{

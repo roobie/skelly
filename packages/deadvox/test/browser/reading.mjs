@@ -2,6 +2,7 @@
 // biome-ignore-all lint/style/noProcessEnv: runner may supply the browser executable and artifact destination.
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative consumer/presentation assertions.
 // biome-ignore-all lint/correctness/noUnresolvedImports: page-evaluated imports address Vite URLs, not Node files.
+// biome-ignore-all lint/performance/noAwaitInLoops: the consumer handles each sheet through sequential player actions.
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -29,6 +30,11 @@ const vite = await createServer({
       name: 'reading-observation',
       enforce: 'pre',
       transform(code, id) {
+        if (id.endsWith('/src/game/worldSetup.ts')) {
+          const anchor = "  if (config.site === 'forest') {";
+          assert.equal(code.split(anchor).length, 2);
+          return `import { readingWorld } from '/test/fixtures/readingWorld.ts';\n${code.replace(anchor, `${anchor}\n    return readingWorld(registry, config.seed, config.scale);`)}`;
+        }
         if (!id.endsWith('/src/game/play.ts')) {
           return;
         }
@@ -36,7 +42,7 @@ const vite = await createServer({
         assert.equal(code.split(marker).length, 2);
         return code.replace(
           marker,
-          `let proofReadCalls=0; let throwGameLoopError=false; const proofOpen=reading.open; reading.open=(value,...args)=>{proofReadCalls++;proofOpen(value,...args);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,saveController:options.saveController,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;},requestResume(){resume();},playFrame:frame,triggerGameLoopError(){throwGameLoopError=true;}}});\nstartRealFrames((now)=>{if(throwGameLoopError){throwGameLoopError=false;throw new Error('Browser-stage game-loop failure');}return frame(now);});`,
+          `let proofReadCalls=0; let throwGameLoopError=false; const proofOpen=reading.open; reading.open=(value,...args)=>{proofReadCalls++;proofOpen(value,...args);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,saveController:options.saveController,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;},requestResume(){resume();},playFrame:frame,triggerGameLoopError(){throwGameLoopError=true;},get handsBusy(){return queue.busy||firearms.busy;}}});\nstartRealFrames((now)=>{if(throwGameLoopError){throwGameLoopError=false;throw new Error('Browser-stage game-loop failure');}return frame(now);});`,
         );
       },
     },
@@ -235,16 +241,16 @@ try {
     } finally {
       await showHud();
     }
-    const crouchBeforeToggle = await page.evaluate(() => globalThis.readingWitness.session.crouching);
+    const stanceBeforeToggle = await page.evaluate(() => globalThis.readingWitness.session.stance);
     await pressAction(page, 'player.crouch-toggle');
     await page.waitForFunction(
-      (crouchingAtDispatch) => globalThis.readingWitness.session.crouching !== crouchingAtDispatch,
-      crouchBeforeToggle,
+      (stanceAtDispatch) => globalThis.readingWitness.session.stance !== stanceAtDispatch,
+      stanceBeforeToggle,
     );
     await pressAction(page, 'player.crouch-toggle');
     await page.waitForFunction(
-      (crouchingAtDispatch) => globalThis.readingWitness.session.crouching === crouchingAtDispatch,
-      crouchBeforeToggle,
+      (stanceAtDispatch) => globalThis.readingWitness.session.stance === stanceAtDispatch,
+      stanceBeforeToggle,
     );
     const walk = async (actionId, targetX, increasing) => {
       const from = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
@@ -273,19 +279,28 @@ try {
         await release();
       }
     };
+    // Spawn faces the showroom's newest slot; the route runs east along the path to the house door.
+    await page.evaluate(() => {
+      globalThis.readingWitness.input.yaw = -Math.PI / 2;
+    });
     const startX = await page.evaluate(() => globalThis.readingWitness.body.pos[0]);
     await walk('movement.forward', startX + 10, true);
-    const aim = async (type) => {
-      const target = await page.evaluate((id) => {
-        const { engine, input, eye } = globalThis.readingWitness;
-        const entity = [...engine.entities.all].find((value) => value.type === id);
-        const at = entity.pos.map((value, axis) => value + entity.size[axis] / 2);
-        const origin = eye();
-        const [dx, dy, dz] = at.map((value, axis) => value - origin[axis]);
-        input.yaw = Math.atan2(-dx, -dz);
-        input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
-        return { pos: entity.pos, size: entity.size, origin, aim: [dx, dy, dz], yaw: input.yaw, pitch: input.pitch };
-      }, type);
+    const aim = async (type, targetUid) => {
+      const target = await page.evaluate(
+        ({ id, uid }) => {
+          const { engine, input, eye } = globalThis.readingWitness;
+          const entity = [...engine.entities.all].find(
+            (value) => value.type === id && (uid === undefined || value.uid === uid),
+          );
+          const at = entity.pos.map((value, axis) => value + entity.size[axis] / 2);
+          const origin = eye();
+          const [dx, dy, dz] = at.map((value, axis) => value - origin[axis]);
+          input.yaw = Math.atan2(-dx, -dz);
+          input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+          return { pos: entity.pos, size: entity.size, origin, aim: [dx, dy, dz], yaw: input.yaw, pitch: input.pitch };
+        },
+        { id: type, uid: targetUid },
+      );
       await record(`aim ${type}`);
       const hit = await page.evaluate(() => globalThis.readingWitness.lookedAt()?.type);
       assert.equal(hit, type, JSON.stringify({ target, hit }));
@@ -325,7 +340,7 @@ try {
       return session.rest.action?.kind === 'rest' && session.rest.action.furnitureUid === uid;
     }, chairUid);
     assert.equal(await page.evaluate(() => globalThis.readingWitness.session.sim.compression.active), true);
-    const crouchingDuringRest = await page.evaluate(() => globalThis.readingWitness.session.crouching);
+    const stanceDuringRest = await page.evaluate(() => globalThis.readingWitness.session.stance);
     const crouchGuardStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
     await pressAction(page, 'player.crouch-toggle');
     await waitForSimulation(
@@ -343,8 +358,8 @@ try {
       },
     );
     assert.equal(
-      await page.evaluate(() => globalThis.readingWitness.session.crouching),
-      crouchingDuringRest,
+      await page.evaluate(() => globalThis.readingWitness.session.stance),
+      stanceDuringRest,
       'long-action lock suppresses the crouch action',
     );
     await interruptRest('rest stop interruption');
@@ -411,6 +426,7 @@ try {
       const vm = restViewModel(session.rest.action, true, session.sim, {
         messagesVisible: true,
         restLabels: { rest: 'fixture rest', sleep: 'fixture sleep' },
+        text: session.inventory.registry.ui.get('core').screenText,
       });
       if (
         !(gauge && session.rest.action?.sleepOnset) ||
@@ -523,12 +539,24 @@ try {
     });
     // A walk ends when the stage releases the key, a wall-clock-dependent time after its condition holds, so it
     // overshoots. Stopping abreast of the crate keeps any overshoot inside use reach.
-    const crateX = await page.evaluate(() => {
-      const crate = [...globalThis.readingWitness.engine.entities.all].find((entity) => entity.type === 'crate');
-      return crate.pos[0] + crate.size[0] / 2;
+    // Appliance look pieces also contain crates; select the note source rather than entity insertion order.
+    const noteCrate = await page.evaluate(() => {
+      const { engine, session } = globalThis.readingWitness;
+      const crate = [...engine.entities.all].find(
+        (entity) =>
+          entity.type === 'crate' &&
+          entity.pockets?.flat().some(({ item }) => {
+            const definition = session.inventory.registry.items.get(item.type);
+            return definition.readable && !definition.book;
+          }),
+      );
+      if (!crate) {
+        throw new Error('test house has no plain-readable fixture crate');
+      }
+      return { uid: crate.uid, x: crate.pos[0] + crate.size[0] / 2 };
     });
-    await walk('movement.back', crateX, false);
-    await aim('crate');
+    await walk('movement.back', noteCrate.x, false);
+    await aim('crate', noteCrate.uid);
     const searchStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
     const interactLabel = await page.evaluate(
       "import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.label('world.interact'))",
@@ -537,15 +565,15 @@ try {
     await pressAction(page, 'world.interact');
     await waitForSimulation(
       page,
-      () => {
+      (uid) => {
         const { session } = globalThis.readingWitness;
         return {
           time: session.sim.time,
           paused: session.sim.paused,
-          reached: [...session.inventory.entities.all].some((entity) => entity.type === 'crate' && entity.searched),
+          reached: session.inventory.entities.byUid(uid)?.searched === true,
         };
       },
-      undefined,
+      noteCrate.uid,
       { seconds: 5, from: searchStart, label: 'crate search (2.25 simulated seconds)', record },
     );
     assert.equal(await page.evaluate(() => globalThis.readingWitness.screen.isOpen), true);
@@ -565,7 +593,6 @@ try {
     await note.waitFor();
     const itemCount = await page.evaluate(() => globalThis.readingWitness.screen.order.length);
     for (let step = 0; step < itemCount; step += 1) {
-      // biome-ignore lint/performance/noAwaitInLoops: selection must advance through the real keyboard action one row at a time.
       const selectedUid = await page.evaluate(() => globalThis.readingWitness.screen.selected?.uid);
       if (selectedUid === noteRowUid) {
         break;
@@ -870,6 +897,183 @@ try {
     );
     assert.equal(afterMove.stopped, true);
     assert.equal(afterMove.compression, false);
+    // Light states are controlled through the hour, the lamp switch and the battery, never through tuning.
+    const seekHour = (hour) =>
+      page.evaluate(async (seconds) => {
+        const clockModule = '/src/core/clock.ts';
+        const { nextTimeOfDay } = await import(clockModule);
+        const { session, saveController } = globalThis.readingWitness;
+        session.sim.setDebugCalendarTime(nextTimeOfDay(session.sim.calendar, seconds));
+        saveController?.rearmAutosaveAfterTimeSeek?.();
+      }, hour * 3600);
+    const lightState = () =>
+      page.evaluate(() => {
+        const { session, reading, readCalls } = globalThis.readingWitness;
+        return {
+          refusal: session.readingLight(),
+          open: reading.isOpen,
+          readCalls,
+          prompt: document.querySelector('#prompt')?.textContent ?? '',
+        };
+      });
+    const refusedRead = async (slot) => {
+      const unread = await lightState();
+      await pressAction(page, `quickbar.use.${slot}`);
+      const refused = await lightState();
+      assert.equal(
+        refused.readCalls,
+        unread.readCalls,
+        `darkness refuses quickbar ${slot}: ${JSON.stringify(refused)}`,
+      );
+      assert.equal(refused.open, false);
+      return refused;
+    };
+    await holdAction('quickbar.use.1', () => page.locator('#reading').waitFor({ state: 'visible' }));
+    await seekHour(0);
+    const midnight = await lightState();
+    assert.ok(midnight.refusal, `the reading spot must be too dark at midnight: ${JSON.stringify(midnight)}`);
+    await page.locator('#reading').waitFor({ state: 'hidden' });
+    await page.waitForFunction(
+      (reason) => document.querySelector('#prompt')?.textContent?.includes(reason),
+      midnight.refusal,
+    );
+    await refusedRead(1);
+    const lamps = await page.evaluate(async () => {
+      const lightsModule = '/src/core/lights.ts';
+      const { chargeOf } = await import(lightsModule);
+      const { session } = globalThis.readingWitness;
+      const { inventory } = session;
+      const { registry } = inventory;
+      const { left: book, right: heldNote } = inventory.hands;
+      const type = [...registry.items.keys()].find((id) => {
+        const { light } = registry.items.get(id);
+        return (
+          light?.power &&
+          !light.burning &&
+          chargeOf(registry, inventory.createRolled({ type: id, count: 1, condition: 1, charge: 1 })) > 0
+        );
+      });
+      if (!type) {
+        throw new Error('No battery light can be rolled with charge for the reading fixture');
+      }
+      // Loot rolls a light with its battery's charge, the path a player finds one by.
+      const full = inventory.createRolled({ type, count: 1, condition: 1, charge: 1 });
+      const feet = { kind: 'pile', pos: inventory.dropFeet() };
+      if (
+        !(
+          inventory.move(heldNote, feet).ok &&
+          inventory.move(book, { kind: 'hand', side: 'right' }).ok &&
+          inventory.add(full, { kind: 'hand', side: 'left' })
+        )
+      ) {
+        throw new Error('Could not arrange the book and lamp in hand');
+      }
+      return { type, full: full.uid };
+    });
+    // Busy hands refuse a hand use, so the switch waits for them as a player would; it lands on the next game frame.
+    const switchLamp = async (uid, on) => {
+      await page.waitForFunction(() => !globalThis.readingWitness.handsBusy);
+      await pressAction(page, 'hand.use-off');
+      await page.waitForFunction(
+        ({ lampUid, want }) => globalThis.readingWitness.session.inventory.itemByUid(lampUid)?.on === want,
+        { lampUid: uid, want: on },
+      );
+    };
+    await switchLamp(lamps.full, true);
+    const lit = await lightState();
+    assert.equal(lit.refusal, undefined, `a carried lamp admits reading: ${JSON.stringify(lit)}`);
+    await holdAction('quickbar.use.2', () => page.locator('#reading').waitFor({ state: 'visible' }));
+    await pressAction(page, 'reading.close');
+    await page.locator('#reading').waitFor({ state: 'hidden' });
+    await switchLamp(lamps.full, false);
+    await refusedRead(2);
+    const lowLamp = await page.evaluate(async ({ type, full }) => {
+      const lightsModule = '/src/core/lights.ts';
+      const { chargeOf } = await import(lightsModule);
+      const { session } = globalThis.readingWitness;
+      const { inventory } = session;
+      const { registry } = inventory;
+      const fullLamp = inventory.itemByUid(full);
+      const { job } = session.sim.actions;
+      // Charge for half the book's remaining time, so the battery dies mid-read.
+      const remaining = job.duration - job.elapsed;
+      const share =
+        (registry.items.get(type).light.power.chargePerGameHour * remaining * 0.5) / chargeOf(registry, fullLamp);
+      const low = inventory.createRolled({ type, count: 1, condition: 1, charge: share });
+      if (
+        !(
+          inventory.move(fullLamp, { kind: 'pile', pos: inventory.dropFeet() }).ok &&
+          inventory.add(low, { kind: 'hand', side: 'left' })
+        )
+      ) {
+        throw new Error('Could not swap in the low lamp');
+      }
+      return {
+        uid: low.uid,
+        elapsed: job.elapsed,
+        remaining,
+        ratio: session.sim.clock.ratio,
+        from: session.sim.time,
+      };
+    }, lamps);
+    await switchLamp(lowLamp.uid, true);
+    assert.equal((await lightState()).refusal, undefined);
+    await holdAction('quickbar.use.2', () => page.locator('#reading').waitFor({ state: 'visible' }));
+    await waitForSimulation(
+      page,
+      (elapsed) => {
+        const { session } = globalThis.readingWitness;
+        const { job } = session.sim.actions;
+        // The book's earlier close left its job stopped; only a stop after further reading counts.
+        return {
+          time: session.sim.time,
+          paused: session.sim.paused,
+          reached: job?.jobType === 'reading' && job.stopped === true && job.elapsed > elapsed,
+        };
+      },
+      lowLamp.elapsed,
+      {
+        seconds: lowLamp.remaining / lowLamp.ratio,
+        from: lowLamp.from,
+        label: 'battery dies mid-read',
+        record,
+      },
+    );
+    const drained = await page.evaluate(async (uid) => {
+      const lightsModule = '/src/core/lights.ts';
+      const { chargeOf } = await import(lightsModule);
+      const { session, reading } = globalThis.readingWitness;
+      const { job } = session.sim.actions;
+      const lamp = session.inventory.itemByUid(uid);
+      return {
+        elapsed: job.elapsed,
+        duration: job.duration,
+        charge: chargeOf(session.inventory.registry, lamp),
+        on: lamp.on,
+        open: reading.isOpen,
+        refusal: session.readingLight(),
+      };
+    }, lowLamp.uid);
+    assert.ok(drained.elapsed > 0 && drained.elapsed < drained.duration, JSON.stringify(drained));
+    assert.equal(drained.charge, 0);
+    assert.equal(drained.on, false);
+    assert.ok(drained.refusal, JSON.stringify(drained));
+    await page.locator('#reading').waitFor({ state: 'hidden' });
+    // Back to the noon light and the hands the sign step began with.
+    await seekHour(12);
+    await page.evaluate(
+      ({ full, low }) => {
+        const { session } = globalThis.readingWitness;
+        const { inventory } = session;
+        for (const uid of [full, low]) {
+          if (!inventory.move(inventory.itemByUid(uid), { kind: 'pile', pos: inventory.dropFeet() }).ok) {
+            throw new Error('Could not set a lamp down');
+          }
+        }
+      },
+      { full: lamps.full, low: lowLamp.uid },
+    );
+    assert.equal((await lightState()).refusal, undefined);
     const signFixture = await page.evaluate(() => {
       const { engine } = globalThis.readingWitness;
       const sign = [...engine.entities.all].find(
@@ -886,8 +1090,13 @@ try {
     });
     await walk('movement.back', signFixture.x, false);
     await aim(signFixture.type);
-    await pressAction(page, 'world.interact');
-    await page.locator('#reading').waitFor({ state: 'visible' });
+    // A tap on furniture does its ordinary use, so one press reads the sign; only a hold opens the action list.
+    const readSign = async () => {
+      await pressAction(page, 'world.interact');
+      await page.locator('#reading').waitFor({ state: 'visible' });
+      assert.equal(await page.locator('#item-action-list').isVisible(), false);
+    };
+    await readSign();
     assert.equal(await page.locator('#reading h1').innerText(), signFixture.readable.title);
     assert.equal(await page.locator('.reading-text').textContent(), signFixture.readable.text);
     await pressAction(page, 'ui.main-menu-toggle');
@@ -906,18 +1115,22 @@ try {
     assert.equal(pageResumed.menuPointer, false);
     assert.equal(await page.locator('#reading').isVisible(), false);
     // A hidden reading surface must not capture F after resume.
-    await pressAction(page, 'world.interact');
-    await page.locator('#reading').waitFor({ state: 'visible' });
+    await readSign();
     assert.equal(await page.locator('#reading h1').innerText(), signFixture.readable.title);
     assert.equal(await page.locator('.reading-text').textContent(), signFixture.readable.text);
     await page.screenshot({ path: resolve(artifacts, 'sign-reading.png') });
+    // An earlier periodic checkpoint may already have committed, so only a newer generation proves this one did.
+    const generationBeforeTrigger = await page.evaluate(() => globalThis.deadvoxSaveTest.saveState().savedGeneration);
     await page.evaluate(() => globalThis.deadvoxSaveTest.triggerPeriodicCheckpoint());
-    await page.waitForFunction(() => {
+    await page.waitForFunction((triggerGeneration) => {
       const { controller } = globalThis.deadvoxSaveTest;
-      return controller.savedGeneration > 0 && !controller.writing && !controller.queued;
-    });
-    const generationBeforeError = await page.evaluate(() => globalThis.deadvoxSaveTest.saveState().savedGeneration);
-    assert.ok(generationBeforeError > 0, 'the error test begins with a committed save');
+      const { savedGeneration, failure, writing, queued } = controller;
+      // A refused snapshot sets `failure` and never advances the generation, so end the wait with its reason.
+      return Boolean(failure) || (savedGeneration > triggerGeneration && !writing && !queued);
+    }, generationBeforeTrigger);
+    const checkpoint = await page.evaluate(() => globalThis.deadvoxSaveTest.saveState());
+    assert.equal(checkpoint.failure, '', 'the checkpoint before the error test saved');
+    assert.ok(checkpoint.savedGeneration > generationBeforeTrigger, 'the error test begins with a new committed save');
     const beforeError = await page.evaluate(() => ({
       paused: globalThis.readingWitness.session.sim.paused,
       locked: globalThis.readingWitness.input.locked,
@@ -1006,22 +1219,177 @@ try {
     });
     assert.equal(
       await page.evaluate(() => globalThis.deadvoxSaveTest.saveState().savedGeneration),
-      generationBeforeError,
+      checkpoint.savedGeneration,
       'hiding the tab after the error leaves the last committed save unchanged',
     );
-    proof = { before, during, menu, resumed: pageResumed, report: { error: report.error, world: report.world } };
+    await page.goto(
+      browserStageUrl(
+        'reading',
+        `http://127.0.0.1:${port}/?site=forest&seed=1&radius=16&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+      ),
+      { waitUntil: 'domcontentloaded' },
+    );
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    await page.locator('#go').click();
+    await page.locator('#save-replace-confirm').click();
+    await page.waitForFunction(
+      () =>
+        document.querySelector('#world-loading')?.dataset.state === 'ready' &&
+        globalThis.readingWitness?.input.locked &&
+        [...globalThis.readingWitness.engine.entities.all].filter((entity) => entity.type === 'crate').length === 2,
+    );
+    const mapCoverages = [];
+    for (const index of [0, 1]) {
+      const source = await page.evaluate((which) => {
+        const crates = [...globalThis.readingWitness.engine.entities.all]
+          .filter((entity) => entity.type === 'crate')
+          .sort((a, b) => a.pos[0] - b.pos[0]);
+        const crate = crates[which];
+        return { uid: crate.uid, x: crate.pos[0] + crate.size[0] / 2 };
+      }, index);
+      if (index > 0) {
+        await page.evaluate(() => {
+          globalThis.readingWitness.input.yaw = -Math.PI / 2;
+          globalThis.readingWitness.input.pitch = 0;
+        });
+        await walk('movement.forward', source.x, true);
+      }
+      await page.evaluate((uid) => {
+        const { engine, input, eye } = globalThis.readingWitness;
+        const entity = engine.entities.byUid(uid);
+        const origin = eye();
+        const [dx, dy, dz] = entity.pos.map((value, axis) => value + entity.size[axis] / 2 - origin[axis]);
+        input.yaw = Math.atan2(-dx, -dz);
+        input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+      }, source.uid);
+      const aimed = await record('aim at sheet source');
+      assert.equal(
+        await page.evaluate(() => globalThis.readingWitness.lookedAt()?.uid),
+        source.uid,
+        JSON.stringify({ source, aimed }),
+      );
+      await pressAction(page, 'world.interact');
+      const searchStarted = await page.waitForFunction((uid) => {
+        const { session } = globalThis.readingWitness;
+        return (
+          session.queue.jobs.some((job) => job.kind === 'action' && job.params.entityUid === uid) && session.sim.time
+        );
+      }, source.uid);
+      const searchFrom = await searchStarted.jsonValue();
+      await searchStarted.dispose();
+      await waitForSimulation(
+        page,
+        (uid) => {
+          const { session, screen } = globalThis.readingWitness;
+          return {
+            time: session.sim.time,
+            paused: session.sim.paused,
+            reached: session.inventory.entities.byUid(uid)?.searched && screen.isOpen,
+          };
+        },
+        source.uid,
+        { seconds: 5, from: searchFrom, label: 'search map container', record },
+      );
+      const sheet = await page.evaluate(() => {
+        const { screen, session } = globalThis.readingWitness;
+        const item = screen.order.find(
+          (entry) =>
+            session.inventory.registry.items.get(entry.type)?.paperMap &&
+            session.inventory.locate(entry)?.kind === 'furniture',
+        );
+        if (!item) {
+          throw new Error('Searched fixture container has no sheet');
+        }
+        return { uid: item.uid, coverage: `${item.paperMap.x},${item.paperMap.z}` };
+      });
+      await uiClick(page.locator(`.inv-item[data-uid="${sheet.uid}"]`));
+      const handFrom = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
+      await pressAction(page, 'inventory.hands');
+      await waitForSimulation(
+        page,
+        (uid) => {
+          const { session } = globalThis.readingWitness;
+          return {
+            time: session.sim.time,
+            paused: session.sim.paused,
+            reached: Object.values(session.inventory.hands).some((item) => item?.uid === uid),
+          };
+        },
+        sheet.uid,
+        { seconds: 5, from: handFrom, label: 'take sheet into hands', record },
+      );
+      await pressAction(page, 'quickbar.assign.1');
+      await page.waitForFunction((uid) => globalThis.readingWitness.session.quickbar.slots[0] === uid, sheet.uid);
+      await pressAction(page, 'ui.inventory-toggle');
+      await holdAction('quickbar.use.1', () => page.locator('#reading').waitFor({ state: 'visible' }));
+      const surface = page.locator('.reading-map');
+      assert.equal(await surface.getAttribute('data-coverage'), sheet.coverage);
+      mapCoverages.push(await surface.getAttribute('data-coverage'));
+      const openFrom = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
+      await waitForSimulation(
+        page,
+        (from) => {
+          const { session, reading } = globalThis.readingWitness;
+          return {
+            time: session.sim.time,
+            paused: session.sim.paused,
+            reached: reading.isOpen && session.sim.time > from + 0.2,
+          };
+        },
+        openFrom,
+        { seconds: 2, from: openFrom, label: 'simulation advances with a sheet open', record },
+      );
+      if (index === 0) {
+        await pressAction(page, 'reading.close');
+      } else {
+        await uiClick(page.locator('#reading button'));
+      }
+      assert.equal(await page.locator('#reading').isVisible(), false);
+      if (index === 0) {
+        await pressAction(page, 'ui.inventory-toggle');
+        await uiClick(page.locator(`.inv-item[data-uid="${sheet.uid}"]`));
+        const stowFrom = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
+        await pressAction(page, 'inventory.best-pocket');
+        await waitForSimulation(
+          page,
+          (uid) => {
+            const { session } = globalThis.readingWitness;
+            return {
+              time: session.sim.time,
+              paused: session.sim.paused,
+              reached: session.inventory.locate(session.inventory.itemByUid(uid))?.kind === 'pocket',
+            };
+          },
+          sheet.uid,
+          { seconds: 5, from: stowFrom, label: 'stow first sheet', record },
+        );
+        await pressAction(page, 'ui.inventory-toggle');
+      }
+    }
+    assert.notEqual(mapCoverages[0], mapCoverages[1], 'separately found sheets cover different regions');
+    proof = {
+      before,
+      during,
+      menu,
+      resumed: pageResumed,
+      mapCoverages,
+      report: { error: report.error, world: report.world },
+    };
   } else {
     // Pure view fixture: no pickup/handling/movement claimed here.
     const marker = 'END-OF-READING';
     await page.evaluate(
       (end) =>
         globalThis.readingWitness.reading.open({
-          title: 'T'.repeat(120),
-          text:
-            ('long'.repeat(1000) + '\n\nPaper paragraph & literal entity &copy;.\n\n'.repeat(400)).slice(
-              0,
-              12_000 - end.length,
-            ) + end,
+          kind: 'text',
+          readable: {
+            title: 'T'.repeat(120),
+            text:
+              ('long'.repeat(1000) + '\n\nPaper paragraph & literal entity &copy;.\n\n'.repeat(400)).slice(
+                0,
+                12_000 - end.length,
+              ) + end,
+          },
         }),
       marker,
     );
@@ -1092,15 +1460,72 @@ try {
     assert.equal(endVisible, true);
     await uiClick(page.getByRole('button', { name: 'Put away reading' }));
     assert.equal(await page.locator('#reading').isVisible(), false);
+    await page.evaluate(() => {
+      const { session } = globalThis.readingWitness;
+      const map = session.inventory.createRolled({
+        type: 'regional_map',
+        count: 1,
+        condition: 1,
+        paperMap: { x: -1, z: 2 },
+      });
+      if (!session.inventory.add(map, { kind: 'hand', side: 'right' })) {
+        throw new Error('Could not place pending map owner in hand');
+      }
+      let complete;
+      const pending = new Promise((done) => {
+        complete = done;
+      });
+      Object.assign(globalThis, { resolvePendingMap: complete, pendingMapOwner: map.uid });
+      globalThis.readingWitness.reading.open(
+        { kind: 'paperMap', ownerUid: map.uid, coverage: { x: -1, z: 2 }, title: 'Map A', itemType: 'regional_map' },
+        pending,
+      );
+    });
+    assert.equal(await page.locator('.reading-map[data-coverage="-1,2"]').count(), 1);
+    assert.equal(await page.locator('.reading-map').getAttribute('aria-busy'), 'true');
+    await page.evaluate(() => globalThis.readingWitness.reading.revalidate(() => false));
+    assert.equal(await page.locator('#reading').isVisible(), false, 'losing the held map closes a pending surface');
+    await page.evaluate(() => globalThis.resolvePendingMap());
+    assert.equal(await page.locator('#reading').isVisible(), false, 'a late map completion cannot reopen its owner');
+    await page.evaluate(() => {
+      let complete;
+      const pending = new Promise((done) => {
+        complete = done;
+      });
+      Object.assign(globalThis, { resolveReplacedMap: complete });
+      globalThis.readingWitness.reading.open(
+        {
+          kind: 'paperMap',
+          ownerUid: globalThis.pendingMapOwner,
+          coverage: { x: 4, z: -3 },
+          title: 'Map B',
+          itemType: 'regional_map',
+        },
+        pending,
+      );
+    });
+    assert.equal(await page.locator('.reading-map[data-coverage="4,-3"]').count(), 1);
+    await page.evaluate(() => globalThis.resolveReplacedMap());
+    await page.waitForFunction(() => document.querySelector('.reading-map')?.getAttribute('aria-busy') === 'false');
+    assert.equal(await page.locator('.reading-map').getAttribute('data-coverage'), '4,-3');
+    await pressAction(page, 'reading.close');
     await page.evaluate(() =>
-      globalThis.readingWitness.reading.open({ title: 'Main menu close', text: 'Placeholder' }),
+      globalThis.readingWitness.reading.open({
+        kind: 'text',
+        readable: { title: 'Main menu close', text: 'Placeholder' },
+      }),
     );
     await pressAction(page, 'ui.main-menu-toggle');
     assert.equal(await page.locator('#reading').isVisible(), false);
     assert.equal(await page.locator('#overlay').isVisible(), true);
     await pressAction(page, 'ui.main-menu-toggle');
     await page.waitForFunction(() => globalThis.readingWitness.input.locked);
-    await page.evaluate(() => globalThis.readingWitness.reading.open({ title: 'Pointer loss', text: 'Placeholder' }));
+    await page.evaluate(() =>
+      globalThis.readingWitness.reading.open({
+        kind: 'text',
+        readable: { title: 'Pointer loss', text: 'Placeholder' },
+      }),
+    );
     await page.evaluate(() => document.exitPointerLock());
     await page.waitForFunction(
       () => !(globalThis.readingWitness.input.locked || globalThis.readingWitness.reading.isOpen),
@@ -1122,7 +1547,21 @@ try {
     );
     const generationBeforeDeath = await page.evaluate(() => globalThis.readingWitness.saveController.savedGeneration);
     await page.evaluate(() => {
-      globalThis.readingWitness.reading.open({ title: 'Death closes paper', text: 'Placeholder' });
+      let complete;
+      const pending = new Promise((done) => {
+        complete = done;
+      });
+      Object.assign(globalThis, { resolveWorldReplacedMap: complete });
+      globalThis.readingWitness.reading.open(
+        {
+          kind: 'paperMap',
+          ownerUid: globalThis.pendingMapOwner,
+          coverage: { x: 4, z: -3 },
+          title: 'Map replaced by death',
+          itemType: 'regional_map',
+        },
+        pending,
+      );
       globalThis.readingWitness.session.sim.hurt(9999, 'reading browser fixture');
     });
     await page.locator('#death').waitFor({ state: 'visible' });
@@ -1190,6 +1629,7 @@ try {
     const playtestUrl = page.url();
     await page.getByRole('button', { name: 'New world', exact: true }).click();
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    assert.equal(await page.locator('#reading').isVisible(), false, 'a replaced world has no old-map reading surface');
     assert.equal(await page.locator('#continue').isVisible(), false);
     await page.goto(playtestUrl, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');

@@ -2,23 +2,23 @@
   {
     "id": "canned_beans",
     "file": "assets/models/canned_beans.glb",
-    "parts": { "package": { "node": "package:vessel", "massKg": 0.45, "centreOfMass": [0, 0.055928062313458364, 0] } },
-    "grip": { "at": [0, 0.0565, 0], "turn": [0, 0, -90] },
+    "parts": { "package": { "node": "package:vessel", "massKg": 0.45, "centreOfMass": [0, 0.05500000000000001, 0] } },
+    "grip": { "at": [0, 0.055, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
   },
   {
     "id": "canned_soup",
     "file": "assets/models/canned_soup.glb",
-    "parts": { "package": { "node": "package:vessel", "massKg": 0.43, "centreOfMass": [0, 0.06092612064541375, 0] } },
-    "grip": { "at": [0, 0.0615, 0], "turn": [0, 0, -90] },
+    "parts": { "package": { "node": "package:vessel", "massKg": 0.43, "centreOfMass": [0, 0.059999999999999984, 0] } },
+    "grip": { "at": [0, 0.06, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
   },
   {
     "id": "crackers",
     "file": "assets/models/crackers.glb",
-    "parts": { "package": { "node": "package:carton", "massKg": 0.25, "centreOfMass": [0, 0.10068854621041944, 0] } },
+    "parts": { "package": { "node": "package:carton", "massKg": 0.25, "centreOfMass": [0, 0.10166666666666667, 0] } },
     "grip": { "at": [0, 0.1, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
@@ -26,23 +26,41 @@
   {
     "id": "chocolate_bar",
     "file": "assets/models/chocolate_bar.glb",
-    "parts": { "package": { "node": "package:carton", "massKg": 0.1, "centreOfMass": [0, 0.006173919616905213, 0] } },
-    "grip": { "at": [0, 0.006, 0], "turn": [0, 0, -90] },
+    "parts": {
+      "package": {
+        "node": "package:carton",
+        "massKg": 0.1,
+        "centreOfMass": [-0.0016666666666666666, 0.005000000000000001, -0.0015555555555555555]
+      }
+    },
+    "grip": { "at": [0, 0.005, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
   },
   {
     "id": "soda_can",
     "file": "assets/models/soda_can.glb",
-    "parts": { "package": { "node": "package:vessel", "massKg": 0.36, "centreOfMass": [0, 0.05905505673421534, 0] } },
-    "grip": { "at": [0, 0.060500000000000005, 0], "turn": [0, 0, -90] },
+    "grip": { "at": [0, 0.06, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "empty_soda_can",
+    "file": "assets/models/empty_soda_can.glb",
+    "grip": { "at": [0, 0.06, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
   },
   {
     "id": "water_bottle",
     "file": "assets/models/water_bottle.glb",
-    "parts": { "package": { "node": "package:vessel", "massKg": 1.05, "centreOfMass": [0, 0.10473515077838855, 0] } },
+    "parts": {
+      "package": {
+        "node": "package:vessel",
+        "massKg": 1.05,
+        "centreOfMass": [-0.00038275193798449587, 0.10025193798449612, -0.0009593023255813948]
+      }
+    },
     "grip": { "at": [0, 0.12, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
@@ -50,7 +68,7 @@
   {
     "id": "juice_carton",
     "file": "assets/models/juice_carton.glb",
-    "parts": { "package": { "node": "package:carton", "massKg": 1.05, "centreOfMass": [0, 0.10026769352988682, 0] } },
+    "parts": { "package": { "node": "package:carton", "massKg": 1.05, "centreOfMass": [0, 0.09844827586206896, 0] } },
     "grip": { "at": [0, 0.095, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
@@ -58,7 +76,13 @@
   {
     "id": "cartridge_box_308_h_winchester",
     "file": "assets/models/cartridge_box_308_h_winchester.glb",
-    "parts": { "package": { "node": "package:carton", "massKg": 0.52, "centreOfMass": [0, 0.04069044717496923, 0] } },
+    "parts": {
+      "package": {
+        "node": "package:carton",
+        "massKg": 0.52,
+        "centreOfMass": [-0.0003623188405797101, 0.042536231884057966, 0]
+      }
+    },
     "grip": { "at": [0, 0.04, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
@@ -66,56 +90,78 @@
   {
     "id": "cartridge_box_5_d_56x45",
     "file": "assets/models/cartridge_box_5_d_56x45.glb",
-    "parts": { "package": { "node": "package:carton", "massKg": 0.28, "centreOfMass": [0, 0.033191603922942604, 0] } },
-    "grip": { "at": [0, 0.0325, 0], "turn": [0, 0, -90] },
+    "parts": { "package": { "node": "package:carton", "massKg": 0.28, "centreOfMass": [0, 0.034999999999999996, 0] } },
+    "grip": { "at": [0, 0.03, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
   },
   {
     "id": "cartridge_box_7_d_62x39",
     "file": "assets/models/cartridge_box_7_d_62x39.glb",
-    "parts": { "package": { "node": "package:carton", "massKg": 0.36, "centreOfMass": [0, 0.03319213680004027, 0] } },
-    "grip": { "at": [0, 0.0325, 0], "turn": [0, 0, -90] },
+    "parts": {
+      "package": { "node": "package:carton", "massKg": 0.36, "centreOfMass": [-0.003407079646017699, 0.035, 0] }
+    },
+    "grip": { "at": [-0.0049999999999999975, 0.03, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
   },
   {
     "id": "cartridge_box_357_h_magnum",
     "file": "assets/models/cartridge_box_357_h_magnum.glb",
-    "parts": { "package": { "node": "package:carton", "massKg": 0.825, "centreOfMass": [0, 0.02819500823978696, 0] } },
-    "grip": { "at": [0, 0.0275, 0], "turn": [0, 0, -90] },
+    "parts": {
+      "package": { "node": "package:carton", "massKg": 0.825, "centreOfMass": [-0.0032500000000000003, 0.02825, 0] }
+    },
+    "grip": { "at": [-0.0050000000000000044, 0.025, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
   },
   {
     "id": "shotshell_box",
     "file": "assets/models/shotshell_box.glb",
-    "parts": { "package": { "node": "package:carton", "massKg": 0.84, "centreOfMass": [0, 0.0381928636699563, 0] } },
-    "grip": { "at": [0, 0.0375, 0], "turn": [0, 0, -90] },
+    "parts": { "package": { "node": "package:carton", "massKg": 0.84, "centreOfMass": [0, 0.041666666666666664, 0] } },
+    "grip": { "at": [0, 0.04, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
   },
   {
     "id": "ammo_can",
     "file": "assets/models/ammo_can.glb",
-    "parts": { "package": { "node": "package:carton", "massKg": 1.6, "centreOfMass": [0, 0.09033956247777805, 0] } },
-    "grip": { "at": [0, 0.21100000000000002, 0], "turn": [0, 0, -90] },
+    "parts": {
+      "package": {
+        "node": "package:carton",
+        "massKg": 1.6,
+        "centreOfMass": [-0.000013307524800387127, 0.08977377207839343, 0]
+      }
+    },
+    "grip": { "at": [-0.0049999999999999975, 0.215, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
   },
   {
     "id": "jerry_can",
     "file": "assets/models/jerry_can.glb",
-    "parts": { "package": { "node": "package:carton", "massKg": 2.5, "centreOfMass": [0, 0.21240192709700098, 0] } },
-    "grip": { "at": [0, 0.47600000000000003, 0], "turn": [0, 0, -90] },
+    "parts": {
+      "package": {
+        "node": "package:carton",
+        "massKg": 2.5,
+        "centreOfMass": [0, 0.21406402196050647, -0.00009961923315328076]
+      }
+    },
+    "grip": { "at": [0, 0.475, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
   },
   {
     "id": "gas_canister",
     "file": "assets/models/gas_canister.glb",
-    "parts": { "package": { "node": "package:vessel", "massKg": 0.35, "centreOfMass": [0, 0.06225437102012218, 0] } },
-    "grip": { "at": [0, 0.07150000000000001, 0], "turn": [0, 0, -90] },
+    "parts": {
+      "package": {
+        "node": "package:vessel",
+        "massKg": 0.35,
+        "centreOfMass": [-0.0006468023255813951, 0.05941860465116279, -0.0007340116279069763]
+      }
+    },
+    "grip": { "at": [-0.0050000000000000044, 0.07, -0.0050000000000000044], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
   },
@@ -141,16 +187,23 @@
     "roll": 0
   },
   {
+    "id": "opened_soda",
+    "file": "assets/models/opened_soda.glb",
+    "grip": { "at": [0, 0.055, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
     "id": "can_opener",
     "file": "assets/models/can_opener.glb",
     "parts": {
       "body": {
         "node": "body:handOpener",
         "massKg": 0.1,
-        "centreOfMass": [-0.058518256502378914, 0.008871417720597692, 0.00038065804559504746]
+        "centreOfMass": [-0.0263157894736842, 0.007807017543859648, 0.0011403508771929824]
       }
     },
-    "grip": { "at": [-0.08000275558820616, 0.007, -0.0166711916682587], "turn": [0, 0, 0] },
+    "grip": { "at": [-0.08, 0.005, -0.015], "turn": [0, 0, 0] },
     "hold": "upright",
     "roll": 90
   },
@@ -158,9 +211,13 @@
     "id": "aa_battery",
     "file": "assets/models/aa_battery.glb",
     "parts": {
-      "material": { "node": "material:vessel", "massKg": 0.023, "centreOfMass": [0, 0.022958377252101727, 0] }
+      "material": {
+        "node": "material:vessel",
+        "massKg": 0.023,
+        "centreOfMass": [-0.0002631578947368421, 0.02605263157894737, 0]
+      }
     },
-    "grip": { "at": [0, 0.02375, 0], "turn": [0, 0, -90] },
+    "grip": { "at": [0, 0.025, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
   },
@@ -171,18 +228,18 @@
       "material": {
         "node": "material:foldedSheet",
         "massKg": 0.05,
-        "centreOfMass": [0.002032137568242561, 0.015259421346948698, -0.00017493534911478442]
+        "centreOfMass": [0.002461538461538459, 0.01507692307692308, 0.00017948717948718207]
       }
     },
-    "grip": { "at": [-0.0525, 0.0175, 0.042499999999999996], "turn": [0, 0, 0] },
+    "grip": { "at": [-0.055, 0.02, 0.039999999999999994], "turn": [0, 0, 0] },
     "hold": "upright",
     "roll": 0
   },
   {
     "id": "duct_tape",
     "file": "assets/models/duct_tape.glb",
-    "parts": { "material": { "node": "material:ring", "massKg": 0.15, "centreOfMass": [0, 0.024, 0] } },
-    "grip": { "at": [0.037000000000000005, 0.024, 0], "turn": [0, 0, 0] },
+    "parts": { "material": { "node": "material:ring", "massKg": 0.15, "centreOfMass": [0, 0.025, 0] } },
+    "grip": { "at": [0.037000000000000005, 0.025, 0], "turn": [0, 0, 0] },
     "hold": "upright",
     "roll": 0
   },
@@ -190,9 +247,13 @@
     "id": "nails",
     "file": "assets/models/nails.glb",
     "parts": {
-      "material": { "node": "material:turnedStock", "massKg": 0.005, "centreOfMass": [0.0435473313047115, 0, 0] }
+      "material": {
+        "node": "material:turnedStock",
+        "massKg": 0.005,
+        "centreOfMass": [0.040783783783783785, -0.000013513513513513596, -0.000013513513513513596]
+      }
     },
-    "grip": { "at": [0.035, 0, 0], "turn": [0, 0, 0] },
+    "grip": { "at": [0.037000000000000005, 0, 0], "turn": [0, 0, 0] },
     "hold": "upright",
     "roll": 0
   },
@@ -203,10 +264,10 @@
       "material": {
         "node": "material:foldedSheet",
         "massKg": 0.5,
-        "centreOfMass": [-0.0010397965290245296, 0.011299371633752246, 0.00112956313584681]
+        "centreOfMass": [-0.0011999999999999969, 0.010933333333333335, -0.00033333333333333506]
       }
     },
-    "grip": { "at": [-0.0625, 0.007500000000000001, -0.0375], "turn": [0, 0, 0] },
+    "grip": { "at": [-0.06, 0.01, -0.04], "turn": [0, 0, 0] },
     "hold": "upright",
     "roll": 0
   },
@@ -214,7 +275,11 @@
     "id": "stick",
     "file": "assets/models/stick.glb",
     "parts": {
-      "material": { "node": "material:turnedStock", "massKg": 0.2, "centreOfMass": [0.1638533875934888, 0, 0] }
+      "material": {
+        "node": "material:turnedStock",
+        "massKg": 0.2,
+        "centreOfMass": [0.1919512195121951, 0, 0.00006097560975609761]
+      }
     },
     "grip": { "at": [0.2, 0, 0], "turn": [0, 0, 0] },
     "hold": "upright",
@@ -224,9 +289,9 @@
     "id": "wax",
     "file": "assets/models/wax.glb",
     "parts": {
-      "material": { "node": "material:turnedStock", "massKg": 0.05, "centreOfMass": [0, 0.013361871616395973, 0] }
+      "material": { "node": "material:turnedStock", "massKg": 0.05, "centreOfMass": [0, 0.012058823529411764, 0] }
     },
-    "grip": { "at": [0, 0.0155, 0], "turn": [0, 0, 0] },
+    "grip": { "at": [0, 0.015, 0], "turn": [0, 0, 0] },
     "hold": "upright",
     "roll": 0
   },
@@ -237,10 +302,24 @@
       "material": {
         "node": "material:cutStock",
         "massKg": 0.5,
-        "centreOfMass": [-0.0037619047619047675, 0.011000000000000001, 0.0011464510332434854]
+        "centreOfMass": [-0.003135359116022099, 0.01, 0.004599447513812155]
       }
     },
-    "grip": { "at": [0, 0.011, 0], "turn": [0, 0, 0] },
+    "grip": { "at": [0, 0.01, 0], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "whetstone",
+    "file": "assets/models/whetstone.glb",
+    "parts": {
+      "material": {
+        "node": "material:cutStock",
+        "massKg": 0.25,
+        "centreOfMass": [0, 0.01478723404255319, -0.0015957446808510633]
+      }
+    },
+    "grip": { "at": [0, 0.015, 0], "turn": [0, 0, 0] },
     "hold": "upright",
     "roll": 0
   },
@@ -251,24 +330,31 @@
       "material": {
         "node": "material:foldedSheet",
         "massKg": 0.12,
-        "centreOfMass": [-0.0011212558065032932, 0.004018220406855679, 0]
+        "centreOfMass": [-0.00018181818181818007, 0.005, -0.000181818181818182]
       }
     },
-    "grip": { "at": [3.469446951953614e-18, 0.00575, -1.3877787807814457e-17], "turn": [0, 0, 0] },
+    "grip": { "at": [0, 0.005, -0.009999999999999995], "turn": [0, 0, 0] },
     "hold": "upright",
     "roll": 0
   },
   {
     "id": "beans",
     "file": "assets/models/beans.glb",
-    "grip": { "at": [0, 0.002, 0], "turn": [0, 0, -90] },
+    "grip": { "at": [0, 0.005, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
   },
   {
     "id": "soup",
     "file": "assets/models/soup.glb",
-    "grip": { "at": [0, 0.0045, 0], "turn": [0, 0, -90] },
+    "grip": { "at": [0, 0.005, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "soda",
+    "file": "assets/models/soda.glb",
+    "grip": { "at": [0, 0.06, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
   },
@@ -279,10 +365,10 @@
       "body": {
         "node": "body:stemmedFruit",
         "massKg": 0.18,
-        "centreOfMass": [0.0000037527945636891458, 0.03719666728199075, 1.3331610776034511e-21]
+        "centreOfMass": [-0.00003472222222222217, 0.03979166666666667, -0.0003125]
       }
     },
-    "grip": { "at": [0, 0.0355, 0], "turn": [0, 0, -90] },
+    "grip": { "at": [0, 0.035, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
   },
@@ -293,10 +379,10 @@
       "body": {
         "node": "body:woundRoll",
         "massKg": 0.02,
-        "centreOfMass": [0.0003110423131491174, 0.022421080525116755, 0]
+        "centreOfMass": [0.0017763157894736838, 0.030263157894736832, 0]
       }
     },
-    "grip": { "at": [0, 0.0225, 0], "turn": [0, 0, -90] },
+    "grip": { "at": [0, 0.025, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
   },
@@ -310,28 +396,28 @@
   {
     "id": "antibiotics",
     "file": "assets/models/antibiotics.glb",
-    "grip": { "at": [0, 0.032, 0], "turn": [0, 0, -90] },
+    "grip": { "at": [0, 0.03, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
   },
   {
     "id": "painkillers",
     "file": "assets/models/painkillers.glb",
-    "grip": { "at": [0, 0.026999999999999996, 0], "turn": [0, 0, -90] },
+    "grip": { "at": [0, 0.025, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
   },
   {
     "id": "codeine",
     "file": "assets/models/codeine.glb",
-    "grip": { "at": [0, 0.032, 0], "turn": [0, 0, -90] },
+    "grip": { "at": [0, 0.03, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
   },
   {
     "id": "morphine",
     "file": "assets/models/morphine.glb",
-    "grip": { "at": [0, 0.036, 0], "turn": [0, 0, -90] },
+    "grip": { "at": [0, 0.03, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
   },
@@ -342,27 +428,27 @@
       "grenade": {
         "node": "grenade:grenade",
         "massKg": 0.4,
-        "centreOfMass": [0.00036723627359508854, 0.03698690246572386, 0.00004708352064786988]
+        "centreOfMass": [0.004585062240663901, 0.04470954356846474, 0.0023858921161825737]
       }
     },
-    "grip": { "at": [0, 0.03314860191316883, 0], "turn": [0, 0, -90] },
+    "grip": { "at": [0, 0.035, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
   },
   {
     "id": "torch",
     "file": "assets/models/torch.glb",
-    "grip": { "at": [0.11099999999999997, 0, 0], "turn": [0, 0, 0] },
+    "grip": { "at": [0.111, 0, 0], "turn": [0, 0, 0] },
     "hold": "upright",
     "rest": "upright",
     "roll": 0,
-    "anchors": { "flame": [0.41999999999999993, 0, 0] },
+    "anchors": { "flame": [0.42, 0, 0] },
     "emissiveMaterial": "#2b241c"
   },
   {
     "id": "candle",
     "file": "assets/models/candle.glb",
-    "grip": { "at": [0.04000000000000001, 0, 0], "turn": [0, 0, 0] },
+    "grip": { "at": [0.04000000000000001, -0.0010000000000000009, -0.0010000000000000009], "turn": [0, 0, 0] },
     "hold": "upright",
     "rest": "upright",
     "roll": 0,
@@ -372,16 +458,16 @@
     "id": "dead_desk_lamp",
     "file": "assets/models/dead_desk_lamp.glb",
     "parts": {
-      "base": { "node": "base:base", "massKg": 0.5, "centreOfMass": [0, 0.006, 0] },
+      "base": { "node": "base:base", "massKg": 0.5, "centreOfMass": [0, 0.005, 0] },
       "arm": {
         "node": "arm:arm",
         "massKg": 0.25,
-        "centreOfMass": [0.0025013109481772274, 0.07563779376164786, -7.842536372901592e-18]
+        "centreOfMass": [0.0009999999999999994, 0.07749999999999999, -9.75616001039197e-18]
       },
       "shade": {
         "node": "shade:shade",
         "massKg": 0.15,
-        "centreOfMass": [0.06914814814814814, 0.06138888888888889, -8.214205012058728e-18]
+        "centreOfMass": [0.06923255813953488, 0.061325581395348834, -0.0005813953488372174]
       }
     }
   },
@@ -392,7 +478,7 @@
       "part": {
         "node": "part:torso",
         "massKg": 12,
-        "centreOfMass": [3.527543114954702e-19, 0.285211969192045, 0.0004477764849046182]
+        "centreOfMass": [-0.00001047086508776095, 0.28300319523305756, 0.0005853969213497701]
       }
     },
     "grip": { "at": [0, 0.37, 0], "turn": [0, 0, 0] },
@@ -403,11 +489,7 @@
     "id": "shambler_head",
     "file": "assets/models/shambler_head.glb",
     "parts": {
-      "part": {
-        "node": "part:head",
-        "massKg": 5,
-        "centreOfMass": [-3.662628507396982e-19, 0.14363995452417178, -0.01089267669210752]
-      }
+      "part": { "node": "part:head", "massKg": 5, "centreOfMass": [0, 0.1429883062305865, -0.010154394299287411] }
     },
     "grip": { "at": [0, 0.15000000000000002, 0], "turn": [0, 0, 0] },
     "hold": "upright",
@@ -416,13 +498,7 @@
   {
     "id": "shambler_left_arm",
     "file": "assets/models/shambler_left_arm.glb",
-    "parts": {
-      "part": {
-        "node": "part:limb",
-        "massKg": 2.5,
-        "centreOfMass": [-1.1462369968187862e-18, 0.41046539178806196, 1.3020175282656349e-18]
-      }
-    },
+    "parts": { "part": { "node": "part:limb", "massKg": 2.5, "centreOfMass": [0, 0.40269491525423723, 0] } },
     "grip": { "at": [0, 0.085, 0], "turn": [0, 0, 0] },
     "hold": "forward",
     "roll": 0
@@ -430,13 +506,7 @@
   {
     "id": "shambler_right_arm",
     "file": "assets/models/shambler_right_arm.glb",
-    "parts": {
-      "part": {
-        "node": "part:limb",
-        "massKg": 2.5,
-        "centreOfMass": [-1.1462369968187862e-18, 0.41046539178806196, 1.3020175282656349e-18]
-      }
-    },
+    "parts": { "part": { "node": "part:limb", "massKg": 2.5, "centreOfMass": [0, 0.40269491525423723, 0] } },
     "grip": { "at": [0, 0.085, 0], "turn": [0, 0, 0] },
     "hold": "forward",
     "roll": 0
@@ -445,11 +515,7 @@
     "id": "shambler_left_leg",
     "file": "assets/models/shambler_left_leg.glb",
     "parts": {
-      "part": {
-        "node": "part:limb",
-        "massKg": 4,
-        "centreOfMass": [-4.733804250381149e-19, 0.4636483664802185, 0.006677478950373384]
-      }
+      "part": { "node": "part:limb", "massKg": 4, "centreOfMass": [0, 0.4588286364930259, 0.007401081696555651] }
     },
     "grip": { "at": [0, 0.15, 0], "turn": [0, 0, 0] },
     "hold": "forward",
@@ -459,11 +525,7 @@
     "id": "shambler_right_leg",
     "file": "assets/models/shambler_right_leg.glb",
     "parts": {
-      "part": {
-        "node": "part:limb",
-        "massKg": 4,
-        "centreOfMass": [-4.733804250381149e-19, 0.4636483664802185, 0.006677478950373384]
-      }
+      "part": { "node": "part:limb", "massKg": 4, "centreOfMass": [0, 0.4588286364930259, 0.007401081696555651] }
     },
     "grip": { "at": [0, 0.15, 0], "turn": [0, 0, 0] },
     "hold": "forward",
@@ -476,15 +538,16 @@
       "body": {
         "node": "body:carton",
         "massKg": 14,
-        "centreOfMass": [0, 0.09258197655858076, 0],
+        "centreOfMass": [0, 0.09375, 0],
         "collision": [
-          { "min": [-0.12, 0, -0.0875], "max": [0.12, 0.17, 0.0875] },
-          { "min": [-0.12, 0.17, -0.0875], "max": [0.12, 0.19000000000000003, 0.0875] },
-          { "min": [-0.1205, 0.05500000000000001, -0.088], "max": [0.1205, 0.115, 0.088] }
-        ]
+          { "min": [-0.125, 0, -0.09375], "max": [0.125, 0.15625, 0.09375] },
+          { "min": [-0.125, 0.15625, -0.09375], "max": [0.125, 0.1875, 0.09375] },
+          { "min": [-0.125, 0.0625, -0.09375], "max": [0.125, 0.125, 0.09375] }
+        ],
+        "voxelGrain": 0.03125
       }
     },
-    "anchors": { "base": [0, 0, 0], "terminal_positive": [0.07200000000000001, 0.19000000000000003, -0.0525] }
+    "anchors": { "base": [0, 0, 0], "terminal_positive": [0.07500000000000001, 0.1875, -0.056249999999999994] }
   },
   {
     "id": "car_headlamp",
@@ -493,11 +556,12 @@
       "body": {
         "node": "body:block",
         "massKg": 1.2,
-        "centreOfMass": [0, 0.08, 0],
-        "collision": [{ "min": [-0.04, 0, -0.11], "max": [0.04, 0.16, 0.11] }]
+        "centreOfMass": [0, 0.078125, 0],
+        "collision": [{ "min": [-0.03125, 0, -0.125], "max": [0.03125, 0.15625, 0.125] }],
+        "voxelGrain": 0.03125
       }
     },
-    "anchors": { "beam": [0.04, 0.08, 0], "mount": [-0.04, 0.08, -0.077] }
+    "anchors": { "beam": [0.03125, 0.078125, 0], "mount": [-0.03125, 0.078125, -0.0875] }
   },
   {
     "id": "hatchback_battery_tray",
@@ -506,11 +570,12 @@
       "body": {
         "node": "body:block",
         "massKg": 1.5,
-        "centreOfMass": [0, 0.010000000000000002, 0],
-        "collision": [{ "min": [-0.14, 0, -0.105], "max": [0.14, 0.02, 0.105] }]
+        "centreOfMass": [-0.015625, 0.015625, 0],
+        "collision": [{ "min": [-0.15625, 0, -0.09375], "max": [0.125, 0.03125, 0.09375] }],
+        "voxelGrain": 0.03125
       }
     },
-    "anchors": { "seat": [0, 0.02, 0] }
+    "anchors": { "seat": [-0.015625, 0.03125, 0] }
   },
   {
     "id": "pickup_battery_tray",
@@ -519,11 +584,1924 @@
       "body": {
         "node": "body:block",
         "massKg": 2.2,
-        "centreOfMass": [0, 0.015, 0],
-        "collision": [{ "min": [-0.16, 0, -0.12], "max": [0.16, 0.03, 0.12] }]
+        "centreOfMass": [0, 0.015625, 0],
+        "collision": [{ "min": [-0.15625, 0, -0.125], "max": [0.15625, 0.03125, 0.125] }],
+        "voxelGrain": 0.03125
       }
     },
-    "anchors": { "seat": [0, 0.03, 0] }
+    "anchors": { "seat": [0, 0.03125, 0] }
+  },
+  {
+    "id": "cargo_space",
+    "file": "assets/models/cargo_space.glb",
+    "parts": {
+      "body": {
+        "node": "body:block",
+        "massKg": 0.2,
+        "centreOfMass": [0, 0.046875, 0],
+        "collision": [{ "min": [-0.0625, 0, -0.0625], "max": [0.0625, 0.09375, 0.0625] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "pickup_bed_floor",
+    "file": "assets/models/pickup_bed_floor.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 45,
+        "centreOfMass": [-1.140625, 0.7139945652173914, 0],
+        "collision": [
+          { "min": [-2.1875, 0.8125, -0.8125], "max": [-0.09375, 0.84375, 0.8125] },
+          { "min": [-2.1875, 0.5625, -0.4375], "max": [-0.09375, 0.8125, 0.4375] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "pickup_bed_side",
+    "file": "assets/models/pickup_bed_side.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 24,
+        "centreOfMass": [-1.1646983664501338, 0.8336059896828429, 0.7715299006495988],
+        "collision": [
+          { "min": [-2.1875, 0.625, 0.8125], "max": [-0.09375, 1.21875, 0.875] },
+          { "min": [-1.6875, 0.5625, 0.59375], "max": [-0.6875, 0.9375, 0.8125] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "pickup_bed_front",
+    "file": "assets/models/pickup_bed_front.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 10,
+        "centreOfMass": [-0.0625, 1.015625, 0],
+        "collision": [{ "min": [-0.09375, 0.8125, -0.875], "max": [-0.03125, 1.21875, 0.875] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "box_van_floor",
+    "file": "assets/models/box_van_floor.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 180,
+        "centreOfMass": [-0.90625, 0.875, 0],
+        "collision": [
+          { "min": [-3, 0.96875, -1], "max": [1.1875, 1, 1] },
+          { "min": [-3, 0.71875, -0.4375], "max": [1.1875, 0.96875, 0.4375] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "box_van_side",
+    "file": "assets/models/box_van_side.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 70,
+        "centreOfMass": [-0.90625, 1.953125, 1.03125],
+        "collision": [{ "min": [-3, 0.90625, 1], "max": [1.1875, 3, 1.0625] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "box_van_front",
+    "file": "assets/models/box_van_front.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 45,
+        "centreOfMass": [1.21875, 2, 0],
+        "collision": [{ "min": [1.1875, 1, -1.0625], "max": [1.25, 3, 1.0625] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "box_van_roof",
+    "file": "assets/models/box_van_roof.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 40,
+        "centreOfMass": [-0.875, 3.03125, 0],
+        "collision": [{ "min": [-3, 3, -1.0625], "max": [1.25, 3.0625, 1.0625] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "wheel_205_55r16",
+    "file": "assets/models/wheel_205_55r16.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 18,
+        "centreOfMass": [-0.0009213297232250293, -0.0015230144404332125, 0],
+        "collision": [
+          { "min": [-0.3125, -0.3125, -0.09375], "max": [0.3125, 0.3125, 0.09375] },
+          { "min": [-0.21875, -0.21875, -0.0625], "max": [0.1875, 0.1875, 0.0625] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": { "hub": [-0.015625, -0.015625, 0] }
+  },
+  {
+    "id": "front_seat",
+    "file": "assets/models/front_seat.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 16,
+        "centreOfMass": [-0.1272935779816514, 0.30239392201834864, 0],
+        "collision": [
+          { "min": [-0.25, 0, -0.25], "max": [0.25, 0.09375, 0.25] },
+          { "min": [-0.25, 0.09375, -0.25], "max": [0.25, 0.25, 0.25] },
+          { "min": [-0.40625, 0.1875, -0.25], "max": [-0.1875, 0.84375, 0.25] },
+          { "min": [-0.4375, 0.84375, -0.125], "max": [-0.34375, 1.03125, 0.125] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": { "hips": [-0.04999999999999999, 0.25, 0] }
+  },
+  {
+    "id": "door_mirror",
+    "file": "assets/models/door_mirror.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 1,
+        "centreOfMass": [-0.014423076923076924, 0.06129807692307693, 0.11778846153846155],
+        "collision": [
+          { "min": [-0.03125, 0.03125, 0], "max": [0.03125, 0.0625, 0.0625] },
+          { "min": [-0.03125, 0, 0.0625], "max": [0.03125, 0.125, 0.1875] },
+          { "min": [-0.0625, 0, 0.0625], "max": [-0.03125, 0.125, 0.1875] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": { "mount": [0, 0.046875, 0] }
+  },
+  {
+    "id": "steering_wheel",
+    "file": "assets/models/steering_wheel.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 2,
+        "centreOfMass": [0.021306818181818184, -0.011837121212121212, 0],
+        "collision": [
+          { "min": [0, -0.1875, -0.1875], "max": [0.03125, 0.1875, 0.1875] },
+          { "min": [0, -0.0625, -0.0625], "max": [0.0625, 0.0625, 0.0625] },
+          { "min": [0, -0.15625, -0.03125], "max": [0.03125, 0, 0.03125] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": { "column": [0.0625, 0, 0] }
+  },
+  {
+    "id": "gear_lever",
+    "file": "assets/models/gear_lever.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 1,
+        "centreOfMass": [-0.00026483050847457616, 0.0971927966101695, -0.00026483050847457616],
+        "collision": [
+          { "min": [-0.0625, 0, -0.0625], "max": [0.0625, 0.03125, 0.0625] },
+          { "min": [-0.03125, -0.03125, -0.03125], "max": [0.03125, 0.25, 0.03125] },
+          { "min": [-0.03125, 0.1875, -0.03125], "max": [0.03125, 0.25, 0.03125] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hatchback_shell",
+    "file": "assets/models/hatchback_shell.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 520,
+        "centreOfMass": [-0.4474143693527568, 0.610266745804905, 0],
+        "collision": [
+          { "min": [-0.9375, 0.1875, -0.8125], "max": [0.6875, 0.3125, 0.8125] },
+          { "min": [-0.9375, 0.28125, -0.75], "max": [0.6875, 0.3125, 0.75] },
+          { "min": [-0.59375, 0.3125, -0.125], "max": [0.6875, 0.4375, 0.125] },
+          { "min": [-1.96875, 0.375, -0.8125], "max": [-0.9375, 0.46875, 0.8125] },
+          { "min": [0.6875, 0.3125, -0.78125], "max": [0.8125, 0.9375, 0.78125] },
+          { "min": [1.9375, 0.34375, -0.59375], "max": [2, 0.8125, 0.59375] },
+          { "min": [-2.0625, 0.4375, -0.8125], "max": [-1.96875, 0.625, 0.8125] },
+          { "min": [-1.65625, 1.40625, -0.6875], "max": [0.125, 1.4375, 0.6875] },
+          { "min": [-1.59375, 1.375, -0.6875], "max": [0.09375, 1.40625, 0.6875] },
+          { "min": [-0.90625, 0.15625, 0.78125], "max": [0.8125, 0.3125, 0.875] },
+          { "min": [0.8125, 0.3125, 0.5625], "max": [1.9375, 0.40625, 0.625] },
+          { "min": [0.84375, 0.40625, 0.5625], "max": [1.6875, 0.84375, 0.59375] },
+          { "min": [0.6875, 0.3125, 0.78125], "max": [0.8125, 0.96875, 0.875] },
+          { "min": [0, 0.9375, 0.71875], "max": [0.8125, 1.40625, 0.8125] },
+          { "min": [-0.375, 0.3125, 0.78125], "max": [-0.25, 1.375, 0.84375] },
+          { "min": [-1.65625, 1.34375, 0.65625], "max": [0.125, 1.40625, 0.8125] },
+          { "min": [-1.96875, 0.3125, 0.8125], "max": [-1.625, 0.96875, 0.875] },
+          { "min": [-1.625, 0.6875, 0.8125], "max": [-1.125, 0.96875, 0.875] },
+          { "min": [-1.96875, 0.46875, 0.6875], "max": [-1, 0.96875, 0.8125] },
+          { "min": [-1.96875, 0.96875, 0.75], "max": [-0.875, 1.40625, 0.8125] },
+          { "min": [-1.96875, 0.96875, 0.625], "max": [-1.59375, 1.40625, 0.75] },
+          { "min": [-0.90625, 0.15625, -0.875], "max": [0.8125, 0.3125, -0.78125] },
+          { "min": [0.8125, 0.3125, -0.625], "max": [1.9375, 0.40625, -0.5625] },
+          { "min": [0.84375, 0.40625, -0.59375], "max": [1.6875, 0.84375, -0.5625] },
+          { "min": [0.6875, 0.3125, -0.875], "max": [0.8125, 0.96875, -0.78125] },
+          { "min": [0, 0.9375, -0.8125], "max": [0.8125, 1.40625, -0.71875] },
+          { "min": [-0.375, 0.3125, -0.84375], "max": [-0.25, 1.375, -0.78125] },
+          { "min": [-1.65625, 1.34375, -0.8125], "max": [0.125, 1.40625, -0.65625] },
+          { "min": [-1.96875, 0.3125, -0.875], "max": [-1.625, 0.96875, -0.8125] },
+          { "min": [-1.625, 0.6875, -0.875], "max": [-1.125, 0.96875, -0.8125] },
+          { "min": [-1.96875, 0.46875, -0.8125], "max": [-1, 0.96875, -0.6875] },
+          { "min": [-1.96875, 0.96875, -0.8125], "max": [-0.875, 1.40625, -0.75] },
+          { "min": [-1.96875, 0.96875, -0.75], "max": [-1.59375, 1.40625, -0.625] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hatchback_front_door",
+    "file": "assets/models/hatchback_front_door.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 24,
+        "centreOfMass": [0.20264061766087366, 0.698604098168154, 0.8247343236261155],
+        "collision": [
+          { "min": [-0.25, 0.3125, 0.8125], "max": [0.6875, 0.96875, 0.875] },
+          { "min": [-0.25, 0.3125, 0.78125], "max": [0.6875, 0.9375, 0.8125] },
+          { "min": [-0.25, 0.96875, 0.78125], "max": [0.6875, 1.375, 0.8125] },
+          { "min": [-0.1875, 0.84375, 0.84375], "max": [-0.0625, 0.875, 0.875] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": { "hinge_a": [0.6875, 0.44375, 0.875], "hinge_b": [0.6875, 0.8375, 0.875] }
+  },
+  {
+    "id": "hatchback_rear_door",
+    "file": "assets/models/hatchback_rear_door.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 20,
+        "centreOfMass": [-0.7129830441640379, 0.7400335173501578, 0.8224073343848581],
+        "collision": [
+          { "min": [-0.90625, 0.3125, 0.8125], "max": [-0.375, 0.96875, 0.875] },
+          { "min": [-1.15625, 0.6875, 0.8125], "max": [-0.90625, 0.96875, 0.875] },
+          { "min": [-1.09375, 0.3125, 0.78125], "max": [-0.375, 0.9375, 0.8125] },
+          { "min": [-1.09375, 0.96875, 0.78125], "max": [-0.375, 1.375, 0.8125] },
+          { "min": [-1.03125, 0.84375, 0.84375], "max": [-0.90625, 0.875, 0.875] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": { "hinge_a": [-0.375, 0.44375, 0.875], "hinge_b": [-0.375, 0.8375, 0.875] }
+  },
+  {
+    "id": "hatchback_tailgate",
+    "file": "assets/models/hatchback_tailgate.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 16,
+        "centreOfMass": [-1.9205230222496907, 0.9655245673671198, 0],
+        "collision": [
+          { "min": [-2.03125, 0.625, -0.625], "max": [-1.96875, 0.96875, 0.625] },
+          { "min": [-2, 0.9375, -0.59375], "max": [-1.65625, 1.40625, 0.59375] },
+          { "min": [-2.03125, 0.75, -0.125], "max": [-2, 0.8125, 0.125] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": { "hinge_a": [-1.65625, 1.40625, 0.59375], "hinge_b": [-1.65625, 1.40625, -0.59375] }
+  },
+  {
+    "id": "hatchback_windscreen",
+    "file": "assets/models/hatchback_windscreen.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 11,
+        "centreOfMass": [0.38308189655172414, 1.1945043103448276, 0],
+        "collision": [{ "min": [0.03125, 0.96875, -0.71875], "max": [0.75, 1.40625, 0.71875] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hatchback_bonnet",
+    "file": "assets/models/hatchback_bonnet.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 12,
+        "centreOfMass": [1.40625, 0.865953947368421, 0],
+        "collision": [{ "min": [0.8125, 0.78125, -0.75], "max": [2, 0.9375, 0.75] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hatchback_front_wing",
+    "file": "assets/models/hatchback_front_wing.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 4,
+        "centreOfMass": [1.4742994332493702, 0.6712452770780857, 0.84375],
+        "collision": [
+          { "min": [0.8125, 0.3125, 0.8125], "max": [0.875, 0.9375, 0.875] },
+          { "min": [0.875, 0.6875, 0.8125], "max": [1.59375, 0.9375, 0.875] },
+          { "min": [1.59375, 0.34375, 0.8125], "max": [2, 0.84375, 0.875] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hatchback_front_bumper",
+    "file": "assets/models/hatchback_front_bumper.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 6,
+        "centreOfMass": [2.002389705882353, 0.43922794117647057, 0],
+        "collision": [
+          { "min": [1.9375, 0.25, -0.84375], "max": [2.0625, 0.5625, 0.84375] },
+          { "min": [1.96875, 0.59375, -0.40625], "max": [2.03125, 0.78125, 0.40625] },
+          { "min": [2.0625, 0.3125, -0.40625], "max": [2.09375, 0.40625, 0.40625] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hatchback_rear_bumper",
+    "file": "assets/models/hatchback_rear_bumper.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 5,
+        "centreOfMass": [-2, 0.40625, 0],
+        "collision": [{ "min": [-2.0625, 0.25, -0.84375], "max": [-1.9375, 0.5625, 0.84375] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hatchback_tail_lamp",
+    "file": "assets/models/hatchback_tail_lamp.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 1,
+        "centreOfMass": [-2, 0.75, 0.734375],
+        "collision": [{ "min": [-2.03125, 0.625, 0.625], "max": [-1.96875, 0.875, 0.84375] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hatchback_front_strut",
+    "file": "assets/models/hatchback_front_strut.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 14,
+        "centreOfMass": [1.2484631147540983, 0.3240266393442623, 0.5225409836065574],
+        "collision": [
+          { "min": [1.09375, 0.1875, 0.34375], "max": [1.40625, 0.25, 0.59375] },
+          { "min": [1.1875, 0.25, 0.59375], "max": [1.28125, 0.375, 0.65625] },
+          { "min": [1.21875, 0.375, 0.59375], "max": [1.28125, 0.84375, 0.65625] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": { "hub": [1.234375, 0.3125, 0.65625] }
+  },
+  {
+    "id": "hatchback_rear_axle",
+    "file": "assets/models/hatchback_rear_axle.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 30,
+        "centreOfMass": [-1.1019736842105263, 0.30448190789473684, 0],
+        "collision": [
+          { "min": [-1.09375, 0.25, -0.5625], "max": [-1.03125, 0.34375, 0.5625] },
+          { "min": [-1.3125, 0.28125, 0.5625], "max": [-0.96875, 0.34375, 0.59375] },
+          { "min": [-1.3125, 0.28125, 0.59375], "max": [-1.21875, 0.375, 0.65625] },
+          { "min": [-1.25, 0.34375, 0.46875], "max": [-1.1875, 0.375, 0.53125] },
+          { "min": [-1.3125, 0.28125, -0.59375], "max": [-0.96875, 0.34375, -0.5625] },
+          { "min": [-1.3125, 0.28125, -0.65625], "max": [-1.21875, 0.375, -0.59375] },
+          { "min": [-1.25, 0.34375, -0.53125], "max": [-1.1875, 0.375, -0.46875] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hatchback_engine",
+    "file": "assets/models/hatchback_engine.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 140,
+        "centreOfMass": [1.4559157580477675, 0.574815031152648, -0.030682113187954312],
+        "collision": [
+          { "min": [1.3125, 0.3125, -0.25], "max": [1.59375, 0.375, 0.1875] },
+          { "min": [1.3125, 0.375, -0.3125], "max": [1.625, 0.71875, 0.25] },
+          { "min": [1.34375, 0.71875, -0.28125], "max": [1.59375, 0.8125, 0.21875] },
+          { "min": [1.34375, 0.8125, -0.25], "max": [1.5625, 0.84375, 0.21875] },
+          { "min": [1.25, 0.5625, -0.25], "max": [1.3125, 0.75, 0.1875] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hatchback_gearbox",
+    "file": "assets/models/hatchback_gearbox.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 35,
+        "centreOfMass": [1.359375, 0.484375, -0.421875],
+        "collision": [{ "min": [1.21875, 0.34375, -0.53125], "max": [1.5, 0.625, -0.3125] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hatchback_radiator",
+    "file": "assets/models/hatchback_radiator.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 6,
+        "centreOfMass": [1.875, 0.578125, 0],
+        "collision": [{ "min": [1.84375, 0.375, -0.5], "max": [1.90625, 0.78125, 0.5] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hatchback_fuel_tank",
+    "file": "assets/models/hatchback_fuel_tank.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 8,
+        "centreOfMass": [-0.703125, 0.15625, -0.40625],
+        "collision": [{ "min": [-0.90625, 0.125, -0.65625], "max": [-0.5, 0.1875, -0.15625] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hatchback_exhaust",
+    "file": "assets/models/hatchback_exhaust.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 12,
+        "centreOfMass": [-1.3226474719101124, 0.21882022471910115, 0.02226123595505618],
+        "collision": [
+          { "min": [-1.40625, 0.125, 0.0625], "max": [1.3125, 0.1875, 0.125] },
+          { "min": [-1.84375, 0.15625, -0.3125], "max": [-1.40625, 0.3125, 0.3125] },
+          { "min": [-2.09375, 0.1875, 0.1875], "max": [-1.84375, 0.25, 0.25] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hatchback_dashboard",
+    "file": "assets/models/hatchback_dashboard.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 14,
+        "centreOfMass": [0.5462906277827249, 0.6710540961709706, 0.0023374888691006235],
+        "collision": [
+          { "min": [0.5625, 0.4375, -0.75], "max": [0.6875, 0.8125, 0.75] },
+          { "min": [0.375, 0.8125, -0.75], "max": [0.6875, 0.90625, 0.75] },
+          { "min": [0.09375, 0.3125, -0.09375], "max": [0.5625, 0.5625, 0.09375] },
+          { "min": [0.34375, 0.75, 0.34375], "max": [0.5625, 0.8125, 0.40625] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hatchback_rear_seat",
+    "file": "assets/models/hatchback_rear_seat.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 20,
+        "centreOfMass": [-0.8858580508474576, 0.6053142655367232, 0],
+        "collision": [
+          { "min": [-0.9375, 0.3125, -0.6875], "max": [-0.5625, 0.4375, 0.6875] },
+          { "min": [-1, 0.4375, -0.6875], "max": [-0.53125, 0.5625, 0.6875] },
+          { "min": [-1.21875, 0.53125, -0.6875], "max": [-0.9375, 1.1875, 0.6875] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_frame_rail",
+    "file": "assets/models/hoist_frame_rail.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 110,
+        "centreOfMass": [0, 0.46875, 0.5],
+        "collision": [{ "min": [-2.875, 0.40625, 0.4375], "max": [2.875, 0.53125, 0.5625] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_crossmember",
+    "file": "assets/models/hoist_crossmember.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 15,
+        "centreOfMass": [0.0625, 0.046875, 0.4375],
+        "collision": [{ "min": [0, 0, 0], "max": [0.125, 0.09375, 0.875] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_wheel",
+    "file": "assets/models/hoist_wheel.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 30,
+        "centreOfMass": [-0.0011666530811868267, -0.0011462748614281043, -0.01052025595044017],
+        "collision": [
+          { "min": [-0.375, -0.375, -0.125], "max": [0.375, 0.375, 0.125] },
+          { "min": [-0.21875, -0.21875, -0.09375], "max": [0.1875, 0.1875, 0.09375] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": { "hub": [-0.015625, -0.015625, 0] }
+  },
+  {
+    "id": "hoist_front_axle",
+    "file": "assets/models/hoist_front_axle.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 140,
+        "centreOfMass": [1.9143391652613826, 0.327598018549747, -0.03319983136593592],
+        "collision": [
+          { "min": [1.84375, 0.3125, -0.5625], "max": [1.96875, 0.40625, 0.5625] },
+          { "min": [1.78125, 0.1875, -0.21875], "max": [2.0625, 0.40625, 0.09375] },
+          { "min": [1.75, 0.21875, 0.5625], "max": [2.03125, 0.5, 0.59375] },
+          { "min": [1.75, 0.21875, -0.59375], "max": [2.03125, 0.5, -0.5625] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_rear_axle",
+    "file": "assets/models/hoist_rear_axle.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 140,
+        "centreOfMass": [-1.4919108347386172, 0.327598018549747, -0.03319983136593592],
+        "collision": [
+          { "min": [-1.5625, 0.3125, -0.5625], "max": [-1.4375, 0.40625, 0.5625] },
+          { "min": [-1.625, 0.1875, -0.21875], "max": [-1.34375, 0.40625, 0.09375] },
+          { "min": [-1.65625, 0.21875, 0.5625], "max": [-1.375, 0.5, 0.59375] },
+          { "min": [-1.65625, 0.21875, -0.59375], "max": [-1.375, 0.5, -0.5625] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_engine",
+    "file": "assets/models/hoist_engine.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 280,
+        "centreOfMass": [1.8224394846434149, 0.6949261452368558, -0.00004066892243623114],
+        "collision": [
+          { "min": [1.375, 0.53125, -0.3125], "max": [2.25, 0.8125, 0.3125] },
+          { "min": [1.375, 0.8125, -0.3125], "max": [2.25, 0.90625, -0.25] },
+          { "min": [1.375, 0.8125, 0.25], "max": [2.25, 0.90625, 0.3125] },
+          { "min": [1.375, 0.8125, -0.25], "max": [1.4375, 0.90625, 0.25] },
+          { "min": [2.1875, 0.8125, -0.25], "max": [2.25, 0.90625, 0.25] },
+          { "min": [1.4375, 0.8125, -0.25], "max": [2.1875, 0.90625, 0.25] },
+          { "min": [1.5, 0.4375, -0.1875], "max": [2.125, 0.53125, 0.1875] },
+          { "min": [1.625, 0.46875, -0.4375], "max": [1.75, 0.53125, -0.3125] },
+          { "min": [1.625, 0.46875, 0.3125], "max": [1.75, 0.53125, 0.4375] },
+          { "min": [2.25, 0.53125, -0.1875], "max": [2.3125, 0.875, 0.15625] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_gearbox",
+    "file": "assets/models/hoist_gearbox.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 70,
+        "centreOfMass": [1.0428240740740742, 0.6186342592592593, 0],
+        "collision": [
+          { "min": [0.6875, 0.53125, -0.15625], "max": [1.375, 0.78125, 0.15625] },
+          { "min": [0.9375, 0.375, -0.125], "max": [1.25, 0.53125, 0.125] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_prop_shaft",
+    "file": "assets/models/hoist_prop_shaft.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 18,
+        "centreOfMass": [-0.3303234924623116, 0.48358982412060303, 0.015625],
+        "collision": [{ "min": [-1.34375, 0.3125, -0.03125], "max": [0.6875, 0.65625, 0.0625] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_fuel_tank",
+    "file": "assets/models/hoist_fuel_tank.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 55,
+        "centreOfMass": [-0.34375, 0.390625, -0.71875],
+        "collision": [{ "min": [-0.8125, 0.25, -0.875], "max": [0.125, 0.53125, -0.5625] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_exhaust",
+    "file": "assets/models/hoist_exhaust.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 18,
+        "centreOfMass": [0.014300847457627119, 0.4088983050847458, 0.6747881355932204],
+        "collision": [
+          { "min": [0.25, 0.375, 0.5625], "max": [1, 0.5, 0.6875] },
+          { "min": [-0.375, 0.3125, 0.5625], "max": [0.25, 0.5, 0.8125] },
+          { "min": [-0.8125, 0.3125, 0.625], "max": [-0.375, 0.4375, 0.75] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_radiator",
+    "file": "assets/models/hoist_radiator.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 15,
+        "centreOfMass": [2.75, 0.703125, 0],
+        "collision": [{ "min": [2.6875, 0.5, -0.375], "max": [2.8125, 0.90625, 0.375] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_cab_floor",
+    "file": "assets/models/hoist_cab_floor.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 80,
+        "centreOfMass": [1.9704269591141397, 0.9582889693356048, 0],
+        "collision": [
+          { "min": [1.125, 0.9375, -0.90625], "max": [2.875, 1, 0.90625] },
+          { "min": [1.21875, 1, -0.75], "max": [2.5625, 1.03125, 0.75] },
+          { "min": [1.1875, 0.53125, -0.5625], "max": [1.3125, 0.9375, -0.4375] },
+          { "min": [1.1875, 0.53125, 0.4375], "max": [1.3125, 0.9375, 0.5625] },
+          { "min": [2.5625, 0.53125, -0.5625], "max": [2.6875, 0.9375, -0.4375] },
+          { "min": [2.5625, 0.53125, 0.4375], "max": [2.6875, 0.9375, 0.5625] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_cab_skirt",
+    "file": "assets/models/hoist_cab_skirt.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 10,
+        "centreOfMass": [2.019809274911032, 0.7683218416370107, 0.8469055827402134],
+        "collision": [
+          { "min": [1.125, 0.5625, 0.78125], "max": [1.46875, 0.9375, 0.90625] },
+          { "min": [2.3125, 0.5625, 0.78125], "max": [2.875, 0.9375, 0.90625] },
+          { "min": [1.46875, 0.5625, 0.78125], "max": [1.53125, 0.9375, 0.90625] },
+          { "min": [1.53125, 0.625, 0.78125], "max": [1.59375, 0.9375, 0.90625] },
+          { "min": [1.5625, 0.6875, 0.78125], "max": [1.625, 0.9375, 0.90625] },
+          { "min": [1.625, 0.71875, 0.78125], "max": [1.6875, 0.9375, 0.90625] },
+          { "min": [1.65625, 0.75, 0.78125], "max": [1.71875, 0.9375, 0.90625] },
+          { "min": [1.71875, 0.78125, 0.78125], "max": [1.75, 0.9375, 0.90625] },
+          { "min": [1.75, 0.78125, 0.78125], "max": [1.8125, 0.9375, 0.90625] },
+          { "min": [1.8125, 0.78125, 0.78125], "max": [1.84375, 0.9375, 0.90625] },
+          { "min": [1.84375, 0.78125, 0.78125], "max": [1.90625, 0.9375, 0.90625] },
+          { "min": [1.90625, 0.78125, 0.78125], "max": [1.96875, 0.9375, 0.90625] },
+          { "min": [1.9375, 0.78125, 0.78125], "max": [2, 0.9375, 0.90625] },
+          { "min": [2, 0.78125, 0.78125], "max": [2.03125, 0.9375, 0.90625] },
+          { "min": [2.03125, 0.78125, 0.78125], "max": [2.09375, 0.9375, 0.90625] },
+          { "min": [2.09375, 0.75, 0.78125], "max": [2.15625, 0.9375, 0.90625] },
+          { "min": [2.125, 0.71875, 0.78125], "max": [2.1875, 0.9375, 0.90625] },
+          { "min": [2.1875, 0.6875, 0.78125], "max": [2.21875, 0.9375, 0.90625] },
+          { "min": [2.21875, 0.625, 0.78125], "max": [2.28125, 0.9375, 0.90625] },
+          { "min": [2.28125, 0.5625, 0.78125], "max": [2.34375, 0.9375, 0.90625] },
+          { "min": [2.28125, 0.375, 0.90625], "max": [2.375, 0.5625, 0.9375] },
+          { "min": [2.21875, 0.53125, 0.90625], "max": [2.34375, 0.71875, 0.9375] },
+          { "min": [2.0625, 0.6875, 0.90625], "max": [2.25, 0.8125, 0.9375] },
+          { "min": [1.90625, 0.75, 0.90625], "max": [2.09375, 0.84375, 0.9375] },
+          { "min": [1.71875, 0.75, 0.90625], "max": [1.90625, 0.84375, 0.9375] },
+          { "min": [1.5625, 0.6875, 0.90625], "max": [1.75, 0.8125, 0.9375] },
+          { "min": [1.46875, 0.53125, 0.90625], "max": [1.59375, 0.71875, 0.9375] },
+          { "min": [1.40625, 0.375, 0.90625], "max": [1.5, 0.5625, 0.9375] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_cab_back",
+    "file": "assets/models/hoist_cab_back.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 35,
+        "centreOfMass": [1.1832386363636365, 1.546875, 0],
+        "collision": [
+          { "min": [1.125, 1, -0.90625], "max": [1.21875, 1.5, 0.90625] },
+          { "min": [1.125, 1.8125, -0.90625], "max": [1.21875, 2.09375, 0.90625] },
+          { "min": [1.125, 1.5, -0.90625], "max": [1.21875, 1.8125, -0.5625] },
+          { "min": [1.125, 1.5, 0.5625], "max": [1.21875, 1.8125, 0.90625] },
+          { "min": [1.125, 1.5, -0.5625], "max": [1.21875, 1.8125, 0.5625] },
+          { "min": [1.21875, 1, 0.78125], "max": [1.3125, 2.09375, 0.90625] },
+          { "min": [1.21875, 1, -0.90625], "max": [1.3125, 2.09375, -0.78125] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_front_panel",
+    "file": "assets/models/hoist_front_panel.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 20,
+        "centreOfMass": [2.8247306034482755, 1.217198275862069, 0],
+        "collision": [
+          { "min": [2.78125, 1, -0.78125], "max": [2.875, 1.4375, 0.78125] },
+          { "min": [2.71875, 1, 0.78125], "max": [2.875, 1.4375, 0.90625] },
+          { "min": [2.71875, 1, -0.90625], "max": [2.875, 1.4375, -0.78125] },
+          { "min": [2.84375, 1.0625, -0.4375], "max": [2.90625, 1.3125, 0.4375] },
+          { "min": [2.84375, 1.34375, -0.125], "max": [2.875, 1.40625, 0.125] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_a_post",
+    "file": "assets/models/hoist_a_post.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 6,
+        "centreOfMass": [2.7968750000000004, 1.7656250000000002, 0.8437500000000001],
+        "collision": [{ "min": [2.71875, 1.4375, 0.78125], "max": [2.875, 2.09375, 0.90625] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_windscreen",
+    "file": "assets/models/hoist_windscreen.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 14,
+        "centreOfMass": [2.828125, 1.765625, 0],
+        "collision": [{ "min": [2.8125, 1.4375, -0.78125], "max": [2.84375, 2.09375, 0.78125] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_roof",
+    "file": "assets/models/hoist_roof.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 30,
+        "centreOfMass": [1.9732974357883992, 2.1279155681238304, 0],
+        "collision": [
+          { "min": [1.125, 2.09375, -0.90625], "max": [2.875, 2.1875, 0.90625] },
+          { "min": [1.21875, 2.0625, -0.75], "max": [2.71875, 2.09375, 0.75] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_door",
+    "file": "assets/models/hoist_door.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 30,
+        "centreOfMass": [2.015219448449892, 1.5168641852919973, 0.8367091744772892],
+        "collision": [
+          { "min": [1.3125, 1, 0.78125], "max": [2.71875, 1.4375, 0.90625] },
+          { "min": [1.3125, 1, 0.75], "max": [2.71875, 1.4375, 0.78125] },
+          { "min": [1.3125, 1.4375, 0.78125], "max": [2.71875, 1.46875, 0.90625] },
+          { "min": [1.3125, 2.03125, 0.78125], "max": [2.71875, 2.09375, 0.90625] },
+          { "min": [1.3125, 1.46875, 0.78125], "max": [1.375, 2.03125, 0.90625] },
+          { "min": [2.65625, 1.46875, 0.78125], "max": [2.71875, 2.03125, 0.90625] },
+          { "min": [1.375, 1.46875, 0.78125], "max": [2.65625, 2.03125, 0.90625] },
+          { "min": [1.375, 1.25, 0.90625], "max": [1.53125, 1.28125, 0.9375] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": { "hinge_a": [2.71875, 1.0875, 0.90625], "hinge_b": [2.71875, 1.35, 0.90625] }
+  },
+  {
+    "id": "hoist_front_bumper",
+    "file": "assets/models/hoist_front_bumper.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 20,
+        "centreOfMass": [2.923026315789474, 0.6768092105263158, 0],
+        "collision": [
+          { "min": [2.875, 0.5625, -0.90625], "max": [2.96875, 0.8125, 0.90625] },
+          { "min": [2.875, 0.40625, -0.5625], "max": [2.9375, 0.5625, -0.4375] },
+          { "min": [2.875, 0.40625, 0.4375], "max": [2.9375, 0.5625, 0.5625] },
+          { "min": [2.96875, 0.625, -0.1875], "max": [3, 0.75, 0.1875] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_dashboard",
+    "file": "assets/models/hoist_dashboard.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 18,
+        "centreOfMass": [2.6688458813758063, 1.2454105188587061, 0.0415984707836623],
+        "collision": [
+          { "min": [2.5625, 1, -0.75], "max": [2.78125, 1.4375, 0.75] },
+          { "min": [2.5625, 1.4375, 0.34375], "max": [2.71875, 1.65625, 0.6875] },
+          { "min": [2.53125, 1.53125, 0.375], "max": [2.59375, 1.625, 0.65625] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_engine_cover",
+    "file": "assets/models/hoist_engine_cover.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 12,
+        "centreOfMass": [2.09375, 1.140625, 0],
+        "collision": [{ "min": [1.6875, 1.03125, -0.25], "max": [2.5, 1.25, 0.25] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_bench",
+    "file": "assets/models/hoist_bench.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 30,
+        "centreOfMass": [1.4319556451612905, 1.3346774193548387, 0],
+        "collision": [
+          { "min": [1.3125, 1.03125, -0.71875], "max": [1.6875, 1.375, 0.71875] },
+          { "min": [1.21875, 1.375, -0.71875], "max": [1.3125, 1.9375, 0.71875] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": { "hips": [1.4625, 1.375, 0] }
+  },
+  {
+    "id": "hoist_deck_floor",
+    "file": "assets/models/hoist_deck_floor.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 120,
+        "centreOfMass": [-1.21875, 0.8186274509803921, 0],
+        "collision": [
+          { "min": [-2.875, 0.875, -0.90625], "max": [0.4375, 0.9375, 0.90625] },
+          { "min": [-2.875, 0.53125, -0.5625], "max": [0.4375, 0.875, -0.4375] },
+          { "min": [-2.875, 0.53125, 0.4375], "max": [0.4375, 0.875, 0.5625] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_headboard",
+    "file": "assets/models/hoist_headboard.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 15,
+        "centreOfMass": [0.40625, 1.09375, 0],
+        "collision": [{ "min": [0.375, 0.9375, -0.90625], "max": [0.4375, 1.25, 0.90625] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_mudguard",
+    "file": "assets/models/hoist_mudguard.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 4,
+        "centreOfMass": [-1.5069867886178863, 0.723704268292683, 0.7187500000000001],
+        "collision": [
+          { "min": [-1.15625, 0.5, 0.59375], "max": [-1, 0.6875, 0.84375] },
+          { "min": [-1.25, 0.625, 0.59375], "max": [-1.09375, 0.78125, 0.84375] },
+          { "min": [-1.375, 0.71875, 0.59375], "max": [-1.1875, 0.875, 0.84375] },
+          { "min": [-1.5, 0.78125, 0.59375], "max": [-1.34375, 0.875, 0.84375] },
+          { "min": [-1.65625, 0.78125, 0.59375], "max": [-1.5, 0.875, 0.84375] },
+          { "min": [-1.8125, 0.71875, 0.59375], "max": [-1.625, 0.875, 0.84375] },
+          { "min": [-1.90625, 0.625, 0.59375], "max": [-1.75, 0.78125, 0.84375] },
+          { "min": [-2, 0.5, 0.59375], "max": [-1.84375, 0.6875, 0.84375] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_rear_underrun",
+    "file": "assets/models/hoist_rear_underrun.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 20,
+        "centreOfMass": [-2.952840909090909, 0.35767045454545454, 0],
+        "collision": [
+          { "min": [-3, 0.375, -0.5625], "max": [-2.875, 0.53125, -0.4375] },
+          { "min": [-3, 0.375, 0.4375], "max": [-2.875, 0.53125, 0.5625] },
+          { "min": [-3, 0.25, -0.8125], "max": [-2.90625, 0.375, 0.8125] },
+          { "min": [-3, 0.53125, -0.8125], "max": [-2.9375, 0.5625, -0.4375] },
+          { "min": [-3, 0.53125, 0.4375], "max": [-2.9375, 0.5625, 0.8125] },
+          { "min": [-3, 0.375, -0.1875], "max": [-2.96875, 0.5, 0.1875] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_tail_lamp",
+    "file": "assets/models/hoist_tail_lamp.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 1,
+        "centreOfMass": [-2.96875, 0.640625, 0.6875],
+        "collision": [
+          { "min": [-3, 0.5625, 0.5625], "max": [-2.9375, 0.625, 0.8125] },
+          { "min": [-3, 0.625, 0.5625], "max": [-2.9375, 0.71875, 0.8125] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_crane_base",
+    "file": "assets/models/hoist_crane_base.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 180,
+        "centreOfMass": [0.7812500000000001, 0.8072916666666667, 0],
+        "collision": [
+          { "min": [0.5, 0.53125, -0.5625], "max": [1.0625, 0.8125, -0.4375] },
+          { "min": [0.5, 0.53125, 0.4375], "max": [1.0625, 0.8125, 0.5625] },
+          { "min": [0.5, 0.8125, -0.5625], "max": [1.0625, 0.9375, 0.5625] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_stabiliser",
+    "file": "assets/models/hoist_stabiliser.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 45,
+        "centreOfMass": [0.78125, 0.6167763157894737, 0.763157894736842],
+        "collision": [
+          { "min": [0.625, 0.6875, 0.5625], "max": [0.9375, 0.8125, 0.875] },
+          { "min": [0.6875, 0.375, 0.75], "max": [0.875, 0.6875, 0.875] },
+          { "min": [0.625, 0.3125, 0.71875], "max": [0.9375, 0.375, 0.90625] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_crane_column",
+    "file": "assets/models/hoist_crane_column.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 140,
+        "centreOfMass": [0.78125, 1.424351585014409, 0],
+        "collision": [
+          { "min": [0.5625, 0.9375, -0.21875], "max": [1, 1.0625, 0.21875] },
+          { "min": [0.65625, 1.0625, -0.125], "max": [0.90625, 1.75, 0.125] },
+          { "min": [0.625, 1.625, -0.21875], "max": [0.9375, 2, -0.125] },
+          { "min": [0.625, 1.625, 0.125], "max": [0.9375, 2, 0.21875] },
+          { "min": [0.71875, 1.8125, -0.25], "max": [0.84375, 1.9375, -0.21875] },
+          { "min": [0.71875, 1.8125, 0.21875], "max": [0.84375, 1.9375, 0.25] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_boom",
+    "file": "assets/models/hoist_boom.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 90,
+        "centreOfMass": [-0.031818181818181815, 1.7493371212121211, 0],
+        "collision": [{ "min": [-0.875, 1.53125, -0.125], "max": [0.8125, 1.96875, 0.125] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_boom_extension",
+    "file": "assets/models/hoist_boom_extension.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 70,
+        "centreOfMass": [-1.6059027777777777, 1.515625, 0],
+        "collision": [{ "min": [-2.5625, 1.3125, -0.09375], "max": [-0.65625, 1.71875, 0.09375] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_luff_ram",
+    "file": "assets/models/hoist_luff_ram.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 35,
+        "centreOfMass": [0.261814024390244, 1.4142530487804879, 0],
+        "collision": [{ "min": [-0.15625, 1.21875, -0.0625], "max": [0.65625, 1.625, 0.0625] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_winch",
+    "file": "assets/models/hoist_winch.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 45,
+        "centreOfMass": [0.9967672413793103, 1.3724407327586208, 0],
+        "collision": [
+          { "min": [0.875, 1.25, -0.15625], "max": [1.09375, 1.46875, 0.15625] },
+          { "min": [0.84375, 1.21875, -0.1875], "max": [1.125, 1.5, -0.15625] },
+          { "min": [0.84375, 1.21875, 0.15625], "max": [1.125, 1.5, 0.1875] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_hook_block",
+    "file": "assets/models/hoist_hook_block.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 15,
+        "centreOfMass": [-2.53125, 1.2230113636363638, 0],
+        "collision": [
+          { "min": [-2.625, 1.15625, -0.0625], "max": [-2.4375, 1.3125, 0.0625] },
+          { "min": [-2.5625, 1.0625, -0.03125], "max": [-2.5, 1.15625, 0.03125] }
+        ],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "hoist_boom_rest",
+    "file": "assets/models/hoist_boom_rest.glb",
+    "parts": {
+      "body": {
+        "node": "body:compound",
+        "massKg": 8,
+        "centreOfMass": [-2.25, 1.125, 0],
+        "collision": [{ "min": [-2.3125, 0.9375, -0.09375], "max": [-2.1875, 1.3125, 0.09375] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
+    "id": "jeans",
+    "file": "assets/models/jeans.glb",
+    "parts": { "jeans": { "node": "jeans:folded-garment", "massKg": 0.7, "centreOfMass": [0, 0.025, 0] } },
+    "grip": { "at": [0, 0.025, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "rubber_boots",
+    "file": "assets/models/rubber_boots.glb",
+    "parts": {
+      "rubber_boots": {
+        "node": "rubber_boots:boots",
+        "massKg": 1.8,
+        "centreOfMass": [2.3738880988034334e-18, 0.07619810825013136, 0.02349710982658959]
+      }
+    },
+    "grip": { "at": [-0.075, 0.11499999999999999, 0.09], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "cargo_pants",
+    "file": "assets/models/cargo_pants.glb",
+    "parts": {
+      "cargo_pants": {
+        "node": "cargo_pants:folded-garment",
+        "massKg": 0.8,
+        "centreOfMass": [0, 0.024999999999999994, 0]
+      }
+    },
+    "grip": { "at": [0, 0.025, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "hoodie",
+    "file": "assets/models/hoodie.glb",
+    "parts": {
+      "hoodie": {
+        "node": "hoodie:folded-garment",
+        "massKg": 0.6,
+        "centreOfMass": [0, 0.03246017955401101, 0.002856935997683174]
+      }
+    },
+    "grip": { "at": [0, 0.03, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "jacket",
+    "file": "assets/models/jacket.glb",
+    "parts": {
+      "jacket": {
+        "node": "jacket:folded-garment",
+        "massKg": 1.2,
+        "centreOfMass": [0, 0.03481927710843374, -0.0022289156626506025]
+      }
+    },
+    "grip": { "at": [0, 0.035, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "utility_vest",
+    "file": "assets/models/utility_vest.glb",
+    "parts": {
+      "utility_vest": {
+        "node": "utility_vest:folded-garment",
+        "massKg": 0.9,
+        "centreOfMass": [0, 0.030000000000000002, -0.007973421926910298]
+      }
+    },
+    "grip": { "at": [0, 0.03, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "fanny_pack",
+    "file": "assets/models/fanny_pack.glb",
+    "parts": {
+      "fanny_pack": {
+        "node": "fanny_pack:bag",
+        "massKg": 0.2,
+        "centreOfMass": [0, 0.06670046801872076, -0.006599063962558501]
+      }
+    },
+    "grip": { "at": [0, 0.07, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "school_backpack",
+    "file": "assets/models/school_backpack.glb",
+    "parts": {
+      "school_backpack": {
+        "node": "school_backpack:bag",
+        "massKg": 0.6,
+        "centreOfMass": [0, 0.2249778538353131, -0.003026978055164083]
+      }
+    },
+    "grip": { "at": [0, 0.48, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "hiking_backpack",
+    "file": "assets/models/hiking_backpack.glb",
+    "parts": {
+      "hiking_backpack": {
+        "node": "hiking_backpack:bag",
+        "massKg": 1.4,
+        "centreOfMass": [0, 0.2867533417894428, -0.008990633232510491]
+      }
+    },
+    "grip": { "at": [0, 0.605, -0.005000000000000001], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "baseball_cap",
+    "file": "assets/models/baseball_cap.glb",
+    "parts": {
+      "baseball_cap": {
+        "node": "baseball_cap:cap",
+        "massKg": 0.08,
+        "centreOfMass": [-0.00034952170713760123, 0.038252391464311995, -0.006990434142752024]
+      }
+    },
+    "grip": { "at": [0, 0.04, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "blowtorch",
+    "file": "assets/models/blowtorch.glb",
+    "parts": {
+      "equipment": {
+        "node": "equipment:blowtorch",
+        "massKg": 0.9,
+        "centreOfMass": [0.003862433862433863, 0.0805026455026455, 0.00002645502645502646]
+      }
+    },
+    "grip": { "at": [0, 0.065, 0], "turn": [0, 0, 0] },
+    "hold": "forward",
+    "roll": 0
+  },
+  {
+    "id": "headlamp",
+    "file": "assets/models/headlamp.glb",
+    "parts": {
+      "equipment": {
+        "node": "equipment:headlamp",
+        "massKg": 0.18,
+        "centreOfMass": [0.00007462686567164179, 0.014502487562189059, -0.039875621890547275]
+      }
+    },
+    "grip": { "at": [0, 0.01, 0.1], "turn": [0, -90, 0] },
+    "hold": "forward",
+    "roll": 0,
+    "anchors": { "lens": [0, 0.019999999999999997, -0.12] }
+  },
+  {
+    "id": "weapon_sling",
+    "file": "assets/models/weapon_sling.glb",
+    "parts": {
+      "equipment": {
+        "node": "equipment:webbingSling",
+        "massKg": 0.15,
+        "centreOfMass": [-0.0006969696969696999, 0.00496969696969697, -0.0002121212121212127]
+      }
+    },
+    "grip": { "at": [-0.121, 0.005, 0], "turn": [0, 0, 0] },
+    "hold": "forward",
+    "roll": 0
+  },
+  {
+    "id": "repair_kit",
+    "file": "assets/models/repair_kit.glb",
+    "parts": {
+      "equipment": {
+        "node": "equipment:repairKit",
+        "massKg": 1.25,
+        "centreOfMass": [-0.003906882591093118, 0.01373144399460189, -0.003326585695006748]
+      }
+    },
+    "grip": { "at": [-0.095, 0.015, -0.0050000000000000044], "turn": [0, 0, 0] },
+    "hold": "forward",
+    "roll": 0
+  },
+  {
+    "id": "wire_strippers",
+    "file": "assets/models/wire_strippers.glb",
+    "parts": {
+      "equipment": {
+        "node": "equipment:pliers",
+        "massKg": 0.18,
+        "centreOfMass": [0.1142079207920792, 0.0014356435643564356, -0.00014851485148514865]
+      }
+    },
+    "grip": { "at": [0.05, 0, -0.02], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "adjustable_pliers",
+    "file": "assets/models/adjustable_pliers.glb",
+    "parts": {
+      "equipment": {
+        "node": "equipment:pliers",
+        "massKg": 0.3,
+        "centreOfMass": [0.10369565217391309, 0.001608695652173914, 0.00004347826086956406]
+      }
+    },
+    "grip": { "at": [0.060000000000000005, 0, -0.02], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "sewing_repair_kit",
+    "file": "assets/models/sewing_repair_kit.glb",
+    "parts": {
+      "equipment": {
+        "node": "equipment:repairKit",
+        "massKg": 0.42,
+        "centreOfMass": [-0.0012921348314606743, 0.013258426966292139, -0.0026029962546816484]
+      }
+    },
+    "grip": { "at": [-0.08499999999999999, 0.015, -0.0049999999999999975], "turn": [0, 0, 0] },
+    "hold": "forward",
+    "roll": 0
+  },
+  {
+    "id": "portable_radio",
+    "file": "assets/models/portable_radio.glb",
+    "parts": {
+      "equipment": {
+        "node": "equipment:portableRadio",
+        "massKg": 0.6,
+        "centreOfMass": [-0.0006851851851851849, 0.06683333333333329, -0.003944444444444443]
+      }
+    },
+    "grip": { "at": [0, 0.0325, 0], "turn": [0, 90, 0] },
+    "hold": "forward",
+    "roll": 0
+  },
+  {
+    "id": "scissor_jack",
+    "file": "assets/models/scissor_jack.glb",
+    "parts": {
+      "jack": {
+        "node": "jack:scissorJack",
+        "massKg": 3.2,
+        "centreOfMass": [0.0034969939879759527, 0.0385871743486974, 0.00015030060120240483]
+      }
+    }
+  },
+  {
+    "id": "bottle_jack",
+    "file": "assets/models/bottle_jack.glb",
+    "parts": {
+      "jack": {
+        "node": "jack:bottleJack",
+        "massKg": 5.5,
+        "centreOfMass": [0.0003823743627093955, 0.07725054624908961, -0.000047341587764020424]
+      }
+    }
+  },
+  {
+    "id": "engine_hoist",
+    "file": "assets/models/engine_hoist.glb",
+    "parts": {
+      "jack": {
+        "node": "jack:engineHoist",
+        "massKg": 48,
+        "centreOfMass": [0.3028120238445295, 0.7393853083482586, -0.000006816541473981143]
+      }
+    }
+  },
+  {
+    "id": "crowbar",
+    "file": "assets/models/crowbar.glb",
+    "parts": {
+      "crowbar": {
+        "node": "crowbar:crowbar",
+        "massKg": 1.5,
+        "centreOfMass": [-0.07926048565121413, -0.011432671081677703, 0]
+      }
+    },
+    "grip": { "at": [-0.3000000000001, 0, 0], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 90,
+    "anchors": { "claw": [0.10499999999996801, -0.129, 0], "strike": [0.230600000000024, 8.007483565108942e-15, 0] }
+  },
+  {
+    "id": "hammer",
+    "file": "assets/models/hammer.glb",
+    "parts": {
+      "hammer": {
+        "node": "hammer:hammer",
+        "massKg": 0.7,
+        "centreOfMass": [-0.004246817930271172, -0.007920468021187444, -0.0005342714839117716]
+      }
+    },
+    "grip": { "at": [-0.184999999999856, 0, 0], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 90,
+    "anchors": {
+      "claw": [0.062000000000016, 0.1, 0],
+      "face": [0.047000000000024, -0.1, 2.0001361678012586e-14],
+      "strike": [0.092, -1.9997892231060632e-14, 0]
+    }
+  },
+  {
+    "id": "sledgehammer",
+    "file": "assets/models/sledgehammer.glb",
+    "parts": {
+      "sledgehammer": {
+        "node": "sledgehammer:sledgehammer",
+        "massKg": 4.5,
+        "centreOfMass": [-0.2129179552841525, -0.000028759972421944166, -0.00002304737516005115]
+      }
+    },
+    "grip": { "at": [-0.45000000000020796, 0, 0], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 90,
+    "anchors": { "face": [0.033999999999984, -0.095000000000064, 0], "strike": [0.06, 0, 0] }
+  },
+  {
+    "id": "baseball_bat",
+    "file": "assets/models/baseball_bat.glb",
+    "parts": {
+      "baseball_bat": {
+        "node": "baseball_bat:bat",
+        "massKg": 0.9,
+        "centreOfMass": [0.16811516120885597, -0.00009478912366360825, -0.0000873810926845695]
+      }
+    },
+    "grip": { "at": [-0.29999999999974, 0, 0], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 0,
+    "anchors": { "strike": [0.4273000000003401, 0, 0] }
+  },
+  {
+    "id": "kabar",
+    "file": "assets/models/kabar.glb",
+    "parts": {
+      "kabar": {
+        "node": "kabar:knife",
+        "massKg": 0.3,
+        "centreOfMass": [-0.011265993265993273, -0.00013973063973063976, -0.00006902356902356909]
+      }
+    },
+    "grip": { "at": [-0.07499999999998, 0, 0], "turn": [0, 0, 0] },
+    "hold": "forward",
+    "roll": 0,
+    "anchors": { "strike": [0.22, 0, 0] }
+  },
+  {
+    "id": "kitchen_knife",
+    "file": "assets/models/kitchen_knife.glb",
+    "parts": {
+      "kitchen_knife": {
+        "node": "kitchen_knife:knife",
+        "massKg": 0.15,
+        "centreOfMass": [0.03870005058168944, -0.003254425897824988, -0.000023267577137076356]
+      }
+    },
+    "grip": { "at": [-0.054999999999996003, 0, 0], "turn": [0, 0, 0] },
+    "hold": "forward",
+    "roll": 0,
+    "anchors": { "strike": [0.2471, 1.599415044850616e-14, 0] }
+  },
+  {
+    "id": "machete",
+    "file": "assets/models/machete.glb",
+    "parts": {
+      "machete": {
+        "node": "machete:knife",
+        "massKg": 0.55,
+        "centreOfMass": [-0.05444100932030008, -0.010371902705160264, -0.00003409865878608778]
+      }
+    },
+    "grip": { "at": [-0.20000000000005602, 0, 0], "turn": [0, 0, 0] },
+    "hold": "forward",
+    "roll": 0,
+    "anchors": { "edge": [0.200000000000044, -0.034, 0], "strike": [0.24400000000000002, -1.599415044850616e-14, 0] }
+  },
+  {
+    "id": "wrench",
+    "file": "assets/models/wrench.glb",
+    "parts": {
+      "wrench": {
+        "node": "wrench:wrench",
+        "massKg": 0.5,
+        "centreOfMass": [0.0033004926108374435, 0.00793103448275862, 0]
+      }
+    },
+    "grip": { "at": [-0.074999999999872, 0, 0], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 90,
+    "anchors": { "strike": [0.10400000000000001, 0.012, 0] }
+  },
+  {
+    "id": "steel_pipe",
+    "file": "assets/models/steel_pipe.glb",
+    "parts": {
+      "steel_pipe": {
+        "node": "steel_pipe:steelPipe",
+        "massKg": 1.8,
+        "centreOfMass": [0.5098691547096871, 0.000004311947067132557, -0.004980298862538101]
+      }
+    },
+    "grip": { "at": [0, 0, 0], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 0,
+    "anchors": { "strike": [0.926999999999992, 0, -0.1] }
+  },
+  {
+    "id": "flashlight",
+    "file": "assets/models/flashlight.glb",
+    "parts": {
+      "flashlight": {
+        "node": "flashlight:flashlight",
+        "massKg": 0.25,
+        "centreOfMass": [0.11609390178089583, -0.00016945493793847795, -0.00013707501349163534]
+      }
+    }
+  },
+  {
+    "id": "compass",
+    "file": "assets/models/compass.glb",
+    "parts": {
+      "compass": {
+        "node": "compass:compass",
+        "massKg": 0.12,
+        "centreOfMass": [0, 0.0055882352941176465, -0.001764705882352941]
+      }
+    },
+    "grip": { "at": [0, 0.005, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0,
+    "anchors": { "needle_mount": [0, 0.01, 0] },
+    "display": { "at": [0, 0.01, 0], "normal": [0, 1, 0], "up": [0, 0, -1], "size": [0.04, 0.04] }
+  },
+  {
+    "id": "lighter",
+    "file": "assets/models/lighter.glb",
+    "parts": { "lighter": { "node": "lighter:lighter", "massKg": 0.02, "centreOfMass": [0, 0.030833333333333334, 0] } },
+    "grip": { "at": [0, 0.025, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "matches",
+    "file": "assets/models/matches.glb",
+    "parts": {
+      "matches": {
+        "node": "matches:matchbox",
+        "massKg": 0.02,
+        "centreOfMass": [0, 0.009615384615384614, 0.0011538461538461537]
+      }
+    },
+    "grip": { "at": [0, 0.005, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "dad_cabin_key",
+    "file": "assets/models/dad_cabin_key.glb",
+    "parts": {
+      "dad_cabin_key": {
+        "node": "dad_cabin_key:key",
+        "massKg": 0.01,
+        "centreOfMass": [0.028, 0.0029999999999999996, 0.003999999999999999]
+      }
+    },
+    "grip": { "at": [0.03, 0.005, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "pharmacy_key",
+    "file": "assets/models/pharmacy_key.glb",
+    "parts": {
+      "pharmacy_key": {
+        "node": "pharmacy_key:key",
+        "massKg": 0.01,
+        "centreOfMass": [0.028, 0.0029999999999999996, 0.003999999999999999]
+      }
+    },
+    "grip": { "at": [0.03, 0.005, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "camp_armoury_key",
+    "file": "assets/models/camp_armoury_key.glb",
+    "parts": {
+      "camp_armoury_key": {
+        "node": "camp_armoury_key:key",
+        "massKg": 0.01,
+        "centreOfMass": [0.03566666666666667, 0.0023333333333333335, 0.005333333333333333]
+      }
+    },
+    "grip": { "at": [0.034999999999999996, 0.005, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "camp_hq_safe_key",
+    "file": "assets/models/camp_hq_safe_key.glb",
+    "parts": {
+      "camp_hq_safe_key": {
+        "node": "camp_hq_safe_key:key",
+        "massKg": 0.01,
+        "centreOfMass": [0.028, 0.0029999999999999996, 0.003999999999999999]
+      }
+    },
+    "grip": { "at": [0.03, 0.005, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "shed_key",
+    "file": "assets/models/shed_key.glb",
+    "parts": {
+      "shed_key": {
+        "node": "shed_key:key",
+        "massKg": 0.01,
+        "centreOfMass": [0.028, 0.0029999999999999996, 0.003999999999999999]
+      }
+    },
+    "grip": { "at": [0.03, 0.005, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "gauntlet_police_armoury_key",
+    "file": "assets/models/gauntlet_police_armoury_key.glb",
+    "parts": {
+      "gauntlet_police_armoury_key": {
+        "node": "gauntlet_police_armoury_key:key",
+        "massKg": 0.01,
+        "centreOfMass": [0.03566666666666667, 0.0023333333333333335, 0.005333333333333333]
+      }
+    },
+    "grip": { "at": [0.034999999999999996, 0.005, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "gauntlet_lab_entry_card",
+    "file": "assets/models/gauntlet_lab_entry_card.glb",
+    "parts": {
+      "gauntlet_lab_entry_card": {
+        "node": "gauntlet_lab_entry_card:keycard",
+        "massKg": 0.005,
+        "centreOfMass": [-0.0011290322580645158, 0.004999999999999999, 0]
+      }
+    },
+    "grip": { "at": [0, 0.005, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "hand_saw",
+    "file": "assets/models/hand_saw.glb",
+    "parts": {
+      "hand_saw": {
+        "node": "hand_saw:compound",
+        "massKg": 0.65,
+        "centreOfMass": [0.14426835443037972, 0, -0.00009113924050632903]
+      }
+    },
+    "grip": { "at": [0.014, 0, 0], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 90
+  },
+  {
+    "id": "screwdriver",
+    "file": "assets/models/screwdriver.glb",
+    "parts": {
+      "screwdriver": {
+        "node": "screwdriver:compound",
+        "massKg": 0.16,
+        "centreOfMass": [0.06330532240545078, -0.000039399624765478433, -0.000031104966920114464]
+      }
+    },
+    "grip": { "at": [0.052000000000000005, 0, 0], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 90
+  },
+  {
+    "id": "copper_wire",
+    "file": "assets/models/copper_wire.glb",
+    "parts": {
+      "copper_wire": {
+        "node": "copper_wire:spool",
+        "massKg": 0.08,
+        "centreOfMass": [-0.000044618395303326685, 0.027850489236790604, -0.0000915851272015656]
+      }
+    }
+  },
+  {
+    "id": "small_spring",
+    "file": "assets/models/small_spring.glb",
+    "parts": {
+      "small_spring": {
+        "node": "small_spring:coil",
+        "massKg": 0.02,
+        "centreOfMass": [-0.00005039787798408485, 0.019222811671087532, -0.00006984969053934572]
+      }
+    }
+  },
+  {
+    "id": "hinge_set",
+    "file": "assets/models/hinge_set.glb",
+    "parts": {
+      "hinge_set": {
+        "node": "hinge_set:compound",
+        "massKg": 0.36,
+        "centreOfMass": [0, 0.0016666666666666668, 9.069962856941094e-19]
+      }
+    }
+  },
+  {
+    "id": "fastener_pack",
+    "file": "assets/models/fastener_pack.glb",
+    "parts": {
+      "fastener_pack": {
+        "node": "fastener_pack:compound",
+        "massKg": 0.18,
+        "centreOfMass": [-0.00004527331668964489, 0.019450422923575666, -0.00010623393076722432]
+      }
+    }
+  },
+  {
+    "id": "taped_flashlight_mount",
+    "file": "assets/models/taped_flashlight_mount.glb",
+    "parts": {
+      "taped_flashlight_mount": {
+        "node": "taped_flashlight_mount:compound",
+        "massKg": 0.12,
+        "centreOfMass": [0.004458850574712642, 0.0181967816091954, -0.00016091954022988511]
+      }
+    }
+  },
+  {
+    "id": "scrap_foregrip",
+    "file": "assets/models/scrap_foregrip.glb",
+    "parts": {
+      "scrap_foregrip": {
+        "node": "scrap_foregrip:compound",
+        "massKg": 0.18,
+        "centreOfMass": [-0.00009501187648456062, 0.043762470308788604, -0.00011401425178147265]
+      }
+    }
+  },
+  {
+    "id": "player_bust",
+    "file": "assets/models/player_bust.glb",
+    "parts": {
+      "bust": {
+        "node": "bust:bust",
+        "massKg": 38,
+        "centreOfMass": [-0.0009431582584657918, 0.4428242916378715, -0.0030449205252246034]
+      }
+    },
+    "anchors": {
+      "head": [0, 0.7000000000000001, 0],
+      "hip_left": [0.08499999999999999, 0.0204, 0],
+      "hip_right": [-0.085, 0.0204, 0],
+      "neck": [0, 0.61, 0],
+      "shoulder_left": [0.23500000000000001, 0.54, 0],
+      "shoulder_right": [-0.23500000000000001, 0.54, 0]
+    }
   },
   {
     "id": "tape_roll",
@@ -532,28 +2510,30 @@
       "electrical_tape": {
         "node": "electrical_tape:ring",
         "massKg": 0.03,
-        "centreOfMass": [0, 0.010499999999999999, 0]
+        "centreOfMass": [0.000576923076923077, 0.010000000000000002, 0.000576923076923077]
       }
     }
   },
   {
     "id": "thread_spool",
     "file": "assets/models/thread_spool.glb",
-    "parts": {
-      "sewing_thread": { "node": "sewing_thread:spool", "massKg": 0.015, "centreOfMass": [0, 0.025000000000000005, 0] }
-    }
+    "parts": { "sewing_thread": { "node": "sewing_thread:spool", "massKg": 0.015, "centreOfMass": [0, 0.025, 0] } }
   },
   {
     "id": "cord_coil",
     "file": "assets/models/cord_coil.glb",
     "parts": {
-      "nylon_cord": { "node": "nylon_cord:coil", "massKg": 0.06, "centreOfMass": [0, 0.012500000000000004, 0] }
+      "nylon_cord": {
+        "node": "nylon_cord:coil",
+        "massKg": 0.06,
+        "centreOfMass": [0.0017857142857142857, 0.010714285714285714, 0.0017857142857142857]
+      }
     }
   },
   {
     "id": "fuse",
     "file": "assets/models/fuse.glb",
-    "parts": { "fuse": { "node": "fuse:fuse", "massKg": 0.01, "centreOfMass": [0, 0.010999999999999998, 0] } }
+    "parts": { "fuse": { "node": "fuse:fuse", "massKg": 0.01, "centreOfMass": [0, 0.009999999999999998, 0] } }
   },
   {
     "id": "bear_trap",
@@ -562,7 +2542,7 @@
       "bear_trap": {
         "node": "bear_trap:bearTrap",
         "massKg": 4.5,
-        "centreOfMass": [-0.007978212127787243, 0.009364679069232785, 4.736746180037985e-18]
+        "centreOfMass": [-0.013005427408412469, 0.009341926729986419, 0.0003052917232021689]
       }
     }
   }

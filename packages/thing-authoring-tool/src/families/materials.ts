@@ -15,7 +15,7 @@ import {
   transform,
   tuple,
 } from 'valibot';
-import { positive, revolve, scalar } from './shapes.ts';
+import { positive, requireConvex, revolve, scalar } from './shapes.ts';
 
 const point = tuple([pipe(number(), finite()), pipe(number(), finite())]);
 const profile = pipe(string(), transform(JSON.parse), array(point), minLength(3));
@@ -25,14 +25,7 @@ export const cutStock = (params: Readonly<Record<string, string>>): ExtrudedPoly
   if (!(d.end > d.start)) {
     throw new Error('Cut stock needs positive thickness');
   }
-  for (let i = 0; i < d.profile.length; i++) {
-    const a = d.profile[i]!;
-    const b = d.profile[(i + 1) % d.profile.length]!;
-    const c = d.profile[(i + 2) % d.profile.length]!;
-    if ((b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0]) <= 0) {
-      throw new Error('Cut stock needs a convex counterclockwise profile');
-    }
-  }
+  requireConvex(d.profile, 'Cut stock');
   return [
     { id: 'body', kind: 'extruded-polygon', axis: d.axis, profile: d.profile, z: [d.start, d.end], slot: 'body' },
   ];

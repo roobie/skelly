@@ -11,6 +11,8 @@ export interface EntityStore<T> {
   /** Stores an entity and returns its id. Ids are never reused. */
   add: (entity: T) => EntityId;
   get: (id: EntityId) => T | undefined;
+  /** Replaces an existing entity without allocating an ID. */
+  replace: (id: EntityId, entity: T) => boolean;
   /** Returns whether the entity existed. */
   remove: (id: EntityId) => boolean;
   /** Entities in the order they were added. */
@@ -40,6 +42,14 @@ export class MapEntityStore<T> implements EntityStore<T> {
 
   get(id: EntityId): T | undefined {
     return this.map.get(id);
+  }
+
+  replace(id: EntityId, entity: T): boolean {
+    if (!this.map.has(id)) {
+      return false;
+    }
+    this.map.set(id, entity);
+    return true;
   }
 
   remove(id: EntityId): boolean {

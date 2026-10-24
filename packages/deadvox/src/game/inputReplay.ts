@@ -1,4 +1,4 @@
-import { canonicalJsonBytes } from '../core/canonicalJson.ts';
+import { canonicalJsonBytes, isPlainRecord, SHA256_HEX } from '../core/canonicalJson.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
 import { decodeSave, encodeSave, type SaveContentKind, type SaveWorldOptions } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
@@ -9,7 +9,7 @@ import { isReplayActionPayload, type ReplayActionPayload } from './replayCommand
 import { PHYSICS_RATE } from './session.ts';
 
 // Recordings from older schemas don't resolve identically.
-export const INPUT_REPLAY_SCHEMA_VERSION = 20;
+export const INPUT_REPLAY_SCHEMA_VERSION = 22;
 
 export const withReplayExportGuard = <T>(hasOverrides: boolean, exportReplay: () => T): T => {
   if (hasOverrides) {
@@ -31,9 +31,14 @@ export const INPUT_REPLAY_MAX_BYTES = 5 * 1024 * 1024;
 const INPUT_REPLAY_MAX_ACTION_PAYLOAD_BYTES = 256 * 1024;
 
 const MAGIC = 'DEADVOX_REPLAY';
-const FINGERPRINT_PATTERN = /^[0-9a-f]{64}$/;
 const PENDING_REPLAY_KEY = 'deadvox.pending-replay';
 const REPLAY_PAYLOAD_ACTIONS = new Set<ReplayActionPayload['kind']>([
+  'liquid.pour',
+  'power.set',
+  'furniture.use',
+  'furniture.slide',
+  'charger.start',
+  'charger.stop',
   'inventory.move',
   'inventory.to-hands',
   'item.pickup',
@@ -49,6 +54,7 @@ const REPLAY_PAYLOAD_ACTIONS = new Set<ReplayActionPayload['kind']>([
   'inventory.cancel-handling',
   'firearm.attachment.fit',
   'firearm.attachment.remove',
+  'vehicle.work',
   'craft.start',
   'action.wait',
   'action.wake-hour',
@@ -56,8 +62,15 @@ const REPLAY_PAYLOAD_ACTIONS = new Set<ReplayActionPayload['kind']>([
   'craft.stop',
   'item.throw.cancel',
   'item.throw',
+  'light.battery.load',
 ]);
 const REPLAY_SEMANTIC_ACTIONS = [
+  'liquid.pour',
+  'power.set',
+  'furniture.use',
+  'furniture.slide',
+  'charger.start',
+  'charger.stop',
   'item.throw',
   'item.throw.cancel',
   'throw.stance.toggle',
@@ -77,11 +90,13 @@ const REPLAY_SEMANTIC_ACTIONS = [
   'inventory.cancel-handling',
   'firearm.attachment.fit',
   'firearm.attachment.remove',
+  'vehicle.work',
   'craft.start',
   'action.wait',
   'action.wake-hour',
   'craft.continue',
   'craft.stop',
+  'light.battery.load',
   ...Array.from({ length: QUICKBAR_SLOTS }, (_, index) => [
     `quickbar.tap.${index + 1}`,
     `quickbar.hold.${index + 1}`,
@@ -214,9 +229,6 @@ const decodeBase64 = (value: string): Uint8Array => {
   return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-
 const isValidQueuedAction = (
   action: string,
   context: InputContext,
@@ -269,7 +281,7 @@ const isReplayActionRecord = (
   lastTick: number,
   frameCount: number,
 ): candidate is ReplayActionRecord => {
-  if (!(isRecord(candidate) && Number.isSafeInteger(candidate.tick) && typeof candidate.action === 'string')) {
+  if (!(isPlainRecord(candidate) && Number.isSafeInteger(candidate.tick) && typeof candidate.action === 'string')) {
     return false;
   }
   const tick = candidate.tick as number;
@@ -716,6 +728,7 @@ export function pendingInputReplay(): Uint8Array | undefined {
   try {
     encoded = sessionStorage.getItem(PENDING_REPLAY_KEY);
   } catch {
+    // Blocked session storage means nothing was staged, the same as an empty key.
     return;
   }
   return encoded === null ? undefined : decodeBase64(encoded);
@@ -797,12 +810,12 @@ export async function decodeInputReplay(
   } catch (error) {
     throw new Error('Replay is not valid UTF-8 JSON', { cause: error });
   }
-  if (!isRecord(value) || value.magic !== MAGIC || value.schemaVersion !== INPUT_REPLAY_SCHEMA_VERSION) {
+  if (!isPlainRecord(value) || value.magic !== MAGIC || value.schemaVersion !== INPUT_REPLAY_SCHEMA_VERSION) {
     throw new Error('Unsupported replay format');
   }
   if (
     typeof value.startSave !== 'string' ||
-    !isRecord(value.startState) ||
+    !isPlainRecord(value.startState) ||
     typeof value.startState.throwingStance !== 'boolean' ||
     typeof value.startState.readyHeld !== 'boolean' ||
     typeof value.startState.aimingDownSights !== 'boolean' ||
@@ -813,7 +826,7 @@ export async function decodeInputReplay(
     !Array.isArray(value.generatedColumns) ||
     !Array.isArray(value.columnChanges) ||
     typeof value.endStateFingerprint !== 'string' ||
-    !FINGERPRINT_PATTERN.test(value.endStateFingerprint) ||
+    !SHA256_HEX.test(value.endStateFingerprint) ||
     typeof value.endSimTimestamp !== 'number' ||
     !Number.isFinite(value.endSimTimestamp) ||
     value.endSimTimestamp < 0

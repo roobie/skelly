@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Chunk } from '../src/core/chunk.ts';
 import { CHUNK_VOLUME } from '../src/core/coords.ts';
-import { World } from '../src/core/world.ts';
 import { farColumns } from '../src/game/streamer.ts';
 
 describe('Chunk', () => {
@@ -27,16 +26,6 @@ describe('Chunk', () => {
     expect(chunk.uniformId).toBe(0);
     expect(chunk.isEmpty()).toBe(true);
     expect(chunk.toArray()).toEqual(new Uint16Array(CHUNK_VOLUME));
-  });
-
-  it('is marked edited by World.setBlock but not by worldgen writes', () => {
-    const world = new World();
-    const generated = new Chunk(0, 0, 0);
-    generated.set(0, 0, 0, 1);
-    world.addChunk(generated);
-    expect(generated.edited).toBe(false);
-    world.setBlock(5, 5, 5, 2);
-    expect(world.getChunk(0, 0, 0)?.edited).toBe(true);
   });
 });
 

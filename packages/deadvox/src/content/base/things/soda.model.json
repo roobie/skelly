@@ -1,0 +1,7 @@
+{
+  "id": "soda",
+  "file": "assets/models/soda.glb",
+  "grip": { "at": [0, 0.06, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

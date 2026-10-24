@@ -1,5 +1,7 @@
 import type { Resolved } from '@skelly/engine/assembly/schema.ts';
-import { expectTypeOf, it } from 'vitest';
+import { NeutralModelSchema } from '@skelly/thing-core/schema';
+import { safeParse } from 'valibot';
+import { expect, expectTypeOf, it } from 'vitest';
 import type {
   ExportGlb,
   ExportPortMetadata,
@@ -9,6 +11,7 @@ import type {
   SrgbColor,
 } from '../src/exportTypes.ts';
 
+// Type-level only: the assertions are checked by the typecheck, so the runtime test cannot fail.
 it('owns the geometry writer and caller-supplied export identity contracts', () => {
   const palette: Palette = {
     familyColors: {},
@@ -30,4 +33,17 @@ it('owns the geometry writer and caller-supplied export identity contracts', () 
   expectTypeOf(failure).toMatchTypeOf<GlbExportResult>();
   expectTypeOf<Palette['familyColors']>().toEqualTypeOf<Readonly<Record<string, SrgbColor>>>();
   expectTypeOf<ExportPortMetadata['id']>().toEqualTypeOf<`${string}.${string}`>();
+});
+
+it('emits a multi-part export that the runtime model schema accepts and constrains', () => {
+  const box = { min: [0, 0, 0], max: [1, 1, 1] };
+  const parts = {
+    base: { node: 'base:instance', massKg: 2, centreOfMass: [0, 0, 0], collision: [box] },
+    child: { node: 'child:instance', massKg: 0.5, centreOfMass: [0.5, 1, 0] },
+  };
+  const exported = { id: 'fixture', file: 'assets/models/fixture.glb', parts };
+  const issues = (value: unknown) => safeParse(NeutralModelSchema, value).issues ?? [];
+  expect(issues(exported)).toEqual([]);
+  expect(issues({ ...exported, parts: { ...parts, child: { ...parts.child, massKg: -1 } } })).not.toEqual([]);
+  expect(issues({ ...exported, parts: {} })).not.toEqual([]);
 });

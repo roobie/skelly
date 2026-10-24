@@ -1,0 +1,14 @@
+{
+  "id": "hoodie",
+  "file": "assets/models/hoodie.glb",
+  "parts": {
+    "hoodie": {
+      "node": "hoodie:folded-garment",
+      "massKg": 0.6,
+      "centreOfMass": [0, 0.03246017955401101, 0.002856935997683174]
+    }
+  },
+  "grip": { "at": [0, 0.03, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

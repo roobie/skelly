@@ -393,9 +393,9 @@ const buildAcid = (genome: Genome, template: AcidTemplate): AcidBody => {
       { onto: ['skin'] },
     );
 
-    return { jawTail, jawLocal, jawDepth };
+    return { jawTail, jawLocal, jawDepth, mouth: localHead([0, (g.mouthLevel - 0.5) * H, -headHalf[2]]) };
   };
-  const { jawTail, jawLocal, jawDepth } = buildHead();
+  const { jawTail, jawLocal, jawDepth, mouth } = buildHead();
 
   const buildArm = (side: 'L' | 'R') => {
     const sign = side === 'L' ? -1 : 1;
@@ -594,7 +594,7 @@ const buildAcid = (genome: Genome, template: AcidTemplate): AcidBody => {
     const sacCenter = add(sacAnchor, scale(normal, sacRadii[2] * g.sacOutset));
     bone('sac.0', 'chest', [sacAnchor, sacCenter], 'burst');
     const sac: Extract<Shape, { kind: 'ellipsoid' }> = { kind: 'ellipsoid', center: sacCenter, radii: sacRadii };
-    feature('sac.0', 'acid', sac, { blend: 0 });
+    feature('sac.0', 'sac', sac, { blend: 0 });
     paint(
       'sac.0',
       'mottle',
@@ -603,7 +603,7 @@ const buildAcid = (genome: Genome, template: AcidTemplate): AcidBody => {
         center: add(sacCenter, scale(normal, -g.sacRimInset * sacRadii[2])),
         radii: tuple(sacRadii.map((value) => value + g.sacRimVoxels * v)),
       },
-      { onto: ['acid'], threshold: g.sacRimNoise },
+      { onto: ['sac'], threshold: g.sacRimNoise },
     );
     const coarse = v > template.voxelSize * g.coarseDroolRatio;
     const strandCount = coarse ? 1 : n('droolStrands');
@@ -777,7 +777,14 @@ const buildAcid = (genome: Genome, template: AcidTemplate): AcidBody => {
   const materials: Record<string, MaterialDef> = { ...template.materials };
   const skinA = template.materials.skin!.color;
   materials.skin = { ...template.materials.skin!, color: lerp3(skinA, tuple(template.skinB), n('skinTint')) };
-  return { bones, features, materials, jointAdjacencyPolicy: 'reserve-overlaps' };
+  return {
+    bones,
+    features,
+    materials,
+    // The glow light sits at the sac's centre, where its bone ends.
+    anchors: { mouth: { bone: 'skull', position: mouth }, glow: { bone: 'sac.0', position: get('sac.0').tail } },
+    jointAdjacencyPolicy: 'reserve-overlaps',
+  };
 };
 
 registerBodyPlan('acid', {
@@ -827,6 +834,16 @@ registerBodyPlan('acid', {
   ],
   woundBones: hosts,
   limbBones: sides.flatMap((side) => [`arm.${side}`, `fore.${side}`, `thigh.${side}`, `shin.${side}`]),
+  // The sac counts as torso so a shot on it needs no region of its own. Fixed shoulders stay with the
+  // trunk because they remain after an arm is cut; drool strands are too thin to take a hit.
+  regionBones: {
+    head: ['skull', 'maw'],
+    torso: ['hips', 'belly', 'chest', 'neck', 'sac.0', 'shoulder.L', 'shoulder.R'],
+    leftArm: ['arm.L', 'fore.L', 'hand.L'],
+    rightArm: ['arm.R', 'fore.R', 'hand.R'],
+    leftLeg: ['thigh.L', 'shin.L', 'foot.L', 'toe.L'],
+    rightLeg: ['thigh.R', 'shin.R', 'foot.R', 'toe.R'],
+  },
   sample(rng, generic) {
     const template = generic as AcidTemplate;
     const params = sampleParams(rng, template.params, Object.keys(template.params));

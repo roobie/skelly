@@ -1,5 +1,5 @@
 import { Chunk } from './chunk.ts';
-import { CHUNK, chunkKey, localIndex, toChunk, toLocal, type Vec3 } from './coords.ts';
+import { CHUNK, CHUNK_VOLUME, chunkKey, toChunk, toLocal, type Vec3 } from './coords.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
 /**
@@ -9,142 +9,137 @@ import { freezeSnapshot } from './snapshotData.ts';
  */
 export const MESH_REACH = 8;
 
-export interface BlockDelta {
-  index: number;
-  base: string;
-  id: string;
-}
-
-export interface ChunkDiff {
-  cx: number;
+/** Every cell of one chunk as maximal runs over the cell index, naming blocks by content id. */
+export interface SavedChunk {
   cy: number;
-  cz: number;
-  cells: BlockDelta[];
+  /** Sorted, unique, every entry used. */
+  palette: string[];
+  runs: { start: number; length: number; id: number }[];
 }
 
-export interface WorldDiffs {
-  chunks: ChunkDiff[];
+export interface SavedColumn {
+  cx: number;
+  cz: number;
+  /** Sorted by cy. */
+  chunks: SavedChunk[];
 }
+
+const columnKey = (cx: number, cz: number): string => `${cx},${cz}`;
+
+const encodeChunk = (chunk: Chunk, contentId: (blockId: number) => string): SavedChunk => {
+  const runs: { start: number; length: number; block: number }[] = [];
+  const uniform = chunk.uniformId;
+  if (uniform === undefined) {
+    const data = chunk.raw()!;
+    for (let index = 0; index < data.length; index++) {
+      const previous = runs.at(-1);
+      if (previous && previous.block === data[index]) {
+        previous.length += 1;
+      } else {
+        runs.push({ start: index, length: 1, block: data[index]! });
+      }
+    }
+  } else {
+    runs.push({ start: 0, length: CHUNK_VOLUME, block: uniform });
+  }
+  const names = new Map([...new Set(runs.map(({ block }) => block))].map((block) => [block, contentId(block)]));
+  const palette = [...new Set(names.values())].sort();
+  const paletteIndex = new Map(palette.map((id, index) => [id, index]));
+  return {
+    cy: chunk.cy,
+    palette,
+    runs: runs.map(({ start, length, block }) => ({ start, length, id: paletteIndex.get(names.get(block)!)! })),
+  };
+};
+
+const decodeChunk = (cx: number, cz: number, saved: SavedChunk, blockId: (contentId: string) => number): Chunk => {
+  const ids = saved.palette.map((name) => {
+    const id = blockId(name);
+    if (!(Number.isSafeInteger(id) && id >= 0 && id <= 0xff_ff)) {
+      throw new Error(`Unknown block content id ${name} in saved chunk ${cx},${saved.cy},${cz}`);
+    }
+    return id;
+  });
+  if (saved.runs.length === 1) {
+    return new Chunk(cx, saved.cy, cz, ids[saved.runs[0]!.id]);
+  }
+  const data = new Uint16Array(CHUNK_VOLUME);
+  for (const run of saved.runs) {
+    data.fill(ids[run.id]!, run.start, run.start + run.length);
+  }
+  return Chunk.fromArray(cx, saved.cy, cz, data);
+};
 
 /** Sparse block storage. Missing chunks read as air. */
 export class World {
   readonly chunks = new Map<string, Chunk>();
   /** Changes whenever blocks visible to simulation queries change. */
   version = 0;
-  private readonly deltas = new Map<string, { x: number; y: number; z: number; base: number; id: number }>();
-  private readonly deltaCounts = new Map<string, number>();
-  private readonly pendingRestore = new Map<string, { diff: ChunkDiff; blockId: (id: string) => number }>();
+  /** Columns with any cell changed by play, ever; they are saved whole and never regenerate. */
+  private readonly touched = new Set<string>();
+  /** Saved form of touched columns unchanged since it was built, so a save re-encodes only changed columns. */
+  private readonly encoded = new Map<string, Readonly<SavedColumn>>();
 
   getChunk(cx: number, cy: number, cz: number): Chunk | undefined {
     return this.chunks.get(chunkKey(cx, cy, cz));
   }
 
   addChunk(chunk: Chunk): void {
-    const key = chunkKey(chunk.cx, chunk.cy, chunk.cz);
-    this.chunks.set(key, chunk);
+    this.chunks.set(chunkKey(chunk.cx, chunk.cy, chunk.cz), chunk);
+    this.encoded.delete(columnKey(chunk.cx, chunk.cz));
     this.version += 1;
-    const pending = this.pendingRestore.get(key);
-    if (pending) {
-      this.restoreChunkDiff(chunk, pending.diff, pending.blockId);
-      this.pendingRestore.delete(key);
-    }
   }
 
   removeChunk(cx: number, cy: number, cz: number): void {
     if (this.chunks.delete(chunkKey(cx, cy, cz))) {
+      this.encoded.delete(columnKey(cx, cz));
       this.version += 1;
     }
   }
 
-  /** Changed cells only, with stable content ids; the live world and chunks are untouched. */
-  snapshotDiffs(contentId: (blockId: number) => string): Readonly<WorldDiffs> {
-    const chunks = new Map<string, ChunkDiff>();
-    for (const [key, pending] of this.pendingRestore) {
-      chunks.set(key, structuredClone(pending.diff));
-    }
-    for (const delta of this.deltas.values()) {
-      const cx = toChunk(delta.x);
-      const cy = toChunk(delta.y);
-      const cz = toChunk(delta.z);
-      const key = chunkKey(cx, cy, cz);
-      let chunk = chunks.get(key);
-      if (!chunk) {
-        chunk = { cx, cy, cz, cells: [] };
-        chunks.set(key, chunk);
-      }
-      chunk.cells.push({
-        index: localIndex(toLocal(delta.x), toLocal(delta.y), toLocal(delta.z)),
-        base: contentId(delta.base),
-        id: contentId(delta.id),
-      });
-    }
-    return freezeSnapshot({
-      chunks: [...chunks.values()]
-        .sort((a, b) => a.cx - b.cx || a.cy - b.cy || a.cz - b.cz)
-        .map((chunk) => ({
-          ...chunk,
-          cells: chunk.cells.sort((a, b) => a.index - b.index),
-        })),
-    });
+  isTouched(cx: number, cz: number): boolean {
+    return this.touched.has(columnKey(cx, cz));
   }
 
-  /** Restores changes now or when each deterministic base chunk is first generated. */
-  restoreDiffs(diffs: WorldDiffs, blockId: (contentId: string) => number): void {
-    if (this.deltas.size > 0 || this.pendingRestore.size > 0) {
-      throw new Error('Cannot restore world diffs over an edited or restored world');
-    }
-    const seen = new Set<string>();
-    for (const diff of diffs.chunks) {
-      this.version += 1;
-      const key = chunkKey(diff.cx, diff.cy, diff.cz);
-      if (seen.has(key)) {
-        throw new Error(`Duplicate world diff chunk ${key}`);
-      }
-      seen.add(key);
-      const chunk = this.getChunk(diff.cx, diff.cy, diff.cz);
-      if (chunk) {
-        this.restoreChunkDiff(chunk, diff, blockId);
-      } else {
-        this.pendingRestore.set(key, { diff: structuredClone(diff), blockId });
+  /** Every resident chunk of each touched column, with stable content ids; the live world is untouched. */
+  snapshotColumns(contentId: (blockId: number) => string): readonly Readonly<SavedColumn>[] {
+    const stale = new Map<string, Chunk[]>();
+    for (const key of this.touched) {
+      if (!this.encoded.has(key)) {
+        stale.set(key, []);
       }
     }
+    if (stale.size > 0) {
+      for (const chunk of this.chunks.values()) {
+        stale.get(columnKey(chunk.cx, chunk.cz))?.push(chunk);
+      }
+      for (const [key, chunks] of stale) {
+        const [cx, cz] = key.split(',').map(Number) as [number, number];
+        chunks.sort((a, b) => a.cy - b.cy);
+        this.encoded.set(key, freezeSnapshot({ cx, cz, chunks: chunks.map((chunk) => encodeChunk(chunk, contentId)) }));
+      }
+    }
+    return [...this.encoded.values()]
+      .filter((column) => column.chunks.length > 0)
+      .sort((a, b) => a.cx - b.cx || a.cz - b.cz);
   }
 
-  private restoreChunkDiff(chunk: Chunk, diff: ChunkDiff, blockId: (contentId: string) => number): void {
-    let previousIndex = -1;
-    for (const cell of diff.cells) {
-      if (cell.index <= previousIndex) {
-        throw new Error(`Unsorted or duplicate block delta index ${cell.index}`);
+  /** Installs saved columns in place of anything generated there; they stay touched. */
+  restoreColumns(columns: readonly Readonly<SavedColumn>[], blockId: (contentId: string) => number): void {
+    if (this.touched.size > 0) {
+      throw new Error('Cannot restore saved columns over an edited or restored world');
+    }
+    for (const column of columns) {
+      const key = columnKey(column.cx, column.cz);
+      if (this.touched.has(key)) {
+        throw new Error(`Duplicate saved column ${key}`);
       }
-      previousIndex = cell.index;
-      this.restoreCell(chunk, diff, cell, blockId);
+      this.touched.add(key);
+      for (const saved of column.chunks) {
+        this.addChunk(decodeChunk(column.cx, column.cz, saved, blockId));
+      }
+      this.encoded.set(key, freezeSnapshot(structuredClone(column)));
     }
-  }
-
-  private restoreCell(chunk: Chunk, diff: ChunkDiff, cell: BlockDelta, blockId: (contentId: string) => number): void {
-    if (!Number.isSafeInteger(cell.index) || cell.index < 0 || cell.index >= CHUNK ** 3) {
-      throw new Error(`Invalid block delta index ${cell.index}`);
-    }
-    const base = blockId(cell.base);
-    const id = blockId(cell.id);
-    if (![base, id].every((block) => Number.isSafeInteger(block) && block >= 0 && block <= 0xff_ff)) {
-      throw new Error(`Unknown block content id in delta ${cell.base} → ${cell.id}`);
-    }
-    if (chunk.at(cell.index) !== base) {
-      throw new Error(`Generated base mismatch at ${diff.cx},${diff.cy},${diff.cz}#${cell.index}`);
-    }
-    const lx = cell.index % CHUNK;
-    const lz = Math.floor(cell.index / CHUNK) % CHUNK;
-    const ly = Math.floor(cell.index / (CHUNK * CHUNK));
-    const x = diff.cx * CHUNK + lx;
-    const y = diff.cy * CHUNK + ly;
-    const z = diff.cz * CHUNK + lz;
-    chunk.set(lx, ly, lz, id);
-    chunk.edited = true;
-    this.deltas.set(`${x},${y},${z}`, { x, y, z, base, id });
-    const key = chunkKey(diff.cx, diff.cy, diff.cz);
-    this.deltaCounts.set(key, (this.deltaCounts.get(key) ?? 0) + 1);
-    this.version += 1;
   }
 
   getBlock(x: number, y: number, z: number): number {
@@ -162,31 +157,11 @@ export class World {
       chunk = new Chunk(cx, cy, cz);
       this.addChunk(chunk);
     }
-    const before = chunk.get(toLocal(x), toLocal(y), toLocal(z));
-    if (before !== id) {
-      const key = `${x},${y},${z}`;
-      const previous = this.deltas.get(key);
-      const base = previous?.base ?? before;
+    if (chunk.get(toLocal(x), toLocal(y), toLocal(z)) !== id) {
       chunk.set(toLocal(x), toLocal(y), toLocal(z), id);
-      const editedKey = chunkKey(cx, cy, cz);
-      let count = this.deltaCounts.get(editedKey) ?? 0;
-      if (id === base) {
-        if (previous) {
-          this.deltas.delete(key);
-          count -= 1;
-        }
-      } else {
-        if (!previous) {
-          count += 1;
-        }
-        this.deltas.set(key, { x, y, z, base, id });
-      }
-      if (count > 0) {
-        this.deltaCounts.set(editedKey, count);
-      } else {
-        this.deltaCounts.delete(editedKey);
-      }
-      chunk.edited = count > 0;
+      const column = columnKey(cx, cz);
+      this.touched.add(column);
+      this.encoded.delete(column);
       this.version += 1;
     }
     return affectedChunks(x, y, z);

@@ -1,0 +1,13 @@
+{
+  "id": "receiver_pump",
+  "file": "assets/models/receiver_pump.glb",
+  "gun": {},
+  "parts": {
+    "receiver_pump": {
+      "item": "receiver_pump",
+      "node": "receiver_pump:receiver",
+      "massKg": 0.9,
+      "centreOfMass": [-0.0771400359066427, -0.012795332136445237, -0.0005439856373429079]
+    }
+  }
+}

@@ -1,11 +1,16 @@
 {
   "furniture": [
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#99794c",
       "id": "sample_sign",
+      "material": "wood",
       "name": "Placeholder sign",
       "readable": {
-        "text": "PLACEHOLDER SIGN — NOT A ROUTE TO A REAL LOCATION\n\nThis is a sample of readable furniture. The hamlet signs and actual directions will be authored later.",
+        "text": "PLACEHOLDER SIGN — NOT A ROUTE TO A REAL LOCATION",
         "title": "Placeholder — a wooden sign"
       },
       "shape": [
@@ -37,12 +42,29 @@
       "id": "sample_note",
       "model": "paper_sheet",
       "name": "Placeholder note",
+      "notLoot": false,
       "readable": {
         "text": "PLACEHOLDER TEXT — NOT PLAYTEST LORE\n\nThis paper demonstrates reading an authored note. The evacuation message, Dad's cabin directions and hunter's logbook will be written separately.\n\nYou can put the paper away with Esc or Tab. The world keeps moving while you read.",
         "title": "Placeholder — a folded note"
       },
       "size": [1, 1],
-      "weight": 5
+      "weight": 5,
+      "workInProgress": false
+    },
+    {
+      "category": "note",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+      },
+      "id": "regional_map",
+      "model": "paper_sheet",
+      "name": "Regional map",
+      "notLoot": false,
+      "paperMap": true,
+      "size": [1, 1],
+      "weight": 5,
+      "workInProgress": false
     }
   ],
   "loot": [

@@ -1,12 +1,12 @@
 import type { Assembly, Domain, PartDef, PartFamily } from '@skelly/engine/assembly/schema.ts';
 import { validate } from '@skelly/engine/assembly/validate.ts';
-import { applyPoint, scale, type Vec3 } from '@skelly/engine/foundation/math.ts';
-import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
+import { applyDir, applyPoint, scale, type Vec3 } from '@skelly/engine/foundation/math.ts';
 import type { Solid } from '@skelly/engine/shapes/solid.ts';
 import { MATERIALS } from '@skelly/thing-core/materials';
 import { ModelPointSchema, type NeutralModel, NeutralModelSchema } from '@skelly/thing-core/schema';
 import { singlePart } from '@skelly/thing-core/single-part';
-import type { Palette } from '@skelly/thing-export/exportTypes.ts';
+import { drawnGeometry } from '@skelly/thing-export/drawn.ts';
+import type { Palette, VoxelGrains } from '@skelly/thing-export/exportTypes.ts';
 import { hex } from '@skelly/thing-export/glb.ts';
 import {
   array,
@@ -31,14 +31,22 @@ import content from '../items.json' with { type: 'json' };
 import { bearTrap } from './families/bearTrap.ts';
 import { block } from './families/block.ts';
 import { head, limb, torso } from './families/body.ts';
+import { bust } from './families/bust.ts';
+import { bag, boots, cap } from './families/carried.ts';
 import { coil } from './families/coil.ts';
-import { foodPortion, stemmedFruit, woundRoll } from './families/food-medical.ts';
+import { compound } from './families/compound.ts';
+import { blowtorch, headlamp, pliers, portableRadio, repairKit, webbingSling } from './families/equipment.ts';
+import { drinkCup, foodPortion, stemmedFruit, woundRoll } from './families/food-medical.ts';
 import { fuse } from './families/fuse.ts';
+import { foldedGarment } from './families/garment.ts';
 import { grenade } from './families/grenade.ts';
+import { compass, keycard, key as keyFamily, lighter, matchbox } from './families/handheld.ts';
 import { handOpener } from './families/handOpener.ts';
+import { bottleJack, engineHoist, scissorJack } from './families/jacks.ts';
 import { arm, base, shade } from './families/lamp.ts';
-import { candle, torch } from './families/lights.ts';
+import { candle, flashlight, torch } from './families/lights.ts';
 import { cutStock, foldedSheet, turnedStock } from './families/materials.ts';
+import { bat, crowbar, hammer, knife, sledgehammer, steelPipe, wrench } from './families/melee.ts';
 import { openTin } from './families/openTin.ts';
 import { carton, vessel } from './families/package.ts';
 import { ring } from './families/ring.ts';
@@ -95,8 +103,12 @@ const ItemSchema = strictObject({
   ),
   /** Named datums on solids, exported as the model's anchors. */
   anchors: optional(record(pipe(string(), regex(/^[a-z0-9_]+$/)), strictObject(SolidPointSchema))),
+  /** The screen's centre on a solid, and the way it faces and its top points in that part's frame. */
+  display: optional(strictObject({ ...SolidPointSchema, normal: ModelPointSchema, up: ModelPointSchema })),
   /** The finish slot that glows while lit; its material must be the only one that slot's finish names in the item. */
   glow: optional(name),
+  /** The item's own voxel grain in metres, in place of its class grain; the export recipe resolves it. */
+  voxelGrain: optional(positive),
 });
 const CatalogueSchema = strictObject({
   units: strictObject({ metresPerUnit: positive, grid: positive, bevel: pipe(number(), finite(), minValue(0)) }),
@@ -116,15 +128,33 @@ const builders = {
   ring,
   spool,
   coil,
+  compound,
   fuse,
+  crowbar,
+  hammer,
+  sledgehammer,
+  bat,
+  knife,
+  wrench,
+  steelPipe,
+  compass,
+  lighter,
+  matchbox,
+  key: keyFamily,
+  keycard,
   cylinder: base,
   arm,
   shade,
   carton,
   vessel,
+  'folded-garment': foldedGarment,
+  bag,
+  boots,
+  cap,
   limb,
   torso,
   head,
+  bust,
   openTin,
   handOpener,
   grenade,
@@ -133,9 +163,20 @@ const builders = {
   foldedSheet,
   turnedStock,
   foodPortion,
+  drinkCup,
   stemmedFruit,
   woundRoll,
+  blowtorch,
+  headlamp,
+  pliers,
+  portableRadio,
+  repairKit,
+  webbingSling,
+  scissorJack,
+  bottleJack,
+  engineHoist,
   torch,
+  flashlight,
   candle,
 } satisfies Record<string, (params: Readonly<Record<string, string>>) => readonly Solid[]>;
 const buildPart = (part: ToolPart, params = part.params): PartDef => {
@@ -182,7 +223,8 @@ const glowMaterial = (item: ToolItem, slot: string): string => {
   return hex(MATERIALS[id]!.colour);
 };
 
-export const buildItem = (item: ToolItem) => {
+/** Builds an item; with a model export's grains its datums read off the drawn voxels (see `drawn.ts`). */
+export const buildItem = (item: ToolItem, voxel?: VoxelGrains) => {
   const first = item.parts[0]!;
   let assembly: Assembly;
   let domain: Domain;
@@ -227,17 +269,24 @@ export const buildItem = (item: ToolItem) => {
   if (report.issues.length > 0) {
     throw new Error(`${item.id}: ${JSON.stringify(report.issues)}`);
   }
-  const datumAt = (datum: Pick<ToolDatum, 'part' | 'solid' | 'fraction'>): Vec3 => {
-    const solid = report.resolved.defs.get(datum.part)?.solids.find(({ id }) => id === datum.solid);
-    const placed = report.resolved.placed.get(datum.part);
-    if (!(solid && placed)) {
-      throw new Error(`${item.id}: missing datum geometry ${datum.part}/${datum.solid}`);
+  const drawn = drawnGeometry(report.resolved, { ...voxel, revolveFacets: catalogue.facets });
+  const drawnSolid = (part: string, solidId: string) => {
+    const solid = report.resolved.defs.get(part)?.solids.find(({ id }) => id === solidId);
+    if (!(solid && report.resolved.placed.has(part))) {
+      throw new Error(`${item.id}: missing datum geometry ${part}/${solidId}`);
     }
-    const [min, max] = localSolidBounds(solid);
-    const point = min.map((value, axis) => value + datum.fraction[axis]! * (max[axis]! - value)) as unknown as Vec3;
-    return scale(applyPoint(placed, point), catalogue.units.metresPerUnit);
+    return drawn.measure(part, solid);
   };
-  let handling: Pick<NeutralModel, 'grip' | 'hold' | 'rest' | 'roll' | 'anchors'> = {};
+  const datumAt = (datum: Pick<ToolDatum, 'part' | 'solid' | 'fraction'>): Vec3 => {
+    const { min, max } = drawnSolid(datum.part, datum.solid);
+    const point = min.map((value, axis) => value + datum.fraction[axis]! * (max[axis]! - value)) as unknown as Vec3;
+    return scale(applyPoint(report.resolved.placed.get(datum.part)!, point), catalogue.units.metresPerUnit);
+  };
+  const directionIn = (part: string, direction: Vec3): Vec3 => {
+    const turned = applyDir(report.resolved.placed.get(part)!, direction);
+    return scale(turned, 1 / Math.hypot(...turned));
+  };
+  let handling: Pick<NeutralModel, 'grip' | 'hold' | 'rest' | 'roll' | 'anchors' | 'display'> = {};
   if (item.handling) {
     const datum = item.handling;
     handling = {
@@ -253,5 +302,30 @@ export const buildItem = (item: ToolItem) => {
       anchors: Object.fromEntries(Object.entries(item.anchors).map(([id, datum]) => [id, datumAt(datum)])),
     };
   }
-  return { report, masses, handling, glow: item.glow && glowMaterial(item, item.glow) };
+  if (item.display) {
+    const { part, solid: solidId, normal, up } = item.display;
+    const at = datumAt(item.display);
+    const { min, max } = drawnSolid(part, solidId);
+    // The screen solid's extent along a part-frame direction.
+    const extentAlong = (direction: Vec3) => {
+      const unit = scale(direction, 1 / Math.hypot(...direction));
+      const across = unit.reduce((sum, value, axis) => sum + Math.abs(value) * (max[axis]! - min[axis]!), 0);
+      return across * catalogue.units.metresPerUnit;
+    };
+    const side: Vec3 = [
+      up[1] * normal[2] - up[2] * normal[1],
+      up[2] * normal[0] - up[0] * normal[2],
+      up[0] * normal[1] - up[1] * normal[0],
+    ];
+    handling = {
+      ...handling,
+      display: {
+        at,
+        normal: directionIn(part, normal),
+        up: directionIn(part, up),
+        size: [extentAlong(side), extentAlong(up)],
+      },
+    };
+  }
+  return { report, masses, handling, drawn, glow: item.glow && glowMaterial(item, item.glow) };
 };

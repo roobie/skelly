@@ -2,15 +2,23 @@
 import { blocks, placementOf } from './authoredPlacement.ts';
 import { buildingBounds, lotOf, profileHeight, standingHeight, surfaceFoundation } from './authoredTerrain.mjs';
 import type { Registry, TemplateDef } from './content.ts';
-import type { Vec3 } from './coords.ts';
-import { HAMLET_BLOCK_SIZE, HAMLET_HORDE_TYPE } from './hamlet.ts';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
+import { CHUNK, type Vec3 } from './coords.ts';
 import { placementLootIssues } from './placementLoot.ts';
 import { WORLD_BOTTOM_M } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
-import type { Rect } from './site.ts';
+import { HORDE_TYPE, TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
+import { ShowroomCatalogue, slotPlacement, slotProps } from './showroom.ts';
+import { type Rect, rectDistance, rectsOverlap } from './site.ts';
 import { spawnOverlappingSolidBlock, zombieBodyDimensions } from './spawnClearance.ts';
-import { type Placement, placedBlockAt, placedPieces, templateLockIds, templateResolves } from './templates.ts';
-import { rectsOverlap } from './vegetation.ts';
+import {
+  cellsOf,
+  type Placement,
+  placedBlockAt,
+  placedPieces,
+  templateLockIds,
+  templateResolves,
+} from './templates.ts';
 
 export type LayoutPoint = readonly [number, number];
 const insideLayout = (bounds: Rect, [x, z]: LayoutPoint, inset = 0): boolean =>
@@ -29,9 +37,59 @@ const foundationFits = (layout: SiteLayoutDef, building: SiteLayoutDef['building
   return true;
 };
 
+/** A slot row that names unknown furniture, outgrows its capacity or leaves the deck is reported, not placed. */
+const showroomIssues = (
+  layout: SiteLayoutDef,
+  registry: Registry,
+  solidAt: (x: number, y: number, z: number) => boolean,
+): [string, string][] => {
+  const showroom = layout.showroom!;
+  const issues: [string, string][] = [];
+  if (!registry.blockIds.has(showroom.catalogue.floor)) {
+    issues.push(['.showroom.catalogue.floor', `no block "${showroom.catalogue.floor}"`]);
+  }
+  if (showroom.focusDistance >= showroom.catalogue.spacing) {
+    issues.push(['.showroom.focusDistance', 'must be less than the catalogue spacing, so focus stands in an aisle']);
+  }
+  if (showroom.slots.length > showroom.capacity) {
+    issues.push(['.showroom.slots', `holds ${showroom.slots.length} slots; capacity is ${showroom.capacity}`]);
+  }
+  showroom.slots.forEach(({ furniture }, i) => {
+    if (!registry.furniture.has(furniture)) {
+      issues.push([`.showroom.slots[${i}].furniture`, `no furniture "${furniture}"`]);
+    }
+  });
+  if (issues.length > 0) {
+    return issues;
+  }
+  // Streaming whole columns, the startup ring can reach one column past its radius.
+  const ready = registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)?.readyRadiusM;
+  const { rect } = new ShowroomCatalogue(registry, showroom.catalogue);
+  const [px, , pz] = layout.player.position;
+  const distance = rectDistance(rect, Math.floor(px / TEMPLATE_BLOCK_SIZE), Math.floor(pz / TEMPLATE_BLOCK_SIZE));
+  if (ready !== undefined && distance * TEMPLATE_BLOCK_SIZE <= ready + CHUNK * TEMPLATE_BLOCK_SIZE) {
+    issues.push(['.showroom.catalogue.position', 'must lie beyond the startup ring, so it cannot delay the start']);
+  }
+  const placement = slotPlacement(registry, layout);
+  if (placement) {
+    issues.push(
+      ...placementLootIssues({ registry, context: layout.lootContext }, placement.template, [], '.showroom.slots'),
+    );
+  }
+  slotProps(registry, showroom).forEach(({ pos, size }, i) => {
+    const cells = [...cellsOf(size)].map(([dx, dy, dz]): Vec3 => [pos[0] + dx, pos[1] + dy, pos[2] + dz]);
+    const blocked = cells.some((cell) => solidAt(...cell));
+    const unsupported = cells.some(([x, y, z]) => y === pos[1] && !solidAt(x, y - 1, z));
+    if (blocked || unsupported) {
+      issues.push([`.showroom.slots[${i}]`, 'must stand clear on a solid deck']);
+    }
+  });
+  return issues;
+};
+
 export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry): [string, string][] => {
   const issues: [string, string][] = [];
-  if (['hamlet', 'city', 'forest'].includes(layout.id)) {
+  if (['city', 'forest'].includes(layout.id)) {
     issues.push(['.id', 'reserved built-in site id']);
   }
   const check = (p: LayoutPoint, path: string, inset = 0) => {
@@ -99,7 +157,7 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
         `.buildings[${i}].fixedLoot`,
       ),
     );
-    if (placement.origin[1] * HAMLET_BLOCK_SIZE < WORLD_BOTTOM_M) {
+    if (placement.origin[1] * TEMPLATE_BLOCK_SIZE < WORLD_BOTTOM_M) {
       issues.push([`.buildings[${i}].position`, 'cellar extends below the world floor']);
     }
     placements.push(placement);
@@ -140,12 +198,28 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
       issues.push([path, 'spawn must stand on a supported surface']);
     }
   };
+  layout.bays?.forEach(({ position }, i) => {
+    const path = `.bays[${i}].position`;
+    checkSpawn([position[0], position[2]], path);
+    supported(position, path);
+  });
+  if (layout.repairStock !== undefined) {
+    const stock = placements.filter(({ template }) => template.id === layout.repairStock);
+    if (stock.length !== 1) {
+      issues.push(['.repairStock', `"${layout.repairStock}" must name exactly one building in this site`]);
+    } else if (!placedPieces(stock[0]!).some(({ furniture }) => registry.furniture.get(furniture)?.container)) {
+      issues.push(['.repairStock', `"${layout.repairStock}" has no container furniture`]);
+    }
+  }
+  if (layout.showroom) {
+    issues.push(...showroomIssues(layout, registry, solidAt));
+  }
   supported(layout.player.position, '.player.position');
   checkSpawn([layout.player.position[0], layout.player.position[2]], '.player.position');
   const authoredHordes = layout.hordes ?? [];
-  const hordeType = registry.zombies.get(HAMLET_HORDE_TYPE);
+  const hordeType = registry.zombies.get(HORDE_TYPE);
   if (authoredHordes.length > 0 && !hordeType) {
-    issues.push(['.hordes', `no zombie type "${HAMLET_HORDE_TYPE}"`]);
+    issues.push(['.hordes', `no zombie type "${HORDE_TYPE}"`]);
   }
   const hordeIds = new Set<string>();
   authoredHordes.forEach(({ id, position }, i) => {
@@ -159,7 +233,7 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     if (hordeType) {
       const blocked = spawnOverlappingSolidBlock(
         blocks(position),
-        zombieBodyDimensions(hordeType, HAMLET_BLOCK_SIZE),
+        zombieBodyDimensions(hordeType, TEMPLATE_BLOCK_SIZE),
         solidAt,
       );
       if (blocked) {
@@ -177,7 +251,7 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     if (type) {
       const blocked = spawnOverlappingSolidBlock(
         blocks(spawn.position),
-        zombieBodyDimensions(type, HAMLET_BLOCK_SIZE),
+        zombieBodyDimensions(type, TEMPLATE_BLOCK_SIZE),
         solidAt,
       );
       if (blocked) {

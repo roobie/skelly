@@ -12,9 +12,10 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       id: 'rifle_hunting', name: 'Hunting rifle', category: 'weapon',
       description: '.308 Winchester bolt-action rifle with an internal magazine.',
       model: 'rifle_hunting', size: [2, 11], twoHanded: true,
+      lightMountSite: { kind: 'strap', at: [0.42, -0.03, 0], turn: [0, 0, 0] },
       firearm: {
         bolt: true, handling: {}, roundLoadSimSeconds: 1.2,
-        recoilKickRadians: 0.025, dispersionRadians: 0.006,
+        recoilKickRadians: 0.025, dispersionRadians: 0.006, pelletSpreadScale: 1,
         shotSound: 'gunshot_tikka', suppressedShotSound: 'gunshot_m4_suppressed',
         dryFireSound: 'firearm_dry_click', boltOpenSound: 'rifle_bolt_open', boltCloseSound: 'rifle_bolt_close',
         skillZeroHandling: {
@@ -30,9 +31,11 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
         "handling": {},
         "roundLoadSimSeconds": 0.9,
         "dispersionRadians": 0,
+        "pelletSpreadScale": 1,
         "pump": true,
         "recoilKickRadians": 0.035,
         "shotSound": "shotgun_blast",
+        "shotBodySound": "shotgun_boom",
         "dryFireSound": "shotgun_dry_click",
         "skillZeroHandling": {
           "automaticFollowup": { "recoilKickScale": 20, "recoilRecoveryScale": 0.18, "variance": 60 },
@@ -40,6 +43,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
         }
       },
       "id": "pump_shotgun",
+      "lightMountSite": { "kind": "strap", "at": [0.34, -0.045, 0], "turn": [0, 0, 0] },
       "model": "shotgun_pump",
       "name": "Pump shotgun",
       "size": [2, 10],
@@ -49,6 +53,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       "category": "weapon",
       "description": "Curated 12-gauge hunting-cabin pump from gungen, with a hand-racked action and four-shell tube. No loot table has it; it is available only in debug mode. Runtime pumping/loading is not implemented yet.",
       "id": "debug_shotgun_pump",
+      "notLoot": true,
       "model": "shotgun_pump",
       "name": "Pump shotgun (debug)",
       "size": [2, 10],
@@ -59,6 +64,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       "description": "5.56×45 rifle fed from STANAG magazines.",
       "firearm": magazineHandling {
         "dispersionRadians": 0.012,
+        "pelletSpreadScale": 1,
         "recoilKickRadians": 0.006,
         "shotSound": "gunshot_m4",
         "suppressedShotSound": "gunshot_m4_suppressed",
@@ -79,8 +85,10 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
       "description": "7.62×39 rifle fed from AKM magazines.",
       "firearm": magazineHandling {
         "dispersionRadians": 0.017999999999999999,
+        "pelletSpreadScale": 1,
         "recoilKickRadians": 0.012,
         "shotSound": "gunshot",
+        "suppressedShotSound": "gunshot_m4_suppressed",
         "dryFireSound": "firearm_dry_click",
         "skillZeroHandling": {
           "automaticFollowup": { "recoilKickScale": 12, "recoilRecoveryScale": 0.25, "variance": 40 },
@@ -96,18 +104,6 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
   ],
   // Imports keep the export writer from overwriting authored handling constructors.
   "models": [
-    {
-      "anchors": { "muzzle": [0.1832, 0, 0.0501] },
-      "file": "assets/models/pistol_compact.glb",
-      "grip": { "at": [0.0866, 0, 0.0266], "turn": [-90, 0, 0] },
-      "id": "pistol_compact"
-    },
-    {
-      "anchors": { "muzzle": [0.2107, 0, 0.0618] },
-      "file": "assets/models/pistol_full.glb",
-      "grip": { "at": [0.0885, 0, 0.0312], "turn": [-90, 0, 0] },
-      "id": "pistol_full"
-    },
     (import 'gungen/rifle_assault.model.json') { gun+: { chargingHandleDegrees: 0 } },
     (import 'gungen/rifle_ak.model.json') { gun+: { chargingHandleDegrees: 90 } },
     import 'gungen/round_7_d_62x39.model.json',
@@ -119,43 +115,7 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
     import 'gungen/revolver.model.json',
     import 'gungen/round_357_h_magnum.model.json',
     import 'gungen/case_357_h_magnum.model.json',
-    {
-      "anchors": { "muzzle": [0.8005, 0.0004, 0.0394] },
-      "file": "assets/models/rifle_battle.glb",
-      "grip": { "at": [0.3158, 0.0004, -0.0138], "turn": [-90, 0, 0] },
-      "id": "rifle_battle"
-    },
-    {
-      "anchors": { "muzzle": [0.7572, -0.0007, 0.0566] },
-      "file": "assets/models/shotgun_auto.glb",
-      "grip": { "at": [0.2903, -0.0007, 0.0123], "turn": [-90, 0, 0] },
-      "id": "shotgun_auto"
-    },
     import 'gungen/shotgun_pump.model.json',
-    {
-      "anchors": { "muzzle": [0.4214, 0.0001, 0.0766] },
-      "file": "assets/models/smg_compact.glb",
-      "grip": { "at": [0.2868, 0.0001, 0.057], "turn": [-90, 0, 0] },
-      "id": "smg_compact"
-    },
-    {
-      "anchors": { "muzzle": [0.5293, 0, 0.0742] },
-      "file": "assets/models/smg_full.glb",
-      "grip": { "at": [0.2944, 0, 0.0365], "turn": [-90, 0, 0] },
-      "id": "smg_full"
-    },
-    {
-      "anchors": { "muzzle": [1.0624, 0.0111, 0.0418] },
-      "file": "assets/models/sniper_material.glb",
-      "grip": { "at": [0.3172, 0.0111, -0.0181], "turn": [-90, 0, 0] },
-      "id": "sniper_material"
-    },
-    {
-      "anchors": { "muzzle": [0.916, 0.0078, 0.0337] },
-      "file": "assets/models/sniper_rifle.glb",
-      "grip": { "at": [0.296, 0.0078, -0.0179], "turn": [-90, 0, 0] },
-      "id": "sniper_rifle"
-    },
     huntingRifle + {
       anchors: huntingRifle.anchors + {
         support_wrist: [huntingRifle.anchors.support[i] + huntingSupportWristOffset[i] for i in std.range(0, 2)],

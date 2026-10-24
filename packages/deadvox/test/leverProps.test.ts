@@ -9,13 +9,13 @@ const lever = registry.models.get(registry.items.get('frag_grenade')!.model!)!.l
 const BLOCK = 0.5;
 const FLOOR = (_x: number, y: number) => y < 0;
 
-/** A throwable resting above the floor: a body mesh and a lever mesh tagged with the content's merge group. */
+/** A throwable resting above the floor: a body mesh and a lever mesh tagged with the content's piece. */
 const throwable = (): Group => {
   const root = new Group();
   const material = new MeshBasicMaterial();
   const body = new Mesh(new BoxGeometry(0.06, 0.1, 0.06), material);
   const leverMesh = new Mesh(new BoxGeometry(0.01, 0.08, 0.02), material);
-  leverMesh.geometry.userData.mergeGroup = lever.mergeGroup;
+  leverMesh.geometry.userData.piece = lever.piece;
   leverMesh.position.set(0.035, 0, 0);
   leverMesh.visible = false;
   root.add(body, leverMesh);

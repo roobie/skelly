@@ -1,6 +1,36 @@
 {
   "powerDevices": [
     {
+      "id": "main_breaker",
+      "kind": "switch",
+      "priority": 0
+    },
+    {
+      "demandWatts": 100,
+      "id": "house_fridge",
+      "kind": "consumer",
+      "priority": 1
+    },
+    {
+      "burnLitresPerGameHour": 1,
+      "id": "lab_generator",
+      "kind": "generator",
+      "outputWatts": 20000,
+      "priority": 0
+    },
+    {
+      "demandWatts": 10,
+      "id": "lab_light",
+      "kind": "consumer",
+      "priority": 1
+    },
+    {
+      "demandWatts": 100,
+      "id": "lab_machine",
+      "kind": "consumer",
+      "priority": 2
+    },
+    {
       "burnLitresPerGameHour": 1,
       "id": "fuel_generator",
       "kind": "generator",
@@ -25,6 +55,12 @@
       "id": "storage_battery",
       "kind": "battery",
       "priority": 0
+    },
+    {
+      "demandWatts": 4,
+      "id": "portable_battery_charger",
+      "kind": "consumer",
+      "priority": 2
     },
     {
       "demandWatts": 100,

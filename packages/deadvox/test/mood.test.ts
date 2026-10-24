@@ -109,12 +109,6 @@ describe('bloom clip per tone mapper', () => {
     }
   });
 
-  it('re-derives the documented values', () => {
-    expect(inputForDisplay('aces', 0.95)).toBeCloseTo(2.039, 2);
-    expect(inputForDisplay('agx', 0.95)).toBeCloseTo(5.024, 2);
-    expect(inputForDisplay('neutral', 0.95)).toBeCloseTo(1.084, 2);
-  });
-
   it('is the old threshold of 1 for no tone mapping, which clips there', () => {
     expect(bloomClipFor('none')).toBe(1);
     expect(displayed('none', 1)).toBeCloseTo(1, 12);

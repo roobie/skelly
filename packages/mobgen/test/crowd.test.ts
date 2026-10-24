@@ -15,11 +15,14 @@ import {
   crowdTexelIndex,
   crowdTextureLayout,
   isSeveredInMask,
+  packBloodiness,
+  packCharge,
   packCrowdBoneMatrix,
   packSeveredMask,
 } from '../src/mob/crowd.ts';
 import { TEMPLATES } from '../src/mob/templates.ts';
 
+const AMALGAM_SEARCH_SEEDS = 64;
 const shambler = TEMPLATES.find((t) => t.name === 'shambler')!;
 const found = generateValid(shambler, 1)!;
 const { body } = realize(found.genome);
@@ -123,6 +126,17 @@ describe('packCrowdBoneMatrix (the pure part of crowd mode)', () => {
     }
   });
 
+  it('packs charge beside the severed mask and bloodiness without clobbering either', () => {
+    const layout = crowdTextureLayout(CROWD_MASK_BITS_PER_TEXEL, 1);
+    const data = new Float32Array(layout.width * layout.height * 4);
+    packSeveredMask(data, layout, 0, [3]);
+    packBloodiness(data, layout, 0, 0.4);
+    packCharge(data, layout, 0, 2.5);
+    expect(isSeveredInMask(data, layout, 0, 3)).toBe(true);
+    expect(data[crowdMaskTexelIndex(layout, 0) + 1]).toBeCloseTo(0.4);
+    expect(data[crowdMaskTexelIndex(layout, 0) + 2]).toBe(2.5);
+  });
+
   it('round-trips each bit across multiple mask words without cross-bit corruption', () => {
     const bonesPerSlot = CROWD_MASK_BITS_PER_TEXEL * 3;
     const layout = crowdTextureLayout(bonesPerSlot, 1);
@@ -137,7 +151,7 @@ describe('packCrowdBoneMatrix (the pure part of crowd mode)', () => {
 
   it('keeps stump-gore bits for high-index severable members in a generated amalgam', () => {
     let amalgam: ReturnType<typeof generateValid> | undefined;
-    for (let seed = 1; seed <= 8 && !amalgam; seed++) {
+    for (let seed = 1; seed <= AMALGAM_SEARCH_SEEDS && !amalgam; seed++) {
       const candidate = generateValid(amalgamTemplate, seed);
       if (!candidate) {
         continue;
@@ -153,7 +167,7 @@ describe('packCrowdBoneMatrix (the pure part of crowd mode)', () => {
         amalgam = candidate;
       }
     }
-    expect(amalgam).toBeDefined();
+    expect(amalgam, `no amalgam in seeds 1..${AMALGAM_SEARCH_SEEDS} has a high-index severable member`).toBeDefined();
     const { body: amalgamBody, voxels } = amalgam!.realized;
     const { bones: amalgamBones } = amalgamBody;
     const parts = amalgamManifest(amalgamBody, voxels).parts.filter(({ severable }) => severable);

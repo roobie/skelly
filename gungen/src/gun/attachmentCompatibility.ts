@@ -1,12 +1,23 @@
 import { mateTransform, resolve } from '@skelly/engine/assembly/resolve.ts';
 import {
+  keepOut,
   keepOutBetweenParts,
   keepOutForPart,
-  portCompat,
+  solidOverlap,
   solidOverlapBetweenParts,
   solidOverlapForPart,
 } from '@skelly/engine/assembly/rules.ts';
-import type { Assembly, Domain, PartDef, Resolved } from '@skelly/engine/assembly/schema.ts';
+import type {
+  Assembly,
+  Domain,
+  ParamSpec,
+  PartDef,
+  Resolved,
+  ResolvedParam,
+  Rule,
+} from '@skelly/engine/assembly/schema.ts';
+import { checkRule, validationRules } from '@skelly/engine/assembly/validate.ts';
+import type { Issue } from '@skelly/engine/foundation/issue.ts';
 import type { Transform } from '@skelly/engine/foundation/math.ts';
 import {
   ATTACHMENT_IDS,
@@ -14,26 +25,75 @@ import {
   attachmentInstanceForId,
   attachmentMetadata,
   attachmentMountSlot,
+  railSpanFitsNotch,
 } from './attachments.ts';
 import { gunDomain } from './domain.ts';
 import { mountCanAccept } from './mounts.ts';
 import { getOptic } from './optics.ts';
-import { opticLoadingClearanceForPart, opticMountFitForPart } from './rules.ts';
+import { opticLoadingClearance, opticLoadingClearanceForPart, opticMountFit, opticMountFitForPart } from './rules.ts';
 
 interface Candidate {
   readonly id: string;
   readonly family: string;
+  /** Every param value the part is built with. */
   readonly params: Readonly<Record<string, string>>;
+  readonly resolvedParams: Readonly<Record<string, ResolvedParam>>;
   readonly definition: PartDef;
 }
 
-const standaloneCandidate = (id: string, domain: Domain): Candidate => {
+const resolvedHostParam = (
+  spec: ParamSpec,
+  host: string,
+  hostParams: Readonly<Record<string, ResolvedParam>>,
+): ResolvedParam => {
+  const source = (spec.from ?? [])
+    .filter(({ port }) => port === 'base')
+    .map(({ param }) => ({ param, value: hostParams[param]?.value }))
+    .find(({ value }) => value !== undefined);
+  return source?.value !== undefined && spec.values.includes(source.value)
+    ? { value: source.value, source: 'inherited', from: `${host}.${source.param}` }
+    : { value: spec.default, source: 'default' };
+};
+
+// A fitted attachment inherits params from its host when resolved, so certification builds each
+// candidate with the host's values: otherwise it would judge a part that never sits on that host.
+const hostedCandidate = (id: string, base: Resolved, host: string): Candidate => {
   const { family, params } = attachmentInstanceForId(id);
-  const familyDef = domain.families[family];
+  const familyDef = base.domain.families[family];
   if (!familyDef) {
     throw new Error(`No part family for attachment ${id}`);
   }
-  return { id, family, params, definition: familyDef.build(params) };
+  const hostParams = base.params.get(host) ?? {};
+  const resolvedParams = Object.fromEntries(
+    Object.entries(familyDef.params).map(([name, spec]): [string, ResolvedParam] => {
+      const set = params[name];
+      return [name, set === undefined ? resolvedHostParam(spec, host, hostParams) : { value: set, source: 'set' }];
+    }),
+  );
+  const values = Object.fromEntries(Object.entries(resolvedParams).map(([name, { value }]) => [name, value]));
+  return { id, family, params: values, resolvedParams, definition: familyDef.build(values) };
+};
+
+const hostedCandidates = (base: Resolved): ((id: string, host: string) => Candidate) => {
+  const built = new Map<string, Candidate>();
+  return (id, host) => {
+    const key = JSON.stringify([host, id]);
+    const cached = built.get(key);
+    if (cached) {
+      return cached;
+    }
+    const candidate = hostedCandidate(id, base, host);
+    built.set(key, candidate);
+    return candidate;
+  };
+};
+
+const slotHost = (slotId: string): readonly [host: string, port: string] => {
+  const [host, port] = slotId.split('.');
+  if (!(host && port)) {
+    throw new Error(`Malformed attachment slot ID ${slotId}`);
+  }
+  return [host, port];
 };
 
 const withCandidate = ({
@@ -71,19 +131,21 @@ const withCandidate = ({
     ...base,
     assembly: {
       ...base.assembly,
-      parts: { ...base.assembly.parts, [partId]: { family: candidate.family, params: candidate.params } },
+      parts: {
+        ...base.assembly.parts,
+        [partId]: {
+          family: candidate.family,
+          params: Object.fromEntries(
+            Object.entries(candidate.resolvedParams)
+              .filter(([, { source }]) => source === 'set')
+              .map(([name, { value }]) => [name, value]),
+          ),
+        },
+      },
       connections: [...base.assembly.connections, connection],
     },
     defs: new Map([...base.defs, [partId, candidate.definition]]),
-    params: new Map([
-      ...base.params,
-      [
-        partId,
-        Object.fromEntries(
-          Object.entries(candidate.params).map(([key, value]) => [key, { value, source: 'set' as const }]),
-        ),
-      ],
-    ]),
+    params: new Map([...base.params, [partId, candidate.resolvedParams]]),
     placed: new Map([
       ...base.placed,
       [partId, placement ?? mateTransform({ hostTransform, hostPort, slot: connection.slot, attachmentPort })],
@@ -92,25 +154,43 @@ const withCandidate = ({
   };
 };
 
-const fitIssues = (resolved: Resolved, candidate: Candidate, partId: string) => {
-  const optic = candidate.family === 'sight' ? getOptic(candidate.params.type) : undefined;
-  return [
-    ...portCompat.check(resolved),
-    ...solidOverlapForPart(resolved, partId),
-    ...(optic ? opticMountFitForPart(resolved, partId) : []),
-    ...(optic ? opticLoadingClearanceForPart(resolved, partId) : []),
-    ...keepOutForPart(resolved, partId),
-  ];
-};
+// Certification runs validation's own rule list, so a certified fit cannot fail validation. Rules
+// with a per-part variant check only the candidate's interactions, which is all a fit can change.
+const PER_PART_RULES = new Map<Rule, (r: Resolved, part: string) => Issue[]>([
+  [solidOverlap, solidOverlapForPart],
+  [keepOut, keepOutForPart],
+  [opticMountFit, opticMountFitForPart],
+  [opticLoadingClearance, opticLoadingClearanceForPart],
+]);
+
+const issueKey = (issue: Issue): string => JSON.stringify(issue);
+
+/** Validation's issues on the bare firearm, which no fit is blamed for. */
+const bareIssueKeys = (base: Resolved): ReadonlySet<string> =>
+  new Set(
+    validationRules(base.domain)
+      .filter((rule) => !PER_PART_RULES.has(rule))
+      .flatMap((rule) => checkRule(rule, base).map(issueKey)),
+  );
+
+const fits = (resolved: Resolved, partId: string, bareIssues: ReadonlySet<string>): boolean =>
+  validationRules(resolved.domain).every((rule) => {
+    const perPart = PER_PART_RULES.get(rule);
+    return perPart
+      ? checkRule(rule, resolved, (r) => perPart(r, partId)).length === 0
+      : checkRule(rule, resolved).every((issue) => bareIssues.has(issueKey(issue)));
+  });
 
 const passesFitRules = ({
   base,
+  bareIssues,
   candidate,
   slot,
   host,
   port,
 }: {
   readonly base: Resolved;
+  readonly bareIssues: ReadonlySet<string>;
   readonly candidate: Candidate;
   readonly slot: Pick<AttachmentSlotMetadata, 'id' | 'mount' | 'notchIndex'>;
   readonly host: string;
@@ -121,12 +201,21 @@ const passesFitRules = ({
   if (mount !== slot.mount) {
     return false;
   }
-  const optic = candidate.family === 'sight' ? getOptic(candidate.params.type) : undefined;
-  if (optic) {
-    const hostPort = base.defs.get(host)?.ports.find(({ id }) => id === port);
-    if (!(hostPort && mountCanAccept(hostPort, optic.mount, slot.notchIndex ?? 0))) {
-      return false;
-    }
+  const hostPort = base.defs.get(host)?.ports.find(({ id }) => id === port);
+  const optic =
+    candidate.family === 'sight' ? getOptic(candidate.params.type, candidate.params.mountSection) : undefined;
+  if (optic && !(hostPort && mountCanAccept(hostPort, optic.mount, slot.notchIndex ?? 0))) {
+    return false;
+  }
+  // The exported span is what the runtime fitter requires on the rail, so certify only what it will accept.
+  const span = attachmentMetadata(
+    candidate.family,
+    candidate.params,
+    base.domain.units.metresPerUnit,
+    candidate.definition,
+  )?.properties.railSpanNotches;
+  if (hostPort && slot.notchIndex !== undefined && !railSpanFitsNotch(span, slot.notchIndex, hostPort)) {
+    return false;
   }
   const partId = `candidate-${candidate.id}`;
   const connection = {
@@ -135,10 +224,10 @@ const passesFitRules = ({
     ...(slot.notchIndex === undefined ? {} : { slot: slot.notchIndex }),
   };
   const resolved = withCandidate({ base, candidate, connection, hostPart: host, hostPortId: port, partId });
-  return resolved !== undefined && fitIssues(resolved, candidate, partId).length === 0;
+  return resolved !== undefined && fits(resolved, partId, bareIssues);
 };
 
-/** Runs gungen's port, optic-support and keep-out rules for every viable attachment/slot pair. */
+/** Runs validation's rules for every viable attachment/slot pair. */
 export const attachmentCompatibility = (
   firearm: Assembly,
   slots: readonly Pick<AttachmentSlotMetadata, 'id' | 'mount' | 'notchIndex'>[],
@@ -169,29 +258,17 @@ export const attachmentCompatibility = (
     ),
   };
   const base = resolve(bareFirearm, domain);
-  const candidatesByMount = new Map<string, Candidate[]>();
-  for (const id of ATTACHMENT_IDS) {
-    const candidate = standaloneCandidate(id, domain);
-    const mount = candidate.definition.ports.find(({ id: portId }) => portId === 'base')?.mount;
-    if (mount) {
-      const candidates = candidatesByMount.get(mount) ?? [];
-      candidates.push(candidate);
-      candidatesByMount.set(mount, candidates);
-    }
-  }
+  const bareIssues = bareIssueKeys(base);
+  const candidateFor = hostedCandidates(base);
 
   return Object.fromEntries(
     slots.map((slot) => {
-      const [host, port] = slot.id.split('.');
-      if (!(host && port)) {
-        throw new Error(`Malformed attachment slot ID ${slot.id}`);
-      }
-      const accepted = (candidatesByMount.get(slot.mount) ?? [])
-        .filter(
-          (candidate) =>
-            !excludedAttachments.includes(candidate.id) && passesFitRules({ base, candidate, slot, host, port }),
-        )
-        .map(({ id }) => id);
+      const [host, port] = slotHost(slot.id);
+      const accepted = ATTACHMENT_IDS.filter(
+        (id) =>
+          !excludedAttachments.includes(id) &&
+          passesFitRules({ base, bareIssues, candidate: candidateFor(id, host), slot, host, port }),
+      );
       return [slot.id, accepted];
     }),
   );
@@ -221,10 +298,7 @@ const canonicalPair = (
 ): AttachmentCompatibilityPair => (compareChoices(a, b) <= 0 ? [a, b] : [b, a]);
 
 const slotConnection = (slot: AttachmentSlotMetadata, partId: string) => {
-  const [host, port] = slot.id.split('.');
-  if (!(host && port)) {
-    throw new Error(`Malformed attachment slot ID ${slot.id}`);
-  }
+  const [host, port] = slotHost(slot.id);
   return {
     hostPart: host,
     hostPortId: port,
@@ -278,7 +352,13 @@ const bareFirearmAndDefaults = (
     return [
       {
         choice: [slot.id, metadata.id] as AttachmentCompatibilityChoice,
-        candidate: { id: metadata.id, family: instance.family, params, definition },
+        candidate: {
+          id: metadata.id,
+          family: instance.family,
+          params,
+          resolvedParams: source.params.get(partId) ?? {},
+          definition,
+        },
       },
     ];
   });
@@ -292,9 +372,11 @@ const bareFirearmAndDefaults = (
   return { bareFirearm, defaults };
 };
 
+type ChoiceCandidate = (choice: AttachmentCompatibilityChoice) => Candidate;
+
 const certifyDynamicPairs = (
   singles: readonly AttachmentCompatibilityChoice[],
-  candidates: ReadonlyMap<string, Candidate>,
+  candidateFor: ChoiceCandidate,
   fitsPair: (
     firstChoice: AttachmentCompatibilityChoice,
     firstCandidate: Candidate,
@@ -305,17 +387,13 @@ const certifyDynamicPairs = (
 ): void => {
   for (let first = 0; first < singles.length; first++) {
     const firstChoice = singles[first]!;
-    const firstCandidate = candidates.get(firstChoice[1]);
-    if (!firstCandidate) {
-      continue;
-    }
+    const firstCandidate = candidateFor(firstChoice);
     for (let second = first + 1; second < singles.length; second++) {
       const secondChoice = singles[second]!;
       if (firstChoice[0] === secondChoice[0]) {
         continue;
       }
-      const secondCandidate = candidates.get(secondChoice[1]);
-      if (secondCandidate && fitsPair(firstChoice, firstCandidate, secondChoice, secondCandidate)) {
+      if (fitsPair(firstChoice, firstCandidate, secondChoice, candidateFor(secondChoice))) {
         add(firstChoice, secondChoice);
       }
     }
@@ -325,13 +403,13 @@ const certifyDynamicPairs = (
 const certifyDefaultPairs = ({
   singles,
   defaults,
-  candidates,
+  candidateFor,
   fitsPair,
   add,
 }: {
   readonly singles: readonly AttachmentCompatibilityChoice[];
   readonly defaults: readonly FittedDefault[];
-  readonly candidates: ReadonlyMap<string, Candidate>;
+  readonly candidateFor: ChoiceCandidate;
   readonly fitsPair: (
     firstChoice: AttachmentCompatibilityChoice,
     firstCandidate: Candidate,
@@ -341,10 +419,7 @@ const certifyDefaultPairs = ({
   readonly add: (a: AttachmentCompatibilityChoice, b: AttachmentCompatibilityChoice) => void;
 }): void => {
   for (const firstChoice of singles) {
-    const firstCandidate = candidates.get(firstChoice[1]);
-    if (!firstCandidate) {
-      continue;
-    }
+    const firstCandidate = candidateFor(firstChoice);
     for (const fitted of defaults) {
       if (
         firstChoice[0] !== fitted.choice[0] &&
@@ -359,7 +434,7 @@ const certifyDefaultPairs = ({
 const certifyPairs = (
   singles: readonly AttachmentCompatibilityChoice[],
   defaults: readonly FittedDefault[],
-  candidates: ReadonlyMap<string, Candidate>,
+  candidateFor: ChoiceCandidate,
   fitsPair: (
     firstChoice: AttachmentCompatibilityChoice,
     firstCandidate: Candidate,
@@ -372,8 +447,8 @@ const certifyPairs = (
     const pair = canonicalPair(a, b);
     certified.set(JSON.stringify(pair), pair);
   };
-  certifyDynamicPairs(singles, candidates, fitsPair, add);
-  certifyDefaultPairs({ singles, defaults, candidates, fitsPair, add });
+  certifyDynamicPairs(singles, candidateFor, fitsPair, add);
+  certifyDefaultPairs({ singles, defaults, candidateFor, fitsPair, add });
   return [...certified.values()].sort(comparePairs);
 };
 
@@ -400,7 +475,8 @@ export const attachmentCompatibilityPairs = (
   const singles = Object.entries(compatibility)
     .flatMap(([slotId, ids]) => ids.map((id) => [slotId, id] as AttachmentCompatibilityChoice))
     .sort(compareChoices);
-  const candidates = new Map(ATTACHMENT_IDS.map((id) => [id, standaloneCandidate(id, domain)]));
+  const hosted = hostedCandidates(base);
+  const candidateFor: ChoiceCandidate = ([slotId, id]) => hosted(id, slotHost(slotId)[0]);
   const placementCache = new Map<string, Transform>();
   const placementFor = (
     choice: AttachmentCompatibilityChoice,
@@ -468,13 +544,13 @@ export const attachmentCompatibilityPairs = (
     if (!withSecond) {
       return false;
     }
-    // Singles certify connection and optic rules against the firearm; only pair-dependent geometry changes here.
+    // Singles certify every validation rule against the firearm; only pair-dependent geometry changes here.
     return (
       solidOverlapBetweenParts(withSecond.resolved, withFirst.partId, withSecond.partId).length === 0 &&
       keepOutBetweenParts(withSecond.resolved, withFirst.partId, withSecond.partId).length === 0
     );
   };
-  const result = certifyPairs(singles, defaults, candidates, fitsPair);
+  const result = certifyPairs(singles, defaults, candidateFor, fitsPair);
   cache.set(cacheKey, result);
   return result;
 };

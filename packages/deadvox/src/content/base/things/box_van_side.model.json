@@ -1,0 +1,14 @@
+{
+  "id": "box_van_side",
+  "file": "assets/models/box_van_side.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 70,
+      "centreOfMass": [-0.90625, 1.953125, 1.03125],
+      "collision": [{ "min": [-3, 0.90625, 1], "max": [1.1875, 3, 1.0625] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

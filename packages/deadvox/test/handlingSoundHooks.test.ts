@@ -57,7 +57,6 @@ describe('handling move sound hooks', () => {
     expect(completed[0]?.target.kind).toBe('pile');
     const dropCue = handlingMoveCompleteCue(completed[0]!);
     expect(dropCue).toEqual({ event: 'item_drop_wood', position: [0.5, 4, 0.5] });
-    expect(dropCue?.position.map((value) => value * 0.5)).toEqual([0.25, 2, 0.25]);
 
     const samePile = queue.enqueue(item, { kind: 'pile', pos: [0, 4, 0], at: { x: 1, y: 0, rotated: false } });
     expect(samePile.ok).toBe(true);

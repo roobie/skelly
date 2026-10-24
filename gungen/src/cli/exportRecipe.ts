@@ -7,6 +7,7 @@ import {
   recipeOptions as optionsFor,
   type RecipeExport,
   type RecipeRow as Row,
+  recipeVoxel as voxelFor,
 } from '@skelly/thing-export/recipe.ts';
 import { nonEmpty, parse, picklist, pipe, strictObject, string } from 'valibot';
 import content from '../../exports/deadvox.json' with { type: 'json' };
@@ -14,10 +15,12 @@ import { formatCartridgeParseError, parseCartridgeJson } from '../ammo/parseCart
 import { exportAttachmentGlb } from '../gun/attachmentExport.ts';
 import { ATTACHMENT_IDS } from '../gun/attachments.ts';
 import { exportCartridgeModel } from '../gun/cartridgeExport.ts';
+import { PART_CATALOGUE } from '../gun/catalogue.ts';
 import type { DeadvoxModelEntry } from '../gun/exportGlb.ts';
 import { exportMagazineGlb } from '../gun/magazineExport.ts';
 import { GUN_PREFABS } from '../gun/prefabs.ts';
 import { exportFileText } from './exportFile.ts';
+import { exportPartItem } from './exportPart.ts';
 
 const ROOT = resolve(import.meta.dirname, '../../..');
 const cartridgeAt = (source: string, root: string) => {
@@ -33,7 +36,7 @@ const exporters = {
     parse(strictObject({}), optionsFor(row));
     const text = readFileSync(resolve(root, row.source), 'utf8');
     return () => {
-      const result = exportFileText(text, assetFor(row));
+      const result = exportFileText(text, assetFor(row), {}, voxelFor(row));
       if (!result.ok) {
         throw new Error(result.message);
       }
@@ -47,7 +50,7 @@ const exporters = {
     const options = parse(strictObject({ component: picklist(['round', 'case']) }), optionsFor(row));
     const cartridge = cartridgeAt(row.source, root);
     return () => {
-      const result = exportCartridgeModel(cartridge, options.component, assetFor(row));
+      const result = exportCartridgeModel(cartridge, options.component, assetFor(row), { voxel: voxelFor(row) });
       if (!result.ok) {
         throw new Error(JSON.stringify(result.error));
       }
@@ -60,7 +63,20 @@ const exporters = {
       throw new Error('unknown attachment source');
     }
     return () => {
-      const result = exportAttachmentGlb(row.source, assetFor(row));
+      const result = exportAttachmentGlb(row.source, assetFor(row), undefined, voxelFor(row));
+      if (!result.ok) {
+        throw new Error(JSON.stringify(result.error));
+      }
+      return result;
+    };
+  },
+  part: (row: Row) => {
+    parse(strictObject({}), optionsFor(row));
+    if (!PART_CATALOGUE.items.has(row.source)) {
+      throw new Error('unknown part item source');
+    }
+    return () => {
+      const result = exportPartItem(row.source, assetFor(row), voxelFor(row));
       if (!result.ok) {
         throw new Error(JSON.stringify(result.error));
       }
@@ -69,7 +85,10 @@ const exporters = {
   },
   magazine: (row: Row, root: string) => {
     const options = parse(
-      strictObject({ cartridge: pipe(string(), nonEmpty()), appearanceProfile: pipe(string(), nonEmpty()) }),
+      strictObject({
+        cartridge: pipe(string(), nonEmpty()),
+        appearanceProfile: pipe(string(), nonEmpty()),
+      }),
       optionsFor(row),
     );
     const prefab = GUN_PREFABS.find(({ id, family }) => id === row.source && family === 'magazine');
@@ -86,6 +105,7 @@ const exporters = {
         params: prefab.fixedParams,
         cartridge,
         appearance: { appearanceProfile: options.appearanceProfile },
+        voxel: voxelFor(row),
       });
       if (!result.ok) {
         throw new Error(JSON.stringify(result.error));

@@ -8,32 +8,33 @@ import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SoundId } from '../src/core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../src/core/soundPicker.ts';
-import { simRate, simSeconds } from '../src/core/time.ts';
+import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { hearVocalNoise } from '../src/core/zombies.ts';
 import { GameAudio } from '../src/game/audio.ts';
-import { firearmShotEmission, HEARTBEAT_FILES, heartbeatForStamina } from '../src/game/audioPresentation.ts';
+import { firearmShotEmission, heartbeatForStamina, playerHeartbeat } from '../src/game/audioPresentation.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const audios: GameAudio[] = [];
 const baseRegistry = startupContent().registry;
+const heartbeat = playerHeartbeat(baseRegistry);
+const firstVariant = (event: SoundId) => baseRegistry.sounds.get(event)!.variants[0] as string;
+const HEARTBEAT_FILES = { slow: firstVariant(heartbeat.sounds.slow), fast: firstVariant(heartbeat.sounds.fast) };
 const GUNSHOT_CAP = baseRegistry.sounds.get('gunshot')!.voiceCap!;
 const SHOT_BURST = GUNSHOT_CAP + 1;
 const senseTuning = {
   id: 'fixture_player',
-  movement: { sidewaysSpeedScale: 0.7, backwardSpeedScale: 0.5 },
   chestEyeFraction: 0.62,
   crouch: {
-    speedMetresPerSimSecond: simRate(0.8),
     hearingRangeScale: 0.5,
     sightRangeScale: 0.5,
-    eyeDropMetres: 0.6,
-    bodyHeightMetres: 1.2,
   },
+  prone: baseRegistry.senses.get('player')!.prone,
   wall: { hearingRangeScale: 0.5, gain: 0.5, cutoffHz: 1200, clearGain: 1, clearCutoffHz: 18_000 },
   footsteps: baseRegistry.senses.get('player')!.footsteps,
   vocalNoiseLifetimeSimSeconds: baseRegistry.senses.get('player')!.vocalNoiseLifetimeSimSeconds,
+  shamblerVoice: baseRegistry.senses.get('player')!.shamblerVoice,
   light: {
     playerDaySightScale: 0,
     lureRangeScale: 0,
@@ -43,8 +44,11 @@ const senseTuning = {
     throwStanceDropHoldRealSeconds: 1,
     wornLightToggleHoldRealSeconds: 1,
     renderedBeamLimit: 3,
+    renderedFixtureLimit: 4,
     throwArmSpeedMetresPerRealSecond: 6,
     throwArmEnergyJoules: 20,
+    groundLight: { senseHeightMetres: 0.075, renderLiftMetres: 0.4 },
+    illumination: { pointDecay: 1, nearFieldMetres: 4, readingThreshold: 0.6 },
   },
 } as const;
 
@@ -142,10 +146,12 @@ const setup = (solidAt: SolidAt = () => false, registryOverride?: Registry) => {
           data: JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')) as unknown,
         },
       ]);
-  const { registry, issues } = soundRegistry;
+  const { issues } = soundRegistry;
   if (issues.length > 0) {
     throw new Error(`Invalid sound fixture: ${JSON.stringify(issues)}`);
   }
+  // Audio reads its default volumes and heartbeat from the bundled UI and body rows.
+  const registry = { ...soundRegistry.registry, ui: baseRegistry.ui, body: baseRegistry.body };
   const isSolid = vi.fn(solidAt);
   const audio = new GameAudio({ registry, blockSize: 1, isSolid, tuning: senseTuning, report: vi.fn() });
   audios.push(audio);
@@ -184,6 +190,7 @@ describe('game audio playback', () => {
   it.each([true, false])('applies authored bass shaping before spatial routing (headLocked=%s)', async (headLocked) => {
     const profile = {
       id: 'fixture_bass_report',
+      description: 'fixture bass report',
       variants: ['assets/audio/gunshot-akm-01.ogg'],
       gain: 0.7,
       lowShelf: { frequencyHz: 175, gainDb: 4 },
@@ -218,15 +225,16 @@ describe('game audio playback', () => {
     const sourceGain = (source: ReturnType<typeof makeSource>) =>
       (source.connect.mock.calls[0]![0] as ReturnType<FakeAudioContext['createGain']>).gain.value;
 
-    audio.updateHeartbeat(86);
+    const { startStamina } = heartbeat;
+    audio.updateHeartbeat(startStamina + 1);
     await flush();
     expect(context.sources).toHaveLength(0);
     expect(fetchBuffer).not.toHaveBeenCalled();
 
-    audio.updateHeartbeat(85);
+    audio.updateHeartbeat(startStamina);
     await flush();
     expect(context.sources).toHaveLength(1);
-    expect(sourceGain(context.sources[0]!)).toBeCloseTo(heartbeatForStamina(85).gain);
+    expect(sourceGain(context.sources[0]!)).toBeCloseTo(heartbeatForStamina(heartbeat, startStamina).gain);
     expect((context.sources[0]!.buffer as (AudioBuffer & { heartbeatFile?: string }) | null)?.heartbeatFile).toBe(
       HEARTBEAT_FILES.slow,
     );
@@ -236,7 +244,7 @@ describe('game audio playback', () => {
     expect(context.panners).toHaveLength(0);
 
     const firstBeatAt = context.sources[0]!.start.mock.calls[0]![0] as number;
-    context.currentTime = firstBeatAt + 60 / heartbeatForStamina(85).bpm - 0.01;
+    context.currentTime = firstBeatAt + 60 / heartbeatForStamina(heartbeat, startStamina).bpm - 0.01;
     audio.updateHeartbeat(0);
     await flush();
     expect(context.sources).toHaveLength(1);
@@ -244,13 +252,13 @@ describe('game audio playback', () => {
     audio.updateHeartbeat(0);
     await flush();
     expect(context.sources).toHaveLength(2);
-    expect(sourceGain(context.sources[1]!)).toBeCloseTo(heartbeatForStamina(0).gain);
+    expect(sourceGain(context.sources[1]!)).toBeCloseTo(heartbeatForStamina(heartbeat, 0).gain);
     expect((context.sources[1]!.buffer as (AudioBuffer & { heartbeatFile?: string }) | null)?.heartbeatFile).toBe(
       HEARTBEAT_FILES.fast,
     );
 
     const secondBeatAt = context.sources[1]!.start.mock.calls[0]![0] as number;
-    context.currentTime = secondBeatAt + 60 / heartbeatForStamina(0).bpm - 0.01;
+    context.currentTime = secondBeatAt + 60 / heartbeatForStamina(heartbeat, 0).bpm - 0.01;
     audio.updateHeartbeat(0);
     await flush();
     expect(context.sources).toHaveLength(2);
@@ -260,17 +268,19 @@ describe('game audio playback', () => {
     expect(context.sources).toHaveLength(3);
 
     context.currentTime += 1;
-    audio.updateHeartbeat(50);
+    audio.updateHeartbeat(startStamina / 2);
     await flush();
     expect(context.sources).toHaveLength(4);
-    expect(sourceGain(context.sources[3]!)).toBeCloseTo(heartbeatForStamina(50).gain);
+    expect(sourceGain(context.sources[3]!)).toBeCloseTo(heartbeatForStamina(heartbeat, startStamina / 2).gain);
     expect(context.sources.every(({ playbackRate }) => playbackRate.value === 1)).toBe(true);
     expect(audio.heardSounds).toHaveLength(0);
   });
 
-  it('previews a heartbeat recording at the requested gain through the body category', async () => {
+  it('previews a heartbeat recording at the requested gain through its category', async () => {
     const { audio, context, fetchBuffer } = setup();
-    expect(audio.previewHeartbeat(HEARTBEAT_FILES.slow, 0.37)).toBe(true);
+    const slow = baseRegistry.sounds.get(heartbeat.sounds.slow)!;
+    expect(slow.category).toBe('body');
+    expect(audio.previewHeartbeat(slow.id, 0.37)).toBe(true);
     await flush();
 
     expect(fetchBuffer).toHaveBeenCalledTimes(1);
@@ -279,7 +289,7 @@ describe('game audio playback', () => {
     const source = context.sources[0]!;
     const sourceGain = source.connect.mock.calls[0]![0] as ReturnType<typeof makeGain>;
     const bodyCategory = context.gainNodes[2]!;
-    expect(sourceGain.gain.value).toBe(0.37);
+    expect(sourceGain.gain.value).toBeCloseTo(0.37 * slow.gain);
     expect(sourceGain.connect).toHaveBeenCalledWith(bodyCategory);
     expect(source.playbackRate.value).toBe(1);
     expect(audio.heardSounds).toHaveLength(0);
@@ -301,7 +311,7 @@ describe('game audio playback', () => {
     expect(oldest.stop).toHaveBeenCalledWith(10.01);
     expect(context.sources.every(({ start }) => start.mock.calls.length === 1)).toBe(true);
     expect(new Set(audio.heardSounds.map(({ file }) => file))).toEqual(
-      new Set(['assets/audio/gunshot-akm-01.ogg', 'assets/audio/gunshot-akm-02.ogg']),
+      new Set(baseRegistry.sounds.get('gunshot')!.variants),
     );
     expect(fetchBuffer).toHaveBeenCalledTimes(2);
     expect(context.decodeAudioData).toHaveBeenCalledTimes(2);

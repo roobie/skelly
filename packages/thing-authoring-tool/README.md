@@ -23,6 +23,18 @@ See `src/catalogue.ts`, `buildItem`, and `packages.libsonnet`. Attachment datums
 as named anchors, use the same solid reference for the same reason: a vehicle part's mount
 follows its geometry. See `vehicle-parts.libsonnet`.
 
+Equipment uses family-specific construction rather than a generic box so silhouettes and
+exposed working parts remain useful identification cues at play distance. Repair trays show
+their contents because a closed case would hide the distinction between metal repair and
+clothing repair; folded continuous webbing keeps a sling's ground footprint practical without
+making it look like a rigid rod. See `src/families/equipment.ts`, `repairKit`, `webbingSling`
+and `pliers`, and `equipment.libsonnet`.
+
+Jacks and the standalone hoist are ordinary carried tools: their jacking quality is authored
+in deadvox content and their models say nothing about load, reach or supported groups, so
+what a jack may lift stays a content and runtime decision. See `src/families/jacks.ts`,
+`engineHoist`, and `jacks.libsonnet`.
+
 The preview draws the same engine report the exporter consumes, so visual inspection is
 not a second model implementation. See `src/main.ts` and `packages/tool-ui/src/scene.ts`,
 `buildLayers`. The page is `index.html`; the deployed viewer path is `/thing-authoring-tool/`.

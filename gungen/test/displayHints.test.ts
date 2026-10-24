@@ -116,11 +116,12 @@ describe('per-solid display hints', () => {
     const raw = JSON.parse(readFileSync(join(import.meta.dirname, '..', 'designs', 'archetype-ar.json'), 'utf8')) as {
       assembly: { parts: Record<string, Record<string, unknown>> };
     };
-    raw.assembly.parts.grip!.display = hints;
+    // A catalogue item part fixes everything but placement, so the hints go on a part the design builds itself.
+    raw.assembly.parts.magazine!.display = hints;
     const loaded = loadGunDesign(JSON.stringify(raw));
     expect(loaded.ok).toBe(true);
     if (loaded.ok) {
-      expect(loaded.design.assembly.parts.grip).not.toHaveProperty('display');
+      expect(loaded.design.assembly.parts.magazine).not.toHaveProperty('display');
     }
   });
 });

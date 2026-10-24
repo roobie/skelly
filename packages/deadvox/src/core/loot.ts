@@ -3,10 +3,12 @@
 // table (rolled in full), or nothing. What comes out is a list of items to make, not
 // instances, so worldgen stays free of item uids.
 
-import { array, check, type InferOutput, picklist, pipe, strictObject } from 'valibot';
+import { array, check, type InferOutput, literal, optional, picklist, pipe, strictObject } from 'valibot';
 import type { ItemDef, LootEntry, Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
+import { type PaperMapCoverage, paperMapAt } from './paperMap.ts';
 import { Rng } from './random.ts';
+import { BLOCK_SIZE } from './scale.ts';
 import type { FixedLootItemDef } from './schema.ts';
 
 const distinct = <T>(values: T[]): boolean => new Set(values).size === values.length;
@@ -15,19 +17,40 @@ export const UsageSchema = pipe(
   array(picklist(['Residential', 'Industrial', 'Medical', 'Hunting', 'Police', 'Military', 'Infected'])),
   check(distinct, 'usage tags must be unique'),
 );
-const LootTierSchema = picklist(['Tier1', 'Tier2', 'Tier3']);
+export const LOOT_TIERS = ['Tier1', 'Tier2', 'Tier3', 'Tier4'] as const;
+const LootTierSchema = picklist(LOOT_TIERS);
 export const ItemEconomySchema = strictObject({
   usage: UsageSchema,
   tiers: pipe(array(LootTierSchema), check(distinct, 'tiers must be unique')),
 });
-export const LootContextSchema = strictObject({ usage: UsageSchema, tier: LootTierSchema });
+/** `lowerTiers` makes the context roll its tier and every tier beneath it, so a deeper area adds a tier and keeps the rest. */
+export const LootContextSchema = strictObject({
+  usage: UsageSchema,
+  tier: LootTierSchema,
+  lowerTiers: optional(literal(true)),
+});
 
 export type ItemEconomy = InferOutput<typeof ItemEconomySchema>;
 export type LootContext = InferOutput<typeof LootContextSchema>;
+/** The part of a loot context an enclosing assembly hands down to the pieces inside it. */
+export type LootDepth = Pick<LootContext, 'tier' | 'lowerTiers'>;
 type UsageTag = ItemEconomy['usage'][number];
 
+export const lootDepthOf = ({ tier, lowerTiers }: LootContext): LootDepth => ({
+  tier,
+  ...(lowerTiers === true ? { lowerTiers } : {}),
+});
+
+/** The context with a piece's own depth in place of the placement's, if it has one. */
+export const withLootDepth = (context: LootContext, depth: LootDepth | undefined): LootContext =>
+  depth === undefined ? context : { usage: context.usage, ...depth };
+
+const tierReaches = (context: LootContext, tier: (typeof LOOT_TIERS)[number]): boolean =>
+  context.lowerTiers === true ? LOOT_TIERS.indexOf(tier) <= LOOT_TIERS.indexOf(context.tier) : tier === context.tier;
+
 export const economyEligible = (economy: ItemEconomy, context: LootContext): boolean =>
-  economy.tiers.includes(context.tier) && economy.usage.some((usage) => context.usage.includes(usage));
+  economy.tiers.some((tier) => tierReaches(context, tier)) &&
+  economy.usage.some((usage) => context.usage.includes(usage));
 
 export const militaryOnlyEconomy = (economy: ItemEconomy): boolean =>
   economy.usage.length === 1 && economy.usage[0] === 'Military';
@@ -72,6 +95,7 @@ export const lootSpawnPoint = (source: LootPointSource): LootSpawnPoint => ({
   context: {
     usage: source.usage === undefined ? [...source.context.usage] : [...source.usage],
     tier: source.context.tier,
+    ...(source.context.lowerTiers === true ? { lowerTiers: true as const } : {}),
   },
   supply: source.supply,
   required: source.required,
@@ -119,14 +143,27 @@ const installedLootTypes = (
   return [...Object.values(overrides), ...children];
 };
 
-export const lootTypeIssue = (
+/** An item no loot context admits: it exists only where content places it by hand. */
+export const neverSpawns = (economy: ItemEconomy): boolean => economy.tiers.length === 0 || economy.usage.length === 0;
+
+/** Why one item is refused; authored placement also admits an item that never spawns, but not craft escrow. */
+const admissionIssue = (item: ItemDef, context: LootContext, placed: boolean): string | undefined => {
+  if (placed && item.workInProgress) {
+    return `"${item.id}" is craft escrow, which only a craft creates`;
+  }
+  return economyEligible(item.economy, context) || (placed && neverSpawns(item.economy))
+    ? undefined
+    : `"${item.id}" is outside the source loot context`;
+};
+
+const typeIssue = (
   registry: Registry,
-  type: string,
+  root: { readonly type: string; readonly fitted: Readonly<Record<string, string>> },
   context: LootContext,
-  fitted: Readonly<Record<string, string>> = {},
+  placed: boolean,
 ): string | undefined => {
   const seen = new Set<string>();
-  const pending = [{ type, fitted }];
+  const pending = [root];
   while (pending.length > 0) {
     const candidate = pending.pop()!;
     if (seen.has(candidate.type)) {
@@ -137,8 +174,9 @@ export const lootTypeIssue = (
     if (!item) {
       return `no item "${candidate.type}"`;
     }
-    if (!economyEligible(item.economy, context)) {
-      return `"${candidate.type}" is outside the source loot context`;
+    const refused = admissionIssue(item, context, placed);
+    if (refused !== undefined) {
+      return refused;
     }
     for (const child of installedLootTypes(registry, item, candidate.fitted)) {
       if (child === undefined) {
@@ -150,13 +188,33 @@ export const lootTypeIssue = (
   return undefined;
 };
 
+/** Whether random loot may roll the item: its economy must reach the context. */
+export const lootTypeIssue = (
+  registry: Registry,
+  type: string,
+  context: LootContext,
+  fitted: Readonly<Record<string, string>> = {},
+): string | undefined => typeIssue(registry, { type, fitted }, context, false);
+
+/** Whether authored content may place the item: loot admission, or an item that never spawns. */
+export const placedTypeIssue = (
+  registry: Registry,
+  type: string,
+  context: LootContext,
+  fitted: Readonly<Record<string, string>> = {},
+): string | undefined => typeIssue(registry, { type, fitted }, context, true);
+
 export interface Rolled {
   type: string;
   count: number;
+  /** Coverage resolved from the immutable loot source, before an item gets a UID. */
+  paperMap?: PaperMapCoverage;
   /** 0 to 1, rounded to hundredths so identical rolls stack. */
   condition: number;
   /** Item types fitted to each one, by slot id; only authored fixed loot sets them. */
   fitted?: Readonly<Record<string, string>>;
+  /** Battery charge as a share of full; only authored fixed loot sets it. */
+  charge?: number;
 }
 
 const pick = <T extends { weight: number }>(entries: readonly T[], rng: Rng): T => {
@@ -178,19 +236,33 @@ const pick = <T extends { weight: number }>(entries: readonly T[], rng: Rng): T 
  * Items for one count of an entry: a stackable item comes as stacks of up to its
  * limit, anything else as separate items.
  */
-const itemsOf = (registry: Registry, { type, count, condition }: Rolled): Rolled[] => {
+const itemsOf = (registry: Registry, { type, count, condition, paperMap }: Rolled): Rolled[] => {
   const limit = registry.items.get(type)?.stack ?? 1;
   const out: Rolled[] = [];
   for (let left = count; left > 0; left -= limit) {
-    out.push({ type, count: Math.min(left, limit), condition });
+    out.push({ type, count: Math.min(left, limit), condition, ...(paperMap === undefined ? {} : { paperMap }) });
   }
   return out;
+};
+
+const mapCoverage = (
+  item: ItemDef | undefined,
+  point: LootSpawnPoint,
+  blockSize: number,
+): PaperMapCoverage | undefined =>
+  item?.paperMap ? paperMapAt(point.position[0] * blockSize, point.position[2] * blockSize) : undefined;
+
+const withMapCoverage = (registry: Registry, point: LootSpawnPoint, blockSize: number, rolled: Rolled): Rolled => {
+  const paperMap = mapCoverage(registry.items.get(rolled.type), point, blockSize);
+  return { ...rolled, ...(paperMap === undefined ? {} : { paperMap }) };
 };
 
 export interface WeightedCandidate {
   readonly type?: string | undefined;
   readonly weight: number;
   readonly fitted?: Readonly<Record<string, string>> | undefined;
+  /** Authored by hand rather than rolled from a table, so an item that never spawns is admitted. */
+  readonly placed?: true | undefined;
 }
 
 export const admittedCandidates = (
@@ -203,7 +275,12 @@ export const admittedCandidates = (
       candidate.type === undefined ||
       (registry.items.has(candidate.type) &&
         ((point.fixture && point.supply.kind === 'fixed') ||
-          lootTypeIssue(registry, candidate.type, point.context, candidate.fitted) === undefined)),
+          (candidate.placed === true ? placedTypeIssue : lootTypeIssue)(
+            registry,
+            candidate.type,
+            point.context,
+            candidate.fitted,
+          ) === undefined)),
   );
 
 /** All item-type choices meet here; explicit fixture stock is not world-economy supply. */
@@ -217,21 +294,34 @@ export const selectLootType = (
   return admitted.length === 0 ? undefined : pick(admitted, rng).type;
 };
 
-const fixedItems = (
-  registry: Registry,
-  items: readonly FixedLootItemDef[],
-  point: LootSpawnPoint,
-  rng: Rng,
-): Rolled[] =>
-  items.flatMap(({ item, count = 1, condition = 1, fitted }) => {
-    const type = selectLootType(registry, point, [{ type: item, weight: 1, fitted }], rng);
+interface RollContext {
+  readonly point: LootSpawnPoint;
+  readonly rng: Rng;
+  readonly blockSize: number;
+}
+
+const fixedItems = (registry: Registry, items: readonly FixedLootItemDef[], context: RollContext): Rolled[] =>
+  items.flatMap(({ item, count = 1, condition = 1, fitted, charge }) => {
+    const type = selectLootType(
+      registry,
+      context.point,
+      [{ type: item, weight: 1, fitted, placed: true }],
+      context.rng,
+    );
     if (type === undefined) {
-      if (point.required) {
-        throw new Error(`required loot ${item} is outside source ${point.id}`);
+      if (context.point.required) {
+        throw new Error(`required loot ${item} is outside source ${context.point.id}`);
       }
       return [];
     }
-    return itemsOf(registry, { type, count, condition }).map((rolled) => (fitted ? { ...rolled, fitted } : rolled));
+    return itemsOf(
+      registry,
+      withMapCoverage(registry, context.point, context.blockSize, { type, count, condition }),
+    ).map((rolled) => ({
+      ...rolled,
+      ...(fitted ? { fitted } : {}),
+      ...(charge === undefined ? {} : { charge }),
+    }));
   });
 
 const leafCandidates = (entries: readonly LootEntry[]): WeightedCandidate[] =>
@@ -266,21 +356,28 @@ const tableEntry = (
   );
 };
 
-const rollTable = (registry: Registry, tableId: string, point: LootSpawnPoint, rng: Rng): Rolled[] => {
+const rollTable = (registry: Registry, tableId: string, context: RollContext): Rolled[] => {
   const table = registry.loot.get(tableId);
   if (!table) {
     return [];
   }
   const out: Rolled[] = [];
-  const rolls = rng.int(table.rolls[0], table.rolls[1]);
+  const rolls = context.rng.int(table.rolls[0], table.rolls[1]);
   for (let i = 0; i < rolls; i++) {
-    const entry = tableEntry(registry, point, table.entries, rng);
+    const entry = tableEntry(registry, context.point, table.entries, context.rng);
     if (entry?.table !== undefined) {
-      out.push(...rollTable(registry, entry.table, point, rng));
+      out.push(...rollTable(registry, entry.table, context));
     } else if (entry?.item !== undefined) {
-      const count = entry.count ? rng.int(entry.count[0], entry.count[1]) : 1;
-      const condition = entry.condition ? Math.round(rng.range(entry.condition[0], entry.condition[1]) * 100) / 100 : 1;
-      out.push(...itemsOf(registry, { type: entry.item, count, condition }));
+      const count = entry.count ? context.rng.int(entry.count[0], entry.count[1]) : 1;
+      const condition = entry.condition
+        ? Math.round(context.rng.range(entry.condition[0], entry.condition[1]) * 100) / 100
+        : 1;
+      out.push(
+        ...itemsOf(
+          registry,
+          withMapCoverage(registry, context.point, context.blockSize, { type: entry.item, count, condition }),
+        ),
+      );
     }
   }
   return out;
@@ -291,19 +388,21 @@ export const rollLootParts = (
   registry: Registry,
   point: LootSpawnPoint,
   rng: Rng,
+  blockSize = BLOCK_SIZE,
 ): { fixed: Rolled[]; rolled: Rolled[] } => {
+  const context = { point, rng, blockSize };
   switch (point.supply.kind) {
     case 'empty':
       return { fixed: [], rolled: [] };
     case 'table':
-      return { fixed: [], rolled: rollTable(registry, point.supply.table, point, rng) };
+      return { fixed: [], rolled: rollTable(registry, point.supply.table, context) };
     case 'fixed': {
-      const fixed = fixedItems(registry, point.supply.items, point, rng);
+      const fixed = fixedItems(registry, point.supply.items, context);
       return {
         fixed: point.required ? fixed : [],
         rolled: [
           ...(point.required ? [] : fixed),
-          ...(point.supply.table === undefined ? [] : rollTable(registry, point.supply.table, point, rng)),
+          ...(point.supply.table === undefined ? [] : rollTable(registry, point.supply.table, context)),
         ],
       };
     }
@@ -312,8 +411,8 @@ export const rollLootParts = (
   }
 };
 
-export const rollLoot = (registry: Registry, point: LootSpawnPoint, rng: Rng): Rolled[] => {
-  const { fixed, rolled } = rollLootParts(registry, point, rng);
+export const rollLoot = (registry: Registry, point: LootSpawnPoint, rng: Rng, blockSize = BLOCK_SIZE): Rolled[] => {
+  const { fixed, rolled } = rollLootParts(registry, point, rng, blockSize);
   return [...fixed, ...rolled];
 };
 

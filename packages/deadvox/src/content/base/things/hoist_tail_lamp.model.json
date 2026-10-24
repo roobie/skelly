@@ -1,0 +1,17 @@
+{
+  "id": "hoist_tail_lamp",
+  "file": "assets/models/hoist_tail_lamp.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 1,
+      "centreOfMass": [-2.96875, 0.640625, 0.6875],
+      "collision": [
+        { "min": [-3, 0.5625, 0.5625], "max": [-2.9375, 0.625, 0.8125] },
+        { "min": [-3, 0.625, 0.5625], "max": [-2.9375, 0.71875, 0.8125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

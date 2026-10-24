@@ -1,14 +1,15 @@
 // Item action availability. Views display these plans; commands revalidate at completion.
+// The to-hands and quickbar commands also enqueue their handling jobs here, so a refusal reaches the caller as text.
 
 import type { BlockEntity, DoorOperation } from './blockEntities.ts';
 import { dominantSide, offSide } from './character.ts';
 import type { ItemDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
+import { type CoreMessageKey, coreLabel, coreMessage } from './coreText.ts';
 import type { HandlingQueue, MoveJob } from './handling.ts';
 import { dropSpots, type HandSide, Inventory, type Plan, type Target, wornSlotOf } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
-import { NO_LANDING_REFUSAL } from './itemThrow.ts';
-import { chargeOf, fitsLight } from './lights.ts';
+import { chargeOf, fitsLight, lightInHands } from './lights.ts';
 import type { ReachSnapshot } from './reach.ts';
 import type { Readable } from './readable.ts';
 import { fitsFuelledTool } from './torch.ts';
@@ -20,6 +21,31 @@ export const heldKeyLocks = (inventory: Inventory): string[] =>
     return lock === undefined ? [] : [lock];
   });
 
+/** A door bar the player holds; a bar is two-handed, so the other hand is empty. */
+export const heldDoorBar = (inventory: Inventory): Item | undefined =>
+  [inventory.hands.right, inventory.hands.left].find(
+    (held) => held !== undefined && defOf(inventory.registry, held.type).doorBar !== undefined,
+  );
+
+/** Setting a bar takes it from both hands; lifting one needs both hands free. */
+const barHandsRefusal = (inventory: Inventory, operation: DoorOperation): string | undefined => {
+  if (operation === 'unbar') {
+    return inventory.liftRefusal();
+  }
+  return operation !== 'bar' || heldDoorBar(inventory) ? undefined : coreMessage(inventory.registry, 'noHeldDoorBar');
+};
+
+const doorSimSeconds = (inventory: Inventory, entity: BlockEntity, operation: DoorOperation): number => {
+  switch (operation) {
+    case 'bar':
+      return defOf(inventory.registry, heldDoorBar(inventory)!.type).doorBar!.setSimSeconds;
+    case 'unbar':
+      return defOf(inventory.registry, entity.bar!.item).doorBar!.liftSimSeconds;
+    default:
+      return inventory.entities.defOf(entity).door!.handlingSimSeconds;
+  }
+};
+
 export const doorPlan = (
   inventory: Inventory,
   entity: BlockEntity,
@@ -27,12 +53,12 @@ export const doorPlan = (
   keyLocks = heldKeyLocks(inventory),
 ): Plan => {
   const refusal = inventory.entities.doorRefusal(entity, operation, keyLocks, inventory.actorPosition());
+  const handled = operation !== 'open' && operation !== 'close';
   const reason =
     refusal ??
-    ((operation === 'lock' || operation === 'unlock') && !inventory.canReachEntity(entity)
-      ? 'Too far away'
-      : undefined);
-  return reason ? { ok: false, reason } : { ok: true, time: inventory.entities.defOf(entity).door!.handlingSimSeconds };
+    (handled && !inventory.canReachEntity(entity) ? coreMessage(inventory.registry, 'tooFar') : undefined) ??
+    barHandsRefusal(inventory, operation);
+  return reason ? { ok: false, reason } : { ok: true, time: doorSimSeconds(inventory, entity, operation) };
 };
 
 export const doorOptions = (
@@ -42,12 +68,12 @@ export const doorOptions = (
   const operation = entity.open ? 'close' : 'open';
   const lock: DoorOperation = entity.lock?.locked ? 'unlock' : 'lock';
   return [
-    { operation, label: entity.open ? 'Close' : 'Open', plan: doorPlan(inventory, entity, operation) },
+    { operation, label: coreLabel(inventory.registry, operation), plan: doorPlan(inventory, entity, operation) },
     ...(entity.lock
       ? [
           {
             operation: lock,
-            label: entity.lock.locked ? 'Unlock' : 'Lock',
+            label: coreLabel(inventory.registry, lock),
             plan: doorPlan(inventory, entity, lock),
           },
         ]
@@ -60,19 +86,19 @@ export const consumption = (
   def: ReturnType<typeof defOf>,
   registry: Registry,
 ): { label: string; simSeconds: number } | undefined => {
-  const name = def.name.toLowerCase();
+  const item = def.name.toLowerCase();
   if (def.serving) {
     const food = defOf(registry, def.serving.food).food!;
-    return { label: `Eat from the ${name}`, simSeconds: food.consumeSimSeconds };
+    return { label: coreLabel(registry, 'eatFrom', { item }), simSeconds: food.consumeSimSeconds };
   }
   if (def.analgesic) {
-    return { label: `Take one ${name}`, simSeconds: def.analgesic.takeSimSeconds };
+    return { label: coreLabel(registry, 'takeOne', { item }), simSeconds: def.analgesic.takeSimSeconds };
   }
   if (!def.food) {
     return undefined;
   }
-  const drink = def.category === 'drink';
-  return { label: `${drink ? 'Drink' : 'Eat'} the ${name}`, simSeconds: def.food.consumeSimSeconds };
+  const verb = def.category === 'drink' ? 'drink' : 'eat';
+  return { label: coreLabel(registry, verb, { item }), simSeconds: def.food.consumeSimSeconds };
 };
 
 export interface MoveOption {
@@ -86,7 +112,10 @@ export interface UseOption {
   kind: 'use';
   label: string;
   plan: Plan;
-  operation?: 'consume' | 'switch' | 'battery' | 'canister' | 'read' | 'trap';
+  operation?: 'consume' | 'switch' | 'battery' | 'canister' | 'read' | 'trap' | 'pour';
+  receiver?: Item;
+  /** How a battery load was admitted; completion rechecks the same route. */
+  route?: BatteryRoute;
   light?: Item;
   battery?: Item;
   tool?: Item;
@@ -97,7 +126,7 @@ export interface UseOption {
 export type Option = MoveOption | UseOption;
 const SIDES: readonly HandSide[] = ['right', 'left'];
 const otherHand = (side: HandSide): HandSide => (side === 'right' ? 'left' : 'right');
-const OBVIOUS = new Set(["It can't go inside itself", "It's already in that hand", "You're already wearing it"]);
+const OBVIOUS: readonly CoreMessageKey[] = ['insideItself', 'alreadyInHand', 'alreadyWearing'];
 
 /** Every pocket of what the player holds and wears, retaining ordinary move ordering. */
 export const playerPockets = (
@@ -107,11 +136,13 @@ export const playerPockets = (
     (defOf(inv.registry, owner.type).container?.pockets ?? []).map((spec, pocket) => ({
       owner,
       pocket,
-      label: `${inv.name(owner)}${spec.name ? ` · ${spec.name}` : ''}`,
+      label: spec.name
+        ? coreLabel(inv.registry, 'pocket', { container: inv.name(owner), pocket: spec.name })
+        : inv.name(owner),
     })),
   );
 
-type DropInventory = Pick<Inventory, 'locate' | 'planAdd' | 'plan' | 'landing'>;
+type DropInventory = Pick<Inventory, 'locate' | 'planAdd' | 'plan' | 'landing' | 'registry'>;
 
 /** The first spot with room on the ground below it, else the first with ground; undefined with no ground at all. */
 const landedDrop = (
@@ -140,7 +171,7 @@ const landedDrop = (
 export const dropTarget = (inv: DropInventory, item: Item, feet: Vec3): { target: Target; plan: Plan } =>
   landedDrop(inv, item, feet, inv.locate(item) === undefined) ?? {
     target: { kind: 'pile', pos: feet },
-    plan: { ok: false, reason: NO_LANDING_REFUSAL },
+    plan: { ok: false, reason: coreMessage(inv.registry, 'noLanding') },
   };
 
 /** Where a new item, or a part leaving its slot, is put down; undefined when nothing nearby has ground below. */
@@ -178,14 +209,14 @@ export const bestPocket = (
 /** Queues an ordinary ground pickup into the quickest player pocket that can carry it. */
 export const pocketGroundItem = (inv: Inventory, queue: HandlingQueue, item: Item): string | undefined => {
   if (inv.locate(item)?.kind !== 'pile') {
-    return 'The item is no longer on the ground';
+    return coreMessage(inv.registry, 'gone');
   }
   const target: Target | undefined =
     defOf(inv.registry, item.type).wearable?.slot === 'back' && inv.worn.back === undefined
       ? { kind: 'worn' }
       : (slingTarget(inv, item) ?? bestPocket(inv, item)?.target);
   if (!target) {
-    return 'No room on you';
+    return coreMessage(inv.registry, 'noRoomOnMe');
   }
   const move = queue.enqueue(item, target);
   return move.ok ? undefined : move.reason;
@@ -215,42 +246,146 @@ const inventoryPocket = (inv: Inventory, item: Item): Target | undefined => {
 /** Dominant-hand items stow; other carried items drop as an ordinary drop does. */
 export const quickMove = (item: Item, view: ReachSnapshot): MoveOption => {
   const inv = view.player.inventory;
+  const label = coreLabel(inv.registry, 'quickMove');
   const at = inv.locate(item);
   if (!(at && ((at.kind === 'hand' && at.side === dominantSide(inv.character)) || inv.placeOf(at) !== undefined))) {
-    return { kind: 'move', label: 'Quick move', ...dropTarget(inv, item, view.feet) };
+    return { kind: 'move', label, ...dropTarget(inv, item, view.feet) };
   }
   const wear: Target = { kind: 'worn' };
   const target =
     slingTarget(inv, item) ??
     (at.kind === 'pile' && item.pockets && inv.plan(item, wear).ok ? wear : inventoryPocket(inv, item));
   return target
-    ? { kind: 'move', label: 'Quick move', target, plan: inv.plan(item, target) }
+    ? { kind: 'move', label, target, plan: inv.plan(item, target) }
     : {
         kind: 'move',
-        label: 'Quick move',
+        label,
         target: { kind: 'pile', pos: view.feet },
-        plan: { ok: false, reason: "It doesn't fit in your inventory" },
+        plan: { ok: false, reason: coreMessage(inv.registry, 'noRoomOnMe') },
       };
 };
 
-const refuseUse = (reason: string): UseOption => ({ kind: 'use', label: 'Use', plan: { ok: false, reason } });
+const refuseUse = (inv: Inventory, reason: string): UseOption => ({
+  kind: 'use',
+  label: coreLabel(inv.registry, 'use'),
+  plan: { ok: false, reason },
+});
 
-const batteryOption = (battery: Item, inv: Inventory, selectedLight?: Item): UseOption => {
-  const light =
-    selectedLight ??
-    [inv.hands[dominantSide(inv.character)], inv.hands[offSide(inv.character)]].find(
-      (held) => held && fitsLight(inv.registry, held, battery),
-    );
-  return light
-    ? {
-        kind: 'use',
-        label: `Put a battery in the ${inv.name(light).toLowerCase()}`,
-        operation: 'battery',
-        light,
-        battery,
-        plan: swapPlan(defOf(inv.registry, light.type).light!.power!.swapSimSeconds),
-      }
-    : refuseUse('Hold the light it goes in first');
+export const pourRefusal = (view: ReachSnapshot, sourceUid: number, receiverUid: number): string | undefined => {
+  const inv = view.player.inventory;
+  const source = inv.itemByUid(sourceUid);
+  const receiver = inv.itemByUid(receiverUid);
+  const to = receiver && inv.locate(receiver);
+  if (!(source && receiver && defOf(inv.registry, source.type).vessel?.pour)) {
+    return coreMessage(inv.registry, 'liquidTransferRefused');
+  }
+  if (inv.locate(source)?.kind !== 'hand') {
+    return coreMessage(inv.registry, 'notInHands', { item: inv.name(source).toLowerCase() });
+  }
+  if (
+    !(
+      view.entries.some((entry) => entry.item === receiver) &&
+      (to?.kind === 'hand' || to?.kind === 'pile' || to?.kind === 'furniture')
+    )
+  ) {
+    return coreMessage(inv.registry, 'liquidTransferRefused');
+  }
+  const plan = inv.planLiquidTransfer(sourceUid, receiverUid);
+  if (plan.ok) {
+    return undefined;
+  }
+  if (plan.reason === 'unserviceable' && (source.on || receiver.on)) {
+    return coreMessage(inv.registry, 'stillLit');
+  }
+  return coreMessage(inv.registry, plan.reason === 'full-receiver' ? 'liquidReceiverFull' : 'liquidTransferRefused');
+};
+
+export const otherHandPour = (item: Item, view: ReachSnapshot): UseOption => {
+  const inv = view.player.inventory;
+  const at = inv.locate(item);
+  const other = at?.kind === 'hand' ? inv.hands[otherHand(at.side)] : undefined;
+  const receiver = other && defOf(inv.registry, other.type).vessel ? other : undefined;
+  const refusal = receiver
+    ? pourRefusal(view, item.uid, receiver.uid)
+    : coreMessage(inv.registry, 'liquidTransferRefused');
+  return {
+    kind: 'use',
+    label: coreLabel(inv.registry, 'pour'),
+    operation: 'pour',
+    ...(receiver ? { receiver } : {}),
+    plan: refusal ? { ok: false, reason: refusal } : swapPlan(0),
+  };
+};
+
+type BatteryRoute = 'hands' | 'slot';
+
+const loadOption = (inv: Inventory, light: Item, battery: Item, route: BatteryRoute): UseOption => ({
+  kind: 'use',
+  label: coreLabel(inv.registry, 'batteryIn', { item: inv.name(light).toLowerCase() }),
+  operation: 'battery',
+  route,
+  light,
+  battery,
+  plan: swapPlan(defOf(inv.registry, light.type).light!.power!.swapSimSeconds),
+});
+
+/** The item at the top of `item`'s slot chain, as a light fitted to a gun answers to the gun. */
+const slotRoot = (inv: Inventory, item: Item): Item => {
+  const at = inv.locate(item);
+  return at?.kind === 'slot' ? slotRoot(inv, at.owner) : item;
+};
+
+/**
+ * Whether `battery` can go into `light` from the light's battery slot on its item card: both within reach,
+ * a fitted light through the item it is fitted to. Returns why not, or undefined.
+ */
+export const batterySlotRefusal = (view: ReachSnapshot, light: Item, battery: Item): string | undefined => {
+  const inv = view.player.inventory;
+  const reachable = (item: Item) => view.entries.some((entry) => entry.item === item);
+  if (!(inv.locate(light) && inv.locate(battery))) {
+    return coreMessage(inv.registry, 'gone');
+  }
+  if (!(reachable(slotRoot(inv, light)) && reachable(battery))) {
+    return coreMessage(inv.registry, 'tooFar');
+  }
+  if (inv.locate(light)?.kind === 'worn') {
+    return coreMessage(inv.registry, 'headlampOnHead');
+  }
+  return fitsLight(inv.registry, light, battery) ? undefined : coreMessage(inv.registry, 'wrongBattery');
+};
+
+/** Loading from the item card's battery slot (`DESIGN.md`, "Light"). */
+export const batterySlotOption = (view: ReachSnapshot, light: Item, battery: Item): UseOption => {
+  const inv = view.player.inventory;
+  const refusal = batterySlotRefusal(view, light, battery);
+  return refusal ? refuseUse(inv, refusal) : loadOption(inv, light, battery, 'slot');
+};
+
+/**
+ * Whether a battery in one hand can go into a light held, or fitted to a gun held, in the other.
+ * Returns why not, or undefined.
+ */
+export const batteryHandRefusal = (inv: Inventory, light: Item, battery: Item): string | undefined => {
+  if (!(inv.locate(light) && inv.locate(battery))) {
+    return coreMessage(inv.registry, 'gone');
+  }
+  if (inv.locate(battery)?.kind !== 'hand') {
+    return coreMessage(inv.registry, 'notInHands', { item: inv.name(battery).toLowerCase() });
+  }
+  return lightInHands(inv, light) && fitsLight(inv.registry, light, battery)
+    ? undefined
+    : coreMessage(inv.registry, 'noLightToFit');
+};
+
+/** A battery used from one hand goes into the light held, or fitted to the gun held, in the other. */
+const batteryOption = (battery: Item, inv: Inventory): UseOption => {
+  if (inv.locate(battery)?.kind !== 'hand') {
+    return refuseUse(inv, coreMessage(inv.registry, 'notInHands', { item: inv.name(battery).toLowerCase() }));
+  }
+  const light = [...inv.carriedTree()]
+    .map(({ item }) => item)
+    .find((item) => batteryHandRefusal(inv, item, battery) === undefined);
+  return light ? loadOption(inv, light, battery, 'hands') : refuseUse(inv, coreMessage(inv.registry, 'noLightToFit'));
 };
 
 const swapPlan = (simSeconds: number): UseOption['plan'] => ({ ok: true, time: simSeconds });
@@ -262,30 +397,36 @@ const canisterOption = (canister: Item, inv: Inventory): UseOption => {
   return tool
     ? {
         kind: 'use',
-        label: `Put a gas cartridge in the ${inv.name(tool).toLowerCase()}`,
+        label: coreLabel(inv.registry, 'cartridgeIn', {
+          fuel: inv.name(canister).toLowerCase(),
+          item: inv.name(tool).toLowerCase(),
+        }),
         operation: 'canister',
         tool,
         canister,
         plan: swapPlan(defOf(inv.registry, tool.type).tool!.fuel!.swapSimSeconds),
       }
-    : refuseUse('Hold the tool it goes in first');
+    : refuseUse(inv, coreMessage(inv.registry, 'noToolToFit'));
 };
 
 const lightOption = (item: Item, view: ReachSnapshot): UseOption => {
   const inv = view.player.inventory;
   if (!item.on && chargeOf(inv.registry, item) === 0) {
-    if (!defOf(inv.registry, item.type).light?.power) {
-      return refuseUse("It's out of fuel");
+    if (defOf(inv.registry, item.type).tool?.fuel) {
+      const [fuel] = view.entries
+        .map((entry) => entry.item)
+        .filter((candidate) => fitsFuelledTool(inv, item, candidate) && (chargeOf(inv.registry, candidate) ?? 0) > 0)
+        .sort((a, b) => (chargeOf(inv.registry, b) ?? 0) - (chargeOf(inv.registry, a) ?? 0));
+      return fuel ? canisterOption(fuel, inv) : refuseUse(inv, coreMessage(inv.registry, 'outOfFuelNoSpare'));
     }
-    const [battery] = view.entries
-      .map((entry) => entry.item)
-      .filter((candidate) => fitsLight(inv.registry, item, candidate) && (chargeOf(inv.registry, candidate) ?? 0) > 0)
-      .sort((a, b) => (chargeOf(inv.registry, b) ?? 0) - (chargeOf(inv.registry, a) ?? 0));
-    return battery ? batteryOption(battery, inv, item) : refuseUse('The battery is dead, and you have no spare');
+    if (!defOf(inv.registry, item.type).light?.power) {
+      return refuseUse(inv, coreMessage(inv.registry, 'outOfFuel'));
+    }
+    return refuseUse(inv, coreMessage(inv.registry, item.slots?.battery ? 'batteryDeadNoSpare' : 'noBatteryNoSpare'));
   }
   return {
     kind: 'use',
-    label: `Switch ${item.on ? 'off' : 'on'}`,
+    label: coreLabel(inv.registry, item.on ? 'switchOff' : 'switchOn'),
     operation: 'switch',
     light: item,
     plan: { ok: true, time: 0 },
@@ -303,17 +444,23 @@ const useLocationRefusal = (
   const { light } = defOf(inventory.registry, item.type);
   if (at.kind === 'worn' && at.slot === 'head' && light?.beam !== undefined) {
     return !item.on && chargeOf(inventory.registry, item) === 0
-      ? 'Take the headlamp in your hands to replace its battery'
+      ? coreMessage(inventory.registry, 'headlampOnHead')
       : undefined;
   }
-  return `Take the ${defOf(inventory.registry, item.type).name.toLowerCase()} in your hands first`;
+  return coreMessage(inventory.registry, 'notInHands', {
+    item: defOf(inventory.registry, item.type).name.toLowerCase(),
+  });
 };
 
-const goneReason = (def: ItemDef, name: string): string => {
+/** Books, notes and maps all read through one use option, so every hand route agrees on what reads. */
+export const isReadableItem = (def: ItemDef): boolean =>
+  def.book !== undefined || def.readable !== undefined || def.paperMap !== undefined;
+
+const goneReason = (registry: Registry, def: ItemDef, item: string): string => {
   if (def.battery) {
-    return "The battery isn't there any more";
+    return coreMessage(registry, 'batteryGone');
   }
-  return def.canister ? "The cartridge isn't there any more" : `Take the ${name} in your hands first`;
+  return def.canister ? coreMessage(registry, 'cartridgeGone') : coreMessage(registry, 'notInHands', { item });
 };
 
 /** A trap lying set is disarmed where it lies; an unset one is set from the hands. */
@@ -323,15 +470,27 @@ const trapOption = (
   inventory: Inventory,
   { disarmSimSeconds, setSimSeconds }: { disarmSimSeconds: number; setSimSeconds: number },
 ): UseOption => {
+  const { registry } = inventory;
   if (item.trap) {
     return item.trap.state === 'armed'
-      ? { kind: 'use', label: 'Disarm', operation: 'trap', plan: swapPlan(disarmSimSeconds) }
-      : refuseUse("It's shut on a leg");
+      ? { kind: 'use', label: coreLabel(registry, 'disarm'), operation: 'trap', plan: swapPlan(disarmSimSeconds) }
+      : refuseUse(inventory, coreMessage(registry, 'trapShut'));
   }
   const refusal = useLocationRefusal(item, at, inventory);
   return refusal
-    ? refuseUse(refusal)
-    : { kind: 'use', label: 'Set it', operation: 'trap', plan: swapPlan(setSimSeconds) };
+    ? refuseUse(inventory, refusal)
+    : { kind: 'use', label: coreLabel(registry, 'setTrap'), operation: 'trap', plan: swapPlan(setSimSeconds) };
+};
+
+const vesselOrLightOption = (item: Item, view: ReachSnapshot): UseOption => {
+  const inv = view.player.inventory;
+  const def = defOf(inv.registry, item.type);
+  if (def.light) {
+    return lightOption(item, view);
+  }
+  return def.vessel?.pour
+    ? otherHandPour(item, view)
+    : refuseUse(inv, coreMessage(inv.registry, 'cantUse', { item: def.name.toLowerCase() }));
 };
 
 /** Eligibility only: effects remain in the domain command owner. */
@@ -341,11 +500,12 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   const name = def.name.toLowerCase();
   const at = inv.locate(item);
   if (!at) {
-    return refuseUse(goneReason(def, name));
+    return refuseUse(inv, goneReason(inv.registry, def, name));
   }
   if (!view.entries.some((entry) => entry.item === item)) {
     const place = inv.placeOf(at);
-    return refuseUse(place?.kind === 'furniture' && !place.entity.searched ? 'Search it first' : 'Too far away');
+    const unsearched = place?.kind === 'furniture' && !place.entity.searched;
+    return refuseUse(inv, coreMessage(inv.registry, unsearched ? 'notSearched' : 'tooFar'));
   }
   if (def.battery) {
     return batteryOption(item, inv);
@@ -358,12 +518,12 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   }
   const locationRefusal = useLocationRefusal(item, at, inv);
   if (locationRefusal) {
-    return refuseUse(locationRefusal);
+    return refuseUse(inv, locationRefusal);
   }
-  if (def.book || def.readable) {
+  if (isReadableItem(def)) {
     return {
       kind: 'use',
-      label: 'Read',
+      label: coreLabel(inv.registry, 'read'),
       operation: 'read',
       ...(def.readable ? { readable: def.readable } : {}),
       plan: { ok: true, time: 0 },
@@ -373,7 +533,7 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   if (consumed) {
     return { kind: 'use', label: consumed.label, operation: 'consume', plan: { ok: true, time: consumed.simSeconds } };
   }
-  return def.light ? lightOption(item, view) : refuseUse(`Nothing to do with the ${name} yet`);
+  return vesselOrLightOption(item, view);
 };
 
 /** All move/use choices, including their refusal reasons and ordinary handling times. */
@@ -381,11 +541,12 @@ export const options = (item: Item, view: ReachSnapshot): Option[] => {
   const inv = view.player.inventory;
   const out: Option[] = SIDES.map((side): MoveOption => {
     const target: Target = { kind: 'hand', side };
-    return { kind: 'move', label: `${side === 'right' ? 'Right' : 'Left'} hand`, target, plan: inv.plan(item, target) };
+    const label = coreLabel(inv.registry, side === 'right' ? 'rightHand' : 'leftHand');
+    return { kind: 'move', label, target, plan: inv.plan(item, target) };
   });
   const wornSlot = wornSlotOf(inv.registry, item);
   if (wornSlot) {
-    const label = wornSlot === 'shoulder' ? 'Sling it' : 'Wear it';
+    const label = coreLabel(inv.registry, wornSlot === 'shoulder' ? 'sling' : 'wear');
     out.push({ kind: 'move', label, target: { kind: 'worn' }, plan: inv.plan(item, { kind: 'worn' }) });
   }
   for (const { owner, pocket, label } of playerPockets(inv)) {
@@ -393,16 +554,22 @@ export const options = (item: Item, view: ReachSnapshot): Option[] => {
     out.push({ kind: 'move', label, target, plan: inv.plan(item, target) });
   }
   out.push(
-    { kind: 'move', label: 'Drop it here', ...dropTarget(inv, item, view.feet) },
+    { kind: 'move', label: coreLabel(inv.registry, 'dropHere'), ...dropTarget(inv, item, view.feet) },
     quickMove(item, view),
     useOption(item, view),
   );
-  return out.filter((o) => o.plan.ok || !OBVIOUS.has(o.plan.reason));
+  return out.filter((o) => o.plan.ok || o.plan.key === undefined || !OBVIOUS.includes(o.plan.key));
 };
 
 const quickbarHand = (inv: Inventory, item: Item): HandSide => {
   const def = defOf(inv.registry, item.type);
-  return def.light && !def.twoHanded ? offSide(inv.character) : dominantSide(inv.character);
+  if (def.light && !def.twoHanded) {
+    return offSide(inv.character);
+  }
+  const dominant = dominantSide(inv.character);
+  const held = inv.hands[dominant];
+  // A battery goes beside the light it fits, so using it puts it in (`DESIGN.md`, "Light").
+  return def.battery && held && fitsLight(inv.registry, held, item) ? otherHand(dominant) : dominant;
 };
 
 /** Where a displaced held item goes without being dropped: a free shoulder, else the best pocket's planned spot. */
@@ -469,7 +636,7 @@ const queueQuickbarStows = (
 };
 
 /** Quickbar tap: stow what fits without dropping anything, then take only with free hands. */
-export const quickbarTake = (inv: Inventory, queue: HandlingQueue, item: Item, _feet: Vec3): string | undefined => {
+export const quickbarTake = (inv: Inventory, queue: HandlingQueue, item: Item): string | undefined => {
   const def = defOf(inv.registry, item.type);
   const side = quickbarHand(inv, item);
   const needs: HandSide[] = def.twoHanded ? [...SIDES] : [side];
@@ -485,8 +652,7 @@ export const quickbarTake = (inv: Inventory, queue: HandlingQueue, item: Item, _
   }
   const { queued, unable } = queueQuickbarStows(inv, queue, displaced);
   if (unable.length > 0) {
-    const names = unable.map((held) => inv.name(held));
-    return `Can't stow ${names.join(' or ')}; your hands stay occupied`;
+    return coreMessage(inv.registry, 'cantStow', { item: inv.name(unable[0]!).toLowerCase() });
   }
   const take = queue.enqueue(item, { kind: 'hand', side }, item.count, queued > 0);
   return take.ok ? undefined : take.reason;
@@ -501,7 +667,7 @@ export const quickbarPutAway = (inv: Inventory, queue: HandlingQueue, item: Item
       ? remembered
       : (slingTarget(inv, item) ?? bestPocket(inv, item)?.target);
   if (!target) {
-    return 'Your pockets are full';
+    return coreMessage(inv.registry, 'pocketsFull');
   }
   const result = queue.enqueue(item, target);
   return result.ok ? undefined : result.reason;
@@ -587,7 +753,7 @@ const stowTwoHandDisplacements = (args: {
     const liveTarget = plannedTarget && liveTargetFor(inv, plannedTarget);
     if (!(plannedHeld && plannedTarget && liveTarget)) {
       cancelStows(queue, stows);
-      return 'Could not make room in your hands';
+      return coreMessage(inv.registry, 'cantFreeHands');
     }
     const stow = queue.enqueue(held, liveTarget, held.count, stows.length > 0);
     if (!stow.ok) {
@@ -597,14 +763,14 @@ const stowTwoHandDisplacements = (args: {
     stows.push(stow.job);
     if (!planned.move(plannedHeld, plannedTarget).ok) {
       cancelStows(queue, stows);
-      return 'Could not make room in your hands';
+      return coreMessage(inv.registry, 'cantFreeHands');
     }
   }
   const plannedItem = planned.itemByUid(item.uid);
   const plan = plannedItem && planned.plan(plannedItem, target);
   if (!plan?.ok) {
     cancelStows(queue, stows);
-    return plan?.reason ?? 'The item is no longer available';
+    return plan?.reason ?? coreMessage(inv.registry, 'gone');
   }
   const take = queue.enqueue(item, target, item.count, true);
   if (!take.ok) {
@@ -623,7 +789,7 @@ const wieldTwoHanded = (inv: Inventory, queue: HandlingQueue, item: Item, feet: 
   );
   if (!stowsHeldFirst(inv, displaced, { source: sourceGrid(inv, item) })) {
     const direct = queue.enqueue(item, target);
-    if (direct.ok || direct.reason === 'Already queued') {
+    if (direct.ok || direct.key === 'alreadyQueued') {
       return direct.ok ? undefined : direct.reason;
     }
     if (inv.hands[preferred] === item && inv.hands[secondary] === item) {
@@ -657,7 +823,7 @@ export const toHands = (inv: Inventory, queue: HandlingQueue, item: Item, feet: 
   }
   const held = inv.hands[preferred] ?? inv.hands[secondary];
   if (!held || held === item) {
-    return inv.plan(item, { kind: 'hand', side: preferred }).ok ? undefined : 'Your hands are full';
+    return inv.plan(item, { kind: 'hand', side: preferred }).ok ? undefined : coreMessage(inv.registry, 'handsFull');
   }
   const away = plannedStowTarget(inv, held, feet, way);
   const stow = away ? queue.enqueue(held, away) : dropTarget(inv, held, feet).plan;

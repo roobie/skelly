@@ -23,10 +23,16 @@ export interface Bone {
   readonly marrowMaterial?: Material;
 }
 
+/** The hit regions a consumer resolves shots against; each body plan says which of its bones form them. */
+export type BodyRegion = 'head' | 'torso' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg';
+
 export type Material = string;
 export interface MaterialDef {
   readonly color: Vec3;
   readonly emissive: number;
+  /** The host scales this material's emission per actor (see mob/crowd.ts, packCharge), so one actor's
+   * telegraph can brighten it without touching the shared mesh or the other glowing materials. */
+  readonly charged?: boolean;
 }
 
 interface NoiseGate {
@@ -50,7 +56,14 @@ export interface Feature {
   readonly onto?: readonly Material[];
 }
 
+export interface BodyAnchor {
+  readonly bone: string;
+  /** Rest-pose world coordinates; apply the owning bone's posed transform. */
+  readonly position: Vec3;
+}
+
 export interface Body {
+  readonly anchors?: Readonly<Record<string, BodyAnchor>>;
   /** Parents-first: every bone's parent appears earlier in the array (or is null). */
   readonly bones: readonly Bone[];
   /** Add features first influence the field; paints are then applied in this array's order. */

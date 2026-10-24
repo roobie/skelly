@@ -343,7 +343,7 @@ export function exportLayout(map) {
     throw new Error('Use a finite orthogonal map with 1x1 tiles (one pixel = one metre)');
   }
   const id = scalar(map, 'id');
-  if (!ID_PATTERN.test(id) || ['hamlet', 'forest', 'city'].includes(id)) {
+  if (!ID_PATTERN.test(id) || ['forest', 'city'].includes(id)) {
     throw new Error('Invalid/reserved site id');
   }
   const ground = finite(scalar(map, 'ground'), 'ground');

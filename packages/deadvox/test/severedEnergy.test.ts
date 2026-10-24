@@ -4,12 +4,15 @@ import { angularVelocity, type RigidBody } from '../src/core/rigidBody.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { figureSeedPool } from '../src/core/zombieFigure.ts';
 import { posedRegionHitDistance, posedShamblerRegionBoxes, type ZombieRegion } from '../src/core/zombieRegions.ts';
-import { type HitImpulse, ZombieSystem } from '../src/core/zombies.ts';
-import { PLAYER, physicsFor } from '../src/game/player.ts';
-import { MobActorMeshes, mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
+import type { HitImpulse } from '../src/core/zombies.ts';
+import { mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { LOOK_FIXTURE } from './lookFixture.ts';
+import { MobActorMeshes } from './mobActorsFixture.ts';
+import { PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const BLOCK = 0.5;
 const registry = baseRegistry();
@@ -33,6 +36,7 @@ const senses = (isSolid: (x: number, y: number, z: number) => boolean) => ({
     movement: 'still' as const,
     lit: false,
     lightSeenFrom: 40,
+    eyeHeightMetres: 1.3,
   }),
   dayPhase: () => dayStateAtHour(12),
   hurtPlayer: () => undefined,
@@ -248,7 +252,8 @@ const bounceApexesAndFreeFlightEnergyRise = (harness: Harness) => {
       maxFreeFlightRise = Math.max(maxFreeFlightRise, energy - previousEnergy);
     }
     if (previousVerticalSpeed > 0 && body.velocity[1] <= 0) {
-      apexes.push(body.center[1] + originOffsetY);
+      // Rotation can trade energy for centre height, so bounce dissipation must compare total energy.
+      apexes.push(energy);
     }
     previousEnergy = energy;
     previousContact = contact;
@@ -269,7 +274,9 @@ describe('severed limb energy', () => {
       for (const report of reports) {
         expect(report.appliedPoints).toHaveLength(1);
         expect(impactPointIsInside(report.appliedPoints[0]!)).toBe(true);
-        expect(Math.hypot(...angularVelocity(report.body!))).toBeLessThanOrEqual(20.000_001);
+        expect(Math.hypot(...angularVelocity(report.body!))).toBeLessThanOrEqual(
+          LOOK_FIXTURE.mobActors.launchSpinRadiansPerSimSecond + 1e-6,
+        );
       }
     } finally {
       for (const report of reports) {
@@ -284,14 +291,16 @@ describe('severed limb energy', () => {
       expect(report.targetRayHitsRegion).toBe(true);
       expect(report.swingHit).toBe(report.id);
       expect(report.body).toBeDefined();
-      expect(Math.hypot(...angularVelocity(report.body!))).toBeLessThanOrEqual(20.000_001);
+      expect(Math.hypot(...angularVelocity(report.body!))).toBeLessThanOrEqual(
+        LOOK_FIXTURE.mobActors.launchSpinRadiansPerSimSecond + 1e-6,
+      );
       expect(report.appliedPoints).toHaveLength(1);
       expect(impactPointIsInside(report.appliedPoints[0]!)).toBe(true);
       const result = bounceApexesAndFreeFlightEnergyRise(report);
       expect(result.maxFreeFlightRise).toBeLessThanOrEqual(report.initialEnergy * 0.005);
       expect(result.apexes.length, JSON.stringify({ seed: report.zombieSeed, ...result })).toBeGreaterThan(0);
       expect(
-        result.apexes.every((height, index) => index === 0 || height < result.apexes[index - 1]!),
+        result.apexes.every((energy, index) => index === 0 || energy < result.apexes[index - 1]!),
         JSON.stringify({ seed: report.zombieSeed, part: report.severedPart, apexes: result.apexes }),
       ).toBe(true);
       expect(result.asleep).toBe(true);

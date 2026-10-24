@@ -7,9 +7,10 @@ import { describe, expect, it } from 'vitest';
 import { generate, realize } from '../src/core/generate.ts';
 import { type Mat3, mulMM, rotX, rotY, rotZ } from '../src/core/math.ts';
 import type { EulerDeg, Pose } from '../src/core/pose.ts';
-import { ATTACK_CLIPS, attackPose, blendArmBase } from '../src/mob/attack.ts';
+import { attackPose, blendArmBase, LUNGE_GRAB } from '../src/mob/attack.ts';
 import {
   advanceClock,
+  createGaitCache,
   footRestExtents,
   type GaitClock,
   INITIAL_CLOCK,
@@ -21,7 +22,6 @@ import type { HumanoidParams } from '../src/mob/humanoid.ts';
 import { HUMANOID_TEMPLATES, TEMPLATES } from '../src/mob/templates.ts';
 import { sweepGroup } from './sweeps.ts';
 
-const LUNGE_GRAB = ATTACK_CLIPS.LUNGE_GRAB!;
 const TOL = 1e-9;
 
 type Axis = 'x' | 'y' | 'z';
@@ -67,7 +67,7 @@ const actorFor = (templateName: string, seed: number) => {
   const extents = footRestExtents(body.bones, voxels);
   const params = genome.params as HumanoidParams;
   const geomL = legGeometryFor(body.bones, extents, 'L');
-  const actor: WalkActor = { bones: body.bones, extents, params, seed: genome.seed };
+  const actor: WalkActor = { bones: body.bones, extents, params, seed: genome.seed, cache: createGaitCache() };
   return { actor, geomL, params, seed: genome.seed };
 };
 type Fixture = ReturnType<typeof actorFor>;

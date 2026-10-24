@@ -18,16 +18,16 @@ import {
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
-import { SEVERED_ITEM, ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
+import { ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
 import type { ZombieRegions } from '../src/core/zombieRegions.ts';
 import type { Detonation } from '../src/core/zombies.ts';
-import type { MoveIntent } from '../src/game/player.ts';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { itemLook } from '../src/render/itemLook.ts';
 import { ModelLibrary } from '../src/render/models.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import type { MoveIntent } from './playerFixture.ts';
 
 const registry = baseRegistry();
 const MODEL_ROOT = 'src/content/base';
@@ -195,8 +195,8 @@ describe('hand grenade', () => {
   it('sheds its lever once, when release lights its fuse, and is drawn without it from then on', () => {
     const lit: Item[] = [];
     const session = runtime(OPEN, undefined, registry, { onFuseLit: (item) => lit.push(item) });
-    const { mergeGroup } = registry.models.get(registry.items.get(GRENADE)!.model!)!.lever!;
-    const shed = (item: Item) => itemLook(registry, item)?.hidden.includes(mergeGroup);
+    const { piece } = registry.models.get(registry.items.get(GRENADE)!.model!)!.lever!;
+    const shed = (item: Item) => itemLook(registry, item)?.hidden.includes(piece);
     const grenade = liveInHand(session);
     session.sim.scheduler.advance(FUSE / 4);
     expect([lit, shed(grenade)]).toEqual([[], false]);
@@ -215,7 +215,7 @@ describe('hand grenade', () => {
     const session = runtime();
     const model = registry.items.get(GRENADE)!.model!;
     const def = registry.models.get(model)!;
-    const { solids } = def.pin!;
+    const { piece } = def.pin!;
     const loads: Promise<void>[] = [];
     const spy = vi.spyOn(GLTFLoader.prototype, 'load').mockImplementation((path, onLoad, _onProgress, onError) => {
       loads.push(new GLTFLoader().parseAsync(Uint8Array.from(readFileSync(path)).buffer, '').then(onLoad, onError));
@@ -235,7 +235,7 @@ describe('hand grenade', () => {
       held.update(camera);
       let drawn = 0;
       held.warmUpTarget.scene.traverseVisible((child) => {
-        if (child instanceof Mesh && solids.includes(child.geometry.userData.solid)) {
+        if (child instanceof Mesh && child.geometry.userData.piece === piece) {
           drawn += 1;
         }
       });
@@ -249,11 +249,11 @@ describe('hand grenade', () => {
     session.fuses.togglePin(grenade);
     drawn.push(pinMeshesDrawn());
     held.dispose();
-    expect(drawn).toEqual([solids.length, 0, solids.length]);
+    expect(drawn).toEqual([1, 0, 1]);
     session.fuses.togglePin(grenade);
     expect(session.inventory.move(grenade, { kind: 'pile', pos: [1, 0, 0] }).ok).toBe(true);
     session.sim.scheduler.advance(FUSE / 4);
-    expect(solids.every((solid) => itemLook(registry, grenade)!.hidden.includes(solid))).toBe(true);
+    expect(itemLook(registry, grenade)!.hidden.includes(piece)).toBe(true);
   });
 
   it('goes off in the hand of whoever picks it up while its fuse burns', () => {
@@ -370,11 +370,19 @@ describe('hand grenade', () => {
 
   it('tears every limb off a shambler before a lethal blast drops it', () => {
     const session = runtime();
-    const id = session.zombies.add(SHAMBLER, [1, 0, 0]);
+    const type = {
+      ...SHAMBLER,
+      id: 'fixture_parts',
+      severedItems: { ...SHAMBLER.severedItems, leftArm: 'rag', rightLeg: null } as typeof SHAMBLER.severedItems,
+    };
+    const id = session.zombies.add(type, [1, 0, 0]);
     session.zombies.detonate(detonation([0, 1, 0], { radiusMetres: 6, damage: 1000, impulse: 1 }));
     expect(session.zombieStore.get(id)).toBeUndefined();
     const dropped = [...session.inventory.piles.values()].flatMap(({ items }) => items.map(({ item }) => item.type));
-    const limbs = (['leftArm', 'rightArm', 'leftLeg', 'rightLeg'] as const).map((region) => SEVERED_ITEM[region]);
-    expect(limbs.filter((limb) => !dropped.includes(limb))).toEqual([]);
+    const limbs = (['leftArm', 'rightArm', 'leftLeg', 'rightLeg'] as const)
+      .map((region) => type.severedItems[region])
+      .filter((item) => item !== null);
+    expect(limbs.filter((limb) => !dropped.includes(limb!))).toEqual([]);
+    expect(dropped).not.toContain(SHAMBLER.severedItems.rightLeg);
   });
 });

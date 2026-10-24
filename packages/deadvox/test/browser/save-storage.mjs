@@ -667,6 +667,32 @@ try {
         throw new Error(`${backend} ${step} storage read failed: ${String(error)}`, { cause: error });
       }
     };
+    // Evidence for #446: tells eviction, a wrong namespace and a lost record apart on the next failure.
+    const reloadFailureDump = async (generationBeforeReload) => {
+      const dump = await page
+        .evaluate(async () => {
+          const attempt = async (read) => {
+            try {
+              return await read();
+            } catch (error) {
+              return { error: String(error) };
+            }
+          };
+          const test = globalThis.deadvoxSaveTest;
+          return {
+            databases: await attempt(() => indexedDB.databases()),
+            namespace: test?.namespace ?? null,
+            listedNamespaces: await attempt(() => test.storage.listNamespaces()),
+            storedGeneration: await attempt(async () => (await test.storage.load(test.namespace))?.generation ?? null),
+            estimate: await attempt(() => navigator.storage.estimate()),
+            sessionKeys: await attempt(() => Object.keys(sessionStorage).filter((key) => key.startsWith('d144-'))),
+            pagehide: await attempt(() => sessionStorage.getItem('d144-pagehide')),
+            writerTrigger: await attempt(() => sessionStorage.getItem('d144-writer-trigger')),
+          };
+        })
+        .catch((error) => ({ error: String(error) }));
+      return `; generationBeforeReload=${generationBeforeReload}; dump=${JSON.stringify(dump)}`;
+    };
     const waitForGeneration = async (previous, trigger = 'checkpoint') => {
       try {
         const result = await page.waitForFunction(
@@ -745,7 +771,10 @@ try {
       });
     } catch (error) {
       const status = await page.locator('#save-status').textContent();
-      throw new Error(`${backend} refresh stayed at ${status}; errors: ${pageErrors.join('; ')}`, { cause: error });
+      throw new Error(
+        `${backend} refresh stayed at ${status}; errors: ${pageErrors.join('; ')}${await reloadFailureDump(firstGeneration)}`,
+        { cause: error },
+      );
     }
     await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
     await page.waitForFunction(
@@ -1071,6 +1100,8 @@ try {
     process.stdout.write(`${browserName}: in-tab loadout navigation ${JSON.stringify(result)}\n`);
     let restored;
     if (browserName === 'chromium' && result.pagehide?.persisted === true) {
+      // The destination page's own pageshow also writes the marker, so clear it to make the wait mean Back's.
+      await page.evaluate(() => sessionStorage.removeItem('d144-pageshow'));
       await navigationPhase('Back pageshow and quiescence', async () => {
         await navigatePage('navigation-only browser Back', () =>
           page.goBack({ waitUntil: 'commit', timeout: STAGE_TIMEOUT_MS }),
@@ -1078,6 +1109,15 @@ try {
         await page.waitForFunction(() => sessionStorage.getItem('d144-pageshow') !== null, undefined, {
           timeout: STAGE_TIMEOUT_MS,
         });
+        const backPageshow = await page.evaluate(() => ({
+          persisted: sessionStorage.getItem('d144-pageshow') === 'true',
+          notRestoredReasons: performance.getEntriesByType('navigation')[0]?.notRestoredReasons?.toJSON() ?? null,
+        }));
+        assert.equal(
+          backPageshow.persisted,
+          true,
+          `Chromium evicted the cached page on Back: ${JSON.stringify(backPageshow.notRestoredReasons)}`,
+        );
         await waitForNavigationIdle();
       });
       restored = await navigationPhase('Back committed record read', () =>

@@ -3,57 +3,65 @@
   "file": "assets/models/shotgun_pump.glb",
   "parts": {
     "receiver": {
+      "item": "receiver_pump",
       "node": "receiver:receiver",
       "massKg": 0.9,
-      "centreOfMass": [-0.07722200297791591, -0.013185393626960074, -0.0005613595248356019]
+      "centreOfMass": [-0.0771400359066427, -0.012795332136445237, -0.0005439856373429079]
     },
     "bolt-carrier": {
+      "item": "bolt_carrier_pump",
       "node": "bolt-carrier:bolt-carrier",
       "massKg": 0.2,
-      "centreOfMass": [-0.03226463823924256, -0.00012133381615205266, 2.7422271155500984e-19]
+      "centreOfMass": [-0.012736842105263158, -0.002842105263157895, -1.5598132915455763e-18]
     },
     "lower": {
+      "item": "lower_pump",
       "node": "lower:lower",
       "massKg": 0.15,
-      "centreOfMass": [-0.14217796076313893, -0.04703802195824334, 8.312929363704656e-19]
+      "centreOfMass": [-0.14222807017543862, -0.04782456140350878, 5.856819604343308e-18]
     },
     "barrel": {
+      "item": "barrel_pump_medium",
       "node": "barrel:barrel",
       "massKg": 0.8,
-      "centreOfMass": [0.24724999999999991, 0, 2.53501887423502e-17]
+      "centreOfMass": [0.24745836985100791, 0, 3.0304910056025873e-17]
     },
     "front-bead": {
+      "item": "front_bead",
       "node": "front-bead:front-sight-bead",
       "massKg": 0.005,
-      "centreOfMass": [0.4485, 0.0215625, 4.9115990688303534e-17]
+      "centreOfMass": [0.44835087719298244, 0.021263157894736845, -0.00008771929824556177]
     },
     "tube": {
+      "item": "tube_magazine",
       "node": "tube:tube-magazine",
       "massKg": 0.2,
-      "centreOfMass": [0.21152607105651297, -0.0315584334261938, 2.1084581066280276e-17]
+      "centreOfMass": [0.21024264178033017, -0.031886575735821966, -0.000030150753768818448]
     },
     "forend": {
+      "item": "forend_pump",
       "node": "forend:forend",
       "massKg": 0.2,
-      "centreOfMass": [0.2311852323323072, -0.034793450233515606, 3.409054985286815e-17]
+      "centreOfMass": [0.23190607935930108, -0.034292682926829264, -0.00008299963596645387]
     },
     "stock": {
+      "item": "stock_tapered_medium",
       "node": "stock:stock",
       "massKg": 0.545,
-      "centreOfMass": [-0.41738715226957096, -0.07136394417702303, -2.8614408991355907e-17]
+      "centreOfMass": [-0.399845983242977, -0.06746007885657962, -0.00004164613109911257]
     }
   },
-  "grip": { "at": [-0.215625, -0.037375, 0], "turn": [0, 0, 0] },
+  "grip": { "at": [-0.216, -0.035688, 0], "turn": [0, 0, 0] },
   "anchors": {
-    "support": [0.231438, -0.043051, 0.0276],
-    "muzzle": [0.45425, 0, 0],
-    "ejection": [-0.033062, 0, 0.01725],
-    "loading_port": [-0.0575, -0.04025, 0]
+    "support": [0.232, -0.044, 0.028],
+    "muzzle": [0.456, 0, 0],
+    "ejection": [-0.033231, -0.0008, 0.016],
+    "loading_port": [-0.057641, -0.04, 0]
   },
   "gun": {
     "sight": {
       "kind": "iron",
-      "eye": [0.4485, 0.02875, 0],
+      "eye": [0.4485, 0.028, 0],
       "direction": [1, 0, 9.269426048794883e-17],
       "up": [1.1351772940589751e-32, 1, -1.2246467991473532e-16],
       "eyeReliefMetres": 0.520375

@@ -1,0 +1,13 @@
+{
+  "id": "stock_ak_long",
+  "file": "assets/models/stock_ak_long.glb",
+  "gun": {},
+  "parts": {
+    "stock_ak_long": {
+      "item": "stock_ak_long",
+      "node": "stock_ak_long:stock",
+      "massKg": 0.4,
+      "centreOfMass": [-0.13118881118881123, -0.038657342657342664, 0]
+    }
+  }
+}

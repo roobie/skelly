@@ -10,10 +10,12 @@ import { Simulation } from '../core/sim.ts';
 import type { RenderedEngine } from '../game/engine.ts';
 import { Survival } from '../game/survival.ts';
 import type { HeldItems } from '../render/hands.ts';
-import { LightPool, POINT_LIGHT_POOL_SIZE } from '../render/lightPool.ts';
+import { LightPool } from '../render/lightPool.ts';
 import { PileMeshes } from '../render/piles.ts';
 
-export const BENCH_LIGHT_COUNTS = Object.freeze({ carried: 4, dropped: 12, pointLights: POINT_LIGHT_POOL_SIZE });
+const BENCH_LIGHT_COUNTS = Object.freeze({ carried: 4, dropped: 12 });
+const benchLightPool = (engine: Pick<RenderedEngine, 'registry' | 'scene'>): LightPool =>
+  new LightPool(engine.scene, engine.registry.senses.get(CORE_CONTENT_IDS.player)!.light.renderedFixtureLimit);
 const INNER_RING_COUNT = 4;
 
 export const benchFlareSourcesFromUrl = (params: URLSearchParams): Vec3[] | undefined => {
@@ -23,13 +25,15 @@ export const benchFlareSourcesFromUrl = (params: URLSearchParams): Vec3[] | unde
   }
   const positions: unknown = JSON.parse(value);
   if (
-    !Array.isArray(positions) ||
-    positions.length > POINT_LIGHT_POOL_SIZE ||
-    !positions.every(
-      (pos) => Array.isArray(pos) && pos.length === 3 && pos.every((n) => typeof n === 'number' && Number.isFinite(n)),
+    !(
+      Array.isArray(positions) &&
+      positions.every(
+        (pos) =>
+          Array.isArray(pos) && pos.length === 3 && pos.every((n) => typeof n === 'number' && Number.isFinite(n)),
+      )
     )
   ) {
-    throw new Error('flareSources must be an array of camera-local metre triples within the point-light pool budget');
+    throw new Error('flareSources must be an array of camera-local metre triples');
   }
   return positions as Vec3[];
 };
@@ -39,7 +43,11 @@ const createFlareFixture = (engine: RenderedEngine, positions: readonly Vec3[]) 
   if (!light) {
     throw new Error('Missing benchmark torch content');
   }
-  const lightPool = new LightPool(engine.scene);
+  const lightPool = benchLightPool(engine);
+  if (positions.length > lightPool.size) {
+    lightPool.group.removeFromParent();
+    throw new Error(`flareSources must fit the point-light pool budget of ${lightPool.size}`);
+  }
   const local = new Vector3();
   return {
     inventory: new Inventory(engine.registry),
@@ -113,6 +121,7 @@ export const createBenchLightFixture = (engine: RenderedEngine, calendar: number
 
   const simulation = new Simulation({
     seed: config.seed,
+    registry,
     bodyTuning: registry.body.get(CORE_CONTENT_IDS.player)!,
     compressionCaps: registry.compression.get(CORE_CONTENT_IDS.player)!.caps,
     clock: { ratio: requireDayCycle(registry).clockRatio, start: calendar },
@@ -122,11 +131,12 @@ export const createBenchLightFixture = (engine: RenderedEngine, calendar: number
     reach: bindReach({ inventory, position: spawn.pos, blockSize, clock: simulation.clock }),
     feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
     notice: () => undefined,
+    readingLight: () => undefined,
     read: () => {
       throw new Error('Unexpected reading in light benchmark fixture');
     },
   });
-  const lightPool = new LightPool(scene);
+  const lightPool = benchLightPool(engine);
   const piles = new PileMeshes(blockSize);
   piles.sync(inventory);
   scene.add(piles.group);

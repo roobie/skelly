@@ -7,9 +7,10 @@ import { type Pose, rotatedSize, rotationOf } from '../src/core/orientation.ts';
 import { stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ContentFile } from '../src/core/schema.ts';
-import { createPlayerBody, physicsFor, steer } from '../src/game/player.ts';
 import { BLUEPRINTS } from '../src/vehicles/catalogue.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
+import { createPlayerBody, physicsFor, steer } from './playerFixture.ts';
 
 const half = makeScale(0.5);
 const base = baseRegistry();
@@ -26,9 +27,13 @@ const frame = {
   color: '#5b605c',
   shape: [post(0, 0), post(4.75, 0), post(4.75, 2.75), { position: [0, 4.5, 0] as Vec3, size: [5, 0.5, 3] as Vec3 }],
   solidFill: 0.01,
+  breach: fixtureBreach(),
+  material: FIXTURE_MATERIAL,
 };
 
 const fixtures: ContentFile = {
+  furnitureMaterials: fixtureMaterials(),
+  sounds: fixtureSounds(),
   furniture: [
     ...['fixture_car', 'fixture_car_wheel_off'].map((id, at) => ({
       id,
@@ -36,6 +41,8 @@ const fixtures: ContentFile = {
       size: [...intact.size] as Vec3,
       color: '#5b605c',
       vehicle: { ...intact.vehicle!, removed: at === 0 ? [] : [wheel] },
+      breach: fixtureBreach(),
+      material: FIXTURE_MATERIAL,
     })),
     frame,
   ],

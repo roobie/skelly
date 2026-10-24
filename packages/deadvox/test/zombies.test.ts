@@ -7,9 +7,8 @@ import { resolveSpawnTime, SECONDS_PER_DAY } from '../src/core/clock.ts';
 import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
-import { Hamlet } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { lightSenseSourceFor, sunExposedAt, toggleLight } from '../src/core/lights.ts';
+import { lightSenseSourceFor, toggleLight } from '../src/core/lights.ts';
 import { type Body, bodyOverlapsBlock, stepBody } from '../src/core/physics.ts';
 import { Rng } from '../src/core/random.ts';
 import { raycast, type SolidAt } from '../src/core/raycast.ts';
@@ -18,20 +17,20 @@ import type { DoorLockDef, ZombieDef } from '../src/core/schema.ts';
 import { Simulation } from '../src/core/sim.ts';
 import type { Site, ZombieSpawn } from '../src/core/site.ts';
 import { sunDirection } from '../src/core/sky.ts';
-import { gameTimeOfDay, simRate } from '../src/core/time.ts';
+import { gameTimeOfDay, simRate, simSeconds } from '../src/core/time.ts';
 import { figureSeedPool, zombieFigure } from '../src/core/zombieFigure.ts';
 import { HIT_FLINCH_DURATION, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
 import {
   FIGURE_BOXES,
   FIGURE_PARTS,
+  posedRegionHit,
   posedRegionHitDistance,
   posedShamblerRegionBoxes,
   type ZombieRegion,
 } from '../src/core/zombieRegions.ts';
 import { ZombieSpawner } from '../src/core/zombieSpawns.ts';
 import {
-  ACTIVE_ZOMBIE_RADIUS_METRES,
   type HitImpulse,
   hearPlayer,
   hearVocalNoise,
@@ -41,15 +40,18 @@ import {
   pickZombieHitRegion,
   pickZombieMove,
   type Zombie,
-  ZombieSystem,
 } from '../src/core/zombies.ts';
-import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
-import { MobActorMeshes, mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
+import { mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
 import { ZombieMeshes } from '../src/render/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
+import { SnapshotSite } from './fixtures/snapshotSite.ts';
+import { sunExposedAt } from './fixtures/sunOracle.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
+import { MobActorMeshes } from './mobActorsFixture.ts';
+import { createPlayerBody, PLAYER, physicsFor, steer } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const SHAMBLER_CPU_BUDGET_MS = 1;
 const registry = baseRegistry();
@@ -60,7 +62,9 @@ const SHAMBLER = registry.zombies.get('shambler')!;
 const SHAMBLER_MOVE_DAMAGES = SHAMBLER.attack.moves.map(({ damage }) => damage);
 const RUNNER = registry.zombies.get('runner')!;
 const CRAWLER = registry.zombies.get('crawler')!;
+const ACID = registry.zombies.get('acid_zombie')!;
 const speedRates = (wander: number, chase: number) => ({
+  ...SHAMBLER.speed,
   wanderMetresPerSimSecond: simRate(wander),
   chaseMetresPerSimSecond: simRate(chase),
 });
@@ -76,7 +80,15 @@ const player = (
   movement: PlayerSense['movement'] = 'still',
   lit = false,
   crouching = false,
-): PlayerSense => ({ pos, facing, movement, lit, lightSeenFrom: 40, crouching });
+): PlayerSense => ({
+  pos,
+  facing,
+  movement,
+  lit,
+  lightSeenFrom: 40,
+  eyeHeightMetres: 1.3,
+  stance: crouching ? 'crouching' : 'standing',
+});
 const senses = (
   playerFn: () => PlayerSense,
   isSolid: SolidAt = FLOOR,
@@ -173,18 +185,42 @@ const hitRecordMatches = ({
     hit.impulse === impulse
   );
 };
-const regionRay = (zombie: import('../src/core/zombies.ts').Zombie, region: ZombieRegion) => {
-  const posed = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, 1, BLOCK_SIZE));
-  const targetBone: Readonly<Record<ZombieRegion, string>> = {
+/** The bone a test ray aims at in each region, per body model. */
+const TARGET_BONES: Readonly<Record<string, Readonly<Record<ZombieRegion, string>>>> = {
+  humanoid: {
     head: 'head',
     torso: 'chest',
     leftArm: 'forearm.L',
     rightArm: 'forearm.R',
     leftLeg: 'shin.L',
     rightLeg: 'shin.R',
-  };
-  const boxes = posed[region];
-  const { center } = boxes.find((box) => box.bone === targetBone[region])!;
+  },
+  acid: { head: 'skull', torso: 'belly', leftArm: 'fore.L', rightArm: 'fore.R', leftLeg: 'shin.L', rightLeg: 'shin.R' },
+};
+const posedBox = (zombie: Zombie, region: ZombieRegion, bone: string, id: number) => {
+  const target = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK_SIZE))[region].find(
+    (box) => box.bone === bone,
+  );
+  if (!target) {
+    throw new Error(`${region} has no box for bone ${bone}`);
+  }
+  return target;
+};
+/** A level ray from a metre outside the body, along the line from the body's axis out through one bone. */
+const outwardRay = (zombie: Zombie, region: ZombieRegion, bone: string, id: number) => {
+  const { center } = posedBox(zombie, region, bone, id);
+  const out = normalized([center[0] - zombie.body.pos[0], 0, center[2] - zombie.body.pos[2]]);
+  const origin: Vec3 = [center[0] + out[0] / BLOCK_SIZE, center[1], center[2] + out[2] / BLOCK_SIZE];
+  return { origin, direction: [-out[0], 0, -out[2]] as Vec3 };
+};
+/** A ray into one region, posed as the system poses entity `id`. Acid limbs sit behind its torso from the
+ * front, so they are approached from outside instead. */
+const regionRay = (zombie: Zombie, region: ZombieRegion, id = 1) => {
+  const bone = (TARGET_BONES[zombie.type.model] ?? TARGET_BONES.humanoid!)[region];
+  if (zombie.type.model === 'acid' && region !== 'head') {
+    return outwardRay(zombie, region, bone, id);
+  }
+  const { center } = posedBox(zombie, region, bone, id);
   const front = [-zombie.facing[0], 0, -zombie.facing[2]] as Vec3;
   if (region === 'head') {
     const origin: Vec3 = [
@@ -623,7 +659,7 @@ describe('shambler perception', () => {
     const lureAt = (hour: number, sunlit: boolean) => {
       const sensed = (): PlayerSense => ({
         ...player([100, 1, 100]),
-        lightSources: [{ pos: target, seenFrom: 20, carried: false }],
+        lightSources: [{ pos: target, seenFrom: 20, carried: false, heightMetres: 0.15 }],
       });
       const system = new ZombieSystem(sensesWithLocalSun(sensed, hour, () => sunlit));
       const id = system.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
@@ -633,7 +669,7 @@ describe('shambler perception', () => {
     const carriedAt = (hour: number, sunlit: boolean) => {
       const sensed = (): PlayerSense => ({
         ...player([100, 1, 100]),
-        lightSources: [{ pos: target, seenFrom: 20, carried: true }],
+        lightSources: [{ pos: target, seenFrom: 20, carried: true, heightMetres: 0.15 }],
       });
       const system = new ZombieSystem(sensesWithLocalSun(sensed, hour, () => sunlit));
       const id = system.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
@@ -676,7 +712,7 @@ describe('shambler perception', () => {
 
     const shadowLurePlayer = (): PlayerSense => ({
       ...player([100, 1, 100]),
-      lightSources: [{ pos: target, seenFrom: 20, carried: false }],
+      lightSources: [{ pos: target, seenFrom: 20, carried: false, heightMetres: 0.15 }],
     });
     const shadowLure = new ZombieSystem(sensesWithLocalSun(shadowLurePlayer, 12, daylightSky));
     const shadowLureId = shadowLure.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
@@ -689,12 +725,14 @@ describe('shambler perception', () => {
     const crouchSightRange = lightSeenFrom * SENSE_TUNING.crouch.sightRangeScale;
     const distanceMetres = (crouchSightRange + lightSeenFrom) / 2;
     const distanceBlocks = distanceMetres / BLOCK_SIZE;
-    const crouchedEye = PLAYER.eye - SENSE_TUNING.crouch.eyeDropMetres;
-    const wallFraction = (1.3 - 0.9) / (1.3 - crouchedEye);
+    const eyeDropMetres = 0.8;
+    const crouchedEye = PLAYER.eye - eyeDropMetres;
+    const zombieEye = SHAMBLER.eyeHeightMetres;
+    const wallFraction = (zombieEye - 0.9) / (zombieEye - crouchedEye);
     const wallX = Math.floor(distanceBlocks * wallFraction);
     const isSolid: SolidAt = (x, y) => x === wallX && y >= 0 && y < 2;
     const visible = (crouching: boolean, blocked: boolean) => {
-      const eyeHeightMetres = PLAYER.eye - (crouching ? SENSE_TUNING.crouch.eyeDropMetres : 0);
+      const eyeHeightMetres = PLAYER.eye - (crouching ? eyeDropMetres : 0);
       return perceivePlayer({
         zombie: { ...SHAMBLER, sight: 0.1, nightSight: 0.1 },
         from: [0, 0, 0],
@@ -702,7 +740,6 @@ describe('shambler perception', () => {
         player: {
           ...player([distanceBlocks, 0, 0], [-1, 0, 0], 'still', true, crouching),
           eyeHeightMetres,
-          lightHeightMetres: eyeHeightMetres,
         },
         dayPhase: dayStateAtHour(0).phase,
         sightBlend: dayStateAtHour(0).sightBlend,
@@ -728,7 +765,7 @@ describe('shambler scenarios', () => {
     const target: Vec3 = [targetDistanceMetres / BLOCK_SIZE, 1, 0];
     const sensedPlayer = (): PlayerSense => ({
       ...player([100, 1, 100]),
-      lightSources: [{ pos: target, seenFrom: sourceRange, carried: false }],
+      lightSources: [{ pos: target, seenFrom: sourceRange, carried: false, heightMetres: 0.15 }],
     });
     const open = new ZombieSystem(senses(sensedPlayer, FLOOR, () => 0));
     const id = open.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
@@ -783,7 +820,7 @@ describe('shambler scenarios', () => {
     const target: Vec3 = [distanceMetres / BLOCK_SIZE, 1, 0];
     const sensed = (): PlayerSense => ({
       ...player([100, 1, 100]),
-      lightSources: [{ pos: target, seenFrom: sourceRange, carried: false }],
+      lightSources: [{ pos: target, seenFrom: sourceRange, carried: false, heightMetres: 0.15 }],
     });
     const alerts: string[] = [];
     const system = new ZombieSystem({
@@ -867,7 +904,7 @@ describe('shambler scenarios', () => {
     const sensed = (): PlayerSense => ({
       ...player([100, 1, 100]),
       vocalNoise: { id: 1, pos: noiseTarget, radiusMetres: 10, expiresAt: 1 },
-      lightSources: [{ pos: lightTarget, seenFrom: 20, carried: false }],
+      lightSources: [{ pos: lightTarget, seenFrom: 20, carried: false, heightMetres: 0.15 }],
     });
     const system = new ZombieSystem(senses(sensed, FLOOR, () => 0));
     const id = system.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
@@ -1706,47 +1743,80 @@ describe('shambler scenarios', () => {
     expect(listened.snapshotState()).toEqual(silent.snapshotState());
   });
 
-  it('severs every non-head region without killing; destroying the head alone kills', () => {
-    for (const region of ZOMBIE_REGION_NAMES) {
-      const severed: ZombieRegion[] = [];
-      const sounds: string[] = [];
-      let deaths = 0;
-      const system = new ZombieSystem({
-        ...senses(() => player([100, 2, 0])),
-        onSound: (event) => sounds.push(event),
-        onSevered: (_zombie, part) => severed.push(part),
-        onDeath: () => {
-          deaths += 1;
-        },
-      });
-      const noRandomSever = { ...SHAMBLER, dismember: { chance: 0, headOnKillChance: 0 } };
-      const id = system.add(noRandomSever, [1, 1, 0], [0, 0, -1]);
-      const zombie = system.store.get(id)!;
-      zombie.modeTimer = 1000;
-      const ray = regionRay(zombie, region);
-      const weapon = { ...FISTS_MELEE, cooldown: 0 };
-      const hits = Math.ceil(zombie.regions[region]! / weapon.damage);
-      for (let hit = 0; hit < hits; hit++) {
-        expect(system.swing(ray.origin, ray.direction, weapon), `swing while damaging ${region}, hit ${hit}`).toBe(id);
-      }
+  const destroyRegion = (type: ZombieDef, region: ZombieRegion) => {
+    const severed: ZombieRegion[] = [];
+    const sounds: string[] = [];
+    let deaths = 0;
+    const system = new ZombieSystem({
+      ...senses(() => player([100, 2, 0])),
+      onSound: (event) => sounds.push(event),
+      onSevered: (_zombie, part) => severed.push(part),
+      onDeath: () => {
+        deaths += 1;
+      },
+    });
+    const noRandomSever = { ...type, dismember: { chance: 0, headOnKillChance: 0 } };
+    const id = system.add(noRandomSever, [1, 1, 0], [0, 0, -1]);
+    const zombie = system.store.get(id)!;
+    zombie.modeTimer = 1000;
+    const ray = regionRay(zombie, region, id);
+    const weapon = { ...FISTS_MELEE, cooldown: 0 };
+    const hits = Math.ceil(zombie.regions[region]! / weapon.damage);
+    const struck = Array.from({ length: hits }, () => system.swing(ray.origin, ray.direction, weapon));
+    return { system, id, zombie, struck, severed, sounds, deaths };
+  };
+
+  const severCases = [SHAMBLER, ACID].flatMap((type) =>
+    ZOMBIE_REGION_NAMES.map((region) => ({ type, region, name: `${type.id} ${region}` })),
+  );
+
+  it.each(severCases)(
+    'severs every non-head region without killing; destroying the head alone kills: $name',
+    ({ type, region }) => {
+      const { system, id, zombie, struck, severed, sounds, deaths } = destroyRegion(type, region);
+      expect(struck.every((hit) => hit === id)).toBe(true);
       if (region === 'head') {
         expect(system.store.get(id)).toBeUndefined();
         expect(deaths).toBe(1);
         expect(severed).toEqual([]);
-      } else {
-        expect(system.store.get(id)).toBe(zombie);
-        expect(zombie.regions[region], `region ${region}`).toBe(0);
-        if (region === 'torso') {
-          expect(severed).toEqual([]);
-          expect(zombie.incapacitated).toBe(true);
-        } else {
-          expect(severed).toEqual([region]);
-          expect(zombie.incapacitated).toBe(false);
-        }
-        expect(sounds).toContain('shambler_hurt');
-        expect(deaths).toBe(0);
+        return;
       }
-    }
+      expect(system.store.get(id)).toBe(zombie);
+      expect(zombie.regions[region]).toBe(0);
+      expect(sounds).toContain(type.sounds.hurt);
+      expect(deaths).toBe(0);
+      if (region === 'torso') {
+        expect(severed).toEqual([]);
+        expect(zombie.incapacitated).toBe(true);
+        return;
+      }
+      expect(severed).toEqual([region]);
+      // The cut follows the body's bone dispositions: the region's top severable part, or none.
+      const figure = zombieFigure(type, zombie.figureSeed);
+      const parts = 'severableParts' in figure ? figure.severableParts[region] : [];
+      expect(zombie.severed).toEqual(parts.slice(0, 1));
+      // A severed acid part drops what a shambler's would.
+      expect(type.severedItems[region]).toEqual(SHAMBLER.severedItems[region]);
+      expect(zombie.incapacitated).toBe(false);
+    },
+  );
+
+  it('counts a shot that meets the acid sac first as a torso hit', () => {
+    const system = new ZombieSystem({ ...senses(() => player([100, 2, 0])) });
+    const type = { ...ACID, regions: { ...ACID.regions, torso: FISTS_MELEE.damage } };
+    const id = system.add(type, [1, 1, 0], [0, 0, -1]);
+    const zombie = system.store.get(id)!;
+    const boxes = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK_SIZE));
+    const { origin, direction } = outwardRay(zombie, 'torso', 'sac.0', id);
+    const [first] = ZOMBIE_REGION_NAMES.flatMap((region) => {
+      const hit = posedRegionHit(boxes[region], origin, direction, BLOCK_SIZE);
+      return hit === undefined ? [] : [{ region, ...hit }];
+    }).sort((a, b) => a.distance - b.distance);
+    expect(first?.box.bone).toBe('sac.0');
+    expect(first?.region).toBe('torso');
+    expect(system.swing(origin, direction, { ...FISTS_MELEE, reach: 4 })).toBe(id);
+    expect(zombie.regions.torso).toBe(0);
+    expect(zombie.incapacitated).toBe(true);
   });
 
   it('incapacitates on torso destruction without death, noise, motion, or sleep blocking, and saves the flag', () => {
@@ -2011,6 +2081,7 @@ describe('shambler scenarios', () => {
     const simulateAttacks = (godMode: boolean) => {
       const sim = new Simulation({
         seed: 9,
+        registry,
         bodyTuning: registry.body.get('player')!,
         compressionCaps: registry.compression.get('player')!.caps,
         clock: BASE_CLOCK,
@@ -2043,8 +2114,16 @@ describe('shambler scenarios', () => {
     expect(ordinaryRun.health).toBeLessThan(100);
   });
 
-  it('loads the hamlet horde once with its group membership intact', () => {
-    const site = new Hamlet(7, registry, SCALE);
+  it('loads a fixture horde once with its group membership intact', () => {
+    const base = new SnapshotSite(7, registry, SCALE);
+    const site = {
+      ...spawnSite({ type: 'shambler', pos: [0, 41, 0] }),
+      registry,
+      seed: 7,
+      surface: base.surface,
+      hordesIn: (cx: number, cz: number) =>
+        cx === 0 && cz === 0 ? [{ id: 'fixture-horde', type: 'shambler', pos: [0, 41, 0] as Vec3, members: 20 }] : [],
+    };
     let column: [number, number] | undefined;
     for (let cz = -20; cz <= 20 && !column; cz++) {
       for (let cx = -20; cx <= 20 && !column; cx++) {
@@ -2067,8 +2146,8 @@ describe('shambler scenarios', () => {
     expect(system.snapshotState()).toEqual(state);
   });
 
-  it('G: a killed hamlet shambler stays gone when its column reloads', () => {
-    const site = new Hamlet(7, registry, SCALE);
+  it('G: a killed fixture shambler stays gone when its column reloads', () => {
+    const site = new SnapshotSite(7, registry, SCALE);
     let column: [number, number] | undefined;
     for (let cz = -20; cz <= 20 && !column; cz++) {
       for (let cx = -20; cx <= 20 && !column; cx++) {
@@ -2849,8 +2928,14 @@ describe('two-tier shambler hearing', () => {
     expect(hear(noise.pos, wall)?.target).not.toEqual(noise.pos);
   });
 
-  it('makes a still player vocalization alert and investigate once', () => {
+  it('makes a loud still-player vocalization alert and investigate once', () => {
     const noise = { id: 44, pos: [12, 1, 0] as Vec3, radiusMetres: 6, expiresAt: 1 };
+    const type = {
+      ...SHAMBLER,
+      sight: 0.01,
+      nightSight: 0.01,
+      hearingModel: { ...SHAMBLER.hearingModel, loudNoiseRadiusMetres: noise.radiusMetres },
+    };
     const target = { ...player(noise.pos), vocalNoise: noise };
     const heard: string[] = [];
     const system = new ZombieSystem({
@@ -2858,7 +2943,7 @@ describe('two-tier shambler hearing', () => {
       seed: 21,
       onSound: (event) => heard.push(event),
     });
-    const id = system.add({ ...SHAMBLER, sight: 0.01, nightSight: 0.01 }, [0, 1, 0]);
+    const id = system.add(type, [0, 1, 0]);
     const zombie = system.store.get(id)!;
 
     system.tick(1 / 20, 0.05);
@@ -2898,7 +2983,7 @@ describe('two-tier shambler hearing', () => {
     );
     system.tick(1 / 20, 0.1);
 
-    expect(first.mode).toBe('investigate');
+    expect(first.mode).toBe('hesitate');
     expect(first.lastPerceived).toBeDefined();
     expect(second.mode).toBe('idle');
     expect(second.lastPerceived).toBeUndefined();
@@ -3050,11 +3135,23 @@ describe('two-tier shambler hearing', () => {
 });
 
 describe('background zombie tier', () => {
+  it('uses authored liveness radius to classify a loaded actor', () => {
+    for (const [activeZombieRadiusMetres, tier] of [
+      [7, 'background'],
+      [17, 'active'],
+    ] as const) {
+      const system = new ZombieSystem({ ...senses(() => player([0, 1, 0])), activeZombieRadiusMetres });
+      const zombie = system.store.get(system.add(SHAMBLER, [12 / BLOCK_SIZE, 1, 0]))!;
+      system.tickActive(1 / 20, 0);
+      expect(zombie.tier).toBe(tier);
+    }
+  });
+
   it('routes firearm reports into the long-range player-noise channel', () => {
     for (const id of ['gunshot', 'gunshot_pbs1_reference', 'shotgun_blast']) {
       const noise = registry.sounds.get(id)?.noise;
       expect(noise?.enabled).toBe(true);
-      expect(noise?.radiusMetres).toBeGreaterThan(ACTIVE_ZOMBIE_RADIUS_METRES);
+      expect(noise?.radiusMetres).toBeGreaterThan(registry.siteGeneration.get('authored')!.activeZombieRadiusMetres);
     }
   });
 
@@ -3120,7 +3217,7 @@ describe('background zombie tier', () => {
     const lightTarget: Vec3 = [75, 1, 0];
     const target: PlayerSense = {
       ...player([0, 1, 0]),
-      lightSources: [{ pos: lightTarget, seenFrom: 100, carried: false }],
+      lightSources: [{ pos: lightTarget, seenFrom: 100, carried: false, heightMetres: 0.15 }],
     };
     const system = new ZombieSystem({
       ...senses(
@@ -3521,6 +3618,97 @@ describe('attack windup', () => {
     restored.restoreState(state, (typeId) => registry.zombies.get(typeId));
 
     expect(restored.store.get(id)!.attackWindup).toBe(before);
+  });
+});
+
+describe('stagger', () => {
+  const stagger = { impulseThreshold: 6, durationSimSeconds: simSeconds(0.5) };
+  const staggering: ZombieDef = { ...SHAMBLER, stagger };
+  const heavy = { ...FISTS_MELEE, impulse: stagger.impulseThreshold };
+  const light = { ...FISTS_MELEE, impulse: stagger.impulseThreshold - 0.1 };
+
+  /** A shambler in reach of a still player, one tick into its attack wind-up. */
+  const windingUp = () => {
+    let damage = 0;
+    const system = new ZombieSystem(
+      senses(
+        () => player([0, 2, 0]),
+        FLOOR,
+        () => 12,
+        (amount) => {
+          damage += amount;
+        },
+      ),
+    );
+    const id = system.add(staggering, [1.2, 1, 0], [-1, 0, 0]);
+    system.tick(1 / 60);
+    return { system, id, zombie: system.store.get(id)!, damage: () => damage };
+  };
+
+  it('a hit at the threshold spoils the attack for the stagger duration; a lighter hit does not', () => {
+    const staggered = windingUp();
+    expect(staggered.zombie.attackWindup).toBeGreaterThan(0);
+    const ray = regionRay(staggered.zombie, 'torso');
+    expect(staggered.system.swing(ray.origin, ray.direction, heavy)).toBe(staggered.id);
+    expect(staggered.zombie.staggerSimSeconds).toBe(stagger.durationSimSeconds);
+    expect(staggered.zombie.attackWindup).toBe(0);
+    run(staggered.system, stagger.durationSimSeconds - 2 / 60);
+    expect(staggered.zombie.staggerSimSeconds).toBeGreaterThan(0);
+    expect(staggered.zombie.attackWindup).toBe(0);
+    expect(staggered.damage()).toBe(0);
+    run(staggered.system, 3 / 60);
+    expect(staggered.zombie.staggerSimSeconds).toBe(0);
+
+    const unstaggered = windingUp();
+    expect(unstaggered.zombie.attackWindup).toBeGreaterThan(0);
+    const lightRay = regionRay(unstaggered.zombie, 'torso');
+    expect(unstaggered.system.swing(lightRay.origin, lightRay.direction, light)).toBe(unstaggered.id);
+    expect(unstaggered.zombie.staggerSimSeconds).toBe(0);
+    expect(unstaggered.zombie.attackWindup).toBeGreaterThan(0);
+  });
+
+  it('never moves the zombie: it holds its exact position while staggered', () => {
+    const chasing = () => {
+      const system = new ZombieSystem(senses(() => player([12, 1, 0], [-1, 0, 0]), FLOOR));
+      const id = system.add(staggering, [0, 1, 0], [1, 0, 0]);
+      run(system, 1);
+      return { system, id, zombie: system.store.get(id)! };
+    };
+    const { system, id, zombie } = chasing();
+    expect(zombie.mode).toBe('chase');
+    const before = [...zombie.body.pos];
+    const ray = regionRay(zombie, 'torso');
+    expect(system.swing(ray.origin, ray.direction, heavy)).toBe(id);
+    expect(zombie.body.pos).toEqual(before);
+    run(system, stagger.durationSimSeconds - 2 / 60);
+    expect(zombie.body.pos).toEqual(before);
+
+    const control = chasing();
+    const controlBefore = [...control.zombie.body.pos];
+    const controlRay = regionRay(control.zombie, 'torso');
+    expect(control.system.swing(controlRay.origin, controlRay.direction, light)).toBe(control.id);
+    run(control.system, stagger.durationSimSeconds - 2 / 60);
+    expect(control.zombie.body.pos).not.toEqual(controlBefore);
+  });
+
+  it('never adds a second stagger to the remaining time', () => {
+    const { system, zombie } = windingUp();
+    const ray = regionRay(zombie, 'torso');
+    system.swing(ray.origin, ray.direction, heavy);
+    system.swing(ray.origin, ray.direction, heavy);
+    expect(zombie.staggerSimSeconds).toBe(stagger.durationSimSeconds);
+  });
+
+  it('keeps the remaining stagger across a snapshot/restore', () => {
+    const { system, id, zombie } = windingUp();
+    const ray = regionRay(zombie, 'torso');
+    system.swing(ray.origin, ray.direction, heavy);
+    run(system, stagger.durationSimSeconds / 2);
+    const remaining = zombie.staggerSimSeconds;
+    expect(remaining).toBeGreaterThan(0);
+    const restored = new ZombieSystem(senses(() => player([0, 2, 0]), FLOOR));
+    restored.restoreState(system.snapshotState(), () => staggering);
+    expect(restored.store.get(id)!.staggerSimSeconds).toBe(remaining);
   });
 });
 

@@ -4,6 +4,7 @@
 // biome-ignore-all lint/performance/noAwaitInLoops: route segments and save boundaries run in order.
 import assert from 'node:assert/strict';
 import { holdAction, pressAction } from './input-actions.mjs';
+import { installSaveStatusTrace, saveLockSnapshot } from './save-lock-diagnostics.mjs';
 import { installWorldMeshControl } from './world-mesh-fixture.mjs';
 
 const gauntletLoading = async (browser, baseUrl) => {
@@ -74,6 +75,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
   await gauntletLoading(browser, baseUrl);
   const context = await browser.newContext({ viewport: { width: 1024, height: 768 } });
   try {
+    await context.addInitScript(installSaveStatusTrace);
     const page = await context.newPage();
     const url = new URL(baseUrl);
     url.searchParams.set('site', 'gauntlet');
@@ -226,6 +228,42 @@ export const gauntletFlow = async (browser, baseUrl) => {
         w.manual = false;
       }
     });
+    // The first clue lies in the dark by design, so the reader brings a light found as loot.
+    await page.evaluate(async () => {
+      const w = globalThis.gauntletWitness;
+      const { engine, session } = w;
+      const lightsModule = '/src/core/lights.ts';
+      const { chargeOf } = await import(lightsModule);
+      const { registry } = engine;
+      const roll = (type) => session.inventory.createRolled({ type, count: 1, condition: 1, charge: 1 });
+      const lightType = [...registry.items.keys()].find((id) => {
+        const { light } = registry.items.get(id);
+        return light?.power && !light.burning && chargeOf(registry, roll(id)) > 0;
+      });
+      const lamp = roll(lightType);
+      const feet = session.body.pos.map((v, axis) => Math.floor(axis === 1 ? v + 0.01 : v));
+      if (!session.inventory.add(lamp, { kind: 'pile', pos: feet })) {
+        throw new Error('No room for the light at the reader’s feet');
+      }
+      const take = session.queue.enqueue(lamp, { kind: 'hand', side: 'left' });
+      if (!take.ok) {
+        throw new Error(take.reason);
+      }
+      const taken = session.queue.tick(session.queue.remaining);
+      if (taken.failed.length > 0 || session.inventory.hands.left !== lamp) {
+        throw new Error('Ordinary light pickup failed');
+      }
+      w.lampUid = lamp.uid;
+    });
+    await page.waitForFunction(() => {
+      const { session } = globalThis.gauntletWitness;
+      return !(session.queue.busy || session.firearms.busy);
+    });
+    await pressAction(page, 'hand.use-off');
+    await page.waitForFunction(() => {
+      const { session, lampUid } = globalThis.gauntletWitness;
+      return session.inventory.itemByUid(lampUid)?.on === true;
+    });
     const releasePaper = await holdAction(page, 'quickbar.use.1');
     try {
       await page.locator('#reading').waitFor({ state: 'visible' });
@@ -284,6 +322,8 @@ export const gauntletFlow = async (browser, baseUrl) => {
       const tick = () => {
         engine.streamer.update(session.body.pos[0], session.body.pos[2]);
         session.frame(1 / 60);
+        // Manual ticks bypass the game loop, which rolls the replay window after each frame; the journey outlasts one.
+        w.rollReplay();
         if (session.sim.dead) {
           throw new Error(`Route stopped by survival: ${JSON.stringify(session.sim.dead)}`);
         }
@@ -411,10 +451,18 @@ export const gauntletFlow = async (browser, baseUrl) => {
         }
         await until(() => !session.inventory.hands[side], Math.ceil((drop.job.duration + 1) * 60), 'free card hand');
       };
+      const sealStock = async (seal) => {
+        const holder = seal.held ? engine.entities.at(...seal.key) : undefined;
+        if (!holder) {
+          return session.inventory.pileAt(seal.key)?.items ?? [];
+        }
+        session.search(holder);
+        await until(() => holder.searched, Math.ceil((session.queue.remaining + 1) * 60), 'keycard container search');
+        return (holder.pockets ?? []).flat();
+      };
       const takeCard = async (seal) => {
-        const card = session.inventory
-          .pileAt(seal.key)
-          ?.items.find(({ item }) => engine.registry.items.get(item.type)?.key)?.item;
+        const stock = await sealStock(seal);
+        const card = stock.find(({ item }) => engine.registry.items.get(item.type)?.key)?.item;
         if (!card) {
           throw new Error('Placed seal keycard absent');
         }
@@ -528,6 +576,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
         w.manual = false;
       }
     });
+    const locksBeforeWin = await saveLockSnapshot(page);
     await pressAction(page, 'world.interact');
     await page.waitForFunction(() => globalThis.gauntletWitness.session.won);
     journey.run = await page.evaluate(() => globalThis.gauntletWitness.session.scenarioRun);
@@ -551,9 +600,11 @@ export const gauntletFlow = async (browser, baseUrl) => {
           };
         })
         .catch((stateError) => `unreadable: ${stateError.message}`);
-      throw new Error(`win checkpoint wait timed out; save controller state: ${JSON.stringify(state)}`, {
-        cause: error,
-      });
+      const locks = { beforeWin: locksBeforeWin, afterTimeout: await saveLockSnapshot(page) };
+      throw new Error(
+        `win checkpoint wait timed out; save controller state: ${JSON.stringify(state)}; save locks: ${JSON.stringify(locks)}`,
+        { cause: error },
+      );
     }
     await page.reload();
     await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);

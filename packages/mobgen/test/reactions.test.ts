@@ -7,7 +7,14 @@ import { build, generateValid } from '../src/core/generate.ts';
 import { applyPoint, IDENTITY_M } from '../src/core/math.ts';
 import { boneTransforms, type Pose } from '../src/core/pose.ts';
 import { voxelize } from '../src/core/voxelize.ts';
-import { bodyRestExtents, corners, footRestExtents, INITIAL_CLOCK, walkPose } from '../src/mob/gait.ts';
+import {
+  bodyRestExtents,
+  corners,
+  createGaitCache,
+  footRestExtents,
+  INITIAL_CLOCK,
+  walkPose,
+} from '../src/mob/gait.ts';
 import type { HumanoidParams } from '../src/mob/humanoid.ts';
 import { DEATH_FALL_DURATION, deathPose, flinchPose, HIT_FLINCH } from '../src/mob/reactions.ts';
 import { HUMANOID_TEMPLATES as TEMPLATES } from '../src/mob/templates.ts';
@@ -34,6 +41,7 @@ const walkActorOf = (found: ReturnType<typeof setup>) => ({
   extents: found.extents,
   params: found.params,
   seed: found.seed,
+  cache: createGaitCache(),
 });
 
 const deathActorOf = (found: ReturnType<typeof setup>) => ({ ...walkActorOf(found), bodyExtents: found.bodyExtents });
@@ -76,11 +84,11 @@ describe('flinchPose', () => {
   });
 
   it('layers on top of an attack pose too, not just a walk pose (mid-attack flinch)', async () => {
-    const { ATTACK_CLIPS, attackPose } = await import('../src/mob/attack.ts');
+    const { attackPose, LUNGE_GRAB } = await import('../src/mob/attack.ts');
     const found = setup('shambler');
     const actor = walkActorOf(found);
     const walkBase = walkPose(actor, INITIAL_CLOCK, 0.8);
-    const attacking = attackPose(actor, ATTACK_CLIPS.LUNGE_GRAB!, 0.3, walkBase);
+    const attacking = attackPose(actor, LUNGE_GRAB, 0.3, walkBase);
     const flinched = flinchPose(actor, 0.05, attacking, { side: -1 });
     // Differs from the pure attack pose (the flinch actually did something)...
     expect(maxPoseDiff(flinched, attacking)).toBeGreaterThan(0);
@@ -154,7 +162,7 @@ describe('deathPose', () => {
     const extents = footRestExtents(body.bones, voxels);
     const bodyExtents = bodyRestExtents(body.bones, voxels);
     const params = found!.genome.params as HumanoidParams;
-    const walkActor = { bones: body.bones, extents, params, seed: found!.genome.seed };
+    const walkActor = { bones: body.bones, extents, params, seed: found!.genome.seed, cache: createGaitCache() };
     const actor = { ...walkActor, bodyExtents };
     const standing = walkPose(walkActor, INITIAL_CLOCK, 0);
     const byId = new Map(body.bones.map((b: Bone) => [b.id, b]));

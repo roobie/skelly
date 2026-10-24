@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { Character, dominantSide, offSide } from '../src/core/character.ts';
+import { coreMessage } from '../src/core/coreText.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bestPocket } from '../src/core/options.ts';
@@ -97,6 +98,7 @@ const runtime = (handedness?: Character['handedness']) => {
     reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 1, clock: BASE_CLOCK }),
     feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
     notice: (text) => notices.push(text),
+    readingLight: () => undefined,
     read: () => {
       throw new Error('Unexpected reading in quickbar fixture');
     },
@@ -165,6 +167,28 @@ describe('quickbar tap and hold actions', () => {
 
     expect(candle.on).toBe(true);
     expect(matches.charges).toBe(chargeBefore - perIgnition);
+  });
+
+  it('a pocket battery goes in only once a tap has taken it beside the held light', () => {
+    const { inventory, queue, actions, notices } = runtime();
+    const dominant = dominantSide(inventory.character);
+    const light = inventory.create('flashlight');
+    light.slots!.battery!.charges = 0;
+    const battery = inventory.create('aa_battery');
+    const { bag, pocket } = carryInBag(inventory, battery);
+    expect(inventory.add(light, { kind: 'hand', side: dominant })).toBe(true);
+    expect(inventory.add(battery, { kind: 'pocket', owner: bag, pocket })).toBe(true);
+
+    actions.hold(battery);
+    expect(queue.jobs).toEqual([]);
+    expect(notices).toHaveLength(1);
+
+    actions.tap(battery);
+    settle(queue);
+    expect(inventory.hands).toMatchObject({ [dominant]: light, [offSide(inventory.character)]: battery });
+    actions.hold(battery);
+    settle(queue);
+    expect(light.slots?.battery).toBe(battery);
   });
 
   it('quickbar-holds a treatment item on its selected wound without wielding it', () => {
@@ -253,7 +277,8 @@ describe('quickbar tap and hold actions', () => {
     const stranded = toolStowed ? light : tool;
     const strandedSide = stranded === tool ? dominantSide(inventory.character) : offSide(inventory.character);
     expect(inventory.locate(stranded)).toMatchObject({ kind: 'hand', side: strandedSide });
-    expect(notices.some((notice) => notice.includes(inventory.name(stranded)))).toBe(true);
+    const report = coreMessage(inventory.registry, 'cantStow', { item: inventory.name(stranded).toLowerCase() });
+    expect(notices).toContain(report);
     expect(inventory.locate(twoHanded)?.kind).toBe('pile');
   });
 

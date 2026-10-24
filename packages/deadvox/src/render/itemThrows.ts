@@ -4,9 +4,8 @@ import type { Vec3 } from '../core/coords.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { PILE_GRID } from '../core/inventoryScale.ts';
 import { cellCount, defOf, type Item } from '../core/items.ts';
-import { itemFlightPoint } from '../core/itemThrow.ts';
+import { type ItemFlight, itemFlightPoint } from '../core/itemThrow.ts';
 import { effectivePileDisplay, effectivePileItemPosition } from '../core/pileDisplay.ts';
-import { reachTuning } from '../core/reach.ts';
 import { PILE_DISPLAY_KIND } from '../core/schema.ts';
 import { placeholderCaseMesh } from './caseVisual.ts';
 import { withHeightFog } from './heightFog.ts';
@@ -19,6 +18,7 @@ const RIGHT = new Vector3(1, 0, 0);
 
 interface Flight {
   active: boolean;
+  trajectory: ItemFlight;
   itemUid: number;
   startedAtSimSeconds: number;
   landingAt: number;
@@ -53,12 +53,14 @@ export class ItemThrows {
   spawn(
     {
       origin: from,
+      flight: trajectory,
       item,
       itemUid = item.uid,
       startedAtSimSeconds = 0,
-      landingAt = startedAtSimSeconds + reachTuning(this.registry).throwFlightSimSeconds,
+      landingAt = startedAtSimSeconds + trajectory.durationSimSeconds,
     }: {
       origin: Vec3;
+      flight: ItemFlight;
       item: Item;
       itemUid?: number;
       startedAtSimSeconds?: number;
@@ -68,6 +70,7 @@ export class ItemThrows {
   ): void {
     const flight = this.flights.find((candidate) => !candidate.active) ?? this.createFlight();
     flight.active = true;
+    flight.trajectory = trajectory;
     flight.itemUid = itemUid;
     flight.startedAtSimSeconds = startedAtSimSeconds;
     flight.landingAt = landingAt;
@@ -179,6 +182,7 @@ export class ItemThrows {
     const emissive = new Mesh(this.geometry, emissiveMaterial);
     const flight: Flight = {
       active: false,
+      trajectory: { points: [[0, 0, 0]], durationSimSeconds: 0, landing: undefined },
       itemUid: 0,
       startedAtSimSeconds: 0,
       landingAt: 0,
@@ -226,17 +230,23 @@ export class ItemThrows {
   }
 
   private drawFlight(flight: Flight, progress: number): void {
-    const { throwArcHeightMetres } = reachTuning(this.registry);
     const point = itemFlightPoint(
       flight.start.toArray() as Vec3,
       flight.end.toArray() as Vec3,
       progress,
-      throwArcHeightMetres,
+      flight.trajectory,
     );
     flight.group.position.set(...point);
-    flight.direction.subVectors(flight.end, flight.start);
-    flight.direction.y +=
-      (Math.cos(Math.PI * progress) * throwArcHeightMetres * Math.PI) / (flight.landingAt - flight.startedAtSimSeconds);
+    const nearby = itemFlightPoint(
+      flight.start.toArray() as Vec3,
+      flight.end.toArray() as Vec3,
+      Math.max(0, progress - 0.001),
+      flight.trajectory,
+    );
+    flight.direction.set(...point).sub(new Vector3(...nearby));
+    if (flight.direction.lengthSq() === 0) {
+      flight.direction.subVectors(flight.end, flight.start);
+    }
     flight.group.quaternion.setFromUnitVectors(flight.modelVisual ? RIGHT : UP, flight.direction.normalize());
   }
 }

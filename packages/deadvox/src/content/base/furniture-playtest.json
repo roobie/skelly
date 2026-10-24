@@ -1,8 +1,13 @@
 {
   "furniture": [
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#99794c",
       "id": "clinic_sign",
+      "material": "wood",
       "mount": "wall",
       "name": "Clinic direction sign",
       "readable": {
@@ -19,8 +24,13 @@
       "solid": false
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#99794c",
       "id": "gas_directions_sign",
+      "material": "wood",
       "mount": "wall",
       "name": "Hand-painted direction sign",
       "readable": {
@@ -37,8 +47,13 @@
       "solid": false
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#b8b5a5",
       "id": "medical_research_notice",
+      "material": "wood",
       "mount": "wall",
       "name": "Medical sampling notice board",
       "readable": {
@@ -55,6 +70,10 @@
       "solid": false
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#a8ada4",
       "container": {
         "pockets": [
@@ -65,6 +84,7 @@
         ]
       },
       "id": "medical_cabinet",
+      "material": "wood",
       "name": "Medical supply cabinet",
       "shape": [
         {
@@ -257,48 +277,96 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#7c8581",
       "id": "sample_rack",
+      "material": "wood",
       "name": "Specimen rack",
       "size": [2, 3, 1]
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#b6c1bc",
       "id": "sample_tray",
+      "material": "wood",
       "name": "Sample tray",
       "size": [2, 1, 1]
     },
     {
+      "breach": {
+        "durability": 400,
+        "minimumStrength": 9
+      },
       "color": "#666c70",
       "door": {
+        "detail": {
+          "fields": [1, 10],
+          "frame": 0,
+          "handle": {
+            "along": 0.080000000000000002,
+            "fromFreeEdge": 1.5,
+            "kind": "bar",
+            "length": 0.29999999999999999,
+            "thickness": 0.029999999999999999
+          },
+          "hardware": "#a9adb0",
+          "hinges": {
+            "count": 0,
+            "length": 0.10000000000000001,
+            "width": 0.059999999999999998
+          },
+          "relief": 0.012,
+          "seam": 0.029999999999999999
+        },
         "handlingSimSeconds": 1.2,
-        "material": "steel",
         "methods": {},
         "openNoise": {
           "sound": "door_roller_open"
         }
       },
       "id": "workshop_roller_door",
+      "material": "steel",
       "name": "Roller door",
       "size": [6, 5, 1]
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#373a3b",
       "id": "workshop_service_pit",
+      "material": "wood",
       "name": "Service pit",
       "size": [6, 1, 2],
       "solid": false
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#dfb72f",
       "id": "workshop_lift",
+      "material": "wood",
       "name": "Vehicle lift",
       "size": [4, 2, 9],
       "solid": false
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#5b605c",
       "id": "workshop_stripped_car",
+      "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -330,8 +398,13 @@
       }
     },
     {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
       "color": "#8a97a3",
       "id": "workshop_sedan",
+      "material": "steel",
       "name": "Car",
       "size": [4, 3, 10],
       "vehicle": {
@@ -343,6 +416,10 @@
       }
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#615b50",
       "container": {
         "pockets": [
@@ -353,6 +430,7 @@
         ]
       },
       "id": "workshop_scrap_pile",
+      "material": "wood",
       "name": "Scrap pile",
       "searchNoise": {
         "sound": "player_strain"
@@ -428,8 +506,13 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#9f9675",
       "id": "workshop_map_board",
+      "material": "wood",
       "mount": "wall",
       "name": "Workshop wall map",
       "readable": {

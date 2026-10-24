@@ -23,9 +23,8 @@ defects before they reach `main`.
 2. Run the installs under "Installing check dependencies" in `AGENTS.md` before the first
    push. The pre-push hook runs checks across every subproject, and a fresh worktree has
    no `node_modules`, so without them even the push that publishes the branch fails.
-3. `git push -u origin <branch>`, and open a draft PR titled with the feature's ID
-   ("Work item IDs" in `AGENTS.md`). CI then checks every later push, so no agent has to
-   repeat the full matrix locally.
+3. `git push -u origin <branch>`, and open a draft PR. CI then checks every later push, so
+   no agent has to repeat the full matrix locally.
 
 ## While working
 

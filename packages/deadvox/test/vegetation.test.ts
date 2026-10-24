@@ -5,48 +5,39 @@ import { worldOpaque, worldSolid } from '../src/core/collision.ts';
 import { foliageRustle, initialRustleClock } from '../src/core/foliageRustle.ts';
 import { footstepEventForBlock, shamblerFootstepEventForBlock } from '../src/core/footsteps.ts';
 import { Forest } from '../src/core/forest.ts';
-import { HAMLET, Hamlet } from '../src/core/hamlet.ts';
 import { PlayerCombat } from '../src/core/playerCombat.ts';
 import { raycast } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { grow } from '../src/core/site.ts';
+import { rectsOverlap } from '../src/core/site.ts';
 import { siteGenerationOf } from '../src/core/sitePalette.ts';
 import { soundOcclusion } from '../src/core/soundOcclusion.ts';
-import { simRate, simSeconds } from '../src/core/time.ts';
-import {
-  forestDensityAt,
-  leafLitterAt,
-  placeTree,
-  rectsOverlap,
-  stampTrees,
-  TreeIndex,
-} from '../src/core/vegetation.ts';
+import { simSeconds } from '../src/core/time.ts';
+import { forestDensityAt, leafLitterAt, placeTree, stampTrees, TreeIndex } from '../src/core/vegetation.ts';
 import { World } from '../src/core/world.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
-import { perceivePlayer, ZombieSystem } from '../src/core/zombies.ts';
-import { PLAYER, physicsFor } from '../src/game/player.ts';
+import { perceivePlayer } from '../src/core/zombies.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { PLAYER, physicsFor } from './playerFixture.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const scale = makeScale(0.5);
 const soundTuning = { hearingRangeScale: 0.5, gain: 0.5, cutoffHz: 1200, clearGain: 1, clearCutoffHz: 18_000 };
 const senseTuning = {
   id: 'fixture_player',
-  movement: { sidewaysSpeedScale: 0.7, backwardSpeedScale: 0.5 },
   chestEyeFraction: 0.62,
   crouch: {
-    speedMetresPerSimSecond: simRate(0.8),
     hearingRangeScale: 0.5,
     sightRangeScale: 0.5,
-    eyeDropMetres: 0.6,
-    bodyHeightMetres: 1.2,
   },
+  prone: registry.senses.get('player')!.prone,
   wall: soundTuning,
   footsteps: registry.senses.get('player')!.footsteps,
   vocalNoiseLifetimeSimSeconds: registry.senses.get('player')!.vocalNoiseLifetimeSimSeconds,
+  shamblerVoice: registry.senses.get('player')!.shamblerVoice,
   light: {
     playerDaySightScale: 0,
     lureRangeScale: 0,
@@ -56,8 +47,11 @@ const senseTuning = {
     throwStanceDropHoldRealSeconds: 1,
     wornLightToggleHoldRealSeconds: 1,
     renderedBeamLimit: 3,
+    renderedFixtureLimit: 4,
     throwArmSpeedMetresPerRealSecond: 6,
     throwArmEnergyJoules: 20,
+    groundLight: { senseHeightMetres: 0.075, renderLiftMetres: 0.4 },
+    illumination: { pointDecay: 1, nearFieldMetres: 4, readingThreshold: 0.6 },
   },
 };
 
@@ -123,7 +117,14 @@ describe('passable but opaque vegetation', () => {
         zombie: registry.zombies.get('shambler')!,
         from: [0, 2, 0],
         facing: [1, 0, 0],
-        player: { pos: [10, 2, 0], facing: [-1, 0, 0], movement: 'still', lit: false, lightSeenFrom: 40 },
+        player: {
+          pos: [10, 2, 0],
+          facing: [-1, 0, 0],
+          movement: 'still',
+          lit: false,
+          lightSeenFrom: 40,
+          eyeHeightMetres: 1.3,
+        },
         dayPhase: dayStateAtHour(12).phase,
         sightBlend: dayStateAtHour(12).sightBlend,
         blockSize: 0.5,
@@ -131,9 +132,9 @@ describe('passable but opaque vegetation', () => {
         tuning: senseTuning,
       });
     expect(sense()).toBe(true);
-    for (const name of ['tree_trunk', 'tree_branch', 'leaves', 'hedge', 'leaf_litter']) {
+    for (const name of ['tree_trunk', 'tree_branch', 'leaves', 'leaf_litter']) {
       const id = registry.blockIds.get(name)!;
-      const blocksMovement = name !== 'leaves' && name !== 'hedge';
+      const blocksMovement = name !== 'leaves';
       expect(registry.blocks[id]!.solid, name).toBe(blocksMovement);
       expect(registry.blocks[id]!.opaque, name).toBe(true);
       for (let y = 0; y < 8; y++) {
@@ -170,6 +171,7 @@ describe('passable but opaque vegetation', () => {
       movement: 'still' as const,
       lit: false,
       lightSeenFrom: 40,
+      eyeHeightMetres: 1.3,
     };
     const hits: number[] = [];
     const system = new ZombieSystem({
@@ -223,7 +225,7 @@ describe('passable but opaque vegetation', () => {
   it('rustles on entry and cooldown only while moving, with faster content cadence', () => {
     const world = new World();
     world.setBlock(2, 2, 2, registry.blockIds.get('leaves')!);
-    world.setBlock(3, 2, 2, registry.blockIds.get('hedge')!);
+    world.setBlock(3, 2, 2, registry.blockIds.get('leaves')!);
     const body = {
       pos: [2.5, 2, 2.5] as [number, number, number],
       vel: [0, 0, 0] as [number, number, number],
@@ -345,39 +347,11 @@ describe('passable but opaque vegetation', () => {
       expect(footstepEventForBlock(block)).toBe(playerWood);
       expect(shamblerFootstepEventForBlock(block)).toBe(shamblerWood);
     }
-    for (const name of ['leaves', 'hedge', 'leaf_litter']) {
+    for (const name of ['leaves', 'leaf_litter']) {
       const block = registry.blocks[registry.blockIds.get(name)!]!;
       expect(footstepEventForBlock(block)).toBe(playerFoliage);
       expect(shamblerFootstepEventForBlock(block)).toBe(shamblerFoliage);
     }
-  });
-
-  it('keeps entire hamlet canopies and hedges off lots, road frontage/entrances, spawn and range', () => {
-    const hamlet = new Hamlet(1, registry, scale);
-    expect(new Set(hamlet.trees.map((tree) => tree.shape))).toEqual(
-      new Set(siteGenerationOf(registry).vegetation.treeMix),
-    );
-    expect(hamlet.hedges.length).toBeGreaterThan(0);
-    const required = [
-      grow(hamlet.road, HAMLET.gap),
-      grow(hamlet.range.rect, 4),
-      ...hamlet.lots.map((lot) => grow(lot.rect, 2)),
-    ];
-    for (const tree of hamlet.trees) {
-      expect(
-        required.some((rect) => rectsOverlap(rect, tree.bounds)),
-        `${tree.shape} at ${tree.origin}`,
-      ).toBe(false);
-    }
-    for (const box of hamlet.hedges) {
-      const footprint = { x0: box.min[0], z0: box.min[2], x1: box.max[0], z1: box.max[2] };
-      expect(required.some((rect) => rectsOverlap(rect, footprint))).toBe(false);
-      expect(hamlet.trees.some((tree) => rectsOverlap(tree.bounds, footprint))).toBe(false);
-    }
-    const broadleaf = hamlet.trees.find((tree) => tree.shape === 'broadleaf')!;
-    expect(hamlet.surface.top!(broadleaf.origin[0], broadleaf.origin[2])).toBe(registry.blockIds.get('leaf_litter'));
-    const [x, , z] = hamlet.spawn.pos;
-    expect(hamlet.surface.top!(Math.floor(x / 0.5), Math.floor(z / 0.5))).toBe(registry.blockIds.get('asphalt'));
   });
 
   it('keeps the seeded forest-density field smooth and seed-dependent', () => {

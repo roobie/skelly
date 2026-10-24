@@ -1,6 +1,6 @@
 import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import type { Assembly, PartAppearance, PartFamily } from '@skelly/engine/assembly/schema.ts';
-import type { GlbAssetIdentity, GlbExportError } from '@skelly/thing-export/exportTypes.ts';
+import type { GlbAssetIdentity, GlbExportError, VoxelGrains } from '@skelly/thing-export/exportTypes.ts';
 import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';
 import { attachmentInstanceForId, attachmentMetadata } from './attachments.ts';
 import { gunDomain } from './domain.ts';
@@ -18,6 +18,7 @@ export const exportAttachmentGlb = (
   id: string,
   asset: GlbAssetIdentity,
   appearance?: PartAppearance,
+  voxel: Partial<VoxelGrains> = {},
 ): AttachmentExportResult => {
   const instance = attachmentInstanceForId(id, appearance);
   const family = FAMILIES[instance.family] ?? ATTACHMENT_FAMILIES[instance.family];
@@ -45,7 +46,7 @@ export const exportAttachmentGlb = (
     rules: [],
   };
   const resolved = resolve(assembly, domain);
-  const result = exportGlb({ resolved, palette: GUN_PALETTE, asset });
+  const result = exportGlb({ resolved, palette: GUN_PALETTE, asset, ...voxel });
   if (!result.ok) {
     return result;
   }

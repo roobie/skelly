@@ -77,6 +77,9 @@ const row = (
 });
 const debugRow = (id: string, description: string, contexts: readonly InputContext[] = entered): Action =>
   row(id, description, contexts, 'press', { debug: true, gate: 'debug.gate' });
+/** Modal navigation of the review-map page, like the spawn menu's: no debug gate held, never reaches the game. */
+const mapRow = (id: string, description: string): Action =>
+  row(id, description, ['review-map'], 'press', { repeat: true });
 const INVENTORY_TAB_BINDINGS = [
   { action: 'ui.inventory-tab-items', description: 'Open / select Items tab', tab: 'items' },
   { action: 'ui.inventory-tab-skills', description: 'Open / select Skills tab', tab: 'skills' },
@@ -100,6 +103,7 @@ const INPUT_ACTIONS: readonly Action[] = [
   row('movement.sprint', 'Sprint', moving, 'held-state'),
   row('movement.walk-toggle', 'Walk / jog', moving),
   row('player.crouch-toggle', 'Toggle crouch', ['play', 'carrying', 'build']),
+  row('player.prone-toggle', 'Lie down or rise to a crouch', ['play', 'carrying', 'build']),
   row('player.throw', 'Tap to toggle throwing stance; hold to drop a held item', ['play']),
   row('movement.jump', 'Jump', ['play', 'carrying', 'build'], 'held-state'),
   row('carry.tip', 'Tip the carried piece over', ['carrying']),
@@ -136,6 +140,9 @@ const INPUT_ACTIONS: readonly Action[] = [
   row('inventory.previous', 'Select previous item', ['inventory'], 'press', { repeat: true }),
   row('inventory.next', 'Select next item', ['inventory'], 'press', { repeat: true }),
   row('inventory.search', 'Search next container', ['inventory']),
+  row('inventory.cycle-target', 'Choose the next container to put into', ['inventory']),
+  row('inventory.put-target', 'Put selected item into the chosen container', ['inventory']),
+  row('inventory.find', 'Find items by name or keyword', ['inventory']),
   row('inventory.hands', 'Wield selected item', ['inventory']),
   row('inventory.wear', 'Wear or remove', ['inventory']),
   row('inventory.drop', 'Drop selected item', ['inventory']),
@@ -145,6 +152,8 @@ const INPUT_ACTIONS: readonly Action[] = [
   row('inventory.quick-action-gate', 'Hold and click an item for its quick action', ['inventory'], 'held-state', {
     plainKey: true,
   }),
+  // Pressed over an item card it views that card; as a key it views the selected item.
+  row('inventory.view-item', 'View an item in 3D', ['inventory'], 'press', { device: 'pointer' }),
   row('reading.close', 'Put away reading', ['reading']),
   row('reading.line-up', 'Read previous line', ['reading'], 'press', { repeat: true }),
   row('reading.line-down', 'Read next line', ['reading'], 'press', { repeat: true }),
@@ -168,6 +177,7 @@ const INPUT_ACTIONS: readonly Action[] = [
   debugRow('debug.god-toggle', 'God mode'),
   debugRow('debug.noclip-toggle', 'Noclip'),
   debugRow('debug.spectator-camera-toggle', 'Spectator camera'),
+  debugRow('debug.spectator-teleport', 'Teleport avatar to spectator camera'),
   debugRow('debug.third-person-toggle', 'Third-person avatar view'),
   debugRow('debug.perception-labels-toggle', 'Perception labels'),
   debugRow('debug.spawn-unaware-shambler', 'Spawn unaware shambler'),
@@ -179,9 +189,13 @@ const INPUT_ACTIONS: readonly Action[] = [
   debugRow('debug.spawn-zombie.runner', 'Spawn runner'),
   debugRow('debug.spawn-zombie.crawler', 'Spawn crawler'),
   debugRow('debug.spawn-zombie.amalgam', 'Spawn amalgam'),
+  debugRow('debug.spawn-zombie.acid_zombie', 'Spawn acid zombie'),
   debugRow('debug.melee-aim-toggle', 'Melee aim boxes'),
   debugRow('debug.freeze-shamblers', 'Freeze shamblers'),
   debugRow('debug.review-map-toggle', 'Review map', ['play', 'carrying', 'noclip', 'review-map']),
+  mapRow('debug.map-slice-down', 'Review map: cut lower'),
+  mapRow('debug.map-slice-up', 'Review map: cut higher'),
+  mapRow('debug.map-slice-surface', 'Review map: back to the surface'),
   debugRow('debug.freeze-game', 'Freeze game'),
   debugRow('debug.tone-cycle', 'Tone mapping'),
   debugRow('debug.exposure-decrease', 'Exposure −'),
@@ -221,15 +235,11 @@ const BASE_DEFAULT_KEYS: BindingMap = new Map(
 );
 export const INPUT_BINDINGS: readonly Binding[] = withDefaults(BASE_DEFAULT_KEYS);
 export const POINTER_ACTIONS = [
-  {
-    id: 'hand.use-dominant',
-    description: 'Use dominant hand; hold to fire automatically when ready',
-    label: 'Left click',
-  },
-  { id: 'hand.off-instant', description: 'Instant off-hand use', label: 'Mouse 5' },
-  { id: 'stance.ready', description: 'Hold to ready a firearm or enter en-garde', label: 'Right mouse' },
-  { id: 'aim.ads-toggle', description: 'Toggle sights while firearm is ready', label: 'Mouse 3' },
-  { id: 'pointer.look', description: 'Look', label: 'Mouse' },
+  { id: 'hand.use-dominant', description: 'Use dominant hand; hold to fire automatically when ready' },
+  { id: 'hand.off-instant', description: 'Instant off-hand use' },
+  { id: 'stance.ready', description: 'Hold to ready a firearm or enter en-garde' },
+  { id: 'aim.ads-toggle', description: 'Toggle sights while firearm is ready' },
+  { id: 'pointer.look', description: 'Look' },
 ] as const;
 // Escape is left out so a tap still frees the pointer and the browser's own fullscreen exit stays.
 export const BROWSER_CHORD_LOCK_CODES: string[] = ['KeyW', 'KeyT', 'KeyN', 'Tab'];
@@ -515,6 +525,7 @@ export class BindingRegistry {
   private readonly suspended = new Map<string, readonly Chord[]>();
   private readonly listeners = new Set<(bindingsChanged: boolean) => void>();
   private layout: ReadonlyMap<string, string> | undefined;
+  private pointerLabels: Readonly<Record<string, string>> = {};
   private readonly storage: PreferenceStorage | undefined;
   private debugRun = false;
   constructor(bindings = INPUT_BINDINGS, storage = browserStorage()) {
@@ -579,7 +590,7 @@ export class BindingRegistry {
   label(id: string): string {
     const binding = this.binding(id);
     if (!binding) {
-      return POINTER_ACTIONS.find((action) => action.id === id)?.label ?? id;
+      return this.pointerLabels[id] ?? id;
     }
     return [...new Set(this.chords(binding.id).map((_, index) => this.alternativeLabel(binding.id, index)))].join(
       ' / ',
@@ -632,6 +643,11 @@ export class BindingRegistry {
   }
   setLayout(layout: ReadonlyMap<string, string>): void {
     this.layout = layout;
+    this.changed(false);
+  }
+  /** Names the fixed pointer input of each pointer action that has no binding. */
+  setPointerLabels(labels: Readonly<Record<string, string>>): void {
+    this.pointerLabels = labels;
     this.changed(false);
   }
   async loadLayout(): Promise<void> {
@@ -753,6 +769,8 @@ export const comboBoxKey = (event: Event): ComboBoxKey | undefined => {
   }
   return event.key === 'Escape' || event.key === 'Tab' ? 'close' : undefined;
 };
+/** Whether a key clears the inventory find field (`src/ui/inventoryScreen.ts`). Like a native search field's, it is fixed. */
+export const clearsFindField = (event: Event): boolean => event instanceof KeyboardEvent && event.key === 'Escape';
 const typesCharacter = (event: Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'altKey'>): boolean =>
   event.key.length === 1 && !(event.ctrlKey || event.metaKey || event.altKey);
 const editable = (target: EventTarget | null): boolean =>
@@ -1043,6 +1061,17 @@ export class KeyboardInput {
       !this.capture
     );
   }
+  /** The window lost focus: held keys may be released where this document cannot see it. */
+  windowBlurred(): void {
+    this.recordTrace('blur');
+    this.cancel(false, false, 'window-blur');
+  }
+  visibilityChanged(): void {
+    this.recordTrace('visibility');
+    if (document.hidden) {
+      this.cancel(false, false, 'document-hidden');
+    }
+  }
   install(): () => void {
     if (this.removeListeners) {
       return this.removeListeners;
@@ -1087,17 +1116,9 @@ export class KeyboardInput {
         event.stopPropagation();
       }
     };
-    const blur = () => {
-      this.recordTrace('blur');
-      this.cancel(false, false, 'window-blur');
-    };
+    const blur = () => this.windowBlurred();
     const windowFocus = () => this.recordTrace('focus');
-    const visibility = () => {
-      this.recordTrace('visibility');
-      if (document.hidden) {
-        this.cancel(false, false, 'document-hidden');
-      }
-    };
+    const visibility = () => this.visibilityChanged();
     const lock = () => {
       this.recordTrace('pointer-lock');
       if (!document.pointerLockElement) {

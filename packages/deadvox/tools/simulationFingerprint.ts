@@ -44,9 +44,12 @@ export const FEASIBILITY_ENTRIES = ['src/vehicles/feasibility/runner.ts'] as con
 
 export const SIMULATION_ENTRIES = [
   'src/core/sim.ts',
+  // Independently constructed appliance owners also determine saved simulation results.
+  'src/core/batteryChargers.ts',
   'src/core/worldgen.ts',
   'src/core/saveState.ts',
   'src/core/saveFormat.ts',
+  'src/core/vehicleWork.ts',
   'src/core/storage.ts',
   'src/core/soundPicker.ts',
   'src/game/player.ts',
@@ -76,6 +79,8 @@ export const SIMULATION_EXCLUSIONS = [
   'src/core/mood.ts',
   // The default look is rendered presentation read by the view and debug panel; it changes neither simulation nor saves.
   'src/core/lookDefaults.ts',
+  // Render budgets select presentation work, not simulation or saved state.
+  'src/core/graphicsTuning.ts',
   // Optic lens projection is rendered presentation; it changes neither simulation nor save state.
   'src/core/opticView.ts',
   // Render-only until weather affects the simulation; then remove this entry and save its state (ADR 0002).
@@ -92,6 +97,10 @@ export const SIMULATION_EXCLUSIONS = [
   'src/core/skyTransport.ts',
   'src/core/shell.ts',
   'src/core/pileLayout.ts',
+  // Paper-map terrain sampling is disposable presentation; it changes neither simulation nor saves.
+  'src/core/paperMapRender.ts',
+  // Its public-cartography types describe printable features, not simulation or saved state.
+  'src/core/publicCartography.ts',
   // WebAudio output/voice allocation and body-sized pitch law are presentation; admission and saved SoundPicker stay fingerprinted.
   'src/game/audio.ts',
   'src/game/audioPresentation.ts',
@@ -108,7 +117,7 @@ export const SIMULATION_EXCLUSIONS = [
   'src/game/saveStorage.ts',
   // Browser selection persistence is transport; admission and pack identity are fingerprinted separately.
   'src/game/modStorage.ts',
-  'src/game/saveStorageLockError.ts',
+  'src/game/saveStorageErrors.ts',
   'src/game/saveStorageRecord.ts',
   'src/game/saveStorageProtocol.ts',
   'src/game/controls.ts',
@@ -134,6 +143,10 @@ export const SIMULATION_EXCLUSIONS = [
   // Read-only debug readout formatting and byte-count estimates.
   'src/ui/playReadout.ts',
   'src/ui/inventoryScreen.ts',
+  // Read-only appliance projection; command admission and effects stay in session and core.
+  'src/ui/chargerPanel.ts',
+  // Read-only vehicle service projection; work admission and transfer stay in core/vehicleWork and session.
+  'src/ui/vehicleInspection.ts',
   // Craft views/readouts and UI preference/event forwarding only. Native intents/admission
   // remain fingerprinted through session -> core/craftCommands and core/longAction.
   'src/ui/craftController.ts',
@@ -177,7 +190,11 @@ const PRESENTATION_ASSET_EXTENSIONS = new Set([
 const MODULE_QUERY_PATTERN = /[?#].*$/;
 const GLOB_REFERENCE = /\bimport\.meta\.glob\b/g;
 const GLOB_CALL = /\bimport\.meta\.glob(?:<[^>]*>)?\s*\(\s*(['"])(.*?)\1/g;
-const CONTENT_GLOB_PATTERNS = new Set(['../content/base/*.json', '../content/base/assets/audio/**/*.ogg']);
+const CONTENT_GLOB_PATTERNS = new Set([
+  '../content/base/*.json',
+  '../content/base/assets/audio/**/*.ogg',
+  '../config/bundled/*.json',
+]);
 const REQUIRE_CALL = /\brequire\s*\(/;
 const IMPORT_META_URL_REFERENCE = /\bimport\.meta\.url\b/g;
 const WORKER_URL_CALL = /\bnew\s+Worker\s*\(\s*new\s+URL\s*\(\s*(['"])(.*?)\1\s*,\s*import\.meta\.url\s*\)/g;
@@ -348,7 +365,10 @@ async function resolveTrackableModule(
   if (PRESENTATION_ASSET_EXTENSIONS.has(extension)) {
     return;
   }
-  if (extension === '.json' && (relativePath.startsWith('src/config/') || relativePath.startsWith('mobgen/'))) {
+  if (
+    extension === '.json' &&
+    ['src/config/', 'mobgen/', 'thing-core/'].some((prefix) => relativePath.startsWith(prefix))
+  ) {
     return { file, relativePath };
   }
   if (!SOURCE_EXTENSIONS.has(extension)) {

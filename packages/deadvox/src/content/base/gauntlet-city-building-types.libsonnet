@@ -195,15 +195,28 @@ local yard(block) = { role: 'trim', block: block };
       { item: 'rifle_assault', weight: 1, condition: [0.5, 0.9] },
       { item: 'rifle_ak', weight: 1, condition: [0.5, 0.9] }, { nothing: true, weight: 1 },
     ] },
-    // Rifle rows and counts are provisional, for BR to tune; only Military sources admit them.
+    // Only Military sources admit rifle rows. Rifle counts are sized so a run offers each rifle calibre
+    // about as many rounds as it offers .357, several thirty-round magazines' worth (#1089).
     { id: 'armoury_ammunition', rolls: [1, 2], entries: [
       { item: 'cartridge_357_h_magnum', weight: 3, count: [3, 12] },
       { item: 'cartridge_box_357_h_magnum', weight: 2 },
       { item: 'shotshell_box', weight: 1 },
-      { item: 'cartridge_5_d_56x45', weight: 3, count: [10, 30] },
-      { item: 'cartridge_box_5_d_56x45', weight: 2 },
-      { item: 'cartridge_7_d_62x39', weight: 3, count: [10, 30] },
-      { item: 'cartridge_box_7_d_62x39', weight: 2 }, { nothing: true, weight: 2 },
+      { item: 'cartridge_5_d_56x45', weight: 3, count: [60, 150] },
+      { item: 'cartridge_box_5_d_56x45', weight: 2, count: [3, 6] },
+      { item: 'cartridge_7_d_62x39', weight: 3, count: [60, 150] },
+      { item: 'cartridge_box_7_d_62x39', weight: 2, count: [3, 6] },
+      { item: 'magazine_stanag_30', weight: 2, condition: [0.5, 0.9] },
+      { item: 'magazine_stanag_20', weight: 1, condition: [0.5, 0.9] },
+      { item: 'magazine_akm_30', weight: 2, condition: [0.5, 0.9] }, { nothing: true, weight: 2 },
+    ] },
+    // Rifle supplies for the rooms outside the armoury, so the HQ's ammunition and magazines are not all in one cabinet.
+    { id: 'hq_field_supplies', rolls: [1, 2], entries: [
+      { item: 'cartridge_5_d_56x45', weight: 2, count: [40, 100] },
+      { item: 'cartridge_7_d_62x39', weight: 2, count: [40, 100] },
+      { item: 'cartridge_box_5_d_56x45', weight: 1, count: [2, 4] }, { item: 'cartridge_box_7_d_62x39', weight: 1, count: [2, 4] },
+      { item: 'magazine_stanag_30', weight: 2, condition: [0.5, 0.9] },
+      { item: 'magazine_stanag_20', weight: 1, condition: [0.5, 0.9] },
+      { item: 'magazine_akm_30', weight: 2, condition: [0.5, 0.9] }, { nothing: true, weight: 3 },
     ] },
     { id: 'armoury_cabinet', rolls: [2, 3], entries: [
       { table: 'armoury_arms', weight: 1 }, { table: 'armoury_ammunition', weight: 2 },

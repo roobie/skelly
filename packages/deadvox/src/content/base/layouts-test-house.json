@@ -1,0 +1,176 @@
+{
+  "layouts": [
+    {
+      "bays": [
+        {
+          "facing": "e",
+          "position": [-19, 21, -7]
+        },
+        {
+          "facing": "e",
+          "position": [-14, 21, -7]
+        }
+      ],
+      "bounds": {
+        "x0": -23,
+        "x1": 17,
+        "z0": -13,
+        "z1": 6
+      },
+      "buildings": [
+        {
+          "position": [4, 20.5, -4.5],
+          "rotation": 0,
+          "template": "test_house_home"
+        },
+        {
+          "position": [-5, 20.5, -7],
+          "rotation": 0,
+          "template": "test_house_shed"
+        },
+        {
+          "position": [-22, 20.5, -12],
+          "rotation": 0,
+          "template": "test_house_garage"
+        },
+        {
+          "position": [-22.5, 20.5, -8.5],
+          "rotation": 0,
+          "template": "test_house_garage_ladder"
+        },
+        {
+          "position": [-2, 20.5, 4.5],
+          "rotation": 0,
+          "template": "test_house_garden_wall"
+        },
+        {
+          "position": [-4, 20.5, -1],
+          "rotation": 0,
+          "template": "test_house_path"
+        },
+        {
+          "position": [3, 20.5, -1.5],
+          "rotation": 0,
+          "template": "test_house_step"
+        },
+        {
+          "position": [2, 20.5, 0.5],
+          "rotation": 0,
+          "template": "test_house_outdoor_stock"
+        },
+        {
+          "position": [-2, 20.5, 0.5],
+          "rotation": 0,
+          "template": "test_house_sign"
+        },
+        {
+          "position": [-2, 20.5, -3],
+          "rotation": 0,
+          "template": "test_house_loose_wardrobe"
+        },
+        {
+          "position": [-12.5, 20.5, -3],
+          "rotation": 0,
+          "template": "test_house_showroom"
+        },
+        {
+          "position": [0, 20.5, -11.5],
+          "rotation": 0,
+          "template": "test_house_reading_booth"
+        }
+      ],
+      "demo": true,
+      "ground": 20.5,
+      "id": "testHouse",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "player": {
+        "bearing": 90,
+        "position": [-6.25, 21.5, -0.5]
+      },
+      "repairStock": "test_house_garage",
+      "shamblers": [],
+      "showroom": {
+        "capacity": 3,
+        "catalogue": {
+          "blend": 4,
+          "floor": "concrete",
+          "position": [-23, 21, 80],
+          "spacing": 2,
+          "width": 50
+        },
+        "facing": "s",
+        "focusDistance": 1,
+        "row": [-12, 21.5, -1],
+        "slots": [
+          {
+            "furniture": "bedroll"
+          },
+          {
+            "fixed": true,
+            "furniture": "grinding_wheel"
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "count": 1,
+                "item": "hand_saw",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "screwdriver",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "copper_wire",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "small_spring",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "hinge_set",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "fastener_pack",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "taped_flashlight_mount",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "scrap_foregrip",
+                "placement": "surface"
+              }
+            ]
+          }
+        ],
+        "spacing": 1
+      },
+      "terrain": [],
+      "tracks": [],
+      "vehicles": [
+        {
+          "blueprint": "hatchback",
+          "facing": "e",
+          "placementKey": "testHouse.parked-hatchback",
+          "position": [-19, 21, -7]
+        }
+      ],
+      "woodlands": []
+    }
+  ]
+}

@@ -1,16 +1,14 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { expect, it } from 'vitest';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
-import { baseRegistry } from './baseRegistry.ts';
-import { buildFixtureRegistry } from './economyFixtures.ts';
+import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
+import { buildFixtureRegistry, FIXTURE_BLOW_SOUND, FIXTURE_MATERIAL, fixtureSources } from './economyFixtures.ts';
 import { capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 
 const methodId = 'fixture_method';
 const qualityId = 'fixture_quality';
 const fixture = (admitted: string[]) => ({
-  doorMaterials: [{ id: 'fixture_material', methods: admitted }],
+  furnitureMaterials: [{ id: FIXTURE_MATERIAL, blowSound: FIXTURE_BLOW_SOUND, methods: admitted }],
   furniture: [
     {
       id: 'fixture_door',
@@ -18,7 +16,6 @@ const fixture = (admitted: string[]) => ({
       size: [2, 4, 1],
       color: '#777777',
       door: {
-        material: 'fixture_material',
         handlingSimSeconds: 0.5,
         methods: {
           [methodId]: {
@@ -54,13 +51,6 @@ const fixture = (admitted: string[]) => ({
     },
   ],
 });
-const base = readdirSync('src/content/base')
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({
-    source: file,
-    data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
-  }));
 const baseSounds = () => [...baseRegistry().sounds.values()].find((sound) => sound.noise.enabled)!;
 const source = (methods: string[]) => ({ source: 'forcing-fixture', data: fixture(methods) });
 
@@ -80,8 +70,7 @@ it('rejects a door method outside its material admission even when the method it
 });
 
 it('starts only with the data-named quality and preserves the interrupted method and its strike sound through save', async () => {
-  const { registry, issues } = buildFixtureRegistry([...base, source(['fixture_method'])]);
-  expect(issues).toEqual([]);
+  const registry = baseRegistryWith(fixtureSources([source(['fixture_method'])]));
   const runtime = createRuntime(undefined, false, undefined, { registry, spawn: [0, 1, 0] });
   const floor = registry.blocks.find((block) => block.solid)!;
   const placeFloor = (target: typeof runtime) => {

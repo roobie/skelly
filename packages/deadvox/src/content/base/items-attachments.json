@@ -3,19 +3,35 @@
     {
       "category": "misc",
       "economy": {
+        "tiers": ["Tier2", "Tier3"],
+        "usage": ["Military"]
+      },
+      "id": "ak_slant_compensator",
+      "model": "ak_slant_compensator",
+      "name": "Slant compensator",
+      "notLoot": false,
+      "size": [1, 1],
+      "weight": 80,
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "optic_hunting_3_9x",
       "model": "optic_hunting_3_9x",
       "name": "3–9× hunting scope",
+      "notLoot": false,
       "opticMagnification": 6,
       "opticZoom": {
         "rememberPerWeapon": true,
         "step": 1
       },
       "size": [2, 2],
-      "weight": 400
+      "weight": 400,
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -26,8 +42,10 @@
       "id": "optic_digital_thermal",
       "model": "optic_digital_thermal",
       "name": "Digital thermal optic",
+      "notLoot": false,
       "size": [2, 2],
-      "weight": 750
+      "weight": 750,
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -38,8 +56,10 @@
       "id": "optic_fixed_prism_4x",
       "model": "optic_fixed_prism_4x",
       "name": "Fixed 4× prism optic",
+      "notLoot": false,
       "size": [1, 2],
-      "weight": 450
+      "weight": 450,
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -50,13 +70,15 @@
       "id": "optic_high_mag_5_25x",
       "model": "optic_high_mag_5_25x",
       "name": "5–25× magnified optic",
+      "notLoot": false,
       "opticMagnification": 10,
       "opticZoom": {
         "rememberPerWeapon": true,
         "step": 1
       },
       "size": [2, 2],
-      "weight": 900
+      "weight": 900,
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -67,8 +89,10 @@
       "id": "optic_holographic",
       "model": "optic_holographic",
       "name": "Holographic sight",
+      "notLoot": false,
       "size": [1, 1],
-      "weight": 250
+      "weight": 250,
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -79,13 +103,15 @@
       "id": "optic_lpvo_1_6x",
       "model": "optic_lpvo_1_6x",
       "name": "1–6× variable-power optic",
+      "notLoot": false,
       "opticMagnification": 3,
       "opticZoom": {
         "rememberPerWeapon": true,
         "step": 1
       },
       "size": [2, 2],
-      "weight": 520
+      "weight": 520,
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -96,8 +122,10 @@
       "id": "optic_mini_reflex",
       "model": "optic_mini_reflex",
       "name": "Mini reflex sight",
+      "notLoot": false,
       "size": [1, 1],
-      "weight": 180
+      "weight": 180,
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -108,8 +136,10 @@
       "id": "optic_tube_dot",
       "model": "optic_tube_dot",
       "name": "Tube red-dot sight",
+      "notLoot": false,
       "size": [1, 2],
-      "weight": 220
+      "weight": 220,
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -120,8 +150,10 @@
       "id": "rail_front_sight",
       "model": "rail_front_sight",
       "name": "Rail-mounted front sight",
+      "notLoot": false,
       "size": [1, 1],
-      "weight": 90
+      "weight": 90,
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -130,26 +162,56 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "firearmAttachmentEffects": {
+        "fitRefusal": "I can't fit this suppressor yet",
+        "fitSkillLevel": 4,
+        "kind": "suppressor",
         "recoilReduction": 0.14999999999999999,
         "wearPerShot": 0.001
       },
       "id": "real_suppressor",
       "model": "real_suppressor",
       "name": "Suppressor",
+      "notLoot": false,
       "size": [1, 2],
-      "weight": 300
+      "weight": 300,
+      "workInProgress": false
     },
     {
-      "category": "misc",
+      "category": "light",
+      "description": "A rail-clamp flashlight. Fitted to a rail on a long gun, its beam follows the barrel.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "tactical_flashlight_mount",
+      "light": {
+        "beam": {
+          "angleDegrees": 60,
+          "decay": 1,
+          "penumbra": 0.59999999999999998,
+          "spill": {
+            "enabled": false,
+            "intensity": 0.17999999999999999,
+            "radiusRatio": 1.5
+          }
+        },
+        "color": "#fff1d8",
+        "intensity": 5,
+        "power": {
+          "battery": "aa_battery",
+          "chargePerGameHour": 0.25,
+          "compatibleBatteries": ["rechargeable_aa_battery"],
+          "swapSimSeconds": 2
+        },
+        "radius": 20,
+        "seenFrom": 40
+      },
       "model": "tactical_flashlight_mount",
       "name": "Tactical flashlight rail mount",
+      "notLoot": false,
       "size": [1, 1],
-      "weight": 120
+      "weight": 120,
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -159,10 +221,12 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "weapon_sling",
+      "model": "weapon_sling",
       "name": "Weapon sling",
+      "notLoot": false,
       "size": [1, 1],
       "sling": true,
-      "weight": 150
+      "workInProgress": false
     },
     {
       "category": "misc",
@@ -171,16 +235,20 @@
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "firearmAttachmentEffects": {
+        "kind": "foregrip",
         "raiseScale": 0.94999999999999996,
         "recoveryScale": 1.1000000000000001,
         "swayScale": 0.84999999999999998,
-        "swingScale": 1.1000000000000001
+        "swingScale": 1.1000000000000001,
+        "wearPerShot": 0
       },
       "id": "foregrip",
       "model": "foregrip",
       "name": "Vertical foregrip",
+      "notLoot": false,
       "size": [1, 1],
-      "weight": 160
+      "weight": 160,
+      "workInProgress": false
     }
   ]
 }

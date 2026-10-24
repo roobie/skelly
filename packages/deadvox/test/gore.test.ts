@@ -4,8 +4,9 @@ import { BODY_REGIONS, type BodyRegion } from '../src/core/body.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import { BLOCK_SIZE } from '../src/core/scale.ts';
 import type { HitImpulse, Zombie } from '../src/core/zombies.ts';
-import { DROPLET_CAP, DROPLET_SPAWNS_PER_FRAME, Gore, type GoreBodies, SPLAT_CAP } from '../src/render/gore.ts';
+import { Gore, type GoreBodies } from '../src/render/gore.ts';
 import { PLAYER_BODY_REAR_OFFSET, PLAYER_REGION_BOXES } from '../src/render/playerFigure.ts';
+import { GORE_TUNING_FIXTURE } from './presentationFixture.ts';
 
 const floor = (_x: number, y: number, _z: number) => y < 0;
 // A heavy downward hit just above the floor, so most droplets land within a few updates.
@@ -15,7 +16,7 @@ const BASE_DRIP = { rate: 1, size: 1 };
 
 describe('Gore', () => {
   it('lights droplets and splats as the world is lit, shadows included', () => {
-    const gore = new Gore(1);
+    const gore = new Gore(1, GORE_TUNING_FIXTURE);
     const meshes = gore.group.children.filter((child): child is InstancedMesh => child instanceof InstancedMesh);
     expect(meshes).toHaveLength(2);
     expect(meshes.every((mesh) => mesh.material instanceof MeshLambertMaterial)).toBe(true);
@@ -24,11 +25,11 @@ describe('Gore', () => {
   });
 
   it('starts at most the per-frame budget of droplets between two updates, however much is sprayed', () => {
-    const gore = new Gore(1);
-    for (let spray = 0; spray < DROPLET_CAP; spray++) {
+    const gore = new Gore(1, GORE_TUNING_FIXTURE);
+    for (let spray = 0; spray < GORE_TUNING_FIXTURE.dropletCap; spray++) {
       gore.spray(lowHit, 100);
     }
-    expect(gore.activeDroplets).toBe(DROPLET_SPAWNS_PER_FRAME);
+    expect(gore.activeDroplets).toBe(GORE_TUNING_FIXTURE.dropletSpawnsPerFrame);
     gore.dispose();
   });
 
@@ -38,7 +39,7 @@ describe('Gore', () => {
     const drip = (bleeding: BodyRegion) => (bleeding === region ? BASE_DRIP : undefined);
 
     const dripPosition = (thirdPerson: boolean): Vector3 => {
-      const gore = new Gore(BLOCK_SIZE);
+      const gore = new Gore(BLOCK_SIZE, GORE_TUNING_FIXTURE);
       gore.update(1, floor, {
         zombies: new MapEntityStore<Zombie>(),
         listener: playerPos,
@@ -84,7 +85,7 @@ describe('Gore', () => {
   });
 
   it('stops player wound drips once the wound stops bleeding', () => {
-    const gore = new Gore(1);
+    const gore = new Gore(1, GORE_TUNING_FIXTURE);
     const bodies: GoreBodies = {
       zombies: new MapEntityStore<Zombie>(),
       listener: [0, 0, 0],
@@ -104,18 +105,18 @@ describe('Gore', () => {
   });
 
   it('keeps droplets and splats within their pools under a flood of sprays', () => {
-    const gore = new Gore(1);
-    const frames = Math.ceil(SPLAT_CAP / DROPLET_SPAWNS_PER_FRAME) * 3;
+    const gore = new Gore(1, GORE_TUNING_FIXTURE);
+    const frames = Math.ceil(GORE_TUNING_FIXTURE.splatCap / GORE_TUNING_FIXTURE.dropletSpawnsPerFrame) * 3;
     for (let frame = 0; frame < frames; frame++) {
-      for (let spray = 0; spray < DROPLET_CAP; spray++) {
+      for (let spray = 0; spray < GORE_TUNING_FIXTURE.dropletCap; spray++) {
         gore.spray(lowHit, 100);
       }
-      expect(gore.activeDroplets).toBeLessThanOrEqual(DROPLET_CAP);
+      expect(gore.activeDroplets).toBeLessThanOrEqual(GORE_TUNING_FIXTURE.dropletCap);
       gore.update(1 / 60, floor);
-      expect(gore.activeSplats).toBeLessThanOrEqual(SPLAT_CAP);
+      expect(gore.activeSplats).toBeLessThanOrEqual(GORE_TUNING_FIXTURE.splatCap);
     }
     // The splat ring filled and then reused its oldest entries instead of growing.
-    expect(gore.activeSplats).toBe(SPLAT_CAP);
+    expect(gore.activeSplats).toBe(GORE_TUNING_FIXTURE.splatCap);
     gore.dispose();
   });
 });

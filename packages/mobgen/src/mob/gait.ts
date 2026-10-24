@@ -18,7 +18,22 @@
 // k (executed by sideForStep(k)) — see legAndFootRotations for how neighbouring steps' plans combine.
 
 import type { Bone } from '../core/body.ts';
-import { add, applyPoint, type Mat3, mulMM, mulMV, rotX, rotY, rotZ, sub, transpose, type Vec3 } from '../core/math.ts';
+import {
+  add,
+  applyPoint,
+  clamp,
+  hermite,
+  type Mat3,
+  mulMM,
+  mulMV,
+  rotX,
+  rotY,
+  rotZ,
+  smoothstep,
+  sub,
+  transpose,
+  type Vec3,
+} from '../core/math.ts';
 import { blendPose, boneTransforms, type EulerDeg, type Pose } from '../core/pose.ts';
 import { cellIndex, type Voxels, worldPosition } from '../core/voxelize.ts';
 import { FEET_BONES, type HumanoidParams } from './humanoid.ts';
@@ -27,9 +42,6 @@ import { createStepPlanMemo, type StepPlan, type StepPlanMemo, stepPlanFor } fro
 const TAU = Math.PI * 2;
 const toDeg = (rad: number): number => (rad * 180) / Math.PI;
 const toRad = (deg: number): number => (deg * Math.PI) / 180;
-const clamp = (x: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, x));
-/** Smooth 0->1 ease with zero slope at both ends (3x²-2x³). */
-const smoothstep = (x: number): number => x * x * (3 - 2 * x);
 // Smooth minimum of a whole list at once (log-sum-exp): exact min at smoothing=0, otherwise undershoots by
 // smoothing*ln(#values within ~smoothing of the true min) — bounded and *not* per-pair-cumulative, unlike
 // folding a pairwise smooth-min across many corners one at a time (tried first: a foot's own rest-box
@@ -54,20 +66,27 @@ const chaseBlend = (speed: number): number => clamp((speed - 0.8) / 2, 0, 1);
 const MAX_YAW_DEG = 6; // pelvis yaw amplitude at the longest (cap-saturating) strides
 const JAW_LAG = 0.08; // fraction of a cycle the jaw bounce lags each heel-strike, as if from inertia
 
-// Sideways sway (width-wise waddle): no new sampled params — girth/pelvisSway/limp (already sampled) drive
-// how wide and how much a given actor sways, so a brute (heavy girth) lands widest and a jittery/limping
-// actor sways more. Width is a *target total* (girth-driven), not a fixed add-on — the rig's own sampled
-// hipWidth already varies a lot on its own, and an add-on stacked on top of that overshot badly (how far
-// was not recorded; the outcome, per 596311a, is feet landing 0.27-0.44 m apart, brute widest).
-/** Extra outward step width beyond the hip (each side), so ankle-to-ankle lands near a girth-driven target
- * (~0.3-0.45 m total across the three templates) regardless of this actor's own sampled hip width. Can be
- * negative (feet land inside the hips) for a narrow-hipped, high-girth-range-relative actor. */
-const stepWidthExtra = (params: HumanoidParams, hipWidthTotal: number): number => {
+// Sideways sway (width-wise waddle): no new sampled params — the body's own width content plus
+// pelvisSway/limp (already sampled) drive how wide and how much a given actor sways, so a brute (heavy
+// girth) lands widest and a jittery/limping actor sways more. Width is a *target total*, not a fixed
+// add-on — the rig's own sampled hipWidth already varies a lot on its own, and an add-on stacked on top
+// of that overshot badly (how far was not recorded; the outcome, per 596311a, is feet landing 0.27-0.44 m
+// apart, brute widest).
+/** This actor's target total stance width (ankle to ankle, m): the body's own width base plus a little
+ * more for a jittery or limping actor. The base is whichever width param the body's template samples —
+ * `stepWidth` itself (the skeleton's explicit width, since it has no bulk param) or the bulk width a
+ * flesh body's `girth` asks for — so code never supplies a third, hidden default for a missing choice. */
+const stanceWidthTarget = (params: HumanoidParams): number => {
   const swayNorm = clamp(params.pelvisSway / 6, 0, 1);
   const limpNorm = clamp(params.limp, 0, 1);
-  const desiredTotal = 0.03 + 0.3 * params.girth + 0.02 * swayNorm + 0.01 * limpNorm;
-  return (desiredTotal - hipWidthTotal) / 2;
+  const base = params.stepWidth ?? 0.03 + 0.3 * params.girth;
+  return base + 0.02 * swayNorm + 0.01 * limpNorm;
 };
+/** Extra outward step width beyond the hip (each side), so ankle-to-ankle lands near the body's own
+ * width target regardless of this actor's own sampled hip width. Can be negative (feet land inside the
+ * hips) for a narrow-hipped, wide-target actor. */
+const stepWidthExtra = (params: HumanoidParams, hipWidthTotal: number): number =>
+  (stanceWidthTarget(params) - hipWidthTotal) / 2;
 // Floor on a foot's own world-X distance off-centre (see landingX) — keeps a crossover stagger's swing
 // path a safe margin clear of the opposite, planted foot.
 const MIN_WORLD_OUTWARD = 0.03;
@@ -259,23 +278,6 @@ const stanceFootTarget = (t: number, len: number, lateralX: number, geom: FootGe
 };
 
 const HERMITE_H = 1e-4; // step for the numeric d/dt of stanceFootTarget at its own endpoints
-
-interface Keyframe {
-  readonly value: number;
-  readonly slope: number;
-}
-
-/** Cubic Hermite basis: k0 at t=0, k1 at t=1. */
-const hermite = (t: number, k0: Keyframe, k1: Keyframe): number => {
-  const t2 = t * t;
-  const t3 = t2 * t;
-  return (
-    (2 * t3 - 3 * t2 + 1) * k0.value +
-    (t3 - 2 * t2 + t) * k0.slope +
-    (-2 * t3 + 3 * t2) * k1.value +
-    (t3 - t2) * k1.slope
-  );
-};
 
 /** Central-difference d/dt of stanceFootTarget at t, extending slightly past [0,1] — safe since each
  * branch's formula is just a smooth polynomial in t past its nominal domain. */
@@ -720,14 +722,13 @@ const legAndFootRotations = (ctx: GaitContext): LegResult => {
     return { ankleRestY: leg.ankleRestY, heelLen: leg.heelLen, toeLen: leg.toeLen, rollMul };
   };
   // Wider base: a step's landing X is the plan's own jitter plus a fixed offset for its side that brings
-  // ankle-to-ankle width to a girth-driven target regardless of this actor's own sampled hip width (see
-  // stepWidthExtra). widthSign reads the actual rig's sign convention off the bone rather than assuming one.
+  // ankle-to-ankle width to the body's own width target regardless of this actor's own sampled hip width
+  // (see stepWidthExtra). widthSign reads the actual rig's sign convention off the bone rather than assuming one.
   const widthSign = (side: Side): number => Math.sign(legFor(side).thigh.head[0]) || (side === 'L' ? -1 : 1);
   const hipWidthTotal = legR.thigh.head[0] - legL.thigh.head[0];
   const widthExtra = stepWidthExtra(params, hipWidthTotal);
   // The step's *base* (stagger-free) landing X — used for the sway amplitude below, so a stagger's own
-  // drift never inflates it (it used to read the full, stagger-included landing X; the inflation was not
-  // measured, 596311a records only that the sway is now taken from the centreline between the feet).
+  // drift never inflates it (the sway is taken from the centreline between the feet).
   const baseFootX = (side: Side): number => legFor(side).thigh.head[0] + widthSign(side) * widthExtra;
   // Limit crossover: even a stagger's own inward jitter can't pull this foot's *world* X past
   // MIN_WORLD_OUTWARD off-centre — swingFootTarget's Hermite has zero slope at both ends (see its own
@@ -906,16 +907,13 @@ const legAndFootRotations = (ctx: GaitContext): LegResult => {
     // just out of it): solving rotZ(θ)·(0, yb, lz-hipZ) = (vx, ly-hipY, lz-hipZ) for θ and yb gives an
     // exact (non-iterative) fix — yb = -hypot(vx, ly-hipY), θ = atan2(vx, hipY-ly) — so the 2-bone solve
     // below targets yb, not ly directly, and ends up exactly on target once abducted. (No division:
-    // hypot/atan2 stay well-behaved even as the lever arm shrinks, unlike the plain asin(vx/yPrime) this
-    // replaced.)
+    // hypot/atan2 stay well-behaved even as the lever arm shrinks.)
     const vx = target.x - hipShift[0] - rootX;
     const vy = ly - thigh.head[1];
     // This rig's own thigh/shin rest vectors already lean inward (hip wider than ankle) — nativeX is that
     // fixed lateral offset (rotX, used for the sagittal bend, never touches X, so it survives any bend
-    // angle unchanged). The old formula implicitly assumed nativeX = 0 — fine while abduction only had to
-    // cancel yaw (tiny), but the wider base's routine, larger lateral targets exposed a real gap between
-    // the intended and actual placement (sideways foot targets ended up to 16 cm short, per 596311a). Solving rotZ(θ)·(nativeX, yPrime) = (vx, vy)
-    // for θ and yPrime generalizes the old (nativeX=0) closed form exactly.
+    // angle unchanged). Ignoring it leaves sideways foot targets short once the wider base makes lateral
+    // targets large. Solve rotZ(θ)·(nativeX, yPrime) = (vx, vy) for θ and yPrime.
     const nativeX = shin.tail[0] - thigh.head[0];
     const yPrime = -Math.sqrt(Math.max(vx * vx + vy * vy - nativeX * nativeX, 0));
     const abductionDeg = toDeg(Math.atan2(vy, vx) - Math.atan2(yPrime, nativeX));
@@ -926,7 +924,7 @@ const legAndFootRotations = (ctx: GaitContext): LegResult => {
     const shinDelta = shinAbs - restAngleDeg(shin) - thighDelta;
     // Cancel pelvis Z-roll (swing-hip drop, see walkPose) here too: it's a rotZ term, same axis as
     // abduction, so cancelling it is just subtracting it from that same angle — pelvisR ∘ thighR then
-    // reduces to the same rotX(roll) ∘ rotZ(abduction) ∘ rotX(bend) as before, algebraically unchanged.
+    // reduces to rotX(roll) ∘ rotZ(abduction) ∘ rotX(bend).
     const thighR = mulMM(mulMM(rotY(-ctx.yawDeg), rotZ(abductionDeg - ctx.pelvisZRollDeg)), rotX(thighDelta));
     const shinR = rotX(shinDelta);
     // Keep the foot level in *world* space: undo pelvis(roll+yaw) ∘ thigh ∘ shin exactly, by matrix

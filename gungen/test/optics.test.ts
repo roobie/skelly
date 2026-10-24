@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { generate } from '@skelly/engine/assembly/generate.ts';
 import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { PartDef } from '@skelly/engine/assembly/schema.ts';
+import type { PartAppearance, PartDef } from '@skelly/engine/assembly/schema.ts';
 import type { Template } from '@skelly/engine/assembly/template.ts';
 import { validate } from '@skelly/engine/assembly/validate.ts';
 import { applyPoint, IDENTITY, invert, type Transform } from '@skelly/engine/foundation/math.ts';
@@ -13,11 +13,15 @@ import {
   penetrationWorld,
   worldSolid,
 } from '@skelly/engine/shapes/geometry.ts';
+import { surfaceOf } from '@skelly/thing-core/materials';
 import { describe, expect, it } from 'vitest';
+import appearance from '../src/gun/appearance.json' with { type: 'json' };
+import { attachmentInstanceForId, attachmentLookIssue } from '../src/gun/attachments.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { MOUNT_KINDS, MOUNT_STANDARDS, mountCanAccept } from '../src/gun/mounts.ts';
-import { getOptic, OPTIC_CATALOG, OPTIC_TYPE_IDS } from '../src/gun/optics.ts';
+import { getOptic, LENS_SLOT, OPTIC_CATALOG, OPTIC_TYPE_IDS } from '../src/gun/optics.ts';
+import { GUN_PALETTE, resolveAppearance } from '../src/gun/palette.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
 import {
   antiMateriel,
@@ -30,7 +34,7 @@ import {
   pumpShotgun,
   smg,
 } from '../src/gun/templates.ts';
-import type { MutableAssembly } from './helpers.ts';
+import { loadDesignAssembly, type MutableAssembly } from './helpers.ts';
 
 const HTTPS_URL = /^https:\/\//;
 const TUBULAR_SOLID_ID = /tube|bell|turret|housing|ring-band/;
@@ -57,6 +61,51 @@ describe('optic catalog', () => {
       (axis) => Math.max(...bounds.map(([, max]) => max[axis]!)) - Math.min(...bounds.map(([min]) => min[axis]!)),
     );
     expect(actual).toEqual(optic.envelopeU);
+  });
+
+  it('builds every round body turned about the optical axis, and the lenses in it, with the content side count', () => {
+    const sides = appearance.opticBodySides;
+    const turned = OPTIC_TYPE_IDS.flatMap((id) =>
+      getOptic(id).solids.filter((solid) => solid.kind === 'revolved' && solid.axis === 'x'),
+    );
+    expect(turned.some(({ slot }) => slot === LENS_SLOT)).toBe(true);
+    for (const solid of turned) {
+      expect(solid.kind === 'revolved' && solid.sides, solid.id).toBe(sides);
+    }
+  });
+
+  it.each(OPTIC_TYPE_IDS)('%s draws its lenses in its product coating, which an instance finish can vary', (id) => {
+    const lenses = getOptic(id).solids.filter(({ slot }) => slot === LENS_SLOT);
+    expect(lenses.length).toBeGreaterThan(0);
+    const coating = (instance: PartAppearance | undefined) =>
+      lenses.map((lens) => {
+        expect(lens.material, lens.id).toBeUndefined();
+        const finish = attachmentInstanceForId(`optic-${id}`, instance).appearance?.finish;
+        return resolveAppearance(GUN_PALETTE, 'sight', lens.id, { ...(finish ? { finish } : {}), slot: LENS_SLOT });
+      });
+    const product = coating(undefined);
+    for (const { finish } of product) {
+      expect(surfaceOf(finish).transparent).toBe(true);
+    }
+    // An instance that varies another slot keeps the product coating.
+    expect(coating({ finish: { metal: 'steel-blued' } })).toEqual(product);
+    const other = Object.keys(GUN_PALETTE.materials ?? {}).find(
+      (material) =>
+        surfaceOf(GUN_PALETTE.materials![material]!.finish).transparent && material !== product[0]!.material,
+    );
+    expect(other).toBeDefined();
+    for (const { material } of coating({ finish: { lens: other! } })) {
+      expect(material).toBe(other);
+    }
+  });
+
+  it.each(OPTIC_TYPE_IDS)('%s refuses a lens left without a known coating instead of drawing it in metal', (id) => {
+    // A product look that selects no coating, or an instance whose coating is no material, fails at the boundary.
+    expect(attachmentLookIssue(`optic-${id}`, {})).toMatch(LENS_SLOT);
+    expect(attachmentLookIssue(`optic-${id}`, { metal: 'steel-blued' })).toMatch(LENS_SLOT);
+    expect(() => attachmentInstanceForId(`optic-${id}`, { finish: { lens: 'no-such-coating' } })).toThrow(
+      'no-such-coating',
+    );
   });
 
   it('gives the closed micro dot a rear-to-front tunnel and two rear-left adjustment dials', () => {
@@ -94,7 +143,8 @@ describe('optic catalog', () => {
       kind: 'box',
       box: { center: [0, optic.opticalAxisY, 0], half: [2.5, 0.25, 0.25] },
     });
-    for (const solid of optic.solids) {
+    // Its windows close the tunnel's ends with glass; no body solid may cross the sight line between them.
+    for (const solid of optic.solids.filter(({ slot }) => slot !== LENS_SLOT)) {
       expect(penetrationWorld(probe, worldSolid(IDENTITY, solid)), solid.id).toBeLessThanOrEqual(0);
     }
   });
@@ -432,9 +482,7 @@ describe('curated optic mounts', () => {
       ['archetype-anti-materiel', ['high-mag-5-25x']],
     ] as const;
     for (const [name, types] of designs) {
-      const { assembly } = JSON.parse(readFileSync(new URL(`../designs/${name}.json`, import.meta.url), 'utf8')) as {
-        assembly: MutableAssembly;
-      };
+      const assembly = loadDesignAssembly(name);
       for (const type of types) {
         assembly.parts.sight!.params = { type };
         expectContactOnPhysicalRail(assembly, type);

@@ -3,11 +3,14 @@ import type { Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { type CrosshairTarget, crosshairTarget } from '../src/core/crosshairTarget.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { ZombieSystem } from '../src/core/zombies.ts';
-import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
+import { PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
+
+/** Reaches past the far wall, so the fixture never depends on the shipped shot range. */
+export const FIXTURE_RANGE_BLOCKS = 120;
 
 export const farWallTarget = (origin: Vec3, direction: Vec3, blockSize: number): CrosshairTarget => {
   const wallZ = Math.floor(origin[2] + direction[2] * 60);
@@ -25,6 +28,7 @@ export const farWallTarget = (origin: Vec3, direction: Vec3, blockSize: number):
     },
     origin,
     direction,
+    FIXTURE_RANGE_BLOCKS,
   );
   if (!target) {
     throw new Error('The camera ray did not intersect the fixture wall');
@@ -41,7 +45,14 @@ export const zombieAimFixture = (registry: Registry, origin: Vec3, direction: Ve
     physics: physicsFor(scale),
     jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
-    player: () => ({ pos: origin, facing: direction, movement: 'still', lit: false, lightSeenFrom: 40 }),
+    player: () => ({
+      pos: origin,
+      facing: direction,
+      movement: 'still',
+      lit: false,
+      lightSeenFrom: 40,
+      eyeHeightMetres: 1.3,
+    }),
     dayPhase: () => dayStateAtHour(12),
     hurtPlayer: () => undefined,
   });

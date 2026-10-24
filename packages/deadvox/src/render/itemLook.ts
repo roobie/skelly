@@ -4,6 +4,7 @@
 
 import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { LIGHT_MOUNT_SLOT } from '../core/firearmFitting.ts';
 import { defOf, type Item } from '../core/items.ts';
 
 export interface ItemLookSlot {
@@ -23,7 +24,7 @@ export interface ItemLookSlot {
 export interface ItemLook {
   readonly model: string;
   readonly slots: readonly ItemLookSlot[];
-  /** Exported merge groups or solids the item has shed, such as a lit grenade's lever or a pulled pin. */
+  /** Exported pieces the item has shed, such as a lit grenade's lever or a pulled pin. */
   readonly hidden: readonly string[];
   /** Equal exactly when two items draw the same. */
   readonly key: string;
@@ -34,8 +35,8 @@ const shedGroups = (registry: Registry, model: string, item: Item): string[] => 
   const modelDef = registry.models.get(model);
   const lit = item.fuseRemainingSimSeconds !== undefined;
   return [
-    ...(modelDef?.pin && (item.pinPulled || lit) ? modelDef.pin.solids : []),
-    ...(modelDef?.lever && lit ? [modelDef.lever.mergeGroup] : []),
+    ...(modelDef?.pin && (item.pinPulled || lit) ? [modelDef.pin.piece] : []),
+    ...(modelDef?.lever && lit ? [modelDef.lever.piece] : []),
   ];
 };
 
@@ -63,18 +64,9 @@ export const itemLook = (registry: Registry, item: Item): ItemLook | undefined =
     if (slotId === 'magazine' || slotId === 'battery' || slotId === 'canister' || !child) {
       continue;
     }
-    const mount = modelDef?.gun?.attachmentSlots?.find(({ id }) => id === slotId);
-    const attachmentModel = defOf(registry, child.type).model;
-    const mountFrame = attachmentModel ? registry.models.get(attachmentModel)?.gun?.attachment?.mountFrame : undefined;
-    if (mount && attachmentModel && mountFrame) {
-      slots.push({
-        slot: slotId,
-        at: mount.position,
-        direction: mount.direction,
-        up: mount.up,
-        mountFrame,
-        model: attachmentModel,
-      });
+    const slot = attachmentSlot(registry, item, slotId, child);
+    if (slot) {
+      slots.push(slot);
     }
   }
   const hidden = shedGroups(registry, model, item);
@@ -88,4 +80,22 @@ export const itemLook = (registry: Registry, item: Item): ItemLook | undefined =
       ...hidden.map((group) => `-${group}`),
     ].join('+'),
   };
+};
+
+/** Where a fitted attachment draws: a gungen mount slot, or the gun's own light-mount site. */
+const attachmentSlot = (registry: Registry, item: Item, slotId: string, child: Item): ItemLookSlot | undefined => {
+  const attachmentModel = defOf(registry, child.type).model;
+  if (!attachmentModel) {
+    return undefined;
+  }
+  if (slotId === LIGHT_MOUNT_SLOT) {
+    const site = defOf(registry, item.type).lightMountSite;
+    return site && { slot: slotId, at: site.at, turn: site.turn, model: attachmentModel };
+  }
+  const modelId = defOf(registry, item.type).model;
+  const mount = modelId && registry.models.get(modelId)?.gun?.attachmentSlots?.find(({ id }) => id === slotId);
+  const mountFrame = registry.models.get(attachmentModel)?.gun?.attachment?.mountFrame;
+  return mount && mountFrame
+    ? { slot: slotId, at: mount.position, direction: mount.direction, up: mount.up, mountFrame, model: attachmentModel }
+    : undefined;
 };

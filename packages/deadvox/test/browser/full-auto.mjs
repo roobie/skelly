@@ -162,7 +162,7 @@ try {
   await page.goto(
     browserStageUrl(
       'full-auto',
-      `http://127.0.0.1:${address.port}/?seed=73&debug=1&loadout=ar&firearmsCombat=0&radius=64&time=12:00&at=43.50,0.00,-90.0&post=0&sunshadow=0&torchshadow=0`,
+      `http://127.0.0.1:${address.port}/?site=testHouse&seed=73&debug=1&loadout=ar&firearmsCombat=0&radius=64&time=12:00&at=43.50,0.00,-90.0&post=0&sunshadow=0&torchshadow=0`,
     ),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
@@ -420,9 +420,9 @@ try {
     const { impactEffects } = globalThis.fullAutoRuntime.view;
     const fire = impactEffects.fire.bind(impactEffects);
     globalThis.fullAutoProbe.trajectories = 0;
-    impactEffects.fire = (trajectory, debugLaser) => {
-      globalThis.fullAutoProbe.trajectories += trajectory.directions.length;
-      fire(trajectory, debugLaser);
+    impactEffects.fire = (traces, debugLaser) => {
+      globalThis.fullAutoProbe.trajectories += traces.length;
+      fire(traces, debugLaser);
       globalThis.fullAutoProbe.laserVisibleAfterFire ||= impactEffects.laser.visible;
     };
   });

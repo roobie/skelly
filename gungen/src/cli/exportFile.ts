@@ -1,9 +1,10 @@
 import { parseAssemblyJson } from '@skelly/engine/assembly/parseAssembly.ts';
 import type { Assembly } from '@skelly/engine/assembly/schema.ts';
-import type { AppearanceContext, GlbAssetIdentity } from '@skelly/thing-export/exportTypes.ts';
+import type { AppearanceContext, GlbAssetIdentity, VoxelGrains } from '@skelly/thing-export/exportTypes.ts';
 import { loadGunDesign } from '../gun/designLoader.ts';
 import { exportGunGlb, type GunDeadvoxModelEntry, type GunExportMetadata } from '../gun/exportGlb.ts';
 import { GUN_APPEARANCE } from '../gun/palette.ts';
+import type { PartItems } from '../gun/physical.ts';
 import { TEMPLATES } from '../gun/templates.ts';
 import { readCartridge } from './readCartridge.ts';
 
@@ -64,6 +65,7 @@ type ReadAssemblyResult =
       appearance: AppearanceContext;
       calibre?: string;
       excludedAttachments?: readonly string[];
+      items?: PartItems;
     }
   | { message: string };
 
@@ -84,6 +86,7 @@ const readDesignAssembly = (text: string): ReadAssemblyResult => {
   }
   return {
     assembly: loaded.design.assembly,
+    ...(loaded.design.items === undefined ? {} : { items: loaded.design.items }),
     ...(loaded.design.excludedAttachments === undefined
       ? {}
       : { excludedAttachments: loaded.design.excludedAttachments }),
@@ -109,10 +112,14 @@ const readFixtureAssembly = (text: string, raw: unknown): ReadAssemblyResult => 
   if (calibre !== undefined && (typeof calibre !== 'string' || calibre.trim() === '')) {
     return { message: 'calibre: expected a non-empty cartridge id' };
   }
+  const appearance = metadata.context ?? FIXTURE_APPEARANCE[parsed.assembly.name];
+  if (!appearance) {
+    return { message: `no appearance profile for fixture ${JSON.stringify(parsed.assembly.name)}` };
+  }
   return {
     assembly: parsed.assembly,
     warnings: [],
-    appearance: metadata.context ?? FIXTURE_APPEARANCE[parsed.assembly.name] ?? {},
+    appearance,
     ...(calibre === undefined ? {} : { calibre }),
   };
 };
@@ -133,6 +140,7 @@ export const exportFileText = (
   text: string,
   asset: GlbAssetIdentity,
   metadata: GunExportMetadata = {},
+  voxel: Partial<VoxelGrains> = {},
 ): ExportFileResult => {
   const read = readAssembly(text);
   if ('message' in read) {
@@ -153,7 +161,9 @@ export const exportFileText = (
   const result = exportGunGlb(read.assembly, asset, read.appearance, {
     ...exportMetadata,
     includeAttachmentCompatibility: true,
+    ...voxel,
     ...(read.excludedAttachments === undefined ? {} : { excludedAttachments: read.excludedAttachments }),
+    ...(read.items === undefined ? {} : { items: read.items }),
   });
   if (!result.ok) {
     return { ok: false, message: `export refused: ${JSON.stringify(result.error)}` };

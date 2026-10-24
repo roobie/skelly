@@ -1,0 +1,14 @@
+{
+  "id": "matches",
+  "file": "assets/models/matches.glb",
+  "parts": {
+    "matches": {
+      "node": "matches:matchbox",
+      "massKg": 0.02,
+      "centreOfMass": [0, 0.009615384615384614, 0.0011538461538461537]
+    }
+  },
+  "grip": { "at": [0, 0.005, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

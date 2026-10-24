@@ -11,18 +11,21 @@ import { createWorldSetup, type WorldSetup } from '../src/game/worldSetup.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { startupContent } from './baseRegistry.ts';
-
-vi.mock('../src/game/testHouse.ts', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../src/game/testHouse.ts')>()),
-  testHouseFurniture: () => [crate],
-}));
+import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 
 afterEach(() => vi.unstubAllGlobals());
 
 const content = startupContent();
 const { registry } = content;
 const crate: EntitySpec = { type: 'fixture_overlay_crate', pos: [3, 1, 1], size: [1, 1, 1], facing: 'n' };
-registry.furniture.set(crate.type, { id: crate.type, name: 'Fixture crate', size: crate.size, color: '#808080' });
+registry.furniture.set(crate.type, {
+  id: crate.type,
+  name: 'Fixture crate',
+  size: crate.size,
+  color: '#808080',
+  breach: fixtureBreach(),
+  material: FIXTURE_MATERIAL,
+});
 const floor = registry.blocks.length;
 registry.blocks.push({ id: 'fixture_floor', name: 'Fixture floor', solid: true, color: '#808080' });
 registry.blockIds.set('fixture_floor', floor);
@@ -45,7 +48,7 @@ const worldSetup = (): WorldSetup => {
     }
   }
   source.world.addChunk(chunk);
-  return source;
+  return { ...source, furnitureIn: () => [{ spec: crate, loot: [] }] };
 };
 
 const session = (source: WorldSetup, restore?: Readonly<SaveSnapshot>) =>
@@ -80,9 +83,8 @@ const version = {
   contentPacks: [{ id: 'fixture', version: '1', canonicalHash: 'b'.repeat(64) }],
 };
 
-it('keeps composed site-less overlay furnishing inside the saved arrival gate', async () => {
+it('keeps composed source furnishing inside the saved arrival gate', async () => {
   const source = worldSetup();
-  expect(source.site).toBeUndefined();
   const furnishing = vi.spyOn(source, 'furnitureIn');
   const runtime = session(source);
   const arrival = columnArrival(runtime, source);

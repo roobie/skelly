@@ -1,216 +1,177 @@
 import { describe, expect, it } from 'vitest';
-import { Chunk } from '../src/core/chunk.ts';
-import { CHUNK } from '../src/core/coords.ts';
-import { type MetreBox, rasterize, stampChunk } from '../src/core/structure.ts';
-import { cellsOf, pieceSize } from '../src/core/templates.ts';
-import { testHouse, testHouseFurniture } from '../src/game/testHouse.ts';
+import { CHUNK, type Vec3 } from '../src/core/coords.ts';
+import { Inventory } from '../src/core/inventory.ts';
+import { cellsOf, footprint } from '../src/core/templates.ts';
+import { vehicleCells } from '../src/core/vehicleProjection.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { testHouseSite } from './testHouseSite.ts';
 
-const blocks = {
-  brick: 1,
-  plaster: 2,
-  planks: 3,
-  tiles: 4,
-  fabric: 5,
-  roof: 6,
-  dirt: 7,
-  grass: 8,
-  stone: 9,
-  sidingRed: 10,
-  sidingBlue: 11,
-  galvanized: 12,
-  cobblestone: 13,
-  dressedStone: 14,
-  hazard: 15,
-};
 const registry = baseRegistry();
-const sizeOf = (type: string) => registry.furniture.get(type)!.size;
-
-const build = (blockSize: number) => {
-  const boxes = testHouse([0, 0, 0], blocks, blockSize);
-  const stamped = rasterize(boxes, blockSize);
-  const chunks = new Map<string, Chunk>();
-  const at = (xm: number, ym: number, zm: number): number => {
-    const [x, y, z] = [xm, ym, zm].map((value) => Math.floor(value / blockSize));
-    const [cx, cy, cz] = [x, y, z].map((value) => Math.floor(value! / CHUNK)) as [number, number, number];
-    const key = `${cx},${cy},${cz}`;
-    let chunk = chunks.get(key);
-    if (!chunk) {
-      chunk = new Chunk(cx, cy, cz);
-      stampChunk(chunk, stamped);
-      chunks.set(key, chunk);
-    }
-    return chunk.get(x! - cx * CHUNK, y! - cy * CHUNK, z! - cz * CHUNK);
-  };
-  return { boxes, at };
-};
-
-const houseBounds = (boxes: MetreBox[]) => {
-  const walls = boxes.filter(({ block }) => block === blocks.brick);
-  return {
-    x0: Math.min(...walls.map(({ min }) => min[0])),
-    x1: Math.max(...walls.map(({ max }) => max[0])),
-    y1: Math.max(...walls.map(({ max }) => max[1])),
-    z0: Math.min(...walls.map(({ min }) => min[2])),
-    z1: Math.max(...walls.map(({ max }) => max[2])),
-  };
-};
-
-const cellCenter = (from: number, to: number, fraction: number, blockSize: number) =>
-  (Math.floor((from + (to - from) * fraction) / blockSize) + 0.5) * blockSize;
-
-describe('test house', () => {
-  for (const blockSize of [1, 0.5]) {
-    it(`keeps the room enclosed and its door and stairs traversable at ${blockSize} m blocks`, () => {
-      const { boxes, at } = build(blockSize);
-      const bounds = houseBounds(boxes);
-      const wallY = bounds.y1 / 2;
-      const interior = {
-        x: bounds.x0 + (bounds.x1 - bounds.x0) / 4,
-        y: wallY,
-        z: (bounds.z0 + bounds.z1) / 2,
-      };
-      expect(at(interior.x, interior.y, interior.z)).toBe(0);
-      expect(at(interior.x, -blockSize / 2, interior.z)).not.toBe(0);
-      expect(at(interior.x, bounds.y1 + blockSize / 2, interior.z)).not.toBe(0);
-
-      const fractions = [0.1, 0.3, 0.7, 0.9];
-      const wallSamples = [
-        fractions.map((fraction) =>
-          at(bounds.x0 + blockSize / 2, wallY, cellCenter(bounds.z0, bounds.z1, fraction, blockSize)),
-        ),
-        fractions.map((fraction) =>
-          at(bounds.x1 - blockSize / 2, wallY, cellCenter(bounds.z0, bounds.z1, fraction, blockSize)),
-        ),
-        fractions.map((fraction) =>
-          at(cellCenter(bounds.x0, bounds.x1, fraction, blockSize), wallY, bounds.z0 + blockSize / 2),
-        ),
-        fractions.map((fraction) =>
-          at(cellCenter(bounds.x0, bounds.x1, fraction, blockSize), wallY, bounds.z1 - blockSize / 2),
-        ),
-      ];
-      expect(wallSamples.every((side) => side.some((block) => block !== 0))).toBe(true);
-
-      const doorway = boxes.find(
-        (box) =>
-          box.block === 0 &&
-          box.min[0] <= bounds.x0 &&
-          box.max[0] <= bounds.x0 + blockSize &&
-          box.min[2] >= bounds.z0 &&
-          box.max[2] <= bounds.z1 &&
-          box.max[1] - box.min[1] >= 2,
-      );
-      expect(doorway).toBeDefined();
-      expect(doorway!.min[1]).toBe(0);
-      const doorwayX = (doorway!.min[0] + doorway!.max[0]) / 2;
-      const doorwayZ = (doorway!.min[2] + doorway!.max[2]) / 2;
-      const walkingY = doorway!.min[1] + blockSize / 2;
-      expect(at(doorwayX, walkingY, doorwayZ)).toBe(0);
-      expect(at(doorway!.min[0] - blockSize / 2, walkingY, doorwayZ)).toBe(0);
-      expect(at(doorway!.max[0] + blockSize / 2, walkingY, doorwayZ)).toBe(0);
-      expect(at(doorwayX, (doorway!.max[1] + bounds.y1) / 2, doorwayZ)).not.toBe(0);
-
-      const stairs = boxes
-        .filter(
-          (box) =>
-            box.block === blocks.planks &&
-            box.min[1] === 0 &&
-            box.max[1] > 0 &&
-            box.max[1] <= bounds.y1 &&
-            box.min[2] >= bounds.z0 &&
-            box.max[2] <= bounds.z0 + 2,
-        )
-        .sort((a, b) => a.min[0] - b.min[0]);
-      expect(stairs.length).toBeGreaterThan(0);
-      expect(stairs[0]!.max[1]).toBe(blockSize);
-      expect(stairs.at(-1)!.max[1]).toBe(bounds.y1);
-      for (const [index, step] of stairs.entries()) {
-        const x = (step.min[0] + step.max[0]) / 2;
-        const z = (step.min[2] + step.max[2]) / 2;
-        expect(at(x, step.max[1] - blockSize / 2, z)).toBe(blocks.planks);
-        expect(at(x, step.max[1] + blockSize / 2, z)).toBe(0);
-        const next = stairs[index + 1];
-        if (next) {
-          expect(next.min[0] - step.min[0]).toBe(blockSize);
-          expect(next.max[1] - step.max[1]).toBe(blockSize);
+const { layout, s, site, at, solid, furniture, insideLot, walkable } = testHouseSite(registry);
+const reachable = (start: Vec3): Vec3[] => {
+  const queue = [start];
+  const visited = new Set([start.join()]);
+  for (const [x, y, z] of queue) {
+    for (const [dx, dz] of [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1],
+    ]) {
+      for (const dy of [-1, 0, 1]) {
+        const next: Vec3 = [x + dx!, y + dy, z + dz!];
+        if (!insideLot(next) || visited.has(next.join()) || !walkable(...next)) {
+          continue;
         }
+        visited.add(next.join());
+        queue.push(next);
       }
-    });
+    }
   }
+  return queue;
+};
+const roof = registry.blockIds.get('roof')!;
+const home = site.placements.find(({ template }) => template.blocks.includes(roof))!;
+const roofCells = [...cellsOf(home.template.size)]
+  .map(([x, y, z]): Vec3 => [home.origin[0] + x, home.origin[1] + y, home.origin[2] + z])
+  .filter((cell) => at(...cell) === roof);
 
-  it('keeps the shed roof within its siding wall footprint at either block scale', () => {
-    for (const blockSize of [1, 0.5]) {
-      const { boxes } = build(blockSize);
-      const roofs = boxes.filter(({ block }) => block === blocks.galvanized);
-      expect(roofs.length).toBeGreaterThan(0);
-      for (const roof of roofs) {
-        const walls = boxes.filter(
-          ({ block, max }) => (block === blocks.sidingRed || block === blocks.sidingBlue) && max[1] === roof.min[1],
-        );
-        expect(walls.length).toBeGreaterThan(0);
-        const wallCells = rasterize(walls, blockSize);
-        const roofCells = rasterize([roof], blockSize);
-        for (const axis of [0, 2] as const) {
-          expect(Math.min(...roofCells.map(({ min }) => min[axis]))).toBeGreaterThanOrEqual(
-            Math.min(...wallCells.map(({ min }) => min[axis])),
-          );
-          expect(Math.max(...roofCells.map(({ max }) => max[axis]))).toBeLessThanOrEqual(
-            Math.max(...wallCells.map(({ max }) => max[axis])),
-          );
-        }
+const furnitureCells = new Set(
+  furniture.flatMap(({ spec }) =>
+    [...cellsOf(spec.size)].map(([dx, dy, dz]) => [spec.pos[0] + dx, spec.pos[1] + dy, spec.pos[2] + dz].join()),
+  ),
+);
+const blocked = (cell: Vec3) => solid(...cell) || furnitureCells.has(cell.join());
+const buildingAt = ([x, , z]: Vec3) =>
+  site.placements.find((placement) => {
+    const [width, depth] = footprint(placement);
+    const [ox, , oz] = placement.origin;
+    return x >= ox && x < ox + width && z >= oz && z < oz + depth;
+  });
+const bayCells = (blueprint: string, bay: NonNullable<typeof layout.bays>[number]): Vec3[] => {
+  const inventory = new Inventory(registry);
+  const origin = bay.position.map((value) => value / s) as Vec3;
+  inventory.registerVehicle({ blueprint, placementKey: 'fixture.bay', origin, facing: bay.facing });
+  return [...vehicleCells(registry, inventory.vehicles, s)];
+};
+/** Slides the vehicle along its length, one way, until it stands clear of its building or touches something. */
+const leaves = (cells: readonly Vec3[], direction: 1 | -1): boolean => {
+  const building = buildingAt(cells[0]!);
+  const span = (dimension: number) =>
+    Math.max(...cells.map((cell) => cell[dimension]!)) - Math.min(...cells.map((cell) => cell[dimension]!));
+  const axis = span(0) > span(2) ? 0 : 2;
+  for (let step = 0; ; step += 1) {
+    const moved = cells.map((cell): Vec3 => {
+      const next: Vec3 = [...cell];
+      next[axis] += step * direction;
+      return next;
+    });
+    if (moved.some(blocked)) {
+      return false;
+    }
+    if (moved.every((cell) => buildingAt(cell) !== building)) {
+      return true;
+    }
+  }
+};
+
+describe('authored test house', () => {
+  it('lets every parked blueprint drive out of every bay without touching the building', () => {
+    const blueprints = new Set((layout.vehicles ?? []).map(({ blueprint }) => blueprint));
+    expect(layout.bays?.length).toBeGreaterThan(0);
+    expect(blueprints.size).toBeGreaterThan(0);
+    for (const bay of layout.bays ?? []) {
+      for (const blueprint of blueprints) {
+        const cells = bayCells(blueprint, bay);
+        expect(buildingAt(cells[0]!), `bay at ${bay.position} is under a roof`).toBeDefined();
+        expect(leaves(cells, 1) || leaves(cells, -1), `${blueprint} leaves the bay at ${bay.position}`).toBe(true);
       }
     }
   });
 
-  describe('furniture', () => {
-    const specs = testHouseFurniture([4, 10, -4], 0.5, sizeOf);
+  it('keeps a bay free of parked vehicles for part work', () => {
+    const parked = new Set((layout.vehicles ?? []).map(({ position }) => position.join()));
+    expect((layout.bays ?? []).some(({ position }) => !parked.has(position.join()))).toBe(true);
+  });
 
-    it('anchors furniture on whole blocks and rotates its size to its facing', () => {
-      expect(specs.length).toBeGreaterThan(0);
-      for (const { type, pos, size, facing } of specs) {
-        expect(pos.every(Number.isInteger)).toBe(true);
-        expect(size).toEqual(pieceSize(sizeOf(type), facing));
+  it('keeps normal-mode authored container sources outside world loot supply', () => {
+    const points = furniture.flatMap(({ spec }) =>
+      site.lootPointsIn(Math.floor(spec.pos[0] / CHUNK), Math.floor(spec.pos[2] / CHUNK)),
+    );
+    expect(points.length).toBeGreaterThan(0);
+    expect(points.every(({ fixture }) => fixture === true)).toBe(true);
+  });
+
+  it('keeps furniture clear, supported and disjoint', () => {
+    expect(furniture.length).toBeGreaterThan(0);
+    const occupied = new Set<string>();
+    const climbable = new Set(
+      furniture
+        .filter(({ spec }) => registry.furniture.get(spec.type)?.climbable)
+        .flatMap(({ spec }) =>
+          [...cellsOf(spec.size)].map(([dx, dy, dz]) => [spec.pos[0] + dx, spec.pos[1] + dy, spec.pos[2] + dz].join()),
+        ),
+    );
+    for (const { spec } of furniture) {
+      for (const [dx, dy, dz] of cellsOf(spec.size)) {
+        const cell: Vec3 = [spec.pos[0] + dx, spec.pos[1] + dy, spec.pos[2] + dz];
+        expect(occupied.has(cell.join()), `overlap at ${cell}`).toBe(false);
+        occupied.add(cell.join());
+        expect(solid(...cell), `structure at ${cell}`).toBe(false);
       }
-    });
-
-    it('keeps each furniture footprint clear, supported and disjoint from its neighbors', () => {
-      const blockSize = 0.5;
-      const { at } = build(blockSize);
-      const furniture = testHouseFurniture([0, 0, 0], blockSize, sizeOf);
-      const occupied = new Set<string>();
-      expect(
-        furniture.some(({ size }) => size.every((dimension) => dimension > 0)),
-        'fixture furniture must exercise the clearance contract',
-      ).toBe(true);
-
-      for (const spec of furniture) {
-        expect(
-          spec.size.every((dimension) => dimension > 0),
-          `furniture ${spec.type} has a footprint`,
-        ).toBe(true);
-        const footprint = [...cellsOf(spec.size)].filter(([, y]) => y === 0);
-        for (const [x, y, z] of cellsOf(spec.size)) {
-          const cell: [number, number, number] = [spec.pos[0] + x, spec.pos[1] + y, spec.pos[2] + z];
-          const key = cell.join(',');
-          expect(occupied.has(key), `furniture overlaps at ${key}`).toBe(false);
-          occupied.add(key);
-          expect(
-            at(...(cell.map((value) => (value + 0.5) * blockSize) as [number, number, number])),
-            `furniture intersects the house at ${key}`,
-          ).toBe(0);
-        }
-        expect(
-          footprint.every(
-            ([x, , z]) =>
-              at(
-                (spec.pos[0] + x + 0.5) * blockSize,
-                (spec.pos[1] - 0.5) * blockSize,
-                (spec.pos[2] + z + 0.5) * blockSize,
-              ) !== 0,
-          ),
-          `furniture ${spec.type} stands on its floor`,
-        ).toBe(true);
+      const def = registry.furniture.get(spec.type)!;
+      for (const [dx, , dz] of cellsOf([spec.size[0], 1, spec.size[2]])) {
+        const x = spec.pos[0] + dx;
+        const z = spec.pos[2] + dz;
+        // A ladder stacks on its own lower piece, and a non-solid fixture may hang from the structure above it.
+        const stacked = def.climbable && climbable.has([x, spec.pos[1] - 1, z].join());
+        const hung = def.solid === false && solid(x, spec.pos[1] + spec.size[1], z);
+        expect(solid(x, spec.pos[1] - 1, z) || stacked || hung, `${spec.type} unsupported at ${x},${z}`).toBe(true);
       }
-    });
+    }
+  });
+
+  it('tops every ladder with a surface to step onto, away from its climbing side', () => {
+    const away = { n: [0, 1], s: [0, -1], e: [-1, 0], w: [1, 0] } as const;
+    const ladders = furniture.filter(({ spec }) => registry.furniture.get(spec.type)?.climbable);
+    expect(ladders.length).toBeGreaterThan(0);
+    const tops = ladders.filter(
+      ({ spec }) =>
+        !ladders.some(({ spec: other }) => other.pos.join() === [spec.pos[0], spec.pos[1] + 1, spec.pos[2]].join()),
+    );
+    for (const { spec } of tops) {
+      const [wx, wz] = away[spec.facing];
+      for (const [dx, , dz] of cellsOf([spec.size[0], 1, spec.size[2]])) {
+        const step: Vec3 = [spec.pos[0] + dx + wx, spec.pos[1] + 1, spec.pos[2] + dz + wz];
+        expect(walkable(...step), `ladder top steps onto ${step}`).toBe(true);
+      }
+    }
+  });
+
+  it('encloses the home beneath the roof perimeter', () => {
+    expect(roofCells.length).toBeGreaterThan(0);
+    const x0 = Math.min(...roofCells.map(([x]) => x));
+    const x1 = Math.max(...roofCells.map(([x]) => x));
+    const z0 = Math.min(...roofCells.map(([, , z]) => z));
+    const z1 = Math.max(...roofCells.map(([, , z]) => z));
+    const wallTop = Math.min(...roofCells.map(([, y]) => y)) - 1;
+    for (const [x, , z] of roofCells) {
+      if (x === x0 || x === x1 || z === z0 || z === z1) {
+        expect(solid(x, wallTop, z), `wall beneath roof at ${x},${z}`).toBe(true);
+      }
+    }
+  });
+
+  it('starts on walkable ground inside the lot and reaches the interior and roof by steps', () => {
+    const start = site.spawn.pos.map((value) => Math.floor(value / s)) as Vec3;
+    expect(insideLot(start)).toBe(true);
+    expect(walkable(...start)).toBe(true);
+    const reached = reachable(start);
+    expect(reached.some(([x, y, z]) => at(x, y - 1, z) === roof)).toBe(true);
+    const [ox, oy, oz] = home.origin;
+    const [width, , depth] = home.template.size;
+    expect(
+      reached.some(([x, y, z]) => y === oy + 1 && x > ox && x < ox + width - 1 && z > oz + 1 && z < oz + depth - 1),
+    ).toBe(true);
   });
 });

@@ -1,0 +1,14 @@
+{
+  "id": "hatchback_fuel_tank",
+  "file": "assets/models/hatchback_fuel_tank.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 8,
+      "centreOfMass": [-0.703125, 0.15625, -0.40625],
+      "collision": [{ "min": [-0.90625, 0.125, -0.65625], "max": [-0.5, 0.1875, -0.15625] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

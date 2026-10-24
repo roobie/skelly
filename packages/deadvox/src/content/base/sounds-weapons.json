@@ -2,6 +2,7 @@
   "sounds": [
     {
       "category": "world",
+      "description": "Fire the bolt-action hunting rifle.",
       "gain": 1,
       "gainJitter": [1, 1],
       "id": "gunshot_tikka",
@@ -16,6 +17,7 @@
     },
     {
       "category": "body",
+      "description": "Open the hunting rifle’s bolt to load loose cartridges, or at the start of a full cycle.",
       "gain": 0.5,
       "gainJitter": [0.94999999999999996, 1.05],
       "id": "rifle_bolt_open",
@@ -29,6 +31,7 @@
     },
     {
       "category": "body",
+      "description": "Close the hunting rifle’s bolt after loading, or at the end of a full cycle.",
       "gain": 0.5,
       "gainJitter": [0.94999999999999996, 1.05],
       "id": "rifle_bolt_close",
@@ -42,6 +45,7 @@
     },
     {
       "category": "body",
+      "description": "Pull the trigger of a magazine gun or the hunting rifle on an empty chamber; it clicks once, then stays silent until the action is worked.",
       "gain": 0.29999999999999999,
       "gainJitter": [0.94999999999999996, 1.05],
       "id": "firearm_dry_click",
@@ -59,6 +63,7 @@
     },
     {
       "category": "body",
+      "description": "Pull the pump shotgun’s trigger on an empty chamber; it clicks once, then stays silent until it is racked.",
       "gain": 0.34999999999999998,
       "gainJitter": [0.94999999999999996, 1.05],
       "id": "shotgun_dry_click",
@@ -72,6 +77,7 @@
     },
     {
       "category": "world",
+      "description": "Swing a light blade (knife or machete).",
       "gain": 0.45000000000000001,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "melee_swing_light",
@@ -89,6 +95,7 @@
     },
     {
       "category": "world",
+      "description": "Swing a heavy weapon (bat, pipe or crowbar).",
       "gain": 0.59999999999999998,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "melee_swing_heavy",
@@ -102,6 +109,7 @@
     },
     {
       "category": "world",
+      "description": "Land a swing with a metal weapon (pipe, crowbar or hammer); it layers over the melee hit.",
       "gain": 0.34999999999999998,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
       "id": "melee_hit_metal",

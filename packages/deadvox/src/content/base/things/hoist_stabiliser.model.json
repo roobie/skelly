@@ -1,0 +1,18 @@
+{
+  "id": "hoist_stabiliser",
+  "file": "assets/models/hoist_stabiliser.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 45,
+      "centreOfMass": [0.78125, 0.6167763157894737, 0.763157894736842],
+      "collision": [
+        { "min": [0.625, 0.6875, 0.5625], "max": [0.9375, 0.8125, 0.875] },
+        { "min": [0.6875, 0.375, 0.75], "max": [0.875, 0.6875, 0.875] },
+        { "min": [0.625, 0.3125, 0.71875], "max": [0.9375, 0.375, 0.90625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

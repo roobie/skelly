@@ -1,56 +1,24 @@
 import type { PartDef, Resolved } from '@skelly/engine/assembly/schema.ts';
-import { add, applyPoint, extrusionPoint, scale, type Transform, type Vec3 } from '@skelly/engine/foundation/math.ts';
-import {
-  boundsOfPoints,
-  clippedExtrudedPolygonPolyhedron,
-  localSolidBounds,
-  polyhedronMeasures,
-} from '@skelly/engine/shapes/geometry.ts';
+import { add, applyPoint, scale, type Transform, type Vec3 } from '@skelly/engine/foundation/math.ts';
+import { boundsOfPoints } from '@skelly/engine/shapes/geometry.ts';
 import type { Solid } from '@skelly/engine/shapes/solid.ts';
 import { modelMassKg } from '@skelly/thing-core/mass';
 import type { ModelBox, ModelParts } from '@skelly/thing-core/schema';
+import { authoredMeasure, type DrawnGeometry, drawnGeometry, type SolidMeasure } from './drawn.ts';
 import { partNodeName } from './glb.ts';
-
-interface VolumeProperties {
-  readonly volume: number;
-  readonly centre: Vec3;
-}
-
-const solidProperties = (solid: Solid): VolumeProperties => {
-  if (solid.kind === 'box') {
-    return { volume: 8 * solid.box.half[0] * solid.box.half[1] * solid.box.half[2], centre: solid.box.center };
-  }
-  if (solid.kind === 'extruded-polygon') {
-    const shape = clippedExtrudedPolygonPolyhedron(solid);
-    if (!shape) {
-      return { volume: 0, centre: [0, 0, 0] };
-    }
-    const { volume, centroid } = polyhedronMeasures(shape);
-    return { volume, centre: centroid };
-  }
-  let volume = 0;
-  let moment = 0;
-  for (let i = 0; i < solid.profile.length; i++) {
-    const [a, r] = solid.profile[i]!;
-    const [b, s] = solid.profile[(i + 1) % solid.profile.length]!;
-    volume += ((b - a) * (r * r + r * s + s * s)) / 3;
-    moment += ((b - a) * ((3 * a + b) * r * r + 2 * (a + b) * r * s + (a + 3 * b) * s * s)) / 12;
-  }
-  const axial = volume === 0 ? 0 : moment / volume;
-  return {
-    volume: Math.PI * Math.abs(volume),
-    centre: add(solid.origin ?? [0, 0, 0], extrusionPoint(solid.axis ?? 'z', [0, 0], axial)),
-  };
-};
 
 export interface PhysicalInputs {
   readonly part: PartDef;
   readonly massKg: number;
+  /** The catalogue item this instance is, when the tool's design names one. */
+  readonly item?: string;
 }
 
+/** Mass and centre of a part; `measureOf` gives each solid's volume and centre, the drawn ones in a model export. */
 export const partProperties = (
   metresPerUnit: number,
   inputs: PhysicalInputs,
+  measureOf: (solid: Solid) => Pick<SolidMeasure, 'volume' | 'centre'> = authoredMeasure,
 ): { massKg: number; centreOfMass: Vec3 } => {
   if (!(Number.isFinite(inputs.massKg) && inputs.massKg >= 0)) {
     throw new Error(`Missing or invalid authored mass for ${inputs.part.family}`);
@@ -61,7 +29,7 @@ export const partProperties = (
   let volume = 0;
   let moment: Vec3 = [0, 0, 0];
   for (const solid of inputs.part.solids) {
-    const properties = solidProperties(solid);
+    const properties = measureOf(solid);
     volume += properties.volume;
     moment = add(moment, scale(properties.centre, properties.volume));
   }
@@ -72,10 +40,15 @@ export const partProperties = (
   return { massKg: inputs.massKg, centreOfMass };
 };
 
-/** One axis-aligned box per solid, around its placed bounds, in the model frame's metres. */
-const collisionBoxes = (part: PartDef, placed: Transform, metresPerUnit: number): ModelBox[] =>
+/** One axis-aligned box per solid, around its placed drawn bounds, in the model frame's metres. */
+const collisionBoxes = (
+  part: PartDef,
+  placed: Transform,
+  metresPerUnit: number,
+  measureOf: (solid: Solid) => SolidMeasure,
+): ModelBox[] =>
   part.solids.map((solid) => {
-    const [min, max] = localSolidBounds(solid);
+    const { min, max } = measureOf(solid);
     const corners = [0, 1, 2, 3, 4, 5, 6, 7].map(
       (corner): Vec3 => [corner & 1 ? max[0] : min[0], corner & 2 ? max[1] : min[1], corner & 4 ? max[2] : min[2]],
     );
@@ -83,10 +56,17 @@ const collisionBoxes = (part: PartDef, placed: Transform, metresPerUnit: number)
     return { min: scale(low, metresPerUnit), max: scale(high, metresPerUnit) };
   });
 
+/**
+ * Physical data per part. `drawn` is the export's drawn geometry (see `drawn.ts`), so collision boxes and centres of
+ * mass follow the voxels in the file; by default they follow the authored solids, as an unvoxelized file draws them.
+ */
 export const modelParts = (
   resolved: Resolved,
   inputsFor: (id: string, part: PartDef) => PhysicalInputs,
-  { collision = false }: { readonly collision?: boolean } = {},
+  {
+    collision = false,
+    drawn = drawnGeometry(resolved),
+  }: { readonly collision?: boolean; readonly drawn?: DrawnGeometry } = {},
 ): ModelParts =>
   Object.fromEntries(
     [...resolved.defs].map(([id, part]) => {
@@ -96,14 +76,19 @@ export const modelParts = (
         throw new Error(`No physical placement or instance for ${id}`);
       }
       const unit = resolved.domain.units.metresPerUnit;
-      const physical = partProperties(unit, inputsFor(id, part));
+      const measureOf = (solid: Solid) => drawn.measure(id, solid);
+      const inputs = inputsFor(id, part);
+      const physical = partProperties(unit, inputs, measureOf);
+      const grain = collision ? drawn.grain(id) : undefined;
       return [
         id,
         {
+          ...(inputs.item === undefined ? {} : { item: inputs.item }),
           node: partNodeName(id, instance.family),
           massKg: physical.massKg,
           centreOfMass: scale(applyPoint(placed, scale(physical.centreOfMass, 1 / unit)), unit),
-          ...(collision ? { collision: collisionBoxes(part, placed, unit) } : {}),
+          ...(collision ? { collision: collisionBoxes(part, placed, unit, measureOf) } : {}),
+          ...(grain === undefined ? {} : { voxelGrain: grain }),
         },
       ];
     }),

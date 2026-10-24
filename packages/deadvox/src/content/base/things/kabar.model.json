@@ -1,0 +1,15 @@
+{
+  "id": "kabar",
+  "file": "assets/models/kabar.glb",
+  "parts": {
+    "kabar": {
+      "node": "kabar:knife",
+      "massKg": 0.3,
+      "centreOfMass": [-0.011265993265993273, -0.00013973063973063976, -0.00006902356902356909]
+    }
+  },
+  "grip": { "at": [-0.07499999999998, 0, 0], "turn": [0, 0, 0] },
+  "hold": "forward",
+  "roll": 0,
+  "anchors": { "strike": [0.22, 0, 0] }
+}

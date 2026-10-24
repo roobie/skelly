@@ -1,3 +1,4 @@
+import { type ActionText, actionText, fillText } from '../core/actionText.ts';
 import type { CylinderState } from '../core/firearmState.ts';
 import type { HandlingQueue, JobParams } from '../core/handling.ts';
 import type { Inventory } from '../core/inventory.ts';
@@ -15,6 +16,7 @@ interface RevolverHooks {
   readonly sound: (event: SoundEventId, time: number) => void;
   readonly eject: (gun: Item, chamber: number, type: string, time: number) => void;
   readonly caseType: (gun: Item) => string;
+  readonly completed?: (gun: Item, step: RevolverStep) => void;
 }
 // The trigger pull's click is the gun's content-selected dry-fire sound.
 const sounds: Record<Exclude<RevolverStep, 'pull'>, SoundEventId> = {
@@ -24,15 +26,6 @@ const sounds: Record<Exclude<RevolverStep, 'pull'>, SoundEventId> = {
   load: 'revolver_round_insert',
   close: 'revolver_crane_close',
   cock: 'revolver_hammer_cock',
-};
-const labels: Record<RevolverStep, string> = {
-  open: 'Open cylinder',
-  eject: 'Eject',
-  pick: 'Pick out case',
-  load: 'Load round',
-  close: 'Close cylinder',
-  cock: 'Cock hammer',
-  pull: 'Trigger pull',
 };
 const firingOrder = (cylinder: CylinderState): number[] =>
   cylinder.chambers.map((_, index) => (cylinder.aligned + 1 + index) % cylinder.chambers.length);
@@ -44,11 +37,13 @@ export class RevolverHandling {
   private readonly inventory: Inventory;
   private readonly queue: HandlingQueue;
   private readonly hooks: RevolverHooks;
+  private readonly text: ActionText;
 
   constructor(inventory: Inventory, queue: HandlingQueue, hooks: RevolverHooks) {
     this.inventory = inventory;
     this.queue = queue;
     this.hooks = hooks;
+    this.text = actionText(inventory.registry);
     for (const step of REVOLVER_STEPS) {
       queue.registerAction(`revolver.${step}`, (params) => this.complete(step, params));
     }
@@ -57,7 +52,7 @@ export class RevolverHandling {
   private complete(step: RevolverStep, params: JobParams): string | undefined {
     const gun = typeof params.uid === 'number' ? this.inventory.itemByUid(params.uid) : undefined;
     if (!(gun && this.held(gun.uid))) {
-      return 'Firearm is no longer held';
+      return this.text.common.notHeld;
     }
     const cylinder = gun.firearm?.cylinder;
     if (!cylinder) {
@@ -71,6 +66,7 @@ export class RevolverHandling {
     if (step !== 'open' && !params.cuePlayed) {
       this.hooks.sound(sounds[step], step === 'eject' ? Number(params.cueAt) : time);
     }
+    this.hooks.completed?.(gun, step);
     this.afterStep(gun, step, time);
     return undefined;
   }
@@ -87,7 +83,7 @@ export class RevolverHandling {
         return;
       case 'cock':
         if (cylinder.open) {
-          return 'The cylinder is open';
+          return this.text.firearm.cylinderOpen;
         }
         cylinder.aligned = (cylinder.aligned + 1) % cylinder.chambers.length;
         cylinder.cocked = true;
@@ -108,7 +104,7 @@ export class RevolverHandling {
   private applyOpenStep(gun: Item, step: 'eject' | 'pick' | 'load', params: JobParams): string | undefined {
     const cylinder = gun.firearm!.cylinder!;
     if (!cylinder.open) {
-      return 'The cylinder is closed';
+      return this.text.firearm.cylinderClosed;
     }
     if (step === 'load') {
       return this.insert(gun, params);
@@ -135,7 +131,7 @@ export class RevolverHandling {
 
   private insert(gun: Item, params: JobParams): string | undefined {
     if (!this.loadingHandFree(gun)) {
-      return 'My other hand is full';
+      return this.text.loading.otherHandFull;
     }
     const cylinder = gun.firearm!.cylinder!;
     const ammo = typeof params.ammoUid === 'number' ? this.inventory.itemByUid(params.ammoUid) : undefined;
@@ -148,7 +144,7 @@ export class RevolverHandling {
       !this.matches(gun, ammo) ||
       !this.inventory.consume(ammo, 1)
     ) {
-      return 'The round is no longer carried';
+      return this.text.loading.roundsNotCarried;
     }
     cylinder.chambers[index] = { state: 'round', roundType: ammo.type };
     return undefined;
@@ -194,8 +190,11 @@ export class RevolverHandling {
     const cylinder = gun.firearm!.cylinder!;
     const label =
       step === 'load'
-        ? `${labels.load} ${cylinder.chambers.filter((entry) => entry.state === 'round').length + 1}/${cylinder.chambers.length}`
-        : labels[step];
+        ? fillText(this.text.loading.loadRound, {
+            count: cylinder.chambers.filter((entry) => entry.state === 'round').length + 1,
+            capacity: cylinder.chambers.length,
+          })
+        : this.text.revolver[step];
     this.queue.enqueueAction(`revolver.${step}`, label, duration, {
       uid: gun.uid,
       at: time + duration,
@@ -210,7 +209,7 @@ export class RevolverHandling {
 
   load(gun: Item, time: number): string | undefined {
     if (this.queue.busy) {
-      return 'Already handling something';
+      return this.text.common.busy;
     }
     const cylinder = gun.firearm!.cylinder!;
     this.releasing.delete(gun.uid);
@@ -220,7 +219,7 @@ export class RevolverHandling {
         this.enqueue(gun, 'close', time);
         return;
       }
-      return 'The cylinder is full';
+      return this.text.loading.full;
     }
     return this.loadStep(gun, time);
   }
@@ -239,12 +238,12 @@ export class RevolverHandling {
     if (!(cylinder.open || ammo || cylinder.chambers.some((chamber) => chamber.state === 'case'))) {
       const calibre = this.model(gun)?.gun?.calibre;
       const round = [...this.inventory.registry.items.values()].find((item) => item.ammo?.calibre === calibre);
-      return `I have no ${round?.name ?? 'compatible round'}s`;
+      return round ? fillText(this.text.loading.noRoundsOf, { round: round.name }) : this.text.loading.noRounds;
     }
     const order = firingOrder(cylinder);
     const spent = order.find((index) => cylinder.chambers[index]!.state === 'case');
     if (ammo && spent === undefined && !this.loadingHandFree(gun)) {
-      return 'My other hand is full';
+      return this.text.loading.otherHandFull;
     }
     if (!cylinder.open) {
       this.enqueue(gun, 'open', time);
@@ -304,7 +303,7 @@ export class RevolverHandling {
 
   cock(gun: Item, time: number): string | undefined {
     if (this.queue.busy) {
-      return 'Already handling something';
+      return this.text.common.busy;
     }
     const cylinder = gun.firearm!.cylinder!;
     if (!cylinder.open && cylinder.cocked) {
@@ -316,7 +315,7 @@ export class RevolverHandling {
 
   dump(gun: Item, time: number): string | undefined {
     if (this.queue.busy) {
-      return 'Already handling something';
+      return this.text.common.busy;
     }
     this.releasing.delete(gun.uid);
     this.dumping.add(gun.uid);

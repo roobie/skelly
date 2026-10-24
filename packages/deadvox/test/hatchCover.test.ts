@@ -12,6 +12,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { cellsOf, footprint, pieceSize } from '../src/core/templates.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
 import {
   capture,
@@ -253,7 +254,16 @@ describe('the secret house', () => {
 });
 
 describe('the content check for covers', () => {
-  const cover = { id: 'cover_test', name: 'Cover', size: [2, 1, 2], color: '#445566', solid: false, cover: true };
+  const cover = {
+    id: 'cover_test',
+    name: 'Cover',
+    size: [2, 1, 2],
+    color: '#445566',
+    solid: false,
+    cover: true,
+    breach: fixtureBreach(),
+    material: FIXTURE_MATERIAL,
+  };
   const issuesFor = (furniture: object) =>
     validateContent({ source: 'cover-test.json', data: { furniture: [furniture] } }).map(({ path }) => path);
 
@@ -268,6 +278,8 @@ describe('the content check for covers', () => {
 
   it('refuses a cover placed as fitted', () => {
     const data = {
+      furnitureMaterials: fixtureMaterials(),
+      sounds: fixtureSounds(),
       furniture: [cover],
       templates: [
         {

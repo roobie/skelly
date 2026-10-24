@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you change item, recipe, appliance or handling ownership
+  - you change item, recipe, appliance, charging, liquid-transfer or handling ownership
   - you change compressed long actions, interruption, reading or save behavior
   - you change work-item escrow, salvage or reachability
   - you change how a trap is set, springs, holds or is disarmed
@@ -13,6 +13,14 @@ This document keeps the reasons and ownership rules behind item use, crafting an
 ## Ownership
 
 The core decides admission and effects; the UI projects queries and sends commands. Queries change nothing. Delayed commands revalidate when they complete because reach, tools and world state may have changed. Item ownership stays in item trees; quickbar and light selections are non-owning UID references. The quickbar shows only what the player carries, so a binding clears when its item leaves the person by any route, and a saved binding to an item not carried restores empty. See `src/game/quickbar.ts`, `Quickbar.resolve`, and `src/core/inventory.ts`, `Inventory.carriedByUid`. UI selection, drag state and open panels are not saved game state.
+
+Liquid service requires an explicit destination: silently choosing another vessel or discarding excess would hide a consequential player choice. Vessels retain their owners so pouring does not masquerade as fitting or moving a container. Each committed increment uses live admission rather than a saved plan, preventing competing requests from spending the same contents. Interruption keeps liquid already moved: cancellation must not undo physical effects or resume an unsaved pour. Explicit endpoint commands make replay independent of nearby stock. See `src/game/survival.ts`, `Survival.pour`, `src/game/replayCommands.ts`, `applyReplayActionPayload`, `src/core/liquids.ts`, `planLiquidTransfer`, and `src/core/inventory.ts`, `Inventory.planLiquidTransfer` and `Inventory.transferLiquid`.
+
+A refused pour must distinguish a burning endpoint, a full receiver and an unheld source: a blanket incompatibility message hides the actionable state and falsely suggests the vessels cannot exchange fuel. See `src/core/options.ts`, `pourRefusal`.
+
+The reservoir card is a transfer target, not an item slot. Keeping the receiver card fixed prevents source selection from changing the destination mid-gesture. Naming the other hand's vessel makes the destination explicit without a picker or nearby-stock search; emptying needs no separate ownership mechanism. The source's authored pour rate governs its flow because the source is the vessel being tipped. Measured contents stay on the opened card to avoid permanent HUD clutter. See `src/ui/inventoryScreen.ts`, `detailsTemplate` and `InventoryScreen.hoverServiceTarget`, and `src/core/options.ts`, `pourRefusal` and `otherHandPour`.
+
+An ownership change is where food can change environment, so it is also where food settles. A leaving subtree first takes its old environment's aging, so a new place changes only later aging and no command can rewrite the past. A refused or cancelled move leaves ownership as it was; aging that is already due is not undone. Relocated, fallen and destroyed furniture settles its pockets before they move. Plans stay pure: merge admission compares projected exposure without settling. See `src/core/inventory.ts`, `Inventory.settleFood` and `Inventory.currentFood`, and `src/core/furnitureMove.ts`, `beforeRelocating`.
 
 Moves, crafting, appliances and quickbar actions share the reach query so they cannot disagree about accessible items. Keep one inventory counter per store; only add per-place counters if Slice 5 profiling shows view-model rebuilding cost needs them, and BR decides whether that evidence warrants the change. See `src/core/reach.ts`, `reach`, and `src/core/options.ts`, `options`.
 
@@ -36,7 +44,7 @@ Reading a recipe book is a long action only while its page is open. Closing it p
 
 Finishing a craft consumes escrow once and creates the result; cancellation returns the exact input identities. Disassembly snapshots its yield when work begins, so stopping and resuming cannot change the promised output after a skill or tool change. Repair recipes improve an existing target and are not disassembly results. See `src/core/disassembly.ts`, `planDisassembly`.
 
-Craft completion awards practice; take-apart work does not. Recipe knowledge is explicit, and books add knowledge without changing item ownership. Practice is source-agnostic. Any future activity-tier restriction is triggered by #275.
+Craft completion awards practice; take-apart work does not. Recipe knowledge is explicit, and books add knowledge without changing item ownership. Practice is source-agnostic. A tiered activity trains a skill only up to its tier, and practice at or above that tier is dropped, so repeating easy work cannot carry a skill upward; see `src/core/character.ts`, `Character.awardPractice`, and `src/content/base/recipes.libsonnet`, `training`.
 
 ## Long actions and interruptions
 
@@ -56,8 +64,33 @@ Only traps inside the block of nine regions around the player spring, and the te
 
 ## Appliances
 
-An appliance is a block entity whose behavior comes from components, not its id. Containers own pockets; controls issue commands; workstations provide recipe qualities; processes run without the player; power joins the electricity graph.
+Appliance processes belong to block entities, not the character's hands or long
+action. Inputs stay in ordinary pockets so cancellation and destruction need no
+second item store. The charging owner uses inventory admission and splitting;
+active ownership prevents withdrawal until stopped or complete. See
+`src/core/batteryChargers.ts`, `BatteryChargers`, and `src/core/inventory.ts`,
+`Inventory.plan`.
 
-A process runs while its chunk is loaded and catches up when it loads again. Settle its state at every rate change before applying the new rate; otherwise unloaded time can disagree with live ticking. Inside the block around the player, test catch-up against ordinary ticking, including a rate change; beyond it, test that the coarse result is deterministic. See [ADR 0008](docs/decisions/0008-deterministic-world.md). Appliance controls, processes and power are Slice 5 work.
+Settle old service before changing controls, wiring or ownership so a command
+cannot rewrite past work. Rendering residency must not affect an initialized
+process. Pause on loss of power; completion releases demand at its boundary,
+not at the end of an absence. See `src/core/power.ts`, `PowerWork`, and
+`docs/electricity.md`, "Solar and elapsed time".
 
-Cooking uses a lit workstation when its recipe requires heat. A player craft stops if that requirement is lost; a process owned by an appliance does not occupy the player's hands or require compression.
+Authored appliance identity must survive streaming and reload rather than depend
+on whichever mesh is visible. See `src/core/sitePower.ts`, `SitePower`, and
+`src/game/session.ts`, `createSessionPower`. Settlement at the snapshot barrier
+prevents a save from keeping power at one time and cell energy at another; see
+`src/core/saveState.ts`, `snapshotSession`.
+
+Loading and collecting use ordinary handling so the same reach and ownership
+checks apply at admission and completion. Starting and stopping do not occupy
+hands; an opened inventory surface keeps machine diagnosis local without a
+permanent HUD. See `src/ui/chargerPanel.ts`, `chargerPanel`, and
+`src/game/session.ts`, `chargerControl`.
+
+Relocation and destruction settle before ownership changes, including pieces
+that fall when their support moves, so reserved contents are neither lost nor
+duplicated. A relocated charger loses its authored connection rather than carrying
+service with it. See `src/core/furnitureMove.ts`, `FurnitureMover`, and
+`src/core/batteryChargers.ts`, `BatteryChargers.beforeRemove`.

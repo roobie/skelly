@@ -1,0 +1,13 @@
+{
+  "id": "gas_cylinder_ak",
+  "file": "assets/models/gas_cylinder_ak.glb",
+  "gun": {},
+  "parts": {
+    "gas_cylinder_ak": {
+      "item": "gas_cylinder_ak",
+      "node": "gas_cylinder_ak:gas-cylinder",
+      "massKg": 0.18,
+      "centreOfMass": [0.086, 0, 0]
+    }
+  }
+}

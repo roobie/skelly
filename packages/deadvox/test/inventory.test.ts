@@ -1,12 +1,45 @@
 import { describe, expect, it } from 'vitest';
+import { coreRefusal } from '../src/core/coreText.ts';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
-import { HANDLING, Inventory } from '../src/core/inventory.ts';
+import { handlingWeights, Inventory } from '../src/core/inventory.ts';
 import { PILE_GRID } from '../src/core/inventoryScale.ts';
 import { conditionWord, fitsAt, weightOf } from '../src/core/items.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();
+const HANDLING = handlingWeights(registry);
+
+/**
+ * The base registry with the footprints the slot expectations below follow from declared here, so retuning base
+ * content sizes cannot move them.
+ */
+const declared = (() => {
+  const withGrid = (id: string, grids: readonly [number, number][]) => {
+    const container = registry.items.get(id)!.container!;
+    return {
+      container: {
+        ...container,
+        pockets: container.pockets.map((pocket, index) => (grids[index] ? { ...pocket, grid: grids[index] } : pocket)),
+      },
+    };
+  };
+  const overrides = new Map<string, object>([
+    ['rag', { size: [1, 1], stack: 6 }],
+    ['canned_beans', { size: [1, 2] }],
+    ['canned_soup', { size: [1, 2] }],
+    ['kabar', { size: [1, 3] }],
+    ['hoodie', withGrid('hoodie', [[3, 2]])],
+    ['jeans', withGrid('jeans', [[1, 2]])],
+    ['school_backpack', withGrid('school_backpack', [[5, 6]])],
+    ['water_bottle', { size: [1, 3] }],
+    ['machete', { size: [1, 6] }],
+  ]);
+  return {
+    ...registry,
+    items: new Map([...registry.items].map(([id, def]) => [id, { ...def, ...overrides.get(id) }])),
+  } as typeof registry;
+})();
 
 /** A player in jeans, a hoodie and a school backpack, standing by an empty floor. */
 const dressed = (content = registry) => {
@@ -38,7 +71,7 @@ const onFloor = (inv: Inventory, type: string, count = 1, condition = 1) => {
 
 describe('grid placement', () => {
   it('places in free spots, swaps equal footprints, and refuses placements beyond grid bounds', () => {
-    const { inv, hoodie } = dressed();
+    const { inv, hoodie } = dressed(declared);
     const beans = onFloor(inv, 'canned_beans');
     const pocket = { kind: 'pocket', owner: hoodie, pocket: 0 } as const;
     expect(inv.move(beans, pocket)).toMatchObject({ ok: true, at: { x: 0, y: 0, rotated: false } });
@@ -55,12 +88,9 @@ describe('grid placement', () => {
   });
 
   it('rotates an item to fit, and refuses one too big either way', () => {
-    const { inv, hoodie, jeans } = dressed();
+    const { inv, hoodie, jeans } = dressed(declared);
     const knife = onFloor(inv, 'kabar');
-    expect(inv.plan(knife, { kind: 'pocket', owner: jeans, pocket: 0 })).toEqual({
-      ok: false,
-      reason: 'Too big for it',
-    });
+    expect(inv.plan(knife, { kind: 'pocket', owner: jeans, pocket: 0 })).toEqual(coreRefusal(registry, 'tooBig'));
     expect(inv.move(knife, { kind: 'pocket', owner: hoodie, pocket: 0 })).toMatchObject({
       ok: true,
       at: { x: 0, y: 0, rotated: true },
@@ -68,14 +98,14 @@ describe('grid placement', () => {
   });
 
   it('checks cells against every item in the grid', () => {
-    const { inv, backpack } = dressed();
+    const { inv, backpack } = dressed(declared);
     const water = onFloor(inv, 'water_bottle');
     inv.move(water, { kind: 'pocket', owner: backpack, pocket: 0, at: { x: 1, y: 1, rotated: false } });
     const grid = { size: inv.pocketGrid(backpack, 0), placed: backpack.pockets![0]! };
     const bat = inv.create('machete');
-    expect(fitsAt(registry, grid, bat, { x: 1, y: 0, rotated: false })).toBe(false);
-    expect(fitsAt(registry, grid, bat, { x: 0, y: 0, rotated: false })).toBe(true);
-    expect(fitsAt(registry, grid, bat, { x: 0, y: 0, rotated: true })).toBe(false);
+    expect(fitsAt(declared, grid, bat, { x: 1, y: 0, rotated: false })).toBe(false);
+    expect(fitsAt(declared, grid, bat, { x: 0, y: 0, rotated: false })).toBe(true);
+    expect(fitsAt(declared, grid, bat, { x: 0, y: 0, rotated: true })).toBe(false);
   });
 
   it('lets an item move within its own grid', () => {
@@ -244,7 +274,7 @@ describe('stacking', () => {
   });
 
   it("doesn't stack items that differ", () => {
-    const { inv, hoodie } = dressed();
+    const { inv, hoodie } = dressed(declared);
     const pocket = { kind: 'pocket', owner: hoodie, pocket: 0 } as const;
     const fresh = onFloor(inv, 'rag', 1, 1);
     const dirty = onFloor(inv, 'rag', 1, 0.4);
@@ -290,7 +320,7 @@ describe('hands and wearing', () => {
     expect(inv.move(jacket, { kind: 'worn' }).ok).toBe(true);
     expect(inv.worn.torso).toBe(jacket);
     expect(inv.locate(hoodie)?.kind).toBe('pile');
-    expect(inv.plan(inv.create('crowbar'), { kind: 'worn' })).toEqual({ ok: false, reason: "It isn't there any more" });
+    expect(inv.plan(inv.create('crowbar'), { kind: 'worn' })).toEqual(coreRefusal(registry, 'gone'));
   });
 
   it('puts a long gun on the shoulder only with a sling fitted', () => {
@@ -411,13 +441,20 @@ describe('registry-aware item tree restoration', () => {
 });
 
 describe('condition', () => {
-  it('reads as a word', () => {
-    expect([1, 0.7, 0.4, 0.15, 0.05].map(conditionWord)).toEqual([
-      'pristine',
-      'worn',
-      'damaged',
-      'badly damaged',
-      'ruined',
-    ]);
+  it('reads every value in [0, 1] as exactly one band of the content table', () => {
+    const bands = registry.inventory.get('player')!.conditionBands;
+    const edges = bands.map((band) => band.from);
+    const samples = [
+      ...Array.from({ length: 101 }, (_, i) => i / 100),
+      ...edges,
+      ...edges.map((edge) => edge - 1e-9),
+    ].filter((value) => value >= 0 && value <= 1);
+    for (const value of samples) {
+      const containing = bands.filter(
+        (band, i) => band.from <= value && (bands[i + 1]?.from ?? Number.POSITIVE_INFINITY) > value,
+      );
+      expect(containing, `condition ${value}`).toHaveLength(1);
+      expect(conditionWord(registry, value)).toBe(containing[0]!.word);
+    }
   });
 });

@@ -128,15 +128,15 @@ const vite = await createServer({
         if (hasSkyControl && id.endsWith('/src/render/skylight.ts')) {
           // Test-only reference: identical scene with diffuse sky visibility forced to one.
           assert.ok(code.includes('shader.uniforms.uSkyVolume = this.texture;'));
-          assert.ok(code.includes('float skyVisibility(out bool unknown) {'));
+          assert.ok(code.includes('vec2 skyVisibility(out bool unbuilt) {'));
           return code
             .replace(
               'shader.uniforms.uSkyVolume = this.texture;',
               'shader.uniforms.uSkyVolume = this.texture;\nshader.uniforms.uSkyProofControl = (globalThis.skyProofControl ??= {value:0});',
             )
             .replace(
-              'float skyVisibility(out bool unknown) {',
-              'uniform float uSkyProofControl;\nfloat skyVisibility(out bool unknown) {\n  if (uSkyProofControl > 0.5) { unknown = false; return 1.0; }',
+              'vec2 skyVisibility(out bool unbuilt) {',
+              'uniform float uSkyProofControl;\nvec2 skyVisibility(out bool unbuilt) {\n  if (uSkyProofControl > 0.5) { unbuilt = false; return vec2(1.0); }',
             );
         }
         if (!id.endsWith('/src/game/play.ts')) {
@@ -406,6 +406,14 @@ try {
     ),
   );
   if (isLightingMode) {
+    // Play drops action input until the world is ready, so a scenario press sent during loading is lost.
+    await timePhase('world-ready', () =>
+      page.waitForFunction(
+        () =>
+          document.querySelector('#world-loading')?.dataset.state === 'ready' &&
+          document.querySelector('#world-loading').hidden,
+      ),
+    );
     const shaderErrors = errors.filter((error) => error.includes('THREE.WebGLProgram: Shader Error'));
     assert.deepEqual(shaderErrors, [], 'chunk shaders compile before the lighting pixel checks');
     if (mode === 'lighting-residents') {
@@ -770,9 +778,12 @@ try {
     assert.ok(selection, 'the owned shader proof completed before entering Play');
     assert.ok(selection.requested > 0 && selection.completed === selection.requested, 'owned worker jobs completed');
     assert.ok(selection.oracleCanopy > 0 && selection.oracleCanopy < 1, 'lateral diffuse paths exist under the canopy');
-    assert.ok(selection.pending.room.cpu > 0 && selection.pending.room.cpu < 1, 'unknown height is dim, not black');
-    assert.ok(selection.pending.room.shader > 0 && selection.pending.room.shader < 1, 'shader uses the same cap');
-    assert.ok(Math.abs(selection.pending.room.cpu - selection.pending.room.shader) <= 1 / 255, 'CPU/shader cap agrees');
+    const { room: unbuiltRoom } = selection.pending;
+    assert.ok(
+      unbuiltRoom.cpu > 0 && unbuiltRoom.cpu <= selection.unbuiltSkyCap,
+      'a field with no result yet draws dimmed, at or below its cap',
+    );
+    assert.ok(Math.abs(unbuiltRoom.cpu - unbuiltRoom.shader) <= 1 / 255, 'CPU and shader draw the same fallback');
     for (const phase of [selection.ready, selection.evicted]) {
       assert.deepEqual(
         phase.room,
@@ -781,11 +792,7 @@ try {
       );
       assert.deepEqual(phase.canopy, { cpu: 1, shader: 1 }, 'noncandidate canopy keeps the old estimate');
     }
-    assert.deepEqual(
-      selection.pending.canopy,
-      { cpu: 1, shader: 1 },
-      'unknown eligible height does not dim noncandidates',
-    );
+    assert.deepEqual(selection.pending.canopy, { cpu: 1, shader: 1 }, 'an unbuilt field does not dim noncandidates');
     assert.deepEqual(selection.ready.above, { cpu: 1, shader: 1 }, 'known air above a current roof is open');
     assert.deepEqual(selection.ready.overlap, selection.ready.room, 'overlapping fence and room select the same field');
     assert.ok(

@@ -107,4 +107,16 @@ describe('HUD options', () => {
     writeHudOptions(options as HudSettings);
     expect(readHudOptions()).toEqual(onlyFirstOptionOff());
   });
+
+  it('starts an option missing from an older saved set enabled', () => {
+    vi.stubGlobal('localStorage', storage());
+    const [missing, ...kept] = HUD_OPTION_KEYS;
+    writeHudOptions({
+      ...Object.fromEntries(kept.map((key) => [key, false])),
+      shown: true,
+    } as unknown as HudSettings);
+    const read = readHudOptions();
+    expect(read[missing]).toBe(DEFAULT_HUD_OPTIONS[missing]);
+    expect(kept.every((key) => read[key] === false)).toBe(true);
+  });
 });

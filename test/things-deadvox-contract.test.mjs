@@ -10,7 +10,7 @@ import { namedNodes } from '../packages/deadvox/src/render/firearmModel.ts';
 import { catalogue } from '../packages/thing-authoring-tool/src/catalogue.ts';
 import { loadThingRecipe } from '../packages/thing-authoring-tool/src/exports.ts';
 import { modelMassKg } from '../packages/thing-core/src/mass.ts';
-import { assertExportSynced, assertRecipeCredits, exportDifference } from './model-export-sync.mjs';
+import { assertExportSynced, assertRecipeCredits, assertVoxelized, exportDifference } from './model-export-sync.mjs';
 
 const deadvoxRequire = createRequire(new URL('../packages/deadvox/package.json', import.meta.url));
 const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders/GLTFLoader.js'));
@@ -18,12 +18,14 @@ const { Box3, Vector3 } = deadvoxRequire('three');
 const { safeParse } = deadvoxRequire('valibot');
 const base = new URL('../packages/deadvox/src/content/base/', import.meta.url).pathname;
 const recipe = loadThingRecipe();
-const exported = recipe.map((row) => ({ id: row.id, source: row.source, ...row.generate() }));
+const exported = recipe.map((row) => ({ id: row.id, source: row.source, voxel: row.voxel, ...row.generate() }));
 const { registry, issues } = buildRegistry(
   readdirSync(base)
     .filter((file) => file.endsWith('.json'))
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) })),
 );
+const figureParts = [...registry.figures.values()].flatMap((figure) => figure.parts ?? []);
+const figureModels = new Set(figureParts.map(({ model }) => model));
 
 describe('thing tool exports satisfy the Deadvox contract', () => {
   it('validates and reproduces every recipe model without orphaned records', () => {
@@ -48,12 +50,38 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
       );
     }
   });
+  it('loads authored handling and anchors without consumer overrides', () => {
+    const authored = exported.filter(({ modelEntry }) => modelEntry.grip || modelEntry.anchors);
+    assert.ok(authored.length > 0, 'the recipe must exercise authored datums');
+    for (const { modelEntry } of authored) {
+      const loaded = registry.models.get(modelEntry.id);
+      assert.ok(loaded, `${modelEntry.id}: missing consumer model`);
+      for (const field of ['grip', 'hold', 'rest', 'roll', 'anchors']) {
+        if (modelEntry[field] !== undefined) {
+          assert.equal(
+            exportDifference(loaded[field], modelEntry[field]),
+            null,
+            `${modelEntry.id}: consumer overrides exported ${field}`,
+          );
+        }
+      }
+    }
+  });
+  it('voxelizes every recipe model on its row class', () => {
+    exported.forEach(assertVoxelized);
+  });
   it('credits every consumed thing export', () => {
     assertRecipeCredits(recipe, JSON.parse(readFileSync(join(base, 'assets/manifest.json'), 'utf8')));
   });
   it('builds the registry with one authoritative mass source for each item', () => {
     assert.deepEqual(issues, []);
     for (const row of recipe) {
+      if (figureModels.has(row.id)) {
+        // A figure part's model is drawn by its figure row; no item holds it.
+        assert.equal(registry.items.has(row.source), false);
+        assert.ok(registry.models.get(row.id));
+        continue;
+      }
       const item = registry.items.get(row.source);
       assert.ok(item, `${row.source}: missing consumer`);
       assert.equal(item.model, row.id);
@@ -68,6 +96,28 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
         assert.ok(toolItem);
         const authoredMass = toolItem.parts.reduce((sum, part) => sum + part.massKg, 0);
         assert.equal(exportDifference(modelMassKg(model), authoredMass), null, row.id);
+      }
+    }
+  });
+  it('registers each jack and hoist as an ordinary tool item on a nonempty model', () => {
+    const jacks = [...registry.items.values()].filter((item) => item.tool?.qualities?.jacking !== undefined);
+    assert.ok(jacks.length > 0, 'no item carries a jacking quality');
+    for (const item of jacks) {
+      const { id } = item;
+      assert.equal(item.category, 'tool', `${id}: a jack is a tool`);
+      assert.equal(item.vehicle, undefined, `${id}: a jack is carried, not fitted`);
+      assert.ok(item.tool.qualities.jacking >= 1, `${id}: missing jacking quality`);
+      const model = registry.models.get(item.model);
+      assert.ok(model && Object.keys(model.parts ?? {}).length > 0, `${id}: empty model`);
+    }
+  });
+  it('resolves every figure part to an exported model holding each joint anchor', () => {
+    assert.ok(figureParts.length > 0, 'the base content must author a figure part');
+    for (const part of figureParts) {
+      const out = exported.find(({ id }) => id === part.model);
+      assert.ok(out, `${part.model}: no recipe export`);
+      for (const [joint, anchor] of Object.entries(part.joints)) {
+        assert.ok(out.modelEntry.anchors?.[anchor], `${part.model}: ${joint} names missing anchor ${anchor}`);
       }
     }
   });
@@ -117,6 +167,7 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
           assert.ok(names.has(modelEntry.emissiveMaterial), `${modelEntry.id}: missing glow material`);
         }
         if (modelEntry.anchors?.flame) {
+          // A datum lies on the drawn voxels, so the flame stands within what the file draws.
           const bounds = new Box3().setFromObject(loaded.scene).expandByScalar(1e-6);
           assert.ok(
             bounds.containsPoint(new Vector3(...modelEntry.anchors.flame)),

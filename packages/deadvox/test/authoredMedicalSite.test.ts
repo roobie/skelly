@@ -9,7 +9,7 @@ import type { SiteLayoutDef } from '../src/core/schema.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
 import { templateReachableStandingPositions, templateSpatialIssues } from '../src/core/templateSpatial.ts';
 import { type CompiledTemplate, compileTemplate, type Facing } from '../src/core/templates.ts';
-import { PLAYER } from '../src/game/player.ts';
+import { PLAYER } from './playerFixture.ts';
 
 const sources = readdirSync('src/content/base')
   .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))

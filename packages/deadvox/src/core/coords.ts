@@ -19,14 +19,6 @@ export const yawFromBearing = (bearing: number): number => {
   return ((((yaw + Math.PI) % FULL_TURN) + FULL_TURN) % FULL_TURN) - Math.PI;
 };
 
-const DIRECTIONS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const;
-
-/** Labels a heading with its rounded 000–359 degree value and nearest compass point. */
-export const headingLabel = (bearing: number): { degrees: number; cardinal: (typeof DIRECTIONS)[number] } => {
-  const degrees = Math.round(((bearing % 360) + 360) % 360) % 360;
-  return { degrees, cardinal: DIRECTIONS[Math.round(degrees / 45) % DIRECTIONS.length]! };
-};
-
 const CHUNK_BITS = 5;
 export const CHUNK = 1 << CHUNK_BITS;
 export const CHUNK_VOLUME = CHUNK * CHUNK * CHUNK;

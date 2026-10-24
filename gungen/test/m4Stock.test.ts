@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import type { Assembly, PortDef } from '@skelly/engine/assembly/schema.ts';
 import { applyPoint, cross, IDENTITY, sub } from '@skelly/engine/foundation/math.ts';
@@ -9,17 +7,14 @@ import type { Solid } from '@skelly/engine/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES, M4_STOCK_GEOMETRY } from '../src/gun/parts.ts';
-import { loadFixture } from './helpers.ts';
+import { loadDesignAssembly, loadFixture } from './helpers.ts';
 
-const ROOT = join(import.meta.dirname, '..');
 const CLIP_BEVEL_ERROR = /set display\.bevel to false/;
-const designAssembly = (name: string): Assembly =>
-  (JSON.parse(readFileSync(join(ROOT, 'designs', `${name}.json`), 'utf8')) as { assembly: Assembly }).assembly;
-const stockSamples = [
+const stockSamples: readonly { readonly assembly: Assembly; readonly label: string }[] = [
   { assembly: loadFixture('archetype-ar'), label: 'AR fixture' },
-  { assembly: designAssembly('archetype-ar'), label: 'archetype-ar design' },
+  { assembly: loadDesignAssembly('archetype-ar'), label: 'archetype-ar design' },
   { assembly: loadFixture('archetype-ar-free-float'), label: 'AR free-float fixture' },
-  { assembly: designAssembly('archetype-ar-free-float'), label: 'archetype-ar-free-float design' },
+  { assembly: loadDesignAssembly('archetype-ar-free-float'), label: 'archetype-ar-free-float design' },
 ];
 
 const vertices = (solid: Solid) => {

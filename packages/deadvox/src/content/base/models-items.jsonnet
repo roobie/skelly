@@ -4,6 +4,8 @@ local authored = [
     import 'things/opened_beans.model.json',
     import 'things/opened_soup.model.json',
     import 'things/empty_can.model.json',
+    import 'things/opened_soda.model.json',
+    import 'things/soda.model.json',
     import 'things/can_opener.model.json',
     import 'things/beans.model.json',
     import 'things/soup.model.json',
@@ -17,6 +19,7 @@ local authored = [
     import 'things/crackers.model.json',
     import 'things/chocolate_bar.model.json',
     import 'things/soda_can.model.json',
+    import 'things/empty_soda_can.model.json',
     import 'things/water_bottle.model.json',
     import 'things/juice_carton.model.json',
     import 'things/cartridge_box_308_h_winchester.model.json',
@@ -28,39 +31,32 @@ local authored = [
     import 'things/jerry_can.model.json',
     import 'things/gas_canister.model.json',
     (import 'things/frag_grenade.model.json') + {
-      lever: { mergeGroup: 'lever', launchMetresPerRealSecond: 3, spinDegreesPerRealSecond: 1080, lifetimeRealSeconds: 1.5 },
-      pin: { solids: ['pin', 'ring'] },
+      lever: { piece: 'lever', launchMetresPerRealSecond: 3, spinDegreesPerRealSecond: 1080, lifetimeRealSeconds: 1.5 },
+      pin: { piece: 'pin' },
     },
     import 'things/torch.model.json',
+    (import 'things/flashlight.model.json') + { grip: { at: [0.085, 0, 0] }, anchors: { lens: [0.199, 0, 0] } },
     import 'things/candle.model.json',
     import 'things/bear_trap.model.json',
-    {
-      "id": "hand_saw",
-      "file": "assets/models/hand_saw.glb",
-      "grip": { "at": [-0.13, 0.034, 0] },
-      "hold": "upright",
-      "roll": 90
-    },
-    {
-      "id": "screwdriver",
-      "file": "assets/models/screwdriver.glb",
-      "grip": { "at": [-0.058, 0.023, 0] },
-      "hold": "upright",
-      "roll": 90
-    },
-    {
-      "id": "wire_spool",
-      "file": "assets/models/wire_spool.glb"
+    (import 'things/compass.model.json') + {
+      dial: {
+        face: 'paint-cream',
+        ink: 'plastic-black',
+        north: 'plastic-red',
+        south: 'plastic-black',
+        marks: ['N', 'E', 'S', 'W'],
+        markHeight: 0.3,
+        needleLength: 0.6,
+        needleWidth: 0.2,
+      },
     },
     { "id": "lamp_oil_bottle", "file": "assets/models/lamp_oil_bottle.glb" },
     { "id": "glass_shards", "file": "assets/models/glass_shards.glb" },
     import 'things/tape_roll.model.json',
-    { "id": "fastener_pack", "file": "assets/models/fastener_pack.glb" },
     { "id": "wood_offcut", "file": "assets/models/wood_offcut.glb" },
     { "id": "rubber_strip", "file": "assets/models/rubber_strip.glb" },
     { "id": "circuit_board", "file": "assets/models/circuit_board.glb" },
     { "id": "glass_lens", "file": "assets/models/glass_lens.glb" },
-    { "id": "small_spring", "file": "assets/models/small_spring.glb" },
     { "id": "cloth_bundle", "file": "assets/models/cloth_bundle.glb" },
     { "id": "stab_vest", "file": "assets/models/stab_vest.glb" },
     { "id": "riot_helmet", "file": "assets/models/riot_helmet.glb" },
@@ -69,17 +65,18 @@ local authored = [
     import 'things/thread_spool.model.json',
     import 'things/fuse.model.json',
     import 'things/cord_coil.model.json',
-    { "id": "pliers", "file": "assets/models/pliers.glb" },
     { "id": "sewing_kit", "file": "assets/models/sewing_kit.glb" },
     { "id": "broken_toaster", "file": "assets/models/broken_toaster.glb" },
     import 'things/dead_desk_lamp.model.json',
+    (import 'things/dead_desk_lamp.model.json') + {
+      id: 'oil_lamp',
+      grip: { at: [0, 0, 0], turn: [0, 0, 0] },
+      anchors: { flame: [0.069, 0.05, 0] },
+    },
     { "id": "table_fan", "file": "assets/models/table_fan.glb" },
     { "id": "cracked_phone", "file": "assets/models/cracked_phone.glb" },
     { "id": "broken_clock", "file": "assets/models/broken_clock.glb" },
     { "id": "electrical_repair_kit", "file": "assets/models/electrical_repair_kit.glb" },
-    { "id": "flashlight_mount", "file": "assets/models/flashlight_mount.glb" },
-    { "id": "scrap_foregrip", "file": "assets/models/scrap_foregrip.glb" },
-    { "id": "hinge_set", "file": "assets/models/hinge_set.glb" },
     { "id": "glass_bulb", "file": "assets/models/glass_bulb.glb" },
     { "id": "paper_sheet", "file": "assets/models/paper_sheet.glb" },
     { "id": "folded_note", "file": "assets/models/folded_note.glb" },
@@ -92,5 +89,10 @@ local authored = [
     import 'things/shambler_right_leg.model.json'
 ];
 {
-  models: authored + [model for model in import 'things/index.json' if !std.member([entry.id for entry in authored], model.id)],
+  // Explicit registrations must not also appear through the export index.
+  models: authored + [
+    model
+    for model in import 'things/index.json'
+    if !std.member([entry.id for entry in authored + (import 'models-melee.jsonnet').models], model.id)
+  ],
 }

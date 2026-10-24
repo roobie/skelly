@@ -1,8 +1,13 @@
 {
   "furniture": [
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#d8d2bd",
       "id": "medical_folding_screen",
+      "material": "wood",
       "name": "Folding screen",
       "shape": [
         {
@@ -18,8 +23,13 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#71828a",
       "id": "medical_examination_couch",
+      "material": "wood",
       "name": "Examination couch",
       "shape": [
         {
@@ -47,8 +57,13 @@
       "solidFill": 0.01
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#7f8987",
       "id": "medical_steam_sterilizer",
+      "material": "wood",
       "name": "Steam sterilizer",
       "shape": [
         {
@@ -68,6 +83,10 @@
         "kind": "drawers",
         "surface": "painted-metal"
       },
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#89918e",
       "container": {
         "pockets": [
@@ -78,12 +97,18 @@
         ]
       },
       "id": "medical_card_file",
+      "material": "steel",
       "name": "Card-file cabinet",
       "size": [1, 2, 1]
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#66706c",
       "id": "medical_bike_rack",
+      "material": "wood",
       "name": "Bike rack",
       "shape": [
         {
@@ -107,8 +132,13 @@
       "solid": false
     },
     {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#657069",
       "id": "medical_bin_enclosure",
+      "material": "wood",
       "name": "Bin enclosure",
       "shape": [
         {

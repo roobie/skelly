@@ -1,4 +1,6 @@
 // Authored, immutable plain text shared by carried notes and furniture signs.
+import type { Vec3 } from './coords.ts';
+
 export const READABLE_TITLE_LIMIT = 120;
 export const READABLE_TEXT_LIMIT = 12_000;
 export const hasReadableWords = (value: string): boolean => value.trim().length > 0;
@@ -20,3 +22,21 @@ export interface Readable {
   title: string;
   text: string;
 }
+
+/** A requested reading surface; generated paper stays distinct from authored prose. */
+export type ReadRequest =
+  | Readonly<{
+      kind: 'text';
+      readable: Readonly<Readable>;
+      bookUid?: number;
+      itemType?: string;
+      /** Where a fixed text's light is measured; carried paper is lit at the reader. */
+      lightAt?: Vec3;
+    }>
+  | Readonly<{
+      kind: 'paperMap';
+      ownerUid: number;
+      coverage: Readonly<{ x: number; z: number }>;
+      title: string;
+      itemType: string;
+    }>;

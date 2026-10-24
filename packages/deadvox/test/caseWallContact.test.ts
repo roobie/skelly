@@ -16,18 +16,20 @@ import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
+import { firearmsCombatTuning } from '../src/core/skillTraining.ts';
 import {
   FirearmMechanics,
   type FirearmShotEffect,
   firearmHandlingFor,
   spentCaseItemId,
 } from '../src/game/firearmHandling.ts';
-import { createPlayerBody, type MoveIntent, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { CaseEffects, caseFlightPoint } from '../src/render/caseEffects.ts';
+import { createPlayerBody, type MoveIntent, PLAYER, physicsFor, steer } from './playerFixture.ts';
 import { chargedRifle } from './rifleFixture.ts';
 
 const { registry } = BUNDLED_CONTENT;
+const CASE_LANDING_LIFT = firearmsCombatTuning(registry).caseEjection.landingLiftMetres;
 const scale = makeScale(0.5);
 const pitch = (-20 * Math.PI) / 180;
 
@@ -246,10 +248,10 @@ const makeCaseSession = ({ world, spawn, intent: startingIntent, crouched = fals
       active: () => true,
       intent: () => intent,
       readyHeld: () => true,
-      consumeCrouchToggle: () => {
+      consumeStanceToggle: () => {
         const pressed = crouchToggle;
         crouchToggle = false;
-        return pressed;
+        return pressed ? 'crouch' : undefined;
       },
       yaw: () => yaw,
       pitch: () => pitch,
@@ -264,7 +266,7 @@ const makeCaseSession = ({ world, spawn, intent: startingIntent, crouched = fals
       const [x, y, z] = effect.landingPosition;
       const landingPosition: Vec3 = [
         (x + 0.5) * scale.blockSize,
-        y * scale.blockSize + 0.006,
+        y * scale.blockSize + CASE_LANDING_LIFT,
         (z + 0.5) * scale.blockSize,
       ];
       spawnResults.push(renderer.spawn({ ...effect, landingPosition }));
@@ -355,6 +357,7 @@ describe('firearm case wall contact', () => {
     const faceEyeX = (wallX + 1) * scale.blockSize - portOffsetX;
     const firstStep = (PLAYER.walk / scale.blockSize / 60) * Math.sin(yaw);
     const body = createPlayerBody(scale, faceEyeX / scale.blockSize + firstStep, 1.01, 0);
+    body.onGround = true;
     steer(body, scale, yaw, { forward: 1, right: 0, jump: false, sprint: false, walk: true });
     stepBody(body, 1 / 60, isSolid, physicsFor(scale));
     for (let frame = 0; frame < 10; frame++) {
@@ -452,7 +455,7 @@ describe('firearm case wall contact', () => {
 
     const landing: Vec3 = [
       (effect.landingPosition[0] + 0.5) * scale.blockSize,
-      effect.landingPosition[1] * scale.blockSize + 0.006,
+      effect.landingPosition[1] * scale.blockSize + CASE_LANDING_LIFT,
       (effect.landingPosition[2] + 0.5) * scale.blockSize,
     ];
     const duration = effect.landingAt - effect.startedAtSimSeconds;
@@ -504,7 +507,7 @@ describe('firearm case wall contact', () => {
     expect(shot.isSolid(casePile!.pos[0], casePile!.pos[1] - 1, casePile!.pos[2])).toBe(true);
     const landing: Vec3 = [
       (blockedEffect.landingPosition[0] + 0.5) * scale.blockSize,
-      blockedEffect.landingPosition[1] * scale.blockSize + 0.006,
+      blockedEffect.landingPosition[1] * scale.blockSize + CASE_LANDING_LIFT,
       (blockedEffect.landingPosition[2] + 0.5) * scale.blockSize,
     ];
     const duration = blockedEffect.landingAt - blockedEffect.startedAtSimSeconds;
@@ -521,7 +524,7 @@ describe('firearm case wall contact', () => {
   it('keeps a crouched corner drop descending to its landing without entering the floor', () => {
     const runtime = makeCrouchedCornerRuntime();
     advanceFrames(runtime.session, 120);
-    expect(runtime.session.crouching).toBe(true);
+    expect(runtime.session.stance).toBe('crouching');
     expect(runtime.session.body.onGround).toBe(true);
     expect(bodyOverlapsTerrain(runtime.session.body, runtime.isSolid)).toBe(false);
     runtime.setIntent({ ...IDLE });
@@ -544,7 +547,7 @@ describe('firearm case wall contact', () => {
     expect(observations.length).toBeGreaterThan(0);
     const effect = runtime.effects[0]!;
     const duration = effect.landingAt - effect.startedAtSimSeconds;
-    const landingY = effect.landingPosition[1] * scale.blockSize + 0.006;
+    const landingY = effect.landingPosition[1] * scale.blockSize + CASE_LANDING_LIFT;
     expect(observations.filter(({ solid }) => solid)).toEqual([]);
     expect(observations.every(({ point }) => point[1] >= landingY - 1e-6)).toBe(true);
     expect(effect.direction).toEqual([0, -1, 0]);

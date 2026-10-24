@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { Character, dominantSide, offSide } from '../src/core/character.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { paperMapAt } from '../src/core/paperMap.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { ignitionTargetForHand, selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { Survival } from '../src/game/survival.ts';
@@ -32,6 +33,7 @@ const capabilities = [
         reach: 1,
         cooldownSimSeconds: 1,
         stamina: 0,
+        impulse: 1,
         type: 'blunt',
         contactFraction: 0.4,
         windupCapSimSeconds: 0.25,
@@ -48,7 +50,13 @@ const capabilities = [
   {
     id: 'held_gun',
     kind: 'firearm',
-    firearm: { recoilKickRadians: 0.02, dispersionRadians: 0.01, shotSound: 'gunshot', handling: {} },
+    firearm: {
+      recoilKickRadians: 0.02,
+      dispersionRadians: 0.01,
+      pelletSpreadScale: 1,
+      shotSound: 'gunshot',
+      handling: {},
+    },
     twoHanded: true,
   },
   {
@@ -76,6 +84,8 @@ const capabilities = [
     kind: 'read',
     book: { title: 'Fixture manual', recipes: ['fixture_recipe'], readingGameMinutes: 1 },
   },
+  { id: 'held_note', kind: 'read', readable: { title: 'Fixture note', text: 'Fixture text.' } },
+  { id: 'held_map', kind: 'read', paperMap: true },
   { id: 'held_box', kind: 'unpack', unpack: { item: 'held_plain', count: 1, simSeconds: 1 } },
   {
     id: 'held_plain',
@@ -94,10 +104,10 @@ const { registry, issues } = buildRegistry([
     source: '../content/base/sounds.json',
     data: JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')) as unknown,
   },
+  { source: '../content/base/ui.json', data: JSON.parse(readFileSync('src/content/base/ui.json', 'utf8')) as unknown },
   {
     source: 'hand-action-fixture',
     data: {
-      doorMaterials: [{ id: 'wood', methods: [] }],
       skills: [{ id: 'crafting', name: 'Crafting', training: { craftingTierOffset: 2 } }],
       furniture: [
         {
@@ -105,7 +115,7 @@ const { registry, issues } = buildRegistry([
           name: 'Fixture door',
           size: [1, 1, 1],
           color: '#666666',
-          door: { material: 'wood', methods: {}, handlingSimSeconds: 0 },
+          door: { methods: {}, handlingSimSeconds: 0 },
         },
       ],
       templates: [
@@ -147,7 +157,15 @@ const hold = (right?: string, left?: string, handedness?: 'right' | 'left') => {
     ['right', right],
     ['left', left],
   ] as const) {
-    if (type && !inventory.add(inventory.create(type), { kind: 'hand', side })) {
+    const item =
+      type &&
+      inventory.factory.create(
+        registry,
+        type,
+        1,
+        registry.items.get(type)?.paperMap ? { paperMap: paperMapAt(0, 0) } : {},
+      );
+    if (item && !inventory.add(item, { kind: 'hand', side })) {
       throw new Error(`Hand-action fixture cannot hold ${type} in ${side}`);
     }
   }
@@ -162,6 +180,7 @@ const survivalFor = (inventory: Inventory) => {
     reach: bindReach(player),
     feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
     notice: () => undefined,
+    readingLight: () => undefined,
     read: () => {
       throw new Error('Unexpected reading in primary-action fixture');
     },
@@ -256,6 +275,7 @@ describe('held-item hand action', () => {
       notice: () => {
         throw new Error('Unexpected use notice in primary-action fixture');
       },
+      readingLight: () => undefined,
       read: () => {
         throw new Error('Unexpected reading in primary-action fixture');
       },
@@ -282,6 +302,30 @@ describe('held-item hand action', () => {
     const { refusal, queue, item } = runHeldUse(id);
     expect(refusal).toBeUndefined();
     expect(queue.jobs).toMatchObject([{ kind: 'action', jobType: 'survival.consume', params: { itemUid: item.uid } }]);
+  });
+
+  it.each([
+    { id: 'held_note', light: undefined, opened: 1 },
+    { id: 'held_map', light: 'Too dark to read.', opened: 0 },
+    { id: 'held_map', light: undefined, opened: 1 },
+    { id: 'held_note', light: 'Too dark to read.', opened: 0 },
+  ])('a main-hand click on $id reads it behind the reading light gate ($light)', ({ id, light, opened }) => {
+    const inventory = hold(id);
+    const action = selectPrimaryAction(inventory);
+    if (action.kind !== 'read') {
+      throw new Error(`Expected held ${id} to select read, got ${action.kind}`);
+    }
+    const reads: unknown[] = [];
+    const player = { inventory, position: [0, 0, 0] as [number, number, number], blockSize: 1, clock: BASE_CLOCK };
+    const survival = new Survival(new Simulation({ seed: 1 }), inventory, new HandlingQueue(inventory), {
+      reach: bindReach(player),
+      feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
+      notice: () => undefined,
+      readingLight: () => light,
+      read: (request) => reads.push(request),
+    });
+    expect(survival.use(action.item)).toBe(light);
+    expect(reads).toHaveLength(opened);
   });
 
   it('refuses a ruined held melee weapon instead of attacking with it', () => {

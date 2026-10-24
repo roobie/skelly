@@ -40,10 +40,35 @@ const tuning = {
 it('benchmark engines use mod defaults despite saved graphics preferences and debug URL overrides', () => {
   const content = buildRegistry([
     { source: 'base/dayCycle.json', data: baseDayCycle },
-    { source: 'fixture', data: { graphics: [{ id: CORE_CONTENT_IDS.coreGraphics, readyRadiusM: 16, ...tuning }] } },
+    {
+      source: 'fixture',
+      data: {
+        graphics: [
+          {
+            id: CORE_CONTENT_IDS.coreGraphics,
+            readyRadiusM: 16,
+            itemPictureCacheCapacity: 2,
+            unbuiltSkyCap: 0.5,
+            itemViewer: {
+              framing: 1,
+              startYawDegrees: 0,
+              startPitchDegrees: 0,
+              pitchLimitDegrees: 80,
+              degreesPerPixel: 1,
+              zoomPerWheelPixel: 0.01,
+              zoomMin: 0.5,
+              zoomMax: 2,
+            },
+            mobActors: { maxCorpses: 9 },
+            gore: { dropletCap: 11, splatCap: 13, dropletSpawnsPerFrame: 5, dripSourceCap: 2 },
+            ...tuning,
+          },
+        ],
+      },
+    },
   ]);
   const { registry } = content;
-  owner.setup = { registry };
+  owner.setup = { registry, skyFields: { fields: [] } };
   let saved = '';
   const storage = {
     getItem: vi.fn(() => saved),

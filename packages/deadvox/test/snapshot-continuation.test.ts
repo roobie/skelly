@@ -19,7 +19,7 @@ import {
   createRuntime,
   encodeFixture,
   fixtureColumns,
-  fixtureHamlet,
+  fixtureSite,
   fixtureZombieColumn,
   formatVersion,
   frozenTree,
@@ -53,17 +53,17 @@ describe('zombie attack causes', () => {
   });
 });
 
-describe('hamlet save/load continuation', () => {
+describe('fixture save/load continuation', () => {
   const oneColumn = [fixtureZombieColumn] as const;
   const soundColumn = fixtureColumns.find(([cx, cz]) =>
-    fixtureHamlet.zombiesIn(cx, cz).some(({ type }) => type === 'shambler'),
+    fixtureSite.zombiesIn(cx, cz).some(({ type }) => type === 'shambler'),
   );
   if (!soundColumn) {
     throw new Error('Snapshot fixture has no shambler sound column');
   }
   const soundColumns = [soundColumn] as const;
   const containerColumn = fixtureColumns.find(([cx, cz]) =>
-    fixtureHamlet.furnitureIn(cx, cz).some(({ spec }) => registry.furniture.get(spec.type)?.container),
+    fixtureSite.furnitureIn(cx, cz).some(({ spec }) => registry.furniture.get(spec.type)?.container),
   );
   if (!containerColumn) {
     throw new Error('Snapshot fixture has no container column');
@@ -72,7 +72,7 @@ describe('hamlet save/load continuation', () => {
 
   it('continues horde noise response and night drift deterministically through a save', async () => {
     const [cx, cz] = fixtureZombieColumn;
-    const center = fixtureHamlet.zombiesIn(cx, cz)[0]?.pos;
+    const center = fixtureSite.zombiesIn(cx, cz)[0]?.pos;
     if (!center) {
       throw new Error('Horde save fixture has no nearby terrain spawn');
     }
@@ -167,13 +167,13 @@ describe('hamlet save/load continuation', () => {
   });
 
   it('continues moving player audio and sprint hysteresis through save/load', async () => {
-    const hedge = fixtureHamlet.hedges.find(({ min }) => toChunk(min[2]) === toChunk(min[2] + 3.5));
+    const hedge = fixtureSite.hedges.find(({ min }) => toChunk(min[2]) === toChunk(min[2] + 3.5));
     if (!hedge) {
-      throw new Error('Snapshot fixture has no hedge crossing route');
+      throw new Error('Snapshot fixture has no foliage crossing route');
     }
     const [x, , z] = hedge.min;
     const startZ = z + 3.5;
-    const ground = fixtureHamlet.surface.height(
+    const ground = fixtureSite.surface.height(
       x,
       startZ,
       terrainHeight(seed, terrainShapeOf(registry), scale, x, startZ),
@@ -272,13 +272,13 @@ describe('hamlet save/load continuation', () => {
   });
 
   it('continues the stamina recovery delay across save/load', async () => {
-    const hedge = fixtureHamlet.hedges.find(({ min }) => toChunk(min[2]) === toChunk(min[2] + 3.5));
+    const hedge = fixtureSite.hedges.find(({ min }) => toChunk(min[2]) === toChunk(min[2] + 3.5));
     if (!hedge) {
       throw new Error('Snapshot fixture has no ground route for stamina recovery');
     }
     const [x, , z] = hedge.min;
     const startZ = z + 3.5;
-    const ground = fixtureHamlet.surface.height(
+    const ground = fixtureSite.surface.height(
       x,
       startZ,
       terrainHeight(seed, terrainShapeOf(registry), scale, x, startZ),
@@ -427,7 +427,7 @@ describe('hamlet save/load continuation', () => {
     expect(loaded.heardSounds).toEqual(continuedSounds);
     expect(continuedSounds.some(({ event }) => event === 'shambler_idle')).toBe(true);
     expect(inspect(loaded)).toEqual(inspect(uninterrupted));
-  }, 5000);
+  });
 
   it('preserves an active-sleep interruption emitted between frames across save/load', () => {
     const uninterrupted = createRuntime(undefined, true, oneColumn);
@@ -479,12 +479,12 @@ describe('hamlet save/load continuation', () => {
     original.zombies.add(registry.zombies.get('shambler')!, original.player.body.pos);
     original = prepareAudioContinuation(original);
     const saved = capture(original);
-    expect(saved.world.diffs.chunks.length).toBeGreaterThan(0);
+    expect(saved.world.columns.length).toBeGreaterThan(0);
     const baseline = runtimeFrom(saved);
     advance(baseline, 1);
 
     const noDelta = structuredClone(saved);
-    noDelta.world.diffs.chunks[0]!.cells.pop();
+    noDelta.world.columns = [];
     const withoutDelta = runtimeFrom(noDelta);
     advance(withoutDelta, 1);
     expect(inspect(withoutDelta)).not.toEqual(inspect(baseline));

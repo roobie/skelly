@@ -76,6 +76,14 @@
       ]
     },
     {
+      "id": "player.prone-toggle",
+      "keys": [
+        {
+          "code": "KeyN"
+        }
+      ]
+    },
+    {
       "id": "player.throw",
       "keys": [
         {
@@ -346,6 +354,30 @@
       ]
     },
     {
+      "id": "inventory.cycle-target",
+      "keys": [
+        {
+          "code": "KeyC"
+        }
+      ]
+    },
+    {
+      "id": "inventory.put-target",
+      "keys": [
+        {
+          "code": "KeyP"
+        }
+      ]
+    },
+    {
+      "id": "inventory.find",
+      "keys": [
+        {
+          "code": "KeyF"
+        }
+      ]
+    },
+    {
       "id": "inventory.hands",
       "keys": [
         {
@@ -398,6 +430,14 @@
       "keys": [
         {
           "code": "KeyT"
+        }
+      ]
+    },
+    {
+      "id": "inventory.view-item",
+      "keys": [
+        {
+          "code": "Mouse1"
         }
       ]
     },
@@ -591,6 +631,14 @@
       ]
     },
     {
+      "id": "debug.spectator-teleport",
+      "keys": [
+        {
+          "code": "KeyR"
+        }
+      ]
+    },
+    {
       "id": "debug.third-person-toggle",
       "keys": [
         {
@@ -679,6 +727,14 @@
       ]
     },
     {
+      "id": "debug.spawn-zombie.acid_zombie",
+      "keys": [
+        {
+          "code": "Numpad6"
+        }
+      ]
+    },
+    {
       "id": "debug.melee-aim-toggle",
       "keys": [
         {
@@ -707,6 +763,30 @@
       "keys": [
         {
           "code": "Numpad5"
+        }
+      ]
+    },
+    {
+      "id": "debug.map-slice-down",
+      "keys": [
+        {
+          "code": "NumpadDivide"
+        }
+      ]
+    },
+    {
+      "id": "debug.map-slice-up",
+      "keys": [
+        {
+          "code": "NumpadMultiply"
+        }
+      ]
+    },
+    {
+      "id": "debug.map-slice-surface",
+      "keys": [
+        {
+          "code": "Backspace"
         }
       ]
     },

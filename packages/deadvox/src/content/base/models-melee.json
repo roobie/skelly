@@ -2,257 +2,187 @@
   "models": [
     {
       "anchors": {
-        "strike": [0.42730000000000001, 0, 0]
+        "strike": [0.42730000000034007, 0, 0]
       },
       "file": "assets/models/baseball_bat.glb",
       "grip": {
-        "at": [-0.29999999999999999, 0, 0]
+        "at": [-0.29999999999973997, 0, 0],
+        "turn": [0, 0, 0]
       },
       "hold": "upright",
       "id": "baseball_bat",
+      "parts": {
+        "baseball_bat": {
+          "centreOfMass": [0.16811516120885597, -9.4789123663608247e-5, -8.7381092684569501e-5],
+          "massKg": 0.90000000000000002,
+          "node": "baseball_bat:bat"
+        }
+      },
       "roll": 0
     },
     {
       "anchors": {
-        "strike": [0.42909999999999998, 0, 0]
-      },
-      "file": "assets/models/baton.glb",
-      "grip": {
-        "at": [-0.12, 0, 0]
-      },
-      "hold": "upright",
-      "id": "baton",
-      "roll": 0
-    },
-    {
-      "anchors": {
-        "strike": [0.2145, 0, 0]
-      },
-      "file": "assets/models/cleaver.glb",
-      "grip": {
-        "at": [-0.074999999999999997, 0, 0]
-      },
-      "hold": "upright",
-      "id": "cleaver",
-      "roll": 90
-    },
-    {
-      "anchors": {
-        "claw": [0.105, -0.129, 0],
-        "strike": [0.2306, 0, 0]
+        "claw": [0.10499999999996801, -0.129, 0],
+        "strike": [0.23060000000002401, 8.0074835651089415e-15, 0]
       },
       "file": "assets/models/crowbar.glb",
       "grip": {
-        "at": [-0.29999999999999999, 0, 0]
+        "at": [-0.30000000000010002, 0, 0],
+        "turn": [0, 0, 0]
       },
       "hold": "upright",
       "id": "crowbar",
+      "parts": {
+        "crowbar": {
+          "centreOfMass": [-0.07926048565121413, -0.011432671081677703, 0],
+          "massKg": 1.5,
+          "node": "crowbar:crowbar"
+        }
+      },
       "roll": 90
     },
     {
       "anchors": {
-        "edge": [0.26600000000000001, -0.115, 0],
-        "strike": [0.31740000000000002, 0, 0]
-      },
-      "file": "assets/models/fire_axe.glb",
-      "grip": {
-        "at": [-0.37, 0, 0]
-      },
-      "hold": "upright",
-      "id": "fire_axe",
-      "roll": 90
-    },
-    {
-      "anchors": {
-        "strike": [0.22120000000000001, 0, 0]
-      },
-      "file": "assets/models/frying_pan.glb",
-      "grip": {
-        "at": [-0.080000000000000002, 0, 0]
-      },
-      "hold": "upright",
-      "id": "frying_pan",
-      "roll": 90
-    },
-    {
-      "anchors": {
-        "strike": [0.0935, 0, 0]
-      },
-      "file": "assets/models/golf_club.glb",
-      "grip": {
-        "at": [-0.60999999999999999, 0, 0]
-      },
-      "hold": "upright",
-      "id": "golf_club",
-      "roll": 90
-    },
-    {
-      "anchors": {
-        "claw": [0.062, 0.10000000000000001, 0],
-        "face": [0.047, -0.10000000000000001, 0],
-        "strike": [0.093899999999999997, 0, 0]
+        "claw": [0.062000000000016001, 0.10000000000000001, 0],
+        "face": [0.047000000000024002, -0.10000000000000001, 2.0001361678012586e-14],
+        "strike": [0.091999999999999998, -1.9997892231060632e-14, 0]
       },
       "file": "assets/models/hammer.glb",
       "grip": {
-        "at": [-0.185, 0, 0]
+        "at": [-0.184999999999856, 0, 0],
+        "turn": [0, 0, 0]
       },
       "hold": "upright",
       "id": "hammer",
+      "parts": {
+        "hammer": {
+          "centreOfMass": [-0.0042468179302711717, -0.0079204680211874441, -0.00053427148391177156],
+          "massKg": 0.69999999999999996,
+          "node": "hammer:hammer"
+        }
+      },
       "roll": 90
     },
     {
       "anchors": {
-        "edge": [0.186, -0.095000000000000001, 0],
-        "strike": [0.22220000000000001, 0, 0]
-      },
-      "file": "assets/models/hand_axe.glb",
-      "grip": {
-        "at": [-0.02, 0, 0]
-      },
-      "hold": "upright",
-      "id": "hand_axe",
-      "roll": 90
-    },
-    {
-      "anchors": {
-        "strike": [0.2205, 0, 0]
+        "strike": [0.22, 0, 0]
       },
       "file": "assets/models/kabar.glb",
       "grip": {
-        "at": [-0.074999999999999997, 0, 0]
+        "at": [-0.074999999999979999, 0, 0],
+        "turn": [0, 0, 0]
       },
       "hold": "forward",
-      "id": "kabar"
+      "id": "kabar",
+      "parts": {
+        "kabar": {
+          "centreOfMass": [-0.011265993265993273, -0.00013973063973063976, -6.9023569023569088e-5],
+          "massKg": 0.29999999999999999,
+          "node": "kabar:knife"
+        }
+      },
+      "roll": 0
     },
     {
       "anchors": {
-        "strike": [0.15939999999999999, 0, 0]
-      },
-      "file": "assets/models/katana.glb",
-      "grip": {
-        "at": [-0.59999999999999998, 0, 0]
-      },
-      "hold": "upright",
-      "id": "katana",
-      "roll": 90
-    },
-    {
-      "anchors": {
-        "strike": [0.24709999999999999, 0, 0]
+        "strike": [0.24709999999999999, 1.5994150448506161e-14, 0]
       },
       "file": "assets/models/kitchen_knife.glb",
       "grip": {
-        "at": [-0.055, 0, 0]
+        "at": [-0.054999999999996003, 0, 0],
+        "turn": [0, 0, 0]
       },
       "hold": "forward",
-      "id": "kitchen_knife"
+      "id": "kitchen_knife",
+      "parts": {
+        "kitchen_knife": {
+          "centreOfMass": [0.038700050581689439, -0.003254425897824988, -2.3267577137076356e-5],
+          "massKg": 0.14999999999999999,
+          "node": "kitchen_knife:knife"
+        }
+      },
+      "roll": 0
     },
     {
       "anchors": {
-        "edge": [0.20000000000000001, -0.034000000000000002, 0],
-        "strike": [0.2447, 0, 0]
+        "edge": [0.200000000000044, -0.034000000000000002, 0],
+        "strike": [0.24400000000000002, -1.5994150448506161e-14, 0]
       },
       "file": "assets/models/machete.glb",
       "grip": {
-        "at": [-0.20000000000000001, 0, 0]
+        "at": [-0.20000000000005602, 0, 0],
+        "turn": [0, 0, 0]
       },
       "hold": "forward",
-      "id": "machete"
+      "id": "machete",
+      "parts": {
+        "machete": {
+          "centreOfMass": [-0.054441009320300077, -0.010371902705160264, -3.4098658786087779e-5],
+          "massKg": 0.55000000000000004,
+          "node": "machete:knife"
+        }
+      },
+      "roll": 0
     },
     {
       "anchors": {
-        "point": [0.23999999999999999, -0.28499999999999998, -0.019],
-        "strike": [0.31309999999999999, 0, 0]
-      },
-      "file": "assets/models/pickaxe.glb",
-      "grip": {
-        "at": [-0.37, 0, 0]
-      },
-      "hold": "upright",
-      "id": "pickaxe",
-      "roll": 90
-    },
-    {
-      "anchors": {
-        "strike": [0.1178, 0, 0]
-      },
-      "file": "assets/models/pocket_knife.glb",
-      "grip": {
-        "at": [-0.070000000000000007, 0, 0]
-      },
-      "hold": "forward",
-      "id": "pocket_knife"
-    },
-    {
-      "anchors": {
-        "strike": [0.41949999999999998, 0, 0]
-      },
-      "file": "assets/models/shovel.glb",
-      "grip": {
-        "at": [-0.38, 0, 0]
-      },
-      "hold": "upright",
-      "id": "shovel",
-      "roll": 90
-    },
-    {
-      "anchors": {
-        "strike": [0.28220000000000001, 0, 0]
-      },
-      "file": "assets/models/sickle.glb",
-      "grip": {
-        "at": [-0.16, 0, 0]
-      },
-      "hold": "upright",
-      "id": "sickle",
-      "roll": 90
-    },
-    {
-      "anchors": {
-        "face": [0.22, -0.086999999999999994, 0],
-        "strike": [0.27310000000000001, 0, 0]
+        "face": [0.033999999999984001, -0.095000000000064005, 0],
+        "strike": [0.059999999999999998, 0, 0]
       },
       "file": "assets/models/sledgehammer.glb",
       "grip": {
-        "at": [-0.41999999999999998, 0, 0]
+        "at": [-0.45000000000020796, 0, 0],
+        "turn": [0, 0, 0]
       },
       "hold": "upright",
       "id": "sledgehammer",
+      "parts": {
+        "sledgehammer": {
+          "centreOfMass": [-0.2129179552841525, -2.8759972421944166e-5, -2.3047375160051148e-5],
+          "massKg": 4.5,
+          "node": "sledgehammer:sledgehammer"
+        }
+      },
       "roll": 90
     },
     {
       "anchors": {
-        "strike": [0.1797, 0, 0]
-      },
-      "file": "assets/models/tanto.glb",
-      "grip": {
-        "at": [-0.14499999999999999, 0, 0]
-      },
-      "hold": "forward",
-      "id": "tanto"
-    },
-    {
-      "anchors": {
-        "strike": [0.1047, 0, 0]
+        "strike": [0.10400000000000001, 0.012, 0]
       },
       "file": "assets/models/wrench.glb",
       "grip": {
-        "at": [-0.074999999999999997, 0, 0]
+        "at": [-0.074999999999872002, 0, 0],
+        "turn": [0, 0, 0]
       },
       "hold": "upright",
       "id": "wrench",
+      "parts": {
+        "wrench": {
+          "centreOfMass": [0.0033004926108374435, 0.0079310344827586195, 0],
+          "massKg": 0.5,
+          "node": "wrench:wrench"
+        }
+      },
       "roll": 90
     },
     {
       "anchors": {
-        "strike": [0.92700000000000005, 0, -0.10000000000000001]
+        "strike": [0.92699999999999205, 0, -0.10000000000000001]
       },
       "file": "assets/models/steel_pipe.glb",
       "grip": {
-        "at": [0, 0, 0]
+        "at": [0, 0, 0],
+        "turn": [0, 0, 0]
       },
       "hold": "upright",
       "id": "steel_pipe",
+      "parts": {
+        "steel_pipe": {
+          "centreOfMass": [0.50986915470968708, 4.3119470671325572e-6, -0.004980298862538101],
+          "massKg": 1.8,
+          "node": "steel_pipe:steelPipe"
+        }
+      },
       "roll": 0
     }
   ]

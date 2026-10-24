@@ -1,11 +1,12 @@
-import type { PartAppearance, PartDef, PartInstance, Resolved } from '@skelly/engine/assembly/schema.ts';
+import type { PartAppearance, PartDef, PartInstance, PortDef, Resolved } from '@skelly/engine/assembly/schema.ts';
 import { applyDir, applyPoint, type Vec3 } from '@skelly/engine/foundation/math.ts';
 import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
+import { MATERIALS } from '@skelly/thing-core/materials';
 import appearanceContent from './appearance.json' with { type: 'json' };
 import { MOUNT_STANDARDS, type MountKind } from './mounts.ts';
-import { getOptic, OPTIC_TYPE_IDS, opticRailContactSolids } from './optics.ts';
+import { getOptic, LENS_SLOT, OPTIC_TYPE_IDS, opticRailContactSolids } from './optics.ts';
 
-type AttachmentKind = 'optic' | 'iron-sight' | 'suppressor' | 'flashlight-mount' | 'foregrip';
+type AttachmentKind = 'optic' | 'iron-sight' | 'suppressor' | 'muzzle-device' | 'flashlight-mount' | 'foregrip';
 
 interface MagnificationRange {
   readonly min: number;
@@ -72,14 +73,58 @@ const suppressors = {
   'improvised-suppressor': { noiseFactor: 0.7, wearClass: 'improvised' },
 } as const;
 
+const akMuzzleDevices = {
+  'ak-slant-compensator': 'slant',
+  'ak74-muzzle-brake': 'ak74',
+} as const;
+
 export const ATTACHMENT_IDS = [
   ...OPTIC_TYPE_IDS.map((id) => `optic-${id}`),
   'rail-front-sight',
   'real-suppressor',
   'improvised-suppressor',
+  'ak-slant-compensator',
+  'ak74-muzzle-brake',
   'tactical-flashlight-mount',
   'foregrip',
 ] as const;
+
+const looks: Readonly<Record<string, { readonly appearance?: PartAppearance; readonly voxelGrain?: number }>> =
+  appearanceContent.attachments;
+
+/** Finish slots no gun or role finish fills, so the attachment's look must select them: an optic's lens coating. */
+const requiredSlots = (id: string): readonly string[] => (id.startsWith('optic-') ? [LENS_SLOT] : []);
+
+/**
+ * Why an attachment's finish cannot be drawn: a required slot it leaves unselected, or a material that does not exist.
+ * Without this, an optic whose coating is missing from content would draw its lens in the sight role's opaque metal
+ * and no one would be told.
+ */
+export const attachmentLookIssue = (id: string, finish: Readonly<Record<string, string>>): string | undefined => {
+  const missing = requiredSlots(id).find((slot) => !Object.hasOwn(finish, slot));
+  if (missing !== undefined) {
+    return `Attachment ${id} needs a ${missing} finish in appearance content attachments`;
+  }
+  const unknown = Object.entries(finish).find(([, material]) => !Object.hasOwn(MATERIALS, material));
+  return unknown && `Attachment ${id} ${unknown[0]} finish ${unknown[1]} is not a material`;
+};
+
+/**
+ * The attachment's authored finish with an instance's own finish over it slot by slot, so an instance that varies one
+ * slot (an optic's lens coating, say) keeps the product's other defaults.
+ */
+const withDefaultLook = (id: string, appearance: PartAppearance | undefined): PartAppearance => {
+  const finish = { ...(Object.hasOwn(looks, id) ? looks[id]!.appearance?.finish : undefined), ...appearance?.finish };
+  const issue = attachmentLookIssue(id, finish);
+  if (issue !== undefined) {
+    throw new Error(issue);
+  }
+  return Object.keys(finish).length === 0 ? {} : { finish };
+};
+
+for (const id of ATTACHMENT_IDS) {
+  withDefaultLook(id, undefined);
+}
 
 export const attachmentInstanceForId = (
   id: string,
@@ -88,13 +133,15 @@ export const attachmentInstanceForId = (
   if (!ATTACHMENT_IDS.includes(id as (typeof ATTACHMENT_IDS)[number])) {
     throw new Error(`Unknown attachment id: ${id}`);
   }
-  const defaults: Readonly<Record<string, PartAppearance>> = appearanceContent.attachmentAppearances;
-  const instanceAppearance = appearance ?? defaults[id] ?? {};
+  const instanceAppearance = withDefaultLook(id, appearance);
   if (id.startsWith('optic-')) {
     return { family: 'sight', params: { type: id.slice('optic-'.length) }, appearance: instanceAppearance };
   }
   if (id === 'real-suppressor' || id === 'improvised-suppressor') {
     return { family: 'suppressor', params: { type: id }, appearance: instanceAppearance };
+  }
+  if (id === 'ak-slant-compensator' || id === 'ak74-muzzle-brake') {
+    return { family: 'ak-muzzle-device', params: { style: akMuzzleDevices[id] }, appearance: instanceAppearance };
   }
   return { family: id, params: {}, appearance: instanceAppearance };
 };
@@ -150,6 +197,16 @@ const railSpanNotches = (part: PartDef | undefined, mount: MountKind, solids = p
   };
 };
 
+// The resolver accepts integer indices below a fractional slot count, so enumerate them with ceil too.
+const railNotchCount = (port: Pick<PortDef, 'slots'>): number => Math.ceil(port.slots?.count ?? 1);
+
+/** Whether an attachment seated on a notch keeps its whole rail span on the rail's notches. */
+export const railSpanFitsNotch = (
+  span: AttachmentProperties['railSpanNotches'],
+  notchIndex: number,
+  hostPort: Pick<PortDef, 'slots'>,
+): boolean => !span || (notchIndex + span.minOffset >= 0 && notchIndex + span.maxOffset < railNotchCount(hostPort));
+
 export const attachmentSlots = (resolved: Resolved): ResolvedAttachmentSlot[] =>
   [...resolved.defs.entries()].flatMap(([partId, definition]) => {
     if (definition.tags?.includes('attachment')) {
@@ -163,8 +220,7 @@ export const attachmentSlots = (resolved: Resolved): ResolvedAttachmentSlot[] =>
       if (port.gender !== 'female' || !MOUNT_SET.has(port.mount as MountKind)) {
         return [];
       }
-      // The resolver accepts integer indices below a fractional slot count, so enumerate them with ceil too.
-      const count = Math.ceil(port.slots?.count ?? 1);
+      const count = railNotchCount(port);
       return Array.from({ length: count }, (_, index) => index).flatMap((index) => {
         const id = `${partId}.${port.id}.${index}`;
         const localPosition = port.slots
@@ -263,6 +319,20 @@ const suppressorMetadata = (
   };
 };
 
+const akMuzzleDeviceMetadata = (
+  params: Readonly<Record<string, string>> | undefined,
+  part: PartDef | undefined,
+): AttachmentCoreMetadata | undefined => {
+  const id = Object.entries(akMuzzleDevices).find(([, style]) => style === params?.style)?.[0];
+  if (!id) {
+    return undefined;
+  }
+  if (!part) {
+    throw new Error(`Muzzle device ${id} has no geometry for attachment metadata`);
+  }
+  return { id, kind: 'muzzle-device', mount: 'muzzle', properties: {} };
+};
+
 const flashlightMountMetadata = (part: PartDef | undefined): AttachmentCoreMetadata => {
   const span = railSpanNotches(part, 'rail-side');
   if (!part) {
@@ -303,6 +373,8 @@ export const attachmentMetadata = (
         return railFrontSightMetadata(metresPerUnit, part);
       case 'suppressor':
         return suppressorMetadata(params, part);
+      case 'ak-muzzle-device':
+        return akMuzzleDeviceMetadata(params, part);
       case 'tactical-flashlight-mount':
         return flashlightMountMetadata(part);
       case 'foregrip':
@@ -325,7 +397,7 @@ export const withAttachmentInstanceAppearances = (resolved: Resolved): Resolved 
   let parts: Record<string, PartInstance> | undefined;
   for (const [id, definition] of resolved.defs) {
     const instance = resolved.assembly.parts[id];
-    if (!instance || instance.appearance) {
+    if (!instance) {
       continue;
     }
     const params = resolved.params.get(id);
@@ -339,7 +411,7 @@ export const withAttachmentInstanceAppearances = (resolved: Resolved): Resolved 
       continue;
     }
     parts ??= { ...resolved.assembly.parts };
-    parts[id] = { ...instance, appearance: attachmentInstanceForId(metadata.id).appearance ?? {} };
+    parts[id] = { ...instance, appearance: withDefaultLook(metadata.id, instance.appearance) };
   }
   return parts ? { ...resolved, assembly: { ...resolved.assembly, parts } } : resolved;
 };

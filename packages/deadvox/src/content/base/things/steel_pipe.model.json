@@ -1,0 +1,15 @@
+{
+  "id": "steel_pipe",
+  "file": "assets/models/steel_pipe.glb",
+  "parts": {
+    "steel_pipe": {
+      "node": "steel_pipe:steelPipe",
+      "massKg": 1.8,
+      "centreOfMass": [0.5098691547096871, 0.000004311947067132557, -0.004980298862538101]
+    }
+  },
+  "grip": { "at": [0, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 0,
+  "anchors": { "strike": [0.926999999999992, 0, -0.1] }
+}

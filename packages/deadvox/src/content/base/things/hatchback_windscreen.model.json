@@ -1,0 +1,14 @@
+{
+  "id": "hatchback_windscreen",
+  "file": "assets/models/hatchback_windscreen.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 11,
+      "centreOfMass": [0.38308189655172414, 1.1945043103448276, 0],
+      "collision": [{ "min": [0.03125, 0.96875, -0.71875], "max": [0.75, 1.40625, 0.71875] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

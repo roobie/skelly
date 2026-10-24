@@ -248,6 +248,22 @@ describe('F interaction target selection', () => {
     piles.dispose();
   });
 
+  it('picks the vehicle part the ray meets first, unless a wall stands before it', () => {
+    const inventory = new Inventory(registry);
+    // Boxes are in world metres; at 0.5 m blocks the near part spans blocks 2–3 along the ray.
+    const vehicleParts = [
+      { vehicleId: 3, fittingId: 'far', boxes: [{ min: [0, 0, 2] as Vec3, max: [1, 1, 3] as Vec3 }] },
+      { vehicleId: 3, fittingId: 'near', boxes: [{ min: [0, 0, 1] as Vec3, max: [1, 1, 1.5] as Vec3 }] },
+    ];
+    const ray = options(inventory, [0.5, 0.5, 0], [0, 0, 1]);
+
+    expect(pickInteractionTarget({ ...ray, vehicleParts })).toMatchObject({ kind: 'vehicle', fittingId: 'near' });
+    expect(
+      pickInteractionTarget({ ...ray, vehicleParts, isSolid: (_x, _y, z) => z === 1 }),
+      'a solid cell before the part hides it',
+    ).toBeUndefined();
+  });
+
   it('lets furniture win when its face and a ground item start at the same ray distance', () => {
     const inventory = new Inventory(registry);
     const item = inventory.create(modelItemType!);

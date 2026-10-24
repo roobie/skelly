@@ -13,11 +13,11 @@ import {
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { PlayerSense, Zombie } from '../src/core/zombies.ts';
-import { ZombieSystem } from '../src/core/zombies.ts';
-import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const BASE = 'src/content/base';
 const registry = baseRegistry();
@@ -32,6 +32,7 @@ const sense = (pos: Vec3, facing: Vec3): PlayerSense => ({
   movement: 'still',
   lit: true,
   lightSeenFrom: 40,
+  eyeHeightMetres: 1.3,
 });
 
 const makeWorld = (player: PlayerSense, isSolid = FLOOR) => {

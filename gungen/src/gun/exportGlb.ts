@@ -3,13 +3,15 @@ import type { Assembly, PartDef, Resolved } from '@skelly/engine/assembly/schema
 import { applyDir, applyPoint, length, normalize, sub, type Vec3 } from '@skelly/engine/foundation/math.ts';
 import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
 import type { ModelParts, NeutralModel } from '@skelly/thing-core/schema';
+import { type DrawnGeometry, drawnGeometry } from '@skelly/thing-export/drawn.ts';
 import type {
   AppearanceContext,
   GlbAssetIdentity,
   GlbExportError,
   GlbExportResult,
+  VoxelGrains,
 } from '@skelly/thing-export/exportTypes.ts';
-import { partNodeName } from '@skelly/thing-export/glb.ts';
+import { partNodeName, partVoxelGrain } from '@skelly/thing-export/glb.ts';
 import { calibreSlug } from '../ammo/calibreSlug.ts';
 import type { Cartridge } from '../ammo/cartridge.ts';
 import { resolveGunAction } from './actionDescription.ts';
@@ -36,7 +38,7 @@ import { exportGunGeometry as exportGlb } from './glbWriter.ts';
 import { internalMagazineCapacity } from './internalMagazine.ts';
 import { getOptic } from './optics.ts';
 import { GUN_PALETTE } from './palette.ts';
-import { gunModelParts, PartMassError } from './physical.ts';
+import { gunModelParts, type PartItems, PartMassError } from './physical.ts';
 import { type RevolverMetadata, revolverMetadata } from './revolverExport.ts';
 import { tubeMagazineCapacity } from './tubeCapacity.ts';
 
@@ -124,10 +126,21 @@ export interface GunExportMetadata {
   readonly cartridge?: Cartridge;
 }
 
-interface GunExportOptions extends GunExportMetadata {
+const voxelGrainsOf = ({
+  voxelGrain,
+  voxelDetailGrain,
+}: {
+  [Key in keyof VoxelGrains]-?: VoxelGrains[Key] | undefined;
+}): Partial<VoxelGrains> => ({
+  ...(voxelGrain === undefined ? {} : { voxelGrain }),
+  ...(voxelDetailGrain === undefined ? {} : { voxelDetailGrain }),
+});
+
+interface GunExportOptions extends GunExportMetadata, Partial<VoxelGrains> {
   /** Geometry-only callers skip the slot solver; CLI model exports explicitly request its certificate. */
   readonly includeAttachmentCompatibility?: boolean;
   readonly excludedAttachments?: readonly string[];
+  readonly items?: PartItems;
 }
 
 interface GunModelEntryOptions extends GunExportMetadata {
@@ -326,7 +339,281 @@ const magazineSlotData = (resolved: Resolved): NonNullable<GunModelFields['slots
   };
 };
 
-const sightMetadata = (resolved: Resolved): GunModelFields['sight'] => {
+interface GlbSightJson {
+  readonly nodes: { translation?: Vec3; rotation?: unknown; mesh?: number; extras?: { part?: string } }[];
+  // biome-ignore lint/style/useNamingConvention: glTF attribute semantics are upper case
+  readonly meshes: { primitives: { attributes: { POSITION: number }; indices: number }[] }[];
+  readonly accessors: { bufferView: number; byteOffset?: number; count: number }[];
+  readonly bufferViews: { byteOffset?: number }[];
+}
+
+/** Model-metre ranges, one per axis, that a drawn face is read over; an absent axis is unbounded. */
+type Column = Readonly<Partial<Record<0 | 1 | 2, readonly [number, number]>>>;
+
+/**
+ * The model-file triangles drawn by the part `partId`, or by every unrotated part without one, as a turned part draws no
+ * faces square to the axes.
+ */
+function* drawnTriangles(glb: Uint8Array, partId?: string): Generator<readonly [Vec3, Vec3, Vec3]> {
+  const view = new DataView(glb.buffer, glb.byteOffset, glb.byteLength);
+  const jsonLength = view.getUint32(12, true);
+  const json = JSON.parse(new TextDecoder().decode(glb.subarray(20, 20 + jsonLength))) as GlbSightJson;
+  const nodes = json.nodes.filter((node) =>
+    partId === undefined ? node.rotation === undefined : node.extras?.part === partId,
+  );
+  if (nodes.some(({ rotation }) => rotation !== undefined)) {
+    throw new Error(`Sight part ${partId} needs an unrotated mesh to give its drawn top`);
+  }
+  const binStart = 20 + jsonLength + 8;
+  const startOf = (accessor: GlbSightJson['accessors'][number]) =>
+    binStart + (json.bufferViews[accessor.bufferView]!.byteOffset ?? 0) + (accessor.byteOffset ?? 0);
+  for (const node of nodes) {
+    const shift = node.translation ?? [0, 0, 0];
+    for (const { attributes, indices } of node.mesh === undefined ? [] : json.meshes[node.mesh]!.primitives) {
+      const positions = startOf(json.accessors[attributes.POSITION]!);
+      const coordinate = (vertex: number, along: number) =>
+        view.getFloat32(positions + vertex * 12 + along * 4, true) + shift[along]!;
+      const point = (vertex: number): Vec3 => [coordinate(vertex, 0), coordinate(vertex, 1), coordinate(vertex, 2)];
+      const index = json.accessors[indices]!;
+      const indexStart = startOf(index);
+      for (let corner = 0; corner + 2 < index.count; corner += 3) {
+        yield [0, 1, 2].map((k) => point(view.getUint32(indexStart + (corner + k) * 4, true))) as [Vec3, Vec3, Vec3];
+      }
+    }
+  }
+}
+
+/**
+ * The furthest face along `axis` that the drawn meshes in the model file turn that way, so voxelized metadata reports
+ * what the file actually draws. With a column, only faces over it count, which keeps a post's top from being read off
+ * the guard ears beside it.
+ */
+const drawnFaceMetres = (glb: Uint8Array, axis: 0 | 1 | 2, column: Column = {}, partId?: string) => {
+  const [u, v] = (
+    [
+      [1, 2],
+      [2, 0],
+      [0, 1],
+    ] as const
+  )[axis];
+  const over = (values: readonly number[], range: Column[0]) =>
+    range === undefined || (Math.min(...values) < range[1] && Math.max(...values) > range[0]);
+  let far = Number.NEGATIVE_INFINITY;
+  for (const [a, b, c] of drawnTriangles(glb, partId)) {
+    const facing = (b[u] - a[u]) * (c[v] - a[v]) - (b[v] - a[v]) * (c[u] - a[u]) > 0;
+    if (
+      facing &&
+      a[axis] === b[axis] &&
+      b[axis] === c[axis] &&
+      over([a[u], b[u], c[u]], column[u]) &&
+      over([a[v], b[v], c[v]], column[v])
+    ) {
+      far = Math.max(far, a[axis]);
+    }
+  }
+  return Number.isFinite(far) ? round6(far) : undefined;
+};
+
+/** The voxelized file a sight line is read off, and the grains it was sampled at. */
+interface VoxelFile {
+  readonly glb: Uint8Array;
+  readonly grains: VoxelGrains;
+}
+
+const drawnTopOrThrow = (file: VoxelFile, partId: string, column?: Column): number => {
+  const top = drawnFaceMetres(file.glb, 1, column, partId);
+  if (top === undefined) {
+    throw new Error(`Sight part ${partId} draws no top to aim along`);
+  }
+  return top;
+};
+
+const frontSightPost = (resolved: Resolved) => {
+  const id = Object.entries(resolved.assembly.parts).find(
+    ([partId, part]) =>
+      part.family.includes('front-sight') && resolved.defs.get(partId)?.solids.some((solid) => solid.id === 'post'),
+  )?.[0];
+  const transform = id && resolved.placed.get(id);
+  const def = id ? resolved.defs.get(id) : undefined;
+  const axis = def?.axes.find(({ kind }) => kind === 'sight');
+  const post = def?.solids.find((candidate) => candidate.id === 'post');
+  if (!(id && transform && axis && post)) {
+    throw new Error('A rear sight needs a front-sight post to define its aim line');
+  }
+  const [low, high] = localSolidBounds(post);
+  return {
+    id,
+    tip: applyPoint(transform, axis.origin),
+    postHalfWidthMetres: ((high[2] - low[2]) / 2) * resolved.domain.units.metresPerUnit,
+  };
+};
+
+/**
+ * The model-metre range along the file's z axis of the sight's authored solids that reach its sight axis's height.
+ * A rear sight's notch lies between them, so the top the eye lines up with is read over them, not over the notch.
+ */
+const leafSpan = (resolved: Resolved, sight: { readonly id: string }): readonly [number, number] => {
+  const def = resolved.defs.get(sight.id)!;
+  const transform = resolved.placed.get(sight.id)!;
+  const { metresPerUnit } = resolved.domain.units;
+  const [, top] = def.axes.find(({ kind }) => kind === 'sight')!.origin;
+  const zs = def.solids
+    .map((solid) => localSolidBounds(solid))
+    .filter(([, high]) => Math.abs(high[1] - top) < 1e-6)
+    .flatMap(([low, high]) =>
+      [low[0], high[0]].flatMap((px) =>
+        [low[1], high[1]].flatMap((py) =>
+          [low[2], high[2]].map((pz) => toFileAxes(applyPoint(transform, [px, py, pz]))[2] * metresPerUnit),
+        ),
+      ),
+    );
+  if (zs.length === 0) {
+    throw new Error(`Sight part ${sight.id} has no solid at its sight axis's height`);
+  }
+  return [Math.min(...zs), Math.max(...zs)];
+};
+
+/**
+ * How far apart the drawn faces are that bound a sight's line on each side, read in the voxel row centred at `row`, or 0
+ * when the line runs through drawn material or has a face on one side only.
+ */
+const drawnWidthAtRow = (file: VoxelFile, partId: string, eye: Vec3, row: number): number => {
+  let left = Number.NEGATIVE_INFINITY;
+  let right = Number.POSITIVE_INFINITY;
+  for (const [a, b, c] of drawnTriangles(file.glb, partId)) {
+    const over = (axis: 0 | 1, at: number) =>
+      Math.min(a[axis], b[axis], c[axis]) < at && Math.max(a[axis], b[axis], c[axis]) > at;
+    if (!(a[2] === b[2] && b[2] === c[2] && over(0, eye[0]) && over(1, row))) {
+      continue;
+    }
+    const towardsPlusZ = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]) > 0;
+    if (towardsPlusZ && a[2] <= eye[2]) {
+      left = Math.max(left, a[2]);
+    } else if (!towardsPlusZ && a[2] >= eye[2]) {
+      right = Math.min(right, a[2]);
+    }
+  }
+  return Number.isFinite(left) && Number.isFinite(right) ? right - left : 0;
+};
+
+/**
+ * The vertical span of the closed hole that the sight line runs through in the drawn part: the highest ceiling face with
+ * material above it and a floor face below it over the line. An open notch has no ceiling, so it gives none.
+ */
+const drawnApertureSpan = (file: VoxelFile, partId: string, eye: Vec3): readonly [number, number] | undefined => {
+  const ceilings: number[] = [];
+  const floors: number[] = [];
+  for (const [a, b, c] of drawnTriangles(file.glb, partId)) {
+    const over = (axis: 0 | 2, at: number) =>
+      Math.min(a[axis], b[axis], c[axis]) < at && Math.max(a[axis], b[axis], c[axis]) > at;
+    if (!(a[1] === b[1] && b[1] === c[1] && over(0, eye[0]) && over(2, eye[2]))) {
+      continue;
+    }
+    const towardsPlusY = (b[2] - a[2]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[2] - a[2]) > 0;
+    (towardsPlusY ? floors : ceilings).push(a[1]);
+  }
+  const ceiling = Math.max(...ceilings.filter((y) => floors.some((above) => above > y) && floors.some((f) => f < y)));
+  if (!Number.isFinite(ceiling)) {
+    return undefined;
+  }
+  return [Math.max(...floors.filter((y) => y < ceiling)), ceiling];
+};
+
+/**
+ * A rear sight is aimed through its notch or its closed aperture, so the voxels must leave it open: at least one voxel
+ * of the gun grain wide. A gap one voxel wide or narrower of its own grain can fill, and the player would line up the
+ * top of a solid block. An open notch is read at the drawn top; where the top row is solid across the line, the eye
+ * drops to the centre of the closed aperture on the line and the width is read across the hole. Returns the eye.
+ */
+const openSightGapOrThrow = (file: VoxelFile, resolved: Resolved, partId: string, topEye: Vec3): Vec3 => {
+  const grain = partVoxelGrain(resolved.defs.get(partId)!, file.grains);
+  const notch = drawnWidthAtRow(file, partId, topEye, topEye[1] - grain / 2);
+  const wide = (width: number) => width >= file.grains.voxelGrain - 1e-6;
+  if (wide(notch)) {
+    return topEye;
+  }
+  const span = drawnApertureSpan(file, partId, topEye);
+  if (span !== undefined) {
+    const centre = round6((span[0] + span[1]) / 2);
+    const eye: Vec3 = [topEye[0], centre, topEye[2]];
+    // A quarter grain below the centre lies inside a voxel row whether the centre is mid-row or on a row boundary.
+    const aperture = drawnWidthAtRow(file, partId, eye, centre - grain / 4);
+    if (wide(aperture) && wide(span[1] - span[0])) {
+      return eye;
+    }
+  }
+  throw new Error(
+    `Sight part ${partId} draws its notch ${round6(notch)} m wide on the sight line, under the ${file.grains.voxelGrain} m gun grain`,
+  );
+};
+
+/**
+ * An iron sight's line as the voxelized file draws it, in model metres, because voxels move the tops the player lines
+ * up. A rear sight aims from its own top to the front post's top, through its drawn notch; the post is read within
+ * twice its own width of the bore plane, which holds its top voxel column wherever the sampler put it and leaves the
+ * guard ears out. A bead sets the eye height to its top and keeps its level line. Any other iron datum, such as a
+ * revolver's frame, keeps its direction and takes the top of its leaves, which the line also runs between.
+ */
+const drawnIronSightLine = (
+  file: VoxelFile,
+  resolved: Resolved,
+  sight: { readonly id: string; readonly eye: Vec3; readonly direction: Vec3 },
+): { readonly eye: Vec3; readonly direction: Vec3 } => {
+  const { family } = resolved.assembly.parts[sight.id]!;
+  const { metresPerUnit } = resolved.domain.units;
+  const [x, , z] = sight.eye;
+  if (family.includes('rear-sight')) {
+    const front = frontSightPost(resolved);
+    const tip = modelPoint(front.tip, metresPerUnit);
+    const band = 2 * front.postHalfWidthMetres;
+    const eye = openSightGapOrThrow(file, resolved, sight.id, [x, drawnTopOrThrow(file, sight.id), z]);
+    const frontTop = drawnTopOrThrow(file, front.id, { 2: [tip[2] - band, tip[2] + band] });
+    return { eye, direction: normalize([tip[0] - eye[0], frontTop - eye[1], tip[2] - eye[2]]) };
+  }
+  if (family === 'front-sight-bead') {
+    return { eye: [x, drawnTopOrThrow(file, sight.id), z], direction: sight.direction };
+  }
+  const half = partVoxelGrain(resolved.defs.get(sight.id)!, file.grains) / 2;
+  const top = drawnTopOrThrow(file, sight.id, { 0: [x - half, x + half], 2: leafSpan(resolved, sight) });
+  return { eye: openSightGapOrThrow(file, resolved, sight.id, [x, top, z]), direction: sight.direction };
+};
+
+// Wider than any bore, so the muzzle's front ring lies over it, and narrower than the gap to the sights above it.
+const MUZZLE_COLUMN_METRES = 0.012;
+
+/**
+ * The muzzle on the front face the voxelized file draws around the bore axis, because the drawn barrel ends up to a
+ * voxel off the smooth tip. Every gun file runs its barrel along +x.
+ */
+const drawnMuzzle = (file: VoxelFile, muzzle: Vec3): Vec3 => {
+  const [, y, z] = muzzle;
+  const column = {
+    1: [y - MUZZLE_COLUMN_METRES, y + MUZZLE_COLUMN_METRES],
+    2: [z - MUZZLE_COLUMN_METRES, z + MUZZLE_COLUMN_METRES],
+  } as const;
+  const front = drawnFaceMetres(file.glb, 0, column);
+  if (front === undefined) {
+    throw new Error('The voxelized gun draws no muzzle face around its bore axis');
+  }
+  return [front, y, z];
+};
+
+const voxelFileOf = (
+  glb: Uint8Array,
+  {
+    voxelGrain,
+    voxelDetailGrain,
+  }: { readonly voxelGrain?: number | undefined; readonly voxelDetailGrain?: number | undefined },
+): VoxelFile | undefined =>
+  voxelGrain === undefined
+    ? undefined
+    : { glb, grains: { voxelGrain, ...(voxelDetailGrain === undefined ? {} : { voxelDetailGrain }) } };
+
+/** The entry's anchors with the muzzle moved onto the drawn front of a voxelized file. */
+const drawnAnchors = (anchors: GunDeadvoxModelEntry['anchors'], file: VoxelFile | undefined) =>
+  file && anchors?.muzzle ? { anchors: { ...anchors, muzzle: drawnMuzzle(file, anchors.muzzle) } } : {};
+
+const sightMetadata = (resolved: Resolved, voxel?: VoxelFile): GunModelFields['sight'] => {
   const candidates = [...resolved.defs.entries()].flatMap(([id, part]) => {
     const candidate = sightCandidate(resolved, id, part);
     return candidate ? [candidate] : [];
@@ -343,32 +630,31 @@ const sightMetadata = (resolved: Resolved): GunModelFields['sight'] => {
     eyeReliefMetres,
     ocularDiameterMetres,
   } = chosen;
-  let direction = chosenDirection;
-  if (sightKind === 'iron' && resolved.assembly.parts[sightId]!.family === 'ak-rear-sight') {
-    const frontId = Object.entries(resolved.assembly.parts).find(([, part]) => part.family === 'front-sight')?.[0];
-    const frontTransform = frontId && resolved.placed.get(frontId);
-    const frontSight = frontId ? resolved.defs.get(frontId) : undefined;
-    const frontAxis = frontSight?.axes.find(({ kind }) => kind === 'sight');
-    if (!(frontTransform && frontAxis)) {
-      throw new Error('AK rear sight needs a front-sight post to define its aim line');
-    }
-    const postTip = applyPoint(frontTransform, frontAxis.origin);
-    direction = normalize([postTip[0] - eye[0], postTip[1] - eye[1], postTip[2] - eye[2]]);
-  }
-  const upAxis = normalize(applyDir(resolved.placed.get(sightId)!, [0, 1, 0]));
-  const upDot = upAxis[0] * direction[0] + upAxis[1] * direction[1] + upAxis[2] * direction[2];
-  const up = normalize([
-    upAxis[0] - direction[0] * upDot,
-    upAxis[1] - direction[1] * upDot,
-    upAxis[2] - direction[2] * upDot,
-  ]);
   const toModel = (point: Vec3): Vec3 => modelPoint(point, resolved.domain.units.metresPerUnit);
   const toModelDirection = (vector: Vec3): Vec3 => normalize(toFileAxes(vector));
+  let direction = chosenDirection;
+  if (sightKind === 'iron' && resolved.assembly.parts[sightId]!.family === 'ak-rear-sight') {
+    const front = frontSightPost(resolved);
+    direction = normalize([front.tip[0] - eye[0], front.tip[1] - eye[1], front.tip[2] - eye[2]]);
+  }
+  // An optic's line is its optical axis, which the drawn tube does not define, so only iron sights read the file.
+  const drawn =
+    voxel && sightKind === 'iron'
+      ? drawnIronSightLine(voxel, resolved, { id: sightId, eye: toModel(eye), direction: toModelDirection(direction) })
+      : { eye: toModel(eye), direction: toModelDirection(direction) };
+  const { eye: modelEye, direction: modelDirection } = drawn;
+  const upAxis = toModelDirection(applyDir(resolved.placed.get(sightId)!, [0, 1, 0]));
+  const upDot = upAxis[0] * modelDirection[0] + upAxis[1] * modelDirection[1] + upAxis[2] * modelDirection[2];
+  const up = normalize([
+    upAxis[0] - modelDirection[0] * upDot,
+    upAxis[1] - modelDirection[1] * upDot,
+    upAxis[2] - modelDirection[2] * upDot,
+  ]);
   return {
     kind: sightKind,
-    eye: toModel(eye),
-    direction: toModelDirection(direction),
-    up: toModelDirection(up),
+    eye: modelEye,
+    direction: modelDirection,
+    up,
     eyeReliefMetres: round6(eyeReliefMetres),
     ...(ocularDiameterMetres === undefined ? {} : { ocularDiameterMetres: round6(ocularDiameterMetres) }),
   };
@@ -381,6 +667,7 @@ export const createGunModelEntry = ({
   metresPerUnit,
   options = {},
   sight,
+  drawn,
 }: {
   asset: GunAssetIdentity;
   parts: ModelParts;
@@ -388,25 +675,31 @@ export const createGunModelEntry = ({
   metresPerUnit: number;
   options?: GunModelEntryOptions;
   sight?: GunModelFields['sight'];
+  /** Moves a point onto the drawn model; the muzzle is left for `drawnMuzzle`, which reads it off the file. */
+  drawn?: DrawnGeometry;
 }): GunDeadvoxModelEntry => {
   const { handling } = options;
   const calibre = options.cartridge?.id;
   if (calibre !== undefined) {
     calibreSlug(calibre);
   }
+  const onModel = (point: Vec3): Vec3 => modelPoint(drawn ? drawn.point(point) : point, metresPerUnit);
   const others = Object.entries(anchors.others)
     .filter(([name]) => name !== 'magwell')
-    .map(([name, frame]): [string, Vec3] => [name, modelPoint(frame.position, metresPerUnit)]);
+    .map(([name, frame]): [string, Vec3] => [
+      name,
+      name === 'muzzle' ? modelPoint(frame.position, metresPerUnit) : onModel(frame.position),
+    ]);
   return {
     id: asset.id,
     file: asset.file as DeadvoxModelFile,
     parts,
-    grip: { at: modelPoint(anchors.hold.position, metresPerUnit), turn: gripTurn() },
+    grip: { at: onModel(anchors.hold.position), turn: gripTurn() },
     ...(others.length > 0 || handling
       ? {
           anchors: {
             ...Object.fromEntries(others),
-            ...(handling ? { ejection: modelPoint(handling.ejection, metresPerUnit) } : {}),
+            ...(handling ? { ejection: onModel(handling.ejection) } : {}),
           },
         }
       : {}),
@@ -436,10 +729,11 @@ const bodyPhysicalData = (
   resolved: Resolved,
   fitted: readonly { readonly node: string }[],
   magazine: { readonly node: string } | undefined,
+  { drawn, items }: { readonly drawn: DrawnGeometry; readonly items: PartItems },
 ) => {
   const replaceableNodes = new Set([...fitted.map(({ node }) => node), ...(magazine ? [magazine.node] : [])]);
   try {
-    return { ok: true as const, parts: gunModelParts(resolved, replaceableNodes) };
+    return { ok: true as const, parts: gunModelParts(resolved, replaceableNodes, { items, drawn }) };
   } catch (error) {
     if (!(error instanceof PartMassError)) {
       throw error;
@@ -467,7 +761,14 @@ export const exportGunGlb = (
   appearance: AppearanceContext,
   options: GunExportOptions = {},
 ): GunExportResult => {
-  const { includeAttachmentCompatibility = false, excludedAttachments = [], ...metadata } = options;
+  const {
+    includeAttachmentCompatibility = false,
+    excludedAttachments = [],
+    items = {},
+    voxelGrain,
+    voxelDetailGrain,
+    ...metadata
+  } = options;
   const message = boltMetadataIssue(assembly, metadata.cartridge);
   if (message) {
     return { ok: false, error: { code: 'structure-issues', issues: [{ rule: 'structure', message, parts: [] }] } };
@@ -486,10 +787,17 @@ export const exportGunGlb = (
   if ('code' in anchors) {
     return { ok: false, error: anchors };
   }
-  const result: GlbExportResult = exportGlb({ resolved, palette: GUN_PALETTE, appearance, asset });
+  const result: GlbExportResult = exportGlb({
+    resolved,
+    palette: GUN_PALETTE,
+    appearance,
+    asset,
+    ...voxelGrainsOf({ voxelGrain, voxelDetailGrain }),
+  });
   if (!result.ok) {
     return result;
   }
+  const voxelFile = voxelFileOf(result.glb, { voxelGrain, voxelDetailGrain });
   const handling = buildActionExport(resolved);
   const internalCapacity = integralCapacity(resolved, metadata.cartridge);
   const {
@@ -497,7 +805,8 @@ export const exportGunGlb = (
   } = resolved.domain;
   const fittedAttachments = attachmentData(resolved);
   const magazine = magazineSlotData(resolved);
-  const physical = bodyPhysicalData(resolved, fittedAttachments, magazine);
+  const drawn = drawnGeometry(resolved, voxelGrainsOf({ voxelGrain, voxelDetailGrain }));
+  const physical = bodyPhysicalData(resolved, fittedAttachments, magazine, { drawn, items });
   if (!physical.ok) {
     return physical;
   }
@@ -506,12 +815,13 @@ export const exportGunGlb = (
     parts: physical.parts,
     anchors,
     metresPerUnit,
+    drawn,
     options: {
       ...metadata,
       ...(handling ? { handling } : {}),
       ...(internalCapacity === undefined ? {} : { internalCapacity }),
     },
-    sight: sightMetadata(resolved),
+    sight: sightMetadata(resolved, voxelFile),
   });
   const attachmentSlotsData = attachmentSlots(resolved).map(({ position, direction, up, ...slot }) => ({
     ...slot,
@@ -527,6 +837,7 @@ export const exportGunGlb = (
     ...result,
     modelEntry: {
       ...modelEntry,
+      ...drawnAnchors(modelEntry.anchors, voxelFile),
       gun: {
         ...modelEntry.gun,
         ...(revolver ? { revolver } : {}),

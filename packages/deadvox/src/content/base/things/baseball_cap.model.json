@@ -1,0 +1,14 @@
+{
+  "id": "baseball_cap",
+  "file": "assets/models/baseball_cap.glb",
+  "parts": {
+    "baseball_cap": {
+      "node": "baseball_cap:cap",
+      "massKg": 0.08,
+      "centreOfMass": [-0.00034952170713760123, 0.038252391464311995, -0.006990434142752024]
+    }
+  },
+  "grip": { "at": [0, 0.04, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

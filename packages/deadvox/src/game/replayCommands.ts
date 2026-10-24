@@ -1,3 +1,4 @@
+import { actionText } from '../core/actionText.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
 import type { CraftPreference } from '../core/crafting.ts';
 import type { HandlingQueue } from '../core/handling.ts';
@@ -6,12 +7,18 @@ import { type DownedBodyWay, isDownedBodyWay } from './downedBody.ts';
 import { QUICKBAR_SLOTS, type Quickbar } from './quickbar.ts';
 
 export type ReplayActionPayload =
+  | { kind: 'liquid.pour'; sourceUid: number; receiverUid: number }
   | { kind: 'inventory.move'; itemUid: number; target: TargetState; count: number }
   | { kind: 'inventory.to-hands'; itemUid: number; feet: [number, number, number] }
   | { kind: 'item.pickup'; itemUid: number; mode: 'pocket' | 'wield'; feet: [number, number, number] }
-  | { kind: 'furniture.interact'; entityUid: number }
-  | { kind: 'furniture.lift'; entityUid: number }
+  | { kind: 'furniture.interact'; entityUid: number; alternatives?: true }
+  | { kind: 'furniture.lift'; entityUid: number; floorLocked?: boolean }
+  | { kind: 'furniture.use'; entityUid: number }
+  | { kind: 'furniture.slide'; entityUid: number; way: 'push' }
   | { kind: 'furniture.place'; pos: [number, number, number] }
+  | { kind: 'power.set'; entityUid: number; enabled: boolean }
+  | { kind: 'charger.start'; entityUid: number }
+  | { kind: 'charger.stop'; entityUid: number }
   | { kind: 'furniture.turn' }
   | { kind: 'furniture.tip' }
   | { kind: 'zombie.downed'; zombieId: number; way: DownedBodyWay }
@@ -21,6 +28,8 @@ export type ReplayActionPayload =
   | { kind: 'inventory.cancel-handling' }
   | { kind: 'firearm.attachment.fit'; firearmUid: number; slotId: string; attachmentUid: number }
   | { kind: 'firearm.attachment.remove'; firearmUid: number; slotId: string }
+  | { kind: 'vehicle.work'; work: 'install' | 'remove'; vehicleId: number; fittingId: string; itemUid: number }
+  | { kind: 'light.battery.load'; lightUid: number; batteryUid: number }
   | { kind: 'craft.start'; recipeId: string; preference?: CraftPreference }
   | { kind: 'craft.continue' }
   | { kind: 'craft.stop' }
@@ -79,9 +88,41 @@ const isAttachmentPayload = (payload: Record<string, unknown>): boolean =>
   typeof payload.slotId === 'string' &&
   (payload.kind !== 'firearm.attachment.fit' || isUid(payload.attachmentUid));
 
+const isPourPayload = (payload: Record<string, unknown>): boolean =>
+  isUid(payload.sourceUid) && isUid(payload.receiverUid);
+
+const isPowerPayload = (payload: Record<string, unknown>): boolean =>
+  isUid(payload.entityUid) && typeof payload.enabled === 'boolean';
+
+const isSlidePayload = (payload: Record<string, unknown>): boolean =>
+  isUid(payload.entityUid) && payload.way === 'push';
+
+const isInteractPayload = (payload: Record<string, unknown>): boolean =>
+  isUid(payload.entityUid) && (payload.alternatives === undefined || payload.alternatives === true);
+
+const isLiftPayload = (payload: Record<string, unknown>): boolean =>
+  isUid(payload.entityUid) && (payload.floorLocked === undefined || typeof payload.floorLocked === 'boolean');
+
+const isVehicleWorkPayload = (payload: Record<string, unknown>): boolean =>
+  (payload.work === 'install' || payload.work === 'remove') &&
+  isUid(payload.vehicleId) &&
+  typeof payload.fittingId === 'string' &&
+  payload.fittingId !== '' &&
+  isUid(payload.itemUid);
+
 /** An hour of the day, or null to sleep until rested. */
 const isWakeGameHour = (value: unknown): boolean =>
   value === null || (Number.isSafeInteger(value) && (value as number) >= 0 && (value as number) < 24);
+
+const isCraftStartPayload = (payload: Record<string, unknown>): boolean =>
+  typeof payload.recipeId === 'string' &&
+  (payload.preference === undefined ||
+    (payload.preference !== null &&
+      typeof payload.preference === 'object' &&
+      !Array.isArray(payload.preference) &&
+      Object.entries(payload.preference).every(
+        ([group, item]) => Number.isSafeInteger(Number(group)) && Number(group) >= 0 && typeof item === 'string',
+      )));
 
 export const isReplayActionPayload = (value: unknown): value is ReplayActionPayload => {
   if (!(value && typeof value === 'object' && !Array.isArray(value))) {
@@ -89,6 +130,8 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
   }
   const payload = value as Record<string, unknown>;
   switch (payload.kind) {
+    case 'liquid.pour':
+      return isPourPayload(payload);
     case 'inventory.move':
       return (
         isUid(payload.itemUid) &&
@@ -98,10 +141,19 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
       );
     case 'inventory.to-hands':
       return isUid(payload.itemUid) && isTriple(payload.feet);
+    case 'power.set':
+      return isPowerPayload(payload);
+    case 'charger.start':
+    case 'charger.stop':
     case 'inventory.search':
-    case 'furniture.interact':
-    case 'furniture.lift':
+    case 'furniture.use':
       return isUid(payload.entityUid);
+    case 'furniture.interact':
+      return isInteractPayload(payload);
+    case 'furniture.lift':
+      return isLiftPayload(payload);
+    case 'furniture.slide':
+      return isSlidePayload(payload);
     case 'furniture.place':
       return isTriple(payload.pos, Number.isSafeInteger);
     case 'zombie.downed':
@@ -122,6 +174,10 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
     case 'firearm.attachment.fit':
     case 'firearm.attachment.remove':
       return isAttachmentPayload(payload);
+    case 'vehicle.work':
+      return isVehicleWorkPayload(payload);
+    case 'light.battery.load':
+      return isUid(payload.lightUid) && isUid(payload.batteryUid);
     case 'inventory.cancel-handling':
     case 'furniture.turn':
     case 'furniture.tip':
@@ -141,33 +197,37 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
         (payload.distance as number) <= 10_000
       );
     case 'craft.start':
-      return (
-        typeof payload.recipeId === 'string' &&
-        (payload.preference === undefined ||
-          (payload.preference !== null &&
-            typeof payload.preference === 'object' &&
-            !Array.isArray(payload.preference) &&
-            Object.entries(payload.preference).every(
-              ([group, item]) => Number.isSafeInteger(Number(group)) && Number(group) >= 0 && typeof item === 'string',
-            )))
-      );
+      return isCraftStartPayload(payload);
     default:
       return false;
   }
 };
 
 export interface ReplayCommandOwners {
-  inventory: Pick<Inventory, 'itemByUid' | 'carriedByUid' | 'resolveTarget'>;
+  inventory: Pick<Inventory, 'itemByUid' | 'carriedByUid' | 'resolveTarget' | 'registry'>;
   queue: Pick<HandlingQueue, 'enqueue' | 'cancel'>;
   quickbar: Pick<Quickbar, 'assign'>;
   search: (entityUid: number) => string | undefined;
+  charger?: (entityUid: number, operation: 'start' | 'stop') => string | undefined;
+  power?: (entityUid: number, enabled: boolean) => string | undefined;
   work: (itemUid: number, operation: WorkOperation) => string | undefined;
+  pour?: (sourceUid: number, receiverUid: number) => string | undefined;
   fitAttachment?: (firearmUid: number, slotId: string, attachmentUid: number) => string | undefined;
   removeAttachment?: (firearmUid: number, slotId: string) => string | undefined;
+  vehicleWork: (
+    work: 'install' | 'remove',
+    vehicleId: number,
+    fittingId: string,
+    itemUid: number,
+  ) => string | undefined;
+  /** Puts a battery into a light from the light's battery slot on its item card. */
+  loadBattery: (lightUid: number, batteryUid: number) => string | undefined;
   toHands: (itemUid: number, feet: [number, number, number]) => string | undefined;
   pickup: (itemUid: number, mode: 'pocket' | 'wield', feet: [number, number, number]) => string | undefined;
-  interact: (entityUid: number) => string | undefined;
-  lift: (entityUid: number) => string | undefined;
+  interact: (entityUid: number, alternatives?: true) => string | undefined;
+  lift: (entityUid: number, floorLocked?: boolean) => string | undefined;
+  useFurniture: (entityUid: number) => string | undefined;
+  slide: (entityUid: number, way: 'push') => string | undefined;
   /** Sets the carried piece down at the aimed cell. */
   place: (pos: [number, number, number]) => string | undefined;
   /** Turns the carried piece a quarter, seen from above. */
@@ -190,11 +250,13 @@ export const applyReplayActionPayload = (
   owners: ReplayCommandOwners,
 ): string | undefined => {
   switch (payload.kind) {
+    case 'liquid.pour':
+      return owners.pour?.(payload.sourceUid, payload.receiverUid);
     case 'inventory.move': {
       const item = owners.inventory.itemByUid(payload.itemUid);
       const target = owners.inventory.resolveTarget(payload.target);
       if (!(item && target)) {
-        return 'The item or destination is no longer available';
+        return actionText(owners.inventory.registry).common.gone;
       }
       const result = owners.queue.enqueue(item, target, payload.count);
       return result.ok ? undefined : result.reason;
@@ -204,9 +266,13 @@ export const applyReplayActionPayload = (
     case 'item.pickup':
       return owners.pickup(payload.itemUid, payload.mode, payload.feet);
     case 'furniture.interact':
-      return owners.interact(payload.entityUid);
+      return owners.interact(payload.entityUid, payload.alternatives);
     case 'furniture.lift':
-      return owners.lift(payload.entityUid);
+      return owners.lift(payload.entityUid, payload.floorLocked);
+    case 'furniture.use':
+      return owners.useFurniture(payload.entityUid);
+    case 'furniture.slide':
+      return owners.slide(payload.entityUid, payload.way);
     case 'furniture.place':
       return owners.place(payload.pos);
     case 'furniture.turn':
@@ -215,6 +281,11 @@ export const applyReplayActionPayload = (
       return owners.tip();
     case 'zombie.downed':
       return owners.clearDownedBody(payload.zombieId, payload.way);
+    case 'power.set':
+      return owners.power?.(payload.entityUid, payload.enabled);
+    case 'charger.start':
+    case 'charger.stop':
+      return owners.charger?.(payload.entityUid, payload.kind === 'charger.start' ? 'start' : 'stop');
     case 'inventory.search':
       return owners.search(payload.entityUid);
     case 'inventory.work':
@@ -222,7 +293,7 @@ export const applyReplayActionPayload = (
     case 'inventory.assign': {
       const item = owners.inventory.carriedByUid(payload.itemUid);
       if (!item) {
-        return "I'm not carrying that";
+        return actionText(owners.inventory.registry).common.notCarried;
       }
       owners.quickbar.assign(payload.slot, item);
       return undefined;
@@ -235,6 +306,10 @@ export const applyReplayActionPayload = (
       return owners.removeAttachment
         ? owners.removeAttachment(payload.firearmUid, payload.slotId)
         : 'Attachment handling is unavailable';
+    case 'vehicle.work':
+      return owners.vehicleWork(payload.work, payload.vehicleId, payload.fittingId, payload.itemUid);
+    case 'light.battery.load':
+      return owners.loadBattery(payload.lightUid, payload.batteryUid);
     case 'inventory.cancel-handling':
       owners.queue.cancel();
       return undefined;

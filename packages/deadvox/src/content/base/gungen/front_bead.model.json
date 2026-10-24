@@ -1,0 +1,13 @@
+{
+  "id": "front_bead",
+  "file": "assets/models/front_bead.glb",
+  "gun": {},
+  "parts": {
+    "front_bead": {
+      "item": "front_bead",
+      "node": "front_bead:front-sight-bead",
+      "massKg": 0.005,
+      "centreOfMass": [-0.000020242914979757166, 0.0070728744939271265, -0.000020242914979757166]
+    }
+  }
+}

@@ -17,6 +17,8 @@ export interface SolidDisplayHints {
   readonly outlineAngleDeg?: number;
   /** Solids in one group are rendered/exported as one display mesh. */
   readonly mergeGroup?: string;
+  /** Solids in one piece export as their own primitive, apart from their finish, so a game can hide or detach them. */
+  readonly piece?: string;
   /** Diagnostic role shared by convex cells of one authored component; otherwise its solid id. */
   readonly role?: string;
 }
@@ -80,6 +82,12 @@ export interface RevolvedSolid extends SolidFinish {
   readonly axis?: ExtrusionAxis;
   /** A profile bend sharper than this keeps a hard edge in the mesh; softer bends are smoothed. Defaults to 40. */
   readonly creaseDegrees?: number;
+  /**
+   * Turns the profile with this many flat sides instead of round: a regular polygon section whose flats face both
+   * transverse axes, with the profile radius as the distance to each flat. A multiple of four, so the bounds stay
+   * those of the round solid. Unlike the facet count, it is part of the shape, so mesh and collision both follow it.
+   */
+  readonly sides?: number;
   /** Only `outline` applies: a revolved mesh has no bevel and cannot join a merge group. */
   readonly display?: SolidDisplayHints;
 }

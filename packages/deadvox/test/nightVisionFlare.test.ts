@@ -9,6 +9,7 @@ import { HeldItems } from '../src/render/hands.ts';
 import { LightPool } from '../src/render/lightPool.ts';
 import { type FlareSource, flareSources, nightVisionFlare } from '../src/render/nightVisionFlare.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const BLOCK = 0.5;
 const VIEW: NightVision = {
@@ -75,7 +76,7 @@ describe('night-vision flare', () => {
     const held = new HeldItems(inventory, undefined, registry.figures.get('player')!.palette);
     const camera = fixtureCamera();
     held.update(camera);
-    const pool = new LightPool(new Scene());
+    const pool = new LightPool(new Scene(), TEST_SENSE_TUNING.light.renderedFixtureLimit);
     const flareNow = () => {
       pool.update(inventory, { held, camera, blockSize: BLOCK, daylightScale: 1 });
       return flareOf(flareSources(pool, [], VIEW.flare.blastIntensity), { camera }).washout;

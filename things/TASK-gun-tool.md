@@ -20,9 +20,10 @@ gungen.
 
 The part-item scope is authored part identity, standalone exports and Deadvox item
 records, with no new player actions. Gameplay disassembly is deferred to #1040 so the
-part rounds stay small and disassembly gets its own design. A mass-table key alone is
-not an exportable part: see `gungen/src/gun/physical.ts`, `physicalInputs`. Item identity
-needs a concrete build source, without making pose or placement create another item.
+part rounds stay small and disassembly gets its own design (`things/WORK.md`, "Decisions").
+A mass row alone is not an exportable part. Item identity needs a concrete build source,
+without making pose or placement create another item; see `gungen/src/gun/catalogue.ts`,
+`loadPartCatalogue`.
 
 Open question 1 in `things/WORK.md`, "Open questions", need not block this sequence:
 sharing engine shapes is not sharing a domain part. Keep each tool's authored parts local;
@@ -81,12 +82,13 @@ all invariants above.
 
 **Depends on:** consumption proof.
 
-Give the mass rows concrete, closed item identities and build sources before changing
-assembly composition. Keep the catalogue in gungen until the single move, so there is no
-package-to-gungen bridge. Use `gungen/src/gun/physical.jsonnet`, `partMasses`, as the
-identity input, not a second mass authority. The matching policy in
-`gungen/src/gun/physical.ts`, `physicalInputs`, must still reject missing and ambiguous
-matches. A family builder remains reusable without making its arbitrary parameter space
+Give the mass rows of the designs the recipe names concrete, closed item identities and
+build sources before changing assembly composition. Other designs keep their rows until one
+is needed, and the move does not wait on them (`things/WORK.md`, "Phases"). Keep the catalogue in gungen until the single move, so there is no
+package-to-gungen bridge. Items and the remaining mass rows share
+`gungen/src/gun/catalogue.jsonnet`, `parts`, so the catalogue is not a second mass
+authority. `gungen/src/gun/physical.ts`, `gunModelParts`, rejects missing and ambiguous
+items and rows. A family builder remains reusable without making its arbitrary parameter space
 the shipped item catalogue.
 
 **Exit:** catalogue tests prove unique identity and a buildable standalone assembly for
@@ -122,9 +124,9 @@ Preserve all invariants above.
 **Depends on:** part items at the consumer boundary.
 
 Keep the gun editor's curation, cycling and ammo presentation rather than replacing it
-with the minimal thing preview. Share only domain-neutral mechanisms: inspect
-`gungen/src/viewer/cameraState.ts`, `parseCameraState`, and
-`gungen/src/viewer/paramPanel.ts`, `buildPanelModel`, for promotion into tool UI.
+with the minimal thing preview. Camera and parameter mechanisms are shared because
+engine assemblies need no firearm policy; see `packages/tool-ui/src/cameraState.ts`,
+`parseCameraState`, and `packages/tool-ui/src/paramPanel.ts`, `buildPanelModel`.
 `gungen/src/viewer/shareUrl.ts`, `setModelQuery`, also carries tool selection policy;
 that policy stays caller-owned rather than becoming a shared gun-shaped URL contract.
 The shared renderer already exists in `packages/tool-ui/src/scene.ts`, `buildLayers`.

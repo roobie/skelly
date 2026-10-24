@@ -1,7 +1,7 @@
 // Pointer-lock mouse look; keyboard intents come from the shared semantic owner.
 
 import { keyboardInput } from './inputBindings.ts';
-import type { MoveIntent } from './player.ts';
+import type { MoveIntent, StanceToggle } from './player.ts';
 import { ReloadInput } from './reloadInput.ts';
 
 const SENSITIVITY = 0.0022;
@@ -56,7 +56,7 @@ export class Input {
   private dominantUsePressed = false;
   private dominantUseDown = false;
   private offUsePressed = false;
-  private crouchTogglePressed = false;
+  private stanceTogglePressed: StanceToggle | undefined;
   cursorX = globalThis.innerWidth / 2;
   cursorY = globalThis.innerHeight / 2;
   private readonly target: HTMLElement;
@@ -137,7 +137,7 @@ export class Input {
     this.dominantUseDown = false;
     this.dominantUsePressed = false;
     this.offUsePressed = false;
-    this.crouchTogglePressed = false;
+    this.stanceTogglePressed = undefined;
   }
   setMouseLookOverride(override: (movementX: number, movementY: number) => boolean): void {
     this.mouseLookOverride = override;
@@ -228,12 +228,12 @@ export class Input {
   consumeOffUse(): void {
     this.offUsePressed = false;
   }
-  requestCrouchToggle(): void {
-    this.crouchTogglePressed = true;
+  requestStanceToggle(toggle: StanceToggle): void {
+    this.stanceTogglePressed = toggle;
   }
-  consumeCrouchToggle(): boolean {
-    const pressed = this.crouchTogglePressed;
-    this.crouchTogglePressed = false;
+  consumeStanceToggle(): StanceToggle | undefined {
+    const pressed = this.stanceTogglePressed;
+    this.stanceTogglePressed = undefined;
     return pressed;
   }
 }

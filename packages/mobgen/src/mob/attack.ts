@@ -7,13 +7,13 @@
 // same rotation, but the bone points the other way at rest) — verified against boneTransforms when the
 // clip was added (af2df6a), not assumed; the check itself was not kept.
 
-import { type Mat3, mulMM, rotAxis, rotX, rotY, rotZ, type Vec3 } from '../core/math.ts';
+import { clamp, hermite, type Mat3, mulMM, rotAxis, rotX, rotY, rotZ, smoothstep, type Vec3 } from '../core/math.ts';
 import type { EulerDeg, Pose } from '../core/pose.ts';
+import type { Template } from '../core/template.ts';
+import clipContent from './attackClips.json' with { type: 'json' };
 import { GROUND_SMOOTHING, groundOffset, legGeometryFor, type WalkActor } from './gait.ts';
 import type { HumanoidParams } from './humanoid.ts';
 
-const clamp = (x: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, x));
-const smoothstep = (x: number): number => x * x * (3 - 2 * x);
 const IDENTITY_M: Mat3 = [1, 0, 0, 0, 1, 0, 0, 0, 1];
 
 export interface AttackKey {
@@ -91,25 +91,81 @@ export const LUNGE_GRAB: AttackClip = {
   ],
 };
 
-export const ATTACK_CLIPS: Readonly<Record<string, AttackClip>> = { LUNGE_GRAB };
+const isVec3 = (value: unknown): value is readonly [number, number, number] =>
+  Array.isArray(value) && value.length === 3 && value.every((n) => Number.isFinite(n));
+
+/** What is wrong with one authored key, or undefined when it has the shape `AttackKey` promises. */
+const keyProblem = (key: unknown): string | undefined => {
+  const k = key as Partial<Record<keyof AttackKey, unknown>> | null;
+  if (typeof k !== 'object' || k === null || !Number.isFinite(k.t)) {
+    return 'has a key that is not an object with a numeric time t';
+  }
+  const { rotations, pelvisDrop } = k;
+  if (typeof rotations !== 'object' || rotations === null || Array.isArray(rotations)) {
+    return 'has a key whose rotations is not a map of bone to [x, y, z]';
+  }
+  if (!Object.values(rotations).every(isVec3)) {
+    return 'has a rotation that is not [x, y, z]';
+  }
+  return pelvisDrop !== undefined && !Number.isFinite(pelvisDrop) ? 'has a pelvisDrop that is not a number' : undefined;
+};
+
+/** Checks one authored clip at the content boundary, so a malformed entry fails at import with its id
+ * instead of surfacing as an undefined during sampling. */
+const contentClip = (id: string, value: unknown): AttackClip => {
+  const clip = value as Partial<AttackClip> | null;
+  const bad = (why: string): never => {
+    throw new Error(`attack clip "${id}" in attackClips.jsonnet ${why}`);
+  };
+  if (typeof clip !== 'object' || clip === null) {
+    return bad('is not an object');
+  }
+  if (clip.name !== id) {
+    return bad(`must be named "${id}", not "${String(clip.name)}"`);
+  }
+  if (!(Number.isFinite(clip.duration) && Number.isFinite(clip.hitTime) && Array.isArray(clip.keys))) {
+    return bad('needs numeric duration and hitTime and a keys list');
+  }
+  for (const key of clip.keys as readonly unknown[]) {
+    const problem = keyProblem(key);
+    if (problem) {
+      return bad(problem);
+    }
+  }
+  return clip as AttackClip;
+};
+
+const contentClips: Readonly<Record<string, AttackClip>> = Object.fromEntries(
+  Object.entries(clipContent).map(([id, value]) => [id, contentClip(id, value)]),
+);
+
+/** Every shared-rig clip by its content-facing id (the clip's own name). The grab is authored above; every
+ * entry of `attackClips.jsonnet` is registered here without a code change and sampled and layered by the
+ * same code. The grab's literal key stays statically checked for direct callers; other ids are looked up
+ * through `attackClipById`. Templates select an entry through `attackClip`; see attackClipFor. */
+export const ATTACK_CLIPS: { readonly 'lunge-grab': AttackClip } & Readonly<Record<string, AttackClip>> = {
+  ...contentClips,
+  'lunge-grab': LUNGE_GRAB,
+};
+
+const clipTable: Readonly<Record<string, AttackClip | undefined>> = ATTACK_CLIPS;
+
+/** The clip with this id, or undefined for an unknown id (UI selectors hold ids as strings). */
+export const attackClipById = (id: string): AttackClip | undefined => clipTable[id];
+
+/** Resolves the clip a template's content selects for the shared rig. A template that attacks through
+ * the shared rig must name one; an absent or unknown selection is an error, never a silent fallback to
+ * a default clip (`PILLARS.md`, "Content forward compatibility"). */
+export const attackClipFor = (template: Pick<Template, 'name' | 'attackClip'>): AttackClip => {
+  const id = template.attackClip;
+  const clip = id === undefined ? undefined : attackClipById(id);
+  if (!clip) {
+    throw new Error(`template "${template.name}" selects no known attack clip (${String(id)})`);
+  }
+  return clip;
+};
 
 // ---- keyframe curve: monotone cubic Hermite, zero slope forced at the clip's first/last key ----
-
-interface Keyframe {
-  readonly value: number;
-  readonly slope: number;
-}
-
-const hermite = (u: number, k0: Keyframe, k1: Keyframe): number => {
-  const u2 = u * u;
-  const u3 = u2 * u;
-  return (
-    (2 * u3 - 3 * u2 + 1) * k0.value +
-    (u3 - 2 * u2 + u) * k0.slope +
-    (-2 * u3 + 3 * u2) * k1.value +
-    (u3 - u2) * k1.slope
-  );
-};
 
 /** Fritsch-Carlson tangent at an interior key: 0 at a local extremum, else the clamped average of the
  * two adjacent secant slopes (prevents the curve overshooting past either neighbour). */

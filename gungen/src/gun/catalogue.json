@@ -1,0 +1,1629 @@
+{
+  "parts": [
+    {
+      "family": "ak-receiver",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "receiver_ak",
+      "massKg": 0.84999999999999998,
+      "match": {},
+      "params": {
+        "action": "bolt",
+        "bore": "S",
+        "feed": "box",
+        "section": "ak"
+      }
+    },
+    {
+      "family": "receiver",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "polymer-black",
+        "metal": "alu-anodized-black"
+      },
+      "id": "receiver_ar",
+      "massKg": 0.90000000000000002,
+      "match": {
+        "section": "ar"
+      },
+      "params": {
+        "action": "auto",
+        "actionFrame": "small",
+        "boltCalibre": "308-winchester",
+        "boltHandle": "rest",
+        "boltHandleProfile": "standard",
+        "bore": "M",
+        "carrierPattern": "ar",
+        "chargingHandle": "rear-top",
+        "feed": "box",
+        "handleStyle": "auto",
+        "integral": "no",
+        "magazineWell": "standard",
+        "rail": "full",
+        "section": "ar",
+        "stockStyle": "m4"
+      }
+    },
+    {
+      "family": "receiver",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "receiver_pump",
+      "massKg": 0.90000000000000002,
+      "match": {
+        "section": "pump"
+      },
+      "params": {
+        "action": "pump",
+        "actionFrame": "small",
+        "boltCalibre": "308-winchester",
+        "boltHandle": "rest",
+        "boltHandleProfile": "standard",
+        "bore": "L",
+        "carrierPattern": "pump",
+        "chargingHandle": "side",
+        "feed": "tube",
+        "handleStyle": "auto",
+        "integral": "no",
+        "magazineWell": "standard",
+        "rail": "none",
+        "section": "pump",
+        "stockStyle": "tapered"
+      }
+    },
+    {
+      "family": "receiver",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "receiver_sporter",
+      "massKg": 0.69999999999999996,
+      "match": {
+        "section": "sporter"
+      },
+      "params": {
+        "action": "bolt",
+        "actionFrame": "small",
+        "boltCalibre": "308-winchester",
+        "boltHandle": "rest",
+        "boltHandleProfile": "sporter",
+        "bore": "M",
+        "carrierPattern": "bolt",
+        "chargingHandle": "side",
+        "feed": "top",
+        "handleStyle": "auto",
+        "integral": "yes",
+        "magazineWell": "recessed",
+        "rail": "full",
+        "section": "sporter",
+        "stockStyle": "sporting"
+      }
+    },
+    {
+      "family": "receiver",
+      "id": "receiver-compact-smg",
+      "massKg": 0.69999999999999996,
+      "match": {
+        "section": "compact-smg"
+      }
+    },
+    {
+      "family": "receiver",
+      "id": "receiver-bolt",
+      "massKg": 0.84999999999999998,
+      "match": {
+        "action": "bolt",
+        "section": "standard"
+      }
+    },
+    {
+      "family": "receiver",
+      "id": "receiver-battle",
+      "massKg": 1.1000000000000001,
+      "match": {
+        "action": "auto",
+        "carrierPattern": "barrett",
+        "section": "standard"
+      }
+    },
+    {
+      "family": "receiver",
+      "id": "receiver-smg",
+      "massKg": 0.69999999999999996,
+      "match": {
+        "action": "auto",
+        "carrierPattern": "smg",
+        "section": "standard"
+      }
+    },
+    {
+      "family": "ar-charging-handle",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "polymer-black",
+        "metal": "alu-anodized-black"
+      },
+      "id": "charging_handle_ar",
+      "massKg": 0.059999999999999998,
+      "match": {},
+      "params": {}
+    },
+    {
+      "family": "bolt-carrier",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "bolt_carrier_ak",
+      "massKg": 0.52000000000000002,
+      "match": {
+        "pattern": "ak"
+      },
+      "params": {
+        "action": "bolt",
+        "boltCalibre": "308-winchester",
+        "bore": "S",
+        "feed": "box",
+        "handleProfile": "standard",
+        "handleStyle": "auto",
+        "pattern": "ak",
+        "section": "ak"
+      }
+    },
+    {
+      "family": "bolt-carrier",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "polymer-black",
+        "metal": "alu-anodized-black"
+      },
+      "id": "bolt_carrier_ar",
+      "massKg": 0.33000000000000002,
+      "match": {
+        "pattern": "ar"
+      },
+      "params": {
+        "action": "auto",
+        "boltCalibre": "308-winchester",
+        "bore": "M",
+        "feed": "box",
+        "handleProfile": "standard",
+        "handleStyle": "auto",
+        "pattern": "ar",
+        "section": "ar"
+      }
+    },
+    {
+      "family": "bolt-carrier",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "bolt_carrier_bolt",
+      "massKg": 0.34999999999999998,
+      "match": {
+        "pattern": "bolt"
+      },
+      "params": {
+        "action": "bolt",
+        "boltCalibre": "308-winchester",
+        "bore": "M",
+        "feed": "top",
+        "handleProfile": "sporter",
+        "handleStyle": "auto",
+        "pattern": "bolt",
+        "section": "sporter"
+      }
+    },
+    {
+      "family": "bolt-carrier",
+      "id": "bolt-carrier-battle",
+      "massKg": 0.45000000000000001,
+      "match": {
+        "pattern": "barrett"
+      }
+    },
+    {
+      "family": "bolt-carrier",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "bolt_carrier_pump",
+      "massKg": 0.20000000000000001,
+      "match": {
+        "pattern": "pump"
+      },
+      "params": {
+        "action": "pump",
+        "boltCalibre": "308-winchester",
+        "bore": "L",
+        "feed": "tube",
+        "handleProfile": "standard",
+        "handleStyle": "auto",
+        "pattern": "pump",
+        "section": "pump"
+      }
+    },
+    {
+      "family": "bolt-carrier",
+      "id": "bolt-carrier-smg",
+      "massKg": 0.40000000000000002,
+      "match": {
+        "pattern": "smg"
+      }
+    },
+    {
+      "family": "bolt-handle-arm",
+      "id": "bolt-handle-standard",
+      "massKg": 0.070000000000000007,
+      "match": {
+        "handleProfile": "standard"
+      }
+    },
+    {
+      "family": "bolt-handle-arm",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "bolt_handle_sporter",
+      "massKg": 0.070000000000000007,
+      "match": {
+        "handleProfile": "sporter"
+      },
+      "params": {
+        "action": "bolt",
+        "boltCalibre": "308-winchester",
+        "bore": "M",
+        "feed": "top",
+        "handleProfile": "sporter",
+        "section": "sporter"
+      }
+    },
+    {
+      "family": "bolt-handle-arm",
+      "id": "bolt-handle-awm",
+      "massKg": 0.10000000000000001,
+      "match": {
+        "handleProfile": "awm"
+      }
+    },
+    {
+      "family": "bolt-handle-knob",
+      "id": "bolt-knob-standard",
+      "massKg": 0.025000000000000001,
+      "match": {
+        "handleProfile": "standard"
+      }
+    },
+    {
+      "family": "bolt-handle-knob",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "bolt_knob_sporter",
+      "massKg": 0.025000000000000001,
+      "match": {
+        "handleProfile": "sporter"
+      },
+      "params": {
+        "action": "bolt",
+        "boltCalibre": "308-winchester",
+        "bore": "M",
+        "feed": "top",
+        "handleProfile": "sporter",
+        "section": "sporter"
+      }
+    },
+    {
+      "family": "bolt-handle-knob",
+      "id": "bolt-knob-awm",
+      "massKg": 0.040000000000000001,
+      "match": {
+        "handleProfile": "awm"
+      }
+    },
+    {
+      "family": "smg-handle",
+      "id": "smg-handle",
+      "massKg": 0.040000000000000001,
+      "match": {}
+    },
+    {
+      "family": "lower",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "lower_ak",
+      "massKg": 0.25,
+      "match": {
+        "layout": "ak"
+      },
+      "params": {
+        "boltCalibre": "308-winchester",
+        "integral": "no",
+        "layout": "ak",
+        "magazineOrientation": "straight",
+        "magazineProfile": "ak-curved",
+        "magazineWell": "standard",
+        "section": "ak",
+        "triggerGuard": "present"
+      }
+    },
+    {
+      "family": "lower",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "polymer-black",
+        "metal": "alu-anodized-black"
+      },
+      "id": "lower_ar",
+      "massKg": 0.34999999999999998,
+      "match": {
+        "layout": "ar"
+      },
+      "params": {
+        "boltCalibre": "308-winchester",
+        "integral": "no",
+        "layout": "ar",
+        "magazineOrientation": "straight",
+        "magazineProfile": "stanag-straight",
+        "magazineWell": "standard",
+        "section": "ar",
+        "triggerGuard": "present"
+      }
+    },
+    {
+      "family": "lower",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "lower_pump",
+      "massKg": 0.14999999999999999,
+      "match": {
+        "layout": "pump"
+      },
+      "params": {
+        "boltCalibre": "308-winchester",
+        "integral": "no",
+        "layout": "pump",
+        "magazineOrientation": "straight",
+        "magazineProfile": "standard",
+        "magazineWell": "standard",
+        "section": "pump",
+        "triggerGuard": "present"
+      }
+    },
+    {
+      "family": "lower",
+      "id": "lower-thumbhole",
+      "massKg": 0.20000000000000001,
+      "match": {
+        "layout": "thumbhole"
+      }
+    },
+    {
+      "family": "lower",
+      "id": "lower-trigger",
+      "massKg": 0.20000000000000001,
+      "match": {
+        "layout": "trigger"
+      }
+    },
+    {
+      "family": "lower",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "lower_sporter",
+      "massKg": 0.17999999999999999,
+      "match": {
+        "layout": "conventional",
+        "section": "sporter"
+      },
+      "params": {
+        "boltCalibre": "308-winchester",
+        "integral": "yes",
+        "layout": "conventional",
+        "magazineOrientation": "straight",
+        "magazineProfile": "standard",
+        "magazineWell": "recessed",
+        "section": "sporter",
+        "triggerGuard": "present"
+      }
+    },
+    {
+      "family": "lower",
+      "id": "lower-compact-smg",
+      "massKg": 0.20000000000000001,
+      "match": {
+        "layout": "conventional",
+        "section": "compact-smg"
+      }
+    },
+    {
+      "family": "lower",
+      "id": "lower-conventional",
+      "massKg": 0.25,
+      "match": {
+        "layout": "conventional",
+        "section": "standard"
+      }
+    },
+    {
+      "family": "barrel",
+      "id": "barrel-ak-short",
+      "massKg": 0.59999999999999998,
+      "match": {
+        "length": "S",
+        "section": "ak"
+      }
+    },
+    {
+      "family": "barrel",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "barrel_ak_medium",
+      "massKg": 0.69999999999999996,
+      "match": {
+        "length": "M",
+        "section": "ak"
+      },
+      "params": {
+        "bore": "S",
+        "frontSightStyle": "ak",
+        "handguardLayout": "ak",
+        "handguardLength": "M",
+        "length": "M",
+        "muzzle": "threaded",
+        "profile": "standard",
+        "section": "ak",
+        "tubeLengthPercent": "75"
+      }
+    },
+    {
+      "family": "barrel",
+      "id": "barrel-ak-long",
+      "massKg": 0.84999999999999998,
+      "match": {
+        "length": "L",
+        "section": "ak"
+      }
+    },
+    {
+      "family": "barrel",
+      "id": "barrel-ar-short",
+      "massKg": 0.75,
+      "match": {
+        "length": "S",
+        "section": "ar"
+      }
+    },
+    {
+      "family": "barrel",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "polymer-black",
+        "metal": "alu-anodized-black"
+      },
+      "id": "barrel_ar_medium",
+      "massKg": 0.94999999999999996,
+      "match": {
+        "length": "M",
+        "section": "ar"
+      },
+      "params": {
+        "bore": "M",
+        "frontSightStyle": "ar",
+        "handguardLayout": "ar",
+        "handguardLength": "M",
+        "length": "M",
+        "muzzle": "threaded",
+        "profile": "standard",
+        "section": "ar",
+        "tubeLengthPercent": "75"
+      }
+    },
+    {
+      "family": "barrel",
+      "id": "barrel-ar-long",
+      "massKg": 1.1499999999999999,
+      "match": {
+        "length": "L",
+        "section": "ar"
+      }
+    },
+    {
+      "family": "barrel",
+      "id": "barrel-pump-short",
+      "massKg": 0.69999999999999996,
+      "match": {
+        "length": "S",
+        "section": "pump"
+      }
+    },
+    {
+      "family": "barrel",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "barrel_pump_medium",
+      "massKg": 0.80000000000000004,
+      "match": {
+        "length": "M",
+        "section": "pump"
+      },
+      "params": {
+        "bore": "L",
+        "frontSightStyle": "ar",
+        "handguardLayout": "standard",
+        "handguardLength": "M",
+        "length": "M",
+        "muzzle": "threaded",
+        "profile": "standard",
+        "section": "pump",
+        "tubeLengthPercent": "75"
+      }
+    },
+    {
+      "family": "barrel",
+      "id": "barrel-pump-long",
+      "massKg": 0.94999999999999996,
+      "match": {
+        "length": "L",
+        "section": "pump"
+      }
+    },
+    {
+      "family": "barrel",
+      "id": "barrel-sporter-short",
+      "massKg": 0.5,
+      "match": {
+        "length": "S",
+        "section": "sporter"
+      }
+    },
+    {
+      "family": "barrel",
+      "id": "barrel-sporter-medium",
+      "massKg": 0.69999999999999996,
+      "match": {
+        "length": "M",
+        "section": "sporter"
+      }
+    },
+    {
+      "family": "barrel",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "barrel_sporter_long",
+      "massKg": 0.84999999999999998,
+      "match": {
+        "length": "L",
+        "section": "sporter"
+      },
+      "params": {
+        "bore": "M",
+        "frontSightStyle": "sporting",
+        "handguardLayout": "standard",
+        "handguardLength": "L",
+        "length": "L",
+        "muzzle": "threaded",
+        "profile": "standard",
+        "section": "sporter",
+        "tubeLengthPercent": "75"
+      }
+    },
+    {
+      "family": "barrel",
+      "id": "barrel-compact-smg",
+      "massKg": 0.29999999999999999,
+      "match": {
+        "section": "compact-smg"
+      }
+    },
+    {
+      "family": "barrel",
+      "id": "barrel-pistol",
+      "massKg": 0.12,
+      "match": {
+        "profile": "pistol",
+        "section": "standard"
+      }
+    },
+    {
+      "family": "barrel",
+      "id": "barrel-heavy-short",
+      "massKg": 0.59999999999999998,
+      "match": {
+        "length": "S",
+        "profile": "heavy",
+        "section": "standard"
+      }
+    },
+    {
+      "family": "barrel",
+      "id": "barrel-heavy-medium",
+      "massKg": 0.90000000000000002,
+      "match": {
+        "length": "M",
+        "profile": "heavy",
+        "section": "standard"
+      }
+    },
+    {
+      "family": "barrel",
+      "id": "barrel-heavy-long",
+      "massKg": 1.3,
+      "match": {
+        "length": "L",
+        "profile": "heavy",
+        "section": "standard"
+      }
+    },
+    {
+      "family": "barrel",
+      "id": "barrel-standard-short-small",
+      "massKg": 0.28000000000000003,
+      "match": {
+        "bore": "S",
+        "length": "S",
+        "profile": "standard",
+        "section": "standard"
+      }
+    },
+    {
+      "family": "barrel",
+      "id": "barrel-standard-short-medium",
+      "massKg": 0.40000000000000002,
+      "match": {
+        "bore": "M",
+        "length": "S",
+        "profile": "standard",
+        "section": "standard"
+      }
+    },
+    {
+      "family": "barrel",
+      "id": "barrel-standard-short-large",
+      "massKg": 0.80000000000000004,
+      "match": {
+        "bore": "L",
+        "length": "S",
+        "profile": "standard",
+        "section": "standard"
+      }
+    },
+    {
+      "family": "barrel",
+      "id": "barrel-standard-medium-small",
+      "massKg": 0.45000000000000001,
+      "match": {
+        "bore": "S",
+        "length": "M",
+        "profile": "standard",
+        "section": "standard"
+      }
+    },
+    {
+      "family": "barrel",
+      "id": "barrel-standard-medium",
+      "massKg": 0.80000000000000004,
+      "match": {
+        "bore": "M",
+        "length": "M",
+        "profile": "standard",
+        "section": "standard"
+      }
+    },
+    {
+      "family": "barrel",
+      "id": "barrel-standard-medium-large",
+      "massKg": 1.6000000000000001,
+      "match": {
+        "bore": "L",
+        "length": "M",
+        "profile": "standard",
+        "section": "standard"
+      }
+    },
+    {
+      "family": "barrel",
+      "id": "barrel-standard-long-small",
+      "massKg": 0.59999999999999998,
+      "match": {
+        "bore": "S",
+        "length": "L",
+        "profile": "standard",
+        "section": "standard"
+      }
+    },
+    {
+      "family": "barrel",
+      "id": "barrel-standard-long",
+      "massKg": 0.94999999999999996,
+      "match": {
+        "bore": "M",
+        "length": "L",
+        "profile": "standard",
+        "section": "standard"
+      }
+    },
+    {
+      "family": "barrel",
+      "id": "barrel-anti-materiel",
+      "massKg": 2.6000000000000001,
+      "match": {
+        "bore": "L",
+        "length": "L",
+        "profile": "standard",
+        "section": "standard"
+      }
+    },
+    {
+      "family": "handguard",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "handguard_ak",
+      "massKg": 0.25,
+      "match": {
+        "layout": "ak"
+      },
+      "params": {
+        "barrelBore": "S",
+        "boltCalibre": "308-winchester",
+        "boltHandleProfile": "standard",
+        "bore": "S",
+        "clearance": "M",
+        "fit": "receiver",
+        "handleStyle": "none",
+        "layout": "ak",
+        "length": "M",
+        "mount": "clamped",
+        "section": "ak"
+      }
+    },
+    {
+      "family": "handguard",
+      "id": "handguard-ak-standard",
+      "massKg": 0.25,
+      "match": {
+        "layout": "standard",
+        "section": "ak"
+      }
+    },
+    {
+      "family": "handguard",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "polymer-black",
+        "metal": "alu-anodized-black"
+      },
+      "id": "handguard_ar_clamped",
+      "massKg": 0.34999999999999998,
+      "match": {
+        "layout": "ar",
+        "mount": "clamped"
+      },
+      "params": {
+        "barrelBore": "M",
+        "boltCalibre": "308-winchester",
+        "boltHandleProfile": "standard",
+        "bore": "M",
+        "clearance": "M",
+        "fit": "receiver",
+        "handleStyle": "none",
+        "layout": "ar",
+        "length": "M",
+        "mount": "clamped",
+        "section": "ar"
+      }
+    },
+    {
+      "family": "handguard",
+      "id": "handguard-ar-free-float",
+      "massKg": 0.46000000000000002,
+      "match": {
+        "layout": "ar",
+        "mount": "free-float"
+      }
+    },
+    {
+      "family": "handguard",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "handguard_sporter",
+      "massKg": 0.34999999999999998,
+      "match": {
+        "layout": "standard",
+        "section": "sporter"
+      },
+      "params": {
+        "barrelBore": "M",
+        "boltCalibre": "308-winchester",
+        "boltHandleProfile": "sporter",
+        "bore": "M",
+        "clearance": "M",
+        "fit": "receiver",
+        "handleStyle": "none",
+        "layout": "standard",
+        "length": "L",
+        "mount": "clamped",
+        "section": "sporter"
+      }
+    },
+    {
+      "family": "handguard",
+      "id": "handguard-compact-smg",
+      "massKg": 0.25,
+      "match": {
+        "layout": "standard",
+        "section": "compact-smg"
+      }
+    },
+    {
+      "family": "handguard",
+      "id": "handguard-standard-short",
+      "massKg": 0.14999999999999999,
+      "match": {
+        "layout": "standard",
+        "length": "S",
+        "section": "standard"
+      }
+    },
+    {
+      "family": "handguard",
+      "id": "handguard-standard-medium",
+      "massKg": 0.29999999999999999,
+      "match": {
+        "layout": "standard",
+        "length": "M",
+        "section": "standard"
+      }
+    },
+    {
+      "family": "handguard",
+      "id": "handguard-standard-long",
+      "massKg": 0.40000000000000002,
+      "match": {
+        "layout": "standard",
+        "length": "L",
+        "section": "standard"
+      }
+    },
+    {
+      "family": "gas-cylinder",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "gas_cylinder_ak",
+      "massKg": 0.17999999999999999,
+      "match": {},
+      "params": {
+        "barrelLength": "M"
+      }
+    },
+    {
+      "family": "gas-block",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "gas_block_ak",
+      "massKg": 0.070000000000000007,
+      "match": {},
+      "params": {
+        "barrelLength": "M",
+        "bore": "S"
+      }
+    },
+    {
+      "family": "grip",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "polymer-black",
+        "metal": "alu-anodized-black"
+      },
+      "id": "grip_standard",
+      "massKg": 0.10000000000000001,
+      "match": {
+        "section": "ar"
+      },
+      "params": {
+        "length": "M",
+        "section": "ar",
+        "well": "none"
+      }
+    },
+    {
+      "family": "grip",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "grip_ak",
+      "massKg": 0.10000000000000001,
+      "match": {
+        "section": "ak"
+      },
+      "params": {
+        "length": "M",
+        "section": "ak",
+        "well": "none"
+      }
+    },
+    {
+      "family": "grip",
+      "id": "grip-standard",
+      "massKg": 0.10000000000000001,
+      "match": {
+        "section": "standard"
+      }
+    },
+    {
+      "family": "grip",
+      "id": "grip-pump",
+      "massKg": 0.10000000000000001,
+      "match": {
+        "section": "pump"
+      }
+    },
+    {
+      "family": "grip",
+      "id": "grip-sporter",
+      "massKg": 0.10000000000000001,
+      "match": {
+        "section": "sporter"
+      }
+    },
+    {
+      "family": "grip",
+      "id": "grip-compact-smg",
+      "massKg": 0.10000000000000001,
+      "match": {
+        "section": "compact-smg"
+      }
+    },
+    {
+      "family": "stock",
+      "id": "stock-ak-short",
+      "massKg": 0.29999999999999999,
+      "match": {
+        "length": "S",
+        "style": "ak-buttstock"
+      }
+    },
+    {
+      "family": "stock",
+      "id": "stock-ak-medium",
+      "massKg": 0.34999999999999998,
+      "match": {
+        "length": "M",
+        "style": "ak-buttstock"
+      }
+    },
+    {
+      "family": "stock",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "stock_ak_long",
+      "massKg": 0.40000000000000002,
+      "match": {
+        "length": "L",
+        "style": "ak-buttstock"
+      },
+      "params": {
+        "combDegrees": "2",
+        "length": "L",
+        "section": "ak",
+        "style": "ak-buttstock"
+      }
+    },
+    {
+      "family": "stock",
+      "id": "stock-m4-short",
+      "massKg": 0.29999999999999999,
+      "match": {
+        "length": "S",
+        "style": "m4"
+      }
+    },
+    {
+      "family": "stock",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "polymer-black",
+        "metal": "alu-anodized-black"
+      },
+      "id": "stock_m4_medium",
+      "massKg": 0.34999999999999998,
+      "match": {
+        "length": "M",
+        "style": "m4"
+      },
+      "params": {
+        "combDegrees": "2",
+        "length": "M",
+        "section": "ar",
+        "style": "m4"
+      }
+    },
+    {
+      "family": "stock",
+      "id": "stock-m4-long",
+      "massKg": 0.40000000000000002,
+      "match": {
+        "length": "L",
+        "style": "m4"
+      }
+    },
+    {
+      "family": "stock",
+      "id": "stock-sporting-short",
+      "massKg": 0.34999999999999998,
+      "match": {
+        "length": "S",
+        "style": "sporting"
+      }
+    },
+    {
+      "family": "stock",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "stock_sporting_medium",
+      "massKg": 0.5,
+      "match": {
+        "length": "M",
+        "style": "sporting"
+      },
+      "params": {
+        "combDegrees": "2",
+        "length": "M",
+        "section": "sporter",
+        "style": "sporting"
+      }
+    },
+    {
+      "family": "stock",
+      "id": "stock-sporting-long",
+      "massKg": 0.65000000000000002,
+      "match": {
+        "length": "L",
+        "style": "sporting"
+      }
+    },
+    {
+      "family": "stock",
+      "id": "stock-tapered-short",
+      "massKg": 0.40000000000000002,
+      "match": {
+        "length": "S",
+        "style": "tapered"
+      }
+    },
+    {
+      "family": "stock",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "stock_tapered_medium",
+      "massKg": 0.54500000000000004,
+      "match": {
+        "length": "M",
+        "style": "tapered"
+      },
+      "params": {
+        "combDegrees": "2",
+        "length": "M",
+        "section": "pump",
+        "style": "tapered"
+      }
+    },
+    {
+      "family": "stock",
+      "id": "stock-tapered-long",
+      "massKg": 0.65000000000000002,
+      "match": {
+        "length": "L",
+        "style": "tapered"
+      }
+    },
+    {
+      "family": "stock",
+      "id": "stock-tapered-sawed-short",
+      "massKg": 0.29999999999999999,
+      "match": {
+        "length": "S",
+        "style": "tapered-sawed"
+      }
+    },
+    {
+      "family": "stock",
+      "id": "stock-tapered-sawed-medium",
+      "massKg": 0.40000000000000002,
+      "match": {
+        "length": "M",
+        "style": "tapered-sawed"
+      }
+    },
+    {
+      "family": "stock",
+      "id": "stock-tapered-sawed-long",
+      "massKg": 0.5,
+      "match": {
+        "length": "L",
+        "style": "tapered-sawed"
+      }
+    },
+    {
+      "family": "stock",
+      "id": "stock-straight-short",
+      "massKg": 0.25,
+      "match": {
+        "length": "S",
+        "style": "straight"
+      }
+    },
+    {
+      "family": "stock",
+      "id": "stock-straight-medium",
+      "massKg": 0.40000000000000002,
+      "match": {
+        "length": "M",
+        "style": "straight"
+      }
+    },
+    {
+      "family": "stock",
+      "id": "stock-straight-long",
+      "massKg": 0.55000000000000004,
+      "match": {
+        "length": "L",
+        "style": "straight"
+      }
+    },
+    {
+      "family": "stock",
+      "id": "stock-thumbhole-short",
+      "massKg": 0.45000000000000001,
+      "match": {
+        "length": "S",
+        "style": "thumbhole"
+      }
+    },
+    {
+      "family": "stock",
+      "id": "stock-thumbhole-medium",
+      "massKg": 0.59999999999999998,
+      "match": {
+        "length": "M",
+        "style": "thumbhole"
+      }
+    },
+    {
+      "family": "stock",
+      "id": "stock-thumbhole-long",
+      "massKg": 0.75,
+      "match": {
+        "length": "L",
+        "style": "thumbhole"
+      }
+    },
+    {
+      "family": "ak-rear-sight",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "rear_sight_ak",
+      "massKg": 0.050000000000000003,
+      "match": {},
+      "params": {}
+    },
+    {
+      "family": "front-sight",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "front_sight_ak",
+      "massKg": 0.050000000000000003,
+      "match": {
+        "style": "ak"
+      },
+      "params": {
+        "bore": "S",
+        "section": "ak",
+        "style": "ak"
+      }
+    },
+    {
+      "family": "front-sight",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "polymer-black",
+        "metal": "alu-anodized-black"
+      },
+      "id": "front_sight_ar",
+      "massKg": 0.11,
+      "match": {
+        "section": "ar",
+        "style": "ar"
+      },
+      "params": {
+        "bore": "M",
+        "section": "ar",
+        "style": "ar"
+      }
+    },
+    {
+      "family": "front-sight",
+      "id": "front-sight-ar-standard",
+      "massKg": 0.11,
+      "match": {
+        "section": "standard",
+        "style": "ar"
+      }
+    },
+    {
+      "family": "front-sight",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "front_sight_sporter",
+      "massKg": 0.02,
+      "match": {
+        "style": "sporting"
+      },
+      "params": {
+        "bore": "M",
+        "section": "sporter",
+        "style": "sporting"
+      }
+    },
+    {
+      "family": "front-sight",
+      "id": "front-sight-ringed",
+      "massKg": 0.040000000000000001,
+      "match": {
+        "style": "ringed"
+      }
+    },
+    {
+      "family": "sporting-rear-sight",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "rear_sight_sporter",
+      "massKg": 0.035000000000000003,
+      "match": {},
+      "params": {
+        "bore": "M",
+        "section": "sporter"
+      }
+    },
+    {
+      "family": "drum-rear-sight",
+      "id": "rear-sight-drum",
+      "massKg": 0.059999999999999998,
+      "match": {}
+    },
+    {
+      "family": "front-sight-bead",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "front_bead",
+      "massKg": 0.0050000000000000001,
+      "match": {},
+      "params": {}
+    },
+    {
+      "family": "tube-magazine",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "tube_magazine",
+      "massKg": 0.20000000000000001,
+      "match": {},
+      "params": {
+        "barrelLength": "M",
+        "bore": "L",
+        "lengthPercent": "75"
+      }
+    },
+    {
+      "family": "forend",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "forend_pump",
+      "massKg": 0.20000000000000001,
+      "match": {},
+      "params": {
+        "barrelLength": "M",
+        "bore": "L",
+        "lengthPercent": "75"
+      }
+    },
+    {
+      "family": "magazine",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-blued"
+      },
+      "id": "integral_magazine",
+      "massKg": 0.12,
+      "match": {
+        "integral": "yes"
+      },
+      "params": {
+        "boltCalibre": "308-winchester",
+        "integral": "yes",
+        "length": "S",
+        "orientation": "straight",
+        "profile": "standard",
+        "section": "sporter",
+        "variant": "ak74",
+        "wellBody": "sporter"
+      }
+    },
+    {
+      "family": "frame",
+      "id": "pistol-frame",
+      "massKg": 0.28000000000000003,
+      "match": {}
+    },
+    {
+      "family": "slide",
+      "id": "pistol-slide",
+      "massKg": 0.27000000000000002,
+      "match": {}
+    },
+    {
+      "family": "revolver-frame",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-stainless"
+      },
+      "id": "revolver_frame",
+      "massKg": 0.40000000000000002,
+      "match": {},
+      "params": {
+        "bore": "M",
+        "butt": "round",
+        "frameSize": "M",
+        "gripLength": "M"
+      }
+    },
+    {
+      "family": "revolver-barrel",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-stainless"
+      },
+      "id": "revolver_barrel",
+      "massKg": 0.22,
+      "match": {},
+      "params": {
+        "bore": "M",
+        "length": "M",
+        "style": "classic"
+      }
+    },
+    {
+      "family": "revolver-cylinder",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-stainless"
+      },
+      "id": "revolver_cylinder",
+      "massKg": 0.28000000000000003,
+      "match": {},
+      "params": {
+        "chamberCount": "6"
+      }
+    },
+    {
+      "family": "revolver-crane",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-stainless"
+      },
+      "id": "revolver_crane",
+      "massKg": 0.070000000000000007,
+      "match": {},
+      "params": {}
+    },
+    {
+      "family": "revolver-ejector",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-stainless"
+      },
+      "id": "revolver_ejector",
+      "massKg": 0.025000000000000001,
+      "match": {},
+      "params": {}
+    },
+    {
+      "family": "revolver-grip",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-stainless"
+      },
+      "id": "revolver_grip",
+      "massKg": 0.080000000000000002,
+      "match": {},
+      "params": {
+        "butt": "round",
+        "length": "M"
+      }
+    },
+    {
+      "family": "revolver-hammer",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-stainless"
+      },
+      "id": "revolver_hammer",
+      "massKg": 0.029999999999999999,
+      "match": {},
+      "params": {}
+    },
+    {
+      "family": "revolver-trigger",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "wood-walnut",
+        "metal": "steel-stainless"
+      },
+      "id": "revolver_trigger",
+      "massKg": 0.025000000000000001,
+      "match": {},
+      "params": {
+        "frameSize": "M"
+      }
+    },
+    {
+      "family": "heavy-receiver",
+      "id": "heavy-receiver",
+      "massKg": 2.5,
+      "match": {}
+    },
+    {
+      "family": "heavy-bolt-carrier",
+      "id": "heavy-bolt-carrier",
+      "massKg": 1.3,
+      "match": {}
+    },
+    {
+      "family": "heavy-lower",
+      "id": "heavy-lower",
+      "massKg": 0.5,
+      "match": {}
+    },
+    {
+      "family": "heavy-magazine",
+      "id": "heavy-magazine",
+      "massKg": 0.29999999999999999,
+      "match": {}
+    },
+    {
+      "family": "recoil-stock",
+      "id": "recoil-stock",
+      "massKg": 1,
+      "match": {}
+    },
+    {
+      "family": "barrel-shroud",
+      "id": "barrel-shroud",
+      "massKg": 0.59999999999999998,
+      "match": {}
+    },
+    {
+      "family": "muzzle-brake",
+      "id": "muzzle-brake",
+      "massKg": 0.40000000000000002,
+      "match": {}
+    },
+    {
+      "family": "handle-trunnion",
+      "id": "carry-trunnion",
+      "massKg": 0.14999999999999999,
+      "match": {}
+    },
+    {
+      "family": "handle-strut",
+      "id": "carry-strut",
+      "massKg": 0.10000000000000001,
+      "match": {}
+    },
+    {
+      "family": "handle-bar",
+      "id": "carry-bar",
+      "massKg": 0.10000000000000001,
+      "match": {}
+    },
+    {
+      "family": "bipod",
+      "id": "bipod",
+      "massKg": 0.80000000000000004,
+      "match": {}
+    },
+    {
+      "family": "monopod",
+      "id": "monopod",
+      "massKg": 0.25,
+      "match": {}
+    }
+  ],
+  "placementParams": ["pose", "muzzleInsetRatio", "chamberIndex", "frontSightMuzzleInsetRatio"]
+}

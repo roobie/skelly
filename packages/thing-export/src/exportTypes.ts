@@ -4,6 +4,7 @@
 import type { Gender, Resolved } from '@skelly/engine/assembly/schema.ts';
 import type { Issue } from '@skelly/engine/foundation/issue.ts';
 import type { Vec3 } from '@skelly/engine/foundation/math.ts';
+import type { MaterialDef } from '@skelly/thing-core/materials';
 
 /**
  * An sRGB colour as normalized red, green, blue channels in [0, 1]. TypeScript cannot enforce finiteness or range;
@@ -22,7 +23,7 @@ export interface AppearanceContext {
 
 export interface MaterialAppearance {
   readonly colour: SrgbColor;
-  readonly finish: { readonly metallic: number; readonly roughness: number };
+  readonly finish: MaterialDef['finish'];
 }
 
 export interface Palette {
@@ -88,7 +89,21 @@ export interface GlbExportInput {
   readonly metadataNamespace?: string;
   /** Facets of every revolved solid in the file: a level of detail baked in at export. Defaults to the mesh default. */
   readonly revolveFacets?: number;
+  /**
+   * Voxel edge in metres. When set, each part's drawn solids are sampled at this grain and written as a greedy-meshed
+   * voxel mesh, one primitive per finish, instead of their smooth meshes. Every model export sets it (see `recipe.ts`,
+   * `recipeVoxel`); absent, the file holds the authored smooth meshes, which only geometry checks read.
+   */
+  readonly voxelGrain?: number;
+  /**
+   * Voxel edge in metres for the parts whose definition carries the `VOXEL_DETAIL` tag (see `glb.ts`); every other part
+   * keeps `voxelGrain`. Must divide `voxelGrain` a whole number of times so the two lattices nest. Needs `voxelGrain`.
+   */
+  readonly voxelDetailGrain?: number;
 }
+
+/** A model export's voxel class as the GLB writer takes it. */
+export type VoxelGrains = Required<Pick<GlbExportInput, 'voxelGrain'>> & Pick<GlbExportInput, 'voxelDetailGrain'>;
 
 export type GlbExportError =
   | { readonly code: 'structure-issues'; readonly issues: readonly Issue[] }

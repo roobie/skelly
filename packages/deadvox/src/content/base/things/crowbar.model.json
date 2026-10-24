@@ -1,0 +1,15 @@
+{
+  "id": "crowbar",
+  "file": "assets/models/crowbar.glb",
+  "parts": {
+    "crowbar": {
+      "node": "crowbar:crowbar",
+      "massKg": 1.5,
+      "centreOfMass": [-0.07926048565121413, -0.011432671081677703, 0]
+    }
+  },
+  "grip": { "at": [-0.3000000000001, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90,
+  "anchors": { "claw": [0.10499999999996801, -0.129, 0], "strike": [0.230600000000024, 8.007483565108942e-15, 0] }
+}

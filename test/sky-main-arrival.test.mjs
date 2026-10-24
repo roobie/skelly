@@ -9,8 +9,10 @@ import {
   adaptMainInteractionPick,
   mainArrivalGit,
   mainOverlayPath,
+  mainOverlaySources,
   mainSourceOverlays,
   removedExports,
+  removedModuleExports,
   workspaceDirectory,
 } from '../packages/deadvox/test/browser/sky-main-arrival.mjs';
 
@@ -19,10 +21,33 @@ it('main rendering overlays retain branch core API owners', () => {
   assert.ok(mainSourceOverlays.every((path) => !path.startsWith('core/')));
 });
 
-it('main overlays keep the play frame producer, consumer and acid effect contract on the same revision', () => {
+it('main overlays keep play, view and their presentation constructor contracts on the same revision', () => {
   assert.ok(mainSourceOverlays.includes('game/play.ts'));
   assert.ok(mainSourceOverlays.includes('render/playView.ts'));
+  assert.ok(mainSourceOverlays.includes('render/playerFigure.ts'));
   assert.ok(mainSourceOverlays.includes('render/acidEffects.ts'));
+  assert.ok(mainSourceOverlays.includes('render/gore.ts'));
+  assert.ok(mainSourceOverlays.includes('render/mobActors.ts'));
+  assert.ok(mainSourceOverlays.includes('render/heightFog.ts'));
+  assert.ok(mainSourceOverlays.includes('bench/post.ts'));
+  assert.ok(mainSourceOverlays.includes('game/damageFeedback.ts'));
+  assert.ok(mainSourceOverlays.includes('game/painCue.ts'));
+});
+
+it('main play overlays keep the entire UI boundary on the base even when export names survive signature changes', () => {
+  const basePaths = new Set([
+    'ui/options.ts',
+    'ui/nested/readout.ts',
+    'ui/style.css',
+    'core/rules.ts',
+    'game/unrelated.ts',
+  ]);
+  const sources = mainOverlaySources(basePaths);
+  assert.ok(sources.includes('ui/options.ts'));
+  assert.ok(sources.includes('ui/nested/readout.ts'));
+  assert.ok(!sources.includes('core/rules.ts'));
+  assert.ok(!sources.includes('game/unrelated.ts'));
+  assert.ok(!sources.includes('ui/style.css'));
 });
 
 it('main picker callers supply both branch reach predicates without changing an already-current caller', () => {
@@ -123,6 +148,42 @@ function movedPackageHistory(repository, git) {
   write('package.json', { workspaces: ['other', 'packages/deadvox'] });
   return { base, branch: commit('move') };
 }
+
+it('main imports of an export the branch removed from a sibling package are found where each revision keeps it', () => {
+  const repository = mkdtempSync(join(tmpdir(), 'main-sibling-export-'));
+  // biome-ignore lint/style/noProcessEnv: a pre-push hook exports GIT_DIR and its kin, which would aim the fixture's commits at the pushing repository.
+  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')));
+  const git = (args) => execFileSync('git', args, { cwd: repository, encoding: 'utf8', env }).trim();
+  const write = (path, text) => {
+    mkdirSync(join(repository, path, '..'), { recursive: true });
+    writeFileSync(join(repository, path), text);
+  };
+  const commit = (message) => {
+    git(['add', '-A']);
+    git(['-c', 'user.name=fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', message]);
+    return git(['rev-parse', 'HEAD']);
+  };
+  try {
+    git(['init', '-q']);
+    write('package.json', JSON.stringify({ workspaces: ['game', 'mob'] }));
+    write('game/package.json', JSON.stringify({ name: 'deadvox' }));
+    write('mob/package.json', JSON.stringify({ name: 'mobgen' }));
+    write('mob/src/cut.ts', 'export const cut = 1;\nexport const PARTS = [];\n');
+    write('mob/src/kept.ts', 'export const kept = 1;\n');
+    const base = commit('base');
+    git(['mv', 'mob', 'packages-mobgen']);
+    write('package.json', JSON.stringify({ workspaces: ['game', 'packages-mobgen'] }));
+    write('packages-mobgen/src/cut.ts', 'export const cut = 1;\n');
+    commit('move and drop');
+    const { removedFrom, shimmed } = removedModuleExports(git, base);
+    const top = git(['rev-parse', '--show-toplevel']);
+    assert.deepEqual(removedFrom(join(top, 'packages-mobgen/src/cut.ts')), ['PARTS']);
+    assert.deepEqual(removedFrom(join(top, 'packages-mobgen/src/kept.ts')), []);
+    assert.deepEqual(shimmed(), { 'packages-mobgen/src/cut.ts': ['PARTS'] });
+  } finally {
+    rmSync(repository, { recursive: true, force: true });
+  }
+});
 
 it('main overlays accept the directory URL trailing separator and worker module query', () => {
   const root = resolve('fixture-root');

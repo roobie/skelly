@@ -5,13 +5,15 @@ import { MathUtils, type PerspectiveCamera, type Scene, SpotLight, Vector3 } fro
 import type { Registry } from '../core/content.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
-import { lightExposureFor } from '../core/lights.ts';
+import { inventoryLightEntries, lightExposureFor } from '../core/lights.ts';
 import { DEFAULT_TORCH } from '../core/mood.ts';
 import type { BeamSpill } from '../core/schema.ts';
 import type { Sky } from '../core/sky.ts';
 import { installFlashlightSpill, setFlashlightSpill, spillHalfAngle } from './flashlightCone.ts';
 import type { HeldItems } from './hands.ts';
 import { installNearFieldFalloff } from './lightFalloff.ts';
+import type { PileMeshes } from './piles.ts';
+import { FIRST_PERSON_SHOULDER } from './playerFigure.ts';
 
 /** Sun plus ambient intensity at which the beam is at half strength. */
 export const HALF_BRIGHTNESS = 0.9;
@@ -62,10 +64,11 @@ export class Flashlight {
 
   private readonly spillOverride: boolean | undefined;
   /** `spillOverride` is the render-only comparison switch: true enables present spill, false forces the plain cone, undefined follows content. */
-  constructor(scene: Scene, beamLimit: number, spillOverride?: boolean) {
+  /** `nearFieldMetres` is content's punctual-light offset, the one the illumination query measures with. */
+  constructor(scene: Scene, beamLimit: number, nearFieldMetres: number, spillOverride?: boolean) {
     this.spillOverride = spillOverride;
     // Before any material compiles; the light chunk is shared by all of them.
-    installNearFieldFalloff();
+    installNearFieldFalloff(nearFieldMetres);
     if (spillOverride !== false) {
       installFlashlightSpill(beamLimit);
     }
@@ -105,6 +108,22 @@ export class Flashlight {
    */
   shadowsAllowed = false;
 
+  private aim(item: Item, wornMount: boolean, held: HeldItems, camera: PerspectiveCamera): void {
+    if (wornMount) {
+      // Slung guns have no first-person model; use the body's shoulder, not the eye or held lens.
+      this.at
+        .set(...FIRST_PERSON_SHOULDER.right)
+        .applyQuaternion(camera.quaternion)
+        .add(camera.position);
+      this.ahead.set(0, -1, 0);
+      return;
+    }
+    if (!held.lensOf(item, this.at)) {
+      this.at.copy(camera.position);
+    }
+    camera.getWorldDirection(this.ahead);
+  }
+
   /** Points the beam of the light that's on, or turns it off. Call after `held.update`. */
   update({
     registry,
@@ -112,19 +131,24 @@ export class Flashlight {
     held,
     camera,
     inventory,
+    piles,
   }: {
     registry: Registry;
     lit: Item | undefined;
     held: HeldItems;
     camera: PerspectiveCamera;
     inventory: Inventory;
+    piles?: Pick<PileMeshes, 'beamPoseOf'>;
   }): void {
-    const sources = [...inventory.carriedTree()]
+    const sources = [...inventoryLightEntries(inventory)]
       .filter(
         ({ item, location, path }) =>
           defOf(registry, item.type).light?.beam !== undefined &&
-          lightExposureFor(registry, item, location, path) === 'carried' &&
-          (held.lensOf(item, this.at) || (location.kind === 'worn' && location.slot === 'head')),
+          lightExposureFor(registry, item, location, path) !== undefined &&
+          ((location.kind === 'pile' && piles?.beamPoseOf(item, this.at, this.ahead)) ||
+            held.lensOf(item, this.at) ||
+            (location.kind === 'worn' && location.slot === 'head') ||
+            (location.kind === 'slot' && path.startsWith('inventory.worn.'))),
       )
       .sort(
         (a, b) =>
@@ -141,8 +165,11 @@ export class Flashlight {
       }
       const def = defOf(registry, source.item.type).light!;
       const beam = def.beam!;
-      if (!held.lensOf(source.item, this.at)) {
-        this.at.copy(camera.position);
+      const wornMount = source.location.kind === 'slot' && source.path.startsWith('inventory.worn.');
+      if (source.location.kind === 'pile') {
+        piles!.beamPoseOf(source.item, this.at, this.ahead);
+      } else {
+        this.aim(source.item, wornMount, held, camera);
       }
       light.color.set(def.color);
       light.intensity = def.intensity * this.daylightScale * this.strength;
@@ -157,7 +184,6 @@ export class Flashlight {
       light.angle = angle;
       light.penumbra = beam.penumbra;
       light.position.copy(this.at);
-      camera.getWorldDirection(this.ahead);
       light.target.position.copy(this.at).addScaledVector(this.ahead, 10);
       light.target.updateMatrixWorld();
     }

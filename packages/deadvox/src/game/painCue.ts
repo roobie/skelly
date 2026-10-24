@@ -6,11 +6,11 @@ import type { BodyTuningDef } from '../core/schema.ts';
 
 type PainTierDef = BodyTuningDef['pain']['tiers'][number];
 
-/** Presentation estimates; BR's look, not the pain model, owns these values. */
-const PULSE_RISE_SECONDS = 0.15;
-const PULSE_FALL_SECONDS = 1.2;
-/** How much longer a hit's tilt takes to settle, per unit of the tier's desaturation. */
-const SETTLE_STRETCH = 2;
+export interface PainCueTuning {
+  readonly pulseRiseRealSeconds: number;
+  readonly pulseFallRealSeconds: number;
+  readonly settleStretch: number;
+}
 
 export interface PainCueState {
   /** How much colour to drain now, 0 to 1. */
@@ -20,8 +20,13 @@ export interface PainCueState {
 }
 
 export class PainCue {
+  private readonly tuning: PainCueTuning;
   private sincePulse = Number.POSITIVE_INFINITY;
   private depth = 0;
+
+  constructor(tuning: PainCueTuning) {
+    this.tuning = tuning;
+  }
 
   /** `tier` is felt pain's tier, undefined below the first; a pulse under way finishes when pain eases. */
   step(dt: number, tier: PainTierDef | undefined): PainCueState {
@@ -32,10 +37,12 @@ export class PainCue {
     }
     const t = this.sincePulse;
     const envelope =
-      t < PULSE_RISE_SECONDS ? t / PULSE_RISE_SECONDS : 1 - (t - PULSE_RISE_SECONDS) / PULSE_FALL_SECONDS;
+      t < this.tuning.pulseRiseRealSeconds
+        ? t / this.tuning.pulseRiseRealSeconds
+        : 1 - (t - this.tuning.pulseRiseRealSeconds) / this.tuning.pulseFallRealSeconds;
     return {
       desaturation: this.depth * Math.max(0, envelope),
-      settle: 1 + SETTLE_STRETCH * (tier?.desaturation ?? 0),
+      settle: 1 + this.tuning.settleStretch * (tier?.desaturation ?? 0),
     };
   }
 }

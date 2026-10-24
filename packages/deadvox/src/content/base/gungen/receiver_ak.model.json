@@ -1,0 +1,13 @@
+{
+  "id": "receiver_ak",
+  "file": "assets/models/receiver_ak.glb",
+  "gun": {},
+  "parts": {
+    "receiver_ak": {
+      "item": "receiver_ak",
+      "node": "receiver_ak:receiver",
+      "massKg": 0.85,
+      "centreOfMass": [-0.12189654535377797, 0.013765749122482917, -0.00159948272676889]
+    }
+  }
+}

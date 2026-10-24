@@ -406,6 +406,26 @@ const huntingRifle: Template = {
   ],
 };
 
+const compactSmg: Template = {
+  ...smg,
+  name: 'compact-smg',
+  description: 'Compact submachine gun traced from a dimensioned schematic, on the proportions table.',
+  // The iron sights are the only sights: the optic rail and the optic would sit where the drum stands.
+  slots: [
+    ...smg.slots
+      .filter((slot) => slot.id !== 'front-sight' && slot.id !== 'sight')
+      .map((slot) =>
+        slot.id === 'receiver' ? { ...slot, params: { ...slot.params, section: 'compact-smg', rail: 'none' } } : slot,
+      ),
+    { id: 'front-sight', family: 'front-sight', params: { style: 'ringed' } },
+    { id: 'rear-sight', family: 'drum-rear-sight' },
+  ],
+  connections: [
+    ...smg.connections.filter((connection) => connection.to !== 'sight.base'),
+    { from: 'receiver.rear-sight', to: 'rear-sight.base' },
+  ],
+};
+
 export const boltRifleBox: Template = {
   name: 'bolt-rifle-box',
   description:
@@ -569,35 +589,6 @@ export const pumpShotgun: Template = {
   ],
 };
 
-const bullpup: Template = {
-  name: 'bullpup',
-  description: 'Bullpup: grip ahead of the magazine, butt built into the lower.',
-  root: 'receiver',
-  slots: [
-    { id: 'receiver', family: 'receiver', params: { action: 'auto', feed: 'box', bore: 'M' } },
-    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'barrett', handleStyle: 'bullpup' } },
-    { id: 'lower', family: 'lower', params: { layout: 'bullpup' } },
-    { id: 'barrel', family: 'barrel', params: { length: SML } },
-    { id: 'handguard', family: 'handguard', params: { clearance: 'M' }, chance: 0.3 },
-    { id: 'grip', family: 'grip', params: { length: ['M', 'L'] } },
-    { id: 'magazine', family: 'magazine', params: { length: ['M', 'L'] } },
-    { id: 'sight', family: 'sight', chance: 0.9 },
-  ],
-  connections: [
-    { from: 'receiver.lower', to: 'lower.top' },
-    { from: 'receiver.barrel', to: 'barrel.rear' },
-    { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
-    { from: 'receiver.handguard', to: 'handguard.rear' },
-    { from: 'handguard.front', to: 'barrel.clamp', when: { part: 'handguard', param: 'mount', equals: 'clamped' } },
-    { from: 'lower.grip', to: 'grip.top' },
-    { from: 'lower.magazine', to: 'magazine.top' },
-    { from: ['receiver.rail', 'handguard.rail'], to: 'sight.base', slot: 'any' },
-  ],
-};
-
-/** Remove a name here to restore its template to generation, statistics, sweeps, and the viewer. */
-export const SUSPENDED_TEMPLATE_NAMES: ReadonlySet<string> = new Set(['bullpup']);
-
 export const antiMateriel: Template = {
   name: 'anti-materiel',
   description:
@@ -643,7 +634,7 @@ export const antiMateriel: Template = {
   ],
 };
 
-const ALL_TEMPLATES: readonly Template[] = [
+export const TEMPLATES: readonly Template[] = [
   battleRifle,
   ar,
   ak,
@@ -652,12 +643,9 @@ const ALL_TEMPLATES: readonly Template[] = [
   smg,
   boltRifle,
   huntingRifle,
+  compactSmg,
   boltRifleBox,
   boltRifleThumbhole,
   pumpShotgun,
-  bullpup,
   antiMateriel,
 ];
-
-export const SUSPENDED_TEMPLATES = ALL_TEMPLATES.filter(({ name }) => SUSPENDED_TEMPLATE_NAMES.has(name));
-export const TEMPLATES = ALL_TEMPLATES.filter(({ name }) => !SUSPENDED_TEMPLATE_NAMES.has(name));

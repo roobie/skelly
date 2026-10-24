@@ -14,6 +14,7 @@ import type { PrefabCatalogue } from '../src/gun/prefabs.ts';
 import { ar, TEMPLATES } from '../src/gun/templates.ts';
 import { createEditorState, editorStateFromDesign, saveDesign } from '../src/viewer/designEditor.ts';
 import { loadFixture } from './helpers.ts';
+import { PART_FIXTURE_ITEMS, partFixtureCatalogue } from './partFixture.ts';
 
 /** A test catalogue; the real content belongs to 3.1. Two revisions of one id coexist. */
 const catalogue: PrefabCatalogue = [
@@ -69,6 +70,21 @@ it('preserves authored attachment exclusions through design loading and editor s
     throw new Error(saved.reason);
   }
   expect(saved.design.excludedAttachments).toEqual(excludedAttachments);
+});
+
+it('refuses a design naming an unknown template instead of loading it under another', () => {
+  const result = expectFatal(loadGunDesign(JSON.stringify({ ...makeDesign(), template: 'no-such-template' })));
+  expect(result.error).toMatchObject({ code: 'invalid-shape', path: 'template' });
+  expect(result.error.message).toContain('no-such-template');
+});
+
+it('keeps the declared status readable when the template is unknown', () => {
+  const text = JSON.stringify({ ...makeDesign({ status: 'draft' }), template: 'no-such-template' });
+  expect(expectFatal(loadGunDesign(text)).declaredStatus).toBe('draft');
+});
+
+it('reports unparseable text as invalid JSON', () => {
+  expect(expectFatal(loadGunDesign('{')).error.code).toBe('invalid-json');
 });
 
 it.each([{ excludedAttachments: 'not-an-array' }, { excludedAttachments: ['unknown-fixture-attachment'] }])(
@@ -218,6 +234,22 @@ describe('loadDesign: fatal errors', () => {
     const result = expectFatal(load(makeDesign({ assembly })));
     expect(result.error.code).toBe('unknown-prefab');
     expect(result.error.path).toBe('assembly.parts.magazine.prefab');
+    expect(result.declaredStatus).toBe('published');
+  });
+
+  it.each([
+    ['an unknown item', { item: 'fixture_unknown_item' }, 'assembly.parts.tab.item'],
+    [
+      'a construction override',
+      { item: PART_FIXTURE_ITEMS.tab, params: { size: 'large' } },
+      'assembly.parts.tab.params.size',
+    ],
+    ['a second family', { item: PART_FIXTURE_ITEMS.tab, family: 'tab' }, 'assembly.parts.tab.family'],
+  ])('refuses a part item with %s', (_label, part, path) => {
+    const assembly = withPart(part as unknown as Assembly['parts'][string], 'tab');
+    const result = expectFatal(loadGunDesignValue(makeDesign({ assembly }), inputs(), partFixtureCatalogue()));
+    expect(result.error.code).toBe('invalid-shape');
+    expect(result.error.path).toBe(path);
     expect(result.declaredStatus).toBe('published');
   });
 

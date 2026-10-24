@@ -37,7 +37,7 @@ import {
 } from './stressActors.ts';
 
 const TAU = Math.PI * 2;
-const LUNGE_GRAB = ATTACK_CLIPS.LUNGE_GRAB!;
+const LUNGE_GRAB = ATTACK_CLIPS['lunge-grab'];
 const ATTACKER_FRACTION = 0.1;
 const GRID_SPACING = 3; // metres between actor path centres — clears a ~1-1.1 m radius circle plus lunge reach
 const SWEEP_NS = [15, 30, 60, 120, 240] as const;

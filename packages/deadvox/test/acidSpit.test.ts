@@ -4,10 +4,12 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { type AcidSpitRelease, acidSpitWindupProgress, type PlayerSense, ZombieSystem } from '../src/core/zombies.ts';
-import { PLAYER, physicsFor } from '../src/game/player.ts';
+import { acidSpitWindupProgress } from '../src/core/zombiePose.ts';
+import type { AcidSpitRelease, PlayerSense } from '../src/core/zombies.ts';
 import { startupContent } from './baseRegistry.ts';
+import { PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const { registry } = startupContent();
 const ACID = registry.zombies.get('acid_zombie')!;
@@ -28,7 +30,8 @@ const sensed = (pos: Vec3, movement: PlayerSense['movement'] = 'still'): PlayerS
   movement,
   lit: false,
   lightSeenFrom: 40,
-  crouching: false,
+  eyeHeightMetres: 1.3,
+  stance: 'standing',
 });
 
 interface Harness {
@@ -121,7 +124,10 @@ describe('acid spit', () => {
     expect(h.releases).toHaveLength(1);
     const [{ moves, origin, aim }] = h.releases as [AcidSpitRelease];
     expect(moves).toEqual(SPIT.moves);
-    expect(origin[0]).toBeCloseTo(zombie.body.pos[0], 0);
+    // The spit leaves the posed mouth: ahead of the body toward the player and above its feet.
+    expect(origin[0]).toBeLessThan(zombie.body.pos[0]);
+    expect(origin[0]).toBeGreaterThan(PLAYER_POS[0]);
+    expect(origin[1]).toBeGreaterThan(zombie.body.pos[1]);
     expect(Math.hypot(...aim)).toBeCloseTo(1, 5);
   });
 
@@ -156,13 +162,48 @@ describe('acid spit', () => {
   });
 
   it('lets low cover that clears a standing chest block a crouched one, so a crouched player draws no spit', () => {
-    const level: Vec3 = [0, 1, 0];
-    const lowCover: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === Math.floor(inBand / 2) && y === 2);
-    const stance = (crouching: boolean) => () => ({
-      ...sensed(level),
-      crouching,
-      eyeHeightMetres: PLAYER.eye - (crouching ? TEST_SENSE_TUNING.crouch.eyeDropMetres : 0),
+    const eyeMetres = (crouching: boolean) => PLAYER.eye - (crouching ? PLAYER.crouch.eyeDropMetres : 0);
+    const stanceAt = (feet: Vec3, crouching: boolean) => () => ({
+      ...sensed(feet),
+      stance: crouching ? ('crouching' as const) : ('standing' as const),
+      eyeHeightMetres: eyeMetres(crouching),
     });
+
+    // Whole-block cover must pass over the crouched eye, so sight holds and the wind-up starts, and over the
+    // standing chest, yet cut the crouched chest line from the posed mouth. The player's sensed height is
+    // searched in tenths of a block for a column where that holds, wherever the mouth and eye land.
+    const coverFor = (feet: Vec3) => {
+      const open = harness(stanceAt(feet, false));
+      const watcher = spawn(open).zombie;
+      frames(open.system, WIND_FRAMES + 5);
+      const [{ origin }] = open.releases as [AcidSpitRelease];
+      const eye: Vec3 = [watcher.body.pos[0], watcher.body.pos[1] + ACID.eyeHeightMetres / BLOCK_SIZE, 0];
+      const heightAt = (from: Vec3, x: number, crouching: boolean, fraction: number) => {
+        const target = feet[1] + (eyeMetres(crouching) * fraction) / BLOCK_SIZE;
+        return from[1] + ((target - from[1]) * (x - from[0])) / (feet[0] - from[0]);
+      };
+      const chest = TEST_SENSE_TUNING.chestEyeFraction;
+      // Lines fall toward the player, so a column's near edge is its lowest point and its far edge its highest.
+      const columns = [...new Array(Math.max(0, Math.floor(origin[0]) - 1)).keys()].map((index) => {
+        const x = index + 1;
+        return { level: feet, column: x, top: Math.floor(heightAt(origin, x + 0.5, true, chest)) };
+      });
+      return columns.find(({ column: x, top: block }) => {
+        const clears = (from: Vec3, crouching: boolean, fraction: number) =>
+          heightAt(from, x, crouching, fraction) >= block + 1;
+        return (
+          block >= 1 &&
+          heightAt(origin, x + 1, true, chest) < block + 1 &&
+          clears(origin, false, chest) &&
+          clears(eye, true, 1)
+        );
+      });
+    };
+    const found = [...new Array(10).keys()].map((tenth) => coverFor([0, 1 + tenth / 10, 0])).find(Boolean);
+    expect(found).toBeDefined();
+    const { level, column, top } = found!;
+    const stance = (crouching: boolean) => stanceAt(level, crouching);
+    const lowCover: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === column && y >= 1 && y <= top);
 
     const standing = harness(stance(false), lowCover);
     spawn(standing);

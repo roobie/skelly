@@ -75,7 +75,20 @@ export const HUMANOID_PARAM_ORDER = [
   'footLift',
 ] as const;
 
-export type HumanoidParams = Readonly<Record<(typeof HUMANOID_PARAM_ORDER)[number], number>>;
+export type HumanoidParams = Readonly<Record<(typeof HUMANOID_PARAM_ORDER)[number], number>> & {
+  /** Explicit stance-width base (m, target ankle-to-ankle before sway/limp flavour) for a body whose
+   * template samples no bulk param — the skeleton's replacement for girth's width term (see mob/gait.ts,
+   * stanceWidthTarget). */
+  readonly stepWidth?: number;
+};
+
+/** The proportion params the joint layout reads: a structural subset of HumanoidParams, so a body plan
+ * that samples no bulk param still lays joints out (the skeleton owns no girth; its width lives in the
+ * gait's stepWidth, not in the joints). */
+export type JointLayoutParams = Pick<
+  HumanoidParams,
+  'height' | 'shoulderWidth' | 'hipWidth' | 'armLength' | 'legLength' | 'hunch' | 'kneeBend' | 'headTilt'
+>;
 
 export const WOUNDABLE_BONES = [
   'spine',
@@ -93,7 +106,7 @@ export const WOUNDABLE_BONES = [
 
 // ---- Reference proportions (fractions of `height`) ----
 // packages/mobgen/reference/README.md, fgc_skeleton joint heights, converted to our axes.
-const REF = {
+export const REF = {
   topOfHead: 1.0,
   baseOfSkull: 0.897,
   jawHinge: 0.909,
@@ -115,7 +128,7 @@ const SHIN_FRAC = REF.kneeY - REF.ankleY; // 0.217
 /** A vector of length `len`, pointing up but tilted forward by `tiltDeg` (positive = toward -Z). */
 const leanUp = (len: number, tiltDeg: number): Vec3 => scale(applyDir(rotation(rotX(-tiltDeg)), UP), len);
 
-interface JointLayout {
+export interface JointLayout {
   readonly height: number;
   readonly pelvis: { readonly bottom: Vec3; readonly top: Vec3 };
   readonly spine: { readonly head: Vec3; readonly tail: Vec3 };
@@ -137,7 +150,7 @@ interface JointLayout {
 
 /** Pure geometry: every joint position in the rest pose, from height and proportion params.
  * Shared by the builder (flesh placement) and the gait (leg IK targets, bone lengths). */
-const jointLayout = (p: HumanoidParams): JointLayout => {
+export const jointLayout = (p: JointLayoutParams): JointLayout => {
   const h = p.height;
   const hunchSpine = p.hunch * 0.3;
   const hunchChest = p.hunch * 0.65;
@@ -202,7 +215,7 @@ const hunchOffsetZ = (from: Vec3, to: Vec3, atY: number): number => {
   return from[2] + (to[2] - from[2]) * t;
 };
 
-const makeArm = (h: number, p: HumanoidParams, side: Side): JointLayout['arm'][Side] => {
+const makeArm = (h: number, p: JointLayoutParams, side: Side): JointLayout['arm'][Side] => {
   const sign = sideSign(side);
   const shoulder: Vec3 = [sign * REF.shoulderLat * h * p.shoulderWidth, REF.shoulderY * h, 0];
   const toElbow = scale(
@@ -225,7 +238,7 @@ interface LegGeometry {
   readonly footLen: number;
 }
 
-const makeLeg = (h: number, p: HumanoidParams, side: Side, geo: LegGeometry): JointLayout['leg'][Side] => {
+const makeLeg = (h: number, p: JointLayoutParams, side: Side, geo: LegGeometry): JointLayout['leg'][Side] => {
   const sign = sideSign(side);
   const hip: Vec3 = [sign * REF.hipLat * h * p.hipWidth, geo.hipY, 0];
   const knee: Vec3 = [sign * 0.04 * h, geo.kneeY, geo.kneeForward];
@@ -236,22 +249,36 @@ const makeLeg = (h: number, p: HumanoidParams, side: Side, geo: LegGeometry): Jo
 
 // ---- Bones ----
 
-const buildBones = (layout: JointLayout): Body['bones'] => {
+export const buildBones = (layout: JointLayout): Body['bones'] => {
   const bones: Body['bones'][number][] = [
     { id: 'pelvis', parent: null, head: layout.pelvis.bottom, tail: layout.pelvis.top },
     { id: 'spine', parent: 'pelvis', head: layout.spine.head, tail: layout.spine.tail },
     { id: 'chest', parent: 'spine', head: layout.chest.head, tail: layout.chest.tail },
     { id: 'neck', parent: 'chest', head: layout.neck.head, tail: layout.neck.tail },
-    { id: 'head', parent: 'neck', head: layout.head.head, tail: layout.head.tail },
+    { id: 'head', parent: 'neck', head: layout.head.head, tail: layout.head.tail, disposition: 'sever' },
     { id: 'jaw', parent: 'head', head: layout.jaw.head, tail: layout.jaw.tail },
   ];
   for (const side of SIDES) {
     const arm = layout.arm[side];
     const leg = layout.leg[side];
     bones.push(
-      { id: `upperArm.${side}`, parent: 'chest', head: arm.shoulder, tail: arm.elbow },
-      { id: `forearm.${side}`, parent: `upperArm.${side}`, head: arm.elbow, tail: arm.wrist, marrowMaterial: 'skin' },
-      { id: `hand.${side}`, parent: `forearm.${side}`, head: arm.wrist, tail: arm.handTip, marrowMaterial: 'skin' },
+      { id: `upperArm.${side}`, parent: 'chest', head: arm.shoulder, tail: arm.elbow, disposition: 'sever' },
+      {
+        id: `forearm.${side}`,
+        parent: `upperArm.${side}`,
+        head: arm.elbow,
+        tail: arm.wrist,
+        marrowMaterial: 'skin',
+        disposition: 'sever',
+      },
+      {
+        id: `hand.${side}`,
+        parent: `forearm.${side}`,
+        head: arm.wrist,
+        tail: arm.handTip,
+        marrowMaterial: 'skin',
+        disposition: 'sever',
+      },
       { id: `thigh.${side}`, parent: 'pelvis', head: leg.hip, tail: leg.knee },
       { id: `shin.${side}`, parent: `thigh.${side}`, head: leg.knee, tail: leg.ankle },
       { id: `foot.${side}`, parent: `shin.${side}`, head: leg.ankle, tail: leg.toe },
@@ -304,8 +331,8 @@ const boxFeature = (bone: string, center: Vec3, half: Vec3, round: number): Feat
 // X and Z sit at plain multiples, so x = 0 and x = ±n*v need no snapping to fall exactly on a column).
 // Snapping a feature's Y this way means a carve/paint reliably lands on one intended voxel row instead
 // of splitting across two.
-const snapRow = (y: number, voxel: number): number => (Math.round(y / voxel - 0.5) + 0.5) * voxel;
-const snapCol = (x: number, voxel: number): number => Math.round(x / voxel) * voxel;
+export const snapRow = (y: number, voxel: number): number => (Math.round(y / voxel - 0.5) + 0.5) * voxel;
+export const snapCol = (x: number, voxel: number): number => Math.round(x / voxel) * voxel;
 
 // Median default-voxel-size / median-template-height ratio: shambler 1/41.4,
 // runner 1/45 and brute 1/43. This calibrates the new metric face constants to
@@ -898,6 +925,15 @@ const sampleHumanoid: BodyPlanDef['sample'] = (rng: Rng, template: Template) => 
   return { params, wounds };
 };
 
+const HUMANOID_REGION_BONES: NonNullable<BodyPlanDef['regionBones']> = {
+  head: ['head', 'jaw'],
+  torso: ['pelvis', 'spine', 'chest', 'neck'],
+  leftArm: ['upperArm.L', 'forearm.L', 'hand.L'],
+  rightArm: ['upperArm.R', 'forearm.R', 'hand.R'],
+  leftLeg: ['thigh.L', 'shin.L', 'foot.L'],
+  rightLeg: ['thigh.R', 'shin.R', 'foot.R'],
+};
+
 registerBodyPlan('humanoid', {
   sample: sampleHumanoid,
   build: (genome) => buildHumanoid(genome),
@@ -905,6 +941,7 @@ registerBodyPlan('humanoid', {
   woundBones: WOUNDABLE_BONES,
   budgets: heightHeadBudgets,
   limbBones: HUMANOID_LIMB_BONES,
+  regionBones: HUMANOID_REGION_BONES,
 });
 
 registerBodyPlan('crawler', {
@@ -914,4 +951,5 @@ registerBodyPlan('crawler', {
   woundBones: WOUNDABLE_BONES,
   budgets: heightHeadBudgets,
   limbBones: HUMANOID_LIMB_BONES.filter((id) => !LOWER_CRAWLER_BONE.test(id)),
+  regionBones: HUMANOID_REGION_BONES,
 });

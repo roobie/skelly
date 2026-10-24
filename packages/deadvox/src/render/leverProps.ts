@@ -70,7 +70,7 @@ export class LeverProps {
     source.updateWorldMatrix(true, true);
     let mesh: Mesh | undefined;
     source.traverse((child) => {
-      if (!mesh && child instanceof Mesh && child.geometry.userData.mergeGroup === lever.mergeGroup) {
+      if (!mesh && child instanceof Mesh && child.geometry.userData.piece === lever.piece) {
         mesh = child;
       }
     });

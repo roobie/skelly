@@ -1,0 +1,17 @@
+{
+  "id": "box_van_floor",
+  "file": "assets/models/box_van_floor.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 180,
+      "centreOfMass": [-0.90625, 0.875, 0],
+      "collision": [
+        { "min": [-3, 0.96875, -1], "max": [1.1875, 1, 1] },
+        { "min": [-3, 0.71875, -0.4375], "max": [1.1875, 0.96875, 0.4375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

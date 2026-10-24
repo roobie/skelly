@@ -1,0 +1,13 @@
+{
+  "id": "handguard_ak",
+  "file": "assets/models/handguard_ak.glb",
+  "gun": {},
+  "parts": {
+    "handguard_ak": {
+      "item": "handguard_ak",
+      "node": "handguard_ak:handguard",
+      "massKg": 0.25,
+      "centreOfMass": [0.08912941176470585, 0.00429019607843137, 0]
+    }
+  }
+}

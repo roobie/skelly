@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest';
 import { PainCue } from '../src/game/painCue.ts';
+import { PAIN_CUE_TUNING_FIXTURE } from './presentationFixture.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 
 const [twinge, agony] = BODY_TUNING_FIXTURE.pain.tiers;
@@ -7,7 +8,7 @@ const FRAME = 1 / 60;
 
 /** Pulses begun, deepest drain and settle over `seconds` of frames, with the tier given for each moment. */
 const watch = (seconds: number, tierAt: (t: number) => typeof twinge) => {
-  const cue = new PainCue();
+  const cue = new PainCue(PAIN_CUE_TUNING_FIXTURE);
   let pulses = 0;
   let deepest = 0;
   let state = { desaturation: 0, settle: 1 };

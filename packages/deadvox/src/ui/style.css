@@ -9,6 +9,8 @@
   --ui-layer-crafting: 21;
   --ui-layer-activity-progress: 22;
   --ui-layer-drag-ghost: 23;
+  /* Inside the inventory panel's own stacking context, above its drop marks. */
+  --ui-layer-item-viewer: 24;
   --ui-layer-reading: 40;
   --ui-layer-debug-ui: 50;
   --ui-layer-debug-overlay: 1000;
@@ -727,6 +729,48 @@ body.unconscious::after {
   visibility: hidden;
   pointer-events: none;
 }
+/* The item viewer covers the whole panel, so no press reaches an item beneath it. */
+#inventory .inv-viewer {
+  position: absolute;
+  inset: 0;
+  z-index: var(--ui-layer-item-viewer);
+  display: grid;
+  place-items: center;
+  padding: calc(var(--ui-spacing) * 1rem);
+  border-radius: inherit;
+  background: rgb(10 11 14 / 92%);
+  /* It holds focus only so keys leave the covered inventory; its own controls show focus. */
+  outline: none;
+}
+#inventory .inv-viewer-card {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ui-spacing) * 0.5rem);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+#inventory .inv-viewer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--ui-spacing) * 0.75rem);
+}
+.inv-viewer-head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+#inventory .inv-viewer-canvas {
+  display: block;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: 1px solid var(--line);
+  border-radius: 0.375rem;
+  background: #1a1d22;
+  cursor: grab;
+  touch-action: none;
+}
 /* The side panes' floors are their min-widths too, so the splitter's clamp reads the same values. */
 #inventory .inv-body[data-tab-panel="items"] {
   --inv-details-width: 20%;
@@ -930,6 +974,18 @@ body.unconscious::after {
   min-width: min(100%, var(--inv-around-container-width-cap, 100%));
   max-width: min(100%, var(--inv-around-container-width-cap, 100%));
 }
+#inventory .inv-around-section[data-around-section="vehicle"] {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+/* One row per vehicle site: the fitted part (or the empty site), its condition and its service work. */
+.inv-vehicle-site {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--ui-spacing) * 0.25rem) calc(var(--ui-spacing) * 0.5rem);
+  min-width: 0;
+}
 #inventory .inv-pocket {
   min-width: 0;
   max-width: 100%;
@@ -943,6 +999,9 @@ body.unconscious::after {
 }
 .inv-pile[data-entity-uid] {
   flex: 0 1 auto;
+}
+.inv-target > .inv-pile-label {
+  color: var(--text);
 }
 /* One grid cell is 3rem: `GRID_CELL_REM` in src/core/inventoryGridName.ts. */
 #inventory .inv-grid-packed {
@@ -988,6 +1047,29 @@ body.unconscious::after {
 }
 .inv-item.selected {
   border: 2px solid var(--accent);
+}
+.inv-find {
+  min-width: 9rem;
+  padding: calc(var(--ui-spacing) * 0.375rem) calc(var(--ui-spacing) * 0.5rem);
+  border: 1px solid var(--line);
+  border-radius: 0.375rem;
+  background: #22262c;
+  color: var(--text);
+  font: inherit;
+}
+.inv-find:focus {
+  border-color: var(--accent);
+}
+.inv-item.inv-item-unmatched {
+  opacity: 0.3;
+}
+.inv-item-picture {
+  float: left;
+  width: 1.125rem;
+  height: 1.125rem;
+  object-fit: contain;
+  margin-right: calc(var(--ui-spacing) * 0.125rem);
+  pointer-events: none;
 }
 .inv-item-name {
   display: block;
@@ -1055,13 +1137,18 @@ body.unconscious::after {
   pointer-events: none;
   border-radius: 0.1875rem;
 }
+.inv-service-target {
+  position: relative;
+}
 .inv-preview[data-drop-shape="will-land"],
-.inv-slot[data-drop-shape="will-land"] {
+.inv-slot[data-drop-shape="will-land"],
+.inv-service-target[data-drop-shape="will-land"] {
   background: rgb(224 176 74 / 22%);
   border: 2px solid var(--accent);
 }
 .inv-preview[data-drop-shape="blocked"],
-.inv-slot[data-drop-shape="blocked"] {
+.inv-slot[data-drop-shape="blocked"],
+.inv-service-target[data-drop-shape="blocked"] {
   background-color: rgb(224 135 110 / 22%);
   background-image: repeating-linear-gradient(135deg, transparent 0 5px, rgb(20 20 20 / 45%) 5px 7px);
   border: 2px dashed #e0876e;
@@ -1088,7 +1175,8 @@ body.unconscious::after {
   border: 2px dashed #e0876e;
 }
 .inv-preview[data-drop-mark]::before,
-.inv-slot[data-drop-mark]::before {
+.inv-slot[data-drop-mark]::before,
+.inv-service-target[data-drop-mark]::before {
   content: attr(data-drop-mark);
   position: absolute;
   top: 50%;
@@ -2260,6 +2348,10 @@ body.inventory-open.inventory-tab-crafting #crafting {
   height: 0.5rem;
   margin: 0 0 calc(var(--ui-spacing) * 0.875rem);
   accent-color: #735e31;
+}
+.reading-map {
+  flex: 1;
+  min-height: 8rem;
 }
 .reading-text {
   min-height: 0;

@@ -2,7 +2,9 @@
   "sounds": [
     {
       "category": "world",
-      "gain": 0.84999999999999998,
+      "debugHint": "?debug=1&loadout=pump: unpack the sealed box, then load loose shells into the pump and rack it.",
+      "description": "Fire a chambered pump shotgun; it needs racking before the next shot.",
+      "gain": 0.80000000000000004,
       "gainJitter": [1, 1],
       "id": "shotgun_blast",
       "lowShelf": {
@@ -16,6 +18,24 @@
       },
       "pitchJitter": [0.85999999999999999, 0.90000000000000002],
       "variants": ["assets/audio/shotgun-model12-01.ogg", "assets/audio/shotgun-model12-02.ogg"]
+    },
+    {
+      "category": "world",
+      "description": "Fire a chambered pump shotgun with LMB; this deep layer sounds with the blast.",
+      "gain": 0.80000000000000004,
+      "gainJitter": [1, 1],
+      "id": "shotgun_boom",
+      "lowShelf": {
+        "frequencyHz": 240,
+        "gainDb": 4
+      },
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.57999999999999996, 0.64000000000000001],
+      "variants": ["assets/audio/gunshot-tikka-01.ogg", "assets/audio/gunshot-tikka-02.ogg"]
     }
   ]
 }

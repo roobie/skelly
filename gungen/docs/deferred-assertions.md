@@ -9,7 +9,7 @@ read_if:
 
 Item and part masses are authored gameplay content, not geometry-derived product
 specifications. Exact outputs stay unpinned so tuning does not freeze the closed item set.
-Inspect the table in `src/gun/physical.jsonnet`, `partMasses`, and re-export through
+Inspect the catalogue in `src/gun/catalogue.jsonnet`, `parts`, and re-export through
 `src/gun/physical.ts`, `gunModelParts`. Tests protect authoritative item weight and part
 summation with their own fixtures instead of pinning production totals.
 

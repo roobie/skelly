@@ -273,7 +273,7 @@ describe('playtest observer snapshot oracle', () => {
       spawner: { snapshotState: () => [] },
       survival: { snapshotState: () => ({}) },
       playerAudio: {},
-      worldDiffs: () => ({ chunks: [] }),
+      worldColumns: () => [],
       audioState: () => ({}),
     } as unknown as Session;
     const observer = new PlaytestObserver(new SessionMetrics(1));

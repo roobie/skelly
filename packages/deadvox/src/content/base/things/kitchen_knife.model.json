@@ -1,0 +1,15 @@
+{
+  "id": "kitchen_knife",
+  "file": "assets/models/kitchen_knife.glb",
+  "parts": {
+    "kitchen_knife": {
+      "node": "kitchen_knife:knife",
+      "massKg": 0.15,
+      "centreOfMass": [0.03870005058168944, -0.003254425897824988, -0.000023267577137076356]
+    }
+  },
+  "grip": { "at": [-0.054999999999996003, 0, 0], "turn": [0, 0, 0] },
+  "hold": "forward",
+  "roll": 0,
+  "anchors": { "strike": [0.2471, 1.599415044850616e-14, 0] }
+}

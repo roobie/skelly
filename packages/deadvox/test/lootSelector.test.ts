@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { chargeShare } from '../src/core/lights.ts';
 import { corpseLootPoint, type LootSpawnPoint, rollLoot, selectLootType } from '../src/core/loot.ts';
 import { Rng } from '../src/core/random.ts';
 import { gamePerHour, simSeconds } from '../src/core/time.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
 
 const context = { usage: ['Medical'], tier: 'Tier2' } as const;
@@ -15,6 +17,8 @@ const itemDefinition = (id: string, usage: string[], tiers: string[]) => ({
   weight: 1,
   stack: 10,
   economy: { usage, tiers },
+  workInProgress: false,
+  notLoot: false,
 });
 const fixture = () => {
   const result = buildRegistry([
@@ -22,12 +26,23 @@ const fixture = () => {
     {
       source: 'selector-fixture',
       data: {
+        furnitureMaterials: fixtureMaterials(),
+        sounds: fixtureSounds(),
         items: [
           itemDefinition('stock', ['Medical'], ['Tier2']),
           itemDefinition('wrong_usage', ['Military'], ['Tier2']),
           itemDefinition('wrong_tier', ['Medical'], ['Tier1', 'Tier3']),
         ],
-        furniture: [{ id: 'unused', name: 'fixture', size: [1, 1, 1], color: '#123456' }],
+        furniture: [
+          {
+            id: 'unused',
+            name: 'fixture',
+            size: [1, 1, 1],
+            color: '#123456',
+            breach: fixtureBreach(),
+            material: FIXTURE_MATERIAL,
+          },
+        ],
         loot: [
           {
             id: 'supply',
@@ -137,5 +152,18 @@ describe('central loot selection', () => {
     const stacks = [...inventory.items()].map(({ item }) => item);
     expect(stacks).toHaveLength(1);
     expect(stacks[0]!.count).toBe(2);
+  });
+
+  it('spawns authored fixed batteries at their authored share of full charge', () => {
+    const registry = fixture();
+    const host = registry.items.get('stock')!;
+    registry.items.set(host.id, { ...host, battery: { capacity: 2 } });
+    const inventory = new Inventory(registry);
+    const source: LootSpawnPoint = {
+      ...point(),
+      supply: { kind: 'fixed', items: [{ item: 'stock', charge: 0.25 }] },
+    };
+    const [rolled] = rollLoot(registry, source, Rng.stream(1, 'charge'));
+    expect(chargeShare(registry, inventory.createRolled(rolled!))).toBe(0.25);
   });
 });
