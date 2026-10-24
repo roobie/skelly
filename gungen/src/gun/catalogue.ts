@@ -46,7 +46,7 @@ const ROW_ID = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 // Item ids are Deadvox content ids, so they follow its grammar rather than the row spelling.
 const ITEM_ID = /^[a-z0-9_]+$/;
 
-const isItem = (entry: CatalogueEntry): entry is PartItem => entry.params !== undefined;
+const isItem = (entry: CatalogueEntry): entry is PartItem => entry.params !== undefined && entry.finish !== undefined;
 
 const itemProblems = (item: PartItem, domain: Domain, placement: ReadonlySet<string>): string[] => {
   const family = domain.families[item.family]!;
@@ -88,7 +88,7 @@ export const loadPartCatalogue = (raw: unknown, domain: Domain = gunDomain): Par
       ...(Object.keys(entry.match).some((name) => placement.has(name))
         ? [`catalogue entry ${entry.id} selects on pose or placement`]
         : []),
-      ...(isItem(entry) === (entry.finish !== undefined)
+      ...((entry.params === undefined) === (entry.finish === undefined)
         ? []
         : [`catalogue entry ${entry.id} needs both params and finish to be an item`]),
     ]),

@@ -122,6 +122,15 @@ const consumptionGaps = (sources) => {
   return { registry, gaps, guns: guns.length, companions };
 };
 const BASE_CONSUMPTION = consumptionGaps(BASE_SOURCES);
+// Recipe guns whose authored design names part items, with that instance → item composition.
+const COMPOSED_GUNS = RECIPE.filter(({ kind }) => kind === 'design').flatMap(({ id, source }) => {
+  const loaded = loadGunDesign(readFileSync(join(ROOT, source), 'utf8'));
+  if (!loaded.ok) {
+    throw new Error(`${source}: ${loaded.error.message}`);
+  }
+  const items = loaded.design.items ?? {};
+  return Object.keys(items).length === 0 ? [] : [{ id, items }];
+});
 
 describe('gungen exports satisfy deadvox model validation', () => {
   it('validates each curated gun model entry, including action metadata', () => {
@@ -190,18 +199,30 @@ describe('gungen exports satisfy deadvox model validation', () => {
     assert.ok(guns > 0 && companions > 0, 'the base must consume a recipe gun and its companions');
   });
 
-  it('draws each fitted part item from its own recipe export and weighs it loose as fitted', () => {
+  it('fits each recipe gun with its authored part items, each drawn and weighed as its loose export', () => {
     const { registry } = BASE_CONSUMPTION;
-    const fitted = [...registry.models.values()].flatMap((model) =>
-      Object.values(model.parts ?? {})
-        .filter((part) => part.item !== undefined)
-        .map((part) => ({ model, part })),
-    );
-    assert.ok(fitted.length > 0, 'the base must fit a part item');
-    for (const { model, part } of fitted) {
-      const item = registry.items.get(part.item);
-      assert.ok(item && RECIPE_IDS.has(item.model), `${model.id}: ${part.item} is no recipe part item`);
-      assert.equal(typeWeightGrams(registry, item.id), part.massKg * 1000, `${model.id}: ${part.item} weight`);
+    assert.ok(COMPOSED_GUNS.length > 0, 'the recipe must ship a gun composed of part items');
+    const looseExport = new Map(RECIPE.filter(({ kind }) => kind === 'part').map(({ id, source }) => [source, id]));
+    for (const gun of COMPOSED_GUNS) {
+      const parts = registry.models.get(gun.id)?.parts ?? {};
+      const fitted = Object.fromEntries(
+        Object.entries(parts)
+          .filter(([, part]) => part.item !== undefined)
+          .map(([id, part]) => [id, part.item]),
+      );
+      assert.deepEqual(fitted, gun.items, `${gun.id}: fitted part items differ from its design`);
+      for (const [id, itemId] of Object.entries(gun.items)) {
+        const item = registry.items.get(itemId);
+        const loose = item && modelOf(registry, item);
+        assert.ok(loose && item.model === looseExport.get(itemId), `${gun.id} ${id}: ${itemId} is no loose export`);
+        const { massKg } = parts[id];
+        assert.deepEqual(
+          Object.values(loose.parts ?? {}).map((part) => part.massKg),
+          [massKg],
+          `${gun.id} ${id}: loose mass`,
+        );
+        assert.equal(typeWeightGrams(registry, itemId), massKg * 1000, `${gun.id} ${id}: ${itemId} weight`);
+      }
     }
   });
 

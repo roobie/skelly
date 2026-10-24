@@ -1,19 +1,23 @@
-import { readFileSync } from 'node:fs';
 import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { Domain, PartDef, Resolved } from '@skelly/engine/assembly/schema.ts';
+import type { Assembly, Domain, PartDef } from '@skelly/engine/assembly/schema.ts';
 import { partNodeName } from '@skelly/thing-export/glb.ts';
 import { expect, it } from 'vitest';
 import { ATTACHMENT_IDS, attachmentInstanceForId } from '../src/gun/attachments.ts';
-import catalogueContent from '../src/gun/catalogue.json' with { type: 'json' };
 import { loadPartCatalogue, PART_CATALOGUE } from '../src/gun/catalogue.ts';
-import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
-import { gunModelParts, type PartItems, PartMassError } from '../src/gun/physical.ts';
+import { gunModelParts, PartMassError } from '../src/gun/physical.ts';
+import {
+  PART_FIXTURE_CONTENT,
+  PART_FIXTURE_DOMAIN,
+  PART_FIXTURE_ITEMS,
+  partFixtureAssembly,
+  partFixtureCatalogue,
+} from './partFixture.ts';
 
 const MASS_CONTEXT = /mass-fixture.*body.*fixture.*plain.*matched/;
 const AMBIGUOUS_ROWS = /plain-body, second-body/;
-const NO_GRIP_ITEM = /no grip item/;
-const BUILT_OTHERWISE = /built with length/;
+const NO_TAB_ITEM = /no tab item/;
+const BUILT_OTHERWISE = /built with size/;
 
 const fixtureDomain = (): Domain => {
   const part: PartDef = { family: 'fixture', solids: [], ports: [], axes: [], keepOuts: [] };
@@ -27,21 +31,20 @@ const fixtureDomain = (): Domain => {
   };
 };
 
-// The pilot design: its body parts name catalogue items, its magazine and optic are replaceable children.
-const pilot = (): { readonly resolved: Resolved; readonly items: PartItems; readonly replaceable: Set<string> } => {
-  const loaded = loadGunDesign(readFileSync(new URL('../designs/archetype-ar.json', import.meta.url), 'utf8'));
-  if (!(loaded.ok && loaded.design.items)) {
-    throw new Error('the pilot design does not load with item references');
+const catalogue = partFixtureCatalogue();
+// The clip is the replaceable child in both fixture assemblies.
+const REPLACEABLE = new Set([partNodeName('clip', 'tab')]);
+
+const resolvedFixture = (assembly: Assembly) => {
+  const resolved = resolve(assembly, PART_FIXTURE_DOMAIN);
+  if (resolved.issues.length > 0) {
+    throw new Error(`fixture assembly does not resolve: ${JSON.stringify(resolved.issues)}`);
   }
-  const { assembly, items } = loaded.design;
-  const resolved = resolve(assembly, gunDomain);
-  const replaceable = new Set(
-    Object.entries(assembly.parts)
-      .filter(([id]) => items[id] === undefined)
-      .map(([id, part]) => partNodeName(id, part.family)),
-  );
-  return { resolved, items, replaceable };
+  return resolved;
 };
+
+const fixtureParts = (assembly: Assembly, items: Readonly<Record<string, string>> = PART_FIXTURE_ITEMS) =>
+  gunModelParts(resolvedFixture(assembly), REPLACEABLE, { catalogue, items });
 
 it('refuses export with no matching authored mass row or several matching rows', () => {
   const domain = fixtureDomain();
@@ -51,11 +54,11 @@ it('refuses export with no matching authored mass row or several matching rows',
   );
   expect(resolved.issues).toEqual([]);
   const row = { id: 'plain-body', family: 'fixture', match: { style: 'plain' }, massKg: 1 };
-  const catalogue = (parts: readonly object[]) => loadPartCatalogue({ placementParams: [], parts }, domain);
-  expect(gunModelParts(resolved, new Set(), { catalogue: catalogue([row]) }).body?.massKg).toBe(row.massKg);
-  const ambiguous = catalogue([row, { ...row, id: 'second-body', match: {} }]);
-  for (const rows of [catalogue([]), ambiguous]) {
-    expect(() => gunModelParts(resolved, new Set(), { catalogue: rows })).toThrow(MASS_CONTEXT);
+  const rows = (parts: readonly object[]) => loadPartCatalogue({ placementParams: [], parts }, domain);
+  expect(gunModelParts(resolved, new Set(), { catalogue: rows([row]) }).body?.massKg).toBe(row.massKg);
+  const ambiguous = rows([row, { ...row, id: 'second-body', match: {} }]);
+  for (const candidate of [rows([]), ambiguous]) {
+    expect(() => gunModelParts(resolved, new Set(), { catalogue: candidate })).toThrow(MASS_CONTEXT);
   }
   expect(() => gunModelParts(resolved, new Set(), { catalogue: ambiguous })).toThrow(AMBIGUOUS_ROWS);
 });
@@ -84,44 +87,44 @@ it('gives every choice of every body family param a mass row that admits it', ()
 });
 
 it('weighs a fitted item by its own mass and leaves replaceable children out of the body', () => {
-  const { resolved, items, replaceable } = pilot();
-  expect(replaceable.size).toBeGreaterThan(0);
-  const parts = gunModelParts(resolved, replaceable, { items });
-  expect(Object.keys(parts).sort()).toEqual(Object.keys(items).sort());
-  for (const [id, itemId] of Object.entries(items)) {
-    expect(parts[id]).toMatchObject({ item: itemId, massKg: PART_CATALOGUE.items.get(itemId)?.massKg });
+  const parts = fixtureParts(partFixtureAssembly('front', 'flat'));
+  expect(Object.keys(parts).sort()).toEqual(Object.keys(PART_FIXTURE_ITEMS).sort());
+  for (const [id, itemId] of Object.entries(PART_FIXTURE_ITEMS)) {
+    expect(parts[id]).toMatchObject({ item: itemId, massKg: catalogue.items.get(itemId)?.massKg });
   }
 });
 
 it('gives one item the same identity and mass wherever an assembly places it', () => {
-  const { resolved, items, replaceable } = pilot();
-  const moved = resolve({ ...resolved.assembly, root: 'barrel' }, gunDomain);
-  const [here, there] = [resolved, moved].map((r) => gunModelParts(r, replaceable, { items }).receiver);
-  expect(here?.item).toBe(items.receiver);
+  const [here, there] = [partFixtureAssembly('front', 'flat'), partFixtureAssembly('top', 'raised')].map(
+    (assembly) => fixtureParts(assembly).tab,
+  );
+  expect(here?.item).toBe(PART_FIXTURE_ITEMS.tab);
   expect(there).toMatchObject({ item: here?.item, massKg: here?.massKg });
   expect(there?.centreOfMass).not.toEqual(here?.centreOfMass);
 });
 
 it('refuses an item reference that names another family or a part built otherwise', () => {
-  const { resolved, items, replaceable } = pilot();
-  expect(() => gunModelParts(resolved, replaceable, { items: { ...items, grip: items.stock! } })).toThrow(NO_GRIP_ITEM);
-  const barrel = PART_CATALOGUE.items.get(items.barrel!)!;
-  const length = gunDomain.families.barrel!.params.length!.values.find((value) => value !== barrel.params.length)!;
-  const rebuilt = loadPartCatalogue({
-    ...catalogueContent,
-    parts: catalogueContent.parts.map((entry) =>
-      entry.id === barrel.id
-        ? { ...entry, match: { ...entry.match, length }, params: { ...barrel.params, length } }
-        : entry,
-    ),
-  });
-  expect(() => gunModelParts(resolved, replaceable, { catalogue: rebuilt, items })).toThrow(PartMassError);
-  expect(() => gunModelParts(resolved, replaceable, { catalogue: rebuilt, items })).toThrow(BUILT_OTHERWISE);
+  const assembly = partFixtureAssembly('front', 'flat');
+  expect(() => fixtureParts(assembly, { ...PART_FIXTURE_ITEMS, tab: PART_FIXTURE_ITEMS.frame })).toThrow(NO_TAB_ITEM);
+  const large = { ...assembly, parts: { ...assembly.parts, tab: { family: 'tab', params: { size: 'large' } } } };
+  expect(() => fixtureParts(large)).toThrow(PartMassError);
+  expect(() => fixtureParts(large)).toThrow(BUILT_OTHERWISE);
 });
 
 it('refuses a catalogue in which two items build the same part', () => {
-  const [item] = PART_CATALOGUE.items.values();
+  const [item] = PART_FIXTURE_CONTENT.parts;
   expect(() =>
-    loadPartCatalogue({ ...catalogueContent, parts: [...catalogueContent.parts, { ...item, id: 'fixture_twin' }] }),
+    partFixtureCatalogue({
+      ...PART_FIXTURE_CONTENT,
+      parts: [...PART_FIXTURE_CONTENT.parts, { ...item, id: 'fixture_twin' }],
+    }),
   ).toThrow('two catalogue items build the same part');
+});
+
+it('names the missing half when a catalogue entry has construction params but no finish', () => {
+  const [item] = PART_FIXTURE_CONTENT.parts;
+  const { finish: _finish, ...unfinished } = item!;
+  expect(() =>
+    partFixtureCatalogue({ ...PART_FIXTURE_CONTENT, parts: [unfinished, ...PART_FIXTURE_CONTENT.parts.slice(1)] }),
+  ).toThrow('needs both params and finish');
 });

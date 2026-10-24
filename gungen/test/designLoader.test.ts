@@ -14,6 +14,7 @@ import type { PrefabCatalogue } from '../src/gun/prefabs.ts';
 import { ar, TEMPLATES } from '../src/gun/templates.ts';
 import { createEditorState, editorStateFromDesign, saveDesign } from '../src/viewer/designEditor.ts';
 import { loadFixture } from './helpers.ts';
+import { PART_FIXTURE_ITEMS, partFixtureCatalogue } from './partFixture.ts';
 
 /** A test catalogue; the real content belongs to 3.1. Two revisions of one id coexist. */
 const catalogue: PrefabCatalogue = [
@@ -237,16 +238,16 @@ describe('loadDesign: fatal errors', () => {
   });
 
   it.each([
-    ['an unknown item', { item: 'fixture_unknown_item' }, 'assembly.parts.grip.item'],
+    ['an unknown item', { item: 'fixture_unknown_item' }, 'assembly.parts.tab.item'],
     [
       'a construction override',
-      { item: 'grip_standard', params: { length: 'L' } },
-      'assembly.parts.grip.params.length',
+      { item: PART_FIXTURE_ITEMS.tab, params: { size: 'large' } },
+      'assembly.parts.tab.params.size',
     ],
-    ['a second family', { item: 'grip_standard', family: 'grip' }, 'assembly.parts.grip.family'],
+    ['a second family', { item: PART_FIXTURE_ITEMS.tab, family: 'tab' }, 'assembly.parts.tab.family'],
   ])('refuses a part item with %s', (_label, part, path) => {
-    const assembly = withPart(part as unknown as Assembly['parts'][string], 'grip');
-    const result = expectFatal(load(makeDesign({ assembly })));
+    const assembly = withPart(part as unknown as Assembly['parts'][string], 'tab');
+    const result = expectFatal(loadGunDesignValue(makeDesign({ assembly }), inputs(), partFixtureCatalogue()));
     expect(result.error.code).toBe('invalid-shape');
     expect(result.error.path).toBe(path);
     expect(result.declaredStatus).toBe('published');
