@@ -46,7 +46,7 @@ local screw(name, z) = turned(name, 'screw', 'x', [[0, 0], [0, 0.0045], [0.003, 
   }, { core: 'plastic-black', winding: 'copper' }) + { voxelGrain: 0.004 },
   // A 32 mm outer diameter compression spring of 4 mm stock, eight turns.
   item('small_spring', 'coil', 0.020, { radius: 0.014, tubeRadius: 0.002, turns: 8, pitch: 0.005 }, { body: 'steel-grey' }) + { voxelGrain: 0.002 },
-  // Four 75 mm steel butt hinges opened flat, two by two.
+  // Four 75 mm brass butt hinges with steel pins, opened flat, two by two.
   compound('hinge_set', 0.360,
     hinge('a', -0.040, -0.034) + hinge('b', 0.040, -0.034) + hinge('c', -0.040, 0.034) + hinge('d', 0.040, 0.034),
     { leaf: 'brass', knuckle: 'steel-grey' }) + { voxelGrain: 0.002 },
