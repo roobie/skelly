@@ -1,4 +1,4 @@
-export type CartridgeClearanceMeasure = 'maximumOverallLengthMm' | 'maximumHeadDiameterMm' | 'caseLengthMm';
+type CartridgeClearanceMeasure = 'maximumOverallLengthMm' | 'maximumHeadDiameterMm' | 'caseLengthMm';
 
 interface CartridgeClearance {
   readonly measure: CartridgeClearanceMeasure;
