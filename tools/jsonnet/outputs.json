@@ -405,6 +405,10 @@
       "output": "packages/mobgen/src/mob/materialTemplates.json"
     },
     {
+      "source": "packages/mobgen/src/mob/skeletonTemplate.jsonnet",
+      "output": "packages/mobgen/src/mob/skeletonTemplate.json"
+    },
+    {
       "source": "packages/thing-authoring-tool/exports/deadvox.jsonnet",
       "output": "packages/thing-authoring-tool/exports/deadvox.json"
     },
