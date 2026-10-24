@@ -31,6 +31,7 @@
     noRoomToStand: 'No room to stand up',
     noRoomToCrouch: 'No room to crouch',
     search: 'Search the {furniture}',
+    focusUnknown: 'No showroom prop "{focus}"',
   },
   doors: {
     operate: '{action} the {door}',

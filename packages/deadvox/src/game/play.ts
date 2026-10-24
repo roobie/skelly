@@ -2,7 +2,7 @@
 // The simulation core runs the clock, the player's physics, needs and the handling
 // queue; Esc pauses it. When health runs out, the death screen offers a new world.
 
-import { actionText, fillParts, fillText } from '../core/actionText.ts';
+import { type ActionText, actionText, fillParts, fillText } from '../core/actionText.ts';
 import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import type { BodyRegion } from '../core/body.ts';
@@ -675,6 +675,17 @@ const createPlayTutorial = (engine: Engine, enabled: boolean | undefined) => {
   return { tutorial, drawTutorial };
 };
 
+/** Says once, on the first live frame, that a focus fell back; loading and the main menu would use up its time. */
+const focusNoticeOnce = (lines: ActionText, unknownFocus: string | undefined) => {
+  let text = unknownFocus === undefined ? undefined : fillText(lines.play.focusUnknown, { focus: unknownFocus });
+  return (live: boolean, show: (notice: string) => void): void => {
+    if (live && text !== undefined) {
+      show(text);
+      text = undefined;
+    }
+  };
+};
+
 export const startPlay = (
   engine: Engine,
   debugModule?: DebugModule,
@@ -693,7 +704,10 @@ export const startPlay = (
   const s = scale.blockSize;
   const { tutorial, drawTutorial } = createPlayTutorial(engine, options.tutorial);
 
-  const playerStart = playerStartFromWorld(engine, scale, config.debugStart, options.restore !== undefined);
+  const playerStart = playerStartFromWorld(engine, scale, config.debugStart, {
+    restoring: options.restore !== undefined,
+    focus: config.focus,
+  });
   let debugTools: DebugRuntime | undefined;
   let replayPlayer: InputReplayPlayer | undefined;
   const shouldCancelForViewerFocus = (reason: InputCancellationReason): boolean =>
@@ -3896,11 +3910,12 @@ export const startPlay = (
     });
   };
 
-  const observeScenarioFrame = (seconds: number): void =>
-    session.observeRunFrame(
-      seconds,
-      worldLoading.ready && started && !mainMenuOpen && document.visibilityState === 'visible',
-    );
+  const showFocusNotice = focusNoticeOnce(lines, playerStart.unknownFocus);
+  const observeScenarioFrame = (seconds: number): void => {
+    const live = worldLoading.ready && started && !mainMenuOpen && document.visibilityState === 'visible';
+    showFocusNotice(live, showNotice);
+    session.observeRunFrame(seconds, live);
+  };
 
   const prepareStreaming = (now: RealTimestamp): void => {
     streamer.update(body.pos[0], body.pos[2]);

@@ -128,6 +128,7 @@
         "play": {
           "continueRefused": "Can't continue: {reason}",
           "dropRefused": "Can't drop it: {reason}",
+          "focusUnknown": "No showroom prop \"{focus}\"",
           "fuseBurning": "The fuse is already burning",
           "gunNotReady": "The gun isn't ready",
           "noRoomToCrouch": "No room to crouch",
