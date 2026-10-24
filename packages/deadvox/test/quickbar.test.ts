@@ -18,6 +18,7 @@ const runtime = () => {
     reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 1, clock: BASE_CLOCK }),
     feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
     notice: () => undefined,
+    readingLight: () => undefined,
     read: () => {
       throw new Error('Unexpected reading in quickbar fixture');
     },

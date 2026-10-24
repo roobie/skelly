@@ -228,6 +228,18 @@
     }
   },
   {
+    "id": "opened_soda",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "opened_soda",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
     "id": "can_opener",
     "kind": "item",
     "options": {
@@ -378,6 +390,18 @@
       "mass": "inventory-atom"
     },
     "source": "soup",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "soda",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "soda",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.01

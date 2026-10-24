@@ -115,6 +115,7 @@
     preferredCompete: 'Preferred alternatives compete for the same stock or would consume a required tool',
     bookGone: 'The book is missing',
     bookNotHeld: "I'm not holding the book",
+    tooDarkToRead: "It's too dark to read",
     wrongCartridge: "It doesn't take that cartridge",
     rightHandOnLadder: 'My right hand is holding the ladder',
     leftHandOnLadder: 'My left hand is holding the ladder',

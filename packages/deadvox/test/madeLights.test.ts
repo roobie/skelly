@@ -20,6 +20,7 @@ const setup = () => {
     reach: bindReach(player),
     feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
     notice: () => undefined,
+    readingLight: () => undefined,
     read: () => {
       throw new Error('Unexpected reading in made-light test');
     },

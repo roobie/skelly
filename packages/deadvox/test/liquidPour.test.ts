@@ -91,6 +91,7 @@ const fixture = (receiverType = 'fixture_receiver', held = true) => {
     feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
     notice: () => undefined,
     read: () => undefined,
+    readingLight: () => undefined,
   });
   const source = admit(inventory, 'fixture_source', 'right');
   const receiver = admit(inventory, receiverType, held ? 'left' : undefined);

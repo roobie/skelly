@@ -98,6 +98,7 @@ const runtime = (handedness?: Character['handedness']) => {
     reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 1, clock: BASE_CLOCK }),
     feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
     notice: (text) => notices.push(text),
+    readingLight: () => undefined,
     read: () => {
       throw new Error('Unexpected reading in quickbar fixture');
     },

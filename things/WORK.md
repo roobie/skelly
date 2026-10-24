@@ -5,6 +5,7 @@ read_if:
   - you decide where a shared concept, schema field or tool UI part belongs
   - you move the engine's export layer, the material data or mass out of gungen or the engine
   - you change the recipe defining the gun tool's reproduction exit
+  - you turn gun parts into Deadvox items
   - you continue the non-gun slice or migrate shared visuals and handling datums
 ---
 
@@ -67,9 +68,8 @@ Settled:
   items rather than generate them (`things/README.md`, "Rules").
 - Until gun parts become items in the gun tool phase, their authored masses come from one
   gungen table keyed by part family and variant
-  (`gungen/PROJECT.md`, "Attachments and export"). A shared part then has one value, and the
-  table already has the shape of the closed item set, so the gun tool phase turns its keys
-  into item ids.
+  (`gungen/PROJECT.md`, "Attachments and export"). A shared part then has one value until
+  the gun tool phase gives each row a complete item (`things/WORK.md`, "Phases").
 - An assembly's export carries each part's mass and centre of mass, and an export package
   above `thing-core` writes them with the GLB and the model entry (`things/README.md`,
   "Rules"; `things/README.md`, "Packages").
@@ -155,10 +155,17 @@ Deadvox depends on `thing-core` for the schema and on nothing above it.
    load test together. The compass keeps its dedicated display renderer.
 5. **Gun tool.** Move gungen's gun and ammo logic onto the shared packages as an authoring
    tool: its parts become a closed set of deadvox items, each atom with an authored mass, and
-   a gun is an assembly of them. The gungen part mass table's rows become those items.
-   Exit: the gun tool reproduces and validates the consumption boundary authored in
-   `gungen/exports/deadvox.jsonnet`. An explicit recipe keeps retirement from overlooking
-   exports that are not guns; see `gungen/src/cli/exportRecipe.ts`, `loadExportRecipe`.
+   a gun is an assembly of them. Conversion happens in place in gungen; the final move
+   changes the workspace and every operational caller together, so there is never a second
+   gun implementation. Item identity and authored mass reach the consumer together: a
+   renamed mass-table row alone is not a part item, because it has no standalone geometry,
+   item entry or assembly reference. Exit: the gun tool reproduces the consumption boundary
+   authored in `gungen/exports/deadvox.jsonnet`, and Deadvox's full content base registers
+   every export and draws each gun's companions from it. The recipe, not the design files,
+   is the boundary because designs alone omit companion exports. These rules keep the phase
+   from completing by a directory rename and keep retirement from losing companions; see
+   `gungen/src/cli/exportRecipe.ts`, `loadExportRecipe`, and
+   `test/gungen-deadvox-contract.test.mjs`, "registers every recipe export in the full base and keeps each gun companion inside the recipe".
 6. **Retire gungen.** Retire residual names and references after the single phase 5 move;
    rename the retained consumption contract atomically with its CI invocation so the gate
    never disappears.

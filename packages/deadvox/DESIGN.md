@@ -2105,7 +2105,7 @@ renderer only chooses which fields to build early and draws what the cache holds
 caches would let the room a player sees and the room gameplay reads disagree. The
 visibility is derived, so it is not saved: a reload recomputes the same answer from
 restored state. Outside every field the answer is open sky, as `docs/readables.md`,
-"Darkness remains open" requires, so missing data never reads as darkness. See
+"Reading needs light" requires, so missing data never reads as darkness. See
 `src/core/skyField.ts`, `SkyFields`, `src/game/worldSetup.ts`, `createWorldSetup`, and
 `src/game/session.ts`, `createSession`.
 
@@ -3026,8 +3026,8 @@ configuration; it is disposable presentation work, not saved knowledge. See
 `src/core/paperMapRender.ts`, `samplePaperMapTerrain` and `PaperMapRenderCache`.
 The discovery policy is optional local supply without guaranteed coverage;
 duplicate copies are ordinary possessions, not globally unique collectibles.
-Completing #470 requires a shared reading-light policy for all paper rather than
-a map-only exception.
+A map needs light like any paper, with no map-only exception; see `docs/readables.md`,
+"Reading needs light".
 
 Region payloads stay with ordinary item ownership so putting down a sheet removes
 access without erasing its identity. Sheets do not stack: stateless merging must

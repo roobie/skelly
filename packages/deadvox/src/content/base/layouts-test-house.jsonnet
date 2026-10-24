@@ -21,6 +21,7 @@ local bays = [
       { template: 'test_house_outdoor_stock', position: [2, 20.5, 0.5], rotation: 0 },
       { template: 'test_house_sign', position: [-2, 20.5, 0.5], rotation: 0 },
       { template: 'test_house_loose_wardrobe', position: [-2, 20.5, -3], rotation: 0 },
+      { template: 'test_house_reading_booth', position: [-9, 20.5, -0.5], rotation: 0 },
     ],
     player: { position: [-4, 21, -0.5], bearing: 90 },
     bays: bays,
