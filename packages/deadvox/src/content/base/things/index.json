@@ -187,6 +187,13 @@
     "roll": 0
   },
   {
+    "id": "opened_soda",
+    "file": "assets/models/opened_soda.glb",
+    "grip": { "at": [0, 0.055, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
     "id": "can_opener",
     "file": "assets/models/can_opener.glb",
     "parts": {
@@ -341,6 +348,13 @@
     "id": "soup",
     "file": "assets/models/soup.glb",
     "grip": { "at": [0, 0.005, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "soda",
+    "file": "assets/models/soda.glb",
+    "grip": { "at": [0, 0.06, 0], "turn": [0, 0, -90] },
     "hold": "upright",
     "roll": 0
   },

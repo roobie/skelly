@@ -36,7 +36,7 @@ import { bag, boots, cap } from './families/carried.ts';
 import { coil } from './families/coil.ts';
 import { compound } from './families/compound.ts';
 import { blowtorch, headlamp, pliers, portableRadio, repairKit, webbingSling } from './families/equipment.ts';
-import { foodPortion, stemmedFruit, woundRoll } from './families/food-medical.ts';
+import { drinkCup, foodPortion, stemmedFruit, woundRoll } from './families/food-medical.ts';
 import { fuse } from './families/fuse.ts';
 import { foldedGarment } from './families/garment.ts';
 import { grenade } from './families/grenade.ts';
@@ -163,6 +163,7 @@ const builders = {
   foldedSheet,
   turnedStock,
   foodPortion,
+  drinkCup,
   stemmedFruit,
   woundRoll,
   blowtorch,
