@@ -127,6 +127,7 @@ local content = {
           }
         ]
       },
+      "stagger": { "impulseThreshold": 12, "durationSimSeconds": 0.8 },
       "dismember": {
         "chance": 0.15,
         "headOnKillChance": 0.25
@@ -251,6 +252,7 @@ local content = {
           }
         ]
       },
+      "stagger": { "impulseThreshold": 12, "durationSimSeconds": 0.8 },
       "dismember": {
         "chance": 0.15,
         "headOnKillChance": 0.25
@@ -285,6 +287,8 @@ local content = {
       "name": "Brute",
       "model": "brute",
       "authoredOnly": true,
+      // How the brute answers heavy hits belongs to the tier-2 brute (`docs/stagger.md`, "Which types stagger").
+      "stagger":: null,
       "regions": {
         "head": 120,
         "torso": 120,

@@ -199,6 +199,10 @@
         "chaseMetresPerSimSecond": 2.7999999999999998,
         "wanderMetresPerSimSecond": 0.80000000000000004
       },
+      "stagger": {
+        "durationSimSeconds": 0.80000000000000004,
+        "impulseThreshold": 12
+      },
       "stepLength": 0.59999999999999998,
       "stimulusMemorySimSeconds": 180,
       "strength": 5,
@@ -426,6 +430,10 @@
         "backgroundStepMetres": 1,
         "chaseMetresPerSimSecond": 2.7999999999999998,
         "wanderMetresPerSimSecond": 0.80000000000000004
+      },
+      "stagger": {
+        "durationSimSeconds": 0.80000000000000004,
+        "impulseThreshold": 12
       },
       "stepLength": 0.59999999999999998,
       "stimulusMemorySimSeconds": 180,
@@ -655,6 +663,10 @@
         "chaseMetresPerSimSecond": 2.7999999999999998,
         "wanderMetresPerSimSecond": 0.80000000000000004
       },
+      "stagger": {
+        "durationSimSeconds": 0.80000000000000004,
+        "impulseThreshold": 12
+      },
       "stepLength": 0.59999999999999998,
       "stimulusMemorySimSeconds": 180,
       "strength": 5,
@@ -883,6 +895,10 @@
         "chaseMetresPerSimSecond": 2.7999999999999998,
         "wanderMetresPerSimSecond": 0.80000000000000004
       },
+      "stagger": {
+        "durationSimSeconds": 0.80000000000000004,
+        "impulseThreshold": 12
+      },
       "stepLength": 0.59999999999999998,
       "stimulusMemorySimSeconds": 180,
       "strength": 5,
@@ -1110,6 +1126,10 @@
         "backgroundStepMetres": 1,
         "chaseMetresPerSimSecond": 2.7999999999999998,
         "wanderMetresPerSimSecond": 0.80000000000000004
+      },
+      "stagger": {
+        "durationSimSeconds": 0.80000000000000004,
+        "impulseThreshold": 12
       },
       "stepLength": 0.59999999999999998,
       "stimulusMemorySimSeconds": 180,
@@ -2171,6 +2191,10 @@
         "backgroundStepMetres": 1,
         "chaseMetresPerSimSecond": 2.7999999999999998,
         "wanderMetresPerSimSecond": 0.80000000000000004
+      },
+      "stagger": {
+        "durationSimSeconds": 0.80000000000000004,
+        "impulseThreshold": 12
       },
       "stepLength": 0.59999999999999998,
       "stimulusMemorySimSeconds": 180,

@@ -35,6 +35,13 @@
       },
       "weapon": {
         "melee": {
+          "charge": {
+            "curveExponent": 1,
+            "damageMultiplier": 1.6000000000000001,
+            "fullSimSeconds": 1,
+            "impulseMultiplier": 2,
+            "stamina": 8
+          },
           "contactFraction": 0.40000000000000002,
           "cooldownSimSeconds": 1.1000000000000001,
           "damage": 14,
@@ -167,6 +174,13 @@
       },
       "weapon": {
         "melee": {
+          "charge": {
+            "curveExponent": 1,
+            "damageMultiplier": 1.6000000000000001,
+            "fullSimSeconds": 1,
+            "impulseMultiplier": 2,
+            "stamina": 5
+          },
           "contactFraction": 0.40000000000000002,
           "cooldownSimSeconds": 0.80000000000000004,
           "damage": 10,
@@ -202,6 +216,13 @@
       "twoHanded": true,
       "weapon": {
         "melee": {
+          "charge": {
+            "curveExponent": 1,
+            "damageMultiplier": 1.6000000000000001,
+            "fullSimSeconds": 1,
+            "impulseMultiplier": 2,
+            "stamina": 16
+          },
           "contactFraction": 0.40000000000000002,
           "cooldownSimSeconds": 1.6000000000000001,
           "damage": 24,
@@ -237,6 +258,13 @@
       },
       "weapon": {
         "melee": {
+          "charge": {
+            "curveExponent": 1,
+            "damageMultiplier": 1.6000000000000001,
+            "fullSimSeconds": 1,
+            "impulseMultiplier": 2,
+            "stamina": 3
+          },
           "contactFraction": 0.40000000000000002,
           "cooldownSimSeconds": 0.5,
           "damage": 8,
@@ -271,6 +299,13 @@
       },
       "weapon": {
         "melee": {
+          "charge": {
+            "curveExponent": 1,
+            "damageMultiplier": 1.6000000000000001,
+            "fullSimSeconds": 1,
+            "impulseMultiplier": 2,
+            "stamina": 3.5
+          },
           "contactFraction": 0.40000000000000002,
           "cooldownSimSeconds": 0.55000000000000004,
           "damage": 9,
@@ -305,6 +340,13 @@
       },
       "weapon": {
         "melee": {
+          "charge": {
+            "curveExponent": 1,
+            "damageMultiplier": 1.6000000000000001,
+            "fullSimSeconds": 1,
+            "impulseMultiplier": 2,
+            "stamina": 5
+          },
           "contactFraction": 0.40000000000000002,
           "cooldownSimSeconds": 0.75,
           "damage": 11,
@@ -396,6 +438,13 @@
       "twoHanded": true,
       "weapon": {
         "melee": {
+          "charge": {
+            "curveExponent": 1,
+            "damageMultiplier": 1.6000000000000001,
+            "fullSimSeconds": 1,
+            "impulseMultiplier": 2,
+            "stamina": 9
+          },
           "contactFraction": 0.40000000000000002,
           "cooldownSimSeconds": 1.2,
           "damage": 15,
@@ -424,6 +473,13 @@
       "size": [1, 10],
       "weapon": {
         "melee": {
+          "charge": {
+            "curveExponent": 1,
+            "damageMultiplier": 1.6000000000000001,
+            "fullSimSeconds": 1,
+            "impulseMultiplier": 2,
+            "stamina": 9
+          },
           "contactFraction": 0.40000000000000002,
           "cooldownSimSeconds": 1.2,
           "damage": 13,

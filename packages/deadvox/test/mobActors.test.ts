@@ -308,6 +308,7 @@ const makeZombie = (
     attackWait: 0,
     attackWindup: 0,
     spitWindup: 0,
+    staggerSimSeconds: 0,
     spitWait: 0,
     spitRng: Rng.stream(0, 'test-zombie-spit'),
     gaitPhase: 0,

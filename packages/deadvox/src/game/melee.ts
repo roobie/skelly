@@ -26,6 +26,7 @@ export const meleeWeaponFromContent = (weapon: ContentMeleeWeapon): MeleeWeapon 
     ...(weapon.swingSound === undefined ? {} : { swingSound: weapon.swingSound }),
     ...(weapon.hitSound === undefined ? {} : { hitSound: weapon.hitSound }),
     ...(weapon.hitLayerSound === undefined ? {} : { hitLayerSound: weapon.hitLayerSound }),
+    ...(weapon.charge === undefined ? {} : { charge: weapon.charge }),
     type: weapon.type,
     motion: weapon.motion,
   });

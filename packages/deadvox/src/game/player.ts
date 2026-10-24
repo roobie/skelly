@@ -107,7 +107,7 @@ export interface MoveIntent {
   directionalSpeed?: { sideways: number; backward: number } | undefined;
   /** Edge-triggered dominant-hand use; the player tick consumes this once. */
   useDominant?: boolean;
-  /** Held dominant trigger; only debug firearms repeat, not other item actions. */
+  /** Held dominant trigger: debug firearms repeat on it and a charged melee swing holds on it. */
   useDominantHeld?: boolean;
   /** Edge-triggered off-hand use; the player tick consumes this once. */
   useOff?: boolean;

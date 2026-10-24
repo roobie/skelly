@@ -992,6 +992,21 @@ const CanisterSchema = strictObject({
   capacity: Positive,
 });
 
+/** Holding the attack past the wind-up builds a stronger strike. Doc: `docs/charged-attacks.md`. */
+const MeleeChargeSchema = strictObject({
+  /** Sim seconds of holding that reach the full charge; holding longer adds nothing. */
+  fullSimSeconds: PositiveSimSeconds,
+  /** Shapes the build-up: the charge level is the held share of `fullSimSeconds` raised to this power. */
+  curveExponent: Positive,
+  /** Damage multiplier at the full charge; a partial charge scales linearly towards it. */
+  damageMultiplier: Positive,
+  /** Impulse multiplier at the full charge; a partial charge scales linearly towards it. */
+  impulseMultiplier: Positive,
+  /** Extra stamina a full charge costs on release, scaled by the charge level. */
+  stamina: NonNegative,
+});
+export type MeleeCharge = InferOutput<typeof MeleeChargeSchema>;
+
 const WeaponSchema = strictObject({
   melee: strictObject({
     motion: picklist(MELEE_MOTIONS),
@@ -1024,6 +1039,7 @@ const WeaponSchema = strictObject({
     /** Played over the hit, such as a metal ring for a metal weapon. */
     hitLayerSound: optional(Id),
     type: picklist(MELEE_DAMAGE_KINDS),
+    charge: optional(MeleeChargeSchema),
   }),
 });
 
@@ -3346,6 +3362,9 @@ const ZombieSchema = strictObject({
     check((attack) => attack.windupSimSeconds < attack.cooldownSimSeconds, 'windup must be less than cooldown'),
     check(({ moves }) => new Set(moves.map(({ id }) => id)).size === moves.length, 'zombie move ids must be unique'),
   ),
+  /** A melee hit with at least this impulse holds the zombie still and spoils its attack (docs/stagger.md);
+   * absent means it never staggers. */
+  stagger: optional(strictObject({ impulseThreshold: Positive, durationSimSeconds: PositiveSimSeconds })),
   /** Flesh a damaging hit knocks off the body, leaving a hole (src/core/amalgamCarving.ts): the struck voxel
    * and every voxel within the radius of it. Amalgams only. */
   carving: optional(

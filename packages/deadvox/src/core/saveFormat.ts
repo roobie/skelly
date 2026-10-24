@@ -156,7 +156,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 61;
+export const SAVE_SCHEMA_VERSION = 62;
 export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -691,6 +691,7 @@ const zombie = obj({
   stanceWeight: opt(finite),
   stepOffset: opt(finite),
   hitFlinchTime: opt(nonNegative),
+  staggerSimSeconds: nonNegative,
   /** Part names severed so far (packages/mobgen/src/mob/dismember.ts's SEVERABLE_PARTS) — cumulative, never
    * shrinks; see Zombie.severed's own doc comment. */
   severed: arr(str()),
@@ -723,6 +724,7 @@ const meleeAction = nullable(
     origin: vec3,
     direction: vec3,
     hands: obj({ right: nullable(positiveInt), left: nullable(positiveInt) }),
+    chargeHeldSimSeconds: opt(nonNegative),
     weapon: obj({
       motion: enumeration(MELEE_MOTIONS),
       damage: positive,
@@ -740,6 +742,15 @@ const meleeAction = nullable(
       hitSound: opt(str({ id: true })),
       hitLayerSound: opt(str({ id: true })),
       type: opt(enumeration(MELEE_DAMAGE_KINDS)),
+      charge: opt(
+        obj({
+          fullSimSeconds: positive,
+          curveExponent: positive,
+          damageMultiplier: positive,
+          impulseMultiplier: positive,
+          stamina: nonNegative,
+        }),
+      ),
     }),
   }),
 );
