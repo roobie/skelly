@@ -94,7 +94,7 @@ export const ar: Template = {
         chargingHandle: 'rear-top',
         rail: 'full',
         section: 'ar',
-        actionFrame: ['small'],
+        actionFrame: ['small', 'large'],
       },
     },
     { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'ar' } },

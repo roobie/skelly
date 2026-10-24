@@ -1,0 +1,90 @@
+{
+  "derivations": {
+    "barrelExtensionDiameter": {
+      "clearanceUnits": 1,
+      "description": "maximum case-head diameter; diametral wall and running allowance",
+      "measure": "maximumHeadDiameterMm",
+      "snap": "half-grid"
+    },
+    "barrelExtensionLength": {
+      "clearanceUnits": 0.25,
+      "description": "case length; estimated extension depth is half the case length with end clearance",
+      "measure": "caseLengthMm",
+      "multiplier": 0.5,
+      "snap": "grid"
+    },
+    "carrierLength": {
+      "clearanceUnits": 0.10000000000000001,
+      "description": "case length; bolt-face clearance",
+      "measure": "caseLengthMm",
+      "snap": "half-grid"
+    },
+    "carrierTravel": {
+      "clearanceUnits": 2.5,
+      "description": "case length; the stroke margin clears the ejected case",
+      "measure": "caseLengthMm",
+      "snap": "grid"
+    },
+    "ejectionPortHeight": {
+      "clearanceUnits": 1,
+      "description": "case-head diameter; aperture allowance clears the carrier and case",
+      "measure": "maximumHeadDiameterMm",
+      "snap": "half-grid"
+    },
+    "ejectionPortLength": {
+      "clearanceUnits": 1,
+      "description": "case length; end clearance leaves the case free of the port edges",
+      "measure": "caseLengthMm",
+      "snap": "half-grid"
+    },
+    "fitMaximumHeadDiameter": {
+      "clearanceUnits": 0.25,
+      "description": "maximum rim and case-head diameter",
+      "measure": "maximumHeadDiameterMm",
+      "snap": "none"
+    },
+    "fitMaximumOverallLength": {
+      "clearanceUnits": 0.25,
+      "description": "maximum cartridge overall length",
+      "measure": "maximumOverallLengthMm",
+      "snap": "none"
+    },
+    "magwellOpeningLength": {
+      "clearanceUnits": 1,
+      "description": "maximum cartridge overall length; insertion clearance for the magazine",
+      "measure": "maximumOverallLengthMm",
+      "snap": "half-grid"
+    },
+    "magwellOpeningWidth": {
+      "clearanceUnits": 1.25,
+      "description": "case-head diameter across the double column; wall and insertion allowance",
+      "measure": "maximumHeadDiameterMm",
+      "multiplier": 2,
+      "snap": "half-grid"
+    }
+  },
+  "frames": [
+    {
+      "cartridge": "5.56x45",
+      "cyclicRpm": 800,
+      "id": "small",
+      "receiver": {
+        "heightUnits": 5,
+        "lengthUnits": 16,
+        "overallLength": "https://en.wikipedia.org/wiki/M4_carbine",
+        "photo": "https://commons.wikimedia.org/wiki/File:PEO_M4_Carbine_RAS_M68_CCO.png"
+      }
+    },
+    {
+      "cartridge": "7.62x51",
+      "cyclicRpm": 700,
+      "id": "large",
+      "receiver": {
+        "heightUnits": 5.5,
+        "lengthUnits": 21.5,
+        "overallLength": "https://en.wikipedia.org/wiki/AR-10",
+        "photo": "https://commons.wikimedia.org/wiki/File:AR10_Armalite_vue_d'ensemble_noBG.png"
+      }
+    }
+  ]
+}

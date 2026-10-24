@@ -9,6 +9,7 @@ import {
   worldSolid,
 } from '@skelly/engine/shapes/geometry.ts';
 import type { Solid } from '@skelly/engine/shapes/solid.ts';
+import { AR_CYCLIC_RPM, SMALL_AR_FRAME } from './arFrames.ts';
 
 export type GunAction = 'ak' | 'ar';
 export type CycleMode = 'fire' | 'hand';
@@ -36,8 +37,8 @@ export const ACTION_CYCLE_PROFILES: Readonly<Record<GunAction, ActionCycleProfil
     dwellSeconds: 0.006,
   },
   ar: {
-    // U.S. Army TM 9-1005-319-10, M16/M4 technical manual: cyclic rate 700–950 rounds/minute.
-    rpm: 800,
+    // A frame passes its own rate to `cycleMotion`; this default is the small frame's.
+    rpm: AR_CYCLIC_RPM[SMALL_AR_FRAME.id]!,
     holdOpenOnEmpty: true,
     ejectAt: 0.76,
     ejectDirection: unit([-0.16, 0.16, 0.97]),
@@ -149,8 +150,12 @@ const handPosition = ({ time, rearwardSeconds, dwellSeconds, mechanicalSeconds, 
   return 0;
 };
 
-const buildCycleTimeline = (action: GunAction, mode: CycleMode, strokeMetres: number): CycleTimeline => {
-  const profile = ACTION_CYCLE_PROFILES[action];
+const buildCycleTimeline = (
+  action: GunAction,
+  profile: ActionCycleProfile,
+  mode: CycleMode,
+  strokeMetres: number,
+): CycleTimeline => {
   const spring = springReturn(strokeMetres);
   const rearwardSeconds = mode === 'fire' ? strokeMetres / profile.rearwardSpeedMetresPerSecond : 0.65;
   const dwellSeconds = mode === 'fire' ? profile.dwellSeconds : 0.3;
@@ -299,18 +304,23 @@ export const pumpCycleMotion = (motion: PartMotion, metresPerUnit: number): Cycl
   };
 };
 
-export const cycleMotion = (action: GunAction, motion: PartMotion, metresPerUnit: number): AutomaticCycleMotion => {
+export const cycleMotion = (
+  action: GunAction,
+  motion: PartMotion,
+  metresPerUnit: number,
+  rpm = ACTION_CYCLE_PROFILES[action].rpm,
+): AutomaticCycleMotion => {
   const strokeUnits = length(sub(motion.end, motion.start));
   if (!(Number.isFinite(metresPerUnit) && metresPerUnit > 0 && strokeUnits > 0)) {
     throw new RangeError('motion stroke and metresPerUnit must be finite and positive');
   }
   const strokeMetres = strokeUnits * metresPerUnit;
-  const profile = ACTION_CYCLE_PROFILES[action];
+  const profile = { ...ACTION_CYCLE_PROFILES[action], rpm };
   return {
     strokeUnits,
     strokeMetres,
-    fire: buildCycleTimeline(action, 'fire', strokeMetres),
-    hand: buildCycleTimeline(action, 'hand', strokeMetres),
+    fire: buildCycleTimeline(action, profile, 'fire', strokeMetres),
+    hand: buildCycleTimeline(action, profile, 'hand', strokeMetres),
     ejectAt: profile.ejectAt,
     ejectDirection: profile.ejectDirection,
     holdOpenOnEmpty: profile.holdOpenOnEmpty,
