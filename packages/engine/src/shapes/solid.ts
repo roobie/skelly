@@ -17,7 +17,7 @@ export interface SolidDisplayHints {
   readonly outlineAngleDeg?: number;
   /** Solids in one group are rendered/exported as one display mesh. */
   readonly mergeGroup?: string;
-  /** Solids in one piece export as their own primitive, apart from their finish, so a game can hide or detach them. */
+  /** Names solids a game hides or detaches on their own, such as a grenade's pin or lever, so export keeps them apart. */
   readonly piece?: string;
   /** Diagnostic role shared by convex cells of one authored component; otherwise its solid id. */
   readonly role?: string;

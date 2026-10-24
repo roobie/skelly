@@ -249,7 +249,8 @@ describe('hand grenade', () => {
     session.fuses.togglePin(grenade);
     drawn.push(pinMeshesDrawn());
     held.dispose();
-    expect(drawn).toEqual([1, 0, 1]);
+    expect(drawn[0]).toBeGreaterThan(0);
+    expect(drawn.slice(1)).toEqual([0, drawn[0]]);
     session.fuses.togglePin(grenade);
     expect(session.inventory.move(grenade, { kind: 'pile', pos: [1, 0, 0] }).ok).toBe(true);
     session.sim.scheduler.advance(FUSE / 4);

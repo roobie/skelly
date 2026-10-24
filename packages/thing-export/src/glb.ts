@@ -231,8 +231,8 @@ interface PartExport {
 const sameAppearance = (a: ReturnType<typeof resolveAppearance>, b: ReturnType<typeof resolveAppearance>): boolean =>
   a.material === b.material && a.slot === b.slot && a.color.every((channel, index) => channel === b.color[index]);
 
-/** Keep g27's finish boundary when using the shared g24 display groups. */
-const splitMixedAppearance = (
+/** Splits a merge group whose solids differ in finish or piece, because one primitive carries one of each. */
+const splitMixed = (
   items: DisplayItem[],
   appearanceFor: (solid: DisplayItem['solids'][number]) => ReturnType<typeof resolveAppearance>,
 ): DisplayItem[] =>
@@ -240,8 +240,11 @@ const splitMixedAppearance = (
     if (!item.merged) {
       return [item];
     }
-    const first = appearanceFor(item.solids[0]!);
-    return item.solids.slice(1).every((solid) => sameAppearance(first, appearanceFor(solid)))
+    const [head, ...rest] = item.solids;
+    const first = appearanceFor(head!);
+    return rest.every(
+      (solid) => solid.display?.piece === head!.display?.piece && sameAppearance(first, appearanceFor(solid)),
+    )
       ? [item]
       : item.solids.map((solid) => ({ id: solid.id, solids: [solid], merged: false }));
   });
@@ -423,9 +426,7 @@ export const exportGlb: ExportGlb = (input) => {
     );
   };
   const itemsOf = (part: PartExport): DisplayItem[] =>
-    splitMixedAppearance(displayItems(part.def.displaySolids ?? part.def.solids), (solid) =>
-      appearanceFor(part, solid),
-    );
+    splitMixed(displayItems(part.def.displaySolids ?? part.def.solids), (solid) => appearanceFor(part, solid));
   /** The part's drawn meshes in part-local metres, one per display item, or none for an empty one. */
   const drawnMeshes = new Map<string, ({ positions: Float32Array; indices: Uint32Array } | undefined)[]>();
   const drawnOf = (part: PartExport) => {
