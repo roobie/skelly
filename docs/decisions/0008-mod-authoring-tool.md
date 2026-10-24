@@ -89,11 +89,21 @@ Control placement and active-set disclosure belong to that combined UX design.
 
 ## Build plan
 
-This is the implementation sequence, one PR per numbered slice, not a claim that the
-features exist. Slice 2 is scheduled ahead of other queued Deadvox engine work and can
-run alongside the read-only tool work; tool editing cannot overtake it. Each slice's
-brief supplies implementation detail. Remove completed plan entries when code becomes
-the authority, preserving the rules and reasons above.
+Each named slice is one PR, not a claim that the features exist. The independent game
+slice has no tool dependency. The numbered tool slices give a delivery order, with only
+the dependencies stated in each entry acting as prerequisites. Slice 2 is scheduled
+ahead of other queued Deadvox engine work and can run alongside the read-only tool
+work; tool editing cannot overtake it. Each slice's brief supplies implementation
+detail. Remove completed plan entries when code becomes the authority, preserving the
+rules and reasons above.
+
+**Independent game slice: Default start flow.** This plan owns integration of mod
+selection alongside new-game and Continue. It depends on shared admission and
+save-identity checks so no entry route can start or resume under different rules, not
+on any tool slice, folder admission or asset linking. Coordinate entry routes with
+`packages/deadvox/docs/url-mods.md`, "Slices", whose first slice owns the URL migration;
+that migration is not a prerequisite for making selection discoverable in the ordinary
+start flow.
 
 1. **Both-mode shell, loader report and read-only overview.** Establish the planned
    package, hosted/local adapters and a guarded Deadvox authoring API together, so the
@@ -110,31 +120,42 @@ the authority, preserving the rules and reasons above.
    whole-entry editor.
 3. **Browser Jsonnet evaluation.** Deliver the #801 prerequisite so both run modes can
    evaluate what they save, including bundled-source imports. Depends on the shared
-   authoring boundary in slice 1; local evaluation follows the pinned compiler rule in
+   authoring boundary in slice 1 so evaluation reaches both adapters through one API;
+   local evaluation follows the pinned compiler rule in
    `docs/jsonnet.md`, "Reasons".
-4. **New-entry and patch editor.** Depends on slices 1–3. Derive structural forms from
+4. **New-entry and patch editor.** Depends on slice 1 for the workspace/API, slice 2
+   for patch semantics and per-field origins, and slice 3 to evaluate saved Jsonnet in
+   the browser. Derive structural forms from
    `packages/deadvox/src/core/schema.ts`, `SECTION_DESCRIPTOR`, rather than keeping a
    second schema; add presentation metadata at that owner. The first editing workflow
    saves Jsonnet and uses the engine's patch semantics and per-field origins.
-5. **Validation parity.** Depends on slice 4. Share file-provider validation with
+5. **Validation parity.** Depends on slice 1 for the hosted/local file adapters, not
+   on an editor. Share file-provider validation with
    `packages/deadvox/src/cli/validate.ts`, `validate`, so browser and local workspaces do
    not silently pass different checks.
-6. **Local and URL folder admission.** Depends on slices 2, 3 and 5 and resolution of
-   the remote trust/disclosure and cross-site-fetch design gates. One manifest with two
-   fetchers avoids transport-specific formats. Keep bounds in trusted content; prove
-   atomic storage and resource cleanup before adding asset-editing UI.
-7. **Asset linking.** Depends on slices 4–6. Use the admitted folder contract to link
-   exported assets and diagnose provenance, rather than creating a geometry editor.
-8. **Default start flow and URL test handoff.** Depends on slices 6–7 and a resolved
-   browser-only hosting/transport path. Integrate mod selection with new-game and
-   Continue through one admission boundary; prove local and hosted handoff, including
-   origin restrictions. Coordinate with `packages/deadvox/docs/url-mods.md`, "Slices",
-   rather than retaining an opt-in decision gate.
-9. **Conflict and load-order inspection.** Depends on slices 1, 2 and 4. Explain the
-   loader's dependency and declaration verdicts, not merely overlapping definitions.
-10. **Catalogue PR preparation.** Depends on slices 5–9. Produce a reviewable Jsonnet,
-    catalogue and asset-provenance addition; a human opens the PR. GitHub automation and
-    a gallery need separate scope decisions.
+6. **Local and URL folder admission.** Depends on slice 5 to validate supplied files
+   through the shared provider. Resolve remote trust/disclosure before admitting remote
+   sources and confirm cross-site fetching so both fetchers can read the same manifest
+   contract. No field-patch or editor dependency: intake admits compiled definitions and
+   assets, not authoring operations. One manifest with two fetchers avoids a format per
+   transport. Keep bounds in trusted content; prove atomic storage and resource
+   cleanup before adding asset-editing UI.
+7. **Asset linking.** Depends on slice 4 for the editing workspace and slice 6 for the
+   admitted asset/manifest contract. Link exported assets and diagnose provenance,
+   rather than creating a geometry editor.
+8. **URL test handoff.** Depends on slice 4 for the authored workspace to test and
+   slice 6 for the URL-folder intake contract. Resolve the browser-only hosting/transport
+   path because a hosted page cannot serve its workspace itself. Prove local and hosted
+   handoff, including origin restrictions. Default start-flow integration is the
+   independent game slice above, not gated on this handoff or asset linking.
+9. **Conflict and load-order inspection.** Depends on slice 1 for merge history and
+   slice 2 for the loader's enforced dependency/declaration verdicts. Explain those
+   verdicts, not merely overlapping definitions; read-only inspection needs no editor.
+10. **Catalogue PR preparation.** Depends on slice 4 for Jsonnet output, slice 5 for
+    validation, and slice 7 for linked assets and provenance. Produce a reviewable
+    Jsonnet, catalogue and asset-provenance addition; a human opens the PR. Neither
+    test handoff nor conflict-inspection UI is a prerequisite for preparing that addition.
+    GitHub automation and a gallery need separate scope decisions.
 
 Extend existing browser flows rather than adding a stage per slice; see `AGENTS.md`,
 "Tests". Where a slice needs rates, thresholds or limits, author them in content and
