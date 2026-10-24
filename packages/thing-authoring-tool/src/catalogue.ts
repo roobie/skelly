@@ -28,6 +28,7 @@ import {
   string,
 } from 'valibot';
 import content from '../items.json' with { type: 'json' };
+import { avatarArm, avatarLeg } from './families/avatarLimbs.ts';
 import { bearTrap } from './families/bearTrap.ts';
 import { block } from './families/block.ts';
 import { head, limb, torso } from './families/body.ts';
@@ -155,6 +156,8 @@ const builders = {
   torso,
   head,
   bust,
+  avatarArm,
+  avatarLeg,
   openTin,
   handOpener,
   grenade,

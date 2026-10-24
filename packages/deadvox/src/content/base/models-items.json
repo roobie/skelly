@@ -3734,6 +3734,34 @@
           "node": "bust:bust"
         }
       }
+    },
+    {
+      "anchors": {
+        "shoulder": [0, 0, 0]
+      },
+      "file": "assets/models/player_arm.glb",
+      "id": "player_arm",
+      "parts": {
+        "arm": {
+          "centreOfMass": [0, -0.2773447069116361, 0.00026246719160104992],
+          "massKg": 3.5,
+          "node": "arm:avatarArm"
+        }
+      }
+    },
+    {
+      "anchors": {
+        "hip": [0, 0, 0]
+      },
+      "file": "assets/models/player_leg.glb",
+      "id": "player_leg",
+      "parts": {
+        "leg": {
+          "centreOfMass": [-0.0011272707009918645, -0.39972138638136628, 0.010909952078457595],
+          "massKg": 11,
+          "node": "leg:avatarLeg"
+        }
+      }
     }
   ]
 }

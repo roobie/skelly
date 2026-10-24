@@ -1501,8 +1501,9 @@ hold up from every side, and a body built only for first person is not enough.
 Worn items carry their own part model that covers or replaces the body part
 under it, so gear shows on the body without the body knowing about gear.
 
-The first-person arms are rebuilt from the same authored hand and sleeve parts
-as the body, so both views share one look. In first person the view draws both
+The first-person arms are the view's own two-segment arms in the figure row's
+palette, not the body's arm models, because they bend at the elbow to reach a
+grip and an authored arm is one rigid piece. In first person the view draws both
 arms, gripping or as fists, so the body's own arms hide there; otherwise an
 empty hand would show two arms.
 
@@ -2539,20 +2540,18 @@ and no extra class is left to maintain. Retuning the item grain moves the figure
 with the tools, which is accepted.
 
 The figure is a content row, so a mod or a second character ships its own row
-and part models without a code change. Each authored part names its model, the
-box parts it draws in place of, and the model anchor each of its joints sits at;
-the row sets the hip height the parts stand at. A box part that no authored part
-names still draws, so the body is authored a part at a time and stays whole
-throughout; the boxes go when the last part lands. Box limbs hang from the
-authored joints, so they meet the authored parts. Code poses every part about
-those joints. Each box part belongs to one limb (the torso with the head, an
-arm, a leg with its foot), and an authored part draws parts of one limb only,
-because a rigid model moves as one piece. It then strides, leans and hides as
-that limb's boxes do, so a new limb model with an accepted part selection needs
-no renderer change. See `src/core/schema.ts`, `FIGURE_BOX_LIMBS`. Hit regions keep the box layout, because the body simulation, not
-the drawn shape, decides where a hit lands, so gore stays put while parts change.
-See `src/core/schema.ts`, `FigureSchema`, and `src/render/playerFigure.ts`,
-`playerFigureLayout`.
+and part models without a code change. The row names one body model, the
+torso with the head, and one model per limb, each arm with its hand and each
+leg with its foot, because a rigid model moves as one piece and a limb swings
+as one. The body names the anchor each limb joint sits at, and each limb names
+its own joint anchor; the row also sets the hip height and the walking swing.
+Every part is an authored model, with no box stand-in, so a figure row that
+names a missing model or anchor fails validation instead of drawing a partial
+body. Code poses every part about those joints, so a new limb model needs no
+renderer change. Hit regions keep a box layout, because the body simulation,
+not the drawn shape, decides where a hit lands, so gore stays put while parts
+change. See `src/core/schema.ts`, `FigureSchema`, and
+`src/render/playerFigure.ts`, `playerFigureLayout` and `PLAYER_REGION_BOXES`.
 
 Many animations are expected over time, so a pose is data that names a joint and an
 angle, and code-posed motion such as arm swing and idle breath is one clip among

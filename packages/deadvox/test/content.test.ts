@@ -3081,23 +3081,31 @@ describe('content', () => {
     }
   });
 
-  it('reports a figure part whose model or joint anchor is missing, or that draws parts of two limbs', () => {
+  it('reports a figure body or limb whose model or joint anchor is missing', () => {
     const figuresFile = base.find(({ source }) => source === 'figures-player.json')!;
+    interface Part {
+      model: string;
+      joint: string;
+      joints: Record<string, string>;
+    }
     const player = (figuresFile.data as { figures: Record<string, unknown>[] }).figures[0]!;
-    const [part] = player.parts as { model: string; joints: Record<string, string> }[];
-    // One build for all three fixture figures; each expected message names only its own fixture's fault.
+    const body = player.body as Part;
+    const limbs = player.limbs as Record<string, Part>;
+    // One build for all three fixture figures; each fixture breaks one reference, at its own path.
     const figures = [
-      { ...part, model: 'fixture_missing_model' },
-      { ...part, joints: { ...part!.joints, leftHip: 'fixture_missing_anchor' } },
-      { ...part, draws: ['body', 'leftLeg'] },
-    ].map((figurePart, index) => ({ ...player, id: `fixture_figure_${index}`, parts: [figurePart] }));
-    const messages = buildRegistry([
+      { body: { ...body, model: 'fixture_missing_model' } },
+      { body: { ...body, joints: { ...body.joints, leftHip: 'fixture_missing_anchor' } } },
+      { limbs: { ...limbs, rightArm: { ...limbs.rightArm!, joint: 'fixture_missing_anchor' } } },
+    ].map((change, index) => ({ ...player, ...change, id: `fixture_figure_${index}` }));
+    const paths = buildRegistry([
       ...base.filter((source) => source !== figuresFile),
       { source: figuresFile.source, data: { figures: [player, ...figures] } },
-    ]).issues.map(({ message }) => message);
-    expect(messages).toContain('no model "fixture_missing_model"');
-    expect(messages).toContain(`model "${part!.model}" has no anchor "fixture_missing_anchor"`);
-    expect(messages).toContain('draws parts of several limbs (torso, leftLeg); a part moves as one limb');
+    ]).issues.map(({ path }) => path);
+    expect(paths).toEqual([
+      'figures[1].body.model',
+      'figures[2].body.joints.leftHip',
+      'figures[3].limbs.rightArm.joint',
+    ]);
   });
 
   it('maps each authored pattern to its own pattern id, and none for a block that authors none', () => {

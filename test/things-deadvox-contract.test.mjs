@@ -24,7 +24,11 @@ const { registry, issues } = buildRegistry(
     .filter((file) => file.endsWith('.json'))
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) })),
 );
-const figureParts = [...registry.figures.values()].flatMap((figure) => figure.parts ?? []);
+/** Each part a figure row names: its model and the joint anchors the row names on it. */
+const figureParts = [...registry.figures.values()].flatMap((figure) => [
+  { model: figure.body.model, joints: figure.body.joints },
+  ...Object.entries(figure.limbs).map(([limb, { model, joint }]) => ({ model, joints: { [limb]: joint } })),
+]);
 const figureModels = new Set(figureParts.map(({ model }) => model));
 
 describe('thing tool exports satisfy the Deadvox contract', () => {
@@ -112,7 +116,7 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
     }
   });
   it('resolves every figure part to an exported model holding each joint anchor', () => {
-    assert.ok(figureParts.length > 0, 'the base content must author a figure part');
+    assert.ok(registry.figures.size > 0, 'the base content must author a figure');
     for (const part of figureParts) {
       const out = exported.find(({ id }) => id === part.model);
       assert.ok(out, `${part.model}: no recipe export`);

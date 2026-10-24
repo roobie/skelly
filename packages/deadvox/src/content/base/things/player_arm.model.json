@@ -1,0 +1,8 @@
+{
+  "id": "player_arm",
+  "file": "assets/models/player_arm.glb",
+  "parts": {
+    "arm": { "node": "arm:avatarArm", "massKg": 3.5, "centreOfMass": [0, -0.2773447069116361, 0.0002624671916010499] }
+  },
+  "anchors": { "shoulder": [0, 0, 0] }
+}
