@@ -67,6 +67,8 @@ const FrameSchema = strictObject({
       fingerBottomU: Finite,
       housingFrontBottomU: Finite,
       housingRearBottomU: Finite,
+      bufferTowerTopU: Finite,
+      halfWidthU: Positive,
     }),
   ),
   freeFloatHandguard: optional(strictObject({ lengthU: Positive, topU: Positive })),
@@ -212,8 +214,9 @@ export interface AuthoredARFrame {
 
 /**
  * A frame's lower traced from its reference photo, in u from the receiver's front face (x) and the bore (y):
- * the buffer tower's rear, the magazine well's centre, the grip's mount, the trigger finger's bottom, and the
- * magazine housing's bottom at its front and rear. A frame without one keeps the family's.
+ * the buffer tower's rear and top, the magazine well's centre, the grip's mount, the trigger finger's bottom, the
+ * magazine housing's bottom at its front and rear, and the lower's half width. A frame without one keeps the
+ * family's.
  */
 export type ARLowerProportions = NonNullable<FrameSource['lower']>;
 

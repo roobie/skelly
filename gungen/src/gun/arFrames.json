@@ -652,8 +652,10 @@
       },
       "id": "large",
       "lower": {
+        "bufferTowerTopU": -1.25,
         "fingerBottomU": -7.5,
         "gripX": -15.5,
+        "halfWidthU": 2,
         "housingFrontBottomU": -6.5,
         "housingRearBottomU": -7.75,
         "rearX": -22,

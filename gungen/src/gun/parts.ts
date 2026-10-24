@@ -2834,11 +2834,26 @@ const lower: PartFamily = {
             ? triggerGuardSolids(arTriggerFinger, lowerGripContactX(layout, arGripX), LOWER_TRIGGER_GUARD)
             : [];
         const arWell = well(arWellCenterX);
+        const lowerRearX = Math.min(traced?.rearX ?? -14.75, lowerGripRearX(arGripX));
         const frame = magazineWellFrame(
-          Math.min(traced?.rearX ?? -14.75, lowerGripRearX(arGripX)),
+          lowerRearX,
           arWellCenterX + wellDepth / 2 + MAGAZINE_WELL_CLEARANCE,
           arWellCenterX,
+          traced?.halfWidthU,
         );
+        // Behind the receiver a traced lower rises as its buffer tower, up under the buffer tube, so its rear
+        // reads as one block with the upper rather than a plate under it.
+        const receiverRearX = -arLayout!.receiverLengthU;
+        const bufferTower =
+          traced !== undefined && lowerRearX < receiverRearX
+            ? [
+                solid(
+                  'buffer-tower',
+                  [lowerRearX, 0, -traced.halfWidthU],
+                  [receiverRearX, fromBore(traced.bufferTowerTopU), traced.halfWidthU],
+                ),
+              ]
+            : [];
         const frontPanel = frame.find(({ id }) => id === 'frame-front');
         if (frontPanel?.kind !== 'box') {
           throw new Error('Expected a box-shaped magazine-well front panel.');
@@ -2850,6 +2865,7 @@ const lower: PartFamily = {
           family: 'lower',
           solids: [
             ...frame,
+            ...bufferTower,
             ...magazineHousing('magazine-housing', arWellCenterX, 0, {
               frontPanelThickness,
               halfWidth: wellOuterZ,

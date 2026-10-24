@@ -78,6 +78,11 @@ local derivation(measure, clearanceUnits, snap, description, multiplier=null) =
         fingerBottomU: -7.5,
         housingFrontBottomU: -6.5,
         housingRearBottomU: -7.75,
+        // Behind the upper the lower rises as its buffer tower to -1.6u, where the castle nut takes over; with no
+        // castle nut on the model it runs up to the buffer tube's underside at -1.25u.
+        bufferTowerTopU: -1.25,
+        // Not visible in a side photo: flush with the receiver's sides.
+        halfWidthU: 2,
       },
       // The free-float rail ends 34.57u ahead of the receiver (34u, so its 2u slot pitch divides it) with its top
       // rail flush with the receiver's at 2.75u (2.85u traced).
