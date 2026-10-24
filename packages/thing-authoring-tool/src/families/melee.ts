@@ -2,9 +2,6 @@ import type { BoxSolid, ExtrudedPolygonSolid, RevolvedSolid } from '@skelly/engi
 import { parse, strictObject } from 'valibot';
 import { positive, revolve, scalar, strip } from './shapes.ts';
 
-// Melee tools lie along +x with the grip end toward -x and the striking end toward +x, the frame deadvox's melee
-// model rows describe their grip and anchors in. The origin sits near the striking end, not at the centre.
-
 /** A turned shaft along x: `profile` is (position along x, radius), closed back to the axis. */
 const turnedAlongX = (id: string, profile: readonly (readonly [number, number])[], slot: string): RevolvedSolid => ({
   id,

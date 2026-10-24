@@ -50,6 +50,23 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
       );
     }
   });
+  it('loads authored handling and anchors without consumer overrides', () => {
+    const authored = exported.filter(({ modelEntry }) => modelEntry.grip || modelEntry.anchors);
+    assert.ok(authored.length > 0, 'the recipe must exercise authored datums');
+    for (const { modelEntry } of authored) {
+      const loaded = registry.models.get(modelEntry.id);
+      assert.ok(loaded, `${modelEntry.id}: missing consumer model`);
+      for (const field of ['grip', 'hold', 'rest', 'roll', 'anchors']) {
+        if (modelEntry[field] !== undefined) {
+          assert.equal(
+            exportDifference(loaded[field], modelEntry[field]),
+            null,
+            `${modelEntry.id}: consumer overrides exported ${field}`,
+          );
+        }
+      }
+    }
+  });
   it('voxelizes every recipe model on its row class', () => {
     exported.forEach(assertVoxelized);
   });
