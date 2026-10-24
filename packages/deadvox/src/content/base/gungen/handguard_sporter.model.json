@@ -1,0 +1,13 @@
+{
+  "id": "handguard_sporter",
+  "file": "assets/models/handguard_sporter.glb",
+  "gun": {},
+  "parts": {
+    "handguard_sporter": {
+      "item": "handguard_sporter",
+      "node": "handguard_sporter:handguard",
+      "massKg": 0.35,
+      "centreOfMass": [0.0019046153846153811, -0.025650769230769224, 0.00014230769230769172]
+    }
+  }
+}

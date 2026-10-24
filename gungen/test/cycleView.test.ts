@@ -6,6 +6,7 @@ import { applyPoint } from '@skelly/engine/foundation/math.ts';
 import { type Mesh, Vector3 } from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { resolveGunAction } from '../src/gun/actionDescription.ts';
+import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { createCycleView } from '../src/viewer/cycleView.ts';
 import { buildLayers, disposeGroup } from '../src/viewer/scene.ts';
@@ -57,7 +58,12 @@ afterEach(() => vi.unstubAllGlobals());
 describe('action cycle viewer', () => {
   it('turns the bolt before drawing it and returns both phases to the canonical pose', () => {
     const controls = stubControls();
-    const { assembly } = JSON.parse(readFileSync('designs/hunting-rifle.json', 'utf8'));
+    // The authored design names catalogue items, so only the loader expands it into an assembly.
+    const loaded = loadGunDesign(readFileSync('designs/hunting-rifle.json', 'utf8'));
+    if (!loaded.ok) {
+      throw new Error(loaded.error.message);
+    }
+    const { assembly } = loaded.design;
     const resolved = resolve(assembly, gunDomain);
     const action = resolveGunAction(resolved)!;
     const knob = action.parts.knob!;

@@ -21,11 +21,19 @@ const designs = loadDesigns().filter(({ assembly }) =>
   Object.values(assembly.parts).some((part) => part.params?.pattern === 'bolt'),
 );
 const BOLT_CARTRIDGE = boltCartridge();
+// A part item lives in another file; the full-base contract resolves it, so a fixture ignores those paths.
+const PART_ITEM_PATH = /^models\[0\]\.parts\.[^.]+\.item$/;
 const hunting = JSON.parse(readFileSync('designs/hunting-rifle.json', 'utf8'));
+// The authored design names catalogue items, so only the loader expands it into an assembly.
+const loadedHunting = loadGunDesign(readFileSync('designs/hunting-rifle.json', 'utf8'));
+if (!loadedHunting.ok) {
+  throw new Error(loadedHunting.error.message);
+}
+const huntingAssembly: Assembly = loadedHunting.design.assembly;
 const scoped: Assembly = {
-  ...hunting.assembly,
-  parts: { ...hunting.assembly.parts, sight: { family: 'sight', params: { type: 'hunting-3-9x' } } },
-  connections: [...hunting.assembly.connections, { from: 'receiver.rail', to: 'sight.base', slot: 3 }],
+  ...huntingAssembly,
+  parts: { ...huntingAssembly.parts, sight: { family: 'sight', params: { type: 'hunting-3-9x' } } },
+  connections: [...huntingAssembly.connections, { from: 'receiver.rail', to: 'sight.base', slot: 3 }],
 };
 
 it('exports every bolt pattern as a hand-only action with a shared bore-parallel turn', () => {
@@ -110,16 +118,18 @@ it('sizes a bolt design action and integral well from its selected calibre', () 
   const resolved = resolve(loaded.design.assembly, gunDomain);
   const action = resolveGunAction(resolved)!;
   expect(action.cycle.strokeUnits).toBe(boltStrokeUnits(selected.cartridge));
-  const original = resolve(hunting.assembly, gunDomain);
+  const original = resolve(huntingAssembly, gunDomain);
   const well = (value: typeof resolved) =>
     [...value.defs.values()].flatMap((def) => def.keepOuts).find(({ id }) => id === 'internal-magazine-well')!.box;
   expect(well(resolved).half[0]).toBeGreaterThan(well(original).half[0]);
+  // The design's items fix their calibre, so exporting it under another one is refused rather than reweighed.
   const exported = exportFileText(JSON.stringify({ ...hunting, calibre: selected.cartridge.id }), {
     id: 'alternate_bolt',
     file: 'assets/models/alternate_bolt.glb',
   });
+  expect(exported.ok).toBe(false);
   if (!exported.ok) {
-    throw new Error(exported.message);
+    expect(exported.message).toContain('boltCalibre');
   }
 });
 
@@ -165,7 +175,7 @@ for (const assembly of [...designs.map((design) => design.assembly), { ...scoped
 }
 
 it('keeps the sporting front post tip centred and visible between the rear notch cheeks from its eye', () => {
-  const resolved = resolve(hunting.assembly, gunDomain);
+  const resolved = resolve(huntingAssembly, gunDomain);
   const rear = resolved.defs.get('rear-sight')!;
   const front = resolved.defs.get('front-sight')!;
   const axis = rear.axes.find(({ kind }) => kind === 'sight')!;
@@ -219,7 +229,7 @@ it('exports integral capacity from the well, iron or fitted-optic sights, and a 
     throw new Error(out.message);
   }
   const model = out.modelEntry;
-  const resolved = resolve(hunting.assembly, gunDomain);
+  const resolved = resolve(huntingAssembly, gunDomain);
   expect(model.gun.internalMagazine?.capacity).toBeDefined();
   expect(model.gun.internalMagazine?.capacity).toBe(internalMagazineCapacity(resolved, BOLT_CARTRIDGE));
   expect(model.gun.slots?.magazine).toBeUndefined();
@@ -239,7 +249,11 @@ it('exports integral capacity from the well, iron or fitted-optic sights, and a 
     throw new Error(JSON.stringify(optic.error));
   }
   expect(optic.modelEntry.gun.sight?.kind).toBe('optic');
-  expect(buildRegistry([{ source: 'fixture', data: { models: [model, optic.modelEntry] } }]).issues).toEqual([]);
+  expect(
+    buildRegistry([{ source: 'fixture', data: { models: [model, optic.modelEntry] } }]).issues.filter(
+      ({ path }) => !PART_ITEM_PATH.test(path ?? ''),
+    ),
+  ).toEqual([]);
   const { hand } = model.gun.action!;
   expect(
     hand.unlockSimSeconds! +
