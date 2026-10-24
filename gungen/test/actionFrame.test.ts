@@ -9,9 +9,9 @@ import {
   validateActionFrames,
   validateFrameCartridgeClearances,
 } from '../src/gun/actionFrame.ts';
-import { AR_ACTION_FRAMES, SMALL_AR_CARTRIDGE, SMALL_AR_FRAME } from '../src/gun/arFrames.ts';
+import { AR_ACTION_FRAMES, AR_FRAMES_BY_CALIBRE, SMALL_AR_CARTRIDGE, SMALL_AR_FRAME } from '../src/gun/arFrames.ts';
 import { gunDomain } from '../src/gun/domain.ts';
-import { variant } from './helpers.ts';
+import { loadDesignAssembly, variant } from './helpers.ts';
 
 const estimate = (value: number): FrameMeasure => ({
   value,
@@ -57,9 +57,13 @@ const sourceCartridge = (id: string, caseLengthMm: number): CartridgeFrameMeasur
 });
 
 describe('AR action-frame selection', () => {
-  it('keeps every cartridge-bound small-frame measure beyond its stated 5.56 clearance', () => {
+  it('keeps every cartridge-bound frame measure beyond its clearance for each cartridge that selects it or a smaller frame', () => {
     expect(
-      AR_ACTION_FRAMES.flatMap((candidate) => validateFrameCartridgeClearances(candidate, SMALL_AR_CARTRIDGE)),
+      AR_FRAMES_BY_CALIBRE.flatMap(({ cartridge: selected, frame: selectedFrame }) =>
+        AR_ACTION_FRAMES.filter((candidate) => candidate.rank >= selectedFrame.rank).flatMap((candidate) =>
+          validateFrameCartridgeClearances(candidate, selected),
+        ),
+      ),
     ).toEqual([]);
     const carrier = SMALL_AR_FRAME.dimensions.carrierLengthMm;
     const basis = carrier.cartridgeClearance;
@@ -175,6 +179,19 @@ describe('AR action-frame selection', () => {
     const issue = validate(edited, gunDomain).issues.find((candidate) => candidate.rule === 'structure');
 
     expect(issue?.message).toContain('has no parameter "receiverLengthMm"');
+  });
+
+  it('rejects a part built for a different action frame than its receiver', () => {
+    const assembly = loadDesignAssembly('archetype-ar');
+    const otherFrame = AR_ACTION_FRAMES.find(({ id }) => id !== SMALL_AR_FRAME.id);
+    if (!otherFrame) {
+      throw new Error('this check needs a second AR frame');
+    }
+    assembly.parts.lower!.params = { ...assembly.parts.lower!.params, actionFrame: otherFrame.id };
+
+    const issues = validate(assembly, gunDomain).issues.filter((issue) => issue.rule === 'action-frame-match');
+
+    expect(issues.map((issue) => issue.parts)).toEqual([['receiver', 'lower']]);
   });
 
   it('does not select a frame when a required cartridge measure is unsourced', () => {

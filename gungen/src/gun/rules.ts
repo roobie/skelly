@@ -753,6 +753,28 @@ export const magazineWellAxis: Rule = {
   },
 };
 
+// A catalogue item fixes its own frame instead of inheriting it, so a part built for another frame would
+// otherwise fit silently.
+export const actionFrameMatch: Rule = {
+  id: 'action-frame-match',
+  title: 'Connected parts are built for the same action frame',
+  check(r) {
+    const issues: Issue[] = [];
+    for (const { from, to } of r.connections) {
+      const fromFrame = r.params.get(from.part)?.actionFrame?.value;
+      const toFrame = r.params.get(to.part)?.actionFrame?.value;
+      if (fromFrame !== undefined && toFrame !== undefined && fromFrame !== toFrame) {
+        issues.push({
+          rule: 'action-frame-match',
+          message: `${from.part} is built for the "${fromFrame}" action frame, but ${to.part} is built for "${toFrame}".`,
+          parts: [from.part, to.part],
+        });
+      }
+    }
+    return issues;
+  },
+};
+
 export const feedMatch: Rule = {
   id: 'feed-match',
   title: 'The lower suits the feed',
