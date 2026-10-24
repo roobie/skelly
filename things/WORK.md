@@ -66,10 +66,22 @@ Settled:
   "Contract").
 - Atoms have authored mass and assemblies sum their parts; the tools author a closed set of
   items rather than generate them (`things/README.md`, "Rules").
-- Until gun parts become items in the gun tool phase, their authored masses come from one
-  gungen table keyed by part family and variant
-  (`gungen/PROJECT.md`, "Attachments and export"). A shared part then has one value until
-  the gun tool phase gives each row a complete item (`things/WORK.md`, "Phases").
+- Gun part masses live in one gungen catalogue whose items carry their full construction;
+  a design's part names an item and sets only its placement. A part of a design not yet
+  converted takes its mass from the row its params match, until the gun tool phase gives
+  every row an item (`gungen/PROJECT.md`, "Attachments and export"; `things/WORK.md`,
+  "Phases").
+- Gun parts are items only: each exports and registers in Deadvox as a loose item, but the
+  player cannot take a gun apart or assemble one yet. Dis/assembly comes later with its own
+  design and tests (#1040), so item identity lands without player mechanics.
+- Where gun part shapes differ, each shape is its own item, such as a plain and a threaded
+  barrel, sharing build helpers but not identity, each with its own weight. A part then
+  looks and weighs the same loose and fitted, and its mass is authored once.
+- A fitted part's item reference travels on the assembly's physical part, so there is no
+  separate composition record to keep in step with the parts. Deadvox checks that the
+  named item exists and weighs what the part does. See
+  `packages/thing-core/src/schema.ts`, `ModelPartSchema`, and
+  `packages/deadvox/src/core/content.ts`, `checkModelPartItems`.
 - An assembly's export carries each part's mass and centre of mass, and an export package
   above `thing-core` writes them with the GLB and the model entry (`things/README.md`,
   "Rules"; `things/README.md`, "Packages").
@@ -140,9 +152,9 @@ Deadvox depends on `thing-core` for the schema and on nothing above it.
 2. **Export package and physical model — complete.**
    The engine ends at assembly so the game can consume authored mass and placed centres
    without loading authoring geometry. Atoms read their item weight; gun bodies sum authored
-   part-table masses and fitted child items keep their own weight. See
+   part masses and fitted child items keep their own weight. See
    `packages/thing-export/README.md`, "Physical model";
-   `gungen/src/gun/physical.jsonnet`, `partMasses`; and
+   `gungen/src/gun/catalogue.jsonnet`, `parts`; and
    `packages/deadvox/src/core/items.ts`, `typeWeightGrams`.
 3. **Thing tool, first slice — complete.** Tape, thread, cord and fuse atoms plus a
    multi-part desk lamp share the source-to-preview and export path. The lamp proves that the single-part helper's users

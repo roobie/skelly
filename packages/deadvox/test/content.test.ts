@@ -2236,7 +2236,17 @@ describe('content references', () => {
       {
         source: 'military-fixture.json',
         data: {
-          models: [{ ...firearmModel, id: item, gun: { ...firearmModel.gun, attachments: [] } }],
+          models: [
+            {
+              ...firearmModel,
+              id: item,
+              // The fixture registers no gun-part items, so its body parts name none.
+              parts: Object.fromEntries(
+                Object.entries(firearmModel.parts ?? {}).map(([id, { item: _item, ...part }]) => [id, part]),
+              ),
+              gun: { ...firearmModel.gun, attachments: [] },
+            },
+          ],
           items: [
             {
               id: item,

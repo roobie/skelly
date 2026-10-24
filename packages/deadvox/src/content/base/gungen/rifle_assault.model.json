@@ -3,42 +3,55 @@
   "file": "assets/models/rifle_assault.glb",
   "parts": {
     "receiver": {
+      "item": "receiver_ar",
       "node": "receiver:receiver",
       "massKg": 0.9,
       "centreOfMass": [-0.09820214882610423, 0.0018599283724631903, -0.0006685236768802234]
     },
     "charging-handle": {
+      "item": "charging_handle_ar",
       "node": "charging-handle:ar-charging-handle",
       "massKg": 0.06,
       "centreOfMass": [-0.1380701754385965, 0.022000000000000002, 0.00017543859649121122]
     },
     "bolt-carrier": {
+      "item": "bolt_carrier_ar",
       "node": "bolt-carrier:bolt-carrier",
       "massKg": 0.33,
       "centreOfMass": [-0.06343478260869564, 0.0030289855072463774, -7.768520347634732e-18]
     },
     "lower": {
+      "item": "lower_ar",
       "node": "lower:lower",
       "massKg": 0.35,
       "centreOfMass": [-0.10142075256556449, -0.04389281641961232, 5.292318059774201e-18]
     },
-    "barrel": { "node": "barrel:barrel", "massKg": 0.95, "centreOfMass": [0.194, 0, 2.3457474544298815e-17] },
+    "barrel": {
+      "item": "barrel_ar_medium",
+      "node": "barrel:barrel",
+      "massKg": 0.95,
+      "centreOfMass": [0.194, 0, 2.3457474544298815e-17]
+    },
     "handguard": {
+      "item": "handguard_ar_clamped",
       "node": "handguard:handguard",
       "massKg": 0.35,
       "centreOfMass": [0.149518573551263, 0, 1.8310744251263232e-17]
     },
     "grip": {
+      "item": "grip_standard",
       "node": "grip:grip",
       "massKg": 0.1,
       "centreOfMass": [-0.16409294225893464, -0.09174784466758376, 1.3317506036538535e-17]
     },
     "stock": {
+      "item": "stock_m4_medium",
       "node": "stock:stock",
       "massKg": 0.35,
       "centreOfMass": [-0.3103997247075017, -0.015806469373709567, -0.00008231245698558507]
     },
     "front-sight": {
+      "item": "front_sight_ar",
       "node": "front-sight:front-sight",
       "massKg": 0.11,
       "centreOfMass": [0.30762912400455067, 0.018663253697383392, 0.00005688282138801661]

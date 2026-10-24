@@ -328,5 +328,86 @@
       "detailGrain": 0.002,
       "grain": 0.0040000000000000001
     }
+  },
+  {
+    "id": "receiver_ar",
+    "kind": "part",
+    "source": "receiver_ar",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "charging_handle_ar",
+    "kind": "part",
+    "source": "charging_handle_ar",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "bolt_carrier_ar",
+    "kind": "part",
+    "source": "bolt_carrier_ar",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "lower_ar",
+    "kind": "part",
+    "source": "lower_ar",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "barrel_ar_medium",
+    "kind": "part",
+    "source": "barrel_ar_medium",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "handguard_ar_clamped",
+    "kind": "part",
+    "source": "handguard_ar_clamped",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "grip_standard",
+    "kind": "part",
+    "source": "grip_standard",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "stock_m4_medium",
+    "kind": "part",
+    "source": "stock_m4_medium",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "front_sight_ar",
+    "kind": "part",
+    "source": "front_sight_ar",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
   }
 ]

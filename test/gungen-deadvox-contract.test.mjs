@@ -7,6 +7,7 @@ import { loadExportRecipe } from '../gungen/src/cli/exportRecipe.ts';
 import { loadGunDesign } from '../gungen/src/gun/designLoader.ts';
 import { exportGunGlb } from '../gungen/src/gun/exportGlb.ts';
 import { buildRegistry } from '../packages/deadvox/src/core/content.ts';
+import { typeWeightGrams } from '../packages/deadvox/src/core/items.ts';
 import { magazineFits } from '../packages/deadvox/src/core/magazine.ts';
 import { ModelSchema } from '../packages/deadvox/src/core/schema.ts';
 import { ammoMatchesCalibre, spentCaseItemId } from '../packages/deadvox/src/game/firearmHandling.ts';
@@ -49,6 +50,7 @@ const loadExports = () =>
     });
 const CURATED_EXPORTS = loadExports();
 const MODELS_FILE = /^models-.*\.json$/;
+const PART_ITEM_PATH = /^models\[0\]\.parts\.[^.]+\.item$/;
 const hasMesh = (scene) => {
   let found = false;
   scene.traverse((node) => {
@@ -120,6 +122,15 @@ const consumptionGaps = (sources) => {
   return { registry, gaps, guns: guns.length, companions };
 };
 const BASE_CONSUMPTION = consumptionGaps(BASE_SOURCES);
+// Recipe guns whose authored design names part items, with that instance → item composition.
+const COMPOSED_GUNS = RECIPE.filter(({ kind }) => kind === 'design').flatMap(({ id, source }) => {
+  const loaded = loadGunDesign(readFileSync(join(ROOT, source), 'utf8'));
+  if (!loaded.ok) {
+    throw new Error(`${source}: ${loaded.error.message}`);
+  }
+  const items = loaded.design.items ?? {};
+  return Object.keys(items).length === 0 ? [] : [{ id, items }];
+});
 
 describe('gungen exports satisfy deadvox model validation', () => {
   it('validates each curated gun model entry, including action metadata', () => {
@@ -162,7 +173,9 @@ describe('gungen exports satisfy deadvox model validation', () => {
     await Promise.all(
       EXPORTED.map(async ({ modelEntry, glb }) => {
         const { issues } = buildRegistry([{ source: modelEntry.file, data: { models: [modelEntry] } }]);
-        assert.deepEqual(issues, [], `${modelEntry.id}: invalid consumer model`);
+        // A part's item lives in another file; the full-base test resolves it.
+        const own = issues.filter(({ path }) => !PART_ITEM_PATH.test(path));
+        assert.deepEqual(own, [], `${modelEntry.id}: invalid consumer model`);
         const loaded = await new GLTFLoader().parseAsync(Uint8Array.from(glb).buffer, '');
         assert.ok(hasMesh(loaded.scene), `${modelEntry.id}: loaded scene has no geometry`);
         const declared = [
@@ -184,6 +197,33 @@ describe('gungen exports satisfy deadvox model validation', () => {
     const { gaps, guns, companions } = BASE_CONSUMPTION;
     assert.deepEqual(gaps, []);
     assert.ok(guns > 0 && companions > 0, 'the base must consume a recipe gun and its companions');
+  });
+
+  it('fits each recipe gun with its authored part items, each drawn and weighed as its loose export', () => {
+    const { registry } = BASE_CONSUMPTION;
+    assert.ok(COMPOSED_GUNS.length > 0, 'the recipe must ship a gun composed of part items');
+    const looseExport = new Map(RECIPE.filter(({ kind }) => kind === 'part').map(({ id, source }) => [source, id]));
+    for (const gun of COMPOSED_GUNS) {
+      const parts = registry.models.get(gun.id)?.parts ?? {};
+      const fitted = Object.fromEntries(
+        Object.entries(parts)
+          .filter(([, part]) => part.item !== undefined)
+          .map(([id, part]) => [id, part.item]),
+      );
+      assert.deepEqual(fitted, gun.items, `${gun.id}: fitted part items differ from its design`);
+      for (const [id, itemId] of Object.entries(gun.items)) {
+        const item = registry.items.get(itemId);
+        const loose = item && modelOf(registry, item);
+        assert.ok(loose && item.model === looseExport.get(itemId), `${gun.id} ${id}: ${itemId} is no loose export`);
+        const { massKg } = parts[id];
+        assert.deepEqual(
+          Object.values(loose.parts ?? {}).map((part) => part.massKg),
+          [massKg],
+          `${gun.id} ${id}: loose mass`,
+        );
+        assert.equal(typeWeightGrams(registry, itemId), massKg * 1000, `${gun.id} ${id}: ${itemId} weight`);
+      }
+    }
   });
 
   it('reports a dangling model reference and a gun companion drawn from outside the recipe', () => {

@@ -10,6 +10,8 @@ import { partNodeName } from './glb.ts';
 export interface PhysicalInputs {
   readonly part: PartDef;
   readonly massKg: number;
+  /** The catalogue item this instance is, when the tool's design names one. */
+  readonly item?: string;
 }
 
 /** Mass and centre of a part; `measureOf` gives each solid's volume and centre, the drawn ones in a model export. */
@@ -75,11 +77,13 @@ export const modelParts = (
       }
       const unit = resolved.domain.units.metresPerUnit;
       const measureOf = (solid: Solid) => drawn.measure(id, solid);
-      const physical = partProperties(unit, inputsFor(id, part), measureOf);
+      const inputs = inputsFor(id, part);
+      const physical = partProperties(unit, inputs, measureOf);
       const grain = collision ? drawn.grain(id) : undefined;
       return [
         id,
         {
+          ...(inputs.item === undefined ? {} : { item: inputs.item }),
           node: partNodeName(id, instance.family),
           massKg: physical.massKg,
           centreOfMass: scale(applyPoint(placed, scale(physical.centreOfMass, 1 / unit)), unit),

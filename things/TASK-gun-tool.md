@@ -20,9 +20,10 @@ gungen.
 
 The part-item scope is authored part identity, standalone exports and Deadvox item
 records, with no new player actions. Gameplay disassembly is deferred to #1040 so the
-part rounds stay small and disassembly gets its own design. A mass-table key alone is
-not an exportable part: see `gungen/src/gun/physical.ts`, `physicalInputs`. Item identity
-needs a concrete build source, without making pose or placement create another item.
+part rounds stay small and disassembly gets its own design (`things/WORK.md`, "Decisions").
+A mass row alone is not an exportable part. Item identity needs a concrete build source,
+without making pose or placement create another item; see `gungen/src/gun/catalogue.ts`,
+`loadPartCatalogue`.
 
 Open question 1 in `things/WORK.md`, "Open questions", need not block this sequence:
 sharing engine shapes is not sharing a domain part. Keep each tool's authored parts local;
@@ -83,10 +84,10 @@ all invariants above.
 
 Give the mass rows concrete, closed item identities and build sources before changing
 assembly composition. Keep the catalogue in gungen until the single move, so there is no
-package-to-gungen bridge. Use `gungen/src/gun/physical.jsonnet`, `partMasses`, as the
-identity input, not a second mass authority. The matching policy in
-`gungen/src/gun/physical.ts`, `physicalInputs`, must still reject missing and ambiguous
-matches. A family builder remains reusable without making its arbitrary parameter space
+package-to-gungen bridge. Items and the remaining mass rows share
+`gungen/src/gun/catalogue.jsonnet`, `parts`, so the catalogue is not a second mass
+authority. `gungen/src/gun/physical.ts`, `gunModelParts`, rejects missing and ambiguous
+items and rows. A family builder remains reusable without making its arbitrary parameter space
 the shipped item catalogue.
 
 **Exit:** catalogue tests prove unique identity and a buildable standalone assembly for

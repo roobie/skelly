@@ -32,6 +32,8 @@ export const ModelBoxSchema = pipe(
 );
 
 export const ModelPartSchema = strictObject({
+  /** The item this part is; the consumer checks it is registered and weighs what the part does. */
+  item: optional(Id),
   massKg: pipe(number(), finite(), minValue(0)),
   centreOfMass: ModelPointSchema,
   node: optional(pipe(string(), nonEmpty())),

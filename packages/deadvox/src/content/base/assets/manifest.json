@@ -36,7 +36,16 @@
         "assets/models/tactical_flashlight_mount.glb",
         "assets/models/magazine_stanag_20.glb",
         "assets/models/magazine_stanag_30.glb",
-        "assets/models/magazine_akm_30.glb"
+        "assets/models/magazine_akm_30.glb",
+        "assets/models/receiver_ar.glb",
+        "assets/models/charging_handle_ar.glb",
+        "assets/models/bolt_carrier_ar.glb",
+        "assets/models/lower_ar.glb",
+        "assets/models/barrel_ar_medium.glb",
+        "assets/models/handguard_ar_clamped.glb",
+        "assets/models/grip_standard.glb",
+        "assets/models/stock_m4_medium.glb",
+        "assets/models/front_sight_ar.glb"
       ],
       "licence": "CC0-1.0",
       "title": "Gungen authored model exports",

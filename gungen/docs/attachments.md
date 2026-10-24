@@ -18,7 +18,7 @@ Pair checks are sufficient because each single already passes validation, and ov
 Attachments are atoms, so their item weight remains authoritative across host-specific
 mount presentation and shared visual models. A gun body sums its authored part masses;
 replaceable geometry belongs to the fitted item instead of competing with its weight.
-See `src/gun/physical.ts`, `gunModelParts`; `src/gun/physical.jsonnet`, `partMasses`; and
+See `src/gun/physical.ts`, `gunModelParts`; `src/gun/catalogue.jsonnet`, `parts`; and
 `packages/deadvox/src/core/items.ts`, `typeWeightGrams`. Geometric centres are estimates,
 not a source of mass; see `packages/thing-export/src/physical.ts`, `partProperties`.
 

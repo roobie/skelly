@@ -4,6 +4,7 @@ import type { AppearanceContext, GlbAssetIdentity, VoxelGrains } from '@skelly/t
 import { loadGunDesign } from '../gun/designLoader.ts';
 import { exportGunGlb, type GunDeadvoxModelEntry, type GunExportMetadata } from '../gun/exportGlb.ts';
 import { GUN_APPEARANCE } from '../gun/palette.ts';
+import type { PartItems } from '../gun/physical.ts';
 import { TEMPLATES } from '../gun/templates.ts';
 import { readCartridge } from './readCartridge.ts';
 
@@ -64,6 +65,7 @@ type ReadAssemblyResult =
       appearance: AppearanceContext;
       calibre?: string;
       excludedAttachments?: readonly string[];
+      items?: PartItems;
     }
   | { message: string };
 
@@ -84,6 +86,7 @@ const readDesignAssembly = (text: string): ReadAssemblyResult => {
   }
   return {
     assembly: loaded.design.assembly,
+    ...(loaded.design.items === undefined ? {} : { items: loaded.design.items }),
     ...(loaded.design.excludedAttachments === undefined
       ? {}
       : { excludedAttachments: loaded.design.excludedAttachments }),
@@ -160,6 +163,7 @@ export const exportFileText = (
     includeAttachmentCompatibility: true,
     ...voxel,
     ...(read.excludedAttachments === undefined ? {} : { excludedAttachments: read.excludedAttachments }),
+    ...(read.items === undefined ? {} : { items: read.items }),
   });
   if (!result.ok) {
     return { ok: false, message: `export refused: ${JSON.stringify(result.error)}` };

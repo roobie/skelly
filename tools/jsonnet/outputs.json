@@ -49,6 +49,10 @@
       "output": "gungen/src/gun/appearance.json"
     },
     {
+      "source": "gungen/src/gun/catalogue.jsonnet",
+      "output": "gungen/src/gun/catalogue.json"
+    },
+    {
       "source": "gungen/src/gun/gunVoxel.jsonnet",
       "output": "gungen/src/gun/gunVoxel.json"
     },
@@ -165,6 +169,10 @@
       "output": "packages/deadvox/src/content/base/items-food.json"
     },
     {
+      "source": "packages/deadvox/src/content/base/items-gun-parts.jsonnet",
+      "output": "packages/deadvox/src/content/base/items-gun-parts.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/items-other.jsonnet",
       "output": "packages/deadvox/src/content/base/items-other.json"
     },
@@ -231,6 +239,10 @@
     {
       "source": "packages/deadvox/src/content/base/models-firearms.jsonnet",
       "output": "packages/deadvox/src/content/base/models-firearms.json"
+    },
+    {
+      "source": "packages/deadvox/src/content/base/models-gun-parts.jsonnet",
+      "output": "packages/deadvox/src/content/base/models-gun-parts.json"
     },
     {
       "source": "packages/deadvox/src/content/base/models-items.jsonnet",

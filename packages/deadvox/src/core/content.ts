@@ -22,6 +22,7 @@ import {
 import { lootTypeIssue } from './loot.ts';
 import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
 import { mapKitIssues } from './mapKit.ts';
+import { modelBodyMassKg } from './modelMass.ts';
 import { pieceItemIssues } from './placementLoot.ts';
 import { POWER_UNITS } from './powerContent.ts';
 import { handlingRangeIssues } from './rangeLayout.ts';
@@ -829,6 +830,31 @@ const checkItemMass = (item: ItemDef, registry: Registry, report: Report): void 
         ? 'an assembly sums its model parts and cannot author an item weight'
         : 'an atom needs an authored item weight',
     );
+  }
+};
+
+/** A model part that names an item is that item fitted, so the item must exist and weigh what the part does. */
+const partItemIssue = (registry: Registry, itemId: string, massKg: number): string | undefined => {
+  const item = registry.items.get(itemId);
+  if (item === undefined) {
+    return `no item "${itemId}"`;
+  }
+  const itemModel = item.model === undefined ? undefined : registry.models.get(item.model);
+  const grams = itemModel?.parts === undefined ? item.weight : modelBodyMassKg(itemModel) * 1000;
+  // A missing weight is checkItemMass's report.
+  return grams !== undefined && Math.abs(grams - massKg * 1000) > 1e-9 * grams
+    ? `item "${itemId}" weighs ${grams} g, not the part's ${massKg * 1000} g`
+    : undefined;
+};
+
+const checkModelPartItems = (registry: Registry, report: Report): void => {
+  for (const model of registry.models.values()) {
+    for (const [id, part] of Object.entries(model.parts ?? {})) {
+      const issue = part.item === undefined ? undefined : partItemIssue(registry, part.item, part.massKg);
+      if (issue !== undefined) {
+        report('models', model.id, `.parts.${id}.item`, issue);
+      }
+    }
   }
 };
 
@@ -1778,6 +1804,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
     }
   }
   checkItems(registry, report);
+  checkModelPartItems(registry, report);
   checkFigures(registry, report);
   checkLoot(registry, report);
   checkMilitaryLoot(registry, report);

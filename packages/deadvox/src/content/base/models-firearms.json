@@ -2501,46 +2501,55 @@
       "parts": {
         "barrel": {
           "centreOfMass": [0.19400000000000001, 0, 2.3457474544298815e-17],
+          "item": "barrel_ar_medium",
           "massKg": 0.94999999999999996,
           "node": "barrel:barrel"
         },
         "bolt-carrier": {
           "centreOfMass": [-0.063434782608695645, 0.0030289855072463774, -7.7685203476347316e-18],
+          "item": "bolt_carrier_ar",
           "massKg": 0.33000000000000002,
           "node": "bolt-carrier:bolt-carrier"
         },
         "charging-handle": {
           "centreOfMass": [-0.13807017543859651, 0.022000000000000002, 0.00017543859649121122],
+          "item": "charging_handle_ar",
           "massKg": 0.059999999999999998,
           "node": "charging-handle:ar-charging-handle"
         },
         "front-sight": {
           "centreOfMass": [0.30762912400455067, 0.018663253697383392, 5.6882821388016612e-5],
+          "item": "front_sight_ar",
           "massKg": 0.11,
           "node": "front-sight:front-sight"
         },
         "grip": {
           "centreOfMass": [-0.16409294225893464, -0.091747844667583761, 1.3317506036538535e-17],
+          "item": "grip_standard",
           "massKg": 0.10000000000000001,
           "node": "grip:grip"
         },
         "handguard": {
           "centreOfMass": [0.149518573551263, 0, 1.8310744251263232e-17],
+          "item": "handguard_ar_clamped",
           "massKg": 0.34999999999999998,
           "node": "handguard:handguard"
         },
         "lower": {
           "centreOfMass": [-0.10142075256556449, -0.043892816419612318, 5.2923180597742006e-18],
+          "item": "lower_ar",
           "massKg": 0.34999999999999998,
           "node": "lower:lower"
         },
         "receiver": {
           "centreOfMass": [-0.09820214882610423, 0.0018599283724631903, -0.00066852367688022339],
+          "item": "receiver_ar",
           "massKg": 0.90000000000000002,
           "node": "receiver:receiver"
         },
         "stock": {
           "centreOfMass": [-0.31039972470750171, -0.015806469373709567, -8.2312456985585069e-5],
+          "item": "stock_m4_medium",
           "massKg": 0.34999999999999998,
           "node": "stock:stock"
         }

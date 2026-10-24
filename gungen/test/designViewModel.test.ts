@@ -8,8 +8,11 @@ import { gunDomain } from '../src/gun/domain.ts';
 import { GUN_PREFABS, type PrefabCatalogue } from '../src/gun/prefabs.ts';
 import { ar } from '../src/gun/templates.ts';
 import { buildDesignViewModel } from '../src/viewer/designViewModel.ts';
+import { loadDesignAssembly } from './helpers.ts';
 
 const arText = readFileSync(join(import.meta.dirname, '..', 'designs', 'archetype-ar.json'), 'utf8');
+// Edits change construction params, which a catalogue item reference fixes, so they start from the built parts.
+const arValues = () => ({ ...JSON.parse(arText), assembly: loadDesignAssembly('archetype-ar') });
 
 describe('buildDesignViewModel', () => {
   it('shows archetype-ar as published with the STANAG prefab on its magazine', () => {
@@ -39,7 +42,7 @@ describe('buildDesignViewModel', () => {
       ...GUN_PREFABS,
       { id: 'test-barrel', version: 1, family: 'barrel', fixedParams: { profile: 'pistol' } },
     ];
-    const mismatchValues = JSON.parse(arText);
+    const mismatchValues = arValues();
     mismatchValues.assembly.parts.barrel.params.profile = 'standard';
     mismatchValues.assembly.parts.barrel.prefab = { id: 'test-barrel', version: 1 };
     const mismatchLoad = loadDesign(JSON.stringify(mismatchValues), {
@@ -62,7 +65,7 @@ describe('buildDesignViewModel', () => {
   });
 
   it('maps live rule issues to the part cards they name', () => {
-    const values = JSON.parse(arText);
+    const values = arValues();
     values.status = 'draft';
     values.assembly.parts.receiver.params.feed = 'tube';
     values.assembly.connections = values.assembly.connections.filter(
