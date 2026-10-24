@@ -224,30 +224,24 @@ local cap = [
   '.......................', '...................dddd', '...................dddd',
   '...................dddd', '...................dddd', '...................dddd',
 ];
-// The showroom pavilion: an open-sided timber deck under a roof, with strip lights on the house supply. The layout's
-// slot row stands on the deck and the default spawn in front of it, beside the charging corner's crates and charger
-// (`docs/test-house.md`, "Normal and debug additions"). The deck's south-east stays open toward the garden gate.
+// The showroom pavilion: an open-sided timber deck under a roof. The layout's slot row stands on the deck and the
+// default spawn in front of it, beside the charging corner's crates and charger (`docs/test-house.md`, "Normal and debug
+// additions"). The spawn's row runs east off the deck along the path to the house door, and the deck's south-east stays
+// open toward the garden gate.
 local pavilionPosts = [
-  'p.........p.........p', '.....................', '.....................', '.....................',
-  '.....................', '.....................', '.....................', '.....................',
-  '.....................', 'p.........p.........p',
+  'p......p.......p', '................', '................', '................', '................',
+  '................', '................', '................', '................', 'p......p.......p',
 ];
 local pavilionCharging(charger) = [
-  'p.........p.........p', '.....................', '.....................', '.....................',
-  '................KK...', '................KK' + charger + '..', '.....................', '.....................',
-  '.....................', 'p.........p.........p',
+  'p......p.......p', '................', '.............KK.', '.............KK' + charger, '................',
+  '................', '................', '................', '................', 'p......p.......p',
 ];
-local pavilionLights = [
-  'p.........p.........p', '.....................', '.....................', '.....II.......II.....',
-  '.....................', '.....................', '.....II.......II.....', '.....................',
-  '.....................', 'p.........p.........p',
-];
-local pavilionSolidRows(block) = [std.join('', [block for _ in std.range(1, 21)]) for _ in std.range(1, 10)];
+local pavilionSolidRows(block) = [std.join('', [block for _ in std.range(1, 16)]) for _ in std.range(1, 10)];
 local templates = [
   {
-    id: 'test_house_showroom', size: [21, 9, 10],
+    id: 'test_house_showroom', size: [16, 9, 10],
     layers: [pavilionSolidRows('d'), pavilionSolidRows('p'), pavilionCharging('X'), pavilionCharging('.'),
-      pavilionPosts, pavilionPosts, pavilionPosts, pavilionLights, pavilionSolidRows('r')],
+      pavilionPosts, pavilionPosts, pavilionPosts, pavilionPosts, pavilionSolidRows('r')],
   },
   {
     id: 'test_house_home', size: [23, 11, 15],

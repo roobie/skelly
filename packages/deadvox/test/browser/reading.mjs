@@ -279,6 +279,10 @@ try {
         await release();
       }
     };
+    // Spawn faces the showroom's newest slot; the route runs east along the path to the house door.
+    await page.evaluate(() => {
+      globalThis.readingWitness.input.yaw = -Math.PI / 2;
+    });
     const startX = await page.evaluate(() => globalThis.readingWitness.body.pos[0]);
     await walk('movement.forward', startX + 10, true);
     const aim = async (type, targetUid) => {

@@ -2,13 +2,14 @@
 import { blocks, placementOf } from './authoredPlacement.ts';
 import { buildingBounds, lotOf, profileHeight, standingHeight, surfaceFoundation } from './authoredTerrain.mjs';
 import type { Registry, TemplateDef } from './content.ts';
-import type { Vec3 } from './coords.ts';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
+import { CHUNK, type Vec3 } from './coords.ts';
 import { placementLootIssues } from './placementLoot.ts';
 import { WORLD_BOTTOM_M } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
 import { HORDE_TYPE, TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
-import { slotPlacement, slotProps } from './showroom.ts';
-import { type Rect, rectsOverlap } from './site.ts';
+import { ShowroomCatalogue, slotPlacement, slotProps } from './showroom.ts';
+import { type Rect, rectDistance, rectsOverlap } from './site.ts';
 import { spawnOverlappingSolidBlock, zombieBodyDimensions } from './spawnClearance.ts';
 import {
   cellsOf,
@@ -60,6 +61,14 @@ const showroomIssues = (
   });
   if (issues.length > 0) {
     return issues;
+  }
+  // Streaming whole columns, the startup ring can reach one column past its radius.
+  const ready = registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)?.readyRadiusM;
+  const { rect } = new ShowroomCatalogue(registry, showroom.catalogue);
+  const [px, , pz] = layout.player.position;
+  const distance = rectDistance(rect, Math.floor(px / TEMPLATE_BLOCK_SIZE), Math.floor(pz / TEMPLATE_BLOCK_SIZE));
+  if (ready !== undefined && distance * TEMPLATE_BLOCK_SIZE <= ready + CHUNK * TEMPLATE_BLOCK_SIZE) {
+    issues.push(['.showroom.catalogue.position', 'must lie beyond the startup ring, so it cannot delay the start']);
   }
   const placement = slotPlacement(registry, layout);
   if (placement) {

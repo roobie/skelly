@@ -69,7 +69,7 @@
           "template": "test_house_loose_wardrobe"
         },
         {
-          "position": [-12.5, 20.5, 0],
+          "position": [-12.5, 20.5, -3],
           "rotation": 0,
           "template": "test_house_showroom"
         }
@@ -82,23 +82,23 @@
         "usage": ["Residential"]
       },
       "player": {
-        "bearing": 0,
-        "position": [-3.25, 21.5, 4.25]
+        "bearing": 90,
+        "position": [-6.25, 21.5, -0.5]
       },
       "repairStock": "test_house_garage",
       "shamblers": [],
       "showroom": {
-        "capacity": 4,
+        "capacity": 3,
         "catalogue": {
           "blend": 4,
           "floor": "concrete",
-          "position": [-23, 21, 12],
+          "position": [-23, 21, 80],
           "spacing": 2,
           "width": 50
         },
         "facing": "s",
         "focusDistance": 1,
-        "row": [-11.5, 21.5, 2.5],
+        "row": [-12, 21.5, -1],
         "slots": [
           {
             "furniture": "flimsy_wood_door"

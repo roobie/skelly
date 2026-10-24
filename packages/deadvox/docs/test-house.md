@@ -71,8 +71,9 @@ content so balancing the haven does not change its mechanisms. See
 
 The showroom is where a new feature's prop is tried first, so it stands at spawn: the
 open-sided pavilion on the lot holds a short authored row of slots, and the default
-spawn faces the newest slot. See `src/content/base/templates-test-house.jsonnet`,
-`test_house_showroom`.
+spawn faces the newest slot. The pavilion has no lights of its own: they would light the
+ground around the spawn, and light tests need it dark at night. See
+`src/content/base/templates-test-house.jsonnet`, `test_house_showroom`.
 
 A feature's test prop goes in the layout's slot list, never inside the house, garage or
 yard, because zone content changes only by a design round and the home must stay a
@@ -92,7 +93,10 @@ rows are spaced, and code packs the pieces into rows, each facing its own aisle 
 focus has somewhere to stand. The catalogue shows furniture,
 not supply, so its pieces stand empty and stay off the house grid. It lies outside the
 lot on a levelled floor, south of the house and clear of the range, because it is far
-larger than the lot. See `src/core/showroom.ts`, `ShowroomCatalogue`. Features that are
+larger than the lot. It also lies beyond the startup ring, because building that many
+pieces before play delays every debug session's start; a focus reaches it directly, and
+`validate` rejects a catalogue placed inside the ring. See `src/core/showroom.ts`,
+`ShowroomCatalogue`. Features that are
 not furniture, such as an item or a vehicle, still need a slot or their owning zone.
 
 ## Focus

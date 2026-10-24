@@ -21,15 +21,16 @@ local bays = [
       { template: 'test_house_sign', position: [-2, 20.5, 0.5], rotation: 0 },
       { template: 'test_house_loose_wardrobe', position: [-2, 20.5, -3], rotation: 0 },
       // East of both bays' drive-out lanes.
-      { template: 'test_house_showroom', position: [-12.5, 20.5, 0], rotation: 0 },
+      { template: 'test_house_showroom', position: [-12.5, 20.5, -3], rotation: 0 },
     ],
-    // On the showroom deck; the bearing applies only while the slot row is empty, since spawn faces the newest slot.
-    player: { position: [-3.25, 21.5, 4.25], bearing: 0 },
+    // On the showroom deck, on the path's line to the house door; the bearing applies only while the slot row is empty,
+    // since spawn faces the newest slot.
+    player: { position: [-6.25, 21.5, -0.5], bearing: 90 },
     showroom: {
-      row: [-11.5, 21.5, 2.5],
+      row: [-12, 21.5, -1],
       facing: 's',
       spacing: 1,
-      capacity: 4,
+      capacity: 3,
       // A feature's test prop goes here, never in the house, garage or hall. Oldest first: past capacity, the first
       // entry leaves.
       slots: [
@@ -38,8 +39,8 @@ local bays = [
         { furniture: 'grinding_wheel', fixed: true },
       ],
       focusDistance: 1,
-      // South of the lot and clear of the range; debug only (`docs/test-house.md`, "Showroom").
-      catalogue: { position: [-23, 21, 12], width: 50, spacing: 2, floor: 'concrete', blend: 4 },
+      // South of the lot, clear of the range and beyond the startup ring; debug only (`docs/test-house.md`, "Showroom").
+      catalogue: { position: [-23, 21, 80], width: 50, spacing: 2, floor: 'concrete', blend: 4 },
     },
     bays: bays,
     vehicles: [{ blueprint: 'hatchback', placementKey: 'testHouse.parked-hatchback' } + bays[0]],
