@@ -7,6 +7,7 @@ import { sitePalette, terrainShapeOf } from './core/sitePalette.ts';
 import { generateColumn, worldGroundAt } from './core/worldgen.ts';
 import { buildBundledContent } from './game/bundledContent.ts';
 import { DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
+import { inputBindings } from './game/inputBindings.ts';
 import { siteForReviewMap } from './game/worldSetup.ts';
 import {
   hillshade,
@@ -86,12 +87,40 @@ const errorPanel = document.querySelector<HTMLElement>('#error')!;
 const sliceReadout = document.querySelector<HTMLElement>('#slice')!;
 const surfaceButton = document.querySelector<HTMLButtonElement>('#slice-surface')!;
 document.querySelector('#seed')!.textContent = `${seed} · ${config.site}`;
+inputBindings.setDebugRun();
+
+type KeyEventLike = Parameters<NonNullable<typeof globalThis.onkeydown>>[0];
+const SLICE_ACTIONS = ['debug.map-slice-down', 'debug.map-slice-up', 'debug.map-slice-surface'] as const;
+
+/** The slice action a key event is bound to, so a rebind moves the map's keys too. */
+const sliceAction = (event: KeyEventLike): (typeof SLICE_ACTIONS)[number] | undefined =>
+  SLICE_ACTIONS.find((action) =>
+    inputBindings
+      .chords(action)
+      .some((chord) => chord.code === event.code && (chord.modifier === 'shift') === event.shiftKey),
+  );
+
+/** Steps the slice for a bound key; the map owns these keys, so they are not forwarded to the game. */
+const sliceKey = (event: KeyEventLike): boolean => {
+  const action = sliceAction(event);
+  if (!action) {
+    return false;
+  }
+  event.preventDefault();
+  if (action === 'debug.map-slice-surface') {
+    showSlice(undefined);
+  } else {
+    stepSlice(action === 'debug.map-slice-down' ? -1 : 1);
+  }
+  return true;
+};
+
 if (overlay) {
   document.body.classList.add('map-overlay');
   document.querySelector<HTMLElement>('#map-label')!.textContent = `${config.site.toUpperCase()} · REVIEW MAP`;
   const requestClose = () =>
     globalThis.parent.postMessage({ type: 'deadvox-review-map-close' }, globalThis.location.origin);
-  const forwardKey = (event: Parameters<NonNullable<typeof globalThis.onkeydown>>[0], phase: 'down' | 'up') => {
+  const forwardKey = (event: KeyEventLike, phase: 'down' | 'up') => {
     event.preventDefault();
     globalThis.parent.postMessage(
       {
@@ -117,9 +146,13 @@ if (overlay) {
     }
   };
   globalThis.onkeyup = (event) => {
-    if (!sliceKeyCodes.has(event.code)) {
+    if (!sliceAction(event)) {
       forwardKey(event, 'up');
     }
+  };
+} else {
+  globalThis.onkeydown = (event) => {
+    sliceKey(event);
   };
 }
 
@@ -372,8 +405,12 @@ const showSlice = async (target: number | undefined) => {
 };
 
 const stepSlice = (blocks: number) => {
-  showSlice((wantedSlice ?? surfaceTopBlock) + blocks);
+  showSlice(Math.max(scale.minCy * CHUNK, (wantedSlice ?? surfaceTopBlock) + blocks));
 };
+
+const [downLabel, upLabel, surfaceLabel] = SLICE_ACTIONS.map((action) => inputBindings.label(action));
+document.querySelector('#slice-keys')!.textContent =
+  `${downLabel} and ${upLabel} step the cut; ${surfaceLabel} returns to the surface.`;
 
 const boundsWidth = bounds.maxX - bounds.minX;
 const boundsHeight = bounds.maxZ - bounds.minZ;
@@ -766,28 +803,6 @@ document.querySelector<HTMLButtonElement>('#slice-down')!.addEventListener('clic
 document.querySelector<HTMLButtonElement>('#slice-up')!.addEventListener('click', () => stepSlice(1));
 surfaceButton.addEventListener('click', () => showSlice(undefined));
 
-const sliceKeyCodes = new Set(['PageDown', 'PageUp', 'Home']);
-
-/** Keys that step the slice; the map handles them itself and does not forward them to the game. */
-const sliceKey = (event: KeyboardEvent): boolean => {
-  const stride = event.shiftKey ? CHUNK : 1;
-  if (event.code === 'PageDown') {
-    stepSlice(-stride);
-  } else if (event.code === 'PageUp') {
-    stepSlice(stride);
-  } else if (event.code === 'Home') {
-    showSlice(undefined);
-  } else {
-    return false;
-  }
-  event.preventDefault();
-  return true;
-};
-globalThis.addEventListener('keydown', (event) => {
-  if (!overlay) {
-    sliceKey(event);
-  }
-});
 globalThis.addEventListener('resize', resize);
 
 try {

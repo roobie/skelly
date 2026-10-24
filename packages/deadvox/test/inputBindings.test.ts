@@ -503,6 +503,9 @@ describe('keyboard registry', () => {
     expect(INPUT_BINDINGS.filter(({ contexts }) => contexts.includes('review-map')).map(({ id }) => id)).toEqual([
       'debug.gate',
       'debug.review-map-toggle',
+      'debug.map-slice-down',
+      'debug.map-slice-up',
+      'debug.map-slice-surface',
     ]);
   });
   it('keeps noclip flight ungated and concurrent with ordinary movement', () => {
