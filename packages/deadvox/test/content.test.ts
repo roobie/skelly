@@ -3125,6 +3125,40 @@ describe('content', () => {
     ]);
   });
 
+  it('reports a two-handed firearm without authored hands, a seat left of the eye and a palm not square to its fingers', () => {
+    const firearmsFile = base.find(({ source }) => source === 'models-firearms.json')!;
+    interface Hold {
+      palm: [number, number, number];
+      fingers: [number, number, number];
+    }
+    interface Hands {
+      seat: [number, number, number];
+      firing: Hold;
+    }
+    const data = firearmsFile.data as { items: Record<string, unknown>[]; models: Record<string, unknown>[] };
+    const gun = data.items.find((item) => item.firearm && item.twoHanded)!;
+    const model = data.models.find(({ id }) => id === gun.model)!;
+    const hands = model.hands as Hands;
+    const { hands: _hands, ...bare } = model;
+    const models = [
+      { ...bare, id: 'fixture_no_hands' },
+      { ...model, id: 'fixture_seat', hands: { ...hands, seat: [-hands.seat[0], hands.seat[1], hands.seat[2]] } },
+      { ...model, id: 'fixture_palm', hands: { ...hands, firing: { ...hands.firing, fingers: hands.firing.palm } } },
+    ];
+    const items = [
+      { ...gun, id: 'fixture_no_hands_gun', name: 'Fixture gun', model: 'fixture_no_hands', notLoot: true },
+    ];
+    // The fixtures live in their own file, so dropping it on their issues leaves the base content whole.
+    const fixtureSource = 'hands-fixture.json';
+    const { issues } = buildRegistry([...base, { source: fixtureSource, data: { items, models } }]);
+    expect(issues.filter((issue) => issue.source === fixtureSource).map(({ path }) => path)).toEqual([
+      'items[0].model',
+      'models[1].hands.seat',
+      'models[2].hands.firing',
+    ]);
+    expect(issues.filter((issue) => issue.source !== fixtureSource)).toEqual([]);
+  });
+
   it('maps each authored pattern to its own pattern id, and none for a block that authors none', () => {
     const plain = baseRegistry.blocks.find(({ pattern }) => pattern === undefined)!;
     const { pattern: _pattern, patternPalette: _palette, patternWashout: _washout, ...template } = plain;

@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { NEUTRAL_AIM } from '../src/core/aim.ts';
 import { Character } from '../src/core/character.ts';
+import type { Vec3 } from '../src/core/coords.ts';
 import { ejectSeconds } from '../src/core/firearmAction.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
-import { heldFirearmTransform } from '../src/core/heldPose.ts';
+import { heldFirearmTransform, modelToView } from '../src/core/heldPose.ts';
 import { type HandSide, Inventory } from '../src/core/inventory.ts';
 import { PLAYER_VIEW_FOV_DEGREES } from '../src/core/opticWindow.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
@@ -106,6 +107,55 @@ describe('actual-slot held placement', () => {
         const barrelCenter = pose.rootOffset.map((offset, axis) => offset + pose.muzzleOffset[axis]!);
         expect(barrelCenter[2]).toBeLessThan(0);
         expect(projectedVerticalPixels(barrelCenter)).toBeLessThan(0);
+      }
+    }
+  });
+
+  it('keeps a long gun’s butt in its shoulder seat while lowering and raising it, mirrored for the left slot', () => {
+    const firearms = registry.skills.get('firearms_combat')!.combat!.firearms!;
+    const longGuns = [...registry.models.values()].filter((model) => model.hands);
+    expect(longGuns.length).toBeGreaterThan(0);
+    for (const model of longGuns) {
+      for (const side of ['right', 'left'] as const) {
+        const { seat } = model.hands!;
+        const expectedSeat = [side === 'right' ? seat[0] : -seat[0], seat[1], seat[2]];
+        const poseAt = (progress: number) =>
+          heldFirearmTransform({
+            model,
+            side,
+            leadingSide: side,
+            twoHanded: true,
+            progress,
+            aimingDownSights: false,
+            aimFrame: NEUTRAL_AIM,
+            loweredPitchRadians: firearms.loweredPitchRadians,
+          });
+        // The root rotation's columns turn view-frame vectors, so the butt goes through the grip frame first.
+        const buttOf = (pose: ReturnType<typeof poseAt>): number[] => {
+          const local = modelToView(
+            model,
+            model.hands!.butt.map((value, axis) => value - model.grip!.at[axis]!) as Vec3,
+          );
+          return pose.rootOffset.map(
+            (root, axis) =>
+              root +
+              local[0] * pose.rootRotation[0][axis]! +
+              local[1] * pose.rootRotation[1][axis]! +
+              local[2] * pose.rootRotation[2][axis]!,
+          );
+        };
+        const lowered = poseAt(0);
+        const ready = poseAt(1);
+        for (let axis = 0; axis < 3; axis++) {
+          expect(buttOf(lowered)[axis], `${model.id} ${side} lowered butt`).toBeCloseTo(expectedSeat[axis]!, 10);
+          expect(buttOf(ready)[axis], `${model.id} ${side} ready butt`).toBeCloseTo(expectedSeat[axis]!, 10);
+        }
+        const muzzleHeight = (pose: ReturnType<typeof poseAt>) => pose.rootOffset[1] + pose.muzzleOffset[1];
+        expect(muzzleHeight(lowered), `${model.id} ${side} lowered muzzle`).toBeLessThan(muzzleHeight(ready));
+        // The lowered gun stays in the view: its muzzle projects inside the vertical field, below centre.
+        const muzzle = lowered.rootOffset.map((root, axis) => root + lowered.muzzleOffset[axis]!);
+        expect(projectedVerticalPixels(muzzle), `${model.id} ${side} lowered muzzle`).toBeLessThan(0);
+        expect(projectedVerticalPixels(muzzle), `${model.id} ${side} lowered muzzle`).toBeGreaterThan(-360);
       }
     }
   });

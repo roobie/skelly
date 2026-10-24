@@ -1699,7 +1699,7 @@ export class FirearmMechanics {
     const point = revolverChamberPoint(model.gun!.revolver!, chamber, cylinder.aligned, 1);
     const local = modelToView(model, point.map((value, index) => value - model.grip!.at[index]!) as Vec3);
     const side = this.inventory.hands.right?.uid === item.uid ? 'right' : 'left';
-    const grip = heldGripOffset(side, false);
+    const grip = heldGripOffset(side, false, model);
     const basis = basisAlong(
       [-Math.sin(pose.yaw) * Math.cos(pose.pitch), Math.sin(pose.pitch), -Math.cos(pose.yaw) * Math.cos(pose.pitch)],
       [0, 1, 0],

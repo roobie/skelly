@@ -28,7 +28,8 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         rightLeg: limb('player_leg', 'hip'),
       },
       // The first-person view turns each arm part about its joint. A fist closes hard; a hand on a grip leaves room
-      // for the handle; a hand on a screen's back lies nearly flat.
+      // for the handle; a hand on a screen's back lies nearly flat. On a long gun the firing hand closes around the
+      // pistol grip with the thumb over its top, and the support hand cups the forend with the thumb along its side.
       armRig: {
         upper: segment('upper', 'shoulder'),
         fore: segment('fore', 'elbow'),
@@ -40,6 +41,8 @@ local handPose(fingers, thumbAcross, thumbIn) = {
           fist: handPose(95, 60, 45),
           holding: handPose(80, 50, 30),
           open: handPose(10, 10, 0),
+          pistolGrip: handPose(85, 70, 35),
+          forend: handPose(85, 15, 10),
         },
         // Where the view hangs the right arm, from the eye; the left mirrors it.
         shoulderFromEye: [0.3, -0.55, 0.05],

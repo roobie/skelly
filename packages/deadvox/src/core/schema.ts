@@ -2049,17 +2049,42 @@ const CompassDialSchema = strictObject({
 });
 export type CompassDial = InferOutput<typeof CompassDialSchema>;
 
+/** How a hand closes, by name: the empty fist, a hand around a plain grip, flat on a screen, or a long gun's two holds. */
+const HAND_POSES = ['fist', 'holding', 'open', 'pistolGrip', 'forend'] as const;
+
+/**
+ * One hand's hold on a held model, in the model's frame as authored for a right-handed hold: where the palm's face
+ * meets the model, which way the palm presses and which way the straight fingers point before they curl. A left
+ * hold mirrors the model's z. The palm and fingers are perpendicular, which validation checks.
+ */
+const HandHoldSchema = strictObject({ at: Point, palm: UnitVector, fingers: UnitVector, pose: picklist(HAND_POSES) });
+
+/**
+ * A long gun's hold (`DESIGN.md`, "Models"): the butt sits at `seat` in the eye's frame (x right, y up, z back) for
+ * a right-handed hold, the left mirrors x; lowering the gun turns it about `butt`, a model point, so the stock stays
+ * in the shoulder; the firing hand takes the grip and the support hand the forend.
+ */
+const HandsModelSchema = strictObject({
+  seat: Point,
+  butt: Point,
+  firing: HandHoldSchema,
+  support: HandHoldSchema,
+});
+export type HandsModelDef = InferOutput<typeof HandsModelSchema>;
+
 export const ModelSchema = pipe(
   modelSchema({
     gun: optional(GunModelSchema),
     dial: optional(CompassDialSchema),
     lever: optional(LeverModelSchema),
     pin: optional(PinModelSchema),
+    hands: optional(HandsModelSchema),
   }),
   check(
     ({ gun, anchors }) => gun?.internalMagazine === undefined || anchors?.loading_port !== undefined,
     'internal magazine metadata needs a loading_port anchor',
   ),
+  check(({ hands, grip }) => hands === undefined || grip !== undefined, 'hands need a grip to hold by'),
 );
 
 // ---- furniture ----
@@ -3488,8 +3513,14 @@ const ArmRigSchema = strictObject({
   thumb: ArmSegmentSchema,
   /** The anchor on the palm's midline a held item's grip sits against, moved out to the palm's face. */
   grip: Id,
-  /** The empty hand's fist, the hand around a held grip, and the hand flat on a held screen's back. */
-  handPoses: strictObject({ fist: HandPoseSchema, holding: HandPoseSchema, open: HandPoseSchema }),
+  /** One closing per `HAND_POSES` name; a held model's hold names the one its hand takes. */
+  handPoses: strictObject({
+    fist: HandPoseSchema,
+    holding: HandPoseSchema,
+    open: HandPoseSchema,
+    pistolGrip: HandPoseSchema,
+    forend: HandPoseSchema,
+  }),
   /**
    * Where the view hangs the right arm, in the eye's frame (x right, y up, z back); the left mirrors x. Presentation,
    * not the body's own shoulder: wider and lower, so the arms show in view. Validation wants it right of and below

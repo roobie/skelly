@@ -19,7 +19,7 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { HOLD, heldAnchorOffset } from '../src/core/heldPose.ts';
+import { HOLD, heldHoldFrame } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { toggleLight } from '../src/core/lights.ts';
 import { meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
@@ -723,48 +723,51 @@ describe('player figure', () => {
     expect(maxTorsoYaw).toBeGreaterThan(0);
   });
 
-  it.each([false, true])(
-    'uses an authored support wrist when present, otherwise the contact anchor: %s',
-    (authoredWrist) => {
-      const model = {
-        id: 'support_fixture',
-        file: 'assets/models/support_fixture.glb' as const,
-        grip: { at: [0, 0, 0] as [number, number, number], turn: [0, 0, 0] as [number, number, number] },
-        gun: { internalMagazine: { capacity: 1 } },
-        anchors: {
-          support: [0.3, 0, 0] as [number, number, number],
-          // biome-ignore lint/style/useNamingConvention: model anchors use content Ids.
-          ...(authoredWrist ? { support_wrist: [0.27, -0.04, 0] as [number, number, number] } : {}),
-        },
-      };
-      const fixture = {
-        ...registry,
-        models: new Map(registry.models).set(model.id, model),
-        items: new Map(registry.items).set('support_fixture', {
-          id: 'support_fixture',
-          name: 'Fixture',
-          category: 'weapon' as const,
-          economy: { usage: [], tiers: [] },
-          workInProgress: false,
-          notLoot: false,
-          weight: 1,
-          size: [1, 1] as [number, number],
-          twoHanded: true,
-          model: model.id,
-        }),
-      };
-      const inventory = new Inventory(fixture);
-      expect(inventory.add(inventory.create('support_fixture'), { kind: 'hand', side: 'right' })).toBe(true);
-      const held = new HeldItems(inventory, undefined, playerFigure);
+  it.each(['right', 'left'] as const)(
+    'puts each hand of a %s-held long gun on its authored hold: palm on the model, fingers along it, pose from the hold',
+    (side) => {
+      const def = [...registry.items.values()].find(
+        (item) => item.firearm && item.twoHanded && item.model && registry.models.get(item.model)?.hands,
+      )!;
+      const model = registry.models.get(def.model!)!;
+      const inventory = new Inventory(registry);
+      expect(inventory.add(inventory.create(def.id), { kind: 'hand', side })).toBe(true);
+      const held = new HeldItems(inventory, figureOnlyModels, playerFigure);
+      const internals = held as unknown as ArmInternals & { heldByHand: Map<'left' | 'right', Group> };
       try {
         held.update(new PerspectiveCamera());
-        const { scene } = held.warmUpTarget;
-        scene.updateMatrixWorld(true);
-        const arm = scene.getObjectByName('first-person-arm-left')!;
-        const anchor = arm.getObjectByName('grip-anchor')!;
-        const wrist = arm.parent!.worldToLocal(anchor.getWorldPosition(new Vector3()));
-        const expected = heldAnchorOffset(model, authoredWrist ? 'support_wrist' : 'support');
-        expect(wrist.distanceTo(new Vector3(...expected))).toBeLessThan(1e-8);
+        internals.view.updateMatrixWorld(true);
+        const gun = internals.heldByHand.get(side)!;
+        const gunRotation = gun.getWorldQuaternion(new Quaternion());
+        const other = side === 'right' ? 'left' : 'right';
+        for (const [hand, hold] of [
+          [side, 'firing'],
+          [other, 'support'],
+        ] as const) {
+          const arm = internals.arms.get(hand)!;
+          const frame = heldHoldFrame(model, hand, hold);
+          const anchor = gun.worldToLocal(worldOf(arm, 'grip-anchor'));
+          expect(anchor.distanceTo(new Vector3(...frame.at)), `${hand} ${hold} at`).toBeLessThan(1e-6);
+          const handRotation = arm.getObjectByName(ARM_NODE.hand)!.getWorldQuaternion(new Quaternion());
+          const expected = gunRotation
+            .clone()
+            .multiply(
+              new Quaternion().setFromRotationMatrix(
+                new Matrix4().makeBasis(
+                  new Vector3(...frame.thumbSide),
+                  new Vector3(...frame.fingers),
+                  new Vector3(...frame.palm),
+                ),
+              ),
+            );
+          expect(handRotation.angleTo(expected), `${hand} ${hold} frame`).toBeLessThan(1e-6);
+          const fingersDegrees = Math.abs(arm.getObjectByName(ARM_NODE.knuckles)!.rotation.z) * (180 / Math.PI);
+          expect(fingersDegrees, `${hand} ${hold} pose`).toBeCloseTo(
+            playerFigure.armRig.handPoses[model.hands![hold].pose].fingersDegrees,
+            6,
+          );
+          expectConnectedArm(arm, internals.armRigs.get(hand)!, `${hand} ${hold}`);
+        }
       } finally {
         held.dispose();
       }

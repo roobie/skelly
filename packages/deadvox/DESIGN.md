@@ -2573,6 +2573,24 @@ gore stays put while parts change. See `src/core/schema.ts`, `FigureSchema`,
 `src/render/armRig.ts`, `buildArmRig`, and `src/render/playerFigure.ts`,
 `playerFigureLayout` and `PLAYER_REGION_BOXES`.
 
+A long gun is held like a rifle, and the hold is authored on the gun's model,
+not in the renderer: the model names where its butt is, the shoulder seat the
+butt sits in, and for each hand a hold point, the direction the palm faces, the
+direction the fingers run and the finger pose. The firing hand wraps the grip
+with the palm on the stock, the support hand lies palm up under the forend, and
+the view places the gun so the butt rests in the seat and lowers and raises it
+by turning about the butt, so the stock stays shouldered at every ready level
+and both arms reach the gun from the seat instead of the gun floating in front
+of the eye. The hold lives in content because a new gun, a mod gun or a retuned
+hold must not need a renderer change, which is the content pillar in
+`PILLARS.md`, "Content forward compatibility", and because one hold formula
+could not fit a pump gun and a pistol-grip rifle alike. A two-handed firearm without an authored hold, a seat
+left of the eye or a palm not square to its fingers fails validation rather
+than drawing a hand through the stock. A one-handed gun keeps the grip frame it
+had. See
+`src/core/schema.ts`, `HandsModelSchema`, `src/core/heldPose.ts`,
+`heldHoldFrame`, and `src/core/content.ts`, `checkHeldHands`.
+
 Many animations are expected over time, so a pose is data that names a joint and an
 angle, and code-posed motion such as arm swing and idle breath is one clip among
 many. A pose is never a formula buried in the renderer: a formula in code

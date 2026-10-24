@@ -39,6 +39,7 @@ import {
   FIGURE_LIMBS,
   type FigureDef,
   type FurnitureDef,
+  type HandsModelDef,
   HELD_DISPLAY_KIND,
   type ItemDef,
   type ModelDef,
@@ -1819,6 +1820,36 @@ const checkFigures = (registry: Registry, report: Report): void => {
   }
 };
 
+/**
+ * A two-handed firearm is drawn held by its authored hands (`DESIGN.md`, "Models"), so its model must author them;
+ * a hold's seat is authored for the right shoulder, and its palm and fingers span the hand frame.
+ */
+const checkHeldHands = (registry: Registry, report: Report): void => {
+  for (const item of registry.items.values()) {
+    const model = item.model === undefined ? undefined : registry.models.get(item.model);
+    if (item.firearm && item.twoHanded && model && model.hands === undefined) {
+      report('items', item.id, '.model', `two-handed firearm model "${model.id}" authors no hands`);
+    }
+  }
+  for (const model of registry.models.values()) {
+    if (model.hands) {
+      checkHands(model.id, model.hands, report);
+    }
+  }
+};
+
+const checkHands = (modelId: string, hands: HandsModelDef, report: Report): void => {
+  if (hands.seat[0] <= 0) {
+    report('models', modelId, '.hands.seat', 'the seat is the right shoulder: it must sit right of the eye');
+  }
+  for (const hold of ['firing', 'support'] as const) {
+    const { palm, fingers } = hands[hold];
+    if (Math.abs(palm[0] * fingers[0] + palm[1] * fingers[1] + palm[2] * fingers[2]) > 1e-6) {
+      report('models', modelId, `.hands.${hold}`, 'the palm and the fingers must be perpendicular');
+    }
+  }
+};
+
 const referenceIssues = (registry: Registry, origins: Map<string, Origin>): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   const report: Report = (section, id, path, message) => {
@@ -1840,6 +1871,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkItems(registry, report);
   checkModelPartItems(registry, report);
   checkFigures(registry, report);
+  checkHeldHands(registry, report);
   checkLoot(registry, report);
   checkMilitaryLoot(registry, report);
   checkFurniture(registry, report);

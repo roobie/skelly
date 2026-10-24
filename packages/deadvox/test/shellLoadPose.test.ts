@@ -84,8 +84,7 @@ const loadPoseContent = (kind: 'pump' | 'bolt') => {
   model.grip = { at: [0, 0, 0], turn: [0, 0, 0] };
   model.roll = 0;
   model.hold = undefined;
-  const { support_wrist: _supportWrist, ...anchors } = model.anchors ?? {};
-  model.anchors = { ...anchors, support: [0.3, 0, 0] };
+  model.anchors = { ...model.anchors, support: [0.3, 0, 0] };
   model.anchors.loading_port = [0, kind === 'bolt' ? 0.03 : -0.03, 0];
   const content = {
     ...registry,

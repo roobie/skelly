@@ -2,9 +2,30 @@
 // https://crateclub.com/blogs/loadout/how-long-does-it-take-to-reload-an-assault-rifle
 // Changing a magazine here stows it instead, so skill 0 sits at the slow end.
 local magazineHandling = { handling: { magazine: { removeSimSeconds: 3, insertSimSeconds: 3 } } };
-local huntingRifle = import 'gungen/rifle_hunting.model.json';
-// The exported support is a contact on the wood; seat the wrist below and behind it so the palm's end meets it without obscuring ADS.
-local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
+// A long gun's hold (`DESIGN.md`, "Models"). The butt seats in the shoulder pocket: right of and below the eye, and a
+// little ahead of it so the lowered gun stays in the frame. Every gun's bore meets that seat, so the butt point sits
+// on the bore above the butt plate. The firing palm lies on the grip's right face, a little behind the grip point so
+// the curled fingers close ahead of it. The support palm presses up into the forend's underside at the exported
+// support contact, set left so the knuckles reach the forend's right edge; the fingers curl up that side and the
+// thumb runs along the left.
+local longGunHands(model, buttX, forendUndersideY) = model {
+  hands: {
+    seat: [0.15, -0.1, -0.12],
+    butt: [buttX, 0, 0],
+    firing: {
+      at: [model.grip.at[0] - 0.02, model.grip.at[1], 0.016],
+      palm: [0, 0, -1],
+      fingers: [1, 0, 0],
+      pose: 'pistolGrip',
+    },
+    support: {
+      at: [model.anchors.support[0], forendUndersideY, -0.02],
+      palm: [0, 1, 0],
+      fingers: [0, 0, 1],
+      pose: 'forend',
+    },
+  },
+};
 
 {
   "items": [
@@ -104,8 +125,8 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
   ],
   // Imports keep the export writer from overwriting authored handling constructors.
   "models": [
-    (import 'gungen/rifle_assault.model.json') { gun+: { chargingHandleDegrees: 0 } },
-    (import 'gungen/rifle_ak.model.json') { gun+: { chargingHandleDegrees: 90 } },
+    longGunHands((import 'gungen/rifle_assault.model.json') { gun+: { chargingHandleDegrees: 0 } }, -0.38, -0.02),
+    longGunHands((import 'gungen/rifle_ak.model.json') { gun+: { chargingHandleDegrees: 90 } }, -0.484, -0.024),
     import 'gungen/round_7_d_62x39.model.json',
     import 'gungen/case_7_d_62x39.model.json',
     import 'gungen/round_5_d_56x45.model.json',
@@ -115,12 +136,8 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
     import 'gungen/revolver.model.json',
     import 'gungen/round_357_h_magnum.model.json',
     import 'gungen/case_357_h_magnum.model.json',
-    import 'gungen/shotgun_pump.model.json',
-    huntingRifle + {
-      anchors: huntingRifle.anchors + {
-        support_wrist: [huntingRifle.anchors.support[i] + huntingSupportWristOffset[i] for i in std.range(0, 2)],
-      },
-    },
+    longGunHands(import 'gungen/shotgun_pump.model.json', -0.568, -0.06),
+    longGunHands(import 'gungen/rifle_hunting.model.json', -0.504, -0.052),
     import 'gungen/round_308_h_winchester.model.json',
     import 'gungen/case_308_h_winchester.model.json',
     import 'gungen/optic_hunting_3_9x.model.json',

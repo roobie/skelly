@@ -21,6 +21,11 @@
             "thumbAcrossDegrees": 60,
             "thumbInDegrees": 45
           },
+          "forend": {
+            "fingersDegrees": 85,
+            "thumbAcrossDegrees": 15,
+            "thumbInDegrees": 10
+          },
           "holding": {
             "fingersDegrees": 80,
             "thumbAcrossDegrees": 50,
@@ -30,6 +35,11 @@
             "fingersDegrees": 10,
             "thumbAcrossDegrees": 10,
             "thumbInDegrees": 0
+          },
+          "pistolGrip": {
+            "fingersDegrees": 85,
+            "thumbAcrossDegrees": 70,
+            "thumbInDegrees": 35
           }
         },
         "shoulderFromEye": [0.29999999999999999, -0.55000000000000004, 0.050000000000000003],
