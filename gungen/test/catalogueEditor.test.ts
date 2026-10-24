@@ -45,14 +45,25 @@ describe('catalogue editor adapter', () => {
     if (!saved.ok) {
       throw new Error(saved.reason);
     }
-    expect(JSON.parse(saved.text).assembly.parts[id]).toEqual({ item: itemId, params: {} });
+    const authoredPart = JSON.parse(saved.text).assembly.parts[id];
+    expect(authoredPart.item).toBe(itemId);
+    expect(authoredPart.params).toEqual(
+      Object.fromEntries(
+        Object.entries(picked.state.assembly.parts[id]!.params ?? {}).filter(([name]) =>
+          PART_CATALOGUE.placementParams.has(name),
+        ),
+      ),
+    );
     const reloaded = loadGunDesign(saved.text);
     if (!reloaded.ok) {
       throw new Error(reloaded.error.message);
     }
     expect(reloaded.issues).toEqual([]);
     expect(reloaded.design.items).toEqual(picked.state.items);
-    expect(reloaded.design.assembly.parts[id]!.params).toEqual(PART_CATALOGUE.items.get(itemId)!.params);
+    expect(reloaded.design.assembly.parts[id]!.params).toEqual({
+      ...PART_CATALOGUE.items.get(itemId)!.params,
+      ...authoredPart.params,
+    });
   });
 
   it('detaches construction edits from item identity without preventing draft saves', () => {
