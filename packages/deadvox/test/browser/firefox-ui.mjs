@@ -331,6 +331,79 @@ try {
     null,
     { timeout: 10_000 },
   );
+  // The acid body: drawn as its own model, dripping and lighting a shared slot, and on death losing its sac to a
+  // splash that leaves the world as the death left it.
+  await pressAction(page, 'debug.spawn-zombie.acid_zombie');
+  const acidId = await page.waitForFunction(
+    () => {
+      const { session, view } = globalThis.firefoxUiTest;
+      // The world may hold lab acid zombies too; the one just spawned is the nearest.
+      const away = ([, zombie]) => Math.hypot(...zombie.body.pos.map((value, axis) => value - session.body.pos[axis]));
+      const [found] = [...session.zombies.store.entries()]
+        .filter(([, zombie]) => zombie.type.id === 'acid_zombie')
+        .sort((a, b) => away(a) - away(b));
+      const state = found && view.zombieMeshes.states?.get(found[0]);
+      const variant = state && view.zombieMeshes.variants?.[state.variantIndex];
+      const body = found?.[1].type.acidBody;
+      const lit = view.lightPool.lights.some(
+        (light) => light.color.getHexString() === body?.color.slice(1) && light.distance === body?.light.radiusMetres,
+      );
+      const sac = found && view.zombieMeshes.boneMatrix(found[0], 'sac.0');
+      return variant?.model === 'acid' &&
+        variant.mesh.count > 0 &&
+        lit &&
+        sac?.some((value) => value !== 0) &&
+        view.acidEffects.dropletCount() > 0
+        ? found[0]
+        : false;
+    },
+    null,
+    { timeout: 10_000 },
+  );
+  const acidDeath = await page.evaluate(
+    (id) => {
+      const { session } = globalThis.firefoxUiTest;
+      const zombie = session.zombies.store.get(id);
+      // The debug ring may put walls between player and zombie, so level high-damage rays are fired from just
+      // beside it, around and down the body, until a lethal region gives way.
+      const [x, y, z] = zombie.body.pos;
+      for (let turn = 0; turn < 8 && session.zombies.store.get(id); turn++) {
+        const [dx, dz] = [Math.cos((turn * Math.PI) / 4), Math.sin((turn * Math.PI) / 4)];
+        for (let height = 5; height > 0 && session.zombies.store.get(id); height -= 0.2) {
+          session.zombies.firePellets({
+            origin: [x + 2 * dx, y + height, z + 2 * dz],
+            directions: [[-dx, 0, -dz]],
+            damage: 1000,
+            impulse: 0,
+            rangeMetres: 100,
+          });
+        }
+      }
+      return {
+        died: session.zombies.store.get(id) === undefined,
+        piles: JSON.stringify(session.inventory.snapshotState().piles),
+      };
+    },
+    await acidId.jsonValue(),
+  );
+  assert.ok(acidDeath.died, 'the acid zombie dies to a lethal shot');
+  await page.waitForFunction(
+    (id) => {
+      const { view } = globalThis.firefoxUiTest;
+      return (
+        view.zombieMeshes.boneMatrix(id, 'sac.0')?.every((value) => value === 0) &&
+        view.acidEffects.dropletCount() >=
+          globalThis.firefoxUiTest.registry.zombies.get('acid_zombie').acidBody.deathSplash.droplets
+      );
+    },
+    await acidId.jsonValue(),
+    { timeout: 5000 },
+  );
+  assert.equal(
+    await page.evaluate(() => JSON.stringify(globalThis.firefoxUiTest.session.inventory.snapshotState().piles)),
+    acidDeath.piles,
+    'the sac burst and its splash leave no item behind',
+  );
   const bodyBeforeSpectator = await page.evaluate(() => [...globalThis.firefoxUiTest.session.body.pos]);
   await pressAction(page, 'debug.spectator-camera-toggle');
   assert.equal(await page.evaluate(() => globalThis.firefoxUiTest.spectatorCameraEnabled()), true);

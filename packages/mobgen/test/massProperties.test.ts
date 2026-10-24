@@ -3,7 +3,7 @@ import { generateValid } from '../src/core/generate.ts';
 import { massProperties, voxelBounds } from '../src/core/massProperties.ts';
 import { templatePartMassProperties } from '../src/core/templateMass.ts';
 import type { Voxels } from '../src/core/voxelize.ts';
-import { SEVERABLE_PARTS, severedBoneSet } from '../src/mob/dismember.ts';
+import { severableParts, severedBoneSet } from '../src/mob/dismember.ts';
 import { TEMPLATES } from '../src/mob/templates.ts';
 
 const grid = (dims: [number, number, number], size = 0.05, origin: [number, number, number] = [0, 0, 0]): Voxels => ({
@@ -34,7 +34,7 @@ const computeShamblerPartProofs = (): AssignedPartProof[] => {
     const { body, voxels } = generated.realized;
     const byId = new Map(body.bones.map((bone, index) => [bone.id, index]));
     const allIndices = body.bones.map((_, index) => index);
-    for (const part of SEVERABLE_PARTS) {
+    for (const part of severableParts(body.bones)) {
       const partIndices = [...severedBoneSet(body.bones, [part])].map((id) => byId.get(id)!);
       proofs.push({
         part,

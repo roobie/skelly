@@ -1934,6 +1934,27 @@
     },
     {
       "abilities": ["acidSpit"],
+      "acidBody": {
+        "charge": {
+          "charged": 2.5,
+          "idle": 0.5
+        },
+        "color": "#9ad21e",
+        "deathSplash": {
+          "droplets": 24,
+          "sizeMetres": 0.02,
+          "slowestSpeedFraction": 0.5,
+          "speedMetresPerRealSecond": 3.5
+        },
+        "drips": {
+          "perRealSecond": 1.5,
+          "sizeMetres": 0.012
+        },
+        "light": {
+          "intensity": 0.59999999999999998,
+          "radiusMetres": 3
+        }
+      },
       "acidResistance": 1,
       "acidSpit": {
         "cancelPenaltyFraction": 0.5,
@@ -2150,7 +2171,7 @@
           "pierce": 0
         }
       },
-      "model": "shambler",
+      "model": "acid",
       "name": "Acid zombie",
       "nightSight": 5,
       "regions": {

@@ -1,12 +1,15 @@
 import type { Bone } from '@mobgen/core/body.ts';
-import { IDENTITY_M, type Mat3, mulMM, rotX, rotY, rotZ } from '@mobgen/core/math.ts';
+import { applyPoint, IDENTITY_M, type Mat3, mulMM, mulMV, rotX, rotY, rotZ } from '@mobgen/core/math.ts';
 import { blendPose, boneTransforms, type Pose } from '@mobgen/core/pose.ts';
+import { acidAttackPose, acidHitPose, acidStrideLength, acidWalkPose, acidWindupPose } from '@mobgen/mob/acidPoses.ts';
+import { acidTemplate } from '@mobgen/mob/acidTemplate.ts';
 import { attackPose, LUNGE_GRAB } from '@mobgen/mob/attack.ts';
 import { crawlerGaitPose, crawlerHitPose, groundCrawlerPose } from '@mobgen/mob/crawler.ts';
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { footRestExtents, type GaitClock, type WalkActor, walkPose } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { applyIdleMotion, type IdleStance, idleBasePose } from '@mobgen/mob/idle.ts';
+import { LOOK_AT_PROFILES } from '@mobgen/mob/lookAtProfiles.ts';
 import { flinchPose, flinchPoseWithClip, HIT_FLINCH, RUNNER_HIT_FLINCH } from '@mobgen/mob/reactions.ts';
 import { zombieFigure as humanoidFigure, type ShamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { amalgamFigure, amalgamSeveredBones } from './amalgamFigure.ts';
@@ -38,6 +41,8 @@ export interface ShamblerPoseInput {
   readonly stanceWeight?: number;
   /** Fixed-step hit reaction; omitted only for older snapshots/tests. */
   readonly hitFlinchTime?: number;
+  /** Share of a spit wind-up elapsed, 0 to 1; draws the head back on a body with a wind-up pose. */
+  readonly spitWindupProgress?: number;
   readonly severed: readonly string[];
   readonly blockSize: number;
 }
@@ -47,6 +52,12 @@ export interface PoseRootOverride {
   readonly facing: Vec3;
   readonly headYaw: number;
 }
+
+/** Share of the wind-up elapsed, 0 when not winding up; presentation reads it for the sac glow and head pull. */
+export const acidSpitWindupProgress = (zombie: Zombie): number => {
+  const spit = zombie.type.acidSpit;
+  return spit && zombie.spitWindup > 0 ? 1 - zombie.spitWindup / spit.windupSimSeconds : 0;
+};
 
 export const zombiePoseInputFor = (
   zombie: Zombie,
@@ -73,6 +84,7 @@ export const zombiePoseInputFor = (
     idleTime: zombie.wanderClock,
     ...(zombie.stanceWeight === undefined ? {} : { stanceWeight: zombie.stanceWeight }),
     ...(zombie.hitFlinchTime === undefined ? {} : { hitFlinchTime: zombie.hitFlinchTime }),
+    ...(zombie.spitWindup > 0 ? { spitWindupProgress: acidSpitWindupProgress(zombie) } : {}),
     severed: zombie.severed,
     blockSize,
   };
@@ -238,6 +250,76 @@ const posedAmalgam = (input: ShamblerPoseInput): PosedShambler => {
   };
 };
 
+/** Melee clip time: the wind-up covers the clip up to its peak, then the clip runs out in real time. */
+const acidAttackTimeFor = (input: ShamblerPoseInput): number | undefined => {
+  const { attackPeak, attackDuration } = acidTemplate.animation;
+  const timed = input.attackWait !== undefined && input.attackCooldown !== undefined;
+  const running = timed ? input.attackWait! > 0 : input.attackWindup > 0;
+  if (!running) {
+    return undefined;
+  }
+  const elapsed = timed ? input.attackCooldown! - input.attackWait! : input.attackWindupSeconds - input.attackWindup;
+  const time =
+    elapsed < input.attackWindupSeconds
+      ? (attackPeak * elapsed) / input.attackWindupSeconds
+      : attackPeak + elapsed - input.attackWindupSeconds;
+  return time > attackDuration ? undefined : time;
+};
+
+const posedAcid = (input: ShamblerPoseInput, figure: ShamblerFigure): PosedShambler => {
+  const { realized } = figure;
+  const { bones } = realized.body;
+  const distance = (input.gaitPhase / (2 * Math.PI)) * acidStrideLength(realized);
+  const walk = acidWalkPose(realized, distance, input.speed, input.idleTime ?? 0);
+  const attackTime = acidAttackTimeFor(input);
+  const attacked = attackTime === undefined ? walk : acidAttackPose(realized, walk, attackTime);
+  const progress = input.spitWindupProgress ?? 0;
+  const woundUp = progress > 0 ? acidWindupPose(realized, attacked, progress) : attacked;
+  const headBone = LOOK_AT_PROFILES.acid?.headBone ?? 'skull';
+  const gazed: Pose =
+    input.headYaw === 0
+      ? woundUp
+      : {
+          ...woundUp,
+          rotations: {
+            ...woundUp.rotations,
+            [headBone]: mulMM(woundUp.rotations[headBone] ?? IDENTITY_M, rotY((input.headYaw * 180) / Math.PI)),
+          },
+        };
+  const pose =
+    input.hitFlinchTime === undefined
+      ? gazed
+      : acidHitPose(realized, gazed, input.hitFlinchTime, flinchSideForId(input.id ?? 0));
+  return {
+    pose,
+    transforms: boneTransforms(bones, pose),
+    bones,
+    figure,
+    hidden: severedBoneSet(bones, input.severed),
+    yaw: rotY((Math.atan2(-input.facing[0], -input.facing[2]) * 180) / Math.PI),
+    position: input.position,
+    blockSize: input.blockSize,
+  };
+};
+
+/**
+ * The posed mouth anchor in block units: where a spit leaves. A body without one spits from the top of its
+ * highest bone, so any body given the ability still has a mouth line.
+ */
+export const posedMouth = (input: ShamblerPoseInput): Vec3 => {
+  const posed = posedShambler(input);
+  const highest = posed.bones.reduce((top, bone) => (bone.tail[1] > top.tail[1] ? bone : top));
+  const anchor = posed.figure.realized.body.anchors?.mouth ?? { bone: highest.id, position: highest.tail };
+  const scale = 'scale' in posed.figure && typeof posed.figure.scale === 'number' ? posed.figure.scale : 1;
+  const local = applyPoint(posed.transforms.get(anchor.bone)!, anchor.position);
+  const world = mulMV(posed.yaw, [local[0] * scale, local[1] * scale, local[2] * scale]);
+  return [
+    posed.position[0] + world[0] / posed.blockSize,
+    posed.position[1] + world[1] / posed.blockSize,
+    posed.position[2] + world[2] / posed.blockSize,
+  ];
+};
+
 /** The shared living-zombie pose source. Rendering and hit-region FK consume the same simulation-driven pose. */
 export const posedShambler = (input: ShamblerPoseInput): PosedShambler => {
   const model = input.model ?? 'shambler';
@@ -245,6 +327,9 @@ export const posedShambler = (input: ShamblerPoseInput): PosedShambler => {
     return posedAmalgam(input);
   }
   const figure = humanoidFigure(model, input.seed);
+  if (model === 'acid') {
+    return posedAcid(input, figure);
+  }
   const { actor, bones, idleBases } = actorForSeed(model, input.seed);
   const phase = ((input.gaitPhase % Math.PI) + Math.PI) % Math.PI;
   const clock: GaitClock = { stepIndex: Math.floor(input.gaitPhase / Math.PI), progress: phase / Math.PI };

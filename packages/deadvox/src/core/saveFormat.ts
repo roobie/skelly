@@ -684,8 +684,7 @@ const zombie = obj({
   stanceWeight: opt(finite),
   stepOffset: opt(finite),
   hitFlinchTime: opt(nonNegative),
-  /** Part names severed so far (packages/mobgen/src/mob/dismember.ts's SEVERABLE_PARTS) — cumulative, never
-   * shrinks; see Zombie.severed's own doc comment. */
+  /** Bone ids severed so far — cumulative, never shrinks; see Zombie.severed's own doc comment. */
   severed: arr(str()),
   /** Amalgam voxel-grid cells knocked out by hits, ascending; see Zombie.carved. */
   carved: arr(nonNegativeInt),

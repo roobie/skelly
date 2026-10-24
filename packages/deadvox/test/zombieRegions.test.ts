@@ -209,6 +209,30 @@ describe('posed shambler hit regions', () => {
     }
   });
 
+  it('stands an acid zombie about as tall as a shambler beside it', () => {
+    const headTop = (model: string, seed: number) => {
+      const boxes = posedShamblerRegionBoxes({
+        model,
+        seed,
+        position: [0, 0, 0],
+        facing: [0, 0, -1],
+        headYaw: 0,
+        gaitPhase: 0,
+        speed: 0,
+        chasing: false,
+        attackWindup: 0,
+        attackWindupSeconds: 0.8,
+        severed: [],
+        blockSize: BLOCK,
+      });
+      return Math.max(...boxes.head.map((box) => box.topY!)) * BLOCK;
+    };
+    const seeds = SHAMBLER_FIGURE_SEEDS.slice(0, 4);
+    const mean = (model: string) => seeds.reduce((sum, seed) => sum + headTop(model, seed), 0) / seeds.length;
+    // Within a tenth of the shambler's height, standing on the same floor.
+    expect(Math.abs(mean('acid') / mean('shambler') - 1)).toBeLessThan(0.1);
+  });
+
   it('removes severed bones from their hit region without hiding the rest of the arm', () => {
     const present = posedShamblerRegionBoxes({
       seed: 1,

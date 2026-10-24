@@ -405,4 +405,31 @@ describe('made-light point pool', () => {
     expect(new Set(selectedIntensities)).toEqual(new Set(nearestIntensities));
     expect(selectedIntensities).not.toContain(TEST_LIGHTS[farthestIndex]!.intensity);
   });
+
+  it('lights body glows in the item slots that lights leave free, nearest first, never displacing a light', () => {
+    const pool = new LightPool(new Scene(), FIXTURE_LIMIT);
+    const inventory = new Inventory(registry);
+    const camera = new PerspectiveCamera();
+    const held = { lightPositionOf: () => false };
+    const stick = inventory.create('glowstick');
+    expect(toggleLight(registry, stick, 0)).toBeUndefined();
+    inventory.add(stick, { kind: 'pile', pos: [1, 0, 0] });
+    const stickIntensity = registry.items.get('glowstick')!.light!.intensity;
+    // Distinct intensities name each glow; more glows than item slots, listed out of distance order.
+    const glows = [...new Array(pool.size).keys()].map((index) => ({
+      position: [pool.size - index + 2, 0, 0] as [number, number, number],
+      color: '#9ad21e',
+      intensity: 100 + index,
+      radiusMetres: 3,
+    }));
+
+    pool.update(inventory, { held, camera, blockSize: 1, daylightScale: 1, glows });
+    const lit = pool.lights.map((light) => light.intensity).filter((intensity) => intensity > 0);
+    const glowLit = lit.filter((intensity) => intensity >= 100);
+    const byDistance = [...glows].sort((a, b) => a.position[0] - b.position[0]);
+    expect(lit).toContain(stickIntensity);
+    expect(glowLit.length).toBeGreaterThan(0);
+    expect(glowLit.length).toBeLessThan(glows.length);
+    expect(new Set(glowLit)).toEqual(new Set(byDistance.slice(0, glowLit.length).map(({ intensity }) => intensity)));
+  });
 });

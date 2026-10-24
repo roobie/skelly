@@ -727,6 +727,14 @@
       ]
     },
     {
+      "id": "debug.spawn-zombie.acid_zombie",
+      "keys": [
+        {
+          "code": "Numpad6"
+        }
+      ]
+    },
+    {
       "id": "debug.melee-aim-toggle",
       "keys": [
         {

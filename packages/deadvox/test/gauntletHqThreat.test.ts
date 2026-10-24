@@ -27,3 +27,25 @@ describe('gauntlet crisis HQ threat and supplies', () => {
     gauntlets.length * GAUNTLET_SITE_MS,
   );
 });
+
+describe('gauntlet lab acid zombies', () => {
+  it(
+    'holds as many acid zombies on each lab storey as its depth',
+    () => {
+      for (const scenario of gauntlets) {
+        const site = new GauntletSite({ seed: 1, registry, scale, scenario });
+        const acid = site.placements.flatMap(placedSpawns).filter(({ zombie }) => zombie === 'acid_zombie');
+        const perLevel = new Map<number, number>();
+        for (const { pos } of acid) {
+          perLevel.set(pos[1], (perLevel.get(pos[1]) ?? 0) + 1);
+        }
+        const counts = [...perLevel].sort(([a], [b]) => b - a).map(([, count]) => count);
+        expect(counts.length, `${scenario.id} has acid zombies on more than one storey`).toBeGreaterThan(1);
+        expect(counts, `${scenario.id} adds one acid zombie per storey down`).toEqual(
+          counts.map((_, depth) => depth + 1),
+        );
+      }
+    },
+    gauntlets.length * GAUNTLET_SITE_MS,
+  );
+});

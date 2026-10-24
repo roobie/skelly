@@ -242,16 +242,30 @@ const buildBones = (layout: JointLayout): Body['bones'] => {
     { id: 'spine', parent: 'pelvis', head: layout.spine.head, tail: layout.spine.tail },
     { id: 'chest', parent: 'spine', head: layout.chest.head, tail: layout.chest.tail },
     { id: 'neck', parent: 'chest', head: layout.neck.head, tail: layout.neck.tail },
-    { id: 'head', parent: 'neck', head: layout.head.head, tail: layout.head.tail },
+    { id: 'head', parent: 'neck', head: layout.head.head, tail: layout.head.tail, disposition: 'sever' },
     { id: 'jaw', parent: 'head', head: layout.jaw.head, tail: layout.jaw.tail },
   ];
   for (const side of SIDES) {
     const arm = layout.arm[side];
     const leg = layout.leg[side];
     bones.push(
-      { id: `upperArm.${side}`, parent: 'chest', head: arm.shoulder, tail: arm.elbow },
-      { id: `forearm.${side}`, parent: `upperArm.${side}`, head: arm.elbow, tail: arm.wrist, marrowMaterial: 'skin' },
-      { id: `hand.${side}`, parent: `forearm.${side}`, head: arm.wrist, tail: arm.handTip, marrowMaterial: 'skin' },
+      { id: `upperArm.${side}`, parent: 'chest', head: arm.shoulder, tail: arm.elbow, disposition: 'sever' },
+      {
+        id: `forearm.${side}`,
+        parent: `upperArm.${side}`,
+        head: arm.elbow,
+        tail: arm.wrist,
+        marrowMaterial: 'skin',
+        disposition: 'sever',
+      },
+      {
+        id: `hand.${side}`,
+        parent: `forearm.${side}`,
+        head: arm.wrist,
+        tail: arm.handTip,
+        marrowMaterial: 'skin',
+        disposition: 'sever',
+      },
       { id: `thigh.${side}`, parent: 'pelvis', head: leg.hip, tail: leg.knee },
       { id: `shin.${side}`, parent: `thigh.${side}`, head: leg.knee, tail: leg.ankle },
       { id: `foot.${side}`, parent: `shin.${side}`, head: leg.ankle, tail: leg.toe },
@@ -898,6 +912,15 @@ const sampleHumanoid: BodyPlanDef['sample'] = (rng: Rng, template: Template) => 
   return { params, wounds };
 };
 
+const HUMANOID_REGION_BONES: NonNullable<BodyPlanDef['regionBones']> = {
+  head: ['head', 'jaw'],
+  torso: ['pelvis', 'spine', 'chest', 'neck'],
+  leftArm: ['upperArm.L', 'forearm.L', 'hand.L'],
+  rightArm: ['upperArm.R', 'forearm.R', 'hand.R'],
+  leftLeg: ['thigh.L', 'shin.L', 'foot.L'],
+  rightLeg: ['thigh.R', 'shin.R', 'foot.R'],
+};
+
 registerBodyPlan('humanoid', {
   sample: sampleHumanoid,
   build: (genome) => buildHumanoid(genome),
@@ -905,6 +928,7 @@ registerBodyPlan('humanoid', {
   woundBones: WOUNDABLE_BONES,
   budgets: heightHeadBudgets,
   limbBones: HUMANOID_LIMB_BONES,
+  regionBones: HUMANOID_REGION_BONES,
 });
 
 registerBodyPlan('crawler', {
@@ -914,4 +938,5 @@ registerBodyPlan('crawler', {
   woundBones: WOUNDABLE_BONES,
   budgets: heightHeadBudgets,
   limbBones: HUMANOID_LIMB_BONES.filter((id) => !LOWER_CRAWLER_BONE.test(id)),
+  regionBones: HUMANOID_REGION_BONES,
 });

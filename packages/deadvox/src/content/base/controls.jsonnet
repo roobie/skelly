@@ -88,6 +88,7 @@ local digits(prefix, count) = [one(prefix + '.' + i, 'Digit' + i) for i in std.r
     one('debug.spawn-zombie.runner', 'Numpad1'),
     one('debug.spawn-zombie.crawler', 'Numpad2'),
     one('debug.spawn-zombie.amalgam', 'Numpad4'),
+    one('debug.spawn-zombie.acid_zombie', 'Numpad6'),
     one('debug.melee-aim-toggle', 'KeyY'),
     one('debug.freeze-shamblers', 'KeyO'),
     one('debug.review-map-toggle', 'KeyM'),

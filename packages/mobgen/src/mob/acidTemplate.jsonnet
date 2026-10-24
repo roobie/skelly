@@ -1,9 +1,10 @@
-local material(color, emissive=0) = { color: color, emissive: emissive };
+local material(color, emissive=0, charged=false) =
+  { color: color, emissive: emissive } + (if charged then { charged: true } else {});
 {
   name: 'acid',
   description: 'Forward-set cube head, exposed acid sac and asymmetric stooped rig.',
   bodyPlan: 'acid',
-  status: 'comparison-only',
+  status: 'ready',
   bodyMassKg: 105,
   sizeReference: 'shambler',
   supportBones: ['foot.L', 'foot.R', 'toe.L', 'toe.R'],
@@ -13,6 +14,8 @@ local material(color, emissive=0) = { color: color, emissive: emissive };
     crust: material([0.420, 0.290, 0.180]),
     trousers: material([0.184, 0.306, 0.298]),
     acid: material([0.561, 0.890, 0.227], 1),
+    // The sac's own copy of acid, so the spit wind-up brightens it and not the eyes or drool.
+    sac: material([0.561, 0.890, 0.227], 1, charged=true),
     mouth: material([0.165, 0.114, 0.086]),
     claw: material([0.239, 0.212, 0.165]),
     bone: material([0.82, 0.78, 0.61]),

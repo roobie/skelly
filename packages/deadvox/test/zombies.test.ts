@@ -24,6 +24,7 @@ import { ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
 import {
   FIGURE_BOXES,
   FIGURE_PARTS,
+  posedRegionHit,
   posedRegionHitDistance,
   posedShamblerRegionBoxes,
   type ZombieRegion,
@@ -61,6 +62,7 @@ const SHAMBLER = registry.zombies.get('shambler')!;
 const SHAMBLER_MOVE_DAMAGES = SHAMBLER.attack.moves.map(({ damage }) => damage);
 const RUNNER = registry.zombies.get('runner')!;
 const CRAWLER = registry.zombies.get('crawler')!;
+const ACID = registry.zombies.get('acid_zombie')!;
 const speedRates = (wander: number, chase: number) => ({
   ...SHAMBLER.speed,
   wanderMetresPerSimSecond: simRate(wander),
@@ -183,18 +185,42 @@ const hitRecordMatches = ({
     hit.impulse === impulse
   );
 };
-const regionRay = (zombie: import('../src/core/zombies.ts').Zombie, region: ZombieRegion) => {
-  const posed = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, 1, BLOCK_SIZE));
-  const targetBone: Readonly<Record<ZombieRegion, string>> = {
+/** The bone a test ray aims at in each region, per body model. */
+const TARGET_BONES: Readonly<Record<string, Readonly<Record<ZombieRegion, string>>>> = {
+  humanoid: {
     head: 'head',
     torso: 'chest',
     leftArm: 'forearm.L',
     rightArm: 'forearm.R',
     leftLeg: 'shin.L',
     rightLeg: 'shin.R',
-  };
-  const boxes = posed[region];
-  const { center } = boxes.find((box) => box.bone === targetBone[region])!;
+  },
+  acid: { head: 'skull', torso: 'belly', leftArm: 'fore.L', rightArm: 'fore.R', leftLeg: 'shin.L', rightLeg: 'shin.R' },
+};
+const posedBox = (zombie: Zombie, region: ZombieRegion, bone: string, id: number) => {
+  const target = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK_SIZE))[region].find(
+    (box) => box.bone === bone,
+  );
+  if (!target) {
+    throw new Error(`${region} has no box for bone ${bone}`);
+  }
+  return target;
+};
+/** A level ray from a metre outside the body, along the line from the body's axis out through one bone. */
+const outwardRay = (zombie: Zombie, region: ZombieRegion, bone: string, id: number) => {
+  const { center } = posedBox(zombie, region, bone, id);
+  const out = normalized([center[0] - zombie.body.pos[0], 0, center[2] - zombie.body.pos[2]]);
+  const origin: Vec3 = [center[0] + out[0] / BLOCK_SIZE, center[1], center[2] + out[2] / BLOCK_SIZE];
+  return { origin, direction: [-out[0], 0, -out[2]] as Vec3 };
+};
+/** A ray into one region, posed as the system poses entity `id`. Acid limbs sit behind its torso from the
+ * front, so they are approached from outside instead. */
+const regionRay = (zombie: Zombie, region: ZombieRegion, id = 1) => {
+  const bone = (TARGET_BONES[zombie.type.model] ?? TARGET_BONES.humanoid!)[region];
+  if (zombie.type.model === 'acid' && region !== 'head') {
+    return outwardRay(zombie, region, bone, id);
+  }
+  const { center } = posedBox(zombie, region, bone, id);
   const front = [-zombie.facing[0], 0, -zombie.facing[2]] as Vec3;
   if (region === 'head') {
     const origin: Vec3 = [
@@ -1717,47 +1743,80 @@ describe('shambler scenarios', () => {
     expect(listened.snapshotState()).toEqual(silent.snapshotState());
   });
 
-  it('severs every non-head region without killing; destroying the head alone kills', () => {
-    for (const region of ZOMBIE_REGION_NAMES) {
-      const severed: ZombieRegion[] = [];
-      const sounds: string[] = [];
-      let deaths = 0;
-      const system = new ZombieSystem({
-        ...senses(() => player([100, 2, 0])),
-        onSound: (event) => sounds.push(event),
-        onSevered: (_zombie, part) => severed.push(part),
-        onDeath: () => {
-          deaths += 1;
-        },
-      });
-      const noRandomSever = { ...SHAMBLER, dismember: { chance: 0, headOnKillChance: 0 } };
-      const id = system.add(noRandomSever, [1, 1, 0], [0, 0, -1]);
-      const zombie = system.store.get(id)!;
-      zombie.modeTimer = 1000;
-      const ray = regionRay(zombie, region);
-      const weapon = { ...FISTS_MELEE, cooldown: 0 };
-      const hits = Math.ceil(zombie.regions[region]! / weapon.damage);
-      for (let hit = 0; hit < hits; hit++) {
-        expect(system.swing(ray.origin, ray.direction, weapon), `swing while damaging ${region}, hit ${hit}`).toBe(id);
-      }
+  const destroyRegion = (type: ZombieDef, region: ZombieRegion) => {
+    const severed: ZombieRegion[] = [];
+    const sounds: string[] = [];
+    let deaths = 0;
+    const system = new ZombieSystem({
+      ...senses(() => player([100, 2, 0])),
+      onSound: (event) => sounds.push(event),
+      onSevered: (_zombie, part) => severed.push(part),
+      onDeath: () => {
+        deaths += 1;
+      },
+    });
+    const noRandomSever = { ...type, dismember: { chance: 0, headOnKillChance: 0 } };
+    const id = system.add(noRandomSever, [1, 1, 0], [0, 0, -1]);
+    const zombie = system.store.get(id)!;
+    zombie.modeTimer = 1000;
+    const ray = regionRay(zombie, region, id);
+    const weapon = { ...FISTS_MELEE, cooldown: 0 };
+    const hits = Math.ceil(zombie.regions[region]! / weapon.damage);
+    const struck = Array.from({ length: hits }, () => system.swing(ray.origin, ray.direction, weapon));
+    return { system, id, zombie, struck, severed, sounds, deaths };
+  };
+
+  const severCases = [SHAMBLER, ACID].flatMap((type) =>
+    ZOMBIE_REGION_NAMES.map((region) => ({ type, region, name: `${type.id} ${region}` })),
+  );
+
+  it.each(severCases)(
+    'severs every non-head region without killing; destroying the head alone kills: $name',
+    ({ type, region }) => {
+      const { system, id, zombie, struck, severed, sounds, deaths } = destroyRegion(type, region);
+      expect(struck.every((hit) => hit === id)).toBe(true);
       if (region === 'head') {
         expect(system.store.get(id)).toBeUndefined();
         expect(deaths).toBe(1);
         expect(severed).toEqual([]);
-      } else {
-        expect(system.store.get(id)).toBe(zombie);
-        expect(zombie.regions[region], `region ${region}`).toBe(0);
-        if (region === 'torso') {
-          expect(severed).toEqual([]);
-          expect(zombie.incapacitated).toBe(true);
-        } else {
-          expect(severed).toEqual([region]);
-          expect(zombie.incapacitated).toBe(false);
-        }
-        expect(sounds).toContain('shambler_hurt');
-        expect(deaths).toBe(0);
+        return;
       }
-    }
+      expect(system.store.get(id)).toBe(zombie);
+      expect(zombie.regions[region]).toBe(0);
+      expect(sounds).toContain(type.sounds.hurt);
+      expect(deaths).toBe(0);
+      if (region === 'torso') {
+        expect(severed).toEqual([]);
+        expect(zombie.incapacitated).toBe(true);
+        return;
+      }
+      expect(severed).toEqual([region]);
+      // The cut follows the body's bone dispositions: the region's top severable part, or none.
+      const figure = zombieFigure(type, zombie.figureSeed);
+      const parts = 'severableParts' in figure ? figure.severableParts[region] : [];
+      expect(zombie.severed).toEqual(parts.slice(0, 1));
+      // A severed acid part drops what a shambler's would.
+      expect(type.severedItems[region]).toEqual(SHAMBLER.severedItems[region]);
+      expect(zombie.incapacitated).toBe(false);
+    },
+  );
+
+  it('counts a shot that meets the acid sac first as a torso hit', () => {
+    const system = new ZombieSystem({ ...senses(() => player([100, 2, 0])) });
+    const type = { ...ACID, regions: { ...ACID.regions, torso: FISTS_MELEE.damage } };
+    const id = system.add(type, [1, 1, 0], [0, 0, -1]);
+    const zombie = system.store.get(id)!;
+    const boxes = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK_SIZE));
+    const { origin, direction } = outwardRay(zombie, 'torso', 'sac.0', id);
+    const [first] = ZOMBIE_REGION_NAMES.flatMap((region) => {
+      const hit = posedRegionHit(boxes[region], origin, direction, BLOCK_SIZE);
+      return hit === undefined ? [] : [{ region, ...hit }];
+    }).sort((a, b) => a.distance - b.distance);
+    expect(first?.box.bone).toBe('sac.0');
+    expect(first?.region).toBe('torso');
+    expect(system.swing(origin, direction, { ...FISTS_MELEE, reach: 4 })).toBe(id);
+    expect(zombie.regions.torso).toBe(0);
+    expect(zombie.incapacitated).toBe(true);
   });
 
   it('incapacitates on torso destruction without death, noise, motion, or sleep blocking, and saves the flag', () => {

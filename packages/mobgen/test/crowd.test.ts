@@ -15,6 +15,8 @@ import {
   crowdTexelIndex,
   crowdTextureLayout,
   isSeveredInMask,
+  packBloodiness,
+  packCharge,
   packCrowdBoneMatrix,
   packSeveredMask,
 } from '../src/mob/crowd.ts';
@@ -122,6 +124,17 @@ describe('packCrowdBoneMatrix (the pure part of crowd mode)', () => {
       expect(isSeveredInMask(data, layout, 0, bone)).toBe(severed.includes(bone));
       expect(isSeveredInMask(data, layout, 1, bone)).toBe(false);
     }
+  });
+
+  it('packs charge beside the severed mask and bloodiness without clobbering either', () => {
+    const layout = crowdTextureLayout(CROWD_MASK_BITS_PER_TEXEL, 1);
+    const data = new Float32Array(layout.width * layout.height * 4);
+    packSeveredMask(data, layout, 0, [3]);
+    packBloodiness(data, layout, 0, 0.4);
+    packCharge(data, layout, 0, 2.5);
+    expect(isSeveredInMask(data, layout, 0, 3)).toBe(true);
+    expect(data[crowdMaskTexelIndex(layout, 0) + 1]).toBeCloseTo(0.4);
+    expect(data[crowdMaskTexelIndex(layout, 0) + 2]).toBe(2.5);
   });
 
   it('round-trips each bit across multiple mask words without cross-bit corruption', () => {

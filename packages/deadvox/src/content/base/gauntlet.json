@@ -5818,17 +5818,10 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_marker_none",
+                "id": "gauntlet_lab_marker_acid_zombie_100",
                 "kind": "piece"
               },
-              "weight": 2
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 3
+              "weight": 1
             }
           ],
           "id": "entry_threat_13",
@@ -6583,17 +6576,10 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_marker_none",
+                "id": "gauntlet_lab_marker_acid_zombie_100",
                 "kind": "piece"
               },
               "weight": 1
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 2
             }
           ],
           "id": "administration_threat_12",
@@ -6605,17 +6591,10 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_marker_none",
+                "id": "gauntlet_lab_marker_acid_zombie_100",
                 "kind": "piece"
               },
               "weight": 1
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_60",
-                "kind": "piece"
-              },
-              "weight": 2
             }
           ],
           "id": "administration_threat_13",
@@ -9206,7 +9185,7 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_marker_none",
+                "id": "gauntlet_lab_marker_acid_zombie_100",
                 "kind": "piece"
               },
               "weight": 1
@@ -9258,7 +9237,7 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_marker_none",
+                "id": "gauntlet_lab_marker_acid_zombie_100",
                 "kind": "piece"
               },
               "weight": 1
@@ -9317,7 +9296,7 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_marker_none",
+                "id": "gauntlet_lab_marker_acid_zombie_100",
                 "kind": "piece"
               },
               "weight": 1
@@ -10186,7 +10165,7 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_marker_none",
+                "id": "gauntlet_lab_marker_acid_zombie_100",
                 "kind": "piece"
               },
               "weight": 1
@@ -10273,31 +10252,10 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_marker_none",
+                "id": "gauntlet_lab_marker_acid_zombie_100",
                 "kind": "piece"
               },
               "weight": 1
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_80",
-                "kind": "piece"
-              },
-              "weight": 4
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_80",
-                "kind": "piece"
-              },
-              "weight": 3
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_crawler_80",
-                "kind": "piece"
-              },
-              "weight": 3
             }
           ],
           "id": "middle_east_threat_2",
@@ -10360,7 +10318,7 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_marker_none",
+                "id": "gauntlet_lab_marker_acid_zombie_100",
                 "kind": "piece"
               },
               "weight": 1
@@ -10426,7 +10384,7 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_marker_none",
+                "id": "gauntlet_lab_marker_acid_zombie_100",
                 "kind": "piece"
               },
               "weight": 1
@@ -11286,31 +11244,10 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_marker_none",
+                "id": "gauntlet_lab_marker_acid_zombie_100",
                 "kind": "piece"
               },
               "weight": 1
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_80",
-                "kind": "piece"
-              },
-              "weight": 3
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_80",
-                "kind": "piece"
-              },
-              "weight": 4
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_crawler_80",
-                "kind": "piece"
-              },
-              "weight": 4
             }
           ],
           "id": "middle_west_threat_2",
@@ -11394,7 +11331,7 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_marker_none",
+                "id": "gauntlet_lab_marker_acid_zombie_100",
                 "kind": "piece"
               },
               "weight": 1
@@ -11481,31 +11418,10 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_marker_none",
+                "id": "gauntlet_lab_marker_acid_zombie_100",
                 "kind": "piece"
               },
               "weight": 1
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_80",
-                "kind": "piece"
-              },
-              "weight": 3
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_80",
-                "kind": "piece"
-              },
-              "weight": 4
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_crawler_80",
-                "kind": "piece"
-              },
-              "weight": 4
             }
           ],
           "id": "middle_east_threat_2",
@@ -11613,7 +11529,7 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_marker_none",
+                "id": "gauntlet_lab_marker_acid_zombie_100",
                 "kind": "piece"
               },
               "weight": 1
@@ -11700,31 +11616,10 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_lab_marker_none",
+                "id": "gauntlet_lab_marker_acid_zombie_100",
                 "kind": "piece"
               },
               "weight": 1
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_shambler_80",
-                "kind": "piece"
-              },
-              "weight": 3
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_runner_80",
-                "kind": "piece"
-              },
-              "weight": 4
-            },
-            {
-              "ref": {
-                "id": "gauntlet_lab_marker_crawler_80",
-                "kind": "piece"
-              },
-              "weight": 4
             }
           ],
           "id": "south_east_threat_2",
@@ -28237,6 +28132,31 @@
       },
       "ports": [],
       "size": [4, 5, 3],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_marker_acid_zombie_100",
+      "layers": [["Z"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [["R"]]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "Z": {
+          "chance": 1,
+          "spawn": "acid_zombie"
+        }
+      },
+      "ports": [],
+      "size": [1, 1, 1],
       "style": "concrete_lab"
     },
     {
