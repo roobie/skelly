@@ -13,7 +13,7 @@ import { BOLT_EXTRACTION_CLEARANCE_U, boltCartridge, boltStrokeUnits } from '../
 import { sweepBoltAction } from '../src/gun/boltSweep.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
-import { exportGunGlb } from '../src/gun/exportGlb.ts';
+import { exportGunGlb, type GunDeadvoxModelEntry } from '../src/gun/exportGlb.ts';
 import { internalMagazineCapacity } from '../src/gun/internalMagazine.ts';
 import { loadDesigns } from './helpers.ts';
 
@@ -23,6 +23,8 @@ const designs = loadDesigns().filter(({ assembly }) =>
 const BOLT_CARTRIDGE = boltCartridge();
 // A part item lives in another file; the full-base contract resolves it, so a fixture ignores those paths.
 const PART_ITEM_PATH = /^models\[0\]\.parts\.[^.]+\.item$/;
+const fixtureIssues = (models: readonly GunDeadvoxModelEntry[]) =>
+  buildRegistry([{ source: 'fixture', data: { models } }]).issues.filter(({ path }) => !PART_ITEM_PATH.test(path ?? ''));
 const hunting = JSON.parse(readFileSync('designs/hunting-rifle.json', 'utf8'));
 // The authored design names catalogue items, so only the loader expands it into an assembly.
 const loadedHunting = loadGunDesign(readFileSync('designs/hunting-rifle.json', 'utf8'));
@@ -249,11 +251,7 @@ it('exports integral capacity from the well, iron or fitted-optic sights, and a 
     throw new Error(JSON.stringify(optic.error));
   }
   expect(optic.modelEntry.gun.sight?.kind).toBe('optic');
-  expect(
-    buildRegistry([{ source: 'fixture', data: { models: [model, optic.modelEntry] } }]).issues.filter(
-      ({ path }) => !PART_ITEM_PATH.test(path ?? ''),
-    ),
-  ).toEqual([]);
+  expect(fixtureIssues([model, optic.modelEntry])).toEqual([]);
   const { hand } = model.gun.action!;
   expect(
     hand.unlockSimSeconds! +
@@ -265,6 +263,8 @@ it('exports integral capacity from the well, iron or fitted-optic sights, and a 
   for (const phase of ['unlockSimSeconds', 'lockSimSeconds'] as const) {
     const bad = structuredClone(model);
     delete bad.gun.action!.hand[phase];
-    expect(buildRegistry([{ source: 'fixture', data: { models: [bad] } }]).issues.length).toBeGreaterThan(0);
+    expect(fixtureIssues([bad]).map(({ message }) => message)).toContain(
+      'turning parts need unlock and lock phases in every referenced timeline',
+    );
   }
 });
