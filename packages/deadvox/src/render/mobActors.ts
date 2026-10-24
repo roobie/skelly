@@ -448,7 +448,7 @@ export interface DrawnAnchors {
 }
 
 /** The sac's emission multiplier: idle at rest, rising to charged across the spit wind-up. */
-export const acidCharge = (zombie: Zombie): number => {
+const acidCharge = (zombie: Zombie): number => {
   const body = zombie.type.acidBody;
   if (!body) {
     return 1;
