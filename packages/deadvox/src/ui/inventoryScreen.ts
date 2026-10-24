@@ -11,6 +11,7 @@ import { BODY_REGIONS, type Body, type BodyRegion, bodyRegionLabel } from '../co
 import { practiceForNextLevel } from '../core/character.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { coreLabel } from '../core/coreText.ts';
 import type { WorkOperation, WorkOption } from '../core/craftCommands.ts';
 import { firearmSlotIds, LIGHT_MOUNT_SLOT } from '../core/firearmFitting.ts';
 import type { HandlingQueue } from '../core/handling.ts';
@@ -18,7 +19,16 @@ import { type Inventory, type Pile, sameGrid, spotOf, type Target, wornSlotOf } 
 import { GRID_CELL_REM as CELL_REM } from '../core/inventoryGridName.ts';
 import { PILE_GRID } from '../core/inventoryScale.ts';
 import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed, weightOf } from '../core/items.ts';
-import { batterySlotRefusal, bestPocket, dropTarget, type Option, options, quickMove } from '../core/options.ts';
+import {
+  batterySlotRefusal,
+  bestPocket,
+  dropTarget,
+  type Option,
+  options,
+  otherHandPour,
+  pourRefusal,
+  quickMove,
+} from '../core/options.ts';
 import { type ReachSnapshot, reachTuning } from '../core/reach.ts';
 import type { ScreenText, WearSlot } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
@@ -118,11 +128,10 @@ interface Drag {
   rotated: boolean;
   start: [number, number];
   moved: boolean;
-  /** The item the details card showed at the press: the card keeps it so its battery slot stays a drop zone. */
+  /** Keep the receiver fixed while dragging onto a service target. */
   card: Item | undefined;
   position?: [number, number];
-  /** A move to `target`, or a load into `light` from its battery slot. */
-  hover?: (({ target: Target } | { light: Item }) & { ok: boolean; reason: string }) | undefined;
+  hover?: (({ target: Target } | { light: Item } | { receiver: Item }) & { ok: boolean; reason: string }) | undefined;
 }
 
 /** The drop zone of a light's battery slot on its card. */
@@ -239,10 +248,12 @@ interface DetailsViewModel {
   readonly vehicleOptions?: readonly VehicleOptionViewModel[];
   readonly attachmentSlots?: readonly AttachmentSlotViewModel[];
   readonly battery?: BatterySlotViewModel;
+  readonly reservoir?: string;
+  readonly pour?: { readonly label: string; readonly receiverUid?: number; readonly reason?: string };
 }
 
 const batterySlotTemplate = (slot: BatterySlotViewModel, text: InventoryText): TemplateResult =>
-  html`<div class="inv-line inv-battery-slot" data-target=${batterySlotTarget(slot.lightUid)} data-occupied=${slot.fitted}>${fillText(text.battery, { battery: slot.name })}</div>`;
+  html`<div class="inv-line inv-service-target" data-target=${batterySlotTarget(slot.lightUid)} data-occupied=${slot.fitted}>${fillText(text.battery, { battery: slot.name })}</div>`;
 
 /** Only a tier content marks `warn` gets the warning style (`DESIGN.md`, "Bleeding"). */
 const bleedingTemplate = (bleeding: BodyRegionViewModel['bleeding']) => {
@@ -469,6 +480,8 @@ const detailsTemplate = (
       <div class="inv-kicker">${text.inspect}</div>
       ${vm.lines.map((line) => html`<div class="inv-line">${line}</div>`)}
       ${vm.battery ? batterySlotTemplate(vm.battery, text) : nothing}
+      ${vm.reservoir ? html`<div class="inv-line inv-service-target" data-target=${`reservoir:${item.uid}`}>${vm.reservoir}</div>` : nothing}
+      ${vm.pour ? html`<button class="inv-pour" ?disabled=${vm.pour.reason !== undefined} title=${vm.pour.reason ?? ''} @click=${() => attachmentAction({ kind: 'liquid.pour', sourceUid: item.uid, receiverUid: vm.pour!.receiverUid! })}>${vm.pour.label}</button>` : nothing}
       <div class="inv-kicker">${text.whereItCanGo}</div>
       ${
         vm.vehicleOptions
@@ -1605,6 +1618,7 @@ export class InventoryScreen {
     const name = workName(this.inv.registry, item);
     const battery = this.batterySlot(item);
     return {
+      ...this.reservoirViewModel(item),
       item,
       empty: false,
       ...(battery ? { battery } : {}),
@@ -1634,6 +1648,31 @@ export class InventoryScreen {
               }
             : { label: option.label, button: false, reason: option.plan.reason.toLowerCase() },
       ),
+    };
+  }
+
+  private reservoirViewModel(item: Item): Pick<DetailsViewModel, 'reservoir' | 'pour'> {
+    const { vessel } = defOf(this.inv.registry, item.type);
+    if (!vessel) {
+      return {};
+    }
+    const option = otherHandPour(item, this.hooks.reach());
+    return {
+      reservoir: coreLabel(this.inv.registry, 'reservoir', {
+        volume: String((item.liquidContents?.kind === 'filled' ? item.liquidContents.volumeMicrolitres : 0) / 1000),
+        capacity: String(vessel.capacityMicrolitres / 1000),
+      }),
+      ...(vessel.pour
+        ? {
+            pour: {
+              label: option.receiver
+                ? coreLabel(this.inv.registry, 'pourInto', { item: this.inv.name(option.receiver) })
+                : option.label,
+              ...(option.receiver ? { receiverUid: option.receiver.uid } : {}),
+              ...(option.plan.ok ? {} : { reason: option.plan.reason }),
+            },
+          }
+        : {}),
     };
   }
 
@@ -1819,19 +1858,24 @@ export class InventoryScreen {
     if (drag.moved) {
       this.hover(e.clientX, e.clientY, e.clientX - drag.grab[0], e.clientY - drag.grab[1]);
       const { hover } = drag;
-      if (hover && 'light' in hover) {
+      if (hover && !('target' in hover)) {
         this.selected = drag.card;
       }
       if (hover?.ok) {
-        this.report(
-          'light' in hover ? this.loadBattery(hover.light, drag.item) : this.tryQueue(drag.item, hover.target),
-        );
+        this.report(this.commitDrop(drag.item, hover));
       } else if (hover) {
         this.refuse(hover.reason);
       }
     }
     this.endDrag();
     this.update();
+  }
+
+  private commitDrop(item: Item, hover: NonNullable<Drag['hover']>): string | undefined {
+    if ('receiver' in hover) {
+      return this.hooks.dispatch({ kind: 'liquid.pour', sourceUid: item.uid, receiverUid: hover.receiver.uid });
+    }
+    return 'light' in hover ? this.loadBattery(hover.light, item) : this.tryQueue(item, hover.target);
   }
 
   private endDrag(): void {
@@ -1894,8 +1938,7 @@ export class InventoryScreen {
       return;
     }
     const spec = zone.dataset.target!;
-    if (spec.startsWith('battery:')) {
-      this.hoverBatterySlot(drag, zone, Number(spec.slice('battery:'.length)));
+    if (this.hoverServiceTarget(drag, zone, spec)) {
       return;
     }
     const rect = zone.getBoundingClientRect();
@@ -1938,6 +1981,31 @@ export class InventoryScreen {
       zone.style.setProperty('--preview-width', `${w * CELL_REM}rem`);
       zone.style.setProperty('--preview-height', `${h * CELL_REM}rem`);
     }
+  }
+
+  private hoverServiceTarget(drag: Drag, zone: HTMLElement, spec: string): boolean {
+    if (spec.startsWith('reservoir:')) {
+      this.hoverReservoir(drag, zone, Number(spec.slice('reservoir:'.length)));
+      return true;
+    }
+    if (spec.startsWith('battery:')) {
+      this.hoverBatterySlot(drag, zone, Number(spec.slice('battery:'.length)));
+      return true;
+    }
+    return false;
+  }
+
+  private hoverReservoir(drag: Drag, zone: HTMLElement, receiverUid: number): void {
+    const view = this.hooks.reach();
+    const receiver = view.player.inventory.itemByUid(receiverUid);
+    if (!receiver) {
+      return;
+    }
+    const reason = this.hooks.actionRefusal?.() ?? pourRefusal(view, drag.item.uid, receiver.uid);
+    drag.hover = { receiver, ok: reason === undefined, reason: reason ?? '' };
+    zone.classList.add(reason ? 'drop-no' : 'drop-ok');
+    zone.dataset.dropShape = reason ? 'blocked' : 'will-land';
+    zone.dataset.dropMark = reason ? '×' : '✓';
   }
 
   private hoverBatterySlot(drag: Drag, zone: HTMLElement, lightUid: number): void {

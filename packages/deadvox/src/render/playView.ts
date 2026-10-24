@@ -529,7 +529,7 @@ export const createPlayView = (
         camera,
         blockSize: s,
         daylightScale: cameraDaylightScale,
-        fixtureDaylightScale: engine.skylight ? 1 : cameraDaylightScale,
+        worldDaylightScale: engine.skylight ? 1 : cameraDaylightScale,
         fixtures: poweredLights(),
       });
       updateFlare(nightVision, dt);

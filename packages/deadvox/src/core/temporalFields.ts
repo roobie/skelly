@@ -110,6 +110,8 @@ export const TEMPORAL_FIELDS = [
   { path: 'items.trap.disarmSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.trap.holdSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.light.fuelPerGameHour', clock: 'Game', unit: 'PerHour', dimension: 'rate' },
+  { path: 'items.light.liquidFuel.microlitresPerGameSecond', clock: 'Game', unit: 'PerSecond', dimension: 'rate' },
+  { path: 'items.vessel.pour.microlitresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'items.light.power.chargePerGameHour', clock: 'Game', unit: 'PerHour', dimension: 'rate' },
   { path: 'items.book.readingGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },
   { path: 'items.disassembly.timeGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },

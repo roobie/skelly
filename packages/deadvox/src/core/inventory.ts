@@ -36,6 +36,7 @@ import {
 import { furnitureSurfacePosition } from './furnitureSurface.ts';
 import { PILE_GRID } from './inventoryScale.ts';
 import {
+  assertSavedLiquidContents,
   cellCount,
   couldFit,
   craftComponentEligible,
@@ -59,6 +60,7 @@ import {
   weightOf,
 } from './items.ts';
 import { itemIds, itemRoots, savedItemTree, subtreeItems, type TreeLocation, walkItemTree } from './itemTree.ts';
+import { type LiquidTransferPlan, planLiquidTransfer } from './liquids.ts';
 import type { Rolled } from './loot.ts';
 import { magazineWellCalibre, slotsReason } from './magazine.ts';
 import type { WearSlot } from './schema.ts';
@@ -912,6 +914,46 @@ export class Inventory {
     }
     this.put(item, target, placement.at);
     return { ok: true, item };
+  }
+
+  planLiquidTransfer(
+    sourceUid: number,
+    receiverUid: number | undefined,
+    limitMicrolitres?: number,
+  ): LiquidTransferPlan {
+    const source = this.itemByUid(sourceUid);
+    const receiver = receiverUid === undefined ? undefined : this.itemByUid(receiverUid);
+    const plan = planLiquidTransfer(this.registry, source, receiver, limitMicrolitres);
+    if (!plan.ok) {
+      return plan;
+    }
+    const from = this.locate(source!)!;
+    const to = this.locate(receiver!)!;
+    const sourcePlace = this.placeOf(from);
+    const receiverPlace = this.placeOf(to);
+    if (!(this.reachable(sourcePlace) && this.reachable(receiverPlace))) {
+      return { ok: false, reason: 'unreachable' };
+    }
+    if (
+      heldInPlace(this.registry, source!, from) ||
+      heldInPlace(this.registry, receiver!, to) ||
+      this.accessRefusal(sourcePlace, receiverPlace)
+    ) {
+      return { ok: false, reason: 'inaccessible' };
+    }
+    return plan;
+  }
+
+  transferLiquid(sourceUid: number, receiverUid: number | undefined, limitMicrolitres?: number): LiquidTransferPlan {
+    // Delayed handling commits quantities, never a previously computed balance.
+    const plan = this.planLiquidTransfer(sourceUid, receiverUid, limitMicrolitres);
+    if (!plan.ok) {
+      return plan;
+    }
+    this.itemByUid(sourceUid)!.liquidContents = { ...plan.sourceContents };
+    this.itemByUid(receiverUid!)!.liquidContents = { ...plan.receiverContents };
+    this.version += 1;
+    return plan;
   }
 
   /** Checks a move and works out its handling time, without changing anything. */
@@ -2001,6 +2043,7 @@ const validateInventoryTree = (registry: Registry, state: InventoryState, vehicl
     }
   };
   for (const { item } of tree) {
+    assertSavedLiquidContents(registry, item);
     const def = defOf(registry, item.type);
     const container =
       item.cargo && def.vehicle?.cargoSpace ? cargoGrid(item.cargo, def.vehicle.cargoSpace) : def.container;

@@ -379,6 +379,13 @@ itemSchema = obj({
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
   cartridges: opt(arr(str({ id: true }))),
   paperMap: opt(obj({ x: safeInt, z: safeInt })),
+  liquidBurnRemainder: opt(num({ integer: true, min: 0, max: 999_999 })),
+  liquidContents: opt(
+    union(
+      obj({ kind: enumeration(['empty']) }),
+      obj({ kind: enumeration(['filled']), liquid: str({ id: true }), volumeMicrolitres: positiveInt }),
+    ),
+  ),
   cargo: opt(arr(positiveInt)),
   slots: opt(record(lazy(() => itemSchema))),
   firearm: opt(

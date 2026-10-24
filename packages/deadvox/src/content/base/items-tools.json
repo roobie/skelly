@@ -760,8 +760,11 @@
           "heightMetres": 0.050000000000000003,
           "radiusMetres": 0.02
         },
-        "fuelPerGameHour": 1,
         "intensity": 3,
+        "liquidFuel": {
+          "accepts": ["lamp_fuel"],
+          "microlitresPerGameSecond": 14
+        },
         "radius": 8,
         "seenFrom": 80
       },
@@ -769,12 +772,18 @@
       "name": "Oil lamp",
       "notLoot": false,
       "size": [2, 3],
-      "tool": {
-        "fuel": {
-          "canister": "lamp_oil",
-          "swapSimSeconds": 3
+      "vessel": {
+        "accepts": ["lamp_fuel"],
+        "capacityMicrolitres": 400000,
+        "initialContents": {
+          "kind": "filled",
+          "liquid": "lamp_fuel",
+          "volumeMicrolitres": 400000
         },
-        "qualities": {}
+        "pour": {
+          "incrementMicrolitres": 10000,
+          "microlitresPerSimSecond": 50000
+        }
       },
       "workInProgress": false
     },

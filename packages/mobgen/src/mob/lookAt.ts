@@ -1,4 +1,5 @@
 import type { Bone } from '../core/body.ts';
+import { clampJointAngles, jointAngles, jointRotation } from '../core/joints.ts';
 import {
   applyPoint,
   IDENTITY_M,
@@ -106,8 +107,9 @@ export const lookAtPose = ({
   baseTransforms = boneTransforms(bones, pose),
 }: LookAtInput): LookAtResult => {
   const neck = bones.find((bone) => bone.id === 'neck');
-  const head = bones.find((bone) => bone.id === 'head');
-  const headTransform = baseTransforms.get('head');
+  const headId = profile.headBone ?? 'head';
+  const head = bones.find((bone) => bone.id === headId);
+  const headTransform = baseTransforms.get(headId);
   if (!(neck && head && headTransform)) {
     return { pose, transforms: baseTransforms, state: LOOK_AT_REST };
   }
@@ -141,12 +143,20 @@ export const lookAtPose = ({
 
   // The neck correction changes the head's parent frame. Conjugate the head's remaining world-space
   // turn through that updated parent so the two joints together apply exactly `applied`.
-  const updatedHeadParent = mulMM(neckCorrection, baseTransforms.get('neck')!.r);
+  const limitedNeck =
+    neck.frame && neck.limits ? jointRotation(neck, clampJointAngles(neck, jointAngles(neck, nextNeck))) : nextNeck;
+  const actualNeckCorrection = mulMM(
+    neckParentRotation,
+    mulMM(limitedNeck, transpose(mulMM(neckParentRotation, neckLocal))),
+  );
+  const updatedHeadParent = mulMM(actualNeckCorrection, baseTransforms.get('neck')!.r);
   const headLocalCorrection = mulMM(transpose(updatedHeadParent), mulMM(headCorrection, updatedHeadParent));
+  const nextHead = mulMM(headLocalCorrection, pose.rotations[headId] ?? IDENTITY_M);
   const rotations = {
     ...pose.rotations,
-    neck: nextNeck,
-    head: mulMM(headLocalCorrection, pose.rotations.head ?? IDENTITY_M),
+    neck: limitedNeck,
+    [headId]:
+      head.frame && head.limits ? jointRotation(head, clampJointAngles(head, jointAngles(head, nextHead))) : nextHead,
   };
   const lookPose: Pose = { root: pose.root, rotations };
   return { pose: lookPose, transforms: boneTransforms(bones, lookPose), state: nextState };

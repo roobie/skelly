@@ -1222,6 +1222,12 @@ const LightSchema = strictObject({
   burnTimeGameHours: optional(PositiveGameHours),
   /** Fuel units consumed per Game hour, for self-fueled sources such as a lighter. */
   fuelPerGameHour: optional(GamePerHour),
+  liquidFuel: optional(
+    strictObject({
+      accepts: pipe(array(Id), minLength(1)),
+      microlitresPerGameSecond: pipe(Positive, integer(), maxValue(Number.MAX_SAFE_INTEGER)),
+    }),
+  ),
   /** A cone-shaped beam; absent means light all around. */
   beam: optional(
     strictObject({
@@ -1425,6 +1431,30 @@ const TreatmentSchema = pipe(
   ),
 );
 
+const LiquidVolumeMicrolitres = pipe(number(), safeInteger(), minValue(0));
+const LiquidContentsSchema = union([
+  strictObject({ kind: literal('empty') }),
+  strictObject({
+    kind: literal('filled'),
+    liquid: Id,
+    volumeMicrolitres: pipe(LiquidVolumeMicrolitres, minValue(1)),
+  }),
+]);
+const LiquidSchema = strictObject({ id: Id, name: Name, densityGramsPerMillilitre: pipe(Positive, finite()) });
+const VesselSchema = strictObject({
+  capacityMicrolitres: pipe(LiquidVolumeMicrolitres, minValue(1)),
+  accepts: pipe(array(Id), nonEmpty()),
+  initialContents: LiquidContentsSchema,
+  pour: optional(
+    strictObject({
+      incrementMicrolitres: pipe(LiquidVolumeMicrolitres, minValue(1)),
+      microlitresPerSimSecond: pipe(Positive, finite()),
+    }),
+  ),
+});
+
+export type LiquidContents = InferOutput<typeof LiquidContentsSchema>;
+
 const ItemSchema = strictObject({
   id: Id,
   economy: ItemEconomySchema,
@@ -1481,6 +1511,7 @@ const ItemSchema = strictObject({
   book: optional(BookSchema),
   battery: optional(BatterySchema),
   canister: optional(CanisterSchema),
+  vessel: optional(VesselSchema),
   /** A working alarm clock: carried, it lets a sleep run to a chosen wake hour. */
   alarm: optional(literal(true)),
   /** Initial ADS power for a variable-power optic; constrained by its exported range. */
@@ -4180,6 +4211,7 @@ const LookDefaultsSchema = strictObject({
 const SECTION_DESCRIPTOR = {
   blocks: { schema: optional(array(BlockSchema)), label: 'blocks', order: 0 },
   items: { schema: optional(array(ItemSchema)), label: 'items', order: 1 },
+  liquids: { schema: optional(array(LiquidSchema)), label: 'liquids', order: 34 },
   furnitureMaterials: { schema: optional(array(FurnitureMaterialSchema)), label: 'furniture materials', order: 32 },
   vehicleBlueprints: { schema: optional(array(VehicleBlueprintSchema)), label: 'vehicle blueprints', order: 33 },
   furniture: { schema: optional(array(FurnitureSchema)), label: 'furniture', order: 2 },

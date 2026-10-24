@@ -50,7 +50,14 @@ export interface Feature {
   readonly onto?: readonly Material[];
 }
 
+interface BodyAnchor {
+  readonly bone: string;
+  /** Rest-pose world coordinates; apply the owning bone's posed transform. */
+  readonly position: Vec3;
+}
+
 export interface Body {
+  readonly anchors?: Readonly<Record<string, BodyAnchor>>;
   /** Parents-first: every bone's parent appears earlier in the array (or is null). */
   readonly bones: readonly Bone[];
   /** Add features first influence the field; paints are then applied in this array's order. */
