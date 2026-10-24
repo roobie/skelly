@@ -8,7 +8,7 @@ read_if:
 
 # Charged attacks
 
-Slice 5 admits charged attacks so committing to a strike has a place in defence (`SLICE-5.md`, "Related issues and admission"). A charged strike is the one that staggers a shambler ([stagger](stagger.md)), so the charge's cost and its interruptions are what keep stagger a reward rather than a habit. See `src/core/playerCombat.ts`, `PlayerCombat`, `holdCharge`.
+Slice 5 admits charged attacks so committing to a strike has a place in defence (`SLICE-5.md`, "Related issues and admission"). Stagger rewards commitment (`docs/stagger.md`, "Stagger rewards commitment"). Charging is how a player commits with any weapon, while a heavy, slow weapon commits on its ordinary swing. The charge's cost and its interruptions keep stagger a reward rather than a habit. See `src/core/playerCombat.ts`, `PlayerCombat`, `holdCharge`.
 
 ## The rules
 

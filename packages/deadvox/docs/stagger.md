@@ -1,7 +1,7 @@
 ---
 read_if:
   - you change how a melee hit interrupts a zombie, or a type's `stagger` content
-  - you tune charged strikes against zombie stagger thresholds
+  - you tune charged strikes or a weapon's impulse against zombie stagger thresholds
   - you add knockback, knockdown or any other hit response that moves a zombie
   - you decide how the tier-2 brute answers heavy hits
 ---
@@ -12,13 +12,15 @@ Slice 5 defence needs hits that interrupt an approaching threat (`SLICE-5.md`, "
 
 ## The rules
 
-**A threshold, per type.** A hit staggers when its impulse reaches the type's threshold, for the type's duration. Both are content because sturdier types should shrug off what drops a shambler. The thresholds sit above ordinary strikes so that only a charged strike staggers; that keeps stagger a reward for committing to an attack, not a side effect of every swing. See `src/core/schema.ts`, `ZombieSchema`.
+**Stagger rewards commitment.** A player commits by charging a strike or by carrying a heavy, slow weapon, and either can reach a type's threshold, the heavy weapon even on an ordinary swing. Light, quick ordinary swings stay below it, so stagger is a reward for commitment rather than a side effect of every swing. Where "heavy" starts is tuning, set by weapon impulse against each type's threshold in content. See `src/core/zombies.ts`, `stagger`, and `src/content/base/items-tools.libsonnet`, `melee`.
+
+**A threshold, per type.** Both the threshold and the duration are content, because sturdier types should shrug off what drops a shambler. See `src/core/schema.ts`, `ZombieSchema`.
 
 **It spoils the attack in progress.** A stagger cancels the melee wind-up and the acid spit and blocks new ones until it ends. A wind-up that resumed afterwards would land anyway, and the interruption would mean nothing.
 
 **It never moves the zombie.** Stagger stops the zombie's own movement and leaves its position alone. Displacement is knockback's job, and keeping the two apart means a stagger can never push a body through a door or wall, and its timing can be proved separately from brute displacement (`SLICE-5.md`, "Reviewable build order").
 
-**Staggers never add up.** A new stagger keeps whichever remaining time is longer, so it can never shorten one in progress. Adding the durations would let a burst of hits bank stagger time and lock a zombie for longer than any single hit earns. The charge's time and stamina cost is what limits how often the player can renew a stagger.
+**Staggers never add up.** A new stagger keeps whichever remaining time is longer, so it can never shorten one in progress. Adding the durations would let a burst of hits bank stagger time and lock a zombie for longer than any single hit earns. What limits how often the player can renew a stagger is the cost of commitment: a charge's time and stamina, or a heavy weapon's slow swing.
 
 **It persists in saves.** Saving and loading must not free a staggered zombie or grant a new stagger, so the remaining time is part of the zombie's snapshot.
 
