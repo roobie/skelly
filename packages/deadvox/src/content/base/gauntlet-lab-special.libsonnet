@@ -136,43 +136,48 @@ local rooms = {
   },
 };
 
-// The specimen pit under the chamber floor holds the amalgam's whole body below the chamber's full height, with a
-// ladder back to the rim at its north-west corner.
-local pit = { at: [32, 28], size: [16, 14] };
-local amalgamMarker = [40, 6, 35];
-local ladderAt = [32, 6, 28];
-local inPit = function(x, z) x >= pit.at[0] && x < pit.at[0] + pit.size[0] && z >= pit.at[1] && z < pit.at[1] + pit.size[1];
-local isLadder = function(x, y, z) (x == ladderAt[0] || x == ladderAt[0] + 1) && z == ladderAt[2] && y >= ladderAt[1] && y < base;
-
-// The excavation below the level is solid owned rock, so no storey or hidden room remains there; only the pit is
-// carved out of it. Its top layer is the level's floor, where it owns only the hole the shell leaves over the pit.
-// The amalgam's marker cell stays unclaimed for its marker piece.
-local glyphAt = function(y, z) std.join('', [
-  if isLadder(x, y, z) then 'J'
-  else if inPit(x, z) then (if y < ladderAt[1] - 1 then '#' else if y == ladderAt[1] - 1 then 'H' else '.')
-  else if y == base then '.'
-  else '#'
-  for x in std.range(0, 71)
-]);
-local claimAt = function(y, z) std.join('', [
-  if [x, y, z] == amalgamMarker then '.'
-  else if isLadder(x, y, z) then 'S'
-  else if y < ladderAt[1] - 1 then 'S'
-  else if inPit(x, z) then (if y == ladderAt[1] - 1 then 'S' else 'R')
-  else if y == base then '.'
-  else 'S'
-  for x in std.range(0, 71)
-]);
-local deep = {
-  id: 'gauntlet_lab_special_deep', size: [72, base + 1, 64], style: 'concrete_lab', lootContext: { usage: [], tier: 'Tier1' },
+// The specimen pit sunk below the chamber floor: a rock base and rim, a hazard floor, two storeys of reserved air for
+// the amalgam's whole body with a ladder back to the rim in the north-west corner, and a top layer that owns the hole
+// the shell leaves over it. The rim stays unclaimed on that top layer, where the shell owns the chamber floor. One
+// cell of the `marked` row stays unclaimed for the amalgam's marker piece.
+local pitPiece = {
+  local rock = '##################',
+  local floor = '#HHHHHHHHHHHHHHHH#',
+  local air = '#................#',
+  local rungs = '#JJ..............#',
+  local open = '..................',
+  local solid = 'SSSSSSSSSSSSSSSSSS',
+  local held = 'SRRRRRRRRRRRRRRRRS',
+  local climb = 'SSSRRRRRRRRRRRRRRS',
+  local marked = 'SRRRRRRRR.RRRRRRRS',
+  local hole = '.RRRRRRRRRRRRRRRR.',
+  id: 'gauntlet_lab_special_pit', size: [18, 5, 16], style: 'concrete_lab', lootContext: { usage: [], tier: 'Tier1' },
   palette: {
     '#': { role: 'shell', material: 'rock' }, H: { role: 'interior_floor', material: 'hazard' },
     '.': { role: 'opening', material: 'air' }, J: { furniture: 'ladder', facing: 's' },
   },
-  layers: [[glyphAt(y, z) for z in std.range(0, 63)] for y in std.range(0, base)],
-  ownership: { layers: [[claimAt(y, z) for z in std.range(0, 63)] for y in std.range(0, base)] },
+  layers: [
+    [rock, rock, rock, rock, rock, rock, rock, rock, rock, rock, rock, rock, rock, rock, rock, rock],
+    [rock, floor, floor, floor, floor, floor, floor, floor, floor, floor, floor, floor, floor, floor, floor, rock],
+    [rock, rungs, air, air, air, air, air, air, air, air, air, air, air, air, air, rock],
+    [rock, rungs, air, air, air, air, air, air, air, air, air, air, air, air, air, rock],
+    [open, open, open, open, open, open, open, open, open, open, open, open, open, open, open, open],
+  ],
+  ownership: { layers: [
+    [solid, solid, solid, solid, solid, solid, solid, solid, solid, solid, solid, solid, solid, solid, solid, solid],
+    [solid, solid, solid, solid, solid, solid, solid, solid, solid, solid, solid, solid, solid, solid, solid, solid],
+    [solid, climb, held, held, held, held, held, held, marked, held, held, held, held, held, held, solid],
+    [solid, climb, held, held, held, held, held, held, held, held, held, held, held, held, held, solid],
+    [open, hole, hole, hole, hole, hole, hole, hole, hole, hole, hole, hole, hole, hole, hole, open],
+  ] },
   anchors: {}, ports: [],
 };
+// Where the pit piece stands in the level's frame; its top layer is the level's floor, so the shell's floor hole
+// matches the pit's interior. The marker and ladder cells are the ones its layers mark.
+local pitAt = [31, base - 4, 27];
+local pit = { at: [pitAt[0] + 1, pitAt[2] + 1], size: [16, 14] };
+local amalgamMarker = [pitAt[0] + 9, pitAt[1] + 2, pitAt[2] + 8];
+local ladderAt = [pitAt[0] + 1, pitAt[1] + 2, pitAt[2] + 1];
 
 local built = level.build({
   id: 'special', base: base, plan: plan, rooms: rooms,
@@ -195,7 +200,7 @@ local built = level.build({
 
 local slot = function(id, ref, at, size) { id: id, at: at, size: size, turn: 0, choices: [{ ref: { kind: 'piece', id: ref }, weight: 1 }] };
 local shell = built.mapPieces[0];
-// The level's frame is two storeys tall: the built shell sits on the solid excavation, and the builder's slots are
+// The level's frame is two storeys tall: the built shell sits on rock that the pit is sunk into, and the builder's slots are
 // rebased up to it. The objective console replaces the bay that reserved its footprint.
 local rebase = function(s) s + { at: [s.at[0], base + s.at[1], s.at[2]] };
 local assembly = {
@@ -203,7 +208,7 @@ local assembly = {
   lootContext: { usage: ['Industrial', 'Medical'], tier: 'Tier4', lowerTiers: true },
   slots: [
     slot('shell', shell.id, [0, base, 0], shell.size),
-    slot('deep', deep.id, [0, 0, 0], deep.size),
+    slot('pit', pitPiece.id, pitAt, pitPiece.size),
   ] + [rebase(s) for s in built.mapAssembly.slots if s.id != 'shell' && s.id != 'objective'] + [
     threat.amalgamSlot('special', amalgamMarker),
     slot('objective', 'gauntlet_lab_equipment_objective', [40, base + 1, 24], [4, 5, 4]),
@@ -233,7 +238,7 @@ local assembly = {
       Whoever keeps opening the floor at night: the schedule is the only part of this we still control.
     ||| },
   }],
-  mapPieces: [deep] + [p for p in built.mapPieces if p.id != 'gauntlet_lab_special_bay_objective'],
+  mapPieces: [pitPiece] + [p for p in built.mapPieces if p.id != 'gauntlet_lab_special_bay_objective'],
   mapAssemblies: [assembly],
   // Margin loot as on the levels above, and the experimental-arms locker's own table, which no other source shares.
   loot: [
