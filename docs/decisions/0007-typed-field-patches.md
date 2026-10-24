@@ -4,6 +4,7 @@ read_if:
   - you change the content merge, its origins or the conflict messages it reports
   - you mark schema fields as patchable or add a patch operation
   - you write a mod that needs one field of a base or other mod's entry changed
+  - you schedule field-patch implementation or the mod tool's editing prerequisites
 tags: [deadvox, adr, mods, content, schema, validation]
 ---
 
@@ -50,7 +51,7 @@ that mod, directly or transitively, and declares the override. Setting a scalar,
 replacing a list and replacing a whole definition are overrides. List additions are not:
 they commute, so two mods adding to one list both keep their additions, in pack order,
 and never conflict. The load fails closed, with a message naming the target, the mods and
-the fix, a check d476 builds, in two cases: two mods with no dependency path between them
+the fix, in two cases: two mods with no dependency path between them
 override the same value or object, or a mod overrides a dependency without declaring it.
 
 Load order alone never decides, because the order in which a player enables mods says
@@ -72,15 +73,21 @@ change from reaching play.
   nothing and fails silently. Every game that took that route later had to build a tool
   to find dead patches or to learn which mod set a value.
 
-## Not decided
+## Implementation ownership
 
-Which item builds the merge step for field patches. The conflict check is d476's, and
-admitting an override needs the pack dependencies of #637 round 1; see
-`packages/deadvox/docs/pack-split.md`, "Round split". Until d476 lands,
-`packages/deadvox/src/core/content.ts`, `merge` lets any later pack replace an entry whole, so
-"Conflicts" binds mod authors without the loader enforcing it. Once d476 lands, a
-whole-entry mod that replaces another pack's entry loads only if it depends on that pack
-and declares the override. Nothing needs migrating before v1.0 beta (#1023).
+Build the field-patch merge as a Deadvox engine feature, design-checked against this ADR
+before implementation and scheduled ahead of other queued Deadvox work. It owns patch
+application, schema marking and per-field origins. The mod authoring tool's editing
+slices wait for that feature to merge; its overview and read-only inspection can proceed.
+See `docs/decisions/0008-mod-authoring-tool.md`, "Build plan".
+
+The engine feature must deliver or explicitly depend on conflict enforcement and the
+pack-dependency admission of #637; see
+`packages/deadvox/docs/pack-split.md`, "Round split". Documented conflict rules are not
+loader enforcement: the design must verify those prerequisites so patch admission
+cannot silently accept an undeclared override. The separate literal set-target rule
+belongs to `docs/decisions/0004-content-language.md`, "Mod rules", and its runtime work
+in #313, not to patch application. Nothing needs migrating before v1.0 beta (#1023).
 
 ## Consequences
 

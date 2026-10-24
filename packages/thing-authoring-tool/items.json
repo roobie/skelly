@@ -5879,6 +5879,203 @@
       ]
     },
     {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "hand_saw",
+        "roll": 90,
+        "solid": "rear",
+        "turn": [0, 0, 0]
+      },
+      "id": "hand_saw",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "blade": "steel-grey",
+            "handle": "wood-walnut"
+          },
+          "id": "hand_saw",
+          "massKg": 0.65000000000000002,
+          "params": {
+            "pieces": "[\n    {\n        \"id\": \"rear\",\n        \"kind\": \"box\",\n        \"max\": [\n            0.03,\n            0.015,\n            0.06\n        ],\n        \"min\": [\n            0,\n            -0.015,\n            -0.06\n        ],\n        \"slot\": \"handle\"\n    },\n    {\n        \"id\": \"top\",\n        \"kind\": \"box\",\n        \"max\": [\n            0.1,\n            0.015,\n            0.06\n        ],\n        \"min\": [\n            0.03,\n            -0.015,\n            0.04\n        ],\n        \"slot\": \"handle\"\n    },\n    {\n        \"id\": \"bottom\",\n        \"kind\": \"box\",\n        \"max\": [\n            0.1,\n            0.015,\n            -0.04\n        ],\n        \"min\": [\n            0.03,\n            -0.015,\n            -0.06\n        ],\n        \"slot\": \"handle\"\n    },\n    {\n        \"id\": \"front\",\n        \"kind\": \"box\",\n        \"max\": [\n            0.1,\n            0.015,\n            0.04\n        ],\n        \"min\": [\n            0.07,\n            -0.015,\n            -0.04\n        ],\n        \"slot\": \"handle\"\n    },\n    {\n        \"axis\": \"y\",\n        \"end\": 0.002,\n        \"id\": \"blade\",\n        \"kind\": \"prism\",\n        \"profile\": [\n            [\n                -0.055,\n                0.1\n            ],\n            [\n                0.055,\n                0.1\n            ],\n            [\n                0.015,\n                0.5\n            ],\n            [\n                -0.015,\n                0.5\n            ]\n        ],\n        \"slot\": \"blade\",\n        \"start\": -0.002\n    }\n]"
+          },
+          "ports": []
+        }
+      ],
+      "voxelGrain": 0.0040000000000000001
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "screwdriver",
+        "roll": 90,
+        "solid": "handle",
+        "turn": [0, 0, 0]
+      },
+      "id": "screwdriver",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "handle": "plastic-yellow",
+            "shaft": "steel-blued"
+          },
+          "id": "screwdriver",
+          "massKg": 0.16,
+          "params": {
+            "pieces": "[\n    {\n        \"axis\": \"x\",\n        \"id\": \"handle\",\n        \"kind\": \"turned\",\n        \"profile\": [\n            [\n                0,\n                0\n            ],\n            [\n                0,\n                0.01\n            ],\n            [\n                0.008,\n                0.015\n            ],\n            [\n                0.085,\n                0.016\n            ],\n            [\n                0.105,\n                0.011\n            ],\n            [\n                0.105,\n                0\n            ]\n        ],\n        \"slot\": \"handle\"\n    },\n    {\n        \"axis\": \"x\",\n        \"id\": \"shaft\",\n        \"kind\": \"turned\",\n        \"profile\": [\n            [\n                0.105,\n                0\n            ],\n            [\n                0.105,\n                0.0035\n            ],\n            [\n                0.25,\n                0.0035\n            ],\n            [\n                0.255,\n                0.002\n            ],\n            [\n                0.255,\n                0\n            ]\n        ],\n        \"slot\": \"shaft\"\n    }\n]"
+          },
+          "ports": []
+        }
+      ],
+      "voxelGrain": 0.002
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "copper_wire",
+      "parts": [
+        {
+          "family": "spool",
+          "finish": {
+            "core": "plastic-black",
+            "winding": "copper"
+          },
+          "id": "copper_wire",
+          "massKg": 0.080000000000000002,
+          "params": {
+            "coreRadius": "0.014999999999999999",
+            "flangeHeight": "0.0040000000000000001",
+            "flangeInset": "0.002",
+            "grooveDepth": "0.002",
+            "height": "0.059999999999999998",
+            "outerRadius": "0.047",
+            "windingRadius": "0.040000000000000001",
+            "windings": "6"
+          },
+          "ports": []
+        }
+      ],
+      "voxelGrain": 0.0040000000000000001
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "small_spring",
+      "parts": [
+        {
+          "family": "coil",
+          "finish": {
+            "body": "steel-grey"
+          },
+          "id": "small_spring",
+          "massKg": 0.02,
+          "params": {
+            "pitch": "0.0050000000000000001",
+            "radius": "0.014",
+            "tubeRadius": "0.002",
+            "turns": "8"
+          },
+          "ports": []
+        }
+      ],
+      "voxelGrain": 0.002
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "hinge_set",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "knuckle": "steel-grey",
+            "leaf": "brass"
+          },
+          "id": "hinge_set",
+          "massKg": 0.35999999999999999,
+          "params": {
+            "pieces": "[\n    {\n        \"id\": \"a-leaf-a\",\n        \"kind\": \"box\",\n        \"max\": [\n            -0.0025000000000000022,\n            0.002,\n            -0.037500000000000006\n        ],\n        \"min\": [\n            -0.0775,\n            0,\n            -0.064\n        ],\n        \"slot\": \"leaf\"\n    },\n    {\n        \"id\": \"a-leaf-b\",\n        \"kind\": \"box\",\n        \"max\": [\n            -0.0025000000000000022,\n            0.002,\n            -0.0040000000000000036\n        ],\n        \"min\": [\n            -0.0775,\n            0,\n            -0.030500000000000003\n        ],\n        \"slot\": \"leaf\"\n    },\n    {\n        \"axis\": \"x\",\n        \"id\": \"a-knuckle\",\n        \"kind\": \"turned\",\n        \"origin\": [\n            -0.0775,\n            0.0035,\n            -0.034\n        ],\n        \"profile\": [\n            [\n                0,\n                0\n            ],\n            [\n                0,\n                0.0035\n            ],\n            [\n                0.075,\n                0.0035\n            ],\n            [\n                0.075,\n                0\n            ]\n        ],\n        \"slot\": \"knuckle\"\n    },\n    {\n        \"id\": \"b-leaf-a\",\n        \"kind\": \"box\",\n        \"max\": [\n            0.0775,\n            0.002,\n            -0.037500000000000006\n        ],\n        \"min\": [\n            0.0025000000000000022,\n            0,\n            -0.064\n        ],\n        \"slot\": \"leaf\"\n    },\n    {\n        \"id\": \"b-leaf-b\",\n        \"kind\": \"box\",\n        \"max\": [\n            0.0775,\n            0.002,\n            -0.0040000000000000036\n        ],\n        \"min\": [\n            0.0025000000000000022,\n            0,\n            -0.030500000000000003\n        ],\n        \"slot\": \"leaf\"\n    },\n    {\n        \"axis\": \"x\",\n        \"id\": \"b-knuckle\",\n        \"kind\": \"turned\",\n        \"origin\": [\n            0.0025000000000000022,\n            0.0035,\n            -0.034\n        ],\n        \"profile\": [\n            [\n                0,\n                0\n            ],\n            [\n                0,\n                0.0035\n            ],\n            [\n                0.075,\n                0.0035\n            ],\n            [\n                0.075,\n                0\n            ]\n        ],\n        \"slot\": \"knuckle\"\n    },\n    {\n        \"id\": \"c-leaf-a\",\n        \"kind\": \"box\",\n        \"max\": [\n            -0.0025000000000000022,\n            0.002,\n            0.030500000000000003\n        ],\n        \"min\": [\n            -0.0775,\n            0,\n            0.0040000000000000036\n        ],\n        \"slot\": \"leaf\"\n    },\n    {\n        \"id\": \"c-leaf-b\",\n        \"kind\": \"box\",\n        \"max\": [\n            -0.0025000000000000022,\n            0.002,\n            0.064\n        ],\n        \"min\": [\n            -0.0775,\n            0,\n            0.037500000000000006\n        ],\n        \"slot\": \"leaf\"\n    },\n    {\n        \"axis\": \"x\",\n        \"id\": \"c-knuckle\",\n        \"kind\": \"turned\",\n        \"origin\": [\n            -0.0775,\n            0.0035,\n            0.034\n        ],\n        \"profile\": [\n            [\n                0,\n                0\n            ],\n            [\n                0,\n                0.0035\n            ],\n            [\n                0.075,\n                0.0035\n            ],\n            [\n                0.075,\n                0\n            ]\n        ],\n        \"slot\": \"knuckle\"\n    },\n    {\n        \"id\": \"d-leaf-a\",\n        \"kind\": \"box\",\n        \"max\": [\n            0.0775,\n            0.002,\n            0.030500000000000003\n        ],\n        \"min\": [\n            0.0025000000000000022,\n            0,\n            0.0040000000000000036\n        ],\n        \"slot\": \"leaf\"\n    },\n    {\n        \"id\": \"d-leaf-b\",\n        \"kind\": \"box\",\n        \"max\": [\n            0.0775,\n            0.002,\n            0.064\n        ],\n        \"min\": [\n            0.0025000000000000022,\n            0,\n            0.037500000000000006\n        ],\n        \"slot\": \"leaf\"\n    },\n    {\n        \"axis\": \"x\",\n        \"id\": \"d-knuckle\",\n        \"kind\": \"turned\",\n        \"origin\": [\n            0.0025000000000000022,\n            0.0035,\n            0.034\n        ],\n        \"profile\": [\n            [\n                0,\n                0\n            ],\n            [\n                0,\n                0.0035\n            ],\n            [\n                0.075,\n                0.0035\n            ],\n            [\n                0.075,\n                0\n            ]\n        ],\n        \"slot\": \"knuckle\"\n    }\n]"
+          },
+          "ports": []
+        }
+      ],
+      "voxelGrain": 0.002
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "fastener_pack",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "box": "paperboard-tan",
+            "lid": "paint-terracotta",
+            "screw": "steel-grey"
+          },
+          "id": "fastener_pack",
+          "massKg": 0.17999999999999999,
+          "params": {
+            "pieces": "[\n    {\n        \"id\": \"tray\",\n        \"kind\": \"box\",\n        \"max\": [\n            0.045,\n            0.034,\n            0.03\n        ],\n        \"min\": [\n            -0.045,\n            0,\n            -0.03\n        ],\n        \"slot\": \"box\"\n    },\n    {\n        \"id\": \"lid\",\n        \"kind\": \"box\",\n        \"max\": [\n            0.046,\n            0.037,\n            0.031\n        ],\n        \"min\": [\n            -0.046,\n            0.034,\n            -0.031\n        ],\n        \"slot\": \"lid\"\n    },\n    {\n        \"axis\": \"x\",\n        \"id\": \"screw-a\",\n        \"kind\": \"turned\",\n        \"origin\": [\n            -0.025,\n            0.0395,\n            -0.016\n        ],\n        \"profile\": [\n            [\n                0,\n                0\n            ],\n            [\n                0,\n                0.0045\n            ],\n            [\n                0.003,\n                0.0045\n            ],\n            [\n                0.003,\n                0.0028\n            ],\n            [\n                0.05,\n                0.0028\n            ],\n            [\n                0.053,\n                0\n            ]\n        ],\n        \"slot\": \"screw\"\n    },\n    {\n        \"axis\": \"x\",\n        \"id\": \"screw-b\",\n        \"kind\": \"turned\",\n        \"origin\": [\n            -0.025,\n            0.0395,\n            0\n        ],\n        \"profile\": [\n            [\n                0,\n                0\n            ],\n            [\n                0,\n                0.0045\n            ],\n            [\n                0.003,\n                0.0045\n            ],\n            [\n                0.003,\n                0.0028\n            ],\n            [\n                0.05,\n                0.0028\n            ],\n            [\n                0.053,\n                0\n            ]\n        ],\n        \"slot\": \"screw\"\n    },\n    {\n        \"axis\": \"x\",\n        \"id\": \"screw-c\",\n        \"kind\": \"turned\",\n        \"origin\": [\n            -0.025,\n            0.0395,\n            0.016\n        ],\n        \"profile\": [\n            [\n                0,\n                0\n            ],\n            [\n                0,\n                0.0045\n            ],\n            [\n                0.003,\n                0.0045\n            ],\n            [\n                0.003,\n                0.0028\n            ],\n            [\n                0.05,\n                0.0028\n            ],\n            [\n                0.053,\n                0\n            ]\n        ],\n        \"slot\": \"screw\"\n    }\n]"
+          },
+          "ports": []
+        }
+      ],
+      "voxelGrain": 0.002
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "taped_flashlight_mount",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "band": "tape-grey",
+            "lens": "plastic-white",
+            "plate": "steel-grey",
+            "torch": "polymer-black"
+          },
+          "id": "taped_flashlight_mount",
+          "massKg": 0.12,
+          "params": {
+            "pieces": "[\n    {\n        \"id\": \"plate\",\n        \"kind\": \"box\",\n        \"max\": [\n            0.065,\n            0.003,\n            0.025\n        ],\n        \"min\": [\n            -0.06,\n            0,\n            -0.025\n        ],\n        \"slot\": \"plate\"\n    },\n    {\n        \"axis\": \"x\",\n        \"id\": \"torch\",\n        \"kind\": \"turned\",\n        \"origin\": [\n            -0.06,\n            0.022,\n            0\n        ],\n        \"profile\": [\n            [\n                0,\n                0\n            ],\n            [\n                0,\n                0.014\n            ],\n            [\n                0.1,\n                0.014\n            ],\n            [\n                0.115,\n                0.019\n            ],\n            [\n                0.125,\n                0.019\n            ],\n            [\n                0.125,\n                0\n            ]\n        ],\n        \"slot\": \"torch\"\n    },\n    {\n        \"axis\": \"x\",\n        \"id\": \"lens\",\n        \"kind\": \"turned\",\n        \"origin\": [\n            -0.06,\n            0.022,\n            0\n        ],\n        \"profile\": [\n            [\n                0.125,\n                0\n            ],\n            [\n                0.125,\n                0.017\n            ],\n            [\n                0.13,\n                0.017\n            ],\n            [\n                0.13,\n                0\n            ]\n        ],\n        \"slot\": \"lens\"\n    },\n    {\n        \"id\": \"band-a\",\n        \"kind\": \"box\",\n        \"max\": [\n            -0.032,\n            0.041,\n            0.021\n        ],\n        \"min\": [\n            -0.04,\n            0,\n            -0.021\n        ],\n        \"slot\": \"band\"\n    },\n    {\n        \"id\": \"band-b\",\n        \"kind\": \"box\",\n        \"max\": [\n            0.018,\n            0.041,\n            0.021\n        ],\n        \"min\": [\n            0.01,\n            0,\n            -0.021\n        ],\n        \"slot\": \"band\"\n    }\n]"
+          },
+          "ports": []
+        }
+      ],
+      "voxelGrain": 0.0040000000000000001
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "scrap_foregrip",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "handle": "wood-birch",
+            "plate": "scrap-rusted",
+            "sleeve": "rubber-black"
+          },
+          "id": "scrap_foregrip",
+          "massKg": 0.17999999999999999,
+          "params": {
+            "pieces": "[\n    {\n        \"id\": \"plate\",\n        \"kind\": \"box\",\n        \"max\": [\n            0.025,\n            0.086,\n            0.025\n        ],\n        \"min\": [\n            -0.025,\n            0.08,\n            -0.025\n        ],\n        \"slot\": \"plate\"\n    },\n    {\n        \"axis\": \"y\",\n        \"id\": \"handle\",\n        \"kind\": \"turned\",\n        \"profile\": [\n            [\n                0,\n                0\n            ],\n            [\n                0,\n                0.018\n            ],\n            [\n                0.01,\n                0.022\n            ],\n            [\n                0.07,\n                0.022\n            ],\n            [\n                0.08,\n                0.018\n            ],\n            [\n                0.08,\n                0\n            ]\n        ],\n        \"slot\": \"handle\"\n    },\n    {\n        \"axis\": \"y\",\n        \"id\": \"sleeve\",\n        \"kind\": \"turned\",\n        \"profile\": [\n            [\n                0.015,\n                0\n            ],\n            [\n                0.015,\n                0.0235\n            ],\n            [\n                0.065,\n                0.0235\n            ],\n            [\n                0.065,\n                0\n            ]\n        ],\n        \"slot\": \"sleeve\"\n    }\n]"
+          },
+          "ports": []
+        }
+      ],
+      "voxelGrain": 0.0040000000000000001
+    },
+    {
       "anchors": {
         "head": {
           "fraction": [0.5, 1, 0.5],

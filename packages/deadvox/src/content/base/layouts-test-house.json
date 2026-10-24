@@ -106,14 +106,56 @@
         "row": [-12, 21.5, -1],
         "slots": [
           {
-            "furniture": "flimsy_wood_door"
-          },
-          {
             "furniture": "bedroll"
           },
           {
             "fixed": true,
             "furniture": "grinding_wheel"
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "count": 1,
+                "item": "hand_saw",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "screwdriver",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "copper_wire",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "small_spring",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "hinge_set",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "fastener_pack",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "taped_flashlight_mount",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "scrap_foregrip",
+                "placement": "surface"
+              }
+            ]
           }
         ],
         "spacing": 1

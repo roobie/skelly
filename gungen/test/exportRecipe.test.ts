@@ -1,4 +1,4 @@
-import { expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 import { loadExportRecipe } from '../src/cli/exportRecipe.ts';
 import { readGlb } from './glbReader.ts';
 
@@ -67,20 +67,28 @@ it('exports a voxelized sight whose up is perpendicular to its direction', () =>
   expect(Math.abs(dot)).toBeLessThan(1e-9);
 });
 
-it('puts every recipe iron sight eye on a drawn voxel top, which lies on its fine lattice', () => {
-  const sights = loadExportRecipe()
-    .filter(({ kind }) => kind === 'design')
-    .map((row) => ({
-      row,
-      sight: (row.generate().modelEntry as unknown as { gun: { sight: { kind: string; eye: readonly number[] } } }).gun
-        .sight,
-    }))
-    .filter(({ sight }) => sight.kind === 'iron');
-  expect(sights.length).toBeGreaterThan(0);
-  for (const { row, sight } of sights) {
-    const step = row.voxel.voxelDetailGrain ?? row.voxel.voxelGrain;
-    expect(Math.abs(sight.eye[1]! / step - Math.round(sight.eye[1]! / step)), row.id).toBeLessThan(1e-6);
-  }
+describe('recipe iron sight lattice', () => {
+  let ironSights = 0;
+  afterAll(() => {
+    if (ironSights === 0) {
+      throw new Error('The recipe must exercise an iron sight');
+    }
+  });
+  it.for(loadExportRecipe().filter(({ kind }) => kind === 'design'))(
+    'puts $id iron sight eye on a drawn voxel top, which lies on its fine lattice',
+    (row, context) => {
+      const { sight } = (
+        row.generate().modelEntry as unknown as { gun: { sight: { kind: string; eye: readonly number[] } } }
+      ).gun;
+      if (sight.kind !== 'iron') {
+        context.skip();
+        return;
+      }
+      ironSights += 1;
+      const step = row.voxel.voxelDetailGrain ?? row.voxel.voxelGrain;
+      expect(Math.abs(sight.eye[1]! / step - Math.round(sight.eye[1]! / step)), row.id).toBeLessThan(1e-6);
+    },
+  );
 });
 
 it('refuses a detail grain the gun grain is not a whole multiple of', () => {

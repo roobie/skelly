@@ -193,7 +193,7 @@ import { TierNotice } from './tierNotice.ts';
 import { Tutorial } from './tutorial.ts';
 import { tutorialUrl } from './tutorialUrl.ts';
 import { Unpacking } from './unpacking.ts';
-import { WorldLoading } from './worldLoading.ts';
+import { finishLoadingFrame, WorldLoading } from './worldLoading.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -3992,13 +3992,16 @@ export const startPlay = (
   };
 
   const finishDraw = (sky: Parameters<typeof view.prepareLighting>[0], now: RealTimestamp): boolean => {
-    if (!renderer) {
-      engine.skylight?.update(engine.scene, [camera.position.x / s, camera.position.y / s, camera.position.z / s]);
-    }
-    view.prepareLighting(sky);
-    view.updateShadows(sky);
-    renderMs = view.render();
-    updateWorldLoading(now);
+    finishLoadingFrame(worldLoading, () => updateWorldLoading(now), {
+      worldFeedsSkylight: Boolean(renderer),
+      skylight: () =>
+        engine.skylight?.update(engine.scene, [camera.position.x / s, camera.position.y / s, camera.position.z / s]),
+      world: () => {
+        view.prepareLighting(sky);
+        view.updateShadows(sky);
+        renderMs = view.render();
+      },
+    });
     if (worldLoading.state === 'failed') {
       return false;
     }

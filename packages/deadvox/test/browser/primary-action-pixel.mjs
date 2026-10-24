@@ -216,6 +216,26 @@ try {
       document.dispatchEvent(new Event('pointerlockchange'));
     };
   });
+  // Returns the parts of world readiness once all hold or loading has failed, or always when asked,
+  // so a failed or timed-out wait names the part that stayed false.
+  const worldReadiness = (always) => {
+    const mask = document.querySelector('#world-loading');
+    const parts = {
+      testHook: Boolean(globalThis.primaryActionTest),
+      overlayHidden: document.querySelector('#overlay')?.hidden === true,
+      pointerLocked: Boolean(document.pointerLockElement),
+      worldLoading: mask?.dataset.state,
+      loadingMessage: mask?.querySelector('#world-loading-message')?.textContent,
+      maskHidden: mask?.hidden === true,
+    };
+    const ready =
+      parts.testHook &&
+      parts.overlayHidden &&
+      parts.pointerLocked &&
+      parts.worldLoading === 'ready' &&
+      parts.maskHidden;
+    return always || ready || parts.worldLoading === 'failed' ? parts : false;
+  };
   await timePhase('testHouse-pixel-boot', async () => {
     await page.goto(
       browserStageUrl(
@@ -228,13 +248,19 @@ try {
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     await page.locator('#dominant-hand').selectOption('left');
     await page.locator('#go').click();
-    await page.waitForFunction(
-      () =>
-        globalThis.primaryActionTest &&
-        document.querySelector('#overlay')?.hidden &&
-        document.pointerLockElement &&
-        document.querySelector('#world-loading')?.dataset.state === 'ready' &&
-        document.querySelector('#world-loading').hidden,
+    let parts;
+    try {
+      parts = await (await page.waitForFunction(worldReadiness, false)).jsonValue();
+    } catch (error) {
+      if (error.name !== 'TimeoutError') {
+        throw error;
+      }
+      parts = await page.evaluate(worldReadiness, true);
+    }
+    assert.equal(parts.worldLoading, 'ready', `the world becomes ready: ${JSON.stringify(parts)}`);
+    assert.ok(
+      parts.testHook && parts.overlayHidden && parts.pointerLocked && parts.maskHidden,
+      `the ready world is entered: ${JSON.stringify(parts)}`,
     );
   });
   const clip = await page.locator('#view canvas').boundingBox();

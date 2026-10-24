@@ -1,0 +1,13 @@
+{
+  "id": "revolver_hammer",
+  "file": "assets/models/revolver_hammer.glb",
+  "gun": {},
+  "parts": {
+    "revolver_hammer": {
+      "item": "revolver_hammer",
+      "node": "revolver_hammer:revolver-hammer",
+      "massKg": 0.03,
+      "centreOfMass": [-0.08279999999999998, -0.0064, 0]
+    }
+  }
+}

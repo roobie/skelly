@@ -45,6 +45,19 @@
         "tiers": [],
         "usage": []
       },
+      "id": "barrel_sporter_long",
+      "model": "barrel_sporter_long",
+      "name": "Sporter barrel",
+      "notLoot": false,
+      "size": [1, 4],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "bolt_carrier_ak",
       "model": "bolt_carrier_ak",
       "name": "AK bolt carrier",
@@ -71,11 +84,50 @@
         "tiers": [],
         "usage": []
       },
+      "id": "bolt_carrier_bolt",
+      "model": "bolt_carrier_bolt",
+      "name": "Bolt carrier",
+      "notLoot": false,
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "bolt_carrier_pump",
       "model": "bolt_carrier_pump",
       "name": "Pump bolt carrier",
       "notLoot": false,
       "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "bolt_handle_sporter",
+      "model": "bolt_handle_sporter",
+      "name": "Bolt handle",
+      "notLoot": false,
+      "size": [1, 1],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "bolt_knob_sporter",
+      "model": "bolt_knob_sporter",
+      "name": "Bolt knob",
+      "notLoot": false,
+      "size": [1, 1],
       "workInProgress": false
     },
     {
@@ -139,6 +191,19 @@
       "id": "front_sight_ar",
       "model": "front_sight_ar",
       "name": "AR front sight",
+      "notLoot": false,
+      "size": [1, 1],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "front_sight_sporter",
+      "model": "front_sight_sporter",
+      "name": "Sporting front sight",
       "notLoot": false,
       "size": [1, 1],
       "workInProgress": false
@@ -227,6 +292,32 @@
         "tiers": [],
         "usage": []
       },
+      "id": "handguard_sporter",
+      "model": "handguard_sporter",
+      "name": "Sporter forend",
+      "notLoot": false,
+      "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "integral_magazine",
+      "model": "integral_magazine",
+      "name": "Integral magazine",
+      "notLoot": false,
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "lower_ak",
       "model": "lower_ak",
       "name": "AK trigger housing",
@@ -266,9 +357,35 @@
         "tiers": [],
         "usage": []
       },
+      "id": "lower_sporter",
+      "model": "lower_sporter",
+      "name": "Sporter trigger housing",
+      "notLoot": false,
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "rear_sight_ak",
       "model": "rear_sight_ak",
       "name": "AK rear sight",
+      "notLoot": false,
+      "size": [1, 1],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "rear_sight_sporter",
+      "model": "rear_sight_sporter",
+      "name": "Sporting rear sight",
       "notLoot": false,
       "size": [1, 1],
       "workInProgress": false
@@ -318,6 +435,123 @@
         "tiers": [],
         "usage": []
       },
+      "id": "receiver_sporter",
+      "model": "receiver_sporter",
+      "name": "Sporter receiver",
+      "notLoot": false,
+      "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "revolver_barrel",
+      "model": "revolver_barrel",
+      "name": "Revolver barrel",
+      "notLoot": false,
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "revolver_crane",
+      "model": "revolver_crane",
+      "name": "Revolver crane",
+      "notLoot": false,
+      "size": [1, 1],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "revolver_cylinder",
+      "model": "revolver_cylinder",
+      "name": "Revolver cylinder",
+      "notLoot": false,
+      "size": [1, 1],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "revolver_ejector",
+      "model": "revolver_ejector",
+      "name": "Revolver ejector",
+      "notLoot": false,
+      "size": [1, 1],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "revolver_frame",
+      "model": "revolver_frame",
+      "name": "Revolver frame",
+      "notLoot": false,
+      "size": [2, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "revolver_grip",
+      "model": "revolver_grip",
+      "name": "Revolver grip",
+      "notLoot": false,
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "revolver_hammer",
+      "model": "revolver_hammer",
+      "name": "Revolver hammer",
+      "notLoot": false,
+      "size": [1, 1],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "revolver_trigger",
+      "model": "revolver_trigger",
+      "name": "Revolver trigger",
+      "notLoot": false,
+      "size": [1, 1],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "stock_ak_long",
       "model": "stock_ak_long",
       "name": "AK buttstock",
@@ -334,6 +568,19 @@
       "id": "stock_m4_medium",
       "model": "stock_m4_medium",
       "name": "M4 stock",
+      "notLoot": false,
+      "size": [2, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "stock_sporting_medium",
+      "model": "stock_sporting_medium",
+      "name": "Sporting stock",
       "notLoot": false,
       "size": [2, 3],
       "workInProgress": false

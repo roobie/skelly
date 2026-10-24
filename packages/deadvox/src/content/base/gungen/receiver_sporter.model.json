@@ -1,0 +1,13 @@
+{
+  "id": "receiver_sporter",
+  "file": "assets/models/receiver_sporter.glb",
+  "gun": {},
+  "parts": {
+    "receiver_sporter": {
+      "item": "receiver_sporter",
+      "node": "receiver_sporter:receiver",
+      "massKg": 0.7,
+      "centreOfMass": [-0.08981801299907154, -0.00012441968430826342, -0.0007632311977715877]
+    }
+  }
+}

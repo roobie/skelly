@@ -1,0 +1,13 @@
+{
+  "id": "revolver_trigger",
+  "file": "assets/models/revolver_trigger.glb",
+  "gun": {},
+  "parts": {
+    "revolver_trigger": {
+      "item": "revolver_trigger",
+      "node": "revolver_trigger:revolver-trigger",
+      "massKg": 0.025,
+      "centreOfMass": [-0.04173333333333334, -0.06786666666666667, 0]
+    }
+  }
+}

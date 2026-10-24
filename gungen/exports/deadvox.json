@@ -357,6 +357,15 @@
     }
   },
   {
+    "id": "receiver_sporter",
+    "kind": "part",
+    "source": "receiver_sporter",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "charging_handle_ar",
     "kind": "part",
     "source": "charging_handle_ar",
@@ -384,9 +393,36 @@
     }
   },
   {
+    "id": "bolt_carrier_bolt",
+    "kind": "part",
+    "source": "bolt_carrier_bolt",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "bolt_carrier_pump",
     "kind": "part",
     "source": "bolt_carrier_pump",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "bolt_handle_sporter",
+    "kind": "part",
+    "source": "bolt_handle_sporter",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "bolt_knob_sporter",
+    "kind": "part",
+    "source": "bolt_knob_sporter",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.0040000000000000001
@@ -420,6 +456,15 @@
     }
   },
   {
+    "id": "lower_sporter",
+    "kind": "part",
+    "source": "lower_sporter",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "barrel_ak_medium",
     "kind": "part",
     "source": "barrel_ak_medium",
@@ -447,6 +492,15 @@
     }
   },
   {
+    "id": "barrel_sporter_long",
+    "kind": "part",
+    "source": "barrel_sporter_long",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "handguard_ak",
     "kind": "part",
     "source": "handguard_ak",
@@ -459,6 +513,15 @@
     "id": "handguard_ar_clamped",
     "kind": "part",
     "source": "handguard_ar_clamped",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "handguard_sporter",
+    "kind": "part",
+    "source": "handguard_sporter",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.0040000000000000001
@@ -519,6 +582,15 @@
     }
   },
   {
+    "id": "stock_sporting_medium",
+    "kind": "part",
+    "source": "stock_sporting_medium",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "stock_tapered_medium",
     "kind": "part",
     "source": "stock_tapered_medium",
@@ -555,6 +627,24 @@
     }
   },
   {
+    "id": "front_sight_sporter",
+    "kind": "part",
+    "source": "front_sight_sporter",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "rear_sight_sporter",
+    "kind": "part",
+    "source": "rear_sight_sporter",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "front_bead",
     "kind": "part",
     "source": "front_bead",
@@ -576,6 +666,87 @@
     "id": "forend_pump",
     "kind": "part",
     "source": "forend_pump",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "integral_magazine",
+    "kind": "part",
+    "source": "integral_magazine",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "revolver_frame",
+    "kind": "part",
+    "source": "revolver_frame",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "revolver_barrel",
+    "kind": "part",
+    "source": "revolver_barrel",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "revolver_cylinder",
+    "kind": "part",
+    "source": "revolver_cylinder",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "revolver_crane",
+    "kind": "part",
+    "source": "revolver_crane",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "revolver_ejector",
+    "kind": "part",
+    "source": "revolver_ejector",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "revolver_grip",
+    "kind": "part",
+    "source": "revolver_grip",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "revolver_hammer",
+    "kind": "part",
+    "source": "revolver_hammer",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "revolver_trigger",
+    "kind": "part",
+    "source": "revolver_trigger",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.0040000000000000001

@@ -1,0 +1,11 @@
+{
+  "id": "fastener_pack",
+  "file": "assets/models/fastener_pack.glb",
+  "parts": {
+    "fastener_pack": {
+      "node": "fastener_pack:compound",
+      "massKg": 0.18,
+      "centreOfMass": [-0.00004527331668964489, 0.019450422923575666, -0.00010623393076722432]
+    }
+  }
+}

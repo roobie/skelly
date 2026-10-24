@@ -2391,6 +2391,100 @@
     "roll": 0
   },
   {
+    "id": "hand_saw",
+    "file": "assets/models/hand_saw.glb",
+    "parts": {
+      "hand_saw": {
+        "node": "hand_saw:compound",
+        "massKg": 0.65,
+        "centreOfMass": [0.14426835443037972, 0, -0.00009113924050632903]
+      }
+    },
+    "grip": { "at": [0.014, 0, 0], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 90
+  },
+  {
+    "id": "screwdriver",
+    "file": "assets/models/screwdriver.glb",
+    "parts": {
+      "screwdriver": {
+        "node": "screwdriver:compound",
+        "massKg": 0.16,
+        "centreOfMass": [0.06330532240545078, -0.000039399624765478433, -0.000031104966920114464]
+      }
+    },
+    "grip": { "at": [0.052000000000000005, 0, 0], "turn": [0, 0, 0] },
+    "hold": "upright",
+    "roll": 90
+  },
+  {
+    "id": "copper_wire",
+    "file": "assets/models/copper_wire.glb",
+    "parts": {
+      "copper_wire": {
+        "node": "copper_wire:spool",
+        "massKg": 0.08,
+        "centreOfMass": [-0.000044618395303326685, 0.027850489236790604, -0.0000915851272015656]
+      }
+    }
+  },
+  {
+    "id": "small_spring",
+    "file": "assets/models/small_spring.glb",
+    "parts": {
+      "small_spring": {
+        "node": "small_spring:coil",
+        "massKg": 0.02,
+        "centreOfMass": [-0.00005039787798408485, 0.019222811671087532, -0.00006984969053934572]
+      }
+    }
+  },
+  {
+    "id": "hinge_set",
+    "file": "assets/models/hinge_set.glb",
+    "parts": {
+      "hinge_set": {
+        "node": "hinge_set:compound",
+        "massKg": 0.36,
+        "centreOfMass": [0, 0.0016666666666666668, 9.069962856941094e-19]
+      }
+    }
+  },
+  {
+    "id": "fastener_pack",
+    "file": "assets/models/fastener_pack.glb",
+    "parts": {
+      "fastener_pack": {
+        "node": "fastener_pack:compound",
+        "massKg": 0.18,
+        "centreOfMass": [-0.00004527331668964489, 0.019450422923575666, -0.00010623393076722432]
+      }
+    }
+  },
+  {
+    "id": "taped_flashlight_mount",
+    "file": "assets/models/taped_flashlight_mount.glb",
+    "parts": {
+      "taped_flashlight_mount": {
+        "node": "taped_flashlight_mount:compound",
+        "massKg": 0.12,
+        "centreOfMass": [0.004458850574712642, 0.0181967816091954, -0.00016091954022988511]
+      }
+    }
+  },
+  {
+    "id": "scrap_foregrip",
+    "file": "assets/models/scrap_foregrip.glb",
+    "parts": {
+      "scrap_foregrip": {
+        "node": "scrap_foregrip:compound",
+        "massKg": 0.18,
+        "centreOfMass": [-0.00009501187648456062, 0.043762470308788604, -0.00011401425178147265]
+      }
+    }
+  },
+  {
     "id": "player_bust",
     "file": "assets/models/player_bust.glb",
     "parts": {

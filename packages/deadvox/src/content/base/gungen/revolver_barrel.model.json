@@ -1,0 +1,13 @@
+{
+  "id": "revolver_barrel",
+  "file": "assets/models/revolver_barrel.glb",
+  "gun": {},
+  "parts": {
+    "revolver_barrel": {
+      "item": "revolver_barrel",
+      "node": "revolver_barrel:revolver-barrel",
+      "massKg": 0.22,
+      "centreOfMass": [0.06241223832528181, -0.0035780998389694043, 0]
+    }
+  }
+}

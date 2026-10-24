@@ -75,7 +75,20 @@ export const HUMANOID_PARAM_ORDER = [
   'footLift',
 ] as const;
 
-export type HumanoidParams = Readonly<Record<(typeof HUMANOID_PARAM_ORDER)[number], number>>;
+export type HumanoidParams = Readonly<Record<(typeof HUMANOID_PARAM_ORDER)[number], number>> & {
+  /** Explicit stance-width base (m, target ankle-to-ankle before sway/limp flavour) for a body whose
+   * template samples no bulk param — the skeleton's replacement for girth's width term (see mob/gait.ts,
+   * stanceWidthTarget). */
+  readonly stepWidth?: number;
+};
+
+/** The proportion params the joint layout reads: a structural subset of HumanoidParams, so a body plan
+ * that samples no bulk param still lays joints out (the skeleton owns no girth; its width lives in the
+ * gait's stepWidth, not in the joints). */
+export type JointLayoutParams = Pick<
+  HumanoidParams,
+  'height' | 'shoulderWidth' | 'hipWidth' | 'armLength' | 'legLength' | 'hunch' | 'kneeBend' | 'headTilt'
+>;
 
 export const WOUNDABLE_BONES = [
   'spine',
@@ -137,7 +150,7 @@ export interface JointLayout {
 
 /** Pure geometry: every joint position in the rest pose, from height and proportion params.
  * Shared by the builder (flesh placement) and the gait (leg IK targets, bone lengths). */
-export const jointLayout = (p: HumanoidParams): JointLayout => {
+export const jointLayout = (p: JointLayoutParams): JointLayout => {
   const h = p.height;
   const hunchSpine = p.hunch * 0.3;
   const hunchChest = p.hunch * 0.65;
@@ -202,7 +215,7 @@ const hunchOffsetZ = (from: Vec3, to: Vec3, atY: number): number => {
   return from[2] + (to[2] - from[2]) * t;
 };
 
-const makeArm = (h: number, p: HumanoidParams, side: Side): JointLayout['arm'][Side] => {
+const makeArm = (h: number, p: JointLayoutParams, side: Side): JointLayout['arm'][Side] => {
   const sign = sideSign(side);
   const shoulder: Vec3 = [sign * REF.shoulderLat * h * p.shoulderWidth, REF.shoulderY * h, 0];
   const toElbow = scale(
@@ -225,7 +238,7 @@ interface LegGeometry {
   readonly footLen: number;
 }
 
-const makeLeg = (h: number, p: HumanoidParams, side: Side, geo: LegGeometry): JointLayout['leg'][Side] => {
+const makeLeg = (h: number, p: JointLayoutParams, side: Side, geo: LegGeometry): JointLayout['leg'][Side] => {
   const sign = sideSign(side);
   const hip: Vec3 = [sign * REF.hipLat * h * p.hipWidth, geo.hipY, 0];
   const knee: Vec3 = [sign * 0.04 * h, geo.kneeY, geo.kneeForward];

@@ -3191,41 +3191,49 @@
       "parts": {
         "barrel": {
           "centreOfMass": [0.06241223832528181, -0.0035780998389694043, 3.0914863189787685e-17],
+          "item": "revolver_barrel",
           "massKg": 0.22,
           "node": "barrel:revolver-barrel"
         },
         "crane": {
           "centreOfMass": [-0.0011578947368421117, -0.033789473684210529, 2.6169734202756441e-19],
+          "item": "revolver_crane",
           "massKg": 0.070000000000000007,
           "node": "crane:revolver-crane"
         },
         "cylinder": {
           "centreOfMass": [-0.032000000000000001, -0.015043478260869566, -7.8981041518316817e-18],
+          "item": "revolver_cylinder",
           "massKg": 0.28000000000000003,
           "node": "cylinder:revolver-cylinder"
         },
         "ejector": {
           "centreOfMass": [-0.031923076923076929, -0.014923076923076923, 0.00061538461538460435],
+          "item": "revolver_ejector",
           "massKg": 0.025000000000000001,
           "node": "ejector:revolver-ejector"
         },
         "frame": {
           "centreOfMass": [-0.059156943303204548, -0.032027937551355794, -9.8603122432210289e-6],
+          "item": "revolver_frame",
           "massKg": 0.40000000000000002,
           "node": "frame:revolver-frame"
         },
         "grip": {
           "centreOfMass": [-0.12143708116157857, -0.099346239761727489, 1.2001889342106404e-17],
+          "item": "revolver_grip",
           "massKg": 0.080000000000000002,
           "node": "grip:revolver-grip"
         },
         "hammer": {
           "centreOfMass": [-0.082799999999999985, -0.0064000000000000003, -1.0140075496940083e-17],
+          "item": "revolver_hammer",
           "massKg": 0.029999999999999999,
           "node": "hammer:revolver-hammer"
         },
         "trigger": {
           "centreOfMass": [-0.041733333333333338, -0.067866666666666672, -5.1108593084416213e-18],
+          "item": "revolver_trigger",
           "massKg": 0.025000000000000001,
           "node": "trigger:revolver-trigger"
         }
@@ -3541,56 +3549,67 @@
       "parts": {
         "barrel": {
           "centreOfMass": [0.27600000000000002, 0, 3.3800251656466954e-17],
+          "item": "barrel_sporter_long",
           "massKg": 0.84999999999999998,
           "node": "barrel:barrel"
         },
         "bolt-carrier": {
           "centreOfMass": [-0.10666540642722118, -7.9395085066162605e-5, 0.00010207939508505313],
+          "item": "bolt_carrier_bolt",
           "massKg": 0.34999999999999998,
           "node": "bolt-carrier:bolt-carrier"
         },
         "bolt-handle-arm": {
           "centreOfMass": [-0.17642232270276367, -0.021439290811054727, 0.029016968108291033],
+          "item": "bolt_handle_sporter",
           "massKg": 0.070000000000000007,
           "node": "bolt-handle-arm:bolt-handle-arm"
         },
         "bolt-handle-knob": {
           "centreOfMass": [-0.1818461538461538, -0.041846153846153825, 0.04584615384615378],
+          "item": "bolt_knob_sporter",
           "massKg": 0.025000000000000001,
           "node": "bolt-handle-knob:bolt-handle-knob"
         },
         "front-sight": {
           "centreOfMass": [0.52300000000000002, 0.0019830028328611904, 0.00015580736543922176],
+          "item": "front_sight_sporter",
           "massKg": 0.02,
           "node": "front-sight:front-sight"
         },
         "handguard": {
           "centreOfMass": [0.0019046153846153811, -0.025650769230769224, 0.00014230769230769196],
+          "item": "handguard_sporter",
           "massKg": 0.34999999999999998,
           "node": "handguard:handguard"
         },
         "lower": {
           "centreOfMass": [-0.10536842105263158, -0.050526315789473683, 6.1876890904287324e-18],
+          "item": "lower_sporter",
           "massKg": 0.17999999999999999,
           "node": "lower:lower"
         },
         "magazine": {
           "centreOfMass": [-0.048000000000000001, -0.028000000000000001, 6.8580220752251797e-18],
+          "item": "integral_magazine",
           "massKg": 0.12,
           "node": "magazine:magazine"
         },
         "rear-sight": {
           "centreOfMass": [0.074999999999999997, 0.016789473684210524, 7.289527044621466e-18],
+          "item": "rear_sight_sporter",
           "massKg": 0.035000000000000003,
           "node": "rear-sight:sporting-rear-sight"
         },
         "receiver": {
           "centreOfMass": [-0.089818012999071536, -0.00012441968430826342, -0.00076323119777158769],
+          "item": "receiver_sporter",
           "massKg": 0.69999999999999996,
           "node": "receiver:receiver"
         },
         "stock": {
           "centreOfMass": [-0.36498379204892972, -0.069590825688073413, -5.1681957186589046e-5],
+          "item": "stock_sporting_medium",
           "massKg": 0.5,
           "node": "stock:stock"
         }

@@ -1,0 +1,13 @@
+{
+  "id": "revolver_ejector",
+  "file": "assets/models/revolver_ejector.glb",
+  "gun": {},
+  "parts": {
+    "revolver_ejector": {
+      "item": "revolver_ejector",
+      "node": "revolver_ejector:revolver-ejector",
+      "massKg": 0.025,
+      "centreOfMass": [0.03951111111111112, -6.320921253135755e-20, -0.00004444444444444446]
+    }
+  }
+}

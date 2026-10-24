@@ -1,0 +1,13 @@
+{
+  "id": "revolver_cylinder",
+  "file": "assets/models/revolver_cylinder.glb",
+  "gun": {},
+  "parts": {
+    "revolver_cylinder": {
+      "item": "revolver_cylinder",
+      "node": "revolver_cylinder:revolver-cylinder",
+      "massKg": 0.28,
+      "centreOfMass": [0, 0, 0]
+    }
+  }
+}
