@@ -100,6 +100,9 @@ const sliceKeys = mapSliceKeys(keyboardInput, (action) => {
   }
 });
 
+globalThis.onblur = () => sliceKeys.blurred();
+document.onvisibilitychange = () => sliceKeys.visibilityChanged();
+
 /** The map owns its slice keys, so a taken key is not forwarded to the game. */
 const sliceKey = (event: KeyEventLike): boolean => {
   const taken = sliceKeys.down(event);

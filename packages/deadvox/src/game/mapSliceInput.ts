@@ -35,5 +35,8 @@ export const mapSliceKeys = (input: KeyboardInput, run: (action: MapSliceAction)
       input.release(event);
       return taken.delete(event.code);
     },
+    /** The page's stand-in for the focus-loss cancellation `KeyboardInput.install` supplies, kept to one key route. */
+    blurred: () => input.windowBlurred(),
+    visibilityChanged: () => input.visibilityChanged(),
   };
 };

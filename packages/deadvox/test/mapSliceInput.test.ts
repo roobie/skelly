@@ -41,6 +41,20 @@ describe('review map slice keys', () => {
     expect(ran).toEqual([]);
   });
 
+  it('works again after the debug gate was released while another window had focus', () => {
+    const { registry, keys, ran } = mapKeys();
+    const [gate] = registry.chords('debug.gate');
+    const [chord] = registry.chords(MAP_SLICE_ACTIONS[0]);
+
+    keys.down(keyEvent(gate!.code));
+    expect(keys.down(keyEvent(chord!.code))).toBe(false);
+    keys.up(keyEvent(chord!.code));
+    keys.blurred();
+
+    expect(keys.down(keyEvent(chord!.code))).toBe(true);
+    expect(ran).toEqual([MAP_SLICE_ACTIONS[0]]);
+  });
+
   it('keeps the matching release from the game once it took the press', () => {
     const { registry, keys } = mapKeys();
     const [chord] = registry.chords(MAP_SLICE_ACTIONS[0]);

@@ -1060,6 +1060,17 @@ export class KeyboardInput {
       !this.capture
     );
   }
+  /** The window lost focus: held keys may be released where this document cannot see it. */
+  windowBlurred(): void {
+    this.recordTrace('blur');
+    this.cancel(false, false, 'window-blur');
+  }
+  visibilityChanged(): void {
+    this.recordTrace('visibility');
+    if (document.hidden) {
+      this.cancel(false, false, 'document-hidden');
+    }
+  }
   install(): () => void {
     if (this.removeListeners) {
       return this.removeListeners;
@@ -1104,17 +1115,9 @@ export class KeyboardInput {
         event.stopPropagation();
       }
     };
-    const blur = () => {
-      this.recordTrace('blur');
-      this.cancel(false, false, 'window-blur');
-    };
+    const blur = () => this.windowBlurred();
     const windowFocus = () => this.recordTrace('focus');
-    const visibility = () => {
-      this.recordTrace('visibility');
-      if (document.hidden) {
-        this.cancel(false, false, 'document-hidden');
-      }
-    };
+    const visibility = () => this.visibilityChanged();
     const lock = () => {
       this.recordTrace('pointer-lock');
       if (!document.pointerLockElement) {
