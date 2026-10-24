@@ -348,9 +348,27 @@
     }
   },
   {
+    "id": "receiver_ar_large",
+    "kind": "part",
+    "source": "receiver_ar_large",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "charging_handle_ar",
     "kind": "part",
     "source": "charging_handle_ar",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "charging_handle_ar_large",
+    "kind": "part",
+    "source": "charging_handle_ar_large",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.0040000000000000001
@@ -375,6 +393,15 @@
     }
   },
   {
+    "id": "bolt_carrier_ar_large",
+    "kind": "part",
+    "source": "bolt_carrier_ar_large",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "lower_ak",
     "kind": "part",
     "source": "lower_ak",
@@ -387,6 +414,15 @@
     "id": "lower_ar",
     "kind": "part",
     "source": "lower_ar",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "lower_ar_large",
+    "kind": "part",
+    "source": "lower_ar_large",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.0040000000000000001
@@ -411,6 +447,15 @@
     }
   },
   {
+    "id": "barrel_ar_large_medium",
+    "kind": "part",
+    "source": "barrel_ar_large_medium",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "handguard_ak",
     "kind": "part",
     "source": "handguard_ak",
@@ -423,6 +468,15 @@
     "id": "handguard_ar_clamped",
     "kind": "part",
     "source": "handguard_ar_clamped",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "handguard_ar_large_clamped",
+    "kind": "part",
+    "source": "handguard_ar_large_clamped",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.0040000000000000001

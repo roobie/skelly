@@ -27,11 +27,43 @@
       "id": "receiver_ar",
       "massKg": 0.90000000000000002,
       "match": {
+        "actionFrame": "small",
         "section": "ar"
       },
       "params": {
         "action": "auto",
         "actionFrame": "small",
+        "boltCalibre": "308-winchester",
+        "boltHandle": "rest",
+        "boltHandleProfile": "standard",
+        "bore": "M",
+        "carrierPattern": "ar",
+        "chargingHandle": "rear-top",
+        "feed": "box",
+        "handleStyle": "auto",
+        "integral": "no",
+        "magazineWell": "standard",
+        "rail": "full",
+        "section": "ar",
+        "stockStyle": "m4"
+      }
+    },
+    {
+      "family": "receiver",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "polymer-black",
+        "metal": "alu-anodized-black"
+      },
+      "id": "receiver_ar_large",
+      "massKg": 1.1499999999999999,
+      "match": {
+        "actionFrame": "large",
+        "section": "ar"
+      },
+      "params": {
+        "action": "auto",
+        "actionFrame": "large",
         "boltCalibre": "308-winchester",
         "boltHandle": "rest",
         "boltHandleProfile": "standard",
@@ -109,8 +141,28 @@
       },
       "id": "charging_handle_ar",
       "massKg": 0.059999999999999998,
-      "match": {},
-      "params": {}
+      "match": {
+        "actionFrame": "small"
+      },
+      "params": {
+        "actionFrame": "small"
+      }
+    },
+    {
+      "family": "ar-charging-handle",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "polymer-black",
+        "metal": "alu-anodized-black"
+      },
+      "id": "charging_handle_ar_large",
+      "massKg": 0.070000000000000007,
+      "match": {
+        "actionFrame": "large"
+      },
+      "params": {
+        "actionFrame": "large"
+      }
     },
     {
       "family": "bolt-carrier",
@@ -126,6 +178,7 @@
       },
       "params": {
         "action": "bolt",
+        "actionFrame": "small",
         "boltCalibre": "308-winchester",
         "bore": "S",
         "feed": "box",
@@ -145,10 +198,37 @@
       "id": "bolt_carrier_ar",
       "massKg": 0.33000000000000002,
       "match": {
+        "actionFrame": "small",
         "pattern": "ar"
       },
       "params": {
         "action": "auto",
+        "actionFrame": "small",
+        "boltCalibre": "308-winchester",
+        "bore": "M",
+        "feed": "box",
+        "handleProfile": "standard",
+        "handleStyle": "auto",
+        "pattern": "ar",
+        "section": "ar"
+      }
+    },
+    {
+      "family": "bolt-carrier",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "polymer-black",
+        "metal": "alu-anodized-black"
+      },
+      "id": "bolt_carrier_ar_large",
+      "massKg": 0.45000000000000001,
+      "match": {
+        "actionFrame": "large",
+        "pattern": "ar"
+      },
+      "params": {
+        "action": "auto",
+        "actionFrame": "large",
         "boltCalibre": "308-winchester",
         "bore": "M",
         "feed": "box",
@@ -257,6 +337,7 @@
         "layout": "ak"
       },
       "params": {
+        "actionFrame": "small",
         "boltCalibre": "308-winchester",
         "integral": "no",
         "layout": "ak",
@@ -277,9 +358,36 @@
       "id": "lower_ar",
       "massKg": 0.34999999999999998,
       "match": {
+        "actionFrame": "small",
         "layout": "ar"
       },
       "params": {
+        "actionFrame": "small",
+        "boltCalibre": "308-winchester",
+        "integral": "no",
+        "layout": "ar",
+        "magazineOrientation": "straight",
+        "magazineProfile": "stanag-straight",
+        "magazineWell": "standard",
+        "section": "ar",
+        "triggerGuard": "present"
+      }
+    },
+    {
+      "family": "lower",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "polymer-black",
+        "metal": "alu-anodized-black"
+      },
+      "id": "lower_ar_large",
+      "massKg": 0.40000000000000002,
+      "match": {
+        "actionFrame": "large",
+        "layout": "ar"
+      },
+      "params": {
+        "actionFrame": "large",
         "boltCalibre": "308-winchester",
         "integral": "no",
         "layout": "ar",
@@ -364,6 +472,7 @@
         "section": "ak"
       },
       "params": {
+        "actionFrame": "small",
         "bore": "S",
         "frontSightStyle": "ak",
         "handguardLayout": "ak",
@@ -403,10 +512,39 @@
       "id": "barrel_ar_medium",
       "massKg": 0.94999999999999996,
       "match": {
+        "actionFrame": "small",
         "length": "M",
         "section": "ar"
       },
       "params": {
+        "actionFrame": "small",
+        "bore": "M",
+        "frontSightStyle": "ar",
+        "handguardLayout": "ar",
+        "handguardLength": "M",
+        "length": "M",
+        "muzzle": "threaded",
+        "profile": "standard",
+        "section": "ar",
+        "tubeLengthPercent": "75"
+      }
+    },
+    {
+      "family": "barrel",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "polymer-black",
+        "metal": "alu-anodized-black"
+      },
+      "id": "barrel_ar_large_medium",
+      "massKg": 1.1499999999999999,
+      "match": {
+        "actionFrame": "large",
+        "length": "M",
+        "section": "ar"
+      },
+      "params": {
+        "actionFrame": "large",
         "bore": "M",
         "frontSightStyle": "ar",
         "handguardLayout": "ar",
@@ -640,6 +778,7 @@
         "layout": "ak"
       },
       "params": {
+        "actionFrame": "small",
         "barrelBore": "S",
         "boltCalibre": "308-winchester",
         "boltHandleProfile": "standard",
@@ -672,10 +811,41 @@
       "id": "handguard_ar_clamped",
       "massKg": 0.34999999999999998,
       "match": {
+        "actionFrame": "small",
         "layout": "ar",
         "mount": "clamped"
       },
       "params": {
+        "actionFrame": "small",
+        "barrelBore": "M",
+        "boltCalibre": "308-winchester",
+        "boltHandleProfile": "standard",
+        "bore": "M",
+        "clearance": "M",
+        "fit": "receiver",
+        "handleStyle": "none",
+        "layout": "ar",
+        "length": "M",
+        "mount": "clamped",
+        "section": "ar"
+      }
+    },
+    {
+      "family": "handguard",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "polymer-black",
+        "metal": "alu-anodized-black"
+      },
+      "id": "handguard_ar_large_clamped",
+      "massKg": 0.40000000000000002,
+      "match": {
+        "actionFrame": "large",
+        "layout": "ar",
+        "mount": "clamped"
+      },
+      "params": {
+        "actionFrame": "large",
         "barrelBore": "M",
         "boltCalibre": "308-winchester",
         "boltHandleProfile": "standard",

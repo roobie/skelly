@@ -25,6 +25,10 @@
       "output": "gungen/cartridges/catalogue/bolt.json"
     },
     {
+      "source": "gungen/designs/archetype-ar-large.jsonnet",
+      "output": "gungen/designs/archetype-ar-large.json"
+    },
+    {
       "source": "gungen/designs/archetype-revolver.jsonnet",
       "output": "gungen/designs/archetype-revolver.json"
     },
@@ -47,6 +51,10 @@
     {
       "source": "gungen/src/gun/appearance.jsonnet",
       "output": "gungen/src/gun/appearance.json"
+    },
+    {
+      "source": "gungen/src/gun/arFrames.jsonnet",
+      "output": "gungen/src/gun/arFrames.json"
     },
     {
       "source": "gungen/src/gun/catalogue.jsonnet",
