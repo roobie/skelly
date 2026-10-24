@@ -2892,16 +2892,12 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   `MobActorMeshes.syncZombie`, `test/runnerRenderContinuity.test.ts`,
   `runEngagement`, and `test/mobActors.test.ts`, `MobActorMeshes`.
 - **Far zombie bodies draw at full detail:** a coarser mesh for distant bodies
-  was built on the closed branch `deadvox/far-actor-lod` and dropped because it
-  measured no reliable whole-frame GPU saving at the crowd sizes tested:
-  interleaved repeats at two crowd sizes under fixed and adaptive render scale
-  cut submitted geometry but showed no repeatable frame gain. Two rulings
-  shaped it. The coarse path simplifies the mesh geometry. Crawlers keep full
-  detail at every distance. A coarse body keeps the full skeleton, parts and joint
-  contacts, so severing and stump gore work the same far away as near; only the
-  drawn surface may get coarser. An admission gate chose which bodies went
-  coarse. Revisit when a crowd size makes far-body cost show in a frame profile,
-  and rebuild from this rule set against that profile rather than from a guess.
+  cut submitted geometry but showed no repeatable whole-frame GPU saving, at two
+  crowd sizes under fixed and adaptive render scale (closed branch
+  `deadvox/far-actor-lod`). Any later coarse path keeps the full skeleton, parts
+  and joint contacts, so severing and stump gore work at any distance, and
+  crawlers keep full detail. Revisit when a frame profile shows far-body cost
+  (#1273).
 - **Sun shadows:** Favor a stable edge near the player over sharp shadows far
   beyond them. The remaining jaggedness is accepted; do not pursue further
   refinement without a new decision. See `sunShadowTexelSize` and
