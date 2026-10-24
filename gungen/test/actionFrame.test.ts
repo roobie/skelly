@@ -19,6 +19,10 @@ import {
 import { gunDomain } from '../src/gun/domain.ts';
 import { loadDesignAssembly, variant } from './helpers.ts';
 
+const MISSING_RANK = /frames\.0\.rank/;
+const NOT_A_CARTRIDGE = /cartridge is not a cartridge document/;
+const DUPLICATE_RANK = /rank must be a unique integer/;
+
 const estimate = (value: number): FrameMeasure => ({
   value,
   evidence: { kind: 'estimate', method: 'synthetic test fixture' },
@@ -188,19 +192,18 @@ describe('AR action-frame selection', () => {
   });
 
   it('refuses a malformed frame entry at load and names the problem', () => {
-    const withFirstFrame = (edit: (entry: Record<string, unknown>) => void): unknown => {
-      const content = structuredClone(frameContent) as { frames: Record<string, unknown>[] };
-      edit(content.frames[0]!);
-      return content;
-    };
+    const [first, ...rest] = frameContent.frames;
+    if (!first) {
+      throw new Error('this check needs an authored frame');
+    }
+    const withFrames = (frames: readonly unknown[]): unknown => ({ ...frameContent, frames });
+    const { rank: _rank, ...rankless } = first;
 
-    expect(() => loadArFrames(withFirstFrame((entry) => delete entry.rank))).toThrow(/frames\.0\.rank/);
-    expect(() => loadArFrames(withFirstFrame((entry) => (entry.cartridge = { id: 'unsourced' })))).toThrow(
-      /cartridge is not a cartridge document/,
+    expect(() => loadArFrames(withFrames([rankless, ...rest]))).toThrow(MISSING_RANK);
+    expect(() => loadArFrames(withFrames([{ ...first, cartridge: { id: 'unsourced' } }, ...rest]))).toThrow(
+      NOT_A_CARTRIDGE,
     );
-    const sameRank = structuredClone(frameContent) as { frames: Record<string, unknown>[] };
-    sameRank.frames.push({ ...sameRank.frames[0]!, id: 'same-rank' });
-    expect(() => loadArFrames(sameRank)).toThrow(/rank must be a unique integer/);
+    expect(() => loadArFrames(withFrames([first, ...rest, { ...first, id: 'same-rank' }]))).toThrow(DUPLICATE_RANK);
   });
 
   it('rejects a part built for a different action frame than its receiver', () => {

@@ -194,7 +194,11 @@ export const loadArFrames = (raw: unknown): readonly AuthoredARFrame[] => {
   const { derivations, frames } = parsed.output;
   const authored = frames.map((source) => {
     const cartridge = frameCartridge(source.id, source.cartridge);
-    return { frame: arFrame(source, cartridge, derivations), cartridge: cartridge.measures, cyclicRpm: source.cyclicRpm };
+    return {
+      frame: arFrame(source, cartridge, derivations),
+      cartridge: cartridge.measures,
+      cyclicRpm: source.cyclicRpm,
+    };
   });
   const issues = validateActionFrames(authored.map(({ frame }) => frame));
   if (issues.length > 0) {
