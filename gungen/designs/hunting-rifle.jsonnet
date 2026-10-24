@@ -7,14 +7,18 @@ base + {
   assembly: base.assembly + {
     name: 'hunting-rifle',
     description: 'Civilian turn-bolt rifle with iron sights and an integral, top-loaded magazine.',
-    parts: { [id]: base.assembly.parts[id] for id in std.objectFields(base.assembly.parts) if id != 'sight' } + {
-      receiver: base.assembly.parts.receiver + { params: base.assembly.parts.receiver.params + { section: 'sporter' } },
-      'bolt-carrier': { family: 'bolt-carrier', params: { pattern: 'bolt', handleProfile: 'sporter' } },
-      lower: { family: 'lower', params: { layout: 'conventional', magazineWell: 'recessed' } },
-      magazine: { family: 'magazine', params: { length: 'S', integral: 'yes', wellBody: 'sporter' } },
-      stock: { family: 'stock', params: { length: 'M', style: 'sporting', combDegrees: '2' } },
-      'front-sight': { family: 'front-sight', params: { style: 'sporting', muzzleInsetRatio: '0.05' } },
-      'rear-sight': { family: 'sporting-rear-sight' },
+    parts: {
+      receiver: { item: 'receiver_sporter' },
+      'bolt-carrier': { item: 'bolt_carrier_bolt' },
+      'bolt-handle-arm': { item: 'bolt_handle_sporter' },
+      'bolt-handle-knob': { item: 'bolt_knob_sporter' },
+      lower: { item: 'lower_sporter' },
+      barrel: { item: 'barrel_sporter_long' },
+      handguard: { item: 'handguard_sporter' },
+      magazine: { item: 'integral_magazine' },
+      stock: { item: 'stock_sporting_medium' },
+      'front-sight': { item: 'front_sight_sporter', params: { muzzleInsetRatio: '0.05' } },
+      'rear-sight': { item: 'rear_sight_sporter' },
     },
     connections: [c for c in base.assembly.connections if c.to != 'sight.base'] + [
       { from: 'barrel.front-sight', to: 'front-sight.base' },

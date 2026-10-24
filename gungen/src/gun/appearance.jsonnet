@@ -77,6 +77,7 @@ local familyHex = {
     roleShades: { [role]: [roles[role][1], roles[role][1], roles[role][1]] for role in std.objectFields(roles) },
     profileFinishes: {
       ak: finish('wood-walnut', 'steel-blued'), 'pump-shotgun': finish('wood-walnut', 'steel-blued'),
+      'hunting-rifle': finish('wood-walnut', 'steel-blued'),
       ar: finish('polymer-black', 'alu-anodized-black'), 'ar-free-float': finish('polymer-black', 'alu-anodized-black'),
       awm: finish('polymer-od-green', 'steel-parkerized'), smg: finish('polymer-black', 'steel-blued'),
       pistol: finish('polymer-black', 'steel-blued'), revolver: finish('wood-walnut', 'steel-stainless'),

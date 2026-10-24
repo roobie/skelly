@@ -1,0 +1,13 @@
+{
+  "id": "bolt_knob_sporter",
+  "file": "assets/models/bolt_knob_sporter.glb",
+  "gun": {},
+  "parts": {
+    "bolt_knob_sporter": {
+      "item": "bolt_knob_sporter",
+      "node": "bolt_knob_sporter:bolt-handle",
+      "massKg": 0.025,
+      "centreOfMass": [0, 0, 0]
+    }
+  }
+}

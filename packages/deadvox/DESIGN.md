@@ -10,7 +10,7 @@ read_if:
   - you change the player figure's look, its authored parts, its clothes or how it is posed
   - you change worn head gear seen from inside or on the player figure
   - you add a wear slot or change what night-vision goggles do to the view
-  - you change browser mod identity or startup admission
+  - you change browser mod identity, startup admission or default mod selection
   - you change streaming reveal or loading readiness
   - you change build-time bundle validation stamps or trusted admission
   - you decide how sunlight, shadows or interior sky should read during discovery and edit revalidation
@@ -2779,8 +2779,11 @@ that changed validation code ran. See `tools/bundleStampPlugin.ts`, `bundleStamp
 
 A whole-definition override restates the entry, so it freezes the base as of its
 writing; how a mod changes one field instead is decided in
-`docs/decisions/0007-typed-field-patches.md`, "Decision". Browser Jsonnet and uploaded assets remain follow-up work in #633. The panel remains opt-in pending BR's entry-flow decision;
-see `src/ui/modsPanel.ts`, `chooseMods`.
+`docs/decisions/0007-typed-field-patches.md`, "Decision". Browser Jsonnet and uploaded
+assets follow `docs/decisions/0008-mod-authoring-tool.md`, "Build plan"; start-flow
+selection follows that ADR's rule in
+`docs/decisions/0008-mod-authoring-tool.md`, "Testing, sharing and start flow".
+See `src/ui/modsPanel.ts`, `chooseMods`.
 
 Remote intake shares local admission so a host cannot bypass the content contract.
 Browser-owned fetching keeps credentials and cross-origin permission with their
