@@ -87,7 +87,6 @@
       "notLoot": false,
       "size": [1, 1],
       "stack": 5,
-      "weight": 180,
       "workInProgress": false
     },
     {
@@ -174,7 +173,6 @@
       "notLoot": false,
       "size": [1, 1],
       "stack": 8,
-      "weight": 20,
       "workInProgress": false
     },
     {
@@ -636,11 +634,10 @@
       "lightMount": {
         "kind": "strap"
       },
-      "model": "flashlight_mount",
+      "model": "taped_flashlight_mount",
       "name": "Taped-on flashlight mount",
       "notLoot": false,
       "size": [1, 2],
-      "weight": 120,
       "workInProgress": false
     },
     {
@@ -673,7 +670,6 @@
       "name": "Scrap foregrip",
       "notLoot": false,
       "size": [1, 2],
-      "weight": 180,
       "workInProgress": false
     },
     {
@@ -698,7 +694,6 @@
       ],
       "salvageTimeGameMinutes": 5,
       "size": [2, 1],
-      "weight": 360,
       "workInProgress": false
     },
     {
@@ -743,7 +738,6 @@
           "sawing": 1
         }
       },
-      "weight": 650,
       "workInProgress": false
     },
     {
@@ -769,7 +763,6 @@
           "screwing": 1
         }
       },
-      "weight": 160,
       "workInProgress": false
     },
     {

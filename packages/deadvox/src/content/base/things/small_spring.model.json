@@ -1,0 +1,11 @@
+{
+  "id": "small_spring",
+  "file": "assets/models/small_spring.glb",
+  "parts": {
+    "small_spring": {
+      "node": "small_spring:coil",
+      "massKg": 0.02,
+      "centreOfMass": [-0.00005039787798408485, 0.019222811671087532, -0.00006984969053934572]
+    }
+  }
+}

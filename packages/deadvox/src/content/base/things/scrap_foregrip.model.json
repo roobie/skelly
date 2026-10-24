@@ -1,0 +1,11 @@
+{
+  "id": "scrap_foregrip",
+  "file": "assets/models/scrap_foregrip.glb",
+  "parts": {
+    "scrap_foregrip": {
+      "node": "scrap_foregrip:compound",
+      "massKg": 0.18,
+      "centreOfMass": [-0.00009501187648456062, 0.043762470308788604, -0.00011401425178147265]
+    }
+  }
+}

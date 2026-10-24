@@ -36,9 +36,15 @@ local bays = [
       // A feature's test prop goes here, never in the house, garage or hall. Oldest first: past capacity, the first
       // entry leaves.
       slots: [
-        { furniture: 'flimsy_wood_door' },
         { furniture: 'bedroll' },
         { furniture: 'grinding_wheel', fixed: true },
+        {
+          furniture: 'crate',
+          items: [
+            { item: item, count: 1, placement: 'surface' }
+            for item in ['hand_saw', 'screwdriver', 'copper_wire', 'small_spring', 'hinge_set', 'fastener_pack', 'taped_flashlight_mount', 'scrap_foregrip']
+          ],
+        },
       ],
       focusDistance: 1,
       // South of the lot, clear of the range and beyond the startup ring; debug only (`docs/test-house.md`, "Showroom").
