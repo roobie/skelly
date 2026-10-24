@@ -8,7 +8,7 @@
 
 import type { Template } from '@skelly/engine/assembly/template.ts';
 import { AK_MAGAZINE_VARIANT_BY_CALIBRE } from './akMagazineCalibre.ts';
-import { AR_FRAME_BY_CALIBRE } from './arFrames.ts';
+import { AR_ACTION_FRAMES, AR_FRAME_BY_CALIBRE } from './arFrames.ts';
 import type { OpticTypeId } from './optics.ts';
 
 const sightMix = (...weights: readonly (readonly [OpticTypeId, number])[]): readonly OpticTypeId[] =>
@@ -94,7 +94,7 @@ export const ar: Template = {
         chargingHandle: 'rear-top',
         rail: 'full',
         section: 'ar',
-        actionFrame: ['small', 'large'],
+        actionFrame: AR_ACTION_FRAMES.map(({ id }) => id),
       },
     },
     { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'ar' } },

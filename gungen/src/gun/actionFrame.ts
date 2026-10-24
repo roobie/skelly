@@ -55,12 +55,6 @@ export type FrameSelection =
   | { readonly ok: true; readonly frame: ActionFrame }
   | { readonly ok: false; readonly issue: ActionFrameIssue };
 
-export const AR_FRAME_RANKS = {
-  small: 0,
-  large: 1,
-  magnum: 2,
-} as const;
-
 const HTTP_URL = /^https?:\/\//;
 
 const measureIssues = (frameId: string, name: string, measure: FrameMeasure): ActionFrameIssue[] => {

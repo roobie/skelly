@@ -2,14 +2,20 @@ import { validate } from '@skelly/engine/assembly/validate.ts';
 import { describe, expect, it } from 'vitest';
 import {
   type ActionFrame,
-  AR_FRAME_RANKS,
   type CartridgeFrameMeasures,
   type FrameMeasure,
   selectFrame,
   validateActionFrames,
   validateFrameCartridgeClearances,
 } from '../src/gun/actionFrame.ts';
-import { AR_ACTION_FRAMES, AR_FRAMES_BY_CALIBRE, SMALL_AR_CARTRIDGE, SMALL_AR_FRAME } from '../src/gun/arFrames.ts';
+import frameContent from '../src/gun/arFrames.json' with { type: 'json' };
+import {
+  AR_ACTION_FRAMES,
+  AR_FRAMES_BY_CALIBRE,
+  loadArFrames,
+  SMALL_AR_CARTRIDGE,
+  SMALL_AR_FRAME,
+} from '../src/gun/arFrames.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { loadDesignAssembly, variant } from './helpers.ts';
 
@@ -114,15 +120,15 @@ describe('AR action-frame selection', () => {
   });
 
   it('selects the next rank when the cartridge exceeds the smaller frame', () => {
-    const small = frame('small', AR_FRAME_RANKS.small, 8, 4);
-    const large = frame('large', AR_FRAME_RANKS.large, 10, 6);
+    const small = frame('small', 0, 8, 4);
+    const large = frame('large', 1, 10, 6);
 
     expect(selectFrame([large, small], cartridge('next', 9, 5))).toEqual({ ok: true, frame: large });
   });
 
   it('reports the largest frame and cartridge measures when no frame fits', () => {
-    const small = frame('small', AR_FRAME_RANKS.small, 8, 4);
-    const magnum = frame('magnum', AR_FRAME_RANKS.magnum, 10, 6);
+    const small = frame('small', 0, 8, 4);
+    const magnum = frame('magnum', 2, 10, 6);
 
     const result = selectFrame([small, magnum], cartridge('oversize', 11, 7));
 
@@ -147,7 +153,7 @@ describe('AR action-frame selection', () => {
   });
 
   it('reports a cartridge that is too long for its frame', () => {
-    const small = frame('small', AR_FRAME_RANKS.small, 8, 6);
+    const small = frame('small', 0, 8, 6);
     const result = selectFrame([small], cartridge('too-long', 9, 5));
 
     expect(result.ok).toBe(false);
@@ -179,6 +185,22 @@ describe('AR action-frame selection', () => {
     const issue = validate(edited, gunDomain).issues.find((candidate) => candidate.rule === 'structure');
 
     expect(issue?.message).toContain('has no parameter "receiverLengthMm"');
+  });
+
+  it('refuses a malformed frame entry at load and names the problem', () => {
+    const withFirstFrame = (edit: (entry: Record<string, unknown>) => void): unknown => {
+      const content = structuredClone(frameContent) as { frames: Record<string, unknown>[] };
+      edit(content.frames[0]!);
+      return content;
+    };
+
+    expect(() => loadArFrames(withFirstFrame((entry) => delete entry.rank))).toThrow(/frames\.0\.rank/);
+    expect(() => loadArFrames(withFirstFrame((entry) => (entry.cartridge = { id: 'unsourced' })))).toThrow(
+      /cartridge is not a cartridge document/,
+    );
+    const sameRank = structuredClone(frameContent) as { frames: Record<string, unknown>[] };
+    sameRank.frames.push({ ...sameRank.frames[0]!, id: 'same-rank' });
+    expect(() => loadArFrames(sameRank)).toThrow(/rank must be a unique integer/);
   });
 
   it('rejects a part built for a different action frame than its receiver', () => {

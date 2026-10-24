@@ -1,4 +1,5 @@
-// The AR receiver frames, one per rank, and the clearance method they share. A frame measure that follows its
+// The AR receiver frames and the clearance method they share. Each frame names its rank and embeds the sourced
+// cartridge it is derived from, so a new frame needs no code change. A frame measure that follows its
 // cartridge clears the cartridge measure (times `multiplier`) plus `clearanceUnits`, then rounds up to `snap`:
 // `grid`, or `half-grid` where the parts build halves the measure, so each half stays on the grid; `none` keeps
 // the fit envelope exact. A receiver estimate is read from a side-profile photo scaled by the rifle's published
@@ -34,7 +35,8 @@ local derivation(measure, clearanceUnits, snap, description, multiplier=null) =
   frames: [
     {
       id: 'small',
-      cartridge: '5.56x45',
+      rank: 0,
+      cartridge: import '../../cartridges/5.56x45.json',
       receiver: {
         photo: 'https://commons.wikimedia.org/wiki/File:PEO_M4_Carbine_RAS_M68_CCO.png',
         overallLength: 'https://en.wikipedia.org/wiki/M4_carbine',
@@ -46,7 +48,8 @@ local derivation(measure, clearanceUnits, snap, description, multiplier=null) =
     },
     {
       id: 'large',
-      cartridge: '7.62x51',
+      rank: 1,
+      cartridge: import '../../cartridges/7.62x51.json',
       receiver: {
         photo: "https://commons.wikimedia.org/wiki/File:AR10_Armalite_vue_d'ensemble_noBG.png",
         overallLength: 'https://en.wikipedia.org/wiki/AR-10',
