@@ -61,9 +61,15 @@ export class PileMeshes {
   private readonly reveal: ColumnReveal | undefined;
   private drawn = '';
   private readonly itemBounds = new Map<number, Box3>();
+  private readonly itemModels = new Map<number, Object3D>();
   private readonly flames = new ModelFlames('pile-light-flame');
   /** Where each drawn flame burns, in world metres. */
   private readonly flamePositions = new Map<number, Vector3>();
+
+  /** The model drawn for a piled item, if it has a loaded one. */
+  drawnModel(uid: number): Object3D | undefined {
+    return this.itemModels.get(uid);
+  }
 
   private readonly beamLenses = new Map<number, Object3D>();
 
@@ -117,6 +123,7 @@ export class PileMeshes {
     this.drawn = version;
     this.beamLenses.clear();
     this.itemBounds.clear();
+    this.itemModels.clear();
     this.flamePositions.clear();
     disposeItemEmissiveMaterials(this.group);
     this.group.clear();
@@ -158,6 +165,7 @@ export class PileMeshes {
     this.caseVisuals.clear();
     this.beamLenses.clear();
     this.itemBounds.clear();
+    this.itemModels.clear();
     this.flamePositions.clear();
     disposeItemEmissiveMaterials(this.group);
     this.group.clear();
@@ -198,6 +206,7 @@ export class PileMeshes {
       model.rotation.y = yaw;
       this.group.add(castsAndReceives(model));
       this.itemBounds.set(item.uid, new Box3().setFromObject(model));
+      this.itemModels.set(item.uid, model);
       const lens = model.getObjectByName(LENS);
       if (lens) {
         const remember = (part: Item): void => {

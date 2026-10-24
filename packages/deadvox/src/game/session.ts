@@ -398,6 +398,8 @@ export interface SessionOptions {
   onFirearmTrajectory?: (trajectory: ResolvedFirearmTrajectory, time: number) => void;
   /** Presentation-only: an explosive went off here, with this blast radius, both in metres. */
   onDetonation?: (at: Vec3, radiusMetres: number) => void;
+  /** Presentation-only: a released explosive's fuse lit, so it sheds its lever (`DESIGN.md`, "Hand grenade"). */
+  onFuseLit?: (item: Item) => void;
   /** Presentation-only: a melee block absorbed damage. */
   onBlock?: (jolt: BlockJolt, full: boolean) => void;
   onAcidImpact?: (position: Vec3, type: Zombie['type']) => void;
@@ -758,6 +760,9 @@ export const createSession = (options: SessionOptions) => {
   const fuses = new Fuses(
     registry,
     Array.from(inventory.items(), ({ item }) => item),
+    () => {
+      inventory.version += 1; // The item now draws with or without its pin.
+    },
   );
   const aim = createSessionAim({
     player: Player,
@@ -1502,7 +1507,11 @@ export const createSession = (options: SessionOptions) => {
     id: 'zombies',
     rate: ZOMBIE_RATE,
     tick: (dt, time) => {
-      for (const item of fuses.advance(dt, (live) => inventory.locate(live)?.kind === 'hand')) {
+      const lit = (item: Item): void => {
+        inventory.version += 1; // The item now draws without its lever.
+        options.onFuseLit?.(item);
+      };
+      for (const item of fuses.advance(dt, (live) => inventory.locate(live)?.kind === 'hand', lit)) {
         detonate(item);
       }
       spawner.advance({ calendar: sim.calendar, registry, zombies: zombieSystem });

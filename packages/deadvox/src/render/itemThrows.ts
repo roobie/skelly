@@ -1,4 +1,4 @@
-import { BoxGeometry, Color, Group, Mesh, MeshBasicMaterial, MeshLambertMaterial, Vector3 } from 'three';
+import { BoxGeometry, Color, Group, Mesh, MeshBasicMaterial, MeshLambertMaterial, type Object3D, Vector3 } from 'three';
 import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Inventory } from '../core/inventory.ts';
@@ -82,21 +82,10 @@ export class ItemThrows {
     flight.emissive.visible = false;
 
     const definition = defOf(this.registry, item.type);
-    const look = itemLook(this.registry, item);
-    const model = look ? this.models?.groundLook(look) : undefined;
-    if (look && model) {
-      model.name = look.key;
-      applyItemEmissive(
-        model,
-        item,
-        definition,
-        definition.model ? this.registry.models.get(definition.model) : undefined,
-      );
-      flight.modelVisual = true;
-      flight.group.add(model);
-    } else if (definition.pileDisplay === PILE_DISPLAY_KIND.scatter) {
+    flight.modelVisual = this.addModel(flight, item);
+    if (!flight.modelVisual && definition.pileDisplay === PILE_DISPLAY_KIND.scatter) {
       flight.group.add(placeholderCaseMesh());
-    } else {
+    } else if (!flight.modelVisual) {
       // Match PileMeshes' unmodeled-item fallback: a low, neutral bundle sized from item cells.
       const capacity = PILE_GRID.w * PILE_GRID.h;
       const height = 0.06 + 0.18 * Math.min(1, cellCount(definition) / capacity);
@@ -148,6 +137,7 @@ export class ItemThrows {
         flight.group.visible = false;
         continue;
       }
+      this.refreshModel(flight, item);
       flight.end.set(...destination);
       const duration = flight.landingAt - flight.startedAtSimSeconds;
       const progress = duration > 0 ? Math.max(0, (simTime - flight.startedAtSimSeconds) / duration) : 1;
@@ -167,6 +157,11 @@ export class ItemThrows {
 
   get hiddenItemUids(): ReadonlySet<number> {
     return new Set(this.flights.filter((flight) => flight.active).map((flight) => flight.itemUid));
+  }
+
+  /** The model drawn for an item in flight, if it is in flight with a loaded model. */
+  drawn(itemUid: number): Object3D | undefined {
+    return this.flights.find((flight) => flight.active && flight.modelVisual && flight.itemUid === itemUid)?.group;
   }
 
   dispose(): void {
@@ -203,6 +198,35 @@ export class ItemThrows {
     this.flights.push(flight);
     this.group.add(group);
     return flight;
+  }
+
+  /** Adds the item's look to the flight; false while it has no loaded model. */
+  private addModel(flight: Flight, item: Item): boolean {
+    const look = itemLook(this.registry, item);
+    const model = look ? this.models?.groundLook(look) : undefined;
+    if (!(look && model)) {
+      return false;
+    }
+    const definition = defOf(this.registry, item.type);
+    model.name = look.key;
+    applyItemEmissive(
+      model,
+      item,
+      definition,
+      definition.model ? this.registry.models.get(definition.model) : undefined,
+    );
+    flight.group.add(model);
+    return true;
+  }
+
+  /** Redraws a modelled flight whose look changed in the air, as when a thrown grenade's fuse lights and it sheds its lever. */
+  private refreshModel(flight: Flight, item: Item | undefined): void {
+    if (!(item && flight.modelVisual) || itemLook(this.registry, item)?.key === flight.group.children[0]?.name) {
+      return;
+    }
+    disposeItemEmissiveMaterials(flight.group);
+    flight.group.clear();
+    this.addModel(flight, item);
   }
 
   private drawFlight(flight: Flight, progress: number): void {

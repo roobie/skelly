@@ -231,8 +231,8 @@ interface PartExport {
 const sameAppearance = (a: ReturnType<typeof resolveAppearance>, b: ReturnType<typeof resolveAppearance>): boolean =>
   a.material === b.material && a.slot === b.slot && a.color.every((channel, index) => channel === b.color[index]);
 
-/** Keep g27's finish boundary when using the shared g24 display groups. */
-const splitMixedAppearance = (
+/** Splits a merge group whose solids differ in finish or piece, because one primitive carries one of each. */
+const splitMixed = (
   items: DisplayItem[],
   appearanceFor: (solid: DisplayItem['solids'][number]) => ReturnType<typeof resolveAppearance>,
 ): DisplayItem[] =>
@@ -240,8 +240,11 @@ const splitMixedAppearance = (
     if (!item.merged) {
       return [item];
     }
-    const first = appearanceFor(item.solids[0]!);
-    return item.solids.slice(1).every((solid) => sameAppearance(first, appearanceFor(solid)))
+    const [head, ...rest] = item.solids;
+    const first = appearanceFor(head!);
+    return rest.every(
+      (solid) => solid.display?.piece === head!.display?.piece && sameAppearance(first, appearanceFor(solid)),
+    )
       ? [item]
       : item.solids.map((solid) => ({ id: solid.id, solids: [solid], merged: false }));
   });
@@ -404,6 +407,7 @@ export const exportGlb: ExportGlb = (input) => {
     ...(appearance.material === undefined ? {} : { material: appearance.material }),
     ...(appearance.slot === undefined ? {} : { slot: appearance.slot }),
   });
+  const pieceExtras = (piece: string | undefined): Json => (piece === undefined ? {} : { piece });
   const primitiveFor = (part: PartExport, item: DisplayItem): Json | undefined => {
     const solid = item.solids[0]!;
     const mesh = meshOf(item);
@@ -416,14 +420,13 @@ export const exportGlb: ExportGlb = (input) => {
       materialFor(appearance),
       {
         ...(item.merged ? { mergeGroup: item.id, solids: item.solids.map(({ id }) => id) } : { solid: solid.id }),
+        ...pieceExtras(solid.display?.piece),
         ...appearanceExtras(appearance),
       },
     );
   };
   const itemsOf = (part: PartExport): DisplayItem[] =>
-    splitMixedAppearance(displayItems(part.def.displaySolids ?? part.def.solids), (solid) =>
-      appearanceFor(part, solid),
-    );
+    splitMixed(displayItems(part.def.displaySolids ?? part.def.solids), (solid) => appearanceFor(part, solid));
   /** The part's drawn meshes in part-local metres, one per display item, or none for an empty one. */
   const drawnMeshes = new Map<string, ({ positions: Float32Array; indices: Uint32Array } | undefined)[]>();
   const drawnOf = (part: PartExport) => {
@@ -482,9 +485,16 @@ export const exportGlb: ExportGlb = (input) => {
       });
     });
   };
-  /** One primitive per finish: the part's drawn solids sampled at the grain, so later solids paint over earlier ones. */
+  /**
+   * One primitive per finish and piece: the part's drawn solids sampled at the grain, so later solids paint over
+   * earlier ones.
+   */
   const voxelPrimitivesFor = (part: PartExport, items: DisplayItem[], grain: number): Json[] => {
-    const finishes: { appearance: ReturnType<typeof resolveAppearance>; solids: string[] }[] = [];
+    const finishes: {
+      appearance: ReturnType<typeof resolveAppearance>;
+      piece: string | undefined;
+      solids: string[];
+    }[] = [];
     const groupOf = new Map<string, number>();
     const drawn = drawnOf(part);
     const sources = items.flatMap((item, index) => {
@@ -492,11 +502,13 @@ export const exportGlb: ExportGlb = (input) => {
       if (mesh === undefined) {
         return [];
       }
-      const appearance = appearanceFor(part, item.solids[0]!);
-      const key = JSON.stringify([materialFor(appearance), appearance.material, appearance.slot]);
+      const solid = item.solids[0]!;
+      const appearance = appearanceFor(part, solid);
+      const piece = solid.display?.piece;
+      const key = JSON.stringify([materialFor(appearance), appearance.material, appearance.slot, piece]);
       let group = groupOf.get(key);
       if (group === undefined) {
-        group = finishes.push({ appearance, solids: [] }) - 1;
+        group = finishes.push({ appearance, piece, solids: [] }) - 1;
         groupOf.set(key, group);
       }
       finishes[group]!.solids.push(...item.solids.map(({ id }) => id));
@@ -512,6 +524,7 @@ export const exportGlb: ExportGlb = (input) => {
       bufferPrimitive(buffers, materialFor(finishes[group]!.appearance), {
         voxelGrain: grain,
         solids: finishes[group]!.solids,
+        ...pieceExtras(finishes[group]!.piece),
         ...appearanceExtras(finishes[group]!.appearance),
       }),
     );

@@ -423,12 +423,21 @@
       },
       "hold": "upright",
       "id": "frag_grenade",
+      "lever": {
+        "launchMetresPerRealSecond": 3,
+        "lifetimeRealSeconds": 1.5,
+        "piece": "lever",
+        "spinDegreesPerRealSecond": 1080
+      },
       "parts": {
         "grenade": {
           "centreOfMass": [0.0045850622406639011, 0.044709543568464738, 0.0023858921161825737],
           "massKg": 0.40000000000000002,
           "node": "grenade:grenade"
         }
+      },
+      "pin": {
+        "piece": "pin"
       },
       "roll": 0
     },

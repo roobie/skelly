@@ -66,11 +66,16 @@ export const grenade = (params: Readonly<Record<string, string>>) => {
     revolve('body', [...body, [shoulder, 0]]),
     { ...cylinder('neck', d.neckRadius, headBase - neckBase, 'metal'), origin: [0, neckBase, 0] as const },
     { ...cylinder('head', d.headRadius, d.headHeight, 'metal'), origin: [0, headBase, 0] as const },
-    ...strip('lever', lever, [d.leverThickness, d.leverWidth], 'metal'),
+    // Own pieces, so a game can detach the lever when the fuse lights and hide the pin and ring while pulled.
+    ...strip('lever', lever, [d.leverThickness, d.leverWidth], 'metal').map((solid) => ({
+      ...solid,
+      display: { mergeGroup: 'lever', piece: 'lever' },
+    })),
     {
       ...cylinder('pin', d.ringTube, pinEnd, 'metal'),
       axis: 'z' as const,
       origin: [0, pinY, 0] as const,
+      display: { piece: 'pin' },
     },
     {
       ...revolve(
@@ -86,6 +91,7 @@ export const grenade = (params: Readonly<Record<string, string>>) => {
       ),
       axis: 'x' as const,
       origin: [0, pinY, ringCentre] as const,
+      display: { piece: 'pin' },
     },
   ];
 };

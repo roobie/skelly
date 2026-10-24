@@ -90,9 +90,9 @@ export interface GlbExportInput {
   /** Facets of every revolved solid in the file: a level of detail baked in at export. Defaults to the mesh default. */
   readonly revolveFacets?: number;
   /**
-   * Voxel edge in metres. When set, each part's drawn solids are sampled at this grain and written as a greedy-meshed
-   * voxel mesh, one primitive per finish, instead of their smooth meshes. Every model export sets it (see `recipe.ts`,
-   * `recipeVoxel`); absent, the file holds the authored smooth meshes, which only geometry checks read.
+   * Voxel edge in metres. When set, drawn solids export as voxel meshes instead of smooth ones (see `glb.ts`,
+   * `voxelPrimitivesFor`). Every model export sets it (see `recipe.ts`, `recipeVoxel`); absent, the file holds the
+   * authored smooth meshes, which only geometry checks read.
    */
   readonly voxelGrain?: number;
   /**

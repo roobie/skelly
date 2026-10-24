@@ -28,13 +28,7 @@ import { createCompass } from '../src/render/compass.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { presentHeldDisplay } from '../src/render/heldDisplay.ts';
 import { itemLook } from '../src/render/itemLook.ts';
-import {
-  fittedPartFrame,
-  groundModelFrame,
-  heldModelFrame,
-  type ModelLibrary,
-  prepareModel,
-} from '../src/render/models.ts';
+import { fittedPartFrame, groundModelFrame, heldModelFrame, ModelLibrary, prepareModel } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { loadFigureModels } from './figureModels.ts';
@@ -438,6 +432,35 @@ it('prepares integral-magazine manual exports and binds movers by glTF node inde
       expect(new Box3().setFromObject(prepared.held).isEmpty()).toBe(false);
     }),
   );
+});
+
+it("draws a grenade without the pin and lever it has shed, by the exported glb's piece names", async () => {
+  const model = registry.items.get('frag_grenade')!.model!;
+  const def = registry.models.get(model)!;
+  const shed = [def.pin!.piece, def.lever!.piece];
+  const loads: Promise<void>[] = [];
+  const spy = vi.spyOn(GLTFLoader.prototype, 'load').mockImplementation((path, onLoad) => {
+    loads.push(parseGlb(readFileSync(path)).then(onLoad));
+  });
+  const models = new ModelLibrary(
+    { ...registry, models: new Map([[model, def]]) },
+    (message) => {
+      throw new Error(message);
+    },
+    { [def.file]: `${BASE}/${def.file}` },
+  );
+  spy.mockRestore();
+  await Promise.all(loads);
+  const meshes: Mesh[] = [];
+  models.groundLook({ model, slots: [], hidden: shed, key: 'shed' })!.traverse((child) => {
+    if (child instanceof Mesh) {
+      meshes.push(child);
+    }
+  });
+  const isShed = ({ geometry: { userData } }: Mesh) => shed.includes(userData.piece);
+  expect(shed.filter((name) => !meshes.some((mesh) => mesh.geometry.userData.piece === name))).toEqual([]);
+  expect(meshes.some((mesh) => !isShed(mesh))).toBe(true);
+  expect(meshes.filter((mesh) => mesh.visible === isShed(mesh))).toEqual([]);
 });
 
 describe('model forms', () => {

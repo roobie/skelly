@@ -2011,6 +2011,23 @@ const GunModelSchema = pipe(
   ),
 );
 
+/**
+ * The safety lever a fused throwable sheds when its fuse lights: the exported piece that leaves the model and
+ * how it flies off (`DESIGN.md`, "Hand grenade"). Hand-authored: the export does not carry it.
+ */
+const LeverModelSchema = strictObject({
+  piece: pipe(string(), nonEmpty()),
+  launchMetresPerRealSecond: Positive,
+  spinDegreesPerRealSecond: NonNegative,
+  lifetimeRealSeconds: PositiveRealSeconds,
+});
+
+/**
+ * The safety pin a fused throwable hides while it is pulled: the exported piece drawn as the pin and its ring
+ * (`DESIGN.md`, "Hand grenade"). Hand-authored: the export does not carry it.
+ */
+const PinModelSchema = strictObject({ piece: pipe(string(), nonEmpty()) });
+
 const ModelMaterialId = pipe(
   string(),
   check((id) => Object.hasOwn(MATERIALS, id), 'must name a model material'),
@@ -2033,7 +2050,12 @@ const CompassDialSchema = strictObject({
 export type CompassDial = InferOutput<typeof CompassDialSchema>;
 
 export const ModelSchema = pipe(
-  modelSchema({ gun: optional(GunModelSchema), dial: optional(CompassDialSchema) }),
+  modelSchema({
+    gun: optional(GunModelSchema),
+    dial: optional(CompassDialSchema),
+    lever: optional(LeverModelSchema),
+    pin: optional(PinModelSchema),
+  }),
   check(
     ({ gun, anchors }) => gun?.internalMagazine === undefined || anchors?.loading_port !== undefined,
     'internal magazine metadata needs a loading_port anchor',
