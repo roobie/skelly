@@ -2,9 +2,8 @@
 // reference joint layout so the shared walk, idle and attack poses drive it unchanged; its shape,
 // sizes and colours come from the template's `geometry` and `materials` (skeletonTemplate.jsonnet).
 //
-// Face parts (eye sockets, nose, teeth) and the separate ribs are snapped to voxel rows and columns:
-// at about 1/12 block a rib or a socket is one or two voxels, so an unsnapped one would merge with its
-// neighbour or vanish.
+// Face parts and the separate ribs are snapped to voxel rows and columns: they are near the voxel size,
+// so an unsnapped one would merge with its neighbour or vanish.
 
 import type { Body, Feature } from '../core/body.ts';
 import { registerBodyPlan, sampleParams } from '../core/generate.ts';
@@ -215,7 +214,10 @@ const buildSpine = (layout: JointLayout, skull: SkullLayout, g: Geometry, v: num
     features.push(
       box(
         bone,
-        { center: [0, y, spineZAt(layout, y)], half: [vertebraX * h * widthScale, runHalf(1, v), vertebraZ * h] },
+        {
+          center: [0, snapRun(y, g.vertebraRows, v, snapRow), spineZAt(layout, y)],
+          half: [vertebraX * h * widthScale, runHalf(g.vertebraRows, v), vertebraZ * h],
+        },
         blend,
       ),
     );
@@ -252,7 +254,7 @@ const buildRibcage = (layout: JointLayout, p: HumanoidParams, g: Geometry, v: nu
       }
     }
   });
-  const sternumTop = ribRows[0]! + v;
+  const sternumTop = ribRows[0]! + g.sternumRiseVoxels * v;
   const sternumBottom = ribRows[Math.min(g.sternumRibs, ribRows.length) - 1]! - v / 2;
   const frontZ = spineZAt(layout, ribRows[0]!) - 2 * g.ribDepth * h * g.ribScale[0]!;
   const [sternumX, sternumZ] = g.sternumHalf;
@@ -352,14 +354,17 @@ const buildHand = (side: Side, [wrist, tip]: readonly [Vec3, Vec3], g: Geometry,
   const features: Feature[] = [
     box(bone, { center: palmCentre, half: [palmDepth * h, palmLength / 2, palmWidth], rot }, blend),
   ];
-  const start = palmLength / Math.hypot(...sub(tip, wrist));
+  const root = (g.fingerRootDepth * palmLength) / Math.hypot(...sub(tip, wrist));
   const fingerRadius = g.fingerRadiusVoxels * v;
   for (let i = 0; i < count; i++) {
     const offset = scale(across, (i - (count - 1) / 2) * g.fingerSpacingVoxels * v);
-    features.push(capsule(bone, [add(along(start / 2), offset), add(along(1), offset)], fingerRadius, blend));
+    features.push(capsule(bone, [add(along(root), offset), add(along(1), offset)], fingerRadius, blend));
   }
+  // The thumb leaves the palm's outer edge, splayed away from the hand's axis.
   const thumbBase = add(along(g.thumbStart), scale(across, -palmWidth));
-  const thumbTip = add(thumbBase, add(scale(across, -g.thumbLength * h * 0.4), scale(sub(tip, wrist), 0.25)));
+  const splay = (g.thumbSplayDeg * Math.PI) / 180;
+  const thumbDir = add(scale(normalize(sub(tip, wrist)), Math.cos(splay)), scale(across, -Math.sin(splay)));
+  const thumbTip = add(thumbBase, scale(thumbDir, g.thumbLength * h));
   features.push(capsule(bone, [thumbBase, thumbTip], fingerRadius, blend));
   return features;
 };
@@ -396,7 +401,7 @@ const buildFoot = (side: Side, [ankle, toe]: readonly [Vec3, Vec3], g: Geometry,
       capsule(
         bone,
         [
-          [x, row, ballZ + v],
+          [x, row, ballZ + g.toeStartVoxels * v],
           [x, row, toe[2]],
         ],
         g.toeRadiusVoxels * v,
@@ -433,27 +438,43 @@ const buildSkull = (skull: SkullLayout, g: Geometry, v: number): Feature[] => {
     box('head', { center: [0, maxY, maxZ], half: [g.maxillaWidth * size, maxHalfY, maxHalfZ] }, blend),
     box('jaw', { center: jawCentre, half: [g.jawWidth * size, jawHalfY, jawHalfZ], rot: jawRot }, blend),
   ];
-  // Eye sockets: one voxel deep, with the glowing eye on the socket's back wall.
+  // A hole carved `depth` columns back from the face, painted on the wall behind it.
+  interface Hole {
+    readonly x: number;
+    readonly y: number;
+    readonly columns: number;
+    readonly rows: number;
+    readonly depth: number;
+    readonly paint: string;
+  }
+  const hole = ({ x, y, columns, rows, depth, paint }: Hole): Feature[] => {
+    const carveZ = frontColumn + ((depth - 1) / 2) * v;
+    const half: Vec3 = [runHalf(columns, v), runHalf(rows, v), runHalf(depth, v)];
+    const wallHalf: Vec3 = [half[0], half[1], runHalf(1, v)];
+    return [cell('carve', BONE, [x, y, carveZ], half), cell('paint', paint, [x, y, frontColumn + depth * v], wallHalf)];
+  };
   const eyeY = snapRun(base[1] + g.eyeHeight * size, g.eyeRows, v, snapRow);
-  const eyeHalf: Vec3 = [runHalf(g.eyeColumns, v), runHalf(g.eyeRows, v), runHalf(1, v)];
   for (const sign of [-1, 1]) {
     const eyeX = sign * snapRun(g.eyeOffset * size, g.eyeColumns, v, snapCol);
     features.push(
-      cell('carve', BONE, [eyeX, eyeY, frontColumn], eyeHalf),
-      cell('paint', 'eye', [eyeX, eyeY, frontColumn + v], eyeHalf),
+      ...hole({ x: eyeX, y: eyeY, columns: g.eyeColumns, rows: g.eyeRows, depth: g.eyeDepthVoxels, paint: 'eye' }),
     );
   }
-  const noseY = snapRun(base[1] + g.noseHeight * size, g.noseRows, v, snapRow);
-  const noseHalf: Vec3 = [runHalf(1, v), runHalf(g.noseRows, v), runHalf(1, v)];
   features.push(
-    cell('carve', BONE, [0, noseY, frontColumn], noseHalf),
-    cell('paint', 'socket', [0, noseY, frontColumn + v], noseHalf),
+    ...hole({
+      x: snapRun(0, g.noseColumns, v, snapCol),
+      y: snapRun(base[1] + g.noseHeight * size, g.noseRows, v, snapRow),
+      columns: g.noseColumns,
+      rows: g.noseRows,
+      depth: g.noseDepthVoxels,
+      paint: 'socket',
+    }),
   );
-  // Teeth: dark gaps on alternate columns of the upper jaw's bottom row.
+  // Teeth: dark gaps every `teethPitchVoxels` columns of the upper jaw's bottom row.
   const teethY = snapRow(base[1] + g.maxillaBottom * size + v / 2, v);
   const teethColumns = Math.floor((g.maxillaWidth * size) / v);
   for (let k = -teethColumns; k <= teethColumns; k++) {
-    if (Math.abs(k) % 2 === 1) {
+    if (Math.abs(k) % g.teethPitchVoxels === 1) {
       features.push(cell('paint', 'socket', [k * v, teethY, frontColumn], [runHalf(1, v), runHalf(1, v), v]));
     }
   }

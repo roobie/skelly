@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { generate, generateValid, realize, recommendedProfileFor } from '../src/core/generate.ts';
-import { applyPoint } from '../src/core/math.ts';
+import { build, generate, generateValid, realize, recommendedProfileFor } from '../src/core/generate.ts';
+import { applyPoint, length, sub } from '../src/core/math.ts';
 import { boneTransforms } from '../src/core/pose.ts';
-import { consumableTemplate } from '../src/core/template.ts';
+import { consumableTemplate, registerTemplate } from '../src/core/template.ts';
 import { corners, createGaitCache, footRestExtents, type GaitClock, walkPose } from '../src/mob/gait.ts';
 import type { HumanoidParams } from '../src/mob/humanoid.ts';
 import { skeletonTemplate } from '../src/mob/skeletonTemplate.ts';
@@ -18,6 +18,31 @@ describe('skeleton template', () => {
       expect(report.issues, `seed ${seed}`).toEqual([]);
       expect(report.ok).toBe(true);
     }
+  });
+
+  it('the authored thumb length sets the built thumb length', () => {
+    const handCapsules = (thumbLength: number) => {
+      const fixture = {
+        ...skeletonTemplate,
+        name: `skeleton-thumb-${thumbLength}`,
+        geometry: { ...skeletonTemplate.geometry, thumbLength },
+      };
+      registerTemplate(fixture);
+      const genome = generate(fixture, 1);
+      const capsules = build(genome).features.flatMap((f) =>
+        f.bone === 'hand.L' && f.shape.kind === 'capsule' ? [f.shape] : [],
+      );
+      return { capsules, height: genome.params.height! };
+    };
+    const base = skeletonTemplate.geometry.thumbLength;
+    const short = handCapsules(base);
+    const long = handCapsules(base * 2);
+    const changed = short.capsules.flatMap((s, i) => {
+      const l = long.capsules[i]!;
+      return length(sub(s.b, s.a)) === length(sub(l.b, l.a)) ? [] : [length(sub(l.b, l.a))];
+    });
+    expect(changed).toHaveLength(1);
+    expect(changed[0]).toBeCloseTo(base * 2 * long.height, 9);
   });
 
   it('refuses consumption until its game contracts are decided', () => {
