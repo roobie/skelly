@@ -24,9 +24,21 @@ export interface ItemLookSlot {
 export interface ItemLook {
   readonly model: string;
   readonly slots: readonly ItemLookSlot[];
+  /** Exported pieces the item has shed, such as a lit grenade's lever or a pulled pin. */
+  readonly hidden: readonly string[];
   /** Equal exactly when two items draw the same. */
   readonly key: string;
 }
+
+/** A pulled pin leaves the model until it goes back in; a lit fuse has let the lever go for good. */
+const shedGroups = (registry: Registry, model: string, item: Item): string[] => {
+  const modelDef = registry.models.get(model);
+  const lit = item.fuseRemainingSimSeconds !== undefined;
+  return [
+    ...(modelDef?.pin && (item.pinPulled || lit) ? [modelDef.pin.piece] : []),
+    ...(modelDef?.lever && lit ? [modelDef.lever.piece] : []),
+  ];
+};
 
 /** The item's model with its fitted magazine's own model in the magazine slot; undefined without a model. */
 export const itemLook = (registry: Registry, item: Item): ItemLook | undefined => {
@@ -57,7 +69,17 @@ export const itemLook = (registry: Registry, item: Item): ItemLook | undefined =
       slots.push(slot);
     }
   }
-  return { model, slots, key: [model, ...slots.map((entry) => `${entry.slot}=${entry.model ?? ''}`)].join('+') };
+  const hidden = shedGroups(registry, model, item);
+  return {
+    model,
+    slots,
+    hidden,
+    key: [
+      model,
+      ...slots.map((entry) => `${entry.slot}=${entry.model ?? ''}`),
+      ...hidden.map((group) => `-${group}`),
+    ].join('+'),
+  };
 };
 
 /** Where a fitted attachment draws: a gungen mount slot, or the gun's own light-mount site. */

@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { Mesh, PerspectiveCamera } from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { describe, expect, it, vi } from 'vitest';
 import { dominantSide } from '../src/core/character.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { fragmentDirections } from '../src/core/explosive.ts';
@@ -20,10 +23,14 @@ import type { ZombieRegions } from '../src/core/zombieRegions.ts';
 import type { Detonation } from '../src/core/zombies.ts';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { HeldItems } from '../src/render/hands.ts';
+import { itemLook } from '../src/render/itemLook.ts';
+import { ModelLibrary } from '../src/render/models.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import type { MoveIntent } from './playerFixture.ts';
 
 const registry = baseRegistry();
+const MODEL_ROOT = 'src/content/base';
 const BLOCK = 0.5;
 const GRENADE = 'frag_grenade';
 const FUSE = registry.items.get(GRENADE)!.explosive!.fuseSimSeconds;
@@ -57,8 +64,13 @@ const runtime = (
   content = registry,
   {
     onDetonation,
+    onFuseLit,
     intent,
-  }: { onDetonation?: (position: Vec3, radiusMetres: number) => void; intent?: () => MoveIntent } = {},
+  }: {
+    onDetonation?: (position: Vec3, radiusMetres: number) => void;
+    onFuseLit?: (item: Item) => void;
+    intent?: () => MoveIntent;
+  } = {},
 ) =>
   createSession({
     registry: content,
@@ -82,6 +94,7 @@ const runtime = (
     notice: () => undefined,
     onRead: () => undefined,
     ...(onDetonation ? { onDetonation } : {}),
+    ...(onFuseLit ? { onFuseLit } : {}),
     ...(restore ? { restore } : {}),
   });
 type Runtime = ReturnType<typeof runtime>;
@@ -177,6 +190,71 @@ describe('hand grenade', () => {
     expect(session.inventory.move(stowed, { kind: 'pocket', owner: fannyPack, pocket: 0 }).ok).toBe(true);
     session.sim.scheduler.advance(FUSE + 0.5);
     expect(session.inventory.itemByUid(stowed.uid)).toBeUndefined();
+  });
+
+  it('sheds its lever once, when release lights its fuse, and is drawn without it from then on', () => {
+    const lit: Item[] = [];
+    const session = runtime(OPEN, undefined, registry, { onFuseLit: (item) => lit.push(item) });
+    const { piece } = registry.models.get(registry.items.get(GRENADE)!.model!)!.lever!;
+    const shed = (item: Item) => itemLook(registry, item)?.hidden.includes(piece);
+    const grenade = liveInHand(session);
+    session.sim.scheduler.advance(FUSE / 4);
+    expect([lit, shed(grenade)]).toEqual([[], false]);
+
+    const { version: before } = session.inventory;
+    expect(session.inventory.move(grenade, { kind: 'pile', pos: [1, 0, 0] }).ok).toBe(true);
+    session.sim.scheduler.advance(FUSE / 4);
+    expect(lit).toEqual([grenade]);
+    expect(shed(grenade)).toBe(true);
+    expect(session.inventory.version).toBeGreaterThan(before);
+    session.sim.scheduler.advance(FUSE / 4);
+    expect(lit).toEqual([grenade]);
+  });
+
+  it('is redrawn in the hand without its pin while the pin is out, and with it once the pin goes back in', async () => {
+    const session = runtime();
+    const model = registry.items.get(GRENADE)!.model!;
+    const def = registry.models.get(model)!;
+    const { piece } = def.pin!;
+    const loads: Promise<void>[] = [];
+    const spy = vi.spyOn(GLTFLoader.prototype, 'load').mockImplementation((path, onLoad, _onProgress, onError) => {
+      loads.push(new GLTFLoader().parseAsync(Uint8Array.from(readFileSync(path)).buffer, '').then(onLoad, onError));
+    });
+    const models = new ModelLibrary(
+      { ...registry, models: new Map([[model, def]]) },
+      (message) => {
+        throw new Error(message);
+      },
+      { [def.file]: `${MODEL_ROOT}/${def.file}` },
+    );
+    spy.mockRestore();
+    await Promise.all(loads);
+    const held = new HeldItems(session.inventory, models, registry.figures.get('player')!.palette);
+    const camera = new PerspectiveCamera();
+    const pinMeshesDrawn = () => {
+      held.update(camera);
+      let drawn = 0;
+      held.warmUpTarget.scene.traverseVisible((child) => {
+        if (child instanceof Mesh && child.geometry.userData.piece === piece) {
+          drawn += 1;
+        }
+      });
+      return drawn;
+    };
+    const grenade = session.inventory.create(GRENADE);
+    expect(session.inventory.add(grenade, { kind: 'hand', side: 'right' })).toBe(true);
+    const drawn = [pinMeshesDrawn()];
+    session.fuses.togglePin(grenade);
+    drawn.push(pinMeshesDrawn());
+    session.fuses.togglePin(grenade);
+    drawn.push(pinMeshesDrawn());
+    held.dispose();
+    expect(drawn[0]).toBeGreaterThan(0);
+    expect(drawn.slice(1)).toEqual([0, drawn[0]]);
+    session.fuses.togglePin(grenade);
+    expect(session.inventory.move(grenade, { kind: 'pile', pos: [1, 0, 0] }).ok).toBe(true);
+    session.sim.scheduler.advance(FUSE / 4);
+    expect(itemLook(registry, grenade)!.hidden.includes(piece)).toBe(true);
   });
 
   it('goes off in the hand of whoever picks it up while its fuse burns', () => {

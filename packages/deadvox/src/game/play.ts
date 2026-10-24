@@ -1002,6 +1002,13 @@ export const startPlay = (
     },
     onFirearmTrajectory: ({ traces }) => view.impactEffects.fire(traces, config.debug && debugLaserEnabled),
     onDetonation: (at, radiusMetres) => view.blastFlashes.spawn(at, radiusMetres),
+    onFuseLit: (item) => {
+      const model = registry.items.get(item.type)?.model;
+      const lever = model ? registry.models.get(model)?.lever : undefined;
+      if (lever) {
+        view.leverProps.lit(item.uid, lever);
+      }
+    },
     onBlock: (jolt) => view.block(jolt),
     onAcidImpact: (position, type) => view.acidEffects.splash(position, type.acidSpit!.presentation),
     debug: () => debugTools,

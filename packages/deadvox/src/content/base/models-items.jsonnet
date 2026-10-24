@@ -30,7 +30,10 @@ local authored = [
     import 'things/ammo_can.model.json',
     import 'things/jerry_can.model.json',
     import 'things/gas_canister.model.json',
-    import 'things/frag_grenade.model.json',
+    (import 'things/frag_grenade.model.json') + {
+      lever: { piece: 'lever', launchMetresPerRealSecond: 3, spinDegreesPerRealSecond: 1080, lifetimeRealSeconds: 1.5 },
+      pin: { piece: 'pin' },
+    },
     import 'things/torch.model.json',
     (import 'things/flashlight.model.json') + { grip: { at: [0.085, 0, 0] }, anchors: { lens: [0.199, 0, 0] } },
     import 'things/candle.model.json',

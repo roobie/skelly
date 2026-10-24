@@ -45,6 +45,7 @@ import { setHeightFogTuning } from './heightFog.ts';
 import { ImpactEffects } from './impactEffects.ts';
 import { ItemPictures } from './itemPictures.ts';
 import { ItemThrows } from './itemThrows.ts';
+import { LeverProps } from './leverProps.ts';
 import { acidGlows, LightPool } from './lightPool.ts';
 import { applyLook } from './look.ts';
 import { MobActorMeshes, type ZombieRenderer } from './mobActors.ts';
@@ -233,9 +234,18 @@ export const createPlayView = (
     : undefined;
   const impactEffects = new ImpactEffects(s, targetCell);
   const blastFlashes = new BlastFlashes();
+  const leverProps = new LeverProps(s, engine.isSolid);
   const acidEffects = new AcidEffects(s, config.seed);
   const held = new HeldItems(inventory, models, playerPalette, engine.sky.light);
-  scene.add(caseEffects.mesh, impactEffects.group, itemThrows.group, gore.group, blastFlashes.group, acidEffects.group);
+  scene.add(
+    caseEffects.mesh,
+    impactEffects.group,
+    itemThrows.group,
+    gore.group,
+    blastFlashes.group,
+    leverProps.group,
+    acidEffects.group,
+  );
   const dispose = () => {
     pictures?.dispose();
     piles.dispose();
@@ -246,6 +256,7 @@ export const createPlayView = (
     impactEffects.dispose();
     itemThrows.dispose();
     blastFlashes.dispose();
+    leverProps.dispose();
     acidEffects.dispose();
     flashlight.dispose();
     held.dispose();
@@ -376,6 +387,7 @@ export const createPlayView = (
     itemThrows,
     impactEffects,
     blastFlashes,
+    leverProps,
     acidEffects,
     furniture,
     playerMeshes,
@@ -428,11 +440,13 @@ export const createPlayView = (
     }: PlayWorldFrame) => {
       itemThrows.update(time, inventory);
       blastFlashes.update(dt);
+      leverProps.update(dt);
       acidEffects.sync(acidGlobs, acidPuddles, registry.zombies, dt);
       acidEffects.syncDroplets(zombieMeshes.anchors?.() ?? [], dt);
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour, dayCycle), weather, dayCycle.weather);
       piles.sync(inventory, itemThrows.hiddenItemUids);
+      leverProps.launchLit((uid) => itemThrows.drawn(uid) ?? piles.drawnModel(uid));
       vehicles.sync(inventory.vehicles);
       furniture.sync(entities);
       decals?.sync(entities);

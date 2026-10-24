@@ -23,9 +23,12 @@ export class Fuses {
   /** Pin pulled, fuse waiting for the item to leave the hand. */
   private readonly live = new Set<Item>();
   private readonly registry: Registry;
+  private readonly pinMoved: () => void;
 
-  constructor(registry: Registry, items: Iterable<Item>) {
+  /** `pinMoved` hears each pull or push of a pin, which changes how the item draws. */
+  constructor(registry: Registry, items: Iterable<Item>, pinMoved: () => void) {
     this.registry = registry;
+    this.pinMoved = pinMoved;
     for (const item of items) {
       if (item.fuseRemainingSimSeconds !== undefined) {
         this.burning.add(item);
@@ -52,11 +55,13 @@ export class Fuses {
     if (state === 'in') {
       item.pinPulled = true;
       this.live.add(item);
+      this.pinMoved();
       return 'pulled';
     }
     if (state === 'pulled') {
       item.pinPulled = undefined;
       this.live.delete(item);
+      this.pinMoved();
       return 'in';
     }
     return state;
@@ -64,9 +69,9 @@ export class Fuses {
 
   /**
    * Burns every fuse by `dt` Sim seconds, then lights the fuse of each explosive with its pin pulled that is no
-   * longer `held`. Returns the explosives whose fuse ran out, by uid.
+   * longer `held`, telling `lit` about each. Returns the explosives whose fuse ran out, by uid.
    */
-  advance(dt: number, held: (item: Item) => boolean): Item[] {
+  advance(dt: number, held: (item: Item) => boolean, lit?: (item: Item) => void): Item[] {
     const done: Item[] = [];
     for (const item of this.burning) {
       item.fuseRemainingSimSeconds = Math.max(0, item.fuseRemainingSimSeconds! - dt);
@@ -80,6 +85,7 @@ export class Fuses {
         this.live.delete(item);
         item.fuseRemainingSimSeconds = this.registry.items.get(item.type)!.explosive!.fuseSimSeconds;
         this.burning.add(item);
+        lit?.(item);
       }
     }
     return done.sort((a, b) => a.uid - b.uid);
