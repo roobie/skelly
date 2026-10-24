@@ -28,13 +28,16 @@ import { POWER_UNITS } from './powerContent.ts';
 import { handlingRangeIssues } from './rangeLayout.ts';
 import { scenarioSources } from './scenarioComposition.ts';
 import {
+  ARM_SEGMENTS,
   type BlockDef,
   CONTENT_SECTION_KEYS,
   type ContentFile,
   ContentFileSchema,
   type ContentSection,
   type DayCycleDef,
+  FIGURE_LIMB_JOINTS,
   FIGURE_LIMBS,
+  type FigureDef,
   type FurnitureDef,
   HELD_DISPLAY_KIND,
   type ItemDef,
@@ -1740,32 +1743,73 @@ const checkHeartbeatSounds = (registry: Registry, report: Report): void => {
   }
 };
 
-/** Each figure part's model exists and holds every anchor the row names on it. */
-const checkFigures = (registry: Registry, report: Report): void => {
-  for (const figure of registry.figures.values()) {
-    const parts = [
-      {
-        path: '.body',
-        model: figure.body.model,
-        anchors: Object.entries(figure.body.joints).map(([field, anchor]) => [`.body.joints.${field}`, anchor]),
-      },
-      ...FIGURE_LIMBS.map((limb) => ({
+/**
+ * Each figure part's model exists and holds every anchor the row names on it, and each arm model holds the rig's
+ * parts and pivots, so the view never bends a part that isn't there.
+ */
+interface FigurePartNames {
+  path: string;
+  model: string;
+  /** Each named anchor as the row path that names it and the anchor name. */
+  anchors: [string, string][];
+  /** Each named model part, the same way. */
+  parts: [string, string][];
+}
+
+const figurePartNames = (figure: FigureDef): FigurePartNames[] => {
+  const rigAnchors: [string, string][] = [
+    ...ARM_SEGMENTS.map((segment): [string, string] => [`.armRig.${segment}.pivot`, figure.armRig[segment].pivot]),
+    ['.armRig.grip', figure.armRig.grip],
+  ];
+  const rigParts: [string, string][] = ARM_SEGMENTS.map((segment) => [
+    `.armRig.${segment}.part`,
+    figure.armRig[segment].part,
+  ]);
+  return [
+    {
+      path: '.body',
+      model: figure.body.model,
+      anchors: Object.entries(figure.body.joints).map(([field, anchor]): [string, string] => [
+        `.body.joints.${field}`,
+        anchor,
+      ]),
+      parts: [],
+    },
+    ...FIGURE_LIMBS.map((limb): FigurePartNames => {
+      const arm = FIGURE_LIMB_JOINTS[limb].endsWith('Shoulder');
+      return {
         path: `.limbs.${limb}`,
         model: figure.limbs[limb].model,
-        anchors: [[`.limbs.${limb}.joint`, figure.limbs[limb].joint]],
-      })),
-    ];
-    for (const { path, model: id, anchors } of parts) {
-      const model = registry.models.get(id);
-      if (!model) {
-        report('figures', figure.id, `${path}.model`, `no model "${id}"`);
-        continue;
-      }
-      for (const [at, anchor] of anchors) {
-        if (model.anchors?.[anchor!] === undefined) {
-          report('figures', figure.id, at!, `model "${id}" has no anchor "${anchor}"`);
-        }
-      }
+        anchors: [[`.limbs.${limb}.joint`, figure.limbs[limb].joint], ...(arm ? rigAnchors : [])],
+        parts: arm ? rigParts : [],
+      };
+    }),
+  ];
+};
+
+const checkFigurePart = (registry: Registry, report: Report, figure: FigureDef, part: FigurePartNames): void => {
+  const { path, model: id, anchors, parts } = part;
+  const model = registry.models.get(id);
+  if (!model) {
+    report('figures', figure.id, `${path}.model`, `no model "${id}"`);
+    return;
+  }
+  for (const [at, anchor] of anchors) {
+    if (model.anchors?.[anchor] === undefined) {
+      report('figures', figure.id, at, `model "${id}" has no anchor "${anchor}"`);
+    }
+  }
+  for (const [at, name] of parts) {
+    if (model.parts?.[name] === undefined) {
+      report('figures', figure.id, at, `model "${id}" has no part "${name}"`);
+    }
+  }
+};
+
+const checkFigures = (registry: Registry, report: Report): void => {
+  for (const figure of registry.figures.values()) {
+    for (const part of figurePartNames(figure)) {
+      checkFigurePart(registry, report, figure, part);
     }
   }
 };

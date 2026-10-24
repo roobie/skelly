@@ -1,6 +1,46 @@
 {
   "figures": [
     {
+      "armRig": {
+        "fingers": {
+          "part": "fingers",
+          "pivot": "knuckles"
+        },
+        "fore": {
+          "part": "fore",
+          "pivot": "elbow"
+        },
+        "grip": "grip",
+        "hand": {
+          "part": "palm",
+          "pivot": "wrist"
+        },
+        "handPoses": {
+          "fist": {
+            "fingersDegrees": 95,
+            "thumbAcrossDegrees": 60,
+            "thumbInDegrees": 45
+          },
+          "holding": {
+            "fingersDegrees": 80,
+            "thumbAcrossDegrees": 50,
+            "thumbInDegrees": 30
+          },
+          "open": {
+            "fingersDegrees": 10,
+            "thumbAcrossDegrees": 10,
+            "thumbInDegrees": 0
+          }
+        },
+        "thumb": {
+          "part": "thumb",
+          "pivot": "thumb_root"
+        },
+        "upper": {
+          "part": "upper",
+          "pivot": "shoulder"
+        }
+      },
       "body": {
         "joints": {
           "leftHip": "hip_left",
@@ -33,11 +73,6 @@
           "joint": "hip",
           "model": "player_leg"
         }
-      },
-      "palette": {
-        "shirt": "#52677d",
-        "skin": "#c58f70",
-        "trousers": "#4a4b55"
       },
       "stancePoses": {
         "blendRealSeconds": 0.20000000000000001,

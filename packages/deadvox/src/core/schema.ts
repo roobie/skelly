@@ -3450,11 +3450,31 @@ export const FIGURE_LIMB_JOINTS: Readonly<Record<FigureLimb, FigureJoint>> = {
 /** An authored limb: its model and the model anchor that sits at, and turns about, its body joint. */
 const FigureLimbSchema = strictObject({ model: Id, joint: Id });
 
-/** Actor palettes and poses are content so appearance doesn't live in renderer code; `DESIGN.md`, "Models". */
+/** The arm model's segments, each a part the first-person view turns about its own joint; `DESIGN.md`, "Models". */
+export const ARM_SEGMENTS = ['upper', 'fore', 'hand', 'fingers', 'thumb'] as const;
+export type ArmSegment = (typeof ARM_SEGMENTS)[number];
+/** One segment: the arm model's part, and the model anchor it turns about. */
+const ArmSegmentSchema = strictObject({ part: Id, pivot: Id });
+/** How a hand closes: the fingers curl at the knuckles; the thumb folds across the palm and in toward it. */
+const HandPoseSchema = strictObject({ fingersDegrees: Degrees, thumbAcrossDegrees: Degrees, thumbInDegrees: Degrees });
+/** The first-person view's rig over the arm model (src/render/armRig.ts). */
+const ArmRigSchema = strictObject({
+  upper: ArmSegmentSchema,
+  fore: ArmSegmentSchema,
+  hand: ArmSegmentSchema,
+  fingers: ArmSegmentSchema,
+  thumb: ArmSegmentSchema,
+  /** The anchor on the palm's midline a held item's grip sits against, moved out to the palm's face. */
+  grip: Id,
+  /** The empty hand's fist, the hand around a held grip, and the hand flat on a held screen's back. */
+  handPoses: strictObject({ fist: HandPoseSchema, holding: HandPoseSchema, open: HandPoseSchema }),
+});
+export type ArmRigDef = InferOutput<typeof ArmRigSchema>;
+export type HandPoseDef = InferOutput<typeof HandPoseSchema>;
+
+/** Actor models and poses are content so appearance doesn't live in renderer code; `DESIGN.md`, "Models". */
 const FigureSchema = strictObject({
   id: Id,
-  /** The first-person view arms' colours, until they are drawn from the figure's own parts. */
-  palette: strictObject({ skin: Color, shirt: Color, trousers: Color }),
   /** Where the hips stand above the ground; stances pivot about them. */
   hipHeightMetres: Positive,
   /** The head and torso model; each joint names its anchor. It stands with its hips at the hip height. */
@@ -3468,6 +3488,8 @@ const FigureSchema = strictObject({
     leftLeg: FigureLimbSchema,
     rightLeg: FigureLimbSchema,
   }),
+  /** Both arm models' rig; the two arms share it because each is the mirror of the other. */
+  armRig: ArmRigSchema,
   /** Walking swings each leg about its hip and each arm, against its leg, about its shoulder; peak angles. */
   gait: strictObject({ legSwingDegrees: Degrees, armSwingDegrees: Degrees }),
   stancePoses: strictObject({

@@ -1256,9 +1256,9 @@ faces and which way its top points. The engine turns the item from those facts, 
 no numbers tuned to the arm and later changes to arm size, pose or animation keep
 screens visible; arm animation must keep the screen's line of sight free. Radios
 and GPS units reuse the rule unchanged, a watch is the same rule with the wrist as
-the back, and handedness stays mirroring of placement only. The forearm meets a
-screen-holding palm at the palm's back face rather than its centre, so no part of
-the arm reaches past the palm into the item or its screen. Validation rejects a
+the back, and handedness stays mirroring of placement only. The hand's grip point
+is the face of its palm, so the item's back sits on the palm and no part of the
+arm reaches past the palm into the item or its screen. Validation rejects a
 held-display item whose model has no screen. See `src/render/heldDisplay.ts`,
 `presentHeldDisplay`, and `packages/thing-core/src/schema.ts`, `NeutralModelSchema`.
 
@@ -1516,11 +1516,11 @@ hold up from every side, and a body built only for first person is not enough.
 Worn items carry their own part model that covers or replaces the body part
 under it, so gear shows on the body without the body knowing about gear.
 
-The first-person arms are the view's own two-segment arms in the figure row's
-palette, not the body's arm models, because they bend at the elbow to reach a
-grip and an authored arm is one rigid piece. In first person the view draws both
-arms, gripping or as fists, so the body's own arms hide there; otherwise an
-empty hand would show two arms.
+The first-person arms are the figure row's own arm models, bent through the row's
+arm rig to reach each grip (`DESIGN.md`, "Models"), so the arms the player sees
+and the arms others see never differ in look or proportion. In first person the
+view draws both arms, gripping or as fists, so the body's own arms hide there;
+otherwise an empty hand would show two arms.
 
 Third person remains a debug inspection aid, not a player-facing camera.
 `PlayerMeshes` in `src/render/playerFigure.ts` draws the body from the `player`
@@ -2557,16 +2557,23 @@ with the tools, which is accepted.
 The figure is a content row, so a mod or a second character ships its own row
 and part models without a code change. The row names one body model, the
 torso with the head, and one model per limb, each arm with its hand and each
-leg with its foot, because a rigid model moves as one piece and a limb swings
-as one. The body names the anchor each limb joint sits at, and each limb names
-its own joint anchor; the row also sets the hip height and the walking swing.
-Every part is an authored model, with no box stand-in, so a figure row that
-names a missing model or anchor fails validation instead of drawing a partial
-body. Code poses every part about those joints, so a new limb model needs no
+leg with its foot. The body names the anchor each limb joint sits at, and each
+limb names its own joint anchor; the row also sets the hip height and the
+walking swing. An arm model is built from parts mated at its joints, upper arm,
+forearm, palm, fingers and thumb, and the row's arm rig names each part with
+the anchor it turns about, the grip anchor on the palm, and the joint angles of
+a fist, a holding hand and an open hand. One arm model serves both views: the
+world body swings it whole, and the first-person view bends it through the rig
+from the shoulder to the held grip, so the two views never diverge in look or
+proportion and the arm bends where a rigid model could not. Every part is an
+authored model, with no box stand-in, so a figure row that names a missing
+model, anchor or rig part fails validation instead of drawing a partial body.
+Code poses every part about those joints, so a new limb model needs no
 renderer change. Hit regions keep a box layout, because the body simulation,
 not the drawn shape, decides where a hit lands, so gore stays put while parts
-change. See `src/core/schema.ts`, `FigureSchema`, and
-`src/render/playerFigure.ts`, `playerFigureLayout` and `PLAYER_REGION_BOXES`.
+change. See `src/core/schema.ts`, `FigureSchema`, `src/render/armRig.ts`,
+`buildArmRig`, and `src/render/playerFigure.ts`, `playerFigureLayout` and
+`PLAYER_REGION_BOXES`.
 
 Many animations are expected over time, so a pose is data that names a joint and an
 angle, and code-posed motion such as arm swing and idle breath is one clip among

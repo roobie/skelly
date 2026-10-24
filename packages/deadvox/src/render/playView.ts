@@ -207,7 +207,6 @@ export const createPlayView = (
   }
   const weather: Weather = { fogginess: dayCycle.weather.defaultFogginess };
   const playerFigure = registry.figures.get(CORE_CONTENT_IDS.player)!;
-  const playerPalette = playerFigure.palette;
   const piles = new PileMeshes(s, models, config.seed, meshes);
   const vehicles = new VehicleMeshes(registry, models, s);
   const caseEffects = new CaseEffects(s, models);
@@ -234,7 +233,7 @@ export const createPlayView = (
   const impactEffects = new ImpactEffects(s, targetCell);
   const blastFlashes = new BlastFlashes();
   const acidEffects = new AcidEffects(s, config.seed);
-  const held = new HeldItems(inventory, models, playerPalette, engine.sky.light);
+  const held = new HeldItems(inventory, models, playerFigure, engine.sky.light);
   scene.add(caseEffects.mesh, impactEffects.group, itemThrows.group, gore.group, blastFlashes.group, acidEffects.group);
   const dispose = () => {
     pictures?.dispose();

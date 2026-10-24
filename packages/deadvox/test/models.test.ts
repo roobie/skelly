@@ -36,8 +36,8 @@ import {
   prepareModel,
 } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
-import { FIRST_PERSON_PALM } from '../src/render/playerFigure.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
+import { loadFigureModels } from './figureModels.ts';
 
 const BASE = 'src/content/base';
 const MODEL_FILE = /^assets\/models\/[a-z0-9_]+\.glb$/;
@@ -73,6 +73,8 @@ const { registry, issues } = buildRegistry([
     data: { items: [{ id: 'fixture_bundle', name: 'Bundle fixture', category: 'misc', weight: 1, size: [1, 2] }] },
   },
 ]);
+const playerFigure = registry.figures.get('player')!;
+const figureModels = await loadFigureModels(registry);
 
 it('prepares every thing recipe export for ground and held drawing with its grip at the hand origin', async () => {
   const recipe: { id: string }[] = JSON.parse(readFileSync('../thing-authoring-tool/exports/deadvox.json', 'utf8'));
@@ -127,7 +129,6 @@ it.each<[string, Vec3]>([
     // The card's top is north, so at its default bearing it stands upright.
     const top = new Vector3(0, 1, 0).applyQuaternion(card.getWorldQuaternion(new Quaternion()));
     expect(top.y).toBeGreaterThan(0.9);
-    const palmFront = FIRST_PERSON_PALM[2] / 2;
     const palmForward = new Vector3(0, 0, 1).applyQuaternion(palm.getWorldQuaternion(new Quaternion()));
     expect(palmForward.dot(toEye)).toBeGreaterThan(0.99);
     const handAt = new Vector3(...heldAt);
@@ -141,7 +142,8 @@ it.each<[string, Vec3]>([
         }
       }
     });
-    expect(nearestToPalm).toBeGreaterThanOrEqual(palmFront - 1e-6);
+    // The grip point is the palm's face, so nothing of the model sits behind it.
+    expect(nearestToPalm).toBeGreaterThanOrEqual(-1e-6);
     compass.dispose();
   },
 );
@@ -154,10 +156,11 @@ it.each(['right', 'left'] as const)('keeps the %s arm out of every sight line to
   expect(inventory.add(inventory.create('compass'), { kind: 'hand', side })).toBeTruthy();
   const models = {
     version: 0,
-    has: () => true,
+    ...figureModels,
+    has: (id: string) => id === definition.id || figureModels.has(id),
     heldLook: () => ({ root: prepareModel(definition, scene.clone()).held, parts: [], slots: {} }),
   } as unknown as ModelLibrary;
-  const held = new HeldItems(inventory, models, { skin: '#bbaa99', shirt: '#556677', trousers: '#334455' });
+  const held = new HeldItems(inventory, models, playerFigure);
   held.update(new PerspectiveCamera(), undefined, 0, { firearms: [] });
   const { scene: view } = held.warmUpTarget;
   view.updateMatrixWorld(true);
@@ -176,7 +179,7 @@ it.each(['right', 'left'] as const)('keeps the %s arm out of every sight line to
       raycaster.far = target.distanceTo(eye);
       const [hit] = raycaster.intersectObject(arm, true);
       if (hit) {
-        blocked.push(`${ring}@${step}: arm part ${arm.children.indexOf(hit.object)}`);
+        blocked.push(`${ring}@${step}: arm part ${hit.object.name}`);
       }
     }
   }
@@ -193,10 +196,11 @@ it.each(['right', 'left'] as const)('keeps the held oil lamp flame visible beyon
   expect(toggleLight(registry, lamp, 0)).toBeUndefined();
   const models = {
     version: 0,
-    has: () => true,
+    ...figureModels,
+    has: (id: string) => id === definition.id || figureModels.has(id),
     heldLook: () => ({ root: prepareModel(definition, scene.clone()).held, parts: [], slots: {} }),
   } as unknown as ModelLibrary;
-  const held = new HeldItems(inventory, models, registry.figures.get('player')!.palette);
+  const held = new HeldItems(inventory, models, playerFigure);
   try {
     held.update(new PerspectiveCamera());
     const { scene: view, camera } = held.warmUpTarget;

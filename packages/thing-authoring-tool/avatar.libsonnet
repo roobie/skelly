@@ -5,6 +5,28 @@ local hip(x) = { part: 'bust', solid: 'pelvis', fraction: [x, 0.12, 0.5] };
 local skin = 'body-skin-player';
 local shirt = 'cloth-shirt-player';
 local pants = 'cloth-pants-player';
+// The arm's measures; shoulder to fingertip reaches mid-thigh on the standing figure.
+local arm = {
+  upperLength: 0.3, upperWidth: 0.085, upperDepth: 0.09, sleeveLength: 0.15,
+  foreLength: 0.25, foreWidth: 0.08, wristWidth: 0.06,
+  palmLength: 0.1, palmWidth: 0.085, palmThickness: 0.032, fingerLength: 0.08, thumbLength: 0.06,
+  sleeveThickness: 0.008, seamOverlap: 0.01, handOverlap: 0.005, armChamfer: 0.03, wristChamfer: 0.02,
+  foreDepthExtra: 0.004, wristDepthExtra: 0.006, wristShare: 0.45,
+  fingerThicknessShare: 0.8, thumbThicknessShare: 0.7, fingerFrontShare: 0.9, thumbRootShare: 0.3,
+  thumbInset: 0.004, thumbProjection: 0.014,
+};
+// An arm joint: the socket on the segment above, at the joint, faces down; the pin at the segment's own origin faces
+// up, so mated the lower segment hangs straight from the joint.
+local jointSocket(id, pos) = { id: id, mount: 'assembly-joint', gender: 'female', pos: pos, normal: [0, -1, 0], up: [0, 0, 1], required: true };
+local jointPin(id) = { id: id, mount: 'assembly-joint', gender: 'male', pos: [0, 0, 0], normal: [0, 1, 0], up: [0, 0, 1], required: true };
+local armSegment(id, massKg, finish, ports) = {
+  id: id,
+  family: 'avatarArm',
+  massKg: massKg,
+  params: params(arm { segment: id }),
+  finish: finish,
+  ports: ports,
+};
 [
   {
     id: 'player_bust',
@@ -47,26 +69,35 @@ local pants = 'cloth-pants-player';
   {
     id: 'player_arm',
     exportMass: 'parts',
-    parts: [{
-      id: 'arm',
-      family: 'avatarArm',
-      massKg: 3.5,
-      // Shoulder to fingertip reaches mid-thigh on the standing figure.
-      params: params({
-        upperLength: 0.3, upperWidth: 0.085, upperDepth: 0.09, sleeveLength: 0.15,
-        foreLength: 0.25, foreWidth: 0.08, wristWidth: 0.06,
-        palmLength: 0.1, palmWidth: 0.085, palmThickness: 0.032, fingerLength: 0.08, thumbLength: 0.06,
-        sleeveThickness: 0.008, seamOverlap: 0.01, handOverlap: 0.005, armChamfer: 0.03, wristChamfer: 0.02,
-        foreDepthExtra: 0.004, wristDepthExtra: 0.006, wristShare: 0.45,
-        fingerThicknessShare: 0.8, thumbThicknessShare: 0.7, fingerFrontShare: 0.9, thumbRootShare: 0.3,
-        thumbInset: 0.004, thumbProjection: 0.014,
-      }),
-      finish: { shirt: shirt, skin: skin },
-      ports: [],
-    }],
-    connections: [],
-    // The joint the arm hangs from and turns about; it sits at the bust's shoulder anchor.
-    anchors: { shoulder: { part: 'arm', solid: 'sleeve', fraction: [0.5, 1, 0.5] } },
+    // One segment per part so the first-person view bends the arm at its joints; each segment is drawn about its
+    // own joint and mates to the segment above it there, so the whole hangs exactly as one piece would.
+    parts: [
+      armSegment('upper', 1.9, { shirt: shirt, skin: skin }, [jointSocket('elbow', [0, -arm.upperLength, 0])]),
+      armSegment('fore', 1.1, { skin: skin }, [jointPin('elbow'), jointSocket('wrist', [0, -arm.foreLength, 0])]),
+      armSegment('palm', 0.3, { skin: skin }, [
+        jointPin('wrist'),
+        jointSocket('knuckles', [0, -arm.palmLength, 0]),
+        jointSocket('thumb', [0, -arm.palmLength * arm.thumbRootShare, arm.palmWidth / 2 - arm.thumbInset]),
+      ]),
+      armSegment('fingers', 0.15, { skin: skin }, [jointPin('knuckles')]),
+      armSegment('thumb', 0.05, { skin: skin }, [jointPin('thumb')]),
+    ],
+    connections: [
+      { from: 'upper.elbow', to: 'fore.elbow' },
+      { from: 'fore.wrist', to: 'palm.wrist' },
+      { from: 'palm.knuckles', to: 'fingers.knuckles' },
+      { from: 'palm.thumb', to: 'thumb.thumb' },
+    ],
+    // The pivots code poses from: the shoulder the arm hangs from, sitting at the bust's shoulder anchor, each joint
+    // below it, and the grip a held item sits at in the palm.
+    anchors: {
+      shoulder: { part: 'upper', solid: 'sleeve', fraction: [0.5, 1, 0.5] },
+      elbow: { part: 'upper', solid: 'upper-arm', fraction: [0.5, 0, 0.5] },
+      wrist: { part: 'fore', solid: 'wrist', fraction: [0.5, 0, 0.5] },
+      knuckles: { part: 'palm', solid: 'palm', fraction: [0.5, 0, 0.5] },
+      thumb_root: { part: 'thumb', solid: 'thumb', fraction: [0.5, 1, 0] },
+      grip: { part: 'palm', solid: 'palm', fraction: [0.5, 0.5, 0.5] },
+    },
   },
   {
     id: 'player_leg',

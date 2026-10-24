@@ -31,13 +31,14 @@ it('the firing hand follows the exported bolt knob rather than moving the suppor
     let knob: Object3D | undefined;
     const models = {
       version: 0,
+      has: () => false,
       heldLook: () => {
         const clone = cloneHeldModel(prepared.held, paths);
         knob = clone.parts.find((part) => part.id === 'knob')!.node;
         return { ...clone, slots: {} };
       },
     } as unknown as ModelLibrary;
-    const held = new HeldItems(inventory, models, registry.figures.get('player')!.palette);
+    const held = new HeldItems(inventory, models, registry.figures.get('player')!);
     const queue = new HandlingQueue(inventory);
     const mechanics = new FirearmMechanics(inventory, queue, {
       blockSize: 0.5,
@@ -74,7 +75,7 @@ const loadPoseContent = (kind: 'pump' | 'bolt') => {
     (definition) => definition.ammo?.calibre === sourceModel?.gun?.calibre && definition.model,
   );
   const carrier = definitions.find((definition) => definition.wearable?.slot === 'back' && definition.container);
-  const figure = [...registry.figures.values()].find((definition) => definition.palette);
+  const figure = registry.figures.get('player');
   if (!(pump && sourceModel?.gun?.action && sourceModel.gun.internalMagazine && ammo && carrier && figure)) {
     throw new Error('Missing load-pose fixture capabilities');
   }
@@ -123,6 +124,7 @@ it.each(SIDES.flatMap((holdingSide) => (['pump', 'bolt'] as const).map((kind) =>
     };
     const models = {
       version: 0,
+      has: () => false,
       held: () => {
         const root = new Group();
         root.name = 'load-shell-probe';
@@ -136,7 +138,7 @@ it.each(SIDES.flatMap((holdingSide) => (['pump', 'bolt'] as const).map((kind) =>
         return { root, parts: [], slots: {} };
       },
     } as unknown as ModelLibrary;
-    const held = new HeldItems(inventory, models, figure.palette);
+    const held = new HeldItems(inventory, models, figure);
     const camera = new PerspectiveCamera();
     const supportSide = holdingSide === 'right' ? 'left' : 'right';
     const { scene } = held.warmUpTarget;

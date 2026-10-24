@@ -2,7 +2,22 @@
   "id": "player_arm",
   "file": "assets/models/player_arm.glb",
   "parts": {
-    "arm": { "node": "arm:avatarArm", "massKg": 3.5, "centreOfMass": [0, -0.2773447069116361, 0.0002624671916010499] }
+    "upper": { "node": "upper:upper", "massKg": 1.9, "centreOfMass": [0, -0.14138554216867472, 0] },
+    "fore": { "node": "fore:fore", "massKg": 1.1, "centreOfMass": [-5.00495294549375e-17, -0.411218487394958, 0] },
+    "palm": { "node": "palm:palm", "massKg": 0.3, "centreOfMass": [-1.469460465287658e-16, -0.6000000000000001, 0] },
+    "fingers": {
+      "node": "fingers:fingers",
+      "massKg": 0.15,
+      "centreOfMass": [-2.5368555600494065e-16, -0.6900000000000001, 0]
+    },
+    "thumb": { "node": "thumb:thumb", "massKg": 0.05, "centreOfMass": [-2.241929430395516e-16, -0.61, 0.05] }
   },
-  "anchors": { "shoulder": [0, 0, 0] }
+  "anchors": {
+    "elbow": [0, -0.3, 0],
+    "grip": [-1.469460465287658e-16, -0.6000000000000001, 0],
+    "knuckles": [-1.5919251452023932e-16, -0.65, 0],
+    "shoulder": [0, 0, 0],
+    "thumb_root": [-2.131711218472254e-16, -0.58, 0.04],
+    "wrist": [-6.878008645017359e-17, -0.55, 0]
+  }
 }

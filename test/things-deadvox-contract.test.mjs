@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { buildRegistry } from '../packages/deadvox/src/core/content.ts';
 import { typeWeightGrams } from '../packages/deadvox/src/core/items.ts';
-import { ModelSchema } from '../packages/deadvox/src/core/schema.ts';
+import { ARM_SEGMENTS, ModelSchema } from '../packages/deadvox/src/core/schema.ts';
 import { namedNodes } from '../packages/deadvox/src/render/firearmModel.ts';
 import { catalogue } from '../packages/thing-authoring-tool/src/catalogue.ts';
 import { loadThingRecipe } from '../packages/thing-authoring-tool/src/exports.ts';
@@ -24,10 +24,21 @@ const { registry, issues } = buildRegistry(
     .filter((file) => file.endsWith('.json'))
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) })),
 );
-/** Each part a figure row names: its model and the joint anchors the row names on it. */
+/** Each part a figure row names: its model, the anchors the row names on it and, for an arm, the rig's parts. */
 const figureParts = [...registry.figures.values()].flatMap((figure) => [
-  { model: figure.body.model, joints: figure.body.joints },
-  ...Object.entries(figure.limbs).map(([limb, { model, joint }]) => ({ model, joints: { [limb]: joint } })),
+  { model: figure.body.model, joints: figure.body.joints, parts: [] },
+  ...Object.entries(figure.limbs).map(([limb, { model, joint }]) => {
+    if (!limb.endsWith('Arm')) {
+      return { model, joints: { [limb]: joint }, parts: [] };
+    }
+    const rig = figure.armRig;
+    const pivots = Object.fromEntries(ARM_SEGMENTS.map((segment) => [`${segment} pivot`, rig[segment].pivot]));
+    return {
+      model,
+      joints: { [limb]: joint, grip: rig.grip, ...pivots },
+      parts: ARM_SEGMENTS.map((segment) => rig[segment].part),
+    };
+  }),
 ]);
 const figureModels = new Set(figureParts.map(({ model }) => model));
 
@@ -115,13 +126,16 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
       assert.ok(model && Object.keys(model.parts ?? {}).length > 0, `${id}: empty model`);
     }
   });
-  it('resolves every figure part to an exported model holding each joint anchor', () => {
+  it('resolves every figure part to an exported model holding each named anchor and rig part', () => {
     assert.ok(registry.figures.size > 0, 'the base content must author a figure');
     for (const part of figureParts) {
       const out = exported.find(({ id }) => id === part.model);
       assert.ok(out, `${part.model}: no recipe export`);
       for (const [joint, anchor] of Object.entries(part.joints)) {
         assert.ok(out.modelEntry.anchors?.[anchor], `${part.model}: ${joint} names missing anchor ${anchor}`);
+      }
+      for (const rigPart of part.parts) {
+        assert.ok(out.modelEntry.parts?.[rigPart], `${part.model}: rig names missing part ${rigPart}`);
       }
     }
   });
@@ -182,7 +196,10 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
     );
   });
   it('reports the sum of authored parts as the multi-part item weight', () => {
-    const multi = recipe.filter((row) => catalogue.items.find(({ id }) => id === row.source).parts.length > 1);
+    // A figure part is multi-part too, but no item holds it, so it has no weight to report.
+    const multi = recipe.filter(
+      (row) => !figureModels.has(row.id) && catalogue.items.find(({ id }) => id === row.source).parts.length > 1,
+    );
     assert.ok(multi.length > 0, 'the slice must exercise a multi-part item');
     for (const row of multi) {
       const model = registry.models.get(row.id);

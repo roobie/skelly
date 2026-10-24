@@ -1,7 +1,6 @@
-// The player's world body and held-item arms: the figure row's authored models posed about their joints, and a
-// short first-person arm ending at each held item's grip.
+// The player's world body: the figure row's authored models posed about their joints.
 
-import { BoxGeometry, Group, Mesh, MeshLambertMaterial, Object3D, Vector3 } from 'three';
+import { Group, Object3D, type Vector3 } from 'three';
 import type { BodyRegion } from '../core/body.ts';
 import type { FigureDef, ModelDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
@@ -111,53 +110,10 @@ const playerFigureLayout = (
   return { hipHeight, joints, parts: [{ name: 'body', model: body.model, at }, ...limbs] };
 };
 
+/** Where the first-person view hangs each arm, in the eye's frame (`src/render/hands.ts`, `HeldItems`). */
 export const FIRST_PERSON_SHOULDER: Readonly<Record<HandSide, Vec3>> = {
   right: [0.3, -0.55, 0.05],
   left: [-0.3, -0.55, 0.05],
-};
-/** The first-person hand's box: across the palm, along the fingers, and through from palm to back. */
-export const FIRST_PERSON_PALM: Vec3 = [0.09, 0.08, 0.09];
-const SEGMENT_UP = new Vector3(0, 1, 0);
-const segmentDirection = new Vector3();
-
-export const placeFirstPersonSegment = (
-  mesh: Mesh,
-  start: Vector3,
-  end: Vector3,
-  { width, depth }: { width: number; depth: number },
-): void => {
-  segmentDirection.subVectors(end, start);
-  const length = segmentDirection.length();
-  mesh.position.copy(start).add(end).multiplyScalar(0.5);
-  mesh.quaternion.setFromUnitVectors(SEGMENT_UP, segmentDirection.normalize());
-  mesh.scale.set(width, length, depth);
-};
-
-/** A sleeve, skin forearm and hand whose palm anchor is exactly at `grip`. */
-export const createFirstPersonArm = (palette: FigureDef['palette'], side: HandSide, grip: Vec3): Group => {
-  const arm = new Group();
-  arm.name = `first-person-arm-${side}`;
-  const shirt = new MeshLambertMaterial({ color: palette.shirt });
-  const skin = new MeshLambertMaterial({ color: palette.skin });
-  const geometry = new BoxGeometry(1, 1, 1);
-  const shoulder = new Vector3(...FIRST_PERSON_SHOULDER[side]);
-  const wrist = new Vector3(...grip);
-  const elbow = shoulder.clone().lerp(wrist, 0.56);
-  const sleeve = new Mesh(geometry, shirt);
-  placeFirstPersonSegment(sleeve, shoulder, elbow, { width: 0.12, depth: 0.12 });
-  arm.add(sleeve);
-  const forearm = new Mesh(geometry, skin);
-  placeFirstPersonSegment(forearm, elbow, wrist, { width: 0.09, depth: 0.09 });
-  arm.add(forearm);
-  const palm = new Mesh(new BoxGeometry(...FIRST_PERSON_PALM), skin);
-  palm.position.copy(wrist);
-  palm.quaternion.setFromUnitVectors(SEGMENT_UP, wrist.clone().sub(elbow).normalize());
-  arm.add(palm);
-  const gripAnchor = new Object3D();
-  gripAnchor.name = 'grip-anchor';
-  gripAnchor.position.copy(wrist);
-  arm.add(gripAnchor);
-  return arm;
 };
 
 export interface PlayerFigurePose {
