@@ -2,7 +2,7 @@ import { buildingBounds } from './core/authoredTerrain.mjs';
 import type { Chunk } from './core/chunk.ts';
 import { blockColors } from './core/content.ts';
 import { CHUNK, compassBearing, toChunk, toLocal } from './core/coords.ts';
-import { BLOCK_SIZE } from './core/scale.ts';
+import { BLOCK_SIZE, WORLD_BOTTOM_M } from './core/scale.ts';
 import { sitePalette, terrainShapeOf } from './core/sitePalette.ts';
 import { generateColumn, worldGroundAt } from './core/worldgen.ts';
 import { buildBundledContent } from './game/bundledContent.ts';
@@ -15,6 +15,7 @@ import {
   siteMapPixels,
   siteMapRasterToWorld,
   siteMapWorldToRaster,
+  topSolidAtOrBelow,
 } from './render/siteMap.ts';
 
 const CELL_SIZE = BLOCK_SIZE;
@@ -65,7 +66,8 @@ const mapGrid = { originX: bounds.minX, originZ: bounds.minZ, cellSize: CELL_SIZ
 const blockGrid = { originX: minBlockX, originZ: minBlockZ, cellSize: 1 };
 const width = maxBlockX - minBlockX;
 const height = maxBlockZ - minBlockZ;
-const heights = new Float32Array(width * height);
+let heights: Float32Array = new Float32Array(width * height);
+const sliceEmptyMetres = WORLD_BOTTOM_M;
 const blockIds = new Uint16Array(width * height);
 const terrain = {
   seed,
@@ -81,6 +83,8 @@ const status = document.querySelector<HTMLElement>('#map-status')!;
 const pointPanel = document.querySelector<HTMLElement>('#point')!;
 const label = document.querySelector<HTMLElement>('#map-label')!;
 const errorPanel = document.querySelector<HTMLElement>('#error')!;
+const sliceReadout = document.querySelector<HTMLElement>('#slice')!;
+const surfaceButton = document.querySelector<HTMLButtonElement>('#slice-surface')!;
 document.querySelector('#seed')!.textContent = `${seed} · ${config.site}`;
 if (overlay) {
   document.body.classList.add('map-overlay');
@@ -107,8 +111,16 @@ if (overlay) {
   document.querySelector<HTMLButtonElement>('#close')!.addEventListener('click', requestClose);
   document.querySelector<HTMLElement>('#hint')!.textContent =
     'Drag to pan · wheel to zoom · click for ground coordinates · Esc to close';
-  globalThis.onkeydown = (event) => forwardKey(event, 'down');
-  globalThis.onkeyup = (event) => forwardKey(event, 'up');
+  globalThis.onkeydown = (event) => {
+    if (!sliceKey(event)) {
+      forwardKey(event, 'down');
+    }
+  };
+  globalThis.onkeyup = (event) => {
+    if (!sliceKeyCodes.has(event.code)) {
+      forwardKey(event, 'up');
+    }
+  };
 }
 
 interface RasterMap {
@@ -123,7 +135,21 @@ interface Viewport {
   fitScale: number;
 }
 
+interface SliceMap {
+  raster: RasterMap;
+  heights: Float32Array;
+}
+
 let raster: RasterMap | undefined;
+/** The surface view, kept so the way back needs no regeneration. */
+let surface: SliceMap | undefined;
+/** Block-grid y of the highest ground in the map; stepping starts below it. */
+let surfaceTopBlock = 0;
+/** Block-grid ceiling of the shown slice; undefined is the surface. */
+let slice: number | undefined;
+let wantedSlice: number | undefined;
+let sliceBusy = false;
+const slices = new Map<number, SliceMap>();
 let view: SiteMapView = selectedView;
 let viewport: Viewport | undefined;
 let selected: { x: number; y: number; z: number } | undefined;
@@ -161,28 +187,6 @@ const processInFrames = (
     requestAnimationFrame(runBatch);
   });
 
-const topSolidBlock = (chunks: ReturnType<typeof generateColumn>, x: number, z: number): number => {
-  for (let ci = chunks.length - 1; ci >= 0; ci -= 1) {
-    const chunk = chunks[ci]!;
-    const uniform = chunk.uniformId;
-    if (uniform !== undefined) {
-      if (uniform !== 0) {
-        return uniform;
-      }
-      continue;
-    }
-    const data = chunk.raw()!;
-    const columnStart = x + CHUNK * z;
-    for (let y = CHUNK - 1; y >= 0; y -= 1) {
-      const id = data[columnStart + CHUNK * CHUNK * y]!;
-      if (id !== 0) {
-        return id;
-      }
-    }
-  }
-  return 0;
-};
-
 const sampleGround = async () => {
   status.textContent = 'Sampling the same ground heights used by world generation…';
   await processInFrames(
@@ -210,7 +214,8 @@ const sampleGround = async () => {
   );
 };
 
-const sampleTopBlocks = async (): Promise<{ columns: number; realSeconds: number }> => {
+/** `ceilingY` cuts the world at that block-grid height; undefined is the surface view. */
+const sampleTopBlocks = async (ceilingY?: number): Promise<{ columns: number; realSeconds: number }> => {
   const minCx = toChunk(minBlockX);
   const minCz = toChunk(minBlockZ);
   const countZ = Math.ceil(maxBlockZ / CHUNK) - minCz;
@@ -232,7 +237,12 @@ const sampleTopBlocks = async (): Promise<{ columns: number; realSeconds: number
         const localZ = toLocal(blockZ);
         for (let blockX = x0; blockX < x1; blockX += 1) {
           const { column, row } = siteMapWorldToRaster(blockX, blockZ, blockGrid);
-          blockIds[column + row * width] = topSolidBlock(chunks, toLocal(blockX), localZ);
+          const cell = column + row * width;
+          const found = topSolidAtOrBelow(chunks, toLocal(blockX), localZ, ceilingY);
+          blockIds[cell] = found?.id ?? 0;
+          if (ceilingY !== undefined) {
+            heights[cell] = found ? (found.y + 1) * CELL_SIZE : sliceEmptyMetres;
+          }
         }
       }
     },
@@ -293,17 +303,76 @@ const addContours = async (topographic: HTMLCanvasElement) => {
   );
 };
 
-const generateMap = async (): Promise<RasterMap> => {
-  await sampleGround();
-  const generated = await sampleTopBlocks();
+const generateMap = async (ceilingY?: number): Promise<RasterMap> => {
+  if (ceilingY === undefined) {
+    await sampleGround();
+  } else {
+    heights = new Float32Array(width * height);
+  }
+  const generated = await sampleTopBlocks(ceilingY);
   const shades = hillshade(heights, width, height, CELL_SIZE);
   const colors = blockColors(registry);
   const topographic = makeRaster('topographic', shades, colors);
   const satellite = makeRaster('satellite', shades, colors);
   await addContours(topographic);
   status.textContent = `Ready · generated ${generated.columns} chunk columns in ${generated.realSeconds.toFixed(1)} s`;
-  document.documentElement.dataset.ready = 'true';
   return { topographic, satellite };
+};
+
+const sliceLabel = (): string =>
+  slice === undefined ? 'SURFACE' : `SLICE · y ${((slice + 1) * CELL_SIZE).toFixed(1)} m`;
+
+const updateLabel = () => {
+  const viewName = view === 'topographic' ? 'TOPOGRAPHIC' : 'BLOCK COLOURS';
+  label.textContent = `${config.site.toUpperCase()} · ${viewName} · ${sliceLabel()}`;
+  sliceReadout.textContent =
+    slice === undefined
+      ? 'Surface view'
+      : `Cut at y ${((slice + 1) * CELL_SIZE).toFixed(1)} m · everything above is left out`;
+  surfaceButton.disabled = slice === undefined;
+};
+
+/** Shows the wanted slice; a step requested while one generates is picked up by the recursion. */
+const settleSlice = async (home: SliceMap): Promise<void> => {
+  const next = wantedSlice;
+  if (slice === next) {
+    return;
+  }
+  let shown = next === undefined ? home : slices.get(next);
+  if (!shown && next !== undefined) {
+    shown = { raster: await generateMap(next), heights };
+    slices.set(next, shown);
+  }
+  if (shown) {
+    ({ raster, heights } = shown);
+  }
+  slice = next;
+  selected = undefined;
+  pointPanel.textContent = 'Click a point on the map.';
+  updateLabel();
+  draw();
+  await settleSlice(home);
+};
+
+/** Steps the cut height; stepping up past the highest ground, or Home, returns to the surface. */
+const showSlice = async (target: number | undefined) => {
+  wantedSlice = target !== undefined && target >= surfaceTopBlock ? undefined : target;
+  if (!surface || sliceBusy) {
+    return;
+  }
+  sliceBusy = true;
+  try {
+    await settleSlice(surface);
+  } catch (error) {
+    errorPanel.hidden = false;
+    errorPanel.textContent = error instanceof Error ? error.message : String(error);
+  } finally {
+    sliceBusy = false;
+  }
+};
+
+const stepSlice = (blocks: number) => {
+  showSlice((wantedSlice ?? surfaceTopBlock) + blocks);
 };
 
 const boundsWidth = bounds.maxX - bounds.minX;
@@ -685,7 +754,7 @@ for (const button of viewButtons) {
     for (const candidate of viewButtons) {
       candidate.setAttribute('aria-pressed', String(candidate === button));
     }
-    label.textContent = `${config.site.toUpperCase()} · ${view === 'topographic' ? 'TOPOGRAPHIC' : 'BLOCK COLOURS'}`;
+    updateLabel();
     const url = new URL(globalThis.location.href);
     url.searchParams.set('view', view);
     globalThis.history.replaceState(null, '', url);
@@ -693,15 +762,46 @@ for (const button of viewButtons) {
   });
 }
 document.querySelector<HTMLButtonElement>('#fit')!.addEventListener('click', fitToBounds);
+document.querySelector<HTMLButtonElement>('#slice-down')!.addEventListener('click', () => stepSlice(-1));
+document.querySelector<HTMLButtonElement>('#slice-up')!.addEventListener('click', () => stepSlice(1));
+surfaceButton.addEventListener('click', () => showSlice(undefined));
+
+const sliceKeyCodes = new Set(['PageDown', 'PageUp', 'Home']);
+
+/** Keys that step the slice; the map handles them itself and does not forward them to the game. */
+const sliceKey = (event: KeyboardEvent): boolean => {
+  const stride = event.shiftKey ? CHUNK : 1;
+  if (event.code === 'PageDown') {
+    stepSlice(-stride);
+  } else if (event.code === 'PageUp') {
+    stepSlice(stride);
+  } else if (event.code === 'Home') {
+    showSlice(undefined);
+  } else {
+    return false;
+  }
+  event.preventDefault();
+  return true;
+};
+globalThis.addEventListener('keydown', (event) => {
+  if (!overlay) {
+    sliceKey(event);
+  }
+});
 globalThis.addEventListener('resize', resize);
 
 try {
   raster = await generateMap();
+  surface = { raster, heights };
+  surfaceTopBlock = Math.floor(
+    heights.reduce((top, value) => Math.max(top, value), Number.NEGATIVE_INFINITY) / CELL_SIZE,
+  );
   for (const button of viewButtons) {
     button.setAttribute('aria-pressed', String(button.dataset.view === view));
   }
-  label.textContent = `${config.site.toUpperCase()} · ${view === 'topographic' ? 'TOPOGRAPHIC' : 'BLOCK COLOURS'}`;
+  updateLabel();
   resize();
+  document.documentElement.dataset.ready = 'true';
 } catch (error) {
   errorPanel.hidden = false;
   errorPanel.textContent = error instanceof Error ? error.message : String(error);
