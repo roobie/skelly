@@ -30,6 +30,14 @@ local looks = {
   tube_magazine: { name: 'Shotgun magazine tube', size: [1, 3] },
   forend_pump: { name: 'Pump forend', size: [1, 2] },
   stock_tapered_medium: { name: 'Tapered stock', size: [2, 3] },
+  revolver_frame: { name: 'Revolver frame', size: [2, 2] },
+  revolver_barrel: { name: 'Revolver barrel', size: [1, 2] },
+  revolver_cylinder: { name: 'Revolver cylinder', size: [1, 1] },
+  revolver_crane: { name: 'Revolver crane', size: [1, 1] },
+  revolver_ejector: { name: 'Revolver ejector', size: [1, 1] },
+  revolver_grip: { name: 'Revolver grip', size: [1, 2] },
+  revolver_hammer: { name: 'Revolver hammer', size: [1, 1] },
+  revolver_trigger: { name: 'Revolver trigger', size: [1, 1] },
 };
 local ids = std.set([entry.id for entry in catalogue.parts if std.objectHas(entry, 'params')]);
 assert ids == std.set(std.objectFields(looks)) :
