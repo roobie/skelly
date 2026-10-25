@@ -13,7 +13,6 @@ import { installFlashlightSpill, setFlashlightSpill, spillHalfAngle } from './fl
 import type { HeldItems } from './hands.ts';
 import { installNearFieldFalloff } from './lightFalloff.ts';
 import type { PileMeshes } from './piles.ts';
-import { FIRST_PERSON_SHOULDER } from './playerFigure.ts';
 
 /** Sun plus ambient intensity at which the beam is at half strength. */
 export const HALF_BRIGHTNESS = 0.9;
@@ -111,10 +110,7 @@ export class Flashlight {
   private aim(item: Item, wornMount: boolean, held: HeldItems, camera: PerspectiveCamera): void {
     if (wornMount) {
       // Slung guns have no first-person model; use the body's shoulder, not the eye or held lens.
-      this.at
-        .set(...FIRST_PERSON_SHOULDER.right)
-        .applyQuaternion(camera.quaternion)
-        .add(camera.position);
+      this.at.copy(held.viewShoulder('right')).applyQuaternion(camera.quaternion).add(camera.position);
       this.ahead.set(0, -1, 0);
       return;
     }

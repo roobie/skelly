@@ -177,6 +177,8 @@ const BlockSchema = strictObject({
   /** Blocks sight/aim/picking; ordinary blocks inherit their movement rule when omitted. */
   opaque: optional(vBoolean()),
   soundBlocking: optional(vBoolean()),
+  /** A medium the body can be in, such as water; never derived from `solid`, since air is not solid either. */
+  liquid: optional(vBoolean()),
   meleePass: optional(
     strictObject({
       motions: array(picklist(MELEE_MOTIONS)),
@@ -1667,6 +1669,8 @@ const SoundSchema = strictObject({
   ),
   gain: pipe(Positive, maxValue(1, 'must be at most 1')),
   lowShelf: optional(strictObject({ frequencyHz: Positive, gainDb: pipe(number(), finite()) })),
+  /** Scrambles the voice: a carrier of this frequency multiplies the sample by `1 - depth + depth * carrier`. */
+  ringMod: optional(strictObject({ frequencyHz: Positive, depth: pipe(Positive, maxValue(1, 'must be at most 1')) })),
   pitchJitter: SoundMultipliers,
   gainJitter: SoundMultipliers,
   minIntervalSimSeconds: SimSeconds,
@@ -2049,17 +2053,45 @@ const CompassDialSchema = strictObject({
 });
 export type CompassDial = InferOutput<typeof CompassDialSchema>;
 
+/**
+ * How a hand closes, by name: the empty fist, a hand around a plain grip, flat on a screen, a firing hand on a pistol
+ * grip or on a stock wrist, or a support hand on a forend.
+ */
+const HAND_POSES = ['fist', 'holding', 'open', 'pistolGrip', 'stockWrist', 'forend'] as const;
+
+/**
+ * One hand's hold on a held model, in the model's frame as authored for a right-handed hold: where the palm's face
+ * meets the model, which way the palm presses and which way the straight fingers point before they curl. A left
+ * hold mirrors the model's z. The palm and fingers are perpendicular, which validation checks.
+ */
+const HandHoldSchema = strictObject({ at: Point, palm: UnitVector, fingers: UnitVector, pose: picklist(HAND_POSES) });
+
+/**
+ * A long gun's hold (`DESIGN.md`, "Models"): the butt sits at `seat` in the eye's frame (x right, y up, z back) for
+ * a right-handed hold, the left mirrors x; lowering the gun turns it about `butt`, a model point, so the stock stays
+ * in the shoulder; the firing hand takes the pistol grip or the stock wrist and the support hand the forend.
+ */
+const HandsModelSchema = strictObject({
+  seat: Point,
+  butt: Point,
+  firing: HandHoldSchema,
+  support: HandHoldSchema,
+});
+export type HandsModelDef = InferOutput<typeof HandsModelSchema>;
+
 export const ModelSchema = pipe(
   modelSchema({
     gun: optional(GunModelSchema),
     dial: optional(CompassDialSchema),
     lever: optional(LeverModelSchema),
     pin: optional(PinModelSchema),
+    hands: optional(HandsModelSchema),
   }),
   check(
     ({ gun, anchors }) => gun?.internalMagazine === undefined || anchors?.loading_port !== undefined,
     'internal magazine metadata needs a loading_port anchor',
   ),
+  check(({ hands, grip }) => hands === undefined || grip !== undefined, 'hands need a grip to hold by'),
 );
 
 // ---- furniture ----
@@ -2719,6 +2751,12 @@ const TerrainPrimitive = union([
     radii: tuple([PositiveMetres, PositiveMetres]),
     rise: PositiveMetres,
   }),
+  strictObject({
+    kind: literal('basin'),
+    centre: LayoutPoint,
+    radii: tuple([PositiveMetres, PositiveMetres]),
+    depth: PositiveMetres,
+  }),
 ]);
 const FixedLootOverride = strictObject({
   lootUsage: optional(UsageSchema),
@@ -2733,6 +2771,8 @@ const LayoutBuilding = strictObject({
   rotation: picklist([0, 90, 180, 270], 'rotation must be a quarter turn'),
   storeys: optional(pipe(Count, minValue(1), maxValue(8))),
   fixedLoot: optional(array(FixedLootOverride)),
+  /** The lot stands in water on purpose, so the flooded-lot check skips it. */
+  overWater: optional(vBoolean()),
 });
 const LayoutRect = pipe(
   strictObject({ x0: Metres, z0: Metres, x1: Metres, z1: Metres }),
@@ -2822,6 +2862,18 @@ const SiteLayoutSchema = strictObject({
   ),
   hordes: optional(array(strictObject({ id: Id, position: MetrePosition }))),
   woodlands: array(strictObject({ polygon: pipe(array(LayoutPoint), minLength(3)), density: Fraction })),
+  /** Standing water: wherever a column inside the polygon has its bed below the level, water fills up to it. */
+  water: optional(
+    array(
+      strictObject({
+        /** The water's top face, the plane a swimmer floats at; `ground` is instead a block's lower face. */
+        level: HalfMetres,
+        polygon: pipe(array(LayoutPoint), minLength(3)),
+        /** How far from the water the ground turns to sand. */
+        shore: pipe(Metres, minValue(0)),
+      }),
+    ),
+  ),
   tracks: array(
     strictObject({
       points: pipe(array(LayoutPoint), minLength(2)),
@@ -3259,12 +3311,8 @@ const ZombieSchema = strictObject({
   spawnWeight: pipe(Positive, maxValue(1, 'must be at most 1')),
   /** Excludes this kind from ordinary settlement selection while keeping authored/debug spawns available. */
   authoredOnly: optional(vBoolean()),
-  sounds: strictObject({
-    idle: picklist(SOUND_EVENT_IDS),
-    alert: picklist(SOUND_EVENT_IDS),
-    attack: picklist(SOUND_EVENT_IDS),
-    hurt: picklist(SOUND_EVENT_IDS),
-  }),
+  /** Sound ids are content references, so a new voice needs content only; the registry checks each exists. */
+  sounds: strictObject({ idle: Id, alert: Id, attack: Id, hurt: Id }),
   /** Fraction of each melee damage type resisted by each region; omitted entries are neutral. */
   meleeDamageResistance: optional(MeleeDamageResistanceSchema),
   /** Fraction of acid damage resisted, whatever the region; 1 is immune and omitted is neutral. */
@@ -3454,59 +3502,101 @@ const StancePoseSchema = strictObject({
   torsoForwardDegrees: Degrees,
   /** Legs and feet swing forward about the hip; negative swings them back. */
   legsForwardDegrees: Degrees,
+  /** Each shin and foot swing back about the knee. */
+  kneeBendDegrees: Degrees,
+  /** Each foot turns toe up about the ankle. */
+  ankleDegrees: Degrees,
+  /** Each arm swings forward about its shoulder, from hanging along the torso. */
+  armsForwardDegrees: Degrees,
+  /** Each forearm and hand swing forward and up about the elbow, from hanging along the upper arm. */
+  elbowBendDegrees: Degrees,
+  /** The head tips back about the neck, from standing on the torso. */
+  headUpDegrees: Degrees,
 });
 
-/** The player figure's box parts: the figure's look until an authored part draws one in its place. */
-export const FIGURE_BOX_PARTS = [
-  'body',
-  'head',
-  'leftUpperArm',
-  'rightUpperArm',
-  'leftForearm',
-  'rightForearm',
-  'leftHand',
-  'rightHand',
-  'leftLeg',
-  'rightLeg',
-  'leftFoot',
-  'rightFoot',
-] as const;
-export type FigureBoxPart = (typeof FIGURE_BOX_PARTS)[number];
-export type FigureLimb = 'torso' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg';
-/** The limb each box part moves and hides with; one authored part draws parts of one limb. */
-export const FIGURE_BOX_LIMBS: Readonly<Record<FigureBoxPart, FigureLimb>> = {
-  body: 'torso',
-  head: 'torso',
-  leftUpperArm: 'leftArm',
-  leftForearm: 'leftArm',
-  leftHand: 'leftArm',
-  rightUpperArm: 'rightArm',
-  rightForearm: 'rightArm',
-  rightHand: 'rightArm',
-  leftLeg: 'leftLeg',
-  leftFoot: 'leftLeg',
-  rightLeg: 'rightLeg',
-  rightFoot: 'rightLeg',
-};
-/** The pivots the rest of the figure hangs from and is posed about. */
+/** The limbs a figure hangs from its body, each at the body joint of the same name in `FIGURE_LIMB_JOINTS`. */
+export const FIGURE_LIMBS = ['leftArm', 'rightArm', 'leftLeg', 'rightLeg'] as const;
+export type FigureLimb = (typeof FIGURE_LIMBS)[number];
+/** The pivots the limbs hang from and are posed about. */
 const FIGURE_JOINTS = ['leftHip', 'rightHip', 'leftShoulder', 'rightShoulder'] as const;
 export type FigureJoint = (typeof FIGURE_JOINTS)[number];
+export const FIGURE_LIMB_JOINTS: Readonly<Record<FigureLimb, FigureJoint>> = {
+  leftArm: 'leftShoulder',
+  rightArm: 'rightShoulder',
+  leftLeg: 'leftHip',
+  rightLeg: 'rightHip',
+};
 
-/** An authored part of a figure: a model drawn in place of box parts; `DESIGN.md`, "Models". */
-const FigurePartSchema = strictObject({
-  model: Id,
-  draws: pipe(array(picklist(FIGURE_BOX_PARTS)), nonEmpty('must name a box part')),
-  /** Each joint names the model anchor it sits at. The part stands with its hips at the figure's hip height. */
-  joints: strictObject({ leftHip: Id, rightHip: Id, leftShoulder: optional(Id), rightShoulder: optional(Id) }),
+/** An authored limb: its model and the model anchor that sits at, and turns about, its body joint. */
+const FigureLimbSchema = strictObject({ model: Id, joint: Id });
+
+/** The arm model's segments, each a part the first-person view turns about its own joint; `DESIGN.md`, "Models". */
+export const ARM_SEGMENTS = ['upper', 'fore', 'hand', 'fingers', 'thumb'] as const;
+export type ArmSegment = (typeof ARM_SEGMENTS)[number];
+/** One segment: the limb model's part, and the model anchor it turns about. */
+const ArmSegmentSchema = strictObject({ part: Id, pivot: Id });
+/** How a hand closes: the fingers curl at the knuckles; the thumb folds across the palm and in toward it. */
+const HandPoseSchema = strictObject({ fingersDegrees: Degrees, thumbAcrossDegrees: Degrees, thumbInDegrees: Degrees });
+/** The first-person view's rig over the arm model (src/render/armRig.ts). */
+const ArmRigSchema = strictObject({
+  upper: ArmSegmentSchema,
+  fore: ArmSegmentSchema,
+  hand: ArmSegmentSchema,
+  fingers: ArmSegmentSchema,
+  thumb: ArmSegmentSchema,
+  /** The anchor on the palm's midline a held item's grip sits against, moved out to the palm's face. */
+  grip: Id,
+  /** One closing per `HAND_POSES` name; a held model's hold names the one its hand takes. */
+  handPoses: strictObject({
+    fist: HandPoseSchema,
+    holding: HandPoseSchema,
+    open: HandPoseSchema,
+    pistolGrip: HandPoseSchema,
+    stockWrist: HandPoseSchema,
+    forend: HandPoseSchema,
+  }),
+  /**
+   * Where the view hangs the right arm, in the eye's frame (x right, y up, z back); the left mirrors x. Presentation,
+   * not the body's own shoulder: wider and lower, so the arms show in view. Validation wants it right of and below
+   * the eye.
+   */
+  shoulderFromEye: Point,
 });
+export type ArmRigDef = InferOutput<typeof ArmRigSchema>;
 
-/** Actor palettes and poses are content so appearance doesn't live in renderer code. */
+/** The leg model's segments below the thigh, each turned about its own joint as a stance bends the leg. */
+export const LEG_SEGMENTS = ['shin', 'foot'] as const;
+export type LegSegment = (typeof LEG_SEGMENTS)[number];
+/** Both leg models' rig, from the hip down; the thigh is the rest of the model. */
+const LegRigSchema = strictObject({ shin: ArmSegmentSchema, foot: ArmSegmentSchema });
+export type HandPoseDef = InferOutput<typeof HandPoseSchema>;
+
+/** Actor models and poses are content so appearance doesn't live in renderer code; `DESIGN.md`, "Models". */
 const FigureSchema = strictObject({
   id: Id,
-  palette: strictObject({ skin: Color, shirt: Color, trousers: Color }),
-  /** Where the hips stand above the ground; box legs reach down from them, and stances pivot about them. */
+  /** Where the hips stand above the ground; stances pivot about them. */
   hipHeightMetres: Positive,
-  parts: optional(array(FigurePartSchema)),
+  /**
+   * The head and torso model; each joint names its anchor. It stands with its hips at the hip height. A stance turns
+   * the head part about its pivot.
+   */
+  body: strictObject({
+    model: Id,
+    joints: strictObject({ leftHip: Id, rightHip: Id, leftShoulder: Id, rightShoulder: Id }),
+    head: ArmSegmentSchema,
+  }),
+  limbs: strictObject({
+    leftArm: FigureLimbSchema,
+    rightArm: FigureLimbSchema,
+    leftLeg: FigureLimbSchema,
+    rightLeg: FigureLimbSchema,
+  }),
+  /** Both arm models' rig; the two arms share it because each is the mirror of the other. */
+  armRig: ArmRigSchema,
+  /** Both leg models' rig; the two legs share it because each is the mirror of the other. */
+  legRig: LegRigSchema,
+  /** Walking swings each leg about its hip and each arm, against its leg, about its shoulder; peak angles. */
+  gait: strictObject({ legSwingDegrees: Degrees, armSwingDegrees: Degrees }),
   stancePoses: strictObject({
     crouching: StancePoseSchema,
     prone: StancePoseSchema,
@@ -3732,7 +3822,7 @@ const SiteGenerationSchema = strictObject({
   }),
   // One palette shared by every site kind: terrain, paving, trees and litter are block ids.
   palette: strictObject({
-    terrain: strictObject({ grass: Id, dirt: Id, rock: Id, sand: Id }),
+    terrain: strictObject({ grass: Id, dirt: Id, rock: Id, sand: Id, water: Id }),
     paving: Id,
     trees: strictObject({ trunk: Id, branch: Id, leaves: Id }),
     leafLitter: Id,

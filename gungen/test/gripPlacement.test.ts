@@ -57,13 +57,17 @@ const gripMountFace = (assembly: Assembly, gripId: string): readonly Vec3[] => {
   const def = resolved.defs.get(gripId)!;
   const transform = resolved.placed.get(gripId)!;
   const port = def.ports.find(({ id }) => id === 'top')!;
-  const points = def.solids.flatMap((solid) =>
+  // A grip built of convex pieces shares its mount face's corners between pieces, so count each corner once.
+  const corners = def.solids.flatMap((solid) =>
     solid.kind === 'extruded-polygon'
-      ? solid.profile
-          .filter(([x, y]) => Math.abs((x - port.pos[0]) * port.normal[0] + (y - port.pos[1]) * port.normal[1]) < 1e-8)
-          .map(([x, y]) => applyPoint(transform, [x, y, 0]))
+      ? solid.profile.filter(
+          ([x, y]) => Math.abs((x - port.pos[0]) * port.normal[0] + (y - port.pos[1]) * port.normal[1]) < 1e-8,
+        )
       : [],
   );
+  const points = [
+    ...new Map(corners.map(([x, y]) => [`${x.toFixed(6)},${y.toFixed(6)}`, [x, y] as const])).values(),
+  ].map(([x, y]) => applyPoint(transform, [x, y, 0]));
   if (points.length !== 2) {
     throw new Error(`${assembly.name}: expected two grip mount face vertices, got ${points.length}`);
   }

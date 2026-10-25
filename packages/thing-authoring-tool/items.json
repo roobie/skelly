@@ -6079,51 +6079,53 @@
       "anchors": {
         "head": {
           "fraction": [0.5, 1, 0.5],
-          "part": "bust",
+          "part": "torso",
           "solid": "neck"
         },
         "hip_left": {
           "fraction": [0.75, 0.12, 0.5],
-          "part": "bust",
+          "part": "torso",
           "solid": "pelvis"
         },
         "hip_right": {
           "fraction": [0.25, 0.12, 0.5],
-          "part": "bust",
+          "part": "torso",
           "solid": "pelvis"
         },
         "neck": {
           "fraction": [0.5, 0, 0.5],
-          "part": "bust",
+          "part": "torso",
           "solid": "neck"
         },
         "shoulder_left": {
           "fraction": [0.5, 0.5, 0.5],
-          "part": "bust",
+          "part": "torso",
           "solid": "shoulder-left"
         },
         "shoulder_right": {
           "fraction": [0.5, 0.5, 0.5],
-          "part": "bust",
+          "part": "torso",
           "solid": "shoulder-right"
         }
       },
-      "connections": [],
+      "connections": [
+        {
+          "from": "torso.head",
+          "to": "head.head"
+        }
+      ],
       "exportMass": "parts",
       "id": "player_bust",
       "parts": [
         {
           "family": "bust",
           "finish": {
-            "eye": "body-eye",
-            "hair": "body-hair",
-            "mouth": "body-mouth",
             "pants": "cloth-pants-player",
             "shirt": "cloth-shirt-player",
             "skin": "body-skin-player"
           },
-          "id": "bust",
-          "massKg": 38,
+          "id": "torso",
+          "massKg": 33,
           "params": {
             "chestDepth": "0.22",
             "chestHeight": "0.14999999999999999",
@@ -6134,6 +6136,7 @@
             "headWidth": "0.16500000000000001",
             "jawHeight": "0.080000000000000002",
             "neckHeight": "0.070000000000000007",
+            "neckOverlap": "0.02",
             "neckWidth": "0.10000000000000001",
             "pelvisDepth": "0.20000000000000001",
             "pelvisHeight": "0.17000000000000001",
@@ -6141,6 +6144,7 @@
             "ribDepth": "0.20999999999999999",
             "ribHeight": "0.12",
             "ribWidth": "0.34999999999999998",
+            "segment": "torso",
             "shoulderDepth": "0.12",
             "shoulderHeight": "0.12",
             "shoulderWidth": "0.089999999999999997",
@@ -6148,7 +6152,576 @@
             "waistHeight": "0.17000000000000001",
             "waistWidth": "0.29999999999999999"
           },
-          "ports": []
+          "ports": [
+            {
+              "gender": "female",
+              "id": "head",
+              "mount": "assembly-joint",
+              "normal": [0, 1, 0],
+              "pos": [0, 0.69999999999999996, 0],
+              "required": true,
+              "up": [0, 0, 1]
+            }
+          ]
+        },
+        {
+          "family": "bust",
+          "finish": {
+            "eye": "body-eye",
+            "hair": "body-hair",
+            "mouth": "body-mouth",
+            "skin": "body-skin-player"
+          },
+          "id": "head",
+          "massKg": 5,
+          "params": {
+            "chestDepth": "0.22",
+            "chestHeight": "0.14999999999999999",
+            "chestWidth": "0.40000000000000002",
+            "hairCover": "0.070000000000000007",
+            "headDepth": "0.20000000000000001",
+            "headHeight": "0.23499999999999999",
+            "headWidth": "0.16500000000000001",
+            "jawHeight": "0.080000000000000002",
+            "neckHeight": "0.070000000000000007",
+            "neckOverlap": "0.02",
+            "neckWidth": "0.10000000000000001",
+            "pelvisDepth": "0.20000000000000001",
+            "pelvisHeight": "0.17000000000000001",
+            "pelvisWidth": "0.33000000000000002",
+            "ribDepth": "0.20999999999999999",
+            "ribHeight": "0.12",
+            "ribWidth": "0.34999999999999998",
+            "segment": "head",
+            "shoulderDepth": "0.12",
+            "shoulderHeight": "0.12",
+            "shoulderWidth": "0.089999999999999997",
+            "waistDepth": "0.19",
+            "waistHeight": "0.17000000000000001",
+            "waistWidth": "0.29999999999999999"
+          },
+          "ports": [
+            {
+              "gender": "male",
+              "id": "head",
+              "mount": "assembly-joint",
+              "normal": [0, -1, 0],
+              "pos": [0, 0, 0],
+              "required": true,
+              "up": [0, 0, 1]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "elbow": {
+          "fraction": [0.5, 0, 0.5],
+          "part": "upper",
+          "solid": "upper-arm"
+        },
+        "grip": {
+          "fraction": [0.5, 0.5, 0.5],
+          "part": "palm",
+          "solid": "palm"
+        },
+        "knuckles": {
+          "fraction": [0.5, 0, 0.5],
+          "part": "palm",
+          "solid": "palm"
+        },
+        "shoulder": {
+          "fraction": [0.5, 1, 0.5],
+          "part": "upper",
+          "solid": "sleeve"
+        },
+        "thumb_root": {
+          "fraction": [0.5, 1, 0],
+          "part": "thumb",
+          "solid": "thumb"
+        },
+        "wrist": {
+          "fraction": [0.5, 0, 0.5],
+          "part": "fore",
+          "solid": "wrist"
+        }
+      },
+      "connections": [
+        {
+          "from": "upper.elbow",
+          "to": "fore.elbow"
+        },
+        {
+          "from": "fore.wrist",
+          "to": "palm.wrist"
+        },
+        {
+          "from": "palm.knuckles",
+          "to": "fingers.knuckles"
+        },
+        {
+          "from": "palm.thumb",
+          "to": "thumb.thumb"
+        }
+      ],
+      "exportMass": "parts",
+      "id": "player_arm",
+      "parts": [
+        {
+          "family": "avatarArm",
+          "finish": {
+            "shirt": "cloth-shirt-player",
+            "skin": "body-skin-player"
+          },
+          "id": "upper",
+          "massKg": 1.8999999999999999,
+          "params": {
+            "armChamfer": "0.029999999999999999",
+            "fingerFrontShare": "0.90000000000000002",
+            "fingerLength": "0.080000000000000002",
+            "fingerThicknessShare": "0.80000000000000004",
+            "foreDepthExtra": "0.0040000000000000001",
+            "foreLength": "0.25",
+            "foreWidth": "0.080000000000000002",
+            "handOverlap": "0.0050000000000000001",
+            "palmLength": "0.10000000000000001",
+            "palmThickness": "0.032000000000000001",
+            "palmWidth": "0.085000000000000006",
+            "seamOverlap": "0.01",
+            "segment": "upper",
+            "sleeveLength": "0.14999999999999999",
+            "sleeveThickness": "0.0080000000000000002",
+            "thumbInset": "0.0040000000000000001",
+            "thumbLength": "0.059999999999999998",
+            "thumbProjection": "0.014",
+            "thumbRootShare": "0.29999999999999999",
+            "thumbThicknessShare": "0.69999999999999996",
+            "upperDepth": "0.089999999999999997",
+            "upperLength": "0.29999999999999999",
+            "upperWidth": "0.085000000000000006",
+            "wristChamfer": "0.02",
+            "wristDepthExtra": "0.0060000000000000001",
+            "wristShare": "0.45000000000000001",
+            "wristWidth": "0.059999999999999998"
+          },
+          "ports": [
+            {
+              "gender": "female",
+              "id": "elbow",
+              "mount": "assembly-joint",
+              "normal": [0, -1, 0],
+              "pos": [0, -0.29999999999999999, 0],
+              "required": true,
+              "up": [0, 0, 1]
+            }
+          ]
+        },
+        {
+          "family": "avatarArm",
+          "finish": {
+            "skin": "body-skin-player"
+          },
+          "id": "fore",
+          "massKg": 1.1000000000000001,
+          "params": {
+            "armChamfer": "0.029999999999999999",
+            "fingerFrontShare": "0.90000000000000002",
+            "fingerLength": "0.080000000000000002",
+            "fingerThicknessShare": "0.80000000000000004",
+            "foreDepthExtra": "0.0040000000000000001",
+            "foreLength": "0.25",
+            "foreWidth": "0.080000000000000002",
+            "handOverlap": "0.0050000000000000001",
+            "palmLength": "0.10000000000000001",
+            "palmThickness": "0.032000000000000001",
+            "palmWidth": "0.085000000000000006",
+            "seamOverlap": "0.01",
+            "segment": "fore",
+            "sleeveLength": "0.14999999999999999",
+            "sleeveThickness": "0.0080000000000000002",
+            "thumbInset": "0.0040000000000000001",
+            "thumbLength": "0.059999999999999998",
+            "thumbProjection": "0.014",
+            "thumbRootShare": "0.29999999999999999",
+            "thumbThicknessShare": "0.69999999999999996",
+            "upperDepth": "0.089999999999999997",
+            "upperLength": "0.29999999999999999",
+            "upperWidth": "0.085000000000000006",
+            "wristChamfer": "0.02",
+            "wristDepthExtra": "0.0060000000000000001",
+            "wristShare": "0.45000000000000001",
+            "wristWidth": "0.059999999999999998"
+          },
+          "ports": [
+            {
+              "gender": "male",
+              "id": "elbow",
+              "mount": "assembly-joint",
+              "normal": [0, 1, 0],
+              "pos": [0, 0, 0],
+              "required": true,
+              "up": [0, 0, 1]
+            },
+            {
+              "gender": "female",
+              "id": "wrist",
+              "mount": "assembly-joint",
+              "normal": [0, -1, 0],
+              "pos": [0, -0.25, 0],
+              "required": true,
+              "up": [0, 0, 1]
+            }
+          ]
+        },
+        {
+          "family": "avatarArm",
+          "finish": {
+            "skin": "body-skin-player"
+          },
+          "id": "palm",
+          "massKg": 0.29999999999999999,
+          "params": {
+            "armChamfer": "0.029999999999999999",
+            "fingerFrontShare": "0.90000000000000002",
+            "fingerLength": "0.080000000000000002",
+            "fingerThicknessShare": "0.80000000000000004",
+            "foreDepthExtra": "0.0040000000000000001",
+            "foreLength": "0.25",
+            "foreWidth": "0.080000000000000002",
+            "handOverlap": "0.0050000000000000001",
+            "palmLength": "0.10000000000000001",
+            "palmThickness": "0.032000000000000001",
+            "palmWidth": "0.085000000000000006",
+            "seamOverlap": "0.01",
+            "segment": "palm",
+            "sleeveLength": "0.14999999999999999",
+            "sleeveThickness": "0.0080000000000000002",
+            "thumbInset": "0.0040000000000000001",
+            "thumbLength": "0.059999999999999998",
+            "thumbProjection": "0.014",
+            "thumbRootShare": "0.29999999999999999",
+            "thumbThicknessShare": "0.69999999999999996",
+            "upperDepth": "0.089999999999999997",
+            "upperLength": "0.29999999999999999",
+            "upperWidth": "0.085000000000000006",
+            "wristChamfer": "0.02",
+            "wristDepthExtra": "0.0060000000000000001",
+            "wristShare": "0.45000000000000001",
+            "wristWidth": "0.059999999999999998"
+          },
+          "ports": [
+            {
+              "gender": "male",
+              "id": "wrist",
+              "mount": "assembly-joint",
+              "normal": [0, 1, 0],
+              "pos": [0, 0, 0],
+              "required": true,
+              "up": [0, 0, 1]
+            },
+            {
+              "gender": "female",
+              "id": "knuckles",
+              "mount": "assembly-joint",
+              "normal": [0, -1, 0],
+              "pos": [0, -0.10000000000000001, 0],
+              "required": true,
+              "up": [0, 0, 1]
+            },
+            {
+              "gender": "female",
+              "id": "thumb",
+              "mount": "assembly-joint",
+              "normal": [0, -1, 0],
+              "pos": [0, -0.029999999999999999, 0.038500000000000006],
+              "required": true,
+              "up": [0, 0, 1]
+            }
+          ]
+        },
+        {
+          "family": "avatarArm",
+          "finish": {
+            "skin": "body-skin-player"
+          },
+          "id": "fingers",
+          "massKg": 0.14999999999999999,
+          "params": {
+            "armChamfer": "0.029999999999999999",
+            "fingerFrontShare": "0.90000000000000002",
+            "fingerLength": "0.080000000000000002",
+            "fingerThicknessShare": "0.80000000000000004",
+            "foreDepthExtra": "0.0040000000000000001",
+            "foreLength": "0.25",
+            "foreWidth": "0.080000000000000002",
+            "handOverlap": "0.0050000000000000001",
+            "palmLength": "0.10000000000000001",
+            "palmThickness": "0.032000000000000001",
+            "palmWidth": "0.085000000000000006",
+            "seamOverlap": "0.01",
+            "segment": "fingers",
+            "sleeveLength": "0.14999999999999999",
+            "sleeveThickness": "0.0080000000000000002",
+            "thumbInset": "0.0040000000000000001",
+            "thumbLength": "0.059999999999999998",
+            "thumbProjection": "0.014",
+            "thumbRootShare": "0.29999999999999999",
+            "thumbThicknessShare": "0.69999999999999996",
+            "upperDepth": "0.089999999999999997",
+            "upperLength": "0.29999999999999999",
+            "upperWidth": "0.085000000000000006",
+            "wristChamfer": "0.02",
+            "wristDepthExtra": "0.0060000000000000001",
+            "wristShare": "0.45000000000000001",
+            "wristWidth": "0.059999999999999998"
+          },
+          "ports": [
+            {
+              "gender": "male",
+              "id": "knuckles",
+              "mount": "assembly-joint",
+              "normal": [0, 1, 0],
+              "pos": [0, 0, 0],
+              "required": true,
+              "up": [0, 0, 1]
+            }
+          ]
+        },
+        {
+          "family": "avatarArm",
+          "finish": {
+            "skin": "body-skin-player"
+          },
+          "id": "thumb",
+          "massKg": 0.050000000000000003,
+          "params": {
+            "armChamfer": "0.029999999999999999",
+            "fingerFrontShare": "0.90000000000000002",
+            "fingerLength": "0.080000000000000002",
+            "fingerThicknessShare": "0.80000000000000004",
+            "foreDepthExtra": "0.0040000000000000001",
+            "foreLength": "0.25",
+            "foreWidth": "0.080000000000000002",
+            "handOverlap": "0.0050000000000000001",
+            "palmLength": "0.10000000000000001",
+            "palmThickness": "0.032000000000000001",
+            "palmWidth": "0.085000000000000006",
+            "seamOverlap": "0.01",
+            "segment": "thumb",
+            "sleeveLength": "0.14999999999999999",
+            "sleeveThickness": "0.0080000000000000002",
+            "thumbInset": "0.0040000000000000001",
+            "thumbLength": "0.059999999999999998",
+            "thumbProjection": "0.014",
+            "thumbRootShare": "0.29999999999999999",
+            "thumbThicknessShare": "0.69999999999999996",
+            "upperDepth": "0.089999999999999997",
+            "upperLength": "0.29999999999999999",
+            "upperWidth": "0.085000000000000006",
+            "wristChamfer": "0.02",
+            "wristDepthExtra": "0.0060000000000000001",
+            "wristShare": "0.45000000000000001",
+            "wristWidth": "0.059999999999999998"
+          },
+          "ports": [
+            {
+              "gender": "male",
+              "id": "thumb",
+              "mount": "assembly-joint",
+              "normal": [0, 1, 0],
+              "pos": [0, 0, 0],
+              "required": true,
+              "up": [0, 0, 1]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "anchors": {
+        "ankle": {
+          "fraction": [0.5, 0.19999999999999998, 0.5],
+          "part": "shin",
+          "solid": "cuff"
+        },
+        "hip": {
+          "fraction": [0.5, 1, 0.5],
+          "part": "thigh",
+          "solid": "thigh"
+        },
+        "knee": {
+          "fraction": [0.5, 0, 0.5],
+          "part": "thigh",
+          "solid": "thigh"
+        }
+      },
+      "connections": [
+        {
+          "from": "thigh.knee",
+          "to": "shin.knee"
+        },
+        {
+          "from": "shin.ankle",
+          "to": "foot.ankle"
+        }
+      ],
+      "exportMass": "parts",
+      "id": "player_leg",
+      "parts": [
+        {
+          "family": "avatarLeg",
+          "finish": {
+            "pants": "cloth-pants-player"
+          },
+          "id": "thigh",
+          "massKg": 7,
+          "params": {
+            "ankleOverlap": "0.01",
+            "cuffHeight": "0.040000000000000001",
+            "cuffThickness": "0.0060000000000000001",
+            "heelReach": "0.059999999999999998",
+            "kneeOverlap": "0.02",
+            "length": "0.81999999999999995",
+            "segment": "thigh",
+            "shinChamfer": "0.029999999999999999",
+            "shinDepth": "0.12",
+            "shinWidth": "0.11",
+            "shoeChamfer": "0.040000000000000001",
+            "shoeHeight": "0.089999999999999997",
+            "shoeWidth": "0.10000000000000001",
+            "soleThickness": "0.025000000000000001",
+            "thighChamfer": "0.040000000000000001",
+            "thighDepth": "0.16",
+            "thighLength": "0.41999999999999998",
+            "thighWidth": "0.14999999999999999",
+            "toeCapHeightShare": "0.59999999999999998",
+            "toeCapSideInset": "0.0060000000000000001",
+            "toeCapStartShare": "0.55000000000000004",
+            "toeCapTipInset": "0.002",
+            "toeReach": "0.20999999999999999",
+            "upperBackShift": "0.0040000000000000001",
+            "upperBase": "0.02",
+            "upperLengthInset": "0.0080000000000000002",
+            "upperSideInset": "0.0040000000000000001"
+          },
+          "ports": [
+            {
+              "gender": "female",
+              "id": "knee",
+              "mount": "assembly-joint",
+              "normal": [0, -1, 0],
+              "pos": [0, -0.41999999999999998, 0],
+              "required": true,
+              "up": [0, 0, 1]
+            }
+          ]
+        },
+        {
+          "family": "avatarLeg",
+          "finish": {
+            "pants": "cloth-pants-player"
+          },
+          "id": "shin",
+          "massKg": 3,
+          "params": {
+            "ankleOverlap": "0.01",
+            "cuffHeight": "0.040000000000000001",
+            "cuffThickness": "0.0060000000000000001",
+            "heelReach": "0.059999999999999998",
+            "kneeOverlap": "0.02",
+            "length": "0.81999999999999995",
+            "segment": "shin",
+            "shinChamfer": "0.029999999999999999",
+            "shinDepth": "0.12",
+            "shinWidth": "0.11",
+            "shoeChamfer": "0.040000000000000001",
+            "shoeHeight": "0.089999999999999997",
+            "shoeWidth": "0.10000000000000001",
+            "soleThickness": "0.025000000000000001",
+            "thighChamfer": "0.040000000000000001",
+            "thighDepth": "0.16",
+            "thighLength": "0.41999999999999998",
+            "thighWidth": "0.14999999999999999",
+            "toeCapHeightShare": "0.59999999999999998",
+            "toeCapSideInset": "0.0060000000000000001",
+            "toeCapStartShare": "0.55000000000000004",
+            "toeCapTipInset": "0.002",
+            "toeReach": "0.20999999999999999",
+            "upperBackShift": "0.0040000000000000001",
+            "upperBase": "0.02",
+            "upperLengthInset": "0.0080000000000000002",
+            "upperSideInset": "0.0040000000000000001"
+          },
+          "ports": [
+            {
+              "gender": "male",
+              "id": "knee",
+              "mount": "assembly-joint",
+              "normal": [0, 1, 0],
+              "pos": [0, 0, 0],
+              "required": true,
+              "up": [0, 0, 1]
+            },
+            {
+              "gender": "female",
+              "id": "ankle",
+              "mount": "assembly-joint",
+              "normal": [0, -1, 0],
+              "pos": [0, -0.31, 0],
+              "required": true,
+              "up": [0, 0, 1]
+            }
+          ]
+        },
+        {
+          "family": "avatarLeg",
+          "finish": {
+            "shoe": "leather-shoe-player",
+            "sole": "rubber-black"
+          },
+          "id": "foot",
+          "massKg": 1,
+          "params": {
+            "ankleOverlap": "0.01",
+            "cuffHeight": "0.040000000000000001",
+            "cuffThickness": "0.0060000000000000001",
+            "heelReach": "0.059999999999999998",
+            "kneeOverlap": "0.02",
+            "length": "0.81999999999999995",
+            "segment": "foot",
+            "shinChamfer": "0.029999999999999999",
+            "shinDepth": "0.12",
+            "shinWidth": "0.11",
+            "shoeChamfer": "0.040000000000000001",
+            "shoeHeight": "0.089999999999999997",
+            "shoeWidth": "0.10000000000000001",
+            "soleThickness": "0.025000000000000001",
+            "thighChamfer": "0.040000000000000001",
+            "thighDepth": "0.16",
+            "thighLength": "0.41999999999999998",
+            "thighWidth": "0.14999999999999999",
+            "toeCapHeightShare": "0.59999999999999998",
+            "toeCapSideInset": "0.0060000000000000001",
+            "toeCapStartShare": "0.55000000000000004",
+            "toeCapTipInset": "0.002",
+            "toeReach": "0.20999999999999999",
+            "upperBackShift": "0.0040000000000000001",
+            "upperBase": "0.02",
+            "upperLengthInset": "0.0080000000000000002",
+            "upperSideInset": "0.0040000000000000001"
+          },
+          "ports": [
+            {
+              "gender": "male",
+              "id": "ankle",
+              "mount": "assembly-joint",
+              "normal": [0, 1, 0],
+              "pos": [0, 0, 0],
+              "required": true,
+              "up": [0, 0, 1]
+            }
+          ]
         }
       ]
     },

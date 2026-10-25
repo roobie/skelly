@@ -85,11 +85,12 @@ describe('visible action details', () => {
     const receiverDef = resolved.defs.get('receiver')!;
     const handguardDef = resolved.defs.get('handguard')!;
     const movingDef = resolved.defs.get('smg-handle')!;
-    const tube = handguardDef.solids.find(({ id }) => id === 'smg-cocking-tube');
-    expect(tube?.slot).toBe('metal');
+    const tube = handguardDef.solids.filter(({ id }) => id.startsWith('smg-cocking-tube-'));
+    expect(tube.length).toBeGreaterThan(0);
+    expect(tube.every(({ slot }) => slot === 'metal')).toBe(true);
     expect(
       receiverDef.solids.some(
-        ({ id }) => id === 'smg-cocking-tube' || id === 'smg-sliding-handle' || id === 'smg-handle-grip',
+        ({ id }) => id.startsWith('smg-cocking-tube') || id === 'smg-sliding-handle' || id === 'smg-handle-grip',
       ),
     ).toBe(false);
     expect(handguardDef.keepOuts.some(({ id }) => id === 'smg-support-hand')).toBe(true);

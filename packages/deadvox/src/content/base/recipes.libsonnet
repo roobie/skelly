@@ -64,7 +64,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
           "readyMovementMinimum": 0.45,
           "readyMovementRange": 0.35,
           "readyMovementHalfLifeLevels": 5,
-          "loweredPitchRadians": 0.55,
+          "loweredPitchRadians": 0.3,
           "adsApertureFill": 0.85,
           "skillZeroHandling": {
             "singleShot": { "variance": 20, "recoilKickScale": 6, "recoilRecoveryScale": 0.5 },

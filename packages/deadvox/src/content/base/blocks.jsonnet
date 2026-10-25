@@ -7,6 +7,8 @@ local footstepEvents = {
   stone: { player: 'footstep_stone', shambler: 'shambler_step_stone' },
   wood: { player: 'footstep_wood', shambler: 'shambler_step_wood' },
   leaves: { player: 'footstep_leaves', shambler: 'shambler_step_leaves' },
+  // Wading borrows the mud events until the wading round gives water a sound of its own.
+  wade: { player: 'footstep_mud', shambler: 'shambler_step_mud' },
 };
 
 local block(id, name, color, surface, extra={}) =
@@ -54,5 +56,6 @@ local paintedAsphalt = asphalt + { id: 'painted_asphalt', name: 'Painted asphalt
       patternPalette: ['#53694d', '#78634d', '#9b8a6b', '#3b4039'],
       patternWashout: 0.42,
     }),
+    block('water', 'Water', '#3b6e8f', 'wade', { solid: false, opaque: false, liquid: true, weatherable: false }),
   ],
 }

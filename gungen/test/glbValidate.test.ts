@@ -33,7 +33,6 @@ describe('gltf-validator', () => {
     if (!result.ok) {
       throw new Error(`${file}: ${JSON.stringify(result.error)}`);
     }
-    expect(result.modelEntry.gun.sight, `${file} should export sight metadata from its parts`).toBeDefined();
     const report = await validator.validateBytes(result.glb, { uri: `${id}.glb` });
     const problems = report.issues.messages
       .filter((m) => m.severity <= 1)

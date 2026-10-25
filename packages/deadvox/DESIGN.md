@@ -18,6 +18,7 @@ read_if:
   - you're choosing world scale, view distance, performance targets or the default render scale
   - you change player movement, load or aim tuning, saved aim admission, or what crouching or lying prone lets the player fit through
   - you're changing world block shapes, wire fences or their supports, sight opacity, reach through obstacles, sound blocking or slab geometry
+  - you change standing water, basins, the flooded-lot check or how liquids are meshed
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry, push or drag, or how stacks settle
   - you're changing the rules for time, survival, light or zombies
@@ -198,6 +199,16 @@ ceiling the body fits under. Visual blending hides the change of shape, but must
 not delay the eye used by sight and collision. See
 `src/content/base/figures-player.jsonnet`, `stancePoses`, and
 `src/render/playerFigure.ts`, `PlayerMeshes`.
+
+The crouch must read as a crouch to anyone watching the avatar, not as sitting:
+knees bent, feet flat on the ground under the body, torso leaning forward and
+head up looking ahead. The arms hold a guard for balance, elbows bent with the
+forearms raised and the hands in front, because arms hanging straight down read
+as a gorilla's. A leg swung forward whole cannot do that, so the leg model is
+split at the knee and ankle, the bust at the neck, and the body arm bends at the
+elbow on the arm rig's parts; each stance pose turns those joints. See
+`src/content/base/figures-player.jsonnet`, `legRig`, and
+`test/playerFigure.test.ts`, "crouches on bent knees: feet flat behind the knees, knees below the hips, torso forward, head up, arms in guard".
 
 The FOB's east-wall passage is sized so a crouched player fits but a standing
 player does not. It is a separate low route from the guarded north entrance and
@@ -620,6 +631,56 @@ not in authored layout geometry. See `AuthoredSite` in
 Small structures use authored templates because they are reviewable and
 content validation can check them. Keep template representation and import
 mechanics in the implementation rather than repeating the format here.
+
+### Water
+
+Standing water is a block, written into the grid where a site layout's water rows put it.
+Movement, sight, aim, picking, the mesher and saved edits all key off the grid, so they treat
+water through the queries they already have; a separate water field would need its own query
+in each. Water is static: a block dug beside a lake stays dry, and a block placed in the water
+replaces it. Flow, rivers and tides would need a field this design does not promise. Only
+authored sites have water; generated terrain has none. See `src/core/worldgen.ts`, `Surface`,
+and `src/core/authoredSite.ts`, `AuthoredSite`.
+
+Lakes are map features of any size. The haven's lake is hundreds of metres across and lakes
+elsewhere on a map can be much larger, so no schema field, fill rule, generation step or
+validation check caps a water body, and the debug lake is built at the haven's scale so its look
+is judged at the size that ships. Work that could grow with a lake's area stays bounded instead:
+validation searches a polygon's cells from coarse to fine and stops at the first one that holds
+water, and the shore's per-column cache is cleared when full. See `src/core/authoredLayout.ts`,
+`coarseToFineCentres`, and `src/core/authoredSite.ts`, `siteWater`.
+
+A water row's level is the water's top face, the plane the eye breaks when surfacing, while a
+layout's `ground` is the lower face of the top ground block. The ground names the block an author
+places and the level names the plane an author sees and a swimmer floats at; the two coincide only
+where there is no water. A column holds water where its bed's top face lies below the level, so
+the shore falls out of the terrain, not out of the polygon. See `src/core/worldgen.ts`,
+`generateChunk`.
+
+A basin lowers the profile by the deepest basin over a point, as hills raise it by the highest
+hill, so overlaps stay predictable and a basin on a hill flank cuts a tarn. See
+`src/core/authoredTerrain.mjs`, `profileHeight`. The bed under water and a shore ring around it
+are sand and grow no trees, because a grass lake bed reads as a hole in a lawn.
+
+Validation rejects unintended inundation instead of clamping, because a silently lowered level or
+raised lot would hide the author's mistake. A water row whose bed reaches the level everywhere
+holds no water, and a lot whose apron stands below the level inside the polygon is flooded unless
+the lot says `overWater`. Overlap alone is allowed, because a shore lot whose apron meets the
+water at its own floor is dry. `overWater` is the seam for constructions over water; a flagged
+lot still raises the ground under its apron to its floor, so it stands on a plinth, not on legs.
+See `src/core/authoredLayout.ts`, `waterIssues`, and `src/core/authoredTerrain.mjs`,
+`layoutHeight`.
+
+The renderer must keep what lies under water. A block's `liquid` flag is its own predicate, not
+"not solid", because air, wire mesh and open doors are not solid and none of them is water. Every
+input that decides what is drawn treats a liquid as open, like air: the streamer's occluder
+table, which feeds chunk enclosure and wide occlusion, and the mesher's face and corner-AO tests.
+Otherwise a lake would hide its bed and walls, darken the bed, and leave a camera under it looking
+through a hollow shell at the sky. A liquid's face is hidden against the same liquid and against a
+solid. Chunk materials draw front faces only, so the mesher adds a downward copy of each liquid
+top face for a camera under it; a double-sided material would double the cost of every terrain
+face. See `src/game/streamer.ts`, `Streamer`; `src/core/world.ts`, `isEnclosed`; and
+`src/core/mesher.ts`, `solid`, `faceKey` and `emitSolidQuad`.
 
 ### Gauntlet
 
@@ -1256,9 +1317,9 @@ faces and which way its top points. The engine turns the item from those facts, 
 no numbers tuned to the arm and later changes to arm size, pose or animation keep
 screens visible; arm animation must keep the screen's line of sight free. Radios
 and GPS units reuse the rule unchanged, a watch is the same rule with the wrist as
-the back, and handedness stays mirroring of placement only. The forearm meets a
-screen-holding palm at the palm's back face rather than its centre, so no part of
-the arm reaches past the palm into the item or its screen. Validation rejects a
+the back, and handedness stays mirroring of placement only. The hand's grip point
+is the face of its palm, so the item's back sits on the palm and no part of the
+arm reaches past the palm into the item or its screen. Validation rejects a
 held-display item whose model has no screen. See `src/render/heldDisplay.ts`,
 `presentHeldDisplay`, and `packages/thing-core/src/schema.ts`, `NeutralModelSchema`.
 
@@ -1516,10 +1577,11 @@ hold up from every side, and a body built only for first person is not enough.
 Worn items carry their own part model that covers or replaces the body part
 under it, so gear shows on the body without the body knowing about gear.
 
-The first-person arms are rebuilt from the same authored hand and sleeve parts
-as the body, so both views share one look. In first person the view draws both
-arms, gripping or as fists, so the body's own arms hide there; otherwise an
-empty hand would show two arms.
+The first-person arms are the figure row's own arm models, bent through the row's
+arm rig to reach each grip (`DESIGN.md`, "Models"), so the arms the player sees
+and the arms others see never differ in look or proportion. In first person the
+view draws both arms, gripping or as fists, so the body's own arms hide there;
+otherwise an empty hand would show two arms.
 
 Third person remains a debug inspection aid, not a player-facing camera.
 `PlayerMeshes` in `src/render/playerFigure.ts` draws the body from the `player`
@@ -2505,7 +2567,7 @@ crouch rules. See `src/core/zombies.ts`, `hearingTier`, `hearVocalNoise` and
 - For #281, visible prey suppresses obstacle wandering; an active wander ends when the prey becomes visible, and the shambler resumes beelining while retaining its slide. Unseen targets and idle strolling can still wander. See `packages/deadvox/src/core/zombies.ts`, `seesPlayer` and `ZombieSystem.tick`.
 - The named phases in `src/core/zombies.ts`, `ZombieSystem.tick`, make the established order reviewable because later steps consume state produced by earlier simulation steps; keep that order when changing the per-tick behavior. See `ZombieSystem.updateAttention`, `ZombieSystem.stepZombieBody`, `ZombieSystem.updateObstacleContact`, `ZombieSystem.resolveZombieAttack` and `ZombieSystem.emitFootsteps`.
 - **Quiet-sound hesitation:** An uncommitted individual pauses and turns toward a quiet noise before deciding; loudness, not a sound category, makes a noise urgent. Idle listeners refuse, while listeners already strolling pursue after the pause: movement expresses existing interest without a heard-noise history or a random pursue roll. Refusal biases the next stroll toward the sound and briefly makes another noise urgent. Searchers and pursuing bodies retain their existing attention rules; sight and light can interrupt the pause. Hordes beeline because their group response should remain decisive. Player movement hearing remains continuous rather than restarting a discrete-noise pause. See `src/core/zombies.ts`, `ZombieSystem.updateAttention` and `ZombieSystem.beginStroll`; tuning belongs to `src/content/base/zombies.jsonnet`, `hearingModel`.
-- **Shared interest:** A pursuing body's alert can recruit nearby listeners to its target point, including its bearing uncertainty, rather than sending them to the caller. Each call offers a flat chance inside its radius. Cascades deliberately have no damping so crowd behaviour can be evaluated before imposing a limit. The transient stimulus queue drains after player perception and before movement, including calls from recruited bodies; no pending queue crosses a save boundary. This prevents entity iteration order from giving one listener an extra movement tick. A future damping decision belongs at this queue's recruitment boundary, not in player noise. See `src/core/zombies.ts`, `ZombieSystem.announcePursuit` and `ZombieSystem.processChainStimuli`; tuning belongs to `src/content/base/zombies.jsonnet`, `hearingModel`.
+- **Shared interest:** Alerts recruit only uncommitted listeners: searching and returning bodies already act on their own memory, and recruiting them re-arms echoes. Recruitment eligibility is an attention-state invariant, not content tuning. Sharing the target and its uncertainty keeps listeners interested in the stimulus rather than the caller. Cascades deliberately remain undamped so crowd behaviour can be evaluated before imposing a limit; slow echoes through bodies that become idle again are accepted. A future damping decision belongs at the recruitment boundary, not in player noise. Draining calls before movement prevents entity iteration order from giving one listener an extra movement tick, and keeping the queue transient avoids pending calls crossing a save boundary. See `src/core/zombies.ts`, `ZombieSystem.announcePursuit` and `ZombieSystem.processChainStimuli`; tuning belongs to `src/content/base/zombies.jsonnet`, `hearingModel`.
 - **Attention and attacks:** Sight and hearing remain the authorities for choosing targets, so interest chaining must not replace visible prey. Far-hearing direction stays uncertain: a grounded listener projects it onto known terrain rather than learning the source's height. See `src/core/zombies.ts`, `seesPlayer`, `farBearingTarget` and `withinAttackReach`.
 - **Background steps:** Background zombies beeline in big, cheap steps. Each type's content caps how far one step moves it, because that cap, not the chase speed, sets how fast a fast type closes in while unseen. The background tick rate stays in code: it is the scheduler's cadence, saved with its phase, so it is engine timing rather than tuning. See `src/core/schema.ts`, `ZombieSchema`, and `src/core/zombies.ts`, `ZombieSystem.tickBackground`.
 - **Distant attention and noise persistence:** A horde retains a heard noise target until it arrives or forgets it; its sun-derived preference for home or roaming does not replace an active noise target. Once the target ends, the horde roams only from sunset to sunrise. A background zombie with no horde or stimulus uses idle behavior instead of treating the player as an implicit target, because distance alone must not make an unseen zombie pursue. See `src/core/zombies.ts`, `ZombieSystem.updateHordes` and `ZombieSystem.tickBackground`.
@@ -2556,20 +2618,54 @@ and no extra class is left to maintain. Retuning the item grain moves the figure
 with the tools, which is accepted.
 
 The figure is a content row, so a mod or a second character ships its own row
-and part models without a code change. Each authored part names its model, the
-box parts it draws in place of, and the model anchor each of its joints sits at;
-the row sets the hip height the parts stand at. A box part that no authored part
-names still draws, so the body is authored a part at a time and stays whole
-throughout; the boxes go when the last part lands. Box limbs hang from the
-authored joints, so they meet the authored parts. Code poses every part about
-those joints. Each box part belongs to one limb (the torso with the head, an
-arm, a leg with its foot), and an authored part draws parts of one limb only,
-because a rigid model moves as one piece. It then strides, leans and hides as
-that limb's boxes do, so a new limb model with an accepted part selection needs
-no renderer change. See `src/core/schema.ts`, `FIGURE_BOX_LIMBS`. Hit regions keep the box layout, because the body simulation, not
-the drawn shape, decides where a hit lands, so gore stays put while parts change.
-See `src/core/schema.ts`, `FigureSchema`, and `src/render/playerFigure.ts`,
-`playerFigureLayout`.
+and part models without a code change. The row names the body and limb models
+and the anchors they join at, and holds every value that shapes the drawn
+figure: hip height, walking swing, the arm rig and where the view hangs the
+arms. One arm model serves both views: the world body swings it whole, and the
+first-person view bends it at its authored joints to reach the held grip, so
+the two views never diverge in look or proportion and the arm bends where a
+rigid model could not. The view's shoulder is a row value, not a renderer
+constant, because a figure with other proportions needs other shoulders. Every
+part is an authored model, with no box stand-in, so a row that names a missing
+model, anchor or rig part, or puts the right view shoulder left of or above the
+eye, fails validation instead of drawing a partial body. Hit regions keep a box layout,
+because the body simulation, not the drawn shape, decides where a hit lands, so
+gore stays put while parts change. See `src/core/schema.ts`, `FigureSchema`,
+`src/render/armRig.ts`, `buildArmRig`, and `src/render/playerFigure.ts`,
+`playerFigureLayout` and `PLAYER_REGION_BOXES`.
+
+A long gun is held like a rifle, and the hold is authored on the gun's model,
+not in the renderer: the model says where its butt seats in the shoulder and
+where and how each hand takes it. The firing hand wraps the pistol grip when the
+gun has one, and otherwise the stock wrist, fingers under the wrist and thumb over
+it, because a pistol-grip pose on a pump gun or a hunting rifle closes on nothing
+and looks wrong. The gungen export marks the kind: a grip part means a pistol grip
+and a stock part without one means a stock wrist, and a long gun that exports
+neither fails to compile, because a guessed hold would close on nothing and hide
+the missing part. The support hand cups the forend from below at the exported
+support anchor, whose height gungen reads off the forend underside the file
+draws, so the contact follows the drawn forend instead of a stale hand-copied
+height: the bore running across the palm from its heel to the gap between
+thumb and index, the fingers curling up the gun's far side and the thumb lying
+along the near side, because a support hand on the side of the forend reads as
+resting on top of the barrel instead of carrying the gun from under it. The view keeps the butt in its seat and
+lowers and raises the gun by turning it about the butt, so the stock stays
+shouldered at every ready level and both arms reach the gun from the shoulder
+instead of the gun floating in front of the eye. A gun that turns about its
+butt swings its muzzle further than one that only drops, so the lowered pitch
+is set so the lowered gun stays inside the player's view. Both holds are
+authored for a right-handed hold and mirrored together across the gun for a
+left-handed one: the support hand is the other hand, but it keeps the gun's
+side, so a hold is authored once. The hold lives in content because a new gun,
+a mod gun or a retuned hold must not need a renderer change, which is the
+content pillar in `PILLARS.md`, "Content forward compatibility", and because
+one hold formula could not fit a pump gun and a pistol-grip rifle alike. A
+two-handed firearm without an authored hold, a seat left of the eye or a palm
+not square to its fingers fails validation rather than drawing a hand through
+the stock. A one-handed gun keeps the grip frame it had. See
+`src/content/base/long-gun-hands.libsonnet`, `firingHold`, `src/core/schema.ts`,
+`HandsModelSchema`, `src/core/heldPose.ts`, `heldHoldFrame`, and
+`src/core/content.ts`, `checkHeldHands`.
 
 Many animations are expected over time, so a pose is data that names a joint and an
 angle, and code-posed motion such as arm swing and idle breath is one clip among

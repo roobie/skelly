@@ -1,0 +1,18 @@
+{
+  "id": "player_leg",
+  "file": "assets/models/player_leg.glb",
+  "parts": {
+    "thigh": { "node": "thigh:thigh", "massKg": 7, "centreOfMass": [0, -0.21, 0] },
+    "shin": {
+      "node": "shin:shin",
+      "massKg": 3,
+      "centreOfMass": [-0.0038859008835959233, -0.5928390318862851, -0.0003592009220130615]
+    },
+    "foot": {
+      "node": "foot:foot",
+      "massKg": 1,
+      "centreOfMass": [-1.9030544570482657e-16, -0.7782947139753802, 0.07889572773352643]
+    }
+  },
+  "anchors": { "ankle": [-9.347520200482578e-17, -0.73, 0], "hip": [0, 0, 0], "knee": [0, -0.42, 0] }
+}

@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { ShaderLib, type Vector3, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
 import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
+import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { controlIssues } from '../src/cli/controlIssues.ts';
 import rawBaseDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
 import { isBodyDoor } from '../src/core/blockEntities.ts';
@@ -43,6 +44,7 @@ const INPUT_GESTURE =
   /\b(?:hold|press|tap|click|double[ -]press|wield|activate|throw|scroll|wheel|drag|rotate|snap|spawn)\b/i;
 const LMB_ALIAS = /\bLMB\b/i;
 const RMB_ALIAS = /\bRMB\b/i;
+const NO_FIRING_HOLD_KIND = /neither a grip part nor a stock part/;
 const base = readdirSync(BASE)
   .filter((f) => f.endsWith('.json'))
   .sort()
@@ -2708,6 +2710,32 @@ const templateBase = [
   { source: 'template-zombies.json', data: { zombies: [templateShambler] } },
 ];
 
+describe('zombie voice references', () => {
+  const voiceSound = { ...templateSoundDefinitions[0]!, id: 'fixture_voice' };
+  const voiced = (sounds: Record<string, string>) =>
+    buildRegistry([
+      ...templateBase.filter(({ source }) => source !== 'template-zombies.json'),
+      { source: 'voice-sound.json', data: { sounds: [voiceSound] } },
+      { source: 'voice-zombie.json', data: { zombies: [{ ...templateShambler, id: 'fixture_voiced', sounds }] } },
+    ]).issues.map(({ path, message }) => `${path}: ${message}`);
+  const voices = (attack: string) => ({
+    idle: 'fixture_voice',
+    alert: 'fixture_voice',
+    attack,
+    hurt: 'fixture_voice',
+  });
+
+  it('accepts an authored sound id as a zombie voice, so a new voice needs content only', () => {
+    expect(voiced(voices('fixture_voice'))).toEqual([]);
+  });
+
+  it('rejects a zombie voice that names no sound', () => {
+    expect(voiced(voices('fixture_missing_voice'))).toEqual([
+      'zombies[0].sounds.attack: no sound event "fixture_missing_voice"',
+    ]);
+  });
+});
+
 describe('templates', () => {
   const template = (layers: string[][], palette: Record<string, unknown>, size = [3, layers.length, 2]) => ({
     source: 'tpl.json',
@@ -3081,23 +3109,133 @@ describe('content', () => {
     }
   });
 
-  it('reports a figure part whose model or joint anchor is missing, or that draws parts of two limbs', () => {
+  it('reports a figure whose model, joint anchor, arm or leg rig part or pivot is missing, or whose view shoulder is misplaced', () => {
     const figuresFile = base.find(({ source }) => source === 'figures-player.json')!;
+    interface Part {
+      model: string;
+      joint: string;
+      joints: Record<string, string>;
+    }
+    interface Rig {
+      fore: { part: string; pivot: string };
+      hand: { part: string; pivot: string };
+      shoulderFromEye: [number, number, number];
+    }
     const player = (figuresFile.data as { figures: Record<string, unknown>[] }).figures[0]!;
-    const [part] = player.parts as { model: string; joints: Record<string, string> }[];
-    // One build for all three fixture figures; each expected message names only its own fixture's fault.
+    const body = player.body as Part;
+    const limbs = player.limbs as Record<string, Part>;
+    const rig = player.armRig as Rig;
+    const legRig = player.legRig as { shin: { part: string; pivot: string } };
+    // One build for all fixture figures; each fixture breaks one reference, at its own path.
     const figures = [
-      { ...part, model: 'fixture_missing_model' },
-      { ...part, joints: { ...part!.joints, leftHip: 'fixture_missing_anchor' } },
-      { ...part, draws: ['body', 'leftLeg'] },
-    ].map((figurePart, index) => ({ ...player, id: `fixture_figure_${index}`, parts: [figurePart] }));
-    const messages = buildRegistry([
-      ...base.filter((source) => source !== figuresFile),
+      { body: { ...body, model: 'fixture_missing_model' } },
+      { body: { ...body, joints: { ...body.joints, leftHip: 'fixture_missing_anchor' } } },
+      { limbs: { ...limbs, rightArm: { ...limbs.rightArm!, joint: 'fixture_missing_anchor' } } },
+      { armRig: { ...rig, fore: { ...rig.fore, part: 'fixture_missing_part' } } },
+      { armRig: { ...rig, hand: { ...rig.hand, pivot: 'fixture_missing_anchor' } } },
+      {
+        armRig: { ...rig, shoulderFromEye: [-rig.shoulderFromEye[0], rig.shoulderFromEye[1], rig.shoulderFromEye[2]] },
+      },
+      { legRig: { ...legRig, shin: { ...legRig.shin, part: 'fixture_missing_part' } } },
+    ].map((change, index) => ({ ...player, ...change, id: `fixture_figure_${index}` }));
+    // Only the models the figure row names: building the full base pack here made the test hit its timeout.
+    const figureModelIds = new Set([body.model, ...Object.values(limbs).map(({ model }) => model)]);
+    const models = base.flatMap(
+      ({ data }) => (data as { models?: { id: string }[] }).models?.filter(({ id }) => figureModelIds.has(id)) ?? [],
+    );
+    expect(models.map(({ id }) => id).sort()).toEqual([...figureModelIds].sort());
+    const paths = buildRegistry([
+      { source: 'figure-models.json', data: { models } },
       { source: figuresFile.source, data: { figures: [player, ...figures] } },
-    ]).issues.map(({ message }) => message);
-    expect(messages).toContain('no model "fixture_missing_model"');
-    expect(messages).toContain(`model "${part!.model}" has no anchor "fixture_missing_anchor"`);
-    expect(messages).toContain('draws parts of several limbs (torso, leftLeg); a part moves as one limb');
+    ]).issues.map(({ path }) => path);
+    // Both arms share the arm rig and both legs the leg rig, so a broken rig name is reported once per limb.
+    expect(paths).toEqual([
+      'figures[1].body.model',
+      'figures[2].body.joints.leftHip',
+      'figures[3].limbs.rightArm.joint',
+      'figures[4].armRig.fore.part',
+      'figures[4].armRig.fore.part',
+      'figures[5].armRig.hand.pivot',
+      'figures[5].armRig.hand.pivot',
+      'figures[6].armRig.shoulderFromEye',
+      'figures[7].legRig.shin.part',
+      'figures[7].legRig.shin.part',
+    ]);
+  });
+
+  it('reports a two-handed firearm without authored hands, a seat left of the eye and a palm not square to its fingers', () => {
+    const firearmsFile = base.find(({ source }) => source === 'models-firearms.json')!;
+    interface Hold {
+      palm: [number, number, number];
+      fingers: [number, number, number];
+    }
+    interface Hands {
+      seat: [number, number, number];
+      firing: Hold;
+    }
+    const data = firearmsFile.data as { items: Record<string, unknown>[]; models: Record<string, unknown>[] };
+    const gun = data.items.find((item) => item.firearm && item.twoHanded)!;
+    const model = data.models.find(({ id }) => id === gun.model)!;
+    const hands = model.hands as Hands;
+    const { hands: _hands, ...bare } = model;
+    const models = [
+      { ...bare, id: 'fixture_no_hands' },
+      { ...model, id: 'fixture_seat', hands: { ...hands, seat: [-hands.seat[0], hands.seat[1], hands.seat[2]] } },
+      { ...model, id: 'fixture_palm', hands: { ...hands, firing: { ...hands.firing, fingers: hands.firing.palm } } },
+    ];
+    const items = [
+      { ...gun, id: 'fixture_no_hands_gun', name: 'Fixture gun', model: 'fixture_no_hands', notLoot: true },
+    ];
+    // Map and site sections cost most of a full build and no hands check reads them, so the build leaves them out.
+    // Keys then miss the doors those sections hold; the baseline build without the fixtures reports the same misses.
+    const worldSections = new Set([
+      'templates',
+      'layouts',
+      'mapPieces',
+      'mapAssemblies',
+      'mapPools',
+      'mapStyles',
+      'scenarios',
+      'siteGeneration',
+      'cityBenchmarks',
+    ]);
+    const sources = base.map(({ source, data: content }) => ({
+      source,
+      data: Object.fromEntries(Object.entries(content as object).filter(([section]) => !worldSections.has(section))),
+    }));
+    // The fixtures live in their own file, so dropping it on their issues leaves the rest of the content as it was.
+    const fixtureSource = 'hands-fixture.json';
+    const baseline = buildRegistry(sources).issues;
+    const { issues } = buildRegistry([...sources, { source: fixtureSource, data: { items, models } }]);
+    expect(issues.filter((issue) => issue.source === fixtureSource).map(({ path }) => path)).toEqual([
+      'items[0].model',
+      'models[1].hands.seat',
+      'models[2].hands.firing',
+    ]);
+    expect(issues.filter((issue) => issue.source !== fixtureSource)).toEqual(baseline);
+  });
+
+  it('gives a long gun the pistol-grip hold when gungen exports a grip part and the stock-wrist hold when it exports a stock and no grip', () => {
+    const longGuns = [...baseRegistry.models.values()]
+      .filter((model) => model.hands)
+      .map((model) => ({
+        id: model.id,
+        pose: model.hands!.firing.pose,
+        grip: model.parts?.grip !== undefined,
+        stock: model.parts?.stock !== undefined,
+      }));
+    expect(longGuns.some(({ pose }) => pose === 'pistolGrip')).toBe(true);
+    expect(longGuns.some(({ pose }) => pose === 'stockWrist')).toBe(true);
+    // Each hold names the exported part it closes on, so the hold is read back from the parts, not from a default.
+    expect(
+      longGuns.map(({ id, pose }) => ({ id, pistolGrip: pose === 'pistolGrip', stockWrist: pose === 'stockWrist' })),
+    ).toEqual(longGuns.map(({ id, grip, stock }) => ({ id, pistolGrip: grip, stockWrist: stock && !grip })));
+  });
+
+  it('rejects a long gun whose export has neither a grip part nor a stock part', () => {
+    expect(() => compileJsonnetFile('packages/deadvox/test/fixtures/jsonnet/long-gun-no-kind.jsonnet')).toThrow(
+      NO_FIRING_HOLD_KIND,
+    );
   });
 
   it('maps each authored pattern to its own pattern id, and none for a block that authors none', () => {

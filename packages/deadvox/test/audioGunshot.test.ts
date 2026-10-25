@@ -104,6 +104,20 @@ class FakeAudioContext {
     return filter;
   }
 
+  oscillators: Array<
+    ReturnType<typeof makeNode> & {
+      frequency: { value: number };
+      start: ReturnType<typeof vi.fn>;
+      stop: ReturnType<typeof vi.fn>;
+    }
+  > = [];
+
+  createOscillator() {
+    const node = { ...makeNode(), frequency: { value: 0 }, start: vi.fn(), stop: vi.fn() };
+    this.oscillators.push(node);
+    return node;
+  }
+
   createPanner() {
     const node = { ...makeNode(), setPosition: vi.fn() };
     this.panners.push(node);
@@ -218,6 +232,46 @@ describe('game audio playback', () => {
     expect(context.panners).toHaveLength(headLocked ? 0 : 1);
     source.onended!();
     expect(shelf.disconnect).toHaveBeenCalledOnce();
+  });
+
+  it('scrambles only a voice whose sound authors ring modulation, and stops its carrier with the voice', async () => {
+    const voice = (id: string, extra: object) => ({
+      id,
+      description: `fixture ${id}`,
+      variants: ['assets/audio/gunshot-akm-01.ogg'],
+      gain: 0.7,
+      pitchJitter: [1, 1],
+      gainJitter: [1, 1],
+      minIntervalSimSeconds: 0,
+      category: 'world',
+      noise: { enabled: false, radiusMetres: 1 },
+      ...extra,
+    });
+    const ringMod = { frequencyHz: 55, depth: 0.5 };
+    const { registry, issues } = buildRegistry([
+      {
+        source: '../content/base/fixture.json',
+        data: { sounds: [voice('fixture_scrambled', { ringMod }), voice('fixture_plain', {})] },
+      },
+    ]);
+    expect(issues).toEqual([]);
+    const { play, context } = setup(() => false, registry);
+
+    play('fixture_plain', [0, 0, 0], 1);
+    await flush();
+    expect(context.oscillators).toHaveLength(0);
+
+    play('fixture_scrambled', [0, 0, 0], 2);
+    await flush();
+    const [carrier] = context.oscillators;
+    expect(context.oscillators).toHaveLength(1);
+    expect(carrier!.frequency.value).toBe(ringMod.frequencyHz);
+    expect(carrier!.start).toHaveBeenCalledOnce();
+    const scrambledSource = context.sources[1]!;
+    const product = scrambledSource.connect.mock.calls[0]![0] as ReturnType<typeof makeGain>;
+    expect(product.gain.value).toBe(1 - ringMod.depth);
+    scrambledSource.onended!();
+    expect(carrier!.stop).toHaveBeenCalledOnce();
   });
 
   it('schedules player-only heartbeat beats at simulated tempo without admitting sound events', async () => {

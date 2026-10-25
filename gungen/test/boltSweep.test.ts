@@ -6,7 +6,7 @@ import { localSolidBounds, penetrationWorld, worldSolid } from '@skelly/engine/s
 import type { BoxSolid } from '@skelly/engine/shapes/solid.ts';
 import { expect, it } from 'vitest';
 import { resolveGunAction } from '../src/gun/actionDescription.ts';
-import { sweepBoltAction } from '../src/gun/boltSweep.ts';
+import { sweepTurningAction } from '../src/gun/boltSweep.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { loadFixture } from './helpers.ts';
 
@@ -65,5 +65,5 @@ it.each(['turn', 'draw'] as const)('detects a %s obstruction between clear endpo
     connections: [...assembly.connections, { from: `${receiver[0]}.rail`, to: 'sweep-blocker.base', slot: 0 }],
   };
   const resolved = resolve(fixture, { ...gunDomain, families: { ...gunDomain.families, 'sweep-blocker': family } });
-  expect(sweepBoltAction(resolved).some((issue) => issue.includes('sweep-blocker.blocker'))).toBe(true);
+  expect(sweepTurningAction(resolved).some((issue) => issue.includes('sweep-blocker.blocker'))).toBe(true);
 });

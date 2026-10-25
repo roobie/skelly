@@ -2488,10 +2488,15 @@
     "id": "player_bust",
     "file": "assets/models/player_bust.glb",
     "parts": {
-      "bust": {
-        "node": "bust:bust",
-        "massKg": 38,
-        "centreOfMass": [-0.0009431582584657918, 0.4428242916378715, -0.0030449205252246034]
+      "torso": {
+        "node": "torso:torso",
+        "massKg": 33,
+        "centreOfMass": [-0.0011775237273511652, 0.3457668248490077, -0.0019654874892148406]
+      },
+      "head": {
+        "node": "head:head",
+        "massKg": 5,
+        "centreOfMass": [1.0201979643961859e-16, 0.8334131944444445, -0.0073888888888888875]
       }
     },
     "anchors": {
@@ -2502,6 +2507,47 @@
       "shoulder_left": [0.23500000000000001, 0.54, 0],
       "shoulder_right": [-0.23500000000000001, 0.54, 0]
     }
+  },
+  {
+    "id": "player_arm",
+    "file": "assets/models/player_arm.glb",
+    "parts": {
+      "upper": { "node": "upper:upper", "massKg": 1.9, "centreOfMass": [0, -0.14138554216867472, 0] },
+      "fore": { "node": "fore:fore", "massKg": 1.1, "centreOfMass": [-5.00495294549375e-17, -0.411218487394958, 0] },
+      "palm": { "node": "palm:palm", "massKg": 0.3, "centreOfMass": [-1.469460465287658e-16, -0.6000000000000001, 0] },
+      "fingers": {
+        "node": "fingers:fingers",
+        "massKg": 0.15,
+        "centreOfMass": [-2.5368555600494065e-16, -0.6900000000000001, 0]
+      },
+      "thumb": { "node": "thumb:thumb", "massKg": 0.05, "centreOfMass": [-2.241929430395516e-16, -0.61, 0.05] }
+    },
+    "anchors": {
+      "elbow": [0, -0.3, 0],
+      "grip": [-1.469460465287658e-16, -0.6000000000000001, 0],
+      "knuckles": [-1.5919251452023932e-16, -0.65, 0],
+      "shoulder": [0, 0, 0],
+      "thumb_root": [-2.131711218472254e-16, -0.58, 0.04],
+      "wrist": [-6.878008645017359e-17, -0.55, 0]
+    }
+  },
+  {
+    "id": "player_leg",
+    "file": "assets/models/player_leg.glb",
+    "parts": {
+      "thigh": { "node": "thigh:thigh", "massKg": 7, "centreOfMass": [0, -0.21, 0] },
+      "shin": {
+        "node": "shin:shin",
+        "massKg": 3,
+        "centreOfMass": [-0.0038859008835959233, -0.5928390318862851, -0.0003592009220130615]
+      },
+      "foot": {
+        "node": "foot:foot",
+        "massKg": 1,
+        "centreOfMass": [-1.9030544570482657e-16, -0.7782947139753802, 0.07889572773352643]
+      }
+    },
+    "anchors": { "ankle": [-9.347520200482578e-17, -0.73, 0], "hip": [0, 0, 0], "knee": [0, -0.42, 0] }
   },
   {
     "id": "tape_roll",

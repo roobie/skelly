@@ -156,7 +156,7 @@ const rig = async () => {
     throw new Error('The spare magazine does not fit the bag');
   }
   const hand = { kind: 'hand', side: dominantSide(inventory.character) } as const;
-  const held = new HeldItems(inventory, models, content.figures.get('player')!.palette);
+  const held = new HeldItems(inventory, models, content.figures.get('player')!);
   const piles = new PileMeshes(BLOCK, models);
   const camera = new PerspectiveCamera();
   const pose = (): Object3D => {
@@ -348,7 +348,7 @@ const heldGun = async (type: string) => {
   if (!inventory.add(gun, { kind: 'hand', side })) {
     throw new Error(`Cannot hold ${type}`);
   }
-  const held = new HeldItems(inventory, models, content.figures.get('player')!.palette);
+  const held = new HeldItems(inventory, models, content.figures.get('player')!);
   const camera = new PerspectiveCamera();
   return {
     queue,

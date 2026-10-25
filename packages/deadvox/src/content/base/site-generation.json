@@ -10,7 +10,8 @@
           "dirt": "dirt",
           "grass": "grass",
           "rock": "rock",
-          "sand": "sand"
+          "sand": "sand",
+          "water": "water"
         },
         "trees": {
           "branch": "tree_branch",

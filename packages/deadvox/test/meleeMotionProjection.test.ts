@@ -4,15 +4,17 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
 import { Inventory } from '../src/core/inventory.ts';
 import { type MeleeProfile, meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
+import { ARM_NODE } from '../src/render/armRig.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import type { ItemLook } from '../src/render/itemLook.ts';
 import { type ModelLibrary, prepareModel } from '../src/render/models.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { loadFigureModels } from './figureModels.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 
 const BASE = 'src/content/base';
 const registry = baseRegistry();
-const { palette } = registry.figures.get('player')!;
+const playerFigure = registry.figures.get('player')!;
 Object.defineProperty(globalThis, 'self', { configurable: true, value: globalThis });
 const gltfLoader = new GLTFLoader(new LoadingManager());
 gltfLoader.register(() => ({ name: 'audit-textures', loadTexture: () => Promise.resolve(new Texture()) }));
@@ -31,6 +33,7 @@ const heldModel = (id: string) => {
 };
 const library: ModelLibrary = {
   version: 0,
+  ...(await loadFigureModels(registry)),
   held: heldModel,
   heldLook: (look: ItemLook) => {
     const model = heldModel(look.model);
@@ -110,7 +113,7 @@ function measure(
             library.heldLook({ ...look, model: look.model === modelId ? modelOverride : look.model }),
         } as ModelLibrary)
       : library;
-  const held = new HeldItems(inventory, models, palette);
+  const held = new HeldItems(inventory, models, playerFigure);
   const internals = held as unknown as HeldInternals;
   const camera = new PerspectiveCamera(75, 16 / 9, 0.01, 128);
   camera.rotation.order = 'YXZ';
@@ -174,7 +177,7 @@ function measure(
       maxWeaponRollDegrees = Math.max(maxWeaponRollDegrees, weaponRollDegrees(restOrientation, orientation));
     }
     for (const [armSide, arm] of internals.arms) {
-      const palm = arm.children[2]!;
+      const palm = arm.getObjectByName(ARM_NODE.hand)!;
       const corners = boxCorners(new Box3().setFromObject(palm));
       const depths = corners.map((point) => -camera.worldToLocal(point.clone()).z);
       minPalmDepth = Math.min(minPalmDepth, ...depths);
