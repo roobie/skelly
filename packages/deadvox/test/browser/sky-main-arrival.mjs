@@ -76,30 +76,6 @@ function contentLookView(source) {
   return rewritten;
 }
 
-// A base figure that still colors box parts from the row's palette meets a branch whose row names authored
-// part models and carries no palette. The base figure takes one fixed palette, so the reference still
-// starts; a base that draws the authored models needs no rewrite. Remove this once the base figure reads no
-// palette.
-const ROW_PALETTE = 'const { palette } = figure;';
-const ARM_PALETTE =
-  "export const createFirstPersonArm = (palette: FigureDef['palette'], side: HandSide, grip: Vec3): Group => {";
-const FIXED_PALETTE = "{ skin: '#d9b48f', shirt: '#4b5d3a', trousers: '#3b3f4a' }";
-export function paletteFreeFigure(source) {
-  if (!source.includes("FigureDef['palette']")) {
-    return source;
-  }
-  const shaped = source.includes(ROW_PALETTE) && source.includes(ARM_PALETTE);
-  if (!shaped) {
-    throw new Error(
-      'Main figure reads the row palette in an unexpected shape; update paletteFreeFigure in sky-main-arrival.mjs',
-    );
-  }
-  const arm = ARM_PALETTE.replace("palette: FigureDef['palette']", "given: FigureDef['palette'] | undefined");
-  return source
-    .replace(ROW_PALETTE, `const palette = figure.palette ?? ${FIXED_PALETTE};`)
-    .replace(ARM_PALETTE, `${arm}\n  const palette = given ?? ${FIXED_PALETTE};`);
-}
-
 // Keep the branch's physical-and-visual reach contract without replacing its core picker with main's.
 export function adaptMainInteractionPick(source) {
   return source.replace(
@@ -265,7 +241,6 @@ function assertOverlayBoundary(root, overlays, branchPaths) {
 /** Source rewrites that fit a base startup module to the branch's core and content, or add the measurement hooks. */
 const OVERLAY_ADAPTERS = {
   'render/playView.ts': contentLookView,
-  'render/playerFigure.ts': paletteFreeFigure,
   'game/play.ts': adaptMainInteractionPick,
   'game/engine.ts': (source) =>
     source.replace(
