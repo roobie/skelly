@@ -8,7 +8,7 @@ import type { BoxSolid } from '@skelly/engine/shapes/solid.ts';
 import { expect, it } from 'vitest';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import { boltCartridge } from '../src/gun/boltCartridge.ts';
-import { sweepBoltAction } from '../src/gun/boltSweep.ts';
+import { sweepTurningAction } from '../src/gun/boltSweep.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { internalMagazineLayout } from '../src/gun/internalMagazine.ts';
@@ -108,7 +108,7 @@ it('fits the staggered stack through the stock aperture clear of the full bolt s
     connections: [...hunting.connections, { from: `${receiver}.rail`, to: 'packed.base', slot: 0 }],
   };
   expect(
-    sweepBoltAction(resolve(fixture, { ...gunDomain, families: { ...gunDomain.families, [family.name]: family } })),
+    sweepTurningAction(resolve(fixture, { ...gunDomain, families: { ...gunDomain.families, [family.name]: family } })),
   ).toEqual([]);
 });
 

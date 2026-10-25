@@ -40,6 +40,8 @@ const stubControls = (): Record<string, Control> => {
       'cycle-speed',
       'cycle-empty-label',
       'cycle-empty',
+      'cycle-hold-label',
+      'cycle-hold',
       'cycle-xray',
       'cycle-readout',
       'cycle-notes',
@@ -156,6 +158,63 @@ describe('action cycle viewer', () => {
       controls['cycle-scrub']!.dispatchEvent(new Event('input'));
       expect(handle.matrix.toArray()).toEqual(home);
       expect(carrier.matrix.toArray()).not.toEqual(carrierHome);
+    } finally {
+      for (const group of Object.values(layers)) {
+        disposeGroup(group);
+      }
+    }
+  });
+
+  it('shows the SMG handle held in its notch while held and home after release', () => {
+    const controls = stubControls();
+    const loaded = loadGunDesign(readFileSync('designs/compact-smg.json', 'utf8'));
+    if (!loaded.ok) {
+      throw new Error(loaded.error.message);
+    }
+    const { assembly } = loaded.design;
+    const resolved = resolve(assembly, gunDomain);
+    const action = resolveGunAction(resolved)!;
+    const handle = action.parts.handle!;
+    const layers = buildLayers(validate(assembly, gunDomain), []);
+    try {
+      let mesh: Mesh | undefined;
+      layers.solids.traverse((object) => {
+        if (object.userData.part === handle.id && (object as Mesh).isMesh) {
+          mesh ??= object as Mesh;
+        }
+      });
+      if (!mesh) {
+        throw new Error('SMG handle mesh is missing');
+      }
+      const expectPose = (draw: number, turn: number, label: string) => {
+        const expected = motionTransform(handle.placed, handle.def.motion!, draw, turn);
+        for (const point of [
+          [0, 0, 0],
+          [0, 0, 1],
+        ] as const) {
+          const actual = new Vector3(...point).applyMatrix4(mesh!.matrix).toArray();
+          applyPoint(expected, point).forEach((coordinate, axis) => {
+            expect(actual[axis], label).toBeCloseTo(coordinate, 6);
+          });
+        }
+      };
+      const view = createCycleView();
+      view.bind(layers.solids, resolved, action);
+      controls['cycle-mode']!.value = 'hand';
+      controls['cycle-mode']!.dispatchEvent(new Event('change'));
+      expect(controls['cycle-hold-label']!.hidden).toBe(false);
+      controls['cycle-hold']!.checked = true;
+      controls['cycle-play']!.dispatchEvent(new Event('click'));
+      const { hand } = action.cycle;
+      // The query asks for 2% speed; each frame advances a tenth of a cycle.
+      const frameSeconds = hand.durationSeconds / 10 / 0.02;
+      for (let index = 0; index < 30; index++) {
+        view.frame(frameSeconds);
+      }
+      expectPose(1, 1, 'held');
+      controls['cycle-hold']!.checked = false;
+      view.frame((hand.durationSeconds - hand.holdSeconds!) / 0.02);
+      expectPose(0, 0, 'released');
     } finally {
       for (const group of Object.values(layers)) {
         disposeGroup(group);

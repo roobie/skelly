@@ -2708,8 +2708,7 @@ export class ZombieSystem {
       for (const [, zombie] of this.store.entries()) {
         if (
           zombie.incapacitated ||
-          zombie.mode === 'chase' ||
-          zombie.mode === 'investigate' ||
+          (zombie.mode !== 'idle' && zombie.mode !== 'stroll' && zombie.mode !== 'hesitate') ||
           horizontalDistance(zombie.body.pos, stimulus.origin) * this.options.blockSize > chainRadiusMetres ||
           zombie.soundRng.next() >= chainChance
         ) {

@@ -4,7 +4,7 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ZombieDef } from '../src/core/schema.ts';
-import { simSeconds } from '../src/core/time.ts';
+import { simRate, simSeconds } from '../src/core/time.ts';
 import type { PlayerSense } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { PLAYER, physicsFor } from './playerFixture.ts';
@@ -153,6 +153,45 @@ describe('shambler interest', () => {
     }
     expect(beyond.mode).toBe('idle');
     expect(beyond.lastPerceived).toBeUndefined();
+  });
+
+  it.each(['search', 'return'] as const)('does not re-recruit a body already in %s', (mode) => {
+    const f = fixture(2);
+    f.player.vocalNoise!.pos = [0, 1, 4];
+    const def: ZombieDef = {
+      ...type,
+      stimulusMemorySimSeconds: simSeconds(30),
+      speed: { ...type.speed, chaseMetresPerSimSecond: simRate(1), wanderMetresPerSimSecond: simRate(1) },
+      hearingModel: {
+        ...type.hearingModel,
+        loudNoiseRadiusMetres: 2,
+        farMultiplier: 1,
+        chainRadiusMetres: 4,
+        chainChance: 1,
+        searchSimSeconds: { min: simSeconds(1), max: simSeconds(1) },
+      },
+    };
+    const listener = f.add([0, 1, 0], def);
+    f.step();
+    expect(listener.mode).toBe('investigate');
+    f.player.vocalNoise = undefined;
+    for (let tick = 0; tick < 200 && listener.mode !== mode; tick++) {
+      f.step();
+    }
+    expect(listener.mode).toBe(mode);
+    const rememberedAt = listener.stimulusAt;
+    const callerPos: Vec3 = [listener.body.pos[0] + 8, 1, listener.body.pos[2]];
+    const caller = f.add(callerPos, def);
+    f.player.vocalNoise = {
+      id: 2,
+      pos: [callerPos[0] + 4, 1, callerPos[2]],
+      radiusMetres: 2,
+      expiresAt: 30,
+    };
+    f.step();
+    expect(caller.mode).toBe('investigate');
+    expect(listener.mode).toBe(mode);
+    expect(listener.stimulusAt).toBe(rememberedAt);
   });
 
   it('a listener before its caller in entity order moves on the same tick as the chain', () => {
