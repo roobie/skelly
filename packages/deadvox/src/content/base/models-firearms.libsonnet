@@ -4,24 +4,31 @@
 local magazineHandling = { handling: { magazine: { removeSimSeconds: 3, insertSimSeconds: 3 } } };
 // A long gun's hold (`DESIGN.md`, "Models"). The butt seats in the shoulder pocket: right of and below the eye, and a
 // little ahead of it so the lowered gun stays in the frame. Every gun's bore meets that seat, so the butt point sits
-// on the bore above the butt plate. The firing palm lies on the grip's right face, a little behind the grip point so
-// the curled fingers close ahead of it. The support palm presses up into the forend's underside at the exported
-// support contact, set left so the knuckles reach the forend's right edge; the fingers curl up that side and the
-// thumb runs along the left.
-local longGunHands(model, buttX, forendUndersideY) = model {
+// on the bore above the butt plate. A gun with a pistol grip (gungen exports it as the `grip` part) takes the firing
+// palm on the grip's right face, a little behind the grip point so the curled fingers close ahead of it. A gun
+// without one takes the firing palm on the stock wrist's right face above the grip point, fingers pointing down and
+// ahead so they curl under the wrist and the thumb lies over its top. The support palm presses into the forend's
+// left face at the exported support contact, `forendLeft` giving that face's height and side, tilted a little under
+// so the back of the hand faces out and down; the fingers point up and curl over the top, and the thumb closes under.
+local longGunHands(model, buttX, forendLeft) = model {
   hands: {
     seat: [0.15, -0.1, -0.12],
     butt: [buttX, 0, 0],
-    firing: {
+    firing: if std.objectHas(model.parts, 'grip') then {
       at: [model.grip.at[0] - 0.02, model.grip.at[1], 0.016],
       palm: [0, 0, -1],
       fingers: [1, 0, 0],
       pose: 'pistolGrip',
+    } else {
+      at: [model.grip.at[0], model.grip.at[1] + 0.01, 0.012],
+      palm: [0, 0, -1],
+      fingers: [0.7660444, -0.6427876, 0],
+      pose: 'stockWrist',
     },
     support: {
-      at: [model.anchors.support[0], forendUndersideY, -0.02],
-      palm: [0, 1, 0],
-      fingers: [0, 0, 1],
+      at: [model.anchors.support[0], forendLeft[0], forendLeft[1]],
+      palm: [0, 0.2588190, 0.9659258],
+      fingers: [0, 0.9659258, -0.2588190],
       pose: 'forend',
     },
   },
@@ -125,8 +132,8 @@ local longGunHands(model, buttX, forendUndersideY) = model {
   ],
   // Imports keep the export writer from overwriting authored handling constructors.
   "models": [
-    longGunHands((import 'gungen/rifle_assault.model.json') { gun+: { chargingHandleDegrees: 0 } }, -0.38, -0.02),
-    longGunHands((import 'gungen/rifle_ak.model.json') { gun+: { chargingHandleDegrees: 90 } }, -0.484, -0.024),
+    longGunHands((import 'gungen/rifle_assault.model.json') { gun+: { chargingHandleDegrees: 0 } }, -0.38, [-0.006, -0.02]),
+    longGunHands((import 'gungen/rifle_ak.model.json') { gun+: { chargingHandleDegrees: 90 } }, -0.484, [-0.01, -0.016]),
     import 'gungen/round_7_d_62x39.model.json',
     import 'gungen/case_7_d_62x39.model.json',
     import 'gungen/round_5_d_56x45.model.json',
@@ -136,8 +143,8 @@ local longGunHands(model, buttX, forendUndersideY) = model {
     import 'gungen/revolver.model.json',
     import 'gungen/round_357_h_magnum.model.json',
     import 'gungen/case_357_h_magnum.model.json',
-    longGunHands(import 'gungen/shotgun_pump.model.json', -0.568, -0.06),
-    longGunHands(import 'gungen/rifle_hunting.model.json', -0.504, -0.052),
+    longGunHands(import 'gungen/shotgun_pump.model.json', -0.568, [-0.04, -0.028]),
+    longGunHands(import 'gungen/rifle_hunting.model.json', -0.504, [-0.032, -0.02]),
     import 'gungen/round_308_h_winchester.model.json',
     import 'gungen/case_308_h_winchester.model.json',
     import 'gungen/optic_hunting_3_9x.model.json',

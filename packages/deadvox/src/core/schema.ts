@@ -2049,8 +2049,11 @@ const CompassDialSchema = strictObject({
 });
 export type CompassDial = InferOutput<typeof CompassDialSchema>;
 
-/** How a hand closes, by name: the empty fist, a hand around a plain grip, flat on a screen, or a long gun's two holds. */
-const HAND_POSES = ['fist', 'holding', 'open', 'pistolGrip', 'forend'] as const;
+/**
+ * How a hand closes, by name: the empty fist, a hand around a plain grip, flat on a screen, a firing hand on a pistol
+ * grip or on a stock wrist, or a support hand on a forend.
+ */
+const HAND_POSES = ['fist', 'holding', 'open', 'pistolGrip', 'stockWrist', 'forend'] as const;
 
 /**
  * One hand's hold on a held model, in the model's frame as authored for a right-handed hold: where the palm's face
@@ -2062,7 +2065,7 @@ const HandHoldSchema = strictObject({ at: Point, palm: UnitVector, fingers: Unit
 /**
  * A long gun's hold (`DESIGN.md`, "Models"): the butt sits at `seat` in the eye's frame (x right, y up, z back) for
  * a right-handed hold, the left mirrors x; lowering the gun turns it about `butt`, a model point, so the stock stays
- * in the shoulder; the firing hand takes the grip and the support hand the forend.
+ * in the shoulder; the firing hand takes the pistol grip or the stock wrist and the support hand the forend.
  */
 const HandsModelSchema = strictObject({
   seat: Point,
@@ -3519,6 +3522,7 @@ const ArmRigSchema = strictObject({
     holding: HandPoseSchema,
     open: HandPoseSchema,
     pistolGrip: HandPoseSchema,
+    stockWrist: HandPoseSchema,
     forend: HandPoseSchema,
   }),
   /**

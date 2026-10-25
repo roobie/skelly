@@ -2575,8 +2575,13 @@ gore stays put while parts change. See `src/core/schema.ts`, `FigureSchema`,
 
 A long gun is held like a rifle, and the hold is authored on the gun's model,
 not in the renderer: the model says where its butt seats in the shoulder and
-where and how each hand takes it. The firing hand wraps the grip, the support
-hand lies palm up under the forend, and the view keeps the butt in its seat and
+where and how each hand takes it. The firing hand wraps the pistol grip when the
+gun has one, and otherwise the stock wrist, fingers under the wrist and thumb over
+it, because a pistol-grip pose on a pump gun or a hunting rifle closes on nothing
+and looks wrong; the gungen export marks the kind, since only a gun with a pistol
+grip has a grip part. The support hand wraps the forend from the gun's far side,
+fingers over the top and the forearm coming up from below, as a rifle is held in
+life. The view keeps the butt in its seat and
 lowers and raises the gun by turning it about the butt, so the stock stays
 shouldered at every ready level and both arms reach the gun from the shoulder
 instead of the gun floating in front of the eye. A gun that turns about its
@@ -2591,8 +2596,9 @@ one hold formula could not fit a pump gun and a pistol-grip rifle alike. A
 two-handed firearm without an authored hold, a seat left of the eye or a palm
 not square to its fingers fails validation rather than drawing a hand through
 the stock. A one-handed gun keeps the grip frame it had. See
-`src/core/schema.ts`, `HandsModelSchema`, `src/core/heldPose.ts`,
-`heldHoldFrame`, and `src/core/content.ts`, `checkHeldHands`.
+`src/content/base/models-firearms.libsonnet`, `longGunHands`, `src/core/schema.ts`,
+`HandsModelSchema`, `src/core/heldPose.ts`, `heldHoldFrame`, and
+`src/core/content.ts`, `checkHeldHands`.
 
 Many animations are expected over time, so a pose is data that names a joint and an
 angle, and code-posed motion such as arm swing and idle breath is one clip among

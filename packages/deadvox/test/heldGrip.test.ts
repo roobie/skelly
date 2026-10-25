@@ -4,7 +4,7 @@ import { Character } from '../src/core/character.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { ejectSeconds } from '../src/core/firearmAction.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
-import { heldFirearmTransform, modelToView } from '../src/core/heldPose.ts';
+import { heldFirearmTransform, heldHoldFrame, modelToView } from '../src/core/heldPose.ts';
 import { type HandSide, Inventory } from '../src/core/inventory.ts';
 import { PLAYER_VIEW_FOV_DEGREES } from '../src/core/opticWindow.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
@@ -107,6 +107,22 @@ describe('actual-slot held placement', () => {
         const barrelCenter = pose.rootOffset.map((offset, axis) => offset + pose.muzzleOffset[axis]!);
         expect(barrelCenter[2]).toBeLessThan(0);
         expect(projectedVerticalPixels(barrelCenter)).toBeLessThan(0);
+      }
+    }
+  });
+
+  it('puts the support hand on the gun’s left for a right hold and on its right for a left one, pressing across the forend', () => {
+    const longGuns = [...registry.models.values()].filter((model) => model.hands);
+    expect(longGuns.length).toBeGreaterThan(0);
+    for (const model of longGuns) {
+      for (const side of ['right', 'left'] as const) {
+        // The gun's right is +x in its view frame; the support hand sits across from the holding hand's side.
+        const toward = side === 'right' ? 1 : -1;
+        const { at, palm } = heldHoldFrame(model, side, 'support');
+        expect(Math.sign(at[0]), `${model.id} ${side} contact side`).toBe(-toward);
+        expect(palm[0] * toward, `${model.id} ${side} palm press`).toBeGreaterThan(
+          Math.max(Math.abs(palm[1]), Math.abs(palm[2])),
+        );
       }
     }
   });

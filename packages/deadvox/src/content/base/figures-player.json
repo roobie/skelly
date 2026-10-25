@@ -22,9 +22,9 @@
             "thumbInDegrees": 45
           },
           "forend": {
-            "fingersDegrees": 85,
-            "thumbAcrossDegrees": 15,
-            "thumbInDegrees": 10
+            "fingersDegrees": 90,
+            "thumbAcrossDegrees": 55,
+            "thumbInDegrees": 30
           },
           "holding": {
             "fingersDegrees": 80,
@@ -39,6 +39,11 @@
           "pistolGrip": {
             "fingersDegrees": 85,
             "thumbAcrossDegrees": 70,
+            "thumbInDegrees": 35
+          },
+          "stockWrist": {
+            "fingersDegrees": 90,
+            "thumbAcrossDegrees": 65,
             "thumbInDegrees": 35
           }
         },

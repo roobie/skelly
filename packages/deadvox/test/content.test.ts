@@ -3159,6 +3159,17 @@ describe('content', () => {
     expect(issues.filter((issue) => issue.source !== fixtureSource)).toEqual([]);
   });
 
+  it('gives a long gun the pistol-grip hold when gungen exports a grip part and the stock-wrist hold otherwise', () => {
+    const longGuns = [...baseRegistry.models.values()]
+      .filter((model) => model.hands)
+      .map((model) => ({ id: model.id, pose: model.hands!.firing.pose, pistolGrip: model.parts?.grip !== undefined }));
+    expect(longGuns.some(({ pistolGrip }) => pistolGrip)).toBe(true);
+    expect(longGuns.some(({ pistolGrip }) => !pistolGrip)).toBe(true);
+    expect(longGuns.map(({ id, pose }) => ({ id, pose }))).toEqual(
+      longGuns.map(({ id, pistolGrip }) => ({ id, pose: pistolGrip ? 'pistolGrip' : 'stockWrist' })),
+    );
+  });
+
   it('maps each authored pattern to its own pattern id, and none for a block that authors none', () => {
     const plain = baseRegistry.blocks.find(({ pattern }) => pattern === undefined)!;
     const { pattern: _pattern, patternPalette: _palette, patternWashout: _washout, ...template } = plain;
