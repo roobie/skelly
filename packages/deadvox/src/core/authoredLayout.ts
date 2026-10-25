@@ -308,6 +308,32 @@ function* cellCentres(rect: Rect): Generator<LayoutPoint> {
 }
 
 /**
+ * Every half-metre cell centre of a rectangle, each once, on halving strides: the first pass
+ * spans the rectangle and each later one fills between the last. A search for one cell with a
+ * property that covers a wide area, like water in a basin, ends in the first few passes instead
+ * of costing the rectangle's whole area, so a lake of any size validates in bounded time.
+ */
+function* coarseToFineCentres(rect: Rect): Generator<LayoutPoint> {
+  const x0 = Math.floor(rect.x0 * 2) / 2;
+  const z0 = Math.floor(rect.z0 * 2) / 2;
+  const columns = Math.ceil((rect.x1 - x0) * 2 - 0.5);
+  const rows = Math.ceil((rect.z1 - z0) * 2 - 0.5);
+  let stride = 1;
+  while (stride < Math.max(columns, rows)) {
+    stride *= 2;
+  }
+  for (let first = true; stride >= 1; stride /= 2, first = false) {
+    for (let j = 0; j < rows; j += stride) {
+      for (let i = 0; i < columns; i += stride) {
+        if (first || i % (2 * stride) !== 0 || j % (2 * stride) !== 0) {
+          yield [x0 + i / 2 + 0.25, z0 + j / 2 + 0.25];
+        }
+      }
+    }
+  }
+}
+
+/**
  * No unintended inundation. Reads the noise-free surface: the authored shape is what the author meant,
  * and near lots, where flooding matters, the topography noise is too weak to move a block.
  */
@@ -332,9 +358,13 @@ const waterIssues = (
     const xs = row.polygon.map(([x]) => x);
     const zs = row.polygon.map(([, z]) => z);
     const extent = { x0: Math.min(...xs), x1: Math.max(...xs), z0: Math.min(...zs), z1: Math.max(...zs) };
-    const holdsWater = [...cellCentres(extent)].some(
-      (p) => inPolygon(p, row.polygon) && standingHeight(layout, lots, p[0], p[1]) < row.level,
-    );
+    let holdsWater = false;
+    for (const p of coarseToFineCentres(extent)) {
+      if (inPolygon(p, row.polygon) && standingHeight(layout, lots, p[0], p[1]) < row.level) {
+        holdsWater = true;
+        break;
+      }
+    }
     if (!holdsWater) {
       issues.push([`.water[${i}]`, 'holds no water: every bed inside the polygon reaches the level']);
     }

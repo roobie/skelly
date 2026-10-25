@@ -139,6 +139,49 @@ describe('authored water', () => {
   });
 });
 
+describe('water validation at any size', () => {
+  const holdsNoWater = (layout: SiteLayoutDef) =>
+    authoredLayoutIssues(layout, registry).filter(
+      ([path, message]) => path === '.water[0]' && message.includes('holds no water'),
+    );
+  const square = (x0: number, x1: number): [number, number][] => [
+    [x0, x0],
+    [x1, x0],
+    [x1, x1],
+    [x0, x1],
+  ];
+
+  it('accepts a lake kilometres across, so the check has no hidden size cap', () => {
+    const side = 20_000;
+    const lake = lakeLayout({
+      bounds: { x0: 0, z0: 0, x1: side, z1: side },
+      terrain: [{ kind: 'basin', centre: [side / 2, side / 2], radii: [side * 0.4, side * 0.3], depth: 8 }],
+      water: [{ level: 20, polygon: square(side * 0.05, side * 0.95), shore: 1 }],
+      player: { position: [side / 2, 20.5, side * 0.98], bearing: 0 },
+    });
+    expect(authoredLayoutIssues(lake, registry)).toEqual([]);
+  });
+
+  it('still finds a puddle one cell wide in a wide polygon, and reports a polygon with none', () => {
+    const wide = (terrain: SiteLayoutDef['terrain']) =>
+      lakeLayout({
+        bounds: { x0: 0, z0: 0, x1: 180, z1: 180 },
+        terrain,
+        water: [{ level: 20, polygon: square(10, 170), shore: 1 }],
+        player: { position: [90, 20.5, 175], bearing: 0 },
+      });
+    // Off every coarse stride's lattice, and too small to reach the cells beside it.
+    const puddle = {
+      kind: 'basin' as const,
+      centre: [101.75, 77.25] as [number, number],
+      radii: [0.3, 0.3] as [number, number],
+      depth: 3,
+    };
+    expect(holdsNoWater(wide([puddle]))).toEqual([]);
+    expect(holdsNoWater(wide([]))).toHaveLength(1);
+  });
+});
+
 describe('flooded lots', () => {
   const shed = registry.templates.get('shed')!;
   // The lot stands on the plain ground inside the extent; the level is above its standing surface.
