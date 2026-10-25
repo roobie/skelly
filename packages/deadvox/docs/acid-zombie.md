@@ -72,9 +72,11 @@ Acid zombies spawn only in labs, where `DESIGN.md`, "Evolution" puts weird types
 
 ## Voice
 
-The acid zombie must be recognisable by ear, so a player who hears it before seeing it knows to look for a spitter and a line of sight to break. It voices the shambler recordings like every zombie, so only the processing sets it apart: its own sound rows pitch the recordings differently and add ring modulation, which gives a metallic, scrambled timbre that pitch alone does not. Both are content parameters on the sound row (`pitchJitter` and `ringMod`), and a sound without `ringMod` plays unprocessed, so the other types' voices are unchanged and a new type scrambles its voice by data. See `src/content/base/sounds.jsonnet`, `zombieVoices`; `src/core/schema.ts`, `SoundSchema`; and `src/game/audio.ts`, `connectSample`.
+The acid zombie must be recognisable by ear, so a player who hears it before seeing it knows to look for a spitter and a line of sight to break. It voices the shambler recordings like every zombie, so only the processing sets it apart. Pitch alone is easy to confuse with the runner or the crawler, so the timbre is scrambled as well, which no other type does.
 
-Hear it with the debug spawn action for acid zombies, or from the sounds page, which lists the type's four voice events.
+The scramble is data on the type's own sound rows, and a zombie's voice sounds are content references rather than a code list, so a new or changed voice needs content only and the other types' voices stay untouched. See `PILLARS.md`, "Content forward compatibility"; `src/content/base/sounds.jsonnet`, `zombieVoices`; `src/core/schema.ts`, `SoundSchema` and `ZombieSchema`; and `src/game/audio.ts`, `connectSample`.
+
+Hear it with the debug spawn action for acid zombies, or from the sounds page.
 
 ## Saves and determinism
 
