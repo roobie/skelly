@@ -57,6 +57,7 @@ it('projects the shipped lowered bore below the raised firearm bore', () => {
   }
   const boreAt = (progress: number) =>
     firearmBoreRay({
+      holds: BUNDLED_CONTENT.registry.figures.get('player')!.holds,
       model: boreModel,
       eye,
       yaw: 0,

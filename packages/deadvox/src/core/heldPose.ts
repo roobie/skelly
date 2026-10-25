@@ -6,13 +6,7 @@ import type { Vec3 } from './coords.ts';
 import type { HandSide } from './inventory.ts';
 import { type MeleeHand, type MeleePoseFrame, readyMeleePose } from './meleePose.ts';
 import { opticWindowDistance, PLAYER_VIEW_FOV_DEGREES } from './opticWindow.ts';
-
-export const HOLD: Readonly<Record<HandSide, Vec3>> = {
-  right: [0.2, -0.2, -0.38],
-  left: [-0.2, -0.2, -0.38],
-};
-
-const TWO_HAND_GRIP: Vec3 = [0.08, -0.22, -0.42];
+import type { HeldPosesDef } from './schema.ts';
 
 /** A hold authored for the right hand, mirrored across the view's x for the left. */
 const mirrorViewX = (side: HandSide, [x, y, z]: Vec3): Vec3 => [side === 'right' ? x : -x, y, z];
@@ -32,15 +26,25 @@ const gripToButt = (model: ModelDef): Vec3 => {
  * Where a held model's grip sits in the eye's frame: a long gun's grip hangs from its seated butt, pitched down by
  * `loweredPitch` about that butt so the stock stays in the shoulder; anything else takes the fixed hold points.
  */
-export const heldGripOffset = (side: HandSide, twoHanded: boolean, model?: ModelDef, loweredPitch = 0): Vec3 => {
+export const heldGripOffset = ({
+  side,
+  twoHanded,
+  model,
+  loweredPitch = 0,
+  holds,
+}: {
+  side: HandSide;
+  twoHanded: boolean;
+  model?: ModelDef | undefined;
+  loweredPitch?: number;
+  holds: HeldPosesDef;
+}): Vec3 => {
   if (model?.hands) {
     const seat = mirrorViewX(side, model.hands.seat);
     const toGrip = rotateYXZ(gripToButt(model).map((value) => -value) as Vec3, [loweredPitch, 0, 0]);
     return seat.map((value, index) => value + toGrip[index]!) as Vec3;
   }
-  return twoHanded
-    ? [side === 'right' ? TWO_HAND_GRIP[0] : -TWO_HAND_GRIP[0], TWO_HAND_GRIP[1], TWO_HAND_GRIP[2]]
-    : [...HOLD[side]];
+  return mirrorViewX(side, twoHanded ? holds.twoHand : holds.oneHand);
 };
 
 /** One hand's authored hold on `model`, for a gun held on `side`, in the view's frame about the held grip. */
@@ -147,8 +151,8 @@ export const throwStanceWorldOffset = (side: HandSide, yaw: number, pitch: numbe
   ];
 };
 
-export const readyFirearmPose = (leading: MeleeHand): MeleePoseFrame => {
-  const hands = readyMeleePose(true, leading);
+export const readyFirearmPose = (leading: MeleeHand, holds: HeldPosesDef): MeleePoseFrame => {
+  const hands = readyMeleePose(true, holds, leading);
   return {
     right: { ...hands.right, rotation: [0, 0, 0] },
     left: { ...hands.left, rotation: [0, 0, 0] },
@@ -181,6 +185,7 @@ const inCameraFrame = (vector: Vec3, frame: AimFrame): Vec3 => {
 };
 
 export interface HeldFirearmTransformInput {
+  readonly holds: HeldPosesDef;
   readonly model: ModelDef;
   readonly side: HandSide;
   readonly leadingSide: HandSide;
@@ -210,6 +215,7 @@ export interface HeldFirearmTransform {
 
 /** Shared simulation/render firearm pose. Anchors and directions use the model's grip frame. */
 export const heldFirearmTransform = ({
+  holds,
   model,
   side,
   leadingSide,
@@ -230,7 +236,7 @@ export const heldFirearmTransform = ({
   ) {
     throw new Error(`Invalid held firearm pose for ${model.id}`);
   }
-  const pose = readyFirearmPose(leadingSide)[side];
+  const pose = readyFirearmPose(leadingSide, holds)[side];
   const eased = progress * progress * (3 - 2 * progress);
   const handRotation = aimingDownSights ? ([0, 0, 0] as Vec3) : (pose.rotation.map((value) => value * eased) as Vec3);
   const loweredPitch = -loweredPitchRadians * (1 - progress);
@@ -244,8 +250,8 @@ export const heldFirearmTransform = ({
   const sightEye = sightEyeBehind(model, adsApertureFill, verticalFovDegrees);
   // A long gun keeps its butt seated and only pitches; a free-held gun rises toward its ready offset.
   const normalRoot = model.hands
-    ? heldGripOffset(side, twoHanded, model, loweredPitch)
-    : (heldGripOffset(side, twoHanded).map((value, index) => value + pose.offset[index]! * eased) as Vec3);
+    ? heldGripOffset({ side, twoHanded, model, loweredPitch, holds })
+    : (heldGripOffset({ side, twoHanded, holds }).map((value, index) => value + pose.offset[index]! * eased) as Vec3);
   // Seat the undeviated sight eye at the view; aim and handling turns then pivot the firearm off that baseline.
   const rootOffset =
     aimingDownSights && model.gun?.sight && sightEye
@@ -290,6 +296,7 @@ const normalize = (vector: Vec3): Vec3 => {
 };
 
 export const heldEjectionPose = ({
+  holds,
   model,
   side,
   twoHanded,
@@ -303,13 +310,14 @@ export const heldEjectionPose = ({
   eye: Vec3;
   yaw: number;
   pitch: number;
+  holds: HeldPosesDef;
 }): { origin: Vec3; direction: Vec3 } => {
   if (!(model.grip && model.anchors?.ejection && model.gun?.action)) {
     throw new Error(`Firearm model ${model.id} needs grip, ejection and action data`);
   }
   const local: Vec3 = model.anchors.ejection.map((value, index) => value - model.grip!.at[index]!) as Vec3;
   const at = modelToView(model, local);
-  const grip = heldGripOffset(side, twoHanded, model);
+  const grip = heldGripOffset({ side, twoHanded, model, holds });
   const offset: Vec3 = at.map((value, index) => value + grip[index]!) as Vec3;
   const worldOffset = ry(rx(offset, pitch), yaw);
   const vector = ry(rx(modelToView(model, model.gun.action.ejectDirection), pitch), yaw);

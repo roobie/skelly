@@ -143,7 +143,7 @@ function measure(
   const sampleTimes = [
     ...new Set([...Array.from({ length: 121 }, (_, step) => (cooldown * step) / 120), pullTime, contactAt, followTime]),
   ].sort((a, b) => a - b);
-  held.update(camera, readyMeleePose(true));
+  held.update(camera, readyMeleePose(true, registry.figures.get('player')!.holds));
   internals.view.updateMatrixWorld(true);
   const weaponTransform = internals.heldByHand.get(side)?.children[0];
   const restOrientation = weaponTransform?.getWorldQuaternion(new Quaternion());

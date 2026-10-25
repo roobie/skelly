@@ -18,6 +18,9 @@ import {
   sampleActionTurn,
 } from '../src/render/firearmModel.ts';
 import { prepareModel } from '../src/render/models.ts';
+import { baseRegistry } from './baseRegistry.ts';
+
+const { holds } = baseRegistry().figures.get('player')!;
 
 const ar = parse(
   ModelSchema,
@@ -218,7 +221,11 @@ describe('exported firearm presentation', () => {
     for (const side of ['right', 'left'] as const) {
       const view = new Group();
       view.rotation.set(pitch, yaw, 0, 'YXZ');
-      view.position.copy(new Vector3(...heldGripOffset(side, true, model)).applyQuaternion(view.quaternion).add(eye));
+      view.position.copy(
+        new Vector3(...heldGripOffset({ side, twoHanded: true, model, holds }))
+          .applyQuaternion(view.quaternion)
+          .add(eye),
+      );
       view.add(held);
       view.updateMatrixWorld(true);
       const heldScene = held.children[0]!.children[0]!.children[0]!;
@@ -226,7 +233,7 @@ describe('exported firearm presentation', () => {
       const expectedDirection = new Vector3(...model.gun!.action!.ejectDirection).transformDirection(
         heldScene.matrixWorld,
       );
-      const actual = heldEjectionPose({ model, side, twoHanded: true, eye: [eye.x, eye.y, eye.z], yaw, pitch });
+      const actual = heldEjectionPose({ holds, model, side, twoHanded: true, eye: [eye.x, eye.y, eye.z], yaw, pitch });
       for (let axis = 0; axis < 3; axis += 1) {
         expect(actual.origin[axis]).toBeCloseTo(expectedAt.getComponent(axis), 9);
         expect(actual.direction[axis]).toBeCloseTo(expectedDirection.getComponent(axis), 9);
