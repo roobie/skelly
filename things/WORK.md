@@ -1,7 +1,7 @@
 ---
 read_if:
   - you plan or pick up work on the things suite or on retiring gungen
-  - you wonder what remains before `gungen/` can be deleted
+  - you wonder which gungen names remain to retire
   - you decide where a shared concept, schema field or tool UI part belongs
   - you move the engine's export layer, the material data or mass out of gungen or the engine
   - you change the recipe defining the gun tool's reproduction exit
@@ -12,7 +12,7 @@ read_if:
 # WORK
 
 The plan to reach the goal in `things/README.md`: a shared core, a thing authoring tool and
-a gun authoring tool that together replace `gungen/`. Delete this file when gungen is gone.
+a gun authoring tool that together replace gungen. Delete this file at close-out.
 
 ## Starting facts
 
@@ -54,7 +54,8 @@ Settled:
 
 - A shared core serves two tools, a thing authoring tool and a gun authoring tool; the gun
   tool succeeds gungen, and gungen is deleted at the end.
-- No package under `packages/` imports from gungen, because gungen is deleted at the end.
+- Neither authoring tool imports its peer, and lower packages and Deadvox cannot import
+  the gun tool, so content ownership cannot reverse the shared dependency layers.
 - `thing-core` imports no package but the engine, so the core stays free of gun modules and
   of the tools above it. Domain packs extend the schema without the core knowing.
 - Deadvox imports nothing from the engine. The game reads exported per-part mass and
@@ -66,10 +67,10 @@ Settled:
   "Contract").
 - Atoms have authored mass and assemblies sum their parts; the tools author a closed set of
   items rather than generate them (`things/README.md`, "Rules").
-- Gun part masses live in one gungen catalogue whose items carry their full construction;
+- Gun part masses live in one gun-tool catalogue whose items carry their full construction;
   a design's part names an item and sets only its placement. A part of a design not yet
   converted takes its mass from the row its params match, until the gun tool phase gives
-  every row an item (`gungen/PROJECT.md`, "Attachments and export"; `things/WORK.md`,
+  every row an item (`packages/gun-authoring-tool/PROJECT.md`, "Attachments and export"; `things/WORK.md`,
   "Phases").
 - Gun parts are items only: each exports and registers in Deadvox as a loose item, but the
   player cannot take a gun apart or assemble one yet. Dis/assembly comes later with its own
@@ -112,8 +113,8 @@ Settled:
   `packages/thing-authoring-tool/README.md`.
 - The directory structure is fixed before any new feature work.
 - Packages live in the top-level `packages/` directory, each a workspace of the root
-  package. Gungen stays at the root until the gun tool phase, so it moves once, under its
-  new name.
+  package. The gun tool has one implementation and one recipe authority, with no forwarding
+  package or old-path alias.
 - At pre-pre-alpha no old format is kept alive; only deadvox validating and loading every
   export is owed.
 - Work is tracked in this file and GitHub issues, with no work-item prefix until open
@@ -124,9 +125,8 @@ The open questions below remain unsettled.
 
 ## Target structure
 
-The package homes follow `things/WORK.md`, "Decisions". The gun tool is refactored in
-place and moves once at the phase 5 exit, avoiding two live implementations and keeping
-packages from importing gungen.
+The package homes follow `things/WORK.md`, "Decisions". The single gun-tool move keeps
+one implementation and one authored-source owner.
 
 | Area | Home |
 |---|---|
@@ -161,7 +161,7 @@ Deadvox depends on `thing-core` for the schema and on nothing above it.
    without loading authoring geometry. Atoms read their item weight; gun bodies sum authored
    part masses and fitted child items keep their own weight. See
    `packages/thing-export/README.md`, "Physical model";
-   `gungen/src/gun/catalogue.jsonnet`, `parts`; and
+   `packages/gun-authoring-tool/src/gun/catalogue.jsonnet`, `parts`; and
    `packages/deadvox/src/core/items.ts`, `typeWeightGrams`.
 3. **Thing tool, first slice — complete.** Tape, thread, cord and fuse atoms plus a
    multi-part desk lamp share the source-to-preview and export path. The lamp proves that the single-part helper's users
@@ -172,27 +172,20 @@ Deadvox depends on `thing-core` for the schema and on nothing above it.
    `test/things-deadvox-contract.test.mjs`.
 4. **Thing tool, remaining families.** Family by family, each with source, GLB, entry and
    load test together. The compass keeps its dedicated display renderer.
-5. **Gun tool.** Move gungen's gun and ammo logic onto the shared packages as an authoring
-   tool: the parts of each gun Deadvox consumes become a closed set of deadvox items, each
-   atom with an authored mass, and a gun is an assembly of them. Gun part items stay
-   authored in the gun tool, which gains a view of one part on its own after the move.
-   The thing tool owns non-gun items and gun part masses live in the gun catalogue, so a
-   second home would reverse both boundaries and make the tools import each other. Only the
-   designs the recipe names convert before the move; every other gungen design stays on the mass-row path and
-   converts one at a time when it is needed. Only the guns Deadvox consumes need item
-   identity before the move, and converting the rest earns its cost only when one of them is
-   needed, so the move does not wait on the whole corpus. Conversion happens in place in
-   gungen; the final move
-   changes the workspace and every operational caller together, so there is never a second
-   gun implementation. Item identity and authored mass reach the consumer together: a
-   renamed mass-table row alone is not a part item, because it has no standalone geometry,
-   item entry or assembly reference. Exit: the gun tool reproduces the consumption boundary
-   authored in `gungen/exports/deadvox.jsonnet`, and Deadvox's full content base registers
-   every export and draws each gun's companions from it. The recipe, not the design files,
-   is the boundary because designs alone omit companion exports. These rules keep the phase
-   from completing by a directory rename and keep retirement from losing companions; see
-   `gungen/src/cli/exportRecipe.ts`, `loadExportRecipe`, and
+5. **Gun tool — complete.** Gun and ammo policy, authored sources, tests and lasting
+   reasons have one home in `packages/gun-authoring-tool`. Recipe designs use closed part
+   items with standalone geometry, consumer records and assembly references; a mass row
+   alone is not item identity. Other designs convert from mass rows when needed, because
+   converting the whole corpus is not required to reproduce the consumer boundary.
+   The recipe, not the design files, is the boundary because designs omit companions;
+   see `packages/gun-authoring-tool/exports/deadvox.jsonnet`,
+   `packages/gun-authoring-tool/src/cli/exportRecipe.ts`, `loadExportRecipe`, and
    `test/gungen-deadvox-contract.test.mjs`, "registers every recipe export in the full base and keeps each gun companion inside the recipe".
+   No root gungen directory remains. Phase 6 retains only names: the root contract and
+   gun workflow, launcher presentation and controls, exporter metadata and consumer output
+   directory. These do not preserve a second implementation. Deferred ownership transfer
+   follows `things/TASK-gun-tool.md`, "Phase 5: complete". A standalone part view remains
+   follow-up UI work, not a reproduction requirement.
 6. **Retire gungen.** Retire residual names and references after the single phase 5 move;
    rename the retained consumption contract atomically with its CI invocation so the gate
    never disappears.
