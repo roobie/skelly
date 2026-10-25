@@ -2581,7 +2581,10 @@ it, because a pistol-grip pose on a pump gun or a hunting rifle closes on nothin
 and looks wrong. The gungen export marks the kind: a grip part means a pistol grip
 and a stock part without one means a stock wrist, and a long gun that exports
 neither fails to compile, because a guessed hold would close on nothing and hide
-the missing part. The support hand cups the forend from below, the bore running
+the missing part. The support hand cups the forend from below at the exported
+support anchor, whose height gungen reads off the forend underside the file
+draws, so no hand-copied height survives in content and a re-export cannot move
+the hold. The bore runs
 across the palm from its heel to the gap between thumb and index, the fingers
 curling up the gun's far side and the thumb lying along the near side, because a
 support hand on the side of the forend reads as resting on top of the barrel
