@@ -632,6 +632,14 @@ replaces it. Flow, rivers and tides would need a field this design does not prom
 authored sites have water; generated terrain has none. See `src/core/worldgen.ts`, `Surface`,
 and `src/core/authoredSite.ts`, `AuthoredSite`.
 
+Lakes are map features of any size. The haven's lake is hundreds of metres across and lakes
+elsewhere on a map can be much larger, so no schema field, fill rule, generation step or
+validation check caps a water body, and the debug lake is built at the haven's scale so its look
+is judged at the size that ships. Work that could grow with a lake's area stays bounded instead:
+validation searches a polygon's cells from coarse to fine and stops at the first one that holds
+water, and the shore's per-column cache is cleared when full. See `src/core/authoredLayout.ts`,
+`coarseToFineCentres`, and `src/core/authoredSite.ts`, `siteWater`.
+
 A water row's level is the water's top face, the plane the eye breaks when surfacing, while a
 layout's `ground` is the lower face of the top ground block. The ground names the block an author
 places and the level names the plane an author sees and a swimmer floats at; the two coincide only
