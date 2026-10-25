@@ -7,7 +7,7 @@
       },
       "color": "#4c5950",
       "id": "police_desk_radio",
-      "massKg": 20,
+      "massKg": 4,
       "material": "wood",
       "name": "Desk radio",
       "shape": [
@@ -54,7 +54,7 @@
       },
       "color": "#d7d0b4",
       "id": "police_duty_notice",
-      "massKg": 10,
+      "massKg": 2,
       "material": "wood",
       "mount": "wall",
       "name": "Duty notice",
@@ -90,7 +90,7 @@
         ]
       },
       "id": "police_file_cabinet",
-      "massKg": 160,
+      "massKg": 40,
       "material": "steel",
       "name": "File cabinet",
       "size": [2, 4, 1]
@@ -114,7 +114,7 @@
         ]
       },
       "id": "police_evidence_locker",
-      "massKg": 160,
+      "massKg": 40,
       "material": "steel",
       "name": "Evidence locker",
       "size": [2, 4, 1]
@@ -126,7 +126,7 @@
       },
       "color": "#deddd3",
       "id": "station_toilet",
-      "massKg": 80,
+      "massKg": 16,
       "material": "wood",
       "name": "Toilet",
       "shape": [
@@ -173,7 +173,7 @@
       },
       "color": "#8b9494",
       "id": "station_cell_toilet",
-      "massKg": 80,
+      "massKg": 16,
       "material": "wood",
       "name": "Cell toilet",
       "shape": [
@@ -220,7 +220,7 @@
       },
       "color": "#deddd3",
       "id": "station_washbasin",
-      "massKg": 40,
+      "massKg": 8,
       "material": "wood",
       "name": "Washbasin",
       "shape": [
@@ -271,7 +271,7 @@
       },
       "color": "#8b9494",
       "id": "station_cleaning_sink",
-      "massKg": 40,
+      "massKg": 8,
       "material": "wood",
       "name": "Cleaning sink",
       "shape": [
@@ -322,7 +322,7 @@
       },
       "color": "#b0b7b3",
       "id": "station_kitchen_sink",
-      "massKg": 40,
+      "massKg": 8,
       "material": "wood",
       "name": "Kitchen sink",
       "shape": [
@@ -373,7 +373,7 @@
       },
       "color": "#535b58",
       "id": "station_solid_fuel_boiler",
-      "massKg": 360,
+      "massKg": 72,
       "material": "wood",
       "name": "Solid-fuel boiler",
       "shape": [
@@ -420,7 +420,7 @@
       },
       "color": "#383d3b",
       "id": "station_coal_bin",
-      "massKg": 120,
+      "massKg": 24,
       "material": "wood",
       "name": "Coal bin",
       "shape": [
@@ -494,7 +494,7 @@
         "methods": {}
       },
       "id": "station_coal_hatch",
-      "massKg": 40,
+      "massKg": 8,
       "material": "steel",
       "name": "Coal delivery hatch",
       "size": [2, 2, 1]
@@ -506,7 +506,7 @@
       },
       "color": "#b7b9ae",
       "id": "station_cooker",
-      "massKg": 40,
+      "massKg": 8,
       "material": "wood",
       "name": "Cooker",
       "shape": [
@@ -588,7 +588,7 @@
         "methods": {}
       },
       "id": "station_emergency_door",
-      "massKg": 80,
+      "massKg": 16,
       "material": "steel",
       "name": "Emergency exit door",
       "size": [2, 4, 1]

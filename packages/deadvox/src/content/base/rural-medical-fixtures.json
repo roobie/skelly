@@ -7,7 +7,7 @@
       },
       "color": "#d8d2bd",
       "id": "medical_folding_screen",
-      "massKg": 20,
+      "massKg": 4,
       "material": "wood",
       "name": "Folding screen",
       "shape": [
@@ -30,7 +30,7 @@
       },
       "color": "#71828a",
       "id": "medical_examination_couch",
-      "massKg": 80,
+      "massKg": 16,
       "material": "wood",
       "name": "Examination couch",
       "shape": [
@@ -65,7 +65,7 @@
       },
       "color": "#7f8987",
       "id": "medical_steam_sterilizer",
-      "massKg": 20,
+      "massKg": 4,
       "material": "wood",
       "name": "Steam sterilizer",
       "shape": [
@@ -100,7 +100,7 @@
         ]
       },
       "id": "medical_card_file",
-      "massKg": 40,
+      "massKg": 10,
       "material": "steel",
       "name": "Card-file cabinet",
       "size": [1, 2, 1]
@@ -112,7 +112,7 @@
       },
       "color": "#66706c",
       "id": "medical_bike_rack",
-      "massKg": 80,
+      "massKg": 16,
       "material": "wood",
       "name": "Bike rack",
       "shape": [
@@ -143,7 +143,7 @@
       },
       "color": "#657069",
       "id": "medical_bin_enclosure",
-      "massKg": 80,
+      "massKg": 16,
       "material": "wood",
       "name": "Bin enclosure",
       "shape": [

@@ -82,7 +82,7 @@
       },
       "color": "#5a7040",
       "id": "shrub_small",
-      "massKg": 40,
+      "massKg": 8,
       "material": "wood",
       "name": "Small shrub",
       "shape": [
@@ -105,7 +105,7 @@
       },
       "color": "#47603a",
       "id": "shrub_tall",
-      "massKg": 120,
+      "massKg": 24,
       "material": "wood",
       "name": "Tall shrub",
       "shape": [
@@ -132,7 +132,7 @@
       },
       "color": "#6f7a3a",
       "id": "weed_tuft",
-      "massKg": 10,
+      "massKg": 2,
       "material": "wood",
       "name": "Weeds",
       "shape": [
@@ -171,7 +171,7 @@
       },
       "color": "#3f5a30",
       "id": "creeper_strip",
-      "massKg": 40,
+      "massKg": 8,
       "material": "wood",
       "name": "Creeper",
       "shape": [

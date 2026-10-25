@@ -15,7 +15,7 @@
         ]
       },
       "id": "gauntlet_lab_dead_researcher",
-      "massKg": 80,
+      "massKg": 16,
       "material": "wood",
       "name": "Dead researcher",
       "shape": [
@@ -58,7 +58,7 @@
         ]
       },
       "id": "gauntlet_lab_fridge",
-      "massKg": 320,
+      "massKg": 80,
       "material": "steel",
       "name": "Fridge",
       "power": {
@@ -76,7 +76,7 @@
       },
       "color": "#59634e",
       "id": "gauntlet_lab_generator",
-      "massKg": 360,
+      "massKg": 72,
       "material": "wood",
       "name": "Generator",
       "power": {
@@ -128,7 +128,7 @@
         "methods": {}
       },
       "id": "gauntlet_lab_bulkhead",
-      "massKg": 400,
+      "massKg": 80,
       "material": "steel",
       "name": "Steel bulkhead door",
       "shape": [
@@ -186,7 +186,7 @@
       },
       "color": "#62696c",
       "id": "gauntlet_lab_dead_lift",
-      "massKg": 400,
+      "massKg": 80,
       "material": "wood",
       "name": "Freight lift",
       "power": {
@@ -226,7 +226,7 @@
       },
       "color": "#a5b8ba",
       "id": "gauntlet_lab_fixture",
-      "massKg": 20,
+      "massKg": 4,
       "material": "wood",
       "name": "Strip light",
       "power": {
@@ -255,7 +255,7 @@
       },
       "color": "#555c61",
       "id": "gauntlet_lab_fixture_broken",
-      "massKg": 20,
+      "massKg": 4,
       "material": "wood",
       "name": "Broken strip light",
       "power": {
@@ -288,7 +288,7 @@
       },
       "color": "#a0a6a0",
       "id": "gauntlet_look_archive",
-      "massKg": 400,
+      "massKg": 80,
       "material": "wood",
       "name": "Prototype archive shelves",
       "shape": [
@@ -323,7 +323,7 @@
       },
       "color": "#90b0b5",
       "id": "gauntlet_look_cold_store",
-      "massKg": 400,
+      "massKg": 80,
       "material": "wood",
       "name": "Prototype cold specimen bank",
       "power": {
@@ -347,7 +347,7 @@
       },
       "color": "#c7cfc7",
       "id": "gauntlet_look_exam",
-      "massKg": 160,
+      "massKg": 32,
       "material": "wood",
       "name": "Prototype examination slab",
       "shape": [
@@ -370,7 +370,7 @@
       },
       "color": "#738981",
       "id": "gauntlet_look_pump",
-      "massKg": 480,
+      "massKg": 96,
       "material": "wood",
       "name": "Prototype pressure plant",
       "power": {
@@ -402,7 +402,7 @@
       },
       "color": "#91a978",
       "id": "gauntlet_look_culture",
-      "massKg": 320,
+      "massKg": 64,
       "material": "wood",
       "name": "Prototype culture apparatus",
       "power": {
@@ -438,7 +438,7 @@
       },
       "color": "#707b7e",
       "id": "gauntlet_look_exhaust",
-      "massKg": 640,
+      "massKg": 128,
       "material": "wood",
       "name": "Service exhaust",
       "shape": [
@@ -465,7 +465,7 @@
       },
       "color": "#707b7e",
       "id": "gauntlet_look_bollard",
-      "massKg": 160,
+      "massKg": 32,
       "material": "wood",
       "name": "Utility bollard",
       "shape": [
@@ -488,7 +488,7 @@
       },
       "color": "#707b7e",
       "id": "gauntlet_look_cabinet",
-      "massKg": 240,
+      "massKg": 48,
       "material": "wood",
       "name": "Utility cabinet",
       "shape": [
@@ -511,7 +511,7 @@
       },
       "color": "#707b7e",
       "id": "gauntlet_look_riser",
-      "massKg": 450,
+      "massKg": 90,
       "material": "wood",
       "name": "Service duct riser",
       "shape": [
@@ -538,7 +538,7 @@
       },
       "color": "#acb4b1",
       "id": "gauntlet_look_bench",
-      "massKg": 160,
+      "massKg": 32,
       "material": "wood",
       "name": "Prototype workbench",
       "shape": [
@@ -565,7 +565,7 @@
       },
       "color": "#7c868c",
       "id": "gauntlet_look_console",
-      "massKg": 160,
+      "massKg": 32,
       "material": "wood",
       "name": "Prototype objective console",
       "power": {
@@ -597,7 +597,7 @@
       },
       "color": "#b29a61",
       "id": "gauntlet_look_containment_bay",
-      "massKg": 320,
+      "massKg": 64,
       "material": "wood",
       "name": "Prototype containment bay",
       "power": {
@@ -637,7 +637,7 @@
       },
       "color": "#9b5550",
       "id": "gauntlet_look_breached_bay",
-      "massKg": 400,
+      "massKg": 80,
       "material": "wood",
       "name": "Prototype breached containment bay",
       "power": {
@@ -677,7 +677,7 @@
       },
       "color": "#742e30",
       "id": "gauntlet_look_spill",
-      "massKg": 120,
+      "massKg": 24,
       "material": "wood",
       "name": "Prototype spill mark — no active hazard",
       "shape": [
@@ -700,7 +700,7 @@
       },
       "color": "#c94b3d",
       "id": "gauntlet_look_button",
-      "massKg": 10,
+      "massKg": 2,
       "material": "wood",
       "name": "Prototype nuclear objective button",
       "readable": {

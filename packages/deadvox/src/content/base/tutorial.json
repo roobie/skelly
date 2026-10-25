@@ -16,7 +16,7 @@
         ]
       },
       "id": "tutorial_cabinet",
-      "massKg": 60,
+      "massKg": 12,
       "material": "wood",
       "name": "Supply cabinet",
       "shape": [
@@ -205,7 +205,7 @@
         ]
       },
       "id": "tutorial_range_cabinet",
-      "massKg": 60,
+      "massKg": 12,
       "material": "wood",
       "name": "Range supplies",
       "shape": [

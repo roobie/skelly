@@ -10,7 +10,7 @@
       },
       "color": "#7d7a72",
       "id": "ladder",
-      "massKg": 40,
+      "massKg": 10,
       "material": "steel",
       "name": "Ladder",
       "shape": [
@@ -65,7 +65,7 @@
         "methods": {}
       },
       "id": "roof_hatch",
-      "massKg": 60,
+      "massKg": 12,
       "material": "steel",
       "name": "Roof hatch",
       "size": [2, 1, 3]

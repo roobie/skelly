@@ -21,11 +21,12 @@
   // Estimated masses label their source as an estimate rather than claiming a measured property; content may override one.
   estimatedMassKg(piece)::
     local volume = piece.size[0] * piece.size[1] * piece.size[2];
-    if std.objectHas(piece, 'cover') then volume
-    else if std.objectHas(piece, 'vehicle') then 100 * volume
-    else if $.materialOf(piece) == 'steel' then 20 * volume
-    else if $.materialOf(piece) == 'plastic' then 5 * volume
-    else 10 * volume,
+    if std.objectHas(piece, 'cover') then volume / 4
+    else if std.objectHas(piece, 'shotTarget') then 5
+    else if std.objectHas(piece, 'vehicle') then 10 * volume
+    else if $.materialOf(piece) == 'steel' then 5 * volume
+    else if $.materialOf(piece) == 'plastic' then volume
+    else 2 * volume,
   breakable(pieces):: [
     assert std.objectHas(piece, 'breach') || !leaf(piece) : 'door leaf "%s" needs its own breach' % piece.id;
     assert std.objectHas(piece, 'material') || !std.objectHas(piece, 'door') : 'door "%s" needs its own material' % piece.id;

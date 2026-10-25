@@ -130,6 +130,20 @@ describe('floor furniture steps', () => {
     );
   });
 
+  it('drains carried furniture stamina only while the player moves', () => {
+    const { session, advance, setWalking } = runtime();
+    const entity = session.inventory.furnish(spec)!;
+    expect(session.liftFurniture(entity.uid, true)).toBeUndefined();
+    const held = session.sim.needs.stamina;
+
+    advance(1);
+    expect(session.sim.needs.stamina).toBe(held);
+
+    setWalking(true);
+    advance(1);
+    expect(session.sim.needs.stamina).toBeLessThan(held);
+  });
+
   it('uses the hold path without changing floor height for any aimed height', () => {
     for (const [height, aimedHeight] of [
       [-8, -40],

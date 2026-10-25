@@ -20,7 +20,7 @@
         ]
       },
       "id": "key_box",
-      "massKg": 20,
+      "massKg": 5,
       "material": "steel",
       "name": "Key box",
       "size": [1, 1, 1]

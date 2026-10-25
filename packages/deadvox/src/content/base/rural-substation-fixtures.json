@@ -7,7 +7,7 @@
       },
       "color": "#7f8d89",
       "id": "substation_switchgear",
-      "massKg": 160,
+      "massKg": 32,
       "material": "wood",
       "name": "Switchgear cabinet",
       "shape": [
@@ -46,7 +46,7 @@
       },
       "color": "#6f7d7a",
       "id": "substation_panel",
-      "massKg": 80,
+      "massKg": 16,
       "material": "wood",
       "name": "Control panel",
       "shape": [
@@ -100,7 +100,7 @@
       },
       "color": "#5d6c73",
       "id": "substation_transformer",
-      "massKg": 2100,
+      "massKg": 420,
       "material": "wood",
       "name": "Transformer",
       "shape": [
@@ -174,7 +174,7 @@
       },
       "color": "#8c9488",
       "id": "substation_disconnector",
-      "massKg": 150,
+      "massKg": 30,
       "material": "wood",
       "name": "Disconnector",
       "shape": [
@@ -221,7 +221,7 @@
       },
       "color": "#6b5a47",
       "id": "substation_pole",
-      "massKg": 800,
+      "massKg": 160,
       "material": "wood",
       "name": "Power line pole",
       "shape": [

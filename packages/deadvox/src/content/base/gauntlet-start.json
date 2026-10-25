@@ -31,7 +31,7 @@
         "methods": {}
       },
       "id": "gauntlet_start_hatch",
-      "massKg": 120,
+      "massKg": 24,
       "material": "steel",
       "name": "Roof hatch",
       "size": [6, 1, 2]

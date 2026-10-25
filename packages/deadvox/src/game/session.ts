@@ -1867,13 +1867,15 @@ export const createSession = (options: SessionOptions) => {
       canSprint(sim.needs, sprinting, sim.body.staminaRules);
     survival.setSprinting(sprinting);
     if (carrying) {
-      spendStamina(
-        sim.needs,
-        furnitureMoveStamina(inventory, entities.carrying()!, 'carry') * dt,
-        bodyTuning.staminaRegenDelaySimSeconds,
-      );
-      if (sim.needs.stamina <= 0) {
-        putDownWornOut();
+      if (intent.forward !== 0 || intent.right !== 0 || intent.jump) {
+        spendStamina(
+          sim.needs,
+          furnitureMoveStamina(inventory, entities.carrying()!, 'carry') * dt,
+          bodyTuning.staminaRegenDelaySimSeconds,
+        );
+        if (sim.needs.stamina <= 0) {
+          putDownWornOut();
+        }
       }
     } else {
       stepStamina(sim.needs, dt, sprinting, {
