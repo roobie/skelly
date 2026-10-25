@@ -75,14 +75,15 @@ export const furnitureMoveStamina = (
   effort: FurnitureMoveEffort,
 ): number => {
   const furniture = inventory.entities.defOf(entity);
-  if (furniture.massKg === undefined) {
+  const massKg = inventory.entities.massKg(entity);
+  if (massKg === undefined) {
     throw new Error(`Liftable furniture "${furniture.id}" has no mass`);
   }
   const { fatigue } = reachTuning(inventory.registry).furnitureMove;
   if (effort === 'carry') {
-    return fatigue.carry.basePerSimSecond + fatigue.carry.perKgPerSimSecond * furniture.massKg;
+    return fatigue.carry.basePerSimSecond + fatigue.carry.perKgPerSimSecond * massKg;
   }
-  return fatigue[effort].base + fatigue[effort].perKg * furniture.massKg;
+  return fatigue[effort].base + fatigue[effort].perKg * massKg;
 };
 
 /**

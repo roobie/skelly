@@ -42,7 +42,8 @@ export const describeLookedAt = (
   const target = crosshairTarget({ world, registry, entities, isSolid, blockSize }, eye, dir, LOOK_REACH / blockSize);
   if (target?.entity) {
     const def = entities.defOf(target.entity);
-    const mass = def.massKg === undefined ? '' : ` · ${def.massKg} kg`;
+    const massKg = entities.massKg(target.entity);
+    const mass = massKg === undefined ? '' : ` · ${massKg} kg`;
     return `${def.id} · ${def.name}${furnitureKind(target.entity, def.door !== undefined)}${mass} · block ${target.entity.pos.join(',')} · ${target.distanceMetres.toFixed(1)} m`;
   }
   const block = target?.block && registry.blocks[world.getBlock(...target.block)];

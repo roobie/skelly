@@ -9,7 +9,7 @@ import type { FurnitureDef, Registry } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { toChunk, type Vec3 } from './coords.ts';
 import { coreMessage } from './coreText.ts';
-import { type Placed, type PlacedState, restorePlaced, snapshotPlaced } from './items.ts';
+import { type Placed, type PlacedState, restorePlaced, snapshotPlaced, weightOf } from './items.ts';
 import { type Pose, rotatedSize, rotationOf, type Tip } from './orientation.ts';
 import { type Body, bodyOverlapsBlock } from './physics.ts';
 import type { DoorLockDef, InventoryTuningDef } from './schema.ts';
@@ -309,6 +309,18 @@ export class BlockEntities {
   /** The pieces standing in the world; a carried piece is in the player's hands instead. */
   get all(): IterableIterator<BlockEntity> {
     return [...this.byOrigin.values()].filter((entity) => !entity.carried).values();
+  }
+
+  /** Furniture's own content mass plus every item it contains. */
+  massKg(entity: BlockEntity): number | undefined {
+    const ownMassKg = this.defOf(entity).massKg;
+    if (ownMassKg === undefined) {
+      return undefined;
+    }
+    const contentsKg = (entity.pockets ?? [])
+      .flat()
+      .reduce((total, { item }) => total + weightOf(this.registry, item) / 1000, 0);
+    return ownMassKg + contentsKg;
   }
 
   /** Every piece, the carried one too, so what it holds stays owned while it travels. */
