@@ -117,6 +117,8 @@ const actionExportFacts = (name: string) => {
   };
 };
 const sightTargetPartId = (out: ExportedGun, endpoint: Vec3, label: string): string => {
+  // modelPoint rounds to micrometres; matching in U must allow the export's resolution.
+  const endpointResolutionU = 1e-6 / out.resolved.domain.units.metresPerUnit;
   for (const [id, part] of out.resolved.defs) {
     const axis = part.axes.find(({ kind }) => kind === 'sight');
     const transform = out.resolved.placed.get(id);
@@ -128,7 +130,7 @@ const sightTargetPartId = (out: ExportedGun, endpoint: Vec3, label: string): str
     const optic = family === 'sight' ? getOptic(params?.type?.value, params?.mountSection?.value) : undefined;
     const localEye: Vec3 = optic ? [optic.ocularX, optic.opticalAxisY, 0] : axis.origin;
     const eye = applyPoint(transform, localEye);
-    if (Math.hypot(eye[0] - endpoint[0], eye[1] - endpoint[1], eye[2] - endpoint[2]) < 1e-6) {
+    if (Math.hypot(eye[0] - endpoint[0], eye[1] - endpoint[1], eye[2] - endpoint[2]) < endpointResolutionU) {
       return id;
     }
   }
