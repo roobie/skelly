@@ -49,6 +49,8 @@ export interface ArmSolution {
   readonly upper: Quaternion;
   readonly fore: Quaternion;
   readonly hand: Quaternion;
+  readonly upperScale: number;
+  readonly foreScale: number;
 }
 
 const partNode = (scene: Object3D, part: string): Object3D => {
@@ -171,30 +173,32 @@ export interface ArmTarget {
   readonly up: Vector3;
 }
 
-/**
- * Places the shoulder, elbow and hand of `rig` so the grip point sits at the target's grip. The hand takes the
- * target's hand frame if given, else continues the forearm with its thumb up. Both segments keep their lengths: a
- * grip out of reach, or closer than the folded arm allows, slides the shoulder along the line to the wrist, so the
- * hand always meets its grip. A wrist on the shoulder has no such line; the arm then hangs down from a lifted shoulder.
- */
+/** Shoulder and grip contacts win over length constraints: sliding the root leaves a floating sleeve. */
 export const solveArmRig = (rig: ArmRig, { shoulder, grip, handFrame, bendSide, up }: ArmTarget): ArmSolution => {
   const reach = rig.upperLength + rig.foreLength;
-  const folded = Math.abs(rig.upperLength - rig.foreLength);
   const solve = (hand: Quaternion) => {
     const wrist = grip.clone().sub(rig.gripFromWrist.clone().applyQuaternion(hand));
     const toWrist = wrist.clone().sub(shoulder);
     const axis = direction(toWrist, up.clone().negate());
-    const distance = Math.max(folded, 1e-6, Math.min(toWrist.length(), reach));
-    const shoulderAt = wrist.clone().addScaledVector(axis, -distance);
-    const along = (rig.upperLength ** 2 - rig.foreLength ** 2 + distance ** 2) / (2 * distance);
-    const height = Math.sqrt(Math.max(0, rig.upperLength ** 2 - along ** 2));
+    const distance = toWrist.length();
+    const stretch = Math.max(1, distance / reach);
+    let upperLength = rig.upperLength * stretch;
+    let foreLength = rig.foreLength * stretch;
+    const foldedExcess = Math.max(0, Math.abs(upperLength - foreLength) - distance) / 2;
+    const longer = Math.sign(upperLength - foreLength);
+    upperLength -= longer * foldedExcess;
+    foreLength += longer * foldedExcess;
+    const along = distance > 1e-12 ? (upperLength ** 2 - foreLength ** 2 + distance ** 2) / (2 * distance) : 0;
+    const height = Math.sqrt(Math.max(0, upperLength ** 2 - along ** 2));
     const bend = perpendicular(bendSide, axis, up);
-    const elbow = shoulderAt.clone().addScaledVector(axis, along).addScaledVector(bend, height);
+    const elbow = shoulder.clone().addScaledVector(axis, along).addScaledVector(bend, height);
     const hinge = axis.clone().cross(bend).normalize();
-    const upperDown = elbow.clone().sub(shoulderAt).normalize().negate();
+    const upperDown = elbow.clone().sub(shoulder).normalize().negate();
     const foreDown = wrist.clone().sub(elbow).normalize().negate();
     return {
-      shoulder: shoulderAt,
+      shoulder: shoulder.clone(),
+      upperScale: upperLength / rig.upperLength,
+      foreScale: foreLength / rig.foreLength,
       elbow,
       upper: basis(hinge, upperDown, hinge.clone().cross(upperDown)),
       fore: basis(hinge, foreDown, hinge.clone().cross(foreDown)),

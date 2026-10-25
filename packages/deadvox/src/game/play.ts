@@ -3602,7 +3602,10 @@ export const startPlay = (
     const elapsed = action
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
       : 0;
-    const pose = renderMeleePose(action, elapsed, ready, dominantSide(inventory.character));
+    const pose = renderMeleePose(action, elapsed, ready, {
+      leading: dominantSide(inventory.character),
+      holds: registry.figures.get(CORE_CONTENT_IDS.player)!.holds,
+    });
     const { job: handlingJob, progress: grabProgress } = handlingPresentation();
     view.updateHeld(dt, pose, spectator.enabled ? undefined : survival.lit, {
       floorPlacement: carryFloorPlacement(),
@@ -3636,6 +3639,7 @@ export const startPlay = (
     const twoHanded = Boolean(registry.items.get(item.type)?.twoHanded);
     const aimingDownSights = firearmPose?.aimingDownSights ?? false;
     const poseInput = {
+      holds: registry.figures.get(CORE_CONTENT_IDS.player)!.holds,
       model,
       side,
       leadingSide,

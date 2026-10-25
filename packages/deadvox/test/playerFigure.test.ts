@@ -20,7 +20,7 @@ import {
 } from 'three';
 import { describe, expect, it } from 'vitest';
 import type { Vec3 } from '../src/core/coords.ts';
-import { HOLD } from '../src/core/heldPose.ts';
+
 import { Inventory } from '../src/core/inventory.ts';
 import { toggleLight } from '../src/core/lights.ts';
 import { meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
@@ -47,6 +47,10 @@ import { createPlayerBody, PLAYER } from './playerFixture.ts';
 const registry = baseRegistry();
 const scale = makeScale(0.5);
 const playerFigure = registry.figures.get('player')!;
+const HOLD = {
+  right: playerFigure.holds.oneHand,
+  left: [-playerFigure.holds.oneHand[0], playerFigure.holds.oneHand[1], playerFigure.holds.oneHand[2]] as Vec3,
+};
 const STANDING = { stance: 'standing', dt: 0 } as const;
 
 const figureModels = { version: 1, ...(await loadFigureModels(registry)) } as unknown as ModelLibrary;
@@ -72,11 +76,25 @@ const armJoints = (arm: Group) => ({
   grip: worldOf(arm, 'grip-anchor'),
   hand: worldOf(arm, ARM_NODE.hand),
 });
-/** The arm's segments keep their model lengths and meet at the joints, with the hand frame on the grip point. */
+/** The scaled model segments meet at their joints, with the hand frame on the grip point. */
 const expectConnectedArm = (arm: Group, rig: ArmRig, label: string): void => {
   const joints = armJoints(arm);
-  expect(joints.elbow.distanceTo(joints.shoulder), `${label} upper length`).toBeCloseTo(rig.upperLength, 4);
-  expect(joints.wrist.distanceTo(joints.elbow), `${label} fore length`).toBeCloseTo(rig.foreLength, 4);
+  expect(joints.elbow.distanceTo(joints.shoulder), `${label} upper length`).toBeCloseTo(
+    rig.upperLength * rig.shoulder.scale.y,
+    4,
+  );
+  expect(joints.wrist.distanceTo(joints.elbow), `${label} fore length`).toBeCloseTo(
+    rig.foreLength * rig.elbow.scale.y,
+    4,
+  );
+  expect(
+    rig.shoulder.localToWorld(new Vector3(0, -rig.upperLength, 0)).distanceTo(joints.elbow),
+    `${label} elbow seam`,
+  ).toBeLessThan(1e-6);
+  expect(
+    rig.elbow.localToWorld(new Vector3(0, -rig.foreLength, 0)).distanceTo(joints.wrist),
+    `${label} wrist seam`,
+  ).toBeLessThan(1e-6);
   expect(joints.hand.distanceTo(joints.grip), `${label} hand on grip`).toBeLessThan(1e-6);
   expect(joints.grip.distanceTo(joints.wrist), `${label} grip from wrist`).toBeCloseTo(rig.gripFromWrist.length(), 4);
 };
@@ -528,7 +546,16 @@ describe('player figure', () => {
   it('draws one pair of arms: no body arm on a side whose first-person view arm draws, all body arms in third person', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
     const meshes = playerMeshes();
-    const bodyArmShown = (side: 'left' | 'right') => drawnPart(meshes, `${side}Arm`).visible;
+    const bodyArmShown = (side: 'left' | 'right') => {
+      let count = 0;
+      meshes.group.traverseVisible((object) => {
+        if (object.name === `figure-${side}Arm` || object.name === `first-person-arm-${side}`) {
+          count += 1;
+        }
+      });
+      expect(count).toBeLessThanOrEqual(1);
+      return count === 1;
+    };
     // Empty hands draw fists; a one-handed and a two-handed item each draw their own grip.
     for (const held of [undefined, 'kitchen_knife', 'baseball_bat']) {
       const inventory = new Inventory(registry);
@@ -650,7 +677,7 @@ describe('player figure', () => {
     modelLoaded = true;
     models.version += 1;
     record(readyMeleePose(false));
-    record(readyMeleePose(true));
+    record(readyMeleePose(true, playerFigure.holds));
     const { cooldown } = FISTS_MELEE;
     const contactAt = meleeContactTime(cooldown, FISTS_MELEE.contactFraction!, FISTS_MELEE.windupCapSimSeconds!);
     const contact = meleePoseAndContact(
@@ -669,7 +696,7 @@ describe('player figure', () => {
       contactAt,
       false,
     );
-    record(readyMeleePose(true));
+    record(readyMeleePose(true, playerFigure.holds));
     record(contact);
 
     expect(inventory.move(knife, { kind: 'hand', side: 'left' }).ok).toBe(true);
@@ -719,7 +746,7 @@ describe('player figure', () => {
     expect(restoredArmCount).toBe(2);
     const restoredBackpack = restored.create('hiking_backpack');
     expect(restored.add(restoredBackpack, { kind: 'worn' })).toBe(true);
-    restoredHeld.update(camera, readyMeleePose(true));
+    restoredHeld.update(camera, readyMeleePose(true, playerFigure.holds));
     let rebuiltArmCount = 0;
     restoredInternals.scene.traverse((object) => {
       if (object.name.startsWith('first-person-arm-')) {

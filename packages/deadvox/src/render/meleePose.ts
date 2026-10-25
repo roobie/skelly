@@ -7,14 +7,16 @@ import {
   readyMeleePose,
 } from '../core/meleePose.ts';
 
+import type { HeldPosesDef } from '../core/schema.ts';
+
 /** Build a held-item render pose, keeping an occupied support hand in its natural hold pose. */
 export const renderMeleePose = (
   action: (MeleeActionPose & { hands: Readonly<Record<MeleeHand, number | null>> }) | undefined,
   elapsed: number,
   ready: boolean,
-  leading: MeleeHand = DEFAULT_HANDED_CHARACTER.handedness,
+  { leading = DEFAULT_HANDED_CHARACTER.handedness, holds }: { leading?: MeleeHand; holds?: HeldPosesDef } = {},
 ): MeleePoseFrame => {
-  const pose = action ? meleePoseAndContact(action, elapsed, false) : readyMeleePose(ready, leading);
+  const pose = action ? meleePoseAndContact(action, elapsed, false) : readyMeleePose(ready, holds, leading);
   if (action && !action.twoHanded) {
     const otherHand = action.hand === 'right' ? 'left' : 'right';
     if (action.hands[otherHand] !== null) {

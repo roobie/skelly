@@ -224,7 +224,7 @@ describe('melee pose and contact contract', () => {
   it('shows a ready pose only when the right-mouse state is active and keeps it within its rest bounds', () => {
     expect(readyMeleePose(false).right.offset).toEqual([0, 0, 0]);
     expect(readyMeleePose(false).left.offset).toEqual([0, 0, 0]);
-    const ready = readyMeleePose(true);
+    const ready = readyMeleePose(true, registry.figures.get('player')!.holds);
     for (const side of ['right', 'left'] as const) {
       expect(ready[side].offset).not.toEqual([0, 0, 0]);
       expect(Math.hypot(...ready[side].offset)).toBeLessThan(0.1);

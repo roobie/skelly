@@ -8,6 +8,7 @@ read_if:
   - you change held sharpening, blade repair entry points or prepared hand pairs
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
   - you change the player figure's look, its authored parts, its clothes or how it is posed
+  - you change shared held-item presentation, arm attachment or the mannequin's item-hold catalogue
   - you change worn head gear seen from inside or on the player figure
   - you add a wear slot or change what night-vision goggles do to the view
   - you change browser mod identity, startup admission or default mod selection
@@ -1577,27 +1578,34 @@ hold up from every side, and a body built only for first person is not enough.
 Worn items carry their own part model that covers or replaces the body part
 under it, so gear shows on the body without the body knowing about gear.
 
-The first-person arms are the figure row's own arm models, bent through the row's
-arm rig to reach each grip (`DESIGN.md`, "Models"), so the arms the player sees
-and the arms others see never differ in look or proportion. In first person the
-view draws both arms, gripping or as fists, so the body's own arms hide there;
-otherwise an empty hand would show two arms.
+First-person and world-body holds share one held-item-and-arms owner, with each
+view supplying its own shoulder frame. This applies to all items, not just guns:
+the world body is what others and the mannequin see, so it must show the same
+holds as first person. One owner prevents those holds drifting, lets the mannequin
+judge them from outside, and gives later NPCs and other players the same source.
+Hold, readiness and support tuning belongs to content so another figure need not
+inherit the player's proportions. See `src/render/heldPresentation.ts`,
+`HeldPresentation`; `src/render/playerFigure.ts`, `PlayerMeshes`;
+`src/render/hands.ts`, `HeldItems`; and
+`src/content/base/figures-player.jsonnet`, `holds`.
 
-Third person remains a debug inspection aid, not a player-facing camera.
-`PlayerMeshes` in `src/render/playerFigure.ts` draws the body from the `player`
-figure row (`DESIGN.md`, "Models"); the authored parts are thing tool rows in
-`packages/thing-authoring-tool/avatar.libsonnet`. The debug query in
-`src/render/avatarStudy.ts` stands a model beside the body for comparison.
-`src/render/avatarMannequin.ts`, `createAvatarMannequin` stands a second, inert copy of the
-body, drawn by the same `PlayerMeshes`, in every pose the figure row defines (`avatarPoses`
-in the same file), so BR can judge a pose from outside instead of only in
-first person. It is debug-only, and its controls (pose, relocate) fill their own debug-panel
-group, present only while a mannequin exists, because BR wants mannequins driven from
-one section of their own and possibly several later; the rows are the `debug.mannequin-`
-actions in `src/game/inputBindings.ts` and the group is in `src/debug/groups.ts`,
-`DEBUG_GROUPS`. Where it stands is the figure row's `mannequinPlacement`. Held-item holds and the ready stance are drawn by the
-first-person `HeldItems`, not the world body, so the mannequin shows them only if the
-world body grows them.
+Shoulders are body attachments, not movable reach handles. When an authored grip
+cannot be reached at authored limb lengths, preserving shoulder and hand contact
+takes priority over exact segment length: a floating sleeve breaks the whole-body
+figure. Reach fitting must not move the item away from its shared simulation pose
+or add per-view hold offsets. The content's joints and grips determine the fit;
+changing to skinned bones would not remove this geometric constraint. See
+`src/render/armRig.ts`, `solveArmRig`; and `src/render/heldPresentation.ts`,
+`HeldPresentation.solve`.
+
+Third person remains a debug inspection aid, not a player-facing camera. The
+mannequin is an inert drawing of the same world body, not another simulated actor.
+Its holds come from the item registry rather than a curated list, so a new item
+using an existing hold needs no debug-tool edit. Its controls belong in their own
+debug-panel group so inspecting a mannequin does not compete with unrelated
+tools. See `src/render/avatarMannequin.ts`, `createAvatarMannequin` and
+`avatarPoses`; `src/render/heldPresentation.ts`, `heldItemPoses`; and
+`src/debug/groups.ts`, `DEBUG_GROUPS`.
 
 Needs are calories, hydration, fatigue, stamina, and body temperature; rates use
 game time. Body temperature is not simulated; #366 is the trigger for deciding
