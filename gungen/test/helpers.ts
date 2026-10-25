@@ -131,11 +131,7 @@ export const loadCorpus = (
 export type Triangle = readonly [readonly number[], readonly number[], readonly number[]];
 
 /** The triangles a part's nodes draw, moved by their node translations into file axes. */
-export const partTriangles = (
-  json: GltfJson,
-  read: ReturnType<typeof readGlb>,
-  partId: string,
-): Triangle[] => {
+export const partTriangles = (json: GltfJson, read: ReturnType<typeof readGlb>, partId: string): Triangle[] => {
   const triangles: Triangle[] = [];
   for (const node of json.nodes.filter(({ extras }) => extras?.part === partId)) {
     const shift = node.translation ?? [0, 0, 0];

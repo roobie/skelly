@@ -120,7 +120,8 @@ const selectOthers = (
       continue;
     }
     const candidate = frames[first]![name]!;
-    others[name] = name === 'muzzle' ? declaring.reduce((best, id) => frontmost(best, frames[id]![name]!), candidate) : candidate;
+    others[name] =
+      name === 'muzzle' ? declaring.reduce((best, id) => frontmost(best, frames[id]![name]!), candidate) : candidate;
     if (name === 'support') {
       supportPart = first;
     }
