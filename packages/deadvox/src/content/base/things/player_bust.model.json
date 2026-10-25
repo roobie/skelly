@@ -2,10 +2,15 @@
   "id": "player_bust",
   "file": "assets/models/player_bust.glb",
   "parts": {
-    "bust": {
-      "node": "bust:bust",
-      "massKg": 38,
-      "centreOfMass": [-0.0009431582584657918, 0.4428242916378715, -0.0030449205252246034]
+    "torso": {
+      "node": "torso:torso",
+      "massKg": 33,
+      "centreOfMass": [-0.0011775237273511652, 0.3457668248490077, -0.0019654874892148406]
+    },
+    "head": {
+      "node": "head:head",
+      "massKg": 5,
+      "centreOfMass": [1.0201979643961859e-16, 0.8334131944444445, -0.0073888888888888875]
     }
   },
   "anchors": {

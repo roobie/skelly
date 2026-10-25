@@ -42,6 +42,7 @@ import {
   type HandsModelDef,
   HELD_DISPLAY_KIND,
   type ItemDef,
+  LEG_SEGMENTS,
   type ModelDef,
   type RecipeDef,
   type ScenarioDef,
@@ -1745,8 +1746,8 @@ const checkHeartbeatSounds = (registry: Registry, report: Report): void => {
 };
 
 /**
- * Each figure part's model exists and holds every anchor the row names on it, and each arm model holds the rig's
- * parts and pivots, so the view never bends a part that isn't there.
+ * Each figure part's model exists and holds every anchor the row names on it, and each limb model holds its rig's
+ * parts and pivots, so neither the view nor a stance bends a part that isn't there.
  */
 interface FigurePartNames {
   path: string;
@@ -1766,23 +1767,34 @@ const figurePartNames = (figure: FigureDef): FigurePartNames[] => {
     `.armRig.${segment}.part`,
     figure.armRig[segment].part,
   ]);
+  const legAnchors = LEG_SEGMENTS.map((segment): [string, string] => [
+    `.legRig.${segment}.pivot`,
+    figure.legRig[segment].pivot,
+  ]);
+  const legParts = LEG_SEGMENTS.map((segment): [string, string] => [
+    `.legRig.${segment}.part`,
+    figure.legRig[segment].part,
+  ]);
   return [
     {
       path: '.body',
       model: figure.body.model,
-      anchors: Object.entries(figure.body.joints).map(([field, anchor]): [string, string] => [
-        `.body.joints.${field}`,
-        anchor,
-      ]),
-      parts: [],
+      anchors: [
+        ...Object.entries(figure.body.joints).map(([field, anchor]): [string, string] => [
+          `.body.joints.${field}`,
+          anchor,
+        ]),
+        ['.body.head.pivot', figure.body.head.pivot],
+      ],
+      parts: [['.body.head.part', figure.body.head.part]],
     },
     ...FIGURE_LIMBS.map((limb): FigurePartNames => {
       const arm = FIGURE_LIMB_JOINTS[limb].endsWith('Shoulder');
       return {
         path: `.limbs.${limb}`,
         model: figure.limbs[limb].model,
-        anchors: [[`.limbs.${limb}.joint`, figure.limbs[limb].joint], ...(arm ? rigAnchors : [])],
-        parts: arm ? rigParts : [],
+        anchors: [[`.limbs.${limb}.joint`, figure.limbs[limb].joint], ...(arm ? rigAnchors : legAnchors)],
+        parts: arm ? rigParts : legParts,
       };
     }),
   ];

@@ -19,6 +19,7 @@ local handPose(fingers, thumbAcross, thumbIn) = {
           leftShoulder: 'shoulder_left',
           rightShoulder: 'shoulder_right',
         },
+        head: segment('head', 'head'),
       },
       // Each limb is mirror-symmetric, so one model hangs on either side.
       limbs: {
@@ -49,11 +50,34 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         // Where the view hangs the right arm, from the eye; the left mirrors it.
         shoulderFromEye: [0.3, -0.55, 0.05],
       },
+      // A stance bends each leg at the knee and ankle about these parts and anchors.
+      legRig: {
+        shin: segment('shin', 'knee'),
+        foot: segment('foot', 'ankle'),
+      },
       gait: { legSwingDegrees: 12.6, armSwingDegrees: 10 },
-      // Each pose keeps the drawn body under its stance's body height in senses.jsonnet.
+      // Each pose keeps the drawn body under its stance's body height in player.jsonnet. The crouch reads as a crouch:
+      // knees bent, feet flat under the hips, torso leaning forward, arms hanging low in front and head up looking
+      // ahead. Its ankle turns the foot back to level, and its hip drop puts the soles on the ground.
       stancePoses: {
-        crouching: { hipDropMetres: 0.47, torsoForwardDegrees: 35, legsForwardDegrees: 70 },
-        prone: { hipDropMetres: 0.48, torsoForwardDegrees: 90, legsForwardDegrees: -90 },
+        crouching: {
+          hipDropMetres: 0.374,
+          torsoForwardDegrees: 50,
+          legsForwardDegrees: 65,
+          kneeBendDegrees: 120,
+          ankleDegrees: 55,
+          armsForwardDegrees: 60,
+          headUpDegrees: 45,
+        },
+        prone: {
+          hipDropMetres: 0.48,
+          torsoForwardDegrees: 90,
+          legsForwardDegrees: -90,
+          kneeBendDegrees: 0,
+          ankleDegrees: 0,
+          armsForwardDegrees: 0,
+          headUpDegrees: 0,
+        },
         blendRealSeconds: 0.2,
       },
     },

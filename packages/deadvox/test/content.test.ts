@@ -3109,7 +3109,7 @@ describe('content', () => {
     }
   });
 
-  it('reports a figure whose model, joint anchor, rig part or pivot is missing, or whose view shoulder is misplaced', () => {
+  it('reports a figure whose model, joint anchor, arm or leg rig part or pivot is missing, or whose view shoulder is misplaced', () => {
     const figuresFile = base.find(({ source }) => source === 'figures-player.json')!;
     interface Part {
       model: string;
@@ -3125,6 +3125,7 @@ describe('content', () => {
     const body = player.body as Part;
     const limbs = player.limbs as Record<string, Part>;
     const rig = player.armRig as Rig;
+    const legRig = player.legRig as { shin: { part: string; pivot: string } };
     // One build for all fixture figures; each fixture breaks one reference, at its own path.
     const figures = [
       { body: { ...body, model: 'fixture_missing_model' } },
@@ -3135,12 +3136,13 @@ describe('content', () => {
       {
         armRig: { ...rig, shoulderFromEye: [-rig.shoulderFromEye[0], rig.shoulderFromEye[1], rig.shoulderFromEye[2]] },
       },
+      { legRig: { ...legRig, shin: { ...legRig.shin, part: 'fixture_missing_part' } } },
     ].map((change, index) => ({ ...player, ...change, id: `fixture_figure_${index}` }));
     const paths = buildRegistry([
       ...base.filter((source) => source !== figuresFile),
       { source: figuresFile.source, data: { figures: [player, ...figures] } },
     ]).issues.map(({ path }) => path);
-    // Both arms share the rig, so a broken rig name is reported once per arm.
+    // Both arms share the arm rig and both legs the leg rig, so a broken rig name is reported once per limb.
     expect(paths).toEqual([
       'figures[1].body.model',
       'figures[2].body.joints.leftHip',
@@ -3150,6 +3152,8 @@ describe('content', () => {
       'figures[5].armRig.hand.pivot',
       'figures[5].armRig.hand.pivot',
       'figures[6].armRig.shoulderFromEye',
+      'figures[7].legRig.shin.part',
+      'figures[7].legRig.shin.part',
     ]);
   });
 

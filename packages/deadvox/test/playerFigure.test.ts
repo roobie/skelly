@@ -33,7 +33,12 @@ import { ARM_NODE, type ArmRig } from '../src/render/armRig.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { renderMeleePose } from '../src/render/meleePose.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
-import { firstPersonShoulder, PLAYER_BODY_REAR_OFFSET, PlayerMeshes } from '../src/render/playerFigure.ts';
+import {
+  FIGURE_PIVOT,
+  firstPersonShoulder,
+  PLAYER_BODY_REAR_OFFSET,
+  PlayerMeshes,
+} from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
@@ -100,6 +105,37 @@ const anchorAt = (meshes: PlayerMeshes, name: 'body' | FigureLimb, model: string
   return new Vector3(...registry.models.get(model)!.anchors![anchor]!).applyMatrix4(
     drawnPart(meshes, name).matrixWorld,
   );
+};
+
+/**
+ * A crouched leg bends at the knee with its foot flat on the ground behind the knee; returns the hip. Yaw 0 faces -z,
+ * so how far a point stands ahead of another is the drop in z.
+ */
+const expectCrouchedLeg = (meshes: PlayerMeshes, leg: 'leftLeg' | 'rightLeg', ground: number, label: string) => {
+  const { model, joint } = playerFigure.limbs[leg];
+  const hip = anchorAt(meshes, leg, model, joint);
+  const drawn = drawnPart(meshes, leg);
+  const knee = drawn.getObjectByName(FIGURE_PIVOT.shin)!.getWorldPosition(new Vector3());
+  const foot = drawn.getObjectByName(FIGURE_PIVOT.foot)!;
+  const ankle = foot.getWorldPosition(new Vector3());
+  expect(knee.y, `${label} knee below hip`).toBeLessThan(hip.y);
+  expect(ankle.y, `${label} ankle below knee`).toBeLessThan(knee.y);
+  expect(hip.z - knee.z, `${label} knee ahead of ankle`).toBeGreaterThan(hip.z - ankle.z);
+  const sole = new Box3().setFromObject(foot, true);
+  expect(sole.min.y, `${label} sole on the ground`).toBeCloseTo(ground, 2);
+  const resting = new Box3();
+  foot.traverse((object) => {
+    const position = object instanceof Mesh ? object.geometry.getAttribute('position') : undefined;
+    for (let index = 0; index < (position?.count ?? 0); index++) {
+      const at = new Vector3().fromBufferAttribute(position!, index).applyMatrix4(object.matrixWorld);
+      if (at.y < ground + 0.01) {
+        resting.expandByPoint(at);
+      }
+    }
+  });
+  // A flat sole rests along most of the shoe's length, not on a toe or heel edge.
+  expect(resting.max.z - resting.min.z, `${label} sole flat`).toBeGreaterThan((sole.max.z - sole.min.z) * 0.8);
+  return hip;
 };
 
 const fallbackLightHands = [...registry.items.values()]
@@ -417,6 +453,46 @@ describe('player figure', () => {
           const on = anchorAt(meshes, 'body', playerFigure.body.model, bodyJoint);
           expect(at.distanceTo(on), `${limb} ${stance} moving ${moving} third person ${thirdPerson}`).toBeCloseTo(0, 6);
         }
+      }
+    }
+  });
+
+  it('crouches on bent knees: feet flat behind the knees, knees below the hips, torso forward, head up, arms in front', () => {
+    const body = createPlayerBody(scale, 4, 1, 4);
+    const meshes = playerMeshes();
+    const ground = body.pos[1] * scale.blockSize;
+    for (const thirdPerson of [true, false]) {
+      meshes.sync({
+        body,
+        yaw: 0,
+        stepOffset: 0,
+        gaitPhase: 0,
+        moving: false,
+        stance: 'crouching',
+        dt: 1,
+        thirdPerson,
+      });
+      const hips = (['leftLeg', 'rightLeg'] as const).map((leg) =>
+        expectCrouchedLeg(meshes, leg, ground, `${leg} third person ${thirdPerson}`),
+      );
+      const lowest = Math.min(...drawnVertices(meshes).map(({ at }) => at.y));
+      expect(lowest, `third person ${thirdPerson}: nothing sinks into the ground`).toBeGreaterThan(ground - 0.005);
+      const head = anchorAt(meshes, 'body', playerFigure.body.model, 'head');
+      const hipZ = (hips[0]!.z + hips[1]!.z) / 2;
+      expect(hipZ - head.z, `third person ${thirdPerson}: torso leans forward`).toBeGreaterThan(0);
+      // Models face +z, so each part's +z is where it faces.
+      const facing = (object: Object3D) => new Vector3(0, 0, 1).transformDirection(object.matrixWorld);
+      const torso = drawnPart(meshes, 'body');
+      expect(
+        facing(torso.getObjectByName(FIGURE_PIVOT.head)!).y,
+        `third person ${thirdPerson}: head up`,
+      ).toBeGreaterThan(facing(torso).y);
+      for (const arm of ['leftArm', 'rightArm'] as const) {
+        const { model, joint } = playerFigure.limbs[arm];
+        const reach = new Box3().setFromObject(drawnPart(meshes, arm), true).getCenter(new Vector3());
+        expect(reach.z, `${arm} third person ${thirdPerson}: hangs in front`).toBeLessThan(
+          anchorAt(meshes, arm, model, joint).z,
+        );
       }
     }
   });
