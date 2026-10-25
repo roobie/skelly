@@ -135,8 +135,7 @@ describe('liquid faces', () => {
   });
 
   it('draws no face between two water blocks and one surface face per column, seen from both sides', () => {
-    const isWater = (x: number, y: number, z: number) =>
-      x >= 5 && x < 11 && z >= 5 && z < 11 && (y === 1 || y === 2);
+    const isWater = (x: number, y: number, z: number) => x >= 5 && x < 11 && z >= 5 && z < 11 && (y === 1 || y === 2);
     for (const face of faces) {
       const [x, y, z, axis, sign] = face.split(',').map(Number) as [number, number, number, number, number];
       if (isWater(x, y, z)) {
@@ -150,7 +149,7 @@ describe('liquid faces', () => {
     // The underside belongs to the cell above the surface, facing down at the same plane.
     const down = inner(3, 1, -1);
     expect(down.filter((face) => faces.has(face))).toEqual(down);
-    expectCounterClockwise(wet);
+    expect(clockwiseTriangles(wet)).toEqual([]);
   });
 
   it('shades the bed under water with the same corner AO as under air', () => {
@@ -163,13 +162,17 @@ const bedTopColours = (mesh: MeshData): string[] => {
   const out: string[] = [];
   for (let v = 0; v < mesh.normals.length / 3; v++) {
     if (mesh.normals[v * 3 + 1] === 1 && mesh.positions[v * 3 + 1] === 1) {
-      out.push(`${mesh.positions.subarray(v * 3, v * 3 + 3).join(',')}:${mesh.colors.subarray(v * 3, v * 3 + 3).join(',')}`);
+      out.push(
+        `${mesh.positions.subarray(v * 3, v * 3 + 3).join(',')}:${mesh.colors.subarray(v * 3, v * 3 + 3).join(',')}`,
+      );
     }
   }
   return out.sort();
 };
 
-const expectCounterClockwise = (mesh: MeshData): void => {
+/** First-index of every triangle not wound counter-clockwise around its normal. */
+const clockwiseTriangles = (mesh: MeshData): number[] => {
+  const out: number[] = [];
   for (let t = 0; t < mesh.indices.length; t += 3) {
     const [a, b, c] = [mesh.indices[t]!, mesh.indices[t + 1]!, mesh.indices[t + 2]!].map((i) =>
       Array.from(mesh.positions.subarray(i * 3, i * 3 + 3)),
@@ -183,6 +186,9 @@ const expectCounterClockwise = (mesh: MeshData): void => {
     ];
     const first = mesh.indices[t]!;
     const n = Array.from(mesh.normals.subarray(first * 3, first * 3 + 3));
-    expect(cross[0]! * n[0]! + cross[1]! * n[1]! + cross[2]! * n[2]!).toBeGreaterThan(0);
+    if (cross[0]! * n[0]! + cross[1]! * n[1]! + cross[2]! * n[2]! <= 0) {
+      out.push(t);
+    }
   }
+  return out;
 };

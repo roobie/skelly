@@ -69,7 +69,11 @@ jobs:
       - name: Primary-action glowstick pixel contract
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 2
-        run: node test/browser/primary-action-pixel.mjs
+        run: node test/browser/primary-action-pixel.mjs held
+      - name: Lake surface pixel contract
+        if: ${{ inputs.shard == 'input' }}
+        timeout-minutes: 2
+        run: node test/browser/primary-action-pixel.mjs lake
       - name: Save-controller browser regressions
         if: ${{ inputs.shard == 'save-other' }}
         timeout-minutes: 4

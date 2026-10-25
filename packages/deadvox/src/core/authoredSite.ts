@@ -288,9 +288,9 @@ export class AuthoredSite implements Site {
     // Overlapping bodies fill to the highest level.
     const levelAt = (xm: number, zm: number): number | undefined => {
       let level: number | undefined;
-      for (const row of waterRows) {
-        if ((level === undefined || row.level > level) && inPolygon([xm, zm], row.polygon)) {
-          level = row.level;
+      for (const { level: rowLevel, polygon } of waterRows) {
+        if ((level === undefined || rowLevel > level) && inPolygon([xm, zm], polygon)) {
+          level = rowLevel;
         }
       }
       return level;
@@ -307,29 +307,23 @@ export class AuthoredSite implements Site {
       }
       return value;
     };
-    // A grass lake bed reads as a hole in a lawn, so the bed and a shore ring around the actual water are sand.
-    const sandy = (x: number, z: number): boolean => {
-      if (wet(x, z)) {
-        return true;
+    const onShore = ({ shore, reach }: (typeof waterRows)[number], x: number, z: number): boolean => {
+      const [xm, zm] = [(x + 0.5) * s, (z + 0.5) * s];
+      if (xm < reach.x0 || xm > reach.x1 || zm < reach.z0 || zm > reach.z1) {
+        return false;
       }
-      const xm = (x + 0.5) * s;
-      const zm = (z + 0.5) * s;
-      for (const row of waterRows) {
-        const { reach } = row;
-        if (xm < reach.x0 || xm > reach.x1 || zm < reach.z0 || zm > reach.z1) {
-          continue;
-        }
-        const cells = Math.floor(row.shore / s);
-        for (let dz = -cells; dz <= cells; dz++) {
-          for (let dx = -cells; dx <= cells; dx++) {
-            if (Math.hypot(dx, dz) * s <= row.shore && wet(x + dx, z + dz)) {
-              return true;
-            }
+      const cells = Math.floor(shore / s);
+      for (let dz = -cells; dz <= cells; dz++) {
+        for (let dx = -cells; dx <= cells; dx++) {
+          if (Math.hypot(dx, dz) * s <= shore && wet(x + dx, z + dz)) {
+            return true;
           }
         }
       }
       return false;
     };
+    // A grass lake bed reads as a hole in a lawn, so the bed and a shore ring around the actual water are sand.
+    const sandy = (x: number, z: number): boolean => wet(x, z) || waterRows.some((row) => onShore(row, x, z));
     const player = blocks(layout.player.position);
     const reserved = [
       ...lots.map((lot) => lot.apron),

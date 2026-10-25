@@ -57,7 +57,7 @@ export interface ColumnSurface {
   water?: Int32Array | undefined;
 }
 
-const NO_WATER = -0x8000_0000;
+const NO_WATER = -0x80_00_00_00;
 
 // Terrain is defined in metres, so every block size gives the same landscape.
 

@@ -6,6 +6,7 @@ import { CHUNK } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
 import { sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
+import { World } from '../src/core/world.ts';
 import { generateChunk, generateColumn, terrainHeight } from '../src/core/worldgen.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
@@ -21,7 +22,18 @@ const lakeLayout = (overrides: Partial<SiteLayoutDef> = {}): SiteLayoutDef => ({
   ground: 20,
   terrain: [{ kind: 'basin', centre: [24, 20], radii: [10, 8], depth: 3 }],
   // The polygon covers only the basin's west half, so the extent, not the terrain, bounds the east shore.
-  water: [{ level: 20, polygon: [[12, 10], [24, 10], [24, 30], [12, 30]], shore: 1 }],
+  water: [
+    {
+      level: 20,
+      polygon: [
+        [12, 10],
+        [24, 10],
+        [24, 30],
+        [12, 30],
+      ],
+      shore: 1,
+    },
+  ],
   buildings: [],
   player: { position: [24, 20.5, 42], bearing: 0 },
   shamblers: [],
@@ -30,10 +42,35 @@ const lakeLayout = (overrides: Partial<SiteLayoutDef> = {}): SiteLayoutDef => ({
   ...overrides,
 });
 
+/** Every water cell in the world's columns over [0, side)², at every height the world spans. */
+const waterCells = (world: World, side: number): { x: number; y: number; z: number }[] => {
+  const out: { x: number; y: number; z: number }[] = [];
+  for (let y = scale.minCy * CHUNK; y < (scale.maxCy + 1) * CHUNK; y++) {
+    for (let z = 0; z < side; z++) {
+      for (let x = 0; x < side; x++) {
+        if (world.getBlock(x, y, z) === blocks.water) {
+          out.push({ x, y, z });
+        }
+      }
+    }
+  }
+  return out;
+};
+
 describe('basin primitive', () => {
   const ground = 10;
-  const hill = { kind: 'hill' as const, centre: [0, 0] as [number, number], radii: [8, 8] as [number, number], rise: 3 };
-  const basin = { kind: 'basin' as const, centre: [0, 0] as [number, number], radii: [4, 4] as [number, number], depth: 2 };
+  const hill = {
+    kind: 'hill' as const,
+    centre: [0, 0] as [number, number],
+    radii: [8, 8] as [number, number],
+    rise: 3,
+  };
+  const basin = {
+    kind: 'basin' as const,
+    centre: [0, 0] as [number, number],
+    radii: [4, 4] as [number, number],
+    depth: 2,
+  };
 
   it('lowers the profile inside its radii and leaves it alone outside', () => {
     expect(profileHeight({ ground, terrain: [basin] }, 0, 0)).toBeLessThan(ground);
@@ -71,25 +108,18 @@ describe('authored water', () => {
   const layout = lakeLayout();
   const site = new AuthoredSite(5, registry, scale, layout);
   const s = scale.blockSize;
-  const columns = [0, 1, 2].flatMap((cx) => [0, 1, 2].map((cz) => [cx, cz] as const));
-  const found: { x: number; y: number; z: number; below: number }[] = [];
-  for (const [cx, cz] of columns) {
-    const chunks = generateColumn({ seed: 5, blocks, shape, scale, surface: site.surface }, cx, cz);
-    for (const chunk of chunks) {
-      for (let ly = 0; ly < CHUNK; ly++) {
-        for (let lz = 0; lz < CHUNK; lz++) {
-          for (let lx = 0; lx < CHUNK; lx++) {
-            if (chunk.get(lx, ly, lz) !== blocks.water) {
-              continue;
-            }
-            const y = chunk.cy * CHUNK + ly;
-            const below = ly > 0 ? chunk.get(lx, ly - 1, lz) : chunks.find((c) => c.cy === chunk.cy - 1)!.get(lx, CHUNK - 1, lz);
-            found.push({ x: cx * CHUNK + lx, y, z: cz * CHUNK + lz, below });
-          }
-        }
+  const world = new World();
+  for (const cx of [0, 1, 2]) {
+    for (const cz of [0, 1, 2]) {
+      for (const chunk of generateColumn({ seed: 5, blocks, shape, scale, surface: site.surface }, cx, cz)) {
+        world.addChunk(chunk);
       }
     }
   }
+  const found = waterCells(world, 3 * CHUNK).map((cell) => ({
+    ...cell,
+    below: world.getBlock(cell.x, cell.y - 1, cell.z),
+  }));
   const level = layout.water![0]!.level / s;
 
   it('places every water block inside the polygon, above its bed and below the level', () => {
@@ -115,7 +145,18 @@ describe('flooded lots', () => {
   const flooded = (overWater: boolean) =>
     lakeLayout({
       terrain: [],
-      water: [{ level: 22, polygon: [[2, 2], [30, 2], [30, 30], [2, 30]], shore: 1 }],
+      water: [
+        {
+          level: 22,
+          polygon: [
+            [2, 2],
+            [30, 2],
+            [30, 30],
+            [2, 30],
+          ],
+          shore: 1,
+        },
+      ],
       buildings: [{ template: shed.id, position: [10, 20, 10], rotation: 0, ...(overWater ? { overWater } : {}) }],
     });
 

@@ -398,6 +398,18 @@ const growRect = (ctx: Context, face: Face, [key, occ]: Keys, [u0, v0]: [number,
 const UP = FACES.find((face) => face.d === 1 && face.s > 0)!;
 const DOWN = FACES.find((face) => face.d === 1 && face.s < 0)!;
 
+/**
+ * Emits a solid quad. Chunk materials cull back faces, so a camera under a liquid sees its surface only
+ * through a second, downward copy; a double-sided material would double every terrain face's cost.
+ */
+const emitSolidQuad = (ctx: Context, face: Face, keys: Keys, rect: number[]): void => {
+  emitQuad(ctx, face, keys, { rect });
+  const id = keys[0] >> 8;
+  if (face === UP && ctx.liquids[id]) {
+    emitQuad(ctx, DOWN, [(id << 8) | 0xff, OPEN_KEY], { rect, plane: rect[0]! + 1 });
+  }
+};
+
 /** Turns the masks into as few quads as the greedy scan finds. */
 const mergeMask = (ctx: Context, face: Face, slice: number): void => {
   for (let v0 = 0; v0 < CHUNK; v0++) {
@@ -414,15 +426,7 @@ const mergeMask = (ctx: Context, face: Face, slice: number): void => {
           emitQuad(ctx, face, keys, { rect: [slice, u0, v0, w, h], polygon }),
         );
       } else {
-        emitQuad(ctx, face, keys, { rect: [slice, u0, v0, w, h] });
-        // Chunk materials cull back faces, so a camera under a liquid sees its surface only through
-        // a second, downward copy; a double-sided material would double every terrain face's cost.
-        if (face === UP && ctx.liquids[key >> 8]) {
-          emitQuad(ctx, DOWN, [((key >> 8) << 8) | 0xff, OPEN_KEY], {
-            rect: [slice, u0, v0, w, h],
-            plane: slice + 1,
-          });
-        }
+        emitSolidQuad(ctx, face, keys, [slice, u0, v0, w, h]);
       }
       for (let v = v0; v < v0 + h; v++) {
         ctx.mask.fill(0, u0 + CHUNK * v, u0 + w + CHUNK * v);
