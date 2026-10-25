@@ -609,6 +609,22 @@ interface ActionContext {
   look: LookControls;
 }
 
+/** The pose steppers exist only when the page asked for a mannequin. */
+const mannequinActions = (mannequin: DebugHooks['mannequin']): Omit<Action, 'key'>[] =>
+  mannequin
+    ? [
+        { id: 'debug.mannequin-previous', delta: -1 },
+        { id: 'debug.mannequin-next', delta: 1 },
+      ].map(({ id, delta }) => ({
+        id,
+        label: delta < 0 ? 'Mannequin pose −' : 'Mannequin pose +',
+        group: 'tools',
+        param: 'mannequin=',
+        detail: () => mannequin.pose.name,
+        run: () => mannequin.step(delta),
+      }))
+    : [];
+
 export const createDebugActions = ({
   hooks,
   build,
@@ -712,6 +728,7 @@ export const createDebugActions = ({
         state: hooks.thirdPerson.enabled,
         run: hooks.thirdPerson.toggle,
       },
+      ...mannequinActions(hooks.mannequin),
       {
         id: 'debug.perception-labels-toggle',
         label: 'Perception labels',

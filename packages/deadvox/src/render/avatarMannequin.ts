@@ -1,24 +1,18 @@
 // Debug mannequin: a second world body, drawn by the player's own figure code, stood near the player so
-// each avatar pose can be judged from outside. `?mannequin=` names its first pose; Delete and Insert step
-// through the poses. It is a drawing only: no simulation, collision or save knows it.
+// each avatar pose can be judged from outside. It is a drawing only: no simulation, collision or save knows it.
 
 import { Group, type Object3D } from 'three';
 import type { FigureDef, ModelDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
+import type { Body } from '../core/physics.ts';
 import type { ModelLibrary } from './models.ts';
-import { type AvatarPose, avatarPoses, PlayerMeshes } from './playerFigure.ts';
+import { type AvatarPose, avatarPoses, type PlayerFigurePose, PlayerMeshes } from './playerFigure.ts';
 
 /** Metres ahead of and beside the player, by the facing at the first sync, so both bodies show in one view. */
 const DISTANCE_AHEAD = 1.2;
 const DISTANCE_ASIDE = 1.2;
-/** Keys no control binds (`src/content/base/controls.jsonnet`). */
-const PREVIOUS_KEY = 'Delete';
-const NEXT_KEY = 'Insert';
-
-export interface MannequinPage {
-  addEventListener: (type: 'keydown', listener: (event: KeyboardEvent) => void) => void;
-  readonly label?: { textContent: string | null };
-}
+/** Radians of gait phase per real second while the mannequin walks. */
+const GAIT_RATE = 6;
 
 export interface MannequinFigure {
   debug: boolean;
@@ -32,125 +26,75 @@ export interface MannequinFigure {
 export const createAvatarMannequin = (
   scene: Object3D,
   { debug, blockSize, figure, modelDefs, models }: MannequinFigure,
-  {
-    search = globalThis.location?.search ?? '',
-    page = globalThis.document
-      ? {
-          addEventListener: (type, listener) => globalThis.document.addEventListener(type, listener),
-          label: labelElement(),
-        }
-      : { addEventListener: () => undefined },
-  }: { search?: string; page?: MannequinPage } = {},
+  search: string = globalThis.location?.search ?? '',
 ): AvatarMannequin | undefined => {
   const requested = debug ? new URLSearchParams(search).get('mannequin') : null;
   if (requested === null) {
     return undefined;
   }
   const meshes = new PlayerMeshes(blockSize, figure, modelDefs, models);
-  const mannequin = new AvatarMannequin(blockSize, meshes, avatarPoses(figure), { requested, label: page.label });
+  const mannequin = new AvatarMannequin(blockSize, meshes, avatarPoses(figure), requested);
   scene.add(mannequin.group);
-  page.addEventListener('keydown', (event) => mannequin.handleKey(event));
   return mannequin;
-};
-
-const labelElement = (): HTMLElement => {
-  const label = document.createElement('div');
-  label.style.cssText =
-    'position:fixed;left:12px;top:220px;padding:2px 6px;background:#000a;color:#fff;font:12px monospace;z-index:9;pointer-events:none';
-  document.body.append(label);
-  return label;
 };
 
 export class AvatarMannequin {
   readonly group = new Group();
-  private readonly label: { textContent: string | null } | undefined;
-  private index: number;
-  private placed: { position: Vec3; yaw: number } | undefined;
-  private gaitPhase = 0;
-
+  readonly poses: readonly AvatarPose[];
   private readonly blockSize: number;
   private readonly meshes: PlayerMeshes;
-  readonly poses: readonly AvatarPose[];
+  private index: number;
+  private placed = false;
+  private readonly body: Body = { pos: [0, 0, 0], vel: [0, 0, 0], halfWidth: 0, height: 0, onGround: true };
+  private readonly figurePose: PlayerFigurePose;
 
-  constructor(
-    blockSize: number,
-    meshes: PlayerMeshes,
-    poses: readonly AvatarPose[],
-    { requested, label }: { requested: string; label?: { textContent: string | null } | undefined },
-  ) {
+  constructor(blockSize: number, meshes: PlayerMeshes, poses: readonly AvatarPose[], requested: string) {
     this.blockSize = blockSize;
     this.meshes = meshes;
     this.poses = poses;
     this.index = Math.max(
       0,
-      this.poses.findIndex((pose) => pose.name === requested),
+      poses.findIndex((pose) => pose.name === requested),
     );
-    this.label = label;
-    this.group.add(this.meshes.group);
-    this.showLabel();
+    this.figurePose = {
+      body: this.body,
+      yaw: 0,
+      stepOffset: 0,
+      gaitPhase: 0,
+      moving: false,
+      stance: 'standing',
+      dt: 0,
+      thirdPerson: true,
+    };
+    this.group.add(meshes.group);
   }
 
   get pose(): AvatarPose {
     return this.poses[this.index]!;
   }
 
-  select(name: string): boolean {
-    const index = this.poses.findIndex((pose) => pose.name === name);
-    if (index < 0) {
-      return false;
-    }
-    this.index = index;
-    this.showLabel();
-    return true;
-  }
-
-  handleKey(event: Pick<KeyboardEvent, 'code' | 'target'>): void {
-    const target = event.target as Partial<HTMLElement> | null;
-    if (target?.isContentEditable || target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') {
-      return;
-    }
-    const steps: Record<string, number> = { [NEXT_KEY]: 1, [PREVIOUS_KEY]: -1 };
-    const step = steps[event.code];
-    if (step !== undefined) {
-      this.index = (this.index + step + this.poses.length) % this.poses.length;
-      this.showLabel();
-    }
+  /** Moves to the next pose, or the previous one for a negative `delta`, wrapping round. */
+  step(delta: number): void {
+    this.index = (this.index + delta + this.poses.length) % this.poses.length;
   }
 
   /** The first call stands the mannequin ahead and aside of the player, facing back; later calls keep it there. */
-  sync(player: { bodyPosition: Vec3; yaw: number; dt: number; visible: boolean }): void {
-    this.group.visible = player.visible;
+  sync(playerPosition: Vec3, playerYaw: number, dt: number): void {
+    const { body, figurePose } = this;
     if (!this.placed) {
+      this.placed = true;
       const ahead = DISTANCE_AHEAD / this.blockSize;
       const aside = DISTANCE_ASIDE / this.blockSize;
-      const [x, y, z] = player.bodyPosition;
-      const { yaw } = player;
-      this.placed = {
-        position: [
-          x - Math.sin(yaw) * ahead + Math.cos(yaw) * aside,
-          y,
-          z - Math.cos(yaw) * ahead - Math.sin(yaw) * aside,
-        ],
-        yaw: player.yaw + Math.PI,
-      };
+      body.pos[0] = playerPosition[0] - Math.sin(playerYaw) * ahead + Math.cos(playerYaw) * aside;
+      body.pos[1] = playerPosition[1];
+      body.pos[2] = playerPosition[2] - Math.cos(playerYaw) * ahead - Math.sin(playerYaw) * aside;
+      figurePose.yaw = playerYaw + Math.PI;
     }
     const { moving, stance } = this.pose;
-    this.gaitPhase += player.dt * 6;
-    this.meshes.sync({
-      body: { pos: this.placed.position, vel: [0, 0, 0], halfWidth: 0, height: 0, onGround: true },
-      yaw: this.placed.yaw,
-      stepOffset: 0,
-      gaitPhase: this.gaitPhase,
-      moving,
-      stance,
-      dt: player.dt,
-      thirdPerson: true,
-    });
-  }
-
-  private showLabel(): void {
-    if (this.label) {
-      this.label.textContent = `mannequin: ${this.pose.name} (${PREVIOUS_KEY} / ${NEXT_KEY} change)`;
-    }
+    figurePose.gaitPhase += dt * GAIT_RATE;
+    figurePose.moving = moving;
+    figurePose.stance = stance;
+    figurePose.dt = dt;
+    this.meshes.sync(figurePose);
   }
 }

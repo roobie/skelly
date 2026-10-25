@@ -647,6 +647,22 @@
       ]
     },
     {
+      "id": "debug.mannequin-previous",
+      "keys": [
+        {
+          "code": "Numpad7"
+        }
+      ]
+    },
+    {
+      "id": "debug.mannequin-next",
+      "keys": [
+        {
+          "code": "Numpad8"
+        }
+      ]
+    },
+    {
       "id": "debug.perception-labels-toggle",
       "keys": [
         {
