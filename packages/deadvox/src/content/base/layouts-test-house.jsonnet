@@ -68,7 +68,7 @@ local bays = [
     repairStock: 'test_house_garage',
     handlingRange: { beside: { x0: -23, z0: -13, x1: 17, z1: 6 }, floor: 21 },
     shamblers: [],
-    woodlands: [{ polygon: [[-85, -65], [65, -65], [60, -26], [10, -18], [-40, -18], [-85, -35]], density: 0.95 }],
+    woodlands: [{ polygon: [[-85, -65], [-32, -65], [-28, -18], [-26, 45], [-80, 65]], density: 0.95 }],
     tracks: [
       { points: [[-4, -0.5], [3.5, -0.5]], width: 1, surface: 'dressed_stone' },
       { points: [[6, 6], [6, 12], [12, 25]], width: 1, surface: 'dressed_stone' },
