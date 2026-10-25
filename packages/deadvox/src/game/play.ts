@@ -1647,6 +1647,7 @@ export const startPlay = (
       teleport: () => spectator.teleport(body, session.playerEyeHeightMetres / s, engine.isSolid),
     },
     thirdPerson,
+    mannequin: view.avatarMannequin,
     perceptionLabels: {
       enabled: () => perceptionLabelsEnabled,
       toggle: () => {
