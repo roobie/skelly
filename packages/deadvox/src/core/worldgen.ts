@@ -48,13 +48,13 @@ export interface Terrain {
 }
 
 /**
- * A column's top block heights, any top blocks the surface replaces (-1 keeps the natural one), and
- * the water's top face (NO_WATER for none).
+ * A column's top block heights, any top blocks the surface replaces (-1 keeps the natural one), and,
+ * when the surface has water, the water's top face (NO_WATER for none).
  */
 export interface ColumnSurface {
   heights: Int32Array;
   tops: Int32Array;
-  water: Int32Array;
+  water?: Int32Array | undefined;
 }
 
 const NO_WATER = -0x8000_0000;
@@ -115,7 +115,7 @@ const columnHeights = (seed: number, shape: TerrainShape, scale: Scale, cx: numb
 const columnSurface = ({ seed, shape, scale, surface }: Terrain, cx: number, cz: number): ColumnSurface => {
   const heights = columnHeights(seed, shape, scale, cx, cz);
   const tops = new Int32Array(CHUNK * CHUNK).fill(-1);
-  const water = new Int32Array(CHUNK * CHUNK).fill(NO_WATER);
+  const water = surface?.water ? new Int32Array(CHUNK * CHUNK) : undefined;
   if (surface) {
     for (let lz = 0; lz < CHUNK; lz++) {
       for (let lx = 0; lx < CHUNK; lx++) {
@@ -123,7 +123,9 @@ const columnSurface = ({ seed, shape, scale, surface }: Terrain, cx: number, cz:
         const i = lx + CHUNK * lz;
         heights[i] = surface.height(x, z, heights[i]!);
         tops[i] = surface.top(x, z) ?? -1;
-        water[i] = surface.water?.(x, z) ?? NO_WATER;
+        if (water) {
+          water[i] = surface.water?.(x, z) ?? NO_WATER;
+        }
       }
     }
   }
@@ -157,10 +159,12 @@ export const generateChunk = (terrain: Terrain, [cx, cy, cz]: Vec3, column = col
       for (let ly = 0; ly <= top; ly++) {
         chunk.set(lx, ly, lz, blockAt(terrain, y0 + ly, h, tops[lx + CHUNK * lz]!));
       }
-      // Water fills h + 1 <= y < level, so a level at the bed's top face leaves the column dry.
-      const surfaceTop = Math.min(water[lx + CHUNK * lz]! - 1 - y0, CHUNK - 1);
-      for (let ly = Math.max(h + 1 - y0, 0); ly <= surfaceTop; ly++) {
-        chunk.set(lx, ly, lz, blocks.water);
+      if (water) {
+        // Water fills h + 1 <= y < level, so a level at the bed's top face leaves the column dry.
+        const surfaceTop = Math.min(water[lx + CHUNK * lz]! - 1 - y0, CHUNK - 1);
+        for (let ly = Math.max(h + 1 - y0, 0); ly <= surfaceTop; ly++) {
+          chunk.set(lx, ly, lz, blocks.water);
+        }
       }
     }
   }

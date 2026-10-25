@@ -36,8 +36,9 @@ describe('liquid enclosure', () => {
     vi.stubGlobal('Worker', RecordingWorker);
     const liquids = new Uint8Array(256);
     liquids[WATER] = 1;
+    const world = new World();
     const streamer = new Streamer({
-      world: new World(),
+      world,
       meshes: { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() } as never,
       seed: 17,
       terrain: { grass: 1, dirt: 2, rock: ROCK, sand: 4, water: WATER },
@@ -61,11 +62,13 @@ describe('liquid enclosure', () => {
     streamer.update(0, 0);
     const init = posted.find((message) => message.type === 'init');
     const bed = posted.find((message) => message.type === 'mesh' && message.key === '0,1,0');
-    return { init, bed };
+    const layers = [1, 2].map((cy) => world.getChunk(0, cy, 0)?.uniformId);
+    return { init, bed, layers };
   };
 
   it('meshes a uniform bed chunk under uniform water, with its top faces and open wide occlusion above', () => {
-    const { init, bed } = meshRequests('water');
+    const { init, bed, layers } = meshRequests('water');
+    expect(layers).toEqual([ROCK, WATER]);
     if (bed?.type !== 'mesh' || init?.type !== 'init') {
       throw new Error('the bed chunk never reached the worker');
     }
@@ -82,7 +85,9 @@ describe('liquid enclosure', () => {
   });
 
   it('still drops the same chunk when rock stands where the water was', () => {
-    expect(meshRequests('rock').bed).toBeUndefined();
+    const { bed, layers } = meshRequests('rock');
+    expect(layers).toEqual([ROCK, ROCK]);
+    expect(bed).toBeUndefined();
   });
 });
 

@@ -316,9 +316,12 @@ const waterIssues = (
   footprints: readonly { rect: Rect; index: number }[],
   check: (p: LayoutPoint, path: string) => void,
 ): [string, string][] => {
+  const rows = layout.water ?? [];
+  if (rows.length === 0) {
+    return [];
+  }
   const lots = footprints.map(({ rect, index }) => lotOf(layout.buildings[index]!, rect));
   const issues: [string, string][] = [];
-  const rows = layout.water ?? [];
   rows.forEach((row, i) => {
     row.polygon.forEach((p, j) => {
       check(p, `.water[${i}].polygon[${j}]`);
