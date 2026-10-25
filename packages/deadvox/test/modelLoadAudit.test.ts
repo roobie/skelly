@@ -38,20 +38,31 @@ const modelAbort = { event: 'asset-error', model: 'machete', url: '/src/content/
 describe('model load audit', () => {
   afterEach(() => vi.restoreAllMocks());
 
+  // The page stamps `unloaded` on each record it sends, so these tests feed beacons the way a page would.
   it('excuses a model fetch that its own document aborted by unloading', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     await closeWith([
-      { event: 'pagehide', document: 7, at: 100 },
-      { ...modelAbort, document: 7, at: 100 },
+      { event: 'pagehide', document: 7, at: 100, unloaded: true },
+      { ...modelAbort, document: 7, at: 100, unloaded: true },
     ]);
+  });
+
+  it('rejects a model load error that precedes pagehide within the same millisecond', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    await expect(
+      closeWith([
+        { ...modelAbort, document: 7, at: 100, unloaded: false },
+        { event: 'pagehide', document: 7, at: 100, unloaded: true },
+      ]),
+    ).rejects.toThrow('unclassified model load failure');
   });
 
   it('does not excuse a model load error on a document that never unloaded', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     await expect(
       closeWith([
-        { event: 'pagehide', document: 6, at: 100 },
-        { ...modelAbort, document: 7, at: 100 },
+        { event: 'pagehide', document: 6, at: 100, unloaded: true },
+        { ...modelAbort, document: 7, at: 100, unloaded: false },
       ]),
     ).rejects.toThrow('unclassified model load failure');
   });
