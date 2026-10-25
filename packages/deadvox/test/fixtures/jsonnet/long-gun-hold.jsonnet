@@ -7,8 +7,7 @@ longGunHands(
     id: 'long_gun_hold_fixture',
     parts: { receiver: {}, barrel: {}, handguard: {}, stock: {} },
     grip: { at: [-0.2, -0.05, 0] },
-    anchors: { support: [0.15, 0, 0] },
+    anchors: { support: [0.15, -0.03, 0.0] },
   },
   -0.5,
-  -0.03,
 )
