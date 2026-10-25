@@ -13,12 +13,16 @@ import {
   penetrationWorld,
   worldSolid,
 } from '@skelly/engine/shapes/geometry.ts';
+import { meshForSolid } from '@skelly/engine/shapes/mesh.ts';
 import { surfaceOf } from '@skelly/thing-core/materials';
+import { Ray, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import appearance from '../src/gun/appearance.json' with { type: 'json' };
-import { attachmentInstanceForId, attachmentLookIssue } from '../src/gun/attachments.ts';
+import { attachmentCompatibility } from '../src/gun/attachmentCompatibility.ts';
+import { attachmentInstanceForId, attachmentLookIssue, attachmentSlots } from '../src/gun/attachments.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
+import fixedPrism from '../src/gun/fixedPrism.json' with { type: 'json' };
 import { MOUNT_KINDS, MOUNT_STANDARDS, mountCanAccept } from '../src/gun/mounts.ts';
 import { getOptic, LENS_SLOT, OPTIC_CATALOG, OPTIC_TYPE_IDS } from '../src/gun/optics.ts';
 import { GUN_PALETTE, resolveAppearance } from '../src/gun/palette.ts';
@@ -61,6 +65,10 @@ describe('optic catalog', () => {
       (axis) => Math.max(...bounds.map(([, max]) => max[axis]!)) - Math.min(...bounds.map(([min]) => min[axis]!)),
     );
     expect(actual).toEqual(optic.envelopeU);
+  });
+
+  it('preserves authored prism solids at the content validation boundary', () => {
+    expect(getOptic('fixed-prism-4x').solids).toEqual(fixedPrism.solids);
   });
 
   it('builds every round body turned about the optical axis, and the lenses in it, with the content side count', () => {
@@ -149,35 +157,66 @@ describe('optic catalog', () => {
     }
   });
 
-  it('gives the fixed prism smaller round ocular and flared objective ends around a squat chamfered body', () => {
-    const optic = getOptic('fixed-prism-4x');
-    const find = (id: string) => {
-      const solid = optic.solids.find((candidate) => candidate.id === id);
-      if (!solid) {
-        throw new Error(`missing prism solid ${id}`);
+  it('keeps magnifying optics drawn metal clear along the optical axis between their lenses', () => {
+    const magnifying = OPTIC_TYPE_IDS.map((id) => getOptic(id)).filter((optic) => optic.magnification);
+    expect(magnifying.length).toBeGreaterThan(0);
+    for (const optic of magnifying) {
+      const lensBounds = optic.solids.filter(({ slot }) => slot === LENS_SLOT).map(localSolidBounds);
+      expect(lensBounds.length, optic.id).toBeGreaterThanOrEqual(2);
+      const front = Math.max(...lensBounds.map(([, high]) => high[0]));
+      const ray = new Ray(new Vector3(optic.ocularX, optic.opticalAxisY, 0), new Vector3(1, 0, 0));
+      const hit = new Vector3();
+      let triangles = 0;
+      for (const solid of optic.solids.filter(({ slot }) => slot !== LENS_SLOT)) {
+        const mesh = meshForSolid(solid, 0);
+        const point = (index: number) => new Vector3().fromArray(mesh.positions, mesh.indices[index]! * 3);
+        for (let index = 0; index < mesh.indices.length; index += 3) {
+          triangles += 1;
+          const crossing = ray.intersectTriangle(point(index), point(index + 1), point(index + 2), false, hit);
+          expect(crossing && hit.x < front, `${optic.id}: ${solid.id} blocks the optical axis`).toBeFalsy();
+        }
       }
-      return solid;
-    };
-    const objective = find('objective-bell');
-    const ocular = find('ocular-bell');
-    expect(objective.kind).toBe('revolved');
-    expect(ocular.kind).toBe('revolved');
-    const [omin, omax] = localSolidBounds(objective);
-    const [rmin, rmax] = localSolidBounds(ocular);
-    const housing = find('prism-housing');
-    expect(housing.kind).toBe('extruded-polygon');
-    if (housing.kind === 'extruded-polygon') {
-      expect(housing.profile.length).toBeGreaterThanOrEqual(6);
+      expect(triangles, optic.id).toBeGreaterThan(0);
     }
-    const [hmin, hmax] = localSolidBounds(housing);
-    expect(hmax[2] - hmin[2]).toBeGreaterThan(omax[2] - omin[2]);
-    expect(hmax[1] - hmin[1]).toBeGreaterThan(omax[1] - omin[1]);
-    expect(omax[0]).toBeGreaterThan(hmax[0]);
-    expect(rmin[0]).toBeLessThan(hmin[0]);
-    expect(rmax[2] - rmin[2]).toBeLessThan(omax[2] - omin[2]);
-    expect(find('elevation-cap').kind).toBe('revolved');
-    expect(find('windage-cap').kind).toBe('revolved');
-    expect(find('mount-cross-bolt').kind).toBe('revolved');
+  });
+
+  it('aligns the prism backup aperture near the fin tip with a centred, unobstructed front post', () => {
+    const optic = getOptic('fixed-prism-4x');
+    const rear = optic.solids.find(({ id }) => id === 'backup-rear-aperture');
+    const front = optic.solids.find(({ id }) => id === 'backup-front-post');
+    if (!(rear?.kind === 'revolved' && rear.axis === 'x' && rear.origin && front?.kind === 'extruded-polygon')) {
+      throw new Error('backup irons require a fore-aft aperture and a profiled front post');
+    }
+    const [frontLow, frontHigh] = localSolidBounds(front);
+    const [, tipY] = frontHigh;
+    const tipStations = front.profile.filter(([, y]) => y === tipY).map(([x]) => x);
+    expect(tipStations.length).toBeGreaterThan(0);
+    const tipX = Math.min(...tipStations);
+    expect(rear.origin[2], 'rear opening is on the optic centre plane').toBe(0);
+    expect((frontLow[2] + frontHigh[2]) / 2, 'front post is on the optic centre plane').toBe(0);
+    expect(rear.origin[1], 'rear opening looks over the front post tip parallel to the bore').toBeCloseTo(tipY);
+    const radii = rear.profile.map(([, radius]) => radius);
+    expect(Math.min(...radii), 'rear aperture is hollow').toBeGreaterThan(0);
+    const finBounds = optic.solids.filter(({ id }) => id.startsWith('backup-rear-fin-')).map(localSolidBounds);
+    expect(finBounds.length).toBeGreaterThan(0);
+    const finTop = Math.max(...finBounds.map(([, high]) => high[1]));
+    expect(finTop - rear.origin[1], 'opening is within its outer radius of the fin tip').toBeLessThanOrEqual(
+      Math.max(...radii),
+    );
+    const rearX = Math.min(...rear.profile.map(([x]) => x)) - Math.max(...radii);
+    const ray = new Ray(new Vector3(rearX, tipY, 0), new Vector3(1, 0, 0));
+    const hit = new Vector3();
+    let triangles = 0;
+    for (const solid of optic.solids.filter(({ slot }) => slot !== LENS_SLOT)) {
+      const mesh = meshForSolid(solid, 0);
+      const point = (index: number) => new Vector3().fromArray(mesh.positions, mesh.indices[index]! * 3);
+      for (let index = 0; index < mesh.indices.length; index += 3) {
+        triangles += 1;
+        const crossing = ray.intersectTriangle(point(index), point(index + 1), point(index + 2), false, hit);
+        expect(crossing && hit.x < tipX - 1e-6, `${solid.id} blocks the backup sight line`).toBeFalsy();
+      }
+    }
+    expect(triangles).toBeGreaterThan(0);
   });
 
   it('keeps low LPVO and high-mag objective bell gaps between 2 and 3 mm above the mounting plane', () => {
@@ -400,7 +439,11 @@ const FIT_CASES = [
   { template: ar, seed: 0, types: OPTIC_TYPE_IDS.slice(0, 5) },
   { template: pistol, seed: 0, types: ['mini-reflex'] },
   { template: smg, seed: 0, types: OPTIC_TYPE_IDS.slice(0, 3) },
-  { template: boltRifle, seed: 0, types: OPTIC_TYPE_IDS.slice(3) },
+  {
+    template: boltRifle,
+    seed: 0,
+    types: OPTIC_TYPE_IDS.slice(3).filter((id) => !getOptic(id).excludedHostFeeds?.includes('top')),
+  },
   { template: boltRifleBox, seed: 0, types: OPTIC_TYPE_IDS.slice(4) },
   { template: boltRifleThumbhole, seed: 0, types: OPTIC_TYPE_IDS.slice(4) },
   { template: pumpShotgun, seed: 4, types: OPTIC_TYPE_IDS.slice(0, 3) },
@@ -475,7 +518,10 @@ describe('curated optic mounts', () => {
       ['archetype-battle-rifle', OPTIC_TYPE_IDS.slice(0, 6)],
       ['archetype-ar', OPTIC_TYPE_IDS.slice(0, 5)],
       ['archetype-ar-free-float', OPTIC_TYPE_IDS.slice(0, 5)],
-      ['archetype-bolt-rifle', OPTIC_TYPE_IDS.slice(3)],
+      [
+        'archetype-bolt-rifle',
+        OPTIC_TYPE_IDS.slice(3).filter((id) => !getOptic(id).excludedHostFeeds?.includes('top')),
+      ],
       ['archetype-bolt-rifle-box', OPTIC_TYPE_IDS.slice(4)],
       ['archetype-awm', OPTIC_TYPE_IDS.slice(4)],
       ['archetype-smg', OPTIC_TYPE_IDS.slice(0, 3)],
@@ -491,25 +537,23 @@ describe('curated optic mounts', () => {
     }
   });
 
-  it('uses two prism feet touching its round ends only on top-loaded hosts, without moving its body', () => {
-    const assembly = fitOptic(boltRifle, 0, 'fixed-prism-4x');
-    const report = validate(assembly, gunDomain);
-    expect(report.issues).toEqual([]);
-    const top = report.resolved.defs.get('sight')!;
-    const closed = FAMILIES.sight!.build({ type: 'fixed-prism-4x', mountFeed: 'box' });
-    expect(closed.solids.some(({ id }) => id === 'mount-bridge')).toBe(true);
-    expect(top.solids.some(({ id }) => id === 'mount-bridge')).toBe(false);
-    expect(top.axes).toEqual(closed.axes);
-    const body = (def: PartDef) => def.solids.filter(({ id }) => !id.endsWith('foot') && id !== 'mount-bridge');
-    expect(body(top)).toEqual(body(closed));
-    const feet = top.solids.filter(({ id }) => id.endsWith('foot'));
-    expect(feet).toHaveLength(2);
-    for (const foot of feet) {
-      const endId = foot.id.startsWith('rear') ? 'ocular-bell' : 'objective-bell';
-      const end = top.solids.find(({ id }) => id === endId)!;
-      expect(distanceWorld(worldSolid(IDENTITY, foot), worldSolid(IDENTITY, end))).toBeLessThanOrEqual(1e-6);
+  it('rejects feed-excluded mounts in validation and compatibility without changing their geometry', () => {
+    const excluded = OPTIC_TYPE_IDS.filter((id) => getOptic(id).excludedHostFeeds?.includes('top'));
+    expect(excluded.length).toBeGreaterThan(0);
+    for (const type of excluded) {
+      expect(validate(fitOptic(ar, 0, type), gunDomain).issues).toEqual([]);
+      const assembly = fitOptic(boltRifle, 0, type);
+      const report = validate(assembly, gunDomain);
+      expect(report.issues.some(({ rule }) => rule === 'optic-mount-fit')).toBe(true);
+      expect(report.resolved.defs.get('sight')!.solids).toEqual(getOptic(type).solids);
+      const { sight: _sight, ...bareParts } = assembly.parts;
+      assembly.parts = bareParts;
+      assembly.connections = assembly.connections.filter(({ to }) => to !== 'sight.base');
+      const slots = attachmentSlots(resolve(assembly, gunDomain));
+      const choices = Object.values(attachmentCompatibility(assembly, slots, gunDomain)).flat();
+      expect(choices.length).toBeGreaterThan(0);
+      expect(choices).not.toContain(`optic-${type}`);
     }
-    expectContactOnPhysicalRail(assembly, 'fixed-prism-4x');
   });
 
   it('leaves the top-loading opening empty at the receiver top, between the two scope bases', () => {

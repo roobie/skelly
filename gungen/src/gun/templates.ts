@@ -352,7 +352,7 @@ export const boltRifle: Template = {
       id: 'sight',
       family: 'sight',
       params: {
-        type: sightMix(['fixed-prism-4x', 4], ['lpvo-1-6x', 10], ['high-mag-5-25x', 22], ['digital-thermal', 4]),
+        type: sightMix(['lpvo-1-6x', 10], ['high-mag-5-25x', 22], ['digital-thermal', 4]),
       },
       chance: 0.8,
     },
