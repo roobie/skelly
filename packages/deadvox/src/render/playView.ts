@@ -30,6 +30,7 @@ import type { Engine } from '../game/engine.ts';
 import { PainCue } from '../game/painCue.ts';
 import { playerTuning } from '../game/player.ts';
 import { THIRD_PERSON_CAMERA } from '../game/thirdPersonOrbit.ts';
+import type { FromMesher } from '../worker/protocol.ts';
 import { AcidEffects } from './acidEffects.ts';
 import { createAvatarMannequin } from './avatarMannequin.ts';
 import { createAvatarStudy } from './avatarStudy.ts';
@@ -57,6 +58,7 @@ import { PileMeshes } from './piles.ts';
 import { PlayerMeshes } from './playerFigure.ts';
 import { applySky } from './sky.ts';
 import { StepOffset } from './stepOffset.ts';
+import { VehicleShapes } from './vehicleShapes.ts';
 import { VehicleMeshes } from './vehicles.ts';
 import { ZombieMeshes } from './zombies.ts';
 
@@ -111,6 +113,21 @@ export interface PlayWorldFrame {
   readonly frozen: boolean;
   readonly perceptionLabels: boolean;
 }
+
+/** Vehicle shapes meshed by a worker of their own, so a new look never stalls a frame; meshed here where there are no workers. */
+const vehicleShapesInWorker = (): { shapes: VehicleShapes; terminate: () => void } => {
+  if (typeof Worker === 'undefined') {
+    return { shapes: new VehicleShapes(), terminate: () => undefined };
+  }
+  const worker = new Worker(new URL('../worker/mesh.worker.ts', import.meta.url), { type: 'module' });
+  const shapes = new VehicleShapes({ post: (message) => worker.postMessage(message) });
+  worker.onmessage = ({ data }: MessageEvent<FromMesher>) => {
+    if (data.type === 'vehicle') {
+      shapes.receive(data);
+    }
+  };
+  return { shapes, terminate: () => worker.terminate() };
+};
 
 const THIRD_PERSON_ORBIT_DISTANCE = Math.hypot(THIRD_PERSON_CAMERA.followDistance, THIRD_PERSON_CAMERA.followHeight);
 const THIRD_PERSON_TARGET_DROP = 0.6;
@@ -262,7 +279,9 @@ export const createPlayView = (
     held.dispose();
   };
   page.addEventListener('pagehide', dispose);
-  const furniture = new FurnitureMeshes(s, meshes);
+  const vehicleMesher = vehicleShapesInWorker();
+  page.addEventListener('pagehide', vehicleMesher.terminate);
+  const furniture = new FurnitureMeshes(s, meshes, vehicleMesher.shapes);
   const carriedPiece = new CarriedPiece(
     inventory.entities,
     (entity, def) => furniture.pieceMesh(entity, def),

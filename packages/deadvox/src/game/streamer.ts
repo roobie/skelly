@@ -498,6 +498,9 @@ export class Streamer {
       callback?.(msg.result, msg.workerRealMs);
       return;
     }
+    if (msg.type === 'vehicle') {
+      return; // vehicle shapes go to the render's own worker, never to this one
+    }
     this.receiveMesh(msg);
     this.dispatchSky();
   }
