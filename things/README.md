@@ -5,6 +5,7 @@ read_if:
   - you decide which tool or package a new model-authoring feature goes in
   - you decide where mass, export or model-entry writing code goes
   - you decide whether an item's mass is authored or summed from its parts
+  - you decide whether a gun is a real-gun look-alike, an invented gun or a gungen archetype
 ---
 
 # things
@@ -49,6 +50,13 @@ Removal waits on the gun-authoring tool reproducing every gungen export; `things
   sources: not every part is one material, and real shapes are more complex than the
   authored solids. Summing still gives any assembly a total and a centre of mass, so
   removing or swapping a part is a subtraction.
+- The gun tool authors guns; it does not generate variants of an archetype. A gun is a
+  designed look-alike of a real gun or an invented, sci-fi gun, and the gun tool's author
+  is free to draw either. Gungen is deprecated and the gun tool replaces it as the
+  primary tool, so gungen's generic archetypes are legacy and gungen's modeling
+  restrictions (its part-family vocabulary and its boundary against reproducing real
+  models) bind only gungen, never the gun tool. A new gun is authored in the gun tool
+  rather than added as another archetype.
 - The tools are authoring tools, not generators: each exports a closed set of items, so
   every atom it draws has a mass someone authored. The gun tool's parts (barrels, receivers
   and so on) are such items.

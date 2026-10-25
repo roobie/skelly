@@ -15,11 +15,11 @@ read_if:
 
 # gungen — low-poly firearm designer
 
-Gungen designs stylized firearm assemblies whose parts fit and whose moving paths have room. Feasibility is checked geometry, not firearm physics: the project does not produce manufacturing tolerances, CAD or fabrication output, and does not reproduce specific real models or brands.
+Gungen designs stylized firearm assemblies whose parts fit and whose moving paths have room. Feasibility is checked geometry, not firearm physics: the project does not produce manufacturing tolerances, CAD or fabrication output, and, as a deprecated tool, does not reproduce specific real models or brands. That restriction is gungen's alone; the gun tool that replaces it is not bound by it (`things/README.md`, "Rules").
 
 ## Modeling boundary
 
-Curated designs choose from a constrained vocabulary of part families, parameters and prefabs. New archetypal shapes belong in that vocabulary rather than unconstrained vertex editing; this keeps fit rules applicable as designs change. See `src/gun/designLoader.ts`, `loadGunDesign` and `src/gun/templates.ts`, `TEMPLATES`.
+Gungen's own boundary, not the gun tool's (`things/README.md`, "Rules"): curated designs choose from a constrained vocabulary of part families, parameters and prefabs. New archetypal shapes belong in that vocabulary rather than unconstrained vertex editing; this keeps fit rules applicable as designs change. See `src/gun/designLoader.ts`, `loadGunDesign` and `src/gun/templates.ts`, `TEMPLATES`.
 
 The shared engine owns domain-neutral assembly, geometry and fit mechanisms. Gungen owns firearm data and policy so other consumers do not inherit gun-specific concepts; see `packages/engine/README.md`, "Shared engine".
 
