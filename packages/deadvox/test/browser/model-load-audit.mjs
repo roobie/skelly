@@ -109,10 +109,9 @@ export const auditModelLoads = async (context) => {
           (record) =>
             record.event === 'texture-error' && record.document === error.document && record.url === error.url,
         );
-        assert(
-          error.url.startsWith('blob:') && texture?.reason === 'TypeError' && (unload || error.at >= closeStarted),
-          `unclassified model load failure: ${JSON.stringify({ error, texture })}`,
-        );
+        // A document's unload aborts its in-flight fetches, blob textures and model files alike.
+        const closeAbort = error.url.startsWith('blob:') && texture?.reason === 'TypeError' && error.at >= closeStarted;
+        assert(unload || closeAbort, `unclassified model load failure: ${JSON.stringify({ error, texture })}`);
         console.log(
           PREFIX +
             JSON.stringify({
