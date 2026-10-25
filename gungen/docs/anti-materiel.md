@@ -6,7 +6,7 @@ read_if:
 
 # Anti-materiel rifle archetype
 
-The M82 is a proportion reference for an unbranded archetype, not a reproduction. This stays within Gungen's boundary against reproducing real models; see `../PROJECT.md`, "Modeling boundary". The curated design is `designs/archetype-anti-materiel.json`, with vocabulary in `src/gun/antiMateriel/`.
+The M82 is a proportion reference for a legacy gungen archetype, kept within gungen's own boundary against reproducing real models (`../PROJECT.md`, "Modeling boundary"); that boundary does not bind the gun tool (`../../things/README.md`, "Rules"). The curated design is `designs/archetype-anti-materiel.json`, with vocabulary in `src/gun/antiMateriel/`.
 
 The dedicated receiver, lower and magazine exist because the shared families are sized for smaller rifle cartridges. They keep the common receiver, lower and magazine roles so shared feed and geometry rules still apply; see `src/gun/antiMateriel/heavyReceiver.ts`; `src/gun/antiMateriel/heavyLower.ts`; `src/gun/antiMateriel/heavyMagazine.ts`; and `src/gun/antiMateriel/rules.ts`.
 
