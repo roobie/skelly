@@ -1,7 +1,19 @@
 import type { KeepOut } from '@skelly/engine/assembly/schema.ts';
 import type { Vec3 } from '@skelly/engine/foundation/math.ts';
 import type { RevolvedSolid, Solid, SolidFinish, Vec2 } from '@skelly/engine/shapes/solid.ts';
-import { array, exactOptional, literal, number, object, parse, picklist, string, tuple, variant } from 'valibot';
+import {
+  array,
+  boolean,
+  exactOptional,
+  literal,
+  number,
+  object,
+  parse,
+  picklist,
+  string,
+  tuple,
+  variant,
+} from 'valibot';
 import appearance from './appearance.json' with { type: 'json' };
 import fixedPrism from './fixedPrism.json' with { type: 'json' };
 import type { MountRequirement } from './mounts.ts';
@@ -240,6 +252,8 @@ const ContentSolid = variant('kind', [
     axis: picklist(['x', 'y', 'z']),
     z: Vector2,
     profile: array(Vector2),
+    clip: exactOptional(array(object({ normal: Vector3, offset: number() }))),
+    display: exactOptional(object({ bevel: boolean() })),
   }),
 ]);
 

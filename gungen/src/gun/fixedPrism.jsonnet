@@ -1,90 +1,103 @@
 local appearance = import 'appearance.jsonnet';
 local mmPerU = 11.5;
 local wall = 0.125;
-local mountRise = 0.25;
-local axisY = 2.25 + mountRise;
-local objectiveRadius = 1.75;
-local neckRadius = 1.125;
-local flareEndX = 5.5;
+local axisY = 2.5;
 local backupZ = 0.5;
+local objectiveRadius = 1.75;
+local objectiveOpening = 16 / mmPerU;
 local body(id, profile, thickness=wall) = {
   id: id, kind: 'revolved', axis: 'x', origin: [0, axisY, 0],
   profile: profile + [[p[0], p[1] - thickness] for p in std.reverse(profile)] + [profile[0]],
   sides: appearance.opticBodySides, slot: 'metal',
 };
-local cylinder(id, axis, origin, span, radius, slot='metal', sides=null, rise=0) = {
-  id: id, kind: 'revolved', axis: axis, origin: [origin[0], origin[1] + rise, origin[2]],
+local cylinder(id, axis, origin, span, radius, slot='metal', sides=null) = {
+  id: id, kind: 'revolved', axis: axis, origin: origin,
   profile: [[span[0], 0], [span[0], radius], [span[1], radius], [span[1], 0]], slot: slot,
 } + if sides == null then {} else { sides: sides };
 local snap(value) = std.floor(value / 0.25 + 0.5) * 0.25;
-local box(id, low, high, rise=0) = {
+local box(id, low, high) = {
   id: id, kind: 'box', slot: 'metal', box: {
-    center: [(snap(low[i]) + snap(high[i])) / 2 + (if i == 1 then rise else 0) for i in std.range(0, 2)],
+    center: [(snap(low[i]) + snap(high[i])) / 2 for i in std.range(0, 2)],
     half: [(snap(high[i]) - snap(low[i])) / 2 for i in std.range(0, 2)],
   },
 };
-local outline(id, profile, halfWidth, centerZ=0, rise=0) = {
+local outline(id, profile, halfWidth, centerZ=0) = {
   id: id, kind: 'extruded-polygon', axis: 'z', z: [centerZ - halfWidth, centerZ + halfWidth],
-  profile: [[p[0], p[1] + rise] for p in profile], slot: 'metal',
+  profile: profile, slot: 'metal',
 };
+local clipped(solid, planes) = solid + { clip: planes, display: { bevel: false } };
+local ringPoint(radius, i) =
+  local angle = (i + 0.5) * 2 * std.pi / appearance.opticBodySides;
+  local scale = radius / std.cos(std.pi / appearance.opticBodySides);
+  [axisY + scale * std.cos(angle), scale * std.sin(angle)];
+// The side reference has a raked mouth, not a vertical end on a symmetric cone.
+// Separate convex wall cells retain the octagonal bore while the same plane trims every cell.
+local hood = [
+  clipped({
+    id: 'objective-hood-' + i, kind: 'extruded-polygon', axis: 'x', z: [3.25, 6.625],
+    profile: [ringPoint(objectiveRadius, i), ringPoint(objectiveRadius, i + 1),
+              ringPoint(objectiveOpening, i + 1), ringPoint(objectiveOpening, i)],
+    slot: 'metal',
+  }, [{ normal: [1, -0.5, 0], offset: 4.5 }])
+  for i in std.range(0, appearance.opticBodySides - 1)
+];
+local fin = [[-6.125, 3.5], [-4.875, 3.5], [-5.5, 5.25], [-5.75, 5.25]];
 {
   source: 'https://www.trijicon.com/products/details/ta31f',
-  reference: 'TA31F published envelope, objective aperture and eye relief; housing, turrets and TA51 contours are perspective-photo estimates, including backup irons',
-  // Published dimensions are L/H/W; the taller neck intentionally exceeds the height to separate body and clamp.
+  reference: 'TA31F published envelope, objective aperture and eye relief; side-photo trace of raked hood, rear-rising casting, ocular collar, control cluster and rear fin',
+  // Published dimensions are L/H/W; the taller neck exceeds the height to separate body and clamp.
   envelopeMm: [151.89, 58.42, 50.8],
-  envelopeU: [13.25, 5 + mountRise, 4.5],
+  envelopeU: [13.25, 5.25, 4.5],
   opticalAxisY: axisY,
   // The continuous TA51 clamp spans a loading mouth; it is not replaced with another mount by host type.
   excludedHostFeeds: ['top'],
   ocularX: -6.625,
   ocularOpeningDiameterU: 2,
   eyeReliefU: 38.1 / mmPerU,
-  // Preserves the existing mounting/eye-datum tolerance, not a manufacturer specification.
+  // Preserves the mounting/eye-datum tolerance, not a manufacturer specification.
   eyeDatumToleranceU: 8,
   mount: {
     contactLengthU: 8, contactWidthU: 1.75, minimumSlots: 5,
     description: 'TA51 flattop mount, photo-estimated two thumbscrews',
     clearanceU: { forward: 0.75, rearward: 0.75, lateral: 0.5 },
   },
-  // Coordinates in U: photo estimates registered on the optical axis and scaled by published length.
-  // Feet carry the rail contact span; this mount is the same on every host.
+  // Photo-estimated contours preserve the optical axis and approved taller envelope, not the photo's raw aspect ratio.
   solids: [
     box('rear-ring-foot', [-2, 0, -0.875], [-1, 0.75, 0.875]),
     box('front-ring-foot', [5, 0, -0.875], [6, 0.75, 0.875]),
-    box('mount-bridge', [-2, 0.75, -0.875], [6, 1 + mountRise, 0.875]),
-    body('prism-housing', [[-4.5, 1.375], [-3.25, 1.5], [-1.5, 1.375], [2.75, neckRadius], [3.5, neckRadius]]),
-    body('ocular-bell', [[-6.625, 1.125], [-5.875, 1.125], [-5.625, 1.375], [-5.25, 1.375], [-4.75, 1.25], [-4.5, 1.375]]),
-    body('objective-bell', [[2.75, neckRadius], [3.5, neckRadius], [flareEndX, objectiveRadius], [6.625, objectiveRadius]], objectiveRadius - 16 / mmPerU),
+    box('mount-bridge', [-2, 0.75, -0.875], [6, 1.25, 0.875]),
+    body('prism-housing', [[-2.5, 1.25], [-1, 1.25], [2.25, 1.375], [3.25, objectiveRadius]]),
+    body('ocular-bell', [[-6.625, 1.125], [-6.375, 1.125], [-6.25, 1.25], [-6, 1.25],
+                         [-5.875, 1.125], [-4, 1.125], [-3.875, 1.5], [-2.75, 1.5], [-2.5, 1.25]]),
+    outline('rear-rising-cast-roof', [[-2.75, 3.5], [0.75, 3.5], [0.75, 3.75], [-2.75, 4.125]], 1.125),
+    outline('housing-keel', [[-2, 1.25], [5.75, 1.25], [3.25, 1.5], [-1.5, 1.75]], 0.625),
     cylinder('ocular-lens', 'x', [0, axisY, 0], [-6.625, -6.375], 1, 'lens', appearance.opticBodySides),
-    // The objective glass is recessed behind the protective lip, not painted across its mouth.
-    cylinder('objective-lens', 'x', [0, axisY, 0], [flareEndX, flareEndX + 0.25], 16 / mmPerU, 'lens', appearance.opticBodySides),
-    // The cast lower keel follows the body instead of a full-width rectangular prism.
-    outline('housing-keel', [[-2, 1], [5.75, 1], [2.75, 2], [-1.5, 1.75]], 0.625, rise=mountRise),
-    // Separate top seam: no red-dot platform is built into the housing.
-    outline('backup-front-base', [[5.5, 3.625], [6.625, 3.625], [6.625, 4.125], [5.5, 4.125]], 0.375, backupZ, rise=mountRise),
-    box('backup-front-post', [6.25, 4, backupZ - 0.25], [6.5, 4.5, backupZ + 0.25], rise=mountRise),
-    outline('backup-rear-base', [[-6.5, 3.125], [-4.75, 3.125], [-5.375, 4.125], [-6.125, 4.125]], 0.375, backupZ, rise=mountRise),
-    // Enlarged from the photo estimate so the aperture remains open at the optic detail grain.
+    // Seated behind the shortest edge of the slanted lip, so the complete glass remains protected.
+    cylinder('objective-lens', 'x', [0, axisY, 0], [4.5, 4.75], objectiveOpening, 'lens', appearance.opticBodySides),
+    outline('objective-top-seam', [[3.25, 4.125], [6.625, 4.125], [6.625, 4.375], [3.25, 4.375]], 0.25, backupZ),
+    outline('backup-front-post', [[5.75, 4.25], [6.5, 4.25], [6.5, 4.875], [5.875, 4.875]], 0.25, backupZ),
+    // The fin has a lower fore-aft opening, not an aperture perched on its tip.
+    outline('backup-rear-fin-near', fin, 0.0625, backupZ - 0.3125),
+    outline('backup-rear-fin-far', fin, 0.0625, backupZ + 0.3125),
+    clipped(outline('backup-rear-fin-top', fin, 0.25, backupZ), [{ normal: [0, -1, 0], offset: -4.125 }]),
+    clipped(outline('backup-rear-fin-bottom', fin, 0.25, backupZ), [{ normal: [0, 1, 0], offset: 3.625 }]),
     {
-      id: 'backup-rear-aperture', kind: 'revolved', axis: 'x', origin: [0, 4.5 + mountRise, backupZ],
-      profile: [[-6, 0.25], [-6, 0.5], [-5.5, 0.5], [-5.5, 0.25], [-6, 0.25]],
+      id: 'backup-rear-aperture', kind: 'revolved', axis: 'x', origin: [0, 3.875, backupZ],
+      profile: [[-6.375, 0.25], [-6.375, 0.5], [-6.125, 0.5], [-6.125, 0.25], [-6.375, 0.25]],
       sides: appearance.opticBodySides, slot: 'metal',
     },
-    cylinder('elevation-stem', 'y', [-0.5, 0, 0], [3.25, 3.75], 0.75, rise=mountRise),
-    cylinder('elevation-cap', 'y', [-0.5, 0, 0], [3.75, 4.375], 0.875, rise=mountRise),
-    cylinder('elevation-cap-rim-lower', 'y', [-0.5, 0, 0], [3.875, 4], 0.9375, rise=mountRise),
-    cylinder('elevation-cap-rim-upper', 'y', [-0.5, 0, 0], [4.125, 4.25], 0.9375, rise=mountRise),
-    cylinder('windage-stem', 'z', [0.875, 2.4375, 0], [-2.5, -1.25], 0.5, rise=mountRise),
-    cylinder('windage-cap', 'z', [0.875, 2.4375, 0], [-2.75, -2.5], 0.5, rise=mountRise),
-    outline('objective-rib-ramp', [[3.5, 3.25], [flareEndX, 3.875], [flareEndX, 4.125], [3.5, 3.5]], 0.25, rise=mountRise),
-    box('objective-rib', [flareEndX, 3.875, -0.25], [6.25, 4.125, 0.25], rise=mountRise),
+    cylinder('elevation-stem', 'y', [-1.125, 0, 0], [3.5, 4], 0.75),
+    cylinder('elevation-cap', 'y', [-1.125, 0, 0], [4, 4.625], 0.875),
+    cylinder('elevation-cap-rim-lower', 'y', [-1.125, 0, 0], [4.125, 4.25], 0.9375),
+    cylinder('elevation-cap-rim-upper', 'y', [-1.125, 0, 0], [4.375, 4.5], 0.9375),
+    cylinder('windage-stem', 'z', [-1.125, 2.25, 0], [-2.5, -1.125], 0.625),
+    cylinder('windage-cap', 'z', [-1.125, 2.25, 0], [-2.75, -2.5], 0.625),
     box('mount-near-clamp', [-2, 0.25, -1.125], [6, 1, -0.875]),
     box('mount-far-clamp', [-2, 0.25, 0.875], [6, 1, 1.125]),
-  ] + std.flattenArrays([
+  ] + hood + std.flattenArrays([
     [
       cylinder('mount-cross-bolt-' + name, 'z', [x, 0.625, 0], [-1.5, 1.125], 0.1875),
       cylinder('mount-thumbscrew-' + name, 'z', [x, 0.625, 0], [-2.125, -1.125], 0.625),
-      // A raised slotted drive is more legible than a solid round button at the item grain.
       box('mount-drive-' + name + '-upper', [x - 0.375, 0.75, -2.25], [x + 0.375, 1, -2.125]),
       box('mount-drive-' + name + '-lower', [x - 0.375, 0.25, -2.25], [x + 0.375, 0.5, -2.125]),
     ]

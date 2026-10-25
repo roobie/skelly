@@ -22,6 +22,7 @@ import { attachmentCompatibility } from '../src/gun/attachmentCompatibility.ts';
 import { attachmentInstanceForId, attachmentLookIssue, attachmentSlots } from '../src/gun/attachments.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
+import fixedPrism from '../src/gun/fixedPrism.json' with { type: 'json' };
 import { MOUNT_KINDS, MOUNT_STANDARDS, mountCanAccept } from '../src/gun/mounts.ts';
 import { getOptic, LENS_SLOT, OPTIC_CATALOG, OPTIC_TYPE_IDS } from '../src/gun/optics.ts';
 import { GUN_PALETTE, resolveAppearance } from '../src/gun/palette.ts';
@@ -64,6 +65,10 @@ describe('optic catalog', () => {
       (axis) => Math.max(...bounds.map(([, max]) => max[axis]!)) - Math.min(...bounds.map(([min]) => min[axis]!)),
     );
     expect(actual).toEqual(optic.envelopeU);
+  });
+
+  it('preserves authored prism solids at the content validation boundary', () => {
+    expect(getOptic('fixed-prism-4x').solids).toEqual(fixedPrism.solids);
   });
 
   it('builds every round body turned about the optical axis, and the lenses in it, with the content side count', () => {
