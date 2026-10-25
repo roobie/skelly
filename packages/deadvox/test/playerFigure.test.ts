@@ -138,6 +138,21 @@ const expectCrouchedLeg = (meshes: PlayerMeshes, leg: 'leftLeg' | 'rightLeg', gr
   return hip;
 };
 
+/**
+ * A crouched arm holds a guard: the forearm rises from the elbow to the hand, and the hand stands in front of the
+ * leaning torso, ahead of its shoulder and of the neck. Yaw 0 faces -z.
+ */
+const expectGuardArm = (meshes: PlayerMeshes, arm: 'leftArm' | 'rightArm', neck: Vector3, label: string) => {
+  const { model, joint } = playerFigure.limbs[arm];
+  const shoulder = anchorAt(meshes, arm, model, joint);
+  const drawn = drawnPart(meshes, arm);
+  const elbow = drawn.getObjectByName(FIGURE_PIVOT.elbow)!.getWorldPosition(new Vector3());
+  const hand = drawn.getObjectByName(FIGURE_PIVOT.wrist)!.getWorldPosition(new Vector3());
+  expect(hand.y, `${label} hand above elbow`).toBeGreaterThan(elbow.y);
+  expect(hand.z, `${label} hand ahead of shoulder`).toBeLessThan(shoulder.z);
+  expect(hand.z, `${label} hand ahead of the neck`).toBeLessThan(neck.z);
+};
+
 const fallbackLightHands = [...registry.items.values()]
   .filter((definition) => definition.light && !definition.model)
   .flatMap((definition) => (['right', 'left'] as const).map((side) => ({ id: definition.id, definition, side })));
@@ -457,7 +472,7 @@ describe('player figure', () => {
     }
   });
 
-  it('crouches on bent knees: feet flat behind the knees, knees below the hips, torso forward, head up, arms in front', () => {
+  it('crouches on bent knees: feet flat behind the knees, knees below the hips, torso forward, head up, arms in guard', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
     const meshes = playerMeshes();
     const ground = body.pos[1] * scale.blockSize;
@@ -488,11 +503,7 @@ describe('player figure', () => {
         `third person ${thirdPerson}: head up`,
       ).toBeGreaterThan(facing(torso).y);
       for (const arm of ['leftArm', 'rightArm'] as const) {
-        const { model, joint } = playerFigure.limbs[arm];
-        const reach = new Box3().setFromObject(drawnPart(meshes, arm), true).getCenter(new Vector3());
-        expect(reach.z, `${arm} third person ${thirdPerson}: hangs in front`).toBeLessThan(
-          anchorAt(meshes, arm, model, joint).z,
-        );
+        expectGuardArm(meshes, arm, head, `${arm} third person ${thirdPerson}`);
       }
     }
   });

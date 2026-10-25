@@ -153,6 +153,7 @@ const STANDING_POSE: StancePose = {
   kneeBendDegrees: 0,
   ankleDegrees: 0,
   armsForwardDegrees: 0,
+  elbowBendDegrees: 0,
   headUpDegrees: 0,
 };
 const STANCE_POSE_KEYS = Object.keys(STANDING_POSE) as (keyof StancePose)[];
@@ -160,40 +161,56 @@ const RADIANS = Math.PI / 180;
 const isArm = (name: string): boolean => name === 'leftArm' || name === 'rightArm';
 const isLeg = (name: string): boolean => name === 'leftLeg' || name === 'rightLeg';
 
-/** The pivots a stance turns inside the drawn parts, by name, so tests find them without knowing the tree. */
-export const FIGURE_PIVOT: Readonly<Record<'head' | LegSegment, string>> = {
+/**
+ * The pivots inside the drawn parts, by name, so tests and later poses find them without knowing the tree. A stance
+ * turns the head, knee, ankle and elbow; the wrist carries the hand for poses that turn it.
+ */
+export const FIGURE_PIVOT: Readonly<Record<'head' | LegSegment | 'elbow' | 'wrist', string>> = {
   head: 'figure-head',
   shin: 'leg-knee',
   foot: 'leg-ankle',
+  elbow: 'figure-elbow',
+  wrist: 'figure-wrist',
 };
 
-/** A model part a stance turns: the name its pivot takes, the part, and the anchor it turns about. */
-interface PivotedPart {
+/** Model parts turned together: the name their pivot takes, the parts, and the anchor they turn about. */
+interface PivotedParts {
   name: string;
-  part: string;
+  parts: readonly string[];
   pivot: string;
 }
 
+/** Which pivot chain a drawn part carries. */
+type PivotedKind = 'body' | 'leg' | 'arm';
+const pivotedKind = (name: FigurePartName): PivotedKind => {
+  if (isArm(name)) {
+    return 'arm';
+  }
+  return isLeg(name) ? 'leg' : 'body';
+};
+
 /**
- * Hangs each of a model's parts from a pivot at its joint, each pivot inside the one before, so turning one turns the
- * parts after it. The parts keep their exported placement, so with every pivot at rest the model draws unchanged.
+ * Hangs a model's parts from pivots at their joints, each pivot inside the one before, so turning one turns the parts
+ * after it. The parts keep their exported placement, so with every pivot at rest the model draws unchanged.
  */
 const hangFromPivots = (
   scene: Object3D,
   anchors: Readonly<Record<string, Vec3>>,
-  chain: readonly PivotedPart[],
+  chain: readonly PivotedParts[],
 ): Object3D[] => {
   scene.updateMatrixWorld(true);
-  const nodes = chain.map(({ part }) => {
-    let node: Object3D | undefined;
-    scene.traverse((object) => {
-      node ??= object.userData.part === part ? object : undefined;
-    });
-    if (!node) {
-      throw new Error(`Figure model has no part "${part}"`);
-    }
-    return node;
-  });
+  const nodes = chain.map(({ parts }) =>
+    parts.map((part) => {
+      let node: Object3D | undefined;
+      scene.traverse((object) => {
+        node ??= object.userData.part === part ? object : undefined;
+      });
+      if (!node) {
+        throw new Error(`Figure model has no part "${part}"`);
+      }
+      return node;
+    }),
+  );
   let parent = scene;
   return chain.map(({ name, pivot: anchor }, index) => {
     const pivot = new Object3D();
@@ -201,7 +218,9 @@ const hangFromPivots = (
     pivot.position.set(...anchors[anchor]!);
     scene.add(pivot);
     parent.attach(pivot);
-    pivot.attach(nodes[index]!);
+    for (const node of nodes[index]!) {
+      pivot.attach(node);
+    }
     parent = pivot;
     return pivot;
   });
@@ -216,10 +235,10 @@ export class PlayerMeshes {
   private readonly layout: PlayerFigureLayout;
   /** Each part's drawn model, once it has loaded. */
   private readonly drawn = new Map<FigurePart, Group>();
-  /** Each drawn part's pivots a stance turns: the body's head, each leg's knee then ankle. */
+  /** Each drawn part's pivots: the body's head, each leg's knee then ankle, each arm's elbow then wrist. */
   private readonly pivots = new Map<FigurePart, Object3D[]>();
   private readonly modelDefs: ReadonlyMap<string, Pick<ModelDef, 'anchors'>>;
-  private readonly pivotedParts: Readonly<Record<'body' | 'leg', readonly PivotedPart[]>>;
+  private readonly pivotedParts: Readonly<Record<PivotedKind, readonly PivotedParts[]>>;
   private attachments: Group[] = [];
   private wornVersion = '';
   private readonly models: ModelLibrary;
@@ -242,9 +261,23 @@ export class PlayerMeshes {
   ) {
     this.layout = playerFigureLayout(figure, modelDefs);
     this.modelDefs = modelDefs;
+    const { body, legRig, armRig } = figure;
     this.pivotedParts = {
-      body: [{ name: FIGURE_PIVOT.head, ...figure.body.head }],
-      leg: LEG_SEGMENTS.map((segment) => ({ name: FIGURE_PIVOT[segment], ...figure.legRig[segment] })),
+      body: [{ name: FIGURE_PIVOT.head, parts: [body.head.part], pivot: body.head.pivot }],
+      leg: LEG_SEGMENTS.map((segment) => ({
+        name: FIGURE_PIVOT[segment],
+        parts: [legRig[segment].part],
+        pivot: legRig[segment].pivot,
+      })),
+      // The body arm bends on the same parts and pivots as the first-person rig, so both views share one arm.
+      arm: [
+        { name: FIGURE_PIVOT.elbow, parts: [armRig.fore.part], pivot: armRig.fore.pivot },
+        {
+          name: FIGURE_PIVOT.wrist,
+          parts: [armRig.hand.part, armRig.fingers.part, armRig.thumb.part],
+          pivot: armRig.hand.pivot,
+        },
+      ],
     };
     this.stancePoses = figure.stancePoses;
     this.gait = figure.gait;
@@ -265,13 +298,17 @@ export class PlayerMeshes {
     this.placement.yaw = pose.yaw;
     this.placement.thirdPerson = thirdPerson;
     this.syncModels();
-    const { kneeBendDegrees, ankleDegrees, headUpDegrees } = this.shownPose;
-    // Models face +z, so turning about +x swings a shin back and tips a toe or the face down.
-    const turns = { body: [-headUpDegrees], leg: [kneeBendDegrees, -ankleDegrees] };
+    const { kneeBendDegrees, ankleDegrees, headUpDegrees, elbowBendDegrees } = this.shownPose;
+    // Models face +z, so turning about +x swings a shin back and tips a toe or the face down; a forearm bends forward
+    // the other way. A stance leaves the wrist alone.
+    const turns: Readonly<Record<PivotedKind, readonly number[]>> = {
+      body: [-headUpDegrees],
+      leg: [kneeBendDegrees, -ankleDegrees],
+      arm: [-elbowBendDegrees],
+    };
     for (const [part, pivots] of this.pivots) {
-      const degrees = turns[part.name === 'body' ? 'body' : 'leg'];
-      pivots.forEach((pivot, index) => {
-        pivot.rotation.x = degrees[index]! * RADIANS;
+      turns[pivotedKind(part.name)].forEach((degrees, index) => {
+        pivots[index]!.rotation.x = degrees * RADIANS;
       });
     }
     for (const [part, drawn] of this.drawn) {
@@ -302,10 +339,8 @@ export class PlayerMeshes {
       const model = new Group();
       model.name = `figure-${part.name}`;
       const scene = this.models.part(part.model)!;
-      if (part.name === 'body' || isLeg(part.name)) {
-        const chain = this.pivotedParts[part.name === 'body' ? 'body' : 'leg'];
-        this.pivots.set(part, hangFromPivots(scene, this.modelDefs.get(part.model)?.anchors ?? {}, chain));
-      }
+      const chain = this.pivotedParts[pivotedKind(part.name)];
+      this.pivots.set(part, hangFromPivots(scene, this.modelDefs.get(part.model)?.anchors ?? {}, chain));
       model.add(scene);
       model.traverse((object) => object.layers.set(PLAYER_FIGURE_LAYER));
       this.drawn.set(part, model);

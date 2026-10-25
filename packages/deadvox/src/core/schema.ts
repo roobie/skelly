@@ -3486,6 +3486,8 @@ const StancePoseSchema = strictObject({
   ankleDegrees: Degrees,
   /** Each arm swings forward about its shoulder, from hanging along the torso. */
   armsForwardDegrees: Degrees,
+  /** Each forearm and hand swing forward and up about the elbow, from hanging along the upper arm. */
+  elbowBendDegrees: Degrees,
   /** The head tips back about the neck, from standing on the torso. */
   headUpDegrees: Degrees,
 });

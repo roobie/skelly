@@ -57,8 +57,9 @@ local handPose(fingers, thumbAcross, thumbIn) = {
       },
       gait: { legSwingDegrees: 12.6, armSwingDegrees: 10 },
       // Each pose keeps the drawn body under its stance's body height in player.jsonnet. The crouch reads as a crouch:
-      // knees bent, feet flat under the hips, torso leaning forward, arms hanging low in front and head up looking
-      // ahead. Its ankle turns the foot back to level, and its hip drop puts the soles on the ground.
+      // knees bent, feet flat under the hips, torso leaning forward, head up looking ahead and arms in a guard for
+      // balance, elbows bent with the forearms raised in front. Its ankle turns the foot back to level, and its hip
+      // drop puts the soles on the ground.
       stancePoses: {
         crouching: {
           hipDropMetres: 0.374,
@@ -66,7 +67,8 @@ local handPose(fingers, thumbAcross, thumbIn) = {
           legsForwardDegrees: 65,
           kneeBendDegrees: 120,
           ankleDegrees: 55,
-          armsForwardDegrees: 60,
+          armsForwardDegrees: 70,
+          elbowBendDegrees: 115,
           headUpDegrees: 45,
         },
         prone: {
@@ -76,6 +78,7 @@ local handPose(fingers, thumbAcross, thumbIn) = {
           kneeBendDegrees: 0,
           ankleDegrees: 0,
           armsForwardDegrees: 0,
+          elbowBendDegrees: 0,
           headUpDegrees: 0,
         },
         blendRealSeconds: 0.2,

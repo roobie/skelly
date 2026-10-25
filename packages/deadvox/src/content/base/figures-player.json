@@ -108,7 +108,8 @@
         "blendRealSeconds": 0.20000000000000001,
         "crouching": {
           "ankleDegrees": 55,
-          "armsForwardDegrees": 60,
+          "armsForwardDegrees": 70,
+          "elbowBendDegrees": 115,
           "headUpDegrees": 45,
           "hipDropMetres": 0.374,
           "kneeBendDegrees": 120,
@@ -118,6 +119,7 @@
         "prone": {
           "ankleDegrees": 0,
           "armsForwardDegrees": 0,
+          "elbowBendDegrees": 0,
           "headUpDegrees": 0,
           "hipDropMetres": 0.47999999999999998,
           "kneeBendDegrees": 0,
