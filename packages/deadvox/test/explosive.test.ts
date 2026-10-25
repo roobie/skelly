@@ -229,7 +229,7 @@ describe('hand grenade', () => {
     );
     spy.mockRestore();
     await Promise.all(loads);
-    const held = new HeldItems(session.inventory, models, registry.figures.get('player')!.palette);
+    const held = new HeldItems(session.inventory, models, registry.figures.get('player')!);
     const camera = new PerspectiveCamera();
     const pinMeshesDrawn = () => {
       held.update(camera);

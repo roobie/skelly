@@ -8,9 +8,11 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory, SIDES } from '../src/core/inventory.ts';
 import { revolverChamberPoint } from '../src/core/revolverPose.ts';
 import { FirearmMechanics } from '../src/game/firearmHandling.ts';
+import { ARM_NODE } from '../src/render/armRig.ts';
 import { actionPartPaths, cloneHeldModel, poseRevolverParts } from '../src/render/firearmModel.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { heldModelFrame, type ModelLibrary, prepareModel } from '../src/render/models.ts';
+import { loadFigureModels } from './figureModels.ts';
 import { content } from './fixtures/startupContent.ts';
 
 const loadModel = (model: ModelDef) => {
@@ -67,7 +69,7 @@ it('keeps the loading cartridge at the palm grip through the real revolver trans
   )!;
   const ammoModel = registry.models.get(ammoDef.model!)!;
   const carrier = definitions.find((definition) => definition.wearable?.slot === 'back' && definition.container)!;
-  const figure = [...registry.figures.values()].find((definition) => definition.palette)!;
+  const figure = registry.figures.get('player')!;
   const gunFile = await loadModel(model);
   const roundFile = await loadModel(ammoModel);
   const gunPrepared = prepareModel(model, gunFile.scene);
@@ -75,6 +77,7 @@ it('keeps the loading cartridge at the palm grip through the real revolver trans
   const paths = actionPartPaths(gunFile.scene, undefined, gunFile.parser, model.gun?.revolver);
   const models = {
     version: 0,
+    ...(await loadFigureModels(registry)),
     heldLook: () => {
       const held = cloneHeldModel(gunPrepared.held, paths);
       held.root.name = 'revolver-load-probe';
@@ -101,7 +104,7 @@ it('keeps the loading cartridge at the palm grip through the real revolver trans
       pose: () => undefined,
       onEjection: () => undefined,
     });
-    const held = new HeldItems(inventory, models, figure.palette);
+    const held = new HeldItems(inventory, models, figure);
     const camera = new PerspectiveCamera();
     const other = side === 'right' ? 'left' : 'right';
     const { scene } = held.warmUpTarget;
@@ -117,7 +120,7 @@ it('keeps the loading cartridge at the palm grip through the real revolver trans
         previous = progress;
         const frames = mechanics.frames();
         held.update(camera, undefined, 0, { firearms: frames, job: queue.jobs[0] });
-        const palm = scene.getObjectByName(`first-person-arm-${other}`)!.children[2]!;
+        const palm = scene.getObjectByName(`first-person-arm-${other}`)!.getObjectByName(ARM_NODE.hand)!;
         const round = scene.getObjectByName('cartridge-load-probe')!;
         expect(round.visible).toBe(true);
         const roundWorld = round.getWorldPosition(new Vector3());

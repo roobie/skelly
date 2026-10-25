@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { exportGunGlb } from '../src/gun/exportGlb.ts';
 import gunVoxel from '../src/gun/gunVoxel.json' with { type: 'json' };
-import { type GltfJson, readGlb } from './glbReader.ts';
-import { loadDesigns, type MutableAssembly } from './helpers.ts';
+import { readGlb } from './glbReader.ts';
+import { loadDesigns, type MutableAssembly, partTriangles, type Triangle } from './helpers.ts';
 
 const ASSET = { id: 'rear_sight_test', file: 'assets/models/rear_sight_test.glb' };
 
@@ -31,29 +31,6 @@ const rearSightParts = (assembly: Assembly): string[] =>
       return def.axes.some(({ kind }) => kind === 'sight') && family !== 'sight' && !family.includes('front-sight');
     })
     .map(([id]) => id);
-
-type Triangle = readonly [readonly number[], readonly number[], readonly number[]];
-
-const partTriangles = (json: GltfJson, read: ReturnType<typeof readGlb>, partId: string): Triangle[] => {
-  const triangles: Triangle[] = [];
-  for (const node of json.nodes.filter(({ extras }) => extras?.part === partId)) {
-    const shift = node.translation ?? [0, 0, 0];
-    for (const primitive of json.meshes[node.mesh!]!.primitives) {
-      const positions = read.floats(primitive.attributes.POSITION);
-      const accessor = json.accessors[primitive.indices]!;
-      const view = json.bufferViews[accessor.bufferView]!;
-      const indices = new Uint32Array(read.bin.slice(view.byteOffset, view.byteOffset + accessor.count * 4).buffer);
-      for (let i = 0; i < indices.length; i += 3) {
-        triangles.push(
-          [0, 1, 2].map((k) =>
-            [0, 1, 2].map((axis) => positions[indices[i + k]! * 3 + axis]! + shift[axis]!),
-          ) as unknown as Triangle,
-        );
-      }
-    }
-  }
-  return triangles;
-};
 
 /**
  * How wide the file's drawn rear sight is open across the sight line: the distance between the drawn faces that bound
