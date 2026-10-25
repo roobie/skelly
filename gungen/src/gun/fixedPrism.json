@@ -1,6 +1,6 @@
 {
   "envelopeMm": [151.88999999999999, 58.420000000000002, 50.799999999999997],
-  "envelopeU": [13.25, 5, 4.5],
+  "envelopeU": [13.25, 5.25, 4.5],
   "excludedHostFeeds": ["top"],
   "eyeDatumToleranceU": 8,
   "eyeReliefU": 3.3130434782608695,
@@ -17,7 +17,7 @@
   },
   "ocularOpeningDiameterU": 2,
   "ocularX": -6.625,
-  "opticalAxisY": 2.25,
+  "opticalAxisY": 2.5,
   "reference": "TA31F published envelope, objective aperture and eye relief; housing, turrets and TA51 contours are perspective-photo estimates, including backup irons",
   "solids": [
     {
@@ -40,8 +40,8 @@
     },
     {
       "box": {
-        "center": [2, 0.875, 0.125],
-        "half": [4, 0.125, 0.875]
+        "center": [2, 1, 0.125],
+        "half": [4, 0.25, 0.875]
       },
       "id": "mount-bridge",
       "kind": "box",
@@ -51,15 +51,15 @@
       "axis": "x",
       "id": "prism-housing",
       "kind": "revolved",
-      "origin": [0, 2.25, 0],
+      "origin": [0, 2.5, 0],
       "profile": [
         [-4.5, 1.375],
         [-3.25, 1.5],
         [-1.5, 1.375],
-        [2.75, 1.25],
-        [3.5, 1.5],
-        [3.5, 1.375],
         [2.75, 1.125],
+        [3.5, 1.125],
+        [3.5, 1],
+        [2.75, 1],
         [-1.5, 1.25],
         [-3.25, 1.375],
         [-4.5, 1.25],
@@ -72,7 +72,7 @@
       "axis": "x",
       "id": "ocular-bell",
       "kind": "revolved",
-      "origin": [0, 2.25, 0],
+      "origin": [0, 2.5, 0],
       "profile": [
         [-6.625, 1.125],
         [-5.875, 1.125],
@@ -95,17 +95,17 @@
       "axis": "x",
       "id": "objective-bell",
       "kind": "revolved",
-      "origin": [0, 2.25, 0],
+      "origin": [0, 2.5, 0],
       "profile": [
-        [2.75, 1.25],
-        [3.5, 1.5],
-        [4.25, 1.75],
+        [2.75, 1.125],
+        [3.5, 1.125],
+        [5.5, 1.75],
         [6.625, 1.75],
         [6.625, 1.3913043478260869],
-        [4.25, 1.3913043478260869],
-        [3.5, 1.1413043478260869],
-        [2.75, 0.89130434782608692],
-        [2.75, 1.25]
+        [5.5, 1.3913043478260869],
+        [3.5, 0.76630434782608692],
+        [2.75, 0.76630434782608692],
+        [2.75, 1.125]
       ],
       "sides": 8,
       "slot": "metal"
@@ -114,7 +114,7 @@
       "axis": "x",
       "id": "ocular-lens",
       "kind": "revolved",
-      "origin": [0, 2.25, 0],
+      "origin": [0, 2.5, 0],
       "profile": [[-6.625, 0], [-6.625, 1], [-6.375, 1], [-6.375, 0]],
       "sides": 8,
       "slot": "lens"
@@ -123,8 +123,8 @@
       "axis": "x",
       "id": "objective-lens",
       "kind": "revolved",
-      "origin": [0, 2.25, 0],
-      "profile": [[5, 0], [5, 1.3913043478260869], [5.25, 1.3913043478260869], [5.25, 0]],
+      "origin": [0, 2.5, 0],
+      "profile": [[5.5, 0], [5.5, 1.3913043478260869], [5.75, 1.3913043478260869], [5.75, 0]],
       "sides": 8,
       "slot": "lens"
     },
@@ -132,7 +132,7 @@
       "axis": "z",
       "id": "housing-keel",
       "kind": "extruded-polygon",
-      "profile": [[-2, 1], [5.75, 1], [2.75, 2], [-1.5, 1.75]],
+      "profile": [[-2, 1.25], [5.75, 1.25], [2.75, 2.25], [-1.5, 2]],
       "slot": "metal",
       "z": [-0.625, 0.625]
     },
@@ -140,13 +140,13 @@
       "axis": "z",
       "id": "backup-front-base",
       "kind": "extruded-polygon",
-      "profile": [[5.5, 3.625], [6.625, 3.625], [6.625, 4.125], [5.5, 4.125]],
+      "profile": [[5.5, 3.875], [6.625, 3.875], [6.625, 4.375], [5.5, 4.375]],
       "slot": "metal",
       "z": [0.125, 0.875]
     },
     {
       "box": {
-        "center": [6.375, 4.25, 0.5],
+        "center": [6.375, 4.5, 0.5],
         "half": [0.125, 0.25, 0.25]
       },
       "id": "backup-front-post",
@@ -157,7 +157,7 @@
       "axis": "z",
       "id": "backup-rear-base",
       "kind": "extruded-polygon",
-      "profile": [[-6.5, 3.125], [-4.75, 3.125], [-5.375, 4.125], [-6.125, 4.125]],
+      "profile": [[-6.5, 3.375], [-4.75, 3.375], [-5.375, 4.375], [-6.125, 4.375]],
       "slot": "metal",
       "z": [0.125, 0.875]
     },
@@ -165,7 +165,7 @@
       "axis": "x",
       "id": "backup-rear-aperture",
       "kind": "revolved",
-      "origin": [0, 4.5, 0.5],
+      "origin": [0, 4.75, 0.5],
       "profile": [[-6, 0.25], [-6, 0.5], [-5.5, 0.5], [-5.5, 0.25], [-6, 0.25]],
       "sides": 8,
       "slot": "metal"
@@ -174,7 +174,7 @@
       "axis": "y",
       "id": "elevation-stem",
       "kind": "revolved",
-      "origin": [-0.5, 0, 0],
+      "origin": [-0.5, 0.25, 0],
       "profile": [[3.25, 0], [3.25, 0.75], [3.75, 0.75], [3.75, 0]],
       "slot": "metal"
     },
@@ -182,7 +182,7 @@
       "axis": "y",
       "id": "elevation-cap",
       "kind": "revolved",
-      "origin": [-0.5, 0, 0],
+      "origin": [-0.5, 0.25, 0],
       "profile": [[3.75, 0], [3.75, 0.875], [4.375, 0.875], [4.375, 0]],
       "slot": "metal"
     },
@@ -190,7 +190,7 @@
       "axis": "y",
       "id": "elevation-cap-rim-lower",
       "kind": "revolved",
-      "origin": [-0.5, 0, 0],
+      "origin": [-0.5, 0.25, 0],
       "profile": [[3.875, 0], [3.875, 0.9375], [4, 0.9375], [4, 0]],
       "slot": "metal"
     },
@@ -198,7 +198,7 @@
       "axis": "y",
       "id": "elevation-cap-rim-upper",
       "kind": "revolved",
-      "origin": [-0.5, 0, 0],
+      "origin": [-0.5, 0.25, 0],
       "profile": [[4.125, 0], [4.125, 0.9375], [4.25, 0.9375], [4.25, 0]],
       "slot": "metal"
     },
@@ -206,7 +206,7 @@
       "axis": "z",
       "id": "windage-stem",
       "kind": "revolved",
-      "origin": [0.875, 2.4375, 0],
+      "origin": [0.875, 2.6875, 0],
       "profile": [[-2.5, 0], [-2.5, 0.5], [-1.25, 0.5], [-1.25, 0]],
       "slot": "metal"
     },
@@ -214,7 +214,7 @@
       "axis": "z",
       "id": "windage-cap",
       "kind": "revolved",
-      "origin": [0.875, 2.4375, 0],
+      "origin": [0.875, 2.6875, 0],
       "profile": [[-2.75, 0], [-2.75, 0.5], [-2.5, 0.5], [-2.5, 0]],
       "slot": "metal"
     },
@@ -222,14 +222,14 @@
       "axis": "z",
       "id": "objective-rib-ramp",
       "kind": "extruded-polygon",
-      "profile": [[3.5, 3.5], [4.25, 3.875], [4.25, 4.125], [3.5, 3.75]],
+      "profile": [[3.5, 3.5], [5.5, 4.125], [5.5, 4.375], [3.5, 3.75]],
       "slot": "metal",
       "z": [-0.25, 0.25]
     },
     {
       "box": {
-        "center": [5.25, 4.125, 0],
-        "half": [1, 0.125, 0.25]
+        "center": [5.875, 4.375, 0],
+        "half": [0.375, 0.125, 0.25]
       },
       "id": "objective-rib",
       "kind": "box",
