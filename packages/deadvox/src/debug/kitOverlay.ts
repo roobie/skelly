@@ -84,15 +84,15 @@ export class KitOverlay {
     const slice = html`
       <div><label>Placement <input aria-label="Kit placement" type="number" min="0" max=${this.placements.length - 1} .value=${String(this.selected)} @change=${this.select} /></label> ${placement.template.id} · turn ${placement.turn}</div>
       <div><label>Local Y <input aria-label="Kit layer" type="number" min="0" max=${placement.template.size[1] - 1} .value=${String(this.layer)} @change=${this.changeLayer} /></label> blue occupancy · green air · magenta reserved · grey unclaimed</div>
-      <canvas aria-label="Compiled kit ownership slice" title="Point at a cell for compiler provenance" style="max-width:70vw;max-height:45vh;image-rendering:pixelated"></canvas>
-      <pre style="white-space:pre-wrap;max-width:70vw;margin:4px 0"></pre>
+      <canvas aria-label="Compiled kit ownership slice" title="Point at a cell for compiler provenance" style="max-width:100%;max-height:45vh;image-rendering:pixelated"></canvas>
+      <pre style="white-space:pre-wrap;margin:4px 0"></pre>
     `;
     render(
       html`
-        <aside id="debug-kit-overlay" style="position:fixed;right:12px;bottom:12px;pointer-events:auto;z-index:var(--ui-layer-debug-ui);background:#111e;color:#eee;padding:8px;max-width:75vw;font:12px monospace">
-          <button type="button" @click=${this.toggle}>Kit cells · ${this.open ? 'close' : 'open'}</button>
+        <div id="debug-kit-overlay">
+          <div class="debug-actions"><button type="button" aria-expanded=${this.open ? 'true' : 'false'} @click=${this.toggle}>Kit cells · ${this.open ? 'close' : 'open'}</button></div>
           ${this.open ? slice : ''}
-        </aside>
+        </div>
       `,
       host,
     );
