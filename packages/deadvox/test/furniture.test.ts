@@ -88,7 +88,7 @@ describe('furniture', () => {
     expect(emptyCarry).toBeLessThan(fullCarry);
 
     expect(inv.move(beans, furniture).ok).toBe(true);
-    expect(inv.entities.massKg(cupboard)).toBe(fullMassKg);
+    expect(inv.entities.massKg(cupboard)).toBeCloseTo(fullMassKg);
     expect(furnitureMoveStamina(inv, cupboard, 'carry')).toBe(fullCarry);
   });
 

@@ -760,6 +760,7 @@
       },
       "color": "#343536",
       "id": "wood_stove",
+      "massKg": 24,
       "material": "steel",
       "name": "Wood stove",
       "shape": [
