@@ -13,7 +13,7 @@ const mannequinFor = (debug: boolean, search: string) => {
   const scene = new Scene();
   const mannequin = createAvatarMannequin(
     scene,
-    { debug, blockSize: 0.5, figure, modelDefs: registry.models, models },
+    { debug, blockSize: 0.5, figure, modelDefs: registry.models, models, registry },
     search,
   );
   return { scene, mannequin };
@@ -29,7 +29,9 @@ describe('debug avatar mannequin', () => {
     const stances = ['standing', ...Object.keys(figure.stancePoses).filter((key) => key !== 'blendRealSeconds')];
     for (const stance of stances) {
       for (const moving of [false, true]) {
-        const offered = mannequin!.poses.filter((pose) => pose.stance === stance && pose.moving === moving);
+        const offered = mannequin!.poses.filter(
+          (pose) => !pose.hold && pose.stance === stance && pose.moving === moving,
+        );
         expect(offered, `${stance} moving=${moving}`).toHaveLength(1);
         while (mannequin!.pose !== offered[0]) {
           mannequin!.step(1);
@@ -80,7 +82,7 @@ describe('debug avatar mannequin', () => {
     });
     vi.stubGlobal('location', { search: '?mannequin=prone' });
     const scene = new Scene();
-    const inactive = { blockSize: 0.5, figure, modelDefs: registry.models, models };
+    const inactive = { blockSize: 0.5, figure, modelDefs: registry.models, models, registry };
     expect(createAvatarMannequin(scene, { ...inactive, debug: false })).toBeUndefined();
     vi.stubGlobal('location', { search: '?debug=1' });
     expect(createAvatarMannequin(scene, { ...inactive, debug: true })).toBeUndefined();

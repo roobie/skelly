@@ -2,10 +2,12 @@
 // each avatar pose can be judged from outside. It is a drawing only: no simulation, collision or save knows it.
 
 import { Group, type Object3D } from 'three';
-import type { FigureDef, ModelDef } from '../core/content.ts';
+import type { FigureDef, ModelDef, Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
+import type { Item } from '../core/items.ts';
 import type { Body } from '../core/physics.ts';
 import type { PlayerStance } from '../core/playerStance.ts';
+import { heldItemPoses, type ItemHoldPose } from './heldPresentation.ts';
 import type { ModelLibrary } from './models.ts';
 import { type PlayerFigurePose, PlayerMeshes } from './playerFigure.ts';
 
@@ -17,18 +19,31 @@ export interface AvatarPose {
   name: string;
   stance: PlayerStance;
   moving: boolean;
+  hold?: ItemHoldPose;
 }
 
 /** Every pose the figure row defines: standing and each stance it poses, each still and walking. */
-const avatarPoses = (figure: FigureDef): AvatarPose[] => {
+const avatarPoses = (figure: FigureDef, registry: Registry): AvatarPose[] => {
   const posed = Object.keys(figure.stancePoses).filter((key) => key !== 'blendRealSeconds') as PlayerStance[];
-  return (['standing', ...posed] as PlayerStance[]).flatMap((stance) => [
+  const stances = (['standing', ...posed] as PlayerStance[]).flatMap((stance) => [
     { name: stance, stance, moving: false },
     { name: `${stance}-walking`, stance, moving: true },
   ]);
+  return [
+    ...stances,
+    ...heldItemPoses(registry).map(
+      (hold): AvatarPose => ({
+        name: hold.name,
+        stance: 'standing',
+        moving: false,
+        hold,
+      }),
+    ),
+  ];
 };
 
 export interface MannequinFigure {
+  registry: Registry;
   debug: boolean;
   blockSize: number;
   figure: FigureDef;
@@ -39,7 +54,7 @@ export interface MannequinFigure {
 /** The mannequin the debug query asks for, added to the scene; undefined when debug is off or the query is absent. */
 export const createAvatarMannequin = (
   scene: Object3D,
-  { debug, blockSize, figure, modelDefs, models }: MannequinFigure,
+  { debug, blockSize, figure, modelDefs, models, registry }: MannequinFigure,
   search: string = globalThis.location?.search ?? '',
 ): AvatarMannequin | undefined => {
   const requested = debug ? new URLSearchParams(search).get('mannequin') : null;
@@ -47,7 +62,8 @@ export const createAvatarMannequin = (
     return undefined;
   }
   const meshes = new PlayerMeshes(blockSize, figure, modelDefs, models);
-  const mannequin = new AvatarMannequin(meshes, avatarPoses(figure), {
+  const mannequin = new AvatarMannequin(meshes, avatarPoses(figure, registry), {
+    registry,
     blockSize,
     placement: figure.mannequinPlacement,
     requested,
@@ -60,6 +76,8 @@ export class AvatarMannequin {
   readonly group = new Group();
   readonly poses: readonly AvatarPose[];
   private readonly blockSize: number;
+  private readonly registry: Registry;
+  private readonly samples = new Map<string, Item>();
   private readonly placement: FigureDef['mannequinPlacement'];
   private readonly meshes: PlayerMeshes;
   private index: number;
@@ -77,9 +95,11 @@ export class AvatarMannequin {
       blockSize,
       placement,
       requested,
-    }: { blockSize: number; placement: FigureDef['mannequinPlacement']; requested: string },
+      registry,
+    }: { blockSize: number; placement: FigureDef['mannequinPlacement']; requested: string; registry: Registry },
   ) {
     this.blockSize = blockSize;
+    this.registry = registry;
     this.placement = placement;
     this.meshes = meshes;
     this.poses = poses;
@@ -98,6 +118,10 @@ export class AvatarMannequin {
       thirdPerson: true,
     };
     this.group.add(meshes.group);
+  }
+
+  dispose(): void {
+    this.meshes.dispose();
   }
 
   get pose(): AvatarPose {
@@ -137,7 +161,15 @@ export class AvatarMannequin {
       this.placed = true;
       this.place();
     }
-    const { moving, stance } = this.pose;
+    const { moving, stance, hold } = this.pose;
+    let item = hold && this.samples.get(hold.itemType);
+    if (hold && !item) {
+      // A mannequin sample is presentation only, not a simulated inventory item with ownership or persistence.
+      item = { uid: this.samples.size + 1, type: hold.itemType, count: 1, condition: 1 };
+      this.samples.set(hold.itemType, item);
+    }
+    figurePose.heldItems = { registry: this.registry, hands: hold && item ? { [hold.side]: item } : {} };
+    figurePose.holdReady = hold?.ready ?? false;
     figurePose.gaitPhase += dt * GAIT_RATE;
     figurePose.moving = moving;
     figurePose.stance = stance;
