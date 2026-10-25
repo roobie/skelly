@@ -3737,10 +3737,15 @@
       "file": "assets/models/player_bust.glb",
       "id": "player_bust",
       "parts": {
-        "bust": {
-          "centreOfMass": [-0.00094315825846579178, 0.44282429163787151, -0.0030449205252246034],
-          "massKg": 38,
-          "node": "bust:bust"
+        "head": {
+          "centreOfMass": [1.0201979643961859e-16, 0.83341319444444451, -0.0073888888888888875],
+          "massKg": 5,
+          "node": "head:head"
+        },
+        "torso": {
+          "centreOfMass": [-0.0011775237273511652, 0.34576682484900773, -0.0019654874892148406],
+          "massKg": 33,
+          "node": "torso:torso"
         }
       }
     },
@@ -3785,15 +3790,27 @@
     },
     {
       "anchors": {
-        "hip": [0, 0, 0]
+        "ankle": [-9.3475202004825779e-17, -0.72999999999999998, 0],
+        "hip": [0, 0, 0],
+        "knee": [0, -0.41999999999999998, 0]
       },
       "file": "assets/models/player_leg.glb",
       "id": "player_leg",
       "parts": {
-        "leg": {
-          "centreOfMass": [-0.0011272707009918645, -0.39972138638136628, 0.010909952078457595],
-          "massKg": 11,
-          "node": "leg:avatarLeg"
+        "foot": {
+          "centreOfMass": [-1.9030544570482657e-16, -0.77829471397538019, 0.078895727733526433],
+          "massKg": 1,
+          "node": "foot:foot"
+        },
+        "shin": {
+          "centreOfMass": [-0.0038859008835959233, -0.59283903188628506, -0.0003592009220130615],
+          "massKg": 3,
+          "node": "shin:shin"
+        },
+        "thigh": {
+          "centreOfMass": [0, -0.20999999999999999, 0],
+          "massKg": 7,
+          "node": "thigh:thigh"
         }
       }
     }

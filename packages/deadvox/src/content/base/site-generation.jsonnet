@@ -57,7 +57,7 @@
         },
       },
       palette: {
-        terrain: { grass: 'grass', dirt: 'dirt', rock: 'rock', sand: 'sand' },
+        terrain: { grass: 'grass', dirt: 'dirt', rock: 'rock', sand: 'sand', water: 'water' },
         paving: 'asphalt',
         trees: { trunk: 'tree_trunk', branch: 'tree_branch', leaves: 'leaves' },
         leafLitter: 'leaf_litter',

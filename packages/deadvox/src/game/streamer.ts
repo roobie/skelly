@@ -43,6 +43,8 @@ export interface StreamerOptions {
   /** Content-owned render-weathering flag per block id. */
   weatherable: Uint8Array;
   wireMeshes?: WireMeshes;
+  /** Liquid flag per block id (`blockLiquids`). */
+  liquids?: Uint8Array;
   fencePosts?: FencePostDefs;
   scale: Scale;
   /** Stamped into every column as it generates. */
@@ -68,7 +70,7 @@ export interface StreamerStats {
 
 export class Streamer {
   private readonly opts: StreamerOptions;
-  private readonly occluders: Uint8Array | undefined;
+  private readonly occluders: Uint8Array;
   private readonly generated = new Set<string>(); // column keys "cx,cz"
   // An edit replaces an existing mesh; it must not close a column that already has its occluders drawn.
   private readonly completeColumns = new Set<string>();
@@ -134,9 +136,9 @@ export class Streamer {
   constructor(opts: StreamerOptions) {
     this.opts = opts;
     opts.meshes.setRevealedColumns(new Set());
-    this.occluders = opts.wireMeshes
-      ? Uint8Array.from({ length: opts.colors.length / 3 }, (_, id) => Number(id !== 0 && !opts.wireMeshes?.[id]))
-      : undefined;
+    this.occluders = Uint8Array.from({ length: opts.colors.length / 3 }, (_, id) =>
+      Number(id !== 0 && !opts.wireMeshes?.[id] && !opts.liquids?.[id]),
+    );
     // Leave a physical core for the main thread: hardwareConcurrency counts hyperthreads.
     const count = Math.max(1, Math.min(3, Math.floor((navigator.hardwareConcurrency || 2) / 2) - 1));
     for (let i = 0; i < count; i++) {
@@ -154,6 +156,7 @@ export class Streamer {
         patterns: opts.patterns,
         weatherable: opts.weatherable,
         wireMeshes: opts.wireMeshes ?? [],
+        liquids: opts.liquids ?? new Uint8Array(0),
         fencePosts: opts.fencePosts ?? [],
       });
       this.workers.push(worker);

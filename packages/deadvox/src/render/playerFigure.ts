@@ -8,7 +8,15 @@ import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf } from '../core/items.ts';
 import type { Body } from '../core/physics.ts';
 import type { PlayerStance } from '../core/playerStance.ts';
-import { FIGURE_LIMB_JOINTS, FIGURE_LIMBS, type FigureJoint, type FigureLimb, type WearSlot } from '../core/schema.ts';
+import {
+  FIGURE_LIMB_JOINTS,
+  FIGURE_LIMBS,
+  type FigureJoint,
+  type FigureLimb,
+  LEG_SEGMENTS,
+  type LegSegment,
+  type WearSlot,
+} from '../core/schema.ts';
 import { FIGURE_BOXES, type FigureBox } from '../core/zombieRegions.ts';
 import type { ModelLibrary } from './models.ts';
 import { castsAndReceives, PLAYER_FIGURE_LAYER } from './shadowFlags.ts';
@@ -70,6 +78,8 @@ interface FigurePart {
 interface PlayerFigureLayout {
   hipHeight: number;
   joints: Readonly<Record<FigureJoint, Vec3>>;
+  /** Where the head turns on the body. */
+  head: Vec3;
   parts: readonly FigurePart[];
 }
 
@@ -94,10 +104,11 @@ const playerFigureLayout = (
   const left = anchorOf(body.model, body.joints.leftHip);
   const right = anchorOf(body.model, body.joints.rightHip);
   const at: Vec3 = [(left[0] + right[0]) / 2, hipHeight - (left[1] + right[1]) / 2, (left[2] + right[2]) / 2];
-  const jointAt = (joint: FigureJoint): Vec3 => {
-    const point = anchorOf(body.model, body.joints[joint]);
+  const bodyPoint = (anchor: string): Vec3 => {
+    const point = anchorOf(body.model, anchor);
     return [at[0] - point[0], at[1] + point[1], at[2] - point[2]];
   };
+  const jointAt = (joint: FigureJoint): Vec3 => bodyPoint(body.joints[joint]);
   const joints = Object.fromEntries(
     (Object.keys(body.joints) as FigureJoint[]).map((joint) => [joint, jointAt(joint)]),
   ) as Record<FigureJoint, Vec3>;
@@ -107,7 +118,12 @@ const playerFigureLayout = (
     const point = anchorOf(model, joint);
     return { name, model, at: [x + point[0], y - point[1], z + point[2]] };
   });
-  return { hipHeight, joints, parts: [{ name: 'body', model: body.model, at }, ...limbs] };
+  return {
+    hipHeight,
+    joints,
+    head: bodyPoint(body.head.pivot),
+    parts: [{ name: 'body', model: body.model, at }, ...limbs],
+  };
 };
 
 /** Where the first-person view hangs an arm, in the eye's frame (`src/render/hands.ts`, `HeldItems`). */
@@ -130,11 +146,85 @@ export interface PlayerFigurePose {
 }
 
 type StancePose = FigureDef['stancePoses']['prone'];
-const STANDING_POSE: StancePose = { hipDropMetres: 0, torsoForwardDegrees: 0, legsForwardDegrees: 0 };
+const STANDING_POSE: StancePose = {
+  hipDropMetres: 0,
+  torsoForwardDegrees: 0,
+  legsForwardDegrees: 0,
+  kneeBendDegrees: 0,
+  ankleDegrees: 0,
+  armsForwardDegrees: 0,
+  elbowBendDegrees: 0,
+  headUpDegrees: 0,
+};
 const STANCE_POSE_KEYS = Object.keys(STANDING_POSE) as (keyof StancePose)[];
 const RADIANS = Math.PI / 180;
-const isArm = (name: FigurePartName): boolean => name === 'leftArm' || name === 'rightArm';
-const isLeg = (name: FigurePartName): boolean => name === 'leftLeg' || name === 'rightLeg';
+const isArm = (name: string): boolean => name === 'leftArm' || name === 'rightArm';
+const isLeg = (name: string): boolean => name === 'leftLeg' || name === 'rightLeg';
+
+/**
+ * The pivots inside the drawn parts, by name, so tests and later poses find them without knowing the tree. A stance
+ * turns the head, knee, ankle and elbow; the wrist carries the hand for poses that turn it.
+ */
+export const FIGURE_PIVOT: Readonly<Record<'head' | LegSegment | 'elbow' | 'wrist', string>> = {
+  head: 'figure-head',
+  shin: 'leg-knee',
+  foot: 'leg-ankle',
+  elbow: 'figure-elbow',
+  wrist: 'figure-wrist',
+};
+
+/** Model parts turned together: the name their pivot takes, the parts, and the anchor they turn about. */
+interface PivotedParts {
+  name: string;
+  parts: readonly string[];
+  pivot: string;
+}
+
+/** Which pivot chain a drawn part carries. */
+type PivotedKind = 'body' | 'leg' | 'arm';
+const pivotedKind = (name: FigurePartName): PivotedKind => {
+  if (isArm(name)) {
+    return 'arm';
+  }
+  return isLeg(name) ? 'leg' : 'body';
+};
+
+/**
+ * Hangs a model's parts from pivots at their joints, each pivot inside the one before, so turning one turns the parts
+ * after it. The parts keep their exported placement, so with every pivot at rest the model draws unchanged.
+ */
+const hangFromPivots = (
+  scene: Object3D,
+  anchors: Readonly<Record<string, Vec3>>,
+  chain: readonly PivotedParts[],
+): Object3D[] => {
+  scene.updateMatrixWorld(true);
+  const nodes = chain.map(({ parts }) =>
+    parts.map((part) => {
+      let node: Object3D | undefined;
+      scene.traverse((object) => {
+        node ??= object.userData.part === part ? object : undefined;
+      });
+      if (!node) {
+        throw new Error(`Figure model has no part "${part}"`);
+      }
+      return node;
+    }),
+  );
+  let parent = scene;
+  return chain.map(({ name, pivot: anchor }, index) => {
+    const pivot = new Object3D();
+    pivot.name = name;
+    pivot.position.set(...anchors[anchor]!);
+    scene.add(pivot);
+    parent.attach(pivot);
+    for (const node of nodes[index]!) {
+      pivot.attach(node);
+    }
+    parent = pivot;
+    return pivot;
+  });
+};
 
 /**
  * The player's world body from its figure row, each part drawn once its model loads. The body, head included,
@@ -145,6 +235,10 @@ export class PlayerMeshes {
   private readonly layout: PlayerFigureLayout;
   /** Each part's drawn model, once it has loaded. */
   private readonly drawn = new Map<FigurePart, Group>();
+  /** Each drawn part's pivots: the body's head, each leg's knee then ankle, each arm's elbow then wrist. */
+  private readonly pivots = new Map<FigurePart, Object3D[]>();
+  private readonly modelDefs: ReadonlyMap<string, Pick<ModelDef, 'anchors'>>;
+  private readonly pivotedParts: Readonly<Record<PivotedKind, readonly PivotedParts[]>>;
   private attachments: Group[] = [];
   private wornVersion = '';
   private readonly models: ModelLibrary;
@@ -166,6 +260,25 @@ export class PlayerMeshes {
     models: ModelLibrary,
   ) {
     this.layout = playerFigureLayout(figure, modelDefs);
+    this.modelDefs = modelDefs;
+    const { body, legRig, armRig } = figure;
+    this.pivotedParts = {
+      body: [{ name: FIGURE_PIVOT.head, parts: [body.head.part], pivot: body.head.pivot }],
+      leg: LEG_SEGMENTS.map((segment) => ({
+        name: FIGURE_PIVOT[segment],
+        parts: [legRig[segment].part],
+        pivot: legRig[segment].pivot,
+      })),
+      // The body arm bends on the same parts and pivots as the first-person rig, so both views share one arm.
+      arm: [
+        { name: FIGURE_PIVOT.elbow, parts: [armRig.fore.part], pivot: armRig.fore.pivot },
+        {
+          name: FIGURE_PIVOT.wrist,
+          parts: [armRig.hand.part, armRig.fingers.part, armRig.thumb.part],
+          pivot: armRig.hand.pivot,
+        },
+      ],
+    };
     this.stancePoses = figure.stancePoses;
     this.gait = figure.gait;
     this.models = models;
@@ -185,6 +298,19 @@ export class PlayerMeshes {
     this.placement.yaw = pose.yaw;
     this.placement.thirdPerson = thirdPerson;
     this.syncModels();
+    const { kneeBendDegrees, ankleDegrees, headUpDegrees, elbowBendDegrees } = this.shownPose;
+    // Models face +z, so turning about +x swings a shin back and tips a toe or the face down; a forearm bends forward
+    // the other way. A stance leaves the wrist alone.
+    const turns: Readonly<Record<PivotedKind, readonly number[]>> = {
+      body: [-headUpDegrees],
+      leg: [kneeBendDegrees, -ankleDegrees],
+      arm: [-elbowBendDegrees],
+    };
+    for (const [part, pivots] of this.pivots) {
+      turns[pivotedKind(part.name)].forEach((degrees, index) => {
+        pivots[index]!.rotation.x = degrees * RADIANS;
+      });
+    }
     for (const [part, drawn] of this.drawn) {
       // In first person the view draws both arms, gripping or as fists (`HeldItems`), so the body's arms would double them.
       drawn.visible = thirdPerson || !isArm(part.name);
@@ -194,7 +320,7 @@ export class PlayerMeshes {
       drawn.rotateY(Math.PI); // Models face +z and the figure faces -z.
     }
     if (this.attachments.length > 0) {
-      this.posePoint(FIGURE_BOXES.head.at, 'body', pose);
+      this.posePoint(FIGURE_BOXES.head.at, 'head', pose);
     }
     for (const attachment of this.attachments) {
       // Worn head gear is drawn from inside in first person, so the body copy shows only in third person.
@@ -212,7 +338,10 @@ export class PlayerMeshes {
       }
       const model = new Group();
       model.name = `figure-${part.name}`;
-      model.add(this.models.part(part.model)!);
+      const scene = this.models.part(part.model)!;
+      const chain = this.pivotedParts[pivotedKind(part.name)];
+      this.pivots.set(part, hangFromPivots(scene, this.modelDefs.get(part.model)?.anchors ?? {}, chain));
+      model.add(scene);
       model.traverse((object) => object.layers.set(PLAYER_FIGURE_LAYER));
       this.drawn.set(part, model);
       this.group.add(castsAndReceives(model));
@@ -277,16 +406,28 @@ export class PlayerMeshes {
     }
   }
 
-  /** Puts `dummy` at figure-frame point `at`, posed as part `name`: a limb swings about its joint, all lean. */
-  private posePoint(at: Vec3, name: FigurePartName, pose: PlayerFigurePose): void {
+  /**
+   * Puts `dummy` at figure-frame point `at`, posed as part `name`: a limb swings about its joint and the head tips about
+   * its pivot, then all lean.
+   */
+  private posePoint(at: Vec3, name: FigurePartName | 'head', pose: PlayerFigurePose): void {
     const { yaw, stepOffset, gaitPhase, moving } = pose;
     const hip = this.layout.hipHeight;
-    const stride = moving ? this.gaitSwing(name, gaitPhase) : 0;
-    const [, pivotY, pivotZ] = name === 'body' ? [0, hip, 0] : this.layout.joints[FIGURE_LIMB_JOINTS[name]];
+    const { hipDropMetres, torsoForwardDegrees, legsForwardDegrees, armsForwardDegrees, headUpDegrees } =
+      this.shownPose;
+    let pivot: Vec3 = [0, hip, 0];
+    let stride = 0;
+    if (name === 'head') {
+      pivot = this.layout.head;
+      stride = headUpDegrees * RADIANS;
+    } else if (name !== 'body') {
+      pivot = this.layout.joints[FIGURE_LIMB_JOINTS[name]];
+      stride = (moving ? this.gaitSwing(name, gaitPhase) : 0) + (isArm(name) ? armsForwardDegrees * RADIANS : 0);
+    }
+    const [, pivotY, pivotZ] = pivot;
     const localY = pivotY + (at[1] - pivotY) * Math.cos(stride) - (at[2] - pivotZ) * Math.sin(stride);
     const localZ = pivotZ + (at[1] - pivotY) * Math.sin(stride) + (at[2] - pivotZ) * Math.cos(stride);
     // The stance swings the legs and the upper body about the hip, then lowers the hip.
-    const { hipDropMetres, torsoForwardDegrees, legsForwardDegrees } = this.shownPose;
     const swing = (isLeg(name) ? legsForwardDegrees : -torsoForwardDegrees) * RADIANS;
     const aboveHip = localY - hip;
     this.localPosition[0] = at[0];

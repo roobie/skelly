@@ -72,7 +72,7 @@ describe('owned hatch/ladder portal fixtures', () => {
       seed: 73,
       shape: terrainShapeOf(registry),
       scale,
-      blocks: { grass: solidId, dirt: solidId, rock: solidId, sand: solidId },
+      blocks: { grass: solidId, dirt: solidId, rock: solidId, sand: solidId, water: solidId },
       surface: { height: () => floor, top: () => solidId },
       stamp: (chunk: Parameters<typeof stampPlacement>[0]) => site.stamp(chunk),
     };

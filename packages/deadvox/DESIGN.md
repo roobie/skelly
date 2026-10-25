@@ -18,6 +18,7 @@ read_if:
   - you're choosing world scale, view distance, performance targets or the default render scale
   - you change player movement, load or aim tuning, saved aim admission, or what crouching or lying prone lets the player fit through
   - you're changing world block shapes, wire fences or their supports, sight opacity, reach through obstacles, sound blocking or slab geometry
+  - you change standing water, basins, the flooded-lot check or how liquids are meshed
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry, push or drag, or how stacks settle
   - you're changing the rules for time, survival, light or zombies
@@ -198,6 +199,16 @@ ceiling the body fits under. Visual blending hides the change of shape, but must
 not delay the eye used by sight and collision. See
 `src/content/base/figures-player.jsonnet`, `stancePoses`, and
 `src/render/playerFigure.ts`, `PlayerMeshes`.
+
+The crouch must read as a crouch to anyone watching the avatar, not as sitting:
+knees bent, feet flat on the ground under the body, torso leaning forward and
+head up looking ahead. The arms hold a guard for balance, elbows bent with the
+forearms raised and the hands in front, because arms hanging straight down read
+as a gorilla's. A leg swung forward whole cannot do that, so the leg model is
+split at the knee and ankle, the bust at the neck, and the body arm bends at the
+elbow on the arm rig's parts; each stance pose turns those joints. See
+`src/content/base/figures-player.jsonnet`, `legRig`, and
+`test/playerFigure.test.ts`, "crouches on bent knees: feet flat behind the knees, knees below the hips, torso forward, head up, arms in guard".
 
 The FOB's east-wall passage is sized so a crouched player fits but a standing
 player does not. It is a separate low route from the guarded north entrance and
@@ -620,6 +631,56 @@ not in authored layout geometry. See `AuthoredSite` in
 Small structures use authored templates because they are reviewable and
 content validation can check them. Keep template representation and import
 mechanics in the implementation rather than repeating the format here.
+
+### Water
+
+Standing water is a block, written into the grid where a site layout's water rows put it.
+Movement, sight, aim, picking, the mesher and saved edits all key off the grid, so they treat
+water through the queries they already have; a separate water field would need its own query
+in each. Water is static: a block dug beside a lake stays dry, and a block placed in the water
+replaces it. Flow, rivers and tides would need a field this design does not promise. Only
+authored sites have water; generated terrain has none. See `src/core/worldgen.ts`, `Surface`,
+and `src/core/authoredSite.ts`, `AuthoredSite`.
+
+Lakes are map features of any size. The haven's lake is hundreds of metres across and lakes
+elsewhere on a map can be much larger, so no schema field, fill rule, generation step or
+validation check caps a water body, and the debug lake is built at the haven's scale so its look
+is judged at the size that ships. Work that could grow with a lake's area stays bounded instead:
+validation searches a polygon's cells from coarse to fine and stops at the first one that holds
+water, and the shore's per-column cache is cleared when full. See `src/core/authoredLayout.ts`,
+`coarseToFineCentres`, and `src/core/authoredSite.ts`, `siteWater`.
+
+A water row's level is the water's top face, the plane the eye breaks when surfacing, while a
+layout's `ground` is the lower face of the top ground block. The ground names the block an author
+places and the level names the plane an author sees and a swimmer floats at; the two coincide only
+where there is no water. A column holds water where its bed's top face lies below the level, so
+the shore falls out of the terrain, not out of the polygon. See `src/core/worldgen.ts`,
+`generateChunk`.
+
+A basin lowers the profile by the deepest basin over a point, as hills raise it by the highest
+hill, so overlaps stay predictable and a basin on a hill flank cuts a tarn. See
+`src/core/authoredTerrain.mjs`, `profileHeight`. The bed under water and a shore ring around it
+are sand and grow no trees, because a grass lake bed reads as a hole in a lawn.
+
+Validation rejects unintended inundation instead of clamping, because a silently lowered level or
+raised lot would hide the author's mistake. A water row whose bed reaches the level everywhere
+holds no water, and a lot whose apron stands below the level inside the polygon is flooded unless
+the lot says `overWater`. Overlap alone is allowed, because a shore lot whose apron meets the
+water at its own floor is dry. `overWater` is the seam for constructions over water; a flagged
+lot still raises the ground under its apron to its floor, so it stands on a plinth, not on legs.
+See `src/core/authoredLayout.ts`, `waterIssues`, and `src/core/authoredTerrain.mjs`,
+`layoutHeight`.
+
+The renderer must keep what lies under water. A block's `liquid` flag is its own predicate, not
+"not solid", because air, wire mesh and open doors are not solid and none of them is water. Every
+input that decides what is drawn treats a liquid as open, like air: the streamer's occluder
+table, which feeds chunk enclosure and wide occlusion, and the mesher's face and corner-AO tests.
+Otherwise a lake would hide its bed and walls, darken the bed, and leave a camera under it looking
+through a hollow shell at the sky. A liquid's face is hidden against the same liquid and against a
+solid. Chunk materials draw front faces only, so the mesher adds a downward copy of each liquid
+top face for a camera under it; a double-sided material would double the cost of every terrain
+face. See `src/game/streamer.ts`, `Streamer`; `src/core/world.ts`, `isEnclosed`; and
+`src/core/mesher.ts`, `solid`, `faceKey` and `emitSolidQuad`.
 
 ### Gauntlet
 
