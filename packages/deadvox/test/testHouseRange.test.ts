@@ -154,6 +154,7 @@ const buildRangeWalkFixture = () => {
       dirt: registry.blockIds.get('dirt')!,
       rock: registry.blockIds.get('stone')!,
       sand: registry.blockIds.get('sand')!,
+      water: registry.blockIds.get('water')!,
     },
     surface: site.surface,
     stamp: (chunk) => site.stamp(chunk),

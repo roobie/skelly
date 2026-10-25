@@ -33,7 +33,13 @@ export const createHeadlessShamblerWorld = (seed: number, registry: Registry): H
   const world = new World();
   const entities = new BlockEntities(registry);
   const block = (id: string): number => registry.blockIds.get(id)!;
-  const blocks = { grass: block('grass'), dirt: block('dirt'), rock: block('stone'), sand: block('sand') };
+  const blocks = {
+    grass: block('grass'),
+    dirt: block('dirt'),
+    rock: block('stone'),
+    sand: block('sand'),
+    water: block('water'),
+  };
   const { surface } = site;
   const shape = terrainShapeOf(registry);
   const stamp = (chunk: Parameters<Forest['stamp']>[0]) => site.stamp(chunk);

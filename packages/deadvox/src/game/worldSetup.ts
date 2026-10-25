@@ -7,7 +7,7 @@ import { CHUNK, toChunk, type Vec3 } from '../core/coords.ts';
 import { Forest } from '../core/forest.ts';
 import { GauntletSite } from '../core/gauntlet.ts';
 import { type LootPointSource, type LootSpawnPoint, lootPointsByColumn } from '../core/loot.ts';
-import { blockPatterns, blockWeatherability } from '../core/meshInput.ts';
+import { blockLiquids, blockPatterns, blockWeatherability } from '../core/meshInput.ts';
 import { HandlingRange } from '../core/range.ts';
 import type { Scale } from '../core/scale.ts';
 import type { ScenarioKind } from '../core/scenarioKinds.ts';
@@ -216,6 +216,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     shape,
     colors: blockColors(registry),
     wireMeshes: registry.blocks.map((block) => block.wireMesh),
+    liquids: blockLiquids(registry),
     fencePosts: registry.blocks.map((block) => block.fencePosts),
     patterns: blockPatterns(registry),
     weatherable: blockWeatherability(registry),

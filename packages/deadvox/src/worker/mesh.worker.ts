@@ -12,10 +12,11 @@ let fencePosts: FencePostDefs = [];
 let colors: Uint8Array = new Uint8Array(0);
 let patterns: Uint8Array = new Uint8Array(0);
 let weatherable: Uint8Array = new Uint8Array(0);
+let liquids: Uint8Array = new Uint8Array(0);
 
 globalThis.onmessage = ({ data: msg }: MessageEvent<ToMesher>) => {
   if (msg.type === 'init') {
-    ({ colors, patterns, weatherable, wireMeshes, fencePosts } = msg);
+    ({ colors, patterns, weatherable, wireMeshes, liquids, fencePosts } = msg);
     return;
   }
   if (msg.type === 'sky') {
@@ -33,7 +34,7 @@ globalThis.onmessage = ({ data: msg }: MessageEvent<ToMesher>) => {
   const { key, version, padded, wide } = msg;
   const start = performance.now();
   const origin = key.split(',').map((coordinate) => Number(coordinate) * CHUNK) as Vec3;
-  const mesh = buildMesh(padded, colors, { patterns, wide, weatherable, wireMeshes, fencePosts, origin });
+  const mesh = buildMesh(padded, colors, { patterns, wide, weatherable, wireMeshes, liquids, fencePosts, origin });
   const reply: FromMesher = { type: 'mesh', key, version, mesh, ms: performance.now() - start };
   postMessage(reply, {
     transfer: [

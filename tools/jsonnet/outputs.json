@@ -233,6 +233,10 @@
       "output": "packages/deadvox/src/content/base/layouts-voice-size.json"
     },
     {
+      "source": "packages/deadvox/src/content/base/layouts-water.jsonnet",
+      "output": "packages/deadvox/src/content/base/layouts-water.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/locks.jsonnet",
       "output": "packages/deadvox/src/content/base/locks.json"
     },

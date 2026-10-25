@@ -1,14 +1,21 @@
 import type { BoxSolid, ExtrudedPolygonSolid } from '@skelly/engine/shapes/solid.ts';
-import { parse, strictObject } from 'valibot';
+import { parse, picklist, strictObject } from 'valibot';
 import { block, slab } from './body.ts';
 import { positive } from './shapes.ts';
 
-// The player's head and torso as one model: origin at the pelvis base on the centre line, y up, face toward +z.
-// Four stacked slabs taper hips to shoulders, a deltoid cap is centred on each shoulder joint, and the head stands
-// on the neck. The model's anchors name solids here, so a joint follows the solid that seats its limb.
+/** The bust's segments: the head is its own part so a stance can lift it about the neck while the torso leans. */
+const BUST_SEGMENTS = ['torso', 'head'] as const;
+
+// The player's head and torso: origin at the pelvis base on the centre line, y up, face toward +z. Four stacked
+// slabs taper hips to shoulders, a deltoid cap is centred on each shoulder joint, and the head stands on the neck.
+// The head segment is drawn about the neck's top, the joint it turns about. The model's anchors name solids here, so
+// a joint follows the solid that seats its limb.
 export const bust = (params: Readonly<Record<string, string>>): (ExtrudedPolygonSolid | BoxSolid)[] => {
   const d = parse(
     strictObject({
+      segment: picklist(BUST_SEGMENTS),
+      /** How far the neck reaches up into the head; its top is the head's joint. */
+      neckOverlap: positive,
       pelvisWidth: positive,
       pelvisDepth: positive,
       pelvisHeight: positive,
@@ -44,6 +51,8 @@ export const bust = (params: Readonly<Record<string, string>>): (ExtrudedPolygon
   const halfZ = d.headDepth / 2;
   const jawHalfX = halfX * 0.8;
   const jawHalfZ = halfZ * 0.84;
+  const origin = d.segment === 'head' ? crown + d.neckOverlap : 0;
+  const ys = (bottom: number, topY: number): [number, number] => [bottom - origin, topY - origin];
   const eyeY = crown + d.headHeight * 0.58;
   const deltoidX = d.chestWidth / 2 + d.shoulderWidth / 2 - 0.012;
   const deltoidY = shoulders - d.shoulderHeight / 2 - 0.01;
@@ -52,7 +61,7 @@ export const bust = (params: Readonly<Record<string, string>>): (ExtrudedPolygon
       id,
       'shirt',
       [side * deltoidX - d.shoulderWidth / 2, side * deltoidX + d.shoulderWidth / 2],
-      [deltoidY - d.shoulderHeight / 2, deltoidY + d.shoulderHeight / 2],
+      ys(deltoidY - d.shoulderHeight / 2, deltoidY + d.shoulderHeight / 2),
       [-d.shoulderDepth / 2, d.shoulderDepth / 2],
     );
   const eye = (id: string, side: 1 | -1) =>
@@ -60,7 +69,7 @@ export const bust = (params: Readonly<Record<string, string>>): (ExtrudedPolygon
       id,
       'eye',
       [Math.min(side * halfX * 0.3, side * halfX * 0.62), Math.max(side * halfX * 0.3, side * halfX * 0.62)],
-      [eyeY - 0.011, eyeY + 0.011],
+      ys(eyeY - 0.011, eyeY + 0.011),
       [halfZ - 0.002, halfZ + 0.003],
     );
   const ear = (id: string, side: 1 | -1) =>
@@ -68,24 +77,32 @@ export const bust = (params: Readonly<Record<string, string>>): (ExtrudedPolygon
       id,
       'skin',
       [side > 0 ? halfX - 0.002 : -halfX - 0.012, side > 0 ? halfX + 0.012 : -halfX + 0.002],
-      [eyeY - 0.04, eyeY + 0.02],
+      ys(eyeY - 0.04, eyeY + 0.02),
       [-0.025, 0.02],
     );
+  if (d.segment === 'torso') {
+    return [
+      slab('pelvis', 'pants', ys(0, waist), { halfX: d.pelvisWidth / 2, halfZ: d.pelvisDepth / 2, chamfer: 0.05 }),
+      slab('waist', 'shirt', ys(waist, ribs), { halfX: d.waistWidth / 2, halfZ: d.waistDepth / 2, chamfer: 0.05 }),
+      slab('ribs', 'shirt', ys(ribs, chest), { halfX: d.ribWidth / 2, halfZ: d.ribDepth / 2, chamfer: 0.05 }),
+      slab('chest', 'shirt', ys(chest, shoulders), { halfX: d.chestWidth / 2, halfZ: d.chestDepth / 2, chamfer: 0.06 }),
+      deltoid('shoulder-left', 1),
+      deltoid('shoulder-right', -1),
+      slab('collar', 'shirt', ys(shoulders - 0.012, shoulders + 0.012), {
+        halfX: d.neckWidth / 2 + 0.022,
+        halfZ: d.neckWidth / 2 + 0.026,
+        chamfer: 0.03,
+      }),
+      slab('neck', 'skin', ys(shoulders, crown + d.neckOverlap), {
+        halfX: d.neckWidth / 2,
+        halfZ: d.neckWidth / 2,
+        chamfer: 0.03,
+      }),
+    ];
+  }
   return [
-    slab('pelvis', 'pants', [0, waist], { halfX: d.pelvisWidth / 2, halfZ: d.pelvisDepth / 2, chamfer: 0.05 }),
-    slab('waist', 'shirt', [waist, ribs], { halfX: d.waistWidth / 2, halfZ: d.waistDepth / 2, chamfer: 0.05 }),
-    slab('ribs', 'shirt', [ribs, chest], { halfX: d.ribWidth / 2, halfZ: d.ribDepth / 2, chamfer: 0.05 }),
-    slab('chest', 'shirt', [chest, shoulders], { halfX: d.chestWidth / 2, halfZ: d.chestDepth / 2, chamfer: 0.06 }),
-    deltoid('shoulder-left', 1),
-    deltoid('shoulder-right', -1),
-    slab('collar', 'shirt', [shoulders - 0.012, shoulders + 0.012], {
-      halfX: d.neckWidth / 2 + 0.022,
-      halfZ: d.neckWidth / 2 + 0.026,
-      chamfer: 0.03,
-    }),
-    slab('neck', 'skin', [shoulders, crown + 0.02], { halfX: d.neckWidth / 2, halfZ: d.neckWidth / 2, chamfer: 0.03 }),
-    slab('skull', 'skin', [crown + d.jawHeight, top], { halfX, halfZ, chamfer: 0.05 }),
-    slab('jaw', 'skin', [crown, crown + d.jawHeight], {
+    slab('skull', 'skin', ys(crown + d.jawHeight, top), { halfX, halfZ, chamfer: 0.05 }),
+    slab('jaw', 'skin', ys(crown, crown + d.jawHeight), {
       halfX: jawHalfX,
       halfZ: jawHalfZ,
       chamfer: 0.04,
@@ -93,47 +110,35 @@ export const bust = (params: Readonly<Record<string, string>>): (ExtrudedPolygon
     }),
     ear('left-ear', 1),
     ear('right-ear', -1),
-    slab('crown', 'hair', [top - d.hairCover, top + 0.006], {
+    slab('crown', 'hair', ys(top - d.hairCover, top + 0.006), {
       halfX: halfX + 0.004,
       halfZ: halfZ + 0.004,
       chamfer: 0.05,
     }),
-    block(
-      'back-hair',
-      'hair',
-      [-halfX - 0.004, halfX + 0.004],
-      [crown + d.jawHeight + 0.02, top],
-      [-halfZ - 0.004, -halfZ + d.hairCover * 0.9],
-    ),
-    block(
-      'side-hair-left',
-      'hair',
-      [halfX - 0.004, halfX + 0.005],
-      [eyeY + 0.02, top],
-      [-halfZ + d.hairCover * 0.9, 0],
-    ),
-    block(
-      'side-hair-right',
-      'hair',
-      [-halfX - 0.005, -halfX + 0.004],
-      [eyeY + 0.02, top],
-      [-halfZ + d.hairCover * 0.9, 0],
-    ),
-    block(
-      'fringe',
-      'hair',
-      [-halfX - 0.004, halfX + 0.004],
-      [top - d.hairCover * 0.85, top],
-      [halfZ - 0.03, halfZ + 0.004],
-    ),
+    block('back-hair', 'hair', [-halfX - 0.004, halfX + 0.004], ys(crown + d.jawHeight + 0.02, top), [
+      -halfZ - 0.004,
+      -halfZ + d.hairCover * 0.9,
+    ]),
+    block('side-hair-left', 'hair', [halfX - 0.004, halfX + 0.005], ys(eyeY + 0.02, top), [
+      -halfZ + d.hairCover * 0.9,
+      0,
+    ]),
+    block('side-hair-right', 'hair', [-halfX - 0.005, -halfX + 0.004], ys(eyeY + 0.02, top), [
+      -halfZ + d.hairCover * 0.9,
+      0,
+    ]),
+    block('fringe', 'hair', [-halfX - 0.004, halfX + 0.004], ys(top - d.hairCover * 0.85, top), [
+      halfZ - 0.03,
+      halfZ + 0.004,
+    ]),
     eye('left-eye', 1),
     eye('right-eye', -1),
-    block('nose', 'skin', [-0.011, 0.011], [eyeY - 0.05, eyeY - 0.004], [halfZ - 0.002, halfZ + 0.016]),
+    block('nose', 'skin', [-0.011, 0.011], ys(eyeY - 0.05, eyeY - 0.004), [halfZ - 0.002, halfZ + 0.016]),
     block(
       'mouth',
       'mouth',
       [-jawHalfX * 0.42, jawHalfX * 0.42],
-      [crown + d.jawHeight * 0.5, crown + d.jawHeight * 0.72],
+      ys(crown + d.jawHeight * 0.5, crown + d.jawHeight * 0.72),
       [jawHalfZ - halfZ * 0.04 - 0.002, jawHalfZ - halfZ * 0.04 + 0.003],
     ),
   ];
