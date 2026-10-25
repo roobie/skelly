@@ -9,7 +9,7 @@ read_if:
 
 ## Purpose and boundary
 
-Trace before modelling so a plausible generic rifle does not become the shape reference for its own correction. The FAL is an authored GAT look-alike replacing the legacy battle-rifle archetype, not a new shared generator family. A close resemblance is preferred; exact variant reproduction is not required. This study establishes an appearance reference, not manufacturing geometry or a claim that geometry, handling or exports have been implemented. Folding charging-handle motion remains outside this study (#648); working stock folding is in scope.
+Trace before modelling so a plausible generic rifle does not become the shape reference for its own correction. The FAL is an authored GAT look-alike replacing the legacy battle-rifle archetype (`../../things/README.md`, "Rules"), not a new shared generator family. A close resemblance is preferred; exact variant reproduction is not required. This study establishes an appearance reference, not manufacturing geometry or a claim that geometry, handling or exports have been implemented. Folding charging-handle motion remains outside this study (#648); working stock folding is in scope.
 
 The supplied photograph and photo overlays stay outside the repository, like the AK reference (`../PROJECT.md`, "Design and variants"). The visible-edge transcription is [`../references/fal-profile.svg`](../references/fal-profile.svg); its path IDs identify the measured regions. Coordinates are original-image pixels, origin top left, muzzle right. Open paths deliberately leave obscured boundaries unresolved. Do not infer depth, hidden interfaces or internal action dimensions from this side profile.
 
@@ -73,7 +73,7 @@ Compare the **loaded curated design**, not a fresh random battle-rifle: `../desi
 
 ## Settled authoring scope
 
-The target replaces the legacy battle rifle as an authored design; it need not create a reusable Para family. Model working stock folding, including hinge, clearance and export, rather than a decorative static folding-stock outline. Include handguard slots, magazine ribs, carry handle, charging handle and sling loop with their proper part ownership. Keep the photo iron sights and support an optional optic as a real fitted attachment. Use clean dark metal and polymer: incidental tape and wear are not the target finish.
+The target replaces the legacy battle rifle as an authored design. Its stock, handguard, receiver and iron sights are authored for this gun, not drawn from a shared Para family; reuse is a later choice when another design needs it. Model working stock folding, including hinge, clearance and export, rather than a decorative static folding-stock outline. Include handguard slots, magazine ribs, carry handle, charging handle and sling loop with their proper part ownership. Keep the photo iron sights and support an optional optic as a real fitted attachment. Use clean dark metal and polymer: incidental tape and wear are not the target finish.
 
 ## Detail references and remaining limits
 

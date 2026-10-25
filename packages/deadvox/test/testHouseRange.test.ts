@@ -9,9 +9,10 @@ import { magazineFits, magazineSpec, magazineWellCalibre } from '../src/core/mag
 import { stepBody } from '../src/core/physics.ts';
 import { HandlingRange } from '../src/core/range.ts';
 import { furnitureDistance, reachTuning } from '../src/core/reach.ts';
+import { rectsOverlap } from '../src/core/site.ts';
 import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { World } from '../src/core/world.ts';
-import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
+import { generateColumn, type Terrain, terrainHeight } from '../src/core/worldgen.ts';
 import { ammoMatchesCalibre, firearmModelForType } from '../src/game/firearmHandling.ts';
 import { INPUT_BINDINGS } from '../src/game/inputBindings.ts';
 import { isTestHouseRangeStockItem, testHouseRangeSupply } from '../src/game/testHouseRange.ts';
@@ -231,6 +232,72 @@ const movePlayerTo = (
 };
 
 describe('the debug test-house range', () => {
+  const vegetationSite = (seed: number) => {
+    const config = makeConfig(seed, 64);
+    config.site = 'testHouse';
+    config.debug = true;
+    const site = buildDebugTestHouseSite(
+      config,
+      BUNDLED_CONTENT.registry,
+      testHouseScene(config, BUNDLED_CONTENT.registry),
+    );
+    if (!site?.catalogue) {
+      throw new Error('debug vegetation fixture needs the range and catalogue');
+    }
+    return { config, site, catalogue: site.catalogue };
+  };
+
+  it.each([1, 9])('keeps authored trees clear of debug range and catalogue footprints (seed %i)', (seed) => {
+    const { site, catalogue } = vegetationSite(seed);
+    expect(site.house.trees.length).toBeGreaterThan(0);
+    for (const area of [site.range.rect, catalogue.rect]) {
+      expect(site.house.trees.filter((tree) => rectsOverlap(tree.bounds, area)).map((tree) => tree.origin)).toEqual([]);
+    }
+  });
+
+  it.each([1, 9])('grounds every authored tree on the debug surface (seed %i)', (seed) => {
+    const { config, site } = vegetationSite(seed);
+    expect(site.house.trees.length).toBeGreaterThan(0);
+    const shape = terrainShapeOf(BUNDLED_CONTENT.registry);
+    const floating = site.house.trees.filter(
+      ({ origin: [x, y, z] }) => y !== site.surface.height(x, z, terrainHeight(seed, shape, config.scale, x, z)) + 1,
+    );
+    expect(floating.map((tree) => tree.origin)).toEqual([]);
+  });
+
+  it('keeps the stocked rack inside the startup ring when landscape bounds expand', () => {
+    const config = makeConfig(13, 64);
+    config.site = 'testHouse';
+    config.debug = true;
+    const { registry } = BUNDLED_CONTENT;
+    const site = new DebugTestHouseSite(config, registry, testHouseScene(config, registry));
+    const racks = rangeFurnitureFor(site).filter(({ loot }) => loot.length > 0);
+    expect(racks.length).toBeGreaterThan(0);
+    const [sx, , sz] = site.spawn.pos.map((value) => value / config.scale.blockSize);
+    for (const { spec } of racks) {
+      const distance = Math.max(
+        Math.abs(toChunk(spec.pos[0]) - toChunk(sx!)),
+        Math.abs(toChunk(spec.pos[2]) - toChunk(sz!)),
+      );
+      expect(distance).toBeLessThanOrEqual(config.readyRadiusChunks);
+    }
+  });
+
+  it('preserves authored lake water in debug mode', () => {
+    const config = makeConfig(13, 64);
+    config.site = 'testHouse';
+    config.debug = true;
+    const { registry } = BUNDLED_CONTENT;
+    const house = testHouseScene(config, registry);
+    const site = new DebugTestHouseSite(config, registry, house);
+    const basins = registry.layouts.get(config.site)!.terrain.filter((feature) => feature.kind === 'basin');
+    expect(basins.length).toBeGreaterThan(0);
+    const samples = basins.map(({ centre }) => centre.map((value) => Math.floor(value / config.scale.blockSize)));
+    const water = samples.map(([x, z]) => house.surface.water?.(x!, z!));
+    expect(water.some((column) => column !== undefined)).toBe(true);
+    expect(samples.map(([x, z]) => site.surface.water?.(x!, z!))).toEqual(water);
+  });
+
   it('describes debug rack stock as fixture supply rather than world economy', () => {
     const { registry, firearm, ammo, box } = withRangeStockFixtures();
     for (const type of [firearm, ammo, box]) {

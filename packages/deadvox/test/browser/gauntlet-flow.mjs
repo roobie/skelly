@@ -92,14 +92,32 @@ export const gauntletFlow = async (browser, baseUrl) => {
         !globalThis.gauntletWitness.input.menuPointer &&
         !globalThis.gauntletWitness.session.sim.paused,
     );
+    await pressAction(page, 'debug.panel-toggle');
+    const releaseDebugGate = await holdAction(page, 'debug.gate');
+    const toolsHeader = page.locator('[data-group="tools"] .debug-group-header');
+    if ((await toolsHeader.getAttribute('aria-expanded')) === 'false') {
+      await toolsHeader.click();
+    }
+    const kitControl = page.locator('[data-group="tools"] #debug-kit-overlay');
+    await kitControl.waitFor();
+    if ((await kitControl.evaluate((node) => getComputedStyle(node).position)) === 'fixed') {
+      throw new Error('Debug kit control is a fixed overlay again');
+    }
+    await kitControl.locator('button').evaluate((button) => button.scrollIntoView({ block: 'center' }));
+    await kitControl.locator('button').evaluate((button) => {
+      const { input } = globalThis.gauntletWitness;
+      const bounds = button.getBoundingClientRect();
+      input.moveMenuCursor(
+        bounds.left + bounds.width / 2 - input.cursorX,
+        bounds.top + bounds.height / 2 - input.cursorY,
+      );
+      button.click();
+    });
+    await releaseDebugGate();
     await page.evaluate(() => {
       const w = globalThis.gauntletWitness;
       const { engine } = w;
       const overlay = document.querySelector('#debug-kit-overlay');
-      if (!overlay) {
-        throw new Error('Debug kit overlay missing');
-      }
-      overlay.querySelector('button').click();
       const placements = engine.site.authoredPlacements.filter((item) => item.template.ownership);
       const selected = placements.findIndex((item) => item.template.reserved.includes(1));
       if (selected < 0) {
@@ -118,12 +136,10 @@ export const gauntletFlow = async (browser, baseUrl) => {
       layer.dispatchEvent(new Event('change'));
       const canvas = overlay.querySelector('canvas');
       const rect = canvas.getBoundingClientRect();
-      canvas.dispatchEvent(
-        new PointerEvent('pointermove', {
-          clientX: rect.left + ((x + 0.5) * rect.width) / template.size[0],
-          clientY: rect.top + ((z + 0.5) * rect.height) / template.size[2],
-        }),
-      );
+      const cellX = rect.left + ((x + 0.5) * rect.width) / template.size[0];
+      const cellY = rect.top + ((z + 0.5) * rect.height) / template.size[2];
+      w.input.moveMenuCursor(cellX - w.input.cursorX, cellY - w.input.cursorY);
+      canvas.dispatchEvent(new PointerEvent('pointermove', { clientX: cellX, clientY: cellY }));
       const detail = overlay.querySelector('pre').textContent;
       const record = template.provenance[index];
       if (!record) {
@@ -137,8 +153,8 @@ export const gauntletFlow = async (browser, baseUrl) => {
       if (!detail.includes('reserved void yes')) {
         throw new Error('Overlay lost reserved void');
       }
-      overlay.querySelector('button').click();
     });
+    await pressAction(page, 'debug.panel-toggle');
     await page.evaluate(async () => {
       const w = globalThis.gauntletWitness;
       const { engine, session, input } = w;

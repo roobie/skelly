@@ -463,6 +463,7 @@ const panelTemplate = ({
         <output aria-live="polite">${firearmsSkillCopyStatus}</output>
         <textarea class="debug-copy-fallback" aria-label="Copy text manually; press Ctrl+C" hidden></textarea>
       </fieldset>
+      <div id="debug-kit-root"></div>
     `,
     shamblers: html`
       <div class="debug-shambler-count" role="group" aria-label="Shambler spawn count">
@@ -510,7 +511,6 @@ const panelTemplate = ({
   return html`
   <div id="sky-route-root"></div>
   <div id="debug-ui-root">
-    <div id="debug-kit-root"></div>
     <div id="debug-center-x" ?hidden=${!crosshairVisible} aria-hidden="true"></div>
     <div class="debug-marker" ?hidden=${open} @click=${toggleOpen}>DEBUG · ${labelForAction('debug.panel-toggle')}</div>
     <div class="debug-marker debug-frozen" ?hidden=${!gameFrozen}>FROZEN · ${labelForAction('debug.freeze-game')}</div>
@@ -1668,7 +1668,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       host.querySelector<HTMLElement>('#debug-ui-root')!.dataset.rendering = hooks.engine.renderer
         ? 'available'
         : 'unavailable';
-      kitOverlay.mount(host.querySelector<HTMLElement>('#debug-kit-root')!);
+      const kitRoot = host.querySelector<HTMLElement>('#debug-kit-root');
+      if (kitRoot) {
+        kitOverlay.mount(kitRoot);
+      }
       build.setHotbar(host.querySelector<HTMLElement>('#hotbar')!);
       spawnMenu.setRoot(host.querySelector<HTMLElement>('#spawn')!);
       aimReadout = host.querySelector<HTMLElement>('#debug-aim-readout');

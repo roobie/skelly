@@ -2847,6 +2847,8 @@ const SiteLayoutSchema = strictObject({
   /** The building template whose containers receive derived repair stock; derivation remains game logic. */
   repairStock: optional(Id),
   showroom: optional(ShowroomSchema),
+  /** Debug lane placement is independent of landscape bounds, so enlarging a view does not move test supplies. */
+  handlingRange: optional(strictObject({ beside: LayoutRect, floor: HalfMetres })),
   player: strictObject({
     position: MetrePosition,
     /** Clockwise degrees from WORLD_NORTH; converted to camera yaw only at startup. */
