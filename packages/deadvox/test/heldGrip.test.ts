@@ -142,6 +142,16 @@ describe('actual-slot held placement', () => {
     }
   });
 
+  it('seats the support contact on the exported support anchor, not a hand-copied height', () => {
+    const fixture = JSON.parse(compileJsonnetFile(HOLD_FIXTURE)) as ModelDef;
+    const models = [fixture, ...[...registry.models.values()].filter((model) => model.hands?.support)];
+    for (const model of models) {
+      expect(model.hands!.support!.at.slice(0, 2), `${model.id} support contact comes from the export`).toEqual(
+        model.anchors!.support!.slice(0, 2),
+      );
+    }
+  });
+
   it('keeps a long gun’s butt in its shoulder seat while lowering and raising it, mirrored for the left slot', () => {
     const firearms = registry.skills.get('firearms_combat')!.combat!.firearms!;
     const longGuns = [...registry.models.values()].filter((model) => model.hands);
