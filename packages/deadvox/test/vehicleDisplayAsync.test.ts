@@ -1,9 +1,12 @@
+import type { Mesh } from 'three';
 import { expect, it } from 'vitest';
-import type { BlockEntity } from '../src/core/blockEntities.ts';
+import { BlockEntities, type BlockEntity } from '../src/core/blockEntities.ts';
+import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { buildShape } from '../src/render/vehicleShape.ts';
 import { type ShapePort, VehicleShapes } from '../src/render/vehicleShapes.ts';
 import { type VehicleLook, vehicleModel } from '../src/render/workshopVehicle.ts';
 import { BLUEPRINTS } from '../src/vehicles/catalogue.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
 const entity = {
   uid: 1,
@@ -48,19 +51,36 @@ it('gives a pending vehicle piece its mesh when the worker replies', () => {
   expect(group.children.length).toBeGreaterThan(0);
 });
 
-it('never shows a vehicle piece that was dropped before its mesh arrived', () => {
-  const { shapes, reply } = heldPort();
-  const scene = new Set<ReturnType<typeof vehicleModel>>();
-  const pending = vehicleModel(entity, look(), 4, { shapes });
-  scene.add(pending);
+const meshesIn = ({ group }: FurnitureMeshes) => {
+  let count = 0;
+  group.traverse((part) => {
+    count += (part as Mesh).isMesh === true ? 1 : 0;
+  });
+  return count;
+};
 
-  scene.delete(pending);
-  const replacement = vehicleModel(entity, look(), 4, { shapes });
-  scene.add(replacement);
+it('never shows a vehicle piece that was removed before its mesh arrived', () => {
+  const registry = baseRegistry();
+  const def = [...registry.furniture.values()].find((candidate) => candidate.vehicle)!;
+  const { shapes, requests, reply } = heldPort();
+  const meshes = new FurnitureMeshes(1, undefined, shapes);
+  const entities = new BlockEntities(registry);
+  const place = (x: number) => entities.add({ type: def.id, pos: [x, 0, 0], size: def.size, facing: 'n' })!;
+  const removed = place(0);
+  meshes.sync(entities);
+  entities.remove(removed);
+  place(100);
+  meshes.sync(entities);
+  expect(requests).toHaveLength(1);
   reply();
 
-  expect([...scene]).toEqual([replacement]);
-  expect(replacement.children.length).toBeGreaterThan(0);
+  const standing = meshesIn(meshes);
+  expect(standing).toBeGreaterThan(0);
+  const alone = new FurnitureMeshes(1, undefined, new VehicleShapes());
+  const lone = new BlockEntities(registry);
+  lone.add({ type: def.id, pos: [100, 0, 0], size: def.size, facing: 'n' });
+  alone.sync(lone);
+  expect(standing).toBe(meshesIn(alone));
 });
 
 it('asks the worker once for pieces that share a shape and fills them all on the reply', () => {
