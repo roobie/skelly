@@ -1588,6 +1588,16 @@ Third person remains a debug inspection aid, not a player-facing camera.
 figure row (`DESIGN.md`, "Models"); the authored parts are thing tool rows in
 `packages/thing-authoring-tool/avatar.libsonnet`. The debug query in
 `src/render/avatarStudy.ts` stands a model beside the body for comparison.
+`src/render/avatarMannequin.ts`, `createAvatarMannequin` stands a second, inert copy of the
+body, drawn by the same `PlayerMeshes`, in every pose the figure row defines (`avatarPoses`
+in the same file), so BR can judge a pose from outside instead of only in
+first person. It is debug-only, and its controls (pose, relocate) fill their own debug-panel
+group, present only while a mannequin exists, because BR wants mannequins driven from
+one section of their own and possibly several later; the rows are the `debug.mannequin-`
+actions in `src/game/inputBindings.ts` and the group is in `src/debug/groups.ts`,
+`DEBUG_GROUPS`. Where it stands is the figure row's `mannequinPlacement`. Held-item holds and the ready stance are drawn by the
+first-person `HeldItems`, not the world body, so the mannequin shows them only if the
+world body grows them.
 
 Needs are calories, hydration, fatigue, stamina, and body temperature; rates use
 game time. Body temperature is not simulated; #366 is the trigger for deciding

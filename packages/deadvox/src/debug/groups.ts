@@ -6,6 +6,7 @@ import { labelForAction } from '../game/inputBindings.ts';
 
 export type GroupId =
   | 'tools'
+  | 'mannequin'
   | 'survival'
   | 'shamblers'
   | 'time'
@@ -30,12 +31,15 @@ export interface GroupDef {
   readonly title: string;
   /** Shown in the header in place of the keys, for a group with no key actions. */
   readonly hint?: string;
+  /** The panel leaves the group out while it has no action, for tools that exist only on request. */
+  readonly hideWhenEmpty?: boolean;
   readonly notes?: readonly GroupNote[];
 }
 
 /** The panel's groups, in order. */
 export const DEBUG_GROUPS: readonly GroupDef[] = [
   { id: 'tools', title: 'Tools' },
+  { id: 'mannequin', title: 'Mannequin', hideWhenEmpty: true },
   { id: 'survival', title: 'Survival' },
   { id: 'shamblers', title: 'Zombies' },
   { id: 'time', title: 'Time' },
