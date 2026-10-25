@@ -19,7 +19,7 @@ Trace the selected side reference before reshaping the ACOG archetype: its raked
 
 The TA51 stays one continuous clamp mount on every host. Top-loaded rifles reject it because that mount obstructs their loading opening; changing the feet to preserve a fit would change the item being traced. The authored exclusion is consumed by validation and attachment certification through the same rule; see `src/gun/fixedPrism.jsonnet`, `excludedHostFeeds`, and `src/gun/rules.ts`, `opticMountFitForPart`.
 
-The backup front post and rear aperture are shape only. ADS remains on the prism's optical axis because the export carries one chosen sight frame, not independently selectable primary and backup sights; see `src/gun/exportGlb.ts`, `sightCandidate` and `sightMetadata`. The separate top seam keeps a later replacement sight from becoming part of the cast housing. The optic keeps its existing material rather than adopting the reference photograph's colour.
+The backup rear opening belongs near the fin tip and must share an unobstructed, bore-parallel sight line with the front post tip, with both on the optic's centre plane. They must work together as a usable sight rather than independent decorative features; see `src/gun/fixedPrism.jsonnet`, `backupY` and `backupZ`, and `test/optics.test.ts`. Primary ADS remains on the prism's optical axis because the export carries one chosen sight frame, not independently selectable primary and backup sights; see `src/gun/exportGlb.ts`, `sightCandidate` and `sightMetadata`. The separate top seam keeps a later replacement sight from becoming part of the cast housing. The optic keeps its existing material rather than adopting the reference photograph's colour.
 
 ## Octagonal bodies
 

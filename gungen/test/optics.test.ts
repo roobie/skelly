@@ -180,6 +180,45 @@ describe('optic catalog', () => {
     }
   });
 
+  it('aligns the prism backup aperture near the fin tip with a centred, unobstructed front post', () => {
+    const optic = getOptic('fixed-prism-4x');
+    const rear = optic.solids.find(({ id }) => id === 'backup-rear-aperture');
+    const front = optic.solids.find(({ id }) => id === 'backup-front-post');
+    if (!(rear?.kind === 'revolved' && rear.axis === 'x' && rear.origin && front?.kind === 'extruded-polygon')) {
+      throw new Error('backup irons require a fore-aft aperture and a profiled front post');
+    }
+    const [frontLow, frontHigh] = localSolidBounds(front);
+    const [, tipY] = frontHigh;
+    const tipStations = front.profile.filter(([, y]) => y === tipY).map(([x]) => x);
+    expect(tipStations.length).toBeGreaterThan(0);
+    const tipX = Math.min(...tipStations);
+    expect(rear.origin[2], 'rear opening is on the optic centre plane').toBe(0);
+    expect((frontLow[2] + frontHigh[2]) / 2, 'front post is on the optic centre plane').toBe(0);
+    expect(rear.origin[1], 'rear opening looks over the front post tip parallel to the bore').toBeCloseTo(tipY);
+    const radii = rear.profile.map(([, radius]) => radius);
+    expect(Math.min(...radii), 'rear aperture is hollow').toBeGreaterThan(0);
+    const finBounds = optic.solids.filter(({ id }) => id.startsWith('backup-rear-fin-')).map(localSolidBounds);
+    expect(finBounds.length).toBeGreaterThan(0);
+    const finTop = Math.max(...finBounds.map(([, high]) => high[1]));
+    expect(finTop - rear.origin[1], 'opening is within its outer radius of the fin tip').toBeLessThanOrEqual(
+      Math.max(...radii),
+    );
+    const rearX = Math.min(...rear.profile.map(([x]) => x)) - Math.max(...radii);
+    const ray = new Ray(new Vector3(rearX, tipY, 0), new Vector3(1, 0, 0));
+    const hit = new Vector3();
+    let triangles = 0;
+    for (const solid of optic.solids.filter(({ slot }) => slot !== LENS_SLOT)) {
+      const mesh = meshForSolid(solid, 0);
+      const point = (index: number) => new Vector3().fromArray(mesh.positions, mesh.indices[index]! * 3);
+      for (let index = 0; index < mesh.indices.length; index += 3) {
+        triangles += 1;
+        const crossing = ray.intersectTriangle(point(index), point(index + 1), point(index + 2), false, hit);
+        expect(crossing && hit.x < tipX - 1e-6, `${solid.id} blocks the backup sight line`).toBeFalsy();
+      }
+    }
+    expect(triangles).toBeGreaterThan(0);
+  });
+
   it('keeps low LPVO and high-mag objective bell gaps between 2 and 3 mm above the mounting plane', () => {
     for (const type of ['lpvo-1-6x', 'high-mag-5-25x']) {
       const optic = getOptic(type);

@@ -2,7 +2,10 @@ local appearance = import 'appearance.jsonnet';
 local mmPerU = 11.5;
 local wall = 0.125;
 local axisY = 2.5;
-local backupZ = 0.5;
+local backupZ = 0;
+local backupY = 4.75;
+local backupOpening = 0.25;
+local backupRim = 0.5;
 local objectiveRadius = 1.75;
 local objectiveOpening = 16 / mmPerU;
 local body(id, profile, thickness=wall) = {
@@ -41,7 +44,7 @@ local hood = [
   }, [{ normal: [1, -0.5, 0], offset: 4.5 }])
   for i in std.range(0, appearance.opticBodySides - 1)
 ];
-local fin = [[-6.125, 3.5], [-4.875, 3.5], [-5.5, 5.25], [-5.75, 5.25]];
+local fin = [[-6.125, 3.5], [-4.875, 3.5], [-5.375, 5.25], [-5.875, 5.25]];
 {
   source: 'https://www.trijicon.com/products/details/ta31f',
   reference: 'TA31F published envelope, objective aperture and eye relief; side-photo trace of raked hood, rear-rising casting, ocular collar, control cluster and rear fin',
@@ -75,15 +78,15 @@ local fin = [[-6.125, 3.5], [-4.875, 3.5], [-5.5, 5.25], [-5.75, 5.25]];
     // Seated behind the shortest edge of the slanted lip, so the complete glass remains protected.
     cylinder('objective-lens', 'x', [0, axisY, 0], [4.5, 4.75], objectiveOpening, 'lens', appearance.opticBodySides),
     outline('objective-top-seam', [[3.25, 4.125], [6.625, 4.125], [6.625, 4.375], [3.25, 4.375]], 0.25, backupZ),
-    outline('backup-front-post', [[5.75, 4.25], [6.5, 4.25], [6.5, 4.875], [5.875, 4.875]], 0.25, backupZ),
-    // The fin has a lower fore-aft opening, not an aperture perched on its tip.
-    outline('backup-rear-fin-near', fin, 0.0625, backupZ - 0.3125),
-    outline('backup-rear-fin-far', fin, 0.0625, backupZ + 0.3125),
-    clipped(outline('backup-rear-fin-top', fin, 0.25, backupZ), [{ normal: [0, -1, 0], offset: -4.125 }]),
-    clipped(outline('backup-rear-fin-bottom', fin, 0.25, backupZ), [{ normal: [0, 1, 0], offset: 3.625 }]),
+    outline('backup-front-post', [[5.75, 4.25], [6.5, 4.25], [6.5, backupY], [5.875, backupY]], 0.25, backupZ),
+    // A shared bore-parallel datum keeps the centred post visible through the near-tip opening, above the controls.
+    outline('backup-rear-fin-near', fin, (backupRim - backupOpening) / 2, backupZ - (backupRim + backupOpening) / 2),
+    outline('backup-rear-fin-far', fin, (backupRim - backupOpening) / 2, backupZ + (backupRim + backupOpening) / 2),
+    clipped(outline('backup-rear-fin-top', fin, backupOpening, backupZ), [{ normal: [0, -1, 0], offset: -(backupY + backupOpening) }]),
+    clipped(outline('backup-rear-fin-bottom', fin, backupOpening, backupZ), [{ normal: [0, 1, 0], offset: backupY - backupOpening }]),
     {
-      id: 'backup-rear-aperture', kind: 'revolved', axis: 'x', origin: [0, 3.875, backupZ],
-      profile: [[-6.375, 0.25], [-6.375, 0.5], [-6.125, 0.5], [-6.125, 0.25], [-6.375, 0.25]],
+      id: 'backup-rear-aperture', kind: 'revolved', axis: 'x', origin: [0, backupY, backupZ],
+      profile: [[-6.125, backupOpening], [-6.125, backupRim], [-5.75, backupRim], [-5.75, backupOpening], [-6.125, backupOpening]],
       sides: appearance.opticBodySides, slot: 'metal',
     },
     cylinder('elevation-stem', 'y', [-1.125, 0, 0], [3.5, 4], 0.75),
