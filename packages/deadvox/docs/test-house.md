@@ -55,6 +55,12 @@ The debug wrapper preserves the home's water surface: a debug visit must not dry
 lake out. Its range placement is independent of the landscape bounds so enlarging the
 view cannot move the rack out of reach at startup. See `src/game/worldSetup.ts`,
 `DebugTestHouseSite`, and `src/core/schema.ts`, `handlingRange`.
+
+Debug floors reserve their derived footprints against authored vegetation before
+streaming. Sharing those rectangles avoids trees in the firing corridor or catalogue
+and prevents a separate content clearing from drifting away from its floor. See
+`src/core/authoredSite.ts`, `reserveVegetation`.
+
 No mobs belong here: an unsafe garden would defeat the haven's purpose. Weathering
 stays off because this is a cared-for home, not a ruin. These choices do not exempt
 later additions from the normal/debug decision below.
@@ -126,9 +132,10 @@ rows are spaced, and code packs the pieces into rows, each facing its own aisle 
 focus has somewhere to stand. The catalogue shows furniture, not supply, so its
 pieces stand empty and stay off the house grid. It lies west of the haven on a levelled
 floor, clear of the lake and range, because its warehouse-like scale must not fill
-the home's view. Keeping it beyond the startup
-ring avoids delaying every debug session with wholesale catalogue construction; a
-focus reaches it directly. See `src/core/showroom.ts`, `ShowroomCatalogue`. Features
+the home's view. Keeping it beyond the startup ring avoids delaying every debug
+session with wholesale catalogue construction; a focus reaches it directly. `validate`
+rejects a catalogue inside that ring; see `src/core/authoredLayout.ts`, `showroomIssues`.
+See `src/core/showroom.ts`, `ShowroomCatalogue`. Features
 that are not furniture, such as an item or a vehicle, still need a slot or their owning
 zone.
 

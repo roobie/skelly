@@ -74,6 +74,7 @@ export class DebugTestHouseSite implements Site {
     });
     const catalogue = house.showroom && new ShowroomCatalogue(registry, house.showroom.catalogue);
     this.catalogue = catalogue;
+    house.reserveVegetation([this.range.rect, ...(catalogue ? [catalogue.rect] : [])]);
     this.surface = {
       ...house.surface,
       height: (x, z, natural) => {
