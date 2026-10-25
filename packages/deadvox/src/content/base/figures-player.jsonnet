@@ -56,6 +56,7 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         foot: segment('foot', 'ankle'),
       },
       gait: { legSwingDegrees: 12.6, armSwingDegrees: 10 },
+      mannequinPlacement: { aheadMetres: 1.2, asideMetres: 1.2 },
       // Each pose keeps the drawn body under its stance's body height in player.jsonnet. The crouch reads as a crouch:
       // knees bent, feet flat under the hips, torso leaning forward, head up looking ahead and arms in a guard for
       // balance, elbows bent with the forearms raised in front. Its ankle turns the foot back to level, and its hip

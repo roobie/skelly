@@ -3599,6 +3599,8 @@ const FigureSchema = strictObject({
   legRig: LegRigSchema,
   /** Walking swings each leg about its hip and each arm, against its leg, about its shoulder; peak angles. */
   gait: strictObject({ legSwingDegrees: Degrees, armSwingDegrees: Degrees }),
+  /** Where the debug mannequin stands from the player, along and across the player's facing. */
+  mannequinPlacement: strictObject({ aheadMetres: Positive, asideMetres: Positive }),
   stancePoses: strictObject({
     crouching: StancePoseSchema,
     prone: StancePoseSchema,

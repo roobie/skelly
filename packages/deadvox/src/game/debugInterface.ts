@@ -68,6 +68,10 @@ export interface DebugHooks {
     teleport: () => 'moved' | 'blocked' | undefined;
   };
   readonly thirdPerson: { enabled: () => boolean; toggle: () => void };
+  /** The debug mannequin, present only when the page asked for one (`src/render/avatarMannequin.ts`). */
+  readonly mannequin?:
+    | { step: (delta: number) => void; place: () => void; readonly pose: { readonly name: string } }
+    | undefined;
   readonly perceptionLabels: { enabled: () => boolean; toggle: () => void };
   /** Emits the existing `player_hurt_light` sound and its player-noise event; this debug action changes simulation state. */
   readonly emitTestNoise: () => boolean;
