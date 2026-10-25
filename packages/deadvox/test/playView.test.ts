@@ -39,6 +39,28 @@ import { skyWorldFixture } from './fixtures/skyWorld.ts';
 import { makeConfig } from './fixtures/startupContent.ts';
 
 const registry = baseRegistry();
+/** Only the figure's model rows, which the drawn body needs to lay out; held items draw their fallbacks. */
+const figureModels = new Set(
+  [...registry.figures.values()].flatMap(({ body, limbs }) => [
+    body.model,
+    ...Object.values(limbs).map(({ model }) => model),
+  ]),
+);
+const withoutItemModels = {
+  ...registry,
+  models: new Map([...registry.models].filter(([id]) => figureModels.has(id))),
+};
+// Node has no page to fetch model files from, so the library gets an empty pack and reports each model as missing.
+vi.mock('../src/render/models.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/render/models.ts')>();
+  class EmptyPackLibrary extends actual.ModelLibrary {
+    constructor(...[content, report]: ConstructorParameters<typeof actual.ModelLibrary>) {
+      super(content, report, {});
+    }
+  }
+  // biome-ignore lint/style/useNamingConvention: the mock replaces the class export by its name.
+  return { ...actual, ModelLibrary: EmptyPackLibrary };
+});
 
 const meshFixture = () => ({
   setLinearColors: vi.fn(),
@@ -49,7 +71,7 @@ const meshFixture = () => ({
 });
 
 const fixture = (isSolid: Engine['isSolid'] = () => false) => {
-  const inventory = new Inventory({ ...registry, models: new Map() });
+  const inventory = new Inventory(withoutItemModels);
   const page = new EventTarget();
   const renderer = { toneMapping: 0, toneMappingExposure: 1 };
   const mood = {
@@ -170,7 +192,7 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
   if (!(sky.inspect()[0]?.complete && sky.inspect()[0]?.current && sky.inspect()[0]?.resident)) {
     throw new Error('test skylight fixture did not become current and resident');
   }
-  const inventory = new Inventory({ ...registry, models: new Map() });
+  const inventory = new Inventory(withoutItemModels);
   const flashlight = inventory.create('flashlight');
   if (!inventory.add(flashlight, { kind: 'hand', side: 'left' })) {
     throw new Error('test flashlight could not be placed in the hand');
@@ -493,7 +515,7 @@ describe('play presentation ownership', () => {
   });
 
   it('skips drawing and shadow warmup without renderer resources', async () => {
-    const inventory = new Inventory({ ...registry, models: new Map() });
+    const inventory = new Inventory(withoutItemModels);
     const engine = {
       config: { ...makeConfig(73, 64, 0.5), actors: 'boxes' },
       registry: inventory.registry,

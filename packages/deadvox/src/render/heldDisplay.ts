@@ -4,7 +4,6 @@ import { Box3, Matrix4, Mesh, Object3D, Quaternion, Vector3 } from 'three';
 import type { Vec3 } from '../core/coords.ts';
 import type { ModelDef } from '../core/schema.ts';
 import { heldModelFrame } from './models.ts';
-import { FIRST_PERSON_PALM } from './playerFigure.ts';
 
 const VIEW_UP = new Vector3(0, 1, 0);
 
@@ -50,7 +49,8 @@ export const presentHeldDisplay = (root: Object3D, display: NonNullable<ModelDef
   const turn = presented.clone().multiply(frameBasis(normal, new Vector3(...display.up)).transpose());
   const frame = heldModelFrame(root);
   const back = depthBehind(frame, at, normal);
-  const screenAt = toEye.clone().multiplyScalar(FIRST_PERSON_PALM[2] / 2 + back);
+  // The hand's grip point is the palm's face, so the model's back sits on it with nothing in between.
+  const screenAt = toEye.clone().multiplyScalar(back);
   const place = turn.clone().setPosition(screenAt.sub(at.applyMatrix4(turn)));
   root.updateWorldMatrix(true, true);
   const inner = root.matrixWorld.clone().invert().multiply(frame.matrixWorld);

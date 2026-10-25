@@ -108,18 +108,38 @@ const connectSample = (
   source: AudioBufferSourceNode,
   gain: GainNode,
   sound: SoundDef,
-): AudioNode[] => {
-  if (!sound.lowShelf) {
-    source.connect(gain);
-    return [source, gain];
+): { nodes: AudioNode[]; carrier: OscillatorNode | null } => {
+  const nodes: AudioNode[] = [source];
+  let tail: AudioNode = source;
+  const chain = (node: AudioNode): void => {
+    tail.connect(node);
+    nodes.push(node);
+    tail = node;
+  };
+  if (sound.lowShelf) {
+    const body = context.createBiquadFilter();
+    body.type = 'lowshelf';
+    body.frequency.value = sound.lowShelf.frequencyHz;
+    body.gain.value = sound.lowShelf.gainDb;
+    chain(body);
   }
-  const body = context.createBiquadFilter();
-  body.type = 'lowshelf';
-  body.frequency.value = sound.lowShelf.frequencyHz;
-  body.gain.value = sound.lowShelf.gainDb;
-  source.connect(body);
-  body.connect(gain);
-  return [source, body, gain];
+  let carrier: OscillatorNode | null = null;
+  if (sound.ringMod) {
+    const { frequencyHz, depth } = sound.ringMod;
+    const product = context.createGain();
+    const swing = context.createGain();
+    carrier = context.createOscillator();
+    carrier.frequency.value = frequencyHz;
+    product.gain.value = 1 - depth;
+    swing.gain.value = depth;
+    carrier.connect(swing);
+    swing.connect(product.gain);
+    carrier.start();
+    nodes.push(carrier, swing);
+    chain(product);
+  }
+  chain(gain);
+  return { nodes, carrier };
 };
 
 /** Thin Web Audio adapter; sound choices and occlusion calculations live in pure core modules. */
@@ -562,7 +582,7 @@ export class GameAudio {
     source.buffer = buffer;
     source.playbackRate.value = pick.pitch;
     gain.gain.value = pick.gain;
-    const connectedNodes = connectSample(context, source, gain, sound);
+    const { nodes: connectedNodes, carrier } = connectSample(context, source, gain, sound);
 
     const category = nodes.categories.get(sound.category)!;
     const listenerBlocks: Vec3 = this.listenerPosition.map((v) => v / this.blockSize) as Vec3;
@@ -631,6 +651,7 @@ export class GameAudio {
         if (tails?.size === 0) {
           this.retiring.delete(event);
         }
+        carrier?.stop();
         for (const node of connectedNodes) {
           node.disconnect();
         }

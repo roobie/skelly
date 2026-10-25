@@ -278,6 +278,8 @@
         "assets/models/taped_flashlight_mount.glb",
         "assets/models/scrap_foregrip.glb",
         "assets/models/player_bust.glb",
+        "assets/models/player_arm.glb",
+        "assets/models/player_leg.glb",
         "assets/models/tape_roll.glb",
         "assets/models/thread_spool.glb",
         "assets/models/cord_coil.glb",

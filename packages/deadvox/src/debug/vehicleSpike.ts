@@ -29,7 +29,6 @@ import { BLOCK_SIZE } from '../core/scale.ts';
 import type { VehicleFittingDef } from '../core/schema.ts';
 import { skyAt } from '../core/sky.ts';
 import { assembledVehicle, loadVehicleBlueprint, type PlacedFitting } from '../core/vehicleBlueprint.ts';
-import { FIGURE_BOXES } from '../core/zombieRegions.ts';
 import { buildBundledContent } from '../game/bundledContent.ts';
 import { ModelLibrary } from '../render/models.ts';
 import { PlayerMeshes } from '../render/playerFigure.ts';
@@ -1180,12 +1179,12 @@ const addPlayer = (): void => {
   if (!player) {
     throw new Error('The bundled player figure is missing');
   }
-  const person = new PlayerMeshes(BLOCK_SIZE, player, registry.models);
+  const person = new PlayerMeshes(BLOCK_SIZE, player, registry.models, partModels);
   const [px, , pz] = PLAYER_AT;
-  person.sync({
+  const pose = {
     body: {
-      pos: [px / BLOCK_SIZE, 0, pz / BLOCK_SIZE],
-      vel: [0, 0, 0],
+      pos: [px / BLOCK_SIZE, 0, pz / BLOCK_SIZE] as Vec3,
+      vel: [0, 0, 0] as Vec3,
       halfWidth: 0.3,
       height: 1.8,
       onGround: true,
@@ -1196,15 +1195,22 @@ const addPlayer = (): void => {
     moving: false,
     stance: 'standing',
     dt: 0,
-  });
-  const headBox = FIGURE_BOXES.head;
-  const head = new Mesh(new BoxGeometry(...headBox.size), new MeshLambertMaterial({ color: player.palette.skin }));
-  head.position.set(px, headBox.at[1], pz + headBox.at[2]);
-  person.group.add(head);
-  person.group.traverse((object) => {
-    object.castShadow = true;
-  });
+    thirdPerson: true,
+  } as const;
   playerGroup.add(person.group);
+  // The figure's models load after the page starts, so it is posed again as each arrives.
+  let posed = -1;
+  const step = (): void => {
+    if (partModels.version !== posed) {
+      posed = partModels.version;
+      person.sync(pose);
+      scheduleRender();
+    }
+    if (!person.loaded) {
+      requestAnimationFrame(step);
+    }
+  };
+  step();
 };
 
 const addTitleSprite = (): void => {
