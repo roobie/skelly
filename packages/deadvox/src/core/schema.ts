@@ -1667,6 +1667,8 @@ const SoundSchema = strictObject({
   ),
   gain: pipe(Positive, maxValue(1, 'must be at most 1')),
   lowShelf: optional(strictObject({ frequencyHz: Positive, gainDb: pipe(number(), finite()) })),
+  /** Scrambles the voice: a carrier of this frequency multiplies the sample by `1 - depth + depth * carrier`. */
+  ringMod: optional(strictObject({ frequencyHz: Positive, depth: pipe(Positive, maxValue(1, 'must be at most 1')) })),
   pitchJitter: SoundMultipliers,
   gainJitter: SoundMultipliers,
   minIntervalSimSeconds: SimSeconds,
@@ -3287,12 +3289,8 @@ const ZombieSchema = strictObject({
   spawnWeight: pipe(Positive, maxValue(1, 'must be at most 1')),
   /** Excludes this kind from ordinary settlement selection while keeping authored/debug spawns available. */
   authoredOnly: optional(vBoolean()),
-  sounds: strictObject({
-    idle: picklist(SOUND_EVENT_IDS),
-    alert: picklist(SOUND_EVENT_IDS),
-    attack: picklist(SOUND_EVENT_IDS),
-    hurt: picklist(SOUND_EVENT_IDS),
-  }),
+  /** Sound ids are content references, so a new voice needs content only; the registry checks each exists. */
+  sounds: strictObject({ idle: Id, alert: Id, attack: Id, hurt: Id }),
   /** Fraction of each melee damage type resisted by each region; omitted entries are neutral. */
   meleeDamageResistance: optional(MeleeDamageResistanceSchema),
   /** Fraction of acid damage resisted, whatever the region; 1 is immune and omitted is neutral. */

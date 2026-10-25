@@ -2710,6 +2710,32 @@ const templateBase = [
   { source: 'template-zombies.json', data: { zombies: [templateShambler] } },
 ];
 
+describe('zombie voice references', () => {
+  const voiceSound = { ...templateSoundDefinitions[0]!, id: 'fixture_voice' };
+  const voiced = (sounds: Record<string, string>) =>
+    buildRegistry([
+      ...templateBase.filter(({ source }) => source !== 'template-zombies.json'),
+      { source: 'voice-sound.json', data: { sounds: [voiceSound] } },
+      { source: 'voice-zombie.json', data: { zombies: [{ ...templateShambler, id: 'fixture_voiced', sounds }] } },
+    ]).issues.map(({ path, message }) => `${path}: ${message}`);
+  const voices = (attack: string) => ({
+    idle: 'fixture_voice',
+    alert: 'fixture_voice',
+    attack,
+    hurt: 'fixture_voice',
+  });
+
+  it('accepts an authored sound id as a zombie voice, so a new voice needs content only', () => {
+    expect(voiced(voices('fixture_voice'))).toEqual([]);
+  });
+
+  it('rejects a zombie voice that names no sound', () => {
+    expect(voiced(voices('fixture_missing_voice'))).toEqual([
+      'zombies[0].sounds.attack: no sound event "fixture_missing_voice"',
+    ]);
+  });
+});
+
 describe('templates', () => {
   const template = (layers: string[][], palette: Record<string, unknown>, size = [3, layers.length, 2]) => ({
     source: 'tpl.json',

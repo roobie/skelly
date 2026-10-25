@@ -922,6 +922,99 @@
     },
     {
       "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's acid zombie action to spawn acid zombies nearby.",
+      "description": "An acid zombie idles nearby.",
+      "gain": 0.45000000000000001,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "acid_zombie_idle",
+      "minIntervalSimSeconds": 0.10000000000000001,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1.0800000000000001, 1.1599999999999999],
+      "ringMod": {
+        "depth": 0.69999999999999996,
+        "frequencyHz": 70
+      },
+      "variants": [
+        "assets/audio/shambler-idle-01.ogg",
+        "assets/audio/shambler-idle-02.ogg",
+        "assets/audio/shambler-idle-03.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's acid zombie action to spawn acid zombies nearby.",
+      "description": "An acid zombie notices you.",
+      "gain": 0.71999999999999997,
+      "gainJitter": [0.90000000000000002, 1.1200000000000001],
+      "id": "acid_zombie_alert",
+      "minIntervalSimSeconds": 0.25,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1.0600000000000001, 1.1399999999999999],
+      "ringMod": {
+        "depth": 0.69999999999999996,
+        "frequencyHz": 70
+      },
+      "variants": [
+        "assets/audio/shambler-alert-04.ogg",
+        "assets/audio/shambler-alert-05.ogg",
+        "assets/audio/shambler-alert-06.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's acid zombie action to spawn acid zombies nearby.",
+      "description": "An acid zombie reaches you and attacks.",
+      "gain": 0.80000000000000004,
+      "gainJitter": [0.90000000000000002, 1.1200000000000001],
+      "id": "acid_zombie_attack",
+      "minIntervalSimSeconds": 0.25,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1.0600000000000001, 1.1399999999999999],
+      "ringMod": {
+        "depth": 0.69999999999999996,
+        "frequencyHz": 70
+      },
+      "variants": [
+        "assets/audio/shambler-attack-07.ogg",
+        "assets/audio/shambler-attack-08.ogg",
+        "assets/audio/shambler-attack-09.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "?debug=1: Use the debug panel's acid zombie action to spawn acid zombies nearby.",
+      "description": "An acid zombie is hit by a melee attack.",
+      "gain": 0.80000000000000004,
+      "gainJitter": [0.90000000000000002, 1.1200000000000001],
+      "id": "acid_zombie_hurt",
+      "minIntervalSimSeconds": 0.080000000000000002,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1.0600000000000001, 1.1399999999999999],
+      "ringMod": {
+        "depth": 0.69999999999999996,
+        "frequencyHz": 70
+      },
+      "variants": [
+        "assets/audio/shambler-hurt-01.ogg",
+        "assets/audio/shambler-hit-05.ogg",
+        "assets/audio/shambler-hit-06.ogg",
+        "assets/audio/shambler-hit-07.ogg"
+      ]
+    },
+    {
+      "category": "world",
       "description": "Strike a locked door with a crowbar to force its padlock.",
       "gain": 0.80000000000000004,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
