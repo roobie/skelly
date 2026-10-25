@@ -16,6 +16,10 @@ export const blockPatterns = (registry: Registry): Uint8Array =>
 export const blockWeatherability = (registry: Registry): Uint8Array =>
   Uint8Array.from(registry.blocks, (block) => (block.weatherable ? 1 : 0));
 
+/** Liquid flag per runtime block id: enclosure, occlusion and the mesher's face and AO tests treat a liquid as open. */
+export const blockLiquids = (registry: Registry): Uint8Array =>
+  Uint8Array.from(registry.blocks, (block) => (block.liquid ? 1 : 0));
+
 /** Side of the padded block array handed to the mesher: the chunk plus a 1-block border. */
 export const PADDED = CHUNK + 2;
 

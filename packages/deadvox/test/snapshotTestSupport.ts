@@ -53,7 +53,13 @@ for (let cz = toChunk(fixtureSite.bounds.z0); cz <= toChunk(fixtureSite.bounds.z
 const fixtureTerrain: Terrain = {
   seed,
   shape: terrainShapeOf(registry),
-  blocks: { grass: blockId('grass'), dirt: blockId('dirt'), rock: blockId('stone'), sand: blockId('sand') },
+  blocks: {
+    grass: blockId('grass'),
+    dirt: blockId('dirt'),
+    rock: blockId('stone'),
+    sand: blockId('sand'),
+    water: blockId('water'),
+  },
   scale,
   surface: fixtureSite.surface,
   stamp: (chunk) => fixtureSite.stamp(chunk),

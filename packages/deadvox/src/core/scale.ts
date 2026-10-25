@@ -6,7 +6,7 @@ import { CHUNK } from './coords.ts';
 
 /** The world's vertical extent in metres (`DESIGN.md`, "Performance and scale"). */
 export const WORLD_BOTTOM_M = -48;
-const WORLD_TOP_M = 80;
+export const WORLD_TOP_M = 80;
 
 export const BLOCK_SIZE = 0.5;
 

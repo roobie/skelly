@@ -68,7 +68,7 @@ it('builds a field over arriving all-air chunks and stops certifying it once its
     world,
     meshes: meshes as never,
     seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4 },
+    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
     shape: baseTerrainShape(),
     colors: new Uint8Array(256 * 4),
     patterns: new Uint8Array(256),
@@ -113,7 +113,7 @@ it('reports generated-column transitions that match the generated-column snapsho
     world,
     meshes: meshes as never,
     seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4 },
+    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
     shape: baseTerrainShape(),
     colors: new Uint8Array(256 * 4),
     patterns: new Uint8Array(256),
@@ -149,7 +149,7 @@ it('lets replay drive terrain generation and unloading without live streaming si
     world,
     meshes: meshes as never,
     seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4 },
+    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
     shape: baseTerrainShape(),
     colors: new Uint8Array(256 * 4),
     patterns: new Uint8Array(256),
@@ -182,7 +182,7 @@ it('lets replay drive terrain generation and unloading without live streaming si
 
 describe('saved columns', () => {
   const scale = makeScale(0.5);
-  const terrain = { grass: 1, dirt: 2, rock: 3, sand: 4 };
+  const terrain = { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 };
   const generate = (cx: number, cz: number) =>
     generateColumn({ seed: 17, blocks: terrain, shape: baseTerrainShape(), scale }, cx, cz, []);
   const streamerFor = (world: World, stamp: (chunk: Chunk) => void) => {

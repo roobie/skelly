@@ -1436,6 +1436,10 @@ const checkSiteGeneration = (registry: Registry, report: Report) => {
         report('siteGeneration', entry.id, path, `no block "${name}"`);
       }
     }
+    const water = registry.blockIds.get(terrain.water);
+    if (water !== undefined && !registry.blocks[water]?.liquid) {
+      report('siteGeneration', entry.id, '.palette.terrain.water', `block "${terrain.water}" is not liquid`);
+    }
   }
 };
 
