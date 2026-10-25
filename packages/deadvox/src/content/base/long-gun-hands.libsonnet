@@ -5,9 +5,10 @@
 // the curled fingers close ahead of it. A gun that exports a `stock` part and no grip takes the firing palm on the
 // stock wrist's right face above the grip point, fingers pointing down and ahead so they curl under the wrist and the
 // thumb lies over its top. A gun that exports neither has no place for the firing hand, so the content fails to
-// compile instead of guessing. The support palm presses into the forend's left face at the exported support contact,
-// `forendLeft` giving that face's height and side, tilted a little under so the back of the hand faces out and down;
-// the fingers point up and curl over the top, and the thumb closes under.
+// compile instead of guessing. The support palm cups the forend from below at the exported support contact,
+// `forendBottom` giving the height of the forend's underside there, so the bore runs across the palm from its heel
+// to the gap between thumb and index: the fingers point forward and 38 degrees toward the gun's far side, curling
+// up that side, and the thumb lies forward along the near side.
 local firingHold(model) =
   if std.objectHas(model.parts, 'grip') then {
     at: [model.grip.at[0] - 0.02, model.grip.at[1], 0.016],
@@ -22,15 +23,15 @@ local firingHold(model) =
   } else
     error 'long gun %s exports neither a grip part nor a stock part, so no firing hold fits it' % [model.id];
 
-function(model, buttX, forendLeft) model {
+function(model, buttX, forendBottom) model {
   hands: {
     seat: [0.15, -0.1, -0.12],
     butt: [buttX, 0, 0],
     firing: firingHold(model),
     support: {
-      at: [model.anchors.support[0], forendLeft[0], forendLeft[1]],
-      palm: [0, 0.2588190, 0.9659258],
-      fingers: [0, 0.9659258, -0.2588190],
+      at: [model.anchors.support[0], forendBottom, 0],
+      palm: [0, 1, 0],
+      fingers: [0.7880108, 0, 0.6156615],
       pose: 'forend',
     },
   },

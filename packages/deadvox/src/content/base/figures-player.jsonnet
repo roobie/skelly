@@ -30,7 +30,7 @@ local handPose(fingers, thumbAcross, thumbIn) = {
       // The first-person view turns each arm part about its joint. A fist closes hard; a hand on a grip leaves room
       // for the handle; a hand on a screen's back lies nearly flat. On a long gun the firing hand closes around the
       // pistol grip with the thumb over its top, or wraps the stock wrist with the fingers under it and the thumb over
-      // it, and the support hand wraps the forend from its side with the fingers over the top and the thumb under.
+      // it, and the support hand cups the forend from below with the fingers curling up its far side.
       armRig: {
         upper: segment('upper', 'shoulder'),
         fore: segment('fore', 'elbow'),

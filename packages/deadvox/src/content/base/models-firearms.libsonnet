@@ -102,8 +102,8 @@ local longGunHands = import 'long-gun-hands.libsonnet';
   ],
   // Imports keep the export writer from overwriting authored handling constructors.
   "models": [
-    longGunHands((import 'gungen/rifle_assault.model.json') { gun+: { chargingHandleDegrees: 0 } }, -0.38, [-0.006, -0.02]),
-    longGunHands((import 'gungen/rifle_ak.model.json') { gun+: { chargingHandleDegrees: 90 } }, -0.484, [-0.01, -0.016]),
+    longGunHands((import 'gungen/rifle_assault.model.json') { gun+: { chargingHandleDegrees: 0 } }, -0.38, -0.02),
+    longGunHands((import 'gungen/rifle_ak.model.json') { gun+: { chargingHandleDegrees: 90 } }, -0.484, -0.024),
     import 'gungen/round_7_d_62x39.model.json',
     import 'gungen/case_7_d_62x39.model.json',
     import 'gungen/round_5_d_56x45.model.json',
@@ -113,8 +113,8 @@ local longGunHands = import 'long-gun-hands.libsonnet';
     import 'gungen/revolver.model.json',
     import 'gungen/round_357_h_magnum.model.json',
     import 'gungen/case_357_h_magnum.model.json',
-    longGunHands(import 'gungen/shotgun_pump.model.json', -0.568, [-0.04, -0.028]),
-    longGunHands(import 'gungen/rifle_hunting.model.json', -0.504, [-0.032, -0.02]),
+    longGunHands(import 'gungen/shotgun_pump.model.json', -0.568, -0.06),
+    longGunHands(import 'gungen/rifle_hunting.model.json', -0.504, -0.052),
     import 'gungen/round_308_h_winchester.model.json',
     import 'gungen/case_308_h_winchester.model.json',
     import 'gungen/optic_hunting_3_9x.model.json',

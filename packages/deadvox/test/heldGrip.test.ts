@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { NEUTRAL_AIM } from '../src/core/aim.ts';
 import { Character } from '../src/core/character.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -7,6 +8,7 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { heldFirearmTransform, heldHoldFrame, modelToView } from '../src/core/heldPose.ts';
 import { type HandSide, Inventory } from '../src/core/inventory.ts';
 import { PLAYER_VIEW_FOV_DEGREES } from '../src/core/opticWindow.ts';
+import type { ModelDef } from '../src/core/schema.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import { FirearmMechanics, type FirearmShotEffect, firearmHandlingFor } from '../src/game/firearmHandling.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -14,6 +16,8 @@ import { chargedRifle } from './rifleFixture.ts';
 
 const source = baseRegistry();
 const rifleType = 'rifle_assault';
+const HOLD_FIXTURE = 'packages/deadvox/test/fixtures/jsonnet/long-gun-hold.jsonnet';
+const dot = (left: Vec3, right: Vec3): number => left[0] * right[0] + left[1] * right[1] + left[2] * right[2];
 const projectionErrorPixels = (direction: readonly number[]): readonly [number, number, number] => {
   const viewportHeight = 720;
   const aspect = 1280 / viewportHeight;
@@ -111,17 +115,28 @@ describe('actual-slot held placement', () => {
     }
   });
 
-  it('puts the support hand on the gun’s left for a right hold and on its right for a left one, pressing across the forend', () => {
-    const longGuns = [...registry.models.values()].filter((model) => model.hands);
-    expect(longGuns.length).toBeGreaterThan(0);
-    for (const model of longGuns) {
-      for (const side of ['right', 'left'] as const) {
-        // The gun's right is +x in its view frame; the support hand sits across from the holding hand's side.
-        const toward = side === 'right' ? 1 : -1;
-        const { at, palm } = heldHoldFrame(model, side, 'support');
-        expect(Math.sign(at[0]), `${model.id} ${side} contact side`).toBe(-toward);
-        expect(palm[0] * toward, `${model.id} ${side} palm press`).toBeGreaterThan(
-          Math.max(Math.abs(palm[1]), Math.abs(palm[2])),
+  it('cups the support palm under the bore with the bore running across it from the heel to the thumb-index gap', () => {
+    const model = JSON.parse(compileJsonnetFile(HOLD_FIXTURE)) as ModelDef;
+    // A gungen export runs its bore along the model's +x through the origin.
+    const bore = modelToView(model, [1, 0, 0]);
+    const boreFromGrip = modelToView(model, model.grip!.at.map((value) => -value) as Vec3);
+    for (const side of ['right', 'left'] as const) {
+      const { at, palm, fingers, thumbSide } = heldHoldFrame(model, side, 'support');
+      // The hand frame's +x is the right hand's thumb side and the left hand's little-finger side.
+      const thumb = thumbSide.map((value) => (side === 'right' ? -value : value)) as Vec3;
+      expect(at[1] - boreFromGrip[1], `${side} contact below the bore`).toBeLessThan(0);
+      expect(palm[1], `${side} palm presses up`).toBeGreaterThan(Math.max(Math.abs(palm[0]), Math.abs(palm[2])));
+      expect(Math.abs(dot(bore, palm)), `${side} bore lies in the palm plane`).toBeLessThan(0.1);
+      expect(dot(bore, fingers), `${side} bore runs toward the fingertips`).toBeGreaterThan(0.3);
+      expect(dot(bore, thumb), `${side} bore runs toward the thumb`).toBeGreaterThan(0.3);
+    }
+    const right = heldHoldFrame(model, 'right', 'support');
+    const left = heldHoldFrame(model, 'left', 'support');
+    for (const key of ['at', 'palm', 'fingers'] as const) {
+      for (let axis = 0; axis < 3; axis++) {
+        expect(left[key][axis], `left hold mirrors ${key} across the view's x`).toBeCloseTo(
+          axis === 0 ? -right[key][axis]! : right[key][axis]!,
+          10,
         );
       }
     }
