@@ -3,6 +3,7 @@ read_if:
   - you build the acid zombie, the `acidSpit` ability, its glob or its puddle
   - you add a ranged zombie attack, a zombie projectile or acid damage
   - you add a later tier of the acid evolution line
+  - you change how the acid zombie sounds, or scramble another type's voice
   - you decide how the player counters an enemy that attacks from a distance
 ---
 
@@ -68,6 +69,12 @@ These must all work, because each is the reason the fight reads as more than tra
 ## Spawning
 
 Acid zombies spawn only in labs, where `DESIGN.md`, "Evolution" puts weird types. Each lab level holds as many acid zombies as its depth below the hatch, so the deepest level holds the most; places outside the lab's numbered depth, such as the sewer, hold none. Lab threat is authored per storey as weighted marker rows, which gives chances, not counts, so the acid zombies take fixed marker cells beside those rows. See `src/content/base/gauntlet-lab-threat.libsonnet`, `acidCounts`, and `src/content/base/gauntlet-lab.libsonnet`, `storeys`. The type is otherwise `authoredOnly`, so ordinary settlement selection cannot place it.
+
+## Voice
+
+The acid zombie must be recognisable by ear, so a player who hears it before seeing it knows to look for a spitter and a line of sight to break. It voices the shambler recordings like every zombie, so only the processing sets it apart: its own sound rows pitch the recordings differently and add ring modulation, which gives a metallic, scrambled timbre that pitch alone does not. Both are content parameters on the sound row (`pitchJitter` and `ringMod`), and a sound without `ringMod` plays unprocessed, so the other types' voices are unchanged and a new type scrambles its voice by data. See `src/content/base/sounds.jsonnet`, `zombieVoices`; `src/core/schema.ts`, `SoundSchema`; and `src/game/audio.ts`, `connectSample`.
+
+Hear it with the debug spawn action for acid zombies, or from the sounds page, which lists the type's four voice events.
 
 ## Saves and determinism
 

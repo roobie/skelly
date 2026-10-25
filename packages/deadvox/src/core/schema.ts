@@ -1667,6 +1667,8 @@ const SoundSchema = strictObject({
   ),
   gain: pipe(Positive, maxValue(1, 'must be at most 1')),
   lowShelf: optional(strictObject({ frequencyHz: Positive, gainDb: pipe(number(), finite()) })),
+  /** Scrambles the voice: a carrier of this frequency multiplies the sample by `1 - depth + depth * carrier`. */
+  ringMod: optional(strictObject({ frequencyHz: Positive, depth: pipe(Positive, maxValue(1, 'must be at most 1')) })),
   pitchJitter: SoundMultipliers,
   gainJitter: SoundMultipliers,
   minIntervalSimSeconds: SimSeconds,
