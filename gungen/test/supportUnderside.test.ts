@@ -10,12 +10,15 @@ import { loadDesigns, type MutableAssembly, partTriangles } from './helpers.ts';
 
 const ASSET = { id: 'support_underside_test', file: 'assets/models/support_underside_test.glb' };
 
-/** A design without any sight-axis parts: this test reads the forend, and a sight line needs its own profile. */
+/**
+ * A design without its sight-axis parts: this test reads the forend, and a sight line needs its own profile. The root
+ * stays even when it carries the sight axis, as a receiver with a built-in rear sight does, since every part hangs on it.
+ */
 const sightless = (assembly: Parameters<typeof exportGunGlb>[0]): typeof assembly => {
   const copy = structuredClone(assembly) as MutableAssembly;
   const resolved = resolve(copy, gunDomain);
   for (const [id, def] of resolved.defs) {
-    if (def.axes.some(({ kind }) => kind === 'sight')) {
+    if (id !== copy.root && def.axes.some(({ kind }) => kind === 'sight')) {
       delete copy.parts[id];
       copy.connections = copy.connections.filter(
         ({ from, to }) => !(from.startsWith(`${id}.`) || to.startsWith(`${id}.`)),
