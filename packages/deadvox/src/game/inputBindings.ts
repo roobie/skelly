@@ -181,6 +181,7 @@ const INPUT_ACTIONS: readonly Action[] = [
   debugRow('debug.third-person-toggle', 'Third-person avatar view'),
   debugRow('debug.mannequin-previous', 'Mannequin pose −'),
   debugRow('debug.mannequin-next', 'Mannequin pose +'),
+  debugRow('debug.mannequin-place', 'Place mannequin here'),
   debugRow('debug.perception-labels-toggle', 'Perception labels'),
   debugRow('debug.spawn-unaware-shambler', 'Spawn unaware shambler'),
   debugRow('debug.test-noise', 'Test noise'),

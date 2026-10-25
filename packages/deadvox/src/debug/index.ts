@@ -609,20 +609,28 @@ interface ActionContext {
   look: LookControls;
 }
 
-/** The pose steppers exist only when the page asked for a mannequin. */
+/** The mannequin's controls fill their own panel group, which exists only when the page asked for a mannequin. */
 const mannequinActions = (mannequin: DebugHooks['mannequin']): Omit<Action, 'key'>[] =>
   mannequin
     ? [
-        { id: 'debug.mannequin-previous', delta: -1 },
-        { id: 'debug.mannequin-next', delta: 1 },
-      ].map(({ id, delta }) => ({
-        id,
-        label: delta < 0 ? 'Mannequin pose −' : 'Mannequin pose +',
-        group: 'tools',
-        param: 'mannequin=',
-        detail: () => mannequin.pose.name,
-        run: () => mannequin.step(delta),
-      }))
+        {
+          id: 'debug.mannequin-previous',
+          label: 'Pose −',
+          group: 'mannequin',
+          param: 'mannequin=',
+          detail: () => mannequin.pose.name,
+          run: () => mannequin.step(-1),
+        },
+        {
+          id: 'debug.mannequin-next',
+          label: 'Pose +',
+          group: 'mannequin',
+          param: 'mannequin=',
+          detail: () => mannequin.pose.name,
+          run: () => mannequin.step(1),
+        },
+        { id: 'debug.mannequin-place', label: 'Place here', group: 'mannequin', run: () => mannequin.place() },
+      ]
     : [];
 
 export const createDebugActions = ({
@@ -1394,14 +1402,16 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   function groupViews(): GroupView[] {
     const all = actionViews();
     const views = new Map(actions.map((action, i) => [action, all[i]!] as const));
-    return actionsByGroup(actions).map(({ def, actions: inGroup }) => ({
-      id: def.id,
-      title: def.title,
-      keys: keysAtAGlance(def, inGroup),
-      open: !closedGroups.has(def.id),
-      actions: inGroup.map((action) => views.get(action)!),
-      toggle: () => toggleGroup(def.id),
-    }));
+    return actionsByGroup(actions)
+      .filter(({ def, actions: inGroup }) => !def.hideWhenEmpty || inGroup.length > 0)
+      .map(({ def, actions: inGroup }) => ({
+        id: def.id,
+        title: def.title,
+        keys: keysAtAGlance(def, inGroup),
+        open: !closedGroups.has(def.id),
+        actions: inGroup.map((action) => views.get(action)!),
+        toggle: () => toggleGroup(def.id),
+      }));
   }
   function updateAxisGizmo(): void {
     axisAnimation = undefined;

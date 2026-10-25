@@ -8,9 +8,6 @@ import type { Body } from '../core/physics.ts';
 import type { ModelLibrary } from './models.ts';
 import { type AvatarPose, avatarPoses, type PlayerFigurePose, PlayerMeshes } from './playerFigure.ts';
 
-/** Metres ahead of and beside the player, by the facing at the first sync, so both bodies show in one view. */
-const DISTANCE_AHEAD = 1.2;
-const DISTANCE_ASIDE = 1.2;
 /** Radians of gait phase per real second while the mannequin walks. */
 const GAIT_RATE = 6;
 
@@ -33,7 +30,11 @@ export const createAvatarMannequin = (
     return undefined;
   }
   const meshes = new PlayerMeshes(blockSize, figure, modelDefs, models);
-  const mannequin = new AvatarMannequin(blockSize, meshes, avatarPoses(figure), requested);
+  const mannequin = new AvatarMannequin(meshes, avatarPoses(figure), {
+    blockSize,
+    placement: figure.mannequinPlacement,
+    requested,
+  });
   scene.add(mannequin.group);
   return mannequin;
 };
@@ -42,14 +43,27 @@ export class AvatarMannequin {
   readonly group = new Group();
   readonly poses: readonly AvatarPose[];
   private readonly blockSize: number;
+  private readonly placement: FigureDef['mannequinPlacement'];
   private readonly meshes: PlayerMeshes;
   private index: number;
   private placed = false;
   private readonly body: Body = { pos: [0, 0, 0], vel: [0, 0, 0], halfWidth: 0, height: 0, onGround: true };
   private readonly figurePose: PlayerFigurePose;
+  /** The player as last synced, which `place` stands the mannequin by. */
+  private readonly playerPosition: Vec3 = [0, 0, 0];
+  private playerYaw = 0;
 
-  constructor(blockSize: number, meshes: PlayerMeshes, poses: readonly AvatarPose[], requested: string) {
+  constructor(
+    meshes: PlayerMeshes,
+    poses: readonly AvatarPose[],
+    {
+      blockSize,
+      placement,
+      requested,
+    }: { blockSize: number; placement: FigureDef['mannequinPlacement']; requested: string },
+  ) {
     this.blockSize = blockSize;
+    this.placement = placement;
     this.meshes = meshes;
     this.poses = poses;
     this.index = Math.max(
@@ -73,22 +87,38 @@ export class AvatarMannequin {
     return this.poses[this.index]!;
   }
 
+  /** Where the mannequin stands, in blocks. */
+  get position(): Readonly<Vec3> {
+    return this.body.pos;
+  }
+
   /** Moves to the next pose, or the previous one for a negative `delta`, wrapping round. */
   step(delta: number): void {
     this.index = (this.index + delta + this.poses.length) % this.poses.length;
   }
 
-  /** The first call stands the mannequin ahead and aside of the player, facing back; later calls keep it there. */
+  /** Stands the mannequin ahead and aside of the player as last synced, facing back, and keeps it there. */
+  place(): void {
+    const [x, y, z] = this.playerPosition;
+    const yaw = this.playerYaw;
+    const ahead = this.placement.aheadMetres / this.blockSize;
+    const aside = this.placement.asideMetres / this.blockSize;
+    this.body.pos[0] = x - Math.sin(yaw) * ahead + Math.cos(yaw) * aside;
+    this.body.pos[1] = y;
+    this.body.pos[2] = z - Math.cos(yaw) * ahead - Math.sin(yaw) * aside;
+    this.figurePose.yaw = yaw + Math.PI;
+  }
+
+  /** The first call places the mannequin by the player; later calls keep it where it stands. */
   sync(playerPosition: Vec3, playerYaw: number, dt: number): void {
-    const { body, figurePose } = this;
+    const { figurePose } = this;
+    this.playerPosition[0] = playerPosition[0];
+    this.playerPosition[1] = playerPosition[1];
+    this.playerPosition[2] = playerPosition[2];
+    this.playerYaw = playerYaw;
     if (!this.placed) {
       this.placed = true;
-      const ahead = DISTANCE_AHEAD / this.blockSize;
-      const aside = DISTANCE_ASIDE / this.blockSize;
-      body.pos[0] = playerPosition[0] - Math.sin(playerYaw) * ahead + Math.cos(playerYaw) * aside;
-      body.pos[1] = playerPosition[1];
-      body.pos[2] = playerPosition[2] - Math.cos(playerYaw) * ahead - Math.sin(playerYaw) * aside;
-      figurePose.yaw = playerYaw + Math.PI;
+      this.place();
     }
     const { moving, stance } = this.pose;
     figurePose.gaitPhase += dt * GAIT_RATE;

@@ -50,6 +50,7 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         shoulderFromEye: [0.3, -0.55, 0.05],
       },
       gait: { legSwingDegrees: 12.6, armSwingDegrees: 10 },
+      mannequinPlacement: { aheadMetres: 1.2, asideMetres: 1.2 },
       // Each pose keeps the drawn body under its stance's body height in senses.jsonnet.
       stancePoses: {
         crouching: { hipDropMetres: 0.47, torsoForwardDegrees: 35, legsForwardDegrees: 70 },

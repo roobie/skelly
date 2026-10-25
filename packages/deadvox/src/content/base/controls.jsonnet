@@ -80,6 +80,7 @@ local digits(prefix, count) = [one(prefix + '.' + i, 'Digit' + i) for i in std.r
     one('debug.third-person-toggle', 'Numpad0'),
     one('debug.mannequin-previous', 'Numpad7'),
     one('debug.mannequin-next', 'Numpad8'),
+    one('debug.mannequin-place', 'Numpad9'),
     one('debug.perception-labels-toggle', 'F7'),
     one('debug.spawn-unaware-shambler', 'Numpad3'),
     one('debug.test-noise', 'F8'),

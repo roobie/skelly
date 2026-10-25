@@ -90,6 +90,10 @@
           "model": "player_leg"
         }
       },
+      "mannequinPlacement": {
+        "aheadMetres": 1.2,
+        "asideMetres": 1.2
+      },
       "stancePoses": {
         "blendRealSeconds": 0.20000000000000001,
         "crouching": {

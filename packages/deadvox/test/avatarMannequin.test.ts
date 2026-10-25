@@ -1,5 +1,6 @@
 import { Scene } from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { Vec3 } from '../src/core/coords.ts';
 import { createAvatarMannequin } from '../src/render/avatarMannequin.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -46,6 +47,20 @@ describe('debug avatar mannequin', () => {
     expect(mannequin!.pose).toBe(mannequin!.poses.at(-1));
     mannequin!.step(1);
     expect(mannequin!.pose).toBe(first);
+  });
+
+  it('relocates to stand near the player wherever the player has gone', () => {
+    const { mannequin } = mannequinFor(true, '?debug=1&mannequin=');
+    const distance = (from: readonly number[], to: readonly number[]) =>
+      Math.hypot(from[0]! - to[0]!, from[2]! - to[2]!);
+    const { aheadMetres, asideMetres } = figure.mannequinPlacement;
+    const standoff = Math.hypot(aheadMetres, asideMetres) / 0.5;
+    mannequin!.sync([0, 0, 0], 0, 0.1);
+    const far: Vec3 = [40, 0, -25];
+    mannequin!.sync(far, 1.3, 0.1);
+    expect(distance(mannequin!.position, far)).toBeGreaterThan(standoff * 2);
+    mannequin!.place();
+    expect(distance(mannequin!.position, far)).toBeCloseTo(standoff, 5);
   });
 
   it('is absent without debug, and without the query', () => {

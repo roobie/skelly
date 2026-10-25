@@ -663,6 +663,14 @@
       ]
     },
     {
+      "id": "debug.mannequin-place",
+      "keys": [
+        {
+          "code": "Numpad9"
+        }
+      ]
+    },
+    {
       "id": "debug.perception-labels-toggle",
       "keys": [
         {
