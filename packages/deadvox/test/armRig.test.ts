@@ -25,19 +25,20 @@ const target = (grip: Vector3, handFrame?: Quaternion): ArmTarget => ({
 const wristOf = (rig: ArmRig, at: ArmTarget, hand: Quaternion): Vector3 =>
   at.grip.clone().sub(rig.gripFromWrist.clone().applyQuaternion(hand));
 
-/** Both segments keep their authored lengths and every rotation stays a unit quaternion. */
+/** Both segments meet the pinned shoulder and wrist, and every rotation stays a unit quaternion. */
 const expectIntactArm = (rig: ArmRig, at: ArmTarget): void => {
   const solved = solveArmRig(rig, at);
   const wrist = wristOf(rig, at, solved.hand);
-  expect(solved.elbow.distanceTo(solved.shoulder)).toBeCloseTo(rig.upperLength, 6);
-  expect(wrist.distanceTo(solved.elbow)).toBeCloseTo(rig.foreLength, 6);
+  expect(solved.shoulder.distanceTo(at.shoulder)).toBeLessThan(1e-9);
+  expect(solved.elbow.distanceTo(solved.shoulder)).toBeCloseTo(rig.upperLength * solved.upperScale, 6);
+  expect(wrist.distanceTo(solved.elbow)).toBeCloseTo(rig.foreLength * solved.foreScale, 6);
   for (const rotation of [solved.upper, solved.fore, solved.hand]) {
     expect(rotation.length()).toBeCloseTo(1, 6);
   }
 };
 
 describe('solveArmRig', () => {
-  it('keeps both segment lengths for a grip closer to the shoulder than the folded arm reaches', () => {
+  it('redistributes segment length without moving the shoulder for a grip inside folded reach', () => {
     for (const rig of [rigOf(0.3, 0.2), rigOf(0.2, 0.3)]) {
       const near = target(new Vector3(0.3, -0.6, 0.05));
       expect(near.grip.distanceTo(near.shoulder)).toBeLessThan(Math.abs(rig.upperLength - rig.foreLength));
@@ -46,7 +47,7 @@ describe('solveArmRig', () => {
     }
   });
 
-  it('keeps both segment lengths and unit rotations for a wrist on the shoulder', () => {
+  it('keeps joints connected and rotations finite for a wrist on the shoulder', () => {
     const { shoulder } = target(new Vector3());
     const frame = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), Math.PI / 3);
     for (const rig of [rigOf(0.3, 0.2), rigOf(0.25, 0.25)]) {
@@ -62,10 +63,21 @@ describe('solveArmRig', () => {
     }
   });
 
+  it('stretches an unreachable arm along its segments without moving its shoulder', () => {
+    const rig = rigOf(0.3, 0.2);
+    const at = target(new Vector3(0.1, -0.5, -1.3), new Quaternion());
+    expectIntactArm(rig, at);
+    const solved = solveArmRig(rig, at);
+    expect(solved.upperScale).toBeGreaterThan(1);
+    expect(solved.upperScale).toBeCloseTo(solved.foreScale, 6);
+  });
+
   it('keeps both segment lengths with the shoulder in place for an ordinary reachable grip', () => {
     const rig = rigOf(0.3, 0.2);
     const at = target(new Vector3(0.1, -0.5, -0.3));
     expectIntactArm(rig, at);
-    expect(solveArmRig(rig, at).shoulder.distanceTo(at.shoulder)).toBeLessThan(1e-6);
+    const solved = solveArmRig(rig, at);
+    expect(solved.upperScale).toBe(1);
+    expect(solved.foreScale).toBe(1);
   });
 });

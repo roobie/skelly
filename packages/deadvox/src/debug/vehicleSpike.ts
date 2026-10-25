@@ -64,7 +64,7 @@ import { MOTORBIKE } from '../vehicles/motorbike.ts';
 import { PICKUP } from '../vehicles/pickup.ts';
 import { RANGE_ROVER, STRIPPED_REMOVED, wheel } from '../vehicles/rangeRover.ts';
 import { SEDAN } from '../vehicles/sedan.ts';
-import { gridBounds, type MeshBuffers, meshGrid, type Rgb, type VoxelGrid } from '../vehicles/voxels.ts';
+import { gridBounds, type MeshBuffers, meshGrid, quadColors, type Rgb, type VoxelGrid } from '../vehicles/voxels.ts';
 import { fittingWear, type WearSite, wearGrid, wearKey, wearPalette } from '../vehicles/wear.ts';
 import { type PanelActions, type PanelModel, panelTemplate } from './vehicleSpikePanel.ts';
 
@@ -304,14 +304,20 @@ const rgbOf = (paint: Paint, mat: string): Rgb => {
   return rgb;
 };
 
-const toGeometry = (buffers: MeshBuffers): BufferGeometry | undefined => {
+const toGeometry = (buffers: MeshBuffers, paint: Paint): BufferGeometry | undefined => {
   if (buffers.quads === 0) {
     return undefined;
   }
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new BufferAttribute(buffers.positions, 3));
   geometry.setAttribute('normal', new BufferAttribute(buffers.normals, 3));
-  geometry.setAttribute('color', new BufferAttribute(buffers.colors, 3));
+  geometry.setAttribute(
+    'color',
+    new BufferAttribute(
+      quadColors(buffers, (mat) => rgbOf(paint, mat)),
+      3,
+    ),
+  );
   geometry.setIndex(new BufferAttribute(buffers.indices, 1));
   geometry.scale(VOXEL, VOXEL, VOXEL);
   geometry.computeBoundingSphere();
@@ -329,8 +335,8 @@ const cachedMeshes = (paint: Paint, part: string, gridOf: () => VoxelGrid): Part
   let meshes = meshCache.get(key);
   if (!meshes) {
     const started = performance.now();
-    const { solid, clear } = meshGrid(gridOf(), (mat) => rgbOf(paint, mat), isClearMaterial);
-    meshes = { solid: toGeometry(solid), clear: toGeometry(clear) };
+    const { solid, clear } = meshGrid(gridOf(), isClearMaterial);
+    meshes = { solid: toGeometry(solid, paint), clear: toGeometry(clear, paint) };
     meshCache.set(key, meshes);
     meshCost.types += 1;
     meshCost.ms += performance.now() - started;

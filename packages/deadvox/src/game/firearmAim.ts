@@ -5,9 +5,11 @@ import { type CrosshairTarget, crosshairAimPoint } from '../core/crosshairTarget
 import { heldFirearmTransform } from '../core/heldPose.ts';
 import type { HandSide } from '../core/inventory.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
+import type { HeldPosesDef } from '../core/schema.ts';
 import type { MeleeWeapon, ZombieAim, ZombieSystem } from '../core/zombies.ts';
 
 export interface FirearmBoreRayInput {
+  readonly holds: HeldPosesDef;
   readonly model: ModelDef;
   readonly eye: Vec3;
   readonly yaw: number;
@@ -34,6 +36,7 @@ export interface FirearmBoreRay {
 }
 
 export const firearmBoreRay = ({
+  holds,
   model,
   eye,
   yaw,
@@ -52,6 +55,7 @@ export const firearmBoreRay = ({
   isSolid = () => false,
 }: FirearmBoreRayInput): FirearmBoreRay => {
   const pose = heldFirearmTransform({
+    holds,
     model,
     side,
     leadingSide,

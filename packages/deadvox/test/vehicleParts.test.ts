@@ -373,14 +373,6 @@ describe('greedy voxel meshing', () => {
     { op: 'box', from: [3, 0, 4], to: [6, 2, 6], mat: 'blue' },
   ]);
   const isClear = (mat: string): boolean => mat === GLASS;
-  const Colors: Readonly<Record<string, readonly [number, number, number]>> = {
-    red: [1, 0, 0],
-    blue: [0, 0, 1],
-    [GLASS]: [0, 1, 0],
-  };
-  const colorOf = (mat: string): readonly [number, number, number] => Colors[mat] ?? [0, 0, 0];
-  const matOf = (rgb: readonly number[]): string | undefined =>
-    Object.keys(Colors).find((mat) => colorOf(mat).every((channel, k) => channel === rgb[k]));
   /** Glass hides behind anything; an opaque face hides only behind another opaque voxel. */
   const hidden = (neighbour: string | undefined, clear: boolean): boolean =>
     neighbour !== undefined && (clear || !isClear(neighbour));
@@ -412,7 +404,7 @@ describe('greedy voxel meshing', () => {
 
   /** The same list from a mesh: each quad split into the unit faces it covers, so a doubled or misplaced face shows. */
   const meshedFaces = (buffers: MeshBuffers): string[] => {
-    const { positions, normals, colors, indices } = buffers;
+    const { positions, normals, materials, indices } = buffers;
     const faces: string[] = [];
     for (let q = 0; q < indices.length; q += 6) {
       const corners = [indices[q]!, indices[q + 1]!, indices[q + 2]!, indices[q + 5]!].map((i) => [
@@ -424,7 +416,7 @@ describe('greedy voxel meshing', () => {
       const max = [0, 1, 2].map((k) => Math.max(...corners.map((corner) => corner[k]!)));
       const first = indices[q]! * 3;
       const normal = [normals[first]!, normals[first + 1]!, normals[first + 2]!];
-      const mat = matOf([colors[first]!, colors[first + 1]!, colors[first + 2]!]);
+      const mat = materials[q / 6];
       const [u, v] = [0, 1, 2].filter((k) => normal[k] === 0) as [number, number];
       for (let a = min[u]!; a < max[u]!; a += 1) {
         for (let b = min[v]!; b < max[v]!; b += 1) {
@@ -445,7 +437,7 @@ describe('greedy voxel meshing', () => {
     ]);
     const reads = vi.spyOn(sparse, 'get');
     try {
-      const { solid, clear } = meshGrid(sparse, colorOf, isClear);
+      const { solid, clear } = meshGrid(sparse, isClear);
       expect(solid.quads).toBeGreaterThan(0);
       expect(clear.quads).toBeGreaterThan(0);
       expect(reads.mock.calls.length).toBeLessThanOrEqual(FACES.length * sparse.size);
@@ -455,7 +447,7 @@ describe('greedy voxel meshing', () => {
   });
 
   it('covers exactly the exposed faces, each once, in fewer quads', () => {
-    const { solid, clear } = meshGrid(fixture, colorOf, isClear);
+    const { solid, clear } = meshGrid(fixture, isClear);
     expect(meshedFaces(solid)).toEqual(naiveFaces(fixture, false));
     expect(meshedFaces(clear)).toEqual(naiveFaces(fixture, true));
     expect(solid.quads).toBeLessThan(naiveFaces(fixture, false).length);
