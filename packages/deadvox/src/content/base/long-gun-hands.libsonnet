@@ -5,8 +5,8 @@
 // the curled fingers close ahead of it. A gun that exports a `stock` part and no grip takes the firing palm on the
 // stock wrist's right face above the grip point, fingers pointing down and ahead so they curl under the wrist and the
 // thumb lies over its top. A gun that exports neither has no place for the firing hand, so the content fails to
-// compile instead of guessing. The support palm cups the forend from below at the exported support contact,
-// `forendBottom` giving the height of the forend's underside there, so the bore runs across the palm from its heel
+// compile instead of guessing. The support palm cups the forend from below at the exported support anchor,
+// whose height gungen reads off the drawn forend's underside, so the bore runs across the palm from its heel
 // to the gap between thumb and index: the fingers point forward and 38 degrees toward the gun's far side, curling
 // up that side, and the thumb lies forward along the near side.
 local firingHold(model) =
@@ -23,13 +23,13 @@ local firingHold(model) =
   } else
     error 'long gun %s exports neither a grip part nor a stock part, so no firing hold fits it' % [model.id];
 
-function(model, buttX, forendBottom) model {
+function(model, buttX) model {
   hands: {
     seat: [0.15, -0.1, -0.12],
     butt: [buttX, 0, 0],
     firing: firingHold(model),
     support: {
-      at: [model.anchors.support[0], forendBottom, 0],
+      at: [model.anchors.support[0], model.anchors.support[1], 0],
       palm: [0, 1, 0],
       fingers: [0.7880108, 0, 0.6156615],
       pose: 'forend',
