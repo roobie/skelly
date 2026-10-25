@@ -170,7 +170,8 @@ export const liftableFurniture = (furniture: FurnitureDef): boolean =>
 const fastened = (inventory: Inventory, entity: BlockEntity): boolean =>
   entity.fixed === true || fastenedKind(inventory, entity);
 
-const fastenedKind = (inventory: Inventory, entity: BlockEntity): boolean => !liftableFurniture(inventory.entities.defOf(entity));
+const fastenedKind = (inventory: Inventory, entity: BlockEntity): boolean =>
+  !liftableFurniture(inventory.entities.defOf(entity));
 
 const anyBodyIn = (pos: Readonly<Vec3>, size: Readonly<Vec3>, bodies: Iterable<Body>): boolean =>
   [...bodies].some((body) => boxIntersectsBody(pos, size, body));
