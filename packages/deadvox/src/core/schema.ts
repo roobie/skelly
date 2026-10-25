@@ -3571,6 +3571,19 @@ export type LegSegment = (typeof LEG_SEGMENTS)[number];
 const LegRigSchema = strictObject({ shin: ArmSegmentSchema, foot: ArmSegmentSchema });
 export type HandPoseDef = InferOutput<typeof HandPoseSchema>;
 
+const ReadyHandSchema = strictObject({ offset: Point, rotation: Point });
+const HeldPosesSchema = strictObject({
+  reachLeadMetres: NonNegative,
+  oneHand: Point,
+  twoHand: Point,
+  display: Point,
+  supportUpright: Point,
+  supportForward: Point,
+  readyPrimary: ReadyHandSchema,
+  readySupport: ReadyHandSchema,
+});
+export type HeldPosesDef = InferOutput<typeof HeldPosesSchema>;
+
 /** Actor models and poses are content so appearance doesn't live in renderer code; `DESIGN.md`, "Models". */
 const FigureSchema = strictObject({
   id: Id,
@@ -3593,6 +3606,7 @@ const FigureSchema = strictObject({
   }),
   /** Both arm models' rig; the two arms share it because each is the mirror of the other. */
   armRig: ArmRigSchema,
+  holds: HeldPosesSchema,
   /** Both leg models' rig; the two legs share it because each is the mirror of the other. */
   legRig: LegRigSchema,
   /** Walking swings each leg about its hip and each arm, against its leg, about its shoulder; peak angles. */

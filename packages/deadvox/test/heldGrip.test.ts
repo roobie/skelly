@@ -85,6 +85,7 @@ describe('actual-slot held placement', () => {
       const model = registry.models.get(modelId)!;
       expect(model.gun?.sight?.eyeReliefMetres).toBeGreaterThan(0);
       const pose = heldFirearmTransform({
+        holds: registry.figures.get('player')!.holds,
         model,
         side: 'right',
         leadingSide: 'right',
@@ -162,6 +163,7 @@ describe('actual-slot held placement', () => {
         const expectedSeat = [side === 'right' ? seat[0] : -seat[0], seat[1], seat[2]];
         const poseAt = (progress: number) =>
           heldFirearmTransform({
+            holds: registry.figures.get('player')!.holds,
             model,
             side,
             leadingSide: side,
@@ -217,6 +219,7 @@ describe('actual-slot held placement', () => {
       },
     };
     const common = {
+      holds: registry.figures.get('player')!.holds,
       model,
       side: 'right' as const,
       leadingSide: 'right' as const,

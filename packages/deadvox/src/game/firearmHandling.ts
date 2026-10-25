@@ -655,6 +655,7 @@ export class FirearmMechanics {
     const side = this.inventory.hands.right?.uid === item.uid ? 'right' : 'left';
     const tuning = this.requiredFirearmsCombatTuning();
     const bore = firearmBoreRay({
+      holds: this.inventory.registry.figures.get(CORE_CONTENT_IDS.player)!.holds,
       model: data.model,
       eye: input.eye,
       yaw: input.yaw,
@@ -1558,7 +1559,15 @@ export class FirearmMechanics {
     const side = this.inventory.hands.right?.uid === item.uid ? 'right' : 'left';
     const twoHanded = Boolean(defOf(this.inventory.registry, item.type).twoHanded);
     const eye: Vec3 = pose.eye.map((value) => value * pose.blockSize) as Vec3;
-    const held = heldEjectionPose({ model: data.model, side, twoHanded, eye, yaw: pose.yaw, pitch: pose.pitch });
+    const held = heldEjectionPose({
+      holds: this.inventory.registry.figures.get(CORE_CONTENT_IDS.player)!.holds,
+      model: data.model,
+      side,
+      twoHanded,
+      eye,
+      yaw: pose.yaw,
+      pitch: pose.pitch,
+    });
     const { origin: portOrigin } = held;
     let origin = portOrigin;
     const originBlocks: Vec3 = origin.map((value) => value / this.blockSize) as Vec3;
@@ -1699,7 +1708,12 @@ export class FirearmMechanics {
     const point = revolverChamberPoint(model.gun!.revolver!, chamber, cylinder.aligned, 1);
     const local = modelToView(model, point.map((value, index) => value - model.grip!.at[index]!) as Vec3);
     const side = this.inventory.hands.right?.uid === item.uid ? 'right' : 'left';
-    const grip = heldGripOffset(side, false, model);
+    const grip = heldGripOffset({
+      side,
+      twoHanded: false,
+      model,
+      holds: this.inventory.registry.figures.get(CORE_CONTENT_IDS.player)!.holds,
+    });
     const basis = basisAlong(
       [-Math.sin(pose.yaw) * Math.cos(pose.pitch), Math.sin(pose.pitch), -Math.cos(pose.yaw) * Math.cos(pose.pitch)],
       [0, 1, 0],

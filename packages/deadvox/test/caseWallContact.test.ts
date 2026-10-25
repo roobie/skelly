@@ -344,6 +344,7 @@ describe('firearm case wall contact', () => {
     const data = firearmHandlingFor(rifle, registry);
     const portAtEye = (eye: Vec3) =>
       heldEjectionPose({
+        holds: registry.figures.get('player')!.holds,
         model: data.model,
         side: 'right',
         twoHanded: defOf(registry, rifle.type).twoHanded === true,
@@ -406,6 +407,7 @@ describe('firearm case wall contact', () => {
     const yaw = (3 * Math.PI) / 4;
     const shot = makeWallShot(yaw, undefined, 0.5);
     const raw = heldEjectionPose({
+      holds: registry.figures.get('player')!.holds,
       model: shot.data.model,
       side: shot.side,
       twoHanded: defOf(registry, shot.rifle.type).twoHanded === true,
@@ -430,6 +432,7 @@ describe('firearm case wall contact', () => {
     expect(bodyOverlapsTerrain(shot.body, shot.isSolid)).toBe(false);
     expect(shot.body.onGround).toBe(true);
     const raw = heldEjectionPose({
+      holds: registry.figures.get('player')!.holds,
       model: shot.data.model,
       side: shot.side,
       twoHanded: defOf(registry, shot.rifle.type).twoHanded === true,
@@ -474,6 +477,7 @@ describe('firearm case wall contact', () => {
     expect(bodyOverlapsTerrain(shot.body, shot.isSolid)).toBe(false);
     expect(shot.body.onGround).toBe(true);
     const raw = heldEjectionPose({
+      holds: registry.figures.get('player')!.holds,
       model: shot.data.model,
       side: 'right',
       twoHanded: defOf(registry, shot.rifle.type).twoHanded === true,

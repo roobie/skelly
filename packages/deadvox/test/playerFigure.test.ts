@@ -20,7 +20,7 @@ import {
 } from 'three';
 import { describe, expect, it } from 'vitest';
 import type { Vec3 } from '../src/core/coords.ts';
-import { HOLD } from '../src/core/heldPose.ts';
+
 import { Inventory } from '../src/core/inventory.ts';
 import { toggleLight } from '../src/core/lights.ts';
 import { meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
@@ -47,6 +47,10 @@ import { createPlayerBody, PLAYER } from './playerFixture.ts';
 const registry = baseRegistry();
 const scale = makeScale(0.5);
 const playerFigure = registry.figures.get('player')!;
+const HOLD = {
+  right: playerFigure.holds.oneHand,
+  left: [-playerFigure.holds.oneHand[0], playerFigure.holds.oneHand[1], playerFigure.holds.oneHand[2]] as Vec3,
+};
 const STANDING = { stance: 'standing', dt: 0 } as const;
 
 const figureModels = { version: 1, ...(await loadFigureModels(registry)) } as unknown as ModelLibrary;
@@ -528,7 +532,16 @@ describe('player figure', () => {
   it('draws one pair of arms: no body arm on a side whose first-person view arm draws, all body arms in third person', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
     const meshes = playerMeshes();
-    const bodyArmShown = (side: 'left' | 'right') => drawnPart(meshes, `${side}Arm`).visible;
+    const bodyArmShown = (side: 'left' | 'right') => {
+      let count = 0;
+      meshes.group.traverseVisible((object) => {
+        if (object.name === `figure-${side}Arm` || object.name === `first-person-arm-${side}`) {
+          count += 1;
+        }
+      });
+      expect(count).toBeLessThanOrEqual(1);
+      return count === 1;
+    };
     // Empty hands draw fists; a one-handed and a two-handed item each draw their own grip.
     for (const held of [undefined, 'kitchen_knife', 'baseball_bat']) {
       const inventory = new Inventory(registry);
@@ -650,7 +663,7 @@ describe('player figure', () => {
     modelLoaded = true;
     models.version += 1;
     record(readyMeleePose(false));
-    record(readyMeleePose(true));
+    record(readyMeleePose(true, playerFigure.holds));
     const { cooldown } = FISTS_MELEE;
     const contactAt = meleeContactTime(cooldown, FISTS_MELEE.contactFraction!, FISTS_MELEE.windupCapSimSeconds!);
     const contact = meleePoseAndContact(
@@ -669,7 +682,7 @@ describe('player figure', () => {
       contactAt,
       false,
     );
-    record(readyMeleePose(true));
+    record(readyMeleePose(true, playerFigure.holds));
     record(contact);
 
     expect(inventory.move(knife, { kind: 'hand', side: 'left' }).ok).toBe(true);
@@ -719,7 +732,7 @@ describe('player figure', () => {
     expect(restoredArmCount).toBe(2);
     const restoredBackpack = restored.create('hiking_backpack');
     expect(restored.add(restoredBackpack, { kind: 'worn' })).toBe(true);
-    restoredHeld.update(camera, readyMeleePose(true));
+    restoredHeld.update(camera, readyMeleePose(true, playerFigure.holds));
     let rebuiltArmCount = 0;
     restoredInternals.scene.traverse((object) => {
       if (object.name.startsWith('first-person-arm-')) {
