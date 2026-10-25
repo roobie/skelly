@@ -310,6 +310,16 @@ const weatheringSlider = (
   `;
 };
 
+const patternCutoffSlider = (
+  value: number,
+  option: { min: number; max: number },
+  change: (value: number) => void,
+): TemplateResult => html`
+  <label for="pattern-cutoff">Surface pattern cutoff (m)</label>
+  <input id="pattern-cutoff" type="range" min=${option.min} max=${option.max} step="1" .value=${live(String(value))}
+    @input=${(event: Event) => change(Number((event.currentTarget as HTMLInputElement).value))} />
+`;
+
 const weatheringColorInput = (
   state: WeatheringUrlState,
   field: WeatheringColorField,
@@ -363,6 +373,9 @@ const panelTemplate = ({
   changeFirearmsSkillZeroEffect,
   copyFirearmsSkillZeroHandling,
   firearmsSkillCopyStatus,
+  patternCutoff,
+  patternCutoffOption,
+  changePatternCutoff,
   weatheringState,
   weatheringProfiles,
   selectWeatheringProfile,
@@ -415,6 +428,9 @@ const panelTemplate = ({
   ) => void;
   copyFirearmsSkillZeroHandling: () => void;
   firearmsSkillCopyStatus: string;
+  patternCutoff: number;
+  patternCutoffOption: { min: number; max: number };
+  changePatternCutoff: (value: number) => void;
   weatheringState: WeatheringUrlState | undefined;
   weatheringProfiles: readonly WeatheringDef[];
   selectWeatheringProfile: (profileId: string) => void;
@@ -426,6 +442,7 @@ const panelTemplate = ({
 }): TemplateResult => {
   // What each group shows besides its action buttons.
   const extras: Partial<Record<GroupId, TemplateResult | typeof nothing>> = {
+    look: patternCutoffSlider(patternCutoff, patternCutoffOption, changePatternCutoff),
     weathering: weatheringState
       ? html`
           <label for="weathering-profile">Weathering profile</label>
@@ -1153,6 +1170,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     weather: hooks.weather,
     ...(shadows ? { shadows } : {}),
     flashlight: hooks.flashlight,
+    patternCutoff: hooks.engine.graphics.tuning.patternCutoff,
     ...(hooks.engine.config.weathering
       ? {
           weathering: {
@@ -1207,14 +1225,22 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   });
   /** Keeps the address bar reproducing the current look: replaces the entry, never adds one or reloads. */
   function syncLookUrl(): void {
-    const next = lookUrl(location.href, lookState(), {
-      look: lookDefaults,
-      defaultFogginess,
-      weathering: look.weatheringState,
-      profiles: hooks.engine.registry.weathering,
-    });
-    if (next !== location.href) {
-      history.replaceState(history.state, '', next);
+    const next = new URL(
+      lookUrl(location.href, lookState(), {
+        look: lookDefaults,
+        defaultFogginess,
+        weathering: look.weatheringState,
+        profiles: hooks.engine.registry.weathering,
+      }),
+    );
+    const cutoff = look.patternCutoff;
+    if (cutoff === hooks.engine.graphics.tuning.patternCutoff.default) {
+      next.searchParams.delete('patterncutoff');
+    } else {
+      next.searchParams.set('patterncutoff', String(cutoff));
+    }
+    if (next.href !== location.href) {
+      history.replaceState(history.state, '', next.href);
     }
     syncCamUrl(true);
   }
@@ -1223,6 +1249,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     syncLookUrl();
     shellKey = '';
     drawShell();
+  };
+  const changePatternCutoff = (value: number): void => {
+    look.setPatternCutoff(value);
+    syncLookUrl();
   };
   const changeWeatheringNumber = (field: WeatheringNumberField, value: number): void => {
     look.setWeatheringNumber(field, value);
@@ -1627,6 +1657,9 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
             drawShell();
           },
           firearmsSkillCopyStatus,
+          patternCutoff: look.patternCutoff,
+          patternCutoffOption: hooks.engine.graphics.tuning.patternCutoff,
+          changePatternCutoff,
           weatheringState: look.weatheringState,
           weatheringProfiles: look.weatheringProfileOptions,
           selectWeatheringProfile,

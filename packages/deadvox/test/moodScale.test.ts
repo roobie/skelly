@@ -38,6 +38,7 @@ const tuning: GraphicsOptions = {
   fastCamo: toggle,
   coarseWeathering: toggle,
   cachedSurfaceNoise: toggle,
+  patternCutoff: { label: 'Fixture pattern cutoff', default: 0, min: 0, max: 96 },
 };
 
 it('non-post rendering scales the scene and hands, presents at display resolution, and probes the complete draw', () => {

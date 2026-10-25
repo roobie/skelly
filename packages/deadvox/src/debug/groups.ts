@@ -45,6 +45,7 @@ export const DEBUG_GROUPS: readonly GroupDef[] = [
     notes: [
       { label: 'Projected camouflage (debug URL override)', param: 'camofast=1' },
       { label: 'Cached surface noise (debug URL override)', param: 'surfacenoise=1' },
+      { label: 'Surface pattern cutoff', param: 'patterncutoff' },
     ],
   },
   {

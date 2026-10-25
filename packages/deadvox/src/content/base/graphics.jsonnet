@@ -41,5 +41,6 @@ local toggle(label, default=false) = { label: label, default: default, options: 
     fastCamo: toggle('Fast camouflage pattern'),
     coarseWeathering: toggle('Coarse weathering grid'),
     cachedSurfaceNoise: toggle('Cached surface noise', true),
+    patternCutoff: { label: 'Surface pattern cutoff', default: 0, min: 0, max: 512 },
   }],
 }

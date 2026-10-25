@@ -31,6 +31,7 @@ const tuning: GraphicsOptions = {
   fastCamo: toggle('Fixture camo'),
   coarseWeathering: toggle('Fixture weather'),
   cachedSurfaceNoise: toggle('Fixture noise'),
+  patternCutoff: { label: 'Fixture pattern cutoff', min: 0, max: 96, default: 0 },
 };
 const source = (options: GraphicsOptions) => ({
   source: 'fixture-graphics.json',
@@ -157,6 +158,19 @@ it('derives URL bounds and explicit override round-trip from each content option
   expect(readGraphicsParams(new URLSearchParams('renderscale=NaN&bloomscale=&sunsmall=invalid'), tuning)).toEqual({});
 });
 
+it('clamps the surface pattern cutoff URL knob to its content range', () => {
+  const contentTuning = buildRegistry([source(tuning)]).registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!;
+  const { patternCutoff } = contentTuning;
+  expect(
+    resolveGraphics(contentTuning, {}, readGraphicsParams(new URLSearchParams(), contentTuning)).patternCutoff,
+  ).toBe(patternCutoff.default);
+  const aboveMax = readGraphicsParams(
+    new URLSearchParams({ patterncutoff: String(patternCutoff.max * 2) }),
+    contentTuning,
+  );
+  expect(aboveMax.patternCutoff).toBe(patternCutoff.max);
+});
+
 it('validated setters reject disallowed values without mutating the player choices', () => {
   const settings = setGraphicsSetting(tuning, {}, 'renderScale', tuning.renderScale.min);
   const changed = setGraphicsSetting(tuning, settings, 'fastCamo', false);
@@ -171,7 +185,12 @@ it('applies all resolved knobs on startup and player changes, with URL priority 
   const targets = {
     mood: { setRenderScale: vi.fn(), setBloomScale: vi.fn(), setDrugVignetteScale: vi.fn() },
     shadows: { setSmallSunMap: vi.fn() },
-    meshes: { setFastCamo: vi.fn(), setCoarseWeathering: vi.fn(), setCachedSurfaceNoise: vi.fn() },
+    meshes: {
+      setFastCamo: vi.fn(),
+      setCoarseWeathering: vi.fn(),
+      setCachedSurfaceNoise: vi.fn(),
+      setPatternCutoffMetres: vi.fn(),
+    },
   };
   let saved = '';
   const storage = {
@@ -190,6 +209,7 @@ it('applies all resolved knobs on startup and player changes, with URL priority 
   expect(targets.meshes.setFastCamo).toHaveBeenLastCalledWith(false);
   expect(targets.meshes.setCoarseWeathering).toHaveBeenLastCalledWith(tuning.coarseWeathering.default);
   expect(targets.meshes.setCachedSurfaceNoise).toHaveBeenLastCalledWith(tuning.cachedSurfaceNoise.default);
+  expect(targets.meshes.setPatternCutoffMetres).toHaveBeenLastCalledWith(tuning.patternCutoff.default);
   controls.set('cachedSurfaceNoise', false);
   expect(targets.meshes.setCachedSurfaceNoise).toHaveBeenLastCalledWith(false);
   controls.clear('cachedSurfaceNoise');

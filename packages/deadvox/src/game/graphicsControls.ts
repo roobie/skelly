@@ -20,6 +20,7 @@ interface GraphicsTargets {
     setFastCamo: (value: boolean) => void;
     setCoarseWeathering: (value: boolean) => void;
     setCachedSurfaceNoise: (value: boolean) => void;
+    setPatternCutoffMetres: (value: number) => void;
   };
 }
 
@@ -88,5 +89,6 @@ export class GraphicsControls {
     this.targets.meshes.setFastCamo(values.fastCamo);
     this.targets.meshes.setCoarseWeathering(values.coarseWeathering);
     this.targets.meshes.setCachedSurfaceNoise(values.cachedSurfaceNoise);
+    this.targets.meshes.setPatternCutoffMetres(values.patternCutoff);
   }
 }

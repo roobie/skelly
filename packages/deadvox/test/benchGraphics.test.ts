@@ -35,6 +35,7 @@ const tuning = {
   fastCamo: toggle,
   coarseWeathering: toggle,
   cachedSurfaceNoise: toggle,
+  patternCutoff: { label: 'Fixture pattern cutoff', default: 0, min: 0, max: 96 },
 };
 
 it('benchmark engines use mod defaults despite saved graphics preferences and debug URL overrides', () => {
@@ -107,7 +108,12 @@ it('post benchmark scale stays at the content default under GPU overload, includ
     tuning,
     {
       mood,
-      meshes: { setFastCamo: vi.fn(), setCoarseWeathering: vi.fn(), setCachedSurfaceNoise: vi.fn() },
+      meshes: {
+        setFastCamo: vi.fn(),
+        setCoarseWeathering: vi.fn(),
+        setCachedSurfaceNoise: vi.fn(),
+        setPatternCutoffMetres: vi.fn(),
+      },
     },
     {
       source: 'mod',

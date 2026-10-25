@@ -3,6 +3,7 @@
 // eye against the game's default look (the `look` content section), which play has already applied.
 
 import type { WebGLRenderer } from 'three';
+import type { GraphicsOptions } from '../core/graphics.ts';
 import {
   AUTO_TONE,
   bloomClipFor,
@@ -60,7 +61,7 @@ type LookMeshes = Pick<
   ChunkMeshes,
   'linearColorsOn' | 'setLinearColors' | 'patternsOn' | 'setPatterns' | 'occlusionOn' | 'setOcclusion'
 > &
-  Partial<Pick<ChunkMeshes, 'setWeathering'>>;
+  Partial<Pick<ChunkMeshes, 'patternCutoffMetres' | 'setPatternCutoffMetres' | 'setWeathering'>>;
 type WeatheringNumberField = keyof typeof WEATHERING_RANGES;
 type WeatheringColorField = 'tintColor' | 'streakColor' | 'mossColor';
 
@@ -82,6 +83,7 @@ export class LookControls {
   private weatheringValue: WeatheringUrlState | undefined;
   private readonly weatheringProfiles: ReadonlyMap<string, WeatheringDef>;
   private readonly weatheringSplit: number | undefined;
+  private readonly patternCutoffOption: GraphicsOptions['patternCutoff'];
 
   /** Takes the renderer as it is: play has applied the default look, and the tone mode follows it. */
   constructor(
@@ -94,6 +96,7 @@ export class LookControls {
       weather: Weather;
       shadows?: ShadowControls;
       flashlight: { strength: number };
+      patternCutoff?: GraphicsOptions['patternCutoff'];
       weathering?: {
         state: WeatheringUrlState;
         profiles: ReadonlyMap<string, WeatheringDef>;
@@ -107,6 +110,7 @@ export class LookControls {
     this.weather = environment.weather;
     this.shadows = environment.shadows;
     this.flashlight = environment.flashlight;
+    this.patternCutoffOption = environment.patternCutoff ?? { label: '', default: 0, min: 0, max: 0 };
     this.weatheringValue = environment.weathering?.state;
     this.weatheringProfiles = environment.weathering?.profiles ?? new Map();
     this.weatheringSplit = environment.weathering?.split;
@@ -287,6 +291,19 @@ export class LookControls {
 
   get patterns(): boolean {
     return this.meshes?.patternsOn ?? this.patternsValue;
+  }
+
+  /** Zero leaves surface patterns on at every distance. */
+  get patternCutoff(): number {
+    return this.meshes?.patternCutoffMetres ?? this.patternCutoffOption.default;
+  }
+
+  setPatternCutoff(value: number): void {
+    if (!Number.isFinite(value)) {
+      return;
+    }
+    const { min, max } = this.patternCutoffOption;
+    this.meshes?.setPatternCutoffMetres?.(Math.max(min, Math.min(max, value)));
   }
 
   /** Wide ambient occlusion on ambient light. */

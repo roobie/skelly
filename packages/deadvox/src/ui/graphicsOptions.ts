@@ -43,7 +43,7 @@ const scaleControl = (
 export const renderGraphicsOptions = (root: HTMLElement, graphics: GraphicsControls, text: OptionsText): void => {
   const draw = (): void => {
     const { values, player } = graphics;
-    const controls = GRAPHICS_KEYS.map((key): TemplateResult => {
+    const controls = GRAPHICS_KEYS.filter((key) => key !== 'patternCutoff').map((key): TemplateResult => {
       const option = graphics.tuning[key];
       const overridden = graphics.overrides[key] !== undefined;
       const change = (value: number | boolean): void => {

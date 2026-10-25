@@ -48,6 +48,19 @@ const scaleOptionSchema = (floor: number) =>
 const ScaleOptionSchema = scaleOptionSchema(Number.MIN_VALUE);
 /** A strength that may be turned off entirely. */
 const ShareOptionSchema = scaleOptionSchema(0);
+/** A non-negative world distance. */
+const DistanceOptionSchema = pipe(
+  strictObject({
+    label: pipe(string(), nonEmpty()),
+    default: pipe(number(), finite(), minValue(0)),
+    min: pipe(number(), finite(), minValue(0)),
+    max: pipe(number(), finite(), minValue(0)),
+  }),
+  check(
+    ({ min, max, default: value }) => min <= max && value >= min && value <= max,
+    'range must be ordered and contain the default',
+  ),
+);
 
 const ToggleOptionSchema = pipe(
   strictObject({
@@ -80,6 +93,7 @@ export const GRAPHICS_KNOBS = {
   fastCamo: { kind: 'toggle', url: 'camofast', schema: ToggleOptionSchema },
   coarseWeathering: { kind: 'toggle', url: 'weathercoarse', schema: ToggleOptionSchema },
   cachedSurfaceNoise: { kind: 'toggle', url: 'surfacenoise', schema: ToggleOptionSchema },
+  patternCutoff: { kind: 'distance', url: 'patterncutoff', schema: DistanceOptionSchema },
 } as const;
 
 export type GraphicsKey = keyof typeof GRAPHICS_KNOBS;

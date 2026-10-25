@@ -49,6 +49,12 @@
       "mobActors": {
         "maxCorpses": 16
       },
+      "patternCutoff": {
+        "default": 0,
+        "label": "Surface pattern cutoff",
+        "max": 512,
+        "min": 0
+      },
       "readyRadiusM": 64,
       "renderScale": {
         "adaptive": {

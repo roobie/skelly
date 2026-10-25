@@ -64,6 +64,7 @@ const chunkMaterial = ({
   blockSize,
   linearColors,
   patterns,
+  patternCutoff,
   occlusion,
   weathering,
   weatheringSplit,
@@ -87,6 +88,7 @@ const chunkMaterial = ({
   blockSize: number;
   linearColors: { value: number };
   patterns: { value: number };
+  patternCutoff: { value: number };
   occlusion: { value: number };
   weathering: { value: number };
   weatheringSplit: { value: number };
@@ -114,6 +116,7 @@ const chunkMaterial = ({
     shader.uniforms.uSurfaceNoise = surfaceNoise;
     shader.uniforms.uLinearColors = linearColors;
     shader.uniforms.uPatterns = patterns;
+    shader.uniforms.uPatternCutoff = patternCutoff;
     shader.uniforms.uOcclusion = occlusion;
     shader.uniforms.uWeathering = weathering;
     shader.uniforms.uWeatheringSplit = weatheringSplit;
@@ -157,7 +160,7 @@ vFaceN = normalize(normal);`,
       .replace('#include <color_pars_fragment>', centroidColorPars(COLOR_PARS_GUARD_FRAGMENT))
       .replace(
         '#include <common>',
-        `#include <common>\nuniform float uLinearColors;\nuniform float uPatterns;\nuniform float uOcclusion;\nuniform float uWeathering;\nuniform float uWeatheringSplit;\nuniform float uWeatheringSplitEnabled;\nuniform float uWeatheringVariation;\nuniform float uWeatheringVariationScale;\nuniform float uMossThreshold;\nuniform float uMossBias;\nuniform vec3 uWeatheringTintColor;\nuniform float uWeatheringTintDarkness;\nuniform vec3 uWeatheringStreakColor;\nuniform float uWeatheringStreakStrength;\nuniform float uWeatheringStreakLength;\nuniform vec3 uWeatheringMossColor;\nuniform float uWeatheringMossStrength;\nuniform float uWeatheringMixCeiling;\nuniform float uWeatheringBlend;\n${CELL_VARYING}\n${PATTERN_VARYING}\n${OCCLUSION_VARYING}\n${WEATHER_VARYING}\n${WEATHERABLE_VARYING}\n${CELL_HASH}\n${SURFACE_PATTERN_GLSL}`,
+        `#include <common>\nuniform float uLinearColors;\nuniform float uPatterns;\nuniform float uPatternCutoff;\nuniform float uOcclusion;\nuniform float uWeathering;\nuniform float uWeatheringSplit;\nuniform float uWeatheringSplitEnabled;\nuniform float uWeatheringVariation;\nuniform float uWeatheringVariationScale;\nuniform float uMossThreshold;\nuniform float uMossBias;\nuniform vec3 uWeatheringTintColor;\nuniform float uWeatheringTintDarkness;\nuniform vec3 uWeatheringStreakColor;\nuniform float uWeatheringStreakStrength;\nuniform float uWeatheringStreakLength;\nuniform vec3 uWeatheringMossColor;\nuniform float uWeatheringMossStrength;\nuniform float uWeatheringMixCeiling;\nuniform float uWeatheringBlend;\n${CELL_VARYING}\n${PATTERN_VARYING}\n${OCCLUSION_VARYING}\n${WEATHER_VARYING}\n${WEATHERABLE_VARYING}\n${CELL_HASH}\n${SURFACE_PATTERN_GLSL}`,
       )
       .replace(
         '#include <lights_fragment_end>',
@@ -186,11 +189,12 @@ vec2 patUV = surfaceUV(vWorld, vFaceN);
 vec2 patFw = fwidth(patUV);
 float patId = floor(vPattern + 0.5);
 float patSeed = dot(abs(vFaceN), vec3(7.13, 13.7, 3.31));
-if (uPatterns > 0.5 && patId == PAT_CAMO) {
+bool showPattern = uPatterns > 0.5 && (uPatternCutoff <= 0.0 || distance(vWorld, cameraPosition) <= uPatternCutoff);
+if (showPattern && patId == PAT_CAMO) {
   float camoAO = min(diffuseColor.r / max(camoBase.r, 1e-4), min(diffuseColor.g / max(camoBase.g, 1e-4), diffuseColor.b / max(camoBase.b, 1e-4)));
   diffuseColor.rgb = camoColor(vWorld, max(patFw.x, patFw.y)) * clamp(camoAO, 0.0, 1.0);
 } else {
-  diffuseColor.rgb *= (uPatterns > 0.5 && patId > 0.5)
+  diffuseColor.rgb *= (showPattern && patId > 0.5)
     ? patternShade(patId, patUV, max(patFw.x, patFw.y), patFw, patSeed)
     : 0.94 + 0.12 * cellHash(floor(vCell + 1e-3));
 }
@@ -254,6 +258,7 @@ export class ChunkMeshes implements ColumnReveal {
   private readonly surfaceNoise: { value: DataTexture | null } = { value: null };
   private readonly linearColors = { value: 0 };
   private readonly patterns = { value: 1 };
+  private readonly patternCutoff = { value: 0 };
   private readonly occlusion = { value: 1 };
   private readonly weathering = { value: 0 };
   private readonly weatheringSplit = { value: 0 };
@@ -311,6 +316,7 @@ export class ChunkMeshes implements ColumnReveal {
       blockSize,
       linearColors: this.linearColors,
       patterns: this.patterns,
+      patternCutoff: this.patternCutoff,
       occlusion: this.occlusion,
       weathering: this.weathering,
       weatheringSplit: this.weatheringSplit,
@@ -404,6 +410,16 @@ export class ChunkMeshes implements ColumnReveal {
   /** Takes effect next frame; the uniform is shared, so no recompile. */
   setPatterns(on: boolean): void {
     this.patterns.value = on ? 1 : 0;
+  }
+
+  /** Zero keeps patterns at every distance; positive values use plain shading beyond this camera distance in metres. */
+  get patternCutoffMetres(): number {
+    return this.patternCutoff.value;
+  }
+
+  /** Takes effect next frame; the uniform is shared, so no recompile and no remesh. */
+  setPatternCutoffMetres(value: number): void {
+    this.patternCutoff.value = value;
   }
 
   /** Whether the wide ambient occlusion darkens ambient light. On by default; the mesh data is the same either way. */
