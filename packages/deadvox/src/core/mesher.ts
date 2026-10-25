@@ -120,6 +120,7 @@ const flatAlong = (face: Face, key: number, occ: number, axis: 'u' | 'v'): boole
 interface Context {
   padded: Uint16Array;
   wireMeshes: WireMeshes;
+  liquids: Uint8Array;
   /** Summed-volume table over the wide solidity array, or undefined when none was given (no occlusion). */
   sums: Int32Array | undefined;
   colors: Uint8Array;
@@ -144,6 +145,8 @@ export interface MeshOptions {
   origin?: Vec3;
   fencePosts?: FencePostDefs;
   wireMeshes?: WireMeshes;
+  /** Liquid flag per block id (`blockLiquids`). */
+  liquids?: Uint8Array;
   patterns?: Uint8Array;
   wide?: Uint8Array;
   weatherable?: Uint8Array;
@@ -154,10 +157,13 @@ const SUMS = makeSums();
 /** Scratch for a box query: [lo, hi) per axis, x y z. */
 const RANGE = new Int32Array(6);
 
-/** 1 if the padded cell holds a block that hides faces next to it, else 0. */
+/**
+ * 1 if the padded cell holds a block that hides faces next to it, else 0. A liquid is open like air,
+ * so a lake bed keeps its faces and its AO.
+ */
 const solid = (ctx: Context, index: number): number => {
   const id = ctx.padded[index]!;
-  return id === 0 || ctx.wireMeshes[id] ? 0 : 1;
+  return id === 0 || ctx.wireMeshes[id] || ctx.liquids[id] ? 0 : 1;
 };
 
 /**
@@ -171,7 +177,7 @@ const faceKey = (ctx: Context, face: Face, base: number): number => {
     return 0;
   }
   const front = base + face.front;
-  if (solid(ctx, front) || (padded[front] === id && ctx.wireMeshes[id])) {
+  if (solid(ctx, front) || (padded[front] === id && (ctx.wireMeshes[id] || ctx.liquids[id]))) {
     return 0;
   }
   let key = id << 8;
@@ -388,6 +394,10 @@ const growRect = (ctx: Context, face: Face, [key, occ]: Keys, [u0, v0]: [number,
   return [w, h];
 };
 
+/** The upward face, and the downward one drawn as a liquid surface's underside. */
+const UP = FACES.find((face) => face.d === 1 && face.s > 0)!;
+const DOWN = FACES.find((face) => face.d === 1 && face.s < 0)!;
+
 /** Turns the masks into as few quads as the greedy scan finds. */
 const mergeMask = (ctx: Context, face: Face, slice: number): void => {
   for (let v0 = 0; v0 < CHUNK; v0++) {
@@ -405,6 +415,14 @@ const mergeMask = (ctx: Context, face: Face, slice: number): void => {
         );
       } else {
         emitQuad(ctx, face, keys, { rect: [slice, u0, v0, w, h] });
+        // Chunk materials cull back faces, so a camera under a liquid sees its surface only through
+        // a second, downward copy; a double-sided material would double every terrain face's cost.
+        if (face === UP && ctx.liquids[key >> 8]) {
+          emitQuad(ctx, DOWN, [((key >> 8) << 8) | 0xff, OPEN_KEY], {
+            rect: [slice, u0, v0, w, h],
+            plane: slice + 1,
+          });
+        }
       }
       for (let v = v0; v < v0 + h; v++) {
         ctx.mask.fill(0, u0 + CHUNK * v, u0 + w + CHUNK * v);
@@ -448,6 +466,7 @@ export const buildMesh = (padded: Uint16Array, colors: Uint8Array, options: Mesh
   const ctx: Context = {
     padded,
     wireMeshes: options.wireMeshes ?? [],
+    liquids: options.liquids ?? new Uint8Array(0),
     sums: wide ? SUMS : undefined,
     colors,
     patterns,

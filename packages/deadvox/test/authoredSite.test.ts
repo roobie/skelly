@@ -346,6 +346,7 @@ const siteWorld = (site: AuthoredSite, columns: [number, number][], seed: number
           dirt: registry.blockIds.get('dirt')!,
           rock: registry.blockIds.get('stone')!,
           sand: registry.blockIds.get('sand')!,
+          water: registry.blockIds.get('water')!,
         },
         surface: site.surface,
         stamp: (written) => site.stamp(written),

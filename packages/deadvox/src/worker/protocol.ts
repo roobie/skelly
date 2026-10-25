@@ -12,6 +12,7 @@ export type ToMesher =
       patterns: Uint8Array;
       weatherable: Uint8Array;
       wireMeshes: WireMeshes;
+      liquids: Uint8Array;
       fencePosts: FencePostDefs;
     }
   | { type: 'mesh'; key: string; version: number; padded: Uint16Array; wide: Uint8Array }

@@ -1,0 +1,42 @@
+{
+  "layouts": [
+    {
+      "bounds": {
+        "x0": 0,
+        "x1": 96,
+        "z0": 0,
+        "z1": 96
+      },
+      "buildings": [],
+      "demo": true,
+      "ground": 21,
+      "id": "lake_demo",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "player": {
+        "bearing": 0,
+        "position": [48, 21.5, 72]
+      },
+      "shamblers": [],
+      "terrain": [
+        {
+          "centre": [48, 44],
+          "depth": 4,
+          "kind": "basin",
+          "radii": [18, 14]
+        }
+      ],
+      "tracks": [],
+      "water": [
+        {
+          "level": 21,
+          "polygon": [[26, 26], [70, 26], [70, 62], [26, 62]],
+          "shore": 1.5
+        }
+      ],
+      "woodlands": []
+    }
+  ]
+}

@@ -208,6 +208,7 @@ describe('explicit storeys and ordinary-block flights on owned geometry', () => 
         dirt: registry.blockIds.get('dirt')!,
         rock: registry.blockIds.get('stone')!,
         sand: registry.blockIds.get('sand')!,
+        water: registry.blockIds.get('water')!,
       },
       surface: site.surface,
       stamp: (chunk: Parameters<typeof site.stamp>[0]) => site.stamp(chunk),

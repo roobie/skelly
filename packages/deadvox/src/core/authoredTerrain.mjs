@@ -26,16 +26,23 @@ export const polylineDistanceAt = (x, z, points) => {
 
 export const polylineDistance = ([x, z], points) => polylineDistanceAt(x, z, points);
 
+// Overlapping hills take the highest rise and overlapping basins the deepest cut, so a basin on a hill flank cuts a tarn.
 export const profileHeight = (layout, x, z) => {
   let rise = 0;
+  let depth = 0;
   for (const feature of layout.terrain) {
     const distance =
       feature.kind === 'ridge'
         ? polylineDistance([x, z], feature.points) / feature.width
         : Math.hypot((x - feature.centre[0]) / feature.radii[0], (z - feature.centre[1]) / feature.radii[1]);
-    rise = Math.max(rise, feature.rise * (1 - smoothstep(Math.min(1, distance))));
+    const weight = 1 - smoothstep(Math.min(1, distance));
+    if (feature.kind === 'basin') {
+      depth = Math.max(depth, feature.depth * weight);
+    } else {
+      rise = Math.max(rise, feature.rise * weight);
+    }
   }
-  return layout.ground + rise;
+  return layout.ground + rise - depth;
 };
 
 export const buildingBounds = (building, size) => {

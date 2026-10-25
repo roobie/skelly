@@ -177,6 +177,8 @@ const BlockSchema = strictObject({
   /** Blocks sight/aim/picking; ordinary blocks inherit their movement rule when omitted. */
   opaque: optional(vBoolean()),
   soundBlocking: optional(vBoolean()),
+  /** A medium the body can be in, such as water; never derived from `solid`, since air is not solid either. */
+  liquid: optional(vBoolean()),
   meleePass: optional(
     strictObject({
       motions: array(picklist(MELEE_MOTIONS)),
@@ -2719,6 +2721,12 @@ const TerrainPrimitive = union([
     radii: tuple([PositiveMetres, PositiveMetres]),
     rise: PositiveMetres,
   }),
+  strictObject({
+    kind: literal('basin'),
+    centre: LayoutPoint,
+    radii: tuple([PositiveMetres, PositiveMetres]),
+    depth: PositiveMetres,
+  }),
 ]);
 const FixedLootOverride = strictObject({
   lootUsage: optional(UsageSchema),
@@ -2733,6 +2741,8 @@ const LayoutBuilding = strictObject({
   rotation: picklist([0, 90, 180, 270], 'rotation must be a quarter turn'),
   storeys: optional(pipe(Count, minValue(1), maxValue(8))),
   fixedLoot: optional(array(FixedLootOverride)),
+  /** The lot stands in water on purpose, so the flooded-lot check skips it. */
+  overWater: optional(vBoolean()),
 });
 const LayoutRect = pipe(
   strictObject({ x0: Metres, z0: Metres, x1: Metres, z1: Metres }),
@@ -2822,6 +2832,18 @@ const SiteLayoutSchema = strictObject({
   ),
   hordes: optional(array(strictObject({ id: Id, position: MetrePosition }))),
   woodlands: array(strictObject({ polygon: pipe(array(LayoutPoint), minLength(3)), density: Fraction })),
+  /** Standing water: wherever a column inside the polygon has its bed below the level, water fills up to it. */
+  water: optional(
+    array(
+      strictObject({
+        /** The water's top face, the plane a swimmer floats at; `ground` is instead a block's lower face. */
+        level: HalfMetres,
+        polygon: pipe(array(LayoutPoint), minLength(3)),
+        /** How far from the water the ground turns to sand. */
+        shore: pipe(Metres, minValue(0)),
+      }),
+    ),
+  ),
   tracks: array(
     strictObject({
       points: pipe(array(LayoutPoint), minLength(2)),
@@ -3732,7 +3754,7 @@ const SiteGenerationSchema = strictObject({
   }),
   // One palette shared by every site kind: terrain, paving, trees and litter are block ids.
   palette: strictObject({
-    terrain: strictObject({ grass: Id, dirt: Id, rock: Id, sand: Id }),
+    terrain: strictObject({ grass: Id, dirt: Id, rock: Id, sand: Id, water: Id }),
     paving: Id,
     trees: strictObject({ trunk: Id, branch: Id, leaves: Id }),
     leafLitter: Id,

@@ -271,6 +271,65 @@ export class AuthoredSite implements Site {
     };
     const trackAt = (x: number, z: number) =>
       layout.tracks.find((track) => polylineDistance([(x + 0.5) * s, (z + 0.5) * s], track.points) <= track.width / 2);
+    const waterRows = (layout.water ?? []).map((row) => {
+      const xs = row.polygon.map(([x]) => x);
+      const zs = row.polygon.map(([, z]) => z);
+      const reach = row.shore;
+      return {
+        ...row,
+        reach: {
+          x0: Math.min(...xs) - reach,
+          x1: Math.max(...xs) + reach,
+          z0: Math.min(...zs) - reach,
+          z1: Math.max(...zs) + reach,
+        },
+      };
+    });
+    // Overlapping bodies fill to the highest level.
+    const levelAt = (xm: number, zm: number): number | undefined => {
+      let level: number | undefined;
+      for (const row of waterRows) {
+        if ((level === undefined || row.level > level) && inPolygon([xm, zm], row.polygon)) {
+          level = row.level;
+        }
+      }
+      return level;
+    };
+    // Inside the site bounds `natural` has no weight, and validation keeps water polygons inside them.
+    const wetColumns = new Map<string, boolean>();
+    const wet = (x: number, z: number): boolean => {
+      const key = `${x},${z}`;
+      let value = wetColumns.get(key);
+      if (value === undefined) {
+        const level = levelAt((x + 0.5) * s, (z + 0.5) * s);
+        value = level !== undefined && height(x, z, layout.ground / s) + 1 < level / s;
+        wetColumns.set(key, value);
+      }
+      return value;
+    };
+    // A grass lake bed reads as a hole in a lawn, so the bed and a shore ring around the actual water are sand.
+    const sandy = (x: number, z: number): boolean => {
+      if (wet(x, z)) {
+        return true;
+      }
+      const xm = (x + 0.5) * s;
+      const zm = (z + 0.5) * s;
+      for (const row of waterRows) {
+        const { reach } = row;
+        if (xm < reach.x0 || xm > reach.x1 || zm < reach.z0 || zm > reach.z1) {
+          continue;
+        }
+        const cells = Math.floor(row.shore / s);
+        for (let dz = -cells; dz <= cells; dz++) {
+          for (let dx = -cells; dx <= cells; dx++) {
+            if (Math.hypot(dx, dz) * s <= row.shore && wet(x + dx, z + dz)) {
+              return true;
+            }
+          }
+        }
+      }
+      return false;
+    };
     const player = blocks(layout.player.position);
     const reserved = [
       ...lots.map((lot) => lot.apron),
@@ -307,6 +366,7 @@ export class AuthoredSite implements Site {
       density: (x, z) => {
         const margin = tuning.vegetation.obstacleMarginMetres;
         if (
+          sandy(Math.floor(x / s), Math.floor(z / s)) ||
           protectedBuildings.some((rect) => rectDistance(rect, x, z, s) <= margin) ||
           layout.tracks.some((track) => polylineDistance([x, z], track.points) <= track.width / 2 + margin) ||
           spawnPoints.some(([spawnX, spawnZ]) => Math.hypot(x - spawnX!, z - spawnZ!) <= margin)
@@ -339,10 +399,17 @@ export class AuthoredSite implements Site {
       );
     });
     this.treeIndex = new TreeIndex(this.trees);
-    const litter = sitePalette(registry).leafLitter;
+    const { leafLitter: litter, terrain } = sitePalette(registry);
     this.surface = {
       height,
+      water: (x, z) => {
+        const level = levelAt((x + 0.5) * s, (z + 0.5) * s);
+        return level === undefined ? undefined : level / s;
+      },
       top: (x, z) => {
+        if (sandy(x, z)) {
+          return terrain.sand;
+        }
         const track = trackAt(x, z);
         if (track) {
           return registry.blockIds.get(track.surface);

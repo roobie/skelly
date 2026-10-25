@@ -1,15 +1,22 @@
 // Content-side acceptance of an authored layout; shape/units are checked by schema.ts.
 import { blocks, placementOf } from './authoredPlacement.ts';
-import { buildingBounds, lotOf, profileHeight, standingHeight, surfaceFoundation } from './authoredTerrain.mjs';
+import {
+  buildingBounds,
+  LOT_APRON_M,
+  lotOf,
+  profileHeight,
+  standingHeight,
+  surfaceFoundation,
+} from './authoredTerrain.mjs';
 import type { Registry, TemplateDef } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
 import { placementLootIssues } from './placementLoot.ts';
-import { WORLD_BOTTOM_M } from './scale.ts';
+import { WORLD_BOTTOM_M, WORLD_TOP_M } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
 import { HORDE_TYPE, TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
 import { ShowroomCatalogue, slotPlacement, slotProps } from './showroom.ts';
-import { type Rect, rectDistance, rectsOverlap } from './site.ts';
+import { grow, type Rect, rectDistance, rectsOverlap } from './site.ts';
 import { spawnOverlappingSolidBlock, zombieBodyDimensions } from './spawnClearance.ts';
 import {
   cellsOf,
@@ -270,6 +277,7 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
       check(p, `.woodlands[${i}].polygon[${j}]`);
     });
   });
+  issues.push(...waterIssues(layout, footprints, check));
   layout.tracks.forEach((track, i) => {
     track.points.forEach((p, j) => {
       check(p, `.tracks[${i}].points[${j}]`, track.width / 2);
@@ -287,6 +295,60 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     check([area.x0, area.z0], `.beats[${i}].area`);
     check([area.x1, area.z1], `.beats[${i}].area`);
   });
+  return issues;
+};
+
+/** Half-metre cell centres of a rectangle in metres. */
+function* cellCentres(rect: Rect): Generator<LayoutPoint> {
+  for (let z = Math.floor(rect.z0 * 2) / 2 + 0.25; z < rect.z1; z += 0.5) {
+    for (let x = Math.floor(rect.x0 * 2) / 2 + 0.25; x < rect.x1; x += 0.5) {
+      yield [x, z];
+    }
+  }
+}
+
+/**
+ * No unintended inundation. Reads the noise-free surface: the authored shape is what the author meant,
+ * and near lots, where flooding matters, the topography noise is too weak to move a block.
+ */
+const waterIssues = (
+  layout: SiteLayoutDef,
+  footprints: readonly { rect: Rect; index: number }[],
+  check: (p: LayoutPoint, path: string) => void,
+): [string, string][] => {
+  const lots = footprints.map(({ rect, index }) => lotOf(layout.buildings[index]!, rect));
+  const issues: [string, string][] = [];
+  const rows = layout.water ?? [];
+  rows.forEach((row, i) => {
+    row.polygon.forEach((p, j) => {
+      check(p, `.water[${i}].polygon[${j}]`);
+    });
+    if (row.level > WORLD_TOP_M) {
+      issues.push([`.water[${i}].level`, 'above the world top']);
+    }
+    const xs = row.polygon.map(([x]) => x);
+    const zs = row.polygon.map(([, z]) => z);
+    const extent = { x0: Math.min(...xs), x1: Math.max(...xs), z0: Math.min(...zs), z1: Math.max(...zs) };
+    const holdsWater = [...cellCentres(extent)].some(
+      (p) => inPolygon(p, row.polygon) && standingHeight(layout, lots, p[0], p[1]) < row.level,
+    );
+    if (!holdsWater) {
+      issues.push([`.water[${i}]`, 'holds no water: every bed inside the polygon reaches the level']);
+    }
+  });
+  for (const { rect, index } of footprints) {
+    if (layout.buildings[index]!.overWater) {
+      continue;
+    }
+    for (const p of cellCentres(grow(rect, LOT_APRON_M))) {
+      const standing = standingHeight(layout, lots, p[0], p[1]);
+      const flooding = rows.findIndex((row) => inPolygon(p, row.polygon) && standing < row.level);
+      if (flooding >= 0) {
+        issues.push([`.buildings[${index}]`, `lot is flooded by water[${flooding}]; raise it or set overWater`]);
+        break;
+      }
+    }
+  }
   return issues;
 };
 
