@@ -183,13 +183,15 @@ Deadvox depends on `thing-core` for the schema and on nothing above it.
    `test/gungen-deadvox-contract.test.mjs`, "registers every recipe export in the full base and keeps each gun companion inside the recipe".
    No root gungen directory remains. Phase 6 retains only names: the root contract and
    gun workflow, launcher presentation and controls, exporter metadata and consumer output
-   directory. These do not preserve a second implementation. Deferred ownership transfer
-   follows `things/TASK-gun-tool.md`, "Phase 5: complete". A standalone part view remains
-   follow-up UI work, not a reproduction requirement.
+   directory, plus dead old-name support in the engine boundary test and zero-drift scanner,
+   boundary/scanner fixtures and `GUNGEN_SWEEPS`. These do not preserve a second
+   implementation. The retirement audit and deferred ownership transfer follow
+   `things/TASK-gun-tool.md`, "Phase 5: complete".
 6. **Retire gungen.** Retire residual names and references after the single phase 5 move;
    rename the retained consumption contract atomically with its CI invocation so the gate
    never disappears.
 7. **Close out.**
+   - Add the standalone part view; it is not a phase 5 reproduction requirement.
    - Run the closing docs pass.
    - Move every decision here that outlives the plan into `things/README.md` or the owning
      package's README, because a lasting rule must survive this file's deletion.

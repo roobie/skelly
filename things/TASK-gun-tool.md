@@ -16,8 +16,11 @@ The gun implementation, authored sources, tests and still-valid docs have one ow
 `packages/gun-authoring-tool`. The single move preserves history without a forwarding
 package or a second recipe authority. No root gungen directory remains. The retained
 names are the root consumption contract, the gun CI workflow, the launcher control and
-presentation names, exporter metadata and the consumer output directory. Phase 6 retires
-those names; none is a second authoring implementation or an old source-path alias.
+presentation names, exporter metadata and the consumer output directory. Phase 6 also
+retires the dead old-name support in `packages/engine/test/engineImportBoundary.test.ts`,
+`rootsUnder`, `importTarget` and its canary fixtures; `tools/zero-drift-check.mjs`,
+`SUBPROJECTS`; the zero-drift and Deadvox import-boundary fixtures; and `GUNGEN_SWEEPS`.
+None is a second authoring implementation or an old source-path alias.
 
 The consumption boundary is `packages/gun-authoring-tool/exports/deadvox.jsonnet`,
 interpreted by `packages/gun-authoring-tool/src/cli/exportRecipe.ts`, `loadExportRecipe`.
@@ -26,12 +29,15 @@ not byte identity. Compiler, workspace, refresh, CI and Pages paths follow the p
 See `tools/jsonnet/compile.mjs`, `SOURCE_ROOTS`; `tools/refresh-deadvox.mjs`; and
 `.github/workflows/pages.yml`.
 
-Recipe designs reference closed part items; placement does not create identity, and
-uncurated body parts cannot export. Other designs retain their mass rows until needed,
-so retirement does not depend on converting the corpus. See
-`packages/gun-authoring-tool/src/gun/catalogue.ts`, `loadPartCatalogue`, and
-`packages/gun-authoring-tool/src/gun/physical.ts`, `gunModelParts`. Gameplay disassembly
-remains deferred to #1040. Shared camera and parameter mechanisms belong in tool-ui;
+Recipe designs reference closed part items; placement does not create identity. The editor
+requires item-backed body parts before export; see
+`packages/gun-authoring-tool/src/viewer/designExport.ts`, `exportEditorDesign`.
+File and recipe export still use the matching mass row for a body part that names no
+item, until its design is converted (#509); see
+`packages/gun-authoring-tool/src/gun/physical.ts`, `gunModelParts`. Retirement does not
+depend on converting the remaining corpus because the consumption recipe's designs name
+items. See `packages/gun-authoring-tool/src/gun/catalogue.ts`, `loadPartCatalogue`.
+Gameplay disassembly remains deferred to #1040. Shared camera and parameter mechanisms belong in tool-ui;
 gun selection and presentation remain caller policy.
 
 CARRY_ALL on #509 transfers ownership without implementing or closing the backlog.

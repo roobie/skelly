@@ -21,7 +21,7 @@ describe('PROJECT.md code citations', () => {
     expect(citations.length).toBeGreaterThan(0);
   });
 
-  it('has no file:line citations into gungen/src', () => {
+  it('has no file:line citations into src/', () => {
     expect(doc.match(/(?<![\w/])src\/(?:[\w-]+\/)*[\w-]+\.ts:\d+/g) ?? []).toEqual([]);
   });
 

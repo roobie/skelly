@@ -53,7 +53,7 @@ reason. `things/WORK.md`, "Phases" tracks retirement and close-out.
 - The gun tool authors guns; it does not generate variants of an archetype. A gun is a
   designed look-alike of a real gun or an invented, sci-fi gun, and the gun tool's author
   is free to draw either. The inherited generic archetypes remain authored sources, not
-  a restriction on real-model resemblance. A new gun is authored as an item rather than
+  a restriction on real-model resemblance. A new gun is authored in the gun tool rather than
   added as another archetype.
 - The tools are authoring tools, not generators: each exports a closed set of items, so
   every atom it draws has a mass someone authored. The gun tool's parts (barrels, receivers
