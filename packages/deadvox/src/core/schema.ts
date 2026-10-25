@@ -3539,6 +3539,11 @@ export type ArmSegment = (typeof ARM_SEGMENTS)[number];
 const ArmSegmentSchema = strictObject({ part: Id, pivot: Id });
 /** How a hand closes: the fingers curl at the knuckles; the thumb folds across the palm and in toward it. */
 const HandPoseSchema = strictObject({ fingersDegrees: Degrees, thumbAcrossDegrees: Degrees, thumbInDegrees: Degrees });
+/** How bare hands leave and return to the first-person view. */
+const EmptyHandPoseSchema = strictObject({
+  loweredOffset: Point,
+  transitionRealSeconds: PositiveRealSeconds,
+});
 /** The first-person view's rig over the arm model (src/render/armRig.ts). */
 const ArmRigSchema = strictObject({
   upper: ArmSegmentSchema,
@@ -3557,6 +3562,7 @@ const ArmRigSchema = strictObject({
     stockWrist: HandPoseSchema,
     forend: HandPoseSchema,
   }),
+  emptyHands: EmptyHandPoseSchema,
   /**
    * Where the view hangs the right arm, in the eye's frame (x right, y up, z back); the left mirrors x. Presentation,
    * not the body's own shoulder: wider and lower, so the arms show in view. Validation wants it right of and below

@@ -49,14 +49,19 @@ export const unarmedMeleeWeapon = (meleeClasses: ReadonlyMap<string, MeleeClassD
   });
 };
 
-export const shouldEnterMeleeReady = (input: {
+export interface MeleeReadinessInput {
   rightMouseHeld: boolean;
   meleeWeaponHeld: boolean;
   handsEmpty: boolean;
   debugBuild: boolean;
   inputLocked: boolean;
-}): boolean =>
+}
+
+export const shouldEnterMeleeReady = (input: MeleeReadinessInput): boolean =>
   input.rightMouseHeld && (input.meleeWeaponHeld || input.handsEmpty) && !input.debugBuild && !input.inputLocked;
+
+/** A primary melee click starts an attack only from en-garde. */
+export const canStartPrimaryMelee = (input: MeleeReadinessInput): boolean => shouldEnterMeleeReady(input);
 
 /** Applies content class defaults and per-weapon overrides once, before the action is saved. */
 export const resolveMeleeWeapon = (weapon: MeleeWeapon, defaults: MeleeClassDef): MeleeWeapon => {

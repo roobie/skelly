@@ -146,6 +146,7 @@ import type { ItemAction } from './itemActions.ts';
 import { registerLayoutVehicles } from './layoutVehicles.ts';
 import { startingLoadout } from './loadout.ts';
 import {
+  canStartPrimaryMelee,
   meleeWeaponFromContent,
   resolvePlayerMeleeWeapon,
   shouldEnterMeleeReady,
@@ -3142,6 +3143,22 @@ export const startPlay = (
       inputLocked: compression.locksInput,
     });
 
+  const startPrimaryMelee = (hand: HandSide | undefined, meleeWeaponHeld: boolean): void => {
+    if (
+      !canStartPrimaryMelee({
+        rightMouseHeld: input.rightMouseActionHeld && input.locked && !input.menuPointer,
+        meleeWeaponHeld,
+        handsEmpty: !(inventory.hands.right || inventory.hands.left),
+        debugBuild: debugTools?.buildOn ?? false,
+        inputLocked: compression.locksInput,
+      })
+    ) {
+      return;
+    }
+    // On a ladder only the free hand swings.
+    swing(session.ladderHold.freeHand(hand));
+  };
+
   const activateIgniter = (item: Item, hand: HandSide): void => {
     const target = ignitionTargetForHand(inventory, hand);
     const usable = target ?? (registry.items.get(item.type)?.light ? item : undefined);
@@ -3207,7 +3224,7 @@ export const startPlay = (
         togglePin(action.item);
         return;
       case 'melee':
-        swing(action.hand);
+        startPrimaryMelee(action.hand, true);
         return;
       case 'ignite':
         activateIgniter(action.item, action.hand);
@@ -3228,8 +3245,7 @@ export const startPlay = (
         );
         return;
       case 'fists':
-        // On a ladder only the free hand swings.
-        swing(session.ladderHold.freeHand(action.hand));
+        startPrimaryMelee(action.hand, false);
         return;
       case 'noop':
         return;
@@ -3609,6 +3625,7 @@ export const startPlay = (
       firearms: firearms.frames(),
       opticZoom: opticZoom.frame(zoomFirearm(), isAimingDownSights()),
       ...(readiness === undefined ? {} : { readiness }),
+      emptyHandsReady: ready,
       aim: aim.frame,
       job: handlingJob,
       ...(grabProgress === undefined ? {} : { grab: { progress: grabProgress } }),

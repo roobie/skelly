@@ -47,6 +47,11 @@ local handPose(fingers, thumbAcross, thumbIn) = {
           stockWrist: handPose(90, 65, 35),
           forend: handPose(90, 55, 30),
         },
+        // Relaxed hands hang below the view; en-garde returns them at the same authored rate on either side.
+        emptyHands: {
+          loweredOffset: [0, -0.5, 0.08],
+          transitionRealSeconds: 0.2,
+        },
         // Where the view hangs the right arm, from the eye; the left mirrors it.
         shoulderFromEye: [0.3, -0.55, 0.05],
       },

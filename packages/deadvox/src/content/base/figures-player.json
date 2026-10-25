@@ -2,6 +2,10 @@
   "figures": [
     {
       "armRig": {
+        "emptyHands": {
+          "loweredOffset": [0, -0.5, 0.080000000000000002],
+          "transitionRealSeconds": 0.20000000000000001
+        },
         "fingers": {
           "part": "fingers",
           "pivot": "knuckles"

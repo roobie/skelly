@@ -11,6 +11,7 @@ import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { MeleeWeapon, Zombie } from '../src/core/zombies.ts';
 import {
+  canStartPrimaryMelee,
   resolveMeleeWeapon,
   resolvePlayerMeleeWeapon,
   shouldEnterMeleeReady,
@@ -219,6 +220,18 @@ describe('melee pose and contact contract', () => {
     expect(shouldEnterMeleeReady({ ...input, meleeWeaponHeld: false, handsEmpty: true })).toBe(true);
     expect(shouldEnterMeleeReady({ ...input, debugBuild: true })).toBe(false);
     expect(shouldEnterMeleeReady({ ...input, inputLocked: true })).toBe(false);
+  });
+
+  it('starts an empty-hand primary attack only from en-garde', () => {
+    const emptyHands = {
+      rightMouseHeld: false,
+      meleeWeaponHeld: false,
+      handsEmpty: true,
+      debugBuild: false,
+      inputLocked: false,
+    };
+    expect(canStartPrimaryMelee(emptyHands)).toBe(false);
+    expect(canStartPrimaryMelee({ ...emptyHands, rightMouseHeld: true })).toBe(true);
   });
 
   it('shows a ready pose only when the right-mouse state is active and keeps it within its rest bounds', () => {
