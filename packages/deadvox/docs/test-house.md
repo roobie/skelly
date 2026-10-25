@@ -51,6 +51,10 @@ placements, because it is the haven's backdrop, not another supply catalogue.
 
 The house and landscape remain normal-mode play space. Entering the lake uses ordinary
 water rules, including swimming and drowning, rather than a decorative barrier.
+The debug wrapper preserves the home's water surface: a debug visit must not dry the
+lake out. Its range placement is independent of the landscape bounds so enlarging the
+view cannot move the rack out of reach at startup. See `src/game/worldSetup.ts`,
+`DebugTestHouseSite`, and `src/core/schema.ts`, `handlingRange`.
 No mobs belong here: an unsafe garden would defeat the haven's purpose. Weathering
 stays off because this is a cared-for home, not a ruin. These choices do not exempt
 later additions from the normal/debug decision below.

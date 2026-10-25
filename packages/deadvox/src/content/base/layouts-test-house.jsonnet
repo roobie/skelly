@@ -66,6 +66,7 @@ local bays = [
     bays: bays,
     vehicles: [{ blueprint: 'hatchback', placementKey: 'testHouse.parked-hatchback' } + bays[0]],
     repairStock: 'test_house_garage',
+    handlingRange: { beside: { x0: -23, z0: -13, x1: 17, z1: 6 }, floor: 21 },
     shamblers: [],
     woodlands: [{ polygon: [[-85, -65], [65, -65], [60, -26], [10, -18], [-40, -18], [-85, -35]], density: 0.95 }],
     tracks: [

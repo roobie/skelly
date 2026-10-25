@@ -81,6 +81,15 @@
       ],
       "demo": true,
       "ground": 20.5,
+      "handlingRange": {
+        "beside": {
+          "x0": -23,
+          "x1": 17,
+          "z0": -13,
+          "z1": 6
+        },
+        "floor": 21
+      },
       "id": "testHouse",
       "lootContext": {
         "tier": "Tier1",
