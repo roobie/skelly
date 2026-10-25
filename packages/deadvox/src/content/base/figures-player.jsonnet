@@ -94,7 +94,7 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         },
         blendRealSeconds: 0.2,
       },
-      // Each dead human wears one of these over the player's models (DESIGN.md, "Dead humans"); dead skin is pale.
+      // Each dead human wears one of these over the player's models (`DESIGN.md`, "Dead humans"); dead skin is pale.
       outfits: {
         police_uniform: {
           skin: '#b39e8f', shirt: '#33415e', pants: '#232937', shoe: '#121212',

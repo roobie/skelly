@@ -8,6 +8,7 @@ read_if:
   - you change held sharpening, blade repair entry points or prepared hand pairs
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
   - you change the player figure's look, its authored parts, its clothes or how it is posed
+  - you add a dead human, change figure outfits or the corpse pose, or change how dead bodies are drawn
   - you change shared held-item presentation, arm attachment or the mannequin's item-hold catalogue
   - you change worn head gear seen from inside or on the player figure
   - you add a wear slot or change what night-vision goggles do to the view
@@ -455,8 +456,8 @@ content authors, so an abandoned place reads as used; it never places a piece ru
 because a ruined piece is gone. See `src/core/schema.ts`, `FurnitureSchema`, and
 `src/core/blockEntities.ts`, `BlockEntities.conditionOf` and `BlockEntities.wear`.
 
-A damaged piece shows its damage in steps its material authors and names its band in the
-hint, so the player can judge what will hold before relying on it. Every piece names a
+A damaged piece other than a dead human shows its damage in steps its material authors,
+and every damaged piece names its band in the hint, so the player can judge what will hold before relying on it. Every piece names a
 material from one furniture material table, so a mod retunes how a kind of furniture
 wears without touching each piece. The hint's word comes from the condition band table
 items read, and it shows no number, following `INTERFACE.md`, "Text". A view redraws a
@@ -468,6 +469,27 @@ piece only when its damage crosses into a different step, not on every blow. See
 Ruin is final: a destroyed piece or a broken door is never repaired, only replaced,
 because a ruined thing is mostly fragments; mending partial damage belongs to
 construction.
+
+### Dead humans
+
+Any dead body of a human, whatever its role, is drawn as the player figure dressed
+for that role, such as a police officer in a police uniform or a soldier in a military
+one. A box shaped like a body reads as a prop, not a person, and sharing the player's
+own figure keeps every human in the world one body plan, so improving the player
+figure improves every corpse.
+
+The body stays furniture: its pockets, loot, placement keys, picking and saves belong
+to the piece, and only its drawing changes. A figure row authors outfits, each a colour
+for the material slots it repaints, and the pose its corpses lie in; a furniture row's
+`corpse` names the figure and the outfit. A new dead human is therefore a content row
+with no code. An outfit repaints only the slots the figure's models export and adds no
+geometry. See `src/core/schema.ts`, `FurnitureSchema` and `FigureSchema`, and
+`src/render/corpseFigures.ts`, `CorpseFigures`.
+
+The figure rests on its lowest point, centred over the piece's footprint with its head
+toward the piece's +x, so the pose needs no hip drop and the body stays within the
+cells the piece claims for picking. It shows no damage steps; the hint still names the
+band.
 
 ### Ladders and hatches
 
