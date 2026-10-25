@@ -1187,6 +1187,20 @@ const checkFurniture = (registry: Registry, report: Report) => {
         report('furniture', furniture.id, `.ruin.debris[${index}].item`, `no item "${item}"`);
       }
     });
+    checkCorpse(registry, furniture, report);
+  }
+};
+
+const checkCorpse = (registry: Registry, furniture: FurnitureDef, report: Report) => {
+  const { corpse } = furniture;
+  if (!corpse) {
+    return;
+  }
+  const figure = registry.figures.get(corpse.figure);
+  if (!figure) {
+    report('furniture', furniture.id, '.corpse.figure', `no figure "${corpse.figure}"`);
+  } else if (!Object.hasOwn(figure.outfits, corpse.outfit)) {
+    report('furniture', furniture.id, '.corpse.outfit', `figure "${figure.id}" has no outfit "${corpse.outfit}"`);
   }
 };
 
