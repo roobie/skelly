@@ -7,6 +7,7 @@
       },
       "color": "#99794c",
       "id": "clinic_sign",
+      "massKg": 10,
       "material": "wood",
       "mount": "wall",
       "name": "Clinic direction sign",
@@ -30,6 +31,7 @@
       },
       "color": "#99794c",
       "id": "gas_directions_sign",
+      "massKg": 10,
       "material": "wood",
       "mount": "wall",
       "name": "Hand-painted direction sign",
@@ -53,6 +55,7 @@
       },
       "color": "#b8b5a5",
       "id": "medical_research_notice",
+      "massKg": 10,
       "material": "wood",
       "mount": "wall",
       "name": "Medical sampling notice board",
@@ -84,6 +87,7 @@
         ]
       },
       "id": "medical_cabinet",
+      "massKg": 60,
       "material": "wood",
       "name": "Medical supply cabinet",
       "shape": [
@@ -283,6 +287,7 @@
       },
       "color": "#7c8581",
       "id": "sample_rack",
+      "massKg": 60,
       "material": "wood",
       "name": "Specimen rack",
       "size": [2, 3, 1]
@@ -294,6 +299,7 @@
       },
       "color": "#b6c1bc",
       "id": "sample_tray",
+      "massKg": 20,
       "material": "wood",
       "name": "Sample tray",
       "size": [2, 1, 1]
@@ -331,6 +337,7 @@
         }
       },
       "id": "workshop_roller_door",
+      "massKg": 300,
       "material": "steel",
       "name": "Roller door",
       "size": [6, 5, 1]
@@ -342,6 +349,7 @@
       },
       "color": "#373a3b",
       "id": "workshop_service_pit",
+      "massKg": 120,
       "material": "wood",
       "name": "Service pit",
       "size": [6, 1, 2],
@@ -354,6 +362,7 @@
       },
       "color": "#dfb72f",
       "id": "workshop_lift",
+      "massKg": 720,
       "material": "wood",
       "name": "Vehicle lift",
       "size": [4, 2, 9],
@@ -366,6 +375,7 @@
       },
       "color": "#5b605c",
       "id": "workshop_stripped_car",
+      "massKg": 14400,
       "material": "steel",
       "name": "Stripped car",
       "size": [4, 4, 9],
@@ -404,6 +414,7 @@
       },
       "color": "#8a97a3",
       "id": "workshop_sedan",
+      "massKg": 12000,
       "material": "steel",
       "name": "Car",
       "size": [4, 3, 10],
@@ -430,6 +441,7 @@
         ]
       },
       "id": "workshop_scrap_pile",
+      "massKg": 120,
       "material": "wood",
       "name": "Scrap pile",
       "searchNoise": {
@@ -512,6 +524,7 @@
       },
       "color": "#9f9675",
       "id": "workshop_map_board",
+      "massKg": 10,
       "material": "wood",
       "mount": "wall",
       "name": "Workshop wall map",

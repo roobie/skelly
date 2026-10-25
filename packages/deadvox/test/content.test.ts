@@ -8,7 +8,7 @@ import rawBaseDayCycle from '../src/content/base/dayCycle.json' with { type: 'js
 import { isBodyDoor } from '../src/core/blockEntities.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { parseTimeOfDay, resolveSpawnTime } from '../src/core/clock.ts';
-import { blockColors, requiredContentIssues, validateContent } from '../src/core/content.ts';
+import { blockColors, buildRegistry as buildContentRegistry, requiredContentIssues, validateContent } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { corpseLootPoint, lootTypeIssue } from '../src/core/loot.ts';
@@ -1017,6 +1017,31 @@ describe('content', () => {
     const rejected = buildRegistry([{ source, data: invalid }]);
     expect(rejected.registry.furniture.has('fixture_chair')).toBe(false);
     expect(rejected.issues.length).toBeGreaterThan(0);
+  });
+
+  it('rejects movable furniture without an estimated mass', () => {
+    const missingMass = buildContentRegistry([
+      {
+        source: 'missing-furniture-mass.json',
+        data: {
+          furniture: [
+            {
+              id: 'fixture_movable',
+              name: 'Movable fixture',
+              size: [1, 1, 1],
+              color: '#123456',
+              breach: fixtureBreach(),
+              material: FIXTURE_MATERIAL,
+            },
+          ],
+        },
+      },
+    ]);
+    expect(missingMass.issues).toContainEqual({
+      source: 'missing-furniture-mass.json',
+      path: 'furniture[0].massKg',
+      message: 'liftable furniture needs an estimated mass',
+    });
   });
 
   it('keeps every sleep surface that is carried like a rug poorer than every fixed one', () => {

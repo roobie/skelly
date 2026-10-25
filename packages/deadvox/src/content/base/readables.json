@@ -7,6 +7,7 @@
       },
       "color": "#99794c",
       "id": "sample_sign",
+      "massKg": 60,
       "material": "wood",
       "name": "Placeholder sign",
       "readable": {

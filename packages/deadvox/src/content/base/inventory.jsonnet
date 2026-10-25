@@ -21,9 +21,12 @@
       throwDrag: { airDensityKgPerCubicMetre: 1.2, footprintDragCoefficient: 0.25 },
       furnitureMove: {
         maxSizeMetres: 1,
-        liftStamina: 15,
-        slide: { reachMetres: 1, stepSimSeconds: 2, stamina: 8 },
-        carryStaminaPerSimSecond: 4,
+        fatigue: {
+          lift: { base: 15, perKg: 0.2 },
+          drag: { base: 8, perKg: 0.1 },
+          carryPerSimSecond: { base: 4, perKg: 0.05 },
+        },
+        slide: { reachMetres: 1, stepSimSeconds: 2 },
         carriedView: {
           offsetMetres: [0, -0.5, -0.9],
           sizeMetres: 0.45,

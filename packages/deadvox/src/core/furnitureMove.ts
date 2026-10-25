@@ -65,6 +65,23 @@ const topLayer = (pos: Readonly<Vec3>, size: Readonly<Vec3>): Vec3[] =>
 
 const messagesOf = (inventory: Inventory) => inventory.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages;
 
+export type FurnitureMoveEffort = 'lift' | 'drag' | 'carry';
+
+/** The content curve for one furniture move: `base + perKg * massKg`. */
+export const furnitureMoveStamina = (
+  inventory: Inventory,
+  entity: BlockEntity,
+  effort: FurnitureMoveEffort,
+): number => {
+  const furniture = inventory.entities.defOf(entity);
+  if (furniture.massKg === undefined) {
+    throw new Error(`Liftable furniture "${furniture.id}" has no mass`);
+  }
+  const { fatigue } = reachTuning(inventory.registry).furnitureMove;
+  const curve = effort === 'carry' ? fatigue.carryPerSimSecond : fatigue[effort];
+  return curve.base + curve.perKg * furniture.massKg;
+};
+
 /**
  * Which cells terrain and standing furniture fill, as a move would leave them: the move's changes over the
  * entities' own cells, so a preview each frame reads only the cells it asks about.
@@ -492,7 +509,7 @@ export const liftFurniture = (mover: FurnitureMover, entity: BlockEntity, floorL
   if (handsRefusal) {
     return handsRefusal;
   }
-  if (mover.stamina < reachTuning(inventory.registry).furnitureMove.liftStamina) {
+  if (mover.stamina < furnitureMoveStamina(inventory, entity, floorLocked ? 'drag' : 'lift')) {
     return messages.tired;
   }
   const supported = supportRefusal(mover, entity, true);
@@ -558,7 +575,7 @@ const slideRefusal = (mover: FurnitureMover, entity: BlockEntity): string | unde
   ) {
     return messages.outOfReach;
   }
-  if (mover.stamina < tuning.stamina) {
+  if (mover.stamina < furnitureMoveStamina(inventory, entity, 'drag')) {
     return messages.slideTired;
   }
   return supportRefusal(mover, entity, true);

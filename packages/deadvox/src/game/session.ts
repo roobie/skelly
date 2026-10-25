@@ -43,6 +43,7 @@ import {
 import {
   type FurnitureMover,
   type FurnitureSlideWay,
+  furnitureMoveStamina,
   liftFurniture,
   placeFurniture,
   placement,
@@ -1588,7 +1589,11 @@ export const createSession = (options: SessionOptions) => {
     if (reason) {
       return reason;
     }
-    spendStamina(sim.needs, reachTuning(registry).furnitureMove.liftStamina, bodyTuning.staminaRegenDelaySimSeconds);
+    spendStamina(
+      sim.needs,
+      furnitureMoveStamina(inventory, entity, floorLocked ? 'drag' : 'lift'),
+      bodyTuning.staminaRegenDelaySimSeconds,
+    );
     playNoisyWorldSound(floorLocked ? 'furniture_drag' : 'furniture_scrape', centre);
     return undefined;
   };
@@ -1609,7 +1614,7 @@ export const createSession = (options: SessionOptions) => {
     if (!reason) {
       spendStamina(
         sim.needs,
-        reachTuning(registry).furnitureMove.slide.stamina,
+        furnitureMoveStamina(inventory, entity, 'drag'),
         bodyTuning.staminaRegenDelaySimSeconds,
       );
       playNoisyWorldSound('furniture_drag', boxCentre(entity.pos, entity.size));
@@ -1868,7 +1873,7 @@ export const createSession = (options: SessionOptions) => {
     if (carrying) {
       spendStamina(
         sim.needs,
-        reachTuning(registry).furnitureMove.carryStaminaPerSimSecond * dt,
+        furnitureMoveStamina(inventory, entities.carrying()!, 'carry') * dt,
         bodyTuning.staminaRegenDelaySimSeconds,
       );
       if (sim.needs.stamina <= 0) {

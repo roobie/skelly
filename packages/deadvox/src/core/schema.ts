@@ -341,15 +341,16 @@ const InventoryTuningSchema = strictObject({
   furnitureMove: strictObject({
     /** The largest piece the player can lift, along each side. */
     maxSizeMetres: Positive,
-    /** Stamina spent to lift a piece. */
-    liftStamina: NonNegative,
+    /** Stamina curves for moving furniture: each drains `base + perKg * massKg`. */
+    fatigue: strictObject({
+      lift: strictObject({ base: NonNegative, perKg: NonNegative }),
+      drag: strictObject({ base: NonNegative, perKg: NonNegative }),
+      carryPerSimSecond: strictObject({ base: SimRate, perKg: SimRate }),
+    }),
     slide: strictObject({
       reachMetres: Positive,
       stepSimSeconds: PositiveSimSeconds,
-      stamina: NonNegative,
     }),
-    /** Stamina spent per Sim second of carrying; running out drops the piece. */
-    carryStaminaPerSimSecond: SimRate,
     /** How the carried piece shows in first person, in view metres (x right, y up, z back from the eye). */
     carriedView: strictObject({
       offsetMetres: tuple([number(), number(), number()]),
@@ -2148,6 +2149,8 @@ const FurnitureSchema = pipe(
     color: Color,
     /** The furniture material whose damage looks the piece shows (`DESIGN.md`, "Block entities"). */
     material: Id,
+    /** Estimated kilograms for a piece that can be lifted or dragged. */
+    massKg: optional(NonNegative),
     solid: optional(vBoolean()),
     /** A flat piece that may lie on a shut hatch (`DESIGN.md`, "Moving furniture"); it must be non-solid and one block high. */
     cover: optional(literal(true)),

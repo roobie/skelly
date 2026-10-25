@@ -5,6 +5,7 @@ import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import {
   type FurnitureMover,
+  furnitureMoveStamina,
   liftFurniture,
   placeFurniture,
   placement,
@@ -111,6 +112,24 @@ const runtime = (restore?: SaveSnapshot) => {
 };
 
 describe('floor furniture steps', () => {
+  it('drains stamina faster for a heavier carried piece under the same content curve', () => {
+    const lightInventory = new Inventory(registry);
+    const light = lightInventory.furnish(spec)!;
+    const heavierRegistry: Registry = {
+      ...registry,
+      furniture: new Map(registry.furniture).set(spec.type, {
+        ...registry.furniture.get(spec.type)!,
+        massKg: registry.furniture.get(spec.type)!.massKg! * 2,
+      }),
+    };
+    const heavyInventory = new Inventory(heavierRegistry);
+    const heavy = heavyInventory.furnish(spec)!;
+
+    expect(furnitureMoveStamina(lightInventory, light, 'carry')).toBeLessThan(
+      furnitureMoveStamina(heavyInventory, heavy, 'carry'),
+    );
+  });
+
   it('uses the hold path without changing floor height for any aimed height', () => {
     for (const [height, aimedHeight] of [
       [-8, -40],

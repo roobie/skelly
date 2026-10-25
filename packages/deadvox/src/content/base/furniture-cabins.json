@@ -30,6 +30,7 @@
         "methods": {}
       },
       "id": "dad_front_door",
+      "massKg": 80,
       "material": "wood",
       "name": "Dad's cabin front door",
       "size": [2, 4, 1]
@@ -49,6 +50,7 @@
         ]
       },
       "id": "gun_cabinet",
+      "massKg": 80,
       "material": "wood",
       "name": "Gun cabinet",
       "shape": [

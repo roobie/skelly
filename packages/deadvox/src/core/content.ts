@@ -1160,10 +1160,20 @@ const checkFurniturePower = (registry: Registry, furniture: FurnitureDef, report
   }
 };
 
+const liftableFurniture = (furniture: FurnitureDef): boolean =>
+  furniture.mount === undefined &&
+  furniture.door === undefined &&
+  furniture.climbable === undefined &&
+  furniture.vehicle === undefined &&
+  furniture.scenarioGoal !== true;
+
 const checkFurniture = (registry: Registry, report: Report) => {
   const cellMetres = registry.inventory.get(CORE_CONTENT_IDS.player)?.cellMetres;
   checkMaterialSounds(registry, report);
   for (const furniture of registry.furniture.values()) {
+    if (liftableFurniture(furniture) && furniture.massKg === undefined) {
+      report('furniture', furniture.id, '.massKg', 'liftable furniture needs an estimated mass');
+    }
     checkFurniturePower(registry, furniture, report);
     if (furniture.container) {
       checkContainerWidth({ section: 'furniture', id: furniture.id, container: furniture.container, registry, report });

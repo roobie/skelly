@@ -534,12 +534,15 @@ because rearranging a room should not require destroying its contents. See `src/
   carrying occupies both of them rather than a new carry slot. Items, ladders
   and furniture answer to one hand authority, so no combination leaves a hand
   doing two jobs at once. See `src/core/inventory.ts`, `HandHold`, and
-  `src/core/ladders.ts`, `LadderHold`. Lifting costs stamina and carrying
-  drains it, so moving a room's worth of furniture is a choice paid for, not a
-  free reshuffle. A worn-out player puts the piece down where it fits; when
-  nothing fits the piece stays held until something does, because dropping it
-  through a wall or a body is worse than holding it a moment longer. See
-  `src/game/session.ts`, `putDownWornOut`.
+  `src/core/ladders.ts`, `LadderHold`. Lifting and dragging cost stamina, with
+  each action's content curve scaling the drain by the piece's estimated mass,
+  so moving a heavy piece tires the player faster and mass has a felt cost. See
+  `src/core/furnitureMove.ts`, `furnitureMoveStamina`, and
+  `src/game/session.ts`, `liftPiece` and `advancePlayerMovement`. A worn-out
+  player puts the piece down where it fits; when nothing fits the piece stays
+  held until something does, because dropping it through a wall or a body is
+  worse than holding it a moment longer. See `src/game/session.ts`,
+  `putDownWornOut`.
 - **Carried sleep surface.** A bedroll lets the player sleep where they are at
   worse recovery than a bed, paid for by carrying it in the hands, so resting
   becomes a choice between place and quality. It lifts because a cover piece is
