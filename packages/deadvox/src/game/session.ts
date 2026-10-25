@@ -1852,6 +1852,21 @@ export const createSession = (options: SessionOptions) => {
     return { intent, moving, handling, readyGait };
   };
 
+  const advanceCarriedFurnitureStamina = (dt: number, intent: MoveIntent): void => {
+    const carried = entities.carrying();
+    if (carried === undefined || (intent.forward === 0 && intent.right === 0 && !intent.jump)) {
+      return;
+    }
+    spendStamina(
+      sim.needs,
+      furnitureMoveStamina(inventory, carried, 'carry') * dt,
+      bodyTuning.staminaRegenDelaySimSeconds,
+    );
+    if (sim.needs.stamina <= 0) {
+      putDownWornOut();
+    }
+  };
+
   const advancePlayerMovement = (
     dt: number,
     time: number,
@@ -1867,16 +1882,7 @@ export const createSession = (options: SessionOptions) => {
       canSprint(sim.needs, sprinting, sim.body.staminaRules);
     survival.setSprinting(sprinting);
     if (carrying) {
-      if (intent.forward !== 0 || intent.right !== 0 || intent.jump) {
-        spendStamina(
-          sim.needs,
-          furnitureMoveStamina(inventory, entities.carrying()!, 'carry') * dt,
-          bodyTuning.staminaRegenDelaySimSeconds,
-        );
-        if (sim.needs.stamina <= 0) {
-          putDownWornOut();
-        }
-      }
+      advanceCarriedFurnitureStamina(dt, intent);
     } else {
       stepStamina(sim.needs, dt, sprinting, {
         ...sim.body.staminaRules,
