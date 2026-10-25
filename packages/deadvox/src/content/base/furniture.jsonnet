@@ -361,6 +361,19 @@ breach.breaking(shape.colliding({
       }
     },
     {
+      id: 'wood_stove', name: 'Wood stove', size: [2, 3, 2], color: '#343536', material: 'steel',
+      shape: [
+        { position: [0.2, 0.25, 0.2], size: [1.6, 1.5, 1.6] },
+        { position: [0.3, 0, 0.3], size: [0.2, 0.25, 0.2] },
+        { position: [1.5, 0, 0.3], size: [0.2, 0.25, 0.2] },
+        { position: [0.3, 0, 1.5], size: [0.2, 0.25, 0.2] },
+        { position: [1.5, 0, 1.5], size: [0.2, 0.25, 0.2] },
+        { position: [0.65, 1.75, 0.6], size: [0.7, 1.25, 0.7] },
+        { position: [0.45, 0.55, 0.12], size: [1.1, 0.9, 0.08], color: '#17191a' },
+        { position: [1.4, 0.8, 0.04], size: [0.12, 0.35, 0.08], color: '#a5a09a' },
+      ],
+    },
+    {
       "id": "bed",
       "name": "Bed",
       "size": [2, 1, 4],

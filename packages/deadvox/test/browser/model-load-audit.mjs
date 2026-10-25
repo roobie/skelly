@@ -59,12 +59,15 @@ export const auditModelLoads = async (context) => {
   records.length = 0;
   // An unloading page can lose Playwright console events; beacons preserve its diagnostic identity.
   await context.addInitScript(() => {
+    // Set in the page itself: Date.now ties and beacon arrival order cannot say which came first.
+    let unloaded = false;
     globalThis.recordModelLoadAudit = (record) => {
       if (location.protocol === 'http:') {
         navigator.sendBeacon(
           '/__model-load-audit',
           JSON.stringify({
             ...record,
+            unloaded,
             at: Date.now(),
             document: performance.timeOrigin,
             href: location.href,
@@ -75,6 +78,7 @@ export const auditModelLoads = async (context) => {
     for (const name of ['beforeunload', 'pagehide']) {
       globalThis.addEventListener(name, (event) => {
         if (event.isTrusted) {
+          unloaded ||= name === 'pagehide';
           globalThis.recordModelLoadAudit({ event: name });
         }
       });
@@ -102,17 +106,16 @@ export const auditModelLoads = async (context) => {
       await context.close();
       console.log(PREFIX + JSON.stringify({ event: 'context-close-end', at: Date.now() }));
       for (const error of records.filter((record) => record.event === 'asset-error')) {
-        const unload = records.find(
-          (record) => record.document === error.document && record.event === 'pagehide' && record.at <= error.at,
-        );
+        const unload = error.unloaded
+          ? records.find((record) => record.document === error.document && record.event === 'pagehide')
+          : undefined;
         const texture = records.find(
           (record) =>
             record.event === 'texture-error' && record.document === error.document && record.url === error.url,
         );
-        assert(
-          error.url.startsWith('blob:') && texture?.reason === 'TypeError' && (unload || error.at >= closeStarted),
-          `unclassified model load failure: ${JSON.stringify({ error, texture })}`,
-        );
+        // A document's unload aborts its in-flight fetches, blob textures and model files alike.
+        const closeAbort = error.url.startsWith('blob:') && texture?.reason === 'TypeError' && error.at >= closeStarted;
+        assert(error.unloaded || closeAbort, `unclassified model load failure: ${JSON.stringify({ error, texture })}`);
         console.log(
           PREFIX +
             JSON.stringify({

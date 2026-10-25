@@ -164,9 +164,11 @@ const EMPTY_TREES: readonly TreePlacement[] = [];
 
 /** Seed-owned footprint buckets, built once. Query cost depends on nearby trees, not site extent. */
 export class TreeIndex {
+  readonly trees: readonly TreePlacement[];
   private readonly columns = new Map<string, TreePlacement[]>();
 
   constructor(trees: readonly TreePlacement[]) {
+    this.trees = trees;
     for (const tree of trees) {
       // Bounds are exclusive block rectangles, shared by litter and clipped voxel writes.
       for (let cz = Math.floor(tree.bounds.z0 / CHUNK); cz < Math.ceil(tree.bounds.z1 / CHUNK); cz++) {
