@@ -3,16 +3,16 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
-import { loadExportRecipe } from '../gungen/src/cli/exportRecipe.ts';
-import { PART_CATALOGUE } from '../gungen/src/gun/catalogue.ts';
-import { loadGunDesign } from '../gungen/src/gun/designLoader.ts';
-import { exportGunGlb } from '../gungen/src/gun/exportGlb.ts';
 import { buildRegistry } from '../packages/deadvox/src/core/content.ts';
 import { typeWeightGrams } from '../packages/deadvox/src/core/items.ts';
 import { magazineFits } from '../packages/deadvox/src/core/magazine.ts';
 import { ModelSchema } from '../packages/deadvox/src/core/schema.ts';
 import { ammoMatchesCalibre, spentCaseItemId } from '../packages/deadvox/src/game/firearmHandling.ts';
 import { namedNodes } from '../packages/deadvox/src/render/firearmModel.ts';
+import { loadExportRecipe } from '../packages/gun-authoring-tool/src/cli/exportRecipe.ts';
+import { PART_CATALOGUE } from '../packages/gun-authoring-tool/src/gun/catalogue.ts';
+import { loadGunDesign } from '../packages/gun-authoring-tool/src/gun/designLoader.ts';
+import { exportGunGlb } from '../packages/gun-authoring-tool/src/gun/exportGlb.ts';
 import {
   assertExportSynced,
   assertRecipeCredits,
@@ -25,7 +25,7 @@ const deadvoxRequire = createRequire(new URL('../packages/deadvox/package.json',
 const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders/GLTFLoader.js'));
 const { safeParse } = deadvoxRequire('valibot');
 const ROOT = new URL('../', import.meta.url).pathname;
-const DESIGNS = join(ROOT, 'gungen/designs');
+const DESIGNS = join(ROOT, 'packages/gun-authoring-tool/designs');
 const DEADVOX_BASE = join(ROOT, 'packages/deadvox/src/content/base');
 const RECIPE = loadExportRecipe();
 const EXPORTED = RECIPE.map((row) => ({ id: row.id, source: row.source, voxel: row.voxel, ...row.generate() }));
@@ -140,7 +140,9 @@ describe('gungen exports satisfy deadvox model validation', () => {
       assert.ok(model.gun, `${file}: missing gun pack block`);
       const parsed = safeParse(ModelSchema, model);
       assert.ok(parsed.success, `${file}: ${JSON.stringify(parsed.issues)}`);
-      const { issues } = buildRegistry([{ source: `gungen/designs/${file}`, data: { models: [model] } }]);
+      const { issues } = buildRegistry([
+        { source: `packages/gun-authoring-tool/designs/${file}`, data: { models: [model] } },
+      ]);
       assert.deepEqual(issues, [], `${file}: invalid consumer model`);
     }
   });
@@ -360,7 +362,7 @@ describe('gungen exports satisfy deadvox model validation', () => {
     const withAction = CURATED_EXPORTS.filter(({ model }) => model.gun?.action?.fire);
     assert.ok(withAction.length > 0);
     for (const { file, model } of withAction) {
-      const source = `gungen/designs/${file}`;
+      const source = `packages/gun-authoring-tool/designs/${file}`;
       assert.deepEqual(buildRegistry([{ source, data: { models: [model] } }]).issues, []);
       const unknownField = 'fixtureUnknownActionField';
       const invalidModel = { ...model, gun: { ...model.gun, action: { ...model.gun.action, [unknownField]: true } } };
