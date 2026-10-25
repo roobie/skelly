@@ -20,7 +20,7 @@ export interface AvatarPose {
 }
 
 /** Every pose the figure row defines: standing and each stance it poses, each still and walking. */
-export const avatarPoses = (figure: FigureDef): AvatarPose[] => {
+const avatarPoses = (figure: FigureDef): AvatarPose[] => {
   const posed = Object.keys(figure.stancePoses).filter((key) => key !== 'blendRealSeconds') as PlayerStance[];
   return (['standing', ...posed] as PlayerStance[]).flatMap((stance) => [
     { name: stance, stance, moving: false },
