@@ -5,7 +5,7 @@ import { penetrationWorld, worldSolid } from '@skelly/engine/shapes/geometry.ts'
 import { describe, expect, it } from 'vitest';
 import { resolveGunAction } from '../src/gun/actionDescription.ts';
 import { sweepTurningAction } from '../src/gun/boltSweep.ts';
-import { advanceCycleClock, sweepMovingPart } from '../src/gun/cycle.ts';
+import { advanceCycleClock, cycleMotion, sweepMovingPart } from '../src/gun/cycle.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { loadCorpus } from './helpers.ts';
 
@@ -40,6 +40,20 @@ describe('SMG charging handle', () => {
       const sweep = sweepMovingPart(resolved, part.id, length(part.travel));
       expect(sweep.clashes, part.id).toEqual([]);
       expect(sweep.clear, part.id).toBeGreaterThanOrEqual(sweep.declared - 1e-9);
+    }
+  });
+
+  it('rejects a notch turn that is not finite, not positive or does not fit inside the dwell', () => {
+    const [first] = smgCases;
+    const { resolved, action } = smgAction(first!.assembly);
+    const { motion } = action.carrier.def;
+    const { metresPerUnit } = resolved.domain.units;
+    const build = (notchTurnSeconds: number) => cycleMotion('smg', motion!, metresPerUnit, { notchTurnSeconds });
+    const { dwellSeconds, rearwardSeconds } = action.cycle.hand;
+    const fits = dwellSeconds / 4;
+    expect(build(fits).hand.holdSeconds).toBeCloseTo(rearwardSeconds + fits, 9);
+    for (const bad of [Number.NaN, Number.POSITIVE_INFINITY, 0, -fits, dwellSeconds / 2]) {
+      expect(() => build(bad), String(bad)).toThrow(RangeError);
     }
   });
 

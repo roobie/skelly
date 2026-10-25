@@ -163,28 +163,25 @@ const handPosition = ({ time, rearwardSeconds, dwellSeconds, mechanicalSeconds, 
   return 0;
 };
 
-/** Visual estimate for turning a hand-only handle into or out of its notch. */
-const NOTCH_TURN_SECONDS = 0.1;
-
 /**
  * The hand turns the handle into the notch and back out inside the rear dwell, so the carrier
  * stays at the rear throughout and the phases Deadvox reads keep their meaning.
  */
-const notchTurn = (rearwardSeconds: number, dwellSeconds: number) => {
-  if (!(2 * NOTCH_TURN_SECONDS < dwellSeconds)) {
-    throw new RangeError('notch turn must fit inside the hand dwell');
+const notchTurn = (rearwardSeconds: number, dwellSeconds: number, turnSeconds: number) => {
+  if (!(Number.isFinite(turnSeconds) && turnSeconds > 0 && 2 * turnSeconds < dwellSeconds)) {
+    throw new RangeError(`notch turn of ${turnSeconds} s must be positive and fit twice inside the hand dwell`);
   }
-  const outStart = rearwardSeconds + dwellSeconds - NOTCH_TURN_SECONDS;
+  const outStart = rearwardSeconds + dwellSeconds - turnSeconds;
   return {
-    holdSeconds: rearwardSeconds + NOTCH_TURN_SECONDS,
+    holdSeconds: rearwardSeconds + turnSeconds,
     turnAt: (time: number) => {
       if (time < rearwardSeconds) {
         return 0;
       }
       if (time < outStart) {
-        return minimumJerk((time - rearwardSeconds) / NOTCH_TURN_SECONDS);
+        return minimumJerk((time - rearwardSeconds) / turnSeconds);
       }
-      return 1 - minimumJerk((time - outStart) / NOTCH_TURN_SECONDS);
+      return 1 - minimumJerk((time - outStart) / turnSeconds);
     },
   };
 };
@@ -193,7 +190,7 @@ const buildCycleTimeline = (
   action: GunAction,
   profile: ActionCycleProfile,
   mode: CycleMode,
-  { strokeMetres, handNotch }: { readonly strokeMetres: number; readonly handNotch: boolean },
+  { strokeMetres, notchTurnSeconds }: { readonly strokeMetres: number; readonly notchTurnSeconds?: number | undefined },
 ): CycleTimeline => {
   const spring = springReturn(strokeMetres);
   const rearwardSeconds = mode === 'fire' ? strokeMetres / profile.rearwardSpeedMetresPerSecond : 0.65;
@@ -205,7 +202,10 @@ const buildCycleTimeline = (
     throw new RangeError(`${action} ${mode} cycle exceeds its declared duration`);
   }
   const wrap = (seconds: number) => ((seconds % durationSeconds) + durationSeconds) % durationSeconds;
-  const notch = mode === 'hand' && handNotch ? notchTurn(rearwardSeconds, dwellSeconds) : undefined;
+  const notch =
+    mode === 'hand' && notchTurnSeconds !== undefined
+      ? notchTurn(rearwardSeconds, dwellSeconds, notchTurnSeconds)
+      : undefined;
   return {
     ...(notch ? { holdSeconds: notch.holdSeconds, turnAt: (seconds: number) => notch.turnAt(wrap(seconds)) } : {}),
     mode,
@@ -374,8 +374,12 @@ export const cycleMotion = (
   metresPerUnit: number,
   {
     rpm = ACTION_CYCLE_PROFILES[action].rpm,
-    handNotch = false,
-  }: { readonly rpm?: number | undefined; readonly handNotch?: boolean } = {},
+    notchTurnSeconds,
+  }: {
+    readonly rpm?: number | undefined;
+    /** Present for a hand-only handle held in a notch; the duration comes from the design's content. */
+    readonly notchTurnSeconds?: number | undefined;
+  } = {},
 ): AutomaticCycleMotion => {
   const strokeUnits = length(sub(motion.end, motion.start));
   if (!(Number.isFinite(metresPerUnit) && metresPerUnit > 0 && strokeUnits > 0)) {
@@ -386,8 +390,8 @@ export const cycleMotion = (
   return {
     strokeUnits,
     strokeMetres,
-    fire: buildCycleTimeline(action, profile, 'fire', { strokeMetres, handNotch: false }),
-    hand: buildCycleTimeline(action, profile, 'hand', { strokeMetres, handNotch }),
+    fire: buildCycleTimeline(action, profile, 'fire', { strokeMetres }),
+    hand: buildCycleTimeline(action, profile, 'hand', { strokeMetres, notchTurnSeconds }),
     ejectAt: profile.ejectAt,
     ejectDirection: profile.ejectDirection,
     holdOpenOnEmpty: profile.holdOpenOnEmpty,

@@ -12,6 +12,7 @@ import {
 } from '@skelly/engine/foundation/math.ts';
 import { partNodeName } from '@skelly/thing-export/glb.ts';
 import { AR_CYCLIC_RPM } from './arFrames.ts';
+import { COMPACT_SMG_PROPORTIONS } from './compactSmgProportions.ts';
 import {
   boltCycleMotion,
   type CycleMode,
@@ -131,6 +132,7 @@ export const resolveGunAction = (resolved: Resolved): ResolvedGunAction | undefi
   const parts = coupledParts(resolved, kind, carrier);
   // A turning hand-only handle on an automatic action is a notch hold, such as the SMG's.
   const handNotch = Object.values(parts).some(({ def, modes }) => def.motion?.turn && !modes.includes('fire'));
+  const notchTurnSeconds = handNotch ? COMPACT_SMG_PROPORTIONS.chargingHandle.notchTurnSeconds : undefined;
   let cycle: CycleMotion;
   if (kind === 'bolt') {
     cycle = boltCycleMotion(carrier.def.motion!, resolved.domain.units.metresPerUnit, boltEjectAt);
@@ -139,7 +141,7 @@ export const resolveGunAction = (resolved: Resolved): ResolvedGunAction | undefi
   } else {
     cycle = cycleMotion(kind, carrier.def.motion!, resolved.domain.units.metresPerUnit, {
       rpm: frameCyclicRpm(resolved, kind, receiverId),
-      handNotch,
+      notchTurnSeconds,
     });
   }
   return {
