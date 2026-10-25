@@ -277,6 +277,8 @@ export const createPlayView = (
     acidEffects.dispose();
     flashlight.dispose();
     held.dispose();
+    playerMeshes.dispose();
+    avatarMannequin?.dispose();
   };
   page.addEventListener('pagehide', dispose);
   const vehicleMesher = vehicleShapesInWorker();
@@ -303,6 +305,7 @@ export const createPlayView = (
   scene.add(piles.group, vehicles.group, furniture.group, playerMeshes.group, modelMaterialWarmUp(true));
   const avatarStudy = createAvatarStudy(scene, config.debug, s, models);
   const avatarMannequin = createAvatarMannequin(scene, {
+    registry,
     debug: config.debug,
     blockSize: s,
     figure: playerFigure,
@@ -521,6 +524,8 @@ export const createPlayView = (
         stance,
         dt,
         inventory,
+        eye,
+        pitch,
         thirdPerson: thirdPerson || detached,
       });
       avatarStudy.sync({ bodyPosition: body.pos, yaw, stepOffset: offset, visible: thirdPerson || detached });
@@ -566,6 +571,7 @@ export const createPlayView = (
         carried?.floorLocked ? { pos: handling.floorPlacement ?? carried.pos, blockSize: s } : undefined,
       );
       held.update(camera, pose, recoil, { ...handling, lift });
+      playerMeshes.syncHeldView(pose, handling);
       flashlight.update({ registry, lit: light, held, camera, inventory, piles });
       lightPool.update(inventory, {
         held,

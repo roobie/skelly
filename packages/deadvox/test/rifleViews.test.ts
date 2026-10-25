@@ -433,6 +433,7 @@ it.each([RIFLE, PUMP])('keeps the crosshair on the drawn %s bore through a rack,
   // The unturned bore shots use, and the crosshair's as play.ts turns it.
   const unturned = (): FirearmBoreRay =>
     firearmBoreRay({
+      holds: content.figures.get('player')!.holds,
       model,
       ...viewpoint,
       blockSize: BLOCK,
@@ -445,6 +446,7 @@ it.each([RIFLE, PUMP])('keeps the crosshair on the drawn %s bore through a rack,
     });
   const crosshair = (): FirearmBoreRay => {
     const basePose = heldFirearmTransform({
+      holds: content.figures.get('player')!.holds,
       model,
       side,
       leadingSide: side,
@@ -460,6 +462,7 @@ it.each([RIFLE, PUMP])('keeps the crosshair on the drawn %s bore through a rack,
       y: basePose.rootOffset[1],
     });
     return firearmBoreRay({
+      holds: content.figures.get('player')!.holds,
       model,
       ...viewpoint,
       blockSize: BLOCK,

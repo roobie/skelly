@@ -2,10 +2,13 @@
 
 import { Group, Object3D, type Vector3 } from 'three';
 import type { BodyRegion } from '../core/body.ts';
-import type { FigureDef, ModelDef } from '../core/content.ts';
+import { dominantSide } from '../core/character.ts';
+import type { FigureDef, ModelDef, Registry } from '../core/content.ts';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
-import { defOf } from '../core/items.ts';
+import { defOf, type Item } from '../core/items.ts';
+import { type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
 import type { Body } from '../core/physics.ts';
 import type { PlayerStance } from '../core/playerStance.ts';
 import {
@@ -18,6 +21,7 @@ import {
   type WearSlot,
 } from '../core/schema.ts';
 import { FIGURE_BOXES, type FigureBox } from '../core/zombieRegions.ts';
+import { HeldPresentation, type HeldPresentationFrame } from './heldPresentation.ts';
 import type { ModelLibrary } from './models.ts';
 import { castsAndReceives, PLAYER_FIGURE_LAYER } from './shadowFlags.ts';
 
@@ -132,6 +136,11 @@ export const firstPersonShoulder = (figure: FigureDef, side: HandSide): Vec3 => 
   return [side === 'right' ? x : -x, y, z];
 };
 
+interface FigureHeldItems {
+  registry: Registry;
+  hands: Readonly<Partial<Record<HandSide, Item>>>;
+}
+
 export interface PlayerFigurePose {
   body: Body;
   yaw: number;
@@ -143,6 +152,10 @@ export interface PlayerFigurePose {
   dt: number;
   thirdPerson?: boolean;
   inventory?: Inventory;
+  heldItems?: FigureHeldItems;
+  holdReady?: boolean;
+  eye?: Vec3;
+  pitch?: number;
 }
 
 type StancePose = FigureDef['stancePoses']['prone'];
@@ -158,6 +171,7 @@ const STANDING_POSE: StancePose = {
 };
 const STANCE_POSE_KEYS = Object.keys(STANDING_POSE) as (keyof StancePose)[];
 const RADIANS = Math.PI / 180;
+const ARM_SIDE: Partial<Record<FigurePartName, HandSide>> = { rightArm: 'right', leftArm: 'left' };
 const isArm = (name: string): boolean => name === 'leftArm' || name === 'rightArm';
 const isLeg = (name: string): boolean => name === 'leftLeg' || name === 'rightLeg';
 
@@ -232,6 +246,13 @@ const hangFromPivots = (
  */
 export class PlayerMeshes {
   readonly group = new Group();
+  private readonly heldFrame = new Group();
+  private readonly figure: FigureDef;
+  private presentation: HeldPresentation | undefined;
+  private heldVersion = '';
+  private lastPose: PlayerFigurePose | undefined;
+  private handPose: MeleePoseFrame | undefined;
+  private handling: HeldPresentationFrame = {};
   private readonly layout: PlayerFigureLayout;
   /** Each part's drawn model, once it has loaded. */
   private readonly drawn = new Map<FigurePart, Group>();
@@ -259,6 +280,9 @@ export class PlayerMeshes {
     modelDefs: ReadonlyMap<string, Pick<ModelDef, 'anchors'>>,
     models: ModelLibrary,
   ) {
+    this.figure = figure;
+    this.heldFrame.name = 'world-held-items';
+    this.group.add(this.heldFrame);
     this.layout = playerFigureLayout(figure, modelDefs);
     this.modelDefs = modelDefs;
     const { body, legRig, armRig } = figure;
@@ -298,6 +322,8 @@ export class PlayerMeshes {
     this.placement.yaw = pose.yaw;
     this.placement.thirdPerson = thirdPerson;
     this.syncModels();
+    this.lastPose = pose;
+    this.syncHeld(pose);
     const { kneeBendDegrees, ankleDegrees, headUpDegrees, elbowBendDegrees } = this.shownPose;
     // Models face +z, so turning about +x swings a shin back and tips a toe or the face down; a forearm bends forward
     // the other way. A stance leaves the wrist alone.
@@ -313,7 +339,8 @@ export class PlayerMeshes {
     }
     for (const [part, drawn] of this.drawn) {
       // In first person the view draws both arms, gripping or as fists (`HeldItems`), so the body's arms would double them.
-      drawn.visible = thirdPerson || !isArm(part.name);
+      const side = ARM_SIDE[part.name];
+      drawn.visible = !isArm(part.name) || (thirdPerson && !(side && this.presentation?.arms.has(side)));
       this.posePoint(part.at, part.name, pose);
       drawn.position.copy(this.dummy.position);
       drawn.quaternion.copy(this.dummy.quaternion);
@@ -328,6 +355,99 @@ export class PlayerMeshes {
       attachment.position.copy(this.dummy.position);
       attachment.quaternion.copy(this.dummy.quaternion);
     }
+  }
+
+  dispose(): void {
+    this.presentation?.dispose();
+    this.heldVersion = '';
+    this.lastPose = undefined;
+  }
+
+  /** Static holds share the first-person owner; view-only handling effects can update them after camera sync. */
+  syncHeldView(handPose: MeleePoseFrame | undefined, handling: HeldPresentationFrame): void {
+    this.handPose = handPose;
+    this.handling = handling;
+    if (this.lastPose) {
+      this.syncHeld(this.lastPose);
+    }
+  }
+
+  private syncHeld(pose: PlayerFigurePose): void {
+    const source = pose.heldItems ?? pose.inventory;
+    this.heldFrame.visible = pose.thirdPerson === true;
+    if (!source) {
+      this.presentation?.clear();
+      this.heldVersion = '';
+      return;
+    }
+    const { registry, hands } = source;
+    const version = `${pose.inventory?.version}:${this.models.version}:${hands.right?.uid}:${hands.right?.type}:${hands.left?.uid}:${hands.left?.type}`;
+    const presentation = this.prepareHeld(source, version);
+    this.positionHeldFrame(pose, registry);
+    const shoulderOf = (side: HandSide): Vector3 => {
+      const joint = this.layout.joints[side === 'right' ? 'rightShoulder' : 'leftShoulder'];
+      this.posePoint(joint, 'body', pose);
+      return this.heldFrame.worldToLocal(this.dummy.position.clone());
+    };
+    const holdingSide = hands.left ? 'left' : 'right';
+    const leading = pose.inventory ? dominantSide(pose.inventory.character) : holdingSide;
+    const handPose = this.handPose ?? readyMeleePose(pose.holdReady ?? false, this.figure.holds, leading);
+    presentation.poseStatic(hands, handPose, {
+      leading,
+      ready: pose.holdReady ?? false,
+      handling: this.handling,
+      shoulderOf,
+    });
+    this.heldFrame.updateMatrixWorld(true);
+    for (const side of presentation.arms.keys()) {
+      const shoulder = shoulderOf(side);
+      const anchor = presentation.gripAnchors.get(side)!;
+      const hold = presentation.holds.get(side);
+      anchor.position.set(...(hold?.at ?? [0, 0, 0]));
+      presentation.solve(side, shoulder, presentation.displayPalms.get(side) ?? (hold ? anchor : undefined));
+    }
+  }
+
+  private prepareHeld({ registry, hands }: FigureHeldItems, version: string): HeldPresentation {
+    if (this.presentation?.registry !== registry) {
+      this.presentation?.dispose();
+      this.presentation = new HeldPresentation(registry, this.figure, this.models, {
+        frame: this.heldFrame,
+        torso: this.heldFrame,
+      });
+      this.heldVersion = '';
+    }
+    const presentation = this.presentation!;
+    if (version !== this.heldVersion) {
+      presentation.clear();
+      for (const side of ['right', 'left'] as const) {
+        const item = hands[side];
+        if (item) {
+          presentation.addItem(side, item);
+        }
+      }
+      this.heldVersion = version;
+      this.heldFrame.traverse((object) => object.layers.set(PLAYER_FIGURE_LAYER));
+      castsAndReceives(this.heldFrame);
+    }
+    return presentation;
+  }
+
+  private positionHeldFrame(pose: PlayerFigurePose, registry: Registry): void {
+    const player = registry.player.get(CORE_CONTENT_IDS.player)!;
+    const lowered = pose.stance === 'crouching' ? player.crouch : player.prone;
+    const drop = pose.stance === 'standing' ? 0 : lowered.eyeDropMetres;
+    if (pose.eye) {
+      this.heldFrame.position.set(...(pose.eye.map((value) => value * this.placement.blockSize) as Vec3));
+    } else {
+      this.heldFrame.position.set(
+        pose.body.pos[0] * this.placement.blockSize,
+        pose.body.pos[1] * this.placement.blockSize + player.eye - drop + pose.stepOffset,
+        pose.body.pos[2] * this.placement.blockSize,
+      );
+    }
+    this.heldFrame.rotation.set(pose.pitch ?? 0, pose.yaw, 0, 'YXZ');
+    this.heldFrame.updateMatrixWorld(true);
   }
 
   /** Adds each part whose model has loaded since the last sync. */
