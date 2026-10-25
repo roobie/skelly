@@ -88,9 +88,10 @@ const fixture = (
   const models = {
     version: 0,
     has: () => true,
+    part: () => undefined,
     heldLook: () => ({ root: heldRoot(), parts: [], slots: {} }),
   } as unknown as ModelLibrary;
-  const held = new HeldItems(inventory, models, { skin: '#bbaa99', shirt: '#556677', trousers: '#334455' });
+  const held = new HeldItems(inventory, models, registry.figures.get('player')!);
   const camera = new PerspectiveCamera();
   const project = (handling: HeldHandlingFrame = { firearms: mechanics.frames(), job: queue.jobs[0] }) => {
     const before = structuredClone({

@@ -152,7 +152,7 @@ describe('a light mount on a long gun', () => {
     const light = gun.slots![LIGHT_MOUNT_SLOT]!;
     expect(toggleLight(registry, light, 0)).toBeUndefined();
     expect(light.on).toBe(true);
-    const held = new HeldItems(inventory, undefined, registry.figures.get('player')!.palette);
+    const held = new HeldItems(inventory, undefined, registry.figures.get('player')!);
     held.update(new PerspectiveCamera());
     expect(held.lensOf(light, new Vector3())).toBe(true);
     held.dispose();
@@ -174,7 +174,7 @@ describe('a light mount on a long gun', () => {
     expect(mount.on).toBe(true);
     expect(chargeOf(registry, mount)).toBeLessThan(before);
     const camera = new PerspectiveCamera();
-    const held = new HeldItems(inventory, undefined, registry.figures.get('player')!.palette);
+    const held = new HeldItems(inventory, undefined, registry.figures.get('player')!);
     const beam = new Flashlight(new Scene(), 1, CALIBRATED_NEAR_FIELD_M, false);
     held.update(camera);
     beam.update({ registry, inventory, held, camera, lit: mount });
@@ -222,7 +222,7 @@ describe('a light mount on a long gun', () => {
     const models = { version: 1, has: () => true, groundLook: () => ground } as unknown as ModelLibrary;
     const piles = new PileMeshes(1, models);
     piles.sync(inventory);
-    const held = new HeldItems(inventory, undefined, registry.figures.get('player')!.palette);
+    const held = new HeldItems(inventory, undefined, registry.figures.get('player')!);
     const camera = new PerspectiveCamera();
     const beam = new Flashlight(new Scene(), 1, CALIBRATED_NEAR_FIELD_M, false);
     const update = () => beam.update({ registry, inventory, held, camera, lit: undefined, piles });

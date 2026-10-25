@@ -2213,10 +2213,10 @@
       "sight": 12.5,
       "sightCone": 60,
       "sounds": {
-        "alert": "shambler_alert",
-        "attack": "shambler_attack",
-        "hurt": "shambler_hurt",
-        "idle": "shambler_idle"
+        "alert": "acid_zombie_alert",
+        "attack": "acid_zombie_attack",
+        "hurt": "acid_zombie_hurt",
+        "idle": "acid_zombie_idle"
       },
       "spawnWeight": 1,
       "speed": {

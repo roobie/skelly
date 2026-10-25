@@ -9,13 +9,11 @@
 import {
   Box3,
   BoxGeometry,
-  type BufferGeometry,
   DirectionalLight,
   DoubleSide,
   Euler,
   Group,
   HemisphereLight,
-  type Material,
   MathUtils,
   Matrix4,
   Mesh,
@@ -36,10 +34,12 @@ import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Job } from '../core/handling.ts';
 import {
+  type HeldHoldFrame,
   HOLD,
   heldAnchorOffset,
   heldFirearmTransform,
   heldGripOffset,
+  heldHoldFrame,
   modelToView,
   readyFirearmPose,
   throwStanceHandOffset,
@@ -52,8 +52,9 @@ import type { OpticLensFrame, OpticViewSettings, OpticZoomFrame } from '../core/
 import { mountedOptic, opticViewSettings, projectLensAperture } from '../core/opticView.ts';
 import { opticWindowDistance, PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { revolverChamberPoint } from '../core/revolverPose.ts';
-import { HELD_DISPLAY_KIND } from '../core/schema.ts';
+import { type ArmRigDef, HELD_DISPLAY_KIND } from '../core/schema.ts';
 import { firearmsCombatTuning } from '../core/skillTraining.ts';
+import { type ArmRig, buildArmRig, solveArmRig } from './armRig.ts';
 import { createCompass } from './compass.ts';
 import {
   type FirearmAction,
@@ -84,12 +85,7 @@ import {
 import { ModelFlames } from './modelFlame.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';
 import { type ComposedSlot, heldModelFrame, LENS, type ModelLibrary } from './models.ts';
-import {
-  createFirstPersonArm,
-  FIRST_PERSON_PALM,
-  FIRST_PERSON_SHOULDER,
-  placeFirstPersonSegment,
-} from './playerFigure.ts';
+import { firstPersonShoulder } from './playerFigure.ts';
 import { rummageFrame, rummageGrip } from './rummagePose.ts';
 import { shellLoadPose } from './shellLoadPose.ts';
 import type { SkyTargets } from './sky.ts';
@@ -207,8 +203,15 @@ export class HeldItems {
   private readonly magazineWrist = new Vector3();
   private readonly magazineTilt = new Quaternion();
   private readonly arms = new Map<HandSide, Group>();
-  private readonly armLengths = new Map<Group, readonly [number, number]>();
+  /** Each arm's rigged model, once its model has loaded; an arm without one is only its grip point. */
+  private readonly armRigs = new Map<HandSide, ArmRig>();
   private readonly handBases = new Map<HandSide, Vec3>();
+  /** Each arm's grip point: the arm's own origin, or a hold authored beside it. */
+  private readonly gripAnchors = new Map<HandSide, Object3D>();
+  /** The authored hold each arm's grip anchor carries (a long gun's grip or forend). */
+  private readonly holds = new Map<HandSide, HeldHoldFrame>();
+  /** The sides whose hand has left its hold this frame, to work the gun; the hand then follows its forearm. */
+  private readonly handsOff = new Set<HandSide>();
   private readonly heldByHand = new Map<HandSide, Object3D>();
   /** The frame each hand's palm takes behind a held screen. */
   private readonly displayPalms = new Map<HandSide, Object3D>();
@@ -223,7 +226,6 @@ export class HeldItems {
   private readonly poseMatrix = new Matrix4();
   private readonly poseEuler = new Euler();
   private readonly handPosition = new Vector3();
-  private readonly pivotPosition = new Vector3();
   private readonly opticRootRight = new Vector3();
   private readonly opticRootUp = new Vector3();
   private readonly opticRootBack = new Vector3();
@@ -237,18 +239,14 @@ export class HeldItems {
   private readonly opticBaseInverse = new Quaternion();
   private rummageSupportRest: { arm: Group; position: Vector3 } | undefined;
 
-  private readonly palette: FigureDef['palette'];
+  /** The player's figure row: names the arm models and how the view bends them. */
+  private readonly figure: FigureDef;
 
-  constructor(
-    inventory: Inventory,
-    models: ModelLibrary | undefined,
-    palette: FigureDef['palette'],
-    sunSource?: DirectionalLight,
-  ) {
+  constructor(inventory: Inventory, models: ModelLibrary | undefined, figure: FigureDef, sunSource?: DirectionalLight) {
     this.view.name = 'held-items-view';
     this.inventory = inventory;
     this.models = models;
-    this.palette = palette;
+    this.figure = figure;
     this.sunSource = sunSource;
     if (sunSource) {
       this.light.shadow = sunSource.shadow;
@@ -289,6 +287,7 @@ export class HeldItems {
     const baseCameraQuaternion = main.quaternion.clone();
     this.restoreRummageSupport();
     this.sync();
+    this.handsOff.clear();
     this.poseFirearms(firearmPoses);
     const { loweredPitchRadians } = firearmsCombatTuning(this.inventory.registry);
     const leadingSide = dominantSide(this.inventory.character);
@@ -330,12 +329,21 @@ export class HeldItems {
     for (const compass of this.compasses.values()) {
       compass.update(main.rotation.y);
     }
+    this.poseArms(firearmPoses);
+    this.view.updateMatrixWorld(true);
+  }
+
+  /** Bends each arm to its grip point, with the hand frame its hold gives it, after every mover has placed the arm. */
+  private poseArms(firearmPoses: readonly HeldFirearmPose[]): void {
     for (const [side, arm] of this.arms) {
       const revolver = this.revolverGripFrame(side, firearmPoses);
       const displayPalm = revolver ? undefined : this.displayPalms.get(side);
-      this.updateArmChain(side, arm, revolver ?? displayPalm, displayPalm !== undefined);
+      // A hand off its hold (working the action, loading) grips where its arm was moved to, not at the hold.
+      const hold = this.handsOff.has(side) ? undefined : this.holds.get(side);
+      const anchor = this.gripAnchors.get(side);
+      anchor?.position.set(...(hold?.at ?? [0, 0, 0]));
+      this.updateArmChain(side, arm, revolver ?? displayPalm ?? (hold ? anchor : undefined));
     }
-    this.view.updateMatrixWorld(true);
   }
 
   private poseHeldHand({
@@ -847,6 +855,7 @@ export class HeldItems {
       knob.node.updateWorldMatrix(true, true);
       const point = new Box3().setFromObject(knob.node).getCenter(new Vector3());
       arm.position.copy(arm.parent.worldToLocal(point));
+      this.handsOff.add(side);
     }
   }
 
@@ -945,6 +954,7 @@ export class HeldItems {
     if (grip) {
       held.updateMatrixWorld(true);
       arm.position.lerp(held.worldToLocal(grip.point.clone()), grip.reach);
+      this.handsOff.add(side);
     }
   }
 
@@ -1035,6 +1045,7 @@ export class HeldItems {
     const reaching = feed?.wrist ?? (frame?.revolver?.step === 'pick' ? port : undefined);
     if (arm?.parent && reaching && !this.inventory.hands[side]) {
       arm.position.copy(arm.parent.worldToLocal(held.localToWorld(new Vector3(...reaching))));
+      this.handsOff.add(side);
     }
     this.poseLoadingShell(item.uid, held, frame?.roundType, feed);
   }
@@ -1065,6 +1076,7 @@ export class HeldItems {
         : undefined;
     if (feed) {
       arm?.position.set(...feed.wrist);
+      this.handsOff.add(side);
     }
     this.poseLoadingShell(uid, held, frame?.roundType, feed);
   }
@@ -1146,16 +1158,24 @@ export class HeldItems {
     held.quaternion.copy(this.poseRotation);
   }
 
+  /** Where the view hangs an arm, in the eye's frame. */
+  viewShoulder(side: HandSide): Vector3 {
+    return new Vector3(...firstPersonShoulder(this.figure, side));
+  }
+
+  /** Places a torso arm's grip, kept within the arm's reach plus the short shoulder lead a stretch allows. */
   private placeTorsoArm(side: HandSide, arm: Group, transform: ReturnType<typeof interpolateHandPose>): void {
-    const [upperLength, lowerLength] = this.armLengths.get(arm)!;
     this.handPosition.set(...transform.offset).applyAxisAngle(TORSO_Y_AXIS, -this.torso.rotation.y);
     transform.offset = [this.handPosition.x, this.handPosition.y, this.handPosition.z];
-    const shoulder = new Vector3(...FIRST_PERSON_SHOULDER[side]);
-    const wrist = new Vector3(...transform.offset);
-    const reach = upperLength + lowerLength + 0.08;
-    if (shoulder.distanceTo(wrist) > reach) {
-      wrist.sub(shoulder).normalize().multiplyScalar(reach).add(shoulder);
-      transform.offset = [wrist.x, wrist.y, wrist.z];
+    const rig = this.armRigs.get(side);
+    if (rig) {
+      const shoulder = this.viewShoulder(side);
+      const grip = new Vector3(...transform.offset);
+      const reach = rig.upperLength + rig.foreLength + rig.gripFromWrist.length() + 0.08;
+      if (shoulder.distanceTo(grip) > reach) {
+        grip.sub(shoulder).normalize().multiplyScalar(reach).add(shoulder);
+        transform.offset = [grip.x, grip.y, grip.z];
+      }
     }
     arm.position.set(...transform.offset);
   }
@@ -1256,7 +1276,6 @@ export class HeldItems {
     this.loadingShells.clear();
     this.magazineSeats.clear();
     this.magazineRound = undefined;
-    this.armLengths.clear();
     this.handBases.clear();
     this.heldByHand.clear();
     this.displayPalms.clear();
@@ -1332,103 +1351,106 @@ export class HeldItems {
     this.drawn = '';
   }
 
-  /** Detaches and disposes arm chains before rebuilding the hands scene on an inventory/model version change. */
+  /** Detaches the arms before rebuilding the hands scene; their meshes are the model library's shared copies. */
   private clearArms(): void {
-    const geometries = new Set<BufferGeometry>();
-    const materials = new Set<Material>();
     for (const arm of this.arms.values()) {
-      arm.traverse((object) => {
-        if (object instanceof Mesh) {
-          geometries.add(object.geometry);
-          for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
-            materials.add(material);
-          }
-        }
-      });
       arm.removeFromParent();
     }
-    for (const geometry of geometries) {
-      geometry.dispose();
-    }
-    for (const material of materials) {
-      material.dispose();
-    }
     this.arms.clear();
+    this.armRigs.clear();
+    this.gripAnchors.clear();
+    this.holds.clear();
   }
 
-  private updateArmChain(side: HandSide, arm: Group, gripFrame: Object3D | undefined, behindScreen = false): void {
-    const sleeve = arm.children[0] as Mesh;
-    const forearm = arm.children[1] as Mesh;
-    const palm = arm.children[2] as Mesh;
-    const anchor = arm.getObjectByName('grip-anchor');
-    if (!(sleeve && forearm && palm && anchor)) {
+  /**
+   * Bends the arm from its shoulder to its grip point, in the view's frame. The hand takes `gripFrame` when it has
+   * one (a screen's back, a revolver being loaded, a long gun's authored hold), else it continues the forearm.
+   */
+  private updateArmChain(side: HandSide, arm: Group, gripFrame: Object3D | undefined): void {
+    const rig = this.armRigs.get(side);
+    if (!rig) {
       return;
     }
-    const palmWorld = anchor.getWorldPosition(new Vector3());
-    const wristWorld = palmWorld.clone();
-    if (gripFrame && behindScreen) {
-      // A palm on a screen's back takes the forearm at its own back face, so the forearm's
-      // end cannot reach past the palm into the screen.
-      const back = new Vector3(0, 0, -1).applyQuaternion(gripFrame.getWorldQuaternion(new Quaternion()));
-      wristWorld.addScaledVector(back, FIRST_PERSON_PALM[2] / 2);
-    }
-    const baseShoulder = new Vector3(...FIRST_PERSON_SHOULDER[side]);
-    const shoulderView =
-      arm.parent === this.torso
-        ? this.view.worldToLocal(this.torso.localToWorld(baseShoulder.clone()))
-        : baseShoulder.clone();
-    const wristView = this.view.worldToLocal(wristWorld.clone());
-    const lengths = this.armLengths.get(arm)!;
-    const maxReach = lengths[0] + lengths[1];
-    const shoulderToWrist = wristView.clone().sub(shoulderView);
-    const distance = shoulderToWrist.length();
-    const lead = Math.min(0.08, Math.max(0, distance - maxReach));
-    if (lead > 0) {
-      shoulderView.addScaledVector(shoulderToWrist.normalize(), lead);
-    }
-    const shoulder = arm.worldToLocal(this.view.localToWorld(shoulderView));
-    const wrist = arm.worldToLocal(wristWorld.clone());
-    const axis = wrist.clone().sub(shoulder);
-    const reach = axis.length();
-    const [upperLength, lowerLength] = lengths;
-    const along = (upperLength * upperLength - lowerLength * lowerLength + reach * reach) / (2 * reach);
-    const bendHeight = Math.sqrt(Math.max(0, upperLength * upperLength - along * along));
-    axis.normalize();
-    const bend = new Vector3(side === 'right' ? 1 : -1, 0, 0);
-    bend.addScaledVector(axis, -bend.dot(axis)).normalize();
-    const elbow = shoulder.clone().addScaledVector(axis, along).addScaledVector(bend, bendHeight);
-    placeFirstPersonSegment(sleeve, shoulder, elbow, { width: sleeve.scale.x, depth: sleeve.scale.z });
-    placeFirstPersonSegment(forearm, elbow, wrist, { width: forearm.scale.x, depth: forearm.scale.z });
-    palm.position.copy(arm.worldToLocal(palmWorld));
-    if (gripFrame) {
-      palm.quaternion.copy(
-        arm.getWorldQuaternion(new Quaternion()).invert().multiply(gripFrame.getWorldQuaternion(new Quaternion())),
-      );
-    } else {
-      palm.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), wrist.clone().sub(elbow).normalize());
-    }
+    const baseShoulder = this.viewShoulder(side);
+    const shoulder =
+      arm.parent === this.torso ? this.view.worldToLocal(this.torso.localToWorld(baseShoulder)) : baseShoulder;
+    const anchor = this.gripAnchors.get(side) ?? arm;
+    const grip = this.view.worldToLocal(anchor.getWorldPosition(new Vector3()));
+    const viewRotation = this.view.getWorldQuaternion(new Quaternion());
+    const handFrame = gripFrame
+      ? viewRotation.clone().invert().multiply(gripFrame.getWorldQuaternion(new Quaternion()))
+      : undefined;
+    const bendSide = new Vector3(side === 'right' ? 1 : -1, 0, 0);
+    const solved = solveArmRig(rig, { shoulder, grip, handFrame, bendSide, up: TORSO_Y_AXIS });
+    const toArm = arm.getWorldQuaternion(new Quaternion()).invert().multiply(viewRotation);
+    const place = (pivot: Object3D, at: Vector3, rotation: Quaternion): void => {
+      pivot.position.copy(arm.worldToLocal(this.view.localToWorld(at.clone())));
+      pivot.quaternion.copy(toArm).multiply(rotation);
+    };
+    place(rig.shoulder, solved.shoulder, solved.upper);
+    place(rig.elbow, solved.elbow, solved.fore);
+    place(rig.hand, grip, solved.hand);
   }
 
-  private addArm(side: HandSide, grip: Vec3, parent: Group = this.torso, parentOrigin: Vec3 = [0, 0, 0]): void {
+  /** The figure's arm model for `side`, once the library has it. */
+  private armModel(side: HandSide): { definition: ModelDef; scene: Object3D } | undefined {
+    const definition = this.inventory.registry.models.get(
+      this.figure.limbs[side === 'right' ? 'rightArm' : 'leftArm'].model,
+    );
+    const scene = definition && this.models?.has(definition.id) ? this.models.part(definition.id) : undefined;
+    return definition && scene ? { definition, scene } : undefined;
+  }
+
+  /**
+   * An arm whose grip point is `grip` in the torso's frame, or in a held item's when `mount` names one, posed as
+   * `pose` says; the arm's own origin is that grip point, so a held item placed from the arm's position sits in its
+   * hand. A `hold` moves the hand's grip anchor off that origin, to where the authored palm meets the held model, and
+   * sets the hand's frame there.
+   */
+  private addArm(
+    side: HandSide,
+    grip: Vec3,
+    pose: keyof ArmRigDef['handPoses'],
+    { mount, hold }: { mount?: { held: Group; origin: Vec3 }; hold?: HeldHoldFrame } = {},
+  ): void {
     if (this.arms.has(side)) {
       return;
     }
-    const arm = createFirstPersonArm(this.palette, side, grip);
-    this.pivotPosition.set(...grip);
-    for (const child of arm.children) {
-      child.position.sub(this.pivotPosition);
+    const arm = new Group();
+    arm.name = `first-person-arm-${side}`;
+    const gripAnchor = new Object3D();
+    gripAnchor.name = 'grip-anchor';
+    if (hold) {
+      gripAnchor.position.set(...hold.at);
+      gripAnchor.quaternion.setFromRotationMatrix(
+        new Matrix4().makeBasis(
+          new Vector3(...hold.thumbSide),
+          new Vector3(...hold.fingers),
+          new Vector3(...hold.palm),
+        ),
+      );
+      this.holds.set(side, hold);
     }
-    const localGrip: Vec3 = [grip[0] - parentOrigin[0], grip[1] - parentOrigin[1], grip[2] - parentOrigin[2]];
+    this.gripAnchors.set(side, gripAnchor);
+    arm.add(gripAnchor);
+    const model = this.armModel(side);
+    if (model) {
+      const { armRig } = this.figure;
+      const rig = buildArmRig(model, armRig, side, armRig.handPoses[pose]);
+      arm.add(rig.shoulder, rig.elbow, rig.hand);
+      this.armRigs.set(side, rig);
+    }
+    const origin = mount?.origin ?? [0, 0, 0];
+    const localGrip: Vec3 = [grip[0] - origin[0], grip[1] - origin[1], grip[2] - origin[2]];
     arm.position.set(...localGrip);
     this.arms.set(side, arm);
-    this.armLengths.set(arm, [(arm.children[0] as Mesh).scale.y, (arm.children[1] as Mesh).scale.y]);
     this.handBases.set(side, localGrip);
-    addShadowReceiver(parent, arm);
+    addShadowReceiver(mount?.held ?? this.torso, arm);
   }
 
   private syncFistHand(side: HandSide): void {
     if (!this.inventory.hands[side]) {
-      this.addArm(side, HOLD[side]);
+      this.addArm(side, HOLD[side], 'fist');
     }
   }
 
@@ -1437,16 +1459,16 @@ export class HeldItems {
       return;
     }
     const def = defOf(this.inventory.registry, item.type);
+    const model = def.model === undefined ? undefined : this.inventory.registry.models.get(def.model);
     // A permanently raised inspection pose keeps this small display legible without a new input route.
     const heldAt: Vec3 =
       def.heldDisplay === undefined
-        ? heldGripOffset(side, Boolean(def.twoHanded))
+        ? heldGripOffset(side, Boolean(def.twoHanded), model)
         : [side === 'right' ? 0.14 : -0.14, -0.13, -0.3];
     const held = new Group();
     held.position.set(...heldAt);
     held.add(this.shape(item));
-    const model = def.heldDisplay === undefined ? undefined : this.inventory.registry.models.get(def.model!);
-    if (model?.display && this.models?.has(model.id)) {
+    if (def.heldDisplay !== undefined && model?.display && this.models?.has(model.id)) {
       const palm = presentHeldDisplay(held.children[0]!, model.display, heldAt);
       held.add(palm);
       this.displayPalms.set(side, palm);
@@ -1454,25 +1476,32 @@ export class HeldItems {
     addShadowReceiver(this.view, held);
     this.shown.set(item.uid, held);
     this.heldByHand.set(side, held);
-    this.addArm(side, heldAt);
+    if (model?.hands) {
+      this.addArm(side, heldAt, model.hands.firing.pose, { hold: heldHoldFrame(model, side, 'firing') });
+    } else {
+      this.addArm(side, heldAt, this.displayPalms.has(side) ? 'open' : 'holding');
+    }
     if (def.twoHanded) {
-      this.syncOffhandArm(side, heldAt, def.model, held);
+      this.syncOffhandArm(side, heldAt, model, held);
     }
   }
 
-  private syncOffhandArm(side: HandSide, heldAt: Vec3, modelId: string | undefined, held: Group): void {
+  private syncOffhandArm(side: HandSide, heldAt: Vec3, model: ModelDef | undefined, held: Group): void {
     const otherSide: HandSide = side === 'right' ? 'left' : 'right';
-    const model = modelId ? this.inventory.registry.models.get(modelId) : undefined;
-    if (model?.gun?.internalMagazine && model.anchors?.support) {
-      const support = heldAnchorOffset(model, model.anchors.support_wrist ? 'support_wrist' : 'support');
-      const offhandGrip: Vec3 = support.map((value, index) => value + heldAt[index]!) as Vec3;
-      this.addArm(otherSide, offhandGrip, held, heldAt);
+    if (model?.hands) {
+      // The hold is authored for the gun's holding side; the support arm is the other hand but mirrors with the gun.
+      const support = heldHoldFrame(model, side, 'support');
+      const offhandGrip: Vec3 = support.at.map((value, index) => value + heldAt[index]!) as Vec3;
+      this.addArm(otherSide, offhandGrip, model.hands.support.pose, {
+        mount: { held, origin: heldAt },
+        hold: { ...support, at: [0, 0, 0] },
+      });
       return;
     }
     const pose = model?.hold;
     const offhandGrip: Vec3 =
       pose === 'upright' ? [heldAt[0], heldAt[1] + 0.14, heldAt[2]] : [heldAt[0], heldAt[1], heldAt[2] - 0.14];
-    this.addArm(otherSide, offhandGrip, held, heldAt);
+    this.addArm(otherSide, offhandGrip, 'holding', { mount: { held, origin: heldAt } });
   }
 
   private shape(item: Item): Object3D {

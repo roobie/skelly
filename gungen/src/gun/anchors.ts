@@ -13,6 +13,8 @@ export type GunAnchorName = 'hold' | 'support' | 'muzzle' | 'ejection' | 'magwel
 export interface SelectedAnchors {
   readonly hold: AnchorFrame;
   readonly others: Readonly<Record<string, AnchorFrame>>;
+  /** The part whose `support` anchor was selected, so the export can read its drawn underside. */
+  readonly supportPart?: string;
 }
 
 export type AnchorSelectionError =
@@ -110,12 +112,19 @@ const selectOthers = (
   hold: AnchorFrame,
 ): SelectedAnchors => {
   const others: Partial<Record<GunAnchorName, AnchorFrame>> = {};
+  let supportPart: string | undefined;
   for (const name of OTHER_ANCHORS) {
-    const candidates = ids.flatMap((i) => frames[i]![name] ?? []);
-    const [first] = candidates;
-    if (first) {
-      others[name] = name === 'muzzle' ? candidates.reduce((best, frame) => frontmost(best, frame)) : first;
+    const declaring = ids.filter((id) => frames[id]![name]);
+    const [first] = declaring;
+    if (!first) {
+      continue;
+    }
+    const candidate = frames[first]![name]!;
+    others[name] =
+      name === 'muzzle' ? declaring.reduce((best, id) => frontmost(best, frames[id]![name]!), candidate) : candidate;
+    if (name === 'support') {
+      supportPart = first;
     }
   }
-  return { hold, others };
+  return { hold, others, ...(supportPart === undefined ? {} : { supportPart }) };
 };

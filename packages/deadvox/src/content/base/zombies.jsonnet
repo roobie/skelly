@@ -653,6 +653,12 @@ local content = {
         "drips": { "perRealSecond": 1.5, "sizeMetres": 0.012 },
         "deathSplash": { "droplets": 24, "speedMetresPerRealSecond": 3.5, "slowestSpeedFraction": 0.5, "sizeMetres": 0.02 }
       },
+      "sounds": {
+        "idle": "acid_zombie_idle",
+        "alert": "acid_zombie_alert",
+        "attack": "acid_zombie_attack",
+        "hurt": "acid_zombie_hurt"
+      },
       "acidResistance": 1,
       "abilities": ["acidSpit"],
       "acidSpit": {
