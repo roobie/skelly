@@ -31,7 +31,7 @@ Some photo detail is beyond the build's primitives and stays a known difference.
 The design sits on the `compactSmg` template; see `src/gun/templates.ts`, `compactSmg`. Its traced parts come from the compact-SMG builders in `src/gun/parts.ts`:
 
 - **Receiver and end cap.** The receiver's section ties its outline and cavity to the table; see `RECEIVER_SECTION` and `compactSmgReceiverDetails`. The receiver carries the gun's sight axis, since the drum rear sight is part of it; see `compactSmgSightAxis`. The section forces the `smg` carrier pattern (`carrierPatternFor`), because the other patterns' carriers do not fit its cavity.
-- **Barrel and front sight.** The barrel carries the front sight and muzzle collar; see `compactSmgBarrelDetails`. The hood ring shares the bore's axis, so the sight line runs through its middle.
+- **Barrel and front sight.** The barrel carries the front sight and muzzle collar; see `compactSmgBarrelDetails`. The hood ring stands between the drum aperture and the post, so its bore must leave the aiming line from the aperture to the post tip clear.
 - **Cocking tube.** Its walls are open, so the handle stem rides in a real slot; see `smgCockingTube`.
 - **Handguard.** It hangs below the cocking tube and leaves the magazine well clear.
 - **Muzzle.** A threaded, suppressor-ready muzzle on the existing thread mount (see `src/gun/mounts.ts`, `muzzle`), and a plain stub whose length is the model's own design. The barrel's `muzzle` param picks the variant, and the port id stays `muzzle` so the anchor sits at the tip of either.

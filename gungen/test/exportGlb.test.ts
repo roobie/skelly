@@ -4,10 +4,13 @@ import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import type { Assembly } from '@skelly/engine/assembly/schema.ts';
 import {
   applyPoint,
+  cross,
+  fromColumns,
   IDENTITY,
   type Mat3,
   mulMM,
   mulMV,
+  normalize,
   rotX,
   rotY,
   rotZ,
@@ -224,6 +227,21 @@ const drawnUpTop = (
     throw new Error(`${partId} draws no upward face there`);
   }
   return top;
+};
+
+const LINE_HALF_THICKNESS = 0.05;
+
+/** A thin box along the segment from `from` to `to`, turned onto the segment's direction. */
+const segmentBox = (from: Vec3, to: Vec3, halfThickness: number) => {
+  const run = sub(to, from);
+  const along = normalize(run);
+  const side = normalize(cross(along, [0, 1, 0]));
+  const up = cross(side, along);
+  const centre: Vec3 = [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2, (from[2] + to[2]) / 2];
+  return worldBox(
+    { r: fromColumns(along, up, side), t: centre },
+    { center: [0, 0, 0], half: [Math.hypot(...run) / 2, halfThickness, halfThickness] },
+  );
 };
 
 /**
@@ -737,9 +755,9 @@ describe('glb export: deadvox model entry', () => {
       };
       near(along(postTip[0]).slice(1), postTip.slice(1), grains ? 3 : 6);
 
-      // The line from the eye to the post passes every convex solid, the drum's walls among them.
-      const reach = postTip[0] - eye[0];
-      const line = worldBox(IDENTITY, { center: along(eye[0] + reach / 2), half: [reach / 2, 0.05, 0.05] });
+      // The line from the eye to the post passes every convex solid, the drum's walls among them. The thin box lies
+      // along the line and stops its own half-thickness short of the post, so its end corners stay off the target.
+      const line = segmentBox(eye, along(postTip[0] - LINE_HALF_THICKNESS), LINE_HALF_THICKNESS);
       for (const [id, part] of out.resolved.defs) {
         const placed = out.resolved.placed.get(id)!;
         for (const solid of part.solids.filter(({ kind }) => kind !== 'revolved')) {
