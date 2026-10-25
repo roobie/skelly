@@ -61,6 +61,10 @@
       "output": "gungen/src/gun/catalogue.json"
     },
     {
+      "source": "gungen/src/gun/fixedPrism.jsonnet",
+      "output": "gungen/src/gun/fixedPrism.json"
+    },
+    {
       "source": "gungen/src/gun/gunVoxel.jsonnet",
       "output": "gungen/src/gun/gunVoxel.json"
     },

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CHUNK, type Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { cellsOf, footprint } from '../src/core/templates.ts';
+import { cellsOf, footprint, placedPieces } from '../src/core/templates.ts';
 import { vehicleCells } from '../src/core/vehicleProjection.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { testHouseSite } from './testHouseSite.ts';
@@ -9,6 +9,20 @@ import { testHouseSite } from './testHouseSite.ts';
 const registry = baseRegistry();
 const { layout, s, site, at, solid, furniture, insideLot, walkable } = testHouseSite(registry);
 const reachable = (start: Vec3): Vec3[] => {
+  // Traverse the buildings and their immediate approaches, not the surrounding landscape.
+  const bounds = site.placements.map((placement) => {
+    const [width, depth] = footprint(placement);
+    return {
+      x0: placement.origin[0],
+      x1: placement.origin[0] + width,
+      z0: placement.origin[2],
+      z1: placement.origin[2] + depth,
+    };
+  });
+  const x0 = Math.min(start[0], ...bounds.map((rect) => rect.x0)) - 1;
+  const x1 = Math.max(start[0], ...bounds.map((rect) => rect.x1)) + 1;
+  const z0 = Math.min(start[2], ...bounds.map((rect) => rect.z0)) - 1;
+  const z1 = Math.max(start[2], ...bounds.map((rect) => rect.z1)) + 1;
   const queue = [start];
   const visited = new Set([start.join()]);
   for (const [x, y, z] of queue) {
@@ -20,7 +34,15 @@ const reachable = (start: Vec3): Vec3[] => {
     ]) {
       for (const dy of [-1, 0, 1]) {
         const next: Vec3 = [x + dx!, y + dy, z + dz!];
-        if (!insideLot(next) || visited.has(next.join()) || !walkable(...next)) {
+        if (
+          next[0] < x0 ||
+          next[0] > x1 ||
+          next[2] < z0 ||
+          next[2] > z1 ||
+          !insideLot(next) ||
+          visited.has(next.join()) ||
+          !walkable(...next)
+        ) {
           continue;
         }
         visited.add(next.join());
@@ -92,6 +114,47 @@ describe('authored test house', () => {
   it('keeps a bay free of parked vehicles for part work', () => {
     const parked = new Set((layout.vehicles ?? []).map(({ position }) => position.join()));
     expect((layout.bays ?? []).some(({ position }) => !parked.has(position.join()))).toBe(true);
+  });
+
+  it('levels terrain to every building foundation without burying or floating it', () => {
+    expect(layout.buildings.length).toBeGreaterThan(0);
+    for (const building of layout.buildings) {
+      const placement = site.placements.find(
+        ({ template, origin }) =>
+          template.id === building.template && origin.every((value, axis) => value * s === building.position[axis]),
+      )!;
+      const [width, depth] = footprint(placement);
+      const [ox, oy, oz] = placement.origin;
+      for (let x = ox; x < ox + width; x++) {
+        for (let z = oz; z < oz + depth; z++) {
+          expect(site.surface.height(x, z, layout.ground / s), `foundation at ${x},${z}`).toBe(oy);
+        }
+      }
+    }
+  });
+
+  it('keeps showroom props and repair-stock containers outside the home', () => {
+    const [width, depth] = footprint(home);
+    const overlapsHome = (pos: Vec3, size: Vec3) =>
+      pos[0] < home.origin[0] + width &&
+      pos[0] + size[0] > home.origin[0] &&
+      pos[2] < home.origin[2] + depth &&
+      pos[2] + size[2] > home.origin[2];
+    expect(placedPieces(home).some(({ furniture: type }) => registry.furniture.get(type)?.container)).toBe(true);
+    expect(site.slots.length).toBeGreaterThan(0);
+    for (const prop of site.slots) {
+      expect(overlapsHome(prop.pos, prop.size), `${prop.furniture} showroom prop enters the home`).toBe(false);
+    }
+    const stock = site.placements
+      .filter(({ template }) => template.id === layout.repairStock)
+      .flatMap(placedPieces)
+      .filter(({ furniture: type }) => registry.furniture.get(type)?.container);
+    expect(stock.length).toBeGreaterThan(0);
+    for (const container of stock) {
+      expect(overlapsHome(container.pos, container.size), `${container.furniture} repair stock enters the home`).toBe(
+        false,
+      );
+    }
   });
 
   it('keeps normal-mode authored container sources outside world loot supply', () => {

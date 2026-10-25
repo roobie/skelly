@@ -2,6 +2,7 @@
 read_if:
   - you change the test house, its garage, its fixture stock or its debug gate
   - you change parking bays or where the test house places vehicles
+  - you change the haven's rooms, landscape, lake or south-facing view
   - you add a feature demonstration near the test-house spawn
   - you change the liquid-service demonstration's normal-mode boundary
   - you benchmark the test house at a different block scale
@@ -29,6 +30,40 @@ streaming; see `src/core/sitePower.ts`, `placedPowerDevices`.
 Keep fixture layouts marked as demos so their containers do not contribute world
 loot supply. The demo flag is an economy boundary, not a save policy; see
 `src/core/authoredSite.ts`, `AuthoredSite`.
+
+## Haven and land
+
+The home is a haven rather than another demonstration room: rooms hold domestic
+furnishings, while the showroom and garage own evaluation props and derived stock.
+Separate kitchen, bedroom and lounge spaces make that boundary legible. The south
+window and roof terrace give the lounge and the outdoor sitting space the same open
+view, rather than looking into a test yard. Warm powered light, plaster and timber
+make the interior welcoming without turning it into a weathering demonstration.
+See `src/content/base/templates-test-house.jsonnet`, `test_house_home`.
+
+The land must feel like a real place to return to: rolling meadow leads south to a
+lake and distant hills, with woodland on one side rather than trees closing every
+sightline. The lake belongs beside the property, not around it; the home stands on
+land, not an island. Its scale must read as a lake rather than a garden pond. Values
+and placements belong to `src/content/base/layouts-test-house.jsonnet`, `layouts`;
+water uses the shared mechanism in `DESIGN.md`, "Water". The woodland has no loot
+placements, because it is the haven's backdrop, not another supply catalogue.
+
+The house and landscape remain normal-mode play space. Entering the lake uses ordinary
+water rules, including swimming and drowning, rather than a decorative barrier.
+The debug wrapper preserves the home's water surface: a debug visit must not dry the
+lake out. Its range placement is independent of the landscape bounds so enlarging the
+view cannot move the rack out of reach at startup. See `src/game/worldSetup.ts`,
+`DebugTestHouseSite`, and `src/core/schema.ts`, `handlingRange`.
+
+Debug floors reserve their derived footprints against authored vegetation before
+streaming. Sharing those rectangles avoids trees in the firing corridor or catalogue
+and prevents a separate content clearing from drifting away from its floor. See
+`src/core/authoredSite.ts`, `reserveVegetation`.
+
+No mobs belong here: an unsafe garden would defeat the haven's purpose. Weathering
+stays off because this is a cared-for home, not a ruin. These choices do not exempt
+later additions from the normal/debug decision below.
 
 ## Normal and debug additions
 
@@ -94,14 +129,15 @@ The catalogue shows every furniture piece in content, so a new piece of furnitur
 no slot: it appears by being content. Derivation is game logic and placement settings
 are content, as with the repair stock: content says where the floor lies and how the
 rows are spaced, and code packs the pieces into rows, each facing its own aisle so a
-focus has somewhere to stand. The catalogue shows furniture,
-not supply, so its pieces stand empty and stay off the house grid. It lies outside the
-lot on a levelled floor, south of the house and clear of the range, because it is far
-larger than the lot. It also lies beyond the startup ring, because building that many
-pieces before play delays every debug session's start; a focus reaches it directly, and
-`validate` rejects a catalogue placed inside the ring. See `src/core/showroom.ts`,
-`ShowroomCatalogue`. Features that are
-not furniture, such as an item or a vehicle, still need a slot or their owning zone.
+focus has somewhere to stand. The catalogue shows furniture, not supply, so its
+pieces stand empty and stay off the house grid. It lies west of the haven on a levelled
+floor, clear of the lake and range, because its warehouse-like scale must not fill
+the home's view. Keeping it beyond the startup ring avoids delaying every debug
+session with wholesale catalogue construction; a focus reaches it directly. `validate`
+rejects a catalogue inside that ring; see `src/core/authoredLayout.ts`, `showroomIssues`.
+See `src/core/showroom.ts`, `ShowroomCatalogue`. Features
+that are not furniture, such as an item or a vehicle, still need a slot or their owning
+zone.
 
 ## Focus
 

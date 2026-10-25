@@ -38,6 +38,7 @@ import {
   lootSourcesOf,
   type PlaytestMarks,
   type Rect,
+  rectsOverlap,
   type Site,
   type ZombieSpawn,
 } from './site.ts';
@@ -144,10 +145,12 @@ export class AuthoredSite implements Site {
   get authoredPlacements(): readonly Placement[] {
     return this.placements;
   }
-  readonly trees: readonly TreePlacement[];
+  get trees(): readonly TreePlacement[] {
+    return this.treeIndex.trees;
+  }
   private readonly spawns: readonly ZombieSpawn[];
   private readonly hordes: readonly HordeSpawn[];
-  private readonly treeIndex: TreeIndex;
+  private treeIndex: TreeIndex;
   private readonly lootColumns: ReadonlyMap<string, readonly LootSpawnPoint[]>;
   readonly playtestMarks: PlaytestMarks;
   readonly lightPractice?: LightPracticeDef;
@@ -415,7 +418,7 @@ export class AuthoredSite implements Site {
         }),
       ],
     });
-    this.trees = candidates.filter((tree) => {
+    const trees = candidates.filter((tree) => {
       const centreX = ((tree.bounds.x0 + tree.bounds.x1) / 2) * s;
       const centreZ = ((tree.bounds.z0 + tree.bounds.z1) / 2) * s;
       const radius = (Math.hypot(tree.bounds.x1 - tree.bounds.x0, tree.bounds.z1 - tree.bounds.z0) * s) / 2;
@@ -423,7 +426,7 @@ export class AuthoredSite implements Site {
         (track) => polylineDistance([centreX, centreZ], track.points) <= track.width / 2 + radius,
       );
     });
-    this.treeIndex = new TreeIndex(this.trees);
+    this.treeIndex = new TreeIndex(trees);
     const { leafLitter: litter, terrain } = sitePalette(registry);
     this.surface = {
       height,
@@ -464,6 +467,11 @@ export class AuthoredSite implements Site {
       pos: blocks(position),
       members: Rng.stream(seed, `authored-horde:${layout.id}:${id}`).int(...HORDE_MEMBERS),
     }));
+  }
+
+  /** Wrappers reserve their derived floors before streaming so neither trees nor litter survive there. */
+  reserveVegetation(areas: readonly Rect[]): void {
+    this.treeIndex = new TreeIndex(this.trees.filter((tree) => !areas.some((area) => rectsOverlap(tree.bounds, area))));
   }
 
   focus(furniture: string): Site['spawn'] | undefined {

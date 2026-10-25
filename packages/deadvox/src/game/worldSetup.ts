@@ -62,15 +62,21 @@ export class DebugTestHouseSite implements Site {
     this.house = house;
     this.spawn = house.spawn;
     const layout = registry.layouts.get(config.site)!;
-    const { bounds } = layout;
+    const range = layout.handlingRange;
+    if (!range) {
+      throw new Error(`content does not define a debug handling range for "${layout.id}"`);
+    }
+    const { beside } = range;
     const s = config.scale.blockSize;
     this.range = new HandlingRange(config.seed, registry, config.scale, {
-      beside: { x0: bounds.x0 / s, x1: bounds.x1 / s, z0: bounds.z0 / s, z1: bounds.z1 / s },
-      floor: house.spawn.pos[1] / s - 1,
+      beside: { x0: beside.x0 / s, x1: beside.x1 / s, z0: beside.z0 / s, z1: beside.z1 / s },
+      floor: range.floor / s,
     });
     const catalogue = house.showroom && new ShowroomCatalogue(registry, house.showroom.catalogue);
     this.catalogue = catalogue;
+    house.reserveVegetation([this.range.rect, ...(catalogue ? [catalogue.rect] : [])]);
     this.surface = {
+      ...house.surface,
       height: (x, z, natural) => {
         const ground = this.range.approachHeight(x, z, house.surface.height(x, z, natural));
         return catalogue ? catalogue.height(x, z, ground) : ground;

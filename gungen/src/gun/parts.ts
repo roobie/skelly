@@ -5416,38 +5416,12 @@ const sight: PartFamily = {
       default: 'standard',
       from: [{ port: 'base', param: 'section' }],
     },
-    mountFeed: {
-      values: ['box', 'top', 'tube', 'cylinder'],
-      default: 'box',
-      from: [{ port: 'base', param: 'feed' }],
-    },
   },
   build(params): PartDef {
     const optic = getOptic(params.type, params.mountSection);
-    // Separate prism feet reach the round ends without putting a bridge across a top-loading mouth.
-    const solids =
-      params.mountFeed === 'top' && optic.id === 'fixed-prism-4x'
-        ? optic.solids
-            .filter(({ id }) => id !== 'mount-bridge')
-            .map((component) =>
-              component.kind === 'box' && component.id.endsWith('foot')
-                ? {
-                    ...component,
-                    box: {
-                      center: [
-                        component.box.center[0],
-                        component.box.center[1] + 0.25,
-                        component.box.center[2],
-                      ] as const,
-                      half: [component.box.half[0], component.box.half[1] + 0.25, component.box.half[2]] as const,
-                    },
-                  }
-                : component,
-            )
-        : optic.solids;
     return {
       family: 'sight',
-      solids,
+      solids: optic.solids,
       ports: [
         { id: 'base', mount: optic.mount.kind, gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true },
       ],
