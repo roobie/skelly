@@ -34,9 +34,9 @@
           "sizeMetres": 0.45000000000000001
         },
         "fatigue": {
-          "carryPerSimSecond": {
-            "base": 4,
-            "perKg": 0.050000000000000003
+          "carry": {
+            "basePerSimSecond": 4,
+            "perKgPerSimSecond": 0.050000000000000003
           },
           "drag": {
             "base": 8,

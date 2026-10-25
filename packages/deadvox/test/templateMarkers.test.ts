@@ -30,6 +30,7 @@ it.each(['P', '🧪'])('indexes furniture and blocks by code point for marker %s
             name: 'Fixture piece',
             size: [1, 1, 1],
             color: '#808080',
+            massKg: 1,
             breach: fixtureBreach(),
             material: FIXTURE_MATERIAL,
           },

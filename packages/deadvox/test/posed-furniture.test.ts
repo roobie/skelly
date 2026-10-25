@@ -33,6 +33,7 @@ describe('posed furniture', () => {
               name: 'Posed cabinet',
               size: [2, 4, 1],
               color: '#808080',
+              massKg: 1,
               appearance: { kind: 'cabinet', surface: 'wood' },
               container: { pockets: [{ grid: [1, 1], handlingSimSeconds: 1 }] },
               breach: fixtureBreach(),

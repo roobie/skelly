@@ -345,7 +345,7 @@ const InventoryTuningSchema = strictObject({
     fatigue: strictObject({
       lift: strictObject({ base: NonNegative, perKg: NonNegative }),
       drag: strictObject({ base: NonNegative, perKg: NonNegative }),
-      carryPerSimSecond: strictObject({ base: SimRate, perKg: SimRate }),
+      carry: strictObject({ basePerSimSecond: SimRate, perKgPerSimSecond: SimRate }),
     }),
     slide: strictObject({
       reachMetres: Positive,

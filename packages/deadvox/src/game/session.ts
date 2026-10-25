@@ -1612,11 +1612,7 @@ export const createSession = (options: SessionOptions) => {
     }
     const reason = slideFurniture(furnitureMover(), entity, params.way, { destination: params.destination as Vec3 });
     if (!reason) {
-      spendStamina(
-        sim.needs,
-        furnitureMoveStamina(inventory, entity, 'drag'),
-        bodyTuning.staminaRegenDelaySimSeconds,
-      );
+      spendStamina(sim.needs, furnitureMoveStamina(inventory, entity, 'drag'), bodyTuning.staminaRegenDelaySimSeconds);
       playNoisyWorldSound('furniture_drag', boxCentre(entity.pos, entity.size));
     }
     return reason;

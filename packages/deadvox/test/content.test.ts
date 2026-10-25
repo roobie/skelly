@@ -8,7 +8,12 @@ import rawBaseDayCycle from '../src/content/base/dayCycle.json' with { type: 'js
 import { isBodyDoor } from '../src/core/blockEntities.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { parseTimeOfDay, resolveSpawnTime } from '../src/core/clock.ts';
-import { blockColors, buildRegistry as buildContentRegistry, requiredContentIssues, validateContent } from '../src/core/content.ts';
+import {
+  blockColors,
+  buildRegistry as buildContentRegistry,
+  requiredContentIssues,
+  validateContent,
+} from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { corpseLootPoint, lootTypeIssue } from '../src/core/loot.ts';

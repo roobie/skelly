@@ -134,6 +134,7 @@ const checkShaped = (solidFill: number, height = 0.5) => {
         name: 'Bench',
         size: [1, 1, 1],
         color: '#5b605c',
+        massKg: 1,
         shape,
         solidFill,
         breach: fixtureBreach(),

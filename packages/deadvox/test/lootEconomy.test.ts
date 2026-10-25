@@ -215,6 +215,7 @@ describe('loot economy descriptions', () => {
               name: 'Fixture',
               size: [1, 1, 1],
               color: '#123456',
+              massKg: 1,
               container: { pockets: [{ grid: [1, 1], handlingSimSeconds: 1 }] },
               breach: fixtureBreach(),
               material: FIXTURE_MATERIAL,

@@ -2,6 +2,7 @@
 // so a refusal leaves the world as it was (`DESIGN.md`, "Moving furniture").
 
 import { type BlockEntities, type BlockEntity, boxIntersectsBody } from './blockEntities.ts';
+import type { FurnitureDef } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
 import { dropSpots, type Inventory, type Pile, type Spot } from './inventory.ts';
@@ -78,8 +79,10 @@ export const furnitureMoveStamina = (
     throw new Error(`Liftable furniture "${furniture.id}" has no mass`);
   }
   const { fatigue } = reachTuning(inventory.registry).furnitureMove;
-  const curve = effort === 'carry' ? fatigue.carryPerSimSecond : fatigue[effort];
-  return curve.base + curve.perKg * furniture.massKg;
+  if (effort === 'carry') {
+    return fatigue.carry.basePerSimSecond + fatigue.carry.perKgPerSimSecond * furniture.massKg;
+  }
+  return fatigue[effort].base + fatigue[effort].perKg * furniture.massKg;
 };
 
 /**
@@ -155,20 +158,19 @@ export const movableRefusal = (inventory: Inventory, entity: BlockEntity, blockS
   return fastened(inventory, entity) ? messages.fastened : undefined;
 };
 
+/** Whether a furniture definition can lift or drag when its placement is not fixed. */
+export const liftableFurniture = (furniture: FurnitureDef): boolean =>
+  furniture.mount === undefined &&
+  furniture.door === undefined &&
+  furniture.climbable === undefined &&
+  furniture.vehicle === undefined &&
+  furniture.scenarioGoal !== true;
+
 /** Fixed where it stands: such a piece neither lifts nor falls. */
 const fastened = (inventory: Inventory, entity: BlockEntity): boolean =>
   entity.fixed === true || fastenedKind(inventory, entity);
 
-const fastenedKind = (inventory: Inventory, entity: BlockEntity): boolean => {
-  const def = inventory.entities.defOf(entity);
-  return (
-    def.mount !== undefined ||
-    def.door !== undefined ||
-    def.climbable !== undefined ||
-    def.vehicle !== undefined ||
-    def.scenarioGoal === true
-  );
-};
+const fastenedKind = (inventory: Inventory, entity: BlockEntity): boolean => !liftableFurniture(inventory.entities.defOf(entity));
 
 const anyBodyIn = (pos: Readonly<Vec3>, size: Readonly<Vec3>, bodies: Iterable<Body>): boolean =>
   [...bodies].some((body) => boxIntersectsBody(pos, size, body));

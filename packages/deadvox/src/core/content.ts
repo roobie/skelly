@@ -10,6 +10,7 @@ import type { BundleAdmission } from './bundleAdmission.ts';
 import { scenarioPlanIssues, settlementCollectionIssues } from './cityPlan.ts';
 import { resolveSpawnTime, type SpawnTimeWindow } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
+import { liftableFurniture } from './furnitureMove.ts';
 import { visibleGridName } from './inventoryGridName.ts';
 import {
   footprintScaleIssue,
@@ -1159,13 +1160,6 @@ const checkFurniturePower = (registry: Registry, furniture: FurnitureDef, report
     report('furniture', furniture.id, '.power.light', 'a light must be a consumer');
   }
 };
-
-const liftableFurniture = (furniture: FurnitureDef): boolean =>
-  furniture.mount === undefined &&
-  furniture.door === undefined &&
-  furniture.climbable === undefined &&
-  furniture.vehicle === undefined &&
-  furniture.scenarioGoal !== true;
 
 const checkFurniture = (registry: Registry, report: Report) => {
   const cellMetres = registry.inventory.get(CORE_CONTENT_IDS.player)?.cellMetres;

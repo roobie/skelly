@@ -25,6 +25,7 @@ const frame = {
   name: 'Frame',
   size: [5, 5, 3] as Vec3,
   color: '#5b605c',
+  massKg: 1,
   shape: [post(0, 0), post(4.75, 0), post(4.75, 2.75), { position: [0, 4.5, 0] as Vec3, size: [5, 0.5, 3] as Vec3 }],
   solidFill: 0.01,
   breach: fixtureBreach(),

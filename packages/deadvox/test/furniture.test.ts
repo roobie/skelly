@@ -270,6 +270,7 @@ describe('furniture', () => {
       name: 'Fixture shaped furniture',
       size: [1, 2, 1] as [number, number, number],
       color: '#123456',
+      massKg: 1,
       breach: fixtureBreach(),
       material: FIXTURE_MATERIAL,
       shape: [
@@ -514,6 +515,7 @@ describe('furniture', () => {
       name: 'Fixture body',
       size: [4, 2, 2],
       color: '#554f43',
+      massKg: 1,
       breach: fixtureBreach(),
       material: FIXTURE_MATERIAL,
       solid: false,

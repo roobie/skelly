@@ -534,8 +534,8 @@ because rearranging a room should not require destroying its contents. See `src/
   carrying occupies both of them rather than a new carry slot. Items, ladders
   and furniture answer to one hand authority, so no combination leaves a hand
   doing two jobs at once. See `src/core/inventory.ts`, `HandHold`, and
-  `src/core/ladders.ts`, `LadderHold`. Lifting and dragging cost stamina, with
-  each action's content curve scaling the drain by the piece's estimated mass,
+  `src/core/ladders.ts`, `LadderHold`. Lifting, carrying and dragging cost
+  stamina, with each action's content curve scaling the drain by the piece's estimated mass,
   so moving a heavy piece tires the player faster and mass has a felt cost. See
   `src/core/furnitureMove.ts`, `furnitureMoveStamina`, and
   `src/game/session.ts`, `liftPiece` and `advancePlayerMovement`. A worn-out

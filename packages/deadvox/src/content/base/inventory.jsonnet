@@ -24,7 +24,7 @@
         fatigue: {
           lift: { base: 15, perKg: 0.2 },
           drag: { base: 8, perKg: 0.1 },
-          carryPerSimSecond: { base: 4, perKg: 0.05 },
+          carry: { basePerSimSecond: 4, perKgPerSimSecond: 0.05 },
         },
         slide: { reachMetres: 1, stepSimSeconds: 2 },
         carriedView: {
