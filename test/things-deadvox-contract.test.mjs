@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { buildRegistry } from '../packages/deadvox/src/core/content.ts';
 import { typeWeightGrams } from '../packages/deadvox/src/core/items.ts';
-import { ARM_SEGMENTS, ModelSchema } from '../packages/deadvox/src/core/schema.ts';
+import { ARM_SEGMENTS, LEG_SEGMENTS, ModelSchema } from '../packages/deadvox/src/core/schema.ts';
 import { namedNodes } from '../packages/deadvox/src/render/firearmModel.ts';
 import { catalogue } from '../packages/thing-authoring-tool/src/catalogue.ts';
 import { loadThingRecipe } from '../packages/thing-authoring-tool/src/exports.ts';
@@ -24,12 +24,23 @@ const { registry, issues } = buildRegistry(
     .filter((file) => file.endsWith('.json'))
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) })),
 );
-/** Each part a figure row names: its model, the anchors the row names on it and, for an arm, the rig's parts. */
+/** Each part a figure row names: its model, the anchors the row names on it and, for a limb, its rig's parts. */
 const figureParts = [...registry.figures.values()].flatMap((figure) => [
-  { model: figure.body.model, joints: figure.body.joints, parts: [] },
+  {
+    model: figure.body.model,
+    joints: { ...figure.body.joints, 'head pivot': figure.body.head.pivot },
+    parts: [figure.body.head.part],
+  },
   ...Object.entries(figure.limbs).map(([limb, { model, joint }]) => {
     if (!limb.endsWith('Arm')) {
-      return { model, joints: { [limb]: joint }, parts: [] };
+      const legPivots = Object.fromEntries(
+        LEG_SEGMENTS.map((segment) => [`${segment} pivot`, figure.legRig[segment].pivot]),
+      );
+      return {
+        model,
+        joints: { [limb]: joint, ...legPivots },
+        parts: LEG_SEGMENTS.map((segment) => figure.legRig[segment].part),
+      };
     }
     const rig = figure.armRig;
     const pivots = Object.fromEntries(ARM_SEGMENTS.map((segment) => [`${segment} pivot`, rig[segment].pivot]));

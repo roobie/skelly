@@ -199,6 +199,16 @@ not delay the eye used by sight and collision. See
 `src/content/base/figures-player.jsonnet`, `stancePoses`, and
 `src/render/playerFigure.ts`, `PlayerMeshes`.
 
+The crouch must read as a crouch to anyone watching the avatar, not as sitting:
+knees bent, feet flat on the ground under the body, torso leaning forward and
+head up looking ahead. The arms hold a guard for balance, elbows bent with the
+forearms raised and the hands in front, because arms hanging straight down read
+as a gorilla's. A leg swung forward whole cannot do that, so the leg model is
+split at the knee and ankle, the bust at the neck, and the body arm bends at the
+elbow on the arm rig's parts; each stance pose turns those joints. See
+`src/content/base/figures-player.jsonnet`, `legRig`, and
+`test/playerFigure.test.ts`, "crouches on bent knees: feet flat behind the knees, knees below the hips, torso forward, head up, arms in guard".
+
 The FOB's east-wall passage is sized so a crouched player fits but a standing
 player does not. It is a separate low route from the guarded north entrance and
 southern breach, with its floor level to the approach; it must not expose any

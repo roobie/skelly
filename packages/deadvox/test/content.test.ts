@@ -3109,7 +3109,7 @@ describe('content', () => {
     }
   });
 
-  it('reports a figure whose model, joint anchor, rig part or pivot is missing, or whose view shoulder is misplaced', () => {
+  it('reports a figure whose model, joint anchor, arm or leg rig part or pivot is missing, or whose view shoulder is misplaced', () => {
     const figuresFile = base.find(({ source }) => source === 'figures-player.json')!;
     interface Part {
       model: string;
@@ -3125,6 +3125,7 @@ describe('content', () => {
     const body = player.body as Part;
     const limbs = player.limbs as Record<string, Part>;
     const rig = player.armRig as Rig;
+    const legRig = player.legRig as { shin: { part: string; pivot: string } };
     // One build for all fixture figures; each fixture breaks one reference, at its own path.
     const figures = [
       { body: { ...body, model: 'fixture_missing_model' } },
@@ -3135,12 +3136,19 @@ describe('content', () => {
       {
         armRig: { ...rig, shoulderFromEye: [-rig.shoulderFromEye[0], rig.shoulderFromEye[1], rig.shoulderFromEye[2]] },
       },
+      { legRig: { ...legRig, shin: { ...legRig.shin, part: 'fixture_missing_part' } } },
     ].map((change, index) => ({ ...player, ...change, id: `fixture_figure_${index}` }));
+    // Only the models the figure row names: building the full base pack here made the test hit its timeout.
+    const figureModelIds = new Set([body.model, ...Object.values(limbs).map(({ model }) => model)]);
+    const models = base.flatMap(
+      ({ data }) => (data as { models?: { id: string }[] }).models?.filter(({ id }) => figureModelIds.has(id)) ?? [],
+    );
+    expect(models.map(({ id }) => id).sort()).toEqual([...figureModelIds].sort());
     const paths = buildRegistry([
-      ...base.filter((source) => source !== figuresFile),
+      { source: 'figure-models.json', data: { models } },
       { source: figuresFile.source, data: { figures: [player, ...figures] } },
     ]).issues.map(({ path }) => path);
-    // Both arms share the rig, so a broken rig name is reported once per arm.
+    // Both arms share the arm rig and both legs the leg rig, so a broken rig name is reported once per limb.
     expect(paths).toEqual([
       'figures[1].body.model',
       'figures[2].body.joints.leftHip',
@@ -3150,6 +3158,8 @@ describe('content', () => {
       'figures[5].armRig.hand.pivot',
       'figures[5].armRig.hand.pivot',
       'figures[6].armRig.shoulderFromEye',
+      'figures[7].legRig.shin.part',
+      'figures[7].legRig.shin.part',
     ]);
   });
 
@@ -3176,15 +3186,33 @@ describe('content', () => {
     const items = [
       { ...gun, id: 'fixture_no_hands_gun', name: 'Fixture gun', model: 'fixture_no_hands', notLoot: true },
     ];
-    // The fixtures live in their own file, so dropping it on their issues leaves the base content whole.
+    // Map and site sections cost most of a full build and no hands check reads them, so the build leaves them out.
+    // Keys then miss the doors those sections hold; the baseline build without the fixtures reports the same misses.
+    const worldSections = new Set([
+      'templates',
+      'layouts',
+      'mapPieces',
+      'mapAssemblies',
+      'mapPools',
+      'mapStyles',
+      'scenarios',
+      'siteGeneration',
+      'cityBenchmarks',
+    ]);
+    const sources = base.map(({ source, data: content }) => ({
+      source,
+      data: Object.fromEntries(Object.entries(content as object).filter(([section]) => !worldSections.has(section))),
+    }));
+    // The fixtures live in their own file, so dropping it on their issues leaves the rest of the content as it was.
     const fixtureSource = 'hands-fixture.json';
-    const { issues } = buildRegistry([...base, { source: fixtureSource, data: { items, models } }]);
+    const baseline = buildRegistry(sources).issues;
+    const { issues } = buildRegistry([...sources, { source: fixtureSource, data: { items, models } }]);
     expect(issues.filter((issue) => issue.source === fixtureSource).map(({ path }) => path)).toEqual([
       'items[0].model',
       'models[1].hands.seat',
       'models[2].hands.firing',
     ]);
-    expect(issues.filter((issue) => issue.source !== fixtureSource)).toEqual([]);
+    expect(issues.filter((issue) => issue.source !== fixtureSource)).toEqual(baseline);
   });
 
   it('gives a long gun the pistol-grip hold when gungen exports a grip part and the stock-wrist hold when it exports a stock and no grip', () => {

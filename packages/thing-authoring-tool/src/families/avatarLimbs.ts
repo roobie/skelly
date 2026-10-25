@@ -133,10 +133,20 @@ export const avatarArm = (params: Readonly<Record<string, string>>): (ExtrudedPo
   }
 };
 
-/** A standing leg: trouser thigh and shin over a shoe whose sole lies `length` below the hip joint. */
+/**
+ * The leg's segments, each its own part so a stance can bend the leg at the knee and ankle (`packages/deadvox/DESIGN.md`,
+ * "Crouching and lying prone"). Like the arm's, each segment is drawn about the joint it turns about.
+ */
+const LEG_SEGMENTS = ['thigh', 'shin', 'foot'] as const;
+
+/**
+ * One segment of a standing leg: trouser thigh and shin over a shoe whose sole lies `length` below the hip joint.
+ * The whole leg's measures come in, so every segment is drawn from the same figures.
+ */
 export const avatarLeg = (params: Readonly<Record<string, string>>): (ExtrudedPolygonSolid | BoxSolid)[] => {
   const d = parse(
     strictObject({
+      segment: picklist(LEG_SEGMENTS),
       length: positive,
       thighLength: positive,
       thighWidth: positive,
@@ -176,31 +186,48 @@ export const avatarLeg = (params: Readonly<Record<string, string>>): (ExtrudedPo
   const ankle = sole + d.shoeHeight;
   const halfShoe = d.shoeWidth / 2;
   const upperBottom = sole + d.upperBase;
-  return [
-    slab('thigh', 'pants', [knee, 0], { halfX: d.thighWidth / 2, halfZ: d.thighDepth / 2, chamfer: d.thighChamfer }),
-    slab('shin', 'pants', [ankle - d.ankleOverlap, knee + d.kneeOverlap], {
-      halfX: d.shinWidth / 2,
-      halfZ: d.shinDepth / 2,
-      chamfer: d.shinChamfer,
-    }),
-    slab('cuff', 'pants', [ankle - d.ankleOverlap, ankle + d.cuffHeight], {
-      halfX: d.shinWidth / 2 + d.cuffThickness,
-      halfZ: d.shinDepth / 2 + d.cuffThickness,
-      chamfer: d.shinChamfer,
-    }),
-    block('sole', 'sole', [-halfShoe, halfShoe], [sole, sole + d.soleThickness], [-d.heelReach, d.toeReach]),
-    slab('shoe', 'shoe', [upperBottom, ankle], {
-      halfX: halfShoe - d.upperSideInset,
-      halfZ: (d.heelReach + d.toeReach) / 2 - d.upperLengthInset,
-      chamfer: d.shoeChamfer,
-      cz: (d.toeReach - d.heelReach) / 2 - d.upperBackShift,
-    }),
-    block(
-      'toe-cap',
-      'shoe',
-      [-halfShoe + d.toeCapSideInset, halfShoe - d.toeCapSideInset],
-      [upperBottom, sole + d.shoeHeight * d.toeCapHeightShare],
-      [d.toeReach * d.toeCapStartShare, d.toeReach - d.toeCapTipInset],
-    ),
-  ];
+  const origin = { thigh: 0, shin: knee, foot: ankle }[d.segment];
+  const ys = (bottom: number, top: number): [number, number] => [bottom - origin, top - origin];
+  switch (d.segment) {
+    case 'thigh':
+      return [
+        slab('thigh', 'pants', ys(knee, 0), {
+          halfX: d.thighWidth / 2,
+          halfZ: d.thighDepth / 2,
+          chamfer: d.thighChamfer,
+        }),
+      ];
+    case 'shin':
+      return [
+        slab('shin', 'pants', ys(ankle - d.ankleOverlap, knee + d.kneeOverlap), {
+          halfX: d.shinWidth / 2,
+          halfZ: d.shinDepth / 2,
+          chamfer: d.shinChamfer,
+        }),
+        slab('cuff', 'pants', ys(ankle - d.ankleOverlap, ankle + d.cuffHeight), {
+          halfX: d.shinWidth / 2 + d.cuffThickness,
+          halfZ: d.shinDepth / 2 + d.cuffThickness,
+          chamfer: d.shinChamfer,
+        }),
+      ];
+    case 'foot':
+      return [
+        block('sole', 'sole', [-halfShoe, halfShoe], ys(sole, sole + d.soleThickness), [-d.heelReach, d.toeReach]),
+        slab('shoe', 'shoe', ys(upperBottom, ankle), {
+          halfX: halfShoe - d.upperSideInset,
+          halfZ: (d.heelReach + d.toeReach) / 2 - d.upperLengthInset,
+          chamfer: d.shoeChamfer,
+          cz: (d.toeReach - d.heelReach) / 2 - d.upperBackShift,
+        }),
+        block(
+          'toe-cap',
+          'shoe',
+          [-halfShoe + d.toeCapSideInset, halfShoe - d.toeCapSideInset],
+          ys(upperBottom, sole + d.shoeHeight * d.toeCapHeightShare),
+          [d.toeReach * d.toeCapStartShare, d.toeReach - d.toeCapTipInset],
+        ),
+      ];
+    default:
+      return d.segment satisfies never;
+  }
 };

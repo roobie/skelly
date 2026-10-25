@@ -3480,6 +3480,16 @@ const StancePoseSchema = strictObject({
   torsoForwardDegrees: Degrees,
   /** Legs and feet swing forward about the hip; negative swings them back. */
   legsForwardDegrees: Degrees,
+  /** Each shin and foot swing back about the knee. */
+  kneeBendDegrees: Degrees,
+  /** Each foot turns toe up about the ankle. */
+  ankleDegrees: Degrees,
+  /** Each arm swings forward about its shoulder, from hanging along the torso. */
+  armsForwardDegrees: Degrees,
+  /** Each forearm and hand swing forward and up about the elbow, from hanging along the upper arm. */
+  elbowBendDegrees: Degrees,
+  /** The head tips back about the neck, from standing on the torso. */
+  headUpDegrees: Degrees,
 });
 
 /** The limbs a figure hangs from its body, each at the body joint of the same name in `FIGURE_LIMB_JOINTS`. */
@@ -3501,7 +3511,7 @@ const FigureLimbSchema = strictObject({ model: Id, joint: Id });
 /** The arm model's segments, each a part the first-person view turns about its own joint; `DESIGN.md`, "Models". */
 export const ARM_SEGMENTS = ['upper', 'fore', 'hand', 'fingers', 'thumb'] as const;
 export type ArmSegment = (typeof ARM_SEGMENTS)[number];
-/** One segment: the arm model's part, and the model anchor it turns about. */
+/** One segment: the limb model's part, and the model anchor it turns about. */
 const ArmSegmentSchema = strictObject({ part: Id, pivot: Id });
 /** How a hand closes: the fingers curl at the knuckles; the thumb folds across the palm and in toward it. */
 const HandPoseSchema = strictObject({ fingersDegrees: Degrees, thumbAcrossDegrees: Degrees, thumbInDegrees: Degrees });
@@ -3531,6 +3541,12 @@ const ArmRigSchema = strictObject({
   shoulderFromEye: Point,
 });
 export type ArmRigDef = InferOutput<typeof ArmRigSchema>;
+
+/** The leg model's segments below the thigh, each turned about its own joint as a stance bends the leg. */
+export const LEG_SEGMENTS = ['shin', 'foot'] as const;
+export type LegSegment = (typeof LEG_SEGMENTS)[number];
+/** Both leg models' rig, from the hip down; the thigh is the rest of the model. */
+const LegRigSchema = strictObject({ shin: ArmSegmentSchema, foot: ArmSegmentSchema });
 export type HandPoseDef = InferOutput<typeof HandPoseSchema>;
 
 /** Actor models and poses are content so appearance doesn't live in renderer code; `DESIGN.md`, "Models". */
@@ -3538,10 +3554,14 @@ const FigureSchema = strictObject({
   id: Id,
   /** Where the hips stand above the ground; stances pivot about them. */
   hipHeightMetres: Positive,
-  /** The head and torso model; each joint names its anchor. It stands with its hips at the hip height. */
+  /**
+   * The head and torso model; each joint names its anchor. It stands with its hips at the hip height. A stance turns
+   * the head part about its pivot.
+   */
   body: strictObject({
     model: Id,
     joints: strictObject({ leftHip: Id, rightHip: Id, leftShoulder: Id, rightShoulder: Id }),
+    head: ArmSegmentSchema,
   }),
   limbs: strictObject({
     leftArm: FigureLimbSchema,
@@ -3551,6 +3571,8 @@ const FigureSchema = strictObject({
   }),
   /** Both arm models' rig; the two arms share it because each is the mirror of the other. */
   armRig: ArmRigSchema,
+  /** Both leg models' rig; the two legs share it because each is the mirror of the other. */
+  legRig: LegRigSchema,
   /** Walking swings each leg about its hip and each arm, against its leg, about its shoulder; peak angles. */
   gait: strictObject({ legSwingDegrees: Degrees, armSwingDegrees: Degrees }),
   stancePoses: strictObject({
