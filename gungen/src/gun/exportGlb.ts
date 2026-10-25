@@ -453,22 +453,23 @@ const frontSightPost = (resolved: Resolved) => {
 /**
  * The model-metre range along the file's z axis of the sight's authored solids that reach its sight axis's height.
  * A rear sight's notch lies between them, so the top the eye lines up with is read over them, not over the notch.
+ * An aperture's eye sits inside its hole, where no solid tops out, so the walls that cross its height bound it.
  */
 const leafSpan = (resolved: Resolved, sight: { readonly id: string }): readonly [number, number] => {
   const def = resolved.defs.get(sight.id)!;
   const transform = resolved.placed.get(sight.id)!;
   const { metresPerUnit } = resolved.domain.units;
   const [, top] = def.axes.find(({ kind }) => kind === 'sight')!.origin;
-  const zs = def.solids
-    .map((solid) => localSolidBounds(solid))
-    .filter(([, high]) => Math.abs(high[1] - top) < 1e-6)
-    .flatMap(([low, high]) =>
-      [low[0], high[0]].flatMap((px) =>
-        [low[1], high[1]].flatMap((py) =>
-          [low[2], high[2]].map((pz) => toFileAxes(applyPoint(transform, [px, py, pz]))[2] * metresPerUnit),
-        ),
+  const bounds = def.solids.map((solid) => localSolidBounds(solid));
+  const toppedOut = bounds.filter(([, high]) => Math.abs(high[1] - top) < 1e-6);
+  const leaves = toppedOut.length > 0 ? toppedOut : bounds.filter(([low, high]) => low[1] < top && high[1] > top);
+  const zs = leaves.flatMap(([low, high]) =>
+    [low[0], high[0]].flatMap((px) =>
+      [low[1], high[1]].flatMap((py) =>
+        [low[2], high[2]].map((pz) => toFileAxes(applyPoint(transform, [px, py, pz]))[2] * metresPerUnit),
       ),
-    );
+    ),
+  );
   if (zs.length === 0) {
     throw new Error(`Sight part ${sight.id} has no solid at its sight axis's height`);
   }
@@ -554,7 +555,8 @@ const openSightGapOrThrow = (file: VoxelFile, resolved: Resolved, partId: string
  * up. A rear sight aims from its own top to the front post's top, through its drawn notch; the post is read within
  * twice its own width of the bore plane, which holds its top voxel column wherever the sampler put it and leaves the
  * guard ears out. A bead sets the eye height to its top and keeps its level line. Any other iron datum, such as a
- * revolver's frame, keeps its direction and takes the top of its leaves, which the line also runs between.
+ * revolver's frame or a receiver's drum aperture, keeps its direction and takes the top of its leaves, which the line
+ * also runs between, then drops into the aperture where that top is closed.
  */
 const drawnIronSightLine = (
   file: VoxelFile,

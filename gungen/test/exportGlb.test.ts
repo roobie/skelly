@@ -562,13 +562,14 @@ describe('glb export: deadvox model entry', () => {
     }
   });
 
+  // Sight solids count too, so a gun that draws sights without a sight axis cannot pass as sightless.
   it.each(loadCorpus())('exports sight metadata exactly when sight parts exist: $label', ({ label, assembly }) => {
     const result = exportGunGlb(assembly, ASSET, { appearanceProfile: 'ar' });
     if (!result.ok) {
       throw new Error(`${label}: export failed: ${JSON.stringify(result.error)}`);
     }
-    const sighted = [...resolve(assembly, gunDomain).defs.values()].some(({ axes }) =>
-      axes.some(({ kind }) => kind === 'sight'),
+    const sighted = [...resolve(assembly, gunDomain).defs.values()].some(
+      ({ axes, solids }) => axes.some(({ kind }) => kind === 'sight') || solids.some(({ id }) => id.includes('sight')),
     );
     expect(result.modelEntry.gun.sight !== undefined).toBe(sighted);
   });
@@ -636,6 +637,53 @@ describe('glb export: deadvox model entry', () => {
     near(exportedEyePoint, eyePoint);
     near(exportedDirection, toFileAxes(expectedDirection));
     expect(out.modelEntry.gun.sight.kind).toBe('iron');
+  });
+
+  it('sights the compact SMG through its drum aperture onto the post tip, clear through the hood', () => {
+    const out = exported(design('compact-smg'));
+    const { sight } = out.modelEntry.gun;
+    if (!sight) {
+      throw new Error('compact SMG needs its drum and post in the exported sight data');
+    }
+    expect(sight.kind).toBe('iron');
+    const eye = sight.eye.map((value) => value / S) as unknown as Vec3;
+    expect(out.resolved.assembly.parts[sightTargetPartId(out, eye, 'compact-smg')]!.family).toBe('receiver');
+    const [barrelId] = Object.entries(out.resolved.assembly.parts).find(([, part]) => part.family === 'barrel')!;
+    const barrel = out.resolved.defs.get(barrelId)!;
+    const barrelAt = out.resolved.placed.get(barrelId)!;
+    const [postLow, postHigh] = localSolidBounds(barrel.solids.find(({ id }) => id === 'front-sight-post')!);
+    // The tip's edge on the post's rear face, which the eye lines up with.
+    const postTip = applyPoint(barrelAt, [postLow[0], postHigh[1], (postLow[2] + postHigh[2]) / 2]);
+    const along = (x: number): Vec3 => {
+      const t = (x - eye[0]) / sight.direction[0];
+      return [x, eye[1] + sight.direction[1] * t, eye[2] + sight.direction[2] * t];
+    };
+    near(along(postTip[0]).slice(1), postTip.slice(1));
+
+    // The line from the eye to the post passes every convex solid, the drum's walls among them.
+    const reach = postTip[0] - eye[0];
+    const line = worldBox(IDENTITY, { center: along(eye[0] + reach / 2), half: [reach / 2, 0.05, 0.05] });
+    for (const [id, part] of out.resolved.defs) {
+      const placed = out.resolved.placed.get(id)!;
+      for (const solid of part.solids.filter(({ kind }) => kind !== 'revolved')) {
+        expect(
+          penetrationWorld(line, worldSolid(placed, solid)),
+          `${id}.${solid.id} blocks the sight line`,
+        ).toBeLessThanOrEqual(0);
+      }
+    }
+    // A ring's convex hull would fill its bore, so the hood is checked by its inner radius instead.
+    const hood = barrel.solids.find(({ id }) => id === 'front-sight-hood');
+    if (hood?.kind !== 'revolved') {
+      throw new Error('compact SMG needs its revolved front-sight hood');
+    }
+    const innerRadius = Math.min(...hood.profile.map(([, radius]) => radius));
+    const hoodX = hood.profile.map(([x]) => x);
+    for (const x of [Math.min(...hoodX), Math.max(...hoodX)]) {
+      const centre = applyPoint(barrelAt, [x, hood.origin![1], hood.origin![2]]);
+      const point = along(centre[0]);
+      expect(Math.hypot(point[1] - centre[1], point[2] - centre[2])).toBeLessThan(innerRadius);
+    }
   });
 
   it('keeps the AK sight line clear of other solids', () => {

@@ -44,6 +44,10 @@ export const COMPACT_SMG_PROPORTIONS = {
     ],
     base: { x: [-19, -16.25], y: [3.25, 3.5] },
     halfWidthU: 0.75,
+    // The eye looks through a square hole across the drum's thickest part, at least one gun voxel each way.
+    aperture: { eyeX: -16.75, centreY: 4.25, halfU: 0.25 },
+    // An estimate of the shooter's eye behind the drum with the cheek on the stock.
+    eyeReliefU: 6,
   },
   // The cited barrel length runs from the threaded muzzle tip back to the breech.
   barrel: {
@@ -58,7 +62,10 @@ export const COMPACT_SMG_PROPORTIONS = {
     block: { x: [11, 12.75], y: [-1, 3.25], halfWidthU: 1 },
     tower: { x: [12.75, 14.25], y: [-1, 3.25], halfWidthU: 0.75 },
     hood: { x: [12.75, 14.25], centreY: 4.5, outerRadiusU: 1.4, wallU: 0.25 },
-    post: { x: [13.25, 13.75], y: [3.25, 4.75], halfWidthU: 0.125 },
+    // The knurled wheel that stands proud of the housing's front face under the hood.
+    wheel: { x: [14.25, 14.5], centreY: 2.375, radiusU: 0.875 },
+    // The post's tip is the drum aperture's height; see `parts.ts`, `compactSmgBarrelDetails`.
+    post: { x: [13.25, 13.75], baseY: 3.25, halfWidthU: 0.125 },
   },
   handguard: { lengthU: 11, outerU: 1.75 },
   // The photo shows the knob held in the notch; notchX sits one GRID ahead of the traced 0.75 so the knob's
@@ -67,7 +74,8 @@ export const COMPACT_SMG_PROPORTIONS = {
     tube: { centreY: 2.5, halfU: 0.75 },
     notchX: 1,
     // The side photo hides the knob's reach from the tube; its stem holds it clear of the handguard's side.
-    knob: { radiusU: 0.75, radial: [2, 3.25] },
+    // The close-up shows a short knob, about half as long as it is wide, with a rounded outer rim.
+    knob: { radiusU: 0.75, radial: [2, 2.75], rimRoundU: 0.25 },
     notchTurnDegrees: 45,
     notchTurnSeconds: 0.1,
   },
@@ -185,7 +193,7 @@ export const COMPACT_SMG_PROPORTIONS = {
         [-43.5, -8.25],
         [-40.5, -3],
         [-39.5, 1],
-        [-42.5, 1.5],
+        [-43, 1.5],
       ],
     ],
     padHalfWidthU: 1.5,
