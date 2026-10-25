@@ -18,6 +18,7 @@ read_if:
   - you're choosing world scale, view distance, performance targets or the default render scale
   - you change player movement, load or aim tuning, saved aim admission, or what crouching or lying prone lets the player fit through
   - you're changing world block shapes, wire fences or their supports, sight opacity, reach through obstacles, sound blocking or slab geometry
+  - you change standing water, basins, the flooded-lot check or how liquids are meshed
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry, push or drag, or how stacks settle
   - you're changing the rules for time, survival, light or zombies
@@ -620,6 +621,48 @@ not in authored layout geometry. See `AuthoredSite` in
 Small structures use authored templates because they are reviewable and
 content validation can check them. Keep template representation and import
 mechanics in the implementation rather than repeating the format here.
+
+### Water
+
+Standing water is a block, written into the grid where a site layout's water rows put it.
+Movement, sight, aim, picking, the mesher and saved edits all key off the grid, so they treat
+water through the queries they already have; a separate water field would need its own query
+in each. Water is static: a block dug beside a lake stays dry, and a block placed in the water
+replaces it. Flow, rivers and tides would need a field this design does not promise. Only
+authored sites have water; generated terrain has none. See `src/core/worldgen.ts`, `Surface`,
+and `src/core/authoredSite.ts`, `AuthoredSite`.
+
+A water row's level is the water's top face, the plane the eye breaks when surfacing, while a
+layout's `ground` is the lower face of the top ground block. The ground names the block an author
+places and the level names the plane an author sees and a swimmer floats at; the two coincide only
+where there is no water. A column holds water where its bed's top face lies below the level, so
+the shore falls out of the terrain, not out of the polygon. See `src/core/worldgen.ts`,
+`generateChunk`.
+
+A basin lowers the profile by the deepest basin over a point, as hills raise it by the highest
+hill, so overlaps stay predictable and a basin on a hill flank cuts a tarn. See
+`src/core/authoredTerrain.mjs`, `profileHeight`. The bed under water and a shore ring around it
+are sand and grow no trees, because a grass lake bed reads as a hole in a lawn.
+
+Validation rejects unintended inundation instead of clamping, because a silently lowered level or
+raised lot would hide the author's mistake. A water row whose bed reaches the level everywhere
+holds no water, and a lot whose apron stands below the level inside the polygon is flooded unless
+the lot says `overWater`. Overlap alone is allowed, because a shore lot whose apron meets the
+water at its own floor is dry. `overWater` is the seam for constructions over water; a flagged
+lot still raises the ground under its apron to its floor, so it stands on a plinth, not on legs.
+See `src/core/authoredLayout.ts`, `waterIssues`, and `src/core/authoredTerrain.mjs`,
+`layoutHeight`.
+
+The renderer must keep what lies under water. A block's `liquid` flag is its own predicate, not
+"not solid", because air, wire mesh and open doors are not solid and none of them is water. Every
+input that decides what is drawn treats a liquid as open, like air: the streamer's occluder
+table, which feeds chunk enclosure and wide occlusion, and the mesher's face and corner-AO tests.
+Otherwise a lake would hide its bed and walls, darken the bed, and leave a camera under it looking
+through a hollow shell at the sky. A liquid's face is hidden against the same liquid and against a
+solid. Chunk materials draw front faces only, so the mesher adds a downward copy of each liquid
+top face for a camera under it; a double-sided material would double the cost of every terrain
+face. See `src/game/streamer.ts`, `Streamer`; `src/core/world.ts`, `isEnclosed`; and
+`src/core/mesher.ts`, `solid`, `faceKey` and `emitSolidQuad`.
 
 ### Gauntlet
 

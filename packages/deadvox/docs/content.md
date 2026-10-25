@@ -11,6 +11,7 @@ read_if:
   - you change recipe, skill, workstation or book content, content references, static reachability or disassembly-output contracts
   - you change item economy metadata, source contexts, loot selection, loot-point descriptions or fixed loot
   - you're authoring or changing authored sites or gauntlet lots, template geometry, palettes, site-generation tuning, time-windowed spawns, curated map kits, role styles or connector contracts
+  - you author standing water, basins or lots over water
   - you're authoring or changing exterior door openings, lab-yard perimeters and dressing, or townhouse aftermath scenes (`packages/deadvox/docs/aftermath.md`)
   - you're authoring or changing furniture mounting, appearance, abandoned furniture placement, surface materials or procedural pattern tuning, assigning action noise, or need the isolated look probe
   - you model a thing or place one fallen, on its side or in another special pose
@@ -208,6 +209,8 @@ Keep authored-site terrain and vegetation controls in base content rather than m
 Terrain shape and the tree and forest tunables are required `siteGeneration` fields (see `src/core/schema.ts`, `siteGeneration`) with no code default, so a mod can reshape the landscape and woods without touching logic and a missing value fails validation instead of silently using a stale one. Code receives the terrain values as one explicit shape (`terrainShapeOf` in `src/core/sitePalette.ts`) rather than reading module constants, so every caller names the world it generates. Geometry, such as tree crowns and placement jitter, and bench-only mechanism values stay in code because they are not tuning a mod should change.
 
 Every site kind shares one block palette so a block choice has a single content home. Unknown names must fail validation instead of selecting a runtime fallback; see `src/core/sitePalette.ts`, `sitePalette`, and `src/core/content.ts`, `checkSiteGeneration`. Optional benchmark geometry belongs with its independent consumer rather than required site-generation content; see `packages/deadvox/docs/content.md`, "City building types".
+
+A site's standing water is authored as layout water rows, its hollows as `basin` terrain primitives, and a lot meant to stand in water says `overWater`; see `src/core/schema.ts`, `SiteLayoutSchema` and `TerrainPrimitive`, and the rules and reasons in `DESIGN.md`, "Water". A row's level is the water's top face, not a block's lower face like `ground`, because the author sets the plane a swimmer floats at. Its polygon only bounds where water may stand, as a woodland polygon bounds trees: the terrain decides the shoreline, so draw the polygon loosely around the basin and shape the shore with the basin's falloff. Generation fills with the palette's water block, which must be a `liquid` block; see `src/core/content.ts`, `checkSiteGeneration`. The debug scene with a lake is `src/content/base/layouts-water.jsonnet`, `lake_demo`.
 
 Procedural surface pattern IDs are schema-checked; the shader implementation remains in code. All camouflage blocks share one palette and washout; distinct looks require a per-block shader lookup. World-anchored blotches avoid texture assets and repeated seams, while block-owned palette and washout keep the shared look tunable. See `BLOCK_PATTERNS` in `src/core/schema.ts` and `surfacePatterns.ts` in `src/render`.
 
