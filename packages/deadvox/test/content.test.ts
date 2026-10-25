@@ -3186,15 +3186,33 @@ describe('content', () => {
     const items = [
       { ...gun, id: 'fixture_no_hands_gun', name: 'Fixture gun', model: 'fixture_no_hands', notLoot: true },
     ];
-    // The fixtures live in their own file, so dropping it on their issues leaves the base content whole.
+    // Map and site sections cost most of a full build and no hands check reads them, so the build leaves them out.
+    // Keys then miss the doors those sections hold; the baseline build without the fixtures reports the same misses.
+    const worldSections = new Set([
+      'templates',
+      'layouts',
+      'mapPieces',
+      'mapAssemblies',
+      'mapPools',
+      'mapStyles',
+      'scenarios',
+      'siteGeneration',
+      'cityBenchmarks',
+    ]);
+    const sources = base.map(({ source, data: content }) => ({
+      source,
+      data: Object.fromEntries(Object.entries(content as object).filter(([section]) => !worldSections.has(section))),
+    }));
+    // The fixtures live in their own file, so dropping it on their issues leaves the rest of the content as it was.
     const fixtureSource = 'hands-fixture.json';
-    const { issues } = buildRegistry([...base, { source: fixtureSource, data: { items, models } }]);
+    const baseline = buildRegistry(sources).issues;
+    const { issues } = buildRegistry([...sources, { source: fixtureSource, data: { items, models } }]);
     expect(issues.filter((issue) => issue.source === fixtureSource).map(({ path }) => path)).toEqual([
       'items[0].model',
       'models[1].hands.seat',
       'models[2].hands.firing',
     ]);
-    expect(issues.filter((issue) => issue.source !== fixtureSource)).toEqual([]);
+    expect(issues.filter((issue) => issue.source !== fixtureSource)).toEqual(baseline);
   });
 
   it('gives a long gun the pistol-grip hold when gungen exports a grip part and the stock-wrist hold when it exports a stock and no grip', () => {
