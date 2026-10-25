@@ -133,6 +133,22 @@ type StancePose = FigureDef['stancePoses']['prone'];
 const STANDING_POSE: StancePose = { hipDropMetres: 0, torsoForwardDegrees: 0, legsForwardDegrees: 0 };
 const STANCE_POSE_KEYS = Object.keys(STANDING_POSE) as (keyof StancePose)[];
 const RADIANS = Math.PI / 180;
+
+/** One way the world body can be drawn: a stance, standing still or walking. */
+export interface AvatarPose {
+  name: string;
+  stance: PlayerStance;
+  moving: boolean;
+}
+
+/** Every pose the figure row defines: standing and each stance it poses, each still and walking. */
+export const avatarPoses = (figure: FigureDef): AvatarPose[] => {
+  const posed = Object.keys(figure.stancePoses).filter((key) => key !== 'blendRealSeconds') as PlayerStance[];
+  return (['standing', ...posed] as PlayerStance[]).flatMap((stance) => [
+    { name: stance, stance, moving: false },
+    { name: `${stance}-walking`, stance, moving: true },
+  ]);
+};
 const isArm = (name: FigurePartName): boolean => name === 'leftArm' || name === 'rightArm';
 const isLeg = (name: FigurePartName): boolean => name === 'leftLeg' || name === 'rightLeg';
 
