@@ -617,10 +617,13 @@ describe('part library', () => {
       // AR hand corridors follow the thin, 0.05u-authored handle; body stations retain their usual grid.
       const fineHandleIds = new Set(['charging-handle', 'rear-t-hand-grip-clearance', 'rear-t-hand-clearance']);
       const fineHandleKeepOuts = def.keepOuts.filter((k) => family.name === 'receiver' && fineHandleIds.has(k.id));
+      // Sights traced onto a barrel keep the sight families' finer grid.
+      const barrelSights = def.solids.filter((s) => family.name === 'barrel' && s.id.startsWith('front-sight-'));
       const numbers = [
         ...def.solids.flatMap((s) =>
           s.kind === 'box' &&
           !s.id.startsWith('trigger-guard-') &&
+          !barrelSights.includes(s) &&
           !(family.name === 'magazine' && params.profile === 'smg') &&
           !(explicitCarrierStyle && s.slot === 'metal')
             ? bounds(s.box)
@@ -639,7 +642,8 @@ describe('part library', () => {
       return {
         geometryOnGrid:
           numbers.every((n) => onGridWithCarrierClearance(n, gridStep, family)) &&
-          fineHandleKeepOuts.flatMap((k) => bounds(k.box)).every((n) => onGrid(n, GRID / 5)),
+          fineHandleKeepOuts.flatMap((k) => bounds(k.box)).every((n) => onGrid(n, GRID / 5)) &&
+          barrelSights.flatMap((s) => (s.kind === 'box' ? bounds(s.box) : [])).every((n) => onGrid(n, GRID / 4)),
         portsOrthonormal: def.ports.every(
           (p) =>
             Math.abs(length(p.normal) - 1) < 1e-6 &&

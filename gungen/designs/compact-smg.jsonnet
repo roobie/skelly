@@ -5,7 +5,8 @@ base + {
   assembly: base.assembly + {
     name: 'compact-smg',
     description: 'Compact submachine gun with a threaded, suppressor-ready muzzle.',
-    // No sights until a new sight design is ruled; see `gungen/docs/compact-smg-export.md`, "Rulings".
+    // Its traced sights are barrel and receiver solids, so the add-on sight parts stay off; see
+    // `gungen/docs/compact-smg-export.md`, "Rulings".
     parts: {
       [name]: parts[name]
       for name in std.objectFields(parts)
@@ -13,6 +14,7 @@ base + {
     } + {
       receiver: parts.receiver + { params: parts.receiver.params + { section: 'compact-smg', rail: 'none' } },
       barrel: parts.barrel + { params: parts.barrel.params + { muzzle: 'threaded' } },
+      stock: parts.stock + { params: parts.stock.params + { style: 'telescoping', pose: 'extended' } },
     },
     connections: [
       c

@@ -96,7 +96,8 @@
         "family": "stock",
         "params": {
           "length": "S",
-          "style": "straight"
+          "pose": "extended",
+          "style": "telescoping"
         }
       }
     },

@@ -417,13 +417,17 @@ const huntingRifle: Template = {
 const compactSmg: Template = {
   ...smg,
   name: 'compact-smg',
-  description: 'Compact submachine gun traced from a dimensioned schematic, on the proportions table.',
-  // No sights until a new sight design is ruled; see `gungen/docs/compact-smg-export.md`, "Rulings".
+  description: 'Compact submachine gun traced from a side photo, on the proportions table.',
+  // Its traced sights are barrel and receiver solids, so the add-on sight parts stay off; see
+  // `gungen/docs/compact-smg-export.md`, "Rulings".
   slots: smg.slots
     .filter((slot) => slot.id !== 'front-sight' && slot.id !== 'sight')
-    .map((slot) =>
-      slot.id === 'receiver' ? { ...slot, params: { ...slot.params, section: 'compact-smg', rail: 'none' } } : slot,
-    ),
+    .map((slot) => {
+      if (slot.id === 'receiver') {
+        return { ...slot, params: { ...slot.params, section: 'compact-smg', rail: 'none' } };
+      }
+      return slot.id === 'stock' ? { ...slot, params: { ...slot.params, style: 'telescoping' } } : slot;
+    }),
   connections: smg.connections.filter(
     (connection) => connection.to !== 'sight.base' && connection.to !== 'front-sight.base',
   ),

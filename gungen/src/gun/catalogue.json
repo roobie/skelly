@@ -1532,6 +1532,14 @@
       }
     },
     {
+      "family": "stock",
+      "id": "stock-telescoping",
+      "massKg": 0.40000000000000002,
+      "match": {
+        "style": "telescoping"
+      }
+    },
+    {
       "family": "ak-rear-sight",
       "finish": {
         "accent": "rubber-black",

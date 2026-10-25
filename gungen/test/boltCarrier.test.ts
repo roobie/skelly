@@ -10,7 +10,7 @@ import {
   translation,
   type Vec3,
 } from '@skelly/engine/foundation/math.ts';
-import { distanceWorld, penetrationWorld, worldSolid } from '@skelly/engine/shapes/geometry.ts';
+import { distanceWorld, localSolidBounds, penetrationWorld, worldSolid } from '@skelly/engine/shapes/geometry.ts';
 import type { Box, Solid } from '@skelly/engine/shapes/solid.ts';
 import { describe, expect, it, vi } from 'vitest';
 import { AR_ACTION_LAYOUT } from '../src/gun/arLayout.ts';
@@ -47,7 +47,10 @@ const corners = (solid: Solid): Vec3[] => {
     );
   }
   if (solid.kind === 'revolved') {
-    throw new Error('gun designs have no revolved solids');
+    const [low, high] = localSolidBounds(solid);
+    return [low[0], high[0]].flatMap((x) =>
+      [low[1], high[1]].flatMap((y) => [low[2], high[2]].map((z) => [x, y, z] as const)),
+    );
   }
   return solid.profile.flatMap((point) =>
     [solid.z[0], solid.z[1]].map((along) => extrusionPoint(solid.axis, point, along)),
