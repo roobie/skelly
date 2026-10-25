@@ -72,7 +72,7 @@ Acid zombies spawn only in labs, where `DESIGN.md`, "Evolution" puts weird types
 
 ## Voice
 
-The acid zombie must be recognisable by ear, so a player who hears it before seeing it knows to look for a spitter and a line of sight to break. It voices the shambler recordings like every zombie, so only the processing sets it apart. Pitch alone is easy to confuse with the runner or the crawler, so the timbre is scrambled as well, which no other type does.
+The acid zombie must be recognisable by ear, so a player who hears it before seeing it knows to look for a spitter and a line of sight to break. Pitch alone is easy to confuse with the runner or the crawler, so the timbre is scrambled as well.
 
 The scramble is data on the type's own sound rows, and a zombie's voice sounds are content references rather than a code list, so a new or changed voice needs content only and the other types' voices stay untouched. See `PILLARS.md`, "Content forward compatibility"; `src/content/base/sounds.jsonnet`, `zombieVoices`; `src/core/schema.ts`, `SoundSchema` and `ZombieSchema`; and `src/game/audio.ts`, `connectSample`.
 
