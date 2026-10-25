@@ -3138,8 +3138,14 @@ describe('content', () => {
       },
       { legRig: { ...legRig, shin: { ...legRig.shin, part: 'fixture_missing_part' } } },
     ].map((change, index) => ({ ...player, ...change, id: `fixture_figure_${index}` }));
+    // Only the models the figure row names: building the full base pack here made the test hit its timeout.
+    const figureModelIds = new Set([body.model, ...Object.values(limbs).map(({ model }) => model)]);
+    const models = base.flatMap(
+      ({ data }) => (data as { models?: { id: string }[] }).models?.filter(({ id }) => figureModelIds.has(id)) ?? [],
+    );
+    expect(models.map(({ id }) => id).sort()).toEqual([...figureModelIds].sort());
     const paths = buildRegistry([
-      ...base.filter((source) => source !== figuresFile),
+      { source: 'figure-models.json', data: { models } },
       { source: figuresFile.source, data: { figures: [player, ...figures] } },
     ]).issues.map(({ path }) => path);
     // Both arms share the arm rig and both legs the leg rig, so a broken rig name is reported once per limb.
