@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { ShaderLib, type Vector3, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
 import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
+import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { controlIssues } from '../src/cli/controlIssues.ts';
 import rawBaseDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
 import { isBodyDoor } from '../src/core/blockEntities.ts';
@@ -43,6 +44,7 @@ const INPUT_GESTURE =
   /\b(?:hold|press|tap|click|double[ -]press|wield|activate|throw|scroll|wheel|drag|rotate|snap|spawn)\b/i;
 const LMB_ALIAS = /\bLMB\b/i;
 const RMB_ALIAS = /\bRMB\b/i;
+const NO_FIRING_HOLD_KIND = /neither a grip part nor a stock part/;
 const base = readdirSync(BASE)
   .filter((f) => f.endsWith('.json'))
   .sort()
@@ -3159,14 +3161,26 @@ describe('content', () => {
     expect(issues.filter((issue) => issue.source !== fixtureSource)).toEqual([]);
   });
 
-  it('gives a long gun the pistol-grip hold when gungen exports a grip part and the stock-wrist hold otherwise', () => {
+  it('gives a long gun the pistol-grip hold when gungen exports a grip part and the stock-wrist hold when it exports a stock and no grip', () => {
     const longGuns = [...baseRegistry.models.values()]
       .filter((model) => model.hands)
-      .map((model) => ({ id: model.id, pose: model.hands!.firing.pose, pistolGrip: model.parts?.grip !== undefined }));
-    expect(longGuns.some(({ pistolGrip }) => pistolGrip)).toBe(true);
-    expect(longGuns.some(({ pistolGrip }) => !pistolGrip)).toBe(true);
-    expect(longGuns.map(({ id, pose }) => ({ id, pose }))).toEqual(
-      longGuns.map(({ id, pistolGrip }) => ({ id, pose: pistolGrip ? 'pistolGrip' : 'stockWrist' })),
+      .map((model) => ({
+        id: model.id,
+        pose: model.hands!.firing.pose,
+        grip: model.parts?.grip !== undefined,
+        stock: model.parts?.stock !== undefined,
+      }));
+    expect(longGuns.some(({ pose }) => pose === 'pistolGrip')).toBe(true);
+    expect(longGuns.some(({ pose }) => pose === 'stockWrist')).toBe(true);
+    // Each hold names the exported part it closes on, so the hold is read back from the parts, not from a default.
+    expect(
+      longGuns.map(({ id, pose }) => ({ id, pistolGrip: pose === 'pistolGrip', stockWrist: pose === 'stockWrist' })),
+    ).toEqual(longGuns.map(({ id, grip, stock }) => ({ id, pistolGrip: grip, stockWrist: stock && !grip })));
+  });
+
+  it('rejects a long gun whose export has neither a grip part nor a stock part', () => {
+    expect(() => compileJsonnetFile('packages/deadvox/test/fixtures/jsonnet/long-gun-no-kind.jsonnet')).toThrow(
+      NO_FIRING_HOLD_KIND,
     );
   });
 

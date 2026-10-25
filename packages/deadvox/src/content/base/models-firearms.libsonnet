@@ -2,37 +2,7 @@
 // https://crateclub.com/blogs/loadout/how-long-does-it-take-to-reload-an-assault-rifle
 // Changing a magazine here stows it instead, so skill 0 sits at the slow end.
 local magazineHandling = { handling: { magazine: { removeSimSeconds: 3, insertSimSeconds: 3 } } };
-// A long gun's hold (`DESIGN.md`, "Models"). The butt seats in the shoulder pocket: right of and below the eye, and a
-// little ahead of it so the lowered gun stays in the frame. Every gun's bore meets that seat, so the butt point sits
-// on the bore above the butt plate. A gun with a pistol grip (gungen exports it as the `grip` part) takes the firing
-// palm on the grip's right face, a little behind the grip point so the curled fingers close ahead of it. A gun
-// without one takes the firing palm on the stock wrist's right face above the grip point, fingers pointing down and
-// ahead so they curl under the wrist and the thumb lies over its top. The support palm presses into the forend's
-// left face at the exported support contact, `forendLeft` giving that face's height and side, tilted a little under
-// so the back of the hand faces out and down; the fingers point up and curl over the top, and the thumb closes under.
-local longGunHands(model, buttX, forendLeft) = model {
-  hands: {
-    seat: [0.15, -0.1, -0.12],
-    butt: [buttX, 0, 0],
-    firing: if std.objectHas(model.parts, 'grip') then {
-      at: [model.grip.at[0] - 0.02, model.grip.at[1], 0.016],
-      palm: [0, 0, -1],
-      fingers: [1, 0, 0],
-      pose: 'pistolGrip',
-    } else {
-      at: [model.grip.at[0], model.grip.at[1] + 0.01, 0.012],
-      palm: [0, 0, -1],
-      fingers: [0.7660444, -0.6427876, 0],
-      pose: 'stockWrist',
-    },
-    support: {
-      at: [model.anchors.support[0], forendLeft[0], forendLeft[1]],
-      palm: [0, 0.2588190, 0.9659258],
-      fingers: [0, 0.9659258, -0.2588190],
-      pose: 'forend',
-    },
-  },
-};
+local longGunHands = import 'long-gun-hands.libsonnet';
 
 {
   "items": [
