@@ -8,7 +8,7 @@ read_if:
   - you change held sharpening, blade repair entry points or prepared hand pairs
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
   - you change the player figure's look, its authored parts, its clothes or how it is posed
-  - you change shared held-item presentation or the mannequin's item-hold catalogue
+  - you change shared held-item presentation, arm attachment or the mannequin's item-hold catalogue
   - you change worn head gear seen from inside or on the player figure
   - you add a wear slot or change what night-vision goggles do to the view
   - you change browser mod identity, startup admission or default mod selection
@@ -1588,6 +1588,15 @@ inherit the player's proportions. See `src/render/heldPresentation.ts`,
 `HeldPresentation`; `src/render/playerFigure.ts`, `PlayerMeshes`;
 `src/render/hands.ts`, `HeldItems`; and
 `src/content/base/figures-player.jsonnet`, `holds`.
+
+Shoulders are body attachments, not movable reach handles. When an authored grip
+cannot be reached at authored limb lengths, preserving shoulder and hand contact
+takes priority over exact segment length: a floating sleeve breaks the whole-body
+figure. Reach fitting must not move the item away from its shared simulation pose
+or add per-view hold offsets. The content's joints and grips determine the fit;
+changing to skinned bones would not remove this geometric constraint. See
+`src/render/armRig.ts`, `solveArmRig`; and `src/render/heldPresentation.ts`,
+`HeldPresentation.solve`.
 
 Third person remains a debug inspection aid, not a player-facing camera. The
 mannequin is an inert drawing of the same world body, not another simulated actor.

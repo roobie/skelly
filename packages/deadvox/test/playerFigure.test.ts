@@ -76,11 +76,25 @@ const armJoints = (arm: Group) => ({
   grip: worldOf(arm, 'grip-anchor'),
   hand: worldOf(arm, ARM_NODE.hand),
 });
-/** The arm's segments keep their model lengths and meet at the joints, with the hand frame on the grip point. */
+/** The scaled model segments meet at their joints, with the hand frame on the grip point. */
 const expectConnectedArm = (arm: Group, rig: ArmRig, label: string): void => {
   const joints = armJoints(arm);
-  expect(joints.elbow.distanceTo(joints.shoulder), `${label} upper length`).toBeCloseTo(rig.upperLength, 4);
-  expect(joints.wrist.distanceTo(joints.elbow), `${label} fore length`).toBeCloseTo(rig.foreLength, 4);
+  expect(joints.elbow.distanceTo(joints.shoulder), `${label} upper length`).toBeCloseTo(
+    rig.upperLength * rig.shoulder.scale.y,
+    4,
+  );
+  expect(joints.wrist.distanceTo(joints.elbow), `${label} fore length`).toBeCloseTo(
+    rig.foreLength * rig.elbow.scale.y,
+    4,
+  );
+  expect(
+    rig.shoulder.localToWorld(new Vector3(0, -rig.upperLength, 0)).distanceTo(joints.elbow),
+    `${label} elbow seam`,
+  ).toBeLessThan(1e-6);
+  expect(
+    rig.elbow.localToWorld(new Vector3(0, -rig.foreLength, 0)).distanceTo(joints.wrist),
+    `${label} wrist seam`,
+  ).toBeLessThan(1e-6);
   expect(joints.hand.distanceTo(joints.grip), `${label} hand on grip`).toBeLessThan(1e-6);
   expect(joints.grip.distanceTo(joints.wrist), `${label} grip from wrist`).toBeCloseTo(rig.gripFromWrist.length(), 4);
 };

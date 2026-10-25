@@ -391,7 +391,9 @@ export class HeldPresentation {
       pivot.quaternion.copy(toArm).multiply(turn);
     };
     place(rig.shoulder, solved.shoulder, solved.upper);
+    rig.shoulder.scale.set(1, solved.upperScale, 1);
     place(rig.elbow, solved.elbow, solved.fore);
+    rig.elbow.scale.set(1, solved.foreScale, 1);
     place(rig.hand, grip, solved.hand);
   }
 }
