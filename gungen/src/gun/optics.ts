@@ -1,7 +1,9 @@
 import type { KeepOut } from '@skelly/engine/assembly/schema.ts';
 import type { Vec3 } from '@skelly/engine/foundation/math.ts';
 import type { RevolvedSolid, Solid, SolidFinish, Vec2 } from '@skelly/engine/shapes/solid.ts';
+import { array, exactOptional, literal, number, object, parse, picklist, string, tuple, variant } from 'valibot';
 import appearance from './appearance.json' with { type: 'json' };
+import fixedPrism from './fixedPrism.json' with { type: 'json' };
 import type { MountRequirement } from './mounts.ts';
 
 export const opticRailContactSolids = (solids: readonly Solid[]): readonly Solid[] =>
@@ -29,6 +31,8 @@ export interface OpticCatalogEntry {
   readonly envelopeU: readonly [length: number, height: number, width: number];
   readonly mount: MountRequirement & { readonly description: string };
   readonly opticalAxisY: number;
+  /** Host feed modes explicitly excluded by the authored mount; geometry is still checked separately. */
+  readonly excludedHostFeeds?: readonly string[];
   readonly reticleKind: 'dot' | 'crosshair' | 'chevron';
   /** Magnification range for export; absent on non-magnifying sights. */
   readonly magnification?: { readonly min: number; readonly max: number };
@@ -216,6 +220,29 @@ const railMount = ({
   description,
 });
 
+const Vector2 = tuple([number(), number()]);
+const Vector3 = tuple([number(), number(), number()]);
+const ContentSolid = variant('kind', [
+  object({ id: string(), kind: literal('box'), slot: string(), box: object({ center: Vector3, half: Vector3 }) }),
+  object({
+    id: string(),
+    kind: literal('revolved'),
+    slot: string(),
+    axis: picklist(['x', 'y', 'z']),
+    origin: Vector3,
+    profile: array(Vector2),
+    sides: exactOptional(number()),
+  }),
+  object({
+    id: string(),
+    kind: literal('extruded-polygon'),
+    slot: string(),
+    axis: picklist(['x', 'y', 'z']),
+    z: Vector2,
+    profile: array(Vector2),
+  }),
+]);
+
 const MICRO_HOUSING_DISPLAY = { bevel: false, outline: false, mergeGroup: 'micro-housing' } as const;
 
 /** Manufacturer-class visual envelopes; lens glass is a look only, and no zoom, reticle, NV or thermal behavior is simulated. */
@@ -375,71 +402,20 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     reticleKind: 'chevron',
     label: 'Fixed 4× prism (TA31 class)',
     magnification: { min: 4, max: 4 },
-    reference: 'Trijicon ACOG TA31 class, including mount, approximately 150 × 45 × 60 mm',
-    source: 'https://www.trijicon.com/products/details/ta31-d-100549',
-    envelopeMm: [150, 45, 60],
-    envelopeU: [13, 3.75, 5.5],
-    mount: railMount({
-      contactLengthU: 12,
-      contactWidthU: 1.75,
-      minimumSlots: 7,
-      description: 'two-base prism bridge mount',
-      clearanceU: { forward: 0.75, rearward: 0.75, lateral: 0.5 },
-    }),
-    opticalAxisY: 2.25,
-    ocularX: -6.5,
-    ocularOpeningDiameterU: 1.5,
-    eyeReliefU: 3.5,
-    eyeDatumToleranceU: 8,
+    reference: fixedPrism.reference,
+    source: fixedPrism.source,
+    envelopeMm: parse(Vector3, fixedPrism.envelopeMm),
+    envelopeU: parse(Vector3, fixedPrism.envelopeU),
+    mount: railMount(fixedPrism.mount),
+    opticalAxisY: fixedPrism.opticalAxisY,
+    excludedHostFeeds: parse(array(picklist(['top', 'box', 'tube', 'cylinder'])), fixedPrism.excludedHostFeeds),
+    ocularX: fixedPrism.ocularX,
+    ocularOpeningDiameterU: fixedPrism.ocularOpeningDiameterU,
+    eyeReliefU: fixedPrism.eyeReliefU,
+    eyeDatumToleranceU: fixedPrism.eyeDatumToleranceU,
     ironCoWitness: true,
-    sightlineStartX: 6.5,
-    solids: [
-      ...pairedFeet(0.75),
-      box('mount-bridge', [-6, 0.75, -0.825], [6, 1, 0.825]),
-      {
-        id: 'prism-housing',
-        kind: 'extruded-polygon',
-        axis: 'x',
-        z: [-3.25, 2.25],
-        profile: [
-          [0.75, -2.25],
-          [1.25, -2.75],
-          [2.75, -2.75],
-          [3.5, -2],
-          [3.5, 1.75],
-          [2.75, 2.25],
-          [1.25, 2.25],
-          [0.75, 1.75],
-        ],
-        slot: 'metal',
-      },
-      ...scopeLenses(2.25, [-6.5, 1], [6.5, 1.25]),
-      scopeBody('objective-bell', 2.25, [
-        [2, 0.875],
-        [3, 1.125],
-        [5, 1.25],
-        [6.5, 1.25],
-      ]),
-      scopeBody('ocular-bell', 2.25, [
-        [-6.5, 1],
-        [-4.5, 1],
-        [-3.5, 0.875],
-        [-3, 0.875],
-      ]),
-      silhouette(
-        'illumination-hood',
-        [
-          [0, 3.5],
-          [2, 3.5],
-          [1.5, 3.75],
-          [0.25, 3.75],
-        ],
-        0.75,
-      ),
-      cylinder('elevation-cap', 'y', [-1.5, 0, 0], { span: [3.25, 3.75], radius: 0.5 }),
-      cylinder('windage-cap', 'z', [-1.5, 2.25, 0], { span: [2, 2.75], radius: 0.5 }),
-      cylinder('mount-cross-bolt', 'z', [-5.5, 0.375, 0], { span: [-1.25, 1.25], radius: 0.25 }),
-    ],
+    sightlineStartX: -fixedPrism.ocularX,
+    solids: parse(array(ContentSolid), fixedPrism.solids),
   }),
   'lpvo-1-6x': makeEntry({
     id: 'lpvo-1-6x',

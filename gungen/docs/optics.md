@@ -4,11 +4,20 @@ read_if:
   - you're authoring or resizing an iron rear sight's notch or aperture
   - you're changing how an optic's lens glass looks or which coating tint it shows
   - you're changing the cross section of a round optic body
+  - you're retracing the fixed prism or changing its backup irons or top-loader compatibility
 ---
 
 # Optic reference envelopes
 
 Optics are static, persisted attachment choices. Their catalog shapes are visual classes based on cited products, not manufacturer CAD; reticles, zoom, night vision and thermal behavior are outside this model. The catalog owns source dimensions and mount requirements in `src/gun/optics.ts`, `OPTIC_CATALOG`.
+
+## Fixed prism reference
+
+The fixed prism uses the [TA31F published dimensions](https://www.trijicon.com/products/details/ta31f) as its size constraint and the selected three-quarter photograph for its cast housing, flared objective, eyepiece, turrets, backup irons and TA51 silhouette. The photograph and dimensions describe different variants, so photographic proportions are estimates rather than additional manufacturer measurements. Register on the optical axis and published length with a perspective projection, and check the other published dimensions separately; a side-view scale would mistake the near objective's enlargement for its diameter. Reference images and overlays stay outside the repository. Source-backed values and labelled estimates belong to `src/gun/fixedPrism.jsonnet`, `solids` and `reference`, not renderer constants.
+
+The TA51 stays one continuous clamp mount on every host. Top-loaded rifles reject it because that mount obstructs their loading opening; changing the feet to preserve a fit would change the item being traced. The authored exclusion is consumed by validation and attachment certification through the same rule; see `src/gun/fixedPrism.jsonnet`, `excludedHostFeeds`, and `src/gun/rules.ts`, `opticMountFitForPart`.
+
+The backup front post and rear aperture are shape only. ADS remains on the prism's optical axis because the export carries one chosen sight frame, not independently selectable primary and backup sights; see `src/gun/exportGlb.ts`, `sightCandidate` and `sightMetadata`. The separate top seam keeps a later replacement sight from becoming part of the cast housing. The optic keeps its existing material rather than adopting the reference photograph's colour.
 
 ## Octagonal bodies
 

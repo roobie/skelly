@@ -109,16 +109,16 @@
             },
             "railSpanNotches": {
               "maxOffset": 3,
-              "minOffset": -3
+              "minOffset": -1
             },
             "reticleKind": "chevron"
           },
           "sight": {
             "direction": [1, 0, 0],
-            "eye": [-0.074749999999999997, 0.025874999999999999, 0],
-            "eyeReliefMetres": 0.040250000000000001,
+            "eye": [-0.076187500000000005, 0.025874999999999999, 0],
+            "eyeReliefMetres": 0.038100000000000002,
             "kind": "optic",
-            "ocularDiameterMetres": 0.017250000000000001,
+            "ocularDiameterMetres": 0.023,
             "up": [0, 1, 0]
           }
         }

@@ -1,0 +1,326 @@
+{
+  "envelopeMm": [151.88999999999999, 58.420000000000002, 50.799999999999997],
+  "envelopeU": [13.25, 5, 4.5],
+  "excludedHostFeeds": ["top"],
+  "eyeDatumToleranceU": 8,
+  "eyeReliefU": 3.3130434782608695,
+  "mount": {
+    "clearanceU": {
+      "forward": 0.75,
+      "lateral": 0.5,
+      "rearward": 0.75
+    },
+    "contactLengthU": 8,
+    "contactWidthU": 1.75,
+    "description": "TA51 flattop mount, photo-estimated two thumbscrews",
+    "minimumSlots": 5
+  },
+  "ocularOpeningDiameterU": 2,
+  "ocularX": -6.625,
+  "opticalAxisY": 2.25,
+  "reference": "TA31F published envelope, objective aperture and eye relief; housing, turrets and TA51 contours are perspective-photo estimates, including backup irons",
+  "solids": [
+    {
+      "box": {
+        "center": [-1.5, 0.375, 0.125],
+        "half": [0.5, 0.375, 0.875]
+      },
+      "id": "rear-ring-foot",
+      "kind": "box",
+      "slot": "metal"
+    },
+    {
+      "box": {
+        "center": [5.5, 0.375, 0.125],
+        "half": [0.5, 0.375, 0.875]
+      },
+      "id": "front-ring-foot",
+      "kind": "box",
+      "slot": "metal"
+    },
+    {
+      "box": {
+        "center": [2, 0.875, 0.125],
+        "half": [4, 0.125, 0.875]
+      },
+      "id": "mount-bridge",
+      "kind": "box",
+      "slot": "metal"
+    },
+    {
+      "axis": "x",
+      "id": "prism-housing",
+      "kind": "revolved",
+      "origin": [0, 2.25, 0],
+      "profile": [
+        [-4.5, 1.375],
+        [-3.25, 1.5],
+        [-1.5, 1.375],
+        [2.75, 1.25],
+        [3.5, 1.5],
+        [3.5, 1.375],
+        [2.75, 1.125],
+        [-1.5, 1.25],
+        [-3.25, 1.375],
+        [-4.5, 1.25],
+        [-4.5, 1.375]
+      ],
+      "sides": 8,
+      "slot": "metal"
+    },
+    {
+      "axis": "x",
+      "id": "ocular-bell",
+      "kind": "revolved",
+      "origin": [0, 2.25, 0],
+      "profile": [
+        [-6.625, 1.125],
+        [-5.875, 1.125],
+        [-5.625, 1.375],
+        [-5.25, 1.375],
+        [-4.75, 1.25],
+        [-4.5, 1.375],
+        [-4.5, 1.25],
+        [-4.75, 1.125],
+        [-5.25, 1.25],
+        [-5.625, 1.25],
+        [-5.875, 1],
+        [-6.625, 1],
+        [-6.625, 1.125]
+      ],
+      "sides": 8,
+      "slot": "metal"
+    },
+    {
+      "axis": "x",
+      "id": "objective-bell",
+      "kind": "revolved",
+      "origin": [0, 2.25, 0],
+      "profile": [
+        [2.75, 1.25],
+        [3.5, 1.5],
+        [4.25, 1.75],
+        [6.625, 1.75],
+        [6.625, 1.3913043478260869],
+        [4.25, 1.3913043478260869],
+        [3.5, 1.1413043478260869],
+        [2.75, 0.89130434782608692],
+        [2.75, 1.25]
+      ],
+      "sides": 8,
+      "slot": "metal"
+    },
+    {
+      "axis": "x",
+      "id": "ocular-lens",
+      "kind": "revolved",
+      "origin": [0, 2.25, 0],
+      "profile": [[-6.625, 0], [-6.625, 1], [-6.375, 1], [-6.375, 0]],
+      "sides": 8,
+      "slot": "lens"
+    },
+    {
+      "axis": "x",
+      "id": "objective-lens",
+      "kind": "revolved",
+      "origin": [0, 2.25, 0],
+      "profile": [[5, 0], [5, 1.3913043478260869], [5.25, 1.3913043478260869], [5.25, 0]],
+      "sides": 8,
+      "slot": "lens"
+    },
+    {
+      "axis": "z",
+      "id": "housing-keel",
+      "kind": "extruded-polygon",
+      "profile": [[-2, 1], [5.75, 1], [2.75, 2], [-1.5, 1.75]],
+      "slot": "metal",
+      "z": [-0.625, 0.625]
+    },
+    {
+      "axis": "z",
+      "id": "backup-front-base",
+      "kind": "extruded-polygon",
+      "profile": [[5.5, 3.625], [6.625, 3.625], [6.625, 4.125], [5.5, 4.125]],
+      "slot": "metal",
+      "z": [0.125, 0.875]
+    },
+    {
+      "box": {
+        "center": [6.375, 4.25, 0.5],
+        "half": [0.125, 0.25, 0.25]
+      },
+      "id": "backup-front-post",
+      "kind": "box",
+      "slot": "metal"
+    },
+    {
+      "axis": "z",
+      "id": "backup-rear-base",
+      "kind": "extruded-polygon",
+      "profile": [[-6.5, 3.125], [-4.75, 3.125], [-5.375, 4.125], [-6.125, 4.125]],
+      "slot": "metal",
+      "z": [0.125, 0.875]
+    },
+    {
+      "axis": "x",
+      "id": "backup-rear-aperture",
+      "kind": "revolved",
+      "origin": [0, 4.5, 0.5],
+      "profile": [[-6, 0.25], [-6, 0.5], [-5.5, 0.5], [-5.5, 0.25], [-6, 0.25]],
+      "sides": 8,
+      "slot": "metal"
+    },
+    {
+      "axis": "y",
+      "id": "elevation-stem",
+      "kind": "revolved",
+      "origin": [-0.5, 0, 0],
+      "profile": [[3.25, 0], [3.25, 0.75], [3.75, 0.75], [3.75, 0]],
+      "slot": "metal"
+    },
+    {
+      "axis": "y",
+      "id": "elevation-cap",
+      "kind": "revolved",
+      "origin": [-0.5, 0, 0],
+      "profile": [[3.75, 0], [3.75, 0.875], [4.375, 0.875], [4.375, 0]],
+      "slot": "metal"
+    },
+    {
+      "axis": "y",
+      "id": "elevation-cap-rim-lower",
+      "kind": "revolved",
+      "origin": [-0.5, 0, 0],
+      "profile": [[3.875, 0], [3.875, 0.9375], [4, 0.9375], [4, 0]],
+      "slot": "metal"
+    },
+    {
+      "axis": "y",
+      "id": "elevation-cap-rim-upper",
+      "kind": "revolved",
+      "origin": [-0.5, 0, 0],
+      "profile": [[4.125, 0], [4.125, 0.9375], [4.25, 0.9375], [4.25, 0]],
+      "slot": "metal"
+    },
+    {
+      "axis": "z",
+      "id": "windage-stem",
+      "kind": "revolved",
+      "origin": [0.875, 2.4375, 0],
+      "profile": [[-2.5, 0], [-2.5, 0.5], [-1.25, 0.5], [-1.25, 0]],
+      "slot": "metal"
+    },
+    {
+      "axis": "z",
+      "id": "windage-cap",
+      "kind": "revolved",
+      "origin": [0.875, 2.4375, 0],
+      "profile": [[-2.75, 0], [-2.75, 0.5], [-2.5, 0.5], [-2.5, 0]],
+      "slot": "metal"
+    },
+    {
+      "axis": "z",
+      "id": "objective-rib-ramp",
+      "kind": "extruded-polygon",
+      "profile": [[3.5, 3.5], [4.25, 3.875], [4.25, 4.125], [3.5, 3.75]],
+      "slot": "metal",
+      "z": [-0.25, 0.25]
+    },
+    {
+      "box": {
+        "center": [5.25, 4.125, 0],
+        "half": [1, 0.125, 0.25]
+      },
+      "id": "objective-rib",
+      "kind": "box",
+      "slot": "metal"
+    },
+    {
+      "box": {
+        "center": [2, 0.625, -0.875],
+        "half": [4, 0.375, 0.125]
+      },
+      "id": "mount-near-clamp",
+      "kind": "box",
+      "slot": "metal"
+    },
+    {
+      "box": {
+        "center": [2, 0.625, 1.125],
+        "half": [4, 0.375, 0.125]
+      },
+      "id": "mount-far-clamp",
+      "kind": "box",
+      "slot": "metal"
+    },
+    {
+      "axis": "z",
+      "id": "mount-cross-bolt-front",
+      "kind": "revolved",
+      "origin": [5, 0.625, 0],
+      "profile": [[-1.5, 0], [-1.5, 0.1875], [1.125, 0.1875], [1.125, 0]],
+      "slot": "metal"
+    },
+    {
+      "axis": "z",
+      "id": "mount-thumbscrew-front",
+      "kind": "revolved",
+      "origin": [5, 0.625, 0],
+      "profile": [[-2.125, 0], [-2.125, 0.625], [-1.125, 0.625], [-1.125, 0]],
+      "slot": "metal"
+    },
+    {
+      "box": {
+        "center": [5.125, 0.875, -2.125],
+        "half": [0.375, 0.125, 0.125]
+      },
+      "id": "mount-drive-front-upper",
+      "kind": "box",
+      "slot": "metal"
+    },
+    {
+      "box": {
+        "center": [5.125, 0.375, -2.125],
+        "half": [0.375, 0.125, 0.125]
+      },
+      "id": "mount-drive-front-lower",
+      "kind": "box",
+      "slot": "metal"
+    },
+    {
+      "axis": "z",
+      "id": "mount-cross-bolt-rear",
+      "kind": "revolved",
+      "origin": [-0.5, 0.625, 0],
+      "profile": [[-1.5, 0], [-1.5, 0.1875], [1.125, 0.1875], [1.125, 0]],
+      "slot": "metal"
+    },
+    {
+      "axis": "z",
+      "id": "mount-thumbscrew-rear",
+      "kind": "revolved",
+      "origin": [-0.5, 0.625, 0],
+      "profile": [[-2.125, 0], [-2.125, 0.625], [-1.125, 0.625], [-1.125, 0]],
+      "slot": "metal"
+    },
+    {
+      "box": {
+        "center": [-0.375, 0.875, -2.125],
+        "half": [0.375, 0.125, 0.125]
+      },
+      "id": "mount-drive-rear-upper",
+      "kind": "box",
+      "slot": "metal"
+    },
+    {
+      "box": {
+        "center": [-0.375, 0.375, -2.125],
+        "half": [0.375, 0.125, 0.125]
+      },
+      "id": "mount-drive-rear-lower",
+      "kind": "box",
+      "slot": "metal"
+    }
+  ],
+  "source": "https://www.trijicon.com/products/details/ta31f"
+}
