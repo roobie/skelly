@@ -162,7 +162,7 @@ try {
   await page.goto(
     browserStageUrl(
       'full-auto',
-      `http://127.0.0.1:${address.port}/?site=testHouse&seed=73&debug=1&loadout=ar&firearmsCombat=0&radius=64&time=12:00&at=43.50,0.00,-90.0&post=0&sunshadow=0&torchshadow=0`,
+      `http://127.0.0.1:${address.port}/?site=testHouse&seed=73&debug=1&mannequin=&loadout=ar&firearmsCombat=0&radius=64&time=12:00&at=43.50,0.00,-90.0&post=0&sunshadow=0&torchshadow=0`,
     ),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
@@ -226,6 +226,16 @@ try {
       document.querySelector('#world-loading').hidden,
   );
   assert.equal(await page.locator('#debug-center-x').count(), 1, 'debug profile includes the separate centre X');
+  const mannequinGroup = page.locator('section[data-group="mannequin"]');
+  assert.equal(await mannequinGroup.count(), 1, 'a requested mannequin gets its own debug panel section');
+  const mannequinPose = mannequinGroup.locator('.debug-actions button').first();
+  const poseBefore = await mannequinPose.textContent();
+  await pressAction(page, 'debug.mannequin-next');
+  await page.waitForFunction(
+    ([before]) =>
+      document.querySelector('section[data-group="mannequin"] .debug-actions button')?.textContent !== before,
+    [poseBefore],
+  );
   const reviewMap = page.locator('iframe[title="Current-world review map"]');
   await pressAction(page, 'debug.review-map-toggle');
   await page.waitForFunction(() => {

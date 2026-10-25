@@ -18,6 +18,7 @@ read_if:
   - you're choosing world scale, view distance, performance targets or the default render scale
   - you change player movement, load or aim tuning, saved aim admission, or what crouching or lying prone lets the player fit through
   - you're changing world block shapes, wire fences or their supports, sight opacity, reach through obstacles, sound blocking or slab geometry
+  - you change standing water, basins, the flooded-lot check or how liquids are meshed
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry, push or drag, or how stacks settle
   - you're changing the rules for time, survival, light or zombies
@@ -198,6 +199,16 @@ ceiling the body fits under. Visual blending hides the change of shape, but must
 not delay the eye used by sight and collision. See
 `src/content/base/figures-player.jsonnet`, `stancePoses`, and
 `src/render/playerFigure.ts`, `PlayerMeshes`.
+
+The crouch must read as a crouch to anyone watching the avatar, not as sitting:
+knees bent, feet flat on the ground under the body, torso leaning forward and
+head up looking ahead. The arms hold a guard for balance, elbows bent with the
+forearms raised and the hands in front, because arms hanging straight down read
+as a gorilla's. A leg swung forward whole cannot do that, so the leg model is
+split at the knee and ankle, the bust at the neck, and the body arm bends at the
+elbow on the arm rig's parts; each stance pose turns those joints. See
+`src/content/base/figures-player.jsonnet`, `legRig`, and
+`test/playerFigure.test.ts`, "crouches on bent knees: feet flat behind the knees, knees below the hips, torso forward, head up, arms in guard".
 
 The FOB's east-wall passage is sized so a crouched player fits but a standing
 player does not. It is a separate low route from the guarded north entrance and
@@ -624,6 +635,56 @@ not in authored layout geometry. See `AuthoredSite` in
 Small structures use authored templates because they are reviewable and
 content validation can check them. Keep template representation and import
 mechanics in the implementation rather than repeating the format here.
+
+### Water
+
+Standing water is a block, written into the grid where a site layout's water rows put it.
+Movement, sight, aim, picking, the mesher and saved edits all key off the grid, so they treat
+water through the queries they already have; a separate water field would need its own query
+in each. Water is static: a block dug beside a lake stays dry, and a block placed in the water
+replaces it. Flow, rivers and tides would need a field this design does not promise. Only
+authored sites have water; generated terrain has none. See `src/core/worldgen.ts`, `Surface`,
+and `src/core/authoredSite.ts`, `AuthoredSite`.
+
+Lakes are map features of any size. The haven's lake is hundreds of metres across and lakes
+elsewhere on a map can be much larger, so no schema field, fill rule, generation step or
+validation check caps a water body, and the debug lake is built at the haven's scale so its look
+is judged at the size that ships. Work that could grow with a lake's area stays bounded instead:
+validation searches a polygon's cells from coarse to fine and stops at the first one that holds
+water, and the shore's per-column cache is cleared when full. See `src/core/authoredLayout.ts`,
+`coarseToFineCentres`, and `src/core/authoredSite.ts`, `siteWater`.
+
+A water row's level is the water's top face, the plane the eye breaks when surfacing, while a
+layout's `ground` is the lower face of the top ground block. The ground names the block an author
+places and the level names the plane an author sees and a swimmer floats at; the two coincide only
+where there is no water. A column holds water where its bed's top face lies below the level, so
+the shore falls out of the terrain, not out of the polygon. See `src/core/worldgen.ts`,
+`generateChunk`.
+
+A basin lowers the profile by the deepest basin over a point, as hills raise it by the highest
+hill, so overlaps stay predictable and a basin on a hill flank cuts a tarn. See
+`src/core/authoredTerrain.mjs`, `profileHeight`. The bed under water and a shore ring around it
+are sand and grow no trees, because a grass lake bed reads as a hole in a lawn.
+
+Validation rejects unintended inundation instead of clamping, because a silently lowered level or
+raised lot would hide the author's mistake. A water row whose bed reaches the level everywhere
+holds no water, and a lot whose apron stands below the level inside the polygon is flooded unless
+the lot says `overWater`. Overlap alone is allowed, because a shore lot whose apron meets the
+water at its own floor is dry. `overWater` is the seam for constructions over water; a flagged
+lot still raises the ground under its apron to its floor, so it stands on a plinth, not on legs.
+See `src/core/authoredLayout.ts`, `waterIssues`, and `src/core/authoredTerrain.mjs`,
+`layoutHeight`.
+
+The renderer must keep what lies under water. A block's `liquid` flag is its own predicate, not
+"not solid", because air, wire mesh and open doors are not solid and none of them is water. Every
+input that decides what is drawn treats a liquid as open, like air: the streamer's occluder
+table, which feeds chunk enclosure and wide occlusion, and the mesher's face and corner-AO tests.
+Otherwise a lake would hide its bed and walls, darken the bed, and leave a camera under it looking
+through a hollow shell at the sky. A liquid's face is hidden against the same liquid and against a
+solid. Chunk materials draw front faces only, so the mesher adds a downward copy of each liquid
+top face for a camera under it; a double-sided material would double the cost of every terrain
+face. See `src/game/streamer.ts`, `Streamer`; `src/core/world.ts`, `isEnclosed`; and
+`src/core/mesher.ts`, `solid`, `faceKey` and `emitSolidQuad`.
 
 ### Gauntlet
 
@@ -1531,6 +1592,16 @@ Third person remains a debug inspection aid, not a player-facing camera.
 figure row (`DESIGN.md`, "Models"); the authored parts are thing tool rows in
 `packages/thing-authoring-tool/avatar.libsonnet`. The debug query in
 `src/render/avatarStudy.ts` stands a model beside the body for comparison.
+`src/render/avatarMannequin.ts`, `createAvatarMannequin` stands a second, inert copy of the
+body, drawn by the same `PlayerMeshes`, in every pose the figure row defines (`avatarPoses`
+in the same file), so BR can judge a pose from outside instead of only in
+first person. It is debug-only, and its controls (pose, relocate) fill their own debug-panel
+group, present only while a mannequin exists, because BR wants mannequins driven from
+one section of their own and possibly several later; the rows are the `debug.mannequin-`
+actions in `src/game/inputBindings.ts` and the group is in `src/debug/groups.ts`,
+`DEBUG_GROUPS`. Where it stands is the figure row's `mannequinPlacement`. Held-item holds and the ready stance are drawn by the
+first-person `HeldItems`, not the world body, so the mannequin shows them only if the
+world body grows them.
 
 Needs are calories, hydration, fatigue, stamina, and body temperature; rates use
 game time. Body temperature is not simulated; #366 is the trigger for deciding
@@ -2510,7 +2581,7 @@ crouch rules. See `src/core/zombies.ts`, `hearingTier`, `hearVocalNoise` and
 - For #281, visible prey suppresses obstacle wandering; an active wander ends when the prey becomes visible, and the shambler resumes beelining while retaining its slide. Unseen targets and idle strolling can still wander. See `packages/deadvox/src/core/zombies.ts`, `seesPlayer` and `ZombieSystem.tick`.
 - The named phases in `src/core/zombies.ts`, `ZombieSystem.tick`, make the established order reviewable because later steps consume state produced by earlier simulation steps; keep that order when changing the per-tick behavior. See `ZombieSystem.updateAttention`, `ZombieSystem.stepZombieBody`, `ZombieSystem.updateObstacleContact`, `ZombieSystem.resolveZombieAttack` and `ZombieSystem.emitFootsteps`.
 - **Quiet-sound hesitation:** An uncommitted individual pauses and turns toward a quiet noise before deciding; loudness, not a sound category, makes a noise urgent. Idle listeners refuse, while listeners already strolling pursue after the pause: movement expresses existing interest without a heard-noise history or a random pursue roll. Refusal biases the next stroll toward the sound and briefly makes another noise urgent. Searchers and pursuing bodies retain their existing attention rules; sight and light can interrupt the pause. Hordes beeline because their group response should remain decisive. Player movement hearing remains continuous rather than restarting a discrete-noise pause. See `src/core/zombies.ts`, `ZombieSystem.updateAttention` and `ZombieSystem.beginStroll`; tuning belongs to `src/content/base/zombies.jsonnet`, `hearingModel`.
-- **Shared interest:** A pursuing body's alert can recruit nearby listeners to its target point, including its bearing uncertainty, rather than sending them to the caller. Each call offers a flat chance inside its radius. Cascades deliberately have no damping so crowd behaviour can be evaluated before imposing a limit. The transient stimulus queue drains after player perception and before movement, including calls from recruited bodies; no pending queue crosses a save boundary. This prevents entity iteration order from giving one listener an extra movement tick. A future damping decision belongs at this queue's recruitment boundary, not in player noise. See `src/core/zombies.ts`, `ZombieSystem.announcePursuit` and `ZombieSystem.processChainStimuli`; tuning belongs to `src/content/base/zombies.jsonnet`, `hearingModel`.
+- **Shared interest:** Alerts recruit only uncommitted listeners: searching and returning bodies already act on their own memory, and recruiting them re-arms echoes. Recruitment eligibility is an attention-state invariant, not content tuning. Sharing the target and its uncertainty keeps listeners interested in the stimulus rather than the caller. Cascades deliberately remain undamped so crowd behaviour can be evaluated before imposing a limit; slow echoes through bodies that become idle again are accepted. A future damping decision belongs at the recruitment boundary, not in player noise. Draining calls before movement prevents entity iteration order from giving one listener an extra movement tick, and keeping the queue transient avoids pending calls crossing a save boundary. See `src/core/zombies.ts`, `ZombieSystem.announcePursuit` and `ZombieSystem.processChainStimuli`; tuning belongs to `src/content/base/zombies.jsonnet`, `hearingModel`.
 - **Attention and attacks:** Sight and hearing remain the authorities for choosing targets, so interest chaining must not replace visible prey. Far-hearing direction stays uncertain: a grounded listener projects it onto known terrain rather than learning the source's height. See `src/core/zombies.ts`, `seesPlayer`, `farBearingTarget` and `withinAttackReach`.
 - **Background steps:** Background zombies beeline in big, cheap steps. Each type's content caps how far one step moves it, because that cap, not the chase speed, sets how fast a fast type closes in while unseen. The background tick rate stays in code: it is the scheduler's cadence, saved with its phase, so it is engine timing rather than tuning. See `src/core/schema.ts`, `ZombieSchema`, and `src/core/zombies.ts`, `ZombieSystem.tickBackground`.
 - **Distant attention and noise persistence:** A horde retains a heard noise target until it arrives or forgets it; its sun-derived preference for home or roaming does not replace an active noise target. Once the target ends, the horde roams only from sunset to sunrise. A background zombie with no horde or stimulus uses idle behavior instead of treating the player as an implicit target, because distance alone must not make an unseen zombie pursue. See `src/core/zombies.ts`, `ZombieSystem.updateHordes` and `ZombieSystem.tickBackground`.

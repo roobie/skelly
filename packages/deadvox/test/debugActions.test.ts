@@ -42,6 +42,26 @@ describe('debug action dispatch', () => {
     expect(grouped).toHaveLength(actions.length);
     expect(new Set(grouped.map(({ id }) => id)).size).toBe(actions.length);
   });
+  it('gives the mannequin its own bound group, only when there is a mannequin', () => {
+    const inGroup = (list: Action[]) => list.filter((action) => action.group === 'mannequin');
+    expect(inGroup(makeActions().actions)).toHaveLength(0);
+    const calls: string[] = [];
+    const mannequin = {
+      pose: { name: 'standing' },
+      step: (delta: number) => calls.push(`step ${delta}`),
+      place: () => calls.push('place'),
+    };
+    const { actions } = makeActions(1, mannequin);
+    const owned = inGroup(actions);
+    expect(owned.length).toBeGreaterThan(0);
+    for (const action of owned) {
+      expect(inputBindings.binding(action.id)).toMatchObject({ debug: true, gate: 'debug.gate' });
+      expect(action.key).toBe(inputBindings.label(action.id));
+      dispatchDebugAction(actions, action.id);
+    }
+    expect(calls).toContain('place');
+    expect(calls.filter((call) => call.startsWith('step'))).toHaveLength(2);
+  });
   it('routes replay registry actions to the existing export and import controls', () => {
     const { actions, replayCalls } = makeActions();
     expect(dispatchDebugAction(actions, 'debug.input-replay-export')).toBe(true);
@@ -139,6 +159,7 @@ describe('debug action dispatch', () => {
 
 const makeActions = (
   shamblerCount = 1,
+  mannequin?: DebugHooks['mannequin'],
 ): {
   actions: Action[];
   spawnCounts: number[];
@@ -222,6 +243,7 @@ const makeActions = (
         thirdPerson = !thirdPerson;
       },
     },
+    mannequin,
     perceptionLabels: {
       enabled: () => perceptionLabels,
       toggle: () => {

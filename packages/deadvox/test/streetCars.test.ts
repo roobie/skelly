@@ -81,7 +81,7 @@ it('keeps the street surface under every placed item standing on a street cell',
     shape: terrainShapeOf(registry),
     scale,
     surface: site.surface,
-    blocks: { grass: 1000, dirt: 1001, rock: 1002, sand: 1003 },
+    blocks: { grass: 1000, dirt: 1001, rock: 1002, sand: 1003, water: 1004 },
   };
   const mismatches: string[] = [];
   let checked = 0;

@@ -547,7 +547,7 @@ describe('one finished city plan', () => {
                 shape: terrainShapeOf(registry),
                 scale,
                 surface: site.surface,
-                blocks: { grass: solid, dirt: solid, rock: solid, sand: solid },
+                blocks: { grass: solid, dirt: solid, rock: solid, sand: solid, water: solid },
               },
               cell,
             );

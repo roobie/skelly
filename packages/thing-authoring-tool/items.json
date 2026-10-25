@@ -6079,51 +6079,53 @@
       "anchors": {
         "head": {
           "fraction": [0.5, 1, 0.5],
-          "part": "bust",
+          "part": "torso",
           "solid": "neck"
         },
         "hip_left": {
           "fraction": [0.75, 0.12, 0.5],
-          "part": "bust",
+          "part": "torso",
           "solid": "pelvis"
         },
         "hip_right": {
           "fraction": [0.25, 0.12, 0.5],
-          "part": "bust",
+          "part": "torso",
           "solid": "pelvis"
         },
         "neck": {
           "fraction": [0.5, 0, 0.5],
-          "part": "bust",
+          "part": "torso",
           "solid": "neck"
         },
         "shoulder_left": {
           "fraction": [0.5, 0.5, 0.5],
-          "part": "bust",
+          "part": "torso",
           "solid": "shoulder-left"
         },
         "shoulder_right": {
           "fraction": [0.5, 0.5, 0.5],
-          "part": "bust",
+          "part": "torso",
           "solid": "shoulder-right"
         }
       },
-      "connections": [],
+      "connections": [
+        {
+          "from": "torso.head",
+          "to": "head.head"
+        }
+      ],
       "exportMass": "parts",
       "id": "player_bust",
       "parts": [
         {
           "family": "bust",
           "finish": {
-            "eye": "body-eye",
-            "hair": "body-hair",
-            "mouth": "body-mouth",
             "pants": "cloth-pants-player",
             "shirt": "cloth-shirt-player",
             "skin": "body-skin-player"
           },
-          "id": "bust",
-          "massKg": 38,
+          "id": "torso",
+          "massKg": 33,
           "params": {
             "chestDepth": "0.22",
             "chestHeight": "0.14999999999999999",
@@ -6134,6 +6136,7 @@
             "headWidth": "0.16500000000000001",
             "jawHeight": "0.080000000000000002",
             "neckHeight": "0.070000000000000007",
+            "neckOverlap": "0.02",
             "neckWidth": "0.10000000000000001",
             "pelvisDepth": "0.20000000000000001",
             "pelvisHeight": "0.17000000000000001",
@@ -6141,6 +6144,7 @@
             "ribDepth": "0.20999999999999999",
             "ribHeight": "0.12",
             "ribWidth": "0.34999999999999998",
+            "segment": "torso",
             "shoulderDepth": "0.12",
             "shoulderHeight": "0.12",
             "shoulderWidth": "0.089999999999999997",
@@ -6148,7 +6152,65 @@
             "waistHeight": "0.17000000000000001",
             "waistWidth": "0.29999999999999999"
           },
-          "ports": []
+          "ports": [
+            {
+              "gender": "female",
+              "id": "head",
+              "mount": "assembly-joint",
+              "normal": [0, 1, 0],
+              "pos": [0, 0.69999999999999996, 0],
+              "required": true,
+              "up": [0, 0, 1]
+            }
+          ]
+        },
+        {
+          "family": "bust",
+          "finish": {
+            "eye": "body-eye",
+            "hair": "body-hair",
+            "mouth": "body-mouth",
+            "skin": "body-skin-player"
+          },
+          "id": "head",
+          "massKg": 5,
+          "params": {
+            "chestDepth": "0.22",
+            "chestHeight": "0.14999999999999999",
+            "chestWidth": "0.40000000000000002",
+            "hairCover": "0.070000000000000007",
+            "headDepth": "0.20000000000000001",
+            "headHeight": "0.23499999999999999",
+            "headWidth": "0.16500000000000001",
+            "jawHeight": "0.080000000000000002",
+            "neckHeight": "0.070000000000000007",
+            "neckOverlap": "0.02",
+            "neckWidth": "0.10000000000000001",
+            "pelvisDepth": "0.20000000000000001",
+            "pelvisHeight": "0.17000000000000001",
+            "pelvisWidth": "0.33000000000000002",
+            "ribDepth": "0.20999999999999999",
+            "ribHeight": "0.12",
+            "ribWidth": "0.34999999999999998",
+            "segment": "head",
+            "shoulderDepth": "0.12",
+            "shoulderHeight": "0.12",
+            "shoulderWidth": "0.089999999999999997",
+            "waistDepth": "0.19",
+            "waistHeight": "0.17000000000000001",
+            "waistWidth": "0.29999999999999999"
+          },
+          "ports": [
+            {
+              "gender": "male",
+              "id": "head",
+              "mount": "assembly-joint",
+              "normal": [0, -1, 0],
+              "pos": [0, 0, 0],
+              "required": true,
+              "up": [0, 0, 1]
+            }
+          ]
         }
       ]
     },
@@ -6478,25 +6540,42 @@
     },
     {
       "anchors": {
+        "ankle": {
+          "fraction": [0.5, 0.19999999999999998, 0.5],
+          "part": "shin",
+          "solid": "cuff"
+        },
         "hip": {
           "fraction": [0.5, 1, 0.5],
-          "part": "leg",
+          "part": "thigh",
+          "solid": "thigh"
+        },
+        "knee": {
+          "fraction": [0.5, 0, 0.5],
+          "part": "thigh",
           "solid": "thigh"
         }
       },
-      "connections": [],
+      "connections": [
+        {
+          "from": "thigh.knee",
+          "to": "shin.knee"
+        },
+        {
+          "from": "shin.ankle",
+          "to": "foot.ankle"
+        }
+      ],
       "exportMass": "parts",
       "id": "player_leg",
       "parts": [
         {
           "family": "avatarLeg",
           "finish": {
-            "pants": "cloth-pants-player",
-            "shoe": "leather-shoe-player",
-            "sole": "rubber-black"
+            "pants": "cloth-pants-player"
           },
-          "id": "leg",
-          "massKg": 11,
+          "id": "thigh",
+          "massKg": 7,
           "params": {
             "ankleOverlap": "0.01",
             "cuffHeight": "0.040000000000000001",
@@ -6504,6 +6583,7 @@
             "heelReach": "0.059999999999999998",
             "kneeOverlap": "0.02",
             "length": "0.81999999999999995",
+            "segment": "thigh",
             "shinChamfer": "0.029999999999999999",
             "shinDepth": "0.12",
             "shinWidth": "0.11",
@@ -6525,7 +6605,123 @@
             "upperLengthInset": "0.0080000000000000002",
             "upperSideInset": "0.0040000000000000001"
           },
-          "ports": []
+          "ports": [
+            {
+              "gender": "female",
+              "id": "knee",
+              "mount": "assembly-joint",
+              "normal": [0, -1, 0],
+              "pos": [0, -0.41999999999999998, 0],
+              "required": true,
+              "up": [0, 0, 1]
+            }
+          ]
+        },
+        {
+          "family": "avatarLeg",
+          "finish": {
+            "pants": "cloth-pants-player"
+          },
+          "id": "shin",
+          "massKg": 3,
+          "params": {
+            "ankleOverlap": "0.01",
+            "cuffHeight": "0.040000000000000001",
+            "cuffThickness": "0.0060000000000000001",
+            "heelReach": "0.059999999999999998",
+            "kneeOverlap": "0.02",
+            "length": "0.81999999999999995",
+            "segment": "shin",
+            "shinChamfer": "0.029999999999999999",
+            "shinDepth": "0.12",
+            "shinWidth": "0.11",
+            "shoeChamfer": "0.040000000000000001",
+            "shoeHeight": "0.089999999999999997",
+            "shoeWidth": "0.10000000000000001",
+            "soleThickness": "0.025000000000000001",
+            "thighChamfer": "0.040000000000000001",
+            "thighDepth": "0.16",
+            "thighLength": "0.41999999999999998",
+            "thighWidth": "0.14999999999999999",
+            "toeCapHeightShare": "0.59999999999999998",
+            "toeCapSideInset": "0.0060000000000000001",
+            "toeCapStartShare": "0.55000000000000004",
+            "toeCapTipInset": "0.002",
+            "toeReach": "0.20999999999999999",
+            "upperBackShift": "0.0040000000000000001",
+            "upperBase": "0.02",
+            "upperLengthInset": "0.0080000000000000002",
+            "upperSideInset": "0.0040000000000000001"
+          },
+          "ports": [
+            {
+              "gender": "male",
+              "id": "knee",
+              "mount": "assembly-joint",
+              "normal": [0, 1, 0],
+              "pos": [0, 0, 0],
+              "required": true,
+              "up": [0, 0, 1]
+            },
+            {
+              "gender": "female",
+              "id": "ankle",
+              "mount": "assembly-joint",
+              "normal": [0, -1, 0],
+              "pos": [0, -0.31, 0],
+              "required": true,
+              "up": [0, 0, 1]
+            }
+          ]
+        },
+        {
+          "family": "avatarLeg",
+          "finish": {
+            "shoe": "leather-shoe-player",
+            "sole": "rubber-black"
+          },
+          "id": "foot",
+          "massKg": 1,
+          "params": {
+            "ankleOverlap": "0.01",
+            "cuffHeight": "0.040000000000000001",
+            "cuffThickness": "0.0060000000000000001",
+            "heelReach": "0.059999999999999998",
+            "kneeOverlap": "0.02",
+            "length": "0.81999999999999995",
+            "segment": "foot",
+            "shinChamfer": "0.029999999999999999",
+            "shinDepth": "0.12",
+            "shinWidth": "0.11",
+            "shoeChamfer": "0.040000000000000001",
+            "shoeHeight": "0.089999999999999997",
+            "shoeWidth": "0.10000000000000001",
+            "soleThickness": "0.025000000000000001",
+            "thighChamfer": "0.040000000000000001",
+            "thighDepth": "0.16",
+            "thighLength": "0.41999999999999998",
+            "thighWidth": "0.14999999999999999",
+            "toeCapHeightShare": "0.59999999999999998",
+            "toeCapSideInset": "0.0060000000000000001",
+            "toeCapStartShare": "0.55000000000000004",
+            "toeCapTipInset": "0.002",
+            "toeReach": "0.20999999999999999",
+            "upperBackShift": "0.0040000000000000001",
+            "upperBase": "0.02",
+            "upperLengthInset": "0.0080000000000000002",
+            "upperSideInset": "0.0040000000000000001"
+          },
+          "ports": [
+            {
+              "gender": "male",
+              "id": "ankle",
+              "mount": "assembly-joint",
+              "normal": [0, 1, 0],
+              "pos": [0, 0, 0],
+              "required": true,
+              "up": [0, 0, 1]
+            }
+          ]
         }
       ]
     },

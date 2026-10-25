@@ -4,11 +4,22 @@ read_if:
   - you're authoring or resizing an iron rear sight's notch or aperture
   - you're changing how an optic's lens glass looks or which coating tint it shows
   - you're changing the cross section of a round optic body
+  - you're retracing the fixed prism or changing its backup irons or top-loader compatibility
 ---
 
 # Optic reference envelopes
 
 Optics are static, persisted attachment choices. Their catalog shapes are visual classes based on cited products, not manufacturer CAD; reticles, zoom, night vision and thermal behavior are outside this model. The catalog owns source dimensions and mount requirements in `src/gun/optics.ts`, `OPTIC_CATALOG`.
+
+## Fixed prism reference
+
+The fixed prism uses the [TA31F published dimensions](https://www.trijicon.com/products/details/ta31f) as its size constraint, except that its taller mount neck may exceed the published height because the optic needs visible rise above the rail fastenings. The body, backup irons and optical axis rise together while the clamp stays seated on the rail.
+
+Trace the selected side reference before reshaping the ACOG archetype: its raked objective hood, rear-rising casting and rear fin distinguish it from a symmetric scope. Preserve those profile cues rather than substituting a generic turned cone. The photograph and dimensions describe different variants, so photographic proportions are estimates rather than additional manufacturer measurements; the trace must not silently replace the size or optical-datum constraints. Reference images and overlays stay outside the repository. Source-backed values and labelled estimates belong to `src/gun/fixedPrism.jsonnet`, `solids` and `reference`, not renderer constants.
+
+The TA51 stays one continuous clamp mount on every host. Top-loaded rifles reject it because that mount obstructs their loading opening; changing the feet to preserve a fit would change the item being traced. The authored exclusion is consumed by validation and attachment certification through the same rule; see `src/gun/fixedPrism.jsonnet`, `excludedHostFeeds`, and `src/gun/rules.ts`, `opticMountFitForPart`.
+
+The backup rear opening belongs near the fin tip and must share an unobstructed, bore-parallel sight line with the front post tip, with both on the optic's centre plane. They must work together as a usable sight rather than independent decorative features; see `src/gun/fixedPrism.jsonnet`, `backupY` and `backupZ`, and `test/optics.test.ts`. Primary ADS remains on the prism's optical axis because the export carries one chosen sight frame, not independently selectable primary and backup sights; see `src/gun/exportGlb.ts`, `sightCandidate` and `sightMetadata`. The separate top seam keeps a later replacement sight from becoming part of the cast housing. The optic keeps its existing material rather than adopting the reference photograph's colour.
 
 ## Octagonal bodies
 
@@ -30,4 +41,4 @@ The AK rear sight's ADS line uses the notch edge rather than the sight-block sea
 
 A rear sight's notch must be wide enough for the voxel lattice to leave it open. A voxelized file keeps a voxel wherever a solid's centre-sampled span reaches it, so a notch one voxel wide or narrower of the grain it is drawn at can hold no voxel centre and fill, and the player lines up a solid block. Author the notch wider than one voxel of whatever grain draws it, and export refuses a sight whose drawn notch is narrower than the gun grain; see `src/gun/exportGlb.ts`, `openSightGapOrThrow`, and `test/rearSightNotch.test.ts`.
 
-One rear-sight model covers an open notch and a closed aperture, so a gun can have a true peep sight (a drum, an aperture rifle) without a per-family exemption. Where the drawn top is open across the line, the eye sits at the top and the notch is read there. Where the top is solid across the line, the eye sits at the centre of the closed hole on the line and the width is read across the hole, because a peep is aimed through its hole and not over its top. Both are held to the same grain rule, and a sight with neither still fails export.
+One rear-sight model covers an open notch and a closed aperture, so a gun can have a true peep sight, as on an aperture rifle, without a per-family exemption. Where the drawn top is open across the line, the eye sits at the top and the notch is read there. Where the top is solid across the line, the eye sits at the centre of the closed hole on the line and the width is read across the hole, because a peep is aimed through its hole and not over its top. Both are held to the same grain rule, and a sight with neither still fails export.

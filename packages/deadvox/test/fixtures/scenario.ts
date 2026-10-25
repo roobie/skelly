@@ -132,6 +132,7 @@ export const fixtureScenarioSources = (
         blocks: [
           { id: 'fixture_solid', name: 'Fixture solid', solid: true, color: '#808080' },
           { id: 'asphalt', name: 'Fixture asphalt', solid: true, color: '#404040' },
+          { id: 'fixture_water', name: 'Fixture water', solid: false, opaque: false, liquid: true, color: '#3b6e8f' },
         ],
         siteGeneration: [
           {
@@ -154,7 +155,13 @@ export const fixtureScenarioSources = (
               treeMix: ['broadleaf'],
             },
             palette: {
-              terrain: { grass: 'fixture_solid', dirt: 'fixture_solid', rock: 'fixture_solid', sand: 'fixture_solid' },
+              terrain: {
+                grass: 'fixture_solid',
+                dirt: 'fixture_solid',
+                rock: 'fixture_solid',
+                sand: 'fixture_solid',
+                water: 'fixture_water',
+              },
               paving: 'asphalt',
               trees: { trunk: 'fixture_solid', branch: 'fixture_solid', leaves: 'fixture_solid' },
               leafLitter: 'fixture_solid',

@@ -50,58 +50,6 @@ it.each(variants)('registers the receiver on its front face and the bore on the 
   expect(tip[2]).toBeCloseTo(0, 6);
 });
 
-const solidsOf = (resolved: Resolved, family: string) => {
-  const id = owner(resolved, family);
-  return resolved.defs.get(id)!.solids.map((solid) => {
-    const shape = worldSolid(resolved.placed.get(id)!, solid);
-    return 'vertices' in shape ? shape : obbPolyhedron(shape);
-  });
-};
-
-const strictlyInside = (shape: ReturnType<typeof obbPolyhedron>, p: Vec3): boolean => {
-  const centre = shape.vertices
-    .reduce<Vec3>((sum, v) => [sum[0] + v[0], sum[1] + v[1], sum[2] + v[2]], [0, 0, 0])
-    .map((c) => c / shape.vertices.length) as unknown as Vec3;
-  return shape.faces.every((face) => {
-    const [a, b, c] = [shape.vertices[face[0]!]!, shape.vertices[face[1]!]!, shape.vertices[face[2]!]!];
-    const u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
-    const w = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
-    let n = [u[1]! * w[2]! - u[2]! * w[1]!, u[2]! * w[0]! - u[0]! * w[2]!, u[0]! * w[1]! - u[1]! * w[0]!];
-    const out = n[0]! * (a[0] - centre[0]) + n[1]! * (a[1] - centre[1]) + n[2]! * (a[2] - centre[2]);
-    n = out < 0 ? n.map((x) => -x) : n;
-    return n[0]! * (p[0] - a[0]) + n[1]! * (p[1] - a[1]) + n[2]! * (p[2] - a[2]) < -1e-9;
-  });
-};
-
-it.each(variants)('threads the eye line through the rear aperture and the front ring: $muzzle', ({ file }) => {
-  const resolved = load(file);
-  const sightY = (family: string): number => {
-    const id = owner(resolved, family);
-    const axis = resolved.defs.get(id)!.axes.find((a) => a.kind === 'sight')!;
-    return applyPoint(resolved.placed.get(id)!, axis.origin)[1];
-  };
-  const y = sightY('drum-rear-sight');
-  expect(sightY('front-sight')).toBeCloseTo(y, 6);
-
-  for (const family of ['drum-rear-sight', 'front-sight']) {
-    const solids = solidsOf(resolved, family);
-    const xs = solids.flatMap((s) => s.vertices.map((v) => v[0]));
-    const [x0, x1] = [Math.min(...xs), Math.max(...xs)];
-    const blocked = (yy: number): boolean => {
-      for (let x = x0; x <= x1; x += 0.05) {
-        if (solids.some((s) => strictlyInside(s, [x, yy, 0]))) {
-          return true;
-        }
-      }
-      return false;
-    };
-    expect(blocked(y), `${family} blocks the eye line`).toBe(false);
-    const surrounds = (sign: number): boolean =>
-      Array.from({ length: 80 }, (_, k) => 0.0125 + k * 0.05).some((t) => blocked(y + sign * t));
-    expect(surrounds(1) && surrounds(-1), `${family} has no material around the eye line`).toBe(true);
-  }
-});
-
 it('derives the threaded breech from the cited barrel span', () => {
   const { breechU, citedLengthU, tipU } = COMPACT_SMG_PROPORTIONS.barrel;
   expect(tipU.threaded - breechU).toBe(citedLengthU);

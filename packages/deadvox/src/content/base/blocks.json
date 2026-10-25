@@ -310,6 +310,19 @@
       "patternWashout": 0.41999999999999998,
       "solid": true,
       "weatherable": true
+    },
+    {
+      "color": "#3b6e8f",
+      "footsteps": {
+        "player": "footstep_mud",
+        "shambler": "shambler_step_mud"
+      },
+      "id": "water",
+      "liquid": true,
+      "name": "Water",
+      "opaque": false,
+      "solid": false,
+      "weatherable": false
     }
   ]
 }

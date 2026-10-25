@@ -11,7 +11,7 @@ import {
 import type { Solid } from '@skelly/engine/shapes/solid.ts';
 import { AR_CYCLIC_RPM, SMALL_AR_FRAME } from './arFrames.ts';
 
-export type GunAction = 'ak' | 'ar';
+export type GunAction = 'ak' | 'ar' | 'smg';
 export type CycleMode = 'fire' | 'hand';
 
 export interface ActionCycleProfile {
@@ -26,7 +26,10 @@ export interface ActionCycleProfile {
 
 const unit = (v: Vec3): Vec3 => scale(v, 1 / length(v));
 
-/** All cycle values are visual estimates. AK cyclic rate: about 600 rpm (Soviet/Russian AKM technical data). */
+/**
+ * All cycle values are visual estimates. AK cyclic rate: about 600 rpm (Soviet/Russian AKM technical data).
+ * SMG cyclic rate: about 800 rpm (HK MP5 specification); its bolt does not hold open on an empty magazine.
+ */
 export const ACTION_CYCLE_PROFILES: Readonly<Record<GunAction, ActionCycleProfile>> = {
   ak: {
     rpm: 600,
@@ -42,6 +45,14 @@ export const ACTION_CYCLE_PROFILES: Readonly<Record<GunAction, ActionCycleProfil
     holdOpenOnEmpty: true,
     ejectAt: 0.76,
     ejectDirection: unit([-0.16, 0.16, 0.97]),
+    rearwardSpeedMetresPerSecond: 3.75,
+    dwellSeconds: 0.006,
+  },
+  smg: {
+    rpm: 800,
+    holdOpenOnEmpty: false,
+    ejectAt: 0.7,
+    ejectDirection: unit([0.2, 0.2, 0.96]),
     rearwardSpeedMetresPerSecond: 3.75,
     dwellSeconds: 0.006,
   },
@@ -95,6 +106,8 @@ export interface CycleTimeline {
   readonly unlockSeconds?: number;
   readonly lockSeconds?: number;
   readonly turnAt?: (seconds: number) => number;
+  /** A held hand stops here, rear and turned into the notch, until released; see `advanceCycleClock`. */
+  readonly holdSeconds?: number;
   readonly ejectAt: number;
   readonly ejectDirection: Vec3;
   readonly holdOpenOnEmpty: boolean;
@@ -150,11 +163,34 @@ const handPosition = ({ time, rearwardSeconds, dwellSeconds, mechanicalSeconds, 
   return 0;
 };
 
+/**
+ * The hand turns the handle into the notch and back out inside the rear dwell, so the carrier
+ * stays at the rear throughout and the phases Deadvox reads keep their meaning.
+ */
+const notchTurn = (rearwardSeconds: number, dwellSeconds: number, turnSeconds: number) => {
+  if (!(Number.isFinite(turnSeconds) && turnSeconds > 0 && 2 * turnSeconds < dwellSeconds)) {
+    throw new RangeError(`notch turn of ${turnSeconds} s must be positive and fit twice inside the hand dwell`);
+  }
+  const outStart = rearwardSeconds + dwellSeconds - turnSeconds;
+  return {
+    holdSeconds: rearwardSeconds + turnSeconds,
+    turnAt: (time: number) => {
+      if (time < rearwardSeconds) {
+        return 0;
+      }
+      if (time < outStart) {
+        return minimumJerk((time - rearwardSeconds) / turnSeconds);
+      }
+      return 1 - minimumJerk((time - outStart) / turnSeconds);
+    },
+  };
+};
+
 const buildCycleTimeline = (
   action: GunAction,
   profile: ActionCycleProfile,
   mode: CycleMode,
-  strokeMetres: number,
+  { strokeMetres, notchTurnSeconds }: { readonly strokeMetres: number; readonly notchTurnSeconds?: number | undefined },
 ): CycleTimeline => {
   const spring = springReturn(strokeMetres);
   const rearwardSeconds = mode === 'fire' ? strokeMetres / profile.rearwardSpeedMetresPerSecond : 0.65;
@@ -165,7 +201,13 @@ const buildCycleTimeline = (
   if (mechanicalSeconds > durationSeconds + 1e-9) {
     throw new RangeError(`${action} ${mode} cycle exceeds its declared duration`);
   }
+  const wrap = (seconds: number) => ((seconds % durationSeconds) + durationSeconds) % durationSeconds;
+  const notch =
+    mode === 'hand' && notchTurnSeconds !== undefined
+      ? notchTurn(rearwardSeconds, dwellSeconds, notchTurnSeconds)
+      : undefined;
   return {
+    ...(notch ? { holdSeconds: notch.holdSeconds, turnAt: (seconds: number) => notch.turnAt(wrap(seconds)) } : {}),
     mode,
     durationSeconds,
     rearwardSeconds,
@@ -177,12 +219,34 @@ const buildCycleTimeline = (
     at: (seconds, empty = false) => {
       const time =
         mode === 'hand' || !(empty && profile.holdOpenOnEmpty)
-          ? ((seconds % durationSeconds) + durationSeconds) % durationSeconds
+          ? wrap(seconds)
           : Math.max(0, Math.min(seconds, durationSeconds));
       const phase = { time, rearwardSeconds, dwellSeconds, mechanicalSeconds, spring };
       return mode === 'fire' ? firePosition({ ...phase, empty, profile }) : handPosition(phase);
     },
   };
+};
+
+/**
+ * Advances a cycle clock. While held, the clock stops at the next hold point and stays there;
+ * releasing lets it run on, so the handle turns out of the notch before it goes forward.
+ */
+export const advanceCycleClock = (
+  timeline: CycleTimeline,
+  seconds: number,
+  deltaSeconds: number,
+  held: boolean,
+): number => {
+  const next = seconds + deltaSeconds;
+  if (!(held && timeline.holdSeconds !== undefined && deltaSeconds > 0)) {
+    return next;
+  }
+  const { durationSeconds, holdSeconds } = timeline;
+  const cycles = (seconds - holdSeconds) / durationSeconds;
+  if (Math.abs(cycles - Math.round(cycles)) * durationSeconds < 1e-9) {
+    return seconds;
+  }
+  return Math.min(next, holdSeconds + (Math.floor(cycles) + 1) * durationSeconds);
 };
 
 export interface CycleMotion {
@@ -308,7 +372,14 @@ export const cycleMotion = (
   action: GunAction,
   motion: PartMotion,
   metresPerUnit: number,
-  rpm = ACTION_CYCLE_PROFILES[action].rpm,
+  {
+    rpm = ACTION_CYCLE_PROFILES[action].rpm,
+    notchTurnSeconds,
+  }: {
+    readonly rpm?: number | undefined;
+    /** Present for a hand-only handle held in a notch; the duration comes from the design's content. */
+    readonly notchTurnSeconds?: number | undefined;
+  } = {},
 ): AutomaticCycleMotion => {
   const strokeUnits = length(sub(motion.end, motion.start));
   if (!(Number.isFinite(metresPerUnit) && metresPerUnit > 0 && strokeUnits > 0)) {
@@ -319,8 +390,8 @@ export const cycleMotion = (
   return {
     strokeUnits,
     strokeMetres,
-    fire: buildCycleTimeline(action, profile, 'fire', strokeMetres),
-    hand: buildCycleTimeline(action, profile, 'hand', strokeMetres),
+    fire: buildCycleTimeline(action, profile, 'fire', { strokeMetres }),
+    hand: buildCycleTimeline(action, profile, 'hand', { strokeMetres, notchTurnSeconds }),
     ejectAt: profile.ejectAt,
     ejectDirection: profile.ejectDirection,
     holdOpenOnEmpty: profile.holdOpenOnEmpty,

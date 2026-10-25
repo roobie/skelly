@@ -10,6 +10,7 @@ export interface TerrainBlocks {
   dirt: number;
   rock: number;
   sand: number;
+  water: number;
 }
 
 /** The natural ground's recipe, from site-generation content. All lengths are metres. */
@@ -31,6 +32,8 @@ export interface Surface {
   height: (x: number, z: number, natural: number) => number;
   /** The top block's id, or undefined for the natural one. */
   top: (x: number, z: number) => number | undefined;
+  /** The standing water's top face in blocks, or undefined for none; generateChunk decides which cells it fills. */
+  water?: ((x: number, z: number) => number | undefined) | undefined;
 }
 
 /** Everything terrain generation depends on. */
@@ -44,11 +47,17 @@ export interface Terrain {
   stamp?: ((chunk: Chunk) => void) | undefined;
 }
 
-/** A column's top block heights and any top blocks the surface replaces (-1 keeps the natural one). */
+/**
+ * A column's top block heights, any top blocks the surface replaces (-1 keeps the natural one), and,
+ * when the surface has water, the water's top face (NO_WATER for none).
+ */
 export interface ColumnSurface {
   heights: Int32Array;
   tops: Int32Array;
+  water?: Int32Array | undefined;
 }
+
+const NO_WATER = -0x80_00_00_00;
 
 // Terrain is defined in metres, so every block size gives the same landscape.
 
@@ -106,6 +115,7 @@ const columnHeights = (seed: number, shape: TerrainShape, scale: Scale, cx: numb
 const columnSurface = ({ seed, shape, scale, surface }: Terrain, cx: number, cz: number): ColumnSurface => {
   const heights = columnHeights(seed, shape, scale, cx, cz);
   const tops = new Int32Array(CHUNK * CHUNK).fill(-1);
+  const water = surface?.water ? new Int32Array(CHUNK * CHUNK) : undefined;
   if (surface) {
     for (let lz = 0; lz < CHUNK; lz++) {
       for (let lx = 0; lx < CHUNK; lx++) {
@@ -113,10 +123,13 @@ const columnSurface = ({ seed, shape, scale, surface }: Terrain, cx: number, cz:
         const i = lx + CHUNK * lz;
         heights[i] = surface.height(x, z, heights[i]!);
         tops[i] = surface.top(x, z) ?? -1;
+        if (water) {
+          water[i] = surface.water?.(x, z) ?? NO_WATER;
+        }
       }
     }
   }
-  return { heights, tops };
+  return { heights, tops, water };
 };
 
 /** The block at height y in a column whose top block is at h (both in blocks), unless `top` replaces it. */
@@ -132,7 +145,7 @@ const blockAt = ({ blocks, shape, scale }: Terrain, y: number, h: number, top: n
 
 export const generateChunk = (terrain: Terrain, [cx, cy, cz]: Vec3, column = columnSurface(terrain, cx, cz)): Chunk => {
   const { blocks, shape, scale } = terrain;
-  const { heights, tops } = column;
+  const { heights, tops, water } = column;
   const y0 = cy * CHUNK;
   // Entirely below the dirt layer of every column: all stone, no per-block writes.
   if (y0 + CHUNK - 1 <= Math.min(...heights) - shape.dirtDepthMetres / scale.blockSize) {
@@ -145,6 +158,13 @@ export const generateChunk = (terrain: Terrain, [cx, cy, cz]: Vec3, column = col
       const top = Math.min(h - y0, CHUNK - 1);
       for (let ly = 0; ly <= top; ly++) {
         chunk.set(lx, ly, lz, blockAt(terrain, y0 + ly, h, tops[lx + CHUNK * lz]!));
+      }
+      if (water) {
+        // Water fills h + 1 <= y < level, so a level at the bed's top face leaves the column dry.
+        const surfaceTop = Math.min(water[lx + CHUNK * lz]! - 1 - y0, CHUNK - 1);
+        for (let ly = Math.max(h + 1 - y0, 0); ly <= surfaceTop; ly++) {
+          chunk.set(lx, ly, lz, blocks.water);
+        }
       }
     }
   }

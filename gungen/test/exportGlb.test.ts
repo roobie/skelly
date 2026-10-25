@@ -4,10 +4,13 @@ import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import type { Assembly } from '@skelly/engine/assembly/schema.ts';
 import {
   applyPoint,
+  cross,
+  fromColumns,
   IDENTITY,
   type Mat3,
   mulMM,
   mulMV,
+  normalize,
   rotX,
   rotY,
   rotZ,
@@ -31,6 +34,7 @@ import { gunDomain } from '../src/gun/domain.ts';
 import { ejectionPoint } from '../src/gun/ejection.ts';
 import { eulerXyzDegrees, FILE_FROM_GUNGEN, gripTurn, METRES_PER_UNIT, toFileAxes } from '../src/gun/exportFrame.ts';
 import { createGunModelEntry, exportGunGlb } from '../src/gun/exportGlb.ts';
+import gunVoxel from '../src/gun/gunVoxel.json' with { type: 'json' };
 import { getOptic } from '../src/gun/optics.ts';
 import { GUN_PALETTE, resolveAppearance } from '../src/gun/palette.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
@@ -117,6 +121,8 @@ const actionExportFacts = (name: string) => {
   };
 };
 const sightTargetPartId = (out: ExportedGun, endpoint: Vec3, label: string): string => {
+  // modelPoint rounds to micrometres; matching in U must allow the export's resolution.
+  const endpointResolutionU = 1e-6 / out.resolved.domain.units.metresPerUnit;
   for (const [id, part] of out.resolved.defs) {
     const axis = part.axes.find(({ kind }) => kind === 'sight');
     const transform = out.resolved.placed.get(id);
@@ -128,7 +134,7 @@ const sightTargetPartId = (out: ExportedGun, endpoint: Vec3, label: string): str
     const optic = family === 'sight' ? getOptic(params?.type?.value, params?.mountSection?.value) : undefined;
     const localEye: Vec3 = optic ? [optic.ocularX, optic.opticalAxisY, 0] : axis.origin;
     const eye = applyPoint(transform, localEye);
-    if (Math.hypot(eye[0] - endpoint[0], eye[1] - endpoint[1], eye[2] - endpoint[2]) < 1e-6) {
+    if (Math.hypot(eye[0] - endpoint[0], eye[1] - endpoint[1], eye[2] - endpoint[2]) < endpointResolutionU) {
       return id;
     }
   }
@@ -181,6 +187,87 @@ const glbIndices = (glb: ReadGlb, accessorIndex: number): Uint32Array => {
   return Uint32Array.from({ length: accessor.count }, (_, index) =>
     view.getUint32(bufferView.byteOffset + index * 4, true),
   );
+};
+
+/**
+ * The highest upward face the file draws for `partId` over the x range and across `z`, below `under`, in gun units.
+ * The writer turns no gun axis for these parts, so file and gun coordinates differ only by the unit.
+ */
+const drawnUpTop = (
+  glb: ReadGlb,
+  partId: string,
+  { x: [x0, x1], z, under }: { readonly x: readonly [number, number]; readonly z: number; readonly under: number },
+): number => {
+  let top = Number.NEGATIVE_INFINITY;
+  for (const node of glb.json.nodes.filter(({ extras }) => extras?.part === partId)) {
+    const shift = node.translation ?? [0, 0, 0];
+    for (const primitive of glb.json.meshes[node.mesh!]!.primitives) {
+      const positions = glb.floats(primitive.attributes.POSITION);
+      const indices = glbIndices(glb, primitive.indices!);
+      const point = (index: number) => [0, 1, 2].map((axis) => (positions[index * 3 + axis]! + shift[axis]!) / S);
+      for (let i = 0; i + 2 < indices.length; i += 3) {
+        const [a, b, c] = [0, 1, 2].map((k) => point(indices[i + k]!)) as [number[], number[], number[]];
+        const xs = [a[0]!, b[0]!, c[0]!];
+        const zs = [a[2]!, b[2]!, c[2]!];
+        const upward = (b[2]! - a[2]!) * (c[0]! - a[0]!) - (b[0]! - a[0]!) * (c[2]! - a[2]!) > 0;
+        if (
+          upward &&
+          a[1] === b[1] &&
+          b[1] === c[1] &&
+          a[1]! < under &&
+          Math.min(...xs) < x1 &&
+          Math.max(...xs) > x0 &&
+          Math.min(...zs) <= z &&
+          Math.max(...zs) >= z
+        ) {
+          top = Math.max(top, a[1]!);
+        }
+      }
+    }
+  }
+  if (!Number.isFinite(top)) {
+    throw new Error(`${partId} draws no upward face there`);
+  }
+  return top;
+};
+
+const LINE_HALF_THICKNESS = 0.05;
+
+/** A thin box along the segment from `from` to `to`, turned onto the segment's direction. */
+const segmentBox = (from: Vec3, to: Vec3, halfThickness: number) => {
+  const run = sub(to, from);
+  const along = normalize(run);
+  const side = normalize(cross(along, [0, 1, 0]));
+  const up = cross(side, along);
+  const centre: Vec3 = [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2, (from[2] + to[2]) / 2];
+  return worldBox(
+    { r: fromColumns(along, up, side), t: centre },
+    { center: [0, 0, 0], half: [Math.hypot(...run) / 2, halfThickness, halfThickness] },
+  );
+};
+
+/**
+ * The compact SMG's hood and the post tip its sight line must meet: the tip's edge on the post's rear face. A voxel
+ * file's tip is the highest upward face it draws over the post and under the hood's centre, which leaves the ring out.
+ */
+const compactSmgFrontSight = (out: ExportedGun, drawn: boolean) => {
+  const [barrelId] = Object.entries(out.resolved.assembly.parts).find(([, part]) => part.family === 'barrel')!;
+  const barrel = out.resolved.defs.get(barrelId)!;
+  const barrelAt = out.resolved.placed.get(barrelId)!;
+  const hood = barrel.solids.find(({ id }) => id === 'front-sight-hood');
+  if (hood?.kind !== 'revolved') {
+    throw new Error('compact SMG needs its revolved front-sight hood');
+  }
+  const [postLow, postHigh] = localSolidBounds(barrel.solids.find(({ id }) => id === 'front-sight-post')!);
+  const [x, authoredY, z] = applyPoint(barrelAt, [postLow[0], postHigh[1], (postLow[2] + postHigh[2]) / 2]);
+  const y = drawn
+    ? drawnUpTop(out.read, barrelId, {
+        x: [x, applyPoint(barrelAt, postHigh)[0]],
+        z,
+        under: applyPoint(barrelAt, hood.origin!)[1],
+      })
+    : authoredY;
+  return { barrelAt, hood, postTip: [x, y, z] as Vec3 };
 };
 
 interface PortExtras {
@@ -562,12 +649,16 @@ describe('glb export: deadvox model entry', () => {
     }
   });
 
-  it.each(loadCorpus())('exports sight metadata from valid parts: $label', ({ label, assembly }) => {
+  // Sight solids count too, so a gun that draws sights without a sight axis cannot pass as sightless.
+  it.each(loadCorpus())('exports sight metadata exactly when sight parts exist: $label', ({ label, assembly }) => {
     const result = exportGunGlb(assembly, ASSET, { appearanceProfile: 'ar' });
     if (!result.ok) {
       throw new Error(`${label}: export failed: ${JSON.stringify(result.error)}`);
     }
-    expect(result.modelEntry.gun.sight).toBeDefined();
+    const sighted = [...resolve(assembly, gunDomain).defs.values()].some(
+      ({ axes, solids }) => axes.some(({ kind }) => kind === 'sight') || solids.some(({ id }) => id.includes('sight')),
+    );
+    expect(result.modelEntry.gun.sight !== undefined).toBe(sighted);
   });
 
   it('exports optic ocular diameter and eye relief with the sight line', () => {
@@ -635,6 +726,60 @@ describe('glb export: deadvox model entry', () => {
     expect(out.modelEntry.gun.sight.kind).toBe('iron');
   });
 
+  // Voxels move the drum's hole and the post's top, so the file's line must meet the post the file draws.
+  it.each([
+    { mode: 'smooth', grains: undefined },
+    { mode: 'voxel', grains: { voxelGrain: gunVoxel.grain, voxelDetailGrain: gunVoxel.detailGrain } },
+  ])(
+    'sights the compact SMG through its drum aperture onto the post tip, clear through the hood: $mode',
+    ({ grains }) => {
+      const assembly = design('compact-smg');
+      const result = exportGunGlb(assembly, ASSET, { appearanceProfile: 'ar' }, grains);
+      if (!result.ok) {
+        throw new Error(`export failed: ${JSON.stringify(result.error)}`);
+      }
+      const out = { ...result, read: readGlb(result.glb), resolved: resolve(assembly, gunDomain) };
+      const { sight } = out.modelEntry.gun;
+      if (!sight) {
+        throw new Error('compact SMG needs its drum and post in the exported sight data');
+      }
+      expect(sight.kind).toBe('iron');
+      const eye = sight.eye.map((value) => value / S) as unknown as Vec3;
+      const [receiverId] = Object.entries(out.resolved.assembly.parts).find(([, part]) => part.family === 'receiver')!;
+      const receiverAxis = out.resolved.defs.get(receiverId)!.axes.find(({ kind }) => kind === 'sight')!;
+      const authoredEye = applyPoint(out.resolved.placed.get(receiverId)!, receiverAxis.origin);
+      // The voxel eye drops into the drawn hole, so only its station and the bore plane stay authored.
+      near([eye[0], eye[2]], [authoredEye[0], authoredEye[2]]);
+      const { barrelAt, hood, postTip } = compactSmgFrontSight(out, grains !== undefined);
+      const along = (x: number): Vec3 => {
+        const t = (x - eye[0]) / sight.direction[0];
+        return [x, eye[1] + sight.direction[1] * t, eye[2] + sight.direction[2] * t];
+      };
+      near(along(postTip[0]).slice(1), postTip.slice(1), grains ? 3 : 6);
+
+      // The line from the eye to the post passes every convex solid, the drum's walls among them. The thin box lies
+      // along the line and stops its own half-thickness short of the post, so its end corners stay off the target.
+      const line = segmentBox(eye, along(postTip[0] - LINE_HALF_THICKNESS), LINE_HALF_THICKNESS);
+      for (const [id, part] of out.resolved.defs) {
+        const placed = out.resolved.placed.get(id)!;
+        for (const solid of part.solids.filter(({ kind }) => kind !== 'revolved')) {
+          expect(
+            penetrationWorld(line, worldSolid(placed, solid)),
+            `${id}.${solid.id} blocks the sight line`,
+          ).toBeLessThanOrEqual(0);
+        }
+      }
+      // A ring's convex hull would fill its bore, so the hood is checked by its inner radius instead.
+      const innerRadius = Math.min(...hood.profile.map(([, radius]) => radius));
+      const hoodX = hood.profile.map(([x]) => x);
+      for (const x of [Math.min(...hoodX), Math.max(...hoodX)]) {
+        const centre = applyPoint(barrelAt, [x, hood.origin![1], hood.origin![2]]);
+        const point = along(centre[0]);
+        expect(Math.hypot(point[1] - centre[1], point[2] - centre[2])).toBeLessThan(innerRadius);
+      }
+    },
+  );
+
   it('keeps the AK sight line clear of other solids', () => {
     expectSightLineClear(exported(design('archetype-ak')), 'design archetype-ak.json');
   });
@@ -642,11 +787,16 @@ describe('glb export: deadvox model entry', () => {
   // This exhaustive corpus check exceeds the default timeout under load. The authored AK is the default sentinel because its sight line passes closest to another solid.
   sweepGroup('published sight-line clearance corpus', () => {
     it('keeps every exported sight line clear of other solids', () => {
-      const corpus = loadCorpus();
-      expect(corpus.length).toBeGreaterThan(0);
-      for (const { label, assembly } of corpus) {
-        expectSightLineClear(exported(assembly), label);
+      // Sightless designs have no line to check; the sight-metadata corpus test ties metadata to sight parts.
+      let checked = 0;
+      for (const { label, assembly } of loadCorpus()) {
+        const out = exported(assembly);
+        if (out.modelEntry.gun.sight) {
+          expectSightLineClear(out, label);
+          checked += 1;
+        }
       }
+      expect(checked).toBeGreaterThan(0);
     });
   });
 

@@ -4,7 +4,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { generateChunk, generateColumn, terrainHeight, terrainHeightMetres } from '../src/core/worldgen.ts';
 import { baseTerrainShape } from './baseRegistry.ts';
 
-const blocks = { air: 0, grass: 1, dirt: 2, rock: 3, sand: 4 };
+const blocks = { air: 0, grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 };
 const shape = baseTerrainShape();
 const metre = makeScale(1);
 const half = makeScale(0.5);

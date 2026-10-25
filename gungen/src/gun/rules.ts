@@ -577,6 +577,18 @@ const opticSupportError = (
   return undefined;
 };
 
+const opticMountSupportError = (
+  r: Resolved,
+  sight: string,
+  host: PortRef,
+  optic: ReturnType<typeof getOptic>,
+): string | undefined => {
+  const feed = r.params.get(host.part)?.feed?.value;
+  return feed !== undefined && optic.excludedHostFeeds?.includes(feed)
+    ? `mount excludes ${feed}-fed hosts`
+    : opticSupportError(r, sight, host, optic.mount.contactLengthU);
+};
+
 const checkOpticMountFit = (r: Resolved, focusSight?: string): Issue[] => {
   const issues: Issue[] = [];
   for (const [sight] of placedOptics(r).filter(([part]) => focusSight === undefined || part === focusSight)) {
@@ -592,7 +604,7 @@ const checkOpticMountFit = (r: Resolved, focusSight?: string): Issue[] => {
     const { port } = host;
     const span = port.slots ? (port.slots.count - 1) * port.slots.pitch : 0;
     const slot = connection.conn.slot ?? 0;
-    const supportError = opticSupportError(r, sight, host, optic.mount.contactLengthU);
+    const supportError = opticMountSupportError(r, sight, host, optic);
     if (!mountCanAccept(port, optic.mount, slot) || supportError) {
       issues.push({
         rule: 'optic-mount-fit',

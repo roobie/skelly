@@ -33,6 +33,7 @@ export function skyWorldFixture(boxes: SkyBounds[] = [fixtureBox]) {
         blocks: [
           { id: 'fixture_wall', name: 'Fixture wall', color: '#888888', solid: true },
           { id: 'fixture_leaves', name: 'Fixture leaves', color: '#228844', solid: false, opaque: true },
+          { id: 'fixture_water', name: 'Fixture water', color: '#3b6e8f', solid: false, opaque: false, liquid: true },
         ],
         siteGeneration: [
           {
@@ -55,7 +56,13 @@ export function skyWorldFixture(boxes: SkyBounds[] = [fixtureBox]) {
               treeMix: ['broadleaf'],
             },
             palette: {
-              terrain: { grass: 'fixture_wall', dirt: 'fixture_wall', rock: 'fixture_wall', sand: 'fixture_wall' },
+              terrain: {
+                grass: 'fixture_wall',
+                dirt: 'fixture_wall',
+                rock: 'fixture_wall',
+                sand: 'fixture_wall',
+                water: 'fixture_water',
+              },
               paving: 'fixture_wall',
               trees: { trunk: 'fixture_wall', branch: 'fixture_wall', leaves: 'fixture_leaves' },
               leafLitter: 'fixture_leaves',

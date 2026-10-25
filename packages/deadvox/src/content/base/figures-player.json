@@ -58,6 +58,10 @@
         }
       },
       "body": {
+        "head": {
+          "part": "head",
+          "pivot": "head"
+        },
         "joints": {
           "leftHip": "hip_left",
           "leftShoulder": "shoulder_left",
@@ -72,6 +76,16 @@
       },
       "hipHeightMetres": 0.81999999999999995,
       "id": "player",
+      "legRig": {
+        "foot": {
+          "part": "foot",
+          "pivot": "ankle"
+        },
+        "shin": {
+          "part": "shin",
+          "pivot": "knee"
+        }
+      },
       "limbs": {
         "leftArm": {
           "joint": "shoulder",
@@ -90,15 +104,29 @@
           "model": "player_leg"
         }
       },
+      "mannequinPlacement": {
+        "aheadMetres": 1.2,
+        "asideMetres": 1.2
+      },
       "stancePoses": {
         "blendRealSeconds": 0.20000000000000001,
         "crouching": {
-          "hipDropMetres": 0.46999999999999997,
-          "legsForwardDegrees": 70,
-          "torsoForwardDegrees": 35
+          "ankleDegrees": 55,
+          "armsForwardDegrees": 70,
+          "elbowBendDegrees": 115,
+          "headUpDegrees": 45,
+          "hipDropMetres": 0.374,
+          "kneeBendDegrees": 120,
+          "legsForwardDegrees": 65,
+          "torsoForwardDegrees": 50
         },
         "prone": {
+          "ankleDegrees": 0,
+          "armsForwardDegrees": 0,
+          "elbowBendDegrees": 0,
+          "headUpDegrees": 0,
           "hipDropMetres": 0.47999999999999998,
+          "kneeBendDegrees": 0,
           "legsForwardDegrees": -90,
           "torsoForwardDegrees": 90
         }
