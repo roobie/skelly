@@ -7,8 +7,21 @@ local bays = [
   layouts: [{
     id: 'testHouse', demo: true,
     lootContext: { usage: ['Residential'], tier: 'Tier1' },
-    bounds: { x0: -23, z0: -13, x1: 17, z1: 6 },
-    ground: 20.5, terrain: [],
+    weatheringProfile: 'proper',
+    bounds: { x0: -240, z0: -80, x1: 270, z1: 340 },
+    ground: 20.5,
+    terrain: [
+      { kind: 'hill', centre: [-48, -25], radii: [30, 24], rise: 5 },
+      { kind: 'hill', centre: [40, -12], radii: [25, 24], rise: 3 },
+      { kind: 'hill', centre: [-60, 38], radii: [45, 32], rise: 5 },
+      { kind: 'basin', centre: [30, 115], radii: [190, 95], depth: 9 },
+      { kind: 'ridge', points: [[-200, 210], [-90, 235], [60, 230], [225, 205]], width: 70, rise: 26 },
+      { kind: 'hill', centre: [115, 235], radii: [65, 48], rise: 36 },
+    ],
+    water: [{
+      level: 19.5, shore: 2,
+      polygon: [[-165, 115], [-120, 35], [25, 20], [165, 35], [225, 115], [165, 195], [25, 215], [-120, 195]],
+    }],
     buildings: [
       { template: 'test_house_home', position: [4, 20.5, -4.5], rotation: 0 },
       { template: 'test_house_shed', position: [-5, 20.5, -7], rotation: 0 },
@@ -47,12 +60,17 @@ local bays = [
         },
       ],
       focusDistance: 1,
-      // South of the lot, clear of the range and beyond the startup ring; debug only (`docs/test-house.md`, "Showroom").
-      catalogue: { position: [-23, 21, 80], width: 50, spacing: 2, floor: 'concrete', blend: 4 },
+      // West of the haven, clear of the lake and beyond the startup ring; debug only (`docs/test-house.md`, "Showroom").
+      catalogue: { position: [-160, 21, -60], width: 50, spacing: 2, floor: 'concrete', blend: 4 },
     },
     bays: bays,
     vehicles: [{ blueprint: 'hatchback', placementKey: 'testHouse.parked-hatchback' } + bays[0]],
     repairStock: 'test_house_garage',
-    shamblers: [], woodlands: [], tracks: [],
+    shamblers: [],
+    woodlands: [{ polygon: [[-85, -65], [65, -65], [60, -26], [10, -18], [-40, -18], [-85, -35]], density: 0.95 }],
+    tracks: [
+      { points: [[-4, -0.5], [3.5, -0.5]], width: 1, surface: 'dressed_stone' },
+      { points: [[6, 6], [6, 12], [12, 25]], width: 1, surface: 'dressed_stone' },
+    ],
   }],
 }

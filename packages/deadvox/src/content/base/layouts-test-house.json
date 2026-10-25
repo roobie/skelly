@@ -12,10 +12,10 @@
         }
       ],
       "bounds": {
-        "x0": -23,
-        "x1": 17,
-        "z0": -13,
-        "z1": 6
+        "x0": -240,
+        "x1": 270,
+        "z0": -80,
+        "z1": 340
       },
       "buildings": [
         {
@@ -97,7 +97,7 @@
         "catalogue": {
           "blend": 4,
           "floor": "concrete",
-          "position": [-23, 21, 80],
+          "position": [-160, 21, -60],
           "spacing": 2,
           "width": 50
         },
@@ -160,8 +160,56 @@
         ],
         "spacing": 1
       },
-      "terrain": [],
-      "tracks": [],
+      "terrain": [
+        {
+          "centre": [-48, -25],
+          "kind": "hill",
+          "radii": [30, 24],
+          "rise": 5
+        },
+        {
+          "centre": [40, -12],
+          "kind": "hill",
+          "radii": [25, 24],
+          "rise": 3
+        },
+        {
+          "centre": [-60, 38],
+          "kind": "hill",
+          "radii": [45, 32],
+          "rise": 5
+        },
+        {
+          "centre": [30, 115],
+          "depth": 9,
+          "kind": "basin",
+          "radii": [190, 95]
+        },
+        {
+          "kind": "ridge",
+          "points": [[-200, 210], [-90, 235], [60, 230], [225, 205]],
+          "rise": 26,
+          "width": 70
+        },
+        {
+          "centre": [115, 235],
+          "kind": "hill",
+          "radii": [65, 48],
+          "rise": 36
+        }
+      ],
+      "tracks": [
+        {
+          "points": [[-4, -0.5], [3.5, -0.5]],
+          "surface": "dressed_stone",
+          "width": 1
+        },
+        {
+          "points": [[6, 6], [6, 12], [12, 25]],
+          "surface": "dressed_stone",
+          "width": 1
+        }
+      ],
       "vehicles": [
         {
           "blueprint": "hatchback",
@@ -170,7 +218,20 @@
           "position": [-19, 21, -7]
         }
       ],
-      "woodlands": []
+      "water": [
+        {
+          "level": 19.5,
+          "polygon": [[-165, 115], [-120, 35], [25, 20], [165, 35], [225, 115], [165, 195], [25, 215], [-120, 195]],
+          "shore": 2
+        }
+      ],
+      "weatheringProfile": "proper",
+      "woodlands": [
+        {
+          "density": 0.94999999999999996,
+          "polygon": [[-85, -65], [65, -65], [60, -26], [10, -18], [-40, -18], [-85, -35]]
+        }
+      ]
     }
   ]
 }
