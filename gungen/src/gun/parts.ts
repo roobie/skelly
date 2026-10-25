@@ -211,6 +211,8 @@ const keepOut = (
 };
 /** Tag for parts the firing hand can hold (see rules.ts). */
 export const FIRING_GRIP = 'firing-grip';
+/** A front post built into another part, which a built-in rear sight's drawn line aims at; see `exportGlb.ts`. */
+export const BUILT_IN_FRONT_POST = 'front-sight-post';
 
 // Standard handguards reach 65% of the exposed barrel, and the gas station clears their end by 10%.
 const HANDGUARD_REACH = { barrelFraction: 0.65 } as const;
@@ -3475,7 +3477,7 @@ const compactSmgBarrelDetails = (seatX: number): Solid[] => {
     box('front-sight-block', block.x, block.y, block.halfWidthU),
     box('front-sight-tower', tower.x, tower.y, tower.halfWidthU),
     // The sight line runs parallel to the bore, so the post's tip stands at the drum aperture's height.
-    box('front-sight-post', post.x, [post.baseY, COMPACT_SMG_PROPORTIONS.rearSight.aperture.centreY], post.halfWidthU),
+    box(BUILT_IN_FRONT_POST, post.x, [post.baseY, COMPACT_SMG_PROPORTIONS.rearSight.aperture.centreY], post.halfWidthU),
     {
       id: 'front-sight-hood',
       kind: 'revolved',
