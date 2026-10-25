@@ -1256,9 +1256,9 @@ faces and which way its top points. The engine turns the item from those facts, 
 no numbers tuned to the arm and later changes to arm size, pose or animation keep
 screens visible; arm animation must keep the screen's line of sight free. Radios
 and GPS units reuse the rule unchanged, a watch is the same rule with the wrist as
-the back, and handedness stays mirroring of placement only. The forearm meets a
-screen-holding palm at the palm's back face rather than its centre, so no part of
-the arm reaches past the palm into the item or its screen. Validation rejects a
+the back, and handedness stays mirroring of placement only. The hand's grip point
+is the face of its palm, so the item's back sits on the palm and no part of the
+arm reaches past the palm into the item or its screen. Validation rejects a
 held-display item whose model has no screen. See `src/render/heldDisplay.ts`,
 `presentHeldDisplay`, and `packages/thing-core/src/schema.ts`, `NeutralModelSchema`.
 
@@ -1516,10 +1516,11 @@ hold up from every side, and a body built only for first person is not enough.
 Worn items carry their own part model that covers or replaces the body part
 under it, so gear shows on the body without the body knowing about gear.
 
-The first-person arms are rebuilt from the same authored hand and sleeve parts
-as the body, so both views share one look. In first person the view draws both
-arms, gripping or as fists, so the body's own arms hide there; otherwise an
-empty hand would show two arms.
+The first-person arms are the figure row's own arm models, bent through the row's
+arm rig to reach each grip (`DESIGN.md`, "Models"), so the arms the player sees
+and the arms others see never differ in look or proportion. In first person the
+view draws both arms, gripping or as fists, so the body's own arms hide there;
+otherwise an empty hand would show two arms.
 
 Third person remains a debug inspection aid, not a player-facing camera.
 `PlayerMeshes` in `src/render/playerFigure.ts` draws the body from the `player`
@@ -2556,20 +2557,52 @@ and no extra class is left to maintain. Retuning the item grain moves the figure
 with the tools, which is accepted.
 
 The figure is a content row, so a mod or a second character ships its own row
-and part models without a code change. Each authored part names its model, the
-box parts it draws in place of, and the model anchor each of its joints sits at;
-the row sets the hip height the parts stand at. A box part that no authored part
-names still draws, so the body is authored a part at a time and stays whole
-throughout; the boxes go when the last part lands. Box limbs hang from the
-authored joints, so they meet the authored parts. Code poses every part about
-those joints. Each box part belongs to one limb (the torso with the head, an
-arm, a leg with its foot), and an authored part draws parts of one limb only,
-because a rigid model moves as one piece. It then strides, leans and hides as
-that limb's boxes do, so a new limb model with an accepted part selection needs
-no renderer change. See `src/core/schema.ts`, `FIGURE_BOX_LIMBS`. Hit regions keep the box layout, because the body simulation, not
-the drawn shape, decides where a hit lands, so gore stays put while parts change.
-See `src/core/schema.ts`, `FigureSchema`, and `src/render/playerFigure.ts`,
-`playerFigureLayout`.
+and part models without a code change. The row names the body and limb models
+and the anchors they join at, and holds every value that shapes the drawn
+figure: hip height, walking swing, the arm rig and where the view hangs the
+arms. One arm model serves both views: the world body swings it whole, and the
+first-person view bends it at its authored joints to reach the held grip, so
+the two views never diverge in look or proportion and the arm bends where a
+rigid model could not. The view's shoulder is a row value, not a renderer
+constant, because a figure with other proportions needs other shoulders. Every
+part is an authored model, with no box stand-in, so a row that names a missing
+model, anchor or rig part, or puts the right view shoulder left of or above the
+eye, fails validation instead of drawing a partial body. Hit regions keep a box layout,
+because the body simulation, not the drawn shape, decides where a hit lands, so
+gore stays put while parts change. See `src/core/schema.ts`, `FigureSchema`,
+`src/render/armRig.ts`, `buildArmRig`, and `src/render/playerFigure.ts`,
+`playerFigureLayout` and `PLAYER_REGION_BOXES`.
+
+A long gun is held like a rifle, and the hold is authored on the gun's model,
+not in the renderer: the model says where its butt seats in the shoulder and
+where and how each hand takes it. The firing hand wraps the pistol grip when the
+gun has one, and otherwise the stock wrist, fingers under the wrist and thumb over
+it, because a pistol-grip pose on a pump gun or a hunting rifle closes on nothing
+and looks wrong. The gungen export marks the kind: a grip part means a pistol grip
+and a stock part without one means a stock wrist, and a long gun that exports
+neither fails to compile, because a guessed hold would close on nothing and hide
+the missing part. The support hand cups the forend from below, the bore running
+across the palm from its heel to the gap between thumb and index, the fingers
+curling up the gun's far side and the thumb lying along the near side, because a
+support hand on the side of the forend reads as resting on top of the barrel
+instead of carrying the gun from under it. The view keeps the butt in its seat and
+lowers and raises the gun by turning it about the butt, so the stock stays
+shouldered at every ready level and both arms reach the gun from the shoulder
+instead of the gun floating in front of the eye. A gun that turns about its
+butt swings its muzzle further than one that only drops, so the lowered pitch
+is set so the lowered gun stays inside the player's view. Both holds are
+authored for a right-handed hold and mirrored together across the gun for a
+left-handed one: the support hand is the other hand, but it keeps the gun's
+side, so a hold is authored once. The hold lives in content because a new gun,
+a mod gun or a retuned hold must not need a renderer change, which is the
+content pillar in `PILLARS.md`, "Content forward compatibility", and because
+one hold formula could not fit a pump gun and a pistol-grip rifle alike. A
+two-handed firearm without an authored hold, a seat left of the eye or a palm
+not square to its fingers fails validation rather than drawing a hand through
+the stock. A one-handed gun keeps the grip frame it had. See
+`src/content/base/long-gun-hands.libsonnet`, `firingHold`, `src/core/schema.ts`,
+`HandsModelSchema`, `src/core/heldPose.ts`, `heldHoldFrame`, and
+`src/core/content.ts`, `checkHeldHands`.
 
 Many animations are expected over time, so a pose is data that names a joint and an
 angle, and code-posed motion such as arm swing and idle breath is one clip among

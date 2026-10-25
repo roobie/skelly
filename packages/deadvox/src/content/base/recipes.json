@@ -585,7 +585,7 @@
             "landingLiftMetres": 0.0060000000000000001,
             "speedMetresPerSimSecond": 3.5
           },
-          "loweredPitchRadians": 0.55000000000000004,
+          "loweredPitchRadians": 0.29999999999999999,
           "rackFactorFloor": 0.16,
           "rackFactorHalfLifeLevels": 3,
           "raiseHalfLifeLevels": 5,

@@ -11,6 +11,8 @@ import {
   mainOverlayPath,
   mainOverlaySources,
   mainSourceOverlays,
+  overlayBoundaryGaps,
+  paletteFreeFigure,
   removedExports,
   removedModuleExports,
   workspaceDirectory,
@@ -25,6 +27,8 @@ it('main overlays keep play, view and their presentation constructor contracts o
   assert.ok(mainSourceOverlays.includes('game/play.ts'));
   assert.ok(mainSourceOverlays.includes('render/playView.ts'));
   assert.ok(mainSourceOverlays.includes('render/playerFigure.ts'));
+  assert.ok(mainSourceOverlays.includes('render/hands.ts'));
+  assert.ok(mainSourceOverlays.includes('render/heldDisplay.ts'));
   assert.ok(mainSourceOverlays.includes('render/acidEffects.ts'));
   assert.ok(mainSourceOverlays.includes('render/gore.ts'));
   assert.ok(mainSourceOverlays.includes('render/mobActors.ts'));
@@ -78,6 +82,50 @@ const dropped = () => 2;`;
   assert.deepEqual(removedExports(base, branch).sort(), ['dropped', 'droppedFn', 'renamed']);
   assert.deepEqual(removedExports(branch, base), []);
 });
+
+it('branch modules beside the overlays are refused a name the overlaid base copy lacks, until the overlay takes them too', () => {
+  const base = new Map([['render/figure.ts', 'export const SHOULDER = 1;\nexport interface Pose {}\n']]);
+  const branch = new Map([
+    ['render/figure.ts', 'export const SHOULDER = 1;\nexport const shoulderOf = () => 1;\n'],
+    [
+      'render/hands.ts',
+      "import {\n  SHOULDER,\n  shoulderOf as shoulder,\n} from './figure.ts';\nimport type { Pose } from './figure.ts';\n",
+    ],
+    [
+      'game/play.ts',
+      "import './style.css';\nimport { type Pose, SHOULDER } from '../render/figure.ts';\nimport { Group } from 'three';\n",
+    ],
+  ]);
+  assert.deepEqual(overlayBoundaryGaps(base, branch), [
+    { importer: 'render/hands.ts', module: 'render/figure.ts', names: ['shoulderOf'] },
+  ]);
+  base.set('render/hands.ts', "import { SHOULDER } from './figure.ts';\n");
+  assert.deepEqual(overlayBoundaryGaps(base, branch), []);
+});
+
+it('main figure sources take a fixed palette when the branch row has none, and a palette-free figure is left alone', () => {
+  const source = `const PLAYER_COLORS: Readonly<Record<Part, keyof FigureDef['palette']>> = {};
+export const createFirstPersonArm = (palette: FigureDef['palette'], side: HandSide, grip: Vec3): Group => {
+  const shirt = palette.shirt;
+};
+class PlayerMeshes {
+  constructor(figure: FigureDef) {
+    const { palette } = figure;
+    use(palette.skin);
+  }
+}`;
+  const adapted = paletteFreeFigure(source);
+  assert.ok(!adapted.includes('const { palette } = figure;'));
+  assert.match(adapted, ROW_PALETTE_FALLBACK);
+  assert.match(adapted, ARM_PALETTE_FALLBACK);
+  const free = 'export class PlayerMeshes {}';
+  assert.equal(paletteFreeFigure(free), free);
+  assert.throws(() => paletteFreeFigure("type P = FigureDef['palette'];"), UNEXPECTED_PALETTE_SHAPE);
+});
+
+const ROW_PALETTE_FALLBACK = /const palette = figure\.palette \?\? \{/;
+const ARM_PALETTE_FALLBACK = /given: FigureDef\['palette'\] \| undefined[^\n]*\n {2}const palette = given \?\? \{/;
+const UNEXPECTED_PALETTE_SHAPE = /update paletteFreeFigure/;
 
 const MISSING_WORKSPACE = /No workspace package named missing/;
 
