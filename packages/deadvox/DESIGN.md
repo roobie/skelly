@@ -1529,7 +1529,7 @@ figure row (`DESIGN.md`, "Models"); the authored parts are thing tool rows in
 `src/render/avatarStudy.ts` stands a model beside the body for comparison.
 `src/render/avatarMannequin.ts`, `createAvatarMannequin` stands a second, inert copy of the
 body, drawn by the same `PlayerMeshes`, in every pose the figure row defines (`avatarPoses`
-in `src/render/playerFigure.ts`), so BR can judge a pose from outside instead of only in
+in the same file), so BR can judge a pose from outside instead of only in
 first person. It is debug-only, and its controls (pose, relocate) fill their own debug-panel
 group, present only while a mannequin exists, because BR wants mannequins driven from
 one section of their own and possibly several later; the rows are the `debug.mannequin-`

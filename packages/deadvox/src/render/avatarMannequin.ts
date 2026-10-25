@@ -5,11 +5,28 @@ import { Group, type Object3D } from 'three';
 import type { FigureDef, ModelDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Body } from '../core/physics.ts';
+import type { PlayerStance } from '../core/playerStance.ts';
 import type { ModelLibrary } from './models.ts';
-import { type AvatarPose, avatarPoses, type PlayerFigurePose, PlayerMeshes } from './playerFigure.ts';
+import { type PlayerFigurePose, PlayerMeshes } from './playerFigure.ts';
 
 /** Radians of gait phase per real second while the mannequin walks. */
 const GAIT_RATE = 6;
+
+/** One way the world body can be drawn: a stance, standing still or walking. */
+export interface AvatarPose {
+  name: string;
+  stance: PlayerStance;
+  moving: boolean;
+}
+
+/** Every pose the figure row defines: standing and each stance it poses, each still and walking. */
+export const avatarPoses = (figure: FigureDef): AvatarPose[] => {
+  const posed = Object.keys(figure.stancePoses).filter((key) => key !== 'blendRealSeconds') as PlayerStance[];
+  return (['standing', ...posed] as PlayerStance[]).flatMap((stance) => [
+    { name: stance, stance, moving: false },
+    { name: `${stance}-walking`, stance, moving: true },
+  ]);
+};
 
 export interface MannequinFigure {
   debug: boolean;
