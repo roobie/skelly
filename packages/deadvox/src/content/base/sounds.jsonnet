@@ -36,11 +36,11 @@ local voiceVariants = {
   hurt: numbered('shambler-hurt', [1]) + numbered('shambler-hit', [5, 6, 7]),
 };
 local voiceIntervals = { idle: 0.1, alert: 0.25, attack: 0.25, hurt: 0.08 };
-local zombieVoices(type, descriptions, debugHint, tuning) = [
+local zombieVoices(type, descriptions, debugHint, tuning, scramble={}) = [
   sound(
     type + '_' + action, descriptions[action], voiceVariants[action],
     tuning[action].gain, tuning[action].pitch, tuning[action].gainJitter, voiceIntervals[action],
-  ) + { debugHint: debugHint }
+  ) + { debugHint: debugHint } + scramble
   for action in ['idle', 'alert', 'attack', 'hurt']
 ];
 local spawnType(type) = "?debug=1: Use the debug panel's %s action to spawn %ss nearby." % [type, type];
@@ -193,6 +193,13 @@ local shellInsert = numbered('shotgun-insert', [1, 2]);
     attack: { gain: 0.7, pitch: [0.65, 0.75], gainJitter: [0.9, 1.12] },
     hurt: { gain: 0.72, pitch: [0.65, 0.75], gainJitter: [0.9, 1.12] },
   })
+  // The acid zombie's ring-modulated, raised voice sets it apart by ear from every other zombie.
+  + zombieVoices('acid_zombie', zombieEvents('An acid zombie'), spawnType('acid zombie'), {
+    idle: { gain: 0.45, pitch: [1.08, 1.16], gainJitter: [0.9, 1.1] },
+    alert: { gain: 0.72, pitch: [1.06, 1.14], gainJitter: [0.9, 1.12] },
+    attack: { gain: 0.8, pitch: [1.06, 1.14], gainJitter: [0.9, 1.12] },
+    hurt: { gain: 0.8, pitch: [1.06, 1.14], gainJitter: [0.9, 1.12] },
+  }, { ringMod: { frequencyHz: 70, depth: 0.7 } })
   + [
     sound(
       'lock_pry', 'Strike a locked door with a crowbar to force its padlock.',

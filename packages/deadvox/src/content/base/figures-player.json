@@ -1,25 +1,95 @@
 {
   "figures": [
     {
+      "armRig": {
+        "fingers": {
+          "part": "fingers",
+          "pivot": "knuckles"
+        },
+        "fore": {
+          "part": "fore",
+          "pivot": "elbow"
+        },
+        "grip": "grip",
+        "hand": {
+          "part": "palm",
+          "pivot": "wrist"
+        },
+        "handPoses": {
+          "fist": {
+            "fingersDegrees": 95,
+            "thumbAcrossDegrees": 60,
+            "thumbInDegrees": 45
+          },
+          "forend": {
+            "fingersDegrees": 90,
+            "thumbAcrossDegrees": 55,
+            "thumbInDegrees": 30
+          },
+          "holding": {
+            "fingersDegrees": 80,
+            "thumbAcrossDegrees": 50,
+            "thumbInDegrees": 30
+          },
+          "open": {
+            "fingersDegrees": 10,
+            "thumbAcrossDegrees": 10,
+            "thumbInDegrees": 0
+          },
+          "pistolGrip": {
+            "fingersDegrees": 85,
+            "thumbAcrossDegrees": 70,
+            "thumbInDegrees": 35
+          },
+          "stockWrist": {
+            "fingersDegrees": 90,
+            "thumbAcrossDegrees": 65,
+            "thumbInDegrees": 35
+          }
+        },
+        "shoulderFromEye": [0.29999999999999999, -0.55000000000000004, 0.050000000000000003],
+        "thumb": {
+          "part": "thumb",
+          "pivot": "thumb_root"
+        },
+        "upper": {
+          "part": "upper",
+          "pivot": "shoulder"
+        }
+      },
+      "body": {
+        "joints": {
+          "leftHip": "hip_left",
+          "leftShoulder": "shoulder_left",
+          "rightHip": "hip_right",
+          "rightShoulder": "shoulder_right"
+        },
+        "model": "player_bust"
+      },
+      "gait": {
+        "armSwingDegrees": 10,
+        "legSwingDegrees": 12.6
+      },
       "hipHeightMetres": 0.81999999999999995,
       "id": "player",
-      "palette": {
-        "shirt": "#52677d",
-        "skin": "#c58f70",
-        "trousers": "#4a4b55"
-      },
-      "parts": [
-        {
-          "draws": ["body", "head"],
-          "joints": {
-            "leftHip": "hip_left",
-            "leftShoulder": "shoulder_left",
-            "rightHip": "hip_right",
-            "rightShoulder": "shoulder_right"
-          },
-          "model": "player_bust"
+      "limbs": {
+        "leftArm": {
+          "joint": "shoulder",
+          "model": "player_arm"
+        },
+        "leftLeg": {
+          "joint": "hip",
+          "model": "player_leg"
+        },
+        "rightArm": {
+          "joint": "shoulder",
+          "model": "player_arm"
+        },
+        "rightLeg": {
+          "joint": "hip",
+          "model": "player_leg"
         }
-      ],
+      },
       "stancePoses": {
         "blendRealSeconds": 0.20000000000000001,
         "crouching": {

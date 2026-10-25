@@ -3,7 +3,7 @@ import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { magazineSpec } from '../core/magazine.ts';
 
-const LOADOUTS = ['ar', 'ak', 'pump', 'magazine', 'grenade', 'revolver', 'revolver-open'] as const;
+const LOADOUTS = ['ar', 'ak', 'pump', 'hunting', 'magazine', 'grenade', 'revolver', 'revolver-open'] as const;
 type LoadoutChoice = (typeof LOADOUTS)[number];
 const isLoadoutChoice = (choice: string | null): choice is LoadoutChoice =>
   (LOADOUTS as readonly (string | null)[]).includes(choice);
@@ -43,6 +43,8 @@ export const equipDebugLoadout = (
     equipRevolver(inventory, backpack, choice === 'revolver-open');
   } else if (choice === 'pump') {
     equipPump(inventory, backpack);
+  } else if (choice === 'hunting') {
+    equipHuntingRifle(inventory, backpack);
   } else if (choice === 'magazine') {
     equipEmptyMagazine(inventory, backpack);
   } else if (choice === 'grenade') {
@@ -132,6 +134,25 @@ const equipPump = (inventory: Inventory, backpack: Item): void => {
     )
   ) {
     throw new Error('Could not equip pump preview loadout');
+  }
+};
+
+/** The empty hunting rifle in hand; a sealed box and a stack of loose rounds of its cartridge packed, to load now. */
+const equipHuntingRifle = (inventory: Inventory, backpack: Item): void => {
+  const box = inventory.create('cartridge_box_308_h_winchester');
+  const round = defOf(inventory.registry, box.type).unpack!.item;
+  const pocket = { kind: 'pocket', owner: backpack, pocket: 0 } as const;
+  if (
+    !(
+      inventory.add(inventory.create('rifle_hunting'), {
+        kind: 'hand',
+        side: dominantSide(inventory.character),
+      }) &&
+      inventory.add(box, pocket) &&
+      inventory.add(inventory.create(round, inventory.registry.items.get(round)?.stack ?? 1), pocket)
+    )
+  ) {
+    throw new Error('Could not equip hunting rifle preview loadout');
   }
 };
 

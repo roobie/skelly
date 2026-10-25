@@ -420,16 +420,14 @@ try {
           requestAnimationFrame(() =>
             requestAnimationFrame(() =>
               resolve(
-                // Box parts are instances; an authored part is a model group with its own matrix.
-                globalThis.firefoxUiTest.view.playerMeshes.group.children.map((part) => [
-                  ...(part.instanceMatrix?.array.slice(0, 16) ?? part.matrix.elements),
-                ]),
+                globalThis.firefoxUiTest.view.playerMeshes.group.children.map((part) => [...part.matrix.elements]),
               ),
             ),
           ),
         ),
     );
   const avatarBeforeLook = await drawnAvatar();
+  assert.ok(avatarBeforeLook.length > 0, 'the avatar draws');
   await page.evaluate(() => {
     globalThis.firefoxUiTest.input.yaw += 1;
   });

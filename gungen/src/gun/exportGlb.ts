@@ -643,6 +643,21 @@ const drawnMuzzle = (file: VoxelFile, muzzle: Vec3): Vec3 => {
   return [front, y, z];
 };
 
+/**
+ * The support anchor on the lowest face the forend part's drawn meshes reach, because a support hand carries the gun
+ * under the forend as the file draws it, and a hand-copied height would drift at the next re-export.
+ */
+const drawnSupport = (file: VoxelFile, partId: string, support: Vec3): Vec3 => {
+  let low = Number.POSITIVE_INFINITY;
+  for (const [a, b, c] of drawnTriangles(file.glb, partId)) {
+    low = Math.min(low, a[1], b[1], c[1]);
+  }
+  if (!Number.isFinite(low)) {
+    throw new Error(`Support part ${partId} draws no underside`);
+  }
+  return [support[0], round6(low), support[2]];
+};
+
 const voxelFileOf = (
   glb: Uint8Array,
   {
@@ -654,9 +669,21 @@ const voxelFileOf = (
     ? undefined
     : { glb, grains: { voxelGrain, ...(voxelDetailGrain === undefined ? {} : { voxelDetailGrain }) } };
 
-/** The entry's anchors with the muzzle moved onto the drawn front of a voxelized file. */
-const drawnAnchors = (anchors: GunDeadvoxModelEntry['anchors'], file: VoxelFile | undefined) =>
-  file && anchors?.muzzle ? { anchors: { ...anchors, muzzle: drawnMuzzle(file, anchors.muzzle) } } : {};
+/** The entry's anchors with the muzzle moved onto the drawn front and the support onto the drawn forend underside. */
+const drawnAnchors = (
+  anchors: GunDeadvoxModelEntry['anchors'],
+  file: VoxelFile | undefined,
+  supportPart: string | undefined,
+) =>
+  file && anchors
+    ? {
+        anchors: {
+          ...anchors,
+          ...(anchors.muzzle ? { muzzle: drawnMuzzle(file, anchors.muzzle) } : {}),
+          ...(anchors.support && supportPart ? { support: drawnSupport(file, supportPart, anchors.support) } : {}),
+        },
+      }
+    : {};
 
 const sightMetadata = (resolved: Resolved, voxel?: VoxelFile): GunModelFields['sight'] => {
   const candidates = [...resolved.defs.entries()].flatMap(([id, part]) => {
@@ -882,7 +909,7 @@ export const exportGunGlb = (
     ...result,
     modelEntry: {
       ...modelEntry,
-      ...drawnAnchors(modelEntry.anchors, voxelFile),
+      ...drawnAnchors(modelEntry.anchors, voxelFile, anchors.supportPart),
       gun: {
         ...modelEntry.gun,
         ...(revolver ? { revolver } : {}),
