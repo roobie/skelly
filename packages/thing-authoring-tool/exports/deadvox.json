@@ -2088,6 +2088,30 @@
     }
   },
   {
+    "id": "player_arm",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "player_arm",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "player_leg",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "player_leg",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
     "id": "tape_roll",
     "kind": "item",
     "options": {

@@ -2,9 +2,7 @@
 // https://crateclub.com/blogs/loadout/how-long-does-it-take-to-reload-an-assault-rifle
 // Changing a magazine here stows it instead, so skill 0 sits at the slow end.
 local magazineHandling = { handling: { magazine: { removeSimSeconds: 3, insertSimSeconds: 3 } } };
-local huntingRifle = import 'gungen/rifle_hunting.model.json';
-// The exported support is a contact on the wood; seat the wrist below and behind it so the palm's end meets it without obscuring ADS.
-local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
+local longGunHands = import 'long-gun-hands.libsonnet';
 
 {
   "items": [
@@ -104,8 +102,8 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
   ],
   // Imports keep the export writer from overwriting authored handling constructors.
   "models": [
-    (import 'gungen/rifle_assault.model.json') { gun+: { chargingHandleDegrees: 0 } },
-    (import 'gungen/rifle_ak.model.json') { gun+: { chargingHandleDegrees: 90 } },
+    longGunHands((import 'gungen/rifle_assault.model.json') { gun+: { chargingHandleDegrees: 0 } }, -0.38),
+    longGunHands((import 'gungen/rifle_ak.model.json') { gun+: { chargingHandleDegrees: 90 } }, -0.484),
     import 'gungen/round_7_d_62x39.model.json',
     import 'gungen/case_7_d_62x39.model.json',
     import 'gungen/round_5_d_56x45.model.json',
@@ -115,12 +113,8 @@ local huntingSupportWristOffset = [-0.02875, -0.0345, 0];
     import 'gungen/revolver.model.json',
     import 'gungen/round_357_h_magnum.model.json',
     import 'gungen/case_357_h_magnum.model.json',
-    import 'gungen/shotgun_pump.model.json',
-    huntingRifle + {
-      anchors: huntingRifle.anchors + {
-        support_wrist: [huntingRifle.anchors.support[i] + huntingSupportWristOffset[i] for i in std.range(0, 2)],
-      },
-    },
+    longGunHands(import 'gungen/shotgun_pump.model.json', -0.568),
+    longGunHands(import 'gungen/rifle_hunting.model.json', -0.504),
     import 'gungen/round_308_h_winchester.model.json',
     import 'gungen/case_308_h_winchester.model.json',
     import 'gungen/optic_hunting_3_9x.model.json',

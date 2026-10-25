@@ -28,15 +28,18 @@ import { POWER_UNITS } from './powerContent.ts';
 import { handlingRangeIssues } from './rangeLayout.ts';
 import { scenarioSources } from './scenarioComposition.ts';
 import {
+  ARM_SEGMENTS,
   type BlockDef,
   CONTENT_SECTION_KEYS,
   type ContentFile,
   ContentFileSchema,
   type ContentSection,
   type DayCycleDef,
-  FIGURE_BOX_LIMBS,
+  FIGURE_LIMB_JOINTS,
+  FIGURE_LIMBS,
   type FigureDef,
   type FurnitureDef,
+  type HandsModelDef,
   HELD_DISPLAY_KIND,
   type ItemDef,
   type ModelDef,
@@ -1745,47 +1748,109 @@ const checkHeartbeatSounds = (registry: Registry, report: Report): void => {
   }
 };
 
-const checkFigurePart = (
-  part: NonNullable<FigureDef['parts']>[number],
-  path: string,
-  registry: Registry,
-  { report, claim }: { report: (path: string, message: string) => void; claim: (path: string, name: string) => void },
-): void => {
-  const model = registry.models.get(part.model);
+/**
+ * Each figure part's model exists and holds every anchor the row names on it, and each arm model holds the rig's
+ * parts and pivots, so the view never bends a part that isn't there.
+ */
+interface FigurePartNames {
+  path: string;
+  model: string;
+  /** Each named anchor as the row path that names it and the anchor name. */
+  anchors: [string, string][];
+  /** Each named model part, the same way. */
+  parts: [string, string][];
+}
+
+const figurePartNames = (figure: FigureDef): FigurePartNames[] => {
+  const rigAnchors: [string, string][] = [
+    ...ARM_SEGMENTS.map((segment): [string, string] => [`.armRig.${segment}.pivot`, figure.armRig[segment].pivot]),
+    ['.armRig.grip', figure.armRig.grip],
+  ];
+  const rigParts: [string, string][] = ARM_SEGMENTS.map((segment) => [
+    `.armRig.${segment}.part`,
+    figure.armRig[segment].part,
+  ]);
+  return [
+    {
+      path: '.body',
+      model: figure.body.model,
+      anchors: Object.entries(figure.body.joints).map(([field, anchor]): [string, string] => [
+        `.body.joints.${field}`,
+        anchor,
+      ]),
+      parts: [],
+    },
+    ...FIGURE_LIMBS.map((limb): FigurePartNames => {
+      const arm = FIGURE_LIMB_JOINTS[limb].endsWith('Shoulder');
+      return {
+        path: `.limbs.${limb}`,
+        model: figure.limbs[limb].model,
+        anchors: [[`.limbs.${limb}.joint`, figure.limbs[limb].joint], ...(arm ? rigAnchors : [])],
+        parts: arm ? rigParts : [],
+      };
+    }),
+  ];
+};
+
+const checkFigurePart = (registry: Registry, report: Report, figure: FigureDef, part: FigurePartNames): void => {
+  const { path, model: id, anchors, parts } = part;
+  const model = registry.models.get(id);
   if (!model) {
-    report(`${path}.model`, `no model "${part.model}"`);
+    report('figures', figure.id, `${path}.model`, `no model "${id}"`);
+    return;
   }
-  for (const [joint, anchor] of Object.entries(part.joints)) {
-    if (model && anchor !== undefined && model.anchors?.[anchor] === undefined) {
-      report(`${path}.joints.${joint}`, `model "${part.model}" has no anchor "${anchor}"`);
-    }
-    if (anchor !== undefined && !joint.endsWith('Hip')) {
-      claim(`${path}.joints.${joint}`, joint);
+  for (const [at, anchor] of anchors) {
+    if (model.anchors?.[anchor] === undefined) {
+      report('figures', figure.id, at, `model "${id}" has no anchor "${anchor}"`);
     }
   }
-  for (const box of part.draws) {
-    claim(`${path}.draws`, box);
-  }
-  const limbs = new Set(part.draws.map((box) => FIGURE_BOX_LIMBS[box]));
-  if (limbs.size > 1) {
-    report(`${path}.draws`, `draws parts of several limbs (${[...limbs].join(', ')}); a part moves as one limb`);
+  for (const [at, name] of parts) {
+    if (model.parts?.[name] === undefined) {
+      report('figures', figure.id, at, `model "${id}" has no part "${name}"`);
+    }
   }
 };
 
-/** Every part stands on the hips, so only the other joints, and each box part, may belong to one part alone. */
 const checkFigures = (registry: Registry, report: Report): void => {
   for (const figure of registry.figures.values()) {
-    const claimed = new Set<string>();
-    const reportFigure = (path: string, message: string) => report('figures', figure.id, path, message);
-    const claim = (path: string, name: string) => {
-      if (claimed.has(name)) {
-        reportFigure(path, `another part already holds "${name}"`);
-      }
-      claimed.add(name);
-    };
-    (figure.parts ?? []).forEach((part, index) => {
-      checkFigurePart(part, `.parts[${index}]`, registry, { report: reportFigure, claim });
-    });
+    for (const part of figurePartNames(figure)) {
+      checkFigurePart(registry, report, figure, part);
+    }
+    // The right arm hangs right of and below the eye, else the view bends it through the head.
+    const [x, y] = figure.armRig.shoulderFromEye;
+    if (x <= 0 || y >= 0) {
+      report('figures', figure.id, '.armRig.shoulderFromEye', 'the right shoulder must sit right of and below the eye');
+    }
+  }
+};
+
+/**
+ * A two-handed firearm is drawn held by its authored hands (`DESIGN.md`, "Models"), so its model must author them;
+ * a hold's seat is authored for the right shoulder, and its palm and fingers span the hand frame.
+ */
+const checkHeldHands = (registry: Registry, report: Report): void => {
+  for (const item of registry.items.values()) {
+    const model = item.model === undefined ? undefined : registry.models.get(item.model);
+    if (item.firearm && item.twoHanded && model && model.hands === undefined) {
+      report('items', item.id, '.model', `two-handed firearm model "${model.id}" authors no hands`);
+    }
+  }
+  for (const model of registry.models.values()) {
+    if (model.hands) {
+      checkHands(model.id, model.hands, report);
+    }
+  }
+};
+
+const checkHands = (modelId: string, hands: HandsModelDef, report: Report): void => {
+  if (hands.seat[0] <= 0) {
+    report('models', modelId, '.hands.seat', 'the seat is the right shoulder: it must sit right of the eye');
+  }
+  for (const hold of ['firing', 'support'] as const) {
+    const { palm, fingers } = hands[hold];
+    if (Math.abs(palm[0] * fingers[0] + palm[1] * fingers[1] + palm[2] * fingers[2]) > 1e-6) {
+      report('models', modelId, `.hands.${hold}`, 'the palm and the fingers must be perpendicular');
+    }
   }
 };
 
@@ -1810,6 +1875,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkItems(registry, report);
   checkModelPartItems(registry, report);
   checkFigures(registry, report);
+  checkHeldHands(registry, report);
   checkLoot(registry, report);
   checkMilitaryLoot(registry, report);
   checkFurniture(registry, report);

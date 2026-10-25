@@ -218,7 +218,7 @@ describe('exported firearm presentation', () => {
     for (const side of ['right', 'left'] as const) {
       const view = new Group();
       view.rotation.set(pitch, yaw, 0, 'YXZ');
-      view.position.copy(new Vector3(...heldGripOffset(side, true)).applyQuaternion(view.quaternion).add(eye));
+      view.position.copy(new Vector3(...heldGripOffset(side, true, model)).applyQuaternion(view.quaternion).add(eye));
       view.add(held);
       view.updateMatrixWorld(true);
       const heldScene = held.children[0]!.children[0]!.children[0]!;
