@@ -4038,15 +4038,17 @@ const handguard: PartFamily = {
       params.section === 'ak'
         ? Math.min(RECEIVER_FRONT_HALF_HEIGHT, AK_GAS_CYLINDER_Y - AK_GAS_CYLINDER_HALF_WIDTH)
         : RECEIVER_FRONT_HALF_HEIGHT;
+    const compactSmg = params.section === 'compact-smg' && params.fit === 'receiver';
+    // The compact SMG's traced outer size keeps one wall's thickness, giving up clearance before wall.
+    const compactCeiling = compactSmg ? COMPACT_SMG_PROPORTIONS.handguard.outerU : ceiling;
     const inner =
       params.fit === 'too-tight'
         ? BARREL_RADIUS[bore] - 0.5
         : Math.min(
             Math.max(BARREL_RADIUS[bore] + HANDGUARD_CLEARANCE[(params.clearance ?? 'M') as SizeClass], extensionFloor),
-            ceiling - HANDGUARD_WALL_THICKNESS,
+            Math.min(ceiling, compactCeiling) - HANDGUARD_WALL_THICKNESS,
           );
     const akLayout = params.layout === 'ak';
-    const compactSmg = params.section === 'compact-smg' && params.fit === 'receiver';
     let outerY: number;
     if (params.fit === 'oversized') {
       outerY = RECEIVER_FRONT_HALF_HEIGHT + 1;
