@@ -31,7 +31,14 @@ import { ActorAnimator, type ActorItemPose, type HeldHandlingFrame } from './act
 import { HeldPresentation } from './heldPresentation.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';
 import { LENS, type ModelLibrary } from './models.ts';
-import { OPTICS_SPIKE_LAYER, type OpticsEye, type OpticsSpike, opticsEyeDistance } from './opticsSpike.ts';
+import {
+  OPTICS_SPIKE_LAYER,
+  type OpticsEye,
+  type OpticsSpike,
+  type OpticsTube,
+  opticsEyeDistance,
+  opticsTubePresentation,
+} from './opticsSpike.ts';
 import { firstPersonShoulder } from './playerFigure.ts';
 import type { SkyTargets } from './sky.ts';
 
@@ -53,6 +60,7 @@ export class HeldItems {
   private visor: Object3D | undefined;
   private opticsSpike: OpticsSpike | undefined;
   private opticsEye: OpticsEye = 'fill';
+  private opticsTube: OpticsTube = 'none';
   private readonly opticEffects = new Group();
   private readonly visorMaterials: MeshBasicMaterial[] = [];
   private drawn = '';
@@ -96,9 +104,10 @@ export class HeldItems {
     this.scene.add(this.view, this.light, this.ambient, this.camera, presentation.warmUp(), modelMaterialWarmUp(false));
   }
 
-  configureOpticsSpike(world: Scene, mode: OpticsSpike, eye: OpticsEye): void {
+  configureOpticsSpike(world: Scene, mode: OpticsSpike, eye: OpticsEye, tube: OpticsTube = 'none'): void {
     this.opticsSpike = mode;
     this.opticsEye = eye;
+    this.opticsTube = tube;
     world.add(this.view);
     this.scene.add(this.opticEffects);
     this.opticEffects.add(this.opticWindow);
@@ -163,8 +172,14 @@ export class HeldItems {
         : base;
     const active = Boolean(aimingDownSights && modelDefinition?.gun?.sight?.kind === 'optic' && settings);
     const heldModel = this.animator.modelOf(item);
+    const tube = opticsTubePresentation(this.opticsTube, settings?.magnification ?? 1);
     if (heldModel) {
       heldModel.visible = this.opticsSpike !== undefined || !active;
+      heldModel.traverse((object) => {
+        if (object instanceof Mesh && object.geometry.userData.piece === 'optic-eyecup') {
+          object.visible = tube.cups;
+        }
+      });
     }
     const diameter = modelDefinition?.gun?.sight?.ocularDiameterMetres;
     const fill = this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms?.adsApertureFill;
@@ -231,7 +246,9 @@ export class HeldItems {
       this.opticViewFrame = {
         ...settings,
         ...aperture,
-        ...(this.opticsSpike ? { border: this.opticsSpike === 'effect', excludeSelf: true } : {}),
+        ...(this.opticsSpike
+          ? { border: this.opticsSpike === 'effect', excludeSelf: true, worldAtUnity: tube.worldAtUnity }
+          : {}),
       };
     }
   }

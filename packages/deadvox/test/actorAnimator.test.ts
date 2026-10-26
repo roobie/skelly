@@ -1,12 +1,22 @@
 import { readFileSync } from 'node:fs';
-import { Group, type Object3D, PerspectiveCamera, Scene, Vector3 } from 'three';
+import {
+  BufferGeometry,
+  Group,
+  Mesh,
+  MeshBasicMaterial,
+  type Object3D,
+  PerspectiveCamera,
+  Scene,
+  Vector3,
+} from 'three';
 import { expect, it, vi } from 'vitest';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { readyMeleePose } from '../src/core/meleePose.ts';
-import { mountedOptic, projectLensAperture } from '../src/core/opticView.ts';
+import { mountedOptic, type OpticLensFrame, projectLensAperture } from '../src/core/opticView.ts';
 import { opticWindowDistance } from '../src/core/opticWindow.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { equipDebugLoadout } from '../src/debug/debugLoadout.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { HeldPresentation } from '../src/render/heldPresentation.ts';
 import { createHeldViews } from '../src/render/heldViews.ts';
@@ -20,7 +30,7 @@ import { createPlayerBody } from './playerFixture.ts';
 
 vi.mock('../src/render/magazineLoadPose.ts', { spy: true });
 
-const fixture = async (firearm = true) => {
+const fixture = async (firearm = true, preview?: string) => {
   const base = baseRegistry();
   const gun = [...base.items.values()].find(
     (def) =>
@@ -51,8 +61,14 @@ const fixture = async (firearm = true) => {
       };
   const registry = { ...base, items: new Map(base.items).set(itemDef.id, itemDef) };
   const inventory = new Inventory(registry);
-  const item = inventory.create(itemDef.id);
-  if (!inventory.add(item, { kind: 'hand', side: 'right' })) {
+  if (preview && !equipDebugLoadout(inventory, true, true, preview)) {
+    throw new Error('Preview loadout was not applied');
+  }
+  const item = preview ? (inventory.hands.right ?? inventory.hands.left)! : inventory.create(itemDef.id);
+  if (!item) {
+    throw new Error('Preview did not equip a firearm');
+  }
+  if (!(preview || inventory.add(item, { kind: 'hand', side: 'right' }))) {
     throw new Error('Cannot hold fixture item');
   }
   const figure = registry.figures.get('player')!;
@@ -287,6 +303,80 @@ it.each([
     f.dispose();
   }
 });
+
+it('holographic relief changes the physical eye distance and its projected window together', async () => {
+  const f = await fixture(true, '?loadout=ar&optic=optic_holographic');
+  const scene = new Scene();
+  const transform = vi.spyOn(HeldPresentation.prototype, 'firearmTransform');
+  const frames: OpticLensFrame[] = [];
+  const offsets: number[][] = [];
+  try {
+    for (const eye of ['fill', 'relief'] as const) {
+      vi.stubGlobal('location', { search: `?optics=world&eye=${eye}` });
+      configureOpticsSpike(f.view, scene, f.camera);
+      f.view.update(f.camera, f.pose, 0, {
+        firearms: [],
+        readiness: { uid: f.item.uid, progress: 1, aimingDownSights: true },
+      });
+      const [input] = transform.mock.calls.at(-1)!;
+      const sight = input.model.gun!.sight!;
+      const distance =
+        eye === 'relief'
+          ? sight.eyeReliefMetres
+          : opticWindowDistance(sight.ocularDiameterMetres!, input.adsApertureFill!, f.camera.fov);
+      const expected = projectLensAperture({
+        center: [0, 0, -distance],
+        right: [1, 0, 0],
+        up: [0, 1, 0],
+        radius: sight.ocularDiameterMetres! / 2,
+        verticalFovDegrees: f.camera.fov,
+        aspect: f.camera.aspect,
+      });
+      expect(f.view.opticLensFrame!.radius[1]).toBeCloseTo(expected!.radius[1]);
+      frames.push(f.view.opticLensFrame!);
+      offsets.push(transform.mock.results.at(-1)!.value.rootOffset);
+    }
+    expect(frames[1]!.radius[1]).toBeLessThan(frames[0]!.radius[1]);
+    expect(offsets[1]).not.toEqual(offsets[0]);
+  } finally {
+    transform.mockRestore();
+    vi.unstubAllGlobals();
+    f.dispose();
+  }
+});
+
+it.each(['disc', 'cups', 'split', 'none'] as const)(
+  'tube=%s switches the authored cup piece at the selected power',
+  async (tube) => {
+    const f = await fixture();
+    const cup = new Mesh(new BufferGeometry(), new MeshBasicMaterial());
+    cup.geometry.userData.piece = 'optic-eyecup';
+    vi.stubGlobal('location', { search: `?optics=world&eye=relief&tube=${tube}` });
+    try {
+      const scene = new Scene();
+      configureOpticsSpike(f.view, scene, f.camera);
+      const optic = mountedOptic(f.registry, f.item)!;
+      const handling = { firearms: [], readiness: { uid: f.item.uid, progress: 1, aimingDownSights: true } };
+      f.view.update(f.camera, f.pose, 0, handling);
+      // The fixture model has no authored geometry; install the export's existing piece marker.
+      const heldRoot = scene.getObjectByName('held-item-right')!;
+      heldRoot.add(cup);
+      for (const magnification of [1, 4]) {
+        f.view.update(f.camera, f.pose, 0, {
+          ...handling,
+          opticZoom: { uid: f.item.uid, opticUid: optic.uid, magnification },
+        });
+        expect(cup.visible).toBe(tube === 'cups' || (tube === 'split' && magnification > 1));
+        expect(f.view.opticLensFrame!.worldAtUnity).toBe(tube === 'disc' || (tube === 'split' && magnification === 1));
+      }
+    } finally {
+      vi.unstubAllGlobals();
+      f.dispose();
+      cup.geometry.dispose();
+      (cup.material as MeshBasicMaterial).dispose();
+    }
+  },
+);
 
 it('optic ADS hides the owner-view gun and supplies its window without hiding the world gun', async () => {
   const f = await fixture();

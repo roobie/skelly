@@ -17,14 +17,18 @@ import { meshForSolid } from '@skelly/engine/shapes/mesh.ts';
 import { surfaceOf } from '@skelly/thing-core/materials';
 import { OpticApertureSchema } from '@skelly/thing-core/optic-aperture';
 import { ReticleSchema } from '@skelly/thing-core/reticle';
-import { Ray, Vector3 } from 'three';
+import { Mesh, Ray, Raycaster, Vector3 } from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
+import exportRecipe from '../exports/deadvox.json' with { type: 'json' };
 import appearance from '../src/gun/appearance.json' with { type: 'json' };
 import { attachmentCompatibility } from '../src/gun/attachmentCompatibility.ts';
+import { exportAttachmentGlb } from '../src/gun/attachmentExport.ts';
 import { attachmentInstanceForId, attachmentLookIssue, attachmentSlots } from '../src/gun/attachments.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
+import { METRES_PER_UNIT } from '../src/gun/exportFrame.ts';
 import fixedPrism from '../src/gun/fixedPrism.json' with { type: 'json' };
 import { MOUNT_KINDS, MOUNT_STANDARDS, mountCanAccept } from '../src/gun/mounts.ts';
 import { getOptic, LENS_SLOT, OPTIC_CATALOG, OPTIC_TYPE_IDS } from '../src/gun/optics.ts';
@@ -170,6 +174,95 @@ describe('optic catalog', () => {
     for (const solid of optic.solids.filter(({ slot }) => slot !== LENS_SLOT)) {
       expect(penetrationWorld(probe, worldSolid(IDENTITY, solid)), solid.id).toBeLessThanOrEqual(0);
     }
+  });
+
+  it.each(['lpvo-1-6x', 'hunting-3-9x'] as const)(
+    '%s cup keeps the relief ocular cone open and covers its rim',
+    (id) => {
+      const optic = getOptic(id);
+      const cup = optic.solids.find((solid) => solid.display?.piece === 'optic-eyecup')!;
+      expect(cup).toBeDefined();
+      const mesh = meshForSolid(cup, 0);
+      const eye = new Vector3(optic.ocularX - optic.eyeReliefU!, optic.opticalAxisY, 0);
+      const crosses = (fraction: number) => {
+        const target = new Vector3(
+          optic.ocularX,
+          optic.opticalAxisY + (optic.ocularOpeningDiameterU / 2) * fraction,
+          0,
+        );
+        const ray = new Ray(eye, target.sub(eye).normalize());
+        const point = (index: number) => new Vector3().fromArray(mesh.positions, mesh.indices[index]! * 3);
+        return Array.from({ length: mesh.indices.length / 3 }, (_, triangle) => triangle * 3).some((index) =>
+          ray.intersectTriangle(point(index), point(index + 1), point(index + 2), false, new Vector3()),
+        );
+      };
+      expect(crosses(0.9)).toBe(false);
+      expect(crosses(1.15)).toBe(true);
+    },
+  );
+
+  it('holographic relief rays clear the hood and forward battery through the central window', () => {
+    const optic = getOptic('holographic');
+    const eye = new Vector3(optic.ocularX - optic.eyeReliefU!, optic.opticalAxisY, 0);
+    const metal = optic.solids.filter(({ slot }) => slot !== LENS_SLOT);
+    expect(metal.length).toBeGreaterThan(0);
+    for (const [vertical, lateral] of [
+      [0, 0],
+      [-0.8, 0],
+      [0.8, 0],
+      [0, -0.8],
+      [0, 0.8],
+    ]) {
+      const target = new Vector3(
+        optic.ocularX,
+        optic.opticalAxisY + (vertical! * optic.ocularOpeningDiameterU) / 2,
+        (lateral! * optic.ocularOpeningDiameterU) / 2,
+      );
+      const ray = new Ray(eye, target.sub(eye).normalize());
+      for (const solid of metal) {
+        const mesh = meshForSolid(solid, 0);
+        const point = (index: number) => new Vector3().fromArray(mesh.positions, mesh.indices[index]! * 3);
+        for (let index = 0; index < mesh.indices.length; index += 3) {
+          expect(
+            ray.intersectTriangle(point(index), point(index + 1), point(index + 2), false, new Vector3()),
+            solid.id,
+          ).toBeNull();
+        }
+      }
+    }
+  });
+
+  it('voxel holographic battery presents an opaque eye-facing surface rather than a hole through glass neighbours', async () => {
+    const optic = getOptic('holographic');
+    const cap = optic.solids.find(({ id }) => id === 'forward-battery-cap')!;
+    const [low, high] = localSolidBounds(cap);
+    const row = exportRecipe.find(({ id }) => id === 'optic_holographic')!;
+    const result = exportAttachmentGlb(
+      'optic-holographic',
+      { id: 'fixture-holo', file: 'assets/models/fixture-holo.glb' },
+      undefined,
+      { voxelGrain: row.voxel.grain, voxelDetailGrain: row.voxel.detailGrain },
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error(JSON.stringify(result.error));
+    }
+    const { scene } = await new GLTFLoader().parseAsync(Uint8Array.from(result.glb).buffer, '');
+    scene.updateMatrixWorld(true);
+    const metal: Mesh[] = [];
+    scene.traverse((mesh) => {
+      if (mesh instanceof Mesh && mesh.geometry.userData.slot === 'metal') {
+        metal.push(mesh);
+      }
+    });
+    expect(metal.length).toBeGreaterThan(0);
+    const eye = new Vector3(optic.ocularX - optic.eyeReliefU!, optic.opticalAxisY, 0).multiplyScalar(METRES_PER_UNIT);
+    const target = new Vector3(low[0], (low[1] + high[1]) / 2, 0).multiplyScalar(METRES_PER_UNIT);
+    // Front-side ray casting must hit the entrance; a back-facing exit cannot hide a missing opaque face.
+    const [hit] = new Raycaster(eye, target.clone().sub(eye).normalize()).intersectObjects(metal, false);
+    expect(hit).toBeDefined();
+    expect(hit!.point.x).toBeLessThan(high[0] * METRES_PER_UNIT);
+    expect(hit!.face!.normal.x).toBeLessThan(0);
   });
 
   it('keeps magnifying optics drawn metal clear along the optical axis between their lenses', () => {

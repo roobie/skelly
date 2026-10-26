@@ -11,7 +11,7 @@ import {
 } from 'three';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import type { OpticLensFrame } from '../core/opticView.ts';
-import { opticFieldOfView } from '../core/opticView.ts';
+import { opticFieldOfView, opticRendersWorld } from '../core/opticView.ts';
 import { OPTICS_SPIKE_LAYER } from './opticsSpike.ts';
 import { PLAYER_FIGURE_LAYER } from './shadowFlags.ts';
 
@@ -103,7 +103,7 @@ export class OpticLensRenderer {
     if (this.target.width !== pass.x || this.target.height !== pass.y) {
       this.target.setSize(pass.x, pass.y);
     }
-    if (!(frame.magnification > 1)) {
+    if (!opticRendersWorld(frame)) {
       return;
     }
     const previous = renderer.getRenderTarget();
@@ -132,6 +132,7 @@ export const opticLensPass = (): ShaderPass => new ShaderPass(OPTIC_LENS_SHADER)
 export const setOpticLensUniforms = (pass: ShaderPass, frame: OpticLensFrame): void => {
   const { reticle, aperture } = frame;
   const { uniforms } = pass;
+  uniforms.uZoomActive!.value = opticRendersWorld(frame) ? 1 : 0;
   uniforms.uBorder!.value = frame.border === false ? 0 : 1;
   uniforms.uLensShape!.value.set(aperture.aspectRatio, aperture.exponent);
   uniforms.uReticleCount!.value = reticle?.primitives.length ?? 0;

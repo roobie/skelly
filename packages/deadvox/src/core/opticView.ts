@@ -39,7 +39,11 @@ export interface LensAperture {
 export interface OpticLensFrame extends LensAperture, OpticViewSettings {
   readonly border?: boolean;
   readonly excludeSelf?: boolean;
+  readonly worldAtUnity?: boolean;
 }
+
+export const opticRendersWorld = (frame: OpticLensFrame): boolean =>
+  frame.magnification > 1 || frame.worldAtUnity === true;
 
 export const opticFieldOfView = (verticalFovDegrees: number, magnification: number): number => {
   if (!(verticalFovDegrees > 0 && verticalFovDegrees < 180 && magnification > 0)) {

@@ -19,6 +19,7 @@ import {
 import appearance from './appearance.json' with { type: 'json' };
 import fixedPrism from './fixedPrism.json' with { type: 'json' };
 import type { MountRequirement } from './mounts.ts';
+import opticPresentation from './opticPresentation.json' with { type: 'json' };
 import reticleContent from './reticles.json' with { type: 'json' };
 
 export const opticRailContactSolids = (solids: readonly Solid[]): readonly Solid[] =>
@@ -136,6 +137,11 @@ const scopeBody = (id: string, centerY: number, outside: readonly Vec2[], wall =
     [...outside, ...outside.toReversed().map(([axial, radius]): Vec2 => [axial, radius - wall]), outside[0]!],
   ),
   sides: OPTIC_BODY_SIDES,
+});
+
+const eyecup = (centerY: number, cup: (typeof opticPresentation.cups)['lpvo-1-6x']): Solid => ({
+  ...scopeBody('ocular-eyecup', centerY, parse(array(tuple([number(), number()])), cup.profile), cup.wall),
+  display: { piece: 'optic-eyecup' },
 });
 
 const ringBand = (id: string, centerX: number, centerY: number, radius: number): Solid =>
@@ -394,26 +400,35 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
       description: 'integral low rail foot',
       clearanceU: { forward: 0.5, rearward: 0.5, lateral: 0.5 },
     }),
-    opticalAxisY: 3,
+    opticalAxisY: 2.875,
     ocularX: -3.75,
     ocularOpeningDiameterU: 2.75,
-    eyeReliefU: 3.5,
+    eyeReliefU: opticPresentation.holographic.eyeReliefU,
     ironCoWitness: true,
     sightlineStartX: 4,
     solids: [
       // The window's rear and front panes, between the side walls and roof listed after them.
       box('ocular-lens', [-3.75, 1.5, -1.5], [-3.5, 4.25, 1.5], lensGlass),
-      box('objective-lens', [0, 1.5, -1.5], [0.25, 4.25, 1.5], lensGlass),
+      box(
+        'objective-lens',
+        [opticPresentation.holographic.hoodFrontX - LENS_THICKNESS_U, 1.5, -1.5],
+        [opticPresentation.holographic.hoodFrontX, 4.25, 1.5],
+        lensGlass,
+      ),
       box('mount-foot', [-2.75, 0, -0.75], [2.75, 0.5, 0.75]),
-      box('lower-battery-section', [-3.75, 0.5, -2.25], [4, 1.5, 2.25]),
-      box('forward-battery-cap', [0.25, 1.5, -2.25], [4, 2, 2.25]),
-      box('window-left-side', [-3.75, 1.5, -2.25], [0.25, 4.25, -1.5]),
-      box('window-right-side', [-3.75, 1.5, 1.5], [0.25, 4.25, 2.25]),
+      box('lower-battery-section', [-3.75, 0.5, -2.25], [opticPresentation.holographic.hoodFrontX, 1.5, 2.25]),
+      box(
+        'forward-battery-cap',
+        [opticPresentation.holographic.hoodFrontX, 0.5, -2.25],
+        [4, opticPresentation.holographic.batteryTopY, 2.25],
+      ),
+      box('window-left-side', [-3.75, 1.5, -2.25], [opticPresentation.holographic.hoodFrontX, 4.25, -1.5]),
+      box('window-right-side', [-3.75, 1.5, 1.5], [opticPresentation.holographic.hoodFrontX, 4.25, 2.25]),
       {
         id: 'window-hood-roof',
         kind: 'extruded-polygon',
         axis: 'x',
-        z: [-3.75, 0.25],
+        z: [-3.75, opticPresentation.holographic.hoodFrontX],
         profile: [
           [4.25, -2.25],
           [5, -1.5],
@@ -450,7 +465,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     reference: 'Vortex Razor HD Gen II-E 1–6×24, approximately 257 mm long',
     source: 'https://vortexoptics.com/razor-hd-gen-ii-e-1-6x24.html',
     envelopeMm: [257, 80, 65],
-    envelopeU: [22.25, 4.75, 4.5],
+    envelopeU: [opticPresentation.cups['lpvo-1-6x'].envelopeLengthU, 4.75, 4.5],
     mount: railMount({
       contactLengthU: 12,
       contactWidthU: 1.75,
@@ -468,6 +483,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     sightlineStartX: 11.25,
     solids: [
       ...pairedFeet(1),
+      eyecup(2, opticPresentation.cups['lpvo-1-6x']),
       ...lensedScope('tube-with-flared-bells', 2, [
         [-10, 1.5],
         [-7.5, 1.5],
@@ -489,7 +505,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     reference: 'Vortex Crossfire II 3–9×40: L1 11.86 in, H1 1.89 in; turret envelope estimated',
     source: 'https://vortexoptics.com/vortex-crossfire-ii-3-9x40-riflescope.html',
     envelopeMm: [301.244, 48.006, 48.006],
-    envelopeU: [26.25, 4.75, 4.75],
+    envelopeU: [opticPresentation.cups['hunting-3-9x'].envelopeLengthU, 4.75, 4.75],
     mount: railMount({
       contactLengthU: 12,
       contactWidthU: 1.75,
@@ -508,6 +524,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     solids: [
       ...pairedFeet(1.25),
       ...scopeLenses(2.25, [-13, 1.75], [13.25, 2.25]),
+      eyecup(2.25, opticPresentation.cups['hunting-3-9x']),
       // Separate convex proxies preserve the narrow tube clearance instead of bridging the two bells.
       scopeBody('hunting-ocular', 2.25, [
         [-13, 1.75],

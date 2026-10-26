@@ -423,7 +423,6 @@ export class Mood {
     }
     const { uniforms } = opticPass;
     uniforms.uZoomTexture!.value = this.opticLens.texture;
-    uniforms.uZoomActive!.value = frame.magnification > 1 ? 1 : 0;
     uniforms.uLensCenter!.value.set(...frame.center);
     uniforms.uLensRadius!.value.set(...frame.radius);
     setOpticLensUniforms(opticPass, frame);

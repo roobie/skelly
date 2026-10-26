@@ -2,6 +2,7 @@
 read_if:
   - you evaluate camera-only optical borders against authored world geometry
   - you compare authored eye relief with aperture-fill-derived ADS placement
+  - you compare an ocular world disc with relief-sized eyecup geometry
 ---
 
 # Optical border comparison
@@ -29,8 +30,22 @@ must describe the same frame: a screen-space aperture cannot stay aligned with
 world geometry posed from an earlier camera sample. See
 `packages/deadvox/src/game/play.ts`, `updateFrame`.
 
-Authored world geometry is the limit of this experiment. Missing close-eye
-interiors are a result to report, not permission to invent replacement assets.
-The magnified image excludes the player's close-eye geometry to avoid magnifying
-the instrument itself; see `packages/deadvox/src/render/opticLens.ts`,
-`OpticLensRenderer.prepare`.
+A hollow eyecup can cover the rim but cannot replace rays through the tube with
+world imagery. The unity-power world disc therefore remains a separate choice;
+above unity the zoom image already replaces the interior. See
+`packages/deadvox/src/render/opticsSpike.ts`, `opticsTubePresentation`; and
+`packages/deadvox/src/render/opticLens.ts`, `OpticLensRenderer.prepare`.
+Both image paths exclude the player's close-eye geometry so neither magnifies
+nor copies the instrument back into its own window.
+
+Eyecups are authored content sized to the relief placement, not a general fix for
+every eye distance or field of view. See
+`packages/gun-authoring-tool/src/gun/optics.ts`, `eyecup`; and
+`packages/gun-authoring-tool/src/gun/opticPresentation.jsonnet`.
+The holographic comparison uses a shallow hood and a separate lower battery
+front because a deep hood narrows the physical window. Keeping the opaque front
+below the transparent pane also avoids a voxel-shared interface that removes its
+eye-facing surface; see `packages/gun-authoring-tool/test/optics.test.ts`,
+"voxel holographic battery presents an opaque eye-facing surface rather than a hole through glass neighbours".
+The relief choice must remain a content value rather than a special rendering
+rule for that sight.
