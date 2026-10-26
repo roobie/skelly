@@ -307,9 +307,10 @@ export class HeldPresentation {
       return;
     }
     const other = side === 'right' ? 'left' : 'right';
-    this.addArm(other, this.mirror(side, this.figure.holds.supportForward), 'fist', {
-      mount: { held, origin: held.position.toArray() as Vec3 },
-    });
+    const origin = held.position.toArray() as Vec3;
+    const offset = this.mirror(side, this.figure.holds.supportForward);
+    const grip = origin.map((value, index) => value + offset[index]!) as Vec3;
+    this.addArm(other, grip, 'fist', { mount: { held, origin } });
   }
 
   private mirror(side: HandSide, at: Vec3): Vec3 {

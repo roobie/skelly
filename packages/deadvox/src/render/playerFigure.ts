@@ -411,7 +411,21 @@ export class PlayerMeshes {
     const holdingSide = hands.left ? 'left' : 'right';
     const leading = pose.inventory ? dominantSide(pose.inventory.character) : holdingSide;
     const handPose = this.handPose ?? readyMeleePose(pose.holdReady ?? false, this.figure.holds, leading);
-    presentation.poseStatic(hands, handPose, {
+    const activeHandPose =
+      aimOffHand?.mode === 'active'
+        ? {
+            ...handPose,
+            [aimOffHand.side]: {
+              offset: this.figure.holds.aimActiveOffHand.offset.map((value, index) =>
+                index === 0 && aimOffHand.side === 'left' ? -value : value,
+              ) as Vec3,
+              rotation: this.figure.holds.aimActiveOffHand.rotation.map((value, index) =>
+                index > 0 && aimOffHand.side === 'left' ? -value : value,
+              ) as Vec3,
+            },
+          }
+        : handPose;
+    presentation.poseStatic(hands, activeHandPose, {
       leading,
       ready: pose.holdReady ?? false,
       handling: this.handling,
