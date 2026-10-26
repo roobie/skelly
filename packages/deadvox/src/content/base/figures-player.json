@@ -228,6 +228,10 @@
           "model": "player_leg"
         }
       },
+      "lookDownLean": {
+        "startPitchDegrees": 60,
+        "torsoForwardDegrees": 15
+      },
       "mannequinPlacement": {
         "aheadMetres": 1.2,
         "asideMetres": 1.2

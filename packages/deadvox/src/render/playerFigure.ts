@@ -10,6 +10,7 @@ import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
 import type { Body } from '../core/physics.ts';
+import { playerEyePosition, playerLookLean } from '../core/playerLookPose.ts';
 import type { PlayerStance } from '../core/playerStance.ts';
 import {
   FIGURE_LIMB_JOINTS,
@@ -500,11 +501,17 @@ export class PlayerMeshes {
     if (pose.eye) {
       this.heldFrame.position.set(...(pose.eye.map((value) => value * this.placement.blockSize) as Vec3));
     } else {
-      this.heldFrame.position.set(
-        pose.body.pos[0] * this.placement.blockSize,
-        pose.body.pos[1] * this.placement.blockSize + player.eye - drop + pose.stepOffset,
-        pose.body.pos[2] * this.placement.blockSize,
-      );
+      const eye = playerEyePosition({
+        feet: pose.body.pos,
+        eyeHeightMetres: player.eye - drop,
+        blockSize: this.placement.blockSize,
+        yaw: pose.yaw,
+        pitch: pose.pitch ?? 0,
+        stance: pose.stance,
+        figure: this.figure,
+      });
+      this.heldFrame.position.set(...(eye.map((value) => value * this.placement.blockSize) as Vec3));
+      this.heldFrame.position.y += pose.stepOffset;
     }
     this.heldFrame.rotation.set(pose.pitch ?? 0, pose.yaw, 0, 'YXZ');
     this.heldFrame.updateMatrixWorld(true);
@@ -672,7 +679,8 @@ export class PlayerMeshes {
     const localY = pivotY + (at[1] - pivotY) * Math.cos(stride) - (at[2] - pivotZ) * Math.sin(stride);
     const localZ = pivotZ + (at[1] - pivotY) * Math.sin(stride) + (at[2] - pivotZ) * Math.cos(stride);
     // The stance swings the legs and the upper body about the hip, then lowers the hip.
-    const swing = (isLeg(name) ? legsForwardDegrees : -torsoForwardDegrees) * RADIANS;
+    const lookLean = playerLookLean(this.figure, pose.pitch ?? 0, pose.stance);
+    const swing = isLeg(name) ? legsForwardDegrees * RADIANS : -torsoForwardDegrees * RADIANS - lookLean;
     const aboveHip = localY - hip;
     this.localPosition[0] = at[0];
     this.localPosition[1] = stepOffset + hip - hipDropMetres + aboveHip * Math.cos(swing) - localZ * Math.sin(swing);

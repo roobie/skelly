@@ -534,16 +534,59 @@ describe('player figure', () => {
     }
   });
 
+  it('leans the shared eye and shoulders forward only when looking steeply down', () => {
+    const body = createPlayerBody(scale, 4, 1, 4);
+    const before = structuredClone(body);
+    const inventory = new Inventory(registry);
+    const meshes = playerMeshes();
+    const yaw = 0.7;
+    const forward = new Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+    const pose = { body, yaw, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING, inventory };
+    meshes.sync({ ...pose, pitch: 0 });
+    const levelEye = new Vector3();
+    const levelShoulder = new Vector3();
+    meshes.eyePosition(levelEye);
+    meshes.shoulderPosition('right', levelShoulder);
+    const centre = new Vector3(...body.pos).multiplyScalar(scale.blockSize);
+    expect(levelEye.clone().sub(centre).dot(forward)).toBeCloseTo(0);
+    const onset = (playerFigure.lookDownLean.startPitchDegrees * Math.PI) / 180;
+    meshes.sync({ ...pose, pitch: -onset });
+    const onsetEye = new Vector3();
+    meshes.eyePosition(onsetEye);
+    expect(onsetEye.distanceTo(levelEye)).toBeCloseTo(0);
+    meshes.sync({ ...pose, pitch: -(onset + Math.PI / 2) / 2 });
+    const midwayEye = new Vector3();
+    meshes.eyePosition(midwayEye);
+    const midwayForward = midwayEye.clone().sub(levelEye).dot(forward);
+    expect(midwayForward).toBeGreaterThan(0);
+
+    meshes.sync({ ...pose, pitch: -Math.PI / 2 });
+    const downEye = new Vector3();
+    const downShoulder = new Vector3();
+    meshes.eyePosition(downEye);
+    meshes.shoulderPosition('right', downShoulder);
+    expect(downEye.clone().sub(levelEye).dot(forward)).toBeGreaterThan(midwayForward);
+    expect(downShoulder.clone().sub(levelShoulder).dot(forward)).toBeGreaterThan(0);
+
+    meshes.sync({ ...pose, pitch: -Math.PI / 2, thirdPerson: true });
+    const externalEye = new Vector3();
+    const externalShoulder = new Vector3();
+    meshes.eyePosition(externalEye);
+    meshes.shoulderPosition('right', externalShoulder);
+    expect(externalEye.toArray()).toEqual(downEye.toArray());
+    expect(externalShoulder.toArray()).toEqual(downShoulder.toArray());
+    expect(body).toEqual(before);
+    meshes.dispose();
+  });
+
   it('keeps a bare foot visible past the torso at -60 and -80 degrees', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
     const meshes = playerMeshes();
-    const eye = new Vector3(
-      body.pos[0] * scale.blockSize,
-      body.pos[1] * scale.blockSize + PLAYER.eye,
-      body.pos[2] * scale.blockSize,
-    );
+    const eye = new Vector3();
+    const inventory = new Inventory(registry);
     for (const pitch of [-Math.PI / 3, (-80 * Math.PI) / 180]) {
-      meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING });
+      meshes.sync({ body, yaw: 0, pitch, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING, inventory });
+      meshes.eyePosition(eye);
       const camera = new PerspectiveCamera(75, 16 / 9, 0.05, 128);
       camera.rotation.order = 'YXZ';
       camera.position.copy(eye);

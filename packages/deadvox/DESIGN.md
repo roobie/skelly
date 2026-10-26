@@ -1630,6 +1630,13 @@ attached rather than moving to suit the observing camera. See
 `src/render/actorAnimator.ts`, `ActorAnimator`; and
 `src/render/shadowFlags.ts`, `PLAYER_SELF_MASK_LAYER`.
 
+Looking steeply down bends the upper body and eye forward together, because
+looking through the avatar's centreline is not realistic biomechanics. The lean
+belongs to the actor in every view, not to the observing camera; it must not move
+the collision body. An already horizontal torso must not fold farther toward the
+ground. See `src/core/playerLookPose.ts`, `playerLookLean` and
+`playerEyePosition`; and `src/render/playerFigure.ts`, `PlayerMeshes`.
+
 The optical adapter must not become another visible arm or held-item owner.
 Authored head-slot interiors use a matching world-frame exclusion to avoid
 doubled colour. ADS eye alignment and the visor/scope effect boundary require

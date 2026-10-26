@@ -29,6 +29,7 @@ import { chargeShare, offHandUse, wornNightVision } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
 import { countText } from '../core/numberText.ts';
 import { doorOptions, doorPlan, dropTarget, heldDoorBar, pocketGroundItem, toHands } from '../core/options.ts';
+import { playerEyePosition } from '../core/playerLookPose.ts';
 import { pryPlan } from '../core/prying.ts';
 import { raycast } from '../core/raycast.ts';
 import { reachTuning } from '../core/reach.ts';
@@ -2532,7 +2533,16 @@ export const startPlay = (
 
   const lookDir = (): Vec3 =>
     aimDirection(replaySample?.yaw ?? input.yaw, replaySample?.pitch ?? input.pitch, NEUTRAL_AIM);
-  const eye = (): Vec3 => [body.pos[0], body.pos[1] + session.playerEyeHeightMetres / s, body.pos[2]];
+  const eye = (): Vec3 =>
+    playerEyePosition({
+      feet: body.pos,
+      eyeHeightMetres: session.playerEyeHeightMetres,
+      blockSize: s,
+      yaw: spectator.avatarYaw(input.yaw),
+      pitch: spectator.avatarPitch(input.pitch),
+      stance: session.stance,
+      figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
+    });
 
   /** Part boxes for picking: the same projection vehicle reach measures to. */
   const currentVehicleParts = () => session.vehicleParts.all();

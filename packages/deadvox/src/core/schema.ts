@@ -3672,6 +3672,13 @@ const FigureSchema = strictObject({
   legRig: LegRigSchema,
   /** Walking swings each leg about its hip and each arm, against its leg, about its shoulder; peak angles. */
   gait: strictObject({ legSwingDegrees: Degrees, armSwingDegrees: Degrees }),
+  lookDownLean: strictObject({
+    startPitchDegrees: pipe(
+      NonNegative,
+      check((value) => value < 90, 'look-down lean must start before straight down'),
+    ),
+    torsoForwardDegrees: pipe(NonNegative, maxValue(90)),
+  }),
   /** Where the debug mannequin stands from the player, along and across the player's facing. */
   mannequinPlacement: strictObject({ aheadMetres: Positive, asideMetres: Positive }),
   stancePoses: strictObject({
