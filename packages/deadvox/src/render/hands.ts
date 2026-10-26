@@ -1,3 +1,6 @@
+// The transitional first-person scene clears depth after the world to keep held objects from wall clipping.
+// It shares world sun and ambient targets; LightPool supplies nearby light copies.
+
 import { opticApertureDistance } from '@skelly/thing-core/optic-aperture';
 import {
   DirectionalLight,
