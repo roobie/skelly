@@ -24,8 +24,9 @@ const SNAPSHOT_PAUSE_BUDGET_MS = 100;
 const ENCODE_BUDGET_MS = 2000;
 // The default suite samples small squares; the bench samples the target area.
 const SAMPLED_SIDES = [5, 9] as const;
-// Exploring the target area through the column path takes seconds; only the bench runs it.
-const BENCH_TIMEOUT_MS = 120_000;
+// Exploring the target area through the column path takes seconds; only the bench runs it. The timeout
+// is a hang guard, about fifteen times the bench's measured run; the budgets above are CPU time.
+const BENCH_TIMEOUT_MS = 60_000;
 const TARGET_SIDE = Math.ceil(Math.sqrt(TARGET_EXPLORED_COLUMNS));
 
 // biome-ignore lint/style/noProcessEnv: timings are asserted only under the bench script.
@@ -98,17 +99,23 @@ const encodeOptions = (source: WorldSetup) => ({
   worldOptions: { blockSize: source.config.scale.blockSize, site: source.config.site, storeys: 1, density: null },
 });
 
+// CPU time, not wall time: a loaded runner stretches the wall clock but not the work done.
+const cpuMs = (since: NodeJS.CpuUsage) => {
+  const used = process.cpuUsage(since);
+  return (used.user + used.system) / 1000;
+};
+
 const sample = async (side: number) => {
   const { source, runtime } = exploreSquare(side);
-  const pauseStarted = performance.now();
+  const pauseStarted = process.cpuUsage();
   const snapshot = runtime.snapshot({ worldId: 'fixture_world', characterId: 'fixture_character' });
-  const pauseMs = performance.now() - pauseStarted;
-  const encodeStarted = performance.now();
+  const pauseMs = cpuMs(pauseStarted);
+  const encodeStarted = process.cpuUsage();
   const bytes = await encodeSave(snapshot, encodeOptions(source));
-  const encodeMs = performance.now() - encodeStarted;
-  const decodeStarted = performance.now();
+  const encodeMs = cpuMs(encodeStarted);
+  const decodeStarted = process.cpuUsage();
   const decoded = await decodeSave(bytes, { version, contentLookup: (kind, id) => contentLookup(registry, kind, id) });
-  const decodeMs = performance.now() - decodeStarted;
+  const decodeMs = cpuMs(decodeStarted);
   return {
     columns: side * side,
     pieces: snapshot.character.inventory.entities.entities.length,
