@@ -63,7 +63,7 @@ const costLines = (summary: ReturnType<ReturnType<typeof costRecorder>['summary'
   `  ${(['cells', 'refined'] as const)
     .map((shown) => {
       const { boxes, cost } = comparison.modes[shown];
-      return `${shown} ${boxes.length} boxes × ${cost.steps + 1} sweeps (gather ${cost.gatherMs.toFixed(3)} · solve ${cost.solveMs.toFixed(3)})`;
+      return `${shown} ${boxes.length} boxes × ${cost.steps + 1} sweeps (gather ${cost.gatherRealMs.toFixed(3)} · solve ${cost.solveRealMs.toFixed(3)})`;
     })
     .join(' · ')}`,
 ];
@@ -145,8 +145,8 @@ export const createWallSpike = (engine: Pick<Engine, 'world' | 'registry' | 'ent
       costs.record('spike', performance.now() - start);
       costs.record('both', compared - start);
       for (const shown of ['cells', 'refined'] as const) {
-        const { gatherMs, solveMs } = comparison.modes[shown].cost;
-        costs.record(shown, gatherMs + solveMs);
+        const { gatherRealMs, solveRealMs } = comparison.modes[shown].cost;
+        costs.record(shown, gatherRealMs + solveRealMs);
       }
       // Summarising sorts every window, so it runs outside the timed span and only every few frames.
       frame += 1;

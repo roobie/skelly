@@ -327,8 +327,8 @@ const solveLowering = (
 
 /** One mode's CPU cost for one sample, in milliseconds, with the counts that drive it. */
 interface WallModeCost {
-  readonly gatherMs: number;
-  readonly solveMs: number;
+  readonly gatherRealMs: number;
+  readonly solveRealMs: number;
   /** Lowering steps tried, the resolved one included. */
   readonly steps: number;
 }
@@ -375,7 +375,7 @@ export const compareWalls = (world: WallWorld, sample: WallPoseSample, tuning: W
     const contact = proxyContact(intended, boxes);
     const lowering = solveLowering(sample, boxes, radius, tuning);
     const steps = Math.round(lowering.coefficient * Math.max(1, Math.round(tuning.steps))) + 1;
-    const cost = { gatherMs: gathered - start, solveMs: performance.now() - gathered, steps };
+    const cost = { gatherRealMs: gathered - start, solveRealMs: performance.now() - gathered, steps };
     return { boxes, contact, lowering, cost };
   };
   const modes = { cells: run('cells'), refined: run('refined') };
