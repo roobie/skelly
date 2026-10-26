@@ -194,6 +194,10 @@ const debugStartFromUrl = (params: URLSearchParams): DebugStart | undefined => {
 
 const MAX_STOREYS = 20;
 
+/** A debug run is ephemeral, so it neither saves nor loads unless `?save=1` also asks for it. */
+export const savingEnabledFromUrl = (params: URLSearchParams): boolean =>
+  params.get('debug') !== '1' || params.get('save') === '1';
+
 /**
  * `?site=city` and `?storeys=N` build the stress-test city; `?site=testHouse` selects the test house;
  * `?site=weatheringTest` selects the debug-only comparison; `fallback` is the site otherwise.

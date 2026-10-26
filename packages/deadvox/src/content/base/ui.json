@@ -707,6 +707,7 @@
           "corrupt": "{error}; raw records are available for export.",
           "couldNotStart": "Could not start the world: {error}",
           "damagedPreserved": "A damaged older-version save is preserved · {namespace}",
+          "debugRun": "Debug run: saves are off unless the address has save=1",
           "exportFailed": "Save export failed",
           "failure": "{what}: {error}",
           "incompatible": "Saved world is incompatible with the running content and was left untouched: {error}",

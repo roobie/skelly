@@ -950,7 +950,10 @@ try {
   let appBackends = [];
   if (navigationOnly) {
     const appUrl = new URL(
-      browserStageUrl(stageId, `http://127.0.0.1:${address.port}/?seed=73&debug=1&save-backend=indexeddb&save-test=1`),
+      browserStageUrl(
+        stageId,
+        `http://127.0.0.1:${address.port}/?seed=73&debug=1&save=1&save-backend=indexeddb&save-test=1`,
+      ),
     );
     appUrl.searchParams.set('freeze', '1');
     await navigatePage('navigation-only initial goto', () =>

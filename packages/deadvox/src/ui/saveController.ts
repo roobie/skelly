@@ -154,7 +154,7 @@ export class SaveController {
 
   constructor(
     text: Pick<ScreenText, 'save' | 'menu'>,
-    backend: SaveBackendPreference = 'auto',
+    { backend = 'auto', savingEnabled = true }: { backend?: SaveBackendPreference; savingEnabled?: boolean } = {},
     bundledMods: readonly ActiveBundledMod[] = [],
     browserMods: readonly ActiveBrowserMod[] = [],
   ) {
@@ -162,9 +162,13 @@ export class SaveController {
     this.goLabels = text.menu;
     this.newWorldGoLabel = text.save.newWorld;
     this.statusText = text.save.checkingSaves;
-    this.environmentProblem = saveEnvironmentProblem(text.save);
+    this.environmentProblem = savingEnabled ? saveEnvironmentProblem(text.save) : text.save.debugRun;
     if (!this.environmentProblem) {
       this.identity = currentSaveVersionIdentity(bundledMods, browserMods);
+    }
+    // A debug run without saves still exports metrics that name its world and character.
+    const canMintIds = !this.environmentProblem || this.environmentProblem === text.save.debugRun;
+    if (canMintIds && typeof globalThis.crypto?.randomUUID === 'function') {
       this.worldId = globalThis.crypto.randomUUID();
       this.characterId = globalThis.crypto.randomUUID();
     }

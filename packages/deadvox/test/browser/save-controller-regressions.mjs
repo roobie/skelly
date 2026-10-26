@@ -72,6 +72,7 @@ const QUOTA_ERROR = /quota regression/i;
 const BEST_EFFORT = /best.effort/i;
 const PERSISTENCE_GRANTED = /Persistent storage granted/;
 const CURRENT_EXPORT = /^deadvox-current-.*\.bin$/;
+const SAVES_OFF = /saves are off/;
 const REPLAY_REJECTED = /^Replay rejected:/;
 const LOADING_WORKER_FAILURE = /Controlled loading worker failure/;
 
@@ -1111,6 +1112,61 @@ try {
     assert.equal(decoded.snapshot.character.simulation.body.health, 30);
     assert.deepEqual(pageErrors, []);
     await context.close();
+  });
+
+  await test('a debug run neither writes nor loads a save unless save=1 is also set', async () => {
+    const withParams = (extra) => {
+      const target = new URL(url);
+      for (const [key, value] of Object.entries(extra)) {
+        target.searchParams.set(key, value);
+      }
+      return target.href;
+    };
+    const enterAndCheckpoint = async (page) => {
+      await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
+      await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+      await page.click('#go');
+      await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
+      return page.evaluate(async () => {
+        const { controller, storage } = deadvoxSaveTest;
+        controller.beforeSleep();
+        for (let attempt = 0; (controller.writing || controller.queued) && attempt < 400; attempt += 1) {
+          await new Promise((resolve) => setTimeout(resolve, 5));
+        }
+        return { namespaces: await storage.listNamespaces(), canSave: controller.canSaveCurrentGame };
+      });
+    };
+    const context = await browser.newContext({ viewport: { width: 800, height: 600 } });
+    try {
+      const pageErrors = [];
+      const debugPage = await context.newPage();
+      debugPage.on('pageerror', (error) => pageErrors.push(error.message));
+      await debugPage.goto(withParams({ debug: '1' }));
+      const unsaved = await enterAndCheckpoint(debugPage);
+      assert.deepEqual(unsaved, { namespaces: [], canSave: false });
+      await debugPage.close();
+
+      const savingPage = await context.newPage();
+      savingPage.on('pageerror', (error) => pageErrors.push(error.message));
+      await savingPage.goto(withParams({ debug: '1', save: '1' }));
+      const saved = await enterAndCheckpoint(savingPage);
+      assert.equal(saved.canSave, true);
+      assert.equal(saved.namespaces.length, 1);
+      await savingPage.close();
+
+      const reloaded = await context.newPage();
+      reloaded.on('pageerror', (error) => pageErrors.push(error.message));
+      await reloaded.goto(withParams({ debug: '1' }));
+      await reloaded.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
+        timeout: 30_000,
+      });
+      assert.equal(await reloaded.evaluate(() => deadvoxSaveTest.controller.restored === undefined), true);
+      assert.equal(await reloaded.locator('#continue').isHidden(), true);
+      assert.match(await reloaded.locator('#save-status').textContent(), SAVES_OFF);
+      assert.deepEqual(pageErrors, []);
+    } finally {
+      await context.close();
+    }
   });
 } finally {
   await browser.close();
