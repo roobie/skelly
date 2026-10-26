@@ -1,6 +1,8 @@
-// biome-ignore-all lint/style/noProcessEnv: broad seed sweeps are for CI and explicit local runs.
+// biome-ignore-all lint/style/noProcessEnv: the sweep gate is env-driven (MOBGEN_SWEEPS)
 import process from 'node:process';
 import { describe } from 'vitest';
 
-export const runSweeps = Boolean(process.env.CI) || process.env.MOBGEN_SWEEPS === '1';
+// Population and seed sweeps run only under MOBGEN_SWEEPS, in the manual slow-test workflow;
+// `AGENTS.md`, "Tests" says why. Default tests exercise representative properties.
+export const runSweeps = process.env.MOBGEN_SWEEPS === '1';
 export const sweepGroup = describe.runIf(runSweeps);

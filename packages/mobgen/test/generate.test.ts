@@ -7,7 +7,6 @@ import { HUMANOID_TEMPLATES, TEMPLATES } from '../src/mob/templates.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const SEEDS = 100;
-const FAR_LOD_SEED_TIMEOUT_MS = 500;
 const seedSamplingFixture = {
   ...TEMPLATES[0]!,
   name: 'test-seed-sampling-fixture',
@@ -284,15 +283,11 @@ describe('validation profiles', () => {
 
   sweepGroup('far LOD silhouette validation', () => {
     for (const template of HUMANOID_TEMPLATES) {
-      it(
-        `passes for every full-valid ${template.name} genome in ${SEEDS} seeds at 1/6, 1/4 and 1/2 block`,
-        () => {
-          const { validSources, failures } = validateFarLodSeeds(template);
-          expect(validSources, 'full-valid sources').toBeGreaterThan(0);
-          expect(failures, 'far LOD budget/silhouette failures').toEqual([]);
-        },
-        SEEDS * FAR_LOD_SEED_TIMEOUT_MS,
-      );
+      it(`passes for every full-valid ${template.name} genome in ${SEEDS} seeds at 1/6, 1/4 and 1/2 block`, () => {
+        const { validSources, failures } = validateFarLodSeeds(template);
+        expect(validSources, 'full-valid sources').toBeGreaterThan(0);
+        expect(failures, 'far LOD budget/silhouette failures').toEqual([]);
+      });
     }
   });
 });
