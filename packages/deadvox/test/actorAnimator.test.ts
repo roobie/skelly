@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { Group, type Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { expect, it, vi } from 'vitest';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -114,6 +115,69 @@ it('orbit and spectator orientation cannot change world handling transforms for 
     f.update(f.camera, f.pose, 0.4, handling);
     expect(f.transforms()).not.toEqual(expected);
   } finally {
+    f.dispose();
+  }
+});
+
+it('the play frame poses overlay and world held views from this frame rather than the previous view', async () => {
+  const source = readFileSync(new URL('../src/game/play.ts', import.meta.url), 'utf8');
+  const start = source.indexOf('const updateFrame =');
+  const end = source.indexOf('const skyRoute =', start);
+  expect(start).toBeGreaterThan(0);
+  expect(end).toBeGreaterThan(start);
+  const frame = source.slice(start, end);
+  const calls = [...frame.matchAll(/\b(updateVisualFeedback|updateHeldItems|finishDraw)\(/g)].map((match) => match[1]!);
+  expect(new Set(calls).size).toBe(3);
+  expect(calls).toHaveLength(3);
+  const f = await fixture();
+  const heldFrame = f.view.warmUpTarget.scene.getObjectByName('held-items-view')!;
+  const next = new PerspectiveCamera();
+  const worldSample = new PerspectiveCamera();
+  const syncHeldView = f.world.syncHeldView.bind(f.world);
+  const world = vi.spyOn(f.world, 'syncHeldView').mockImplementation((...args) => {
+    syncHeldView(...args);
+    worldSample.position.copy(f.physical().position);
+    worldSample.quaternion.copy(f.physical().quaternion);
+  });
+  const steps: Record<string, () => void> = {
+    updateVisualFeedback: () => {
+      f.camera.position.copy(next.position);
+      f.camera.quaternion.copy(next.quaternion);
+      f.camera.updateMatrixWorld(true);
+      f.world.sync({
+        ...f.actor,
+        eye: [next.position.x / 0.5, next.position.y / 0.5, next.position.z / 0.5],
+        yaw: next.rotation.y,
+        pitch: next.rotation.x,
+      });
+    },
+    updateHeldItems: () =>
+      f.update(f.camera, f.pose, 0, {
+        firearms: [],
+        readiness: { uid: f.item.uid, progress: 1, aimingDownSights: true },
+      }),
+    finishDraw: () => {
+      for (const sample of [heldFrame, f.view.warmUpTarget.camera, worldSample]) {
+        expect(sample.position.distanceTo(next.position)).toBeLessThan(1e-8);
+        expect(sample.quaternion.toArray()).toEqual(next.quaternion.toArray());
+      }
+      expect(f.view.opticLensFrame).toBeDefined();
+    },
+  };
+  try {
+    for (const [x, y, z, pitch, yaw] of [
+      [1, 2, 3, 0.3, -0.7],
+      [-2, 1, 4, -0.4, 1.2],
+    ] as const) {
+      next.position.set(x, y, z);
+      next.rotation.set(pitch, yaw, 0, 'YXZ');
+      for (const call of calls) {
+        steps[call]!();
+      }
+    }
+    expect(world).toHaveBeenCalledTimes(2);
+  } finally {
+    world.mockRestore();
     f.dispose();
   }
 });
